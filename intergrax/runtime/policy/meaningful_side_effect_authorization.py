@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TypeVar
+from typing import Any, Mapping, TypeVar
 
 from intergrax.collaborative_work.enforcement_gate import CollaborativeWorkEnforcementGate
 from intergrax.contracts.collaborative_work import (
@@ -32,6 +32,16 @@ from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle, TaskState
 
 T = TypeVar("T")
+
+GOVERNED_EXECUTION_TASK_METADATA_KEY = "runtime.governed_execution.task.v1"
+
+
+def resolve_governed_execution_task(metadata: Mapping[str, Any]) -> Task | None:
+    """Resolve the live Nexus ``Task`` handle when wired by graph execution."""
+    raw = metadata.get(GOVERNED_EXECUTION_TASK_METADATA_KEY)
+    if isinstance(raw, Task):
+        return raw
+    return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -89,6 +99,7 @@ class MeaningfulSideEffectAuthorizationBoundary:
         lifecycle: TaskLifecycle | None = None,
         source_agent_id: str = "platform.meaningful_side_effect",
         source_step_id: str | None = None,
+        on_authorization: Callable[[MeaningfulSideEffectAuthorizationResult], None] | None = None,
     ) -> T | MeaningfulSideEffectAuthorizationResult:
         """Fresh enforcement evaluation before ``execute``.
 
@@ -104,6 +115,8 @@ class MeaningfulSideEffectAuthorizationBoundary:
             source_agent_id=source_agent_id,
             source_step_id=source_step_id,
         )
+        if on_authorization is not None:
+            on_authorization(authorization)
         action = authorization.decision.action
         enforcement = authorization.enforcement_result
         side_effect = request.meaningful_side_effect_request

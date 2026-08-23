@@ -693,6 +693,11 @@ class GraphExecutor:
             engine_prompt_id = task.metadata.get("engine_planner_prompt_id")
             if isinstance(engine_prompt_id, str) and engine_prompt_id.strip():
                 request.metadata["engine_planner_prompt_id"] = engine_prompt_id.strip()
+            from intergrax.runtime.policy.meaningful_side_effect_authorization import (
+                GOVERNED_EXECUTION_TASK_METADATA_KEY,
+            )
+
+            request.metadata[GOVERNED_EXECUTION_TASK_METADATA_KEY] = task
             return await AgentEngine.run_agent_with_result(
                 current_agent,
                 request,

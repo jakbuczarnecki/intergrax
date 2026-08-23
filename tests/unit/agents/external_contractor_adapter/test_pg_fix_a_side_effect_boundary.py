@@ -107,6 +107,28 @@ class _SpyAuthorizationBoundary:
             requires_governed_continuation=False,
         )
 
+    def authorize_and_execute(
+        self,
+        request: CollaborativeWorkEnforcementRequest,
+        execute: object,
+        *,
+        task: object | None = None,
+        lifecycle: object | None = None,
+        source_agent_id: str = "platform.meaningful_side_effect",
+        source_step_id: str | None = None,
+        on_authorization: object | None = None,
+    ) -> object:
+        _ = task, lifecycle, source_step_id
+        authorization = self.authorize(
+            request,
+            source_agent_id=source_agent_id,
+        )
+        if on_authorization is not None:
+            on_authorization(authorization)
+        if authorization.permitted:
+            return execute()
+        return authorization
+
 
 def _meta(**overrides: object) -> dict[str, object]:
     payload: dict[str, object] = {
@@ -251,8 +273,8 @@ def test_a6_require_human_without_grant_blocks_provider() -> None:
 
 def test_a7_matching_grant_dependency_pg_fix_c() -> None:
     source = _ADAPTER_PY.read_text(encoding="utf-8")
-    assert "authorize_and_execute" not in source
-    assert "authorization_boundary.authorize(" in source
+    assert "authorize_and_execute" in source
+    assert "authorization_boundary.authorize(" not in source
 
 
 def test_a8_deny_overrides_grant_blocks_provider() -> None:
