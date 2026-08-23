@@ -13,6 +13,7 @@ from intergrax.runtime.adaptive.adaptation_models import (
 )
 from intergrax.runtime.adaptive.contracts import ProfileArtifactType, ProfileVersionDraft
 from intergrax.runtime.adaptive.profile_lifecycle import ProfileVersionLifecycleManager
+from intergrax.runtime.adaptive.profile_mutation_store import InMemoryAdaptiveProfileMutationStore
 from intergrax.runtime.adaptive.profile_pointer_store import InMemoryProfileActivePointerStore
 from intergrax.runtime.adaptive.profile_version_store import InMemoryProfileVersionStore
 from intergrax.runtime.architecture.adaptive_governance import (
@@ -32,10 +33,15 @@ def test_shadow_allocation_records_candidate_profile_version_observation() -> No
     store = InMemoryProfileVersionStore()
     pointer_store = InMemoryProfileActivePointerStore()
     lifecycle = ProfileVersionLifecycleManager(store)
+    mutation_store = InMemoryAdaptiveProfileMutationStore(
+        version_store=store,
+        pointer_store=pointer_store,
+    )
     executor = AdaptationExecutor(
         profile_store=store,
         pointer_store=pointer_store,
         lifecycle_manager=lifecycle,
+        mutation_store=mutation_store,
     )
 
     envelope = AdaptiveLoopEnvelope(

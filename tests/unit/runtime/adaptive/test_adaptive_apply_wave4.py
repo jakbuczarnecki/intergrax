@@ -37,6 +37,7 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.runtime.adaptive.profile_mutation_store import InMemoryAdaptiveProfileMutationStore
 from intergrax.runtime.adaptive.profile_pointer_store import InMemoryProfileActivePointerStore
 from intergrax.runtime.adaptive.profile_policy_resolver import apply_policy_fragment_version
 from intergrax.runtime.adaptive.profile_version_store import InMemoryProfileVersionStore
@@ -126,10 +127,15 @@ def _build_executor(
     store = InMemoryProfileVersionStore()
     resolved_pointer_store = pointer_store or InMemoryProfileActivePointerStore()
     lifecycle = ProfileVersionLifecycleManager(store)
+    mutation_store = InMemoryAdaptiveProfileMutationStore(
+        version_store=store,
+        pointer_store=resolved_pointer_store,
+    )
     return AdaptationExecutor(
         profile_store=store,
         pointer_store=resolved_pointer_store,
         lifecycle_manager=lifecycle,
+        mutation_store=mutation_store,
         approval_store=approval_store or InMemoryPolicyLearningApprovalStore(),
     )
 
@@ -330,8 +336,7 @@ def test_materialize_runtime_config_includes_adaptive_profile_when_enabled(tmp_p
             "adaptive_profile": AdaptiveProfile(
                 enabled=True,
                 mode="shadow",
-                profile_versions_db_path=tmp_path / "profiles.db",
-                profile_pointers_db_path=tmp_path / "pointers.db",
+                adaptive_profile_db_path=tmp_path / "adaptive_harness.db",
                 signal_store_path=tmp_path / "signals.db",
             )
         }

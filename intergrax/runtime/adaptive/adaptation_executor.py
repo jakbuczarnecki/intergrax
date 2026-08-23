@@ -18,10 +18,8 @@ from intergrax.runtime.adaptive.policy_learning_approval import (
     require_policy_learning_approval,
 )
 from intergrax.runtime.adaptive.profile_lifecycle import ProfileVersionLifecycleManager
-from intergrax.runtime.adaptive.profile_pointer_store import (
-    ProfileActivePointerConflictError,
-    ProfileActivePointerStore,
-)
+from intergrax.runtime.adaptive.profile_mutation_store import AdaptiveProfileMutationStore
+from intergrax.runtime.adaptive.profile_pointer_store import ProfileActivePointerStore
 from intergrax.runtime.adaptive.profile_version_store import ProfileVersionStore
 
 
@@ -79,11 +77,13 @@ class AdaptationExecutor:
         profile_store: ProfileVersionStore,
         pointer_store: ProfileActivePointerStore,
         lifecycle_manager: ProfileVersionLifecycleManager,
+        mutation_store: AdaptiveProfileMutationStore,
         approval_store: PolicyLearningApprovalStore | None = None,
     ) -> None:
         self._profile_store = profile_store
         self._pointer_store = pointer_store
         self._lifecycle_manager = lifecycle_manager
+        self._mutation_store = mutation_store
         self._approval_store = approval_store
 
     def shadow(
@@ -166,41 +166,18 @@ class AdaptationExecutor:
             raise ValueError(
                 f"Apply requires shadow or canary status, got {record.status.value}"
             )
-        self._assert_pointer_matches_expected(
+        swapped = self._mutation_store.commit_apply(
             tenant_id=tenant_id,
             task_class=task_class,
             artifact_type=record.artifact_type,
-            expected_active_version_id=expected_active_version_id,
-        )
-        if record.status == ProfileVersionStatus.SHADOW:
-            record = self._lifecycle_manager.transition(version_id, target=ProfileVersionStatus.CANARY)
-        active = self._lifecycle_manager.transition(record.version_id, target=ProfileVersionStatus.ACTIVE)
-
-        pointer = self._pointer_store.get_pointer(
-            tenant_id=tenant_id,
-            task_class=task_class,
-            artifact_type=active.artifact_type,
-        )
-        if pointer is not None and pointer.active_version_id != active.version_id:
-            previous = self._profile_store.get(pointer.active_version_id)
-            if previous is not None and previous.status == ProfileVersionStatus.ACTIVE:
-                self._lifecycle_manager.transition(
-                    previous.version_id,
-                    target=ProfileVersionStatus.RETIRED,
-                )
-
-        swapped = self._pointer_store.swap_active(
-            tenant_id=tenant_id,
-            task_class=task_class,
-            artifact_type=active.artifact_type,
-            new_active_version_id=active.version_id,
+            target_version_id=version_id,
             expected_active_version_id=expected_active_version_id,
         )
         return ApplyProfileResult(
             tenant_id=tenant_id,
             task_class=task_class,
-            applied_version_id=active.version_id,
-            artifact_type=active.artifact_type,
+            applied_version_id=swapped.active_version_id,
+            artifact_type=record.artifact_type,
             previous_version_id=swapped.previous_version_id,
         )
 
@@ -212,42 +189,18 @@ class AdaptationExecutor:
         artifact_type: ProfileArtifactType,
         expected_active_version_id: str,
     ) -> RollbackProfileResult:
-        pointer = self._pointer_store.get_pointer(
+        swapped = self._mutation_store.commit_rollback(
             tenant_id=tenant_id,
             task_class=task_class,
             artifact_type=artifact_type,
-        )
-        if pointer is None or pointer.previous_version_id is None:
-            raise ValueError("No rollback pointer available for active profile version")
-        if pointer.active_version_id != expected_active_version_id:
-            raise ProfileActivePointerConflictError(
-                "active profile pointer changed before rollback"
-            )
-
-        current = self._profile_store.get(pointer.active_version_id)
-        previous = self._profile_store.get(pointer.previous_version_id)
-        if current is None or previous is None:
-            raise ValueError("Rollback requires both current and previous profile versions")
-
-        if current.status == ProfileVersionStatus.ACTIVE:
-            self._lifecycle_manager.transition(current.version_id, target=ProfileVersionStatus.DRAFT)
-        restored = self._lifecycle_manager.transition(
-            previous.version_id,
-            target=ProfileVersionStatus.ACTIVE,
-        )
-        self._pointer_store.swap_active(
-            tenant_id=tenant_id,
-            task_class=task_class,
-            artifact_type=artifact_type,
-            new_active_version_id=restored.version_id,
             expected_active_version_id=expected_active_version_id,
         )
         return RollbackProfileResult(
             tenant_id=tenant_id,
             task_class=task_class,
-            restored_version_id=restored.version_id,
+            restored_version_id=swapped.active_version_id,
             artifact_type=artifact_type,
-            rolled_back_version_id=current.version_id,
+            rolled_back_version_id=swapped.previous_version_id,
         )
 
     def _require_scoped_version(
@@ -277,25 +230,6 @@ class AdaptationExecutor:
                 f"expected {artifact_type.value!r}, got {record.artifact_type.value!r}"
             )
         return record
-
-    def _assert_pointer_matches_expected(
-        self,
-        *,
-        tenant_id: str,
-        task_class: str,
-        artifact_type: ProfileArtifactType,
-        expected_active_version_id: str | None,
-    ) -> None:
-        pointer = self._pointer_store.get_pointer(
-            tenant_id=tenant_id,
-            task_class=task_class,
-            artifact_type=artifact_type,
-        )
-        actual_active = pointer.active_version_id if pointer is not None else None
-        if actual_active != expected_active_version_id:
-            raise ProfileActivePointerConflictError(
-                "active profile pointer changed before mutation"
-            )
 
     def _validate_apply_promotion_authority(
         self,

@@ -53,9 +53,12 @@ class ProfileActivePointerStore(Protocol):
     def clear(self) -> None: ...
 
 
-def default_profile_pointer_store_path(repo_root: Path | None = None) -> Path:
-    root = repo_root or Path(__file__).resolve().parents[3]
-    return root / "build" / "adaptive_harness" / "profile_pointers.db"
+def default_adaptive_profile_db_path(repo_root: Path | None = None) -> Path:
+    from intergrax.runtime.adaptive.profile_mutation_store import (
+        default_adaptive_profile_db_path as _default_path,
+    )
+
+    return _default_path(repo_root)
 
 
 class InMemoryProfileActivePointerStore:
@@ -124,7 +127,7 @@ class SQLiteProfileActivePointerStore:
     """SQLite-backed active pointer store."""
 
     def __init__(self, db_path: Path | None = None) -> None:
-        self._db_path = db_path or default_profile_pointer_store_path()
+        self._db_path = db_path or default_adaptive_profile_db_path()
         self._ensure_schema()
 
     def _connection(self) -> sqlite3.Connection:

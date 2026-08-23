@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""AHI control-plane mutation governance proofs (AHICPM1–AHICPM20)."""
+"""AHI control-plane mutation governance proofs (AHICPM1–AHICPM25)."""
 
 from __future__ import annotations
 
@@ -36,13 +36,23 @@ from intergrax.runtime.adaptive.contracts import (
     ProfileVersionStatus,
 )
 from intergrax.runtime.adaptive.policy_learning_approval import InMemoryPolicyLearningApprovalStore
-from intergrax.runtime.adaptive.profile_lifecycle import ProfileVersionLifecycleManager
+from intergrax.runtime.adaptive.profile_lifecycle import (
+    ProfileLifecycleTransitionError,
+    ProfileVersionLifecycleManager,
+)
+from intergrax.runtime.adaptive.profile_mutation_store import (
+    InMemoryAdaptiveProfileMutationStore,
+    SQLiteAdaptiveProfileMutationStore,
+)
 from intergrax.runtime.adaptive.profile_pointer_store import (
     InMemoryProfileActivePointerStore,
     ProfileActivePointerConflictError,
     SQLiteProfileActivePointerStore,
 )
-from intergrax.runtime.adaptive.profile_version_store import InMemoryProfileVersionStore
+from intergrax.runtime.adaptive.profile_version_store import (
+    InMemoryProfileVersionStore,
+    SQLiteProfileVersionStore,
+)
 from intergrax.runtime.adaptive.signal_store import InMemorySignalStore
 from intergrax.runtime.adaptive.verification_loop import VerificationLoop
 from intergrax.runtime.adaptive.verification_models import VerificationContext, VerificationTarget
@@ -143,11 +153,16 @@ def _build_stack(
     store = InMemoryProfileVersionStore()
     pointer_store = InMemoryProfileActivePointerStore()
     lifecycle = ProfileVersionLifecycleManager(store)
+    mutation_store = InMemoryAdaptiveProfileMutationStore(
+        version_store=store,
+        pointer_store=pointer_store,
+    )
     approval_store = InMemoryPolicyLearningApprovalStore()
     executor = AdaptationExecutor(
         profile_store=store,
         pointer_store=pointer_store,
         lifecycle_manager=lifecycle,
+        mutation_store=mutation_store,
         approval_store=approval_store,
     )
     recording = evaluator or _RecordingEvaluator()
@@ -711,3 +726,321 @@ def test_ahicpm20_real_evidence_only() -> None:
     assert evidence.request_digest.startswith("sha256:")
     assert evidence.request_digest != "sha256:"
     assert evidence.mutation_type == MUTATION_TYPE_APPLY_PROFILE
+
+
+def _seed_sqlite_apply_race_state(
+    db_path: Path,
+    *,
+    baseline_id: str = "v10",
+    candidate_id: str = "v11",
+    intruder_id: str = "v12",
+) -> SQLiteAdaptiveProfileMutationStore:
+    version_store = SQLiteProfileVersionStore(db_path=db_path)
+    version_store.create_from_draft(
+        ProfileVersionDraft(
+            version_id=baseline_id,
+            artifact_type=ProfileArtifactType.RAG,
+            artifact_payload={"tier": "baseline"},
+            status=ProfileVersionStatus.ACTIVE,
+        ),
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+    )
+    version_store.create_from_draft(
+        ProfileVersionDraft(
+            version_id=candidate_id,
+            artifact_type=ProfileArtifactType.RAG,
+            artifact_payload={"tier": "candidate"},
+            parent_version_id=baseline_id,
+            status=ProfileVersionStatus.CANARY,
+        ),
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+    )
+    version_store.create_from_draft(
+        ProfileVersionDraft(
+            version_id=intruder_id,
+            artifact_type=ProfileArtifactType.RAG,
+            artifact_payload={"tier": "intruder"},
+            status=ProfileVersionStatus.ACTIVE,
+        ),
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+    )
+    pointer_store = SQLiteProfileActivePointerStore(db_path=db_path)
+    pointer_store.swap_active(
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+        artifact_type=ProfileArtifactType.RAG,
+        new_active_version_id=baseline_id,
+        expected_active_version_id=None,
+    )
+    pointer_store.swap_active(
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+        artifact_type=ProfileArtifactType.RAG,
+        new_active_version_id=intruder_id,
+        expected_active_version_id=baseline_id,
+    )
+    return SQLiteAdaptiveProfileMutationStore(db_path=db_path)
+
+
+def test_ahicpm21_apply_mid_flight_conflict_zero_partial_writes(tmp_path: Path) -> None:
+    db_path = tmp_path / "adaptive_harness.db"
+    mutation_store = _seed_sqlite_apply_race_state(db_path)
+    version_store = SQLiteProfileVersionStore(db_path=db_path)
+    pointer_store = SQLiteProfileActivePointerStore(db_path=db_path)
+
+    with pytest.raises(ProfileActivePointerConflictError):
+        mutation_store.commit_apply(
+            tenant_id=_TENANT,
+            task_class=_TASK_CLASS,
+            artifact_type=ProfileArtifactType.RAG,
+            target_version_id="v11",
+            expected_active_version_id="v10",
+        )
+
+    pointer = pointer_store.get_pointer(
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+        artifact_type=ProfileArtifactType.RAG,
+    )
+    assert pointer is not None
+    assert pointer.active_version_id == "v12"
+    assert version_store.get("v11").status == ProfileVersionStatus.CANARY
+    assert version_store.get("v10").status == ProfileVersionStatus.ACTIVE
+
+
+def test_ahicpm22_rollback_mid_flight_conflict_zero_partial_writes(tmp_path: Path) -> None:
+    db_path = tmp_path / "adaptive_harness.db"
+    version_store = SQLiteProfileVersionStore(db_path=db_path)
+    pointer_store = SQLiteProfileActivePointerStore(db_path=db_path)
+    version_store.create_from_draft(
+        ProfileVersionDraft(
+            version_id="baseline-v1",
+            artifact_type=ProfileArtifactType.RAG,
+            artifact_payload={"tier": "baseline"},
+            status=ProfileVersionStatus.ACTIVE,
+        ),
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+    )
+    version_store.create_from_draft(
+        ProfileVersionDraft(
+            version_id="candidate-v2",
+            artifact_type=ProfileArtifactType.RAG,
+            artifact_payload={"tier": "candidate"},
+            parent_version_id="baseline-v1",
+            status=ProfileVersionStatus.CANARY,
+        ),
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+    )
+    version_store.create_from_draft(
+        ProfileVersionDraft(
+            version_id="intruder-v3",
+            artifact_type=ProfileArtifactType.RAG,
+            artifact_payload={"tier": "intruder"},
+            status=ProfileVersionStatus.ACTIVE,
+        ),
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+    )
+    pointer_store.swap_active(
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+        artifact_type=ProfileArtifactType.RAG,
+        new_active_version_id="baseline-v1",
+        expected_active_version_id=None,
+    )
+    pointer_store.swap_active(
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+        artifact_type=ProfileArtifactType.RAG,
+        new_active_version_id="candidate-v2",
+        expected_active_version_id="baseline-v1",
+    )
+    lifecycle = ProfileVersionLifecycleManager(version_store)
+    lifecycle.transition("baseline-v1", target=ProfileVersionStatus.RETIRED)
+    lifecycle.transition("candidate-v2", target=ProfileVersionStatus.ACTIVE)
+    pointer_store.swap_active(
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+        artifact_type=ProfileArtifactType.RAG,
+        new_active_version_id="intruder-v3",
+        expected_active_version_id="candidate-v2",
+    )
+    mutation_store = SQLiteAdaptiveProfileMutationStore(db_path=db_path)
+
+    with pytest.raises(ProfileActivePointerConflictError):
+        mutation_store.commit_rollback(
+            tenant_id=_TENANT,
+            task_class=_TASK_CLASS,
+            artifact_type=ProfileArtifactType.RAG,
+            expected_active_version_id="candidate-v2",
+        )
+
+    pointer = pointer_store.get_pointer(
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+        artifact_type=ProfileArtifactType.RAG,
+    )
+    assert pointer is not None
+    assert pointer.active_version_id == "intruder-v3"
+    assert version_store.get("candidate-v2").status == ProfileVersionStatus.ACTIVE
+    assert version_store.get("baseline-v1").status == ProfileVersionStatus.RETIRED
+
+
+def test_ahicpm23_successful_apply_atomic_commit(tmp_path: Path) -> None:
+    db_path = tmp_path / "adaptive_harness.db"
+    version_store = SQLiteProfileVersionStore(db_path=db_path)
+    version_store.create_from_draft(
+        ProfileVersionDraft(
+            version_id="v10",
+            artifact_type=ProfileArtifactType.RAG,
+            artifact_payload={"tier": "baseline"},
+            status=ProfileVersionStatus.ACTIVE,
+        ),
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+    )
+    version_store.create_from_draft(
+        ProfileVersionDraft(
+            version_id="v11",
+            artifact_type=ProfileArtifactType.RAG,
+            artifact_payload={"tier": "candidate"},
+            parent_version_id="v10",
+            status=ProfileVersionStatus.CANARY,
+        ),
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+    )
+    pointer_store = SQLiteProfileActivePointerStore(db_path=db_path)
+    pointer_store.swap_active(
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+        artifact_type=ProfileArtifactType.RAG,
+        new_active_version_id="v10",
+        expected_active_version_id=None,
+    )
+    mutation_store = SQLiteAdaptiveProfileMutationStore(db_path=db_path)
+    pointer = mutation_store.commit_apply(
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+        artifact_type=ProfileArtifactType.RAG,
+        target_version_id="v11",
+        expected_active_version_id="v10",
+    )
+    assert pointer.active_version_id == "v11"
+    assert pointer.previous_version_id == "v10"
+    assert version_store.get("v11").status == ProfileVersionStatus.ACTIVE
+    assert version_store.get("v10").status == ProfileVersionStatus.RETIRED
+
+
+def test_ahicpm24_successful_rollback_atomic_commit(tmp_path: Path) -> None:
+    db_path = tmp_path / "adaptive_harness.db"
+    version_store = SQLiteProfileVersionStore(db_path=db_path)
+    pointer_store = SQLiteProfileActivePointerStore(db_path=db_path)
+    version_store.create_from_draft(
+        ProfileVersionDraft(
+            version_id="baseline-v1",
+            artifact_type=ProfileArtifactType.RAG,
+            artifact_payload={"tier": "baseline"},
+            status=ProfileVersionStatus.ACTIVE,
+        ),
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+    )
+    version_store.create_from_draft(
+        ProfileVersionDraft(
+            version_id="candidate-v2",
+            artifact_type=ProfileArtifactType.RAG,
+            artifact_payload={"tier": "candidate"},
+            parent_version_id="baseline-v1",
+            status=ProfileVersionStatus.CANARY,
+        ),
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+    )
+    pointer_store.swap_active(
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+        artifact_type=ProfileArtifactType.RAG,
+        new_active_version_id="baseline-v1",
+        expected_active_version_id=None,
+    )
+    pointer_store.swap_active(
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+        artifact_type=ProfileArtifactType.RAG,
+        new_active_version_id="candidate-v2",
+        expected_active_version_id="baseline-v1",
+    )
+    lifecycle = ProfileVersionLifecycleManager(version_store)
+    lifecycle.transition("baseline-v1", target=ProfileVersionStatus.RETIRED)
+    lifecycle.transition("candidate-v2", target=ProfileVersionStatus.ACTIVE)
+
+    mutation_store = SQLiteAdaptiveProfileMutationStore(db_path=db_path)
+    pointer = mutation_store.commit_rollback(
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+        artifact_type=ProfileArtifactType.RAG,
+        expected_active_version_id="candidate-v2",
+    )
+    assert pointer.active_version_id == "baseline-v1"
+    assert pointer.previous_version_id == "candidate-v2"
+    assert version_store.get("baseline-v1").status == ProfileVersionStatus.ACTIVE
+    assert version_store.get("candidate-v2").status == ProfileVersionStatus.DRAFT
+
+
+def test_ahicpm25_durable_sqlite_atomicity_rolls_back_invalid_transition(tmp_path: Path) -> None:
+    db_path = tmp_path / "adaptive_harness.db"
+    version_store = SQLiteProfileVersionStore(db_path=db_path)
+    version_store.create_from_draft(
+        ProfileVersionDraft(
+            version_id="v10",
+            artifact_type=ProfileArtifactType.RAG,
+            artifact_payload={"tier": "baseline"},
+            status=ProfileVersionStatus.ACTIVE,
+        ),
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+    )
+    version_store.create_from_draft(
+        ProfileVersionDraft(
+            version_id="v11",
+            artifact_type=ProfileArtifactType.RAG,
+            artifact_payload={"tier": "draft"},
+            status=ProfileVersionStatus.DRAFT,
+        ),
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+    )
+    pointer_store = SQLiteProfileActivePointerStore(db_path=db_path)
+    pointer_store.swap_active(
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+        artifact_type=ProfileArtifactType.RAG,
+        new_active_version_id="v10",
+        expected_active_version_id=None,
+    )
+    mutation_store = SQLiteAdaptiveProfileMutationStore(db_path=db_path)
+
+    with pytest.raises(ProfileLifecycleTransitionError):
+        mutation_store.commit_apply(
+            tenant_id=_TENANT,
+            task_class=_TASK_CLASS,
+            artifact_type=ProfileArtifactType.RAG,
+            target_version_id="v11",
+            expected_active_version_id="v10",
+        )
+
+    pointer = pointer_store.get_pointer(
+        tenant_id=_TENANT,
+        task_class=_TASK_CLASS,
+        artifact_type=ProfileArtifactType.RAG,
+    )
+    assert pointer is not None
+    assert pointer.active_version_id == "v10"
+    assert version_store.get("v10").status == ProfileVersionStatus.ACTIVE
+    assert version_store.get("v11").status == ProfileVersionStatus.DRAFT

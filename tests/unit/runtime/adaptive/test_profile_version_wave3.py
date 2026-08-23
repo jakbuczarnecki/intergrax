@@ -28,6 +28,7 @@ from intergrax.runtime.adaptive.profile_promotion import (
     evaluate_profile_promotion,
 )
 from intergrax.runtime.adaptive.profile_rag_router import ProfileAwareQueryRouter
+from intergrax.runtime.adaptive.profile_mutation_store import InMemoryAdaptiveProfileMutationStore
 from intergrax.runtime.adaptive.profile_pointer_store import InMemoryProfileActivePointerStore
 from intergrax.runtime.adaptive.profile_version_store import (
     InMemoryProfileVersionStore,
@@ -144,10 +145,15 @@ def test_adaptation_executor_shadow_allocates_candidate_version() -> None:
     store = InMemoryProfileVersionStore()
     pointer_store = InMemoryProfileActivePointerStore()
     lifecycle = ProfileVersionLifecycleManager(store)
+    mutation_store = InMemoryAdaptiveProfileMutationStore(
+        version_store=store,
+        pointer_store=pointer_store,
+    )
     executor = AdaptationExecutor(
         profile_store=store,
         pointer_store=pointer_store,
         lifecycle_manager=lifecycle,
+        mutation_store=mutation_store,
     )
     package = _sample_package()
     result = executor.shadow(package, tenant_id="tenant_a", task_class="echo.basic")
@@ -162,10 +168,15 @@ def test_adaptation_executor_shadow_rejects_failed_gate() -> None:
     store = InMemoryProfileVersionStore()
     pointer_store = InMemoryProfileActivePointerStore()
     lifecycle = ProfileVersionLifecycleManager(store)
+    mutation_store = InMemoryAdaptiveProfileMutationStore(
+        version_store=store,
+        pointer_store=pointer_store,
+    )
     executor = AdaptationExecutor(
         profile_store=store,
         pointer_store=pointer_store,
         lifecycle_manager=lifecycle,
+        mutation_store=mutation_store,
     )
     with pytest.raises(ValueError, match="failed governance"):
         executor.shadow(_sample_package(passed=False), tenant_id="tenant_a", task_class="echo.basic")

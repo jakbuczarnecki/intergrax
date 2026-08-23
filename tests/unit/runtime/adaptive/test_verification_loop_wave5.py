@@ -39,6 +39,7 @@ from intergrax.runtime.adaptive.l4_runtime_evidence import (
 )
 from intergrax.runtime.adaptive.loop_apply_block_store import InMemoryLoopApplyBlockStore
 from intergrax.runtime.adaptive.profile_lifecycle import ProfileVersionLifecycleManager
+from intergrax.runtime.adaptive.profile_mutation_store import InMemoryAdaptiveProfileMutationStore
 from intergrax.runtime.adaptive.profile_pointer_store import InMemoryProfileActivePointerStore
 from intergrax.runtime.adaptive.profile_version_store import InMemoryProfileVersionStore
 from intergrax.runtime.adaptive.proposal_builder import ProposalBuilder
@@ -271,10 +272,15 @@ def test_verification_loop_auto_rollback_and_block_on_failure() -> None:
     governance_bridge = RuntimeArchitectureGovernanceBridge(
         mutation_authorization_boundary=boundary,
     )
+    mutation_store = InMemoryAdaptiveProfileMutationStore(
+        version_store=profile_store,
+        pointer_store=pointer_store,
+    )
     executor = AdaptationExecutor(
         profile_store=profile_store,
         pointer_store=pointer_store,
         lifecycle_manager=lifecycle,
+        mutation_store=mutation_store,
     )
     loop = VerificationLoop(
         signal_store=signal_store,
@@ -442,10 +448,15 @@ def test_rollback_drill_completes_under_five_minutes() -> None:
         expected_active_version_id="baseline-drill",
     )
     lifecycle.transition("baseline-drill", target=ProfileVersionStatus.RETIRED)
+    mutation_store = InMemoryAdaptiveProfileMutationStore(
+        version_store=profile_store,
+        pointer_store=pointer_store,
+    )
     executor = AdaptationExecutor(
         profile_store=profile_store,
         pointer_store=pointer_store,
         lifecycle_manager=lifecycle,
+        mutation_store=mutation_store,
     )
     rollback = executor.rollback(
         tenant_id="tenant-drill",

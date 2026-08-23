@@ -33,6 +33,7 @@ from intergrax.runtime.adaptive.l4_runtime_evidence import (
 from intergrax.runtime.adaptive.loop_apply_block_store import InMemoryLoopApplyBlockStore
 from intergrax.runtime.adaptive.profile_lifecycle import ProfileVersionLifecycleManager
 from intergrax.runtime.adaptive.profile_pointer_store import InMemoryProfileActivePointerStore
+from intergrax.runtime.adaptive.profile_mutation_store import InMemoryAdaptiveProfileMutationStore
 from intergrax.runtime.adaptive.profile_version_store import InMemoryProfileVersionStore
 from intergrax.runtime.adaptive.signal_store import InMemorySignalStore
 from intergrax.runtime.adaptive.verification_loop import VerificationLoop
@@ -90,10 +91,15 @@ def _build_verification_report(*, use_baseline: bool) -> tuple[object, object]:
     profile_store = InMemoryProfileVersionStore()
     pointer_store = InMemoryProfileActivePointerStore()
     lifecycle = ProfileVersionLifecycleManager(store=profile_store)
+    mutation_store = InMemoryAdaptiveProfileMutationStore(
+        version_store=profile_store,
+        pointer_store=pointer_store,
+    )
     executor = AdaptationExecutor(
         profile_store=profile_store,
         pointer_store=pointer_store,
         lifecycle_manager=lifecycle,
+        mutation_store=mutation_store,
     )
     verification_loop = VerificationLoop(
         signal_store=signal_store,

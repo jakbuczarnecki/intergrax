@@ -17,6 +17,7 @@ from intergrax.runtime.adaptive.policy_learning_approval import (
     PolicyLearningApprovalStore,
 )
 from intergrax.runtime.adaptive.profile_lifecycle import ProfileVersionLifecycleManager
+from intergrax.runtime.adaptive.profile_mutation_store import SQLiteAdaptiveProfileMutationStore
 from intergrax.runtime.adaptive.profile_pointer_store import (
     ProfileActivePointerStore,
     SQLiteProfileActivePointerStore,
@@ -74,14 +75,16 @@ def wire_adaptive_profile(
             domain_fragments={"adaptive_enabled": False, "adaptive_mode": profile.mode},
         )
 
-    version_store = SQLiteProfileVersionStore(db_path=profile.profile_versions_db_path)
-    pointer_store = SQLiteProfileActivePointerStore(db_path=profile.profile_pointers_db_path)
+    version_store = SQLiteProfileVersionStore(db_path=profile.adaptive_profile_db_path)
+    pointer_store = SQLiteProfileActivePointerStore(db_path=profile.adaptive_profile_db_path)
+    mutation_store = SQLiteAdaptiveProfileMutationStore(db_path=profile.adaptive_profile_db_path)
     lifecycle_manager = ProfileVersionLifecycleManager(version_store)
     approval_store = InMemoryPolicyLearningApprovalStore()
     executor = AdaptationExecutor(
         profile_store=version_store,
         pointer_store=pointer_store,
         lifecycle_manager=lifecycle_manager,
+        mutation_store=mutation_store,
         approval_store=approval_store,
     )
 

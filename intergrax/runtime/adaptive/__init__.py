@@ -102,11 +102,16 @@ from intergrax.runtime.adaptive.profile_rag_router import (
     ProfileAwareQueryRouter,
     apply_rag_profile_version,
 )
+from intergrax.runtime.adaptive.profile_mutation_store import (
+    AdaptiveProfileMutationStore,
+    InMemoryAdaptiveProfileMutationStore,
+    SQLiteAdaptiveProfileMutationStore,
+    default_adaptive_profile_db_path,
+)
 from intergrax.runtime.adaptive.profile_version_store import (
     InMemoryProfileVersionStore,
     ProfileVersionStore,
     SQLiteProfileVersionStore,
-    default_profile_version_store_path,
 )
 from intergrax.runtime.adaptive.routing_tuning_engine import RoutingTuningEngine
 from intergrax.runtime.adaptive.cost_normalization import normalize_cost_against_budget
@@ -140,7 +145,7 @@ from intergrax.runtime.architecture.adaptive_governance import (
 )
 
 __all__ = [
-    "ADAPTIVE_PACKAGE_SCHEMA_VERSION",
+    "AdaptiveProfileMutationStore",
     "AdaptationEngine",
     "AdaptationExecutor",
     "AdaptationEngineContext",
@@ -165,6 +170,7 @@ __all__ = [
     "HarnessSecurityAdversarialBaselineChecker",
     "InMemoryLoopApplyBlockStore",
     "InMemoryBanditStateStore",
+    "InMemoryAdaptiveProfileMutationStore",
     "InMemoryProfileVersionStore",
     "L4RuntimeEvidenceReport",
     "LoopApplyBlockStore",
@@ -204,6 +210,7 @@ __all__ = [
     "SQLiteLoopApplyBlockStore",
     "SQLiteBanditStateStore",
     "ShadowAllocationResult",
+    "SQLiteAdaptiveProfileMutationStore",
     "SQLiteProfileVersionStore",
     "SQLiteSignalStore",
     "VerificationCheckId",
@@ -223,7 +230,7 @@ __all__ = [
     "build_l4_runtime_evidence_from_signals",
     "compute_utility",
     "default_bandit_store_path",
-    "default_profile_version_store_path",
+    "default_adaptive_profile_db_path",
     "default_proposal_store_path",
     "default_signal_store",
     "default_signal_store_path",

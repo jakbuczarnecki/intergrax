@@ -41,8 +41,8 @@ def _resolve_bandit_store(env: ApplicationEnvironmentProfile) -> BanditStateStor
     if adaptive.signal_store_path is not None:
         bandit_path = adaptive.signal_store_path.parent / "bandit_state.db"
         return SQLiteBanditStateStore(bandit_path)
-    if adaptive.profile_versions_db_path is not None:
-        bandit_path = adaptive.profile_versions_db_path.parent / "bandit_state.db"
+    if adaptive.adaptive_profile_db_path is not None:
+        bandit_path = adaptive.adaptive_profile_db_path.parent / "bandit_state.db"
         return SQLiteBanditStateStore(bandit_path)
     return InMemoryBanditStateStore()
 
@@ -54,9 +54,9 @@ def _profile_version_policy_hint(
     task_class: str,
 ) -> str | None:
     adaptive = env.adaptive_profile
-    if adaptive.profile_versions_db_path is None:
+    if adaptive.adaptive_profile_db_path is None:
         return None
-    store = SQLiteProfileVersionStore(adaptive.profile_versions_db_path)
+    store = SQLiteProfileVersionStore(adaptive.adaptive_profile_db_path)
     versions = store.list_versions(
         tenant_id=tenant_id,
         task_class=task_class,

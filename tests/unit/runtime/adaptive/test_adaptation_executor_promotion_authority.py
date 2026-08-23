@@ -18,6 +18,7 @@ from intergrax.runtime.adaptive.contracts import (
 )
 from intergrax.runtime.adaptive.policy_learning_approval import InMemoryPolicyLearningApprovalStore
 from intergrax.runtime.adaptive.profile_lifecycle import ProfileVersionLifecycleManager
+from intergrax.runtime.adaptive.profile_mutation_store import InMemoryAdaptiveProfileMutationStore
 from intergrax.runtime.adaptive.profile_pointer_store import InMemoryProfileActivePointerStore
 from intergrax.runtime.adaptive.profile_version_store import InMemoryProfileVersionStore
 from intergrax.runtime.architecture.adaptive_governance import (
@@ -80,10 +81,15 @@ def _build_executor() -> tuple[
     store = InMemoryProfileVersionStore()
     pointer_store = InMemoryProfileActivePointerStore()
     lifecycle = ProfileVersionLifecycleManager(store)
+    mutation_store = InMemoryAdaptiveProfileMutationStore(
+        version_store=store,
+        pointer_store=pointer_store,
+    )
     executor = AdaptationExecutor(
         profile_store=store,
         pointer_store=pointer_store,
         lifecycle_manager=lifecycle,
+        mutation_store=mutation_store,
         approval_store=InMemoryPolicyLearningApprovalStore(),
     )
     return executor, store, pointer_store
