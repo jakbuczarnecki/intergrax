@@ -12,7 +12,7 @@ It is **not** a feature matrix, competitor attack page, market ranking, performa
 
 Modern alternatives overlap and may be composed. Intergrax is **not** universally superior. The comparison is about **architectural responsibility** and **integration burden** — which layer owns product semantics, enforcement, consequential effects, canonical history, recovery, and evidence — not about whether a listed capability exists somewhere in a stack.
 
-External product capabilities were verified against vendor primary documentation on **2026-08-18**. Intergrax claims remain bounded by [PROOFS.md](../proofs/PROOFS.md). Category-level comparison (no vendor names): [Where Intergrax fits](WHY_INTERGRAX.md#where-intergrax-fits).
+External product capabilities were verified against vendor primary documentation on **2026-08-18**, except **Amazon Bedrock AgentCore** (verified **2026-08-23**). Intergrax claims remain bounded by [PROOFS.md](../proofs/PROOFS.md). Category-level comparison (no vendor names): [Where Intergrax fits](WHY_INTERGRAX.md#where-intergrax-fits).
 
 ---
 
@@ -96,6 +96,66 @@ Intergrax is not an Azure-native distribution. It consolidates governed executio
 ### Current Intergrax evidence boundary
 
 Active R&D with partial proofs. No enterprise-readiness or Azure-equivalence claim.
+
+---
+
+## Amazon Bedrock AgentCore
+
+Primary sources: [What is Amazon Bedrock AgentCore?](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/what-is-bedrock-agentcore.html), [AgentCore Runtime](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agents-tools-runtime.html), [AgentCore Gateway](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway.html), [Policy in AgentCore](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/policy.html), [AgentCore Identity](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/identity.html), [AgentCore Observability](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/observability.html), [AgentCore Memory](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/memory.html) (verified 2026-08-23).
+
+### Best fit / strengths
+
+A managed AWS platform for deploying, connecting, securing, governing, and observing agentic workloads at scale — without owning the underlying agent infrastructure.
+
+Per AWS documentation, AgentCore provides a secure, serverless runtime with session isolation; framework-agnostic hosting for agents built with LangGraph, CrewAI, Strands, LlamaIndex, Google ADK, OpenAI Agents SDK, and custom code; model flexibility across Bedrock and models outside Bedrock (including OpenAI, Gemini, and Claude where documented); MCP and A2A protocol support; a Gateway that exposes APIs, Lambda functions, MCP servers, and other targets as agent-accessible tools; Identity for workload authentication and credential management with existing IdPs; Policy with Cedar (and natural-language authoring) that intercepts Gateway tool calls outside agent code; Memory for short- and long-term context; and Observability with logs, metrics, traces, and CloudWatch dashboards in OpenTelemetry-compatible form.
+
+### Choose it when…
+
+- your organization is **already deeply standardized on AWS**;
+- you prefer **managed agent infrastructure** over owning a source-available application operating layer;
+- **AWS-native IAM, CloudWatch, and managed runtime integration** are priorities;
+- the primary requirement is production **hosting, connectivity, authorization, and operations** for agentic workloads;
+- your team prefers **AWS operational ownership** over maintaining its own shared application operating layer.
+
+**AgentCore may be the better choice** for an AWS-centric organization that wants managed agent infrastructure and policy enforcement at the Gateway boundary without owning another application platform.
+
+### What it already solves
+
+Substantial overlap with concerns Intergrax also addresses — presented here as AWS capability facts, not Intergrax gaps:
+
+- **Runtime hosting** — secure, serverless deployment and scaling with session isolation.
+- **Tool and resource gateway** — controlled access to APIs, Lambda, MCP servers, other agents, and model routing through Gateway endpoints.
+- **Authorization / policy** — deterministic Cedar-based (or natural-language-authored) policy evaluation at the Gateway boundary, outside agent code, with audit logging.
+- **Identity** — workload identity, credential management, and IdP integration for inbound and outbound access.
+- **Memory** — short-term session context and long-term cross-session retention.
+- **Observability** — traces, metrics, logs, and dashboards via CloudWatch and OTEL-compatible telemetry.
+- **External integrations / targets** — OpenAPI, Lambda, Smithy, pre-built connectors, and MCP/A2A traffic through Gateway.
+- **Framework and model flexibility** — documented support for major open-source agent frameworks and multiple foundation-model providers.
+
+### Responsibilities / questions your team still needs to settle
+
+Architecture and adoption questions — not implied AWS feature gaps:
+
+- Where do **product-specific decision semantics** and acceptance criteria live?
+- How are **evidence and admissibility requirements** defined and reviewed across multiple products?
+- If several independent applications use AgentCore resources differently, what becomes the **common execution and evidence model**?
+- What is the **canonical product history** reviewers need beyond provider telemetry and audit logs?
+- How are **application-specific recovery semantics** — retry, compensation, degradation, HITL — standardized across products?
+- What is the **deployment and portability posture** if AWS dependency or cost profile becomes undesirable?
+
+### How Intergrax approaches responsibility differently
+
+AgentCore's center of gravity is **managed AWS infrastructure** for agentic workloads — runtime, connectivity, identity, policy at the Gateway boundary, memory, and observability as AWS-managed services.
+
+Intergrax's intended center of gravity is a **shared application operating model** for specialized AI products: product semantics remain product-owned while reusable policy, evidence, execution, recovery, identity/history, and other operating boundaries are consolidated in a source-available layer under the adopting team's control.
+
+This is a **different center of responsibility**, not a claim of more complete governance, better safety, lower cost, faster delivery, or stronger reliability. Provider neutrality is an **architecture intent** — Intergrax is designed as a source-available application operating layer you operate — not a proven universal cloud-deployment portability guarantee.
+
+Cross-product reuse and compounding delivery value remain a **hypothesis** for Intergrax; measured acceleration across a second or third product is not established.
+
+### Current Intergrax evidence boundary
+
+Bounded LKW and platform-capability proofs — see [PROOFS.md](../proofs/PROOFS.md). No claim of AWS-equivalent managed scale, enterprise readiness, or production maturity. No measured superiority over AgentCore for hosting, governance, or operations.
 
 ---
 
