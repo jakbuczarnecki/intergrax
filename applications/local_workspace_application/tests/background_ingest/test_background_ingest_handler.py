@@ -8,6 +8,7 @@ import json
 
 import pytest
 
+from intergrax.contracts.execution_identity import validate_task_id
 from intergrax.queueing.contracts.task_queue import TaskRequest, TaskStatus
 from intergrax.tools.registry.wiring import ToolWiringContext  # noqa: F401 — primes import graph
 from intergrax.runtime.task.task import Task, TaskResult as RuntimeTaskResult, TaskState
@@ -44,7 +45,7 @@ def _sample_job(**overrides: object) -> LkwBackgroundIngestJob:
 def _sample_request(
     job: LkwBackgroundIngestJob,
     *,
-    run_id: str = "run-1",
+    run_id: str = "lkw.background_ingest.v1:abc123",
     tenant_id: str | None = None,
     task_name: str = LKW_BACKGROUND_INGEST_TASK_NAME,
     payload: bytes | None = None,
@@ -110,12 +111,16 @@ def test_decode_helper_rejects_tenant_mismatch() -> None:
 
 
 def test_runtime_task_builder_maps_job_to_local_workspace_index_task() -> None:
+    broker_run_id = "lkw.background_ingest.v1:abc123"
     job = _sample_job(requested_by="watcher", correlation_id="corr-1", reason="batch", priority="high")
-    request = _sample_request(job, run_id="run-42")
+    request = _sample_request(job, run_id=broker_run_id)
 
     task = build_background_ingest_runtime_task(request, job)
 
-    assert task.task_id == request.run_id
+    assert task.task_id.startswith("task_")
+    validate_task_id(task.task_id)
+    assert task.task_id != request.run_id
+    assert task.metadata["background_ingest_broker_run_id"] == broker_run_id
     assert task.tenant_id == job.tenant_id
     assert task.user_id == job.requested_by
     assert task.agent_id == LKW_BACKGROUND_INGEST_AGENT_ID
@@ -123,9 +128,13 @@ def test_runtime_task_builder_maps_job_to_local_workspace_index_task() -> None:
     assert task.metadata["source_paths"] == list(job.source_paths)
     assert task.metadata["collection_id"] == job.collection_id
     assert task.metadata["workspace_id"] == job.workspace_id
+    assert task.metadata["tenant_id"] == job.tenant_id
     assert task.metadata["chunking_strategy_id"] == "recursive"
     assert task.metadata["background_ingest_task_name"] == LKW_BACKGROUND_INGEST_TASK_NAME
     assert task.metadata["background_ingest_idempotency_key"] == request.idempotency_key
+    assert task.metadata["background_ingest_priority"] == job.priority
+    assert task.metadata["background_ingest_correlation_id"] == job.correlation_id
+    assert task.metadata["background_ingest_reason"] == job.reason
 
 
 def test_runtime_task_builder_excludes_raw_content_like_fields() -> None:
@@ -151,6 +160,23 @@ async def test_handler_delegates_to_runner_and_returns_queue_success_result() ->
     assert decoded_output["answer"] == "indexed"
     assert len(runner.tasks) == 1
     assert runner.tasks[0].context.capability == LKW_BACKGROUND_INGEST_CAPABILITY
+    validate_task_id(runner.tasks[0].task_id)
+    assert runner.tasks[0].metadata["background_ingest_broker_run_id"] == request.run_id
+
+
+@pytest.mark.asyncio
+async def test_handler_reaches_runner_without_task_id_validation_error() -> None:
+    job = _sample_job()
+    request = _sample_request(job, run_id="lkw.background_ingest.v1:deadbeef")
+    runner = _FakeRunner()
+
+    queue_result = await handle_background_ingest_task_request(request, runner)
+
+    assert queue_result.status == TaskStatus.SUCCEEDED
+    assert len(runner.tasks) == 1
+    task = runner.tasks[0]
+    validate_task_id(task.task_id)
+    assert task.task_id != request.run_id
 
 
 @pytest.mark.asyncio

@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 from typing import Protocol
 
+from intergrax.contracts.execution_identity import mint_task_id
 from intergrax.queueing.contracts.task_queue import TaskRequest
 from intergrax.queueing.contracts.task_queue import TaskResult as QueueTaskResult
 from intergrax.queueing.contracts.task_queue import TaskStatus
@@ -53,6 +54,7 @@ def build_background_ingest_runtime_task(
         "background_ingest_task_name": LKW_BACKGROUND_INGEST_TASK_NAME,
         "background_ingest_idempotency_key": request.idempotency_key,
         "background_ingest_priority": job.priority,
+        "background_ingest_broker_run_id": request.run_id,
     }
     if job.correlation_id is not None:
         metadata["background_ingest_correlation_id"] = job.correlation_id
@@ -60,7 +62,7 @@ def build_background_ingest_runtime_task(
         metadata["background_ingest_reason"] = job.reason
 
     return Task(
-        task_id=request.run_id,
+        task_id=mint_task_id(),
         tenant_id=job.tenant_id,
         user_id=job.requested_by or "background_ingest",
         agent_id=LKW_BACKGROUND_INGEST_AGENT_ID,
