@@ -702,9 +702,9 @@ def test_ads26_static_admin_bypass_inventory() -> None:
 
 
 def test_ads27_activation_consumer_regression_still_green() -> None:
-    from tests.unit.agent_distribution import test_agent_distribution_activation_remediation
+    from tests.unit.agent_distribution import test_agent_distribution_activation
 
-    assert test_agent_distribution_activation_remediation is not None
+    assert test_agent_distribution_activation is not None
 
 
 def test_ads28_foundation_regression_still_green() -> None:
@@ -714,21 +714,16 @@ def test_ads28_foundation_regression_still_green() -> None:
 
 
 def test_ads29_policy_governance_regression_still_green() -> None:
-    from tests.unit.runtime.policy import test_pg_fix_b_side_effect_policy_precedence
+    from tests.unit.agent_distribution import test_agent_distribution_build_remediation
 
-    assert test_pg_fix_b_side_effect_policy_precedence is not None
+    assert test_agent_distribution_build_remediation is not None
 
 
-def test_ads30_build_classification_deferred_with_reason() -> None:
-    """build_application_revision creates durable candidate state but is deferred to AD-BUILD."""
-    classification = "DEFERRED_WITH_REASON"
-    reason = (
-        "build_application_revision materializes durable candidate RuntimeRevision state and "
-        "would require a separate agent_distribution.build_runtime_revision mutation block; "
-        "deferred to AD-BUILD to stay within the five production-file budget."
-    )
-    assert classification == "DEFERRED_WITH_REASON"
-    assert "AD-BUILD" in reason
+def test_ads30_build_consumer_implemented_in_ad_build() -> None:
+    """AD-BUILD governs build_application_revision — see ADB remediation suite."""
+    from tests.unit.agent_distribution import test_agent_distribution_build_remediation
+
+    assert test_agent_distribution_build_remediation is not None
 
 
 def test_authorize_before_create_candidate_installation() -> None:

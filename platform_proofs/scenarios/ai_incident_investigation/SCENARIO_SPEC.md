@@ -3,7 +3,7 @@
 **Scenario:** AI Incident Investigation with Independent Verification  
 **Slug:** `ai_incident_investigation`  
 **Proof class:** SCENARIO  
-**Status:** ACCEPTED FOR IMPLEMENTATION — scenario concept passed human Scenario Quality Gate; implementation, executable proof, evidence, and report have not started yet.
+**Status:** FULL-1 RESOLVED evidence world implemented — UNRESOLVED path (FULL-2) and public proof publication not started.
 
 [← Back to public Scenario page](README.md)
 
@@ -470,11 +470,10 @@ The proof may show that Intergrax bundles useful guarantees; it does not claim t
 
 ### Limitations
 
-- Single bounded manufacturing incident fixture (not arbitrary enterprise data).
-- Synthetic or seeded operational dataset with designed adversarial conditions.
-- One primary RESOLVED path and one primary UNRESOLVED path at acceptance.
+- FULL-1 RESOLVED evidence world with H1/H2/H3 adversarial dataset implemented.
+- One primary RESOLVED path implemented; UNRESOLVED path pending FULL-2.
 - Evaluator semantics scoped to this scenario’s claim, not all incident types.
-- Design stage: no runtime, evidence, or report exists yet.
+- Not accepted for public proof publication.
 
 ---
 
@@ -504,4 +503,4 @@ NOT YET PERFORMED
 
 ## E. PROOF BUILD
 
-NOT STARTED — scenario accepted for implementation; capability-fit and proof build pending.
+FULL-1 RESOLVED evidence world implemented — executable via platform proof runner; `public_evidence_eligible` remains false. FULL-2 UNRESOLVED path and public publication not started.

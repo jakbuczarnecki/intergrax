@@ -77,7 +77,7 @@ Modern agent frameworks and platforms increasingly bundle runtime facilities tha
 
 [View full-size diagram](../assets/public/readme/fullsize/intergrax-why.md)
 
-The diagram contrasts rebuilding foundations per product with reusing one governed foundation. It does not imply that every future product is already implemented.
+The diagram contrasts rebuilding foundations per product with reusing one governed foundation — how multiple specialized products can share governed mechanisms. It does not imply that every future product is already implemented.
 
 ---
 
@@ -128,7 +128,9 @@ For named modern frameworks and platforms — including cases where another stac
 
 ## Business and strategic thesis
 
-Cross-product reuse, commercial outcomes, and adopter profiles below are strategic hypotheses — not measured results. Commercial and real-user validation remain open; see [Commercialization gates](#commercialization-gates).
+If multiple specialized products reuse the same governed foundations, Intergrax can reduce repeated platform construction and concentrate improvement in one shared layer.
+
+Cross-product reuse, commercial outcomes, and adopter profiles below remain strategic hypotheses — not measured results. Commercial and real-user validation remain open; see [Commercialization gates](#commercialization-gates).
 
 ### Repeated organizational cost
 

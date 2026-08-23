@@ -16,6 +16,7 @@ from scripts.proof.intergrax_platform_proof_evidence import (
     PLATFORM_PROOF_EVIDENCE_SCHEMA_VERSION,
     PlatformProofEvidence,
     ProofEvidenceExecutionStatus,
+    iter_evidence_claim_graph_binding_violations,
 )
 from scripts.proof.intergrax_platform_proof_evidence_io import (
     compute_evidence_checksum,
@@ -75,6 +76,22 @@ def _verify_checksum(evidence: PlatformProofEvidence) -> bool:
     provenance["evidence_checksum"] = None
     payload["provenance"] = provenance
     return checksum == compute_evidence_checksum(payload)
+
+
+def _evidence_claim_bindings_consistent(
+    evidence: PlatformProofEvidence,
+) -> tuple[bool, str]:
+    evidence_graph_ids = frozenset(
+        node.evidence_id for node in evidence.evidence_graph.nodes
+    )
+    violations = iter_evidence_claim_graph_binding_violations(
+        evidence.evidence_claims,
+        evidence_graph_ids,
+    )
+    if not violations:
+        return True, ""
+    diagnostic_code = violations[0].split(":", 1)[0]
+    return False, diagnostic_code
 
 
 def _evaluator_consistent(evidence: PlatformProofEvidence) -> tuple[bool, str]:
@@ -256,6 +273,17 @@ def verify_platform_proof_evidence(
             evidence_path=resolved_path,
             diagnostic_code="invalid_evidence",
             diagnostic_summary="provenance.evidence_checksum mismatch",
+            parsed_evidence=evidence,
+        )
+
+    bindings_ok, bindings_code = _evidence_claim_bindings_consistent(evidence)
+    if not bindings_ok:
+        return EvidenceVerificationResult(
+            status=EvidenceVerificationStatus.INVALID,
+            proof_id=proof_id,
+            evidence_path=resolved_path,
+            diagnostic_code=bindings_code,
+            diagnostic_summary=bindings_code,
             parsed_evidence=evidence,
         )
 

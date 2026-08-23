@@ -16,6 +16,7 @@ from intergrax.agent_distribution.binding import (
     AgentBindingPolicyOverrides,
 )
 from intergrax.agent_distribution.catalog import AgentCatalogEntry, CatalogEntryFilters
+from intergrax.agent_distribution.deployment import DeploymentInstanceState, DrainPolicy
 from intergrax.agent_distribution.dependency import RepositoryDependencyDeclaration
 from intergrax.agent_distribution.identity import AgentPackageIdentity
 from intergrax.agent_distribution.installation import InstallationState
@@ -24,6 +25,7 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevisionState,
 )
 from intergrax.agent_distribution.trust import AgentInstallationTrustRecord
+from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.control_plane_mutation import (
     ControlPlaneMutationAuthorizationEvidence,
     ControlPlaneMutationAuthorizationScope,
@@ -40,6 +42,29 @@ class AgentPlatformAdminBlockedError(Exception):
         self.blocker_code = blocker_code
 
 
+class ControlPlaneTenantScopeDenial(BaseModel):
+    """Pre-evaluation tenant authority rejection — no mutation request was evaluated."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    tenant_id: str = _NON_EMPTY
+    resource_type: str = _NON_EMPTY
+    resource_id: str = _NON_EMPTY
+    resource_scope: str = _NON_EMPTY
+    principal_type: PrincipalType
+    principal_user_id: str | None = None
+    principal_auth_subject: str | None = None
+    reason: str = _NON_EMPTY
+
+    @field_validator("tenant_id", "resource_type", "resource_id", "resource_scope", "reason")
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+
 class AgentPlatformAdminGovernanceBlockedError(AgentPlatformAdminBlockedError):
     """Control-plane mutation blocked by governance before domain commit."""
 
@@ -49,13 +74,34 @@ class AgentPlatformAdminGovernanceBlockedError(AgentPlatformAdminBlockedError):
         message: str,
         *,
         policy_action: str,
-        authorization_evidence: ControlPlaneMutationAuthorizationEvidence,
+        authorization_evidence: ControlPlaneMutationAuthorizationEvidence | None = None,
         authorization_scope: ControlPlaneMutationAuthorizationScope | None = None,
+        tenant_scope_denial: ControlPlaneTenantScopeDenial | None = None,
     ) -> None:
         super().__init__(blocker_code, message)
         self.policy_action = policy_action
         self.authorization_evidence = authorization_evidence
         self.authorization_scope = authorization_scope
+        self.tenant_scope_denial = tenant_scope_denial
+
+    def governance_http_detail(self) -> dict[str, object]:
+        detail: dict[str, object] = {
+            "blocker_code": self.blocker_code,
+            "policy_action": self.policy_action,
+        }
+        if self.authorization_evidence is not None:
+            detail["authorization_evidence"] = self.authorization_evidence.model_dump(
+                mode="json"
+            )
+        if self.authorization_scope is not None:
+            detail["authorization_scope"] = self.authorization_scope.model_dump(
+                mode="json"
+            )
+        if self.tenant_scope_denial is not None:
+            detail["tenant_scope_denial"] = self.tenant_scope_denial.model_dump(
+                mode="json"
+            )
+        return detail
 
 
 class InstallAgentRequest(BaseModel):
@@ -185,6 +231,7 @@ class BuildApplicationRevisionRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    mutation_id: str = _NON_EMPTY
     runtime_revision_id: str = _NON_EMPTY
     application_release_id: str = _NON_EMPTY
     platform_version: str = _NON_EMPTY
@@ -199,6 +246,7 @@ class BuildApplicationRevisionRequest(BaseModel):
     agent_source_roots: tuple[tuple[str, str], ...] = ()
 
     @field_validator(
+        "mutation_id",
         "runtime_revision_id",
         "application_release_id",
         "platform_version",
@@ -260,6 +308,52 @@ class RollbackRuntimeRevisionRequest(BaseModel):
         "mutation_id",
         "expected_current_traffic_revision_id",
         "target_runtime_revision_id",
+    )
+    @classmethod
+    def _strip_optional(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+
+class CompleteRevisionDrainRequest(BaseModel):
+    """Complete drain for one DRAINING deployment instance."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    mutation_id: str = _NON_EMPTY
+    runtime_revision_id: str = _NON_EMPTY
+    expected_record_revision: int = Field(ge=0)
+    policy: DrainPolicy
+
+    @field_validator("mutation_id", "runtime_revision_id")
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+
+class HandlePostCutoverFailureRequest(BaseModel):
+    """Record post-cutover failure and optionally attempt governed recovery rollback."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    mutation_id: str = _NON_EMPTY
+    recovery_mutation_id: str | None = None
+    runtime_revision_id: str = _NON_EMPTY
+    failure_evidence_ref: str = _NON_EMPTY
+    attempt_rollback: bool = True
+
+    @field_validator(
+        "mutation_id",
+        "recovery_mutation_id",
+        "runtime_revision_id",
+        "failure_evidence_ref",
     )
     @classmethod
     def _strip_optional(cls, value: str | None) -> str | None:
@@ -396,6 +490,7 @@ class BuildRevisionResult(BaseModel):
     materialization_artifact_digest: str | None = None
     artifact_locator: str | None = None
     materialization_topology: MaterializationTopology | None = None
+    authorization_evidence: ControlPlaneMutationAuthorizationEvidence | None = None
     audit_event_types: tuple[str, ...] = ()
 
 
@@ -424,6 +519,30 @@ class RollbackResultView(BaseModel):
     revision_state: RuntimeRevisionState
     superseded_revision_id: str | None = None
     authorization_evidence: ControlPlaneMutationAuthorizationEvidence | None = None
+    audit_event_types: tuple[str, ...] = ()
+
+
+class DrainCompletionResultView(BaseModel):
+    """Drain completion evidence."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    runtime_revision_id: str
+    instance_state: DeploymentInstanceState
+    record_revision: int
+    authorization_evidence: ControlPlaneMutationAuthorizationEvidence | None = None
+    audit_event_types: tuple[str, ...] = ()
+
+
+class PostCutoverFailureResultView(BaseModel):
+    """Post-cutover failure handling evidence."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    runtime_revision_id: str
+    instance_state: DeploymentInstanceState | None = None
+    failure_mark_authorization_evidence: ControlPlaneMutationAuthorizationEvidence | None = None
+    rollback_result: RollbackResultView | None = None
     audit_event_types: tuple[str, ...] = ()
 
 

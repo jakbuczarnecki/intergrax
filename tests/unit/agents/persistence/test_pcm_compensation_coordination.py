@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import inspect
 import threading
 import time
 from datetime import UTC, datetime, timedelta
@@ -177,11 +176,7 @@ async def test_a3_explicit_retryable_still_claimable() -> None:
 
 
 def test_b1_no_unfenced_terminal_mutation_api() -> None:
-    abstract = {
-        name
-        for name, value in inspect.getmembers(CompensationQueueStore)
-        if getattr(value, "__isabstractmethod__", False)
-    }
+    abstract = set(CompensationQueueStore.__abstractmethods__)
     assert "complete_claim" in abstract
     assert "fail_claim" in abstract
     assert "mark_completed" not in abstract

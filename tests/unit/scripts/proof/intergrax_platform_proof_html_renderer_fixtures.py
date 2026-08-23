@@ -218,7 +218,7 @@ def _base_provenance(*, proof_id: str = "GENERIC-PLATFORM-PROOF") -> ProvenanceE
         generated_at=_TS_END,
         execution_id=_EXECUTION_ID,
         evidence_checksum="f" * 64,
-        artifact_identity=f"intergrax.platform_proof_evidence.v2:{proof_id}:{_EXECUTION_ID}:20260821T120500Z",
+        artifact_identity=f"intergrax.platform_proof_evidence.v3:{proof_id}:{_EXECUTION_ID}:20260821T120500Z",
     )
 
 

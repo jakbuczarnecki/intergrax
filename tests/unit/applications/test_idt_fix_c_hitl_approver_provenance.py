@@ -351,7 +351,7 @@ async def test_c13_event_evidence_contains_safe_approver() -> None:
     approval_events = [
         event
         for event in published
-        if getattr(event, "event_type", None) == RuntimeEventType.HUMAN_APPROVAL_RECEIVED
+        if event.event_type == RuntimeEventType.HUMAN_APPROVAL_RECEIVED
     ]
     assert len(approval_events) == 1
     payload = approval_events[0].payload

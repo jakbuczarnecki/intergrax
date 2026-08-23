@@ -26,6 +26,7 @@ from intergrax.applications._shared.registry_projection import MaterializedRegis
 from intergrax.applications._shared.registry_projection_input_bundle import (
     build_reference_activation_request,
     build_reference_registry_projection_input_bundle,
+    reference_admission_mutation_id,
 )
 from intergrax.applications._shared.reference_production_governance_wiring import (
     wire_governed_reference_production_launcher,
@@ -116,6 +117,9 @@ def _activate_projection_via_ap_lifecycle(
         bundle,
         activation_request,
         principal=governance.principal,
+        admission_mutation_id=reference_admission_mutation_id(
+            revision.runtime_revision_id
+        ),
     )
     return result.runtime_revision_id
 

@@ -117,6 +117,7 @@ def _install_enable_build(stack: AdminStack, revision_id: str):
         application_id=_PROOF_APP,
         application_environment_id=_ENV,
         request=_build_request(revision_id),
+        principal=principal,
     )
 
 
@@ -189,6 +190,7 @@ def test_cross_layer_identity_chain_through_admin_serving_state() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         request=_build_request("rev-chain-1"),
+        principal=admin_test_principal(),
     )
     revision = stack.service.inspect_revision(
         application_id=_APP,
@@ -242,6 +244,7 @@ def test_cross_layer_build_blocked_without_explicit_dependency_resolver() -> Non
             application_id=_APP,
             application_environment_id=_ENV,
             request=_build_request("rev-no-resolver"),
+            principal=admin_test_principal(),
         )
     assert exc.value.blocker_code == "AP-11_BLOCKED_BY_MISSING_DEPENDENCY_RESOLVER"
 
@@ -426,6 +429,7 @@ def test_real_projection_rollback_reuses_frozen_registry_n() -> None:
         application_id=_PROOF_APP,
         application_environment_id=_ENV,
         request=_build_request("rev-proof-n1"),
+        principal=admin_test_principal(),
     )
     input_store.register(_freeze_registry_projection_bundle(stack, "rev-proof-n1"))
     activation.prepare_candidate(

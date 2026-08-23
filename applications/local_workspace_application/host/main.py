@@ -16,6 +16,9 @@ from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
     create_reference_production_process_composition,
 )
+from intergrax.applications._shared.registry_projection_input_bundle import (
+    reference_admission_mutation_id,
+)
 from intergrax.applications._shared.reference_production_governance_wiring import (
     wire_governed_reference_production_launcher,
 )
@@ -87,6 +90,9 @@ def run_reference_production() -> None:
         projection_input,
         activation_request,
         principal=governance.principal,
+        admission_mutation_id=reference_admission_mutation_id(
+            projection_input.runtime_revision.runtime_revision_id
+        ),
     )
     host = os.environ.get("LOCAL_WORKSPACE_BACKEND_HOST", "0.0.0.0")
     port = int(os.environ.get("LOCAL_WORKSPACE_BACKEND_PORT", "8020"))

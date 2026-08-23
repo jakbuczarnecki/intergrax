@@ -93,14 +93,14 @@ assembly returns insufficient evidence. This is not the Product Quick Start path
 The Trusted Ask durability proof separately verifies completed grounded Ask
 outcomes before and after restart. Core Platform Proof separately verifies bounded
 infrastructure behavior. Mixed indexed + authorized live Hybrid Ask remains
-incomplete, and complete live-provider access remains incomplete.
+incomplete, and complete **external** live-provider access remains incomplete.
 
 | Capability | Status | What it demonstrates | Limitation |
 |------------|--------|----------------------|------------|
 | **Product Quick Start / indexed Ask V1** | 🧪 **BOUNDED PROOF** · supported product-evaluation path | One-command local execution of the canonical LKW application path: managed sample upload → indexing → grounded indexed Ask → source citation → persisted Ask-run verification — [run it](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) | Indexed knowledge only; script-driven; no polished end-user UI; not the Hybrid Ask verification path; not production readiness; no real-user or commercial validation |
 | **Indexed Hybrid Ask** | 🧪 **BOUNDED PROOF** | Bounded indexed branch through production Hybrid Ask `indexed_only`; some proofs validate retrieval and boundary behavior even when answer assembly returns insufficient evidence | Not Product Quick Start; not mixed indexed + authorized-live Hybrid Ask; not production readiness or commercial validation |
 | **Trusted Ask / durable indexed workspace Ask** | 🧪 **BOUNDED PROOF** | Current runtime image through Ollama generation and embeddings, workspace source sync, Qdrant indexed retrieval, completed first Ask with evidence, non-destructive restart, completed second Ask without resync/reindex, and unchanged persisted first Ask run | Indexed knowledge only; bounded local runtime; no mixed indexed + authorized-live Hybrid Ask; no universal provider, production, or commercial claims |
-| **Governed Evidence Decision Proof** | 🧪 **BOUNDED PROOF** | Advanced bounded proof inside LKW stack: four policy-derived live obligations, four independent Docker-backed providers/connections/capabilities, execution-time authority, temporal admissibility, typed failure semantics, LLM suppression on unsatisfied admissibility, persisted structural proof, vendor restart without reseed — [canonical proof doc](../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) | **LIVE_ONLY**; not Product Quick Start; not complete indexed + authorized-live Hybrid Ask certification; not production readiness, commercial validation, or real-user validation |
+| **Governed Evidence Decision Proof** | 🧪 **BOUNDED PROOF** | Advanced bounded proof inside LKW stack: four policy-derived live obligations, four independent **controlled live providers** (Docker-backed services via real HTTP/runtime paths), execution-time authority, temporal admissibility, typed failure semantics, LLM suppression on unsatisfied admissibility, persisted structural proof, vendor restart without reseed — [canonical proof doc](../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) | **LIVE_ONLY** over **controlled live providers** — not external SaaS validation; not Product Quick Start; not complete indexed + authorized-live Hybrid Ask certification; not production readiness, commercial validation, or real-user validation |
 | **Core Platform Proof** | 🧪 **BOUNDED PROOF** | Real application startup/readiness, durable knowledge and execution, background processing, persisted reviewable evidence, hosting/recovery, and watched-folder indexing (Elasticsearch/Kibana observability, Sentry problem signals, MongoDB ProofReceipts) | Bounded to documented verified proof profiles; not production readiness, commercial validation, or all-provider certification |
 
 **Product Quick Start proofs:** `LKW-PRODUCT-QUICKSTART-WINDOWS`, `LKW-PRODUCT-QUICKSTART-LINUX`, `LKW-PRODUCT-QUICKSTART-MACOS`
@@ -117,7 +117,7 @@ incomplete, and complete live-provider access remains incomplete.
 
 | Capability | Status | What it demonstrates | Limitation |
 |------------|--------|----------------------|------------|
-| Web URL knowledge intake | 🧪 **BOUNDED PROOF** | Real WEB_URL capture and RAG indexing into the exact tenant/workspace Qdrant scope, verified indexed retrieval, and execution through Hybrid Ask `indexed_only`; a suite **PASS** always requires those indexed-path steps — grounded answer and indexed citation/evidence are verified only when the run completes with `status=completed`; `status=insufficient_evidence` may still **PASS** after successful indexed retrieval without proving completed answer assembly | Controlled `example.com` origin only; not arbitrary external-site verification; mixed indexed + authorized live Hybrid Ask remains incomplete; complete live-provider access remains incomplete |
+| Web URL knowledge intake | 🧪 **BOUNDED PROOF** | Real WEB_URL capture and RAG indexing into the exact tenant/workspace Qdrant scope, verified indexed retrieval, and execution through Hybrid Ask `indexed_only`; a suite **PASS** always requires those indexed-path steps — grounded answer and indexed citation/evidence are verified only when the run completes with `status=completed`; `status=insufficient_evidence` may still **PASS** after successful indexed retrieval without proving completed answer assembly | Controlled `example.com` origin only; not arbitrary external-site verification; mixed indexed + authorized live Hybrid Ask remains incomplete; complete external live-provider access remains incomplete |
 | Ollama / vLLM model runtime portability | 🧪 **BOUNDED PROOF** | Same workspace workflows on Ollama and vLLM without reindexing | Not complete product parity across all features |
 
 **Proof:** `LKW-WEB-URL-INDEXED-ASK`
@@ -127,8 +127,8 @@ incomplete, and complete live-provider access remains incomplete.
 ### Not established by the accepted public proof
 
 - Mixed indexed + authorized live Hybrid Ask remains incomplete.
-- Complete live-provider access remains incomplete.
-- Productized multi-source live capability across the intended LKW product experience remains incomplete — distinct from the bounded four-provider **LIVE_ONLY** Governed Evidence Decision Proof (`advanced_flagship_proof`).
+- Complete **external** live-provider access remains incomplete.
+- Productized multi-source live capability across the intended LKW product experience remains incomplete — distinct from the bounded four **controlled live provider** **LIVE_ONLY** Governed Evidence Decision Proof (`advanced_flagship_proof`); that proof is real runtime/HTTP execution, not external SaaS validation.
 - Real-user validation is not established.
 - Commercial validation is not established.
 

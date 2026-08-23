@@ -34,6 +34,7 @@ from tests.unit.agent_distribution.test_agent_platform_admin_service import (
     _ENV,
     _activate_request,
     _bind_request,
+    _build_revision,
     _build_request,
     _install_request,
     _rollback_request,
@@ -94,11 +95,7 @@ def _seed_validated_revision(stack, revision_id: str) -> object:
         request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
         principal=principal,
     )
-    return stack.service.build_application_revision(
-        application_id=_APP,
-        application_environment_id=_ENV,
-        request=_build_request(revision_id),
-    )
+    return _build_revision(stack, revision_id)
 
 
 def _stack_with_evaluator(evaluator: _RecordingEvaluator):
@@ -213,11 +210,7 @@ def test_ad4_rollback_allow_commits_once() -> None:
             mutation_id="mut-ad4-a",
         ),
     )
-    second = stack.service.build_application_revision(
-        application_id=_APP,
-        application_environment_id=_ENV,
-        request=_build_request("rev-ad4-b"),
-    )
+    second = _build_revision(stack, "rev-ad4-b")
     stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,
@@ -262,11 +255,7 @@ def test_ad5_rollback_deny_zero_commits() -> None:
             mutation_id="mut-ad5-a",
         ),
     )
-    second = stack.service.build_application_revision(
-        application_id=_APP,
-        application_environment_id=_ENV,
-        request=_build_request("rev-ad5-b"),
-    )
+    second = _build_revision(stack, "rev-ad5-b")
     stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,
@@ -311,11 +300,7 @@ def test_ad6_rollback_require_human_zero_commits() -> None:
             mutation_id="mut-ad6-a",
         ),
     )
-    second = stack.service.build_application_revision(
-        application_id=_APP,
-        application_environment_id=_ENV,
-        request=_build_request("rev-ad6-b"),
-    )
+    second = _build_revision(stack, "rev-ad6-b")
     stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,

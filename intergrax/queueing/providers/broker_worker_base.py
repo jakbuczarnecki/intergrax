@@ -164,6 +164,48 @@ class BrokerWorkerBase(ABC):
                 idempotency_store=self._idempotency_store,
             )
 
+            if not result.success:
+                tool_error = result.error
+                if tool_error is not None:
+                    error_message = (
+                        f"{tool_error.error_code}: {tool_error.error_message}"
+                    )
+                else:
+                    error_message = "handler_failed"
+                result_record = f"{TaskStatus.FAILED.value}|1|{error_message}|"
+
+                self._kv_store.set(
+                    tenant_id=tenant_id,
+                    key=self._status_key(task_id),
+                    value=TaskStatus.FAILED.value.encode("utf-8"),
+                )
+
+                self._kv_store.set(
+                    tenant_id=tenant_id,
+                    key=self._result_key(task_id),
+                    value=result_record.encode("utf-8"),
+                )
+                record_task_index(
+                    self._kv_store,
+                    tenant_id=tenant_id,
+                    task_id=task_id,
+                    task_name=task_name,
+                    provider=provider_name,
+                    status=TaskStatus.FAILED,
+                )
+                self._emit_event(
+                    TaskEventName.FAILED,
+                    task_id=task_id,
+                    tenant_id=tenant_id,
+                    run_id=run_id,
+                    task_name=task_name,
+                    idempotency_key=idempotency_key,
+                    correlation_id=correlation_id,
+                    status=TaskStatus.FAILED.value,
+                    metadata={"error": error_message},
+                )
+                return
+
             encoded_output = ""
             if result.output is not None:
                 # Serialize BaseModel → JSON → UTF-8 bytes → base64

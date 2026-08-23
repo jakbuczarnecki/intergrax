@@ -20,6 +20,8 @@ from intergrax.agent_distribution.control_plane_governance import (
     ApplicationEnvironmentTenantResolver,
     authorize_scoped_control_plane_mutation,
     build_activation_mutation_request,
+    build_admit_runtime_revision_mutation_request,
+    runtime_revision_admission_identity_digest,
 )
 from intergrax.agent_distribution.deployment import FakeInMemoryRuntimeDeploymentAdapter
 from intergrax.agent_distribution.in_memory_stores import (
@@ -43,7 +45,11 @@ from intergrax.applications._shared.registry_projection import (
     RegistryProjectionInputStore,
 )
 from intergrax.contracts.agent_run import RequestIdentity
-from intergrax.contracts.control_plane_mutation import ControlPlaneMutationAuthorizationResult
+from intergrax.contracts.control_plane_mutation import (
+    ControlPlaneMutationAuthorizationEvidence,
+    ControlPlaneMutationAuthorizationResult,
+    ControlPlaneMutationAuthorizationScope,
+)
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
@@ -83,8 +89,8 @@ class ReferenceProductionLifecycleGovernanceBlockedError(ReferenceProductionLife
         message: str,
         *,
         policy_action: str,
-        authorization_evidence: object | None = None,
-        authorization_scope: object | None = None,
+        authorization_evidence: ControlPlaneMutationAuthorizationEvidence | None = None,
+        authorization_scope: ControlPlaneMutationAuthorizationScope | None = None,
     ) -> None:
         super().__init__(message)
         self.policy_action = policy_action
@@ -151,12 +157,18 @@ class ReferenceProductionLifecycleLauncher:
         activation_request: ActivateRuntimeRevisionRequest,
         *,
         principal: RequestIdentity,
+        admission_mutation_id: str,
     ) -> ReferenceProductionLifecycleResult:
         """Prepare registry projection and commit activation for one explicit revision."""
         revision = projection_input.runtime_revision
         application_id = revision.application_id
         application_environment_id = revision.application_environment_id
         runtime_revision_id = revision.runtime_revision_id
+        normalized_admission_mutation_id = admission_mutation_id.strip()
+        if not normalized_admission_mutation_id:
+            raise ReferenceProductionLifecycleError(
+                "reference production admission requires explicit admission_mutation_id"
+            )
 
         if activation_request.runtime_revision_id != runtime_revision_id:
             raise ReferenceProductionLifecycleError(
@@ -176,15 +188,52 @@ class ReferenceProductionLifecycleLauncher:
                 raise ReferenceProductionLifecycleError(
                     "runtime revision materialization_artifact_digest mismatch with projection input"
                 )
+        if revision.materialized_runtime_lock_digest is None:
+            raise ReferenceProductionLifecycleError(
+                "runtime revision requires materialized_runtime_lock_digest for admission"
+            )
+        if revision.runtime_graph_digest is None:
+            raise ReferenceProductionLifecycleError(
+                "runtime revision requires runtime_graph_digest for admission"
+            )
+        if revision.materialization_topology is None:
+            raise ReferenceProductionLifecycleError(
+                "runtime revision requires materialization_topology for admission"
+            )
+
+        self._require_environment_tenant_resolver()
+        self._require_mutation_authorization_boundary()
+
+        admission_identity_digest = runtime_revision_admission_identity_digest(
+            runtime_revision_id=runtime_revision_id,
+            application_release_id=revision.application_release_id,
+            platform_version=revision.platform_version,
+            effective_roster_revision_id=revision.effective_roster_revision_id,
+            lock_digest=revision.materialized_runtime_lock_digest,
+            graph_digest=revision.runtime_graph_digest,
+            materialization_topology=revision.materialization_topology.value,
+            materialization_artifact_digest=artifact_digest,
+            build_input_digest=revision.build_input_digest,
+        )
+        self._authorize_admission(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            mutation_id=normalized_admission_mutation_id,
+            runtime_revision_id=runtime_revision_id,
+            identity_digest=admission_identity_digest,
+        )
 
         revision_service = self._services.revision_service
-        candidate = revision.model_copy(update={"revision_state": RuntimeRevisionState.CANDIDATE})
-        revision_service.persist_candidate_revision(candidate)
-        validated = candidate.model_copy(
+        candidate = revision.model_copy(
             update={
-                "revision_state": RuntimeRevisionState.VALIDATED,
+                "revision_state": RuntimeRevisionState.CANDIDATE,
                 "materialization_artifact_digest": artifact_digest,
             }
+        )
+        revision_service.persist_candidate_revision(candidate)
+        validated = candidate.model_copy(
+            update={"revision_state": RuntimeRevisionState.VALIDATED}
         )
         revision_service.mark_validated(runtime_revision_id, validated_revision=validated)
 
@@ -261,6 +310,34 @@ class ReferenceProductionLifecycleLauncher:
                 policy_action=PolicyAction.DENY.value,
             )
         return resolver
+
+    def _authorize_admission(
+        self,
+        *,
+        principal: RequestIdentity,
+        application_id: str,
+        application_environment_id: str,
+        mutation_id: str,
+        runtime_revision_id: str,
+        identity_digest: str,
+    ) -> ControlPlaneMutationAuthorizationResult:
+        resolver = self._require_environment_tenant_resolver()
+        boundary = self._require_mutation_authorization_boundary()
+        request = build_admit_runtime_revision_mutation_request(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            mutation_id=mutation_id,
+            runtime_revision_id=runtime_revision_id,
+            identity_digest=identity_digest,
+        )
+        return self._enforce_authorization_result(
+            authorize_scoped_control_plane_mutation(
+                boundary=boundary,
+                tenant_resolver=resolver,
+                request=request,
+            ),
+        )
 
     def _authorize_activation(
         self,

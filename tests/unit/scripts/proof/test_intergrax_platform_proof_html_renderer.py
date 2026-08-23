@@ -10,8 +10,26 @@ import pytest
 
 from scripts.proof.intergrax_platform_proof_evidence import (
     DomainExtensionEvidence,
+    EvidenceGraphEvidence,
+    EvidenceNode,
+    EvidenceNodeKind,
+    ReportSafeTextSourceKind,
     ToolsSqlInvestigationExtension,
+    project_evidence_claim_set,
     proof_authored_report_safe_text,
+)
+from intergrax.contracts.evidence_claims import (
+    ChallengeDefectFamily,
+    ChallengeResolution,
+    ClaimResolution,
+    EvidenceBackedClaim,
+    EvidenceChallenge,
+    EvidenceClaimSet,
+    validate_claim_kind,
+    validate_defect_code,
+    validate_evidence_challenge_id,
+    validate_evidence_claim_id,
+    validate_evidence_reference_id,
 )
 from scripts.proof.intergrax_platform_proof_html_renderer import (
     PLATFORM_PROOF_HTML_RENDERER_VERSION,
@@ -274,3 +292,96 @@ def test_common_evidence_html_unchanged_without_domain_extension() -> None:
         evidence.model_copy(update={"domain_extension": DomainExtensionEvidence()})
     )
     assert first == second
+
+
+def _material_claims_evidence():
+    claim_id = validate_evidence_claim_id("eclaim_0123456789abcdef0123456789abcdef")
+    challenge_id = validate_evidence_challenge_id("echlg_0123456789abcdef0123456789abcdef")
+    claim_set = project_evidence_claim_set(
+        EvidenceClaimSet(
+            claims=(
+                EvidenceBackedClaim(
+                    claim_id=claim_id,
+                    statement="Equipment degradation caused the incident.",
+                    claim_kind=validate_claim_kind("manufacturing.root_cause"),
+                    supporting_evidence_ids=[validate_evidence_reference_id("e1")],
+                    contradicting_evidence_ids=[validate_evidence_reference_id("e2")],
+                    resolution=ClaimResolution.REJECTED,
+                ),
+            ),
+            challenges=(
+                EvidenceChallenge(
+                    challenge_id=challenge_id,
+                    claim_id=claim_id,
+                    defect_family=ChallengeDefectFamily.UNSUPPORTED_INFERENCE,
+                    defect_code=validate_defect_code("manufacturing.correlation_only"),
+                    evidence_ids=[validate_evidence_reference_id("e3")],
+                    description="Correlation is insufficient to establish causation.",
+                    resolution=ChallengeResolution.SATISFIED,
+                ),
+            ),
+        ),
+        text_source=ReportSafeTextSourceKind.PROOF_AUTHORED,
+    )
+    graph = EvidenceGraphEvidence(
+        nodes=tuple(
+            EvidenceNode(
+                evidence_id=evidence_id,
+                kind=EvidenceNodeKind.OTHER,
+                label=evidence_id,
+            )
+            for evidence_id in ("e1", "e2", "e3")
+        )
+    )
+    return build_pass_evidence().model_copy(
+        update={
+            "evidence_claims": claim_set,
+            "evidence_graph": graph,
+        }
+    )
+
+
+def test_material_claims_section_renders() -> None:
+    html = render_platform_proof_report(_material_claims_evidence())
+    assert "Material claims" in html
+    assert "Equipment degradation caused the incident." in html
+    assert "manufacturing.root_cause" in html
+    assert "rejected" in html
+    assert "unsupported_inference" in html
+    assert "Correlation is insufficient to establish causation." in html
+    assert "satisfied" in html
+    assert "evidence-id" in html
+
+
+def test_material_claims_renderer_never_exposes_redacted_secret() -> None:
+    claim_id = validate_evidence_claim_id("eclaim_abcdef0123456789abcdef0123456789")
+    claim_set = project_evidence_claim_set(
+        EvidenceClaimSet(
+            claims=(
+                EvidenceBackedClaim(
+                    claim_id=claim_id,
+                    statement="Authorization: Bearer fake-secret-value",
+                    claim_kind=validate_claim_kind("generic.claim"),
+                    supporting_evidence_ids=[validate_evidence_reference_id("e-secret")],
+                ),
+            ),
+        ),
+        text_source=ReportSafeTextSourceKind.RUNTIME_SANITIZED,
+    )
+    evidence = build_pass_evidence().model_copy(
+        update={
+            "evidence_claims": claim_set,
+            "evidence_graph": EvidenceGraphEvidence(
+                nodes=(
+                    EvidenceNode(
+                        evidence_id="e-secret",
+                        kind=EvidenceNodeKind.OTHER,
+                        label="secret evidence",
+                    ),
+                )
+            ),
+        }
+    )
+    html = render_platform_proof_report(evidence)
+    assert "fake-secret-value" not in html
+    assert "[REDACTED]" in html

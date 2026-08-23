@@ -5,7 +5,7 @@
 A fictional industrial manufacturer needs a defensible root-cause diagnosis when production target attainment collapses — not a fluent story that sounds right under time pressure.
 
 > [!NOTE]
-> **Scenario status:** ACCEPTED FOR IMPLEMENTATION — scenario concept passed human Scenario Quality Gate; implementation, executable proof, evidence, and report have not started yet. This is not published/accepted proof evidence.
+> **Scenario status:** SCENARIO-1 FULL-1 — full RESOLVED evidence world implemented (H1/H2/H3); UNRESOLVED path pending FULL-2; public proof not yet established; evidence/report not yet accepted for publication.
 
 > **Synthetic scenario provenance:** This is a fully fictional operational scenario. The organization, facility, incident, datasets, telemetry, staffing records, equipment behavior, and numerical values are synthetic and are not derived from any employer, customer, production environment, confidential source, or proprietary system.
 
@@ -22,7 +22,7 @@ At a fictional industrial manufacturing plant, production target attainment on a
 | **Trap** | Workload rises while throughput declines — correlation presented as causation |
 | **Decision risk** | Wrong overtime, line reallocation, or capacity action before high-volume production window |
 | **Scenario outcome** | RESOLVED or UNRESOLVED |
-| **Status** | ACCEPTED FOR IMPLEMENTATION |
+| **Status** | FULL-1 RESOLVED evidence world implemented; UNRESOLVED pending FULL-2 |
 | **Proof class** | SCENARIO |
 | **Slug** | `ai_incident_investigation` |
 
@@ -96,16 +96,16 @@ Full normative PASS/FAIL contract: [Scenario Specification § B](SCENARIO_SPEC.m
 ## Latest verified run
 
 > [!NOTE]
-> **Not yet available.** This scenario is accepted for implementation; no executable proof run has been performed. After implementation this section will show verdict, proof version, Intergrax SHA, model/provider, run timestamp, RESOLVED/UNRESOLVED outcome, and key invariant results.
+> **Not yet available for publication.** FULL-1 RESOLVED evidence world is implemented and executable via platform proof runner; no accepted public proof run or published evidence bundle exists yet. After publication gates pass this section will show verdict, proof version, Intergrax SHA, model/provider, run timestamp, RESOLVED/UNRESOLVED outcome, and key invariant results.
 
 ## Run / report / evidence / source
 
 > [!NOTE]
-> **Not yet available.** No report, evidence bundle, or reproduction path exists at design stage. Links appear here only after real execution and report acceptance.
+> **Not yet available for publication.** FULL-1 produces executable evidence via platform proof runner but is not accepted for public publication. Links appear here only after real execution and report acceptance.
 
 ## Limitations
 
-Single bounded manufacturing incident fixture with designed adversarial conditions — not arbitrary enterprise data. Design stage only: no runtime, evidence, or report exists yet. Evaluator semantics are scoped to this scenario's claim.
+Single bounded manufacturing incident fixture with designed adversarial conditions — not arbitrary enterprise data. FULL-1 implements RESOLVED path only; UNRESOLVED terminal scenario pending FULL-2. Evaluator semantics are scoped to this scenario's claim.
 
 Full limitations and excluded claims: [Scenario Specification § B](SCENARIO_SPEC.md#limitations).
 

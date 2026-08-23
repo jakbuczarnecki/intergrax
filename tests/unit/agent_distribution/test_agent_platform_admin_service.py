@@ -20,6 +20,7 @@ from intergrax.agent_distribution.admin_models import (
     AgentPlatformAdminBlockedError,
     BindAgentRequest,
     BuildApplicationRevisionRequest,
+    BuildRevisionResult,
     InstallAgentRequest,
     RollbackRuntimeRevisionRequest,
     SetAgentEnablementRequest,
@@ -199,8 +200,13 @@ def _bind_request(mutation_id: str = "mut-bind") -> BindAgentRequest:
     )
 
 
-def _build_request(revision_id: str) -> BuildApplicationRevisionRequest:
+def _build_request(
+    revision_id: str,
+    *,
+    mutation_id: str = "mut-build",
+) -> BuildApplicationRevisionRequest:
     return BuildApplicationRevisionRequest(
+        mutation_id=mutation_id,
         runtime_revision_id=revision_id,
         application_release_id="rel-1",
         platform_version="0.1.0",
@@ -215,6 +221,20 @@ def _build_request(revision_id: str) -> BuildApplicationRevisionRequest:
         ),
         resolver_algorithm_id="intergrax.test-resolver",
         resolver_algorithm_version="1.0.0",
+    )
+
+
+def _build_revision(
+    stack: AdminStack,
+    revision_id: str,
+    *,
+    mutation_id: str = "mut-build",
+) -> BuildRevisionResult:
+    return stack.service.build_application_revision(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        request=_build_request(revision_id, mutation_id=mutation_id),
+        principal=admin_test_principal(),
     )
 
 
@@ -407,11 +427,7 @@ def test_disable_does_not_change_serving_revision() -> None:
         request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
         principal=admin_test_principal(),
     )
-    built = stack.service.build_application_revision(
-        application_id=_APP,
-        application_environment_id=_ENV,
-        request=_build_request("rev-17"),
-    )
+    built = _build_revision(stack, "rev-17")
     activated = stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,
@@ -451,11 +467,7 @@ def test_build_creates_candidate_but_does_not_activate() -> None:
         request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
         principal=admin_test_principal(),
     )
-    built = stack.service.build_application_revision(
-        application_id=_APP,
-        application_environment_id=_ENV,
-        request=_build_request("rev-18"),
-    )
+    built = _build_revision(stack, "rev-18")
     assert built.runtime_revision_id == "rev-18"
     assert built.revision_state is RuntimeRevisionState.VALIDATED
     assert built.effective_roster_revision_id
@@ -489,11 +501,7 @@ def test_activate_delegates_ap9_and_changes_serving_revision() -> None:
         request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
         principal=admin_test_principal(),
     )
-    built = stack.service.build_application_revision(
-        application_id=_APP,
-        application_environment_id=_ENV,
-        request=_build_request("rev-18"),
-    )
+    built = _build_revision(stack, "rev-18")
     activated = stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,
@@ -527,11 +535,7 @@ def test_rollback_delegates_immutable_ap9_rollback() -> None:
         request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
         principal=admin_test_principal(),
     )
-    first = stack.service.build_application_revision(
-        application_id=_APP,
-        application_environment_id=_ENV,
-        request=_build_request("rev-17"),
-    )
+    first = _build_revision(stack, "rev-17")
     stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,
@@ -542,11 +546,7 @@ def test_rollback_delegates_immutable_ap9_rollback() -> None:
             expected_artifact_digest=_ARTIFACT,
         ),
     )
-    second = stack.service.build_application_revision(
-        application_id=_APP,
-        application_environment_id=_ENV,
-        request=_build_request("rev-18"),
-    )
+    second = _build_revision(stack, "rev-18")
     stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,
@@ -606,11 +606,7 @@ def test_stale_activation_conflict_propagated() -> None:
         request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
         principal=admin_test_principal(),
     )
-    first = stack.service.build_application_revision(
-        application_id=_APP,
-        application_environment_id=_ENV,
-        request=_build_request("rev-17"),
-    )
+    first = _build_revision(stack, "rev-17")
     stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,
@@ -621,11 +617,7 @@ def test_stale_activation_conflict_propagated() -> None:
             expected_artifact_digest=_ARTIFACT,
         ),
     )
-    second = stack.service.build_application_revision(
-        application_id=_APP,
-        application_environment_id=_ENV,
-        request=_build_request("rev-18"),
-    )
+    second = _build_revision(stack, "rev-18")
     stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,
@@ -666,6 +658,7 @@ def test_build_revision_blocked_without_dependency_resolver() -> None:
             application_id=_APP,
             application_environment_id=_ENV,
             request=_build_request("rev-no-resolver"),
+            principal=admin_test_principal(),
         )
     assert exc.value.blocker_code == "AP-11_BLOCKED_BY_MISSING_DEPENDENCY_RESOLVER"
 
@@ -698,11 +691,7 @@ def test_ap9_activation_service_still_commits_on_shared_stores() -> None:
         request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
         principal=admin_test_principal(),
     )
-    built = stack.service.build_application_revision(
-        application_id=_APP,
-        application_environment_id=_ENV,
-        request=_build_request("rev-ap9"),
-    )
+    built = _build_revision(stack, "rev-ap9")
     result = stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,
@@ -739,11 +728,7 @@ def test_cross_application_resource_isolation() -> None:
         request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
         principal=admin_test_principal(),
     )
-    built = stack.service.build_application_revision(
-        application_id=_APP,
-        application_environment_id=_ENV,
-        request=_build_request("rev-scope"),
-    )
+    built = _build_revision(stack, "rev-scope")
     with pytest.raises(AgentDistributionNotFoundError):
         stack.service.inspect_revision(
             application_id=_APP_B,

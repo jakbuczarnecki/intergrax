@@ -20,6 +20,7 @@ from intergrax.applications._shared.registry_projection import MaterializedRegis
 from intergrax.applications._shared.registry_projection_input_bundle import (
     build_reference_activation_request,
     build_reference_registry_projection_input_bundle,
+    reference_admission_mutation_id,
 )
 from intergrax.applications._shared.reference_production_governance_wiring import (
     wire_governed_reference_production_launcher,
@@ -54,6 +55,23 @@ def _governed_launcher(
     return wire_governed_reference_production_launcher(composition, env)
 
 
+def _deploy_launcher(
+    launcher: ReferenceProductionLifecycleLauncher,
+    projection_input,
+    activation_request,
+    *,
+    principal,
+):
+    return launcher.deploy_and_activate(
+        projection_input,
+        activation_request,
+        principal=principal,
+        admission_mutation_id=reference_admission_mutation_id(
+            projection_input.runtime_revision.runtime_revision_id
+        ),
+    )
+
+
 def _deploy_and_activate(
     composition,
     projection_input,
@@ -73,6 +91,9 @@ def _deploy_and_activate(
         projection_input,
         activation_request,
         principal=governance.principal,
+        admission_mutation_id=reference_admission_mutation_id(
+            projection_input.runtime_revision.runtime_revision_id
+        ),
     )
 
 
@@ -131,7 +152,8 @@ def test_reference_lifecycle_research_e2e_without_seed_helper(
         runtime_revision_id="rev-lifecycle-e2e",
     )
     launcher, governance = _governed_launcher(composition, settings=settings)
-    result = launcher.deploy_and_activate(
+    result = _deploy_launcher(
+        launcher,
         projection_input,
         activation_request,
         principal=governance.principal,
@@ -200,7 +222,8 @@ def test_serving_pointer_without_projection_fails(monkeypatch: pytest.MonkeyPatc
         runtime_revision_id="rev-missing-projection",
     )
     launcher, governance = _governed_launcher(composition, settings=settings)
-    launcher.deploy_and_activate(
+    _deploy_launcher(
+        launcher,
         projection_input,
         activation_request,
         principal=governance.principal,
@@ -271,7 +294,8 @@ def test_multi_app_same_composition(monkeypatch: pytest.MonkeyPatch) -> None:
         application_id="legal",
         application_environment_id="prod",
     )
-    launcher.deploy_and_activate(
+    _deploy_launcher(
+        launcher,
         research_bundle,
         build_reference_activation_request(research_bundle),
         principal=governance.principal,
@@ -282,7 +306,8 @@ def test_multi_app_same_composition(monkeypatch: pytest.MonkeyPatch) -> None:
         application_id="legal",
         application_environment_id="prod",
     )
-    legal_launcher.deploy_and_activate(
+    _deploy_launcher(
+        legal_launcher,
         legal_bundle,
         build_reference_activation_request(legal_bundle),
         principal=legal_governance.principal,

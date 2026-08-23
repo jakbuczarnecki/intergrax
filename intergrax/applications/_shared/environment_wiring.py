@@ -86,10 +86,15 @@ from intergrax.applications._shared.tool_wiring import (
     build_application_tool_wiring,
 )
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications._shared.security_assembly_resolver import SecurityAssemblyError
+from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.platform_plugin_evidence import (
     ApplicationPlatformPluginEvidence,
     build_application_platform_plugin_evidence,
 )
+from intergrax.core.plugin_env import discover_plugins_enabled
+from intergrax.core.plugins.admission import DomainPluginLoadReport
+from intergrax.core.security_bootstrap import SecurityBootstrapResult, bootstrap_security_providers
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
@@ -121,6 +126,36 @@ class ApplicationEnvironmentWiring:
     prompt_registry: YamlPromptRegistry | None = None
     registry_snapshot: HarnessRegistrySnapshot | None = None
     capability_graph: EnvironmentCapabilityGraphView | None = None
+
+
+def _security_plugin_bootstrap_errors(report: DomainPluginLoadReport) -> tuple[str, ...]:
+    errors: list[str] = []
+    for item in report.failed:
+        errors.append(f"security plugin load failed: {item.spec.name}: {item.error}")
+    for item in report.rejected:
+        if item.fail_closed:
+            errors.append(
+                "security plugin admission rejected: "
+                f"{item.spec.name}: {item.reason_code.value}",
+            )
+    if not errors:
+        errors.append("security plugin bootstrap admission is not acceptable")
+    return tuple(errors)
+
+
+def _bootstrap_application_security_providers() -> SecurityBootstrapResult:
+    return bootstrap_security_providers(discover_entry_points=discover_plugins_enabled())
+
+
+def _assert_strict_security_bootstrap_acceptable(
+    env: ApplicationEnvironmentProfile,
+    security_result: SecurityBootstrapResult,
+) -> None:
+    if env.execution_mode is not ExecutionMode.STRICT:
+        return
+    if security_result.critical_bootstrap_acceptable:
+        return
+    raise SecurityAssemblyError(_security_plugin_bootstrap_errors(security_result.load_report))
 
 
 def _merge_integration_read_allowlist_roots(
@@ -169,6 +204,8 @@ def wire_application_environment(
     Replaces scattered per-host wiring sequences (lab/legal/research/poc).
     """
     bootstrap_application_integration_catalog()
+    security_bootstrap = _bootstrap_application_security_providers()
+    _assert_strict_security_bootstrap_acceptable(env, security_bootstrap)
     context_bootstrap = bootstrap_application_context_catalog()
     resolved_integration = (
         integration_profile or env.integration_profile or manifest.integration_profile
@@ -385,6 +422,7 @@ def wire_application_environment(
     platform_plugin_evidence = build_application_platform_plugin_evidence(
         memory_report=memory_wiring.memory_store_plugin_load_report,
         context_report=context_bootstrap.load_report,
+        security_report=security_bootstrap.load_report,
         policy_bundle=policy_bundle,
     )
 

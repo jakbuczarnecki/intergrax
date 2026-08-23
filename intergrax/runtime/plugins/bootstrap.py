@@ -9,11 +9,16 @@ from dataclasses import dataclass, field
 from typing import Callable, List, Optional
 
 from intergrax.runtime.hooks.hook_registry import HookRegistry
+from intergrax.runtime.plugins.compatibility import (
+    RuntimePluginCompatibilityError,
+    evaluate_runtime_plugin_compatibility,
+)
 from intergrax.runtime.plugins.contract import (
     PolicyEngineLike,
     RuntimeEventBusLike,
     RuntimePlugin,
 )
+from intergrax.runtime.schema.registry import current_runtime_version
 
 
 @dataclass
@@ -33,6 +38,12 @@ def bootstrap_runtime_plugins(
 
     Returns shutdown callbacks for FastAPI lifespan handlers.
     """
+    runtime = current_runtime_version()
+    for plugin in plugins:
+        result = evaluate_runtime_plugin_compatibility(plugin, runtime)
+        if not result.compatible:
+            raise RuntimePluginCompatibilityError(result)
+
     policy = policy_engine or _NullPolicyEngine()
     shutdowns: List[Callable[[], None]] = []
     for plugin in plugins:

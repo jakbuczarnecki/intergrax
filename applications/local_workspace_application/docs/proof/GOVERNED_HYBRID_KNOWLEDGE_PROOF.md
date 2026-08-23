@@ -5,8 +5,20 @@
 > **Scope note:** COMM-5 bounded proof paths collectively exercise indexed and live
 > evidence mechanisms. The **Advanced Flagship proof (F3-F)** — the public
 > **Governed Evidence Decision Proof** — is specifically **LIVE_ONLY** with four
-> independent live providers. Complete indexed + authorized live Hybrid Ask in a
-> single admissibility gate remains **not proven**.
+> independent **controlled live providers** (Docker-backed services reached through
+> real runtime HTTP). They are **not** four verified external SaaS systems.
+> Complete indexed + authorized live Hybrid Ask in a single admissibility gate
+> remains **not proven**.
+
+### Provider evidence levels
+
+| Level | Meaning |
+|-------|---------|
+| **mock** | Substituted test response; no independent service process |
+| **controlled live provider / service** | A genuinely running, independent service reached through real runtime/network paths, operated inside the proof environment (for example Docker) — not a mock, but not external-provider certification |
+| **external live provider** | A real vendor system outside proof-harness control (for example production Jira, ServiceNow, or customer VPC SaaS) |
+
+**F3-F uses controlled live providers only.** Real HTTP, separate processes, execution-time authority, failure semantics, and restart persistence are proven. **External SaaS validation is not claimed.**
 
 <a href="../assets/fullsize/lkw-governed-evidence-gate.md">
 <picture>
@@ -65,11 +77,13 @@ flowchart LR
 
 The strongest accepted public evidence is the **Governed Evidence Decision Proof**
 (**Advanced Flagship / F3-F**): a **LIVE_ONLY**, multi-provider, bounded governed
-evidence proof over Docker-backed organizational sources.
+evidence proof over four independent **controlled live providers** — Docker-backed
+organizational services reached through real runtime HTTP, not external SaaS.
 
 F3-F demonstrates that Intergrax can derive mandatory live evidence obligations
-from versioned policy rules, acquire four independent live sources through
-authorized connections and capabilities, revalidate authority at execution time,
+from versioned policy rules, acquire four independent controlled live services
+through authorized connections and capabilities, revalidate authority at execution
+time,
 apply temporal admissibility, classify typed evidence failures, suppress LLM
 synthesis when admissibility is unsatisfied, and persist structural proof of why
 a past answer was or was not permitted.
@@ -92,7 +106,7 @@ building blocks documented under [Earlier proof lineage](#earlier-proof-lineage)
 **Core demonstrated behavior:**
 
 - four policy-derived mandatory live evidence obligations
-- four independent live providers
+- four independent controlled live providers (Docker-backed; real HTTP/runtime path)
 - four connections
 - four capabilities
 - execution-time authority revalidation
@@ -104,9 +118,11 @@ building blocks documented under [Earlier proof lineage](#earlier-proof-lineage)
 - vendor restart without reseed
 
 **Claim boundary:** F3-F is a **multi-provider**, **LIVE_ONLY**, **bounded
-governed evidence proof**. It is **not** complete indexed + authorized live Hybrid
-Ask certification. COMM-5 collectively exercises indexed and live mechanisms across
-separate bounded paths; F3-F itself exercises **live evidence only**.
+governed evidence proof** over **controlled live providers**. Real runtime/network
+execution is proven; **external live provider / SaaS validation is not**. It is
+**not** complete indexed + authorized live Hybrid Ask certification. COMM-5
+collectively exercises indexed and live mechanisms across separate bounded paths;
+F3-F itself exercises **controlled live evidence only**.
 
 **Admissibility note:** `SATISFIED` means the evidence gate permits synthesis. It
 does **not** mean deployment is approved, the business result is positive, or the
@@ -219,7 +235,7 @@ an accidental validation error.
 
 ---
 
-## External vendor truth and persistence
+## Controlled vendor truth and persistence
 
 <a href="../assets/fullsize/lkw-external-evidence-authority.md">
 <picture>
@@ -238,9 +254,11 @@ an accidental validation error.
 </picture>
 </a>
 
-The Advanced Flagship uses four independent Docker-backed live providers accessed
-only through Intergrax integration abstractions — never through direct proof-harness
-HTTP or storage mutation.
+The Advanced Flagship uses four independent **controlled live providers**
+(Docker-backed HTTP services) accessed only through Intergrax integration
+abstractions — never through direct proof-harness HTTP or storage mutation.
+Vendor state lives outside the Intergrax process but **inside the proof environment**;
+this is not external SaaS validation.
 
 **F3-E-R1** (Security Status vendor) established Docker-backed Mongo persistence
 for one controlled vendor. F3-F extends that pattern across four providers and proves
@@ -315,6 +333,7 @@ inspectable across reload.
 | Admissibility | Permits synthesis only — not deployment approval or positive business outcome |
 | Live payload replay | EPHEMERAL bodies not durably retained |
 | Production readiness | Not claimed |
+| External live provider / SaaS validation | Not claimed — controlled Docker-backed services only |
 | Real enterprise vendor deployment | Not claimed |
 | Universal vendor interoperability | Not claimed |
 | Real-user / commercial validation | Not established |
@@ -332,7 +351,7 @@ The Advanced Flagship was assembled from earlier bounded slices:
 COMM-5D (indexed policy + single live provider)
   → adversarial hardening
   → temporal / failure / provider-persistence foundations (F3-E-R1)
-  → F3-F Advanced Flagship (four live providers, LIVE_ONLY)
+  → F3-F Advanced Flagship (four controlled live providers, LIVE_ONLY)
 ```
 
 These proofs remain valid evidence for the mechanisms they exercise. They are

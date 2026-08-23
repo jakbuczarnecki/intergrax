@@ -56,7 +56,7 @@ def _full_conformance_descriptor_payload() -> dict[str, object]:
         profiles=["full", "live"],
         timeout_seconds=3600,
         safety_class="LOCAL_MUTATING",
-        evidence_schema="intergrax.platform_proof_evidence.v2",
+        evidence_schema="intergrax.platform_proof_evidence.v3",
         report_required=True,
         environment_requirements=[
             {"kind": "COMMAND_AVAILABLE", "name": "uv"},
@@ -138,7 +138,7 @@ def test_full_descriptor_parses(tmp_path: Path) -> None:
     assert descriptor.proof_id == "TEST-DOMAIN-FULL"
     assert descriptor.domains_exercised == (_TEST_DOMAIN,)
     assert descriptor.package_version == "1.0.0"
-    assert descriptor.evidence_schema == "intergrax.platform_proof_evidence.v2"
+    assert descriptor.evidence_schema == "intergrax.platform_proof_evidence.v3"
     assert descriptor.report_required is True
 
 

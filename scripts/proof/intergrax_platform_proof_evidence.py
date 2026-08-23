@@ -17,12 +17,30 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.contracts.evidence_claims import (
+    ChallengeDefectFamily,
+    ChallengeResolution,
+    ClaimKind,
+    ClaimResolution,
+    DefectCode,
+    EvidenceBackedClaim,
+    EvidenceChallenge,
+    EvidenceClaimId,
+    EvidenceClaimSet,
+    EvidenceChallengeId,
+    EvidenceReferenceId,
+    validate_claim_kind,
+    validate_defect_code,
+    validate_evidence_claim_id,
+    validate_evidence_challenge_id,
+    validate_evidence_reference_id,
+)
 from scripts.proof.intergrax_proof_contracts import ProofProfile, ProofStatus
 from scripts.proof.intergrax_platform_proof_descriptor import (
     _normalize_domains_exercised,
 )
 
-PLATFORM_PROOF_EVIDENCE_SCHEMA_VERSION = "intergrax.platform_proof_evidence.v2"
+PLATFORM_PROOF_EVIDENCE_SCHEMA_VERSION = "intergrax.platform_proof_evidence.v3"
 
 _SECRET_FIELD_PATTERN = re.compile(
     r"(secret|password|token|api[_-]?key|authorization|credential)",
@@ -181,6 +199,264 @@ def _reject_raw_report_safe_str(value: object) -> object:
             "sanitized_runtime_report_safe_text, or explicit_runtime_report_safe_text"
         )
     return value
+
+
+def _wrap_report_safe_text(text: str, source: ReportSafeTextSourceKind) -> ReportSafeText:
+    if source == ReportSafeTextSourceKind.PROOF_AUTHORED:
+        return proof_authored_report_safe_text(text)
+    if source == ReportSafeTextSourceKind.RUNTIME_SANITIZED:
+        return sanitized_runtime_report_safe_text(text)
+    return explicit_runtime_report_safe_text(text)
+
+
+def _normalize_projected_evidence_reference_collection(
+    value: object,
+    *,
+    field_name: str,
+) -> tuple[EvidenceReferenceId, ...]:
+    if value is None:
+        return ()
+    if isinstance(value, str):
+        raise ValueError(f"{field_name} must be a sequence")
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name} must be a sequence")
+    normalized: list[EvidenceReferenceId] = []
+    seen: set[EvidenceReferenceId] = set()
+    for item in value:
+        evidence_id = validate_evidence_reference_id(item)
+        if evidence_id in seen:
+            raise ValueError(f"{field_name} must not contain duplicates")
+        seen.add(evidence_id)
+        normalized.append(evidence_id)
+    return tuple(sorted(normalized, key=str))
+
+
+class ReportSafeEvidenceBackedClaim(BaseModel):
+    """Report-safe projection of ``EvidenceBackedClaim`` — not a new semantic contract."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    claim_id: EvidenceClaimId
+    statement: ReportSafeText
+    claim_kind: ClaimKind
+    supporting_evidence_ids: tuple[EvidenceReferenceId, ...] = ()
+    contradicting_evidence_ids: tuple[EvidenceReferenceId, ...] = ()
+    resolution: ClaimResolution = ClaimResolution.PENDING
+    supersedes_claim_id: EvidenceClaimId | None = None
+
+    @field_validator("claim_id", mode="before")
+    @classmethod
+    def _validate_claim_id(cls, value: object) -> EvidenceClaimId:
+        return validate_evidence_claim_id(value)
+
+    @field_validator("supersedes_claim_id", mode="before")
+    @classmethod
+    def _validate_supersedes_claim_id(cls, value: object) -> EvidenceClaimId | None:
+        if value is None:
+            return None
+        return validate_evidence_claim_id(value)
+
+    @field_validator("claim_kind", mode="before")
+    @classmethod
+    def _validate_claim_kind(cls, value: object) -> ClaimKind:
+        return validate_claim_kind(value)
+
+    @field_validator("statement", mode="before")
+    @classmethod
+    def _reject_raw_statement(cls, value: object) -> object:
+        return _reject_raw_report_safe_str(value)
+
+    @field_validator("supporting_evidence_ids", mode="before")
+    @classmethod
+    def _validate_supporting_evidence_ids(
+        cls,
+        value: object,
+    ) -> tuple[EvidenceReferenceId, ...]:
+        return _normalize_projected_evidence_reference_collection(
+            value,
+            field_name="supporting_evidence_ids",
+        )
+
+    @field_validator("contradicting_evidence_ids", mode="before")
+    @classmethod
+    def _validate_contradicting_evidence_ids(
+        cls,
+        value: object,
+    ) -> tuple[EvidenceReferenceId, ...]:
+        return _normalize_projected_evidence_reference_collection(
+            value,
+            field_name="contradicting_evidence_ids",
+        )
+
+    @model_validator(mode="after")
+    def _evidence_collections_disjoint(self) -> ReportSafeEvidenceBackedClaim:
+        overlap = set(self.supporting_evidence_ids) & set(self.contradicting_evidence_ids)
+        if overlap:
+            raise ValueError(
+                "supporting_evidence_ids and contradicting_evidence_ids must be disjoint"
+            )
+        if self.supersedes_claim_id is not None and self.supersedes_claim_id == self.claim_id:
+            raise ValueError("claim must not supersede itself")
+        return self
+
+
+class ReportSafeEvidenceChallenge(BaseModel):
+    """Report-safe projection of ``EvidenceChallenge`` — not a new semantic contract."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    challenge_id: EvidenceChallengeId
+    claim_id: EvidenceClaimId
+    defect_family: ChallengeDefectFamily
+    defect_code: DefectCode | None = None
+    evidence_ids: tuple[EvidenceReferenceId, ...] = ()
+    description: ReportSafeText = Field(
+        default_factory=lambda: proof_authored_report_safe_text("")
+    )
+    resolution: ChallengeResolution = ChallengeResolution.OPEN
+
+    @field_validator("challenge_id", mode="before")
+    @classmethod
+    def _validate_challenge_id(cls, value: object) -> EvidenceChallengeId:
+        return validate_evidence_challenge_id(value)
+
+    @field_validator("claim_id", mode="before")
+    @classmethod
+    def _validate_target_claim_id(cls, value: object) -> EvidenceClaimId:
+        return validate_evidence_claim_id(value)
+
+    @field_validator("defect_code", mode="before")
+    @classmethod
+    def _validate_optional_defect_code(cls, value: object) -> DefectCode | None:
+        if value is None:
+            return None
+        return validate_defect_code(value)
+
+    @field_validator("description", mode="before")
+    @classmethod
+    def _reject_raw_description(cls, value: object) -> object:
+        return _reject_raw_report_safe_str(value)
+
+    @field_validator("evidence_ids", mode="before")
+    @classmethod
+    def _validate_evidence_ids(cls, value: object) -> tuple[EvidenceReferenceId, ...]:
+        return _normalize_projected_evidence_reference_collection(
+            value,
+            field_name="evidence_ids",
+        )
+
+
+class ReportSafeEvidenceClaimSet(BaseModel):
+    """Report-safe projection of ``EvidenceClaimSet`` — not a new semantic contract."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    claims: tuple[ReportSafeEvidenceBackedClaim, ...] = ()
+    challenges: tuple[ReportSafeEvidenceChallenge, ...] = ()
+
+    @model_validator(mode="after")
+    def _validate_referential_integrity(self) -> ReportSafeEvidenceClaimSet:
+        claim_ids: list[EvidenceClaimId] = []
+        seen_claim_ids: set[EvidenceClaimId] = set()
+        for claim in self.claims:
+            if claim.claim_id in seen_claim_ids:
+                raise ValueError("claims must have unique claim_id values")
+            seen_claim_ids.add(claim.claim_id)
+            claim_ids.append(claim.claim_id)
+
+        claim_id_set = set(claim_ids)
+        seen_challenge_ids: set[EvidenceChallengeId] = set()
+        for challenge in self.challenges:
+            if challenge.challenge_id in seen_challenge_ids:
+                raise ValueError("challenges must have unique challenge_id values")
+            seen_challenge_ids.add(challenge.challenge_id)
+            if challenge.claim_id not in claim_id_set:
+                raise ValueError("challenge claim_id must reference an existing claim")
+
+        for claim in self.claims:
+            if (
+                claim.supersedes_claim_id is not None
+                and claim.supersedes_claim_id not in claim_id_set
+            ):
+                raise ValueError(
+                    "supersedes_claim_id must reference an existing claim in the set"
+                )
+
+        return self
+
+
+def project_evidence_backed_claim(
+    claim: EvidenceBackedClaim,
+    *,
+    statement_source: ReportSafeTextSourceKind,
+) -> ReportSafeEvidenceBackedClaim:
+    """Project canonical claim text into explicit report-safe representation."""
+    return ReportSafeEvidenceBackedClaim(
+        claim_id=claim.claim_id,
+        statement=_wrap_report_safe_text(claim.statement, statement_source),
+        claim_kind=claim.claim_kind,
+        supporting_evidence_ids=claim.supporting_evidence_ids,
+        contradicting_evidence_ids=claim.contradicting_evidence_ids,
+        resolution=claim.resolution,
+        supersedes_claim_id=claim.supersedes_claim_id,
+    )
+
+
+def project_evidence_challenge(
+    challenge: EvidenceChallenge,
+    *,
+    description_source: ReportSafeTextSourceKind,
+) -> ReportSafeEvidenceChallenge:
+    """Project canonical challenge description into explicit report-safe representation."""
+    return ReportSafeEvidenceChallenge(
+        challenge_id=challenge.challenge_id,
+        claim_id=challenge.claim_id,
+        defect_family=challenge.defect_family,
+        defect_code=challenge.defect_code,
+        evidence_ids=challenge.evidence_ids,
+        description=_wrap_report_safe_text(challenge.description, description_source),
+        resolution=challenge.resolution,
+    )
+
+
+def project_evidence_claim_set(
+    claim_set: EvidenceClaimSet,
+    *,
+    text_source: ReportSafeTextSourceKind,
+) -> ReportSafeEvidenceClaimSet:
+    """Project canonical GAP-1A claim set into report-safe proof evidence form."""
+    return ReportSafeEvidenceClaimSet(
+        claims=tuple(
+            project_evidence_backed_claim(claim, statement_source=text_source)
+            for claim in claim_set.claims
+        ),
+        challenges=tuple(
+            project_evidence_challenge(challenge, description_source=text_source)
+            for challenge in claim_set.challenges
+        ),
+    )
+
+
+def iter_evidence_claim_graph_binding_violations(
+    evidence_claims: ReportSafeEvidenceClaimSet,
+    evidence_graph_ids: frozenset[str],
+) -> tuple[str, ...]:
+    """Return deterministic binding violation codes for claim/challenge evidence references."""
+    violations: list[str] = []
+    for claim in evidence_claims.claims:
+        for evidence_id in claim.supporting_evidence_ids:
+            if str(evidence_id) not in evidence_graph_ids:
+                violations.append(f"claim_support_evidence_missing:{evidence_id}")
+        for evidence_id in claim.contradicting_evidence_ids:
+            if str(evidence_id) not in evidence_graph_ids:
+                violations.append(f"claim_contradicting_evidence_missing:{evidence_id}")
+    for challenge in evidence_claims.challenges:
+        if challenge.claim_id not in {claim.claim_id for claim in evidence_claims.claims}:
+            violations.append(f"challenge_claim_missing:{challenge.claim_id}")
+        for evidence_id in challenge.evidence_ids:
+            if str(evidence_id) not in evidence_graph_ids:
+                violations.append(f"challenge_evidence_missing:{evidence_id}")
+    return tuple(violations)
 
 
 ReportSafeScalar = int | float | bool | None
@@ -503,7 +779,7 @@ class ReproductionEvidence(BaseModel):
 class ProvenanceEvidence(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    evidence_schema_version: Literal["intergrax.platform_proof_evidence.v2"] = (
+    evidence_schema_version: Literal["intergrax.platform_proof_evidence.v3"] = (
         PLATFORM_PROOF_EVIDENCE_SCHEMA_VERSION
     )
     proof_id: str = Field(min_length=1)
@@ -526,6 +802,8 @@ class EvidenceNodeKind(StrEnum):
 class EvidenceRelationship(StrEnum):
     EVIDENCE_BASIS = "EVIDENCE_BASIS"
     PRODUCED_BY = "PRODUCED_BY"
+    # Legacy/general conclusion linkage. Material claim support is expressed through
+    # ``evidence_claims`` (GAP-1A projection), not duplicate graph edges.
     SUPPORTS_CONCLUSION = "SUPPORTS_CONCLUSION"
 
 
@@ -594,7 +872,7 @@ class DomainExtensionEvidence(BaseModel):
 class PlatformProofEvidence(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["intergrax.platform_proof_evidence.v2"] = (
+    schema_version: Literal["intergrax.platform_proof_evidence.v3"] = (
         PLATFORM_PROOF_EVIDENCE_SCHEMA_VERSION
     )
     proof_identity: ProofIdentityEvidence
@@ -605,6 +883,9 @@ class PlatformProofEvidence(BaseModel):
     environment: EnvironmentEvidence
     scenarios: tuple[ScenarioEvidence, ...] = ()
     evidence_graph: EvidenceGraphEvidence = Field(default_factory=EvidenceGraphEvidence)
+    evidence_claims: ReportSafeEvidenceClaimSet = Field(
+        default_factory=ReportSafeEvidenceClaimSet
+    )
     final_output: FinalOutputEvidence | None = None
     evaluator: EvaluatorSummaryEvidence | None = None
     limitations: tuple[str, ...] = ()
@@ -652,6 +933,13 @@ class PlatformProofEvidence(BaseModel):
                 for created_id in step.evidence_created_ids:
                     if created_id not in evidence_ids:
                         raise ValueError(f"dangling evidence_created_id: {created_id}")
+
+        binding_violations = iter_evidence_claim_graph_binding_violations(
+            self.evidence_claims,
+            frozenset(evidence_ids),
+        )
+        if binding_violations:
+            raise ValueError(binding_violations[0])
 
         if self.execution.status in {
             ProofEvidenceExecutionStatus.CRASH,

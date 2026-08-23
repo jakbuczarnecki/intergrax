@@ -6,7 +6,7 @@ Users can add or connect approved knowledge, ask questions, receive grounded and
 
 This tour explains the supported product experience without requiring installation or a local run. It is a product walkthrough, not a screenshot of a finished application UI.
 
-**Maturity:** Backend Product Alpha / MVP — **PARTIAL**. Capabilities, integrations, and proof coverage vary by path; boundaries below stay explicit.
+**Maturity:** Backend Product Alpha / MVP — **PARTIAL**. See [Current boundary](#current-boundary) for the full evidence limit inventory.
 
 ## At a glance
 
@@ -32,7 +32,7 @@ Project and organizational knowledge rarely sits in one place. It may be spread 
 
 You may need to **find** information, **gather** facts from multiple sources, **inspect current state**, **combine evidence**, and **synthesize** a result — while keeping answers reviewable rather than opaque.
 
-LKW provides one governed workspace path for those needs. It does **not** claim that every integration, live provider, or hybrid combination is complete today.
+LKW provides one governed workspace path for those needs. Scope limits are listed under [Current boundary](#current-boundary).
 
 ## Who LKW is for
 
@@ -69,7 +69,7 @@ You ask about the prepared scope. The primary supported product path answers fro
 
 ### 4. Receive a grounded answer
 
-LKW returns an answer grounded in admissible evidence for that path. It is a bounded product outcome — not a claim that every question will be answered correctly.
+LKW returns an answer grounded in admissible evidence for that path — a bounded product outcome on supported routes.
 
 ### 5. Inspect the source and saved result
 
@@ -81,11 +81,11 @@ Results include source references where applicable, plus a persisted Ask run so 
 |-----------|-------------------|
 | Fragmented knowledge | One governed Ask path instead of ad-hoc search across silos |
 | Opaque AI answers | Source and evidence visibility on supported paths |
-| Need to inspect current organizational state | Bounded live evidence path where supported — not full hybrid certification |
+| Need to inspect current organizational state | Bounded live evidence path where supported |
 | Need for review and audit | Persisted, inspectable Ask runs and structural proof on advanced paths |
-| Risk of answering without required evidence | Advanced governed admissibility proof — a bounded proof path, not full product-wide certification |
+| Risk of answering without required evidence | Advanced governed admissibility proof on the flagship **LIVE_ONLY** path |
 
-Some rows describe **proof paths** or **partial** product scope; see boundaries below.
+Proof-path scope and partial coverage: [Current boundary](#current-boundary).
 
 ## Why Intergrax
 
@@ -120,9 +120,9 @@ flowchart TB
 
 The strongest advanced proof story is the [Governed Evidence Decision Proof](../proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md): governed answer admissibility over **live organizational evidence** (**LIVE_ONLY**).
 
-It demonstrates versioned policy-derived obligations, four independent live providers, execution-time authority, temporal admissibility, typed failure semantics, LLM suppression when inadmissible, and persisted structural proof over Docker-backed vendor truth.
+It demonstrates versioned policy-derived obligations, four independent controlled live providers reached via real HTTP/runtime paths (not external SaaS validation), execution-time authority, temporal admissibility, typed failure semantics, LLM suppression when inadmissible, and persisted structural proof over Docker-backed vendor truth.
 
-It is **LIVE_ONLY** — complete indexed + authorized live Hybrid Ask remains **not proven**.
+It is **LIVE_ONLY** — see [Current boundary](#current-boundary) for hybrid and validation limits.
 
 <a href="../assets/fullsize/lkw-governed-evidence-gate.md">
 <picture>
@@ -135,7 +135,7 @@ It is **LIVE_ONLY** — complete indexed + authorized live Hybrid Ask remains **
     srcset="../assets/lkw-governed-evidence-gate-light.png"
   >
   <img
-    alt="LKW advanced governed proof showing versioned policy-derived evidence requirements, four live organizational sources, execution-time authority, temporal validity, evidence admissibility, LLM gating, and persisted structural proof."
+    alt="LKW advanced governed proof showing versioned policy-derived evidence requirements, four independent controlled live sources via real HTTP/runtime (not external SaaS validation), execution-time authority, temporal validity, evidence admissibility, LLM gating, and persisted structural proof."
     src="../assets/lkw-governed-evidence-gate-light.png"
   >
 </picture>
@@ -165,9 +165,9 @@ LKW offers distinct public proof stories — choose by goal:
 
 **Product Quick Start** is the easiest runnable product evaluation: approved sample knowledge, managed upload, indexed Ask, source citation, and persisted Ask-run verification.
 
-**Governed Evidence Decision Proof** demonstrates versioned policy-derived obligations, four independent live providers, execution-time authority, temporal admissibility, typed failure semantics, LLM gating, and persisted structural proof over Docker-backed vendor truth. It is **LIVE_ONLY** — complete indexed + authorized live Hybrid Ask remains **not certified**.
+**Governed Evidence Decision Proof** demonstrates versioned policy-derived obligations, four independent controlled live providers reached via real HTTP/runtime paths (not external SaaS validation), execution-time authority, temporal admissibility, typed failure semantics, LLM gating, and persisted structural proof over Docker-backed vendor truth (**LIVE_ONLY**).
 
-See the [Governed Evidence Decision Proof](../proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) for the canonical technical narrative.
+See the [Governed Evidence Decision Proof](../proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) for the canonical technical narrative and [Current boundary](#current-boundary) for what remains outside that proof.
 
 **Product Tour ≠ Quick Start ≠ Platform Proof.** None replaces the others.
 
@@ -179,10 +179,10 @@ Advanced governed paths prove additional evidence-admissibility behavior; they d
 
 ## Current boundary
 
-This tour does **not** represent:
+LKW today does **not** represent:
 
 - complete mixed indexed + authorized live Hybrid Ask;
-- complete live-provider access;
+- complete external live-provider access;
 - finished end-user UI;
 - finished SaaS;
 - production-readiness certification;

@@ -9,9 +9,11 @@ from typing import Optional
 
 from pydantic import BaseModel
 
+from intergrax.background_tasks.events import TaskEvent, TaskEventName
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.queueing.contracts.task_queue import TaskStatus
 from intergrax.queueing.providers.broker_worker_base import BrokerWorkerBase
+from intergrax.queueing.task_index import list_tasks_from_index
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.tools.execution_models import ToolExecutionResult
 
@@ -64,6 +66,27 @@ class _TestWorker(BrokerWorkerBase):
         raise NotImplementedError
 
 
+class _EventCollector:
+    def __init__(self) -> None:
+        self.events: list[TaskEvent] = []
+
+    def emit(self, event: TaskEvent) -> None:
+        self.events.append(event)
+
+
+def _build_message(*, task_id: str = "t1", task_name: str = "dummy") -> bytes:
+    encoded_payload = base64.b64encode(b"input").decode("ascii")
+    message = {
+        "task_id": task_id,
+        "tenant_id": "tenant-A",
+        "run_id": "run-1",
+        "task_name": task_name,
+        "payload": encoded_payload,
+        "idempotency_key": None,
+    }
+    return json.dumps(message).encode("utf-8")
+
+
 def test_broker_worker_base_transitions_to_succeeded() -> None:
     kv = InMemoryKVStore()
     registry = TaskExecutionRegistry()
@@ -89,20 +112,7 @@ def test_broker_worker_base_transitions_to_succeeded() -> None:
         idempotency_store=None,
     )
 
-    encoded_payload = base64.b64encode(b"input").decode("ascii")
-
-    message = {
-        "task_id": "t1",
-        "tenant_id": "tenant-A",
-        "run_id": "run-1",
-        "task_name": "dummy",
-        "payload": encoded_payload,
-        "idempotency_key": None,
-    }
-
-    raw = json.dumps(message).encode("utf-8")
-
-    worker.process_message(raw_payload=raw)
+    worker.process_message(raw_payload=_build_message())
 
     status_bytes = kv.get("tenant-A", "task:t1:status")
     assert status_bytes == TaskStatus.SUCCEEDED.value.encode("utf-8")
@@ -119,3 +129,84 @@ def test_broker_worker_base_transitions_to_succeeded() -> None:
 
     output_decoded = base64.b64decode(parts[3].encode("ascii"))
     assert output_decoded == b'{"value":"OK"}'
+
+
+def test_broker_worker_base_transitions_to_failed_on_controlled_result() -> None:
+    kv = InMemoryKVStore()
+    registry = TaskExecutionRegistry()
+    collector = _EventCollector()
+
+    def handler(
+        *,
+        tenant_id: str,
+        run_id: str,
+        payload: bytes,
+        idempotency_key,
+    ) -> ToolExecutionResult[DummyOutput]:
+        return ToolExecutionResult.fail(
+            code="index.embedding_failed",
+            message="embedding provider unavailable",
+        )
+
+    registry.register("dummy", handler)
+
+    worker = _TestWorker(
+        registry=registry,
+        kv_store=kv,
+        idempotency_store=None,
+        event_emitter=collector,
+    )
+
+    worker.process_message(raw_payload=_build_message(task_id="t-fail"))
+
+    status_bytes = kv.get("tenant-A", "task:t-fail:status")
+    assert status_bytes == TaskStatus.FAILED.value.encode("utf-8")
+
+    result_bytes = kv.get("tenant-A", "task:t-fail:result")
+    assert result_bytes is not None
+    decoded = result_bytes.decode("utf-8")
+    assert decoded == "FAILED|1|index.embedding_failed: embedding provider unavailable|"
+
+    indexed = list_tasks_from_index(kv, "tenant-A", provider="broker")
+    assert len(indexed) == 1
+    assert indexed[0].task_id == "t-fail"
+    assert indexed[0].status == TaskStatus.FAILED.value
+
+    names = [event.name for event in collector.events]
+    assert TaskEventName.STARTED in names
+    assert TaskEventName.FAILED in names
+    assert TaskEventName.SUCCEEDED not in names
+    assert TaskEventName.RESULT_STORED not in names
+
+
+def test_broker_worker_base_transitions_to_failed_on_exception() -> None:
+    kv = InMemoryKVStore()
+    registry = TaskExecutionRegistry()
+
+    def handler(
+        *,
+        tenant_id: str,
+        run_id: str,
+        payload: bytes,
+        idempotency_key,
+    ) -> ToolExecutionResult[DummyOutput]:
+        raise RuntimeError("unexpected worker crash")
+
+    registry.register("dummy", handler)
+
+    worker = _TestWorker(
+        registry=registry,
+        kv_store=kv,
+        idempotency_store=None,
+    )
+
+    with pytest.raises(RuntimeError, match="unexpected worker crash"):
+        worker.process_message(raw_payload=_build_message(task_id="t-exc"))
+
+    status_bytes = kv.get("tenant-A", "task:t-exc:status")
+    assert status_bytes == TaskStatus.FAILED.value.encode("utf-8")
+
+    result_bytes = kv.get("tenant-A", "task:t-exc:result")
+    assert result_bytes is not None
+    decoded = result_bytes.decode("utf-8")
+    assert decoded == "FAILED|1|unexpected worker crash|"

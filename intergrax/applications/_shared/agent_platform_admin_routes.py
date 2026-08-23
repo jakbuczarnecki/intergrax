@@ -89,16 +89,7 @@ def _raise_admin_http(exc: Exception) -> None:
     if isinstance(exc, AgentPlatformAdminGovernanceBlockedError):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "blocker_code": exc.blocker_code,
-                "policy_action": exc.policy_action,
-                "authorization_evidence": exc.authorization_evidence.model_dump(mode="json"),
-                "authorization_scope": (
-                    exc.authorization_scope.model_dump(mode="json")
-                    if exc.authorization_scope is not None
-                    else None
-                ),
-            },
+            detail=exc.governance_http_detail(),
         ) from exc
     if isinstance(exc, AgentPlatformAdminBlockedError):
         raise HTTPException(
@@ -460,12 +451,14 @@ def mount_agent_platform_admin_routes(
         application_id: str,
         environment_id: str,
         body: BuildApplicationRevisionRequest,
+        principal: RequestIdentity = Depends(resolve_agent_platform_admin_request_identity),
     ) -> BuildRevisionResult:
         try:
             return admin_service.build_application_revision(
                 application_id=application_id,
                 application_environment_id=environment_id,
                 request=body,
+                principal=principal,
             )
         except Exception as exc:
             _raise_admin_http(exc)

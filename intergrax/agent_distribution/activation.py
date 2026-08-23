@@ -336,6 +336,7 @@ class ActivationService:
         *,
         application_environment_id: str,
         runtime_revision_id: str,
+        expected_record_revision: int,
         policy: DrainPolicy,
     ) -> TransitionResult[DrainCompletionResult]:
         revision = self._require_revision(runtime_revision_id)
@@ -352,6 +353,8 @@ class ActivationService:
                 raise AgentDistributionNotFoundError("deployment instance was not found")
             if instance.instance_state is not DeploymentInstanceState.DRAINING:
                 raise RuntimeDrainError("complete_drain requires draining instance")
+            if instance.record_revision != expected_record_revision:
+                raise RuntimeActivationConflict("drain record revision mismatch")
             if instance.serving_unit_ref is None:
                 raise RuntimeDrainError("draining instance lacks serving unit ref")
 
@@ -511,8 +514,8 @@ class ActivationService:
         application_environment_id: str,
         runtime_revision_id: str,
         failure_evidence_ref: str,
-        attempt_rollback: bool = True,
-    ) -> TransitionResult[RollbackResult | None]:
+        expected_record_revision: int,
+    ) -> TransitionResult[DeploymentInstanceRecord | None]:
         with self._environment_lock(application_id, application_environment_id):
             serving = self._serving_store.get_serving_record(
                 application_id,
@@ -526,34 +529,23 @@ class ActivationService:
                 application_environment_id,
                 runtime_revision_id,
             )
-            if instance is not None:
-                failed = instance.model_copy(
-                    update={
-                        "instance_state": DeploymentInstanceState.FAILED,
-                        "failure_evidence_ref": failure_evidence_ref,
-                        "record_revision": instance.record_revision + 1,
-                    }
-                )
-                self._deployment_instance_store.update_instance(
-                    failed,
-                    expected_state=instance.instance_state,
-                    expected_record_revision=instance.record_revision,
-                )
-
-            if not attempt_rollback or serving.prior_traffic_revision_id is None:
+            if instance is None:
                 return TransitionResult(value=None)
-
-            try:
-                return self.rollback(
-                    application_id=application_id,
-                    application_environment_id=application_environment_id,
-                    expected_current_traffic_revision_id=runtime_revision_id,
-                    expected_serving_pointer_revision=serving.serving_pointer_revision,
-                )
-            except (RuntimeRollbackError, RuntimeActivationConflict) as exc:
-                raise RuntimeRollbackError(
-                    "post-cutover rollback failed; serving pointer remains authoritative"
-                ) from exc
+            if instance.record_revision != expected_record_revision:
+                raise RuntimeActivationConflict("failure mark record revision mismatch")
+            failed = instance.model_copy(
+                update={
+                    "instance_state": DeploymentInstanceState.FAILED,
+                    "failure_evidence_ref": failure_evidence_ref,
+                    "record_revision": instance.record_revision + 1,
+                }
+            )
+            persisted = self._deployment_instance_store.update_instance(
+                failed,
+                expected_state=instance.instance_state,
+                expected_record_revision=instance.record_revision,
+            )
+            return TransitionResult(value=persisted)
 
     def _idempotent_active_commit(
         self,

@@ -162,7 +162,7 @@ Display separately where applicable:
 | Identifier | Value (v1) |
 |------------|------------|
 | **Report standard** | Platform Proof Report Standard **v1** |
-| **Evidence schema version** (target, PP-REPORT-2) | `intergrax.platform_proof_evidence.v2` |
+| **Evidence schema version** (target, PP-REPORT-2) | `intergrax.platform_proof_evidence.v3` |
 | **Report model schema version** (target, PP-REPORT-2) | `intergrax.platform_proof_report.v1` |
 | **Renderer version** (when implemented) | semver string recorded in provenance |
 

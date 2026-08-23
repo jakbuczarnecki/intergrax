@@ -52,6 +52,17 @@ def test_scenario_not_product_boundary(proof_library_text: str) -> None:
     assert "production readiness" in normalized
 
 
+def test_scenario_proof_positive_before_boundary(proof_library_text: str) -> None:
+    """Positive Scenario Proof capability precedes the detailed validation boundary."""
+    normalized = re.sub(r"[*_`]", "", proof_library_text).lower()
+    boundary_idx = normalized.index("scenario proofs are not products")
+    positive_markers = ("falsif", "stress-test", "inspectable evidence", "reproduced")
+    earliest_positive = min(
+        normalized.index(marker) for marker in positive_markers if marker in normalized
+    )
+    assert earliest_positive < boundary_idx
+
+
 def test_challenge_intergrax_route(proof_library_text: str) -> None:
     assert "Challenge Intergrax" in proof_library_text
     assert "scenario_proposal.yml" in proof_library_text
