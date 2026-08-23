@@ -28,6 +28,12 @@ def test_adaptive_package_schema_version() -> None:
     assert ADAPTIVE_PACKAGE_SCHEMA_VERSION == "1.0.0"
 
 
+def test_adaptive_package_schema_version_in_all() -> None:
+    from intergrax.runtime import adaptive
+
+    assert "ADAPTIVE_PACKAGE_SCHEMA_VERSION" in adaptive.__all__
+
+
 def test_adaptive_package_exports_core_components() -> None:
     from intergrax.runtime.adaptive import (
         AdaptationEngine,

@@ -145,6 +145,7 @@ from intergrax.runtime.architecture.adaptive_governance import (
 )
 
 __all__ = [
+    "ADAPTIVE_PACKAGE_SCHEMA_VERSION",
     "AdaptiveProfileMutationStore",
     "AdaptationEngine",
     "AdaptationExecutor",
