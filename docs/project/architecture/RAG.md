@@ -192,9 +192,13 @@ Evidence maturity: **E4**
 
 Full qualification matrix: [§7 Canonical current-state qualification matrix](#7-canonical-current-state-qualification-matrix) in engineering canon below.
 
-## Evidence / proof
+## Verify / inspect implementation
 
-### Engineering qualification (domain-internal)
+### Evidence
+
+Bounded public proof routes exercise **indexed** LKW ingest/retrieve paths only ([`PROOFS.md`](../proofs/PROOFS.md)) — not full RAG domain qualification. Mixed indexed + authorized live Hybrid Ask is **not** established.
+
+**Engineering qualification (domain-internal)**
 
 | Proof / evidence | Demonstrates | Does not demonstrate |
 | ---------------- | ------------ | -------------------- |
@@ -222,7 +226,14 @@ Catalog: [`docs/project/proofs/PROOFS.md`](../proofs/PROOFS.md) · LKW detail: [
 
 **Not established by current public or qualification evidence:** mixed indexed + authorized live Hybrid Ask; complete live-provider access; real-user validation; commercial validation; transactional exactly-once replacement across stores.
 
-## Go deeper
+### Core implementation
+
+- [`KnowledgeDocument`](../../../intergrax/knowledge/contracts/document.py)
+- [`RetrievalService`](../../../intergrax/rag/retrieval/retrieval_service.py)
+- [`VectorStoreScope`](../../../intergrax/rag/vectorstore/contracts/native_vectorstore.py)
+- [`IngestPipeline`](../../../intergrax/rag/ingest/ingest_pipeline.py)
+
+### Go deeper
 
 | Depth | Route |
 | ----- | ----- |

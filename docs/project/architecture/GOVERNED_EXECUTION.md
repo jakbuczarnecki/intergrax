@@ -373,6 +373,31 @@ Remediation: **CLA-CONTROL-PLANE-GOVERNANCE-INTEGRITY** in [`plan/GOVERNED_EXECU
 
 ---
 
+## Verify / inspect implementation
+
+### Evidence
+
+No dedicated public domain proof is established today. [`PROOFS.md`](../proofs/PROOFS.md) lists **bounded** LKW proofs (for example Governed Evidence Decision Proof) that exercise policy-derived obligations on controlled paths — **not** a full Governed Execution domain qualification.
+
+### Core implementation
+
+Orientation map: [Existing implementation map](#existing-implementation-map). Canonical code entry points:
+
+- [`PolicyDecision` / `PolicyAction` contracts](../../../intergrax/contracts/runtime_policy.py)
+- [`RuntimePolicyEngine`](../../../intergrax/runtime/policy/runtime_policy_engine.py)
+- [`DeclarativePolicyEnforcer`](../../../intergrax/runtime/policy/declarative_enforcer.py)
+- [`PolicyEngine` facade](../../../intergrax/runtime/policy/policy_engine.py)
+- [Canonical HITL runner](../../../intergrax/runtime/nexus/orchestration/hitl_runner.py)
+- [`GovernanceService` (post-run)](../../../intergrax/runtime/governance/service.py)
+
+### Go deeper
+
+- [ADR-GOVERNED-EXECUTION-001](../technical/adr/entries/2026-08-16/ADR-GOVERNED-EXECUTION-001.md) · [ADR-GOVERNED-EXECUTION-002](../technical/adr/entries/2026-08-17/ADR-GOVERNED-EXECUTION-002.md)
+- [Maintainer plan](../maintainers/plans/GOVERNED_EXECUTION.md)
+- [Reliability / HITL](RELIABILITY_FAILURE_AND_HITL.md) · [Platform plugins](PLATFORM_PLUGINS.md)
+
+---
+
 ## Review / deeper routes
 
 | Topic | Canonical owner |

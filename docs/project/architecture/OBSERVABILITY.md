@@ -375,7 +375,9 @@ K-only reconstruction ≠ full bitemporal reconstruction.
 | External export / vendors | **I3** — export boundary done; vendor adapters partial | Export policy tests; full vendor hardening open |
 | OECP | **I1** — architecture only | OBS-ECP-0 docs; code phases planned |
 
-## Evidence / proof
+## Verify / inspect implementation
+
+### Evidence
 
 | Layer | Artifacts |
 | ----- | --------- |
@@ -385,7 +387,16 @@ K-only reconstruction ≠ full bitemporal reconstruction.
 | **Public proof** | [`PROOFS.md`](../proofs/PROOFS.md) — LKW Core Platform Proof (**partial** bounded proof; Elasticsearch/Kibana export closed for platform proof, not production hardening) |
 | **Production / customer** | **Not established** |
 
-## Go deeper
+Bounded public proof routes: [`PROOFS.md`](../proofs/PROOFS.md) — LKW Core Platform Proof (**partial**; Elasticsearch/Kibana export closed for platform proof, not production hardening or universal observability qualification).
+
+### Core implementation
+
+- [`RuntimeEvent`](../../../intergrax/runtime/events/runtime_event.py) · [`RuntimeEventBus`](../../../intergrax/runtime/events/event_bus.py)
+- [`RuntimeEventPersistence` contract](../../../intergrax/runtime/events/persistence_contract.py)
+- [`build_unified_run_journal`](../../../intergrax/runtime/events/unified_run_journal.py)
+- [Observability export boundary](../../../intergrax/runtime/observability/export_boundary.py)
+
+### Go deeper
 
 | Depth | Route |
 | ----- | ----- |

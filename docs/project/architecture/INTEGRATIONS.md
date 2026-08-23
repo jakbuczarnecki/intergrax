@@ -296,7 +296,11 @@ Evidence maturity: **E3**
 
 > **Provider catalog scale ≠ production qualification.**
 
-## Evidence / proof
+## Verify / inspect implementation
+
+### Evidence
+
+No dedicated public domain proof is established today. See the evidence table below; LKW exercises integrations only in **bounded** supporting-foundation scope.
 
 | Evidence class | What exists | What it does not prove |
 | -------------- | ----------- | ---------------------- |
@@ -308,7 +312,14 @@ Evidence maturity: **E3**
 
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 
-## Go deeper
+### Core implementation
+
+- [`PlatformIntegrationContract`](../../../intergrax/runtime/integrations/contracts.py)
+- [`IntegrationProfile`](../../../intergrax/integrations/registry/profile.py)
+- [Open catalog `get_entry`](../../../intergrax/integrations/registry/catalog.py) · [`resolve_from_profile`](../../../intergrax/integrations/registry/factory.py)
+- [`IntegrationRegistry` v2 metadata](../../../intergrax/runtime/integrations/registry_v2.py)
+
+### Go deeper
 
 | Depth | Route |
 | ----- | ----- |
