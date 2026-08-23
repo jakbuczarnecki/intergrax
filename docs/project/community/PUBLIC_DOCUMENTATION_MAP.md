@@ -10,12 +10,24 @@ Use this map when you know what you want to do but not which document to open.
 
 | Gateway | Role |
 | --- | --- |
-| [README](../../../README.md) | First contact — what Intergrax is, persona paths, grouped Platform Map, LKW product discovery |
+| [README](../../../README.md) | First contact — Scenarios, Products, Platform entry points, persona paths, LKW product discovery |
 | **This map** | Intent-based fallback router — find the right next document by goal |
+| [Proof Library](../proofs/PROOF_LIBRARY.md) | Problem-first Scenario Proof catalog — difficult real-world problems and executable falsification |
 | [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) | Project-level architectural mental model |
 | [Runtime architecture hub](../architecture/intergrax_runtime_architecture.md) | Complete technical index — 24 domain pairs + cross-layer feature pairs |
 
-**First contact and platform discovery** stay in the [README](../../../README.md#explore-the-intergrax-platform) — including the grouped Platform Map and documentation-layer guide. This file routes by **reader intent**; it does not duplicate the full platform index or persona table.
+**First contact** stays in the [README](../../../README.md) — including the three public entry points (**Scenarios**, **Products**, **Platform**), grouped Platform Map, and documentation-layer guide. This file routes by **reader intent**; it does not duplicate the full platform index or persona table.
+
+---
+
+## Three ways to evaluate Intergrax
+
+| Path | Start here | What you get |
+| --- | --- | --- |
+| **Scenarios** | [Proof Library](../proofs/PROOF_LIBRARY.md) | Difficult real-world problems, executable falsification, evidence, verdict, reproduction |
+| **Products** | [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) | Real user workflows, reference applications, bounded product proof |
+| **Platform** | [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) · [Platform Map](../../../README.md#explore-the-intergrax-platform) | Reusable governed foundations, architecture, mechanisms |
+| **Audit claims** | [PROOFS](../proofs/PROOFS.md) | Evidence-first dashboard — what is proven and what may be claimed |
 
 ---
 
