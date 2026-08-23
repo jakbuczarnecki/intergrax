@@ -248,12 +248,24 @@ def test_cp9_risk_survives_boundary_roundtrip() -> None:
 
 
 def test_cp10_evaluator_failure_fail_closed() -> None:
+    request = _request(mutation_id="mut-eval-fail")
+    expected_digest = control_plane_mutation_request_digest(request)
     evaluator = _FakeEvaluator(raise_error=True)
     boundary = ControlPlaneMutationAuthorizationBoundary(evaluator=evaluator)
-    result = boundary.authorize(_request())
+    result = boundary.authorize(request)
     assert result.permitted is False
     assert result.decision.action is PolicyAction.DENY
     assert "evaluator_failure" in result.decision.reason
+    assert result.evidence.request_digest == expected_digest
+    assert "0000000000000000" not in result.evidence.request_digest
+    assert result.evidence.mutation_id == "mut-eval-fail"
+    assert result.evidence.mutation_type == "apply_configuration"
+    assert result.evidence.resource_scope == "workspace-a"
+    assert result.evidence.resource_type == "ahi_configuration"
+    assert result.evidence.resource_id == "adaptive-profile-1"
+    assert result.evidence.current_revision == "5"
+    assert result.evidence.target_revision == "6"
+    assert result.evidence.mutation_id != "unknown"
 
 
 def test_cp11_modify_fail_closed_to_deny() -> None:

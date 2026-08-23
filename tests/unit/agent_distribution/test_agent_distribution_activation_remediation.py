@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -32,7 +33,10 @@ from intergrax.applications._shared.reference_production_lifecycle import (
 )
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
-from intergrax.contracts.control_plane_mutation import ControlPlaneMutationRequest
+from intergrax.contracts.control_plane_mutation import (
+    ControlPlaneMutationRequest,
+    control_plane_mutation_request_digest,
+)
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
@@ -59,6 +63,20 @@ from tests.unit.agent_distribution.test_agent_distribution_control_plane_governa
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
+
+_CONTROL_PLANE_GOVERNANCE_SLICE_FILES = (
+    "intergrax/contracts/control_plane_mutation.py",
+    "intergrax/runtime/governance/control_plane_mutation_authorization.py",
+    "intergrax/agent_distribution/control_plane_governance.py",
+    "intergrax/agent_distribution/admin_service.py",
+    "intergrax/applications/_shared/reference_production_lifecycle.py",
+    "intergrax/applications/_shared/reference_production_governance_wiring.py",
+    "intergrax/applications/_shared/agent_platform_admin_routes.py",
+)
+
+_FORBIDDEN_DYNAMIC_PATTERNS = re.compile(
+    r"getattr\s*\(|setattr\s*\(|hasattr\s*\(|__dict__|eval\s*\(|exec\s*\("
+)
 
 
 @dataclass
@@ -456,6 +474,69 @@ def test_adr17_foundation_boundary_still_fail_closed_on_missing_principal() -> N
     )
     result = boundary.authorize(request)
     assert result.permitted is False
+
+
+def test_r2_control_plane_slice_zero_dynamic_access() -> None:
+    offenders: list[str] = []
+    for relative in _CONTROL_PLANE_GOVERNANCE_SLICE_FILES:
+        path = _REPO_ROOT / relative
+        text = path.read_text(encoding="utf-8")
+        if _FORBIDDEN_DYNAMIC_PATTERNS.search(text):
+            offenders.append(relative)
+    assert offenders == []
+
+
+def test_r2_tenant_scoped_evaluator_delegates_via_typed_protocol() -> None:
+    inner = _RecordingEvaluator(
+        decision=PolicyDecision(action=PolicyAction.ALLOW, reason="ok")
+    )
+    evaluator = TenantScopedControlPlaneMutationEvaluator(
+        tenant_resolver=StaticApplicationEnvironmentTenantResolver("tenant-test"),
+        inner=inner,
+    )
+    request = build_activation_mutation_request(
+        principal=admin_test_principal(),
+        application_id=_APP,
+        application_environment_id=_ENV,
+        mutation_id="mut-r2-delegate",
+        current_traffic_revision_id=None,
+        current_serving_pointer_revision=0,
+        target_runtime_revision_id="rev-r2-delegate",
+    )
+    decision = evaluator.evaluate(request)
+    assert decision.action is PolicyAction.ALLOW
+    assert len(inner.calls) == 1
+    assert inner.calls[0] is request
+
+
+def test_r2_evaluator_failure_preserves_real_evidence() -> None:
+    request = build_activation_mutation_request(
+        principal=admin_test_principal(),
+        application_id=_APP,
+        application_environment_id=_ENV,
+        mutation_id="mut-r2-evidence",
+        current_traffic_revision_id=None,
+        current_serving_pointer_revision=0,
+        target_runtime_revision_id="rev-r2-evidence",
+    )
+    expected_digest = control_plane_mutation_request_digest(request)
+    boundary = ControlPlaneMutationAuthorizationBoundary(
+        evaluator=_RecordingEvaluator(raise_error=True)
+    )
+    result = boundary.authorize(request)
+    assert result.permitted is False
+    assert result.decision.action is PolicyAction.DENY
+    assert "evaluator_failure" in result.decision.reason
+    assert result.evidence.request_digest == expected_digest
+    assert result.evidence.mutation_id == "mut-r2-evidence"
+    assert result.evidence.mutation_type == request.mutation_type
+    assert result.evidence.resource_scope == request.resource_scope
+    assert result.evidence.resource_type == request.resource_type
+    assert result.evidence.resource_id == request.resource_id
+    assert result.evidence.current_revision == request.current_revision
+    assert result.evidence.target_revision == request.target_revision
+    assert result.evidence.mutation_id != "unknown"
+    assert "0000000000000000" not in result.evidence.request_digest
 
 
 def test_adr18_previous_ad_allow_path_still_commits() -> None:

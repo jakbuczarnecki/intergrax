@@ -138,8 +138,13 @@ class ControlPlaneMutationAuthorizationBoundary:
                 policy_bundle_digest=deny.policy_bundle_digest,
             )
 
-        request_digest = self._safe_request_digest(request)
-        evidence = self._safe_evidence(request, decision=deny, request_digest=request_digest)
+        request_digest = control_plane_mutation_request_digest(request)
+        evidence = self._fail_closed_evidence(
+            request,
+            decision=deny,
+            request_digest=request_digest,
+            validation_failed=validation_failed,
+        )
         return ControlPlaneMutationAuthorizationResult(
             permitted=False,
             decision=deny,
@@ -150,46 +155,41 @@ class ControlPlaneMutationAuthorizationBoundary:
         )
 
     @staticmethod
-    def _safe_request_digest(request: ControlPlaneMutationRequest) -> str:
-        try:
-            return control_plane_mutation_request_digest(request)
-        except Exception:
-            return "sha256:0000000000000000000000000000000000000000000000000000000000000000"
-
-    @staticmethod
-    def _safe_evidence(
+    def _fail_closed_evidence(
         request: ControlPlaneMutationRequest,
         *,
         decision: PolicyDecision,
         request_digest: str,
+        validation_failed: bool,
     ) -> ControlPlaneMutationAuthorizationEvidence:
-        try:
+        if not validation_failed:
             return evidence_from_request_and_decision(
                 request,
                 decision=decision,
                 request_digest=request_digest,
             )
-        except Exception:
-            tenant_id = "unknown"
-            if request.principal is not None and request.principal.tenant_id.strip():
-                tenant_id = request.principal.tenant_id
-            return ControlPlaneMutationAuthorizationEvidence(
-                request_digest=request_digest,
-                mutation_id=getattr(request, "mutation_id", "") or "unknown",
-                mutation_type=getattr(request, "mutation_type", "") or "unknown",
-                tenant_id=tenant_id,
-                resource_scope=getattr(request, "resource_scope", "") or "unknown",
-                resource_type=getattr(request, "resource_type", "") or "unknown",
-                resource_id=getattr(request, "resource_id", "") or "unknown",
-                current_revision=getattr(request, "current_revision", "") or "unknown",
-                target_revision=getattr(request, "target_revision", "") or "unknown",
-                risk_classification=request.risk_classification,
-                principal_type=(
-                    request.principal.principal_type
-                    if request.principal is not None
-                    else PrincipalType.USER
-                ),
-                policy_action=decision.action,
-                policy_rule_id=decision.policy_rule_id,
-                policy_decision_id=decision.decision_id,
-            )
+
+        principal = request.principal
+        return ControlPlaneMutationAuthorizationEvidence.model_construct(
+            request_digest=request_digest,
+            mutation_id=request.mutation_id,
+            mutation_type=request.mutation_type,
+            tenant_id=principal.tenant_id if principal is not None else "",
+            resource_scope=request.resource_scope,
+            resource_type=request.resource_type,
+            resource_id=request.resource_id,
+            current_revision=request.current_revision,
+            target_revision=request.target_revision,
+            risk_classification=request.risk_classification,
+            principal_type=(
+                principal.principal_type if principal is not None else PrincipalType.USER
+            ),
+            principal_user_id=principal.user_id if principal is not None else None,
+            principal_auth_subject=principal.auth_subject if principal is not None else None,
+            task_id=str(request.task_id) if request.task_id is not None else None,
+            run_id=str(request.run_id) if request.run_id is not None else None,
+            approval_evidence_ref=request.approval_evidence_ref,
+            policy_action=decision.action,
+            policy_rule_id=decision.policy_rule_id,
+            policy_decision_id=decision.decision_id,
+        )
