@@ -79,7 +79,6 @@ def normalize_to_manifest_entry(
     return ProofManifestEntry(
         proof_id=descriptor.proof_id,
         title=descriptor.title,
-        domain=descriptor.domain,
         profiles=frozenset(descriptor.profiles),
         proof_kind=descriptor.proof_kind,
         command=descriptor.command,

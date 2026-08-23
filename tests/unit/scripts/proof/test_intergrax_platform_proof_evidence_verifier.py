@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# Â© Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
 
@@ -73,7 +73,6 @@ def _entry(proof_id: str = _FAKE_PROOF_ID) -> ProofManifestEntry:
     return ProofManifestEntry(
         proof_id=proof_id,
         title=proof_id,
-        domain="test_evidence_verify",
         profiles=frozenset({ProofProfile.QUICK}),
         proof_kind="evidence_verify",
         command=ProofArgvCommand(
@@ -145,7 +144,7 @@ def _minimal_evidence(
         proof_identity=ProofIdentityEvidence(
             proof_id=proof_id,
             title="title",
-            domain="test",
+            domains_exercised=("test_evidence_verify",),
             proof_version="1.0.0",
             source_revision=source_revision,
             execution_profile=ProofProfile.QUICK,
@@ -257,7 +256,7 @@ def test_wrong_schema_version_fails(tmp_path: Path) -> None:
         artifact_dir,
         evidence_path,
         _transport(),
-        spec=_spec(entry, evidence_schema="intergrax.platform_proof_evidence.v2"),
+        spec=_spec(entry, evidence_schema="intergrax.platform_proof_evidence.v1"),
     )
     assert result.status == EvidenceVerificationStatus.INVALID
 
@@ -383,7 +382,6 @@ def test_legacy_proof_without_evidence_policy_uses_exit_code(tmp_path: Path) -> 
     entry = ProofManifestEntry(
         proof_id="LEGACY",
         title="legacy",
-        domain="test",
         profiles=frozenset({ProofProfile.QUICK}),
         proof_kind="legacy",
         command=ProofArgvCommand(executable="python", argv=("-c", "import sys; sys.exit(0)")),
@@ -447,7 +445,7 @@ def _descriptor_payload(
         "library_class": "CONFORMANCE",
         "proof_id": proof_id,
         "title": proof_id,
-        "domain": "test_evidence_verify",
+        "domains_exercised": ["test_evidence_verify"],
         "proof_kind": "evidence_verify",
         "mechanisms_exercised": ["tools.sample_mechanism"],
         "package_version": "1.0.0",
@@ -545,7 +543,7 @@ def _build_evidence(status: ProofEvidenceExecutionStatus) -> PlatformProofEviden
         proof_identity=ProofIdentityEvidence(
             proof_id=PROOF_ID,
             title="title",
-            domain="test",
+            domains_exercised=("test_evidence_verify",),
             proof_version="1.0.0",
             source_revision=revision,
             execution_profile=ProofProfile.QUICK,

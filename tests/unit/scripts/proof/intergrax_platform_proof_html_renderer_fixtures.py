@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# Â© Artur Czarnecki. All rights reserved.
 
 """Representative PlatformProofEvidence fixtures for HTML renderer tests (PP-REPORT-3)."""
 
@@ -218,7 +218,7 @@ def _base_provenance(*, proof_id: str = "GENERIC-PLATFORM-PROOF") -> ProvenanceE
         generated_at=_TS_END,
         execution_id=_EXECUTION_ID,
         evidence_checksum="f" * 64,
-        artifact_identity=f"intergrax.platform_proof_evidence.v1:{proof_id}:{_EXECUTION_ID}:20260821T120500Z",
+        artifact_identity=f"intergrax.platform_proof_evidence.v2:{proof_id}:{_EXECUTION_ID}:20260821T120500Z",
     )
 
 
@@ -236,7 +236,7 @@ def _base_identity(*, proof_id: str = "GENERIC-PLATFORM-PROOF") -> ProofIdentity
     return ProofIdentityEvidence(
         proof_id=proof_id,
         title="Generic Platform Proof",
-        domain="platform",
+        domains_exercised=("platform",),
         proof_version="1.0.0",
         source_revision=_REVISION,
         execution_profile=ProofProfile.FULL,

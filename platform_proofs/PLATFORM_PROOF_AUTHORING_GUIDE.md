@@ -624,12 +624,12 @@ Existing domain-oriented paths may remain (e.g. `platform_proofs/<domain>/<proof
 
 ---
 
-## Descriptor v2
+## Descriptor v3
 
 Every proof declares a static `proof.json` with schema:
 
 ```text
-intergrax.platform_proof_descriptor.v2
+intergrax.platform_proof_descriptor.v3
 ```
 
 **Canonical schema source:** `scripts/proof/intergrax_platform_proof_descriptor.py` and [PLATFORM_PROOF_PROTOCOL.md](PLATFORM_PROOF_PROTOCOL.md) § D2. Do not duplicate full schema here.
@@ -639,9 +639,11 @@ intergrax.platform_proof_descriptor.v2
 | Field | Role |
 |-------|------|
 | `library_class` | `SCENARIO` or `CONFORMANCE` |
-| `domain` | Technical ownership / runner grouping (Conformance: primary domain; SCENARIO: legacy single-domain field — see § Descriptor v2 scenario note) |
+| `domains_exercised` | Non-empty list of Intergrax domains actually exercised (no primary, owner, or ranking) |
 | `proof_kind` | Proof-specific kind slug |
 | `mechanisms_exercised` | Mechanisms the proof exercises |
+
+**Principle:** The proof does not belong to a domain. It exercises domains.
 
 ### Additional for SCENARIO
 
@@ -651,22 +653,29 @@ intergrax.platform_proof_descriptor.v2
 | `problem_summary` | Short problem statement |
 | `failure_mode_summary` | Failure being tested |
 
-**No descriptor v1.** No loose metadata bags. No compatibility shims. No aliases. No fallback. No legacy proof execution path.
+**No descriptor v1 or v2.** No loose metadata bags. No compatibility shims. No aliases. No fallback. No legacy proof execution path. No fake placeholder domain values (`MULTI_DOMAIN`, `CROSS_DOMAIN`, `SCENARIO`, etc.).
 
 Discovery is automatic from `proof.json` under `platform_proofs/` — no central manifest registration for descriptor-backed proofs.
 
-### Descriptor v2 scenario note (documentation vs executable contract)
+### Conformance framing
 
-Scenario **documentation and design** are **multi-domain by default**: the problem chooses required guarantees; guarantees choose mechanisms and participating domains during Intergrax Fit (§ C).
+```text
+PROPERTY / CONTRACT UNDER TEST
+→ MECHANISMS
+→ DOMAINS EXERCISED
+```
 
-The current executable descriptor (`intergrax.platform_proof_descriptor.v2`) still declares a single `domain: str` field. That is **known legacy architecture** for the Scenario model. **Do not modify descriptor v2 in scenario-documentation tasks.** A dedicated migration will introduce the formal multi-domain descriptor contract.
+### Scenario framing
 
-Until that migration lands:
+```text
+REAL PROBLEM
+→ REQUIRED GUARANTEES
+→ CAPABILITY FIT
+→ MECHANISMS
+→ DOMAINS EXERCISED
+```
 
-- **do not** author `proof.json` for a Scenario if a single `domain` value would misrepresent participating domains;
-- **do not** use fake placeholder values (`MULTI_DOMAIN`, `CROSS_DOMAIN`, `SCENARIO`, etc.) to satisfy v2.
-
-Conformance proofs may continue to use `domain` as primary mechanism ownership. Scenario proofs remain problem-first and cross-domain when the problem requires it.
+Scenario **documentation and design** are **multi-domain by default**: the problem chooses required guarantees; guarantees choose mechanisms and participating domains during Intergrax Fit (§ C). When the executable package ships, declare the truthful `domains_exercised` list — one domain or several, with no ownership semantics.
 
 ---
 

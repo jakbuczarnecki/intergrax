@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# Â© Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
 
@@ -50,7 +50,6 @@ def _entry(
     return ProofManifestEntry(
         proof_id=proof_id,
         title=proof_id,
-        domain="test",
         profiles=frozenset({ProofProfile.QUICK}),
         proof_kind="test",
         command=ProofArgvCommand(executable="python", argv=("-c", "print('ok')")),

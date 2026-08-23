@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# Â© Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
 
@@ -58,7 +58,6 @@ def _entry(proof_id: str = _FAKE_PROOF_ID) -> ProofManifestEntry:
     return ProofManifestEntry(
         proof_id=proof_id,
         title=proof_id,
-        domain="test_artifact_verify",
         profiles=frozenset({ProofProfile.QUICK}),
         proof_kind="artifact_verify",
         command=ProofArgvCommand(
@@ -98,7 +97,7 @@ def _artifacts_spec(
     return ProofExecutionSpec(
         manifest_entry=entry,
         evidence_required=evidence_required,
-        evidence_schema="intergrax.platform_proof_evidence.v1",
+        evidence_schema="intergrax.platform_proof_evidence.v2",
         expected_artifacts=artifacts,
     )
 
@@ -135,7 +134,7 @@ def _minimal_descriptor_payload(**overrides: object) -> dict[str, object]:
         "library_class": "CONFORMANCE",
         "proof_id": "TOOLS-SAMPLE",
         "title": "sample",
-        "domain": "tools",
+        "domains_exercised": ["tools"],
         "proof_kind": "sample",
         "mechanisms_exercised": ["tools.sample_mechanism"],
         "package_version": "1.0.0",
@@ -559,7 +558,7 @@ def _descriptor_payload(
         "library_class": "CONFORMANCE",
         "proof_id": proof_id,
         "title": proof_id,
-        "domain": "test_artifact_verify",
+        "domains_exercised": ["test_artifact_verify"],
         "proof_kind": "artifact_verify",
         "mechanisms_exercised": ["tools.sample_mechanism"],
         "package_version": "1.0.0",
@@ -571,7 +570,7 @@ def _descriptor_payload(
         "timeout_seconds": 60,
         "safety_class": "LOCAL_READ_ONLY",
         "evidence_required": True,
-        "evidence_schema": "intergrax.platform_proof_evidence.v1",
+        "evidence_schema": "intergrax.platform_proof_evidence.v2",
         "expected_artifacts": [
             {
                 "kind": "EVIDENCE_JSON",
@@ -637,7 +636,7 @@ def _build_evidence(status: ProofEvidenceExecutionStatus) -> PlatformProofEviden
         proof_identity=ProofIdentityEvidence(
             proof_id=PROOF_ID,
             title="title",
-            domain="test",
+            domains_exercised=("test_artifact_verify",),
             proof_version="1.0.0",
             source_revision=revision,
             execution_profile=ProofProfile.QUICK,

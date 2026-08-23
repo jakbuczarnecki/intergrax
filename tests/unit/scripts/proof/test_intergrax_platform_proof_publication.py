@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# Â© Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
 
@@ -83,7 +83,6 @@ def _entry(proof_id: str = _FAKE_PROOF_ID) -> ProofManifestEntry:
     return ProofManifestEntry(
         proof_id=proof_id,
         title=proof_id,
-        domain="test_domain",
         profiles=frozenset({ProofProfile.QUICK}),
         proof_kind="publish",
         command=ProofArgvCommand(
@@ -122,7 +121,7 @@ def _spec(
     return ProofExecutionSpec(
         manifest_entry=entry,
         evidence_required=True,
-        evidence_schema="intergrax.platform_proof_evidence.v1",
+        evidence_schema="intergrax.platform_proof_evidence.v2",
         expected_artifacts=_artifacts(),
         package_root=package_root,
     )
@@ -175,7 +174,7 @@ def _write_evidence(
         proof_identity=ProofIdentityEvidence(
             proof_id=_FAKE_PROOF_ID,
             title="title",
-            domain="test_domain",
+            domains_exercised=("test_domain",),
             proof_version="1.0.0",
             source_revision=revision,
             execution_profile=ProofProfile.QUICK,
@@ -788,7 +787,7 @@ def _descriptor_payload(*, proof_id: str, entrypoint: str, run_mode: str) -> dic
         "library_class": "CONFORMANCE",
         "proof_id": proof_id,
         "title": proof_id,
-        "domain": "test_domain",
+        "domains_exercised": ["test_domain"],
         "proof_kind": "publish",
         "mechanisms_exercised": ["tools.sample_mechanism"],
         "package_version": "1.0.0",
@@ -797,7 +796,7 @@ def _descriptor_payload(*, proof_id: str, entrypoint: str, run_mode: str) -> dic
         "timeout_seconds": 60,
         "safety_class": "LOCAL_READ_ONLY",
         "evidence_required": True,
-        "evidence_schema": "intergrax.platform_proof_evidence.v1",
+        "evidence_schema": "intergrax.platform_proof_evidence.v2",
         "report_required": True,
         "expected_artifacts": [
             {"kind": "EVIDENCE_JSON", "relative_path": "evidence.json", "required": True},
@@ -852,7 +851,7 @@ def _build_evidence(status: ProofEvidenceExecutionStatus, execution_id: str) -> 
         proof_identity=ProofIdentityEvidence(
             proof_id=PROOF_ID,
             title="title",
-            domain="test_domain",
+            domains_exercised=("test_domain",),
             proof_version="1.0.0",
             source_revision=revision,
             execution_profile=ProofProfile.QUICK,

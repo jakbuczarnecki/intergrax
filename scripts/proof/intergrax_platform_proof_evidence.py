@@ -18,8 +18,13 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from scripts.proof.intergrax_proof_contracts import ProofProfile, ProofStatus
+from scripts.proof.intergrax_platform_proof_descriptor import (
+    DOMAIN_ID_MAX_LENGTH,
+    UNSAFE_DOMAIN_CHARS,
+    _normalize_identifier_collection,
+)
 
-PLATFORM_PROOF_EVIDENCE_SCHEMA_VERSION = "intergrax.platform_proof_evidence.v1"
+PLATFORM_PROOF_EVIDENCE_SCHEMA_VERSION = "intergrax.platform_proof_evidence.v2"
 
 _SECRET_FIELD_PATTERN = re.compile(
     r"(secret|password|token|api[_-]?key|authorization|credential)",
@@ -255,10 +260,21 @@ class ProofIdentityEvidence(BaseModel):
 
     proof_id: str = Field(min_length=1)
     title: str = Field(min_length=1)
-    domain: str = Field(min_length=1)
+    domains_exercised: tuple[str, ...]
     proof_version: str = Field(min_length=1)
     source_revision: str = Field(min_length=1)
     execution_profile: ProofProfile
+
+    @field_validator("domains_exercised", mode="before")
+    @classmethod
+    def _normalize_domains_exercised(cls, value: object) -> tuple[str, ...]:
+        return _normalize_identifier_collection(
+            value,
+            field_name="domains_exercised",
+            max_length=DOMAIN_ID_MAX_LENGTH,
+            unsafe_pattern=UNSAFE_DOMAIN_CHARS,
+            unsafe_message="domains_exercised contains unsafe path characters",
+        )
 
 
 class ExecutionMetadataEvidence(BaseModel):
@@ -495,7 +511,7 @@ class ReproductionEvidence(BaseModel):
 class ProvenanceEvidence(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    evidence_schema_version: Literal["intergrax.platform_proof_evidence.v1"] = (
+    evidence_schema_version: Literal["intergrax.platform_proof_evidence.v2"] = (
         PLATFORM_PROOF_EVIDENCE_SCHEMA_VERSION
     )
     proof_id: str = Field(min_length=1)
@@ -586,7 +602,7 @@ class DomainExtensionEvidence(BaseModel):
 class PlatformProofEvidence(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["intergrax.platform_proof_evidence.v1"] = (
+    schema_version: Literal["intergrax.platform_proof_evidence.v2"] = (
         PLATFORM_PROOF_EVIDENCE_SCHEMA_VERSION
     )
     proof_identity: ProofIdentityEvidence

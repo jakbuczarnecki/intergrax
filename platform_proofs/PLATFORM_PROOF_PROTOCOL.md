@@ -70,7 +70,7 @@ Platform proofs sit between integration tests and product proofs. They prove the
 
 ## B2. Proof Library classes
 
-The Intergrax Proof Library distinguishes two public proof classes via `library_class` in `proof.json` (`intergrax.platform_proof_descriptor.v2`):
+The Intergrax Proof Library distinguishes two public proof classes via `library_class` in `proof.json` (`intergrax.platform_proof_descriptor.v3`):
 
 | Class | Role | Entry framing |
 |-------|------|---------------|
@@ -79,11 +79,11 @@ The Intergrax Proof Library distinguishes two public proof classes via `library_
 
 Both classes remain **executable falsification attempts** — not demos. **Platform proof ≠ product proof.** Product proofs stay under `applications/`.
 
-`domain` remains technical primary ownership / grouping metadata for the runner and `ProofManifestEntry`. Library metadata (`library_class`, `mechanisms_exercised`, SCENARIO problem fields) is descriptor-owned and does not need to appear in runner-facing manifest entries unless execution requires it.
+Every proof declares **`domains_exercised`** (non-empty; no owning or primary domain) and **`mechanisms_exercised`**. A proof does not belong to one domain — it exercises one or more domains. Library metadata (`library_class`, `domains_exercised`, `mechanisms_exercised`, SCENARIO problem fields) is descriptor-owned and does not appear in runner-facing `ProofManifestEntry` unless execution genuinely requires it (currently: domain metadata is not execution authority).
 
-**Scenario documentation vs descriptor:** Scenario design documentation is **problem-owned and multi-domain by default** — participating domains are discovered during Intergrax Fit, not assigned before the scenario exists. The current v2 descriptor still requires a single `domain: str` field for SCENARIO proofs; that is **legacy architecture** pending a dedicated multi-domain descriptor migration. Do not author `proof.json` for a Scenario when a single domain would misrepresent the problem, and do not use fake placeholder domain values. See [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md) § Descriptor v2 scenario note.
+**Scenario documentation:** Scenario design is **problem-owned and multi-domain by default** — participating domains are discovered during Intergrax Fit, then declared truthfully in `domains_exercised` when the proof package ships. See [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md).
 
-Every descriptor declares `library_class` and `mechanisms_exercised`. SCENARIO additionally requires `problem_category`, `problem_summary`, and `failure_mode_summary`. CONFORMANCE forbids those problem fields.
+Every descriptor declares `library_class`, `domains_exercised`, and `mechanisms_exercised`. SCENARIO additionally requires `problem_category`, `problem_summary`, and `failure_mode_summary`. CONFORMANCE forbids those problem fields.
 
 ---
 
@@ -144,11 +144,11 @@ platform_proofs/scenarios/<scenario_slug>/
     assets/             # optional — after Scenario Quality Gate
 ```
 
-After implementation, Scenario packages add `proof.json`, `run_proof.py`, and other runtime artifacts per [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md). Scenario proofs are **problem-first** and may exercise **multiple domains**; Conformance proofs remain **mechanism-first** and may naturally belong to one primary domain.
+After implementation, Scenario packages add `proof.json`, `run_proof.py`, and other runtime artifacts per [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md). Scenario proofs are **problem-first** and may exercise **multiple domains**; Conformance proofs remain **mechanism-first** and declare every domain they actually exercise in `domains_exercised`.
 
 **Why static JSON (`proof.json`):** language-neutral, human-readable, machine-validated, deterministic, inspectable by CI, and free of Python import side effects during discovery. Discovery must **not** import proof modules or execute `run_proof.py` to read metadata.
 
-**Descriptor schema:** `intergrax.platform_proof_descriptor.v2` — implemented in `scripts/proof/intergrax_platform_proof_descriptor.py` and loaded by `scripts/proof/intergrax_platform_proof_descriptor_loader.py`. Only the current schema version is accepted; there is no legacy v1 fallback.
+**Descriptor schema:** `intergrax.platform_proof_descriptor.v3` — implemented in `scripts/proof/intergrax_platform_proof_descriptor.py` and loaded by `scripts/proof/intergrax_platform_proof_descriptor_loader.py`. Only the current schema version is accepted; v2 and v1 are rejected with no fallback.
 
 **Command contract:** structured `argv` only (`shell=False`). No shell strings.
 

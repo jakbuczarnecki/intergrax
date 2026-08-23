@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# Â© Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
 
@@ -52,11 +52,11 @@ def _write_descriptor_package(
 def _full_conformance_descriptor_payload() -> dict[str, object]:
     return _minimal_conformance_descriptor(
         proof_id="TEST-DOMAIN-FULL",
-        domain=_TEST_DOMAIN,
+        domains_exercised=(_TEST_DOMAIN,),
         profiles=["full", "live"],
         timeout_seconds=3600,
         safety_class="LOCAL_MUTATING",
-        evidence_schema="intergrax.platform_proof_evidence.v1",
+        evidence_schema="intergrax.platform_proof_evidence.v2",
         report_required=True,
         environment_requirements=[
             {"kind": "COMMAND_AVAILABLE", "name": "uv"},
@@ -86,7 +86,7 @@ def _minimal_conformance_descriptor(**overrides: object) -> dict[str, object]:
         "library_class": ProofLibraryClass.CONFORMANCE.value,
         "proof_id": _SAMPLE_PROOF_ID,
         "title": "sample",
-        "domain": _TEST_DOMAIN,
+        "domains_exercised": [_TEST_DOMAIN],
         "proof_kind": "sample",
         "mechanisms_exercised": list(_MINIMAL_MECHANISMS),
         "package_version": "1.0.0",
@@ -105,7 +105,7 @@ def _minimal_scenario_descriptor(**overrides: object) -> dict[str, object]:
         "library_class": ProofLibraryClass.SCENARIO.value,
         "proof_id": "SCENARIO-SAMPLE",
         "title": "scenario sample",
-        "domain": "tools",
+        "domains_exercised": ["tools"],
         "proof_kind": "scenario_sample",
         "mechanisms_exercised": ["tools.sample_mechanism"],
         "package_version": "1.0.0",
@@ -136,9 +136,9 @@ def test_full_descriptor_parses(tmp_path: Path) -> None:
     assert descriptor.schema_version == PLATFORM_PROOF_DESCRIPTOR_SCHEMA_VERSION
     assert descriptor.library_class is ProofLibraryClass.CONFORMANCE
     assert descriptor.proof_id == "TEST-DOMAIN-FULL"
-    assert descriptor.domain == _TEST_DOMAIN
+    assert descriptor.domains_exercised == (_TEST_DOMAIN,)
     assert descriptor.package_version == "1.0.0"
-    assert descriptor.evidence_schema == "intergrax.platform_proof_evidence.v1"
+    assert descriptor.evidence_schema == "intergrax.platform_proof_evidence.v2"
     assert descriptor.report_required is True
 
 
@@ -152,6 +152,85 @@ def test_v1_descriptor_rejected(tmp_path: Path) -> None:
     )
     with pytest.raises((DescriptorLoadError, ValidationError)):
         load_descriptor(descriptor_path, repo_root=tmp_path)
+
+
+def test_v2_descriptor_rejected(tmp_path: Path) -> None:
+    descriptor_path = _write_descriptor_package(
+        tmp_path,
+        payload=_minimal_conformance_descriptor(
+            schema_version="intergrax.platform_proof_descriptor.v2",
+        ),
+    )
+    with pytest.raises((DescriptorLoadError, ValidationError)):
+        load_descriptor(descriptor_path, repo_root=tmp_path)
+
+
+def test_legacy_domain_field_rejected() -> None:
+    with pytest.raises(ValidationError, match="extra"):
+        PlatformProofDescriptor.model_validate(
+            {**_minimal_conformance_descriptor(), "domain": _TEST_DOMAIN}
+        )
+
+
+def test_primary_domain_field_rejected() -> None:
+    with pytest.raises(ValidationError, match="extra"):
+        PlatformProofDescriptor.model_validate(
+            {**_minimal_conformance_descriptor(), "primary_domain": _TEST_DOMAIN}
+        )
+
+
+def test_empty_domains_exercised_rejected() -> None:
+    with pytest.raises(ValidationError, match="non-empty"):
+        PlatformProofDescriptor.model_validate(
+            _minimal_conformance_descriptor(domains_exercised=[])
+        )
+
+
+def test_empty_domain_element_rejected() -> None:
+    with pytest.raises(ValidationError, match="empty values"):
+        PlatformProofDescriptor.model_validate(
+            _minimal_conformance_descriptor(domains_exercised=[" "])
+        )
+
+
+def test_duplicate_domains_exercised_rejected() -> None:
+    with pytest.raises(ValidationError, match="duplicate"):
+        PlatformProofDescriptor.model_validate(
+            _minimal_conformance_descriptor(
+                domains_exercised=[_TEST_DOMAIN, _TEST_DOMAIN]
+            )
+        )
+
+
+def test_unsafe_domain_identifier_rejected() -> None:
+    with pytest.raises(ValidationError, match="unsafe"):
+        PlatformProofDescriptor.model_validate(
+            _minimal_conformance_descriptor(domains_exercised=["../escape"])
+        )
+
+
+def test_multiple_domains_exercised_accepted() -> None:
+    descriptor = PlatformProofDescriptor.model_validate(
+        _minimal_conformance_descriptor(
+            domains_exercised=["tools", "runtime"]
+        )
+    )
+    assert descriptor.domains_exercised == ("tools", "runtime")
+
+
+def test_single_domain_exercised_accepted() -> None:
+    descriptor = PlatformProofDescriptor.model_validate(_minimal_conformance_descriptor())
+    assert descriptor.domains_exercised == (_TEST_DOMAIN,)
+
+
+def test_domains_exercised_order_preserved_without_priority_field() -> None:
+    descriptor = PlatformProofDescriptor.model_validate(
+        _minimal_conformance_descriptor(
+            domains_exercised=["runtime", "tools"]
+        )
+    )
+    assert descriptor.domains_exercised == ("runtime", "tools")
+    assert "primary_domain" not in PlatformProofDescriptor.model_fields
 
 
 def test_unknown_schema_version_rejected(tmp_path: Path) -> None:
@@ -456,3 +535,15 @@ def test_descriptor_models_remain_frozen_and_forbid_extra() -> None:
         PlatformProofDescriptor.model_validate(
             {**_minimal_conformance_descriptor(), "hub_tags": ["forbidden"]}
         )
+
+
+def test_committed_proof_descriptors_use_v3_contract(repo_root: Path) -> None:
+    proofs_root = repo_root / "platform_proofs"
+    if not proofs_root.is_dir():
+        return
+    for descriptor_path in sorted(proofs_root.rglob(PROOF_DESCRIPTOR_FILENAME)):
+        descriptor = load_descriptor(descriptor_path, repo_root=repo_root)
+        assert descriptor.schema_version == PLATFORM_PROOF_DESCRIPTOR_SCHEMA_VERSION
+        assert descriptor.domains_exercised
+        payload = json.loads(descriptor_path.read_text(encoding="utf-8"))
+        assert "domain" not in payload

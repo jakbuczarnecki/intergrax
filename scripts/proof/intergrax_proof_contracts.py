@@ -17,6 +17,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 SUITE_RECEIPT_SCHEMA_VERSION = "intergrax.proof_suite_receipt.v1"
+PROOF_MANIFEST_SCHEMA_VERSION = "intergrax.proof_manifest.v2"
 
 
 class ProofProfile(StrEnum):
@@ -98,7 +99,6 @@ class ProofManifestEntry(BaseModel):
 
     proof_id: str = Field(min_length=1)
     title: str = Field(min_length=1)
-    domain: str = Field(min_length=1)
     profiles: frozenset[ProofProfile]
     proof_kind: str = Field(min_length=1)
     command: ProofArgvCommand
@@ -109,7 +109,7 @@ class ProofManifestEntry(BaseModel):
     safety_class: ProofSafetyClass
     public_evidence_eligible: bool = False
 
-    @field_validator("proof_id", "title", "domain", "proof_kind")
+    @field_validator("proof_id", "title", "proof_kind")
     @classmethod
     def _strip_required(cls, value: str) -> str:
         normalized = value.strip()
@@ -127,7 +127,7 @@ class ProofManifestEntry(BaseModel):
 class IntergraxProofManifest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["intergrax.proof_manifest.v1"] = "intergrax.proof_manifest.v1"
+    schema_version: Literal["intergrax.proof_manifest.v2"] = PROOF_MANIFEST_SCHEMA_VERSION
     entries: tuple[ProofManifestEntry, ...]
 
     @model_validator(mode="after")

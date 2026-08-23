@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# Â© Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ def _minimal_descriptor_payload(
         "library_class": "CONFORMANCE",
         "proof_id": proof_id,
         "title": f"{proof_id} title",
-        "domain": "test_domain",
+        "domains_exercised": ["test_domain"],
         "proof_kind": "example",
         "mechanisms_exercised": ["tools.sample_mechanism"],
         "package_version": "1.0.0",
@@ -133,7 +133,6 @@ def _static_twin_entry() -> ProofManifestEntry:
     return ProofManifestEntry(
         proof_id=_STATIC_TWIN_PROOF_ID,
         title="static twin",
-        domain="test_domain",
         profiles=frozenset({ProofProfile.QUICK}),
         proof_kind="example",
         command=ProofArgvCommand(

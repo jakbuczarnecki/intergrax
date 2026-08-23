@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# Â© Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
 
@@ -155,7 +155,7 @@ def test_evidence_graph_rejects_dangling_references() -> None:
             proof_identity=ProofIdentityEvidence(
                 proof_id="P",
                 title="t",
-                domain="test_domain",
+                domains_exercised=("test_domain",),
                 proof_version="v1",
                 source_revision="sha",
                 execution_profile=ProofProfile.QUICK,
