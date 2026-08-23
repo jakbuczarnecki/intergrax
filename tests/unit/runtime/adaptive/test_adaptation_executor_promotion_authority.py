@@ -18,6 +18,7 @@ from intergrax.runtime.adaptive.contracts import (
 )
 from intergrax.runtime.adaptive.policy_learning_approval import InMemoryPolicyLearningApprovalStore
 from intergrax.runtime.adaptive.profile_lifecycle import ProfileVersionLifecycleManager
+from intergrax.runtime.adaptive.profile_mutation_store import InMemoryAdaptiveProfileMutationStore
 from intergrax.runtime.adaptive.profile_pointer_store import InMemoryProfileActivePointerStore
 from intergrax.runtime.adaptive.profile_version_store import InMemoryProfileVersionStore
 from intergrax.runtime.architecture.adaptive_governance import (
@@ -80,10 +81,15 @@ def _build_executor() -> tuple[
     store = InMemoryProfileVersionStore()
     pointer_store = InMemoryProfileActivePointerStore()
     lifecycle = ProfileVersionLifecycleManager(store)
+    mutation_store = InMemoryAdaptiveProfileMutationStore(
+        version_store=store,
+        pointer_store=pointer_store,
+    )
     executor = AdaptationExecutor(
         profile_store=store,
         pointer_store=pointer_store,
         lifecycle_manager=lifecycle,
+        mutation_store=mutation_store,
         approval_store=InMemoryPolicyLearningApprovalStore(),
     )
     return executor, store, pointer_store
@@ -113,6 +119,7 @@ def test_apply_rejects_failed_governance_gates() -> None:
             tenant_id=_TENANT_A,
             task_class=_TASK_CLASS,
             version_id=version_id,
+            expected_active_version_id=None,
         )
 
     record = store.get(version_id)
@@ -138,6 +145,7 @@ def test_apply_rejects_package_version_mismatch() -> None:
             tenant_id=_TENANT_A,
             task_class=_TASK_CLASS,
             version_id="draft-v2",
+            expected_active_version_id=None,
         )
 
     assert store.get("draft-v2") is not None
@@ -173,6 +181,7 @@ def test_apply_rejects_proposal_lineage_mismatch() -> None:
             tenant_id=_TENANT_A,
             task_class=_TASK_CLASS,
             version_id=_VERSION_ID,
+            expected_active_version_id=None,
         )
 
     record = store.get(_VERSION_ID)
@@ -196,6 +205,7 @@ def test_apply_rejects_cross_tenant_scope() -> None:
             tenant_id=_TENANT_A,
             task_class=_TASK_CLASS,
             version_id=version_id,
+            expected_active_version_id=None,
         )
 
     record = store.get(version_id)
@@ -225,6 +235,7 @@ def test_apply_rejects_task_class_mismatch() -> None:
             tenant_id=_TENANT_A,
             task_class=_TASK_CLASS,
             version_id=version_id,
+            expected_active_version_id=None,
         )
 
     record = store.get(version_id)
@@ -265,6 +276,7 @@ def test_valid_matching_apply_succeeds() -> None:
         tenant_id=_TENANT_A,
         task_class=_TASK_CLASS,
         version_id=version_id,
+        expected_active_version_id=None,
     )
 
     assert result.applied_version_id == _VERSION_ID

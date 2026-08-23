@@ -300,9 +300,11 @@ Evidence maturity: **E3**
 | Extended §42.8+ engineering sections | **Satellite-referenced** — intentional progressive disclosure in [runtime extended satellite](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md) |
 | Public UER lifecycle proof | **Not claimed** |
 
-## Evidence / proof
+## Verify / inspect implementation
 
-UER evidence is **engineering- and audit-oriented** — there is **no** dedicated public proof route in [`docs/project/proofs/`](../proofs/) for UER lifecycle semantics.
+### Evidence
+
+UER evidence is **engineering- and audit-oriented** — there is **no** dedicated public proof route in [`docs/project/proofs/`](../proofs/) for UER lifecycle semantics. LKW and other product proofs may run on the harness stack; they do **not** qualify the UER domain.
 
 | Evidence class | What exists | What it does not prove |
 | -------------- | ----------- | ---------------------- |
@@ -312,7 +314,14 @@ UER evidence is **engineering- and audit-oriented** — there is **no** dedicate
 | Audit | [`docs/audit_results/AUDIT_PROTOCOL.md`](../technical/docs/audit_results/UNIFIED_EXECUTION_RUNTIME.md), 2026-06-19 audit closeout | Customer production window |
 | Public product proof | **None** for UER domain | Do not infer UER qualification from RAG, Token Optimization, or LKW proofs that merely run on the harness stack |
 
-## Go deeper
+### Core implementation
+
+- [`RuntimeEvent`](../../../intergrax/runtime/events/runtime_event.py) · [event catalog](../../../intergrax/runtime/events/event_catalog.py)
+- [`RuntimeEventBus`](../../../intergrax/runtime/events/event_bus.py)
+- [`AgentEngine`](../../../intergrax/agents/agent_engine.py) · [`UAEP` / executor](../../../intergrax/agents/uaep.py)
+- [`HarnessKernel`](../../../intergrax/runtime/kernel/step_kernel.py)
+
+### Go deeper
 
 | Depth | Route |
 | ----- | ----- |

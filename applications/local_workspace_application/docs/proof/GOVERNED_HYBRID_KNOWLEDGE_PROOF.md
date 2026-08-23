@@ -31,7 +31,7 @@
     srcset="../assets/lkw-governed-evidence-gate-light.png"
   >
   <img
-    alt="LKW advanced governed proof showing versioned policy-derived evidence requirements, four live organizational sources, execution-time authority, temporal validity, evidence admissibility, LLM gating, and persisted structural proof."
+    alt="LKW advanced governed proof showing versioned policy-derived evidence requirements, four controlled live organizational sources via real runtime/HTTP, execution-time authority, temporal validity, evidence admissibility, LLM gating, and persisted structural proof."
     src="../assets/lkw-governed-evidence-gate-light.png"
   >
 </picture>
@@ -248,7 +248,7 @@ an accidental validation error.
     srcset="../assets/lkw-external-evidence-authority-light.png"
   >
   <img
-    alt="LKW advanced proof showing four independent live provider connections and Docker-backed vendor state accessed only through integration abstractions."
+    alt="LKW advanced proof showing four independent controlled live provider connections and Docker-backed vendor state accessed only through integration abstractions."
     src="../assets/lkw-external-evidence-authority-light.png"
   >
 </picture>

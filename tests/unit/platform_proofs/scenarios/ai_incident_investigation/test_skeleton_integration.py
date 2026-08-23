@@ -57,12 +57,7 @@ from platform_proofs.scenarios.ai_incident_investigation.evidence_builder import
     PROOF_ID,
     build_platform_proof_evidence,
 )
-from platform_proofs.scenarios.ai_incident_investigation.evaluator import (
-    evaluate_correlation_only_strategy,
-    evaluate_h3_without_telemetry_strategy,
-    evaluate_scenario_run,
-    evaluate_stale_staffing_strategy,
-)
+from platform_proofs.scenarios.ai_incident_investigation.evaluator import evaluate_scenario_run
 from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
     FORBIDDEN_LEAK_MARKERS,
     TimeWindowLabel,

@@ -162,7 +162,7 @@ They are **not** a marketing demo, feature showcase, or product claim. Product, 
 
 Initial production signals make workload overload plausible — but evidence is conflicting, stale, and incomplete. Independent verification must challenge unsupported causality, gather targeted evidence to distinguish competing hypotheses, and produce a bounded **RESOLVED** or honest **UNRESOLVED** outcome.
 
-**Status:** in development — no executable evidence or report yet.
+**Status:** FULL-1 RESOLVED evidence world implemented and executable; UNRESOLVED path and accepted public proof remain pending.
 
 <a href="docs/project/assets/public/readme/fullsize/scenario-ai-incident-investigation.md">
 <picture>
@@ -230,10 +230,11 @@ certification:
 #### B. Governed Evidence Decision Proof
 
 Advanced bounded proof inside the LKW application stack demonstrating governed
-answer admissibility over **live organizational evidence** (`LIVE_ONLY`) —
-versioned policy-derived obligations, execution-time authority revalidation,
-temporal admissibility, typed failure semantics, deterministic LLM suppression
-when admissibility is unsatisfied, and persisted structural proof.
+answer admissibility over four independent **controlled live providers**
+(Docker-backed organizational services via real runtime/HTTP; **not external SaaS validation**) — `LIVE_ONLY` obligations, versioned policy-derived
+requirements, execution-time authority revalidation, temporal admissibility,
+typed failure semantics, deterministic LLM suppression when admissibility is
+unsatisfied, and persisted structural proof.
 
 **Hybrid Ask combining indexed and authorized live evidence** is outside this
 proof's scope — see the [Governed Evidence Decision Proof](applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md).
@@ -249,7 +250,7 @@ proof's scope — see the [Governed Evidence Decision Proof](applications/local_
     srcset="applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-light.png"
   >
   <img
-    alt="LKW advanced governed proof showing versioned policy-derived evidence requirements, four live organizational sources, execution-time authority, temporal validity, evidence admissibility, LLM gating, and persisted structural proof."
+    alt="LKW advanced governed proof showing versioned policy-derived evidence requirements, four controlled live organizational sources via real runtime/HTTP, execution-time authority, temporal validity, evidence admissibility, LLM gating, and persisted structural proof."
     src="applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-light.png"
   >
 </picture>
@@ -258,7 +259,7 @@ proof's scope — see the [Governed Evidence Decision Proof](applications/local_
 **Other bounded paths:** indexed Hybrid Ask branch (`LKW-HYBRID-ASK-INDEXED`) —
 real application code path; [Trusted Ask](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md#trusted-ask-workspace-mvp-2)
 (`LKW-ASK-WORKSPACE-LIVE`) — durable workspace Ask across restart. Current limits
-(live-provider access, end-user packaging; real-user validation and commercial
+(external live-provider access, end-user packaging; real-user validation and commercial
 validation incomplete): [LKW Platform Proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [PROOFS](docs/project/proofs/PROOFS.md).
 
 ## Try LKW
@@ -275,7 +276,7 @@ in the [LKW Quick Start](applications/local_workspace_application/docs/product/Q
 | --- | --- |
 | [Product Tour](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) | Understand what the product experience looks like |
 | [Quick Start](applications/local_workspace_application/docs/product/QUICKSTART.md) | Run the canonical product path |
-| [Governed Evidence Decision Proof](applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) | Inspect advanced governed evidence admissibility over live organizational sources |
+| [Governed Evidence Decision Proof](applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) | Inspect advanced governed evidence admissibility over controlled live providers |
 | [Core Platform Proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) | Verify bounded infrastructure/platform behavior |
 
 **Core Platform Proof** is separate from Product Quick Start and Trusted Ask: a

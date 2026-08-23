@@ -355,8 +355,7 @@ class AdaptiveProfile(BaseModel):
     canary_tenant_allowlist: list[str] = Field(default_factory=list)
     canary_traffic_percent: float = Field(default=0.0, ge=0.0, le=100.0)
     human_approver_group: str | None = None
-    profile_versions_db_path: Path | None = None
-    profile_pointers_db_path: Path | None = None
+    adaptive_profile_db_path: Path | None = None
     signal_store_path: Path | None = None
     proposal_store_path: Path | None = None
     debug_readonly_routes: bool = False

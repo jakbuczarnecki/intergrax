@@ -66,6 +66,8 @@ def test_governed_flagship_proof_distinguishes_controlled_live_from_external_saa
         assert phrase in governed_proof_text, f"Missing governed proof phrase: {phrase}"
 
     assert "four independent live providers" not in governed_proof_text.lower()
+    assert "four live organizational sources" not in governed_proof_text.lower()
+    assert "four independent live provider connections" not in governed_proof_text.lower()
 
     lkw_section = proofs_text.split("## LKW — Active reference product evidence", 1)[1].split(
         "\n---\n", 1

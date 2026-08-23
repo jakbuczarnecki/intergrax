@@ -54,6 +54,33 @@ _READER_PATHS = (
     BUILDER_QUICKSTART_PATH,
 )
 
+_DOMAIN_VERIFY_ARCH_PATHS = (
+    REPO_ROOT / "docs/project/architecture/GOVERNED_EXECUTION.md",
+    REPO_ROOT / "docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md",
+    REPO_ROOT / "docs/project/architecture/INTEGRATIONS.md",
+    REPO_ROOT / "docs/project/architecture/OBSERVABILITY.md",
+    REPO_ROOT / "docs/project/architecture/RAG.md",
+)
+
+_VERIFY_IMPLEMENTATION_SECTION = re.compile(
+    r"^##\s+Verify\s*/\s*inspect\s+implementation\s*$",
+    re.MULTILINE,
+)
+_CORE_IMPLEMENTATION_SUBSECTION = re.compile(
+    r"^###\s+Core\s+implementation\s*$",
+    re.MULTILINE,
+)
+_EVIDENCE_SUBSECTION = re.compile(r"^###\s+Evidence\s*$", re.MULTILINE)
+_INTERGRAX_CODE_LINK = re.compile(r"\]\(\.\./\.\./\.\./intergrax/[^)]+\)")
+_PROOF_STATUS_PHRASES = (
+    "no dedicated public",
+    "not established",
+    "none dedicated",
+    "none for uer domain",
+    "bounded public proof",
+    "bounded lkw",
+)
+
 _ARCH_OPENING = (
     "How Intergrax separates the specialized product application, its application "
     "operating layer, model or agent behavior, governed access to knowledge and tools, "
@@ -1240,3 +1267,28 @@ def test_lkw_product_tour_presentation_contract() -> None:
         "## flagship proof"
     )
     assert normalized.index("## flagship proof") < normalized.index("## current boundary")
+
+
+def test_domain_architecture_verify_implementation_routes() -> None:
+    for path in _DOMAIN_VERIFY_ARCH_PATHS:
+        text = _read(path)
+        normalized = " ".join(_normalize(text).split()).lower()
+        assert _VERIFY_IMPLEMENTATION_SECTION.search(text), (
+            f"{path.name} missing Verify / inspect implementation section"
+        )
+        assert _EVIDENCE_SUBSECTION.search(text), f"{path.name} missing ### Evidence subsection"
+        assert _CORE_IMPLEMENTATION_SUBSECTION.search(text), (
+            f"{path.name} missing ### Core implementation subsection"
+        )
+        assert _INTERGRAX_CODE_LINK.search(text), (
+            f"{path.name} missing canonical intergrax code link"
+        )
+        assert any(phrase in normalized for phrase in _PROOF_STATUS_PHRASES), (
+            f"{path.name} missing explicit proof-status boundary"
+        )
+        go_deeper_idx = normalized.find("### go deeper")
+        core_idx = normalized.find("### core implementation")
+        assert go_deeper_idx != -1, f"{path.name} missing ### Go deeper subsection"
+        assert core_idx != -1 and core_idx < go_deeper_idx, (
+            f"{path.name} Core implementation must precede Go deeper"
+        )
