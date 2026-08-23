@@ -860,6 +860,7 @@ class AgentPlatformAdminService:
                 effective_roster_revision_id=roster.effective_roster_revision_id,
                 lock_digest=lock.lock_digest,
                 graph_digest=graph.runtime_graph_digest,
+                build_input_digest_value=build_input_digest_value,
             ):
                 if existing.revision_state in {
                     RuntimeRevisionState.VALIDATED,
@@ -899,6 +900,7 @@ class AgentPlatformAdminService:
             materialized_runtime_lock_digest=persisted_lock.lock_digest,
             runtime_graph_digest=graph.runtime_graph_digest,
             materialization_topology=request.materialization_topology,
+            build_input_digest=build_input_digest_value,
             revision_state=RuntimeRevisionState.CANDIDATE,
         )
         persisted = self._revision_service.persist_candidate_revision(candidate)
@@ -1315,7 +1317,12 @@ class AgentPlatformAdminService:
         effective_roster_revision_id: str,
         lock_digest: str,
         graph_digest: str,
+        build_input_digest_value: str,
     ) -> bool:
+        if existing.build_input_digest is None:
+            return False
+        if existing.build_input_digest != build_input_digest_value:
+            return False
         return (
             existing.application_release_id == request.application_release_id
             and existing.platform_version == request.platform_version

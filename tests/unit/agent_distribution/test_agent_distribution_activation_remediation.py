@@ -23,6 +23,11 @@ from intergrax.agent_distribution.errors import RuntimeActivationConflict
 from intergrax.applications._shared.production_process_composition import (
     create_reference_production_process_composition,
 )
+from intergrax.applications._shared.registry_projection_input_bundle import (
+    build_reference_activation_request,
+    build_reference_registry_projection_input_bundle,
+    reference_admission_mutation_id,
+)
 from intergrax.applications._shared.reference_production_governance_wiring import (
     build_reference_production_control_plane_governance,
     wire_governed_reference_production_launcher,
@@ -41,7 +46,6 @@ from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
-from research_application.host.reference_lifecycle_input import build_research_reference_lifecycle_input
 from research_application.host.settings import ResearchBackendSettings
 from research_application.host.wiring import build_research_environment_profile
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
@@ -84,6 +88,42 @@ class _AllowEvaluator:
     def evaluate(self, request: ControlPlaneMutationRequest) -> PolicyDecision:
         del request
         return PolicyDecision(action=PolicyAction.ALLOW, reason="allow")
+
+
+def _research_reference_input(
+    revision_id: str,
+) -> tuple[object, object, object]:
+    from research_application.host.agent_builders import RESEARCH_AGENT_BUILDERS
+
+    settings = ResearchBackendSettings(use_nexus_loop=True)
+    manifest = RESEARCH_APPLICATION_MANIFEST
+    env = manifest.environment or build_research_environment_profile(settings)
+    projection_input = build_reference_registry_projection_input_bundle(
+        manifest,
+        env,
+        builders=RESEARCH_AGENT_BUILDERS,
+        runtime_revision_id=revision_id,
+        enabled_contract_stems=frozenset({"research"}),
+    )
+    activation_request = build_reference_activation_request(projection_input)
+    return projection_input, activation_request, env
+
+
+def _reference_deploy_and_activate(
+    launcher: ReferenceProductionLifecycleLauncher,
+    projection_input,
+    activation_request,
+    *,
+    principal: RequestIdentity,
+):
+    return launcher.deploy_and_activate(
+        projection_input,
+        activation_request,
+        principal=principal,
+        admission_mutation_id=reference_admission_mutation_id(
+            projection_input.runtime_revision.runtime_revision_id
+        ),
+    )
 
 
 def test_adr1_no_authority_config_denies_without_commit() -> None:
@@ -212,15 +252,11 @@ def test_adr6_require_human_zero_commits_preserves_scope() -> None:
 
 def test_adr7_reference_production_allow_commits() -> None:
     composition = create_reference_production_process_composition()
-    settings = ResearchBackendSettings(use_nexus_loop=True)
-    projection_input, activation_request = build_research_reference_lifecycle_input(
-        settings,
-        runtime_revision_id="rev-adr7",
-    )
+    projection_input, activation_request, env = _research_reference_input("rev-adr7")
     manifest = RESEARCH_APPLICATION_MANIFEST
-    env = manifest.environment or build_research_environment_profile(settings)
     launcher, governance = wire_governed_reference_production_launcher(composition, env)
-    result = launcher.deploy_and_activate(
+    result = _reference_deploy_and_activate(
+        launcher,
         projection_input,
         activation_request,
         principal=governance.principal,
@@ -231,13 +267,8 @@ def test_adr7_reference_production_allow_commits() -> None:
 
 def test_adr8_reference_production_deny_zero_commit() -> None:
     composition = create_reference_production_process_composition()
-    settings = ResearchBackendSettings(use_nexus_loop=True)
-    projection_input, activation_request = build_research_reference_lifecycle_input(
-        settings,
-        runtime_revision_id="rev-adr8",
-    )
+    projection_input, activation_request, env = _research_reference_input("rev-adr8")
     manifest = RESEARCH_APPLICATION_MANIFEST
-    env = manifest.environment or build_research_environment_profile(settings)
     governance = build_reference_production_control_plane_governance(env)
     deny_evaluator = _RecordingEvaluator(
         decision=PolicyDecision(action=PolicyAction.DENY, reason="deny")
@@ -250,7 +281,8 @@ def test_adr8_reference_production_deny_zero_commit() -> None:
         environment_tenant_resolver=governance.environment_tenant_resolver,
     )
     with pytest.raises(ReferenceProductionLifecycleGovernanceBlockedError):
-        launcher.deploy_and_activate(
+        _reference_deploy_and_activate(
+            launcher,
             projection_input,
             activation_request,
             principal=governance.principal,
@@ -265,20 +297,16 @@ def test_adr8_reference_production_deny_zero_commit() -> None:
 
 def test_adr9_reference_production_missing_boundary_fails_closed() -> None:
     composition = create_reference_production_process_composition()
-    settings = ResearchBackendSettings(use_nexus_loop=True)
-    projection_input, activation_request = build_research_reference_lifecycle_input(
-        settings,
-        runtime_revision_id="rev-adr9",
-    )
+    projection_input, activation_request, env = _research_reference_input("rev-adr9")
     manifest = RESEARCH_APPLICATION_MANIFEST
-    env = manifest.environment or build_research_environment_profile(settings)
     governance = build_reference_production_control_plane_governance(env)
     launcher = ReferenceProductionLifecycleLauncher(
         composition,
         environment_tenant_resolver=governance.environment_tenant_resolver,
     )
     with pytest.raises(ReferenceProductionLifecycleGovernanceBlockedError):
-        launcher.deploy_and_activate(
+        _reference_deploy_and_activate(
+            launcher,
             projection_input,
             activation_request,
             principal=governance.principal,
@@ -287,13 +315,8 @@ def test_adr9_reference_production_missing_boundary_fails_closed() -> None:
 
 def test_adr10_reference_production_wrong_tenant_zero_commit() -> None:
     composition = create_reference_production_process_composition()
-    settings = ResearchBackendSettings(use_nexus_loop=True)
-    projection_input, activation_request = build_research_reference_lifecycle_input(
-        settings,
-        runtime_revision_id="rev-adr10",
-    )
+    projection_input, activation_request, env = _research_reference_input("rev-adr10")
     manifest = RESEARCH_APPLICATION_MANIFEST
-    env = manifest.environment or build_research_environment_profile(settings)
     launcher, governance = wire_governed_reference_production_launcher(composition, env)
     wrong_principal = RequestIdentity(
         tenant_id="wrong-tenant",
@@ -302,7 +325,8 @@ def test_adr10_reference_production_wrong_tenant_zero_commit() -> None:
         auth_subject="svc",
     )
     with pytest.raises(ReferenceProductionLifecycleGovernanceBlockedError):
-        launcher.deploy_and_activate(
+        _reference_deploy_and_activate(
+            launcher,
             projection_input,
             activation_request,
             principal=wrong_principal,
@@ -311,13 +335,8 @@ def test_adr10_reference_production_wrong_tenant_zero_commit() -> None:
 
 def test_adr11_reference_production_require_human_zero_commit() -> None:
     composition = create_reference_production_process_composition()
-    settings = ResearchBackendSettings(use_nexus_loop=True)
-    projection_input, activation_request = build_research_reference_lifecycle_input(
-        settings,
-        runtime_revision_id="rev-adr11",
-    )
+    projection_input, activation_request, env = _research_reference_input("rev-adr11")
     manifest = RESEARCH_APPLICATION_MANIFEST
-    env = manifest.environment or build_research_environment_profile(settings)
     governance = build_reference_production_control_plane_governance(env)
     launcher = ReferenceProductionLifecycleLauncher(
         composition,
@@ -329,7 +348,8 @@ def test_adr11_reference_production_require_human_zero_commit() -> None:
         environment_tenant_resolver=governance.environment_tenant_resolver,
     )
     with pytest.raises(ReferenceProductionLifecycleGovernanceBlockedError) as exc:
-        launcher.deploy_and_activate(
+        _reference_deploy_and_activate(
+            launcher,
             projection_input,
             activation_request,
             principal=governance.principal,
@@ -338,16 +358,11 @@ def test_adr11_reference_production_require_human_zero_commit() -> None:
     assert exc.value.authorization_scope is not None
 
 
-def test_adr12_reference_path_reuses_activation_request_mutation_id() -> None:
+def test_adr12_reference_path_uses_distinct_admission_and_activation_mutation_ids() -> None:
     composition = create_reference_production_process_composition()
-    settings = ResearchBackendSettings(use_nexus_loop=True)
-    projection_input, activation_request = build_research_reference_lifecycle_input(
-        settings,
-        runtime_revision_id="rev-adr12",
-    )
+    projection_input, activation_request, env = _research_reference_input("rev-adr12")
     activation_request = activation_request.model_copy(update={"mutation_id": "mut-adr12-exact"})
     manifest = RESEARCH_APPLICATION_MANIFEST
-    env = manifest.environment or build_research_environment_profile(settings)
     governance = build_reference_production_control_plane_governance(env)
     recording = _RecordingEvaluator()
     launcher = ReferenceProductionLifecycleLauncher(
@@ -360,13 +375,20 @@ def test_adr12_reference_path_reuses_activation_request_mutation_id() -> None:
         ),
         environment_tenant_resolver=governance.environment_tenant_resolver,
     )
-    launcher.deploy_and_activate(
+    _reference_deploy_and_activate(
+        launcher,
         projection_input,
         activation_request,
         principal=governance.principal,
     )
-    assert len(recording.calls) == 1
-    assert recording.calls[0].mutation_id == "mut-adr12-exact"
+    assert len(recording.calls) == 2
+    activation_calls = [
+        call
+        for call in recording.calls
+        if call.mutation_type == "agent_distribution.activate_runtime_revision"
+    ]
+    assert len(activation_calls) == 1
+    assert activation_calls[0].mutation_id == "mut-adr12-exact"
 
 
 def test_adr13_revision_token_parity_between_admin_and_reference() -> None:

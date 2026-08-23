@@ -64,6 +64,7 @@ RUNTIME_REVISION_IMMUTABLE_IDENTITY_FIELDS: Final = (
     "materialized_runtime_lock_digest",
     "runtime_graph_digest",
     "materialization_topology",
+    "build_input_digest",
 )
 
 RUNTIME_REVISION_VALIDATION_TRANSITION_FIELDS: Final = frozenset(
@@ -93,6 +94,7 @@ class RuntimeRevision(BaseModel):
     runtime_graph_digest: str | None = None
     materialization_artifact_digest: str | None = None
     materialization_topology: MaterializationTopology | None = None
+    build_input_digest: str | None = None
     policy_certification_evidence_refs: tuple[AgentTrustEvidenceRef, ...] = ()
     revision_state: RuntimeRevisionState
     supersedes_revision_id: str | None = None
@@ -110,6 +112,7 @@ class RuntimeRevision(BaseModel):
         "materialized_runtime_lock_digest",
         "runtime_graph_digest",
         "materialization_artifact_digest",
+        "build_input_digest",
         "supersedes_revision_id",
         "rollback_target_revision_id",
     )

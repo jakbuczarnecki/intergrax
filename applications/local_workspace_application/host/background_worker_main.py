@@ -15,6 +15,9 @@ from intergrax.applications._shared.production_process_composition import (
     create_reference_production_process_composition,
 )
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
+from intergrax.applications._shared.registry_projection_input_bundle import (
+    reference_admission_mutation_id,
+)
 from intergrax.applications._shared.reference_production_governance_wiring import (
     wire_governed_reference_production_launcher,
 )
@@ -49,6 +52,9 @@ def activate_local_workspace_reference_production_authority(
         projection_input,
         activation_request,
         principal=governance.principal,
+        admission_mutation_id=reference_admission_mutation_id(
+            projection_input.runtime_revision.runtime_revision_id
+        ),
     )
     registry_projection = bootstrap_production_registry_projection(
         application_id=LOCAL_WORKSPACE_APPLICATION_MANIFEST.app_id,

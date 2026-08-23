@@ -19,6 +19,7 @@ from intergrax.agent_distribution.admin_models import (
     BuildApplicationRevisionRequest,
 )
 from intergrax.agent_distribution.control_plane_governance import (
+    MUTATION_TYPE_ADMIT_RUNTIME_REVISION,
     MUTATION_TYPE_BUILD_RUNTIME_REVISION,
     StaticApplicationEnvironmentTenantResolver,
     TenantScopedControlPlaneMutationEvaluator,
@@ -73,6 +74,7 @@ _CONTROL_PLANE_GOVERNANCE_SLICE_FILES = (
     "intergrax/runtime/governance/control_plane_mutation_authorization.py",
     "intergrax/agent_distribution/control_plane_governance.py",
     "intergrax/agent_distribution/admin_service.py",
+    "intergrax/applications/_shared/reference_production_lifecycle.py",
     "intergrax/applications/_shared/agent_platform_admin_routes.py",
 )
 
@@ -161,6 +163,53 @@ def _build_mutation_calls(evaluator: _RecordingEvaluator) -> list[ControlPlaneMu
 def _build_payload(revision_id: str, mutation_id: str = "mut-build") -> dict[str, object]:
     request = _build_request(revision_id, mutation_id=mutation_id)
     return request.model_dump(mode="json")
+
+
+def _research_reference_input(
+    revision_id: str,
+) -> tuple[object, object, object]:
+    from intergrax.applications._shared.registry_projection_input_bundle import (
+        build_reference_activation_request,
+        build_reference_registry_projection_input_bundle,
+    )
+    from research_application.host.agent_builders import RESEARCH_AGENT_BUILDERS
+    from research_application.host.settings import ResearchBackendSettings
+    from research_application.host.wiring import build_research_environment_profile
+    from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
+
+    settings = ResearchBackendSettings(use_nexus_loop=True)
+    manifest = RESEARCH_APPLICATION_MANIFEST
+    env = manifest.environment or build_research_environment_profile(settings)
+    projection_input = build_reference_registry_projection_input_bundle(
+        manifest,
+        env,
+        builders=RESEARCH_AGENT_BUILDERS,
+        runtime_revision_id=revision_id,
+        enabled_contract_stems=frozenset({"research"}),
+    )
+    activation_request = build_reference_activation_request(projection_input)
+    return projection_input, activation_request, env
+
+
+def _reference_deploy_and_activate(
+    launcher,
+    projection_input,
+    activation_request,
+    *,
+    principal: RequestIdentity,
+):
+    from intergrax.applications._shared.registry_projection_input_bundle import (
+        reference_admission_mutation_id,
+    )
+
+    return launcher.deploy_and_activate(
+        projection_input,
+        activation_request,
+        principal=principal,
+        admission_mutation_id=reference_admission_mutation_id(
+            projection_input.runtime_revision.runtime_revision_id
+        ),
+    )
 
 
 def test_adb1_build_allow_persists_once() -> None:
@@ -535,13 +584,303 @@ def test_adb21_zero_dynamic_access_in_governance_slice() -> None:
         assert _FORBIDDEN_DYNAMIC_PATTERNS.search(source) is None, relative_path
 
 
-def test_adb22_production_build_bypass_inventory() -> None:
-    """Reference production lifecycle persists revisions without admin build — classified bootstrap."""
+def test_r1_2_same_id_different_python_version_conflicts() -> None:
+    stack = build_admin_stack()
+    _install_enable_with_allow_boundary(stack)
+    _build_revision(stack, "rev-r1-2")
+    different_python = _build_request("rev-r1-2", mutation_id="mut-r1-2-b").model_copy(
+        update={"python_version": "3.11"}
+    )
+    with pytest.raises(RuntimeRevisionConflict):
+        stack.service.build_application_revision(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            request=different_python,
+            principal=admin_test_principal(),
+        )
+
+
+def test_r1_3_same_id_different_source_roots_conflicts() -> None:
+    stack = build_admin_stack()
+    _install_enable_with_allow_boundary(stack)
+    _build_revision(stack, "rev-r1-3")
+    different_source = _build_request("rev-r1-3", mutation_id="mut-r1-3-b").model_copy(
+        update={"application_source_root": "applications/other-app"}
+    )
+    with pytest.raises(RuntimeRevisionConflict):
+        stack.service.build_application_revision(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            request=different_source,
+            principal=admin_test_principal(),
+        )
+
+
+def test_r1_4_same_id_different_resolver_conflicts() -> None:
+    stack = build_admin_stack()
+    _install_enable_with_allow_boundary(stack)
+    _build_revision(stack, "rev-r1-4")
+    different_resolver = _build_request("rev-r1-4", mutation_id="mut-r1-4-b").model_copy(
+        update={"resolver_algorithm_version": "9.9.9"}
+    )
+    with pytest.raises(RuntimeRevisionConflict):
+        stack.service.build_application_revision(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            request=different_resolver,
+            principal=admin_test_principal(),
+        )
+
+
+def test_r1_5_auth_persist_identity_parity() -> None:
+    evaluator = _RecordingEvaluator()
+    stack = _prepare_build_evaluator_stack(evaluator)
+    request = _build_request("rev-r1-5", mutation_id="mut-r1-5")
+    result = stack.service.build_application_revision(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        request=request,
+        principal=admin_test_principal(),
+    )
+    stored = stack.service._revision_store.get_revision(result.runtime_revision_id)
+    assert stored is not None
+    assert stored.build_input_digest is not None
+    build_calls = _build_mutation_calls(evaluator)
+    assert len(build_calls) == 1
+    target = build_calls[0].target_revision
+    identity_digest = build_runtime_revision_identity_digest(
+        runtime_revision_id=request.runtime_revision_id,
+        application_release_id=request.application_release_id,
+        platform_version=request.platform_version,
+        effective_roster_revision_id=stored.effective_roster_revision_id,
+        lock_digest=stored.materialized_runtime_lock_digest or "",
+        graph_digest=stored.runtime_graph_digest or "",
+        materialization_topology=request.materialization_topology.value,
+        build_input_digest=stored.build_input_digest,
+    )
+    assert f"digest:{identity_digest}" in target
+
+
+def test_r1_7_reference_admission_allow_persists_revision() -> None:
+    from intergrax.applications._shared.production_process_composition import (
+        create_reference_production_process_composition,
+    )
+    from intergrax.applications._shared.reference_production_governance_wiring import (
+        build_reference_production_control_plane_governance,
+    )
+    from intergrax.applications._shared.reference_production_lifecycle import (
+        ReferenceProductionLifecycleLauncher,
+    )
+    from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
+
+    composition = create_reference_production_process_composition()
+    projection_input, activation_request, env = _research_reference_input("rev-r1-7")
+    manifest = RESEARCH_APPLICATION_MANIFEST
+    governance = build_reference_production_control_plane_governance(env)
+    launcher = ReferenceProductionLifecycleLauncher(
+        composition,
+        mutation_authorization_boundary=governance.mutation_authorization_boundary,
+        environment_tenant_resolver=governance.environment_tenant_resolver,
+    )
+    before = len(composition.agent_platform_runtime.distribution_state.revisions)
+    _reference_deploy_and_activate(
+        launcher,
+        projection_input,
+        activation_request,
+        principal=governance.principal,
+    )
+    assert len(composition.agent_platform_runtime.distribution_state.revisions) == before + 1
+
+
+def test_r1_8_reference_admission_deny_zero_revision_writes() -> None:
+    from intergrax.applications._shared.production_process_composition import (
+        create_reference_production_process_composition,
+    )
+    from intergrax.applications._shared.reference_production_governance_wiring import (
+        build_reference_production_control_plane_governance,
+    )
+    from intergrax.applications._shared.reference_production_lifecycle import (
+        ReferenceProductionLifecycleGovernanceBlockedError,
+        ReferenceProductionLifecycleLauncher,
+    )
+
+    composition = create_reference_production_process_composition()
+    projection_input, activation_request, env = _research_reference_input("rev-r1-8")
+    governance = build_reference_production_control_plane_governance(env)
+    launcher = ReferenceProductionLifecycleLauncher(
+        composition,
+        mutation_authorization_boundary=ControlPlaneMutationAuthorizationBoundary(
+            evaluator=_RecordingEvaluator(
+                decision=PolicyDecision(action=PolicyAction.DENY, reason="deny")
+            )
+        ),
+        environment_tenant_resolver=governance.environment_tenant_resolver,
+    )
+    before = len(composition.agent_platform_runtime.distribution_state.revisions)
+    with pytest.raises(ReferenceProductionLifecycleGovernanceBlockedError):
+        _reference_deploy_and_activate(
+            launcher,
+            projection_input,
+            activation_request,
+            principal=governance.principal,
+        )
+    assert len(composition.agent_platform_runtime.distribution_state.revisions) == before
+
+
+def test_r1_9_reference_admission_require_human_zero_writes() -> None:
+    from intergrax.applications._shared.production_process_composition import (
+        create_reference_production_process_composition,
+    )
+    from intergrax.applications._shared.reference_production_governance_wiring import (
+        build_reference_production_control_plane_governance,
+    )
+    from intergrax.applications._shared.reference_production_lifecycle import (
+        ReferenceProductionLifecycleGovernanceBlockedError,
+        ReferenceProductionLifecycleLauncher,
+    )
+
+    composition = create_reference_production_process_composition()
+    projection_input, activation_request, env = _research_reference_input("rev-r1-9")
+    governance = build_reference_production_control_plane_governance(env)
+    launcher = ReferenceProductionLifecycleLauncher(
+        composition,
+        mutation_authorization_boundary=ControlPlaneMutationAuthorizationBoundary(
+            evaluator=_RecordingEvaluator(
+                decision=PolicyDecision(action=PolicyAction.REQUIRE_HUMAN, reason="hitl")
+            )
+        ),
+        environment_tenant_resolver=governance.environment_tenant_resolver,
+    )
+    before = len(composition.agent_platform_runtime.distribution_state.revisions)
+    with pytest.raises(ReferenceProductionLifecycleGovernanceBlockedError) as exc:
+        _reference_deploy_and_activate(
+            launcher,
+            projection_input,
+            activation_request,
+            principal=governance.principal,
+        )
+    assert exc.value.policy_action == PolicyAction.REQUIRE_HUMAN.value
+    assert exc.value.authorization_scope is not None
+    assert exc.value.authorization_evidence is not None
+    assert len(composition.agent_platform_runtime.distribution_state.revisions) == before
+
+
+class _AdmissionAllowActivationDenyEvaluator:
+    def evaluate(self, request: ControlPlaneMutationRequest) -> PolicyDecision:
+        if request.mutation_type == MUTATION_TYPE_ADMIT_RUNTIME_REVISION:
+            return PolicyDecision(action=PolicyAction.ALLOW, reason="admit")
+        return PolicyDecision(action=PolicyAction.DENY, reason="activation-deny")
+
+
+def test_r1_11_admission_allow_activation_deny_leaves_traffic_unchanged() -> None:
+    from intergrax.applications._shared.production_process_composition import (
+        create_reference_production_process_composition,
+    )
+    from intergrax.applications._shared.reference_production_governance_wiring import (
+        build_reference_production_control_plane_governance,
+    )
+    from intergrax.applications._shared.reference_production_lifecycle import (
+        ReferenceProductionLifecycleGovernanceBlockedError,
+        ReferenceProductionLifecycleLauncher,
+    )
+    from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
+
+    composition = create_reference_production_process_composition()
+    projection_input, activation_request, env = _research_reference_input("rev-r1-11")
+    manifest = RESEARCH_APPLICATION_MANIFEST
+    governance = build_reference_production_control_plane_governance(env)
+    launcher = ReferenceProductionLifecycleLauncher(
+        composition,
+        mutation_authorization_boundary=ControlPlaneMutationAuthorizationBoundary(
+            evaluator=_AdmissionAllowActivationDenyEvaluator()
+        ),
+        environment_tenant_resolver=governance.environment_tenant_resolver,
+    )
+    with pytest.raises(ReferenceProductionLifecycleGovernanceBlockedError):
+        _reference_deploy_and_activate(
+            launcher,
+            projection_input,
+            activation_request,
+            principal=governance.principal,
+        )
+    assert composition.agent_platform_runtime.distribution_state.revisions.get("rev-r1-11") is not None
+    serving = composition.agent_platform_runtime.stores.serving_store.get_serving_record(
+        manifest.app_id,
+        env.profile_id,
+    )
+    assert serving is None or serving.traffic_serving_revision_id is None
+
+
+def test_r1_15_reference_governance_error_typed_evidence_scope() -> None:
+    import inspect
+    from intergrax.applications._shared import reference_production_lifecycle as module
+    from intergrax.applications._shared.reference_production_lifecycle import (
+        ReferenceProductionLifecycleGovernanceBlockedError,
+    )
+
+    signature = inspect.signature(ReferenceProductionLifecycleGovernanceBlockedError.__init__)
+    evidence = signature.parameters["authorization_evidence"].annotation
+    scope = signature.parameters["authorization_scope"].annotation
+    assert "object" not in str(evidence)
+    assert "Any" not in str(evidence)
+    assert "object" not in str(scope)
+    assert "Any" not in str(scope)
+    source = inspect.getsource(module.ReferenceProductionLifecycleGovernanceBlockedError)
+    assert "object | None" not in source
+
+
+def test_adb22_production_revision_write_bypass_inventory() -> None:
+    production_roots = (_REPO_ROOT / "intergrax",)
+    hits: dict[str, list[str]] = {}
+    for root in production_roots:
+        if not root.exists():
+            continue
+        for path in root.rglob("*.py"):
+            posix = path.as_posix()
+            if "/tests/" in posix or path.name.startswith("test_"):
+                continue
+            if "/docker/runtime-context/" in posix:
+                continue
+            text = path.read_text(encoding="utf-8")
+            markers = [
+                name
+                for name in (
+                    "persist_candidate_revision(",
+                    "mark_validated(",
+                    "persist_lock(",
+                    "materialize(",
+                )
+                if name in text
+            ]
+            if not markers:
+                continue
+            relative = path.relative_to(_REPO_ROOT).as_posix()
+            hits[relative] = markers
     classification = {
-        "AgentPlatformAdminService.build_application_revision": "governed_orchestration",
-        "reference_production_lifecycle": "bootstrap_reference_path",
+        "intergrax/agent_distribution/admin_service.py": "governed_build_orchestration",
+        "intergrax/applications/_shared/reference_production_lifecycle.py": (
+            "governed_reference_admission_orchestration"
+        ),
+        "intergrax/agent_distribution/runtime_revision_service.py": "domain_executor",
+        "intergrax/agent_distribution/in_memory_stores.py": "store_executor",
+        "intergrax/agent_distribution/materialization_service.py": "materialization_executor",
+        "intergrax/agent_distribution/materialization_adapters.py": "materialization_executor",
+        "intergrax/agent_distribution/stores.py": "store_contract",
+        "intergrax/runtime/vendor_knowledge/jira_indexed_materializers.py": "unrelated_vendor",
+        "intergrax/runtime/vendor_knowledge/ms365_graph_indexed_materializers.py": "unrelated_vendor",
+        "intergrax/runtime/vendor_knowledge/confluence_indexed_materializers.py": "unrelated_vendor",
+        "intergrax/runtime/vendor_knowledge/google_workspace_indexed_materializers.py": "unrelated_vendor",
     }
-    assert classification["reference_production_lifecycle"] == "bootstrap_reference_path"
+    orchestration_paths = {
+        path
+        for path, markers in hits.items()
+        if "persist_candidate_revision(" in markers or "mark_validated(" in markers
+    }
+    for path in orchestration_paths:
+        assert path in classification, f"unclassified revision-write surface: {path}"
+    assert classification[
+        "intergrax/applications/_shared/reference_production_lifecycle.py"
+    ].startswith("governed_")
 
 
 def test_adb23_desired_state_regression_still_green() -> None:

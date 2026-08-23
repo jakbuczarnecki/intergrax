@@ -12,6 +12,7 @@ from intergrax.applications._shared.registry_projection import MaterializedRegis
 from intergrax.applications._shared.registry_projection_input_bundle import (
     build_reference_activation_request,
     build_reference_registry_projection_input_bundle,
+    reference_admission_mutation_id,
 )
 from intergrax.applications._shared.reference_production_governance_wiring import (
     wire_governed_reference_production_launcher,
@@ -74,5 +75,8 @@ def create_lkw_hosted_test_process_composition(
         projection_input,
         activation_request,
         principal=governance.principal,
+        admission_mutation_id=reference_admission_mutation_id(
+            projection_input.runtime_revision.runtime_revision_id
+        ),
     )
     return composition

@@ -37,6 +37,7 @@ MUTATION_TYPE_UPDATE_BINDING_CONFIG = "agent_distribution.update_binding_config"
 MUTATION_TYPE_ENABLE_BINDING = "agent_distribution.enable_binding"
 MUTATION_TYPE_DISABLE_BINDING = "agent_distribution.disable_binding"
 MUTATION_TYPE_BUILD_RUNTIME_REVISION = "agent_distribution.build_runtime_revision"
+MUTATION_TYPE_ADMIT_RUNTIME_REVISION = "agent_distribution.admit_runtime_revision"
 
 _INSTALL_ABSENT_TOKEN = "inst:__absent__"
 _BINDING_ABSENT_TOKEN = "binding:__absent__"
@@ -193,7 +194,11 @@ def build_input_digest(
     resolver_algorithm_id: str,
     resolver_algorithm_version: str,
 ) -> str:
-    """Deterministic digest of semantic build-driving inputs (no local output paths)."""
+    """Deterministic digest of semantic build-driving inputs.
+
+    ``output_root`` and other pure destination paths are excluded because they do
+    not change artifact semantics — only where artifacts are written.
+    """
     payload = {
         "application_release_id": application_release_id,
         "platform_version": platform_version,
@@ -239,6 +244,63 @@ def build_runtime_revision_target_token(
     identity_digest: str,
 ) -> str:
     return f"runtime_revision:{runtime_revision_id}|digest:{identity_digest}"
+
+
+def runtime_revision_admission_identity_digest(
+    *,
+    runtime_revision_id: str,
+    application_release_id: str,
+    platform_version: str,
+    effective_roster_revision_id: str,
+    lock_digest: str,
+    graph_digest: str,
+    materialization_topology: str,
+    materialization_artifact_digest: str,
+    build_input_digest: str | None,
+) -> str:
+    payload = {
+        "runtime_revision_id": runtime_revision_id,
+        "application_release_id": application_release_id,
+        "platform_version": platform_version,
+        "effective_roster_revision_id": effective_roster_revision_id,
+        "lock_digest": lock_digest,
+        "graph_digest": graph_digest,
+        "materialization_topology": materialization_topology,
+        "materialization_artifact_digest": materialization_artifact_digest,
+        "build_input_digest": build_input_digest or "__absent__",
+    }
+    return request_digest_for_payload(payload)
+
+
+def build_admit_runtime_revision_mutation_request(
+    *,
+    principal: RequestIdentity,
+    application_id: str,
+    application_environment_id: str,
+    mutation_id: str,
+    runtime_revision_id: str,
+    identity_digest: str,
+) -> ControlPlaneMutationRequest:
+    return ControlPlaneMutationRequest(
+        mutation_id=mutation_id,
+        mutation_type=MUTATION_TYPE_ADMIT_RUNTIME_REVISION,
+        principal=principal,
+        resource_scope=application_environment_resource_scope(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        resource_type=AGENT_DISTRIBUTION_RESOURCE_TYPE,
+        resource_id=application_environment_resource_id(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        current_revision=runtime_revision_absent_token(runtime_revision_id),
+        target_revision=build_runtime_revision_target_token(
+            runtime_revision_id=runtime_revision_id,
+            identity_digest=identity_digest,
+        ),
+        risk_classification=ControlPlaneMutationRisk.HIGH,
+    )
 
 
 def serving_revision_token(

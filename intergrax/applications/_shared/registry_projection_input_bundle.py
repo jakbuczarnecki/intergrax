@@ -250,6 +250,14 @@ def build_reference_registry_projection_input_bundle(
     )
 
 
+def reference_admission_mutation_id(runtime_revision_id: str) -> str:
+    """Explicit caller-stable mutation identity for reference revision admission."""
+    normalized = runtime_revision_id.strip()
+    if not normalized:
+        raise ValueError("runtime_revision_id must be non-empty")
+    return f"reference-admit:{normalized}"
+
+
 def build_reference_activation_request(
     projection_input: RegistryProjectionInputBundle,
     *,
@@ -274,5 +282,6 @@ def build_reference_activation_request(
 __all__ = [
     "build_reference_activation_request",
     "build_reference_registry_projection_input_bundle",
+    "reference_admission_mutation_id",
     "reference_artifact_locator_for_revision",
 ]
