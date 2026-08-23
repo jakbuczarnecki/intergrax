@@ -26,6 +26,10 @@ class ControlPlaneMutationAuthorizationBoundary:
     def __init__(self, *, evaluator: ControlPlaneMutationPolicyEvaluator) -> None:
         self._evaluator = evaluator
 
+    @property
+    def evaluator(self) -> ControlPlaneMutationPolicyEvaluator:
+        return self._evaluator
+
     def authorize(
         self,
         request: ControlPlaneMutationRequest,

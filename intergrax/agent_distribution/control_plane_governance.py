@@ -5,14 +5,20 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Protocol
 
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.control_plane_mutation import (
+    ControlPlaneMutationAuthorizationResult,
+    ControlPlaneMutationPolicyEvaluator,
     ControlPlaneMutationRequest,
     ControlPlaneMutationRisk,
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
+)
 
 AGENT_DISTRIBUTION_RESOURCE_TYPE = "agent_distribution.application_environment"
 MUTATION_TYPE_ACTIVATE_RUNTIME_REVISION = "agent_distribution.activate_runtime_revision"
@@ -29,6 +35,22 @@ class ApplicationEnvironmentTenantResolver(Protocol):
         application_environment_id: str,
     ) -> str:
         """Return canonical tenant id owning ``application_id`` / ``application_environment_id``."""
+
+
+@dataclass(frozen=True, slots=True)
+class StaticApplicationEnvironmentTenantResolver:
+    """Explicit single-tenant host mapping for control-plane mutation authority."""
+
+    tenant_id: str
+
+    def resolve_tenant_id(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+    ) -> str:
+        del application_id, application_environment_id
+        return self.tenant_id
 
 
 def application_environment_resource_id(
@@ -132,33 +154,70 @@ def build_rollback_mutation_request(
 
 
 class TenantScopedControlPlaneMutationEvaluator:
-    """Fail closed when principal tenant does not own the environment scope."""
+    """Fail closed when tenant authority or permission policy is not explicitly configured."""
 
     def __init__(
         self,
         *,
         tenant_resolver: ApplicationEnvironmentTenantResolver | None = None,
-        inner: object | None = None,
+        inner: ControlPlaneMutationPolicyEvaluator | None = None,
     ) -> None:
         self._tenant_resolver = tenant_resolver
         self._inner = inner
 
     def evaluate(self, request: ControlPlaneMutationRequest) -> PolicyDecision:
-        if self._tenant_resolver is not None:
-            application_id, application_environment_id = _parse_resource_id(request.resource_id)
-            environment_tenant = self._tenant_resolver.resolve_tenant_id(
-                application_id=application_id,
-                application_environment_id=application_environment_id,
+        if self._tenant_resolver is None:
+            return PolicyDecision(
+                action=PolicyAction.DENY,
+                reason="tenant_authority_not_configured",
+                policy_rule_id="agent_distribution.tenant_scope",
             )
-            if environment_tenant != request.principal.tenant_id:
-                return PolicyDecision(
-                    action=PolicyAction.DENY,
-                    reason="tenant_authority_mismatch",
-                    policy_rule_id="agent_distribution.tenant_scope",
-                )
-        if self._inner is not None and hasattr(self._inner, "evaluate"):
-            return self._inner.evaluate(request)
-        return PolicyDecision(action=PolicyAction.ALLOW, reason="tenant_scope_ok")
+        application_id, application_environment_id = _parse_resource_id(request.resource_id)
+        environment_tenant = self._tenant_resolver.resolve_tenant_id(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        if environment_tenant != request.principal.tenant_id:
+            return PolicyDecision(
+                action=PolicyAction.DENY,
+                reason="tenant_authority_mismatch",
+                policy_rule_id="agent_distribution.tenant_scope",
+            )
+        if self._inner is None:
+            return PolicyDecision(
+                action=PolicyAction.DENY,
+                reason="control_plane_policy_not_configured",
+                policy_rule_id="agent_distribution.control_plane_policy",
+            )
+        return self._inner.evaluate(request)
+
+
+def compose_tenant_scoped_mutation_boundary(
+    *,
+    policy_evaluator: ControlPlaneMutationPolicyEvaluator,
+    tenant_resolver: ApplicationEnvironmentTenantResolver,
+) -> ControlPlaneMutationAuthorizationBoundary:
+    """Compose canonical tenant scope + permission policy for one mutation boundary."""
+    return ControlPlaneMutationAuthorizationBoundary(
+        evaluator=TenantScopedControlPlaneMutationEvaluator(
+            tenant_resolver=tenant_resolver,
+            inner=policy_evaluator,
+        )
+    )
+
+
+def authorize_scoped_control_plane_mutation(
+    *,
+    boundary: ControlPlaneMutationAuthorizationBoundary,
+    tenant_resolver: ApplicationEnvironmentTenantResolver,
+    request: ControlPlaneMutationRequest,
+) -> ControlPlaneMutationAuthorizationResult:
+    """Authorize one mutation with explicit tenant authority and configured policy."""
+    scoped_boundary = compose_tenant_scoped_mutation_boundary(
+        policy_evaluator=boundary.evaluator,
+        tenant_resolver=tenant_resolver,
+    )
+    return scoped_boundary.authorize(request)
 
 
 def _parse_resource_id(resource_id: str) -> tuple[str, str]:

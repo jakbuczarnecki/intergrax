@@ -262,6 +262,7 @@ def build_reference_activation_request(
     if artifact_digest is None:
         raise ValueError("projection input requires materialization_artifact_digest")
     return ActivateRuntimeRevisionRequest(
+        mutation_id=f"reference-activate:{revision_id}",
         runtime_revision_id=revision_id,
         artifact_locator=reference_artifact_locator_for_revision(revision_id),
         expected_artifact_digest=artifact_digest,

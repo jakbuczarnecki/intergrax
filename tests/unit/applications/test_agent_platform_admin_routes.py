@@ -16,6 +16,9 @@ from intergrax.integrations.contracts.identity_provider import (
     AGENT_PLATFORM_ADMIN_ROLE,
     IdentityUser,
 )
+from intergrax.agent_distribution.control_plane_governance import (
+    StaticApplicationEnvironmentTenantResolver,
+)
 from tests.unit.agent_distribution.test_agent_platform_admin_service import (
     _DIGEST,
     _META_REF,
@@ -61,6 +64,10 @@ def _client(
     dev_auth: bool = True,
 ) -> tuple[TestClient, object]:
     stack = build_admin_stack(with_catalog=with_catalog)
+    if dev_auth:
+        stack.service._environment_tenant_resolver = (  # type: ignore[attr-defined]
+            StaticApplicationEnvironmentTenantResolver("default")
+        )
     app = FastAPI()
     if dev_auth:
         app.state.harness_auth = HarnessAuthState(require_api_key=False)

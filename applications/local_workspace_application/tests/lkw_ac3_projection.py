@@ -13,8 +13,8 @@ from intergrax.applications._shared.registry_projection_input_bundle import (
     build_reference_activation_request,
     build_reference_registry_projection_input_bundle,
 )
-from intergrax.applications._shared.reference_production_lifecycle import (
-    ReferenceProductionLifecycleLauncher,
+from intergrax.applications._shared.reference_production_governance_wiring import (
+    wire_governed_reference_production_launcher,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from local_workspace_application.host.agent_builders import LOCAL_WORKSPACE_AGENT_BUILDERS
@@ -69,8 +69,10 @@ def create_lkw_hosted_test_process_composition(
         settings=resolved_settings,
     )
     activation_request = build_reference_activation_request(projection_input)
-    ReferenceProductionLifecycleLauncher(composition).deploy_and_activate(
+    launcher, governance = wire_governed_reference_production_launcher(composition, env)
+    launcher.deploy_and_activate(
         projection_input,
         activation_request,
+        principal=governance.principal,
     )
     return composition

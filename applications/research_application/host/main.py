@@ -16,8 +16,8 @@ from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
     create_reference_production_process_composition,
 )
-from intergrax.applications._shared.reference_production_lifecycle import (
-    ReferenceProductionLifecycleLauncher,
+from intergrax.applications._shared.reference_production_governance_wiring import (
+    wire_governed_reference_production_launcher,
 )
 from research_application.host.factory import create_research_backend_app
 from research_application.host.reference_lifecycle_input import build_research_reference_lifecycle_input
@@ -69,9 +69,13 @@ def run_reference_production() -> None:
 
     composition = create_reference_production_process_composition()
     projection_input, activation_request = build_research_reference_lifecycle_input()
-    ReferenceProductionLifecycleLauncher(composition).deploy_and_activate(
+    manifest = RESEARCH_APPLICATION_MANIFEST
+    env = manifest.environment or build_research_environment_profile()
+    launcher, governance = wire_governed_reference_production_launcher(composition, env)
+    launcher.deploy_and_activate(
         projection_input,
         activation_request,
+        principal=governance.principal,
     )
     host = os.environ.get("RESEARCH_BACKEND_HOST", "0.0.0.0")
     port = int(os.environ.get("RESEARCH_BACKEND_PORT", "8010"))

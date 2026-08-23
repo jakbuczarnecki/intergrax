@@ -15,8 +15,8 @@ from intergrax.applications._shared.production_process_composition import (
     create_reference_production_process_composition,
 )
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
-from intergrax.applications._shared.reference_production_lifecycle import (
-    ReferenceProductionLifecycleLauncher,
+from intergrax.applications._shared.reference_production_governance_wiring import (
+    wire_governed_reference_production_launcher,
 )
 from local_workspace_application.host.background_worker_factory import (
     build_local_workspace_background_worker_wiring,
@@ -43,11 +43,13 @@ def activate_local_workspace_reference_production_authority(
     projection_input, activation_request = build_local_workspace_reference_lifecycle_input(
         resolved_settings,
     )
-    ReferenceProductionLifecycleLauncher(composition).deploy_and_activate(
+    env = build_local_workspace_environment_profile(resolved_settings)
+    launcher, governance = wire_governed_reference_production_launcher(composition, env)
+    launcher.deploy_and_activate(
         projection_input,
         activation_request,
+        principal=governance.principal,
     )
-    env = build_local_workspace_environment_profile(resolved_settings)
     registry_projection = bootstrap_production_registry_projection(
         application_id=LOCAL_WORKSPACE_APPLICATION_MANIFEST.app_id,
         application_environment_id=env.profile_id,

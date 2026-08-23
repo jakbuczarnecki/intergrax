@@ -16,6 +16,11 @@ from dataclasses import dataclass
 
 from intergrax.agent_distribution.activation import ActivationService
 from intergrax.agent_distribution.admin_models import ActivateRuntimeRevisionRequest
+from intergrax.agent_distribution.control_plane_governance import (
+    ApplicationEnvironmentTenantResolver,
+    authorize_scoped_control_plane_mutation,
+    build_activation_mutation_request,
+)
 from intergrax.agent_distribution.deployment import FakeInMemoryRuntimeDeploymentAdapter
 from intergrax.agent_distribution.in_memory_stores import (
     InMemoryApplicationEnvironmentActivationStore,
@@ -36,6 +41,12 @@ from intergrax.applications._shared.registry_projection import (
     MaterializedRegistryProjection,
     RegistryProjectionInputBundle,
     RegistryProjectionInputStore,
+)
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.control_plane_mutation import ControlPlaneMutationAuthorizationResult
+from intergrax.contracts.runtime_policy import PolicyAction
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
 )
 
 
@@ -62,6 +73,23 @@ class ReferenceProductionLifecycleResult:
 
 class ReferenceProductionLifecycleError(ValueError):
     """Reference lifecycle launcher input or precondition violation."""
+
+
+class ReferenceProductionLifecycleGovernanceBlockedError(ReferenceProductionLifecycleError):
+    """Control-plane governance blocked reference production activation."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        policy_action: str,
+        authorization_evidence: object | None = None,
+        authorization_scope: object | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.policy_action = policy_action
+        self.authorization_evidence = authorization_evidence
+        self.authorization_scope = authorization_scope
 
 
 def wire_reference_production_lifecycle_services(
@@ -101,9 +129,13 @@ class ReferenceProductionLifecycleLauncher:
         composition: ProductionProcessComposition,
         *,
         services: ReferenceProductionLifecycleServices | None = None,
+        mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
+        environment_tenant_resolver: ApplicationEnvironmentTenantResolver | None = None,
     ) -> None:
         self._composition = composition
         self._services = services or wire_reference_production_lifecycle_services(composition)
+        self._mutation_authorization_boundary = mutation_authorization_boundary
+        self._environment_tenant_resolver = environment_tenant_resolver
 
     @property
     def process_composition(self) -> ProductionProcessComposition:
@@ -117,6 +149,8 @@ class ReferenceProductionLifecycleLauncher:
         self,
         projection_input: RegistryProjectionInputBundle,
         activation_request: ActivateRuntimeRevisionRequest,
+        *,
+        principal: RequestIdentity,
     ) -> ReferenceProductionLifecycleResult:
         """Prepare registry projection and commit activation for one explicit revision."""
         revision = projection_input.runtime_revision
@@ -163,6 +197,21 @@ class ReferenceProductionLifecycleLauncher:
             runtime_revision_id=runtime_revision_id,
             artifact_locator=activation_request.artifact_locator,
         )
+        serving_store = self._composition.agent_platform_runtime.stores.serving_store
+        serving = serving_store.get_serving_record(application_id, application_environment_id)
+        current_traffic_revision_id = (
+            serving.traffic_serving_revision_id if serving is not None else None
+        )
+        current_pointer_revision = serving.serving_pointer_revision if serving is not None else 0
+        self._authorize_activation(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            mutation_id=activation_request.mutation_id,
+            current_traffic_revision_id=current_traffic_revision_id,
+            current_serving_pointer_revision=current_pointer_revision,
+            target_runtime_revision_id=runtime_revision_id,
+        )
         committed = activation.commit_activation(
             application_id=application_id,
             application_environment_id=application_environment_id,
@@ -191,9 +240,90 @@ class ReferenceProductionLifecycleLauncher:
             resolved_projection=resolved,
         )
 
+    def _require_mutation_authorization_boundary(
+        self,
+    ) -> ControlPlaneMutationAuthorizationBoundary:
+        boundary = self._mutation_authorization_boundary
+        if boundary is None:
+            raise ReferenceProductionLifecycleGovernanceBlockedError(
+                "reference production activation requires ControlPlaneMutationAuthorizationBoundary",
+                policy_action=PolicyAction.DENY.value,
+            )
+        return boundary
+
+    def _require_environment_tenant_resolver(
+        self,
+    ) -> ApplicationEnvironmentTenantResolver:
+        resolver = self._environment_tenant_resolver
+        if resolver is None:
+            raise ReferenceProductionLifecycleGovernanceBlockedError(
+                "reference production activation requires ApplicationEnvironmentTenantResolver",
+                policy_action=PolicyAction.DENY.value,
+            )
+        return resolver
+
+    def _authorize_activation(
+        self,
+        *,
+        principal: RequestIdentity,
+        application_id: str,
+        application_environment_id: str,
+        mutation_id: str,
+        current_traffic_revision_id: str | None,
+        current_serving_pointer_revision: int,
+        target_runtime_revision_id: str,
+    ) -> ControlPlaneMutationAuthorizationResult:
+        resolver = self._require_environment_tenant_resolver()
+        boundary = self._require_mutation_authorization_boundary()
+        request = build_activation_mutation_request(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            mutation_id=mutation_id,
+            current_traffic_revision_id=current_traffic_revision_id,
+            current_serving_pointer_revision=current_serving_pointer_revision,
+            target_runtime_revision_id=target_runtime_revision_id,
+        )
+        return self._enforce_authorization_result(
+            authorize_scoped_control_plane_mutation(
+                boundary=boundary,
+                tenant_resolver=resolver,
+                request=request,
+            ),
+        )
+
+    @staticmethod
+    def _enforce_authorization_result(
+        result: ControlPlaneMutationAuthorizationResult,
+    ) -> ControlPlaneMutationAuthorizationResult:
+        if result.permitted:
+            return result
+        action = result.decision.action
+        if action is PolicyAction.REQUIRE_HUMAN:
+            raise ReferenceProductionLifecycleGovernanceBlockedError(
+                "reference production activation requires governed human approval",
+                policy_action=action.value,
+                authorization_evidence=result.evidence,
+                authorization_scope=result.authorization_scope,
+            )
+        if action is PolicyAction.ESCALATE:
+            raise ReferenceProductionLifecycleGovernanceBlockedError(
+                "reference production activation requires escalation",
+                policy_action=action.value,
+                authorization_evidence=result.evidence,
+                authorization_scope=result.authorization_scope,
+            )
+        raise ReferenceProductionLifecycleGovernanceBlockedError(
+            "reference production activation denied by control-plane governance",
+            policy_action=action.value,
+            authorization_evidence=result.evidence,
+            authorization_scope=result.authorization_scope,
+        )
+
 
 __all__ = [
     "ReferenceProductionLifecycleError",
+    "ReferenceProductionLifecycleGovernanceBlockedError",
     "ReferenceProductionLifecycleLauncher",
     "ReferenceProductionLifecycleResult",
     "ReferenceProductionLifecycleServices",

@@ -39,6 +39,7 @@ from intergrax.agent_distribution.binding import ApplicationAgentBinding
 from intergrax.agent_distribution.binding_service import BindingService
 from intergrax.agent_distribution.control_plane_governance import (
     ApplicationEnvironmentTenantResolver,
+    authorize_scoped_control_plane_mutation,
     build_activation_mutation_request,
     build_rollback_mutation_request,
 )
@@ -1019,31 +1020,16 @@ class AgentPlatformAdminService:
             )
         return boundary
 
-    def _validate_environment_tenant_authority(
+    def _require_environment_tenant_resolver(
         self,
-        *,
-        principal: RequestIdentity,
-        application_id: str,
-        application_environment_id: str,
-    ) -> None:
+    ) -> ApplicationEnvironmentTenantResolver:
         resolver = self._environment_tenant_resolver
         if resolver is None:
-            return
-        environment_tenant = resolver.resolve_tenant_id(
-            application_id=application_id,
-            application_environment_id=application_environment_id,
-        )
-        if environment_tenant != principal.tenant_id:
-            raise AgentPlatformAdminGovernanceBlockedError(
-                "AP-11_BLOCKED_BY_TENANT_AUTHORITY",
-                "principal tenant is outside application environment authority scope",
-                policy_action=PolicyAction.DENY.value,
-                authorization_evidence=self._synthetic_tenant_deny_evidence(
-                    principal=principal,
-                    application_id=application_id,
-                    application_environment_id=application_environment_id,
-                ),
+            raise AgentPlatformAdminBlockedError(
+                "AP-11_BLOCKED_BY_MISSING_TENANT_AUTHORITY",
+                "activation/rollback requires ApplicationEnvironmentTenantResolver",
             )
+        return resolver
 
     def _authorize_activation(
         self,
@@ -1056,11 +1042,7 @@ class AgentPlatformAdminService:
         current_serving_pointer_revision: int,
         target_runtime_revision_id: str,
     ) -> ControlPlaneMutationAuthorizationResult:
-        self._validate_environment_tenant_authority(
-            principal=principal,
-            application_id=application_id,
-            application_environment_id=application_environment_id,
-        )
+        resolver = self._require_environment_tenant_resolver()
         boundary = self._require_mutation_authorization_boundary()
         request = build_activation_mutation_request(
             principal=principal,
@@ -1072,7 +1054,11 @@ class AgentPlatformAdminService:
             target_runtime_revision_id=target_runtime_revision_id,
         )
         return self._enforce_authorization_result(
-            boundary.authorize(request),
+            authorize_scoped_control_plane_mutation(
+                boundary=boundary,
+                tenant_resolver=resolver,
+                request=request,
+            ),
             operation="activation",
         )
 
@@ -1087,11 +1073,7 @@ class AgentPlatformAdminService:
         current_serving_pointer_revision: int,
         target_runtime_revision_id: str,
     ) -> ControlPlaneMutationAuthorizationResult:
-        self._validate_environment_tenant_authority(
-            principal=principal,
-            application_id=application_id,
-            application_environment_id=application_environment_id,
-        )
+        resolver = self._require_environment_tenant_resolver()
         boundary = self._require_mutation_authorization_boundary()
         request = build_rollback_mutation_request(
             principal=principal,
@@ -1103,7 +1085,11 @@ class AgentPlatformAdminService:
             target_runtime_revision_id=target_runtime_revision_id,
         )
         return self._enforce_authorization_result(
-            boundary.authorize(request),
+            authorize_scoped_control_plane_mutation(
+                boundary=boundary,
+                tenant_resolver=resolver,
+                request=request,
+            ),
             operation="rollback",
         )
 
@@ -1116,6 +1102,14 @@ class AgentPlatformAdminService:
         if result.permitted:
             return result
         action = result.decision.action
+        if result.decision.reason == "tenant_authority_mismatch":
+            raise AgentPlatformAdminGovernanceBlockedError(
+                "AP-11_BLOCKED_BY_TENANT_AUTHORITY",
+                f"{operation} denied by tenant authority scope",
+                policy_action=action.value,
+                authorization_evidence=result.evidence,
+                authorization_scope=result.authorization_scope,
+            )
         if action is PolicyAction.REQUIRE_HUMAN:
             raise AgentPlatformAdminGovernanceBlockedError(
                 "AP-11_BLOCKED_BY_REQUIRE_HUMAN",

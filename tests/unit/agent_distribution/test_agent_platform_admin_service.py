@@ -26,6 +26,9 @@ from intergrax.agent_distribution.admin_models import (
     UpdateAgentBindingRequest,
 )
 from intergrax.agent_distribution.admin_service import AgentPlatformAdminService
+from intergrax.agent_distribution.control_plane_governance import (
+    StaticApplicationEnvironmentTenantResolver,
+)
 from intergrax.agent_distribution.agent_project_metadata import AgentProjectMetadata
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
@@ -282,6 +285,7 @@ def build_admin_stack(*, with_catalog: bool = True) -> AdminStack:
         catalog_provider=catalog if with_catalog else None,
         dependency_resolver=make_identity_dependency_resolver(),
         mutation_authorization_boundary=allow_mutation_boundary(),
+        environment_tenant_resolver=StaticApplicationEnvironmentTenantResolver("tenant-test"),
     )
     return AdminStack(service=service, state=state, catalog=catalog)
 
