@@ -158,10 +158,15 @@ def test_adr4_tenant_match_and_policy_allow_commits_once() -> None:
 
 
 def test_adr5_policy_deny_zero_commits() -> None:
-    stack = _stack_with_evaluator(
-        _RecordingEvaluator(decision=PolicyDecision(action=PolicyAction.DENY, reason="deny"))
-    )
+    stack = build_admin_stack()
     built = _seed_validated_revision(stack, "rev-adr5")
+    stack.service._mutation_authorization_boundary = (  # type: ignore[attr-defined]
+        ControlPlaneMutationAuthorizationBoundary(
+            evaluator=_RecordingEvaluator(
+                decision=PolicyDecision(action=PolicyAction.DENY, reason="deny")
+            )
+        )
+    )
     with pytest.raises(AgentPlatformAdminGovernanceBlockedError):
         stack.service.activate_revision(
             application_id=_APP,
@@ -179,12 +184,15 @@ def test_adr5_policy_deny_zero_commits() -> None:
 
 
 def test_adr6_require_human_zero_commits_preserves_scope() -> None:
-    stack = _stack_with_evaluator(
-        _RecordingEvaluator(
-            decision=PolicyDecision(action=PolicyAction.REQUIRE_HUMAN, reason="hitl")
+    stack = build_admin_stack()
+    built = _seed_validated_revision(stack, "rev-adr6")
+    stack.service._mutation_authorization_boundary = (  # type: ignore[attr-defined]
+        ControlPlaneMutationAuthorizationBoundary(
+            evaluator=_RecordingEvaluator(
+                decision=PolicyDecision(action=PolicyAction.REQUIRE_HUMAN, reason="hitl")
+            )
         )
     )
-    built = _seed_validated_revision(stack, "rev-adr6")
     with pytest.raises(AgentPlatformAdminGovernanceBlockedError) as exc:
         stack.service.activate_revision(
             application_id=_APP,
@@ -412,8 +420,8 @@ def test_adr14_cas_regression_after_allow() -> None:
 
 def test_adr15_admin_missing_tenant_resolver_blocks_activation() -> None:
     stack = build_admin_stack()
-    stack.service._environment_tenant_resolver = None  # type: ignore[attr-defined]
     built = _seed_validated_revision(stack, "rev-adr15")
+    stack.service._environment_tenant_resolver = None  # type: ignore[attr-defined]
     with pytest.raises(AgentPlatformAdminBlockedError) as exc:
         stack.service.activate_revision(
             application_id=_APP,

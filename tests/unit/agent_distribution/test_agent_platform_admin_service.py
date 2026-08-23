@@ -178,8 +178,9 @@ def _trust() -> AgentInstallationTrustRecord:
     )
 
 
-def _install_request() -> InstallAgentRequest:
+def _install_request(mutation_id: str = "mut-install") -> InstallAgentRequest:
     return InstallAgentRequest(
+        mutation_id=mutation_id,
         installation_id="inst-1",
         installation_slot_id="slot-search",
         package_identity=_PACKAGE,
@@ -189,8 +190,9 @@ def _install_request() -> InstallAgentRequest:
     )
 
 
-def _bind_request() -> BindAgentRequest:
+def _bind_request(mutation_id: str = "mut-bind") -> BindAgentRequest:
     return BindAgentRequest(
+        mutation_id=mutation_id,
         application_binding_id="bind-search",
         logical_agent_id="researcher",
         installation_slot_id="slot-search",
@@ -321,15 +323,18 @@ def _rollback_request(
 
 
 def _install_bind(stack: AdminStack) -> None:
+    principal = admin_test_principal()
     stack.service.install_agent(
         application_id=_APP,
         application_environment_id=_ENV,
         request=_install_request(),
+        principal=principal,
     )
     stack.service.bind_agent(
         application_id=_APP,
         application_environment_id=_ENV,
         request=_bind_request(),
+        principal=principal,
     )
 
 
@@ -357,7 +362,8 @@ def test_status_read_model_distinguishes_desired_vs_serving() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     assert enabled.binding.enablement is True
     status = stack.service.inspect_agent_status(
@@ -383,7 +389,8 @@ def test_enable_does_not_change_serving_revision() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     after = stack.service.inspect_serving(application_id=_APP, application_environment_id=_ENV)
     assert after.traffic_serving_revision_id == before.traffic_serving_revision_id
@@ -397,7 +404,8 @@ def test_disable_does_not_change_serving_revision() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     built = stack.service.build_application_revision(
         application_id=_APP,
@@ -419,7 +427,8 @@ def test_disable_does_not_change_serving_revision() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=1),
+        request=SetAgentEnablementRequest(mutation_id="mut-disable", expected_revision=1),
+        principal=admin_test_principal(),
     )
     serving = stack.service.inspect_serving(application_id=_APP, application_environment_id=_ENV)
     assert serving.traffic_serving_revision_id == serving_id
@@ -439,7 +448,8 @@ def test_build_creates_candidate_but_does_not_activate() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     built = stack.service.build_application_revision(
         application_id=_APP,
@@ -476,7 +486,8 @@ def test_activate_delegates_ap9_and_changes_serving_revision() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     built = stack.service.build_application_revision(
         application_id=_APP,
@@ -513,7 +524,8 @@ def test_rollback_delegates_immutable_ap9_rollback() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     first = stack.service.build_application_revision(
         application_id=_APP,
@@ -571,14 +583,16 @@ def test_stale_binding_conflict_propagated() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     with pytest.raises(BindingRevisionConflict):
         stack.service.enable_binding(
             application_id=_APP,
             application_environment_id=_ENV,
             application_binding_id="bind-search",
-            request=SetAgentEnablementRequest(expected_revision=0),
+            request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
         )
 
 
@@ -589,7 +603,8 @@ def test_stale_activation_conflict_propagated() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     first = stack.service.build_application_revision(
         application_id=_APP,
@@ -680,7 +695,8 @@ def test_ap9_activation_service_still_commits_on_shared_stores() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     built = stack.service.build_application_revision(
         application_id=_APP,
@@ -720,7 +736,8 @@ def test_cross_application_resource_isolation() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
     built = stack.service.build_application_revision(
         application_id=_APP,

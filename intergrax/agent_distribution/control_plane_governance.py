@@ -5,10 +5,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Protocol
 
+from intergrax.agent_distribution._immutable_json import (
+    DistributionJsonValue,
+    distribution_json_to_plain,
+)
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.evaluated_policy_decision import request_digest_for_payload
 from intergrax.contracts.control_plane_mutation import (
     ControlPlaneMutationAuthorizationResult,
     ControlPlaneMutationPolicyEvaluator,
@@ -23,6 +29,14 @@ from intergrax.runtime.governance.control_plane_mutation_authorization import (
 AGENT_DISTRIBUTION_RESOURCE_TYPE = "agent_distribution.application_environment"
 MUTATION_TYPE_ACTIVATE_RUNTIME_REVISION = "agent_distribution.activate_runtime_revision"
 MUTATION_TYPE_ROLLBACK_RUNTIME_REVISION = "agent_distribution.rollback_runtime_revision"
+MUTATION_TYPE_INSTALL_AGENT = "agent_distribution.install_agent"
+MUTATION_TYPE_BIND_AGENT = "agent_distribution.bind_agent"
+MUTATION_TYPE_UPDATE_BINDING_CONFIG = "agent_distribution.update_binding_config"
+MUTATION_TYPE_ENABLE_BINDING = "agent_distribution.enable_binding"
+MUTATION_TYPE_DISABLE_BINDING = "agent_distribution.disable_binding"
+
+_INSTALL_ABSENT_TOKEN = "inst:__absent__"
+_BINDING_ABSENT_TOKEN = "binding:__absent__"
 
 
 class ApplicationEnvironmentTenantResolver(Protocol):
@@ -72,6 +86,93 @@ def application_environment_resource_scope(
     )
 
 
+def binding_config_digest(config: Mapping[str, DistributionJsonValue]) -> str:
+    """Deterministic digest for non-secret binding config governance evidence."""
+    payload = {"config": distribution_json_to_plain(dict(config))}
+    return request_digest_for_payload(payload)
+
+
+def installation_absent_token(*, installation_slot_id: str) -> str:
+    return f"slot:{installation_slot_id}|{_INSTALL_ABSENT_TOKEN}"
+
+
+def installation_state_token(
+    *,
+    installation_slot_id: str,
+    installation_id: str,
+    installation_state: str,
+    package_digest: str,
+) -> str:
+    return (
+        f"slot:{installation_slot_id}|inst:{installation_id}"
+        f"|state:{installation_state}|digest:{package_digest}"
+    )
+
+
+def installation_target_token(
+    *,
+    installation_slot_id: str,
+    installation_id: str,
+    package_digest: str,
+) -> str:
+    return (
+        f"slot:{installation_slot_id}|inst:{installation_id}"
+        f"|digest:{package_digest}|state:installed_active"
+    )
+
+
+def binding_absent_token() -> str:
+    return _BINDING_ABSENT_TOKEN
+
+
+def binding_state_token(
+    *,
+    application_binding_id: str,
+    binding_revision: int,
+    enablement: bool,
+) -> str:
+    enabled = "true" if enablement else "false"
+    return f"binding:{application_binding_id}|rev:{binding_revision}|enabled:{enabled}"
+
+
+def binding_create_target_token(
+    *,
+    application_binding_id: str,
+    logical_agent_id: str,
+    installation_slot_id: str,
+    enablement: bool,
+) -> str:
+    enabled = "true" if enablement else "false"
+    return (
+        f"binding:{application_binding_id}|agent:{logical_agent_id}"
+        f"|slot:{installation_slot_id}|rev:0|enabled:{enabled}"
+    )
+
+
+def binding_config_target_token(
+    *,
+    application_binding_id: str,
+    next_revision: int,
+    config_digest_value: str,
+) -> str:
+    return (
+        f"binding:{application_binding_id}|rev:{next_revision}"
+        f"|config:{config_digest_value}"
+    )
+
+
+def binding_enablement_target_token(
+    *,
+    application_binding_id: str,
+    next_revision: int,
+    enablement: bool,
+) -> str:
+    enabled = "true" if enablement else "false"
+    return (
+        f"binding:{application_binding_id}|rev:{next_revision}|enabled:{enabled}"
+    )
+
+
 def serving_revision_token(
     *,
     traffic_revision_id: str | None,
@@ -112,6 +213,183 @@ def build_activation_mutation_request(
         target_revision=serving_revision_token(
             traffic_revision_id=target_runtime_revision_id,
             serving_pointer_revision=expected_pointer,
+        ),
+        risk_classification=ControlPlaneMutationRisk.HIGH,
+    )
+
+
+def build_install_agent_mutation_request(
+    *,
+    principal: RequestIdentity,
+    application_id: str,
+    application_environment_id: str,
+    mutation_id: str,
+    installation_slot_id: str,
+    installation_id: str,
+    package_digest: str,
+    current_revision: str,
+) -> ControlPlaneMutationRequest:
+    return ControlPlaneMutationRequest(
+        mutation_id=mutation_id,
+        mutation_type=MUTATION_TYPE_INSTALL_AGENT,
+        principal=principal,
+        resource_scope=application_environment_resource_scope(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        resource_type=AGENT_DISTRIBUTION_RESOURCE_TYPE,
+        resource_id=application_environment_resource_id(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        current_revision=current_revision,
+        target_revision=installation_target_token(
+            installation_slot_id=installation_slot_id,
+            installation_id=installation_id,
+            package_digest=package_digest,
+        ),
+        risk_classification=ControlPlaneMutationRisk.HIGH,
+    )
+
+
+def build_bind_agent_mutation_request(
+    *,
+    principal: RequestIdentity,
+    application_id: str,
+    application_environment_id: str,
+    mutation_id: str,
+    application_binding_id: str,
+    logical_agent_id: str,
+    installation_slot_id: str,
+    enablement: bool,
+    current_revision: str,
+) -> ControlPlaneMutationRequest:
+    return ControlPlaneMutationRequest(
+        mutation_id=mutation_id,
+        mutation_type=MUTATION_TYPE_BIND_AGENT,
+        principal=principal,
+        resource_scope=application_environment_resource_scope(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        resource_type=AGENT_DISTRIBUTION_RESOURCE_TYPE,
+        resource_id=application_environment_resource_id(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        current_revision=current_revision,
+        target_revision=binding_create_target_token(
+            application_binding_id=application_binding_id,
+            logical_agent_id=logical_agent_id,
+            installation_slot_id=installation_slot_id,
+            enablement=enablement,
+        ),
+        risk_classification=ControlPlaneMutationRisk.HIGH,
+    )
+
+
+def build_update_binding_config_mutation_request(
+    *,
+    principal: RequestIdentity,
+    application_id: str,
+    application_environment_id: str,
+    mutation_id: str,
+    application_binding_id: str,
+    expected_revision: int,
+    config_digest_value: str,
+) -> ControlPlaneMutationRequest:
+    return ControlPlaneMutationRequest(
+        mutation_id=mutation_id,
+        mutation_type=MUTATION_TYPE_UPDATE_BINDING_CONFIG,
+        principal=principal,
+        resource_scope=application_environment_resource_scope(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        resource_type=AGENT_DISTRIBUTION_RESOURCE_TYPE,
+        resource_id=application_environment_resource_id(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        current_revision=f"binding:{application_binding_id}|rev:{expected_revision}",
+        target_revision=binding_config_target_token(
+            application_binding_id=application_binding_id,
+            next_revision=expected_revision + 1,
+            config_digest_value=config_digest_value,
+        ),
+        risk_classification=ControlPlaneMutationRisk.HIGH,
+    )
+
+
+def build_enable_binding_mutation_request(
+    *,
+    principal: RequestIdentity,
+    application_id: str,
+    application_environment_id: str,
+    mutation_id: str,
+    application_binding_id: str,
+    expected_revision: int,
+    current_enablement: bool,
+) -> ControlPlaneMutationRequest:
+    return ControlPlaneMutationRequest(
+        mutation_id=mutation_id,
+        mutation_type=MUTATION_TYPE_ENABLE_BINDING,
+        principal=principal,
+        resource_scope=application_environment_resource_scope(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        resource_type=AGENT_DISTRIBUTION_RESOURCE_TYPE,
+        resource_id=application_environment_resource_id(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        current_revision=binding_state_token(
+            application_binding_id=application_binding_id,
+            binding_revision=expected_revision,
+            enablement=current_enablement,
+        ),
+        target_revision=binding_enablement_target_token(
+            application_binding_id=application_binding_id,
+            next_revision=expected_revision + 1,
+            enablement=True,
+        ),
+        risk_classification=ControlPlaneMutationRisk.HIGH,
+    )
+
+
+def build_disable_binding_mutation_request(
+    *,
+    principal: RequestIdentity,
+    application_id: str,
+    application_environment_id: str,
+    mutation_id: str,
+    application_binding_id: str,
+    expected_revision: int,
+    current_enablement: bool,
+) -> ControlPlaneMutationRequest:
+    return ControlPlaneMutationRequest(
+        mutation_id=mutation_id,
+        mutation_type=MUTATION_TYPE_DISABLE_BINDING,
+        principal=principal,
+        resource_scope=application_environment_resource_scope(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        resource_type=AGENT_DISTRIBUTION_RESOURCE_TYPE,
+        resource_id=application_environment_resource_id(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        ),
+        current_revision=binding_state_token(
+            application_binding_id=application_binding_id,
+            binding_revision=expected_revision,
+            enablement=current_enablement,
+        ),
+        target_revision=binding_enablement_target_token(
+            application_binding_id=application_binding_id,
+            next_revision=expected_revision + 1,
+            enablement=False,
         ),
         risk_classification=ControlPlaneMutationRisk.HIGH,
     )

@@ -256,12 +256,14 @@ def mount_agent_platform_admin_routes(
         application_id: str,
         environment_id: str,
         body: InstallAgentRequest,
+        principal: RequestIdentity = Depends(resolve_agent_platform_admin_request_identity),
     ) -> InstallationMutationResult:
         try:
             return admin_service.install_agent(
                 application_id=application_id,
                 application_environment_id=environment_id,
                 request=body,
+                principal=principal,
             )
         except Exception as exc:
             _raise_admin_http(exc)
@@ -283,12 +285,14 @@ def mount_agent_platform_admin_routes(
         application_id: str,
         environment_id: str,
         body: BindAgentRequest,
+        principal: RequestIdentity = Depends(resolve_agent_platform_admin_request_identity),
     ) -> BindingMutationResult:
         try:
             return admin_service.bind_agent(
                 application_id=application_id,
                 application_environment_id=environment_id,
                 request=body,
+                principal=principal,
             )
         except Exception as exc:
             _raise_admin_http(exc)
@@ -303,6 +307,7 @@ def mount_agent_platform_admin_routes(
         environment_id: str,
         application_binding_id: str,
         body: UpdateAgentBindingRequest,
+        principal: RequestIdentity = Depends(resolve_agent_platform_admin_request_identity),
     ) -> BindingMutationResult:
         try:
             return admin_service.update_binding_config(
@@ -310,6 +315,7 @@ def mount_agent_platform_admin_routes(
                 application_environment_id=environment_id,
                 application_binding_id=application_binding_id,
                 request=body,
+                principal=principal,
             )
         except Exception as exc:
             _raise_admin_http(exc)
@@ -324,6 +330,7 @@ def mount_agent_platform_admin_routes(
         environment_id: str,
         application_binding_id: str,
         body: SetAgentEnablementRequest,
+        principal: RequestIdentity = Depends(resolve_agent_platform_admin_request_identity),
     ) -> BindingMutationResult:
         try:
             return admin_service.enable_binding(
@@ -331,6 +338,7 @@ def mount_agent_platform_admin_routes(
                 application_environment_id=environment_id,
                 application_binding_id=application_binding_id,
                 request=body,
+                principal=principal,
             )
         except Exception as exc:
             _raise_admin_http(exc)
@@ -345,6 +353,7 @@ def mount_agent_platform_admin_routes(
         environment_id: str,
         application_binding_id: str,
         body: SetAgentEnablementRequest,
+        principal: RequestIdentity = Depends(resolve_agent_platform_admin_request_identity),
     ) -> BindingMutationResult:
         try:
             return admin_service.disable_binding(
@@ -352,6 +361,7 @@ def mount_agent_platform_admin_routes(
                 application_environment_id=environment_id,
                 application_binding_id=application_binding_id,
                 request=body,
+                principal=principal,
             )
         except Exception as exc:
             _raise_admin_http(exc)

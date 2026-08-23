@@ -74,21 +74,25 @@ class _StaticTenantResolver:
 
 
 def _seed_validated_revision(stack, revision_id: str) -> object:
+    principal = admin_test_principal()
     stack.service.install_agent(
         application_id=_APP,
         application_environment_id=_ENV,
         request=_install_request(),
+        principal=principal,
     )
     stack.service.bind_agent(
         application_id=_APP,
         application_environment_id=_ENV,
         request=_bind_request(),
+        principal=principal,
     )
     stack.service.enable_binding(
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=principal,
     )
     return stack.service.build_application_revision(
         application_id=_APP,
@@ -105,10 +109,18 @@ def _stack_with_evaluator(evaluator: _RecordingEvaluator):
     return stack
 
 
+def _stack_seeded_with_evaluator(revision_id: str, evaluator: _RecordingEvaluator):
+    stack = build_admin_stack()
+    built = _seed_validated_revision(stack, revision_id)
+    stack.service._mutation_authorization_boundary = (  # type: ignore[attr-defined]
+        ControlPlaneMutationAuthorizationBoundary(evaluator=evaluator)
+    )
+    return stack, built
+
+
 def test_ad1_activation_allow_commits_once() -> None:
     evaluator = _RecordingEvaluator()
-    stack = _stack_with_evaluator(evaluator)
-    built = _seed_validated_revision(stack, "rev-ad1")
+    stack, built = _stack_seeded_with_evaluator("rev-ad1", evaluator)
     before = stack.state.serving_records
     result = stack.service.activate_revision(
         application_id=_APP,
@@ -129,11 +141,14 @@ def test_ad1_activation_allow_commits_once() -> None:
 
 
 def test_ad2_activation_deny_zero_commits() -> None:
+    stack = build_admin_stack()
+    built = _seed_validated_revision(stack, "rev-ad2")
     evaluator = _RecordingEvaluator(
         decision=PolicyDecision(action=PolicyAction.DENY, reason="deny")
     )
-    stack = _stack_with_evaluator(evaluator)
-    built = _seed_validated_revision(stack, "rev-ad2")
+    stack.service._mutation_authorization_boundary = (  # type: ignore[attr-defined]
+        ControlPlaneMutationAuthorizationBoundary(evaluator=evaluator)
+    )
     with pytest.raises(AgentPlatformAdminGovernanceBlockedError) as exc:
         stack.service.activate_revision(
             application_id=_APP,
@@ -152,6 +167,8 @@ def test_ad2_activation_deny_zero_commits() -> None:
 
 
 def test_ad3_activation_require_human_zero_commits_preserves_scope() -> None:
+    stack = build_admin_stack()
+    built = _seed_validated_revision(stack, "rev-ad3")
     evaluator = _RecordingEvaluator(
         decision=PolicyDecision(
             action=PolicyAction.REQUIRE_HUMAN,
@@ -159,8 +176,9 @@ def test_ad3_activation_require_human_zero_commits_preserves_scope() -> None:
             policy_rule_id="rule.hitl",
         )
     )
-    stack = _stack_with_evaluator(evaluator)
-    built = _seed_validated_revision(stack, "rev-ad3")
+    stack.service._mutation_authorization_boundary = (  # type: ignore[attr-defined]
+        ControlPlaneMutationAuthorizationBoundary(evaluator=evaluator)
+    )
     with pytest.raises(AgentPlatformAdminGovernanceBlockedError) as exc:
         stack.service.activate_revision(
             application_id=_APP,
@@ -329,10 +347,13 @@ def test_ad6_rollback_require_human_zero_commits() -> None:
 
 
 def test_ad7_wrong_tenant_authority_denies_without_mutation() -> None:
-    evaluator = _RecordingEvaluator()
-    stack = _stack_with_evaluator(evaluator)
-    stack.service._environment_tenant_resolver = _StaticTenantResolver("tenant-owned")  # type: ignore[attr-defined]
+    stack = build_admin_stack()
     built = _seed_validated_revision(stack, "rev-ad7")
+    evaluator = _RecordingEvaluator()
+    stack.service._environment_tenant_resolver = _StaticTenantResolver("tenant-owned")  # type: ignore[attr-defined]
+    stack.service._mutation_authorization_boundary = (  # type: ignore[attr-defined]
+        ControlPlaneMutationAuthorizationBoundary(evaluator=evaluator)
+    )
     with pytest.raises(AgentPlatformAdminGovernanceBlockedError) as exc:
         stack.service.activate_revision(
             application_id=_APP,
@@ -350,9 +371,12 @@ def test_ad7_wrong_tenant_authority_denies_without_mutation() -> None:
 
 
 def test_ad8_stale_state_cas_rejects_after_allow() -> None:
-    evaluator = _RecordingEvaluator()
-    stack = _stack_with_evaluator(evaluator)
+    stack = build_admin_stack()
     built = _seed_validated_revision(stack, "rev-ad8")
+    evaluator = _RecordingEvaluator()
+    stack.service._mutation_authorization_boundary = (  # type: ignore[attr-defined]
+        ControlPlaneMutationAuthorizationBoundary(evaluator=evaluator)
+    )
     with pytest.raises(RuntimeActivationConflict):
         stack.service.activate_revision(
             application_id=_APP,
@@ -396,9 +420,12 @@ def test_ad9_target_change_digest_differs() -> None:
 
 
 def test_ad10_mutation_id_stable_on_retry() -> None:
-    evaluator = _RecordingEvaluator()
-    stack = _stack_with_evaluator(evaluator)
+    stack = build_admin_stack()
     built = _seed_validated_revision(stack, "rev-ad10")
+    evaluator = _RecordingEvaluator()
+    stack.service._mutation_authorization_boundary = (  # type: ignore[attr-defined]
+        ControlPlaneMutationAuthorizationBoundary(evaluator=evaluator)
+    )
     result = stack.service.activate_revision(
         application_id=_APP,
         application_environment_id=_ENV,
@@ -455,9 +482,12 @@ def test_ad11_activation_and_rollback_digest_distinct() -> None:
 
 
 def test_ad12_policy_failure_zero_mutations() -> None:
-    evaluator = _RecordingEvaluator(raise_error=True)
-    stack = _stack_with_evaluator(evaluator)
+    stack = build_admin_stack()
     built = _seed_validated_revision(stack, "rev-ad12")
+    evaluator = _RecordingEvaluator(raise_error=True)
+    stack.service._mutation_authorization_boundary = (  # type: ignore[attr-defined]
+        ControlPlaneMutationAuthorizationBoundary(evaluator=evaluator)
+    )
     with pytest.raises(AgentPlatformAdminGovernanceBlockedError):
         stack.service.activate_revision(
             application_id=_APP,
@@ -475,11 +505,14 @@ def test_ad12_policy_failure_zero_mutations() -> None:
 
 
 def test_ad13_modify_zero_mutations() -> None:
+    stack = build_admin_stack()
+    built = _seed_validated_revision(stack, "rev-ad13")
     evaluator = _RecordingEvaluator(
         decision=PolicyDecision(action=PolicyAction.MODIFY, reason="modify")
     )
-    stack = _stack_with_evaluator(evaluator)
-    built = _seed_validated_revision(stack, "rev-ad13")
+    stack.service._mutation_authorization_boundary = (  # type: ignore[attr-defined]
+        ControlPlaneMutationAuthorizationBoundary(evaluator=evaluator)
+    )
     with pytest.raises(AgentPlatformAdminGovernanceBlockedError) as exc:
         stack.service.activate_revision(
             application_id=_APP,
@@ -498,11 +531,14 @@ def test_ad13_modify_zero_mutations() -> None:
 
 
 def test_ad16_projection_order_prepare_candidate_before_authorization() -> None:
+    stack = build_admin_stack()
+    built = _seed_validated_revision(stack, "rev-ad16")
     evaluator = _RecordingEvaluator(
         decision=PolicyDecision(action=PolicyAction.DENY, reason="deny")
     )
-    stack = _stack_with_evaluator(evaluator)
-    built = _seed_validated_revision(stack, "rev-ad16")
+    stack.service._mutation_authorization_boundary = (  # type: ignore[attr-defined]
+        ControlPlaneMutationAuthorizationBoundary(evaluator=evaluator)
+    )
     with pytest.raises(AgentPlatformAdminGovernanceBlockedError):
         stack.service.activate_revision(
             application_id=_APP,

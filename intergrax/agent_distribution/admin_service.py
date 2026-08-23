@@ -40,8 +40,17 @@ from intergrax.agent_distribution.binding_service import BindingService
 from intergrax.agent_distribution.control_plane_governance import (
     ApplicationEnvironmentTenantResolver,
     authorize_scoped_control_plane_mutation,
+    binding_absent_token,
+    binding_config_digest,
     build_activation_mutation_request,
+    build_bind_agent_mutation_request,
+    build_disable_binding_mutation_request,
+    build_enable_binding_mutation_request,
+    build_install_agent_mutation_request,
     build_rollback_mutation_request,
+    build_update_binding_config_mutation_request,
+    installation_absent_token,
+    installation_state_token,
 )
 from intergrax.agent_distribution.catalog import CatalogEntryFilters, CatalogSourceProvider
 from intergrax.agent_distribution.dependency import DependencyResolverInput
@@ -92,7 +101,10 @@ from intergrax.agent_distribution.stores import (
     RuntimeRevisionStore,
 )
 from intergrax.contracts.agent_run import RequestIdentity
-from intergrax.contracts.control_plane_mutation import ControlPlaneMutationAuthorizationResult
+from intergrax.contracts.control_plane_mutation import (
+    ControlPlaneMutationAuthorizationResult,
+    ControlPlaneMutationRequest,
+)
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
@@ -481,6 +493,7 @@ class AgentPlatformAdminService:
         application_id: str,
         application_environment_id: str,
         request: InstallAgentRequest,
+        principal: RequestIdentity,
     ) -> InstallationMutationResult:
         identity = self._resolve_install_identity(request)
         existing = self._installation_store.get_installation(request.installation_id)
@@ -497,6 +510,35 @@ class AgentPlatformAdminService:
             raise InstallationSlotConflict(
                 "installation id already used with different identity"
             )
+
+        active_for_slot = self._installation_service.resolve_active_for_slot(
+            application_environment_id,
+            request.installation_slot_id,
+        )
+        if active_for_slot is None:
+            current_revision = installation_absent_token(
+                installation_slot_id=request.installation_slot_id,
+            )
+        else:
+            current_revision = installation_state_token(
+                installation_slot_id=active_for_slot.installation_slot_id,
+                installation_id=active_for_slot.installation_id,
+                installation_state=active_for_slot.installation_state.value,
+                package_digest=active_for_slot.package_identity.package_digest,
+            )
+        self._authorize_desired_state_mutation(
+            build_install_agent_mutation_request(
+                principal=principal,
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+                mutation_id=request.mutation_id,
+                installation_slot_id=request.installation_slot_id,
+                installation_id=request.installation_id,
+                package_digest=identity.package_digest,
+                current_revision=current_revision,
+            ),
+            operation="install_agent",
+        )
 
         created = self._installation_service.create_candidate_installation(
             installation_id=request.installation_id,
@@ -531,6 +573,7 @@ class AgentPlatformAdminService:
         application_id: str,
         application_environment_id: str,
         request: BindAgentRequest,
+        principal: RequestIdentity,
     ) -> BindingMutationResult:
         existing = self._binding_store.get_binding(request.application_binding_id)
         if existing is not None:
@@ -545,6 +588,20 @@ class AgentPlatformAdminService:
                     audit_event_types=(),
                 )
             raise BindingRevisionConflict("application_binding_id already used")
+        self._authorize_desired_state_mutation(
+            build_bind_agent_mutation_request(
+                principal=principal,
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+                mutation_id=request.mutation_id,
+                application_binding_id=request.application_binding_id,
+                logical_agent_id=request.logical_agent_id,
+                installation_slot_id=request.installation_slot_id,
+                enablement=request.enablement,
+                current_revision=binding_absent_token(),
+            ),
+            operation="bind_agent",
+        )
         result = self._binding_service.create_binding(
             application_binding_id=request.application_binding_id,
             application_id=application_id,
@@ -570,11 +627,25 @@ class AgentPlatformAdminService:
         application_environment_id: str,
         application_binding_id: str,
         request: UpdateAgentBindingRequest,
+        principal: RequestIdentity,
     ) -> BindingMutationResult:
-        self._require_binding_scope(
+        binding = self._require_binding_scope(
             application_binding_id,
             application_id=application_id,
             application_environment_id=application_environment_id,
+        )
+        config_digest_value = binding_config_digest(request.config)
+        self._authorize_desired_state_mutation(
+            build_update_binding_config_mutation_request(
+                principal=principal,
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+                mutation_id=request.mutation_id,
+                application_binding_id=application_binding_id,
+                expected_revision=request.expected_revision,
+                config_digest_value=config_digest_value,
+            ),
+            operation="update_binding_config",
         )
         result = self._binding_service.update_config(
             application_binding_id,
@@ -593,11 +664,24 @@ class AgentPlatformAdminService:
         application_environment_id: str,
         application_binding_id: str,
         request: SetAgentEnablementRequest,
+        principal: RequestIdentity,
     ) -> BindingMutationResult:
-        self._require_binding_scope(
+        binding = self._require_binding_scope(
             application_binding_id,
             application_id=application_id,
             application_environment_id=application_environment_id,
+        )
+        self._authorize_desired_state_mutation(
+            build_enable_binding_mutation_request(
+                principal=principal,
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+                mutation_id=request.mutation_id,
+                application_binding_id=application_binding_id,
+                expected_revision=request.expected_revision,
+                current_enablement=binding.enablement,
+            ),
+            operation="enable_binding",
         )
         result = self._binding_service.enable(
             application_binding_id,
@@ -615,11 +699,24 @@ class AgentPlatformAdminService:
         application_environment_id: str,
         application_binding_id: str,
         request: SetAgentEnablementRequest,
+        principal: RequestIdentity,
     ) -> BindingMutationResult:
-        self._require_binding_scope(
+        binding = self._require_binding_scope(
             application_binding_id,
             application_id=application_id,
             application_environment_id=application_environment_id,
+        )
+        self._authorize_desired_state_mutation(
+            build_disable_binding_mutation_request(
+                principal=principal,
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+                mutation_id=request.mutation_id,
+                application_binding_id=application_binding_id,
+                expected_revision=request.expected_revision,
+                current_enablement=binding.enablement,
+            ),
+            operation="disable_binding",
         )
         result = self._binding_service.disable(
             application_binding_id,
@@ -1016,7 +1113,7 @@ class AgentPlatformAdminService:
         if boundary is None:
             raise AgentPlatformAdminBlockedError(
                 "AP-11_BLOCKED_BY_MISSING_MUTATION_AUTHORIZATION_BOUNDARY",
-                "activation/rollback requires ControlPlaneMutationAuthorizationBoundary",
+                "control-plane mutations require ControlPlaneMutationAuthorizationBoundary",
             )
         return boundary
 
@@ -1027,9 +1124,26 @@ class AgentPlatformAdminService:
         if resolver is None:
             raise AgentPlatformAdminBlockedError(
                 "AP-11_BLOCKED_BY_MISSING_TENANT_AUTHORITY",
-                "activation/rollback requires ApplicationEnvironmentTenantResolver",
+                "control-plane mutations require ApplicationEnvironmentTenantResolver",
             )
         return resolver
+
+    def _authorize_desired_state_mutation(
+        self,
+        request: ControlPlaneMutationRequest,
+        *,
+        operation: str,
+    ) -> ControlPlaneMutationAuthorizationResult:
+        resolver = self._require_environment_tenant_resolver()
+        boundary = self._require_mutation_authorization_boundary()
+        return self._enforce_authorization_result(
+            authorize_scoped_control_plane_mutation(
+                boundary=boundary,
+                tenant_resolver=resolver,
+                request=request,
+            ),
+            operation=operation,
+        )
 
     def _authorize_activation(
         self,

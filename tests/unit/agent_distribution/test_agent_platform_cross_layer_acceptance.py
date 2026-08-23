@@ -93,21 +93,25 @@ def _wire_real_projection_coordinator(stack: AdminStack) -> tuple[
 
 
 def _install_enable_build(stack: AdminStack, revision_id: str):
+    principal = admin_test_principal()
     stack.service.install_agent(
         application_id=_PROOF_APP,
         application_environment_id=_ENV,
         request=_install_request(),
+        principal=principal,
     )
     stack.service.bind_agent(
         application_id=_PROOF_APP,
         application_environment_id=_ENV,
         request=_bind_request(),
+        principal=principal,
     )
     stack.service.enable_binding(
         application_id=_PROOF_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=principal,
     )
     return stack.service.build_application_revision(
         application_id=_PROOF_APP,
@@ -172,7 +176,8 @@ def test_cross_layer_identity_chain_through_admin_serving_state() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
     )
 
     roster_view = stack.service.inspect_effective_roster(

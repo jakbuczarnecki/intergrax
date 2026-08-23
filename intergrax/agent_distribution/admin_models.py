@@ -63,6 +63,7 @@ class InstallAgentRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    mutation_id: str = _NON_EMPTY
     installation_id: str = _NON_EMPTY
     installation_slot_id: str = _NON_EMPTY
     package_identity: AgentPackageIdentity
@@ -73,6 +74,7 @@ class InstallAgentRequest(BaseModel):
     version_selector: str | None = None
 
     @field_validator(
+        "mutation_id",
         "installation_id",
         "installation_slot_id",
         "artifact_store_ref",
@@ -95,6 +97,7 @@ class BindAgentRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    mutation_id: str = _NON_EMPTY
     application_binding_id: str = _NON_EMPTY
     logical_agent_id: str = _NON_EMPTY
     installation_slot_id: str = _NON_EMPTY
@@ -116,6 +119,7 @@ class BindAgentRequest(BaseModel):
         )
 
     @field_validator(
+        "mutation_id",
         "application_binding_id",
         "logical_agent_id",
         "installation_slot_id",
@@ -136,8 +140,17 @@ class UpdateAgentBindingRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    mutation_id: str = _NON_EMPTY
     expected_revision: int = Field(ge=0)
     config: Mapping[str, DistributionJsonValue]
+
+    @field_validator("mutation_id")
+    @classmethod
+    def _strip_mutation_id(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
 
     @field_validator("config", mode="before")
     @classmethod
@@ -155,7 +168,16 @@ class SetAgentEnablementRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    mutation_id: str = _NON_EMPTY
     expected_revision: int = Field(ge=0)
+
+    @field_validator("mutation_id")
+    @classmethod
+    def _strip_mutation_id(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
 
 
 class BuildApplicationRevisionRequest(BaseModel):

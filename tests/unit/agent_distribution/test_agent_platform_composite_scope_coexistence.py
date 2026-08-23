@@ -42,6 +42,7 @@ def _scope(application_id: str, environment_id: str) -> ApplicationEnvironmentId
 
 
 def _setup_application(stack, *, application_id: str, binding_id: str, slot_id: str) -> None:
+    principal = admin_test_principal()
     install = _install_request()
     install = install.model_copy(
         update={
@@ -53,8 +54,10 @@ def _setup_application(stack, *, application_id: str, binding_id: str, slot_id: 
         application_id=application_id,
         application_environment_id=_ENV,
         request=install,
+        principal=principal,
     )
     bind = BindAgentRequest(
+        mutation_id=f"mut-bind-{application_id}",
         application_binding_id=binding_id,
         logical_agent_id="researcher",
         installation_slot_id=slot_id,
@@ -63,12 +66,17 @@ def _setup_application(stack, *, application_id: str, binding_id: str, slot_id: 
         application_id=application_id,
         application_environment_id=_ENV,
         request=bind,
+        principal=principal,
     )
     stack.service.enable_binding(
         application_id=application_id,
         application_environment_id=_ENV,
         application_binding_id=binding_id,
-        request=SetAgentEnablementRequest(expected_revision=0),
+        request=SetAgentEnablementRequest(
+            mutation_id=f"mut-enable-{application_id}",
+            expected_revision=0,
+        ),
+        principal=principal,
     )
 
 

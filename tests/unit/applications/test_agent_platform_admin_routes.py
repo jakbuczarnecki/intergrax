@@ -64,10 +64,9 @@ def _client(
     dev_auth: bool = True,
 ) -> tuple[TestClient, object]:
     stack = build_admin_stack(with_catalog=with_catalog)
-    if dev_auth:
-        stack.service._environment_tenant_resolver = (  # type: ignore[attr-defined]
-            StaticApplicationEnvironmentTenantResolver("default")
-        )
+    stack.service._environment_tenant_resolver = (  # type: ignore[attr-defined]
+        StaticApplicationEnvironmentTenantResolver("default")
+    )
     app = FastAPI()
     if dev_auth:
         app.state.harness_auth = HarnessAuthState(require_api_key=False)
@@ -92,6 +91,7 @@ def _trust_payload() -> dict[str, object]:
 
 def _install_payload() -> dict[str, object]:
     return {
+        "mutation_id": "mut-install-http",
         "installation_id": "inst-1",
         "installation_slot_id": "slot-search",
         "package_identity": {
@@ -107,6 +107,7 @@ def _install_payload() -> dict[str, object]:
 
 def _bind_payload() -> dict[str, object]:
     return {
+        "mutation_id": "mut-bind-http",
         "application_binding_id": "bind-search",
         "logical_agent_id": "researcher",
         "installation_slot_id": "slot-search",
@@ -138,7 +139,7 @@ def _seed_enabled(client: TestClient) -> None:
     assert client.post(f"{_PREFIX}/bindings", json=_bind_payload()).status_code == 200
     enable = client.post(
         f"{_PREFIX}/bindings/bind-search/enable",
-        json={"expected_revision": 0},
+        json={"mutation_id": "mut-enable-http", "expected_revision": 0},
     )
     assert enable.status_code == 200
 
@@ -196,7 +197,7 @@ def test_config_raw_secret_rejection_preserved() -> None:
     client.post(f"{_PREFIX}/bindings", json=_bind_payload())
     update = client.patch(
         f"{_PREFIX}/bindings/bind-search/config",
-        json={"expected_revision": 0, "config": {"password": "hunter2"}},
+        json={"mutation_id": "mut-update-http", "expected_revision": 0, "config": {"password": "hunter2"}},
     )
     assert update.status_code == 422
 
@@ -207,7 +208,7 @@ def test_enable_disable_routes() -> None:
     client.post(f"{_PREFIX}/bindings", json=_bind_payload())
     enabled = client.post(
         f"{_PREFIX}/bindings/bind-search/enable",
-        json={"expected_revision": 0},
+        json={"mutation_id": "mut-enable-http", "expected_revision": 0},
     )
     assert enabled.status_code == 200
     assert enabled.json()["binding"]["enablement"] is True
@@ -215,7 +216,7 @@ def test_enable_disable_routes() -> None:
     assert serving["traffic_serving_revision_id"] is None
     disabled = client.post(
         f"{_PREFIX}/bindings/bind-search/disable",
-        json={"expected_revision": 1},
+        json={"mutation_id": "mut-disable-http", "expected_revision": 1},
     )
     assert disabled.status_code == 200
     assert disabled.json()["binding"]["enablement"] is False
@@ -284,12 +285,12 @@ def test_409_concurrency_conflict() -> None:
     client.post(f"{_PREFIX}/bindings", json=_bind_payload())
     first = client.post(
         f"{_PREFIX}/bindings/bind-search/enable",
-        json={"expected_revision": 0},
+        json={"mutation_id": "mut-enable-http", "expected_revision": 0},
     )
     assert first.status_code == 200
     stale = client.post(
         f"{_PREFIX}/bindings/bind-search/enable",
-        json={"expected_revision": 0},
+        json={"mutation_id": "mut-enable-http", "expected_revision": 0},
     )
     assert stale.status_code == 409
 
@@ -366,14 +367,14 @@ def test_missing_auth_blocks_enable_disable_build_activate_rollback(
     assert (
         client.post(
             f"{_PREFIX}/bindings/bind-search/enable",
-            json={"expected_revision": 0},
+            json={"mutation_id": "mut-enable-http", "expected_revision": 0},
         ).status_code
         == 401
     )
     assert (
         client.post(
             f"{_PREFIX}/bindings/bind-search/disable",
-            json={"expected_revision": 0},
+            json={"mutation_id": "mut-enable-http", "expected_revision": 0},
         ).status_code
         == 401
     )
