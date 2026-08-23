@@ -7,6 +7,14 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from intergrax.contracts.evidence_claims import EvidenceClaimSet
+from platform_proofs.scenarios.ai_incident_investigation.fixtures import ScenarioVariant
+from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
+    TELEMETRY_EVIDENCE_ID,
+)
+from platform_proofs.scenarios.ai_incident_investigation.scenario import (
+    OUTCOME_RESOLVED,
+    ScenarioExecutionResult,
+)
 from scripts.proof.intergrax_platform_proof_evidence import (
     ArchitectureEvidence,
     ConclusionEvidence,
@@ -27,6 +35,7 @@ from scripts.proof.intergrax_platform_proof_evidence import (
     ProofStepExecutionStatus,
     ProvenanceEvidence,
     ReportSafePayload,
+    ReportSafeText,
     ReportSafeTextSourceKind,
     ReproductionEvidence,
     ScenarioEvidence,
@@ -35,20 +44,80 @@ from scripts.proof.intergrax_platform_proof_evidence import (
     project_evidence_claim_set,
 )
 from scripts.proof.intergrax_proof_contracts import ProofProfile
-from platform_proofs.scenarios.ai_incident_investigation.scenario import ScenarioExecutionResult
 
 PROOF_ID = "SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON"
 PROOF_VERSION = "full-1-resolved-full-2-unresolved-0.3.0"
+
+EVIDENCE_RESOLVED_FILENAME = "evidence-resolved.json"
+EVIDENCE_UNRESOLVED_FILENAME = "evidence-unresolved.json"
+REPORT_RESOLVED_FILENAME = "report-resolved.html"
+REPORT_UNRESOLVED_FILENAME = "report-unresolved.html"
+
+_SCENARIO_METADATA: dict[ScenarioVariant, dict[str, str]] = {
+    ScenarioVariant.RESOLVED: {
+        "scenario_id": "resolved_full_evidence_world",
+        "scenario_title": "RESOLVED FULL — H1/H2/H3 evidence world",
+        "proof_title": "AI Incident Investigation — RESOLVED evidence path",
+        "expected_behavior": (
+            "Reject H1 overload; resolve H2 staffing conflict; gather comparison and "
+            "telemetry; accept bounded H3 diagnosis"
+        ),
+        "supported_conclusion": (
+            "RESOLVED path with decisive telemetry and bounded H3 diagnosis"
+        ),
+        "execution_suffix": "resolved",
+    },
+    ScenarioVariant.UNRESOLVED: {
+        "scenario_id": "unresolved_full_evidence_world",
+        "scenario_title": "UNRESOLVED FULL — telemetry unavailable evidence world",
+        "proof_title": "AI Incident Investigation — UNRESOLVED evidence path",
+        "expected_behavior": (
+            "Reject H1 overload; resolve H2 staffing conflict; gather comparison; "
+            "accept epistemic UNRESOLVED when telemetry is unavailable for incident window"
+        ),
+        "supported_conclusion": (
+            "UNRESOLVED path when decisive telemetry is unavailable for incident window"
+        ),
+        "execution_suffix": "unresolved",
+    },
+}
+
+
+def _telemetry_evidence_summary(payload: object) -> ReportSafeText:
+    if not isinstance(payload, dict):
+        return proof_authored_report_safe_text("observable tool result")
+    availability = payload.get("availability")
+    if availability == "unavailable":
+        reason = str(payload.get("unavailability_reason", "no_observation_for_window"))
+        return proof_authored_report_safe_text(
+            "Telemetry source queried successfully; observation unavailable for incident window "
+            f"({reason})"
+        )
+    if availability == "available":
+        signal_state = str(payload.get("signal_state", "unknown"))
+        return proof_authored_report_safe_text(
+            f"Telemetry available; station signal degraded ({signal_state})"
+        )
+    return proof_authored_report_safe_text("observable tool result")
+
+
+def _evidence_node_summary(node: dict[str, object]) -> ReportSafeText:
+    evidence_id = str(node.get("evidence_id", ""))
+    if evidence_id == str(TELEMETRY_EVIDENCE_ID) or "telemetry" in evidence_id:
+        return _telemetry_evidence_summary(node.get("payload"))
+    return proof_authored_report_safe_text("observable tool result")
 
 
 def build_platform_proof_evidence(
     result: ScenarioExecutionResult,
     *,
+    variant: ScenarioVariant,
     source_revision: str,
     finished_at: datetime | None = None,
 ) -> PlatformProofEvidence:
     finished = finished_at or datetime.now(tz=UTC)
     started = finished
+    meta = _SCENARIO_METADATA[variant]
     claim_set = EvidenceClaimSet.model_validate(result.claim_set)
     projected_claims = project_evidence_claim_set(
         claim_set,
@@ -60,7 +129,7 @@ def build_platform_proof_evidence(
             evidence_id=str(node["evidence_id"]),
             kind=EvidenceNodeKind.TOOL_RESULT,
             label=str(node.get("label", "tool observation")),
-            summary=proof_authored_report_safe_text("observable tool result"),
+            summary=_evidence_node_summary(node),
             producing_step_id="step-investigate",
         )
         for node in result.evidence_nodes
@@ -96,18 +165,21 @@ def build_platform_proof_evidence(
         status=ProofStepExecutionStatus.OK,
     )
 
-    execution_id = f"incident-skeleton-{int(started.timestamp())}"
+    execution_id = f"incident-{meta['execution_suffix']}-{int(started.timestamp())}"
+    paired_note = (
+        "Paired UNRESOLVED canonical evidence exists in evidence-unresolved.json"
+        if variant is ScenarioVariant.RESOLVED
+        else "Paired RESOLVED canonical evidence exists in evidence-resolved.json"
+    )
+
     scenario = ScenarioEvidence(
-        scenario_id="resolved_full_evidence_world",
-        title="RESOLVED FULL — H1/H2/H3 evidence world",
+        scenario_id=meta["scenario_id"],
+        title=meta["scenario_title"],
         question=(
             "Can workload-throughput correlation become accepted diagnosis without "
             "comparison, staffing resolution, and telemetry follow-up?"
         ),
-        expected_behavior=(
-            "Reject H1 overload; resolve H2 staffing conflict; gather comparison and "
-            "telemetry; accept bounded H3 diagnosis"
-        ),
+        expected_behavior=meta["expected_behavior"],
         falsification_condition=(
             "Unsupported overload diagnosis accepted without distinguishing evidence"
         ),
@@ -115,6 +187,10 @@ def build_platform_proof_evidence(
         metrics=(
             MetricEvidence(name="tool_invocations", value=result.tool_invocations),
             MetricEvidence(name="evaluator_loop_iterations", value=result.evaluator_loop_iterations),
+            MetricEvidence(
+                name="scenario_outcome",
+                value=1 if result.outcome == OUTCOME_RESOLVED else 0,
+            ),
         ),
         steps=(step,),
         final_output=FinalOutputEvidence(
@@ -123,10 +199,22 @@ def build_platform_proof_evidence(
         ),
     )
 
+    unsupported_conclusions: tuple[str, ...] = ("Public proof publication",)
+    if variant is ScenarioVariant.RESOLVED:
+        unsupported_conclusions = (
+            "Public proof publication",
+            "UNRESOLVED path proven solely by this artifact's claim graph",
+        )
+    else:
+        unsupported_conclusions = (
+            "Public proof publication",
+            "RESOLVED path proven solely by this artifact's claim graph",
+        )
+
     return PlatformProofEvidence(
         proof_identity=ProofIdentityEvidence(
             proof_id=PROOF_ID,
-            title="AI Incident Investigation — full RESOLVED evidence world",
+            title=meta["proof_title"],
             domains_exercised=("EXECUTION", "TOOLS", "CRITIC", "EVIDENCE"),
             proof_version=PROOF_VERSION,
             source_revision=source_revision,
@@ -140,7 +228,9 @@ def build_platform_proof_evidence(
         ),
         claim=ProofClaimEvidence(
             claim="No material incident diagnosis without auditable evidence and falsification.",
-            user_relevance="FULL-1/FULL-2 prove RESOLVED and UNRESOLVED paths with H1/H2/H3 adversarial evidence.",
+            user_relevance=(
+                "FULL-1/FULL-2 prove RESOLVED and UNRESOLVED paths with H1/H2/H3 adversarial evidence."
+            ),
             success_criteria=(
                 "ToolRuntime exercised",
                 "Critic challenge and revision bounded",
@@ -164,16 +254,12 @@ def build_platform_proof_evidence(
         ),
         limitations=(
             "FULL-1 RESOLVED and FULL-2 UNRESOLVED evidence worlds implemented.",
+            paired_note,
             "Not accepted for public proof publication.",
         ),
         conclusion=ConclusionEvidence(
-            supported_conclusions=(
-                "RESOLVED path with decisive telemetry and bounded H3 diagnosis",
-                "UNRESOLVED path when decisive telemetry is unavailable",
-            ),
-            unsupported_conclusions=(
-                "Public proof publication",
-            ),
+            supported_conclusions=(meta["supported_conclusion"],),
+            unsupported_conclusions=unsupported_conclusions,
             open_questions=("Accepted public proof run",),
         ),
         reproduction=ReproductionEvidence(

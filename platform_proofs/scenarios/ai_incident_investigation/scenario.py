@@ -69,7 +69,55 @@ from platform_proofs.scenarios.ai_incident_investigation.validation import (
 INVESTIGATOR_NODE_ID = "investigator-1"
 OUTCOME_RESOLVED = "RESOLVED"
 OUTCOME_UNRESOLVED = "UNRESOLVED"
+TERMINAL_STATE_NOT_ACCEPTED = "incident_terminal_state_not_accepted"
 EVALUATOR_LOOP_MAX_ITERATIONS = 2
+
+
+def is_resolved_completion(
+    *,
+    critic_verdict_passed: bool,
+    has_supported_diagnosis: bool,
+    completion_mode: str,
+) -> bool:
+    return (
+        critic_verdict_passed
+        and has_supported_diagnosis
+        and completion_mode == COMPLETION_SUPPORTED_DIAGNOSIS
+    )
+
+
+def is_epistemic_unresolved_completion(
+    *,
+    critic_verdict_passed: bool,
+    has_supported_diagnosis: bool,
+    completion_mode: str,
+) -> bool:
+    return (
+        critic_verdict_passed
+        and not has_supported_diagnosis
+        and completion_mode == COMPLETION_UNRESOLVED
+    )
+
+
+def derive_terminal_outcome(
+    *,
+    critic_verdict_passed: bool,
+    has_supported_diagnosis: bool,
+    completion_mode: str,
+) -> str:
+    if is_resolved_completion(
+        critic_verdict_passed=critic_verdict_passed,
+        has_supported_diagnosis=has_supported_diagnosis,
+        completion_mode=completion_mode,
+    ):
+        return OUTCOME_RESOLVED
+    if is_epistemic_unresolved_completion(
+        critic_verdict_passed=critic_verdict_passed,
+        has_supported_diagnosis=has_supported_diagnosis,
+        completion_mode=completion_mode,
+    ):
+        return OUTCOME_UNRESOLVED
+    raise RuntimeError(TERMINAL_STATE_NOT_ACCEPTED)
 
 
 @dataclass(frozen=True, slots=True)
@@ -252,11 +300,6 @@ async def execute_resolved_skeleton(
         claim.resolution is ClaimResolution.SUPPORTED for claim in claim_set_model.claims
     )
     completion_mode = str(domain_payload.get("completion_mode", COMPLETION_SUPPORTED_DIAGNOSIS))
-    epistemic_unresolved = (
-        critic_verdict_passed
-        and not has_supported_diagnosis
-        and completion_mode == COMPLETION_UNRESOLVED
-    )
 
     if critic_challenged and failed_critic_verdict is not None:
         claim_set, evidence_challenge = apply_challenge_lifecycle(
@@ -279,12 +322,11 @@ async def execute_resolved_skeleton(
     if node_status.value != "completed" and critic_verdict_passed:
         raise RuntimeError(f"investigator node not completed: {node_status}")
 
-    if critic_verdict_passed and has_supported_diagnosis:
-        outcome = OUTCOME_RESOLVED
-    elif epistemic_unresolved:
-        outcome = OUTCOME_UNRESOLVED
-    else:
-        outcome = OUTCOME_UNRESOLVED
+    outcome = derive_terminal_outcome(
+        critic_verdict_passed=critic_verdict_passed,
+        has_supported_diagnosis=has_supported_diagnosis,
+        completion_mode=completion_mode,
+    )
     leak_blob = _leak_scan_blob(claim_set, evidence_nodes)
 
     return ScenarioExecutionResult(

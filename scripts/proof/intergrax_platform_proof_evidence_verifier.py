@@ -19,6 +19,7 @@ from scripts.proof.intergrax_platform_proof_evidence import (
     iter_evidence_claim_graph_binding_violations,
 )
 from scripts.proof.intergrax_platform_proof_evidence_io import (
+    EVIDENCE_FILENAME,
     compute_evidence_checksum,
     evidence_payload_dict,
 )
@@ -40,15 +41,23 @@ class EvidenceVerificationResult:
     parsed_evidence: PlatformProofEvidence | None = None
 
 
+def resolve_expected_evidence_paths(
+    spec: ProofExecutionSpec,
+) -> tuple[tuple[str, bool], ...]:
+    paths: list[tuple[str, bool]] = []
+    for artifact in spec.expected_artifacts:
+        if artifact.kind == ExpectedArtifactKind.EVIDENCE_JSON:
+            paths.append((artifact.relative_path, artifact.required))
+    if not paths:
+        paths.append((EVIDENCE_FILENAME, True))
+    return tuple(paths)
+
+
 def resolve_expected_evidence_path(
     proof_artifact_directory: Path,
     spec: ProofExecutionSpec,
 ) -> Path:
-    relative = "evidence.json"
-    for artifact in spec.expected_artifacts:
-        if artifact.kind == ExpectedArtifactKind.EVIDENCE_JSON:
-            relative = artifact.relative_path
-            break
+    relative = resolve_expected_evidence_paths(spec)[0][0]
     return proof_artifact_directory / relative
 
 
@@ -320,6 +329,40 @@ def verify_platform_proof_evidence(
         diagnostic_summary="evidence_verified",
         parsed_evidence=evidence,
     )
+
+
+def verify_all_platform_proof_evidence(
+    *,
+    proof_artifact_directory: Path,
+    spec: ProofExecutionSpec,
+    subprocess_result: ProofRunResult,
+    expected_source_revision: str | None = None,
+) -> EvidenceVerificationResult:
+    """Verify every declared EVIDENCE_JSON artifact (required and present optional)."""
+    last_pass: EvidenceVerificationResult | None = None
+    for relative_path, required in resolve_expected_evidence_paths(spec):
+        evidence_path = proof_artifact_directory / relative_path
+        if not required and not evidence_path.is_file():
+            continue
+        result = verify_platform_proof_evidence(
+            evidence_path=evidence_path,
+            artifact_root=proof_artifact_directory,
+            spec=spec,
+            subprocess_result=subprocess_result,
+            expected_source_revision=expected_source_revision,
+        )
+        if result.status != EvidenceVerificationStatus.PASS:
+            return result
+        last_pass = result
+    if last_pass is None:
+        return EvidenceVerificationResult(
+            status=EvidenceVerificationStatus.MISSING,
+            proof_id=spec.manifest_entry.proof_id,
+            evidence_path=None,
+            diagnostic_code="missing_required_evidence",
+            diagnostic_summary="required evidence.json is missing",
+        )
+    return last_pass
 
 
 def apply_evidence_verification(

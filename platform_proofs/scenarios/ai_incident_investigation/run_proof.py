@@ -13,6 +13,10 @@ from pathlib import Path
 from scripts.proof.intergrax_platform_proof_evidence_io import write_evidence_json
 from scripts.proof.intergrax_platform_proof_html_renderer import render_platform_proof_report
 from platform_proofs.scenarios.ai_incident_investigation.evidence_builder import (
+    EVIDENCE_RESOLVED_FILENAME,
+    EVIDENCE_UNRESOLVED_FILENAME,
+    REPORT_RESOLVED_FILENAME,
+    REPORT_UNRESOLVED_FILENAME,
     build_platform_proof_evidence,
 )
 from platform_proofs.scenarios.ai_incident_investigation.evaluator import evaluate_scenario_run
@@ -54,8 +58,14 @@ async def _run_skeleton() -> int:
 
     repo_root = Path(__file__).resolve().parents[3]
     source_revision = _source_revision(repo_root)
-    evidence = build_platform_proof_evidence(
+    resolved_evidence = build_platform_proof_evidence(
         resolved_result,
+        variant=ScenarioVariant.RESOLVED,
+        source_revision=source_revision,
+    )
+    unresolved_evidence = build_platform_proof_evidence(
+        unresolved_result,
+        variant=ScenarioVariant.UNRESOLVED,
         source_revision=source_revision,
     )
 
@@ -63,9 +73,24 @@ async def _run_skeleton() -> int:
     if artifact_dir_env:
         out_dir = Path(artifact_dir_env)
         out_dir.mkdir(parents=True, exist_ok=True)
-        write_evidence_json(evidence, proof_directory=out_dir)
-        report_html = render_platform_proof_report(evidence)
-        (out_dir / "report.html").write_text(report_html, encoding="utf-8")
+        write_evidence_json(
+            resolved_evidence,
+            proof_directory=out_dir,
+            relative_path=EVIDENCE_RESOLVED_FILENAME,
+        )
+        write_evidence_json(
+            unresolved_evidence,
+            proof_directory=out_dir,
+            relative_path=EVIDENCE_UNRESOLVED_FILENAME,
+        )
+        (out_dir / REPORT_RESOLVED_FILENAME).write_text(
+            render_platform_proof_report(resolved_evidence),
+            encoding="utf-8",
+        )
+        (out_dir / REPORT_UNRESOLVED_FILENAME).write_text(
+            render_platform_proof_report(unresolved_evidence),
+            encoding="utf-8",
+        )
         (out_dir / "domain_result.json").write_text(
             json.dumps(
                 {
