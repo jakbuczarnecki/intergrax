@@ -18,6 +18,10 @@ _DOC_ARCH = (
     / "docs/project/maintainers/public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
 )
 _TOKEN_GUIDE = _REPO_ROOT / "docs/project/capabilities/token_optimization/README.md"
+_GOVERNED_PROOF = (
+    _REPO_ROOT
+    / "applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md"
+)
 
 
 @pytest.fixture
@@ -33,6 +37,49 @@ def maintainer_model_text() -> str:
 @pytest.fixture
 def doc_arch_text() -> str:
     return _DOC_ARCH.read_text(encoding="utf-8")
+
+
+@pytest.fixture
+def governed_proof_text() -> str:
+    return _GOVERNED_PROOF.read_text(encoding="utf-8")
+
+
+def test_governed_flagship_proof_distinguishes_controlled_live_from_external_saas(
+    governed_proof_text: str,
+    proofs_text: str,
+) -> None:
+    """Flagship proof must claim controlled Docker-backed runtime, not external SaaS."""
+    for phrase in (
+        "controlled live provider",
+        "external live provider",
+        "not external SaaS",
+        "real runtime",
+        "Docker-backed",
+    ):
+        assert phrase in governed_proof_text, f"Missing governed proof phrase: {phrase}"
+
+    assert "four independent live providers" not in governed_proof_text.lower()
+
+    lkw_section = proofs_text.split("## LKW — Active reference product evidence", 1)[1].split(
+        "\n---\n", 1
+    )[0]
+    governed_row = re.search(
+        r"^\| \*\*Governed Evidence Decision Proof\*\* \|.*$",
+        lkw_section,
+        re.MULTILINE,
+    )
+    assert governed_row is not None
+    row = governed_row.group(0).lower()
+    assert "controlled live provider" in row
+    assert "not external saas" in row
+
+    not_established = proofs_text.split("### Not established by the accepted public proof", 1)[1]
+    lkw_not_established = not_established.split("## Token Optimization", 1)[0]
+    assert "external" in lkw_not_established.lower()
+    assert "external saas validation" in lkw_not_established.lower() or (
+        "controlled live provider" in lkw_not_established.lower()
+        and "not external saas" in lkw_not_established.lower()
+    )
 
 
 def test_token_offline_proof_not_masquerading_as_vllm_claim(proofs_text: str) -> None:

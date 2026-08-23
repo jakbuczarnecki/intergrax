@@ -326,7 +326,12 @@ def test_project_projections_synchronize_accepted_lkw_boundaries() -> None:
         assert "partial" in text, f"{name} omits LKW partial status"
         assert "real-user validation" in text, f"{name} omits real-user boundary"
         assert "commercial validation" in text, f"{name} omits commercial boundary"
-        assert "complete live-provider access" in text, f"{name} omits live-provider boundary"
+        assert (
+            "complete external live-provider access" in text
+            or "complete live-provider access" in text
+        ), f"{name} omits live-provider boundary"
+
+    assert "complete external live-provider access" in proofs
 
     assert "active reference product" in proofs, "PROOFS omits LKW product identity"
     assert "primary product proof" not in proofs, "PROOFS must not identify LKW as proof"
