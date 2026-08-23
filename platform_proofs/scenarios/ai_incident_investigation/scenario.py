@@ -14,8 +14,8 @@ from intergrax.contracts.execution_identity import (
     mint_run_id,
     reset_active_execution_identity,
 )
-from intergrax.contracts.evidence_claims import EvidenceClaimSet
-from intergrax.runtime.critic.contracts import CriticScope, CriticVerdict
+from intergrax.contracts.evidence_claims import EvidenceChallenge, EvidenceClaimSet
+from intergrax.runtime.critic.contracts import CriticVerdict
 from intergrax.runtime.critic.critic_wiring import (
     CriticHookConfig,
     build_critic_graph_hooks,
@@ -27,14 +27,15 @@ from intergrax.runtime.critic.evaluator_loop_metadata import (
     tag_node_evaluator_loop,
 )
 from intergrax.runtime.critic.evaluator_loop_spec import EvaluatorLoopSpec
+from intergrax.runtime.critic.trace import CriticTraceEmitter
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.tools.registry import ToolRegistry
 from platform_proofs.scenarios.ai_incident_investigation.critic_adapter import (
-    build_satisfied_challenge,
-    map_critic_verdict_to_challenge,
+    apply_challenge_lifecycle,
+    first_failed_node_partial_verdict_from_trace,
 )
 from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
     build_skeleton_fixture,
@@ -54,12 +55,12 @@ from platform_proofs.scenarios.ai_incident_investigation.execution_payload impor
 )
 from platform_proofs.scenarios.ai_incident_investigation.validation import (
     IncidentInvestigationValidationEngine,
-    UNSUPPORTED_INFERENCE_ERROR,
 )
 
 INVESTIGATOR_NODE_ID = "investigator-1"
 OUTCOME_RESOLVED = "RESOLVED"
 OUTCOME_UNRESOLVED = "UNRESOLVED"
+EVALUATOR_LOOP_MAX_ITERATIONS = 2
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,6 +76,8 @@ class ScenarioExecutionResult:
     revision_used_tools: bool
     critic_verdict_passed: bool
     leak_scan_blob: str
+    failed_critic_verdict: CriticVerdict | None
+    evidence_challenge: EvidenceChallenge | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,43 +109,18 @@ def _leak_scan_blob(
     return json.dumps({"claim_set": claim_set, "evidence_nodes": evidence_nodes})
 
 
-def _attach_challenge_record(claim_set: dict[str, Any]) -> tuple[dict[str, Any], bool]:
-    failed_verdict = CriticVerdict(
-        scope=CriticScope.NODE_PARTIAL,
-        passed=False,
-        failure_reasons=[UNSUPPORTED_INFERENCE_ERROR],
-    )
-    draft_challenge = map_critic_verdict_to_challenge(
-        failed_verdict,
-        claim_id=INITIAL_CLAIM_ID,
-        evidence_ids=(WORKLOAD_EVIDENCE_ID, THROUGHPUT_EVIDENCE_ID),
-    )
-    if draft_challenge is None:
-        return claim_set, False
-    claim_set_model = EvidenceClaimSet.model_validate(claim_set)
-    satisfied = build_satisfied_challenge(
-        draft_challenge.challenge_id,
-        claim_id=INITIAL_CLAIM_ID,
-        evidence_ids=(WORKLOAD_EVIDENCE_ID, THROUGHPUT_EVIDENCE_ID),
-        description="Follow-up telemetry gathered via platform tools",
-    )
-    updated = EvidenceClaimSet(
-        claims=claim_set_model.claims,
-        challenges=(satisfied,),
-    )
-    return updated.model_dump(mode="json"), True
-
-
 async def execute_resolved_skeleton(
     bundle: ScenarioRuntimeBundle,
     *,
-    require_critic_on_completion: bool = False,
+    require_critic_on_completion: bool = True,
     semantic_judge_enabled: bool = False,
+    validation_engine: IncidentInvestigationValidationEngine | None = None,
+    evaluator_loop_max_iterations: int = EVALUATOR_LOOP_MAX_ITERATIONS,
 ) -> ScenarioExecutionResult:
     agent_registry = AgentRegistry()
     agent_registry.register(bundle.investigator)
 
-    validation_engine = IncidentInvestigationValidationEngine()
+    resolved_validation_engine = validation_engine or IncidentInvestigationValidationEngine()
     critic_hooks = build_critic_graph_hooks(
         config=CriticHookConfig(
             verify_node_partial=True,
@@ -150,7 +128,7 @@ async def execute_resolved_skeleton(
             require_critic_on_completion=require_critic_on_completion,
             semantic_judge_enabled=semantic_judge_enabled,
         ),
-        validation_engine=validation_engine,
+        validation_engine=resolved_validation_engine,
     )
     if critic_hooks is None:
         raise RuntimeError("critic hooks required for skeleton")
@@ -163,7 +141,7 @@ async def execute_resolved_skeleton(
     tag_node_evaluator_loop(
         worker,
         EvaluatorLoopSpec(
-            max_iterations=2,
+            max_iterations=evaluator_loop_max_iterations,
             revise_node_id=INVESTIGATOR_NODE_ID,
             escalate_on_exhaustion=False,
         ),
@@ -182,28 +160,42 @@ async def execute_resolved_skeleton(
     )
     executor = GraphExecutor(
         agent_registry,
-        validation_engine=validation_engine,
+        validation_engine=resolved_validation_engine,
         critic_graph_hooks=critic_hooks,
     )
 
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
+    critic_trace = CriticTraceEmitter(run_id=run_id)
     token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
     try:
-        executions, _retries, graph_out, _ = await executor.execute(graph, task)
+        executions, _retries, graph_out, _ = await executor.execute(
+            graph,
+            task,
+            critic_trace_emitter=critic_trace,
+        )
     finally:
         reset_active_execution_identity(token)
 
     if not executions:
-        raise RuntimeError("no agent executions produced")
-
-    final_execution = executions[-1]
+        node = graph_out.node_by_id(INVESTIGATOR_NODE_ID)
+        if node.execution_result is None:
+            raise RuntimeError("no agent executions produced")
+        final_execution = node.execution_result
+    else:
+        final_execution = executions[-1]
     domain_payload = domain_payload_from_execution(final_execution)
     claim_set = dict(domain_payload.get("claim_set", {}))
     evidence_nodes = tuple(domain_payload.get("evidence_nodes", []))
     tool_invocations = int(domain_payload.get("tool_invocations", 0))
     revision_pass = bool(domain_payload.get("revision_pass", False))
     evaluator_loop_iterations = current_evaluator_loop_iteration(worker)
+
+    failed_critic_verdict = first_failed_node_partial_verdict_from_trace(
+        critic_trace,
+        node_id=INVESTIGATOR_NODE_ID,
+    )
+    critic_challenged = failed_critic_verdict is not None and not failed_critic_verdict.passed
 
     final_validation, final_verdict = validate_node_with_critic_detail(
         final_execution,
@@ -227,9 +219,15 @@ async def execute_resolved_skeleton(
         )
     critic_verdict_passed = final_verdict.passed and final_validation.valid
 
-    critic_challenged = evaluator_loop_iterations > 0
-    if critic_challenged:
-        claim_set, _ = _attach_challenge_record(claim_set)
+    evidence_challenge: EvidenceChallenge | None = None
+    if critic_challenged and failed_critic_verdict is not None:
+        claim_set, evidence_challenge = apply_challenge_lifecycle(
+            claim_set,
+            failed_critic_verdict,
+            claim_id=INITIAL_CLAIM_ID,
+            evidence_ids=(WORKLOAD_EVIDENCE_ID, THROUGHPUT_EVIDENCE_ID),
+            resolved=critic_verdict_passed,
+        )
 
     node_status = graph_out.node_by_id(INVESTIGATOR_NODE_ID).status
     if node_status.value != "completed" and critic_verdict_passed:
@@ -250,12 +248,15 @@ async def execute_resolved_skeleton(
         revision_used_tools=revision_pass and tool_invocations >= 3,
         critic_verdict_passed=critic_verdict_passed,
         leak_scan_blob=leak_blob,
+        failed_critic_verdict=failed_critic_verdict,
+        evidence_challenge=evidence_challenge,
     )
 
 
 async def execute_with_completion_gate_blocked(bundle: ScenarioRuntimeBundle) -> ScenarioExecutionResult:
+    """Real graph path where critic failure cannot recover within platform loop budget."""
     return await execute_resolved_skeleton(
         bundle,
         require_critic_on_completion=True,
-        semantic_judge_enabled=True,
+        evaluator_loop_max_iterations=1,
     )

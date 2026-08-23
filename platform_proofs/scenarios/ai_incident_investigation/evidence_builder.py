@@ -52,7 +52,7 @@ def build_platform_proof_evidence(
     claim_set = EvidenceClaimSet.model_validate(result.claim_set)
     projected_claims = project_evidence_claim_set(
         claim_set,
-        text_source=ReportSafeTextSourceKind.PROOF_AUTHORED,
+        text_source=ReportSafeTextSourceKind.RUNTIME_EXPLICIT,
     )
 
     evidence_nodes = tuple(

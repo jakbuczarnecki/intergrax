@@ -6,17 +6,32 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.contracts.evidence_claims import ClaimResolution, EvidenceClaimSet
+from intergrax.contracts.evidence_claims import (
+    ChallengeDefectFamily,
+    ChallengeResolution,
+    ClaimResolution,
+    EvidenceClaimSet,
+)
+from platform_proofs.scenarios.ai_incident_investigation.critic_adapter import (
+    UNSUPPORTED_INFERENCE_DEFECT,
+)
 from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
     FORBIDDEN_LEAK_MARKERS,
     IncidentFixture,
     HypothesisId,
 )
 from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
+    INITIAL_CLAIM_ID,
     REVISED_CLAIM_ID,
     TELEMETRY_EVIDENCE_ID,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario import ScenarioExecutionResult
+from platform_proofs.scenarios.ai_incident_investigation.scenario import (
+    EVALUATOR_LOOP_MAX_ITERATIONS,
+    ScenarioExecutionResult,
+)
+from platform_proofs.scenarios.ai_incident_investigation.validation import (
+    UNSUPPORTED_INFERENCE_ERROR,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,8 +67,38 @@ def evaluate_scenario_run(
     else:
         checks.append("critic_falsification_occurred")
 
+    if result.failed_critic_verdict is None:
+        failures.append("failed_critic_verdict_missing")
+    elif UNSUPPORTED_INFERENCE_ERROR not in result.failed_critic_verdict.failure_reasons:
+        failures.append("failed_critic_verdict_reason_mismatch")
+    else:
+        checks.append("failed_critic_verdict_provenance")
+
+    if result.evidence_challenge is None:
+        failures.append("evidence_challenge_missing")
+    else:
+        challenge = result.evidence_challenge
+        if challenge.claim_id != INITIAL_CLAIM_ID:
+            failures.append("challenge_target_claim_mismatch")
+        elif challenge.defect_family is not ChallengeDefectFamily.UNSUPPORTED_INFERENCE:
+            failures.append("challenge_defect_family_mismatch")
+        elif challenge.defect_code != UNSUPPORTED_INFERENCE_DEFECT:
+            failures.append("challenge_defect_code_mismatch")
+        else:
+            checks.append("critic_challenge_mapped_from_verdict")
+
+        if result.critic_verdict_passed:
+            if challenge.resolution is not ChallengeResolution.SATISFIED:
+                failures.append("challenge_not_satisfied_after_resolution")
+            else:
+                checks.append("challenge_satisfied_after_revision")
+        elif challenge.resolution is not ChallengeResolution.OPEN:
+            failures.append("unresolved_challenge_should_remain_open")
+
     if result.evaluator_loop_iterations < 1:
         failures.append("bounded_recovery_missing")
+    elif result.evaluator_loop_iterations > EVALUATOR_LOOP_MAX_ITERATIONS:
+        failures.append("evaluator_loop_budget_exceeded")
     else:
         checks.append("bounded_recovery_within_platform")
 
@@ -74,6 +119,9 @@ def evaluate_scenario_run(
     else:
         checks.append("resolved_outcome")
 
+    if not result.critic_verdict_passed:
+        failures.append("final_critic_verdict_not_passed")
+
     leaked = _collect_leakage_strings(result)
     if leaked:
         failures.append(f"ground_truth_leak:{','.join(leaked)}")
@@ -85,7 +133,6 @@ def evaluate_scenario_run(
     else:
         failures.append("follow_up_not_via_tools")
 
-    # Private truth comparison — evaluator only
     if fixture.private_truth.initiating_factor_code != "station_signal_degraded_pattern":
         failures.append("fixture_truth_integrity")
     else:

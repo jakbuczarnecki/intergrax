@@ -23,6 +23,17 @@ UNSUPPORTED_INFERENCE_ERROR = (
 )
 
 
+def _observable_evidence_ids(payload: dict[str, object]) -> frozenset[str]:
+    raw_nodes = payload.get("evidence_nodes")
+    if not isinstance(raw_nodes, list):
+        return frozenset()
+    ids: list[str] = []
+    for node in raw_nodes:
+        if isinstance(node, dict) and "evidence_id" in node:
+            ids.append(str(node["evidence_id"]))
+    return frozenset(ids)
+
+
 class IncidentInvestigationValidationEngine(NexusValidationEngine):
     """Platform L0 critic — rejects H1-only correlation; accepts bounded H3 with telemetry."""
 
@@ -43,17 +54,8 @@ class IncidentInvestigationValidationEngine(NexusValidationEngine):
         if not base.valid:
             return base
 
-        summary = (execution.summary or "").strip()
-        if summary.startswith("revised:"):
-            return ValidationResult(valid=True, warnings=list(base.warnings))
-        if summary.startswith("draft:"):
-            return ValidationResult(
-                valid=False,
-                errors=[UNSUPPORTED_INFERENCE_ERROR],
-                warnings=list(base.warnings),
-            )
-
-        raw_claim_set = domain_payload_from_execution(execution).get("claim_set")
+        domain_payload = domain_payload_from_execution(execution)
+        raw_claim_set = domain_payload.get("claim_set")
         if raw_claim_set is None:
             return ValidationResult(
                 valid=False,
@@ -74,6 +76,7 @@ class IncidentInvestigationValidationEngine(NexusValidationEngine):
                 warnings=list(base.warnings),
             )
 
+        observable_ids = _observable_evidence_ids(domain_payload)
         latest = diagnosis_claims[-1]
         telemetry_refs = tuple(
             evidence_id
@@ -88,11 +91,20 @@ class IncidentInvestigationValidationEngine(NexusValidationEngine):
                     errors=["supported_diagnosis_missing_telemetry_evidence"],
                     warnings=list(base.warnings),
                 )
+            missing_observable = [
+                str(evidence_id)
+                for evidence_id in telemetry_refs
+                if str(evidence_id) not in observable_ids
+            ]
+            if missing_observable:
+                return ValidationResult(
+                    valid=False,
+                    errors=["supported_diagnosis_telemetry_not_observable"],
+                    warnings=list(base.warnings),
+                )
             return ValidationResult(valid=True, warnings=list(base.warnings))
 
-        active_hypothesis = str(
-            domain_payload_from_execution(execution).get("active_hypothesis", "")
-        )
+        active_hypothesis = str(domain_payload.get("active_hypothesis", ""))
         if active_hypothesis == "H1" and not telemetry_refs:
             return ValidationResult(
                 valid=False,
@@ -101,6 +113,17 @@ class IncidentInvestigationValidationEngine(NexusValidationEngine):
             )
 
         if active_hypothesis == "H3" and telemetry_refs:
+            missing_observable = [
+                str(evidence_id)
+                for evidence_id in telemetry_refs
+                if str(evidence_id) not in observable_ids
+            ]
+            if missing_observable:
+                return ValidationResult(
+                    valid=False,
+                    errors=["h3_diagnosis_telemetry_not_observable"],
+                    warnings=list(base.warnings),
+                )
             return ValidationResult(valid=True, warnings=list(base.warnings))
 
         return ValidationResult(
