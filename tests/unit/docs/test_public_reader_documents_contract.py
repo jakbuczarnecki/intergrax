@@ -1035,7 +1035,9 @@ def test_why_business_strategic_thesis(why_text: str) -> None:
         "lkw is the current product path used to test this thesis",
         "compounding value hypothesis",
         "commercialization gates",
-        "commercial and real-user validation remain open",
+        "measured cross-product acceleration",
+        "not yet established",
+        "the following remain open",
         "real-user validation",
     ):
         assert phrase in normalized, f"WHY missing business thesis marker: {phrase}"
@@ -1053,6 +1055,26 @@ def test_why_business_strategic_thesis(why_text: str) -> None:
     )
     for phrase in forbidden_promotional:
         assert phrase not in normalized, f"WHY contains promotional claim phrase: {phrase!r}"
+
+
+def test_why_governed_evidence_controlled_live_boundary(why_text: str) -> None:
+    """AUD-SKEPTIC-1: Governed Evidence claim must project controlled-live semantics."""
+    normalized = _normalize(why_text)
+    governed_section = normalized[
+        normalized.find("governed evidence decision proof") : normalized.find("compounding value hypothesis")
+    ]
+    assert "controlled live" in governed_section
+    assert "not external saas" in governed_section
+    assert "live organizational evidence" not in governed_section.replace(
+        "controlled live organizational evidence", ""
+    )
+
+
+def test_use_cases_external_live_provider_boundary() -> None:
+    """AUD-SKEPTIC-1: incomplete live-provider boundary must name external access."""
+    normalized = " ".join(_normalize(_read(USE_CASES_PATH)).split())
+    assert "complete external live-provider access is incomplete" in normalized
+    assert "complete live-provider access is incomplete" not in normalized
 
 
 def test_use_cases_workflow_fit_and_ownership_contract() -> None:
@@ -1076,8 +1098,8 @@ def test_use_cases_workflow_fit_and_ownership_contract() -> None:
         assert phrase in normalized, f"USE_CASES missing reader-fit marker: {phrase}"
 
     assert "mixed indexed + authorized live hybrid ask" in normalized
-    assert "remains incomplete" in normalized
-    assert "complete live-provider access is incomplete" in normalized
+    assert "mixed indexed + authorized live hybrid ask is not yet established" in normalized
+    assert "complete external live-provider access is incomplete" in normalized
 
 
 def test_use_cases_business_evaluation_framing() -> None:
