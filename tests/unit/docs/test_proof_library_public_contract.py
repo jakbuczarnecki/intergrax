@@ -93,6 +93,30 @@ def test_catalog_truth(proof_library_text: str) -> None:
     assert "verdict: pass" not in featured_normalized
 
 
+def test_incident_scenario_projection_semantics(proof_library_text: str) -> None:
+    """AI Incident Investigation first-contact status matches canonical scenario semantics."""
+    normalized = re.sub(r"[*_`]", "", proof_library_text).lower()
+    assert "full-1" in normalized
+    assert "implemented" in normalized
+    assert "executable" in normalized
+    assert (
+        "public scenario proof not yet accepted" in normalized
+        or "public proof" in normalized
+        or "not accepted" in normalized
+    )
+    assert "no executable proof yet" not in normalized
+    assert "design accepted for implementation" not in normalized
+    featured_section = proof_library_text.split("## D. Featured scenario in development", 1)[1]
+    featured_section = featured_section.split("## E. How to read a proof", 1)[0]
+    featured_normalized = re.sub(r"[*_`]", "", featured_section).lower()
+    assert "no report, evidence bundle, or reproduction path exists yet" not in featured_normalized
+    assert (
+        "no accepted published evidence bundle" in featured_normalized
+        or "not accepted for public publication" in featured_normalized
+        or "no accepted published" in featured_normalized
+    )
+
+
 def test_premium_structure(proof_library_text: str) -> None:
     for heading in (
         "## A. What is a Scenario Proof?",

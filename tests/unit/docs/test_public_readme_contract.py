@@ -277,12 +277,16 @@ def test_scenario_public_positioning(readme_text: str) -> None:
     assert "scenario proof library" in normalized
     assert "not a marketing demo" in normalized or "not a marketing" in normalized
     assert "featured scenario in development" in normalized
-    assert "in development" in normalized
+    assert "full-1" in normalized
+    assert "implemented" in normalized
+    assert "executable" in normalized
     assert (
-        "no executable proof" in normalized
-        or "not a current pass" in normalized
-        or "no executable evidence" in normalized
+        "public proof" in normalized
+        or "not accepted" in normalized
+        or "remain pending" in normalized
     )
+    assert "no executable proof yet" not in normalized
+    assert "no executable evidence or report yet" not in normalized
     assert "ai_incident_investigation" in scenario_section
     explore_section = _section_slice(
         readme_text,
@@ -321,6 +325,23 @@ def test_top_cta_proof_library(readme_text: str) -> None:
     top_block = readme_text[: readme_text.index("## Choose your path")]
     assert "Explore Proof Library" in top_block
     assert "docs/project/proofs/PROOF_LIBRARY.md" in top_block
+
+
+def test_governed_evidence_first_contact_projection(readme_text: str) -> None:
+    """Governed Evidence flagship wording matches controlled-live canonical semantics."""
+    governed_section = _section_slice(
+        readme_text,
+        "#### B. Governed Evidence Decision Proof",
+        "**Other bounded paths:**",
+    )
+    normalized = re.sub(r"[*_`]", "", governed_section).lower()
+    assert "controlled live" in normalized
+    assert (
+        "not external saas" in normalized
+        or "not external saas validation" in normalized
+    )
+    assert "four live organizational sources" not in normalized
+    assert "external live-provider access" in re.sub(r"[*_`]", "", readme_text).lower()
 
 
 def test_lkw_routes_governed_evidence_proof(readme_text: str) -> None:

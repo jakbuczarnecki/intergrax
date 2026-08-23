@@ -81,7 +81,7 @@ The library operating model is ready. Accepted Scenario Proofs appear here only 
 
 | Scenario | Status | Public routes |
 | --- | --- | --- |
-| **AI Incident Investigation with Independent Verification** | **In development** — design accepted for implementation; no executable proof yet | [Scenario design](../../../platform_proofs/scenarios/ai_incident_investigation/README.md) |
+| **AI Incident Investigation with Independent Verification** | **In development** — FULL-1 RESOLVED path implemented and executable; UNRESOLVED path pending; public Scenario Proof not yet accepted | [Scenario design](../../../platform_proofs/scenarios/ai_incident_investigation/README.md) |
 
 When a scenario is accepted, each entry will expose:
 
@@ -114,7 +114,7 @@ Links appear only when artifacts exist — not for placeholder or in-design work
 
 Initial operational signals make workload overload plausible. Evidence is conflicting, stale, and incomplete. Independent verification must challenge unsupported causality, gather targeted evidence to distinguish competing hypotheses, and produce a bounded **RESOLVED** or honest **UNRESOLVED** outcome.
 
-**Status:** in development — not accepted proof evidence. No report, evidence bundle, or reproduction path exists yet.
+**Status:** in development — FULL-1 RESOLVED evidence world implemented and executable via platform proof runner; UNRESOLVED path pending FULL-2. No accepted published evidence bundle, report, or reproduction route yet.
 
 <a href="../assets/public/readme/fullsize/scenario-ai-incident-investigation.md">
 <picture>
