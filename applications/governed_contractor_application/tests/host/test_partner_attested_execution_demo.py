@@ -73,11 +73,13 @@ def _bundle():
                 rule_id="fake.meaningful_side_effect.CREATE_EXTERNAL_WORK",
                 description="allow create",
                 effect="allow",
+                match_action=ACTION_CREATE_EXTERNAL_WORK,
             ),
             PolicyBundleRule(
                 rule_id="fake.meaningful_side_effect.ACCEPT_QUOTE",
                 description="allow accept",
                 effect="allow",
+                match_action=ACTION_ACCEPT_QUOTE,
             ),
         ),
         issued_at=_T0,
