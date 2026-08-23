@@ -32,11 +32,9 @@ those mechanisms for every workflow.
 </picture>
 </a>
 
-> Intergrax is **source-available** and under **active R&D**. LKW is a
-> **Backend Product Alpha / MVP**. **Real-user validation** and **commercial
-> validation** are incomplete.
+> Intergrax is **source-available** and under **active R&D**.
 
-**Current reality:** [Local Knowledge Workspace](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) is the active reference product at **Backend Product Alpha / MVP** with bounded proof paths — not production readiness. Additional portfolio directions are **selected pre-bootstrap** only; their presence does not imply implementation or runtime proof.
+**Current reality:** [Local Knowledge Workspace](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) is the active reference product at **Backend Product Alpha / MVP** with bounded proof paths. **Real-user validation** and **commercial validation** remain incomplete. Additional portfolio directions are **selected pre-bootstrap** only — their presence does not imply implementation or runtime proof.
 
 ---
 
@@ -128,9 +126,12 @@ Intergrax is easier to understand by watching it handle difficult problems — n
 
 Scenario Proofs start where AI systems can fail: conflicting evidence, stale information, unsafe actions, crash after an external side effect, missing required evidence, or false confident diagnosis.
 
-Each accepted Scenario Proof is intended to expose: problem → failure risk → adversarial scenario → execution → evidence → verdict → reproduction.
+Scenario Proofs are executable falsification attempts against bounded real-world
+system claims — designed to be run, inspected, challenged, and reproduced.
 
-This is **not** a marketing demo, feature showcase, or product claim — executable falsification against a bounded real-world problem.
+Each accepted Scenario Proof exposes: problem → failure risk → adversarial scenario → execution → evidence → verdict → reproduction.
+
+They are **not** a marketing demo, feature showcase, or product claim. Product, user, and commercial validation are tracked separately.
 
 <a href="docs/project/assets/public/readme/fullsize/intergrax-scenarios-overview.md">
 <picture>
@@ -161,7 +162,7 @@ This is **not** a marketing demo, feature showcase, or product claim — executa
 
 Initial production signals make workload overload plausible — but evidence is conflicting, stale, and incomplete. Independent verification must challenge unsupported causality, gather targeted evidence to distinguish competing hypotheses, and produce a bounded **RESOLVED** or honest **UNRESOLVED** outcome.
 
-**Status:** in development — no executable proof, evidence, or report yet. The visual describes possible bounded outcomes, not a current PASS.
+**Status:** in development — no executable evidence or report yet.
 
 <a href="docs/project/assets/public/readme/fullsize/scenario-ai-incident-investigation.md">
 <picture>
@@ -234,8 +235,8 @@ versioned policy-derived obligations, execution-time authority revalidation,
 temporal admissibility, typed failure semantics, deterministic LLM suppression
 when admissibility is unsatisfied, and persisted structural proof.
 
-This proof does **not** certify complete **indexed + authorized live Hybrid Ask**
-in a single admissibility gate. See the [Governed Evidence Decision Proof](applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md).
+**Hybrid Ask combining indexed and authorized live evidence** is outside this
+proof's scope — see the [Governed Evidence Decision Proof](applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md).
 
 <a href="applications/local_workspace_application/docs/assets/fullsize/lkw-governed-evidence-gate.md">
 <picture>
@@ -254,18 +255,11 @@ in a single admissibility gate. See the [Governed Evidence Decision Proof](appli
 </picture>
 </a>
 
-**Separate bounded technical evidence:** indexed Hybrid Ask branch
-(`LKW-HYBRID-ASK-INDEXED`) is a **real application code path** for indexed retrieval.
-Hybrid Ask combining indexed and authorized live evidence is **not yet proven**.
-
-**Separate live durability evidence:** [Trusted Ask](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md#trusted-ask-workspace-mvp-2)
-(`LKW-ASK-WORKSPACE-LIVE`) verifies completed grounded Ask outcomes across
-restart without resync/reindex.
-
-**Not yet proven:** complete live-provider access, finished end-user packaging,
-**real-user validation**, and **commercial validation**. See
-[LKW Platform Proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) and
-[PROOFS](docs/project/proofs/PROOFS.md).
+**Other bounded paths:** indexed Hybrid Ask branch (`LKW-HYBRID-ASK-INDEXED`) —
+real application code path; [Trusted Ask](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md#trusted-ask-workspace-mvp-2)
+(`LKW-ASK-WORKSPACE-LIVE`) — durable workspace Ask across restart. Current limits
+(live-provider access, end-user packaging; real-user validation and commercial
+validation incomplete): [LKW Platform Proof](applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [PROOFS](docs/project/proofs/PROOFS.md).
 
 ## Try LKW
 

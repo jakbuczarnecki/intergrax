@@ -8,12 +8,12 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 **Real problems. Executable evidence.**
 
-The Intergrax Proof Library is a problem-first catalog of **Scenario Proofs** — executable, falsifiable demonstrations that start from difficult real-world AI system problems, not from platform feature demos.
+The Intergrax Proof Library is a problem-first catalog of **Scenario Proofs** — executable falsification attempts against bounded real-world system claims.
 
-Intergrax is easier to understand by watching it handle hard problems than by reading capability lists. Each accepted Scenario Proof is designed so you can inspect what was tested, how it was attacked, the evidence produced, the verdict, stated limitations, source, and a reproduction path.
+Intergrax is easier to understand by watching it handle hard problems than by reading capability lists. Each accepted Scenario Proof is designed to be run, inspected, challenged, and reproduced: what was tested, how it was attacked, the evidence produced, the verdict, stated limitations, source, and a reproduction path.
 
 > [!IMPORTANT]
-> **Scenario Proofs are not products.** They do not substitute for real-user validation, commercial validation, or production readiness. They make bounded claims inspectable under adversarial conditions — not marketing demos.
+> Scenario Proofs stress-test bounded system guarantees under adversarial conditions and produce inspectable evidence. **Scenario Proofs are not products.** They do not substitute for real-user validation, commercial validation, or production readiness. Product, user, and commercial validation remain separate evidence classes.
 
 ---
 
@@ -191,16 +191,14 @@ Bring the **problem**, not an Intergrax feature request. If the problem is suita
 
 ## H. Proof Library vs evidence dashboard
 
-These are **separate** public surfaces with different jobs:
+**[PROOFS.md](PROOFS.md)** remains the canonical evidence-status source. These surfaces answer different reader questions:
 
 | Surface | Framing | Answers |
 | --- | --- | --- |
 | **Proof Library** (this page) | Problem-first | *Show me difficult problems and executable scenarios.* |
 | **[PROOFS.md](PROOFS.md)** | Evidence-first | *Show me exactly what is proven and what Intergrax is allowed to claim.* |
 
-An attractive scenario description **never** overrides evidence or claim status. For implementation status, bounded verification, partial capability, planned work, and claims that are not currently supported, use the **[Intergrax Proofs evidence dashboard](PROOFS.md)**.
-
-Scenario Proofs are also **not** product proofs. For the active reference product and its bounded product proof paths, see [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md).
+Use [PROOFS.md](PROOFS.md) for implementation status, bounded verification, partial capability, planned work, and claims that are not currently supported. Scenario Proofs are distinct from product proofs — for the active reference product and its bounded product paths, see [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md).
 
 ---
 

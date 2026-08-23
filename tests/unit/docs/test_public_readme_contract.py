@@ -278,7 +278,11 @@ def test_scenario_public_positioning(readme_text: str) -> None:
     assert "not a marketing demo" in normalized or "not a marketing" in normalized
     assert "featured scenario in development" in normalized
     assert "in development" in normalized
-    assert "no executable proof" in normalized or "not a current pass" in normalized
+    assert (
+        "no executable proof" in normalized
+        or "not a current pass" in normalized
+        or "no executable evidence" in normalized
+    )
     assert "ai_incident_investigation" in scenario_section
     explore_section = _section_slice(
         readme_text,
