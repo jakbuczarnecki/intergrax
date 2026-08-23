@@ -38,7 +38,7 @@ from scripts.proof.intergrax_proof_contracts import ProofProfile
 from platform_proofs.scenarios.ai_incident_investigation.scenario import ScenarioExecutionResult
 
 PROOF_ID = "SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON"
-PROOF_VERSION = "skeleton-0.1.0"
+PROOF_VERSION = "full-1-resolved-0.2.0"
 
 
 def build_platform_proof_evidence(
@@ -98,11 +98,19 @@ def build_platform_proof_evidence(
 
     execution_id = f"incident-skeleton-{int(started.timestamp())}"
     scenario = ScenarioEvidence(
-        scenario_id="resolved_challenge_revision",
-        title="CHALLENGE → REVISION → ACCEPT",
-        question="Can workload-throughput correlation become accepted diagnosis without follow-up?",
-        expected_behavior="Reject H1 overload; gather telemetry; accept bounded H3 diagnosis",
-        falsification_condition="Unsupported overload diagnosis accepted without distinguishing evidence",
+        scenario_id="resolved_full_evidence_world",
+        title="RESOLVED FULL — H1/H2/H3 evidence world",
+        question=(
+            "Can workload-throughput correlation become accepted diagnosis without "
+            "comparison, staffing resolution, and telemetry follow-up?"
+        ),
+        expected_behavior=(
+            "Reject H1 overload; resolve H2 staffing conflict; gather comparison and "
+            "telemetry; accept bounded H3 diagnosis"
+        ),
+        falsification_condition=(
+            "Unsupported overload diagnosis accepted without distinguishing evidence"
+        ),
         execution_status=ProofEvidenceExecutionStatus.PASS,
         metrics=(
             MetricEvidence(name="tool_invocations", value=result.tool_invocations),
@@ -118,7 +126,7 @@ def build_platform_proof_evidence(
     return PlatformProofEvidence(
         proof_identity=ProofIdentityEvidence(
             proof_id=PROOF_ID,
-            title="AI Incident Investigation — platform-native skeleton",
+            title="AI Incident Investigation — full RESOLVED evidence world",
             domains_exercised=("EXECUTION", "TOOLS", "CRITIC", "EVIDENCE"),
             proof_version=PROOF_VERSION,
             source_revision=source_revision,
@@ -132,8 +140,12 @@ def build_platform_proof_evidence(
         ),
         claim=ProofClaimEvidence(
             claim="No material incident diagnosis without auditable evidence and falsification.",
-            user_relevance="Skeleton proves platform-native investigation wiring.",
-            success_criteria=("ToolRuntime exercised", "Critic challenge and revision bounded"),
+            user_relevance="FULL-1 proves RESOLVED path with H1/H2/H3 adversarial evidence.",
+            success_criteria=(
+                "ToolRuntime exercised",
+                "Critic challenge and revision bounded",
+                "Comparison and staffing conflict handled",
+            ),
             falsification_criteria=("Unsupported causal diagnosis accepted",),
             excluded_claims=("Full manufacturing dataset", "Public proof established"),
         ),
@@ -151,12 +163,18 @@ def build_platform_proof_evidence(
             content=explicit_runtime_report_safe_text(result.terminal_summary),
         ),
         limitations=(
-            "Skeleton slice only — minimal synthetic fixture, not full H1/H2/H3 dataset.",
+            "FULL-1 RESOLVED evidence world only — UNRESOLVED path pending FULL-2.",
+            "Not accepted for public proof publication.",
         ),
         conclusion=ConclusionEvidence(
-            supported_conclusions=("Platform-native critic revision path exercised",),
-            unsupported_conclusions=("Full scenario dataset", "Public proof publication"),
-            open_questions=("UNRESOLVED insufficient-evidence path at scale",),
+            supported_conclusions=(
+                "RESOLVED path with H1/H2/H3 adversarial evidence exercised",
+            ),
+            unsupported_conclusions=(
+                "UNRESOLVED insufficient-evidence path",
+                "Public proof publication",
+            ),
+            open_questions=("FULL-2 UNRESOLVED terminal scenario",),
         ),
         reproduction=ReproductionEvidence(
             source_revision=source_revision,

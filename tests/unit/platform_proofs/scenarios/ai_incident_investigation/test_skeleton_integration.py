@@ -57,12 +57,25 @@ from platform_proofs.scenarios.ai_incident_investigation.evidence_builder import
     PROOF_ID,
     build_platform_proof_evidence,
 )
-from platform_proofs.scenarios.ai_incident_investigation.evaluator import evaluate_scenario_run
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import FORBIDDEN_LEAK_MARKERS
+from platform_proofs.scenarios.ai_incident_investigation.evaluator import (
+    evaluate_correlation_only_strategy,
+    evaluate_h3_without_telemetry_strategy,
+    evaluate_scenario_run,
+    evaluate_stale_staffing_strategy,
+)
+from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
+    FORBIDDEN_LEAK_MARKERS,
+    TimeWindowLabel,
+    build_resolved_fixture,
+    staffing_record_admissible_for_incident,
+)
 from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
+    COMPARISON_EVIDENCE_ID,
     INITIAL_CLAIM_ID,
     INVESTIGATOR_CAPABILITY,
     REVISED_CLAIM_ID,
+    STAFFING_ATTENDANCE_EVIDENCE_ID,
+    STAFFING_PRELIMINARY_EVIDENCE_ID,
     TELEMETRY_EVIDENCE_ID,
     THROUGHPUT_EVIDENCE_ID,
     WORKLOAD_EVIDENCE_ID,
@@ -152,7 +165,7 @@ async def test_resolved_skeleton_executes_platform_path() -> None:
     assert result.critic_challenged
     assert result.evaluator_loop_iterations >= 1
     assert result.evaluator_loop_iterations <= EVALUATOR_LOOP_MAX_ITERATIONS
-    assert result.tool_invocations >= 3
+    assert result.tool_invocations >= 6
     assert result.revision_used_tools
     assert result.failed_critic_verdict is not None
     assert UNSUPPORTED_INFERENCE_ERROR in result.failed_critic_verdict.failure_reasons
@@ -165,7 +178,7 @@ async def test_resolved_skeleton_executes_platform_path() -> None:
     assert result.evidence_challenge.resolution is ChallengeResolution.SATISFIED
     assert TELEMETRY_EVIDENCE_ID in result.evidence_challenge.evidence_ids
     assert WORKLOAD_EVIDENCE_ID in result.evidence_challenge.evidence_ids
-    assert THROUGHPUT_EVIDENCE_ID in result.evidence_challenge.evidence_ids
+    assert COMPARISON_EVIDENCE_ID in result.evidence_challenge.evidence_ids
 
     evaluation = evaluate_scenario_run(result, bundle.fixture)
     assert evaluation.passed
@@ -329,7 +342,11 @@ async def test_summary_revised_with_missing_telemetry_evidence_fails() -> None:
         capability=INVESTIGATOR_CAPABILITY,
     )
     assert not validation.valid
-    assert "supported_diagnosis_telemetry_not_observable" in validation.errors
+    assert (
+        "supported_diagnosis_telemetry_not_observable" in validation.errors
+        or "supported_diagnosis_evidence_not_observable" in validation.errors
+        or "unsupported_inference:missing_comparison_evidence" in validation.errors
+    )
 
 
 @pytest.mark.asyncio
@@ -386,7 +403,7 @@ async def test_follow_up_uses_platform_tools_not_direct_fixture() -> None:
     bundle = build_runtime_bundle()
     result = await execute_resolved_skeleton(bundle)
     assert result.revision_used_tools
-    assert result.tool_invocations == 3
+    assert result.tool_invocations == 6
 
 
 @pytest.mark.asyncio

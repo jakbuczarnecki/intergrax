@@ -69,7 +69,7 @@ async def _run_skeleton() -> int:
             encoding="utf-8",
         )
 
-    print("SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON: PASS")
+    print("SCENARIO-AI-INCIDENT-INVESTIGATION-FULL-1: PASS")
     return 0
 
 

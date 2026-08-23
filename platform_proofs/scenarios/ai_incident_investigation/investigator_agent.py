@@ -30,9 +30,14 @@ from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExe
 from intergrax.tools.registry import ToolRegistry
 from platform_proofs.scenarios.ai_incident_investigation.fixtures import HypothesisId
 from platform_proofs.scenarios.ai_incident_investigation.tools import (
+    default_comparison_input,
     default_line_window_input,
+    default_staffing_input,
     default_telemetry_input,
     SCENARIO_TOOL_IDS,
+    TOOL_COMPARISON_READ,
+    TOOL_STAFFING_ATTENDANCE_READ,
+    TOOL_STAFFING_SCHEDULE_READ,
     TOOL_TELEMETRY_READ,
     TOOL_THROUGHPUT_READ,
     TOOL_WORKLOAD_READ,
@@ -44,9 +49,19 @@ INVESTIGATOR_AGENT_ID = "incident_investigator"
 INVESTIGATOR_CAPABILITY = "incident_investigation.investigate"
 
 INITIAL_CLAIM_ID = validate_evidence_claim_id("eclaim_a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1")
+H2_CLAIM_ID = validate_evidence_claim_id("eclaim_c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3")
 REVISED_CLAIM_ID = validate_evidence_claim_id("eclaim_b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2")
 WORKLOAD_EVIDENCE_ID = validate_evidence_reference_id("evidence.workload.line4.incident_window")
 THROUGHPUT_EVIDENCE_ID = validate_evidence_reference_id("evidence.throughput.line4.incident_window")
+STAFFING_PRELIMINARY_EVIDENCE_ID = validate_evidence_reference_id(
+    "evidence.staffing.schedule.line4.incident_window"
+)
+STAFFING_ATTENDANCE_EVIDENCE_ID = validate_evidence_reference_id(
+    "evidence.staffing.attendance.line4.incident_window"
+)
+COMPARISON_EVIDENCE_ID = validate_evidence_reference_id(
+    "evidence.comparison.line3.high_load_window"
+)
 TELEMETRY_EVIDENCE_ID = validate_evidence_reference_id(
     "evidence.telemetry.complex_assembly_station.incident_window"
 )
@@ -62,7 +77,7 @@ class IncidentInvestigatorAgent(Agent):
         return AgentContract(
             id=INVESTIGATOR_AGENT_ID,
             name=INVESTIGATOR_AGENT_ID,
-            description="Incident investigator — platform-native skeleton",
+            description="Incident investigator — platform-native scenario",
             capabilities=[INVESTIGATOR_CAPABILITY],
             allowed_tools=list(SCENARIO_TOOL_IDS),
         )
@@ -113,6 +128,28 @@ class IncidentInvestigatorAgent(Agent):
             )
         ]
 
+    async def _invoke_tool(
+        self,
+        *,
+        runtime_state: RuntimeState,
+        step: AgentStep,
+        tool_id: str,
+        tool_input: dict[str, str],
+    ) -> object:
+        await ToolRuntime.invoke(
+            state=runtime_state,
+            plan=ToolInvocationPlan(
+                tool_ids=(tool_id,),
+                tool_inputs={tool_id: tool_input},
+            ),
+            trace_step=step.step_id,
+            allowed_tools=SCENARIO_TOOL_IDS,
+        )
+        trace = runtime_state.tool_traces[-1]
+        if not trace.success:
+            raise RuntimeError(f"{tool_id} failed: {trace.error_message}")
+        return trace.output_preview
+
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         is_revision = bool((ctx.request.metadata or {}).get("critic_feedback"))
         if not is_revision:
@@ -125,73 +162,101 @@ class IncidentInvestigatorAgent(Agent):
 
         tool_invocations = 0
         line_input = default_line_window_input()
+        staffing_input = default_staffing_input()
 
-        await ToolRuntime.invoke(
-            state=runtime_state,
-            plan=ToolInvocationPlan(
-                tool_ids=(TOOL_WORKLOAD_READ,),
-                tool_inputs={TOOL_WORKLOAD_READ: line_input},
-            ),
-            trace_step=step.step_id,
-            allowed_tools=SCENARIO_TOOL_IDS,
+        workload_preview = await self._invoke_tool(
+            runtime_state=runtime_state,
+            step=step,
+            tool_id=TOOL_WORKLOAD_READ,
+            tool_input=line_input,
         )
         tool_invocations += 1
-        workload_trace = runtime_state.tool_traces[-1]
-        if not workload_trace.success:
-            raise RuntimeError(f"workload tool failed: {workload_trace.error_message}")
 
-        await ToolRuntime.invoke(
-            state=runtime_state,
-            plan=ToolInvocationPlan(
-                tool_ids=(TOOL_THROUGHPUT_READ,),
-                tool_inputs={TOOL_THROUGHPUT_READ: line_input},
-            ),
-            trace_step=step.step_id,
-            allowed_tools=SCENARIO_TOOL_IDS,
+        throughput_preview = await self._invoke_tool(
+            runtime_state=runtime_state,
+            step=step,
+            tool_id=TOOL_THROUGHPUT_READ,
+            tool_input=line_input,
         )
         tool_invocations += 1
-        throughput_trace = runtime_state.tool_traces[-1]
-        if not throughput_trace.success:
-            raise RuntimeError(f"throughput tool failed: {throughput_trace.error_message}")
 
-        evidence_nodes = [
+        staffing_preview = await self._invoke_tool(
+            runtime_state=runtime_state,
+            step=step,
+            tool_id=TOOL_STAFFING_SCHEDULE_READ,
+            tool_input=staffing_input,
+        )
+        tool_invocations += 1
+
+        evidence_nodes: list[dict[str, object]] = [
             {
                 "evidence_id": str(WORKLOAD_EVIDENCE_ID),
                 "kind": "tool_result",
                 "label": "workload observation",
-                "payload": workload_trace.output_preview,
+                "payload": workload_preview,
             },
             {
                 "evidence_id": str(THROUGHPUT_EVIDENCE_ID),
                 "kind": "tool_result",
                 "label": "throughput observation",
-                "payload": throughput_trace.output_preview,
+                "payload": throughput_preview,
+            },
+            {
+                "evidence_id": str(STAFFING_PRELIMINARY_EVIDENCE_ID),
+                "kind": "tool_result",
+                "label": "staffing schedule observation",
+                "payload": staffing_preview,
             },
         ]
 
         if is_revision:
-            telemetry_input = default_telemetry_input(self._station_id)
-            await ToolRuntime.invoke(
-                state=runtime_state,
-                plan=ToolInvocationPlan(
-                    tool_ids=(TOOL_TELEMETRY_READ,),
-                    tool_inputs={TOOL_TELEMETRY_READ: telemetry_input},
-                ),
-                trace_step=step.step_id,
-                allowed_tools=SCENARIO_TOOL_IDS,
+            comparison_preview = await self._invoke_tool(
+                runtime_state=runtime_state,
+                step=step,
+                tool_id=TOOL_COMPARISON_READ,
+                tool_input=default_comparison_input(),
             )
             tool_invocations += 1
-            telemetry_trace = runtime_state.tool_traces[-1]
-            if not telemetry_trace.success:
-                raise RuntimeError(f"telemetry tool failed: {telemetry_trace.error_message}")
-            evidence_nodes.append(
-                {
-                    "evidence_id": str(TELEMETRY_EVIDENCE_ID),
-                    "kind": "tool_result",
-                    "label": "station telemetry observation",
-                    "payload": telemetry_trace.output_preview,
-                }
+
+            attendance_preview = await self._invoke_tool(
+                runtime_state=runtime_state,
+                step=step,
+                tool_id=TOOL_STAFFING_ATTENDANCE_READ,
+                tool_input=staffing_input,
             )
+            tool_invocations += 1
+
+            telemetry_preview = await self._invoke_tool(
+                runtime_state=runtime_state,
+                step=step,
+                tool_id=TOOL_TELEMETRY_READ,
+                tool_input=default_telemetry_input(self._station_id),
+            )
+            tool_invocations += 1
+
+            evidence_nodes.extend(
+                [
+                    {
+                        "evidence_id": str(COMPARISON_EVIDENCE_ID),
+                        "kind": "tool_result",
+                        "label": "comparison line observation",
+                        "payload": comparison_preview,
+                    },
+                    {
+                        "evidence_id": str(STAFFING_ATTENDANCE_EVIDENCE_ID),
+                        "kind": "tool_result",
+                        "label": "staffing attendance observation",
+                        "payload": attendance_preview,
+                    },
+                    {
+                        "evidence_id": str(TELEMETRY_EVIDENCE_ID),
+                        "kind": "tool_result",
+                        "label": "station telemetry observation",
+                        "payload": telemetry_preview,
+                    },
+                ]
+            )
+
             initial_claim = EvidenceBackedClaim(
                 claim_id=INITIAL_CLAIM_ID,
                 statement=(
@@ -202,26 +267,46 @@ class IncidentInvestigatorAgent(Agent):
                 supporting_evidence_ids=(WORKLOAD_EVIDENCE_ID, THROUGHPUT_EVIDENCE_ID),
                 resolution=ClaimResolution.SUPERSEDED,
             )
+            h2_claim = EvidenceBackedClaim(
+                claim_id=H2_CLAIM_ID,
+                statement=(
+                    "Understaffing on the affected shift is not supported as initiating cause: "
+                    "preliminary roster export conflicts with confirmed attendance for the "
+                    "incident window — hypothesis H2 rejected."
+                ),
+                claim_kind=DIAGNOSIS_KIND,
+                supporting_evidence_ids=(
+                    STAFFING_PRELIMINARY_EVIDENCE_ID,
+                    STAFFING_ATTENDANCE_EVIDENCE_ID,
+                ),
+                resolution=ClaimResolution.REJECTED,
+            )
             revised_claim = EvidenceBackedClaim(
                 claim_id=REVISED_CLAIM_ID,
                 statement=(
                     "Intermittent station signal degradation on the complex-assembly step "
-                    "correlates with throughput loss; workload growth is a contributing factor, "
-                    "not the initiating cause — bounded H3 diagnosis."
+                    "is the best-supported initiating cause; comparison evidence shows "
+                    "similar elevated workload elsewhere without comparable degradation; "
+                    "workload growth plausibly amplified impact — bounded H3 diagnosis."
                 ),
                 claim_kind=DIAGNOSIS_KIND,
                 supporting_evidence_ids=(
                     WORKLOAD_EVIDENCE_ID,
                     THROUGHPUT_EVIDENCE_ID,
+                    COMPARISON_EVIDENCE_ID,
                     TELEMETRY_EVIDENCE_ID,
                 ),
                 resolution=ClaimResolution.SUPPORTED,
                 supersedes_claim_id=INITIAL_CLAIM_ID,
             )
-            claim_set = EvidenceClaimSet(claims=(initial_claim, revised_claim), challenges=())
+            claim_set = EvidenceClaimSet(
+                claims=(initial_claim, h2_claim, revised_claim),
+                challenges=(),
+            )
             active_hypothesis = HypothesisId.H3
             summary = (
-                "revised: bounded equipment-process degradation diagnosis supported by telemetry"
+                "revised: bounded equipment-process degradation diagnosis supported "
+                "by telemetry and comparison evidence"
             )
         else:
             draft_claim = EvidenceBackedClaim(
@@ -244,6 +329,11 @@ class IncidentInvestigatorAgent(Agent):
             "active_hypothesis": str(active_hypothesis),
             "tool_invocations": tool_invocations,
             "revision_pass": is_revision,
+            "initial_evidence_ids": [
+                str(WORKLOAD_EVIDENCE_ID),
+                str(THROUGHPUT_EVIDENCE_ID),
+                str(STAFFING_PRELIMINARY_EVIDENCE_ID),
+            ],
         }
         return StepOutput(
             step_id=step.step_id,

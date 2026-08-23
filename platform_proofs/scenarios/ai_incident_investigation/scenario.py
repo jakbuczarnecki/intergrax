@@ -38,14 +38,16 @@ from platform_proofs.scenarios.ai_incident_investigation.critic_adapter import (
     first_failed_node_partial_verdict_from_trace,
 )
 from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
-    build_skeleton_fixture,
+    build_resolved_fixture,
     IncidentFixture,
 )
 from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
+    COMPARISON_EVIDENCE_ID,
     INITIAL_CLAIM_ID,
     IncidentInvestigatorAgent,
     INVESTIGATOR_AGENT_ID,
     INVESTIGATOR_CAPABILITY,
+    STAFFING_ATTENDANCE_EVIDENCE_ID,
     TELEMETRY_EVIDENCE_ID,
     WORKLOAD_EVIDENCE_ID,
     THROUGHPUT_EVIDENCE_ID,
@@ -70,11 +72,13 @@ class ScenarioExecutionResult:
     terminal_summary: str
     claim_set: dict[str, Any]
     evidence_nodes: tuple[dict[str, Any], ...]
+    initial_evidence_nodes: tuple[dict[str, Any], ...]
     tool_trace_count: int
     tool_invocations: int
     evaluator_loop_iterations: int
     critic_challenged: bool
     revision_used_tools: bool
+    revision_pass: bool
     critic_verdict_passed: bool
     leak_scan_blob: str
     failed_critic_verdict: CriticVerdict | None
@@ -89,7 +93,7 @@ class ScenarioRuntimeBundle:
 
 
 def build_runtime_bundle() -> ScenarioRuntimeBundle:
-    fixture = build_skeleton_fixture()
+    fixture = build_resolved_fixture()
     registry = ToolRegistry()
     register_scenario_tools(registry, fixture)
     investigator = IncidentInvestigatorAgent(
@@ -188,6 +192,14 @@ async def execute_resolved_skeleton(
     domain_payload = domain_payload_from_execution(final_execution)
     claim_set = dict(domain_payload.get("claim_set", {}))
     evidence_nodes = tuple(domain_payload.get("evidence_nodes", []))
+    initial_ids_raw = domain_payload.get("initial_evidence_ids", [])
+    if isinstance(initial_ids_raw, list) and initial_ids_raw:
+        initial_id_set = {str(item) for item in initial_ids_raw}
+        initial_evidence_nodes = tuple(
+            node for node in evidence_nodes if str(node.get("evidence_id")) in initial_id_set
+        )
+    else:
+        initial_evidence_nodes = evidence_nodes
     tool_invocations = int(domain_payload.get("tool_invocations", 0))
     revision_pass = bool(domain_payload.get("revision_pass", False))
     evaluator_loop_iterations = current_evaluator_loop_iteration(worker)
@@ -227,8 +239,15 @@ async def execute_resolved_skeleton(
             failed_critic_verdict,
             claim_id=INITIAL_CLAIM_ID,
             initial_evidence_ids=(WORKLOAD_EVIDENCE_ID, THROUGHPUT_EVIDENCE_ID),
-            resolving_evidence_ids=(TELEMETRY_EVIDENCE_ID,),
+            resolving_evidence_ids=(
+                TELEMETRY_EVIDENCE_ID,
+                COMPARISON_EVIDENCE_ID,
+                STAFFING_ATTENDANCE_EVIDENCE_ID,
+            ),
             resolved=critic_verdict_passed,
+            satisfied_description=(
+                "Follow-up comparison, attendance, and telemetry gathered via platform tools"
+            ),
         )
 
     node_status = graph_out.node_by_id(INVESTIGATOR_NODE_ID).status
@@ -243,11 +262,13 @@ async def execute_resolved_skeleton(
         terminal_summary=final_execution.summary or "",
         claim_set=claim_set,
         evidence_nodes=evidence_nodes,
+        initial_evidence_nodes=initial_evidence_nodes,
         tool_trace_count=tool_invocations,
         tool_invocations=tool_invocations,
         evaluator_loop_iterations=evaluator_loop_iterations,
         critic_challenged=critic_challenged,
-        revision_used_tools=revision_pass and tool_invocations >= 3,
+        revision_used_tools=revision_pass and tool_invocations >= 6,
+        revision_pass=revision_pass,
         critic_verdict_passed=critic_verdict_passed,
         leak_scan_blob=leak_blob,
         failed_critic_verdict=failed_critic_verdict,
