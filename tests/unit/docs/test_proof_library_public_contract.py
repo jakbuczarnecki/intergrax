@@ -21,6 +21,15 @@ _SCENARIO_DESIGN_PATH = (
     / "README.md"
 )
 
+_STALE_INCIDENT_SCENARIO_LOGISTICS_MARKERS = (
+    "warehouse overload",
+    "warehouse",
+    "parcel",
+    "sorter",
+    "logistics operator",
+    "heavy parcel",
+)
+
 
 @pytest.fixture(scope="module")
 def proof_library_text() -> str:
@@ -46,6 +55,20 @@ def test_scenario_not_product_boundary(proof_library_text: str) -> None:
 def test_challenge_intergrax_route(proof_library_text: str) -> None:
     assert "Challenge Intergrax" in proof_library_text
     assert "scenario_proposal.yml" in proof_library_text
+
+
+def test_featured_incident_scenario_no_stale_logistics_framing(
+    proof_library_text: str,
+) -> None:
+    """Featured AI Incident Investigation prose must not regress to logistics fixture wording."""
+    featured_section = proof_library_text.split("## D. Featured scenario in development", 1)[1]
+    featured_section = featured_section.split("## E. How to read a proof", 1)[0]
+    normalized = re.sub(r"[*_`]", "", featured_section).lower()
+    for marker in _STALE_INCIDENT_SCENARIO_LOGISTICS_MARKERS:
+        assert marker not in normalized, (
+            f"Stale logistics framing in featured incident scenario: {marker!r}"
+        )
+    assert "workload overload" in normalized
 
 
 def test_catalog_truth(proof_library_text: str) -> None:

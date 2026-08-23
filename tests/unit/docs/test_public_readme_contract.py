@@ -161,6 +161,15 @@ _FORBIDDEN_SAVINGS_PHRASES = (
     "guaranteed token savings",
 )
 
+_STALE_INCIDENT_SCENARIO_LOGISTICS_MARKERS = (
+    "warehouse overload",
+    "warehouse",
+    "parcel",
+    "sorter",
+    "logistics operator",
+    "heavy parcel",
+)
+
 _FORBIDDEN_SAVINGS_PATTERN = re.compile(r"reduces token usage by\s*\d+\s*%", re.IGNORECASE)
 _PERCENT_PATTERN = re.compile(r"\d+\s*%")
 
@@ -237,6 +246,21 @@ def test_section_order(readme_text: str) -> None:
     assert ai_execution_idx < responsibility_idx, (
         "Platform differentiation (AI execution) must precede Responsibility model"
     )
+
+
+def test_featured_incident_scenario_no_stale_logistics_framing(readme_text: str) -> None:
+    """Featured AI Incident Investigation prose must not regress to logistics fixture wording."""
+    featured_section = _section_slice(
+        readme_text,
+        "### Featured scenario in development",
+        "---",
+    )
+    normalized = re.sub(r"[*_`]", "", featured_section).lower()
+    for marker in _STALE_INCIDENT_SCENARIO_LOGISTICS_MARKERS:
+        assert marker not in normalized, (
+            f"Stale logistics framing in featured incident scenario: {marker!r}"
+        )
+    assert "workload overload" in normalized or "production signals" in normalized
 
 
 def test_scenario_public_positioning(readme_text: str) -> None:

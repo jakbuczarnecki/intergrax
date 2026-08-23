@@ -159,7 +159,7 @@ This is **not** a marketing demo, feature showcase, or product claim — executa
 
 > Can an AI investigate an operational incident without turning correlation into a confident false diagnosis?
 
-Initial operational signals make warehouse overload plausible — but evidence is conflicting, stale, and incomplete. Independent verification must challenge unsupported causality and distinguish competing hypotheses with bounded **RESOLVED** or honest **UNRESOLVED** outcomes.
+Initial production signals make workload overload plausible — but evidence is conflicting, stale, and incomplete. Independent verification must challenge unsupported causality, gather targeted evidence to distinguish competing hypotheses, and produce a bounded **RESOLVED** or honest **UNRESOLVED** outcome.
 
 **Status:** in development — no executable proof, evidence, or report yet. The visual describes possible bounded outcomes, not a current PASS.
 
