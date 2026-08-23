@@ -5,7 +5,7 @@
 A fictional industrial manufacturer needs a defensible root-cause diagnosis when production target attainment collapses — not a fluent story that sounds right under time pressure.
 
 > [!NOTE]
-> **Scenario status:** ACCEPTED FOR IMPLEMENTATION — scenario concept passed human Scenario Quality Gate; implementation, executable proof, evidence, and report have not started yet. This is not published/accepted proof evidence.
+> **Scenario status:** SCENARIO DESIGN ACCEPTED — platform-native skeleton implemented; full scenario dataset, executable public proof, and accepted evidence/report not established yet.
 
 > **Synthetic scenario provenance:** This is a fully fictional operational scenario. The organization, facility, incident, datasets, telemetry, staffing records, equipment behavior, and numerical values are synthetic and are not derived from any employer, customer, production environment, confidential source, or proprietary system.
 
