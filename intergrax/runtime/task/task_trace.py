@@ -5,7 +5,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, List, Optional
 
-from intergrax.contracts.execution_identity import AttemptId, RunId
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    RunId,
+    peek_active_execution_identity,
+    validate_attempt_id,
+    validate_run_id,
+)
 
 if TYPE_CHECKING:
     from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -19,6 +25,21 @@ from intergrax.runtime.nexus.tracing.trace_models import (
 from intergrax.runtime.nexus.tracing.persistence_models import RunMetadata, RunStats, RunTraceWriter
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task import Task
+
+
+def _resolve_trace_execution_identity(
+    emitter_run_id: RunId,
+    emitter_attempt_id: AttemptId,
+) -> tuple[RunId, AttemptId]:
+    """Resolve run/attempt for trace_bridge at emission time (retry-safe AttemptId)."""
+    active = peek_active_execution_identity()
+    if active is not None:
+        active_run_id, active_attempt_id = active
+        validated_emitter_run_id = validate_run_id(emitter_run_id)
+        if validated_emitter_run_id != active_run_id:
+            raise RuntimeError("run_id conflicts with active execution identity")
+        return active_run_id, active_attempt_id
+    return validate_run_id(emitter_run_id), validate_attempt_id(emitter_attempt_id)
 
 
 class TaskTraceEmitter:
@@ -85,12 +106,16 @@ class TaskTraceEmitter:
         if self._event_bus is not None:
             from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event
 
+            bridge_run_id, bridge_attempt_id = _resolve_trace_execution_identity(
+                self._run_id,
+                self._attempt_id,
+            )
             self._event_bus.record(
                 trace_event_to_runtime_event(
                     evt,
                     task,
-                    run_id=self._run_id,
-                    attempt_id=self._attempt_id,
+                    run_id=bridge_run_id,
+                    attempt_id=bridge_attempt_id,
                 )
             )
         return evt
@@ -117,12 +142,16 @@ class TaskTraceEmitter:
         if self._event_bus is not None:
             from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event
 
+            bridge_run_id, bridge_attempt_id = _resolve_trace_execution_identity(
+                self._run_id,
+                self._attempt_id,
+            )
             self._event_bus.record(
                 trace_event_to_runtime_event(
                     evt,
                     task,
-                    run_id=self._run_id,
-                    attempt_id=self._attempt_id,
+                    run_id=bridge_run_id,
+                    attempt_id=bridge_attempt_id,
                 )
             )
         return evt
