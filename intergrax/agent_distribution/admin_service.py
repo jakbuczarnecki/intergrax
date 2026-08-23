@@ -495,6 +495,12 @@ class AgentPlatformAdminService:
         request: InstallAgentRequest,
         principal: RequestIdentity,
     ) -> InstallationMutationResult:
+        self._require_environment_tenant_scope(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            operation="install_agent",
+        )
         identity = self._resolve_install_identity(request)
         existing = self._installation_store.get_installation(request.installation_id)
         if existing is not None:
@@ -575,6 +581,12 @@ class AgentPlatformAdminService:
         request: BindAgentRequest,
         principal: RequestIdentity,
     ) -> BindingMutationResult:
+        self._require_environment_tenant_scope(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            operation="bind_agent",
+        )
         existing = self._binding_store.get_binding(request.application_binding_id)
         if existing is not None:
             if (
@@ -629,6 +641,12 @@ class AgentPlatformAdminService:
         request: UpdateAgentBindingRequest,
         principal: RequestIdentity,
     ) -> BindingMutationResult:
+        self._require_environment_tenant_scope(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            operation="update_binding_config",
+        )
         binding = self._require_binding_scope(
             application_binding_id,
             application_id=application_id,
@@ -666,6 +684,12 @@ class AgentPlatformAdminService:
         request: SetAgentEnablementRequest,
         principal: RequestIdentity,
     ) -> BindingMutationResult:
+        self._require_environment_tenant_scope(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            operation="enable_binding",
+        )
         binding = self._require_binding_scope(
             application_binding_id,
             application_id=application_id,
@@ -701,6 +725,12 @@ class AgentPlatformAdminService:
         request: SetAgentEnablementRequest,
         principal: RequestIdentity,
     ) -> BindingMutationResult:
+        self._require_environment_tenant_scope(
+            principal=principal,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            operation="disable_binding",
+        )
         binding = self._require_binding_scope(
             application_binding_id,
             application_id=application_id,
@@ -1127,6 +1157,31 @@ class AgentPlatformAdminService:
                 "control-plane mutations require ApplicationEnvironmentTenantResolver",
             )
         return resolver
+
+    def _require_environment_tenant_scope(
+        self,
+        *,
+        principal: RequestIdentity,
+        application_id: str,
+        application_environment_id: str,
+        operation: str,
+    ) -> None:
+        resolver = self._require_environment_tenant_resolver()
+        environment_tenant = resolver.resolve_tenant_id(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+        if environment_tenant != principal.tenant_id:
+            raise AgentPlatformAdminGovernanceBlockedError(
+                "AP-11_BLOCKED_BY_TENANT_AUTHORITY",
+                f"{operation} denied by tenant authority scope",
+                policy_action=PolicyAction.DENY.value,
+                authorization_evidence=self._synthetic_tenant_deny_evidence(
+                    principal=principal,
+                    application_id=application_id,
+                    application_environment_id=application_environment_id,
+                ),
+            )
 
     def _authorize_desired_state_mutation(
         self,
