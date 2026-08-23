@@ -113,6 +113,7 @@ def test_apply_rejects_failed_governance_gates() -> None:
             tenant_id=_TENANT_A,
             task_class=_TASK_CLASS,
             version_id=version_id,
+            expected_active_version_id=None,
         )
 
     record = store.get(version_id)
@@ -138,6 +139,7 @@ def test_apply_rejects_package_version_mismatch() -> None:
             tenant_id=_TENANT_A,
             task_class=_TASK_CLASS,
             version_id="draft-v2",
+            expected_active_version_id=None,
         )
 
     assert store.get("draft-v2") is not None
@@ -173,6 +175,7 @@ def test_apply_rejects_proposal_lineage_mismatch() -> None:
             tenant_id=_TENANT_A,
             task_class=_TASK_CLASS,
             version_id=_VERSION_ID,
+            expected_active_version_id=None,
         )
 
     record = store.get(_VERSION_ID)
@@ -196,6 +199,7 @@ def test_apply_rejects_cross_tenant_scope() -> None:
             tenant_id=_TENANT_A,
             task_class=_TASK_CLASS,
             version_id=version_id,
+            expected_active_version_id=None,
         )
 
     record = store.get(version_id)
@@ -225,6 +229,7 @@ def test_apply_rejects_task_class_mismatch() -> None:
             tenant_id=_TENANT_A,
             task_class=_TASK_CLASS,
             version_id=version_id,
+            expected_active_version_id=None,
         )
 
     record = store.get(version_id)
@@ -265,6 +270,7 @@ def test_valid_matching_apply_succeeds() -> None:
         tenant_id=_TENANT_A,
         task_class=_TASK_CLASS,
         version_id=version_id,
+        expected_active_version_id=None,
     )
 
     assert result.applied_version_id == _VERSION_ID

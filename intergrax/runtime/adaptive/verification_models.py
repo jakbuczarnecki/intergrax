@@ -9,6 +9,7 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.runtime.adaptive.contracts import ProfileArtifactType
 from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
 from intergrax.runtime.architecture.cost_budget import BudgetEnvelope
@@ -66,6 +67,8 @@ class VerificationContext(BaseModel):
     min_run_count: int = Field(default=3, ge=1)
     window_days: int = Field(default=7, ge=1)
     auto_rollback_enabled: bool = True
+    auto_rollback_service_principal: RequestIdentity | None = None
+    auto_rollback_mutation_id: str | None = None
 
 
 class VerificationResult(BaseModel):

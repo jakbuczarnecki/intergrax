@@ -8,6 +8,14 @@ import time
 
 import pytest
 
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    reset_active_execution_identity,
+)
+from intergrax.contracts.agent_run_enums import PrincipalType
+from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+
 from intergrax.runtime.adaptive.adaptation_executor import AdaptationExecutor
 from intergrax.runtime.adaptive.adaptation_scheduler import AdaptationScheduler
 from intergrax.runtime.adaptive.adaptation_engine import AdaptationEngine
@@ -44,6 +52,7 @@ from intergrax.runtime.adaptive.verification_checks import (
 from intergrax.runtime.adaptive.verification_loop import VerificationLoop
 from intergrax.runtime.adaptive.verification_models import VerificationContext, VerificationTarget
 from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
+from intergrax.runtime.architecture.runtime_governance_bridge import RuntimeArchitectureGovernanceBridge
 from intergrax.runtime.architecture.cost_budget import BudgetEnvelope, BudgetScope
 from intergrax.runtime.architecture.evaluation_automation import (
     AutomatedEvaluationRecord,
@@ -56,6 +65,9 @@ from intergrax.runtime.architecture.evaluation_registry_trends import (
     build_evaluation_registry_trend_report,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -139,6 +151,11 @@ def _build_scheduler_engine() -> AdaptationEngine:
 class _AlwaysPassSecurityChecker:
     def evaluate(self) -> bool:
         return True
+
+
+class _AllowControlPlaneEvaluator:
+    def evaluate(self, request) -> PolicyDecision:
+        return PolicyDecision(action=PolicyAction.ALLOW, reason="ok")
 
 
 def test_utility_trend_passes_when_candidate_beats_baseline() -> None:
@@ -236,16 +253,24 @@ def test_verification_loop_auto_rollback_and_block_on_failure() -> None:
         task_class="echo",
         artifact_type=ProfileArtifactType.RAG,
         new_active_version_id="baseline-v1",
+        expected_active_version_id=None,
     )
     pointer_store.swap_active(
         tenant_id="tenant-a",
         task_class="echo",
         artifact_type=ProfileArtifactType.RAG,
         new_active_version_id="candidate-v2",
+        expected_active_version_id="baseline-v1",
     )
     lifecycle.transition("baseline-v1", target=ProfileVersionStatus.RETIRED)
     lifecycle.transition("candidate-v2", target=ProfileVersionStatus.ACTIVE)
     block_store = InMemoryLoopApplyBlockStore()
+    boundary = ControlPlaneMutationAuthorizationBoundary(
+        evaluator=_AllowControlPlaneEvaluator(),
+    )
+    governance_bridge = RuntimeArchitectureGovernanceBridge(
+        mutation_authorization_boundary=boundary,
+    )
     executor = AdaptationExecutor(
         profile_store=profile_store,
         pointer_store=pointer_store,
@@ -255,6 +280,8 @@ def test_verification_loop_auto_rollback_and_block_on_failure() -> None:
         signal_store=signal_store,
         profile_store=profile_store,
         executor=executor,
+        governance_bridge=governance_bridge,
+        pointer_store=pointer_store,
         block_store=block_store,
         security_checker=_AlwaysPassSecurityChecker(),
     )
@@ -267,7 +294,17 @@ def test_verification_loop_auto_rollback_and_block_on_failure() -> None:
     )
     result = loop.verify_target(
         target,
-        context=VerificationContext(min_run_count=3, auto_rollback_enabled=True),
+        context=VerificationContext(
+            min_run_count=3,
+            auto_rollback_enabled=True,
+            auto_rollback_service_principal=RequestIdentity(
+                tenant_id="tenant-a",
+                user_id="verification-scheduler",
+                principal_type=PrincipalType.SERVICE,
+                auth_subject="verification-scheduler",
+            ),
+            auto_rollback_mutation_id="mut-auto-rollback-1",
+        ),
     )
     assert result.passed is False
     assert result.rolled_back is True
@@ -318,24 +355,31 @@ def test_scheduler_run_verification_loop_delegates_to_verification_loop() -> Non
 
 
 def test_adaptive_verification_runtime_events() -> None:
-    failed = build_adaptive_verification_failed_event(
-        task_id="task-1",
-        run_id="run-1",
-        tenant_id="tenant-a",
-        candidate_version_id="candidate-v2",
-        failure_reasons=["utility_trend"],
+    token = bind_active_execution_identity(
+        run_id="run_0123456789abcdef0123456789abcdef",
+        attempt_id="attempt_0123456789abcdef0123456789abcdef",
     )
-    blocked = build_adaptive_loop_blocked_event(
-        task_id="task-1",
-        run_id="run-1",
-        tenant_id="tenant-a",
-        loop_kind="routing_tuning",
-        reason="verification_failed",
-    )
-    assert failed.event_type == RuntimeEventType.DOMAIN_SIGNAL
-    assert failed.event_kind == "platform.adaptive.adaptive_verification_failed"
-    assert blocked.event_type == RuntimeEventType.DOMAIN_SIGNAL
-    assert blocked.event_kind == "platform.adaptive.adaptive_loop_blocked"
+    try:
+        failed = build_adaptive_verification_failed_event(
+            task_id="task_0123456789abcdef0123456789abcdef",
+            run_id="run_0123456789abcdef0123456789abcdef",
+            tenant_id="tenant-a",
+            candidate_version_id="candidate-v2",
+            failure_reasons=["utility_trend"],
+        )
+        blocked = build_adaptive_loop_blocked_event(
+            task_id="task_0123456789abcdef0123456789abcdef",
+            run_id="run_0123456789abcdef0123456789abcdef",
+            tenant_id="tenant-a",
+            loop_kind="routing_tuning",
+            reason="verification_failed",
+        )
+        assert failed.event_type == RuntimeEventType.DOMAIN_SIGNAL
+        assert failed.event_kind == "platform.adaptive.adaptive_verification_failed"
+        assert blocked.event_type == RuntimeEventType.DOMAIN_SIGNAL
+        assert blocked.event_kind == "platform.adaptive.adaptive_loop_blocked"
+    finally:
+        reset_active_execution_identity(token)
 
 
 def test_cost_budget_check_uses_budget_envelopes() -> None:
@@ -388,12 +432,14 @@ def test_rollback_drill_completes_under_five_minutes() -> None:
         task_class="drill",
         artifact_type=ProfileArtifactType.ORCHESTRATION,
         new_active_version_id="baseline-drill",
+        expected_active_version_id=None,
     )
     pointer_store.swap_active(
         tenant_id="tenant-drill",
         task_class="drill",
         artifact_type=ProfileArtifactType.ORCHESTRATION,
         new_active_version_id="candidate-drill",
+        expected_active_version_id="baseline-drill",
     )
     lifecycle.transition("baseline-drill", target=ProfileVersionStatus.RETIRED)
     executor = AdaptationExecutor(
@@ -405,6 +451,7 @@ def test_rollback_drill_completes_under_five_minutes() -> None:
         tenant_id="tenant-drill",
         task_class="drill",
         artifact_type=ProfileArtifactType.ORCHESTRATION,
+        expected_active_version_id="candidate-drill",
     )
     elapsed_seconds = time.monotonic() - started
     assert rollback.restored_version_id == "baseline-drill"

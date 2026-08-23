@@ -8,7 +8,12 @@ from datetime import UTC, datetime, timedelta
 
 from intergrax.runtime.adaptive.adaptation_executor import AdaptationExecutor
 from intergrax.runtime.adaptive.contracts import ProfileVersionStatus
+from intergrax.runtime.adaptive.control_plane_governance import AhiGovernanceBlockedError
 from intergrax.runtime.adaptive.loop_apply_block_store import LoopApplyBlockStore
+from intergrax.runtime.adaptive.profile_pointer_store import (
+    ProfileActivePointerConflictError,
+    ProfileActivePointerStore,
+)
 from intergrax.runtime.adaptive.profile_version_store import ProfileVersionStore
 from intergrax.runtime.adaptive.signal_store import SignalStore
 from intergrax.runtime.adaptive.verification_checks import (
@@ -27,6 +32,7 @@ from intergrax.runtime.adaptive.verification_models import (
     VerificationResult,
     VerificationTarget,
 )
+from intergrax.runtime.architecture.runtime_governance_bridge import RuntimeArchitectureGovernanceBridge
 
 
 class VerificationLoop:
@@ -42,12 +48,16 @@ class VerificationLoop:
         signal_store: SignalStore,
         profile_store: ProfileVersionStore,
         executor: AdaptationExecutor | None = None,
+        governance_bridge: RuntimeArchitectureGovernanceBridge | None = None,
+        pointer_store: ProfileActivePointerStore | None = None,
         block_store: LoopApplyBlockStore | None = None,
         security_checker: SecurityAdversarialBaselineChecker | None = None,
     ) -> None:
         self._signal_store = signal_store
         self._profile_store = profile_store
         self._executor = executor
+        self._governance_bridge = governance_bridge
+        self._pointer_store = pointer_store
         self._block_store = block_store
         self._security_checker = security_checker or HarnessSecurityAdversarialBaselineChecker()
 
@@ -159,16 +169,25 @@ class VerificationLoop:
         rolled_back = False
         blocked_kind = target.loop_kind
 
-        if self._executor is not None:
-            try:
-                self._executor.rollback(
-                    tenant_id=target.tenant_id,
-                    task_class=target.task_class,
-                    artifact_type=target.artifact_type,
-                )
-                rolled_back = True
-            except ValueError:
+        if self._governance_bridge is not None and self._executor is not None and self._pointer_store is not None:
+            service_principal = context.auto_rollback_service_principal
+            rollback_mutation_id = context.auto_rollback_mutation_id
+            if service_principal is None or rollback_mutation_id is None:
                 rolled_back = False
+            else:
+                try:
+                    self._governance_bridge.rollback_profile(
+                        executor=self._executor,
+                        pointer_store=self._pointer_store,
+                        principal=service_principal,
+                        mutation_id=rollback_mutation_id,
+                        tenant_id=target.tenant_id,
+                        task_class=target.task_class,
+                        artifact_type=target.artifact_type,
+                    )
+                    rolled_back = True
+                except (ValueError, AhiGovernanceBlockedError, ProfileActivePointerConflictError):
+                    rolled_back = False
 
         if blocked_kind is not None and self._block_store is not None:
             self._block_store.block(

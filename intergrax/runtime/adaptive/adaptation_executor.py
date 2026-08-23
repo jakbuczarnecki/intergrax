@@ -18,7 +18,10 @@ from intergrax.runtime.adaptive.policy_learning_approval import (
     require_policy_learning_approval,
 )
 from intergrax.runtime.adaptive.profile_lifecycle import ProfileVersionLifecycleManager
-from intergrax.runtime.adaptive.profile_pointer_store import ProfileActivePointerStore
+from intergrax.runtime.adaptive.profile_pointer_store import (
+    ProfileActivePointerConflictError,
+    ProfileActivePointerStore,
+)
 from intergrax.runtime.adaptive.profile_version_store import ProfileVersionStore
 
 
@@ -149,6 +152,7 @@ class AdaptationExecutor:
         tenant_id: str,
         task_class: str,
         version_id: str,
+        expected_active_version_id: str | None,
     ) -> ApplyProfileResult:
         record = self._validate_apply_promotion_authority(
             package,
@@ -162,6 +166,12 @@ class AdaptationExecutor:
             raise ValueError(
                 f"Apply requires shadow or canary status, got {record.status.value}"
             )
+        self._assert_pointer_matches_expected(
+            tenant_id=tenant_id,
+            task_class=task_class,
+            artifact_type=record.artifact_type,
+            expected_active_version_id=expected_active_version_id,
+        )
         if record.status == ProfileVersionStatus.SHADOW:
             record = self._lifecycle_manager.transition(version_id, target=ProfileVersionStatus.CANARY)
         active = self._lifecycle_manager.transition(record.version_id, target=ProfileVersionStatus.ACTIVE)
@@ -184,6 +194,7 @@ class AdaptationExecutor:
             task_class=task_class,
             artifact_type=active.artifact_type,
             new_active_version_id=active.version_id,
+            expected_active_version_id=expected_active_version_id,
         )
         return ApplyProfileResult(
             tenant_id=tenant_id,
@@ -199,6 +210,7 @@ class AdaptationExecutor:
         tenant_id: str,
         task_class: str,
         artifact_type: ProfileArtifactType,
+        expected_active_version_id: str,
     ) -> RollbackProfileResult:
         pointer = self._pointer_store.get_pointer(
             tenant_id=tenant_id,
@@ -207,6 +219,10 @@ class AdaptationExecutor:
         )
         if pointer is None or pointer.previous_version_id is None:
             raise ValueError("No rollback pointer available for active profile version")
+        if pointer.active_version_id != expected_active_version_id:
+            raise ProfileActivePointerConflictError(
+                "active profile pointer changed before rollback"
+            )
 
         current = self._profile_store.get(pointer.active_version_id)
         previous = self._profile_store.get(pointer.previous_version_id)
@@ -224,6 +240,7 @@ class AdaptationExecutor:
             task_class=task_class,
             artifact_type=artifact_type,
             new_active_version_id=restored.version_id,
+            expected_active_version_id=expected_active_version_id,
         )
         return RollbackProfileResult(
             tenant_id=tenant_id,
@@ -260,6 +277,25 @@ class AdaptationExecutor:
                 f"expected {artifact_type.value!r}, got {record.artifact_type.value!r}"
             )
         return record
+
+    def _assert_pointer_matches_expected(
+        self,
+        *,
+        tenant_id: str,
+        task_class: str,
+        artifact_type: ProfileArtifactType,
+        expected_active_version_id: str | None,
+    ) -> None:
+        pointer = self._pointer_store.get_pointer(
+            tenant_id=tenant_id,
+            task_class=task_class,
+            artifact_type=artifact_type,
+        )
+        actual_active = pointer.active_version_id if pointer is not None else None
+        if actual_active != expected_active_version_id:
+            raise ProfileActivePointerConflictError(
+                "active profile pointer changed before mutation"
+            )
 
     def _validate_apply_promotion_authority(
         self,

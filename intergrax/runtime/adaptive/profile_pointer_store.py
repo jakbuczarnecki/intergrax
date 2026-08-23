@@ -13,6 +13,10 @@ from pydantic import BaseModel, ConfigDict
 from intergrax.runtime.adaptive.contracts import ProfileArtifactType
 
 
+class ProfileActivePointerConflictError(Exception):
+    """Concurrent or stale active profile pointer mutation."""
+
+
 class ProfileActivePointer(BaseModel):
     """Active version pointer with rollback reference."""
 
@@ -43,6 +47,7 @@ class ProfileActivePointerStore(Protocol):
         task_class: str,
         artifact_type: ProfileArtifactType,
         new_active_version_id: str,
+        expected_active_version_id: str | None,
     ) -> ProfileActivePointer: ...
 
     def clear(self) -> None: ...
@@ -88,6 +93,7 @@ class InMemoryProfileActivePointerStore:
         task_class: str,
         artifact_type: ProfileArtifactType,
         new_active_version_id: str,
+        expected_active_version_id: str | None,
     ) -> ProfileActivePointer:
         key = self._key(
             tenant_id=tenant_id,
@@ -95,6 +101,11 @@ class InMemoryProfileActivePointerStore:
             artifact_type=artifact_type,
         )
         existing = self._pointers.get(key)
+        actual_active = existing.active_version_id if existing else None
+        if actual_active != expected_active_version_id:
+            raise ProfileActivePointerConflictError(
+                "active profile pointer changed before swap"
+            )
         pointer = ProfileActivePointer(
             tenant_id=tenant_id,
             task_class=task_class,
@@ -162,31 +173,64 @@ class SQLiteProfileActivePointerStore:
         task_class: str,
         artifact_type: ProfileArtifactType,
         new_active_version_id: str,
+        expected_active_version_id: str | None,
     ) -> ProfileActivePointer:
-        existing = self.get_pointer(
-            tenant_id=tenant_id,
-            task_class=task_class,
-            artifact_type=artifact_type,
-        )
         pointer = ProfileActivePointer(
             tenant_id=tenant_id,
             task_class=task_class,
             artifact_type=artifact_type,
             active_version_id=new_active_version_id,
-            previous_version_id=existing.active_version_id if existing else None,
+            previous_version_id=expected_active_version_id,
         )
         payload = pointer.model_dump_json()
         with self._connection() as conn:
-            conn.execute(
+            if expected_active_version_id is None:
+                inserted = conn.execute(
+                    """
+                    INSERT INTO profile_active_pointers (
+                        tenant_id, task_class, artifact_type, payload_json
+                    )
+                    SELECT ?, ?, ?, ?
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM profile_active_pointers
+                        WHERE tenant_id = ? AND task_class = ? AND artifact_type = ?
+                    )
+                    """,
+                    (
+                        tenant_id,
+                        task_class,
+                        artifact_type.value,
+                        payload,
+                        tenant_id,
+                        task_class,
+                        artifact_type.value,
+                    ),
+                )
+                if inserted.rowcount == 0:
+                    raise ProfileActivePointerConflictError(
+                        "active profile pointer already exists"
+                    )
+                return pointer
+
+            updated = conn.execute(
                 """
-                INSERT INTO profile_active_pointers (
-                    tenant_id, task_class, artifact_type, payload_json
-                ) VALUES (?, ?, ?, ?)
-                ON CONFLICT(tenant_id, task_class, artifact_type)
-                DO UPDATE SET payload_json = excluded.payload_json
+                UPDATE profile_active_pointers
+                SET payload_json = ?
+                WHERE tenant_id = ? AND task_class = ? AND artifact_type = ?
+                  AND json_extract(payload_json, '$.active_version_id') = ?
                 """,
-                (tenant_id, task_class, artifact_type.value, payload),
+                (
+                    payload,
+                    tenant_id,
+                    task_class,
+                    artifact_type.value,
+                    expected_active_version_id,
+                ),
             )
+            if updated.rowcount == 0:
+                raise ProfileActivePointerConflictError(
+                    "active profile pointer changed before swap"
+                )
         return pointer
 
     def clear(self) -> None:

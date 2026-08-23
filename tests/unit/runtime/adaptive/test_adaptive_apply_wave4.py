@@ -30,6 +30,13 @@ from intergrax.runtime.adaptive.policy_learning_approval import (
     require_policy_learning_approval,
 )
 from intergrax.runtime.adaptive.profile_lifecycle import ProfileVersionLifecycleManager
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    reset_active_execution_identity,
+)
+from intergrax.contracts.agent_run_enums import PrincipalType
+from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.runtime.adaptive.profile_pointer_store import InMemoryProfileActivePointerStore
 from intergrax.runtime.adaptive.profile_policy_resolver import apply_policy_fragment_version
 from intergrax.runtime.adaptive.profile_version_store import InMemoryProfileVersionStore
@@ -42,6 +49,9 @@ from intergrax.runtime.architecture.adaptive_governance import (
 )
 from intergrax.runtime.architecture.runtime_governance_bridge import RuntimeArchitectureGovernanceBridge
 from intergrax.runtime.adaptive.adaptation_executor import AdaptationExecutor
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
+)
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 
@@ -111,13 +121,14 @@ def _routing_package() -> AdaptationProposalPackage:
 def _build_executor(
     *,
     approval_store: InMemoryPolicyLearningApprovalStore | None = None,
+    pointer_store: InMemoryProfileActivePointerStore | None = None,
 ) -> AdaptationExecutor:
     store = InMemoryProfileVersionStore()
-    pointer_store = InMemoryProfileActivePointerStore()
+    resolved_pointer_store = pointer_store or InMemoryProfileActivePointerStore()
     lifecycle = ProfileVersionLifecycleManager(store)
     return AdaptationExecutor(
         profile_store=store,
-        pointer_store=pointer_store,
+        pointer_store=resolved_pointer_store,
         lifecycle_manager=lifecycle,
         approval_store=approval_store or InMemoryPolicyLearningApprovalStore(),
     )
@@ -153,6 +164,7 @@ def test_adaptation_executor_apply_and_rollback_roundtrip() -> None:
         tenant_id="tenant_a",
         task_class="echo.basic",
         version_id=shadow_a.candidate_profile_version_id,
+        expected_active_version_id=None,
     )
     assert first_apply.applied_version_id == "draft-routing-echo"
 
@@ -176,6 +188,7 @@ def test_adaptation_executor_apply_and_rollback_roundtrip() -> None:
         tenant_id="tenant_a",
         task_class="echo.basic",
         version_id=shadow_b.candidate_profile_version_id,
+        expected_active_version_id="draft-routing-echo",
     )
     assert second_apply.previous_version_id == "draft-routing-echo"
 
@@ -183,6 +196,7 @@ def test_adaptation_executor_apply_and_rollback_roundtrip() -> None:
         tenant_id="tenant_a",
         task_class="echo.basic",
         artifact_type=ProfileArtifactType.RAG,
+        expected_active_version_id="draft-routing-echo-v2",
     )
     assert rollback.restored_version_id == "draft-routing-echo"
     assert rollback.rolled_back_version_id == "draft-routing-echo-v2"
@@ -199,6 +213,7 @@ def test_policy_learning_apply_requires_approval() -> None:
             tenant_id="tenant_a",
             task_class="echo.basic",
             version_id=shadow.candidate_profile_version_id,
+            expected_active_version_id=None,
         )
     approval_store.record_approval(package.proposal_id, approver_id="owner:ops")
     require_policy_learning_approval(package, approval_store=approval_store)
@@ -207,13 +222,20 @@ def test_policy_learning_apply_requires_approval() -> None:
         tenant_id="tenant_a",
         task_class="echo.basic",
         version_id=shadow.candidate_profile_version_id,
+        expected_active_version_id=None,
     )
     assert result.artifact_type == ProfileArtifactType.POLICY_FRAGMENT
 
 
 def test_governance_bridge_submit_and_apply_approved() -> None:
-    bridge = RuntimeArchitectureGovernanceBridge()
-    executor = _build_executor()
+    pointer_store = InMemoryProfileActivePointerStore()
+    executor = _build_executor(pointer_store=pointer_store)
+    boundary = ControlPlaneMutationAuthorizationBoundary(
+        evaluator=_AllowControlPlaneEvaluator(),
+    )
+    bridge = RuntimeArchitectureGovernanceBridge(
+        mutation_authorization_boundary=boundary,
+    )
     package = _routing_package()
     proposal_id = bridge.submit_proposal(package)
     assert proposal_id == package.proposal_id
@@ -221,11 +243,25 @@ def test_governance_bridge_submit_and_apply_approved() -> None:
     applied = bridge.apply_approved(
         package,
         executor=executor,
+        pointer_store=pointer_store,
+        principal=RequestIdentity(
+            tenant_id="tenant_a",
+            user_id="operator-1",
+            principal_type=PrincipalType.USER,
+            auth_subject="operator-1",
+        ),
+        mutation_id="mut-apply-1",
         tenant_id="tenant_a",
         task_class="echo.basic",
         version_id=shadow.candidate_profile_version_id,
     )
-    assert applied.applied_version_id == "draft-routing-echo"
+    assert applied.apply_result.applied_version_id == "draft-routing-echo"
+    assert applied.authorization_evidence.mutation_id == "mut-apply-1"
+
+
+class _AllowControlPlaneEvaluator:
+    def evaluate(self, request) -> PolicyDecision:
+        return PolicyDecision(action=PolicyAction.ALLOW, reason="ok")
 
 
 def test_apply_policy_fragment_version_attaches_domain_fragment() -> None:
@@ -244,33 +280,40 @@ def test_apply_policy_fragment_version_attaches_domain_fragment() -> None:
 
 
 def test_adaptive_runtime_events_use_typed_event_types() -> None:
-    proposal_event = build_adaptive_proposal_event(
-        task_id="task-1",
-        run_id="run-1",
-        tenant_id="tenant_a",
-        proposal_id="prop-1",
-        loop_id="loop-1",
+    token = bind_active_execution_identity(
+        run_id="run_0123456789abcdef0123456789abcdef",
+        attempt_id="attempt_0123456789abcdef0123456789abcdef",
     )
-    assert proposal_event.event_type == RuntimeEventType.DOMAIN_SIGNAL
-    assert proposal_event.event_kind == "platform.adaptive.adaptive_proposal_submitted"
-    apply_event = build_adaptive_apply_event(
-        task_id="task-1",
-        run_id="run-1",
-        tenant_id="tenant_a",
-        version_id="v1",
-        artifact_type="rag",
-    )
-    assert apply_event.event_type == RuntimeEventType.DOMAIN_SIGNAL
-    assert apply_event.event_kind == "platform.adaptive.adaptive_profile_applied"
-    rollback_event = build_adaptive_rollback_event(
-        task_id="task-1",
-        run_id="run-1",
-        tenant_id="tenant_a",
-        restored_version_id="v0",
-        artifact_type="rag",
-    )
-    assert rollback_event.event_type == RuntimeEventType.DOMAIN_SIGNAL
-    assert rollback_event.event_kind == "platform.adaptive.adaptive_profile_rollback"
+    try:
+        proposal_event = build_adaptive_proposal_event(
+            task_id="task_0123456789abcdef0123456789abcdef",
+            run_id="run_0123456789abcdef0123456789abcdef",
+            tenant_id="tenant_a",
+            proposal_id="prop-1",
+            loop_id="loop-1",
+        )
+        assert proposal_event.event_type == RuntimeEventType.DOMAIN_SIGNAL
+        assert proposal_event.event_kind == "platform.adaptive.adaptive_proposal_submitted"
+        apply_event = build_adaptive_apply_event(
+            task_id="task_0123456789abcdef0123456789abcdef",
+            run_id="run_0123456789abcdef0123456789abcdef",
+            tenant_id="tenant_a",
+            version_id="v1",
+            artifact_type="rag",
+        )
+        assert apply_event.event_type == RuntimeEventType.DOMAIN_SIGNAL
+        assert apply_event.event_kind == "platform.adaptive.adaptive_profile_applied"
+        rollback_event = build_adaptive_rollback_event(
+            task_id="task_0123456789abcdef0123456789abcdef",
+            run_id="run_0123456789abcdef0123456789abcdef",
+            tenant_id="tenant_a",
+            restored_version_id="v0",
+            artifact_type="rag",
+        )
+        assert rollback_event.event_type == RuntimeEventType.DOMAIN_SIGNAL
+        assert rollback_event.event_kind == "platform.adaptive.adaptive_profile_rollback"
+    finally:
+        reset_active_execution_identity(token)
 
 
 def test_wire_adaptive_profile_disabled_returns_no_executor() -> None:
