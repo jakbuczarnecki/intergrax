@@ -347,7 +347,6 @@ class HandlePostCutoverFailureRequest(BaseModel):
     recovery_mutation_id: str | None = None
     runtime_revision_id: str = _NON_EMPTY
     failure_evidence_ref: str = _NON_EMPTY
-    originating_activation_mutation_id: str = _NON_EMPTY
     attempt_rollback: bool = True
 
     @field_validator(
@@ -355,7 +354,6 @@ class HandlePostCutoverFailureRequest(BaseModel):
         "recovery_mutation_id",
         "runtime_revision_id",
         "failure_evidence_ref",
-        "originating_activation_mutation_id",
     )
     @classmethod
     def _strip_optional(cls, value: str | None) -> str | None:

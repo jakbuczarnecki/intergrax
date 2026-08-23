@@ -61,7 +61,6 @@ from intergrax.agent_distribution.control_plane_governance import (
     build_update_binding_config_mutation_request,
     installation_absent_token,
     installation_state_token,
-    PostCutoverRecoveryAuthority,
 )
 from intergrax.agent_distribution.catalog import CatalogEntryFilters, CatalogSourceProvider
 from intergrax.agent_distribution.dependency import DependencyResolverInput
@@ -1195,14 +1194,6 @@ class AgentPlatformAdminService:
                     "AP-11_BLOCKED_BY_MISSING_RECOVERY_MUTATION_ID",
                     "recovery rollback requires recovery_mutation_id",
                 )
-            recovery_authority = PostCutoverRecoveryAuthority(
-                application_id=application_id,
-                application_environment_id=application_environment_id,
-                failed_runtime_revision_id=request.runtime_revision_id,
-                originating_activation_mutation_id=request.originating_activation_mutation_id,
-                permitted_recovery_operation="rollback",
-                target_rollback_revision_id=serving.prior_traffic_revision_id,
-            )
             try:
                 authorization, rolled = self._execute_governed_rollback(
                     principal=principal,
@@ -1211,7 +1202,7 @@ class AgentPlatformAdminService:
                     mutation_id=recovery_mutation_id,
                     current_traffic_revision_id=serving.traffic_serving_revision_id,
                     current_serving_pointer_revision=serving.serving_pointer_revision,
-                    target_runtime_revision_id=recovery_authority.target_rollback_revision_id,
+                    target_runtime_revision_id=serving.prior_traffic_revision_id,
                     expected_current_traffic_revision_id=request.runtime_revision_id,
                     expected_serving_pointer_revision=serving.serving_pointer_revision,
                 )

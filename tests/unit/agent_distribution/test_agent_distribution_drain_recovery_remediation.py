@@ -432,6 +432,8 @@ def test_dr10_no_dynamic_access_in_governance_slice() -> None:
     for relative in _CONTROL_PLANE_GOVERNANCE_SLICE_FILES:
         source = (_REPO_ROOT / relative).read_text(encoding="utf-8")
         assert _FORBIDDEN_DYNAMIC_PATTERNS.search(source) is None, relative
+        assert "PostCutoverRecoveryAuthority" not in source, relative
+        assert "originating_activation_mutation_id" not in source, relative
 
 
 def test_dr11_failure_mark_is_control_plane_mutation() -> None:
@@ -463,7 +465,6 @@ def test_dr12_failure_mark_wrong_tenant_denies() -> None:
                 mutation_id="mut-dr12",
                 runtime_revision_id="rev-n1",
                 failure_evidence_ref="health:failed",
-                originating_activation_mutation_id="mut-activate-rev-n1",
                 attempt_rollback=False,
             ),
         )
@@ -485,7 +486,6 @@ def test_dr13_recovery_rollback_requires_governance() -> None:
                 recovery_mutation_id="mut-dr13-recovery",
                 runtime_revision_id="rev-n1",
                 failure_evidence_ref="health:failed",
-                originating_activation_mutation_id="mut-activate-rev-n1",
             ),
         )
     serving = stack.service.inspect_serving(application_id=_APP, application_environment_id=_ENV)
@@ -516,7 +516,6 @@ def test_dr14_recovery_current_deny_leaves_traffic() -> None:
                 recovery_mutation_id="mut-dr14-recovery",
                 runtime_revision_id="rev-n1",
                 failure_evidence_ref="health:failed",
-                originating_activation_mutation_id="mut-activate-rev-n1",
             ),
         )
     serving = stack.service.inspect_serving(application_id=_APP, application_environment_id=_ENV)
@@ -526,6 +525,10 @@ def test_dr14_recovery_current_deny_leaves_traffic() -> None:
 def test_dr15_recovery_allow_rolls_back() -> None:
     stack = _stack_with_evaluator(_RecordingEvaluator())
     _activate_pair(stack, rev_a="rev-n", rev_b="rev-n1")
+    serving_before = stack.service.inspect_serving(
+        application_id=_APP, application_environment_id=_ENV
+    )
+    assert serving_before.prior_traffic_revision_id == "rev-n"
     result = stack.service.handle_post_cutover_failure(
         application_id=_APP,
         application_environment_id=_ENV,
@@ -535,7 +538,6 @@ def test_dr15_recovery_allow_rolls_back() -> None:
             recovery_mutation_id="mut-dr15-recovery",
             runtime_revision_id="rev-n1",
             failure_evidence_ref="health:failed",
-            originating_activation_mutation_id="mut-activate-rev-n1",
         ),
     )
     assert result.rollback_result is not None
@@ -622,7 +624,6 @@ def test_dr19_service_principal_for_automated_recovery() -> None:
             recovery_mutation_id="mut-dr19-recovery",
             runtime_revision_id="rev-n1",
             failure_evidence_ref="health:failed",
-            originating_activation_mutation_id="mut-activate-rev-n1",
         ),
     )
     assert result.rollback_result is not None
@@ -642,13 +643,25 @@ def test_dr20_tenant_resolver_required_for_automated_path() -> None:
                 mutation_id="mut-dr20",
                 runtime_revision_id="rev-1",
                 failure_evidence_ref="health:failed",
-                originating_activation_mutation_id="mut-activate",
                 attempt_rollback=False,
             ),
         )
 
 
 def test_dr21_recovery_mutation_id_stable() -> None:
+    stack_missing = _stack_with_evaluator(_RecordingEvaluator())
+    _activate_pair(stack_missing, rev_a="rev-n", rev_b="rev-n1")
+    with pytest.raises(AgentPlatformAdminBlockedError, match="recovery_mutation_id"):
+        stack_missing.service.handle_post_cutover_failure(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            principal=admin_test_principal(),
+            request=HandlePostCutoverFailureRequest(
+                mutation_id="mut-dr21-missing-recovery",
+                runtime_revision_id="rev-n1",
+                failure_evidence_ref="health:failed",
+            ),
+        )
     stack = _stack_with_evaluator(_RecordingEvaluator())
     _activate_pair(stack, rev_a="rev-n", rev_b="rev-n1")
     result = stack.service.handle_post_cutover_failure(
@@ -660,7 +673,6 @@ def test_dr21_recovery_mutation_id_stable() -> None:
             recovery_mutation_id="mut-dr21-recovery",
             runtime_revision_id="rev-n1",
             failure_evidence_ref="health:failed",
-            originating_activation_mutation_id="mut-activate-rev-n1",
         ),
     )
     assert result.rollback_result is not None
@@ -672,6 +684,10 @@ def test_dr22_no_double_governance_on_recovery() -> None:
     evaluator = _RecordingEvaluator()
     stack = _stack_with_evaluator(evaluator)
     _activate_pair(stack, rev_a="rev-n", rev_b="rev-n1")
+    serving_before = stack.service.inspect_serving(
+        application_id=_APP, application_environment_id=_ENV
+    )
+    assert serving_before.prior_traffic_revision_id == "rev-n"
     stack.service.handle_post_cutover_failure(
         application_id=_APP,
         application_environment_id=_ENV,
@@ -681,9 +697,44 @@ def test_dr22_no_double_governance_on_recovery() -> None:
             recovery_mutation_id="mut-dr22-recovery",
             runtime_revision_id="rev-n1",
             failure_evidence_ref="health:failed",
-            originating_activation_mutation_id="mut-activate-rev-n1",
         ),
     )
+    rollback_calls = [
+        call for call in evaluator.calls if call.mutation_type == MUTATION_TYPE_ROLLBACK_RUNTIME_REVISION
+    ]
+    assert len(rollback_calls) == 1
+    assert serving_before.prior_traffic_revision_id in rollback_calls[0].target_revision
+
+
+def test_dr22b_recovery_require_human_zero_effects() -> None:
+    class _RequireHumanRollbackEvaluator:
+        def __init__(self) -> None:
+            self.calls: list[ControlPlaneMutationRequest] = []
+
+        def evaluate(self, request: ControlPlaneMutationRequest) -> PolicyDecision:
+            self.calls.append(request)
+            if request.mutation_type == MUTATION_TYPE_MARK_POST_CUTOVER_FAILURE:
+                return PolicyDecision(action=PolicyAction.ALLOW, reason="allow-mark")
+            return PolicyDecision(action=PolicyAction.REQUIRE_HUMAN, reason="hitl")
+
+    evaluator = _RequireHumanRollbackEvaluator()
+    stack = _stack_with_evaluator(evaluator)  # type: ignore[arg-type]
+    _activate_pair(stack, rev_a="rev-n", rev_b="rev-n1")
+    with pytest.raises(AgentPlatformAdminGovernanceBlockedError) as exc:
+        stack.service.handle_post_cutover_failure(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            principal=admin_test_principal(),
+            request=HandlePostCutoverFailureRequest(
+                mutation_id="mut-dr22b-mark",
+                recovery_mutation_id="mut-dr22b-recovery",
+                runtime_revision_id="rev-n1",
+                failure_evidence_ref="health:failed",
+            ),
+        )
+    assert exc.value.policy_action == PolicyAction.REQUIRE_HUMAN.value
+    serving = stack.service.inspect_serving(application_id=_APP, application_environment_id=_ENV)
+    assert serving.traffic_serving_revision_id == "rev-n1"
     rollback_calls = [
         call for call in evaluator.calls if call.mutation_type == MUTATION_TYPE_ROLLBACK_RUNTIME_REVISION
     ]

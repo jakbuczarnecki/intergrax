@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Literal, Protocol
+from typing import Protocol
 
 from intergrax.agent_distribution._digest import content_digest_for_model
 from intergrax.agent_distribution.deployment import DrainPolicy
@@ -559,19 +559,6 @@ def build_runtime_revision_mutation_request(
         ),
         risk_classification=ControlPlaneMutationRisk.HIGH,
     )
-
-
-@dataclass(frozen=True, slots=True)
-class PostCutoverRecoveryAuthority:
-    """Scoped recovery continuation derived from a governed activation attempt."""
-
-    application_id: str
-    application_environment_id: str
-    failed_runtime_revision_id: str
-    originating_activation_mutation_id: str
-    permitted_recovery_operation: Literal["rollback"]
-    target_rollback_revision_id: str
-
 
 def drain_policy_digest(policy: DrainPolicy) -> str:
     """Deterministic digest for drain policy governance identity."""
