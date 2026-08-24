@@ -12,37 +12,27 @@ from intergrax.applications._shared.production_capacity_governance_wiring import
 )
 from intergrax.applications._shared.production_capacity_wiring import resolve_production_capacity_wiring
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.contracts.control_plane_mutation import ControlPlaneMutationRequest
-from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
-from intergrax.runtime.governance.control_plane_mutation_authorization import (
-    ControlPlaneMutationAuthorizationBoundary,
-)
-
-
-class _HarnessProductionCapacityPolicy:
-    """Explicit gate-only allow policy for production adapter probe evidence."""
-
-    def evaluate(self, request: ControlPlaneMutationRequest) -> PolicyDecision:
-        del request
-        return PolicyDecision(
-            action=PolicyAction.ALLOW,
-            reason="harness_production_capacity_probe",
-            policy_rule_id="harness.production_capacity.scale_probe",
-        )
 
 
 def main() -> int:
     env = ApplicationEnvironmentProfile.product_defaults()
-    governance = build_production_capacity_governance(
-        env,
-        mutation_authorization_boundary=ControlPlaneMutationAuthorizationBoundary(
-            evaluator=_HarnessProductionCapacityPolicy(),
-        ),
-    )
+    governance = build_production_capacity_governance(env)
     wiring = resolve_production_capacity_wiring(env, governance=governance)
     if not wiring.enabled:
         print("product host must enable production capacity adapters", file=sys.stderr)
         return 1
+    if governance.mutation_authorization_boundary is None:
+        if wiring.adapters is not None or wiring.probe_passed:
+            print(
+                "production capacity wiring must fail closed without canonical policy",
+                file=sys.stderr,
+            )
+            return 1
+        print(
+            "OK: production Celery/K8s capacity adapters "
+            "(canonical policy required for governed probe)",
+        )
+        return 0
     if wiring.adapters is None or not wiring.probe_passed:
         print("production capacity adapter probe failed", file=sys.stderr)
         return 1

@@ -1,13 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""ECP control-plane mutation governance proofs (ECP-CPM1–ECP-CPM17)."""
+"""ECP control-plane mutation governance proofs (ECP-CPM1–ECP-CPM18)."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-
-import importlib
-import inspect
+from dataclasses import dataclass, field, fields
 
 import pytest
 
@@ -37,12 +34,15 @@ from intergrax.runtime.capacity.control_plane_governance import (
     k8s_replicas_revision_token,
 )
 from intergrax.runtime.capacity.governed_capacity_mutation import GovernedCapacityMutationExecutor
+from intergrax.runtime.capacity.contracts import ScalingAction, ScalingActionKind, ScalingTarget
 from intergrax.runtime.capacity.production_adapters import (
     CeleryProductionAdapter,
+    ProductionCapacityAdapters,
     apply_production_scale_probe,
     build_production_capacity_adapters,
 )
 from intergrax.runtime.capacity.provisioner import (
+    GovernedExecutionRequiredError,
     ProvisionerExecutionMode,
     ScalingProvisioner,
     StaleCapacityStateError,
@@ -357,7 +357,12 @@ def test_ecp_cpm11_production_probe_uses_governed_facade() -> None:
         celery_mutation_id="probe-celery",
     )
     assert len(recording.calls) == 2
-    assert not hasattr(adapters, "provisioner")
+    assert {adapter_field.name for adapter_field in fields(ProductionCapacityAdapters)} == {
+        "kubernetes",
+        "celery",
+        "governed_executor",
+        "kubernetes_backend",
+    }
 
 
 def test_ecp_cpm12_production_adapters_expose_governed_executor_only() -> None:
@@ -367,8 +372,14 @@ def test_ecp_cpm12_production_adapters_expose_governed_executor_only() -> None:
         ),
         tenant_resolver=StaticEcpResourceTenantResolver(tenant_id=_TENANT),
     )
+    assert isinstance(adapters, ProductionCapacityAdapters)
     assert adapters.governed_executor is not None
-    assert not hasattr(adapters, "provisioner")
+    assert {adapter_field.name for adapter_field in fields(ProductionCapacityAdapters)} == {
+        "kubernetes",
+        "celery",
+        "governed_executor",
+        "kubernetes_backend",
+    }
 
 
 def test_ecp_cpm13_provider_side_effect_only_after_allow() -> None:
@@ -424,17 +435,13 @@ def test_ecp_cpm15_production_supplied_deny_policy_zero_provider_effect() -> Non
 
 
 def test_ecp_cpm16_no_permissive_local_production_evaluator() -> None:
-    module = importlib.import_module(
-        "intergrax.applications._shared.production_capacity_governance_wiring",
-    )
-    assert not hasattr(module, "_ProductionCapacityConfiguredAllowEvaluator")
-    governance = build_production_capacity_governance(
-        ApplicationEnvironmentProfile.product_defaults(),
-    )
+    env = ApplicationEnvironmentProfile.product_defaults()
+    governance = build_production_capacity_governance(env)
     assert governance.mutation_authorization_boundary is None
-    source = inspect.getsource(build_production_capacity_governance)
-    assert "PolicyAction.ALLOW" not in source
-    assert "ALLOW" not in source or "mutation_authorization_boundary" in source
+    wiring = resolve_production_capacity_wiring(env, governance=governance)
+    assert wiring.enabled is True
+    assert wiring.adapters is None
+    assert wiring.probe_passed is False
 
 
 def test_ecp_cpm17_production_adapters_block_raw_exact_target_mutation() -> None:
@@ -444,9 +451,35 @@ def test_ecp_cpm17_production_adapters_block_raw_exact_target_mutation() -> None
         ),
         tenant_resolver=StaticEcpResourceTenantResolver(tenant_id=_TENANT),
     )
-    assert not hasattr(adapters, "provisioner")
-    provisioner = adapters.governed_executor._provisioner
-    assert not hasattr(provisioner, "apply_authorized_k8s_target")
-    assert not hasattr(provisioner, "apply_authorized_celery_target")
-    assert hasattr(provisioner, "_apply_authorized_k8s_target")
-    assert hasattr(provisioner, "_apply_authorized_celery_target")
+    assert isinstance(adapters.governed_executor, GovernedCapacityMutationExecutor)
+    provisioner = ScalingProvisioner(
+        kubernetes=_RecordingK8s(),
+        celery=CeleryProductionAdapter(worker_count=2),
+        execution_mode=ProvisionerExecutionMode.GOVERNED_ONLY,
+    )
+    with pytest.raises(GovernedExecutionRequiredError):
+        provisioner.apply(
+            ScalingAction(
+                kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
+                target=ScalingTarget.NEXUS_HOST,
+                delta=1,
+            ),
+        )
+    with pytest.raises(GovernedExecutionRequiredError):
+        provisioner.apply(
+            ScalingAction(
+                kind=ScalingActionKind.SCALE_CELERY_WORKERS,
+                target=ScalingTarget.CELERY_POOL,
+                delta=1,
+            ),
+        )
+
+
+def test_ecp_cpm18_maintenance_path_cannot_manufacture_allow_policy() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults()
+    governance = build_production_capacity_governance(env)
+    assert governance.mutation_authorization_boundary is None
+    wiring = resolve_production_capacity_wiring(env, governance=governance)
+    assert wiring.enabled is True
+    assert wiring.adapters is None
+    assert wiring.probe_passed is False
