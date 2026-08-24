@@ -30,7 +30,9 @@ def test_rag_first_contact_internal_qualification_disclaimer() -> None:
 
 
 def test_readme_no_hybrid_ask_certification_wording() -> None:
-    assert "Hybrid Ask certification" not in README.read_text(encoding="utf-8")
+    text = README.read_text(encoding="utf-8")
+    assert "Hybrid Ask certification" not in text
+    assert "all-provider certification" not in text
 
 
 def test_proofs_no_public_technical_certification_phrases() -> None:

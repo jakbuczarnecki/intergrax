@@ -643,10 +643,18 @@ def test_readme_platform_extensibility_positioning(readme_text: str) -> None:
         "governed extension/package model",
         "domain-owned contracts",
         "canonical architecture frozen",
-        "implementation stages planned",
-        "complete third-party install-to-runtime e2e proof not yet established",
+        "extension-platform slices implemented",
+        "core program closed",
+        "not yet established",
     ):
         assert phrase in normalized, f"README missing Platform Extensibility marker: {phrase}"
+    for stale_phrase in (
+        "implementation stages planned",
+        "harmonized cross-platform plugin lifecycle is future work",
+    ):
+        assert stale_phrase not in normalized, (
+            f"README contains stale Platform Extensibility wording: {stale_phrase}"
+        )
     for phrase in (
         "active reference product",
         "backend product alpha / mvp",
@@ -701,13 +709,19 @@ def test_architecture_platform_extensibility_section(arch_text: str) -> None:
     assert "intentionally secondary" in normalized
     for phrase in (
         "independently packaged extensions",
-        "harmonized cross-platform plugin lifecycle",
-        "future work",
+        "extension-platform implementation slices exist",
         "not a universal platformplugin.execute",
         "does not replace integrationplugin",
         "domain-owned surfaces",
     ):
         assert phrase in normalized, f"ARCHITECTURE missing Platform Extensibility marker: {phrase}"
+    for stale_phrase in (
+        "harmonized cross-platform plugin lifecycle is future work",
+        "implementation stages planned",
+    ):
+        assert stale_phrase not in normalized, (
+            f"ARCHITECTURE contains stale Platform Extensibility wording: {stale_phrase}"
+        )
     assert "active reference product" in normalized
     assert "primary product proof" not in normalized
     assert "featured platform-capability proof" in normalized
@@ -722,7 +736,8 @@ def test_roadmap_platform_extensibility_supporting_work() -> None:
         "platform extensibility / plugins",
         "strategic platform capability",
         "canonical cross-cutting architecture is frozen",
-        "implementation stages",
+        "extension-platform implementation slices exist",
+        "core program is closed",
         "not yet established",
         "token optimization",
         "featured platform-capability proof",
@@ -730,6 +745,13 @@ def test_roadmap_platform_extensibility_supporting_work() -> None:
         "multiplayer ai",
     ):
         assert phrase in normalized, f"ROADMAP missing Platform Extensibility marker: {phrase}"
+    for stale_phrase in (
+        "implementation stages for harmonization",
+        "harmonized cross-platform plugin lifecycle",
+    ):
+        assert stale_phrase not in normalized, (
+            f"ROADMAP contains stale Platform Extensibility wording: {stale_phrase}"
+        )
     assert "platform-plugin-" not in normalized
 
 

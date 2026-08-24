@@ -18,6 +18,7 @@ def test_public_documentation_local_link_integrity() -> None:
     report = collect_public_link_integrity_report()
 
     assert report.roots_checked == len(PUBLIC_ROOTS)
+    assert not report.missing_roots, f"missing public roots: {report.missing_roots}"
     assert report.documents_checked >= len(PUBLIC_ROOTS)
     assert not report.broken_links, _format_broken_links(report)
 

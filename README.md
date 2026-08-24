@@ -283,7 +283,7 @@ in the [LKW Quick Start](applications/local_workspace_application/docs/product/Q
 platform-level bounded proof covering startup/readiness, durable knowledge and
 execution, background processing, persisted reviewable evidence, hosting/recovery,
 and watched-folder indexing — not production readiness, commercial validation,
-or all-provider certification.
+or provider-wide qualification.
 
 **Proof families:** Product evaluation (`LKW-PRODUCT-QUICKSTART-*`), Core platform (`LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`), Indexed Hybrid Ask (`LKW-HYBRID-ASK-INDEXED`), Trusted Ask (`LKW-ASK-WORKSPACE-LIVE`), Governed Evidence Decision Proof (`advanced_flagship_proof`).
 
@@ -421,7 +421,7 @@ lack established runtime proof:
 | Direction | What it adds | Current maturity | Explore |
 | --- | --- | --- | --- |
 | **Multiplayer AI** | Governed multi-principal collaboration among humans, agents, services, and external agents | **Architecture / roadmap stage** — runtime proof **not yet established** | [Multiplayer AI architecture](docs/project/capabilities/architecture/MULTIPLAYER_AI.md) |
-| **Platform Extensibility** | Governed extension/package model across domain-owned contracts | **Canonical architecture frozen** — implementation stages planned; complete third-party install-to-runtime E2E proof **not yet established** | [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md) |
+| **Platform Extensibility** | Governed extension/package model across domain-owned contracts | **Canonical architecture frozen** — multiple extension-platform slices implemented; core program closed. Residual Protocol v2 work remains planned; complete third-party install-to-runtime E2E proof **not yet established** | [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md) |
 | **Agent Marketplace** | Future ecosystem layer — discovery and distribution over governed Agent Distribution / Platform Extensibility | **FUTURE PRODUCT — NOT SHIPPED TODAY** | [Agent Marketplace concept](docs/project/overview/AGENT_MARKETPLACE.md) |
 
 ## License and collaboration

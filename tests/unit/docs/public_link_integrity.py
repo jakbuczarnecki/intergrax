@@ -74,6 +74,7 @@ class BrokenLocalLink:
 @dataclass(frozen=True, slots=True)
 class PublicLinkIntegrityReport:
     roots_checked: int
+    missing_roots: tuple[str, ...]
     documents_checked: int
     local_links_checked: int
     assets_checked: int
@@ -120,6 +121,11 @@ def resolve_local_target(base_dir: Path, ref: str) -> Path | None:
 
 
 def collect_public_link_integrity_report() -> PublicLinkIntegrityReport:
+    missing_roots = tuple(
+        root.relative_to(REPO_ROOT).as_posix()
+        for root in PUBLIC_ROOTS
+        if not root.is_file()
+    )
     visited: set[Path] = set()
     queue: deque[Path] = deque(root.resolve() for root in PUBLIC_ROOTS if root.is_file())
 
@@ -161,6 +167,7 @@ def collect_public_link_integrity_report() -> PublicLinkIntegrityReport:
     unique_broken = tuple(dict.fromkeys(broken).keys())
     return PublicLinkIntegrityReport(
         roots_checked=len(PUBLIC_ROOTS),
+        missing_roots=missing_roots,
         documents_checked=len(visited),
         local_links_checked=local_links_checked,
         assets_checked=assets_checked,
