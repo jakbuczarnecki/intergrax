@@ -816,13 +816,13 @@ await reporter.report(
 
 `MessageBusTaskRef.task_id` is opaque transport identity (`str`); `RuntimeExecutionRef.task_id` is canonical `TaskId`. Identical text may appear on both sides without collapsing domains — isolation is enforced by typed contracts, not lexical format rules.
 
-**Canonical persistence (R1):** **PLATFORM GAP** — no durable, tenant-scoped, queryable platform persistence boundary exists today for typed non-execution causal evidence. `RuntimeEventPersistence` is execution-scoped only. `PlatformProblemSignal` and `HostedApplicationEvent` share the same export/spine projection path without a dedicated durable causal-evidence store.
+**Canonical persistence (P1):** **contract DONE** — `CausalEvidencePersistence` defines the platform-owned, backend-neutral append/read contract for typed non-execution causal evidence (`append`, `list_for_execution`, `list_for_transport_task`). `InMemoryCausalEvidencePersistence` is the reference implementation for tests and conformance only. **Production durable backend: NOT YET** — no SQL/Cassandra (or similar) backend is selected or wired. **Writer integration: NOT YET** (DIAG-1I). `RuntimeEventPersistence` remains execution-scoped only and is unchanged.
 
 **Optional export projection:** `envelope_from_causal_evidence` maps to `ExportRecordKind.DIAGNOSTIC` with typed `CausalEvidenceExportSource` on `ObservabilityExportEnvelope` — a **lossless export projection**, not canonical persistence. Export backends (Sentry, Datadog, OTLP, `InMemoryObservabilityExporter`) are optional sinks; the causal fact must not depend on them.
 
 **Evidence identity:** `PlatformCausalEvidence.evidence_id` currently uses `EventId` (`evt_…`), which may be execution-event scoped — dedicated `CausalEvidenceId` is a deferred decision point if non-execution evidence persistence lands.
 
-**Code references:** `causal_evidence.py` · `causal_evidence_export.py` · `export_boundary.py`.
+**Code references:** `causal_evidence.py` · `causal_evidence_persistence.py` · `memory_causal_evidence_persistence.py` · `causal_evidence_export.py` · `export_boundary.py`.
 
 ---
 

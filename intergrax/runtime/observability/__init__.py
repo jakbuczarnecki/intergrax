@@ -3,6 +3,9 @@
 
 """Harness observability spine helpers (OBS-BUS-2+)."""
 
+from intergrax.runtime.observability.causal_evidence_persistence import (
+    CausalEvidencePersistence,
+)
 from intergrax.runtime.observability.export_attributes import (
     APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA,
     ApplicationObservabilityAttributePolicyResult,
@@ -133,7 +136,9 @@ from intergrax.runtime.observability.journal_export import (
     serialize_runtime_event,
 )
 from intergrax.runtime.observability.persistence_conformance import (
+    assert_causal_evidence_persistence_conformance,
     assert_runtime_event_persistence_conformance,
+    sample_causal_evidence,
     sample_runtime_event,
 )
 from intergrax.runtime.observability.extension_sdk import (
@@ -156,7 +161,7 @@ from intergrax.runtime.observability.trace_scope import (
 )
 
 __all__ = [
-    "APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA",
+    "CausalEvidencePersistence",
     "ApplicationObservabilityAttributePolicyResult",
     "ApplicationObservabilityAttributes",
     "ExportRecordKind",
@@ -196,6 +201,7 @@ __all__ = [
     "RuntimeEventExportSource",
     "SANITIZED_APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA",
     "SanitizedApplicationObservabilityAttributes",
+    "assert_causal_evidence_persistence_conformance",
     "assert_runtime_event_persistence_conformance",
     "build_journal_export_snapshot",
     "build_journal_ref",
@@ -274,6 +280,7 @@ __all__ = [
     "observability_attribute_key",
     "sanitize_application_observability_attributes",
     "sanitized_application_attributes_are_content_safe",
+    "sample_causal_evidence",
     "sample_runtime_event",
     "serialize_runtime_event",
     "TraceScopeState",
