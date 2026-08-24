@@ -9,10 +9,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from intergrax.applications._shared import llm_resolver
 from intergrax.applications._shared.prompt_wiring import resolve_prompt_registry
-from intergrax.applications._shared.runtime_config_bridge import (
-    build_runtime_context_from_environment,
-)
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
@@ -27,7 +25,7 @@ from platform_proofs.scenarios.ai_incident_investigation.runtime_composition imp
     build_agent_runtime_context,
     build_scenario_environment_profile,
     build_scenario_runtime_composition,
-    ensure_scenario_llm_adapter_resolved,
+    resolve_scenario_llm_adapter,
 )
 from platform_proofs.scenarios.ai_incident_investigation.scenario import build_runtime_bundle
 from testing_support.builder import FakeLLMAdapter
@@ -96,43 +94,58 @@ def test_build_runtime_bundle_registers_production_tool_contracts() -> None:
 
 
 def test_build_agent_runtime_context_uses_production_platform_paths(monkeypatch: pytest.MonkeyPatch) -> None:
-    calls: list[str] = []
+    resolve_calls = 0
     sentinel = FakeLLMAdapter(fixed_text="probe")
 
     def _track_resolve(*_args, **_kwargs):
-        calls.append("resolve_llm_adapter")
+        nonlocal resolve_calls
+        resolve_calls += 1
         return sentinel
-
-    def _track_build_context(request, build_ctx, env, **kwargs):
-        calls.append("build_runtime_context_from_environment")
-        assert kwargs.get("llm_adapter") is None
-        ctx = build_runtime_context_from_environment(
-            request,
-            build_ctx,
-            env,
-            llm_adapter=sentinel,
-        )
-        return ctx
 
     monkeypatch.setattr(
         "platform_proofs.scenarios.ai_incident_investigation.runtime_composition.resolve_llm_adapter",
         _track_resolve,
     )
+
+    bundle = build_runtime_bundle()
+    ctx = build_agent_runtime_context(_runtime_request(), bundle.runtime_composition)
+
+    assert resolve_calls == 1
+    assert ctx.config.llm_adapter is sentinel
+    assert isinstance(ctx.prompt_registry, YamlPromptRegistry)
+    assert ctx.session_manager is not None
+
+
+def test_build_agent_runtime_context_reuses_scenario_adapter_without_second_provider_construction(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider_constructions = 0
+    sentinel = FakeLLMAdapter(fixed_text="identity-probe")
+
+    def _track_provider_construction(*_args, **_kwargs):
+        nonlocal provider_constructions
+        provider_constructions += 1
+        return sentinel
+
     monkeypatch.setattr(
-        "platform_proofs.scenarios.ai_incident_investigation.runtime_composition.build_runtime_context_from_environment",
-        _track_build_context,
+        "platform_proofs.scenarios.ai_incident_investigation.runtime_composition.resolve_llm_adapter",
+        llm_resolver.resolve_llm_adapter,
+    )
+    monkeypatch.setattr(
+        "intergrax.applications._shared.runtime_config_bridge.resolve_llm_adapter",
+        llm_resolver.resolve_llm_adapter,
+    )
+    monkeypatch.setattr(
+        llm_resolver,
+        "_create_base_llm_adapter",
+        _track_provider_construction,
     )
 
     bundle = build_runtime_bundle()
     ctx = build_agent_runtime_context(_runtime_request(), bundle.runtime_composition)
 
-    assert calls == [
-        "resolve_llm_adapter",
-        "build_runtime_context_from_environment",
-    ]
-    assert isinstance(ctx.config.llm_adapter, FakeLLMAdapter)
-    assert ctx.session_manager is not None
-    assert isinstance(ctx.prompt_registry, YamlPromptRegistry)
+    assert provider_constructions == 1
+    assert ctx.config.llm_adapter is sentinel
 
 
 def test_prompt_registry_resolved_through_platform_wiring() -> None:
@@ -153,7 +166,7 @@ def test_missing_llm_configuration_fails_closed(monkeypatch: pytest.MonkeyPatch)
     )
 
     with pytest.raises(RuntimeError, match="incident_scenario_llm_configuration_missing"):
-        ensure_scenario_llm_adapter_resolved(env)
+        resolve_scenario_llm_adapter(env)
 
 
 def test_investigator_delegates_build_context_to_composition_boundary() -> None:

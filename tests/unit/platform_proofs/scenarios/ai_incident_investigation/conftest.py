@@ -13,7 +13,9 @@ from testing_support.builder import FakeLLMAdapter
 def _patch_scenario_llm_resolver(monkeypatch: pytest.MonkeyPatch) -> None:
     """Keep scenario tests offline while canonical code uses production resolver paths."""
 
-    def _fake_resolve(*_args, **_kwargs):
+    def _fake_resolve(*_args, agent_override=None, **_kwargs):
+        if agent_override is not None:
+            return agent_override
         return FakeLLMAdapter(fixed_text="investigate")
 
     monkeypatch.setattr(

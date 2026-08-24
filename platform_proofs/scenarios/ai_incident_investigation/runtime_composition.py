@@ -18,6 +18,7 @@ from intergrax.applications.contracts.environment_profile import (
 from intergrax.integrations.registry.catalog_manifests import LOG
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
@@ -66,22 +67,22 @@ def build_scenario_runtime_composition(
     )
 
 
-def ensure_scenario_llm_adapter_resolved(
+def resolve_scenario_llm_adapter(
     environment: ApplicationEnvironmentProfile,
-) -> None:
+) -> LLMAdapter:
     """
-    Fail closed when platform LLM configuration cannot be resolved.
+    Resolve the platform LLM adapter for the scenario environment.
 
     Model calls are not material to deterministic ``run_step()`` yet (APP-2); this
     only validates that the production adapter boundary is configured.
     """
     try:
-        resolve_llm_adapter(environment)
+        return resolve_llm_adapter(environment)
     except Exception as exc:
         raise RuntimeError(
-            "incident_scenario_llm_configuration_missing: configure provider-neutral "
-            "INTERGRAX_LLM_PROVIDER and INTERGRAX_LLM_MODEL (and provider credentials "
-            "when required) before running the canonical scenario proof"
+            "incident_scenario_llm_configuration_missing: failed to resolve a configured "
+            "platform LLM adapter from the application environment profile (check "
+            "llm_profile, INTERGRAX_LLM_* overrides, and provider credentials when required)"
         ) from exc
 
 
@@ -89,9 +90,10 @@ def build_agent_runtime_context(
     request: RuntimeRequest,
     composition: ScenarioRuntimeComposition,
 ) -> RuntimeContext:
-    ensure_scenario_llm_adapter_resolved(composition.environment)
+    resolved_llm = resolve_scenario_llm_adapter(composition.environment)
     return build_runtime_context_from_environment(
         request,
         composition.build_context,
         composition.environment,
+        llm_adapter=resolved_llm,
     )
