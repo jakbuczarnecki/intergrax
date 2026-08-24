@@ -401,4 +401,4 @@ Explicitly **out of scope** for this architecture document and the BG-TASKS trac
 - [`plan/BACKGROUND_TASKS.md`](../maintainers/plans/BACKGROUND_TASKS.md) — implementation phases
 - [`architecture/INTEGRATIONS.md`](INTEGRATIONS.md) — `message_bus` provider category
 - [`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/ARCHITECTURE.md) §8.7 — LKW.4 product architecture
-- [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md) §6 — LKW.4 task schedule
+- [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §6 — LKW.4 task schedule

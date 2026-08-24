@@ -5,7 +5,7 @@
 **Classification:** docs-only architecture and contract boundary  
 **Branch:** `development`  
 **Integration canon:** [`INTEGRATIONS.md`](INTEGRATIONS.md)  
-**LKW intake discovery:** [`../../applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md`](../KNOWLEDGE_INTAKE_DISCOVERY.md)
+**LKW intake discovery:** [`../../applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md`](../../../applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md)
 
 ---
 
@@ -1194,7 +1194,7 @@ application database/store       LKW Knowledge Intake
 12. Live Slack results remain ephemeral unless an explicit promotion/materialization workflow is executed.
 13. Indexed permission and live-access authorization are separate grants.
 14. Slack-as-frontend and Slack-as-knowledge-source are independent roles even when they resolve the same provider integration foundation.
-15. **Conversation Context Binding** (LKW application domain) controls where and under which audience the assistant may respond. Provider adapters supply `ConversationIngressContext` with `observed_audience`; `binding.audience_mode` must match before workspace resolution or Ask. At most one `ACTIVE` binding per semantic identity. Independent from Indexed Source Binding and Live Access Binding. Canonical contract: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../CONVERSATION_CONTEXT_ARCHITECTURE.md).
+15. **Conversation Context Binding** (LKW application domain) controls where and under which audience the assistant may respond. Provider adapters supply `ConversationIngressContext` with `observed_audience`; `binding.audience_mode` must match before workspace resolution or Ask. At most one `ACTIVE` binding per semantic identity. Independent from Indexed Source Binding and Live Access Binding. Canonical contract: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md).
 
 **Independent grants (provider-neutral):**
 

@@ -44,8 +44,8 @@ A skeptical external reviewer must be able to open the report offline and unders
 |----------|------|
 | [`PROOFS.md`](PROOFS.md) | Public proof dashboard — links **accepted/published** evidence only |
 | [`PUBLIC_PROOF_AND_CLAIMS_MODEL.md`](../maintainers/public-adoption/PUBLIC_PROOF_AND_CLAIMS_MODEL.md) | Public claim qualification and promotion |
-| [`PLATFORM_PROOF_PROTOCOL.md`](../../platform_proofs/PLATFORM_PROOF_PROTOCOL.md) | Platform proof methodology |
-| [`PLATFORM_PROOF_AUTHORING_GUIDE.md`](../../platform_proofs/PLATFORM_PROOF_AUTHORING_GUIDE.md) | Author workflow |
+| [`PLATFORM_PROOF_PROTOCOL.md`](../../../platform_proofs/PLATFORM_PROOF_PROTOCOL.md) | Platform proof methodology |
+| [`PLATFORM_PROOF_AUTHORING_GUIDE.md`](../../../platform_proofs/PLATFORM_PROOF_AUTHORING_GUIDE.md) | Author workflow |
 
 ---
 

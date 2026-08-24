@@ -11,7 +11,7 @@
 **Maturity:** [`../technical/guides/MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md) — four-axis A/I/P/E vocabulary; legacy L3/L4/L5 mapping (P2-ARCH-02). Maturity labels elsewhere in this hub are summaries only; authoritative production readiness claims require four-axis A/I/P/E statements in the owning architecture/plan pair.
 **Layer completion:** [`../technical/guides/LAYER_COMPLETION_MODE.md`](../technical/guides/LAYER_COMPLETION_MODE.md) — deep domain layer closeout workflow
 **Doc boundaries (Experimentation/DX):** [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#architecture-vs-implementation-rules-boundary) — architecture vs Cursor/workflow rules placement (P2-ARCH-13)
-**Audit:** [`../technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](../technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) · **Idea intake (Mode I):** [`../maintainers/bootstrap/idea_audit.txt`](../maintainers/bootstrap/idea_audit.txt) · **Cursor bootstrap:** [`../maintainers/bootstrap`](../maintainers/bootstrap) · **Domain audit prompts:** [`../maintainers/audit`](../maintainers/audit) · **Architecture audit results:** [`audit_results/`](../../audit_results/README.md) · **Implementation journal:** [`../maintainers/implementation-journal`](../maintainers/implementation-journal/README.md)
+**Audit:** [`../technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](../../audit_results/legacy/plan-audit-history/README.md) · **Idea intake (Mode I):** [`../maintainers/bootstrap/idea_audit.txt`](../maintainers/bootstrap/README.md) · **Cursor bootstrap:** [`../maintainers/bootstrap`](../maintainers/bootstrap) · **Domain audit prompts:** [`../maintainers/audit`](../../audit_results/README.md) · **Architecture audit results:** [`audit_results/`](../../audit_results/README.md) · **Implementation journal:** [`../maintainers/implementation-journal`](../maintainers/implementation-journal/README.md)
 **Authoring:** [`../technical/guides`](../technical/guides)
 **Platform proofs:** [`../../../platform_proofs/README.md`](../../../platform_proofs/README.md) — reusable platform mechanism proof methodology and coverage map (execution via [`scripts/proof/`](../../../scripts/proof/); public dashboard [`../proofs/PROOFS.md`](../proofs/PROOFS.md))
 
@@ -182,7 +182,7 @@ Intergrax is **not** “one Python class that is also the OS.” The **agent** i
 
 ## Application in the harness environment
 
-**Hub summary** — full canon in [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §24–§51 (APP-CON / APP-EVOL / APP-OPS) · **freeze audit:** [`../technical/guides/GOVERNANCE_CONSISTENCY_AUDIT.md`](../technical/guides/GOVERNANCE_CONSISTENCY_AUDIT.md) · plan [H-APP-CON](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md#phase-h-app-con--application-environment-architecture-canon-app-con) · [H-APP-FREEZE](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md#phase-h-app-freeze--cross-document-governance-consistency-audit).
+**Hub summary** — full canon in [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §24–§51 (APP-CON / APP-EVOL / APP-OPS) · **freeze audit:** [`../technical/guides/GOVERNANCE_CONSISTENCY_AUDIT.md`](../../audit_results/legacy/GOVERNANCE_CONSISTENCY_AUDIT.md) · plan [H-APP-CON](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md#phase-h-app-con--application-environment-architecture-canon-app-con) · [H-APP-FREEZE](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md#phase-h-app-freeze--cross-document-governance-consistency-audit).
 
 The **application** is a **deployable composition shell** — not a cognitive agent. It normalizes intake → `Task`, declares roster and harness profiles, and returns product output. Tier-3 authors control environment through **three modes** (§30): declarative profile, rules envelope, imperative `ApplicationHost` hooks.
 
@@ -236,11 +236,11 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 
 
 LKW.7 is **Closed**: LKW.7A Done; LKW.7B1 Done; LKW.7B2A Done; LKW.7B2B Done; LKW.7B Closed; LKW.7C Closed; LKW.7C1 Done; LKW.7C2 Done.
-LKW.6 closed narrowly as: unified interaction intake; Application Hosting adoption; first Windows PowerShell product interaction adapter; live reviewer proof. Product docs: [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md).
+LKW.6 closed narrowly as: unified interaction intake; Application Hosting adoption; first Windows PowerShell product interaction adapter; live reviewer proof. Product docs: [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md).
 
 ### LKW Hybrid Knowledge Workspace — active product roadmap
 
-Canonical execution order: [applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md). Architecture: [KNOWLEDGE_ACCESS_ARCHITECTURE.md](../KNOWLEDGE_ACCESS_ARCHITECTURE.md).
+Canonical execution order: [applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md). Architecture: [KNOWLEDGE_ACCESS_ARCHITECTURE.md](../../../applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md).
 
 | Block | Scope | Status |
 |-------|-------|--------|
@@ -270,7 +270,7 @@ Canonical plan: [plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md](../maintainers/plans/KNO
 | **LKW-GOOGLE-WORKSPACE-PROOF-1** | First user-oriented Google Doc/Sheet/Calendar/Drive proof | **PLANNED** |
 | **MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR** | Microsoft Graph Calendar Vendor Knowledge adapter | **PLANNED** (after first accepted Google LKW proof) |
 
-LKW application tasks (`LKW-SLACK-CONNECTED-SOURCE-1` **IN_PROGRESS / CHANGES_REQUIRED**; `LKW-CONVERSATION-CONTEXT-1` **NEXT**; `LKW-CONVERSATION-CONTEXT-ARCH-1` **ACCEPTED**; `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`, `LKW-SLACK-KNOWLEDGE-PROOF-1` **PLANNED**; final proof joins `LKW-HYBRID-ASK-1`; Google Workspace runtime starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED**) are tracked in the [LKW Implementation Plan](../IMPLEMENTATION_PLAN.md) and [Conversation Context Architecture](../CONVERSATION_CONTEXT_ARCHITECTURE.md), not as platform adapter tasks.
+LKW application tasks (`LKW-SLACK-CONNECTED-SOURCE-1` **IN_PROGRESS / CHANGES_REQUIRED**; `LKW-CONVERSATION-CONTEXT-1` **NEXT**; `LKW-CONVERSATION-CONTEXT-ARCH-1` **ACCEPTED**; `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`, `LKW-SLACK-KNOWLEDGE-PROOF-1` **PLANNED**; final proof joins `LKW-HYBRID-ASK-1`; Google Workspace runtime starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED**) are tracked in the [LKW Implementation Plan](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) and [Conversation Context Architecture](../../../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md), not as platform adapter tasks.
 
 
 Former 1B-6 / 1C–1E slices are **mapped into** the blocks above; see Implementation Plan §3.4.

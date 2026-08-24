@@ -353,7 +353,7 @@ Evidence maturity:         E4
 | Tier-3 composition | [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) |
 | Execution recovery | [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) |
 | Evidence spine | [`OBSERVABILITY.md`](OBSERVABILITY.md) |
-| LKW reviewer proof | [`applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md`](../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) |
+| LKW reviewer proof | [`applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md`](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) |
 | Maturity vocabulary | [`MATURITY_TAXONOMY.md](../technical/guides/MATURITY_TAXONOMY.md) |
 
 ---
@@ -568,10 +568,10 @@ Generic contracts and engine code **MUST NOT** live under `applications/local_wo
 
 Accepted [`APPLICATION_HOSTING`](../../audit_results/2026-08-18/APPLICATION_HOSTING.md) findings **01–06** (2026-08-21). Remediation **ACCEPTED / PLANNED** — **not implemented** by audit persistence.
 
-1. **Observability authority** — public production hosting uses a configured canonical Observability exporter. Default public foreground hosting must not silently retain lifecycle evidence only in a NoOp exporter. Explicit lab/no-observability mode or fail-closed when evidence is required. Cross-link [`OBSERVABILITY_EVIDENCE`](OBSERVABILITY_EVIDENCE.md); do not create a hosting-specific event bus/store.
+1. **Observability authority** — public production hosting uses a configured canonical Observability exporter. Default public foreground hosting must not silently retain lifecycle evidence only in a NoOp exporter. Explicit lab/no-observability mode or fail-closed when evidence is required. Cross-link [`OBSERVABILITY_EVIDENCE`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md); do not create a hosting-specific event bus/store.
 2. **Runtime component failure semantics** — `ComponentFailureAction` applies after READY, not startup only. Every health transition after READY maps through the effective registered action: `IGNORE_WITH_DIAGNOSTIC` / `MARK_DEGRADED` / `MARK_NOT_READY` / `FAIL_HOST`. `FAIL_HOST` triggers the canonical hosted failure/control path eligible for supervisor classification/restart. Do not build a second health subsystem.
 3. **Shutdown outcome truthfulness** — component stop failures propagate into aggregate phase outcome. Failed component stop cannot masquerade as COMPLETED. Aggregate exposes COMPLETED when all applicable stops succeed, FAILED when any fail, TIMED_OUT when bounded stop does not complete. Per-component diagnostics preserved; do not emit semantic success for failed stops unless event vocabulary explicitly distinguishes attempted vs successful.
-4. **Durability flush semantics** — flush services declare durability criticality. Required durability flush failure must make terminal outcome non-clean and remain visible in exit evidence/restart policy. Best-effort telemetry flush may remain non-fatal only through explicit policy. `CLEAN_STOP` requires required shutdown durability obligations to succeed. Cross-link [`OBSERVABILITY_EVIDENCE`](OBSERVABILITY_EVIDENCE.md) where event/journal durability overlaps.
+4. **Durability flush semantics** — flush services declare durability criticality. Required durability flush failure must make terminal outcome non-clean and remain visible in exit evidence/restart policy. Best-effort telemetry flush may remain non-fatal only through explicit policy. `CLEAN_STOP` requires required shutdown durability obligations to succeed. Cross-link [`OBSERVABILITY_EVIDENCE`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md) where event/journal durability overlaps.
 5. **Instance recovery** — native file lock remains authoritative for local mutual exclusion. Process metadata used for stale recovery must distinguish process incarnation, not PID alone, if used as an additional ownership fence. Avoid false ownership conflicts caused by PID reuse.
 6. **Plan/current-state truth** — architecture and implementation plan agree on shipped W1/W2/W3 (public foundation, engine, process control/supervision, LKW proof) vs remaining backlog (APP-HOST-3D, 5D/5E, 6, 7, 9B–9F). Historical Done rows preserved.
 

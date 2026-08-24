@@ -311,7 +311,7 @@ UER evidence is **engineering- and audit-oriented** — there is **no** dedicate
 | Architecture | This hub, TRACE-ARCH-SYNC-1, REL/Governed Execution boundaries | Production operation at scale |
 | Unit / gate | Event catalog phase coverage, UAEP tenant propagation, single `STEP_COMPLETED` gate | Full multi-tenant SLO |
 | Integration / runtime | Nexus harness path, unified journal strictness (TRACE-1C) | Universal product-host qualification |
-| Audit | [`docs/audit_results/AUDIT_PROTOCOL.md`](../technical/docs/audit_results/UNIFIED_EXECUTION_RUNTIME.md), 2026-06-19 audit closeout | Customer production window |
+| Audit | [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/legacy/2026-06-19/UNIFIED_EXECUTION_RUNTIME.md), 2026-06-19 audit closeout | Customer production window |
 | Public product proof | **None** for UER domain | Do not infer UER qualification from RAG, Token Optimization, or LKW proofs that merely run on the harness stack |
 
 ### Core implementation
@@ -670,7 +670,7 @@ def enforce_cost_ceiling(ctx: HookContext) -> HookResult:
 - Hooks MUST NOT call adapters directly; they influence policy and decisions only.
 - Hooks MUST be registered in `HookRegistry` at application startup (Tier-3) or Nexus bootstrap.
 
-**Authoring reference:** full `HookPoint` list and orchestration hook placement — [`guides/AGENT_CREATION_GUIDE.md` Appendix I §I.2](guides/AGENT_CREATION_GUIDE.md#i2-orchestration-control-plane-map) · governance hooks Appendix H.
+**Authoring reference:** full `HookPoint` list and orchestration hook placement — [`guides/AGENT_CREATION_GUIDE.md` Appendix I §I.2](../technical/guides/AGENT_CREATION_GUIDE.md#i2-orchestration-control-plane-map) · governance hooks Appendix H.
 
 ---
 

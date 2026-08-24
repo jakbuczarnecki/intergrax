@@ -456,7 +456,7 @@ Remediation: **TOOLS-GOVERNED-BOUNDARY-INTEGRITY** (01, 02, 03) and **TOOLS-SIDE
 | LLM Adapters | [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) |
 | Extension author | [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) |
 | Invocation patterns | [`TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md`](../technical/guides/TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md) |
-| Audit slice | [`docs/audit_results/TOOLS.md`](../../audit_results/TOOLS.md) |
+| Audit slice | [`docs/audit_results/TOOLS.md`](../../audit_results/2026-08-18/TOOLS.md) |
 
 ---
 
