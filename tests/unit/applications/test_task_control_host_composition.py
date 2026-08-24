@@ -28,8 +28,11 @@ from intergrax.applications._shared.harness_control_plane_governance_wiring impo
 )
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
-from intergrax.applications._shared.reference_production_governance_wiring import (
-    build_reference_production_control_plane_governance,
+from intergrax.runtime.governance.control_plane_mutation_approval import (
+    ApprovalConsumingControlPlaneMutationEvaluator,
+)
+from intergrax.runtime.governance.control_plane_mutation_policy import (
+    BundleBackedControlPlaneMutationEvaluator,
 )
 from intergrax.applications._shared.task_control_governance import (
     build_cancel_task_execution_mutation_request,
@@ -245,14 +248,13 @@ async def test_taskcpm_h3_deny_through_host_composed_boundary_zero_cancel_effect
     assert not CancellationCoordinator.is_requested(task.metadata)
 
 
-def test_taskcpm_h4_product_host_uses_shared_reference_production_evaluator() -> None:
+def test_taskcpm_h4_product_host_uses_canonical_bundle_policy_authority() -> None:
     env = ApplicationEnvironmentProfile.product_defaults(profile_id=_TENANT)
     governance = build_harness_control_plane_governance(env)
     boundary = resolve_harness_task_control_mutation_boundary(governance)
     assert boundary is not None
-    reference = build_reference_production_control_plane_governance(env)
     cancel_request = build_cancel_task_execution_mutation_request(
-        principal=reference.principal,
+        principal=_principal(),
         tenant_id=_TENANT,
         task_id=mint_task_id(),
         run_id=mint_run_id(),
@@ -260,9 +262,8 @@ def test_taskcpm_h4_product_host_uses_shared_reference_production_evaluator() ->
         current_state=TaskState.RUNNING,
     )
     host_result = boundary.authorize(cancel_request)
-    reference_result = reference.mutation_authorization_boundary.authorize(cancel_request)
-    assert host_result.permitted == reference_result.permitted
-    assert host_result.decision.policy_rule_id == reference_result.decision.policy_rule_id
+    assert host_result.permitted is True
+    assert host_result.decision.policy_rule_id == "harness.task_control.cancel_task_execution"
 
 
 @pytest.mark.asyncio
@@ -297,12 +298,12 @@ async def test_taskcpm_h5_missing_boundary_remains_fail_closed_on_direct_mount()
     assert cancel_request.call_count == 0
 
 
-def test_taskcpm_h6_same_canonical_boundary_semantics_for_distinct_mutation_types() -> None:
+def test_taskcpm_h6_host_policy_separates_cancel_from_lifecycle_mutations() -> None:
     env = ApplicationEnvironmentProfile.product_defaults(profile_id=_TENANT)
     governance = build_harness_control_plane_governance(env)
     boundary = resolve_harness_task_control_mutation_boundary(governance)
     assert boundary is not None
-    principal = build_reference_production_control_plane_governance(env).principal
+    principal = _principal()
     cancel_request = build_cancel_task_execution_mutation_request(
         principal=principal,
         tenant_id=_TENANT,
@@ -323,8 +324,8 @@ def test_taskcpm_h6_same_canonical_boundary_semantics_for_distinct_mutation_type
     cancel_result = boundary.authorize(cancel_request)
     lifecycle_result = boundary.authorize(lifecycle_request)
     assert cancel_result.permitted is True
-    assert lifecycle_result.permitted is True
-    assert cancel_result.decision.policy_rule_id == lifecycle_result.decision.policy_rule_id
+    assert lifecycle_result.permitted is False
+    assert cancel_result.decision.policy_rule_id != lifecycle_result.decision.policy_rule_id
 
 
 def test_taskcpm_h7_second_product_host_reuses_shared_composition() -> None:
@@ -339,7 +340,7 @@ def test_taskcpm_h7_second_product_host_reuses_shared_composition() -> None:
     assert boundary_a is not None
     assert boundary_b is not None
     request = build_cancel_task_execution_mutation_request(
-        principal=build_reference_production_control_plane_governance(env_a).principal,
+        principal=_principal(tenant_id="tenant-a"),
         tenant_id="tenant-a",
         task_id=mint_task_id(),
         run_id=mint_run_id(),

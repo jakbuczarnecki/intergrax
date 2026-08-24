@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.applications._shared.reference_production_governance_wiring import (
-    build_reference_production_control_plane_governance,
+from intergrax.applications._shared.harness_control_plane_policy_wiring import (
+    build_harness_control_plane_mutation_boundary,
 )
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
@@ -53,9 +53,7 @@ def build_harness_control_plane_governance(
     """Compose one canonical host control-plane boundary from platform governance."""
     resolved_boundary = mutation_authorization_boundary
     if resolved_boundary is None and env.application_profile is ApplicationProfile.PRODUCT:
-        resolved_boundary = (
-            build_reference_production_control_plane_governance(env).mutation_authorization_boundary
-        )
+        resolved_boundary = build_harness_control_plane_mutation_boundary(env)
     resolved_coordinator = approval_coordinator
     if resolved_boundary is not None and resolved_coordinator is None:
         resolved_coordinator = ControlPlaneMutationApprovalCoordinator()
