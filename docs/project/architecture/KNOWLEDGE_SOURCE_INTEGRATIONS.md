@@ -1,92 +1,48 @@
-# Vendor Knowledge Facade and Integration Boundary
+# Knowledge Source Integrations
 
-**Status:** `CORRECTED / READY_FOR_REVIEW`  
-**Task:** `VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1 — three-mode provider reuse architecture`
-**Classification:** docs-only architecture and contract boundary  
-**Branch:** `development`  
-**Integration canon:** [`INTEGRATIONS.md`](INTEGRATIONS.md)  
-**LKW intake discovery:** [`../../applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md`](../../../applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md)
+**Intergrax Knowledge Source Integrations** defines how external vendor data enters the platform for knowledge use — through existing category-correct integrations, shared provider read primitives, and three separate consumption modes with distinct lifecycle, policy, and persistence semantics.
 
----
+## Why it matters
 
-## 1. Correction summary
+One vendor integration should not be duplicated separately for RAG indexing, durable materialization, and live access. Without a shared provider foundation, each product path reimplements clients, credentials, pagination, and error handling — and lifecycle semantics blur between durable sync, indexed retrieval, and ephemeral reads.
 
-The previous version of this document proposed a new `knowledge_source` integration category and separate public integrations such as `jira:knowledge_source`, `confluence:knowledge_source`, or `ms365_graph:knowledge_source`.
+Intergrax reuses **one provider/category integration** and **one set of typed provider read primitives** while keeping **indexed RAG**, **durable materialization**, and **live access** as separate modes. Hybrid Ask combines indexed and live evidence at the application level; it is not a fourth provider integration.
 
-That direction is rejected.
+> [!NOTE]
+> **Maturity boundary:** The canonical integration and Vendor Knowledge boundary in this hub is **defined and binding**. That is **not** universal provider coverage, complete live external validation, or production qualification for every vendor surface. Support remains **provider-specific** and must be declared explicitly per provider and source kind. See [Current reality / maturity boundary](#current-reality--maturity-boundary) and vendor sections below.
 
-Intergrax already has the correct lower-level integration architecture:
+**Primary audience:** CTOs, software architects, principal engineers, and AI platform engineers evaluating how Intergrax connects external knowledge without duplicating integrations — after the platform overview in the root README.
 
-```text
-PlatformIntegrationContract
-        |
-        v
-category-specific integration contract
-        |
-        v
-one public integration implementation for one provider/category
-        |
-        v
-provider-specific operational methods and client behavior
-```
+**Related canon:** [`INTEGRATIONS.md`](INTEGRATIONS.md) · LKW intake discovery: [`KNOWLEDGE_INTAKE_DISCOVERY.md`](../../../applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md)
 
-Examples already present in the platform:
+## Current reality / maturity boundary
 
-```text
-JiraIssueTrackerIntegration
-ConfluenceWikiKnowledgeIntegration
-Ms365GraphCollaborationSuiteIntegration
-DatabricksRelationalStoreIntegration
-SlackConversationChannelIntegration
-GoogleWorkspaceCollaborationSuiteIntegration
-```
+- **Canonical architecture boundary is defined** — existing integration categories, Vendor Knowledge Facade, sync/materialization runtime, and live capability paths are specified in this document.
+- **Existing provider/category integrations remain authoritative** — Jira, Confluence, Microsoft Graph, Slack, Google Workspace, Databricks, and peers keep one public integration each; knowledge use reuses them rather than introducing parallel `knowledge_source` integrations.
+- **Three consumption modes are frozen direction** — indexed RAG, durable materialization, and live access retain separate lifecycles; hybrid access is application-level composition only.
+- **Support is provider-specific** — capability matrices, read primitives, adapters, and proofs vary by vendor; a gap in one mode does not imply support in another.
+- **Complete provider coverage and complete live external validation are not implied** — vendor sections document what is implemented, planned, or absent; manifest or shell presence is not operational proof.
+- **Architecture definition ≠ universal implementation / production qualification** — binding decisions govern design; rollout, LKW Connected Sources, and external validation follow separate plan and proof tracks.
 
-These integrations must remain the single public provider/category entrypoints. They own vendor communication and implement the appropriate existing category contract. They must not be duplicated merely because an application wants to use their data as knowledge.
+## At a glance
 
-The missing capability belongs above the integration layer as **reusable provider foundations** consumed through **three separate modes**:
+| Concern | Current rule |
+| -------- | -------- |
+| **Provider integration** | One category-correct public integration per provider/category — reuse client, transport, and credential resolution |
+| **Indexed RAG** | Durable sync/materialization → shared parsing/chunking/embedding pipeline → vector store → scoped retrieval |
+| **Durable materialization** | Durable sync/materialization → approved DocumentStore / DB / object storage — embeddings optional |
+| **Live access** | Authorized typed capability → provider read at request time → ephemeral evidence; no automatic durable persistence |
+| **Credentials** | Referenced through Connection/credential handles — never embedded in bindings or config records |
+| **Synchronization** | Shared sync/materialization runtime — checkpoints, leases, replay, reconciliation — not per-vendor reimplementation |
+| **ACL** | Enforced before content reaches the model — prompt instructions are not authorization |
+| **Application boundary** | Applications use Vendor Knowledge Facade (durable) and validated live capability paths — not direct vendor SDK/API calls |
+| **Vendor Knowledge Facade** | Platform service above integrations — not an integration category |
+| **MCP** | Complementary live/action surface — does not replace durable synchronization |
+| **Go deeper** | [Binding decisions](#2-binding-architectural-decisions) · [Layered architecture](#3-layered-architecture) · [Vendor direction](#13-vendor-direction) · [plan](../maintainers/plans/KNOWLEDGE_SOURCE_INTEGRATIONS.md) |
 
-```text
-indexed RAG
-durable materialization
-bounded real-time (live) access
-```
+## Core mental model
 
-Each mode retains its own lifecycle, policy and persistence semantics. Hybrid Ask combines indexed and live evidence at the application level; it is not a fourth provider integration.
-
-One-sentence result:
-
-> Every vendor integration and provider read primitive is designed once as a reusable foundation for indexed RAG, durable data materialization and bounded real-time access, while each consumption mode retains its own lifecycle, policy and persistence semantics.
-
----
-
-## 2. Binding architectural decisions
-
-| Decision | Classification | Binding statement |
-|---|---|---|
-| Existing integration categories remain authoritative | `FROZEN` | Jira remains an issue-tracker integration, Confluence remains a wiki-knowledge integration, Microsoft Graph remains a collaboration-suite integration, and Databricks remains a relational-store integration unless a separately justified domain category is introduced. |
-| No generic `knowledge_source` integration category | `REJECTED` | Knowledge ingestion is a cross-category application use case, not the primary domain identity of every vendor integration. |
-| No duplicate public integration for knowledge use | `REJECTED` | Do not create `JiraKnowledgeSourceIntegration`, `ConfluenceKnowledgeSourceIntegration`, `SlackKnowledgeIntegration`, `SlackRagIntegration`, `SlackDatabaseIntegration`, `SlackLiveIntegration`, `GoogleDriveIntegration`, `GoogleDocsIntegration`, `GoogleSheetsIntegration`, `GoogleCalendarIntegration`, `GoogleSlidesIntegration`, `GmailKnowledgeIntegration`, `GoogleChatKnowledgeIntegration`, `GoogleWorkspaceKnowledgeIntegration`, or equivalent parallel public integrations beside existing provider/category integrations. |
-| Slack remains one `conversation_channel` integration | `FROZEN` | `SlackConversationChannelIntegration` is the only public Slack integration for conversational runtime, shared typed Slack knowledge reads, durable materialization, indexed RAG and bounded live access. Reuse the existing client, transport and credential resolution. Do not create an LKW-owned Slack vendor client. |
-| Slack dual role is independent | `FROZEN` | Slack-as-frontend (LKW companion transport) and Slack-as-knowledge-source (Connection → Remote Resource → bindings) are separate roles. Enabling the Slack chatbot does not authorize indexing or live Slack history access. Conversation transport events do not automatically become durable knowledge. |
-| Google Workspace remains one `collaboration_suite` integration | `FROZEN` | `GoogleWorkspaceCollaborationSuiteIntegration` is the only public Google Workspace integration for collaboration operations, shared typed Google knowledge reads, durable materialization, indexed RAG and bounded live access. Reuse one credential-resolution boundary and one provider client/transport family. Do not create parallel public integrations per Drive, Docs, Sheets, Calendar, Slides, Mail or Chat surface. |
-| Google provider integration ≠ Vendor Knowledge Adapter ≠ Live Capability ≠ LKW Connected Source | `FROZEN` | Google Workspace knowledge use follows the same separation as other vendors: provider integration owns transport; thin Vendor Knowledge adapters map canonical contracts; Live Capability adapters own ephemeral reads; LKW Connected Source owns workspace binding and indexing — without duplicating Google clients or credentials. |
-| Vendor integration remains low-level | `FROZEN` | It owns provider transport, auth handoff, vendor request/response mapping, provider errors and category operations. It does not know LKW, workspaces, RAG or product workflows. |
-| Unified knowledge behavior is exposed by platform boundaries | `FROZEN DIRECTION` | Durable knowledge behavior uses Vendor Knowledge Facade; live knowledge behavior uses the validated live capability boundary. Both resolve the same existing integration through separate adapter paths. |
-| Facade is not an integration category | `FROZEN` | It is a platform service/facade and may use a registry of source adapters. It is not registered as another vendor integration. |
-| Existing integrations may expose additional provider methods | `FROZEN DIRECTION` | Delta reads, pagination, attachments, permissions or inventory methods may be added to the correct existing integration or to a private/provider-specific read facet behind it. |
-| Application does not call vendor methods directly | `FROZEN` | LKW and other knowledge-consuming applications do not call vendor APIs, vendor SDKs or provider-specific integration methods directly. Durable knowledge operations use: Vendor Knowledge Facade → Vendor Knowledge Adapter → existing vendor integration. Live knowledge operations use: Validated Capability Executor → Live Capability Adapter → existing vendor integration. Both paths must resolve the same Connection and existing provider/category integration. |
-| One shared synchronization runtime | `FROZEN DIRECTION` | Checkpoints, leases, retry, reconciliation, durable item state and replay semantics are common platform/application mechanisms, not independently reimplemented by each vendor. |
-| One shared ingestion pipeline | `FROZEN` | Parsing, structured normalization, chunking, embeddings, Document Store and Vector Store remain shared downstream capabilities. |
-| Stable remote identity is separate from revision | `FROZEN` | Vendor item identity must not be derived from a content hash. Version, ETag, content hash and ACL hash represent change state. |
-| ACL must be enforceable before model access | `FROZEN` | Prompt instructions are not authorization. Retrieval must not expose knowledge that the requesting principal is not allowed to access. |
-| Secrets are referenced, never embedded | `FROZEN` | Source bindings and facade requests may carry only opaque connection or credential references. |
-| MCP is complementary | `FROZEN DIRECTION` | MCP may expose live tools or approved actions, but it does not replace durable synchronization and application-owned knowledge state. |
-
----
-
-## 2.1 One provider integration, three consumption modes
-
-**Frozen architectural principle.** One existing category-correct **Vendor Integration** remains the single owner of provider communication. Shared **provider read primitives** are designed independently of how a caller will later persist, index or ephemerally use the result.
+**Frozen architectural principle.** One existing category-correct **Vendor Integration** remains the single owner of provider communication. Shared **provider read primitives** are designed independently of how a caller will later persist, index, or ephemerally use the result.
 
 ```text
 MODE 1 — INDEXED RAG
@@ -212,6 +168,31 @@ or a live-capability gap?
 ```
 
 A provider task must never claim all three modes merely because one exact-read method exists. Support must be explicit and evidenced.
+
+---
+
+## 2. Binding architectural decisions
+
+| Decision | Classification | Binding statement |
+|---|---|---|
+| Existing integration categories remain authoritative | `FROZEN` | Jira remains an issue-tracker integration, Confluence remains a wiki-knowledge integration, Microsoft Graph remains a collaboration-suite integration, and Databricks remains a relational-store integration unless a separately justified domain category is introduced. |
+| No generic `knowledge_source` integration category | `REJECTED` | Knowledge ingestion is a cross-category application use case, not the primary domain identity of every vendor integration. |
+| No duplicate public integration for knowledge use | `REJECTED` | Do not create `JiraKnowledgeSourceIntegration`, `ConfluenceKnowledgeSourceIntegration`, `SlackKnowledgeIntegration`, `SlackRagIntegration`, `SlackDatabaseIntegration`, `SlackLiveIntegration`, `GoogleDriveIntegration`, `GoogleDocsIntegration`, `GoogleSheetsIntegration`, `GoogleCalendarIntegration`, `GoogleSlidesIntegration`, `GmailKnowledgeIntegration`, `GoogleChatKnowledgeIntegration`, `GoogleWorkspaceKnowledgeIntegration`, or equivalent parallel public integrations beside existing provider/category integrations. |
+| Slack remains one `conversation_channel` integration | `FROZEN` | `SlackConversationChannelIntegration` is the only public Slack integration for conversational runtime, shared typed Slack knowledge reads, durable materialization, indexed RAG and bounded live access. Reuse the existing client, transport and credential resolution. Do not create an LKW-owned Slack vendor client. |
+| Slack dual role is independent | `FROZEN` | Slack-as-frontend (LKW companion transport) and Slack-as-knowledge-source (Connection → Remote Resource → bindings) are separate roles. Enabling the Slack chatbot does not authorize indexing or live Slack history access. Conversation transport events do not automatically become durable knowledge. |
+| Google Workspace remains one `collaboration_suite` integration | `FROZEN` | `GoogleWorkspaceCollaborationSuiteIntegration` is the only public Google Workspace integration for collaboration operations, shared typed Google knowledge reads, durable materialization, indexed RAG and bounded live access. Reuse one credential-resolution boundary and one provider client/transport family. Do not create parallel public integrations per Drive, Docs, Sheets, Calendar, Slides, Mail or Chat surface. |
+| Google provider integration ≠ Vendor Knowledge Adapter ≠ Live Capability ≠ LKW Connected Source | `FROZEN` | Google Workspace knowledge use follows the same separation as other vendors: provider integration owns transport; thin Vendor Knowledge adapters map canonical contracts; Live Capability adapters own ephemeral reads; LKW Connected Source owns workspace binding and indexing — without duplicating Google clients or credentials. |
+| Vendor integration remains low-level | `FROZEN` | It owns provider transport, auth handoff, vendor request/response mapping, provider errors and category operations. It does not know LKW, workspaces, RAG or product workflows. |
+| Unified knowledge behavior is exposed by platform boundaries | `FROZEN DIRECTION` | Durable knowledge behavior uses Vendor Knowledge Facade; live knowledge behavior uses the validated live capability boundary. Both resolve the same existing integration through separate adapter paths. |
+| Facade is not an integration category | `FROZEN` | It is a platform service/facade and may use a registry of source adapters. It is not registered as another vendor integration. |
+| Existing integrations may expose additional provider methods | `FROZEN DIRECTION` | Delta reads, pagination, attachments, permissions or inventory methods may be added to the correct existing integration or to a private/provider-specific read facet behind it. |
+| Application does not call vendor methods directly | `FROZEN` | LKW and other knowledge-consuming applications do not call vendor APIs, vendor SDKs or provider-specific integration methods directly. Durable knowledge operations use: Vendor Knowledge Facade → Vendor Knowledge Adapter → existing vendor integration. Live knowledge operations use: Validated Capability Executor → Live Capability Adapter → existing vendor integration. Both paths must resolve the same Connection and existing provider/category integration. |
+| One shared synchronization runtime | `FROZEN DIRECTION` | Checkpoints, leases, retry, reconciliation, durable item state and replay semantics are common platform/application mechanisms, not independently reimplemented by each vendor. |
+| One shared ingestion pipeline | `FROZEN` | Parsing, structured normalization, chunking, embeddings, Document Store and Vector Store remain shared downstream capabilities. |
+| Stable remote identity is separate from revision | `FROZEN` | Vendor item identity must not be derived from a content hash. Version, ETag, content hash and ACL hash represent change state. |
+| ACL must be enforceable before model access | `FROZEN` | Prompt instructions are not authorization. Retrieval must not expose knowledge that the requesting principal is not allowed to access. |
+| Secrets are referenced, never embedded | `FROZEN` | Source bindings and facade requests may carry only opaque connection or credential references. |
+| MCP is complementary | `FROZEN DIRECTION` | MCP may expose live tools or approved actions, but it does not replace durable synchronization and application-owned knowledge state. |
 
 ---
 
@@ -1620,6 +1601,64 @@ This architecture does not authorize:
 - unrestricted ingestion of entire mailboxes, tenants, BI estates or lakehouses;
 - treating MCP as guaranteed durable synchronization;
 - implementing all vendors in one task.
+
+---
+
+## Implementation / architecture history
+
+### Maintainer note
+
+**Internal architecture workflow status:** `CORRECTED / READY_FOR_REVIEW`
+**Task:** `VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1 — three-mode provider reuse architecture`
+**Classification:** docs-only architecture and contract boundary
+
+### Correction summary
+
+The previous version of this document proposed a new `knowledge_source` integration category and separate public integrations such as `jira:knowledge_source`, `confluence:knowledge_source`, or `ms365_graph:knowledge_source`.
+
+That direction is rejected.
+
+Intergrax already has the correct lower-level integration architecture:
+
+```text
+PlatformIntegrationContract
+        |
+        v
+category-specific integration contract
+        |
+        v
+one public integration implementation for one provider/category
+        |
+        v
+provider-specific operational methods and client behavior
+```
+
+Examples already present in the platform:
+
+```text
+JiraIssueTrackerIntegration
+ConfluenceWikiKnowledgeIntegration
+Ms365GraphCollaborationSuiteIntegration
+DatabricksRelationalStoreIntegration
+SlackConversationChannelIntegration
+GoogleWorkspaceCollaborationSuiteIntegration
+```
+
+These integrations must remain the single public provider/category entrypoints. They own vendor communication and implement the appropriate existing category contract. They must not be duplicated merely because an application wants to use their data as knowledge.
+
+The missing capability belongs above the integration layer as **reusable provider foundations** consumed through **three separate modes**:
+
+```text
+indexed RAG
+durable materialization
+bounded real-time (live) access
+```
+
+Each mode retains its own lifecycle, policy and persistence semantics. Hybrid Ask combines indexed and live evidence at the application level; it is not a fourth provider integration.
+
+One-sentence result:
+
+> Every vendor integration and provider read primitive is designed once as a reusable foundation for indexed RAG, durable data materialization and bounded real-time access, while each consumption mode retains its own lifecycle, policy and persistence semantics.
 
 ---
 
