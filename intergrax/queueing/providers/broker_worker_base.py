@@ -16,6 +16,7 @@ from intergrax.queueing.contracts.task_queue import TaskStatus
 from intergrax.queueing.task_index import record_task_index
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.execution import execute_logical_task
+from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
 
 
 class BrokerWorkerBase(ABC):
@@ -154,14 +155,18 @@ class BrokerWorkerBase(ABC):
         )
 
         try:
+            execution_identity = bootstrap_background_execution(
+                transport_tenant_id=tenant_id,
+            )
             result = execute_logical_task(
                 registry=self._registry,
                 logical_task_name=task_name,
-                tenant_id=tenant_id,
-                run_id=run_id,
+                tenant_id=execution_identity.tenant_id,
+                run_id=str(execution_identity.run_id),
                 payload=payload_bytes,
                 idempotency_key=idempotency_key,
                 idempotency_store=self._idempotency_store,
+                execution_identity=execution_identity,
             )
 
             if not result.success:

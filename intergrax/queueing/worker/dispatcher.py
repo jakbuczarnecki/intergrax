@@ -20,6 +20,7 @@ from intergrax.queueing.worker.execution import (
     IdempotencyLockConflictError,
 )
 from intergrax.queueing.worker.result_codec import encode_logical_task_result
+from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
 from intergrax.queueing.worker.rate_limit_event import RateLimitEvent
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_event import RetryEvent
@@ -139,17 +140,21 @@ def register_dispatcher_task(
         # Core Execution
         # -------------------------
         try:
+            execution_identity = bootstrap_background_execution(
+                transport_tenant_id=tenant_id,
+            )
             return encode_logical_task_result(
                 execute_logical_task(
                     registry=registry,
                     logical_task_name=logical_task_name,
-                    tenant_id=tenant_id,
-                    run_id=run_id,
+                    tenant_id=execution_identity.tenant_id,
+                    run_id=str(execution_identity.run_id),
                     payload=payload,
                     idempotency_key=idempotency_key,
                     idempotency_store=idempotency_store,
                     lease_seconds=lock_ttl_seconds,
                     completed_ttl_seconds=completed_ttl_seconds,
+                    execution_identity=execution_identity,
                 )
             )
 

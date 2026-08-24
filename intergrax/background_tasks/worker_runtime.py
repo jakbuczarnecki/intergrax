@@ -17,6 +17,7 @@ from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.queueing.contracts.task_queue import TaskRequest, TaskResult, TaskStatus
 from intergrax.queueing.worker.execution import execute_logical_task
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
 from intergrax.tools.execution_models import ToolExecutionResult
 
 
@@ -105,14 +106,18 @@ class WorkerRuntime:
         )
 
         try:
+            execution_identity = bootstrap_background_execution(
+                transport_tenant_id=request.tenant_id,
+            )
             tool_result: ToolExecutionResult[BaseModel] = execute_logical_task(
                 registry=self._execution_registry,
                 logical_task_name=request.task_name,
-                tenant_id=request.tenant_id,
-                run_id=request.run_id,
+                tenant_id=execution_identity.tenant_id,
+                run_id=str(execution_identity.run_id),
                 payload=request.payload,
                 idempotency_key=request.idempotency_key,
                 idempotency_store=self._idempotency_store,
+                execution_identity=execution_identity,
             )
         except Exception as exc:
             self._state_store.set_status(

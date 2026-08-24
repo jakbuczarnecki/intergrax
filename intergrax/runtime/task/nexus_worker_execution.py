@@ -11,8 +11,9 @@ from typing import Any, Dict, Optional, Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field
 
-from intergrax.contracts.execution_identity import validate_run_id
+from intergrax.contracts.execution_identity import AttemptId, RunId, validate_run_id
 from intergrax.fastapi_core.execution.models import ExecutionRequest
+from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -87,41 +88,62 @@ class NexusWorkerRuntime:
         *,
         tenant_id: str,
         run_id: str,
+        execution_identity: BackgroundExecutionIdentity | None = None,
     ) -> Dict[str, Any]:
         request = decode_execution_request(payload)
-        if request.run_id != run_id:
-            request = ExecutionRequest(
-                run_id=run_id,
-                tenant_id=request.tenant_id,
-                user_id=request.user_id,
-                input_payload=request.input_payload,
-                metadata=request.metadata,
-                config=request.config,
-            )
-        if request.tenant_id != tenant_id:
-            raise ValueError(
-                f"tenant mismatch: payload={request.tenant_id!r} worker={tenant_id!r}"
-            )
+        if execution_identity is not None:
+            if request.tenant_id != execution_identity.tenant_id:
+                raise ValueError(
+                    "tenant mismatch between payload and background execution identity: "
+                    f"payload={request.tenant_id!r} identity={execution_identity.tenant_id!r}"
+                )
+            if tenant_id != execution_identity.tenant_id:
+                raise ValueError(
+                    "tenant mismatch between worker scope and background execution identity: "
+                    f"worker={tenant_id!r} identity={execution_identity.tenant_id!r}"
+                )
+            resolved_run_id = execution_identity.run_id
+            resolved_attempt_id: AttemptId | None = execution_identity.attempt_id
+        else:
+            if request.run_id != run_id:
+                request = ExecutionRequest(
+                    run_id=run_id,
+                    tenant_id=request.tenant_id,
+                    user_id=request.user_id,
+                    input_payload=request.input_payload,
+                    metadata=request.metadata,
+                    config=request.config,
+                )
+            if request.tenant_id != tenant_id:
+                raise ValueError(
+                    f"tenant mismatch: payload={request.tenant_id!r} worker={tenant_id!r}"
+                )
+            resolved_run_id = validate_run_id(run_id)
+            resolved_attempt_id = None
 
         if self._lifecycle is not None:
-            self._lifecycle.mark_running(run_id)
+            self._lifecycle.mark_running(str(resolved_run_id))
 
         try:
-            task = task_from_execution_request(request)
+            task = task_from_execution_request(
+                request,
+                execution_identity=execution_identity,
+            )
             result = _run_coro_sync(
                 self._task_runner.run_task(
                     task,
-                    run_id=validate_run_id(run_id),
+                    run_id=resolved_run_id,
+                    attempt_id=resolved_attempt_id,
                 )
             )
             result_payload = task_result_to_payload(result)
             if self._lifecycle is not None:
-                self._lifecycle.mark_completed(run_id, result_payload=result_payload)
+                self._lifecycle.mark_completed(str(resolved_run_id), result_payload=result_payload)
             return result_payload
         except Exception as exc:
             if self._lifecycle is not None:
                 self._lifecycle.mark_failed(
-                    run_id,
+                    str(resolved_run_id),
                     error_type=type(exc).__name__,
                     error_message=str(exc),
                 )
@@ -139,6 +161,7 @@ def make_nexus_task_worker_handler(
         run_id: str,
         payload: bytes,
         idempotency_key: Optional[str] = None,
+        execution_identity: BackgroundExecutionIdentity | None = None,
     ) -> ToolExecutionResult[NexusTaskWorkerOutput]:
         _ = idempotency_key
         try:
@@ -146,6 +169,7 @@ def make_nexus_task_worker_handler(
                 payload,
                 tenant_id=tenant_id,
                 run_id=run_id,
+                execution_identity=execution_identity,
             )
             return ToolExecutionResult.ok(
                 NexusTaskWorkerOutput(result_payload=result_payload)

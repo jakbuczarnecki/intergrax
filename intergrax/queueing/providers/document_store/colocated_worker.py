@@ -15,6 +15,7 @@ from intergrax.queueing.providers.document_store.document_store_task_queue impor
 )
 from intergrax.queueing.worker.execution import execute_logical_task
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
 
 logger = logging.getLogger(__name__)
 
@@ -72,14 +73,18 @@ class DocumentStoreTaskWorker:
         claimed = self._queue.claim_pending(limit=self._claim_limit)
         for handle, request in claimed:
             try:
+                execution_identity = bootstrap_background_execution(
+                    transport_tenant_id=request.tenant_id,
+                )
                 result = execute_logical_task(
                     registry=self._registry,
                     logical_task_name=request.task_name,
-                    tenant_id=request.tenant_id,
-                    run_id=request.run_id,
+                    tenant_id=execution_identity.tenant_id,
+                    run_id=str(execution_identity.run_id),
                     payload=request.payload,
                     idempotency_key=request.idempotency_key,
                     idempotency_store=None,
+                    execution_identity=execution_identity,
                 )
                 if result.success:
                     output = None
