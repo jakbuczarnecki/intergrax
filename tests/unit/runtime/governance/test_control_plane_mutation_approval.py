@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import inspect
 from dataclasses import dataclass, field
 
 import pytest
@@ -50,6 +49,14 @@ class _RecordingEvaluator:
     def evaluate(self, request: ControlPlaneMutationRequest) -> PolicyDecision:
         self.calls.append(request)
         return self.decision
+
+
+@dataclass
+class _FakeDomainExecutor:
+    executions: list[ControlPlaneMutationRequest] = field(default_factory=list)
+
+    def execute(self, request: ControlPlaneMutationRequest) -> None:
+        self.executions.append(request)
 
 
 def _service_principal(
@@ -478,28 +485,55 @@ def test_cpma_27_unknown_grant_denies() -> None:
     assert evaluator.evaluate(request).action is PolicyAction.DENY
 
 
-def test_cpma_28_coordinator_does_not_execute_domain_mutation() -> None:
-    mutation_counter = {"count": 0}
-
-    def _domain_side_effect() -> None:
-        mutation_counter["count"] += 1
-
+def test_cpma_28_approval_consumption_returns_authorization_only_domain_execution_remains_explicit() -> None:
     coordinator = ControlPlaneMutationApprovalCoordinator()
-    request = _request()
-    _create_grant(coordinator, request)
-    assert mutation_counter["count"] == 0
-    _domain_side_effect()
-    assert mutation_counter["count"] == 1
+    evaluator = _approval_evaluator(coordinator)
+    domain_executor = _FakeDomainExecutor()
+    original = _request()
+    grant_id = _create_grant(coordinator, original)
+    resumed = original.model_copy(update={"approval_evidence_ref": grant_id})
+
+    decision = evaluator.evaluate(resumed)
+    assert decision.action is PolicyAction.ALLOW
+    assert decision.reason == "scoped_human_approval_consumed"
+    assert domain_executor.executions == []
+
+    domain_executor.execute(resumed)
+    assert len(domain_executor.executions) == 1
+    assert domain_executor.executions[0].mutation_id == original.mutation_id
 
 
-def test_cpma_29_approval_primitive_has_no_ecp_specific_concepts() -> None:
-    import intergrax.runtime.governance.control_plane_mutation_approval as approval_mod
+def test_cpma_29_generic_non_ecp_control_plane_mutation_can_use_scoped_approval_primitive_end_to_end() -> None:
+    coordinator = ControlPlaneMutationApprovalCoordinator()
+    evaluator = _approval_evaluator(coordinator)
+    original = _request(
+        mutation_id="mut-credential-rotate",
+        mutation_type="rotate_service_credentials",
+        resource_type="service_credential",
+        resource_id="credential-set-a",
+        resource_scope="tenant-a/security",
+        current_revision="revision-1",
+        target_revision="revision-2",
+        principal=_service_principal(user_id="svc-security"),
+    )
+    grant_id = _create_grant(coordinator, original)
+    grant = coordinator.get_grant(grant_id)
+    assert grant is not None
+    assert grant.mutation_id == original.mutation_id
+    assert grant.resource_type == "service_credential"
+    assert grant.resource_id == "credential-set-a"
 
-    source = inspect.getsource(approval_mod)
-    assert "ecp." not in source.lower()
-    assert "kubernetes" not in source.lower()
-    assert "celery" not in source.lower()
-    assert "capacity" not in source.lower()
+    resumed = original.model_copy(update={"approval_evidence_ref": grant_id})
+    assert resumed.mutation_id == original.mutation_id
+    assert resumed.resource_type == "service_credential"
+    assert resumed.resource_id == "credential-set-a"
+
+    decision = evaluator.evaluate(resumed)
+    assert decision.action is PolicyAction.ALLOW
+    assert coordinator.is_consumed(grant_id)
+
+    second = evaluator.evaluate(resumed)
+    assert second.action is PolicyAction.DENY
 
 
 def test_cpma_30_consumption_is_one_attempt_not_success_reuse() -> None:
