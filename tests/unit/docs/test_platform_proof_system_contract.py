@@ -55,6 +55,11 @@ def readme_text() -> str:
     return README_PATH.read_text(encoding="utf-8")
 
 
+@pytest.fixture
+def authoring_text() -> str:
+    return AUTHORING_PATH.read_text(encoding="utf-8")
+
+
 def test_platform_proofs_canonical_docs_exist() -> None:
     required = (
         README_PATH,
@@ -147,3 +152,48 @@ def test_no_duplicate_proof_runner_or_manifest_paths() -> None:
             if path.relative_to(REPO_ROOT).as_posix() != f"scripts/proof/{name}"
         ]
         assert not matches, f"competing canonical {name} outside scripts/proof/: {matches}"
+
+
+def test_authoring_guide_defines_production_capable_scenario_application(
+    authoring_text: str,
+) -> None:
+    assert "production-capable autonomous application component" in authoring_text
+    assert "it does not replace the application itself" in authoring_text
+    assert "production-validated" in authoring_text
+    assert "Do **not** write \"production-proven\" or \"production-validated\"" in authoring_text
+
+
+def test_authoring_guide_contains_application_survival_test(
+    authoring_text: str,
+) -> None:
+    assert "### Application Survival Test" in authoring_text
+    assert "If proof infrastructure, evaluator, evidence packaging, and report generation" in (
+        authoring_text
+    )
+    assert "**NO** | **Not acceptable** as SCENARIO" in authoring_text
+
+
+def test_authoring_guide_prohibits_fake_llm_in_canonical_scenario_path(
+    authoring_text: str,
+) -> None:
+    assert "FakeLLMAdapter" in authoring_text
+    assert "**Scenario canonical application path**" in authoring_text
+    assert "**PROHIBITED**" in authoring_text
+
+
+def test_protocol_distinguishes_scenario_vs_conformance_mock_policy(
+    protocol_text: str,
+) -> None:
+    assert "**Scenario canonical application path**" in protocol_text
+    assert "**Conformance proof**" in protocol_text
+    assert "Allowed only **outside** claimed boundary" in protocol_text
+    assert "FakeLLM" in protocol_text
+
+
+def test_gateway_defines_scenario_as_production_capable_component(
+    readme_text: str,
+) -> None:
+    assert "Production-capable autonomous mini application" in readme_text
+    assert "falsification, evidence" in readme_text.lower() or "falsifies" in readme_text.lower()
+    assert "PLATFORM_PROOF_AUTHORING_GUIDE.md" in readme_text
+    assert "does **not** substitute for the application" in readme_text

@@ -75,9 +75,15 @@ The Intergrax Proof Library distinguishes two public proof classes via `library_
 | Class | Role | Entry framing |
 |-------|------|---------------|
 | **CONFORMANCE PROOF** | Executable evidence for a **specific platform mechanism** — CI, regression, development confidence, architectural assurance | Mechanism-first |
-| **SCENARIO PROOF** | Executable falsification of a **real problem / failure mode**; may exercise multiple mechanisms and domains | Problem-first |
+| **SCENARIO PROOF** | **Production-capable autonomous application component** that solves a concrete real-world problem; Proof Library layer falsifies and evidences that application — it does not replace it | Problem-first |
 
 Both classes remain **executable falsification attempts** — not demos. **Platform proof ≠ product proof.** Product proofs stay under `applications/`.
+
+**SCENARIO normative definition:**
+
+> A Scenario Proof is a production-capable autonomous application component that solves a concrete real-world problem through normal Intergrax runtime and platform contracts. The Proof Library layer executes adversarial cases, falsifies claims, captures evidence, evaluates outcomes, and renders reports; it does not replace the application itself.
+
+Use **production-capable** (architecture suitable for real deployment; no test-only application shortcuts) — not "production-proven" or "production-validated". Scenario Proof acceptance does **not** automatically establish production validation in live user/environment terms. Operational workflow: [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md) § Scenario Proof — production-capable application contract.
 
 Every proof declares **`domains_exercised`** (non-empty; no owning or primary domain) and **`mechanisms_exercised`**. A proof does not belong to one domain — it exercises one or more domains. Library metadata (`library_class`, `domains_exercised`, `mechanisms_exercised`, SCENARIO problem fields) is descriptor-owned and does not appear in runner-facing `ProofManifestEntry` unless execution genuinely requires it (currently: domain metadata is not execution authority).
 
@@ -197,23 +203,32 @@ A proof must exercise the **real boundary** relevant to its claim.
 
 Do not use a fake to replace the mechanism being claimed.
 
-**Deterministic fixtures** are allowed when they provide controlled input — not when they substitute the capability.
+**SCENARIO-specific:** canonical Scenario execution **MUST** exercise the same production-capable application path intended for real deployment. Controlled/synthetic provider implementations **MAY** supply data through normal application contracts when the external system itself is not the claim. See [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md) § Scenario Proof — production-capable application contract.
+
+**Deterministic fixtures** are allowed when they provide controlled input — not when they substitute the capability or fake application behavior.
 
 | Allowed | Not allowed |
 |---------|-------------|
 | Synthetic deterministic logistics dataset in real PostgreSQL | Fake SQL tool returning pre-written answers when proving tool/database investigation |
+| Synthetic telemetry through typed provider contract in Scenario about investigation behavior | Fake model output replacing AI behavior when AI behavior is material to the Scenario claim |
 
 ---
 
 ## G. Mock / fixture policy
 
-| Technique | Policy |
-|-----------|--------|
-| **Fixtures** | Allowed for controlled deterministic data |
-| **Mocks / fakes** | Allowed for dependencies that are **not** the mechanism under proof |
+Class-specific rules supersede any generic "dependency not under proof" allowance for **SCENARIO canonical application execution**.
+
+| Context | Fake/mock policy |
+|---------|------------------|
+| **Scenario canonical application path** | **PROHIBITED** for material app/runtime behavior (including FakeLLM, scripted model, `Mock`/`MagicMock`, `testing_support` in application core) |
+| **Scenario unit/integration tests** | Allowed |
+| **Conformance proof** | Allowed only **outside** claimed boundary |
 | **Mechanism under proof** | **MUST NOT** be mocked |
+| **Fixtures (controlled data)** | Allowed when they provide deterministic input through normal contracts — not when they decide outcomes or replace AI behavior material to the claim |
 
 If a proof uses a fake at a material claimed boundary, it **cannot** claim that boundary as proved.
+
+**Legacy summary (Conformance and non-canonical tests):** mocks/fakes remain usable outside the claimed mechanism boundary. Conformance **MAY** legitimately use controlled harnesses/test doubles that do not invalidate the mechanism claim. SCENARIO canonical execution has stricter production-capable application requirements — see Authoring Guide § Fake / mock policy (Scenario canonical path).
 
 ---
 

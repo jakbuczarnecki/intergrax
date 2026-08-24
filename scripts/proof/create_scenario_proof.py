@@ -177,6 +177,11 @@ def build_design_scenario_spec(title: str) -> str:
         "_To be qualified._\n\n"
         "### Scenario Quality Gate\n\n"
         "_To be qualified._\n\n"
+        "### Application Survival Test\n\n"
+        "> If proof infrastructure, evaluator, evidence packaging, and report generation "
+        "are removed, does a useful autonomous application component remain that still "
+        "solves the underlying problem?\n\n"
+        "Required answer: **YES**. If **NO**, redesign or consider CONFORMANCE instead.\n\n"
         "### Conditional authoring prompts _(complete when relevant)_\n\n"
         "**Hidden truth / evaluator leakage:** Does this scenario have hidden fixture truth "
         "or expected behavior? If yes, how is it isolated from model-visible context?\n\n"
@@ -188,6 +193,15 @@ def build_design_scenario_spec(title: str) -> str:
         "**Temporal semantics:** If time windows, staleness, or admissibility matter, define them.\n\n"
         "**Side effects / recovery / HITL / governance:** Note only when relevant to the problem.\n\n"
         "## B. SOLUTION\n\n"
+        "### APPLICATION vs PROOF HARNESS\n\n"
+        "Document before implementation (see Authoring Guide):\n\n"
+        "| APPLICATION OWNS | PROOF OWNS |\n"
+        "| --- | --- |\n"
+        "| business workflow | adversarial input configuration |\n"
+        "| autonomous reasoning / decision flow | evaluator |\n"
+        "| provider / tool consumption | falsification assertions |\n"
+        "| production configuration surface | evidence projection / report |\n"
+        "| domain output | reproduction metadata |\n\n"
         "### Desired behavior\n\n"
         "_To be qualified._\n\n"
         "### Step-by-step story\n\n"
@@ -210,17 +224,22 @@ def build_design_scenario_spec(title: str) -> str:
         "NOT YET PERFORMED\n\n"
         "INTERGRAX FIT is not a single-domain assignment. Expected future analysis:\n\n"
         "```text\n"
-        "required guarantee\n"
-        "→ Intergrax mechanism\n"
-        "→ exact owner/component\n"
-        "→ participating domain(s)\n"
-        "→ AVAILABLE / AVAILABLE BUT NEEDS WIRING / MISSING\n"
+        "APPLICATION NEED\n"
+        "→ PLATFORM MECHANISM\n"
+        "→ CURRENT PLATFORM OWNER\n"
+        "→ STATUS\n"
         "```\n\n"
-        "Do not prepopulate domains — participating domains are discovered during capability-fit.\n\n"
+        "Also audit **TEST-ONLY SUBSTITUTE PRESENT?** in canonical Scenario path — "
+        "**YES** is a **BLOCKER**.\n\n"
+        "Do not prepopulate participating domain(s) — domains are discovered during capability-fit.\n\n"
         "## D. GAP DECISION\n\n"
         "NOT YET PERFORMED\n\n"
         "## E. PROOF BUILD\n\n"
-        "NOT STARTED — blocked on scenario acceptance and capability-fit.\n"
+        "NOT STARTED — blocked on scenario acceptance, APPLICATION vs PROOF HARNESS "
+        "separation, and capability-fit.\n\n"
+        "Before implementation confirm: production-capable application exists; canonical "
+        "path has no prohibited fake/test shortcuts; controlled providers use normal "
+        "application contracts; real model boundary configured if AI behavior is material.\n"
     )
 
 
@@ -258,8 +277,10 @@ DESIGN_STAGE_SPEC_REQUIRED_SECTIONS: tuple[str, ...] = (
     "### Skeptic Challenge",
     "### Adversarial conditions",
     "### Scenario Quality Gate",
+    "### Application Survival Test",
     "### Conditional authoring prompts",
     "## B. SOLUTION",
+    "### APPLICATION vs PROOF HARNESS",
     "### Desired behavior",
     "### Step-by-step story",
     "### Guarantees",
@@ -271,10 +292,12 @@ DESIGN_STAGE_SPEC_REQUIRED_SECTIONS: tuple[str, ...] = (
     "### Limitations",
     "## C. INTERGRAX FIT",
     "INTERGRAX FIT is not a single-domain assignment",
+    "TEST-ONLY SUBSTITUTE PRESENT?",
+    "production-capable application exists",
     "## D. GAP DECISION",
     "## E. PROOF BUILD",
     "NOT YET PERFORMED",
-    "NOT STARTED — blocked on scenario acceptance and capability-fit.",
+    "NOT STARTED — blocked on scenario acceptance, APPLICATION vs PROOF HARNESS",
     "Hidden truth / evaluator leakage",
     "Evidence boundary",
     "Alternative hypotheses",

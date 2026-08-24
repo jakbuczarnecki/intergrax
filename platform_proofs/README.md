@@ -13,8 +13,14 @@ The library has two public classes:
 
 | Class | Role | Entry framing |
 |-------|------|---------------|
-| **SCENARIO** | Executable falsification of a **real problem / failure mode**; may exercise multiple mechanisms and domains | Problem-first — primary public layer |
-| **CONFORMANCE** | Executable evidence for a **specific platform mechanism** — CI, regression, contract verification, architecture confidence | Mechanism-first — secondary in public library |
+| **SCENARIO** | **Production-capable autonomous mini application** that solves a concrete real-world problem — plus falsification, evidence, evaluation, and report | Problem-first — primary public layer |
+| **CONFORMANCE** | **Mechanism-level executable proof** — CI, regression, contract verification, architecture confidence | Mechanism-first — secondary in public library |
+
+**SCENARIO in one line:** production-capable application component + adversarial proof layer that falsifies and evidences it (the proof layer does **not** substitute for the application).
+
+**CONFORMANCE in one line:** platform mechanism → controlled harness → contract/invariant → evidence.
+
+Normative detail: [Authoring Guide § Scenario Proof — production-capable application contract](PLATFORM_PROOF_AUTHORING_GUIDE.md#scenario-proof--production-capable-application-contract) · [Authoring Guide § Application Survival Test](PLATFORM_PROOF_AUTHORING_GUIDE.md#application-survival-test) · [Protocol § B2](PLATFORM_PROOF_PROTOCOL.md#b2-proof-library-classes) · [Protocol § G Mock/fixture policy](PLATFORM_PROOF_PROTOCOL.md#g-mock--fixture-policy)
 
 Products under `applications/` may **consume** platform mechanisms, but product execution is **not** independent proof of those mechanisms.
 
