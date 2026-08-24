@@ -55,6 +55,10 @@ from platform_proofs.scenarios.ai_incident_investigation.investigator_agent impo
     THROUGHPUT_EVIDENCE_ID,
 )
 from platform_proofs.scenarios.ai_incident_investigation.tools import register_scenario_tools
+from platform_proofs.scenarios.ai_incident_investigation.runtime_composition import (
+    ScenarioRuntimeComposition,
+    build_scenario_runtime_composition,
+)
 from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
     COMPLETION_SUPPORTED_DIAGNOSIS,
     COMPLETION_UNRESOLVED,
@@ -144,12 +148,14 @@ class ScenarioRuntimeBundle:
     fixture: IncidentFixture
     registry: ToolRegistry
     investigator: IncidentInvestigatorAgent
+    runtime_composition: ScenarioRuntimeComposition
 
 
 def build_runtime_bundle(
     *,
     variant: ScenarioVariant = ScenarioVariant.RESOLVED,
     fixture: IncidentFixture | None = None,
+    runtime_composition: ScenarioRuntimeComposition | None = None,
 ) -> ScenarioRuntimeBundle:
     resolved_fixture = fixture or (
         build_unresolved_fixture()
@@ -158,14 +164,17 @@ def build_runtime_bundle(
     )
     registry = ToolRegistry()
     register_scenario_tools(registry, resolved_fixture)
+    composition = runtime_composition or build_scenario_runtime_composition(registry=registry)
     investigator = IncidentInvestigatorAgent(
         registry=registry,
         station_id=resolved_fixture.telemetry.station_id,
+        runtime_composition=composition,
     )
     return ScenarioRuntimeBundle(
         fixture=resolved_fixture,
         registry=registry,
         investigator=investigator,
+        runtime_composition=composition,
     )
 
 

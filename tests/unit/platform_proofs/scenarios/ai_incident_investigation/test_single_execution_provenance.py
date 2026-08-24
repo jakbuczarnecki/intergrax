@@ -265,6 +265,6 @@ def test_investigator_has_no_direct_registry_executor_execution() -> None:
     assert "_registry_executor.execute(" not in source
     assert "self._registry_executor" not in source
     assert "ToolExecutionRequest(" not in source
-    assert "RegistryToolExecutor(" in source
+    assert "build_agent_runtime_context(" in source
     assert "ToolRuntime.invoke_request(" in source
     assert "ToolRuntime.invoke(" not in source.replace("ToolRuntime.invoke_request(", "")

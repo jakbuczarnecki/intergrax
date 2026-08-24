@@ -31,16 +31,11 @@ from platform_proofs.scenarios.ai_incident_investigation.scenario_contract impor
     THROUGHPUT_EVIDENCE_ID,
     WORKLOAD_EVIDENCE_ID,
 )
-from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.contracts.tool_request import ToolRequest, ToolResponseStatus
 from intergrax.runtime.nexus.tools.tool_runtime import ToolRuntime
-from unittest.mock import MagicMock
-
-from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
 from intergrax.tools.registry import ToolRegistry
 from intergrax.contracts.capability import CapabilityMatchResult
 from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import (
@@ -69,7 +64,10 @@ from platform_proofs.scenarios.ai_incident_investigation.tools import (
     TOOL_WORKLOAD_READ,
 )
 from platform_proofs.scenarios.ai_incident_investigation.fixtures import HypothesisId
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from platform_proofs.scenarios.ai_incident_investigation.runtime_composition import (
+    ScenarioRuntimeComposition,
+    build_agent_runtime_context,
+)
 
 INVESTIGATOR_AGENT_ID = "incident_investigator"
 INVESTIGATOR_CAPABILITY = "incident_investigation.investigate"
@@ -170,9 +168,15 @@ def _build_claims_from_assessment(assessment: IncidentAssessment) -> EvidenceCla
 
 
 class IncidentInvestigatorAgent(Agent):
-    def __init__(self, registry: ToolRegistry, station_id: str) -> None:
+    def __init__(
+        self,
+        registry: ToolRegistry,
+        station_id: str,
+        runtime_composition: ScenarioRuntimeComposition,
+    ) -> None:
         self._registry = registry
         self._station_id = station_id
+        self._runtime_composition = runtime_composition
 
     def get_contract(self) -> AgentContract:
         return AgentContract(
@@ -195,27 +199,7 @@ class IncidentInvestigatorAgent(Agent):
         return CapabilityMatchResult(matched=False)
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        invoker = RuntimeToolInvoker(
-            registry=self._registry,
-            executor=RegistryToolExecutor(self._registry),
-        )
-        config = RuntimeConfig(
-            llm_adapter=FakeLLMAdapter(fixed_text="investigate"),
-            enable_rag=False,
-            production_mode=False,
-            tenant_id=request.tenant_id,
-            tool_invoker=invoker,
-            tool_registry=self._registry,
-            tools_mode="catalog",
-        )
-        from intergrax.runtime.events.event_bus import RuntimeEventBus
-
-        config.runtime_event_bus = RuntimeEventBus()
-        return RuntimeContext(
-            config=config,
-            session_manager=build_in_memory_session_manager(),
-            prompt_registry=MagicMock(),
-        )
+        return build_agent_runtime_context(request, self._runtime_composition)
 
     def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
         _ = context

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.tool_executor import ToolHandler
@@ -16,8 +17,6 @@ from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
     TelemetryAvailability,
     TimeWindowLabel,
 )
-from testing_support.builder import tools_agent_make_contract
-
 TOOL_WORKLOAD_READ = "production.workload.read"
 TOOL_THROUGHPUT_READ = "production.throughput.read"
 TOOL_STAFFING_SCHEDULE_READ = "production.staffing.schedule.read"
@@ -135,6 +134,24 @@ class TelemetryOutput(BaseModel):
 
 def _iso(dt: object) -> str:
     return dt.isoformat()
+
+
+def _scenario_tool_contract(
+    tool_id: str,
+    input_model: type[BaseModel],
+    output_model: type[BaseModel],
+    *,
+    description: str,
+) -> ToolContract:
+    return ToolContract(
+        tool_id=tool_id,
+        name=tool_id,
+        description=description,
+        input_schema=input_model,
+        output_schema=output_model,
+        error_mapping={},
+        side_effects=False,
+    )
 
 
 class _WorkloadHandler(ToolHandler[LineWindowInput, WorkloadOutput]):
@@ -369,31 +386,57 @@ class _TelemetryHandler(ToolHandler[TelemetryInput, TelemetryOutput]):
 
 def register_scenario_tools(registry: ToolRegistry, fixture: IncidentFixture) -> None:
     registry.register(
-        tools_agent_make_contract(TOOL_WORKLOAD_READ, LineWindowInput, WorkloadOutput),
+        _scenario_tool_contract(
+            TOOL_WORKLOAD_READ,
+            LineWindowInput,
+            WorkloadOutput,
+            description="Read production workload observations for a line and time window.",
+        ),
         _WorkloadHandler(fixture),
     )
     registry.register(
-        tools_agent_make_contract(TOOL_THROUGHPUT_READ, LineWindowInput, ThroughputOutput),
+        _scenario_tool_contract(
+            TOOL_THROUGHPUT_READ,
+            LineWindowInput,
+            ThroughputOutput,
+            description="Read production throughput observations for a line and time window.",
+        ),
         _ThroughputHandler(fixture),
     )
     registry.register(
-        tools_agent_make_contract(
-            TOOL_STAFFING_SCHEDULE_READ, StaffingScheduleInput, StaffingScheduleOutput
+        _scenario_tool_contract(
+            TOOL_STAFFING_SCHEDULE_READ,
+            StaffingScheduleInput,
+            StaffingScheduleOutput,
+            description="Read preliminary staffing schedule export for a line shift window.",
         ),
         _StaffingScheduleHandler(fixture),
     )
     registry.register(
-        tools_agent_make_contract(
-            TOOL_STAFFING_ATTENDANCE_READ, StaffingAttendanceInput, StaffingAttendanceOutput
+        _scenario_tool_contract(
+            TOOL_STAFFING_ATTENDANCE_READ,
+            StaffingAttendanceInput,
+            StaffingAttendanceOutput,
+            description="Read confirmed staffing attendance for a line shift window.",
         ),
         _StaffingAttendanceHandler(fixture),
     )
     registry.register(
-        tools_agent_make_contract(TOOL_COMPARISON_READ, ComparisonInput, ComparisonOutput),
+        _scenario_tool_contract(
+            TOOL_COMPARISON_READ,
+            ComparisonInput,
+            ComparisonOutput,
+            description="Read cross-line workload and attainment comparison observations.",
+        ),
         _ComparisonHandler(fixture),
     )
     registry.register(
-        tools_agent_make_contract(TOOL_TELEMETRY_READ, TelemetryInput, TelemetryOutput),
+        _scenario_tool_contract(
+            TOOL_TELEMETRY_READ,
+            TelemetryInput,
+            TelemetryOutput,
+            description="Read station telemetry observations for a time window.",
+        ),
         _TelemetryHandler(fixture),
     )
 
