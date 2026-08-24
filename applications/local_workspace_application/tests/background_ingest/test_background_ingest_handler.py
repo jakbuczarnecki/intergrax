@@ -154,7 +154,7 @@ def test_runtime_task_builder_excludes_raw_content_like_fields() -> None:
 
 
 @pytest.mark.asyncio
-async def test_handler_output_includes_execution_identity_block() -> None:
+async def test_handler_output_excludes_execution_identity_block() -> None:
     job = _sample_job(change_token="sha256:" + ("a" * 64))
     request = _sample_request(job)
     runner = _FakeRunner()
@@ -164,12 +164,8 @@ async def test_handler_output_includes_execution_identity_block() -> None:
     assert queue_result.status == TaskStatus.SUCCEEDED
     assert queue_result.output is not None
     decoded_output = json.loads(queue_result.output.decode("utf-8"))
-    identity = decoded_output.get("execution_identity")
-    assert isinstance(identity, dict)
-    assert identity.get("runtime_task_id") == runner.tasks[0].task_id
-    assert identity.get("broker_run_id") == request.run_id
-    assert identity.get("idempotency_key") == request.idempotency_key
-    assert identity.get("change_token") == job.change_token
+    assert "execution_identity" not in decoded_output
+    assert decoded_output["task_id"] == runner.tasks[0].task_id
 
 
 @pytest.mark.asyncio

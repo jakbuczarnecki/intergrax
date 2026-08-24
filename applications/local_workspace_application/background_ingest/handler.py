@@ -87,13 +87,6 @@ def _runtime_result_output(
         "agent_id": result.agent_id,
         "answer": result.answer,
         "metadata": result.metadata,
-        "execution_identity": {
-            "runtime_task_id": result.task_id,
-            "runtime_run_id": result.run_id,
-            "broker_run_id": request.run_id,
-            "idempotency_key": request.idempotency_key,
-            "change_token": job.change_token,
-        },
     }
     return json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
 

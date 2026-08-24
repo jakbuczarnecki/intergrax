@@ -109,24 +109,64 @@ Unchanged source after restart must not increase the Kafka task topic count.
 
 ## Execution-identity evidence
 
-After search succeeds and Kafka count increases, the proof also requires measured
-execution-identity linkage from the real watcher and worker path:
+### A. Application proof (established)
+
+After search succeeds and Kafka count increases, the proof requires measured
+watcher enqueue evidence from the real sidecar path:
 
 ```text
-watcher sidecar JSON (lkw.file_watcher_ingest_enqueued.v1)
-  change_token
-  message_bus task_id (= broker run_id = idempotency_key on Kafka)
-  → message_bus.get_result via proof status route
-  → runtime_task_id (platform task_*)
-  → runtime_run_id (platform run_*)
+filesystem change
+  → watcher change_token
+  → MessageBusEnqueueOutput.task_id (MEASURED)
+  → provider
+  → tenant_id
+  → broker_run_id / idempotency_key (provider invariant on Kafka)
 ```
 
-The proof fails closed when watcher enqueue evidence, worker result evidence, or
-cross-boundary linkage is missing or contradictory. Kafka topic count alone is
-not sufficient identity evidence.
+The proof fails closed when watcher enqueue evidence is missing or internally
+contradictory. Kafka topic count alone is not sufficient identity evidence.
 
-`AttemptId` is not persisted through the background-ingest worker result payload
-today; that boundary remains a platform observability gap.
+Watcher evidence is emitted as sidecar JSON with schema
+`lkw.file_watcher_ingest_enqueued.v1`.
+
+### B. Provider invariant (Kafka)
+
+For the current Kafka provider:
+
+```text
+MessageBusEnqueueOutput.task_id == request.run_id
+```
+
+When File Watcher background ingest does not supply an explicit `run_id`, the
+enqueue path resolves `request.run_id` from the background-ingest idempotency
+key derived from the change batch. This is a deterministic provider invariant,
+not an independently measured second identifier.
+
+### C. Unresolved platform diagnostic lineage (PLATFORM GAP)
+
+There is currently no single generic, canonical, operator-facing platform
+contract exposed to this workload that links:
+
+```text
+message-bus / broker task
+  → runtime TaskId
+  → runtime RunId
+  → runtime AttemptId
+```
+
+LKW does not close this gap by serializing runtime identifiers into its own
+worker result payload. `AttemptId` remains platform-owned.
+
+| Boundary | Verdict |
+|---|---|
+| filesystem → watcher change | PROVEN |
+| watcher change_token → MessageBus task_id | PROVEN |
+| enqueue → Kafka provider task | PROVEN (current provider semantics) |
+| MessageBus task → runtime TaskId | PLATFORM GAP |
+| runtime TaskId → RunId | PLATFORM GAP (no canonical cross-boundary linkage) |
+| runtime → AttemptId | PLATFORM GAP |
+| ingest → persistent search | PROVEN |
+| Unified Run Journal | not used by this proof |
 
 ## ProofReceipt mapping
 
