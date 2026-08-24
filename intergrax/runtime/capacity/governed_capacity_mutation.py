@@ -32,7 +32,15 @@ from intergrax.runtime.capacity.control_plane_governance import (
     parse_k8s_replicas_revision,
     validate_ecp_resource_tenant_authority,
 )
-from intergrax.runtime.capacity.provisioner import ScalingProvisioner, StaleCapacityStateError
+from intergrax.runtime.capacity.action_gate import CapacityActionGate
+from intergrax.runtime.capacity.contracts import ScalingAction
+from intergrax.runtime.capacity.events import PublishFn
+from intergrax.runtime.capacity.metrics import record_scale_action
+from intergrax.runtime.capacity.provisioner import (
+    OrchestrationCeilingPatcher,
+    ScalingProvisioner,
+    StaleCapacityStateError,
+)
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
@@ -79,9 +87,50 @@ class GovernedCapacityMutationExecutor:
         self._approval_coordinator = approval_coordinator
         self._mutation_boundary = self._wrap_boundary(mutation_boundary, approval_coordinator)
 
+    def attach_scheduler_dependencies(
+        self,
+        *,
+        action_gate: CapacityActionGate | None = None,
+        ceiling_patcher: OrchestrationCeilingPatcher | None = None,
+        publish: PublishFn | None = None,
+    ) -> None:
+        """Attach scheduler-only dependencies to the owned internal provisioner."""
+        self._provisioner.attach_scheduler_dependencies(
+            action_gate=action_gate,
+            ceiling_patcher=ceiling_patcher,
+            publish=publish,
+        )
+
+    def with_approval_coordinator(
+        self,
+        approval_coordinator: ControlPlaneMutationApprovalCoordinator,
+    ) -> GovernedCapacityMutationExecutor:
+        """Return a governed executor sharing the owned provisioner with approval wiring."""
+        return GovernedCapacityMutationExecutor(
+            provisioner=self._provisioner,
+            mutation_boundary=self._mutation_boundary,
+            tenant_resolver=self._tenant_resolver,
+            approval_coordinator=approval_coordinator,
+        )
+
+    def record_scheduler_applied(self, action: ScalingAction, *, tenant_id: str = "harness") -> None:
+        """Record governed scheduler apply bookkeeping without exposing the provisioner."""
+        del tenant_id
+        self._provisioner.applied.append(action)
+        record_scale_action(target=action.target.value)
+
+    def record_scheduler_blocked(self, action: ScalingAction, *, blocker_code: str) -> None:
+        """Record governed scheduler failure bookkeeping without exposing the provisioner."""
+        del action
+        self._provisioner.failures.append(blocker_code)
+
     @property
-    def provisioner(self) -> ScalingProvisioner:
-        return self._provisioner
+    def scheduler_applied_actions(self) -> tuple[ScalingAction, ...]:
+        return tuple(self._provisioner.applied)
+
+    @property
+    def scheduler_recorded_failures(self) -> tuple[str, ...]:
+        return tuple(self._provisioner.failures)
 
     @staticmethod
     def _wrap_boundary(

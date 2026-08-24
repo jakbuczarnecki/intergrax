@@ -61,7 +61,7 @@ class CapacityScheduler:
         *,
         collector: CapacitySignalCollector,
         evaluator: ScalingEvaluator,
-        provisioner: ScalingProvisioner,
+        provisioner: ScalingProvisioner | None = None,
         interval_seconds: float = 30.0,
         approval_queue: CapacityApprovalQueue | None = None,
         publish: PublishFn | None = None,
@@ -87,6 +87,11 @@ class CapacityScheduler:
         self._task: asyncio.Task[None] | None = None
         self._blocked_outcomes: list[SchedulerCapacityMutationBlocked] = []
 
+    def _require_provisioner(self) -> ScalingProvisioner:
+        if self._provisioner is None:
+            raise RuntimeError("capacity scheduler provisioner not configured")
+        return self._provisioner
+
     async def _apply_plan(self, plan: ScalingActionPlan) -> None:
         for action in plan.actions:
             await self._apply_action(action)
@@ -96,13 +101,13 @@ class CapacityScheduler:
             if self._requires_governed_execution:
                 self._apply_governed_k8s(action)
                 return
-            self._provisioner.apply(action, deployment=self._k8s_deployment)
+            self._require_provisioner().apply(action, deployment=self._k8s_deployment)
             return
         if action.kind is ScalingActionKind.SCALE_CELERY_WORKERS:
             if self._requires_governed_execution:
                 self._apply_governed_celery(action)
                 return
-            self._provisioner.apply(action)
+            self._require_provisioner().apply(action)
             return
         if action.kind is ScalingActionKind.RAISE_ORCHESTRATION_CEILING:
             if self._requires_governed_execution:
@@ -112,7 +117,7 @@ class CapacityScheduler:
                     blocker_code="ECP_SCHEDULER_CEILING_UNSUPPORTED",
                 )
                 return
-            self._provisioner.apply(action)
+            self._require_provisioner().apply(action)
             return
         if action.kind is ScalingActionKind.REQUEST_HITL:
             return
@@ -273,7 +278,7 @@ class CapacityScheduler:
             if action.kind is ScalingActionKind.SCALE_K8S_DEPLOYMENT:
                 deployment, current_replicas = parse_k8s_replicas_revision(scope.current_revision)
                 _, target_replicas = parse_k8s_replicas_revision(scope.target_revision)
-                observed = self._provisioner.read_k8s_replicas(deployment=deployment)
+                observed = self._require_provisioner().read_k8s_replicas(deployment=deployment)
                 if observed != current_replicas:
                     raise StaleCapacityStateError(
                         authorized_current=current_replicas,
@@ -304,7 +309,7 @@ class CapacityScheduler:
                         blocker_code="ECP_SCHEDULER_SCOPE_MISMATCH",
                     )
                     return
-                self._provisioner._apply_authorized_k8s_target(
+                self._require_provisioner()._apply_authorized_k8s_target(
                     deployment=deployment,
                     replicas=target_replicas,
                     authorized_current=current_replicas,
@@ -312,7 +317,7 @@ class CapacityScheduler:
             elif action.kind is ScalingActionKind.SCALE_CELERY_WORKERS:
                 pool_id, current_workers = parse_celery_workers_revision(scope.current_revision)
                 _, target_workers = parse_celery_workers_revision(scope.target_revision)
-                observed = self._provisioner.read_celery_worker_count()
+                observed = self._require_provisioner().read_celery_worker_count()
                 if observed != current_workers:
                     raise StaleCapacityStateError(
                         authorized_current=current_workers,
@@ -343,7 +348,7 @@ class CapacityScheduler:
                         blocker_code="ECP_SCHEDULER_SCOPE_MISMATCH",
                     )
                     return
-                self._provisioner._apply_authorized_celery_target(
+                self._require_provisioner()._apply_authorized_celery_target(
                     target_workers=target_workers,
                     authorized_current=current_workers,
                 )
@@ -498,7 +503,7 @@ class CapacityScheduler:
         from intergrax.runtime.capacity.governed_capacity_mutation import LOCAL_HITL_POLICY_RULE_ID
 
         if action.kind is ScalingActionKind.SCALE_K8S_DEPLOYMENT:
-            current = self._provisioner.read_k8s_replicas(deployment=self._k8s_deployment)
+            current = self._require_provisioner().read_k8s_replicas(deployment=self._k8s_deployment)
             target = max(0, current + action.delta)
             request = build_scale_k8s_deployment_mutation_request(
                 principal=principal,
@@ -509,7 +514,7 @@ class CapacityScheduler:
                 target_replicas=target,
             )
         elif action.kind is ScalingActionKind.SCALE_CELERY_WORKERS:
-            current = self._provisioner.read_celery_worker_count()
+            current = self._require_provisioner().read_celery_worker_count()
             target = max(1, current + action.delta)
             request = build_scale_celery_workers_mutation_request(
                 principal=principal,
@@ -571,7 +576,14 @@ class CapacityScheduler:
         return self._governed_capacity_executor
 
     def _record_applied_action(self, action: ScalingAction) -> None:
-        self._provisioner.applied.append(action)
+        if self._requires_governed_execution and self._governed_capacity_executor is not None:
+            self._governed_capacity_executor.record_scheduler_applied(
+                action,
+                tenant_id=self._tenant_id or "harness",
+            )
+            return
+        provisioner = self._require_provisioner()
+        provisioner.applied.append(action)
         record_scale_action(target=action.target.value)
         if self._publish is not None:
             publish_scale_applied(self._publish, action, tenant_id=self._tenant_id or "harness")
@@ -616,7 +628,13 @@ class CapacityScheduler:
             governance_error=governance_error,
         )
         self._blocked_outcomes.append(blocked)
-        self._provisioner.failures.append(blocker_code)
+        if self._governed_capacity_executor is not None:
+            self._governed_capacity_executor.record_scheduler_blocked(
+                action,
+                blocker_code=blocker_code,
+            )
+        elif self._provisioner is not None:
+            self._provisioner.failures.append(blocker_code)
         if self._publish is not None:
             publish_scale_failed(self._publish, action, reason=blocker_code)
 

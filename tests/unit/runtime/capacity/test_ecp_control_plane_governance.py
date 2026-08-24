@@ -507,7 +507,7 @@ def _build_governed_scheduler(
     "CapacityScheduler",
     _RecordingK8s,
     CeleryProductionAdapter,
-    ScalingProvisioner,
+    GovernedCapacityMutationExecutor,
     _RecordingEvaluator,
 ]:
     import asyncio
@@ -527,11 +527,6 @@ def _build_governed_scheduler(
             evaluator=recording,
             tenant_id=tenant_id,
         )
-    provisioner = ScalingProvisioner(
-        kubernetes=kubernetes,
-        celery=celery_adapter,
-        execution_mode=ProvisionerExecutionMode.GOVERNED_ONLY,
-    )
     policy = ScalingPolicy(
         enabled=True,
         rules=[
@@ -557,19 +552,19 @@ def _build_governed_scheduler(
     scheduler = CapacityScheduler(
         collector=collector,
         evaluator=ScalingEvaluator(policy),
-        provisioner=provisioner,
+        provisioner=None,
         execution_identity=execution_identity or _scheduler_service_principal(tenant_id),
         governed_capacity_executor=governed_executor,
         tenant_id=tenant_id,
         requires_governed_execution=requires_governed,
     )
-    return scheduler, kubernetes, celery_adapter, provisioner, recording
+    return scheduler, kubernetes, celery_adapter, governed_executor, recording
 
 
 def test_ecp_cpm19_automatic_scheduler_k8s_allow() -> None:
     import asyncio
 
-    scheduler, k8s, _celery, provisioner, recording = _build_governed_scheduler()
+    scheduler, k8s, _celery, executor, recording = _build_governed_scheduler()
     scheduler._collector.record_backpressure()
     asyncio.run(scheduler.tick())
     assert len(recording.calls) == 1
@@ -578,8 +573,8 @@ def test_ecp_cpm19_automatic_scheduler_k8s_allow() -> None:
     assert request.principal.principal_type is PrincipalType.SERVICE
     assert request.principal.user_id == "capacity-scheduler"
     assert k8s.scale_calls == [3]
-    assert len(provisioner.applied) == 1
-    assert provisioner.applied[0].action_id == request.mutation_id
+    assert len(executor.scheduler_applied_actions) == 1
+    assert executor.scheduler_applied_actions[0].action_id == request.mutation_id
 
 
 def test_ecp_cpm20_automatic_scheduler_k8s_deny() -> None:
@@ -588,14 +583,14 @@ def test_ecp_cpm20_automatic_scheduler_k8s_deny() -> None:
     evaluator = _RecordingEvaluator(
         decision=PolicyDecision(action=PolicyAction.DENY, reason="blocked"),
     )
-    scheduler, k8s, _celery, provisioner, _recording = _build_governed_scheduler(
+    scheduler, k8s, _celery, executor, _recording = _build_governed_scheduler(
         evaluator=evaluator,
     )
     scheduler._collector.record_backpressure()
     asyncio.run(scheduler.tick())
     assert k8s.scale_calls == []
-    assert provisioner.applied == []
-    assert provisioner.failures
+    assert executor.scheduler_applied_actions == ()
+    assert executor.scheduler_recorded_failures
 
 
 def test_ecp_cpm21_automatic_scheduler_celery_allow() -> None:
@@ -603,7 +598,7 @@ def test_ecp_cpm21_automatic_scheduler_celery_allow() -> None:
 
     from intergrax.runtime.capacity.contracts import ScalingActionPlan
 
-    scheduler, _k8s, celery, provisioner, recording = _build_governed_scheduler()
+    scheduler, _k8s, celery, executor, recording = _build_governed_scheduler()
     action = ScalingAction(
         kind=ScalingActionKind.SCALE_CELERY_WORKERS,
         target=ScalingTarget.CELERY_POOL,
@@ -617,7 +612,7 @@ def test_ecp_cpm21_automatic_scheduler_celery_allow() -> None:
     assert len(celery_calls) == 1
     assert celery_calls[0].principal.principal_type is PrincipalType.SERVICE
     assert celery.worker_count == 3
-    assert len(provisioner.applied) == 1
+    assert len(executor.scheduler_applied_actions) == 1
 
 
 def test_ecp_cpm22_automatic_scheduler_celery_deny() -> None:
@@ -628,7 +623,7 @@ def test_ecp_cpm22_automatic_scheduler_celery_deny() -> None:
     evaluator = _RecordingEvaluator(
         decision=PolicyDecision(action=PolicyAction.DENY, reason="blocked"),
     )
-    scheduler, _k8s, celery, provisioner, _recording = _build_governed_scheduler(
+    scheduler, _k8s, celery, executor, _recording = _build_governed_scheduler(
         evaluator=evaluator,
     )
     action = ScalingAction(
@@ -639,14 +634,14 @@ def test_ecp_cpm22_automatic_scheduler_celery_deny() -> None:
     plan = ScalingActionPlan(actions=(action,), evaluation_status="planned")
     asyncio.run(scheduler._apply_plan(plan))
     assert celery.worker_count == 2
-    assert provisioner.applied == []
-    assert provisioner.failures
+    assert executor.scheduler_applied_actions == ()
+    assert executor.scheduler_recorded_failures
 
 
 def test_ecp_cpm23_missing_governed_executor_fail_closed() -> None:
     import asyncio
 
-    scheduler, k8s, _celery, provisioner, _recording = _build_governed_scheduler(
+    scheduler, k8s, _celery, executor, _recording = _build_governed_scheduler(
         governed_executor=None,
         requires_governed=True,
     )
@@ -654,14 +649,15 @@ def test_ecp_cpm23_missing_governed_executor_fail_closed() -> None:
     scheduler._collector.record_backpressure()
     asyncio.run(scheduler.tick())
     assert k8s.scale_calls == []
-    assert provisioner.applied == []
-    assert any("ECP_SCHEDULER_MISSING_EXECUTOR" in failure for failure in provisioner.failures)
+    assert executor.scheduler_applied_actions == ()
+    assert len(scheduler.blocked_outcomes) == 1
+    assert scheduler.blocked_outcomes[0].blocker_code == "ECP_SCHEDULER_MISSING_EXECUTOR"
 
 
 def test_ecp_cpm24_wrong_tenant_automatic_scheduler_blocked() -> None:
     import asyncio
 
-    scheduler, k8s, _celery, provisioner, recording = _build_governed_scheduler(
+    scheduler, k8s, _celery, executor, recording = _build_governed_scheduler(
         execution_identity=_scheduler_service_principal(tenant_id=_OTHER_TENANT),
         tenant_id=_TENANT,
     )
@@ -669,7 +665,7 @@ def test_ecp_cpm24_wrong_tenant_automatic_scheduler_blocked() -> None:
     asyncio.run(scheduler.tick())
     assert recording.calls == []
     assert k8s.scale_calls == []
-    assert provisioner.applied == []
+    assert executor.scheduler_applied_actions == ()
 
 
 def test_ecp_cpm25_scheduler_mutation_id_uses_action_id() -> None:
@@ -677,7 +673,7 @@ def test_ecp_cpm25_scheduler_mutation_id_uses_action_id() -> None:
 
     from intergrax.runtime.capacity.contracts import ScalingActionPlan
 
-    scheduler, _k8s, _celery, provisioner, recording = _build_governed_scheduler()
+    scheduler, _k8s, _celery, executor, recording = _build_governed_scheduler()
     action = ScalingAction(
         action_id="stable-scheduler-action-id",
         kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
@@ -687,7 +683,7 @@ def test_ecp_cpm25_scheduler_mutation_id_uses_action_id() -> None:
     plan = ScalingActionPlan(actions=(action,), evaluation_status="planned")
     asyncio.run(scheduler._apply_plan(plan))
     assert recording.calls[0].mutation_id == "stable-scheduler-action-id"
-    assert provisioner.applied[0].action_id == "stable-scheduler-action-id"
+    assert executor.scheduler_applied_actions[0].action_id == "stable-scheduler-action-id"
 
 
 def test_ecp_cpm26_require_human_zero_provider_effect() -> None:
@@ -700,22 +696,22 @@ def test_ecp_cpm26_require_human_zero_provider_effect() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, provisioner, _recording = _build_governed_scheduler(
+    scheduler, k8s, _celery, executor, _recording = _build_governed_scheduler(
         evaluator=evaluator,
     )
     scheduler._collector.record_backpressure()
     asyncio.run(scheduler.tick())
     assert k8s.scale_calls == []
-    assert provisioner.applied == []
-    assert any("ECP_BLOCKED_BY_REQUIRE_HUMAN" in failure for failure in provisioner.failures)
+    assert executor.scheduler_applied_actions == ()
+    assert any("ECP_BLOCKED_BY_REQUIRE_HUMAN" in failure for failure in executor.scheduler_recorded_failures)
 
 
 def test_ecp_cpm27_scheduler_production_path_no_raw_provisioner_apply() -> None:
     import asyncio
     from unittest.mock import patch
 
-    scheduler, k8s, _celery, provisioner, _recording = _build_governed_scheduler()
-    with patch.object(provisioner, "apply", side_effect=AssertionError("raw apply bypass")):
+    scheduler, k8s, _celery, executor, _recording = _build_governed_scheduler()
+    with patch.object(ScalingProvisioner, "apply", side_effect=AssertionError("raw apply bypass")):
         scheduler._collector.record_backpressure()
         asyncio.run(scheduler.tick())
     assert k8s.scale_calls == [3]
@@ -728,15 +724,8 @@ def test_ecp_cpm28_ceiling_automatic_mutation_fail_closed() -> None:
     from intergrax.runtime.capacity.contracts import ScalingActionPlan
 
     patcher = BoundedOrchestrationCeilingPatcher(max_inflight_nodes=10)
-    scheduler, _k8s, _celery, provisioner, _recording = _build_governed_scheduler()
-    kubernetes = scheduler._provisioner._kubernetes
-    celery_backend = scheduler._provisioner._celery
-    scheduler._provisioner = ScalingProvisioner(
-        kubernetes=kubernetes,
-        celery=celery_backend,
-        ceiling_patcher=patcher,
-        execution_mode=ProvisionerExecutionMode.GOVERNED_ONLY,
-    )
+    scheduler, _k8s, _celery, executor, _recording = _build_governed_scheduler()
+    executor.attach_scheduler_dependencies(ceiling_patcher=patcher)
     action = ScalingAction(
         kind=ScalingActionKind.RAISE_ORCHESTRATION_CEILING,
         target=ScalingTarget.ORCHESTRATION_CEILING,
@@ -745,10 +734,10 @@ def test_ecp_cpm28_ceiling_automatic_mutation_fail_closed() -> None:
     plan = ScalingActionPlan(actions=(action,), evaluation_status="planned")
     asyncio.run(scheduler._apply_plan(plan))
     assert patcher.max_inflight_nodes == 10
-    assert scheduler._provisioner.applied == []
+    assert executor.scheduler_applied_actions == ()
     assert any(
         "ECP_SCHEDULER_CEILING_UNSUPPORTED" in failure
-        for failure in scheduler._provisioner.failures
+        for failure in executor.scheduler_recorded_failures
     )
 
 
@@ -764,7 +753,7 @@ def test_ecp_cpm29_require_human_scheduler_preserves_governance_outcome() -> Non
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, provisioner, _recording = _build_governed_scheduler(
+    scheduler, k8s, _celery, executor, _recording = _build_governed_scheduler(
         evaluator=evaluator,
     )
     action = ScalingAction(
@@ -776,7 +765,7 @@ def test_ecp_cpm29_require_human_scheduler_preserves_governance_outcome() -> Non
     plan = ScalingActionPlan(actions=(action,), evaluation_status="planned")
     asyncio.run(scheduler._apply_plan(plan))
     assert k8s.scale_calls == []
-    assert provisioner.applied == []
+    assert executor.scheduler_applied_actions == ()
     assert len(scheduler.blocked_outcomes) == 1
     blocked = scheduler.blocked_outcomes[0]
     assert blocked.action_id == "scheduler-require-human-action"
@@ -797,7 +786,7 @@ def test_ecp_cpm30_deny_scheduler_preserves_canonical_evidence() -> None:
     evaluator = _RecordingEvaluator(
         decision=PolicyDecision(action=PolicyAction.DENY, reason="blocked"),
     )
-    scheduler, k8s, celery, provisioner, _recording = _build_governed_scheduler(
+    scheduler, k8s, celery, executor, _recording = _build_governed_scheduler(
         evaluator=evaluator,
     )
     k8s_action = ScalingAction(
@@ -819,7 +808,7 @@ def test_ecp_cpm30_deny_scheduler_preserves_canonical_evidence() -> None:
     asyncio.run(scheduler._apply_plan(plan))
     assert k8s.scale_calls == []
     assert celery.worker_count == 2
-    assert provisioner.applied == []
+    assert executor.scheduler_applied_actions == ()
     assert len(scheduler.blocked_outcomes) == 2
     for blocked in scheduler.blocked_outcomes:
         assert blocked.blocker_code == "ECP_BLOCKED_BY_POLICY"
@@ -832,7 +821,7 @@ def test_ecp_cpm30_deny_scheduler_preserves_canonical_evidence() -> None:
 def test_ecp_cpm31_wrong_tenant_scheduler_preserves_tenant_denial_without_evidence() -> None:
     import asyncio
 
-    scheduler, k8s, _celery, provisioner, recording = _build_governed_scheduler(
+    scheduler, k8s, _celery, executor, recording = _build_governed_scheduler(
         execution_identity=_scheduler_service_principal(tenant_id=_OTHER_TENANT),
         tenant_id=_TENANT,
     )
@@ -840,7 +829,7 @@ def test_ecp_cpm31_wrong_tenant_scheduler_preserves_tenant_denial_without_eviden
     asyncio.run(scheduler.tick())
     assert recording.calls == []
     assert k8s.scale_calls == []
-    assert provisioner.applied == []
+    assert executor.scheduler_applied_actions == ()
     assert len(scheduler.blocked_outcomes) == 1
     blocked = scheduler.blocked_outcomes[0]
     assert blocked.blocker_code == "ECP_BLOCKED_BY_TENANT_AUTHORITY"
@@ -856,7 +845,7 @@ def test_ecp_cpm32_stale_state_scheduler_blocked_without_cpm_evidence() -> None:
 
     from intergrax.runtime.capacity.contracts import ScalingActionPlan
 
-    scheduler, k8s, _celery, provisioner, _recording = _build_governed_scheduler(
+    scheduler, k8s, _celery, executor, _recording = _build_governed_scheduler(
         k8s=_FlakyK8s(),
     )
     action = ScalingAction(
@@ -868,7 +857,7 @@ def test_ecp_cpm32_stale_state_scheduler_blocked_without_cpm_evidence() -> None:
     plan = ScalingActionPlan(actions=(action,), evaluation_status="planned")
     asyncio.run(scheduler._apply_plan(plan))
     assert k8s.scale_calls == []
-    assert provisioner.applied == []
+    assert executor.scheduler_applied_actions == ()
     assert len(scheduler.blocked_outcomes) == 1
     blocked = scheduler.blocked_outcomes[0]
     assert blocked.action_id == "scheduler-stale-k8s"
@@ -899,7 +888,7 @@ def _build_hitl_governed_scheduler(
     "CapacityScheduler",
     _RecordingK8s,
     CeleryProductionAdapter,
-    ScalingProvisioner,
+    GovernedCapacityMutationExecutor,
     _RecordingEvaluator,
     "CapacityApprovalQueue",
     "ControlPlaneMutationApprovalCoordinator",
@@ -963,14 +952,14 @@ def _build_hitl_governed_scheduler(
     scheduler = CapacityScheduler(
         collector=collector,
         evaluator=ScalingEvaluator(policy),
-        provisioner=provisioner,
+        provisioner=None,
         approval_queue=queue,
         execution_identity=_scheduler_service_principal(tenant_id),
         governed_capacity_executor=governed_executor,
         tenant_id=tenant_id,
         requires_governed_execution=True,
     )
-    return scheduler, kubernetes, celery_adapter, provisioner, recording, queue, coordinator
+    return scheduler, kubernetes, celery_adapter, governed_executor, recording, queue, coordinator
 
 
 def test_ecp_cpm33_require_human_k8s_pending_preserves_scope() -> None:
@@ -983,13 +972,13 @@ def test_ecp_cpm33_require_human_k8s_pending_preserves_scope() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, provisioner, _recording, queue, _coordinator = (
+    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = (
         _build_hitl_governed_scheduler(evaluator=evaluator)
     )
     scheduler._collector.record_backpressure()
     asyncio.run(scheduler.tick())
     assert k8s.scale_calls == []
-    assert provisioner.applied == []
+    assert executor.scheduler_applied_actions == ()
     pending = queue.list_pending()
     assert len(pending) == 1
     record = pending[0]
@@ -1008,7 +997,7 @@ def test_ecp_cpm34_human_approve_k8s_resume_exact_target_once() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, provisioner, _recording, queue, coordinator = (
+    scheduler, k8s, _celery, executor, _recording, queue, coordinator = (
         _build_hitl_governed_scheduler(evaluator=evaluator)
     )
     scheduler._collector.record_backpressure()
@@ -1018,7 +1007,7 @@ def test_ecp_cpm34_human_approve_k8s_resume_exact_target_once() -> None:
     assert grant is not None
     asyncio.run(scheduler.tick())
     assert k8s.scale_calls == [3]
-    assert len(provisioner.applied) == 1
+    assert len(executor.scheduler_applied_actions) == 1
     assert coordinator.is_consumed(grant.grant_id)
 
 
@@ -1032,7 +1021,7 @@ def test_ecp_cpm35_human_deny_zero_provider_effect() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, provisioner, _recording, queue, coordinator = (
+    scheduler, k8s, _celery, executor, _recording, queue, coordinator = (
         _build_hitl_governed_scheduler(evaluator=evaluator)
     )
     scheduler._collector.record_backpressure()
@@ -1042,7 +1031,7 @@ def test_ecp_cpm35_human_deny_zero_provider_effect() -> None:
     assert denial is not None
     asyncio.run(scheduler.tick())
     assert k8s.scale_calls == []
-    assert provisioner.applied == []
+    assert executor.scheduler_applied_actions == ()
     assert coordinator.get_denial(mutation_id) is not None
     assert queue.approve_mutation(mutation_id, _human_principal()) is None
 
@@ -1057,7 +1046,7 @@ def test_ecp_cpm36_wrong_approver_tenant_fail_closed() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, provisioner, _recording, queue, _coordinator = (
+    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = (
         _build_hitl_governed_scheduler(evaluator=evaluator)
     )
     scheduler._collector.record_backpressure()
@@ -1066,7 +1055,7 @@ def test_ecp_cpm36_wrong_approver_tenant_fail_closed() -> None:
     assert queue.approve_mutation(mutation_id, _human_principal(tenant_id=_OTHER_TENANT)) is None
     asyncio.run(scheduler.tick())
     assert k8s.scale_calls == []
-    assert provisioner.applied == []
+    assert executor.scheduler_applied_actions == ()
 
 
 def test_ecp_cpm37_wrong_mutation_approval_cannot_resume_other_action() -> None:
@@ -1081,7 +1070,7 @@ def test_ecp_cpm37_wrong_mutation_approval_cannot_resume_other_action() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, provisioner, _recording, queue, coordinator = (
+    scheduler, k8s, _celery, executor, _recording, queue, coordinator = (
         _build_hitl_governed_scheduler(evaluator=evaluator)
     )
     action_a = ScalingAction(
@@ -1140,7 +1129,7 @@ def test_ecp_cpm37_wrong_mutation_approval_cannot_resume_other_action() -> None:
     )
     scheduler._resume_governed_mutation(resumable_b)
     assert k8s.scale_calls == []
-    assert provisioner.applied == []
+    assert executor.scheduler_applied_actions == ()
 
 
 def test_ecp_cpm38_resource_mismatch_k8s_approval_not_celery() -> None:
@@ -1155,7 +1144,7 @@ def test_ecp_cpm38_resource_mismatch_k8s_approval_not_celery() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, celery, provisioner, _recording, queue, _coordinator = (
+    scheduler, k8s, celery, executor, _recording, queue, _coordinator = (
         _build_hitl_governed_scheduler(evaluator=evaluator)
     )
     k8s_action = ScalingAction(
@@ -1181,7 +1170,7 @@ def test_ecp_cpm38_resource_mismatch_k8s_approval_not_celery() -> None:
     asyncio.run(scheduler.tick())
     assert k8s.scale_calls == [3]
     assert celery.worker_count == 2
-    assert len([a for a in provisioner.applied if a.action_id == celery_action.action_id]) == 0
+    assert len([a for a in executor.scheduler_applied_actions if a.action_id == celery_action.action_id]) == 0
 
 
 def test_ecp_cpm39_stale_current_after_approval_no_provider_write() -> None:
@@ -1195,7 +1184,7 @@ def test_ecp_cpm39_stale_current_after_approval_no_provider_write() -> None:
         ),
     )
     flaky = _FlakyK8s()
-    scheduler, k8s, _celery, provisioner, _recording, queue, _coordinator = (
+    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = (
         _build_hitl_governed_scheduler(evaluator=evaluator, k8s=flaky)
     )
     scheduler._collector.record_backpressure()
@@ -1204,8 +1193,8 @@ def test_ecp_cpm39_stale_current_after_approval_no_provider_write() -> None:
     queue.approve_mutation(mutation_id, _human_principal())
     asyncio.run(scheduler.tick())
     assert k8s.scale_calls == []
-    assert provisioner.applied == []
-    assert any("ECP_SCHEDULER_STALE_STATE" in failure for failure in provisioner.failures)
+    assert executor.scheduler_applied_actions == ()
+    assert any("ECP_SCHEDULER_STALE_STATE" in failure for failure in executor.scheduler_recorded_failures)
 
 
 def test_ecp_cpm40_target_mismatch_cannot_execute() -> None:
@@ -1216,7 +1205,7 @@ def test_ecp_cpm40_target_mismatch_cannot_execute() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, provisioner, _recording, queue, coordinator = (
+    scheduler, k8s, _celery, executor, _recording, queue, coordinator = (
         _build_hitl_governed_scheduler(evaluator=evaluator)
     )
     action = ScalingAction(
@@ -1261,7 +1250,7 @@ def test_ecp_cpm40_target_mismatch_cannot_execute() -> None:
     )
     scheduler._resume_governed_mutation(resumable)
     assert k8s.scale_calls == []
-    assert provisioner.applied == []
+    assert executor.scheduler_applied_actions == ()
 
 
 def test_ecp_cpm41_double_drain_cannot_execute_twice() -> None:
@@ -1274,7 +1263,7 @@ def test_ecp_cpm41_double_drain_cannot_execute_twice() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, provisioner, _recording, queue, _coordinator = (
+    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = (
         _build_hitl_governed_scheduler(evaluator=evaluator)
     )
     scheduler._collector.record_backpressure()
@@ -1283,7 +1272,7 @@ def test_ecp_cpm41_double_drain_cannot_execute_twice() -> None:
     asyncio.run(scheduler.tick())
     asyncio.run(scheduler.tick())
     assert k8s.scale_calls == [3]
-    assert len(provisioner.applied) == 1
+    assert len(executor.scheduler_applied_actions) == 1
 
 
 def test_ecp_cpm42_missing_approval_dependency_fail_closed() -> None:
@@ -1298,7 +1287,7 @@ def test_ecp_cpm42_missing_approval_dependency_fail_closed() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, provisioner, _recording, queue, _coordinator = (
+    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = (
         _build_hitl_governed_scheduler(evaluator=evaluator)
     )
     action = ScalingAction(
@@ -1324,7 +1313,7 @@ def test_ecp_cpm42_missing_approval_dependency_fail_closed() -> None:
     )
     scheduler._resume_governed_mutation(resumable)
     assert k8s.scale_calls == []
-    assert provisioner.applied == []
+    assert executor.scheduler_applied_actions == ()
 
 
 def test_ecp_cpm43_multi_action_per_action_approval_scope() -> None:
@@ -1339,7 +1328,7 @@ def test_ecp_cpm43_multi_action_per_action_approval_scope() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, celery, provisioner, _recording, queue, _coordinator = (
+    scheduler, k8s, celery, executor, _recording, queue, _coordinator = (
         _build_hitl_governed_scheduler(evaluator=evaluator)
     )
     k8s_action = ScalingAction(
@@ -1364,7 +1353,7 @@ def test_ecp_cpm43_multi_action_per_action_approval_scope() -> None:
     asyncio.run(scheduler.tick())
     assert k8s.scale_calls == [3]
     assert celery.worker_count == 2
-    assert len(provisioner.applied) == 1
+    assert len(executor.scheduler_applied_actions) == 1
 
 
 def test_ecp_cpm44_local_hitl_flag_does_not_bypass_canonical_governance() -> None:
@@ -1373,13 +1362,13 @@ def test_ecp_cpm44_local_hitl_flag_does_not_bypass_canonical_governance() -> Non
     evaluator = _RecordingEvaluator(
         decision=PolicyDecision(action=PolicyAction.ALLOW, reason="ok"),
     )
-    scheduler, k8s, _celery, provisioner, _recording, queue, _coordinator = (
+    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = (
         _build_hitl_governed_scheduler(evaluator=evaluator, require_hitl_policy=True)
     )
     scheduler._collector.record_backpressure()
     asyncio.run(scheduler.tick())
     assert k8s.scale_calls == []
-    assert provisioner.applied == []
+    assert executor.scheduler_applied_actions == ()
     pending = queue.list_pending()[0]
     assert pending.authorization_evidence.policy_action is PolicyAction.REQUIRE_HUMAN
     assert queue.approve_mutation(pending.mutation_id, _human_principal()) is not None
@@ -1399,7 +1388,7 @@ def test_ecp_cpm45_scheduler_require_human_routable_to_pending_flow() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, provisioner, _recording, queue, _coordinator = (
+    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = (
         _build_hitl_governed_scheduler(evaluator=evaluator)
     )
     action = ScalingAction(
@@ -1415,7 +1404,7 @@ def test_ecp_cpm45_scheduler_require_human_routable_to_pending_flow() -> None:
     assert pending[0].mutation_id == action.action_id
     assert pending[0].authorization_evidence.mutation_id == action.action_id
     assert k8s.scale_calls == []
-    assert provisioner.applied == []
+    assert executor.scheduler_applied_actions == ()
 
 
 def test_ecp_cpm46_plan_approve_without_approver_cannot_authorize() -> None:
@@ -1428,7 +1417,7 @@ def test_ecp_cpm46_plan_approve_without_approver_cannot_authorize() -> None:
             policy_rule_id="rule.hitl",
         ),
     )
-    scheduler, k8s, _celery, provisioner, _recording, queue, _coordinator = (
+    scheduler, k8s, _celery, executor, _recording, queue, _coordinator = (
         _build_hitl_governed_scheduler(evaluator=evaluator)
     )
     scheduler._collector.record_backpressure()
@@ -1437,7 +1426,7 @@ def test_ecp_cpm46_plan_approve_without_approver_cannot_authorize() -> None:
     assert queue.approve(plan_id) is None
     asyncio.run(scheduler.tick())
     assert k8s.scale_calls == []
-    assert provisioner.applied == []
+    assert executor.scheduler_applied_actions == ()
 
 
 def test_ecp_cpm47_production_adapters_do_not_expose_k8s_mutation_surface() -> None:
@@ -1547,7 +1536,7 @@ def _build_production_scaling_wiring(
 def test_ecp_cpm50_production_scheduler_k8s_through_governed_executor() -> None:
     wiring, adapters, recording, asyncio = _build_production_scaling_wiring()
     assert wiring.scheduler is not None
-    assert wiring.provisioner is adapters.governed_executor.provisioner
+    assert wiring.provisioner is None
     scheduler = wiring.scheduler
     scheduler._collector.record_backpressure()
     asyncio.run(scheduler.tick())
@@ -1561,7 +1550,7 @@ def test_ecp_cpm51_production_scheduler_celery_through_governed_executor() -> No
 
     wiring, adapters, recording, asyncio = _build_production_scaling_wiring()
     assert wiring.scheduler is not None
-    assert wiring.provisioner is adapters.governed_executor.provisioner
+    assert wiring.provisioner is None
     scheduler = wiring.scheduler
     action = ScalingAction(
         kind=ScalingActionKind.SCALE_CELERY_WORKERS,
@@ -1620,3 +1609,111 @@ def test_ecp_cpm53_live_kubernetes_backend_only_behind_governed_write_path(
         delta=1,
     )
     assert adapters.kubernetes_observation.get_replicas(deployment=_DEPLOYMENT) == 3
+
+
+_GOVERNED_EXECUTOR_PUBLIC_METHODS = frozenset({
+    "attach_scheduler_dependencies",
+    "prepare_k8s_pending_authorization",
+    "prepare_celery_pending_authorization",
+    "record_scheduler_applied",
+    "record_scheduler_blocked",
+    "resume_celery_workers",
+    "resume_k8s_deployment",
+    "scale_celery_workers",
+    "scale_k8s_deployment",
+    "with_approval_coordinator",
+})
+
+
+def test_ecp_cpm54_governed_executor_public_api_does_not_expose_scaling_provisioner() -> None:
+    executor, _, _, _ = _build_executor()
+    assert "provisioner" not in GovernedCapacityMutationExecutor.__dict__
+    with pytest.raises(AttributeError):
+        executor.provisioner  # type: ignore[attr-defined]
+    public_callables = {
+        name
+        for name, value in GovernedCapacityMutationExecutor.__dict__.items()
+        if callable(value) and not name.startswith("_")
+    }
+    assert public_callables == _GOVERNED_EXECUTOR_PUBLIC_METHODS
+
+
+def test_ecp_cpm55_production_wiring_attaches_scheduler_deps_without_provisioner_escape() -> None:
+    wiring, adapters, _, _ = _build_production_scaling_wiring()
+    assert wiring.provisioner is None
+    assert wiring.scheduler is not None
+    assert wiring.scheduler._provisioner is None
+    with pytest.raises(AttributeError):
+        adapters.governed_executor.provisioner  # type: ignore[attr-defined]
+
+
+def test_ecp_cpm56_production_scheduler_k8s_through_governed_executor() -> None:
+    wiring, adapters, recording, asyncio = _build_production_scaling_wiring()
+    scheduler = wiring.scheduler
+    assert scheduler is not None
+    scheduler._collector.record_backpressure()
+    asyncio.run(scheduler.tick())
+    assert len(recording.calls) == 1
+    assert recording.calls[0].mutation_type == MUTATION_TYPE_SCALE_K8S_DEPLOYMENT
+    assert adapters.kubernetes_observation.get_replicas(deployment=_DEPLOYMENT) == 3
+
+
+def test_ecp_cpm57_production_scheduler_celery_through_governed_executor() -> None:
+    from intergrax.runtime.capacity.contracts import ScalingActionPlan
+
+    wiring, adapters, recording, asyncio = _build_production_scaling_wiring()
+    scheduler = wiring.scheduler
+    assert scheduler is not None
+    action = ScalingAction(
+        kind=ScalingActionKind.SCALE_CELERY_WORKERS,
+        target=ScalingTarget.CELERY_POOL,
+        delta=1,
+    )
+    plan = ScalingActionPlan(actions=(action,), evaluation_status="planned")
+    asyncio.run(scheduler._apply_plan(plan))
+    assert len(recording.calls) == 1
+    assert recording.calls[0].mutation_type == MUTATION_TYPE_SCALE_CELERY_WORKERS
+    assert adapters.celery_observation.get_worker_count() == 3
+
+
+def test_ecp_cpm58_read_only_observation_still_works_after_provisioner_surface_closure() -> None:
+    recording = _RecordingEvaluator()
+    adapters = build_production_capacity_adapters(
+        mutation_boundary=ControlPlaneMutationAuthorizationBoundary(evaluator=recording),
+        tenant_resolver=StaticEcpResourceTenantResolver(tenant_id=_TENANT),
+    )
+    assert adapters.kubernetes_observation.get_replicas(deployment=_DEPLOYMENT) == 2
+    assert adapters.celery_observation.get_worker_count() == 2
+    assert apply_production_scale_probe(
+        adapters,
+        principal=_service_principal(),
+        tenant_id=_TENANT,
+        k8s_mutation_id="probe-k8s-readonly-r2",
+        celery_mutation_id="probe-celery-readonly-r2",
+    )
+    assert adapters.kubernetes_observation.get_replicas(deployment=_DEPLOYMENT) == 3
+    assert adapters.celery_observation.get_worker_count() == 3
+
+
+def test_ecp_cpm59_governed_only_remains_fail_closed_for_legacy_apply_path() -> None:
+    adapters = build_production_capacity_adapters(
+        mutation_boundary=ControlPlaneMutationAuthorizationBoundary(
+            evaluator=_RecordingEvaluator(),
+        ),
+        tenant_resolver=StaticEcpResourceTenantResolver(tenant_id=_TENANT),
+    )
+    legacy_provisioner = ScalingProvisioner(
+        kubernetes=_RecordingK8s(),
+        celery=CeleryProductionAdapter(worker_count=2),
+        execution_mode=ProvisionerExecutionMode.GOVERNED_ONLY,
+    )
+    with pytest.raises(GovernedExecutionRequiredError):
+        legacy_provisioner.apply(
+            ScalingAction(
+                kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
+                target=ScalingTarget.NEXUS_HOST,
+                delta=1,
+            ),
+        )
+    with pytest.raises(AttributeError):
+        adapters.governed_executor.provisioner  # type: ignore[attr-defined]
