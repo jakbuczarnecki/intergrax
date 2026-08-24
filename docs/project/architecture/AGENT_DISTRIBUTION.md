@@ -1,5 +1,101 @@
 # Agent Distribution and Management
 
+**Intergrax Agent Distribution and Management** is the Tier-0 platform plane that governs how agent packages move from catalog discovery through installation, application binding, deterministic dependency closure, immutable materialization, and activation — before Tier-1 **AgentRegistry** projection and Nexus capability routing answer what is actually running and routable.
+
+The domain sits **below** Tier-3 application composition and **above** Tier-1 execution: applications declare defaults and host admin surfaces; Agent Distribution owns durable install/bind/enable state and produces revision-bound runtime artifacts; **AgentRegistry** remains a derived projection; **Nexus** remains capability routing only.
+
+## Why it matters
+
+Without a separate distribution layer, operators and product surfaces collapse distinct lifecycle steps:
+
+- **Catalog availability ≠ installation** — a listing or index entry does not mean a digest-pinned artifact is verified on the host.
+- **Installation ≠ application binding** — an installed package is not automatically bound to an application slot with validated config.
+- **Application binding ≠ activation** — durable bindings and enablement do not by themselves swap the active runtime revision.
+- **Catalog listing ≠ trusted runnable agent** — trust, provenance, and revocation gates precede production activation.
+- **Runtime must not guess dependency closure** — every activated revision requires a deterministic lock produced from an effective roster, not floating catalog state.
+- **Marketplace must not become a second runtime** — discovery and publisher onboarding are product/catalog surfaces; execution stays on AgentRegistry + Nexus.
+
+Agent Distribution keeps these steps explicit and authoritative so third-party agents, enterprise catalogs, and future marketplace listings can attach without forking orchestration or hot-loading Python into a live process.
+
+## Current reality / maturity boundary
+
+Read this hub in four layers — do not merge them into a single “shipped” headline.
+
+**A. Canonical architecture (frozen).** AGENT-PLATFORM-2 + ARCH-AGENT-ACTIVATION-1 define the full distribution → activation → projection chain, orthogonal lifecycle dimensions, persistence matrix, and marketplace/LKW boundaries. The architecture delivery for AGENT-PLATFORM-2 is **complete**; activation semantics are **frozen**.
+
+**B. Implemented pieces (capability-specific).** Tier-0 modules under `intergrax/agent_distribution/` and reference process-local production semantics (§34) implement parts of the chain — contracts, stores, trust, roster merge, lock production, materialization adapters, activation/projection services — under explicit scope limits. Process-local in-memory stores are **reference single-process semantics**, not general durable multi-instance production.
+
+**C. Planned / not yet publicly proven end-to-end.** Durable cross-process activation, horizontal host scale-out, generic Tier-3 harness admin API productization (AP-11), and LKW consumer proof wiring (AP-12) remain on the AP-3+ track. A complete third-party **discover → install → bind → materialize → activate → route** journey is **not established** as public product or platform proof today. Manifest-only development assembly (migration phase M0) remains valid for lab; STRICT production hosts require an active revision-bound registry projection (§31, §34).
+
+**D. Future marketplace / product surfaces.** [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) is a **future** ecosystem discovery experience — one possible `CatalogSourceProvider` implementation plus publisher onboarding. Billing, reviews, checkout, publisher portal, and marketplace-specific Nexus branches are **not shipped**. Marketplace does not replace Agent Distribution authority, AgentRegistry, or Nexus.
+
+> [!NOTE]
+> **Maturity boundary:** Canonical distribution architecture is defined. Implementation maturity is capability-specific; complete third-party install-to-activated-runtime proof is not yet established. Frozen architecture documentation is not equivalent to universal production rollout.
+
+**Primary audience:** CTOs, principal/staff engineers, software architects, and AI platform engineers evaluating how Intergrax separates agent packaging from runtime execution — after the platform overview in the root README.
+
+**Related canon:** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) · [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md) · [`APPLICATION_RUNTIME_GRAPH_MODEL.md`](APPLICATION_RUNTIME_GRAPH_MODEL.md) · [`Agent Marketplace`](../overview/AGENT_MARKETPLACE.md) (future product surface)
+
+## At a glance
+
+| Concern | Responsibility / current boundary |
+| -------- | ----------------------------------- |
+| **Catalog availability** | `CatalogSourceProvider` indexes discoverable packages — **AVAILABLE** ≠ installed |
+| **Installation** | Tier-0 verifies digest-pinned artifacts → durable `AgentInstallation` on host/environment |
+| **Application binding** | Durable `ApplicationAgentBinding` per app + slot — separate from install records |
+| **Dependency closure** | Effective roster → deterministic resolver → immutable `MaterializedRuntimeLock` |
+| **Materialization** | Topology-abstract adapters produce runtime artifacts from lock + graph — Model B immutability |
+| **Activation** | `RuntimeRevision` swap (PREPARE/READY/COMMIT/DRAIN) — enablement alone is insufficient |
+| **AgentRegistry projection** | Tier-1 **derived** population from materialization — not install-state authority |
+| **Nexus routing** | Capability routing over **ROUTABLE** subset — Distribution MUST NOT add routing branches |
+| **Trust / provenance** | `AgentPackageTrust` parallel to Platform Plugins — fail-closed before activation |
+| **Marketplace relation** | Future catalog/discovery surface only — not execution fork, not second Nexus |
+| **LKW relation** | Future **consumer** via generic platform APIs — MUST NOT own stores, catalog, or materializer |
+| **Maturity** | Architecture frozen; implementation partial and topology-specific — see [Current reality](#current-reality--maturity-boundary) and §33–§34 |
+| **Go deeper** | [Engineering canon](#engineering-canon) · [§3 invariants](#3-architecture-invariants) · [§27 LKW](#27-lkw-proof-boundary) · [§28 marketplace](#28-marketplace-readiness) · [plan](../maintainers/plans/AGENT_DISTRIBUTION.md) |
+
+## Core mental model
+
+**Frozen chain.** Each step has a single platform authority; later steps must not succeed when earlier required steps failed.
+
+```text
+catalog (CatalogSourceProvider)
+  ↓
+installation (digest-pinned AgentInstallation)
+  ↓
+application binding (ApplicationAgentBinding + config)
+  ↓
+deterministic dependency closure (EffectiveRoster → MaterializedRuntimeLock)
+  ↓
+immutable materialization (RuntimeMaterialization)
+  ↓
+activation (RuntimeRevision)
+  ↓
+AgentRegistry projection (MaterializedRegistryProjection)
+  ↓
+Nexus capability routing (ROUTABLE agents)
+```
+
+**Authority separation (do not merge):**
+
+| Surface | Question answered | Role |
+| -------- | ----------------- | ---- |
+| **Agent Marketplace** (future) | Where do operators discover/list packages? | Product/ecosystem discovery — one catalog provider kind |
+| **Agent Distribution** | What is installed, bound, trusted, locked, materialized, activated? | Tier-0 distribution / activation authority |
+| **AgentRegistry** | What agent instances exist for the active revision? | Tier-1 runtime projection — derived only |
+| **Nexus** | Which agent handles this capability request? | Tier-1 execution / routing — derived only |
+
+Marketplace MUST NOT replace AgentRegistry, replace Nexus, create a second execution runtime, or bypass activation/trust boundaries. Platform Plugins remain the broader extension/package architecture — Agent Distribution is the **agent-specific** distribution canon; reuse trust patterns only (§10, Platform Plugins §16–§18).
+
+Orthogonal lifecycle dimensions (normative):
+
+```text
+AVAILABLE ≠ INSTALLED ≠ BOUND_TO_APPLICATION ≠ CONFIGURED ≠ ENABLED
+  ≠ REGISTERED_IN_RUNTIME ≠ ROUTABLE
+```
+
+## Engineering canon
+
 **Status:** Canonical architecture (AGENT-PLATFORM-2 + ARCH-AGENT-ACTIVATION-1 activation semantics frozen — documentation only)
 **Plan (1:1):** [`plan/AGENT_DISTRIBUTION.md`](../maintainers/plans/AGENT_DISTRIBUTION.md)
 **ADR:** [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../technical/adr/entries/2026-08-12/ADR-AGENT-004.md) · [`adr/entries/2026-08-17/ADR-AGENT-005.md`](../technical/adr/entries/2026-08-17/ADR-AGENT-005.md) (AC-3 store ownership)
@@ -8,8 +104,6 @@
 **Runtime graph:** [`APPLICATION_RUNTIME_GRAPH_MODEL.md`](APPLICATION_RUNTIME_GRAPH_MODEL.md)
 **Packaging:** [`APPLICATION_DEPENDENCY_MODEL.md`](APPLICATION_DEPENDENCY_MODEL.md)
 **Trust patterns (reuse only):** [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md) §16–§18
-
----
 
 ## Cursor read scope (token budget)
 
