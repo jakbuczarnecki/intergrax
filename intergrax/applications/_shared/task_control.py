@@ -7,19 +7,40 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from intergrax.applications._shared.task_control_governance import (
+    TaskControlGovernanceBlockedError,
+    build_cancel_task_execution_mutation_request,
+    enforce_task_control_authorization_result,
+    is_task_execution_cancellable,
+    task_execution_state_revision,
+    validate_task_control_principal_tenant_authority,
+)
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.autonomy_level import AutonomyLevel
-from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
+from intergrax.contracts.control_plane_mutation import (
+    ControlPlaneMutationAuthorizationEvidence,
+    ControlPlaneMutationAuthorizationScope,
+)
+from intergrax.contracts.execution_identity import RunId, validate_run_id
 from intergrax.contracts.human_approver import HumanApproverEvidence, local_development_approver_evidence
+from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
+)
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.resume_planner import build_checkpoint_resume_task
-from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
-from intergrax.runtime.task.task import Task, TaskResult
+from intergrax.runtime.task.active_task_registry import ActiveTaskBinding, ActiveTaskRegistry
+from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_contract import TaskPauseRecord
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 
 class HitlResumeValidationError(ValueError):
     """Fail-closed validation for shared HITL resume surfaces."""
+
+
+class TaskControlValidationError(ValueError):
+    """Fail-closed validation for governed task-control surfaces."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,9 +51,53 @@ class TaskControlResult:
     detail: str = ""
     state: str | None = None
     metadata: dict[str, Any] | None = None
+    authorization_evidence: ControlPlaneMutationAuthorizationEvidence | None = None
+    authorization_scope: ControlPlaneMutationAuthorizationScope | None = None
+    blocker_code: str | None = None
+    policy_action: str | None = None
 
 
-async def cancel_active_task(task_id: str, *, reason: str = "operator_cancel") -> TaskControlResult:
+def _execute_cooperative_cancel(task: Task, *, reason: str) -> None:
+    CancellationCoordinator.request(task, reason=reason)
+
+
+def _blocked_result(
+    *,
+    task_id: str,
+    detail: str,
+    exc: TaskControlGovernanceBlockedError,
+) -> TaskControlResult:
+    return TaskControlResult(
+        task_id=task_id,
+        action="cancel",
+        accepted=False,
+        detail=detail,
+        blocker_code=exc.blocker_code,
+        policy_action=exc.policy_action,
+        authorization_evidence=exc.authorization_evidence,
+        authorization_scope=exc.authorization_scope,
+        metadata={"tenant_scope_denial": exc.tenant_scope_denial.model_dump(mode="json")}
+        if exc.tenant_scope_denial is not None
+        else None,
+    )
+
+
+async def governed_cancel_active_task(
+    *,
+    task_id: str,
+    run_id: str,
+    mutation_id: str,
+    principal: RequestIdentity,
+    mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None,
+    reason: str = "operator_cancel",
+    approval_evidence_ref: str | None = None,
+) -> TaskControlResult:
+    """Governed cooperative cancel for one exact active task/run binding."""
+    normalized_mutation_id = mutation_id.strip()
+    if not normalized_mutation_id:
+        raise TaskControlValidationError("mutation_id_required")
+
+    validated_run_id = validate_run_id(run_id)
     binding = await ActiveTaskRegistry.get(task_id)
     if binding is None:
         return TaskControlResult(
@@ -41,15 +106,112 @@ async def cancel_active_task(task_id: str, *, reason: str = "operator_cancel") -
             accepted=False,
             detail="task_not_active",
         )
+
+    if binding.run_id != validated_run_id:
+        return TaskControlResult(
+            task_id=task_id,
+            action="cancel",
+            accepted=False,
+            detail="run_id_mismatch",
+        )
+
     task = binding.task
-    CancellationCoordinator.request(task, reason=reason)
+    try:
+        validate_task_control_principal_tenant_authority(
+            principal=principal,
+            task_tenant_id=task.tenant_id,
+            task_id=binding.task_id,
+            run_id=binding.run_id,
+            operation="cancel_task_execution",
+        )
+    except TaskControlGovernanceBlockedError as exc:
+        return _blocked_result(task_id=task_id, detail="tenant_authority_mismatch", exc=exc)
+
+    if not is_task_execution_cancellable(
+        state=task.state,
+        cancellation_requested=CancellationCoordinator.is_requested(task.metadata),
+    ):
+        return TaskControlResult(
+            task_id=task_id,
+            action="cancel",
+            accepted=False,
+            detail="task_not_cancellable",
+            state=task.state.value,
+        )
+
+    if mutation_boundary is None:
+        raise TaskControlGovernanceBlockedError(
+            "TASK_CONTROL_BLOCKED_BY_MISSING_BOUNDARY",
+            "cancel_task_execution requires ControlPlaneMutationAuthorizationBoundary",
+            policy_action="DENY",
+        )
+
+    mutation_request = build_cancel_task_execution_mutation_request(
+        principal=principal,
+        tenant_id=task.tenant_id,
+        task_id=binding.task_id,
+        run_id=binding.run_id,
+        mutation_id=normalized_mutation_id,
+        current_state=task.state,
+        approval_evidence_ref=approval_evidence_ref,
+    )
+    authorization_result = mutation_boundary.authorize(mutation_request)
+    try:
+        authorization_result = enforce_task_control_authorization_result(
+            authorization_result,
+            operation="cancel_task_execution",
+        )
+    except TaskControlGovernanceBlockedError as exc:
+        return _blocked_result(task_id=task_id, detail=exc.blocker_code.lower(), exc=exc)
+
+    revalidated = await _revalidate_cancel_binding(
+        task_id=task_id,
+        expected_run_id=validated_run_id,
+        expected_tenant_id=task.tenant_id,
+        expected_current_revision=mutation_request.current_revision,
+    )
+    if revalidated is None:
+        return TaskControlResult(
+            task_id=task_id,
+            action="cancel",
+            accepted=False,
+            detail="stale_active_binding",
+            authorization_evidence=authorization_result.evidence,
+        )
+
+    _execute_cooperative_cancel(revalidated.task, reason=reason)
     return TaskControlResult(
         task_id=task_id,
         action="cancel",
         accepted=True,
         detail=reason,
-        state=task.state.value,
+        state=revalidated.task.state.value,
+        authorization_evidence=authorization_result.evidence,
     )
+
+
+async def _revalidate_cancel_binding(
+    *,
+    task_id: str,
+    expected_run_id: RunId,
+    expected_tenant_id: str,
+    expected_current_revision: str,
+) -> ActiveTaskBinding | None:
+    binding = await ActiveTaskRegistry.get(task_id)
+    if binding is None:
+        return None
+    if binding.run_id != expected_run_id:
+        return None
+    if binding.task.tenant_id != expected_tenant_id:
+        return None
+    if task_execution_state_revision(state=binding.task.state.value) != expected_current_revision:
+        return None
+    if not is_task_execution_cancellable(
+        state=binding.task.state,
+        cancellation_requested=CancellationCoordinator.is_requested(binding.task.metadata),
+    ):
+        return None
+    return binding
 
 
 async def set_task_autonomy(task_id: str, level: AutonomyLevel) -> TaskControlResult:

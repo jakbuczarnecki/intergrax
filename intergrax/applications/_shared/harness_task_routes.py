@@ -22,8 +22,15 @@ from intergrax.applications._shared.harness_principal import (
 )
 from intergrax.applications._shared.task_control import (
     HitlResumeValidationError,
-    cancel_active_task,
+    TaskControlValidationError,
+    governed_cancel_active_task,
     set_task_autonomy,
+)
+from intergrax.applications._shared.task_control_governance import (
+    TaskControlGovernanceBlockedError,
+)
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
 )
 from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
@@ -44,6 +51,14 @@ class HarnessAutonomyRequest(BaseModel):
     autonomy_level: AutonomyLevel
 
 
+class HarnessCancelRequest(BaseModel):
+    mutation_id: str = Field(min_length=1)
+    run_id: str = Field(min_length=1)
+    reason: str = "operator_cancel"
+    tenant_id: str | None = None
+    approval_evidence_ref: str | None = None
+
+
 class HarnessResumeRequest(BaseModel):
     tenant_id: str = "default"
     resume_token: str = Field(min_length=1)
@@ -57,6 +72,41 @@ class HarnessTaskControlResponse(BaseModel):
     detail: str = ""
     state: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+    authorization_evidence: dict[str, Any] | None = None
+    authorization_scope: dict[str, Any] | None = None
+    blocker_code: str | None = None
+    policy_action: str | None = None
+
+
+def _raise_task_control_http(exc: Exception) -> None:
+    if isinstance(exc, TaskControlGovernanceBlockedError):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=exc.governance_http_detail(),
+        ) from exc
+    if isinstance(exc, TaskControlValidationError):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+    raise exc
+
+
+def _task_control_response(result) -> HarnessTaskControlResponse:
+    evidence = result.authorization_evidence
+    scope = result.authorization_scope
+    return HarnessTaskControlResponse(
+        task_id=result.task_id,
+        action=result.action,
+        accepted=result.accepted,
+        detail=result.detail,
+        state=result.state,
+        metadata=dict(result.metadata or {}),
+        authorization_evidence=evidence.model_dump(mode="json") if evidence is not None else None,
+        authorization_scope=scope.model_dump(mode="json") if scope is not None else None,
+        blocker_code=result.blocker_code,
+        policy_action=result.policy_action,
+    )
 
 
 def mount_harness_task_routes(
@@ -67,6 +117,7 @@ def mount_harness_task_routes(
     checkpoint_store: TaskCheckpointPersistence | None = None,
     task_enricher: Callable[[Task], Task] | None = None,
     async_index: AsyncTaskIndexProtocol | None = None,
+    mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
 ) -> APIRouter:
     router = APIRouter(
         prefix=prefix,
@@ -94,18 +145,68 @@ def mount_harness_task_routes(
         return await get_async_status(task_id, index=async_index)
 
     @router.post("/{task_id}/cancel", response_model=HarnessTaskControlResponse)
-    async def cancel_task(task_id: str) -> HarnessTaskControlResponse:
-        result = await cancel_active_task(task_id)
+    async def cancel_task(
+        task_id: str,
+        body: HarnessCancelRequest,
+        _request: Request,
+        principal=Depends(resolve_harness_authenticated_principal),
+    ) -> HarnessTaskControlResponse:
+        if principal is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="authenticated_principal_required",
+            )
+        identity = harness_principal_to_request_identity(principal)
+        if body.tenant_id is not None:
+            reject_identity_assertion_conflicts(
+                canonical=identity,
+                asserted_tenant_id=body.tenant_id,
+                asserted_user_id=None,
+            )
+        try:
+            result = await governed_cancel_active_task(
+                task_id=task_id,
+                run_id=body.run_id,
+                mutation_id=body.mutation_id,
+                principal=identity,
+                mutation_boundary=mutation_boundary,
+                reason=body.reason,
+                approval_evidence_ref=body.approval_evidence_ref,
+            )
+        except TaskControlGovernanceBlockedError as exc:
+            _raise_task_control_http(exc)
+        except TaskControlValidationError as exc:
+            _raise_task_control_http(exc)
         if not result.accepted:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=result.detail)
-        return HarnessTaskControlResponse(
-            task_id=result.task_id,
-            action=result.action,
-            accepted=result.accepted,
-            detail=result.detail,
-            state=result.state,
-            metadata=dict(result.metadata or {}),
-        )
+            if result.detail == "task_not_active":
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=result.detail,
+                )
+            if result.detail in {"run_id_mismatch", "stale_active_binding", "task_not_cancellable"}:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=result.detail,
+                )
+            if result.blocker_code is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail={
+                        "blocker_code": result.blocker_code,
+                        "policy_action": result.policy_action,
+                        "authorization_evidence": (
+                            result.authorization_evidence.model_dump(mode="json")
+                            if result.authorization_evidence is not None
+                            else None
+                        ),
+                        "authorization_scope": (
+                            result.authorization_scope.model_dump(mode="json")
+                            if result.authorization_scope is not None
+                            else None
+                        ),
+                    },
+                )
+        return _task_control_response(result)
 
     @router.post("/{task_id}/autonomy", response_model=HarnessTaskControlResponse)
     async def set_autonomy(task_id: str, body: HarnessAutonomyRequest) -> HarnessTaskControlResponse:

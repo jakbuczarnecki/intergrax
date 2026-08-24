@@ -8,7 +8,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from intergrax.applications._shared.task_control import cancel_active_task, set_task_autonomy
+from intergrax.applications._shared.task_control import governed_cancel_active_task, set_task_autonomy
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.agent_run_enums import PrincipalType
+from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
+)
 from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
@@ -216,13 +222,39 @@ async def test_taskreg_12_old_runner_cleanup_cannot_unregister_newer_binding() -
 
 
 @pytest.mark.asyncio
-async def test_taskreg_13_cancel_active_task_targets_binding_task() -> None:
+async def test_taskreg_13_governed_cancel_active_task_targets_binding_task() -> None:
     task = _task()
     run_id = mint_run_id()
     await ActiveTaskRegistry.register(task, run_id)
-    result = await cancel_active_task(str(task.task_id))
+    boundary = ControlPlaneMutationAuthorizationBoundary(
+        evaluator=_AllowCancelEvaluator(),
+    )
+    result = await governed_cancel_active_task(
+        task_id=str(task.task_id),
+        run_id=str(run_id),
+        mutation_id="mut-taskreg-13",
+        principal=RequestIdentity(
+            tenant_id=task.tenant_id,
+            user_id="operator",
+            principal_type=PrincipalType.USER,
+            auth_subject="operator",
+        ),
+        mutation_boundary=boundary,
+    )
     assert result.accepted is True
     assert CancellationCoordinator.is_requested(task.metadata)
+
+
+class _AllowCancelEvaluator:
+    def evaluate(self, request):  # type: ignore[no-untyped-def]
+        del request
+        return PolicyDecision(
+            action=PolicyAction.ALLOW,
+            reason="test_allow",
+            enforcement_level=EnforcementLevel.MANDATORY,
+            policy_rule_id="task_control.test_allow",
+            decision_id="dec-allow",
+        )
 
 
 @pytest.mark.asyncio

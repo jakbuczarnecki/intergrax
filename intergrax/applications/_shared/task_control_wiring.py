@@ -25,6 +25,9 @@ from intergrax.applications._shared.acp_checkpoint_task_enricher import (
 )
 from intergrax.applications._shared.reliability_wiring import apply_reliability_task_defaults
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
+)
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
@@ -69,6 +72,7 @@ def wire_harness_task_control(
     checkpoint_store: TaskCheckpointPersistence | None = None,
     task_route_prefix: str = "/v1/tasks",
     extra_enricher: TaskEnricher | None = None,
+    mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
 ) -> TaskEnricher:
     """
     Mount optional harness task HTTP routes and return a task enricher for intake/MCP.
@@ -85,6 +89,7 @@ def wire_harness_task_control(
             prefix=task_route_prefix,
             task_enricher=enricher,
             async_index=async_index,
+            mutation_boundary=mutation_boundary,
         )
     return enricher
 
