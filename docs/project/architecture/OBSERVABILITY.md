@@ -38,6 +38,7 @@ Observability addresses this through typed identity, `RuntimeEvent`, HOS, strict
 | **K-only reconstruction** | `HistoricalKnowledgeProjection` at watermark **K** — **Done**; not full bitemporal |
 | **Bitemporal scope** | E and K shipped slices; Valid/System Time + combined E+K query **planned** |
 | **Problem plane** | `PlatformProblemSignal` — classified operator attention; not execution history |
+| **Causal evidence** | `PlatformCausalEvidence` — cross-boundary transport→execution relation; not execution history |
 | **Redaction** | `DiagnosticPayload.redact()` + export policy — strongest on canonical/export paths |
 | **Export** | HOS → policy-safe envelope → Integration vendor backend |
 | **External sinks** | OTLP, Langfuse, Sentry, Phoenix, Datadog — destinations, not semantic owners |
@@ -808,6 +809,12 @@ await reporter.report(
 - Do **not** add `ObservabilityEmitter.emit_problem`, automatic global exception hooks, or `RuntimeEventBus` subscribers that auto-emit problems (deferred / out of scope for OBS-PROBLEM-3).
 
 **Code references:** `problem_signal.py` · `problem_export.py` · `problem_reporter.py` · `export_boundary.py` · `export_policy.py`. **Plan:** OBS-PROBLEM-3 in [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md).
+
+### Causal evidence plane (DIAG-1)
+
+`PlatformCausalEvidence` records an immutable, tenant-scoped causal fact between existing identity domains — for example a provider-neutral async transport task (`MessageBusTaskRef`) that **triggered** canonical runtime execution (`RuntimeExecutionRef` with `TaskId` / `RunId` / `AttemptId`). It does **not** extend `RuntimeEvent`, mint synthetic execution IDs for transport, or duplicate retry lineage already expressed by execution history. Emission reuses the HOS export path (`envelope_from_causal_evidence` → `ExportRecordKind.DIAGNOSTIC`).
+
+**Code references:** `causal_evidence.py` · `causal_evidence_export.py` · `export_boundary.py`.
 
 ---
 
