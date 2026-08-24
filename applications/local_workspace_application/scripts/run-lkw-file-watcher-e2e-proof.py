@@ -18,6 +18,7 @@ import subprocess
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -49,6 +50,12 @@ if str(_AGENTS_ROOT) not in sys.path:
 from local_search.diagnostics import (  # noqa: E402  # pyright: ignore[reportMissingImports]
     SearchSummaryReason,
     parse_search_summary_reason,
+)
+from local_workspace_application.file_watcher.execution_evidence import (  # noqa: E402
+    BackgroundIngestExecutionIdentityEvidence,
+    FileWatcherIngestEnqueuedRecord,
+    extract_file_watcher_ingest_enqueued_records,
+    validate_background_ingest_execution_identity_evidence,
 )
 
 _APPLICATION_ID = "local_workspace"
@@ -163,6 +170,12 @@ class FileWatcherE2EWorkloadEvidence:
     source_file_modified_after_index: bool
     restart_mode: str
     volumes_removed: bool
+    message_bus_task_id: str
+    change_token: str
+    broker_run_id: str
+    idempotency_key: str
+    runtime_task_id: str
+    runtime_run_id: str
 
     @property
     def task_topic_increased(self) -> bool:
@@ -236,6 +249,22 @@ def validate_file_watcher_e2e_workload_evidence(
         raise ValueError("watcher_final_checkpoint_not_saved")
     if not evidence.checkpoint_restore_verified:
         raise ValueError("watcher_restore_not_proven")
+    if not evidence.message_bus_task_id.strip():
+        raise ValueError("message_bus_task_id_missing")
+    if not evidence.change_token.strip():
+        raise ValueError("change_token_missing")
+    if not evidence.broker_run_id.strip():
+        raise ValueError("broker_run_id_missing")
+    if not evidence.idempotency_key.strip():
+        raise ValueError("idempotency_key_missing")
+    if evidence.broker_run_id != evidence.idempotency_key:
+        raise ValueError("broker_run_id_idempotency_key_mismatch")
+    if not evidence.runtime_task_id.strip():
+        raise ValueError("runtime_task_id_missing")
+    if not evidence.runtime_run_id.strip():
+        raise ValueError("runtime_run_id_missing")
+    if evidence.message_bus_task_id == evidence.runtime_task_id:
+        raise ValueError("message_bus_runtime_task_id_collapsed")
     if evidence.source_file_modified_after_index:
         raise ValueError("source_file_modified_after_index")
 
@@ -314,6 +343,81 @@ def sidecar_result_proves_checkpoint_restore(
     if result.get("error_id") is not None:
         return False
     return True
+
+
+def fetch_watcher_service_logs(
+    *,
+    base_compose: Path,
+    kafka_compose: Path,
+    watcher_compose: Path,
+    mongodb_compose: Path,
+) -> str:
+    completed = run_compose(
+        "logs",
+        "--no-color",
+        "--no-log-prefix",
+        "--tail",
+        "400",
+        _WATCHER_SERVICE,
+        base_compose=base_compose,
+        kafka_compose=kafka_compose,
+        watcher_compose=watcher_compose,
+        mongodb_compose=mongodb_compose,
+        check=False,
+        timeout=60.0,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError("watcher_logs_unavailable")
+    return completed.stdout
+
+
+def select_watcher_ingest_enqueued_record(
+  records: Sequence[FileWatcherIngestEnqueuedRecord],
+) -> FileWatcherIngestEnqueuedRecord | None:
+    if not records:
+        return None
+    return records[-1]
+
+
+def poll_background_task_execution_identity(
+    *,
+    base_url: str,
+    task_id: str,
+    provider: str,
+    tenant_id: str,
+    deadline: float,
+) -> BackgroundIngestExecutionIdentityEvidence | None:
+    status_url = (
+        f"{base_url.rstrip('/')}/v1/local_workspace/proof/background-task/status/"
+        f"{urllib.parse.quote(provider, safe='')}/"
+        f"{urllib.parse.quote(task_id, safe='')}"
+        f"?tenant_id={urllib.parse.quote(tenant_id, safe='')}"
+    )
+    while time.monotonic() < deadline:
+        try:
+            payload = request_json(status_url, timeout=10.0)
+        except (urllib.error.URLError, TimeoutError, ValueError, OSError):
+            time.sleep(2.0)
+            continue
+        if not bool(payload.get("completed")):
+            time.sleep(2.0)
+            continue
+        if str(payload.get("task_status", "")) != "SUCCEEDED":
+            return None
+        if not bool(payload.get("has_result")):
+            return None
+        try:
+            return BackgroundIngestExecutionIdentityEvidence(
+                message_bus_task_id=task_id,
+                broker_run_id=str(payload.get("broker_run_id", "")),
+                idempotency_key=str(payload.get("idempotency_key", "")),
+                change_token=str(payload.get("change_token", "")),
+                runtime_task_id=str(payload.get("runtime_task_id", "")),
+                runtime_run_id=str(payload.get("runtime_run_id", "")),
+            )
+        except ValueError:
+            return None
+    return None
 
 
 def fail(reason: str, **safe_fields: object) -> int:
@@ -1007,8 +1111,8 @@ def build_file_watcher_e2e_proof_receipt(
         application_id=_APPLICATION_ID,
         result=ProofReceiptResult.PASS,
         run_id=run_id,
-        correlation_id=None,
-        task_id=None,
+        correlation_id=workload_evidence.change_token,
+        task_id=workload_evidence.message_bus_task_id,
         provider_evidence={
             "message_bus_provider": "kafka",
             "worker_execution": "asynchronous",
@@ -1030,6 +1134,11 @@ def build_file_watcher_e2e_proof_receipt(
             "task_topic_increased": workload_evidence.task_topic_increased,
             "task_count_before_restart": (workload_evidence.task_count_before_restart),
             "task_count_after_restart": workload_evidence.task_count_after_restart,
+            "message_bus_task_id": workload_evidence.message_bus_task_id,
+            "change_token": workload_evidence.change_token,
+            "broker_run_id": workload_evidence.broker_run_id,
+            "runtime_task_id": workload_evidence.runtime_task_id,
+            "runtime_run_id": workload_evidence.runtime_run_id,
             "duplicate_enqueue_after_restart": (
                 workload_evidence.duplicate_enqueue_after_restart
             ),
@@ -1043,6 +1152,12 @@ def build_file_watcher_e2e_proof_receipt(
             "marker": workload_evidence.marker,
             "proof_filename": workload_evidence.proof_filename,
             "container_source_path": workload_evidence.container_source_path,
+            "message_bus_task_id": workload_evidence.message_bus_task_id,
+            "change_token": workload_evidence.change_token,
+            "broker_run_id": workload_evidence.broker_run_id,
+            "idempotency_key": workload_evidence.idempotency_key,
+            "runtime_task_id": workload_evidence.runtime_task_id,
+            "runtime_run_id": workload_evidence.runtime_run_id,
             "embedding_warmup_completed": (
                 workload_evidence.embedding_warmup_completed
             ),
@@ -1208,6 +1323,12 @@ def build_pass_evidence(
         "marker": workload_evidence.marker,
         "proof_filename": workload_evidence.proof_filename,
         "container_source_path": workload_evidence.container_source_path,
+        "message_bus_task_id": workload_evidence.message_bus_task_id,
+        "change_token": workload_evidence.change_token,
+        "broker_run_id": workload_evidence.broker_run_id,
+        "idempotency_key": workload_evidence.idempotency_key,
+        "runtime_task_id": workload_evidence.runtime_task_id,
+        "runtime_run_id": workload_evidence.runtime_run_id,
         "task_topic": _TASK_TOPIC,
         "task_count_before_file": workload_evidence.task_count_before_file,
         "task_count_after_file": workload_evidence.task_count_after_file,
@@ -1495,6 +1616,48 @@ def main(argv: list[str] | None = None) -> int:
             task_count_after_file=task_count_after_file,
         )
 
+    try:
+        watcher_logs = fetch_watcher_service_logs(
+            base_compose=base_compose,
+            kafka_compose=kafka_compose,
+            watcher_compose=watcher_compose,
+            mongodb_compose=mongodb_compose,
+        )
+    except RuntimeError:
+        return fail("watcher_logs_unavailable")
+
+    watcher_record = select_watcher_ingest_enqueued_record(
+        extract_file_watcher_ingest_enqueued_records(watcher_logs)
+    )
+    if watcher_record is None:
+        return fail("watcher_enqueue_record_missing")
+
+    worker_identity = poll_background_task_execution_identity(
+        base_url=base_url,
+        task_id=watcher_record.task_id,
+        provider=watcher_record.provider,
+        tenant_id=watcher_record.tenant_id,
+        deadline=min(deadline, time.monotonic() + 120.0),
+    )
+    if worker_identity is None:
+        return fail(
+            "background_task_execution_identity_missing",
+            message_bus_task_id=watcher_record.task_id,
+            provider=watcher_record.provider,
+        )
+    try:
+        validate_background_ingest_execution_identity_evidence(
+            watcher_record=watcher_record,
+            worker_evidence=worker_identity,
+        )
+    except ValueError as exc:
+        return fail(
+            "execution_identity_linkage_invalid",
+            failure_reason=str(exc),
+            message_bus_task_id=watcher_record.task_id,
+            runtime_task_id=worker_identity.runtime_task_id,
+        )
+
     task_count_before_restart = task_count_after_file
 
     try:
@@ -1734,6 +1897,12 @@ def main(argv: list[str] | None = None) -> int:
         source_file_modified_after_index=source_file_modified_after_index,
         restart_mode="non_destructive",
         volumes_removed=False,
+        message_bus_task_id=watcher_record.task_id,
+        change_token=watcher_record.change_token,
+        broker_run_id=watcher_record.broker_run_id,
+        idempotency_key=watcher_record.idempotency_key,
+        runtime_task_id=worker_identity.runtime_task_id,
+        runtime_run_id=worker_identity.runtime_run_id,
     )
     try:
         validate_file_watcher_e2e_workload_evidence(workload_evidence)

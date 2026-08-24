@@ -38,6 +38,8 @@ from local_workspace_application.host.settings import LocalWorkspaceBackendSetti
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
+_IDEMPOTENCY_KEY = "lkw.background_ingest.v1:0123456789abcdef0123456789abcdef"
+
 
 def _snap(path: Path, *, size: int, mtime: int) -> FileSnapshot:
     return FileSnapshot(path=str(path), size_bytes=size, modified_time_ns=mtime)
@@ -559,9 +561,11 @@ def test_save_after_every_cycle_status(tmp_path: Path, status: str) -> None:
             status="enqueued",
             actionable_path_count=1,
             change_token="sha256:" + ("a" * 64),
-            task_id="task-1",
+            task_id=_IDEMPOTENCY_KEY,
             provider="fake",
             tenant_id="tenant-a",
+            broker_run_id=_IDEMPOTENCY_KEY,
+            idempotency_key=_IDEMPOTENCY_KEY,
         )
     elif status == "deletions_only":
         cycle = FileWatcherCycleResult(
@@ -720,9 +724,11 @@ def test_checkpoint_failure_after_enqueue_success(tmp_path: Path) -> None:
                 status="enqueued",
                 actionable_path_count=1,
                 change_token="sha256:" + ("c" * 64),
-                task_id="task-1",
+                task_id=_IDEMPOTENCY_KEY,
                 provider="fake",
                 tenant_id="tenant-a",
+                broker_run_id=_IDEMPOTENCY_KEY,
+                idempotency_key=_IDEMPOTENCY_KEY,
             ),
         ],
         checkpoint=_empty_checkpoint(tmp_path),

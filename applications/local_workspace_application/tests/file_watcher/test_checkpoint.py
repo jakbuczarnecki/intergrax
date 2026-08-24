@@ -13,6 +13,7 @@ import pytest
 from pydantic import ValidationError
 
 from local_workspace_application.background_ingest.contracts import (
+    LkwBackgroundIngestJob,
     background_ingest_idempotency_key,
 )
 from local_workspace_application.file_watcher import (
@@ -92,10 +93,12 @@ class _FakeEnqueuer:
         self._calls += 1
         if self._calls <= self._fail_times:
             raise RuntimeError("enqueue boom")
+        assert isinstance(job, LkwBackgroundIngestJob)
+        key = background_ingest_idempotency_key(job)
         return MessageBusEnqueueOutput(
-            task_id="task-1",
+            task_id=key,
             provider="fake",
-            tenant_id="tenant-a",
+            tenant_id=job.tenant_id,
         )
 
 

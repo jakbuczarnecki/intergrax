@@ -72,6 +72,11 @@ class LocalWorkspaceBackgroundTaskProofStatusResponseV1(BaseModel):
     completed: bool = False
     has_result: bool = False
     error_message: str = ""
+    runtime_task_id: str = ""
+    runtime_run_id: str = ""
+    broker_run_id: str = ""
+    change_token: str = ""
+    idempotency_key: str = ""
 
 
 def _proof_endpoint_enabled(settings: LocalWorkspaceBackendSettings) -> bool:
@@ -176,6 +181,38 @@ async def enqueue_local_workspace_background_task_proof(
     )
 
 
+def _decode_background_task_result_identity(
+  result_output_base64: str,
+) -> dict[str, str]:
+    if not result_output_base64.strip():
+        return {}
+    try:
+        import base64
+        import json
+
+        raw = base64.b64decode(result_output_base64.encode("ascii"))
+        parsed = json.loads(raw.decode("utf-8"))
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        return {}
+    if not isinstance(parsed, dict):
+        return {}
+    execution_identity = parsed.get("execution_identity")
+    identity_payload: dict[str, object] = {}
+    if isinstance(execution_identity, dict):
+        identity_payload = execution_identity
+    return {
+        "runtime_task_id": str(
+            identity_payload.get("runtime_task_id") or parsed.get("runtime_task_id") or ""
+        ),
+        "runtime_run_id": str(
+            identity_payload.get("runtime_run_id") or parsed.get("runtime_run_id") or ""
+        ),
+        "broker_run_id": str(identity_payload.get("broker_run_id") or ""),
+        "change_token": str(identity_payload.get("change_token") or ""),
+        "idempotency_key": str(identity_payload.get("idempotency_key") or ""),
+    }
+
+
 def inspect_local_workspace_background_task_status(
     *,
     wiring_context: ToolWiringContext,
@@ -193,6 +230,7 @@ def inspect_local_workspace_background_task_status(
         MessageBusGetResultInput(task_id=task_id, provider=provider, tenant_id=tenant_id),
     )
     terminal = status_output.status in {TaskStatus.SUCCEEDED, TaskStatus.FAILED}
+    identity_fields = _decode_background_task_result_identity(result_output.output_base64)
     return LocalWorkspaceBackgroundTaskProofStatusResponseV1(
         task_id=task_id,
         provider=provider,
@@ -201,6 +239,11 @@ def inspect_local_workspace_background_task_status(
         completed=terminal,
         has_result=result_output.completed,
         error_message=result_output.error_message or "",
+        runtime_task_id=identity_fields.get("runtime_task_id", ""),
+        runtime_run_id=identity_fields.get("runtime_run_id", ""),
+        broker_run_id=identity_fields.get("broker_run_id", ""),
+        change_token=identity_fields.get("change_token", ""),
+        idempotency_key=identity_fields.get("idempotency_key", ""),
     )
 
 

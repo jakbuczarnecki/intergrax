@@ -37,6 +37,9 @@ from local_workspace_application.file_watcher.checkpoint import (
     file_watcher_checkpoint_path,
     restore_file_watcher_runtime,
 )
+from local_workspace_application.file_watcher.execution_evidence import (
+    FileWatcherIngestEnqueuedRecord,
+)
 from local_workspace_application.file_watcher.runtime import (
     FileWatcherCycleStatus,
     FileWatcherRuntime,
@@ -489,6 +492,33 @@ class FileWatcherSidecar:
                 self._logger.warning(
                     "file_watcher_enqueue_failed",
                     extra={"error_id": cycle.error_id},
+                )
+            elif cycle.status == "enqueued":
+                assert cycle.change_token is not None
+                assert cycle.task_id is not None
+                assert cycle.provider is not None
+                assert cycle.tenant_id is not None
+                assert cycle.broker_run_id is not None
+                assert cycle.idempotency_key is not None
+                record = FileWatcherIngestEnqueuedRecord(
+                    change_token=cycle.change_token,
+                    task_id=cycle.task_id,
+                    provider=cycle.provider,
+                    tenant_id=cycle.tenant_id,
+                    broker_run_id=cycle.broker_run_id,
+                    idempotency_key=cycle.idempotency_key,
+                )
+                print(record.model_dump_json(), flush=True)
+                self._logger.info(
+                    "file_watcher_ingest_enqueued",
+                    extra={
+                        "cycle_status": cycle.status,
+                        "detected_count": cycle.detected_change_count,
+                        "actionable_count": cycle.actionable_path_count,
+                        "deleted_count": cycle.deleted_path_count,
+                        "cycles_completed": cycles_completed,
+                        "restored": restored_from_checkpoint,
+                    },
                 )
             else:
                 self._logger.info(

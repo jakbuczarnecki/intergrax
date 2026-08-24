@@ -37,6 +37,11 @@ class BackgroundIngestWorkerOutput(BaseModel):
     answer: str | None = None
     agent_id: str | None = None
     metadata: dict[str, object] = Field(default_factory=dict)
+    runtime_task_id: str | None = None
+    runtime_run_id: str | None = None
+    broker_run_id: str | None = None
+    change_token: str | None = None
+    idempotency_key: str | None = None
     schema_version: str = "lkw.background_ingest_worker.v1"
 
 
@@ -90,11 +95,29 @@ def make_background_ingest_worker_handler(
                 if isinstance(parsed, dict):
                     decoded = parsed
 
+            execution_identity = decoded.get("execution_identity")
+            identity_payload: dict[str, object] = {}
+            if isinstance(execution_identity, dict):
+                identity_payload = execution_identity
+
             return ToolExecutionResult.ok(
                 BackgroundIngestWorkerOutput(
                     answer=str(decoded.get("answer") or ""),
                     agent_id=str(decoded.get("agent_id") or "") or None,
                     metadata=dict(decoded.get("metadata") or {}),
+                    runtime_task_id=(
+                        str(identity_payload.get("runtime_task_id") or decoded.get("task_id") or "")
+                        or None
+                    ),
+                    runtime_run_id=(
+                        str(identity_payload.get("runtime_run_id") or decoded.get("run_id") or "")
+                        or None
+                    ),
+                    broker_run_id=str(identity_payload.get("broker_run_id") or run_id) or None,
+                    change_token=str(identity_payload.get("change_token") or "") or None,
+                    idempotency_key=(
+                        str(identity_payload.get("idempotency_key") or resolved_idempotency) or None
+                    ),
                 )
             )
         except Exception as exc:  # noqa: BLE001 - worker plane normalizes failures

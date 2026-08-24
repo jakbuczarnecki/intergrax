@@ -107,14 +107,35 @@ Host-side size and `modified_time_ns` are captured after index and after restart
 
 Unchanged source after restart must not increase the Kafka task topic count.
 
+## Execution-identity evidence
+
+After search succeeds and Kafka count increases, the proof also requires measured
+execution-identity linkage from the real watcher and worker path:
+
+```text
+watcher sidecar JSON (lkw.file_watcher_ingest_enqueued.v1)
+  change_token
+  message_bus task_id (= broker run_id = idempotency_key on Kafka)
+  → message_bus.get_result via proof status route
+  → runtime_task_id (platform task_*)
+  → runtime_run_id (platform run_*)
+```
+
+The proof fails closed when watcher enqueue evidence, worker result evidence, or
+cross-boundary linkage is missing or contradictory. Kafka topic count alone is
+not sufficient identity evidence.
+
+`AttemptId` is not persisted through the background-ingest worker result payload
+today; that boundary remains a platform observability gap.
+
 ## ProofReceipt mapping
 
 ```text
 proof_kind = file_watcher_persistent_search
 application_id = local_workspace
 run_id = proof marker
-task_id = None
-correlation_id = None
+task_id = message_bus task_id from watcher enqueue evidence
+correlation_id = change_token
 ```
 
 LKW maps in-memory live evidence into a platform `ProofReceipt` and records it through

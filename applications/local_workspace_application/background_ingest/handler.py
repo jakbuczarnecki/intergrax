@@ -60,6 +60,8 @@ def build_background_ingest_runtime_task(
         metadata["background_ingest_correlation_id"] = job.correlation_id
     if job.reason is not None:
         metadata["background_ingest_reason"] = job.reason
+    if job.change_token is not None:
+        metadata["background_ingest_change_token"] = job.change_token
 
     return Task(
         task_id=mint_task_id(),
@@ -72,7 +74,12 @@ def build_background_ingest_runtime_task(
     )
 
 
-def _runtime_result_output(result: RuntimeTaskResult) -> bytes:
+def _runtime_result_output(
+    result: RuntimeTaskResult,
+    *,
+    request: TaskRequest,
+    job: LkwBackgroundIngestJob,
+) -> bytes:
     payload = {
         "task_id": result.task_id,
         "run_id": result.run_id,
@@ -80,6 +87,13 @@ def _runtime_result_output(result: RuntimeTaskResult) -> bytes:
         "agent_id": result.agent_id,
         "answer": result.answer,
         "metadata": result.metadata,
+        "execution_identity": {
+            "runtime_task_id": result.task_id,
+            "runtime_run_id": result.run_id,
+            "broker_run_id": request.run_id,
+            "idempotency_key": request.idempotency_key,
+            "change_token": job.change_token,
+        },
     }
     return json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
 
@@ -115,6 +129,6 @@ async def handle_background_ingest_task_request(
 
     return QueueTaskResult(
         status=TaskStatus.SUCCEEDED,
-        output=_runtime_result_output(runtime_result),
+        output=_runtime_result_output(runtime_result, request=request, job=job),
         attempts=1,
     )
