@@ -65,7 +65,6 @@ def resolve_kubernetes_backend() -> tuple[InMemoryKubernetesScaler | object, Kub
 class ProductionCapacityAdapters:
     kubernetes: InMemoryKubernetesScaler | object
     celery: CeleryProductionAdapter
-    provisioner: ScalingProvisioner
     governed_executor: GovernedCapacityMutationExecutor
     kubernetes_backend: KubernetesBackendKind
 
@@ -91,7 +90,6 @@ def build_production_capacity_adapters(
     return ProductionCapacityAdapters(
         kubernetes=kubernetes,
         celery=celery,
-        provisioner=provisioner,
         governed_executor=governed_executor,
         kubernetes_backend=backend_kind,
     )

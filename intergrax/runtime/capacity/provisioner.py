@@ -95,7 +95,7 @@ class ScalingProvisioner:
             raise RuntimeError("celery backend not configured")
         return self._celery.get_worker_count()
 
-    def apply_authorized_k8s_target(
+    def _apply_authorized_k8s_target(
         self,
         *,
         deployment: str,
@@ -113,7 +113,7 @@ class ScalingProvisioner:
             )
         return self._kubernetes.scale_workload(deployment=deployment, replicas=replicas)
 
-    def apply_authorized_celery_target(
+    def _apply_authorized_celery_target(
         self,
         *,
         target_workers: int,

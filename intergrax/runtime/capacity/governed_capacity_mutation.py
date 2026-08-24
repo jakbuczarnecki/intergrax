@@ -100,7 +100,7 @@ class GovernedCapacityMutationExecutor:
                 observed_current=observed_current,
                 deployment=deployment,
             )
-        self._provisioner.apply_authorized_k8s_target(
+        self._provisioner._apply_authorized_k8s_target(
             deployment=deployment,
             replicas=target_replicas,
             authorized_current=current_replicas,
@@ -157,7 +157,7 @@ class GovernedCapacityMutationExecutor:
                 observed_current=observed_current,
                 pool_id=pool_id,
             )
-        self._provisioner.apply_authorized_celery_target(
+        self._provisioner._apply_authorized_celery_target(
             target_workers=target_workers,
             authorized_current=current_workers,
         )
