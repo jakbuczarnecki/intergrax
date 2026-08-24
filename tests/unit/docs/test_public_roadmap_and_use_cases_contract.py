@@ -191,7 +191,7 @@ _FORBIDDEN_READER_MAINTAINER_PHRASES = (
 _ROADMAP_NEGATIVE_SEMANTICS = (
     "no finished hosted saas",
     "no claim that mixed indexed + authorized live hybrid ask is complete",
-    "no claim of complete live-provider access",
+    "no claim of complete external live-provider access",
     "no completed problem/customer discovery, real-user validation",
     "commercial validation",
     "no claim of universal production readiness",
@@ -546,7 +546,7 @@ def test_indexed_hybrid_ask_claim_boundary_across_public_docs(
     )
     assert "bounded indexed ask path exists" in next_section
     assert "mixed indexed + authorized live hybrid ask remains incomplete" in next_section
-    assert "complete live-provider access remains incomplete" in next_section
+    assert "complete external live-provider access remains incomplete" in next_section
 
     # 4. No public document positively claims complete Hybrid Ask.
     # Negated forms such as "No claim that Hybrid Ask is complete" are allowed.

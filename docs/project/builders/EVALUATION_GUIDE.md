@@ -68,7 +68,7 @@ Do not record a result against a moving branch state. Normal self-service evalua
 
 Write the **CLAIM BEING TESTED** before executing commands. Also write **WHAT THE PATH DOES NOT PROVE**.
 
-For example, an indexed LKW path may support a bounded indexed Ask result. It does not automatically prove mixed indexed + authorized live Hybrid Ask, complete live-provider access, production readiness, real-user validation, or commercial validation. Use [PROOFS](../proofs/PROOFS.md) for current boundaries; do not reproduce its status matrix here.
+For example, an indexed LKW path may support a bounded indexed Ask result. It does not automatically prove mixed indexed + authorized live Hybrid Ask, complete external live-provider access, production readiness, real-user validation, or commercial validation. Use [PROOFS](../proofs/PROOFS.md) for current boundaries; do not reproduce its status matrix here.
 
 ## 5. RUN THE CANONICAL PATH
 
