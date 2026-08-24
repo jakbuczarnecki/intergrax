@@ -1611,31 +1611,38 @@ def test_ecp_cpm53_live_kubernetes_backend_only_behind_governed_write_path(
     assert adapters.kubernetes_observation.get_replicas(deployment=_DEPLOYMENT) == 3
 
 
-_GOVERNED_EXECUTOR_PUBLIC_METHODS = frozenset({
-    "attach_scheduler_dependencies",
-    "prepare_k8s_pending_authorization",
-    "prepare_celery_pending_authorization",
-    "record_scheduler_applied",
-    "record_scheduler_blocked",
-    "resume_celery_workers",
-    "resume_k8s_deployment",
-    "scale_celery_workers",
-    "scale_k8s_deployment",
-    "with_approval_coordinator",
-})
-
-
 def test_ecp_cpm54_governed_executor_public_api_does_not_expose_scaling_provisioner() -> None:
     executor, _, _, _ = _build_executor()
-    assert "provisioner" not in GovernedCapacityMutationExecutor.__dict__
     with pytest.raises(AttributeError):
         executor.provisioner  # type: ignore[attr-defined]
-    public_callables = {
-        name
-        for name, value in GovernedCapacityMutationExecutor.__dict__.items()
-        if callable(value) and not name.startswith("_")
+
+    recording = _RecordingEvaluator()
+    adapters = build_production_capacity_adapters(
+        mutation_boundary=ControlPlaneMutationAuthorizationBoundary(
+            evaluator=recording,
+        ),
+        tenant_resolver=StaticEcpResourceTenantResolver(tenant_id=_TENANT),
+    )
+    assert {adapter_field.name for adapter_field in fields(ProductionCapacityAdapters)} == {
+        "governed_executor",
+        "kubernetes_backend",
+        "kubernetes_observation",
+        "celery_observation",
     }
-    assert public_callables == _GOVERNED_EXECUTOR_PUBLIC_METHODS
+
+    wiring, _, _, _asyncio = _build_production_scaling_wiring()
+    assert wiring.provisioner is None
+    assert wiring.scheduler is not None
+
+    adapters.governed_executor.scale_k8s_deployment(
+        principal=_service_principal(),
+        tenant_id=_TENANT,
+        mutation_id="cpm54-governed",
+        deployment=_DEPLOYMENT,
+        delta=1,
+    )
+    assert len(recording.calls) == 1
+    assert adapters.kubernetes_observation.get_replicas(deployment=_DEPLOYMENT) == 3
 
 
 def test_ecp_cpm55_production_wiring_attaches_scheduler_deps_without_provisioner_escape() -> None:
