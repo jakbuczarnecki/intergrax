@@ -14,9 +14,8 @@ from intergrax.runtime.nexus.budget.budget_enforcer import BudgetExceededError
 from intergrax.runtime.nexus.config_types import ToolInvocationMode
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tools.catalog_tool_planner import CatalogToolPlanner
-from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
 from intergrax.runtime.nexus.tools.tool_invocation_pattern import ToolInvocationStopReason
+from intergrax.runtime.nexus.tools.tool_invoker_protocol import ToolInvokerProtocol
 from intergrax.runtime.nexus.tools.tool_loop import run_bounded_tool_loop
 from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
@@ -85,19 +84,21 @@ class _IncidentScopedToolInvoker:
     def __init__(
         self,
         *,
-        inner: RuntimeToolInvoker,
+        inner: ToolInvokerProtocol,
+        registry: ToolRegistry,
         scope: IncidentScope,
         runtime_state: RuntimeState,
         investigation_phase: str,
     ) -> None:
         self._inner = inner
+        self._registry = registry
         self._scope = scope
         self._runtime_state = runtime_state
         self._investigation_phase = investigation_phase
 
     @property
     def registry(self) -> ToolRegistry:
-        return self._inner.registry
+        return self._registry
 
     def invoke(self, state: RuntimeState, request: object, agent_id: str | None = None) -> object:
         from intergrax.tools.execution_models import ToolExecutionRequest
@@ -297,9 +298,12 @@ def gather_incident_evidence(
 ) -> EvidenceGatheringResult:
     investigation_phase = "revision" if is_revision else "initial"
     planner = build_catalog_tool_planner(runtime_state=runtime_state, registry=registry)
-    inner_invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    canonical_invoker = runtime_state.context.config.tool_invoker
+    if canonical_invoker is None:
+        raise RuntimeError("incident_runtime_tool_invoker_missing")
     invoker = _IncidentScopedToolInvoker(
-        inner=inner_invoker,
+        inner=canonical_invoker,
+        registry=registry,
         scope=scope,
         runtime_state=runtime_state,
         investigation_phase=investigation_phase,

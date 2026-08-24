@@ -13,8 +13,13 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id, mint_task_id
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.nexus.tools.tool_invoker_protocol import ToolInvokerProtocol
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
+from intergrax.tools.execution_models import ToolExecutionRequest
+from intergrax.tools.registry import ToolRegistry
+from pydantic import BaseModel
 from platform_proofs.scenarios.ai_incident_investigation.evidence_gathering import (
     gather_incident_evidence,
 )
@@ -46,6 +51,67 @@ from tests.unit.platform_proofs.scenarios.ai_incident_investigation.planner_doub
 )
 
 pytestmark = pytest.mark.unit
+
+
+class _SentinelCanonicalInvoker:
+    """Test double proving evidence gathering delegates to config.tool_invoker."""
+
+    def __init__(self, *, inner: ToolInvokerProtocol, registry: ToolRegistry) -> None:
+        self._inner = inner
+        self._registry = registry
+        self.invoke_count = 0
+
+    @property
+    def registry(self) -> ToolRegistry:
+        return self._registry
+
+    def invoke(
+        self,
+        *,
+        state: object,
+        agent_id: str,
+        request: ToolExecutionRequest[BaseModel],
+    ) -> object:
+        self.invoke_count += 1
+        return self._inner.invoke(state=state, agent_id=agent_id, request=request)
+
+
+class _MarkedDecoratorInvoker:
+    """Decorator sentinel proving IncidentScope wrapper does not unwrap canonical invoker."""
+
+    marker_id = "incident-canonical-decorator-sentinel"
+
+    def __init__(self, inner: ToolInvokerProtocol) -> None:
+        self._inner = inner
+        self.wrapped_invocations = 0
+
+    @property
+    def registry(self) -> ToolRegistry:
+        return self._inner.registry
+
+    def invoke(
+        self,
+        *,
+        state: object,
+        agent_id: str,
+        request: ToolExecutionRequest[BaseModel],
+    ) -> object:
+        self.wrapped_invocations += 1
+        return self._inner.invoke(state=state, agent_id=agent_id, request=request)
+
+
+def _build_runtime_state(bundle) -> RuntimeState:
+    request = RuntimeRequest(
+        agent_id=INVESTIGATOR_AGENT_ID,
+        user_id="u",
+        session_id="s",
+        tenant_id="t",
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        message="investigate",
+    )
+    ctx = bundle.investigator.build_context(request)
+    return RuntimeState(context=ctx, request=request, run_id=request.run_id)
 
 
 def test_incident_scope_rejects_out_of_scope_line() -> None:
@@ -231,3 +297,105 @@ async def test_scope_violation_emits_diagnostic_without_unresolved_conversion(
     with pytest.raises(IncidentScopeViolationError):
         await bundle.investigator.run_step(step, exec_ctx)
     assert any(event.step == "incident_scope_rejection" for event in state.trace_events)
+
+
+def test_gather_incident_evidence_requires_runtime_config_tool_invoker() -> None:
+    bundle = build_runtime_bundle()
+    state = _build_runtime_state(bundle)
+    state.context.config.tool_invoker = None
+    with pytest.raises(RuntimeError, match="incident_runtime_tool_invoker_missing"):
+        gather_incident_evidence(
+            runtime_state=state,
+            registry=bundle.registry,
+            scope=IncidentScope.from_fixture_defaults(station_id=bundle.fixture.telemetry.station_id),
+            is_revision=False,
+        )
+
+
+def test_gather_incident_evidence_delegates_to_runtime_config_tool_invoker() -> None:
+    bundle = build_runtime_bundle()
+    state = _build_runtime_state(bundle)
+    canonical = state.context.config.tool_invoker
+    assert canonical is not None
+    sentinel = _SentinelCanonicalInvoker(inner=canonical, registry=bundle.registry)
+    state.context.config.tool_invoker = sentinel
+
+    gathering = gather_incident_evidence(
+        runtime_state=state,
+        registry=bundle.registry,
+        scope=IncidentScope.from_fixture_defaults(station_id=bundle.fixture.telemetry.station_id),
+        is_revision=False,
+    )
+
+    assert sentinel.invoke_count == gathering.tool_invocations
+    assert sentinel.invoke_count > 0
+
+
+def test_incident_scoped_invoker_preserves_decorated_canonical_invoker() -> None:
+    bundle = build_runtime_bundle()
+    state = _build_runtime_state(bundle)
+    canonical = state.context.config.tool_invoker
+    assert canonical is not None
+    decorated = _MarkedDecoratorInvoker(canonical)
+    state.context.config.tool_invoker = decorated
+
+    gathering = gather_incident_evidence(
+        runtime_state=state,
+        registry=bundle.registry,
+        scope=IncidentScope.from_fixture_defaults(station_id=bundle.fixture.telemetry.station_id),
+        is_revision=False,
+    )
+
+    assert decorated.wrapped_invocations == gathering.tool_invocations
+    assert decorated.wrapped_invocations > 0
+
+
+def test_scope_rejection_does_not_invoke_canonical_tool_invoker(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _OutOfScopeLLM(ScriptedIncidentInvestigationLLM):
+        def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
+            response = super().generate_with_tools(messages, tools_schema, **kwargs)
+            if not response.tool_calls:
+                return response
+            original = response.tool_calls[0]
+            return LLMAdapterResponse(
+                content=response.content,
+                tool_calls=(
+                    LLMToolCall.from_openai_shape(
+                        call_id=original.id,
+                        name=TOOL_WORKLOAD_READ,
+                        arguments={"line_id": "line_z", "window": "incident_window"},
+                    ),
+                ),
+            )
+
+    monkeypatch.setattr(
+        "platform_proofs.scenarios.ai_incident_investigation.runtime_composition.resolve_llm_adapter",
+        lambda *_args, **_kwargs: _OutOfScopeLLM(initial_sequence=(TOOL_WORKLOAD_READ,)),
+    )
+    bundle = build_runtime_bundle()
+    state = _build_runtime_state(bundle)
+    canonical = state.context.config.tool_invoker
+    assert canonical is not None
+    sentinel = _SentinelCanonicalInvoker(inner=canonical, registry=bundle.registry)
+    state.context.config.tool_invoker = sentinel
+
+    with pytest.raises(IncidentScopeViolationError):
+        gather_incident_evidence(
+            runtime_state=state,
+            registry=bundle.registry,
+            scope=IncidentScope.from_fixture_defaults(station_id=bundle.fixture.telemetry.station_id),
+            is_revision=False,
+        )
+
+    assert sentinel.invoke_count == 0
+    assert any(event.step == "incident_scope_rejection" for event in state.trace_events)
+
+
+def test_evidence_gathering_has_no_local_runtime_tool_invoker_construction() -> None:
+    from platform_proofs.scenarios.ai_incident_investigation import evidence_gathering as mod
+
+    source = inspect.getsource(mod)
+    assert "RegistryToolExecutor(" not in source
+    assert "RuntimeToolInvoker(" not in source
