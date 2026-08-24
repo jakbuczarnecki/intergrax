@@ -162,7 +162,7 @@ They are **not** a marketing demo, feature showcase, or product claim. Product, 
 
 Initial production signals make workload overload plausible — but evidence is conflicting, stale, and incomplete. Independent verification must challenge unsupported causality, gather targeted evidence to distinguish competing hypotheses, and produce a bounded **RESOLVED** or honest **UNRESOLVED** outcome.
 
-**Status:** FULL-1 RESOLVED evidence world implemented and executable; UNRESOLVED path and accepted public proof remain pending.
+**Status:** FULL-1 RESOLVED and FULL-2 UNRESOLVED are implemented and executable; public Scenario Proof not yet accepted or published.
 
 <a href="docs/project/assets/public/readme/fullsize/scenario-ai-incident-investigation.md">
 <picture>

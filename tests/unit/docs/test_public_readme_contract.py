@@ -280,13 +280,16 @@ def test_scenario_public_positioning(readme_text: str) -> None:
     assert "not a marketing demo" in normalized or "not a marketing" in normalized
     assert "featured scenario in development" in normalized
     assert "full-1" in normalized
+    assert "full-2" in normalized
     assert "implemented" in normalized
     assert "executable" in normalized
     assert (
-        "public proof" in normalized
+        "public scenario proof not yet accepted" in normalized
+        or "not yet accepted or published" in normalized
         or "not accepted" in normalized
-        or "remain pending" in normalized
     )
+    assert "unresolved path pending" not in normalized
+    assert "pending full-2" not in normalized
     assert "no executable proof yet" not in normalized
     assert "no executable evidence or report yet" not in normalized
     assert "ai_incident_investigation" in scenario_section

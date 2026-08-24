@@ -30,6 +30,20 @@ _STALE_INCIDENT_SCENARIO_LOGISTICS_MARKERS = (
     "heavy parcel",
 )
 
+_STALE_FULL2_PENDING_MARKERS = (
+    "unresolved path pending",
+    "pending full-2",
+    "full-2) and public proof publication not started",
+    "full-2 unresolved path and public publication not started",
+)
+
+_PUBLIC_INCIDENT_STATUS_PROJECTION_PATHS = (
+    REPO_ROOT / "README.md",
+    PROOF_LIBRARY_PATH,
+    REPO_ROOT / "platform_proofs/scenarios/ai_incident_investigation/SCENARIO_SPEC.md",
+    _SCENARIO_DESIGN_PATH,
+)
+
 
 @pytest.fixture(scope="module")
 def proof_library_text() -> str:
@@ -93,10 +107,46 @@ def test_catalog_truth(proof_library_text: str) -> None:
     assert "verdict: pass" not in featured_normalized
 
 
+def _readme_incident_scenario_section(readme_text: str) -> str:
+    start = readme_text.index("## Real problems. Executable evidence.")
+    end = readme_text.index("## Local Knowledge Workspace (LKW)")
+    return readme_text[start:end]
+
+
+def _projection_text_for_stale_guard(path: Path) -> str:
+    text = path.read_text(encoding="utf-8")
+    if path.name == "README.md" and path.parent == REPO_ROOT:
+        return _readme_incident_scenario_section(text)
+    return text
+
+
+def test_incident_scenario_public_projections_no_stale_full2_pending() -> None:
+    """Public status projections must not regress FULL-2 to pending/not-started."""
+    for path in _PUBLIC_INCIDENT_STATUS_PROJECTION_PATHS:
+        projection = _projection_text_for_stale_guard(path)
+        normalized = re.sub(r"[*_`]", "", projection).lower()
+        for marker in _STALE_FULL2_PENDING_MARKERS:
+            assert marker not in normalized, (
+                f"{path.relative_to(REPO_ROOT)}: stale FULL-2 pending marker {marker!r}"
+            )
+        assert "full-2" in normalized, (
+            f"{path.relative_to(REPO_ROOT)}: missing FULL-2 implemented projection"
+        )
+        assert "implemented" in normalized
+        assert (
+            "not yet accepted" in normalized
+            or "not yet established" in normalized
+            or "not accepted" in normalized
+            or "not yet published" in normalized
+            or "publication is still pending" in normalized
+        )
+
+
 def test_incident_scenario_projection_semantics(proof_library_text: str) -> None:
     """AI Incident Investigation first-contact status matches canonical scenario semantics."""
     normalized = re.sub(r"[*_`]", "", proof_library_text).lower()
     assert "full-1" in normalized
+    assert "full-2" in normalized
     assert "implemented" in normalized
     assert "executable" in normalized
     assert (
