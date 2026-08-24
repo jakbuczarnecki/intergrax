@@ -173,6 +173,38 @@ def test_authoring_guide_contains_application_survival_test(
     assert "**NO** | **Not acceptable** as SCENARIO" in authoring_text
 
 
+def test_authoring_guide_contains_observability_contract(
+    authoring_text: str,
+) -> None:
+    assert "### Application Observability Test" in authoring_text
+    assert "### Mandatory observability, explainability, and diagnostics" in authoring_text
+    assert "MUST NOT** be a black box" in authoring_text
+    assert "Hidden chain-of-thought is neither required nor accepted" in authoring_text
+    assert "MUST NOT** invent execution explanations" in authoring_text
+    assert "RuntimeState.trace_events" in authoring_text
+    assert "ToolCallTrace" in authoring_text
+
+
+def test_protocol_requires_scenario_observability(
+    protocol_text: str,
+) -> None:
+    assert "## G2. SCENARIO observability, explainability, and diagnostics" in protocol_text
+    assert "MUST NOT** be a black box" in protocol_text
+    assert "Application Observability Test" in protocol_text
+    assert "MUST NOT** invent post-hoc execution explanations" in protocol_text
+    assert "PASS cannot rely solely on final answer" in protocol_text
+    assert "renderer **MUST NOT** invent tool calls" in protocol_text
+
+
+def test_report_standard_scenario_source_of_truth_rule() -> None:
+    report_text = (
+        REPO_ROOT / "docs" / "project" / "proofs" / "PLATFORM_PROOF_REPORT_STANDARD.md"
+    ).read_text(encoding="utf-8")
+    assert "### 7.2 SCENARIO report presentation profile (normative)" in report_text
+    assert "MUST NOT** invent tool calls" in report_text
+    assert "intergrax.platform_proof_evidence.v3" in report_text
+
+
 def test_authoring_guide_prohibits_fake_llm_in_canonical_scenario_path(
     authoring_text: str,
 ) -> None:

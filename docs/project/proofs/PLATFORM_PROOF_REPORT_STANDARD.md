@@ -87,6 +87,7 @@ Rules:
 2. All factual claims in the report **must** be derivable from structured evidence produced by the proof/runtime.
 3. The report **must not invent facts**.
 4. The report **must not** independently promote public status, qualification, or accepted-evidence lifecycle.
+5. **SCENARIO execution narrative** must be projected from `PlatformProofEvidence` steps/graph and runtime trace exports — not synthesized from expected proof outcomes.
 
 Reuse existing **`SuiteReceipt`** from `scripts/proof/intergrax_proof_contracts.py`. Do **not** merge suite receipts with domain `ProofReceipt` or with report presentation models.
 
@@ -549,6 +550,30 @@ Extensions **must not** replace common sections. They add typed subsections fed 
 | **CONTEXT_ENGINEERING** | `context_engineering.assembly-trace` | Sources, selection, token budget, compaction, final context |
 
 Renderer implementations for domain extensions are **out of scope** for PP-REPORT-1.
+
+### 7.2 SCENARIO report presentation profile (normative)
+
+Applies when `library_class` is **SCENARIO** and material autonomous behavior exists. Conformance proofs **MUST NOT** be required to render empty SCENARIO-only decorative sections.
+
+**Source-of-truth rule:** all execution narrative in SCENARIO reports **MUST** be derived from machine-readable structured artifacts (`PlatformProofEvidence.scenarios[].steps`, `evidence_graph`, evaluator/failure fields, runtime trace projection) — **not** from expected outcomes or renderer-invented plausible stories. The renderer **MUST NOT** invent tool calls, model decisions, rationales, evidence, or challenges absent from canonical artifacts.
+
+**Required presentation semantics** (map to §6 common skeleton and evidence fields):
+
+| Presentation | Primary evidence source | Common skeleton anchor |
+|--------------|-------------------------|------------------------|
+| Decision / investigation timeline | `ProofExecutionStep` sequence (`purpose`, `action`, `observation`, `evidence_basis_ids`, `evidence_created_ids`, `tool_invocation`) | §9 `execution-timeline` |
+| Why the system acted | `purpose`, bounded `ReportSafePayload` fields, claim/challenge evidence | §9 subsections / domain extension |
+| Tools / external actions and evidence | `tool_invocation`, step table columns | §9 + `tools.tool-call-trace` extension when TOOLS exercised |
+| Claim lifecycle | `evidence_claims` / claim graph binding | §10 `evidence-graph` + domain extension |
+| Critic / governance | evaluator checks, challenge resolution fields | §12 `evaluator-verdict` |
+| Diagnostics | `failure`, step `error`, bounded diagnostics | §13 `failure-analysis` |
+| Final decision provenance | `final_output`, `conclusion`, evidence graph back-links | §11 + §15 |
+
+**Terminal semantics:** distinguish **successful resolution**, **epistemic unresolved** (insufficient evidence), and **operational failure** — do not narrate operational failure as epistemic uncertainty.
+
+**Chain-of-thought:** operational decision trace ≠ chain-of-thought (see §9 frozen rule). Reports **MUST NOT** expose hidden reasoning or require chain-of-thought artifacts.
+
+**Machine-readable artifact:** `evidence.json` (`intergrax.platform_proof_evidence.v3`) is the canonical proof-layer projection; runtime `TraceEvent` / `ToolCallTrace` remain the application/platform source. A separate `decision-trace.json` is **not** required when v3 evidence steps and graph suffice.
 
 ---
 

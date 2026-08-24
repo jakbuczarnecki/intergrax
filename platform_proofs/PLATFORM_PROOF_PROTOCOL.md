@@ -83,6 +83,8 @@ Both classes remain **executable falsification attempts** — not demos. **Platf
 
 > A Scenario Proof is a production-capable autonomous application component that solves a concrete real-world problem through normal Intergrax runtime and platform contracts. The Proof Library layer executes adversarial cases, falsifies claims, captures evidence, evaluates outcomes, and renders reports; it does not replace the application itself.
 
+**SCENARIO observability (normative):** a Scenario Proof **MUST NOT** be a black box. Canonical Scenario execution **MUST** be observable and reconstructable from structured production-path artifacts. Every material autonomous decision, external action, evidence acquisition, claim transition, challenge, recovery action, and terminal outcome **MUST** be traceable through application/platform observability (`TraceEvent`, `ToolCallTrace`, typed diagnostics, and evidence projection) — not invented by the Proof layer after execution. Explainability **MUST** use explicit decision summaries, objectives, evidence references, selected actions, and bounded rationales; hidden chain-of-thought is neither required nor accepted. Operational detail: [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md) § Mandatory observability, explainability, and diagnostics.
+
 Use **production-capable** (architecture suitable for real deployment; no test-only application shortcuts) — not "production-proven" or "production-validated". Scenario Proof acceptance does **not** automatically establish production validation in live user/environment terms. Operational workflow: [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md) § Scenario Proof — production-capable application contract.
 
 Every proof declares **`domains_exercised`** (non-empty; no owning or primary domain) and **`mechanisms_exercised`**. A proof does not belong to one domain — it exercises one or more domains. Library metadata (`library_class`, `domains_exercised`, `mechanisms_exercised`, SCENARIO problem fields) is descriptor-owned and does not appear in runner-facing `ProofManifestEntry` unless execution genuinely requires it (currently: domain metadata is not execution authority).
@@ -232,6 +234,27 @@ If a proof uses a fake at a material claimed boundary, it **cannot** claim that 
 
 ---
 
+## G2. SCENARIO observability, explainability, and diagnostics
+
+This section applies to **SCENARIO** proofs only. Conformance observability depth may differ by mechanism under proof.
+
+**Application Observability Test (mandatory):**
+
+> If the proof evaluator, evidence packaging, and HTML report are removed, does the application/runtime still produce enough structured execution information to reconstruct its material decisions, actions, observations, challenges, recoveries, diagnostics, and terminal result?
+
+Required answer: **YES**. **NO** means the Scenario is **not acceptable**.
+
+| Owner | Responsibility |
+|-------|----------------|
+| **Application / platform** | Emit canonical structured execution trace, decision provenance, diagnostics, claim/challenge lifecycle |
+| **Proof** | Validate, project, package, render — **MUST NOT** invent post-hoc execution explanations |
+
+**PASS cannot rely solely on final answer or narrative prose.** Acceptance requires traceability of material decisions, actions, evidence, challenges, recoveries, diagnostics, and terminal outcome. Reports **MUST** derive execution claims from machine-readable structured evidence — not from expected proof truth or renderer-invented story.
+
+Machine-readable provenance for accepted executable SCENARIO proofs **MUST** be available via existing contracts where possible (`PlatformProofEvidence` v3 `scenarios[].steps`, evidence graph, runtime trace export). Do not require a parallel Proof-only logging system.
+
+---
+
 ## H. Required scenario content
 
 Every Platform Proof documentation artifact must include:
@@ -251,6 +274,8 @@ Every Platform Proof documentation artifact must include:
 13. Limitations  
 14. What this proof explicitly does NOT prove  
 15. Educational explanation  
+
+**SCENARIO-specific additions (design stage):** Application Survival Test result; Application Observability Test result; observability / explainability / diagnostics contract (material decisions, coverage, redaction, expected machine-readable artifact, report projection plan). See Authoring Guide scaffold § Observability / Explainability / Diagnostics Contract.
 
 ---
 
@@ -273,6 +298,8 @@ Do not allow a primary proof to be only a polished happy path.
 ## J. PASS / FAIL
 
 **PASS** must be based on explicit machine-checkable invariants where possible.
+
+**SCENARIO-specific:** PASS **MUST NOT** rely solely on final answer text or report narrative. Material autonomous actions **MUST** have provenance in structured production-path observability; model-selected actions **MUST** correlate to runtime execution; failure paths **MUST** include structured diagnostics; operational failure **MUST** be distinguished from epistemic unresolved outcome.
 
 | Avoid | Prefer |
 |-------|--------|
@@ -317,6 +344,8 @@ Every Platform Proof execution must also produce a human-readable **Proof Report
 [`PLATFORM_PROOF_REPORT_STANDARD.md`](../docs/project/proofs/PLATFORM_PROOF_REPORT_STANDARD.md)
 (PP-REPORT-1). The report presents typed proof evidence; it is not an independent
 source of truth.
+
+**SCENARIO reports:** execution narrative in the report **MUST** be derivable from structured evidence (`PlatformProofEvidence`, trace steps, evidence graph) — the renderer **MUST NOT** invent tool calls, decisions, rationales, evidence, or challenges absent from canonical artifacts.
 
 ---
 
