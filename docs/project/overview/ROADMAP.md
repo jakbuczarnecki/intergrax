@@ -96,7 +96,7 @@ The stage is achieved only when the documented workflow is repeatable as a user-
 
 **User / product outcome:** a user can combine indexed knowledge with authorized live evidence and receive a grounded answer with coherent, reviewable provenance.
 
-**Current precise boundary:** A bounded indexed Ask path exists. Mixed indexed + authorized live Hybrid Ask remains incomplete. Complete live-provider access remains incomplete.
+**Current precise boundary:** A bounded indexed Ask path exists. Mixed indexed + authorized live Hybrid Ask remains incomplete. Complete external live-provider access remains incomplete.
 
 | User / product outcome | Evidence required before calling it achieved |
 |-------------------------|-----------------------------------------------|
@@ -219,7 +219,7 @@ No category is claimed as a proven buyer or ICP. See [Partners](../community/PAR
 
 - No finished hosted SaaS.
 - No claim that mixed indexed + authorized live Hybrid Ask is complete.
-- No claim of complete live-provider access or a complete provider catalog.
+- No claim of complete external live-provider access or a complete provider catalog.
 - No completed problem/customer discovery, real-user validation, validated ICP, product-market fit, or commercial validation.
 - No claim of universal production readiness or universal token savings.
 - No fixed release-date commitment.

@@ -426,7 +426,7 @@ def test_faq_hybrid_ask_reader_route(faq_text: str) -> None:
         "mixed indexed + authorized-live hybrid ask",
         "not proven",
         "production readiness",
-        "complete live-provider access",
+        "complete external live-provider access",
         "proofs.md",
         "lkw platform proof",
     ):

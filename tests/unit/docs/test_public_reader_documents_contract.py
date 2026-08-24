@@ -37,6 +37,8 @@ MULTIPLAYER_ARCH_PATH = (
 )
 PLATFORM_PLUGINS_ARCH_PATH = REPO_ROOT / "docs" / "project" / "architecture" / "PLATFORM_PLUGINS.md"
 ROADMAP_PATH = REPO_ROOT / "docs" / "project" / "overview" / "ROADMAP.md"
+FAQ_PATH = REPO_ROOT / "docs" / "project" / "overview" / "FAQ.md"
+EVALUATION_GUIDE_PATH = REPO_ROOT / "docs" / "project" / "builders" / "EVALUATION_GUIDE.md"
 
 _LEGAL_HEADER = (
     "<!--\n"
@@ -1075,6 +1077,22 @@ def test_use_cases_external_live_provider_boundary() -> None:
     normalized = " ".join(_normalize(_read(USE_CASES_PATH)).split())
     assert "complete external live-provider access is incomplete" in normalized
     assert "complete live-provider access is incomplete" not in normalized
+
+
+def test_public_reader_docs_external_live_provider_boundary() -> None:
+    """RELEASE-FIX-1: public reader docs must not imply controlled-live is absent."""
+    for path in (
+        ARCHITECTURE_OVERVIEW_PATH,
+        ROADMAP_PATH,
+        FAQ_PATH,
+        EVALUATION_GUIDE_PATH,
+    ):
+        normalized = " ".join(_normalize(_read(path)).split())
+        assert "complete external live-provider access" in normalized, path.name
+        assert (
+            "complete live-provider access"
+            not in normalized.replace("complete external live-provider access", "")
+        ), path.name
 
 
 def test_use_cases_workflow_fit_and_ownership_contract() -> None:
