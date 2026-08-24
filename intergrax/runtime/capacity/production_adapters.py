@@ -6,10 +6,18 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Literal
 
-from intergrax.runtime.capacity.contracts import ScalingAction, ScalingActionKind, ScalingTarget
-from intergrax.runtime.capacity.provisioner import ScalingProvisioner
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.runtime.capacity.control_plane_governance import EcpResourceTenantResolver
+from intergrax.runtime.capacity.governed_capacity_mutation import GovernedCapacityMutationExecutor
+from intergrax.runtime.capacity.provisioner import (
+    ProvisionerExecutionMode,
+    ScalingProvisioner,
+)
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
+)
 
 KubernetesBackendKind = Literal["live", "in_memory"]
 
@@ -38,8 +46,11 @@ class CeleryProductionAdapter:
         self.worker_count = max(1, self.worker_count + delta)
         return self.worker_count
 
+    def get_worker_count(self) -> int:
+        return self.worker_count
 
-def resolve_kubernetes_backend() -> tuple[Any, KubernetesBackendKind]:
+
+def resolve_kubernetes_backend() -> tuple[InMemoryKubernetesScaler | object, KubernetesBackendKind]:
     """Use REST K8s client when INTERGRAX_KUBERNETES_URL is configured."""
     if os.environ.get("INTERGRAX_KUBERNETES_URL", "").strip():
         from intergrax.integrations.providers.cloud_platform.kubernetes.bundle import (
@@ -52,45 +63,71 @@ def resolve_kubernetes_backend() -> tuple[Any, KubernetesBackendKind]:
 
 @dataclass(frozen=True, slots=True)
 class ProductionCapacityAdapters:
-    kubernetes: Any
+    kubernetes: InMemoryKubernetesScaler | object
     celery: CeleryProductionAdapter
     provisioner: ScalingProvisioner
+    governed_executor: GovernedCapacityMutationExecutor
     kubernetes_backend: KubernetesBackendKind
 
 
-def build_production_capacity_adapters() -> ProductionCapacityAdapters:
-    """Wire production Celery/K8s adapters behind the scaling provisioner."""
+def build_production_capacity_adapters(
+    *,
+    mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
+    tenant_resolver: EcpResourceTenantResolver | None = None,
+) -> ProductionCapacityAdapters:
+    """Wire production Celery/K8s adapters behind governed capacity mutation facade."""
     kubernetes, backend_kind = resolve_kubernetes_backend()
     celery = CeleryProductionAdapter(worker_count=2)
-    provisioner = ScalingProvisioner(kubernetes=kubernetes, celery=celery)
+    provisioner = ScalingProvisioner(
+        kubernetes=kubernetes,
+        celery=celery,
+        execution_mode=ProvisionerExecutionMode.GOVERNED_ONLY,
+    )
+    governed_executor = GovernedCapacityMutationExecutor(
+        provisioner=provisioner,
+        mutation_boundary=mutation_boundary,
+        tenant_resolver=tenant_resolver,
+    )
     return ProductionCapacityAdapters(
         kubernetes=kubernetes,
         celery=celery,
         provisioner=provisioner,
+        governed_executor=governed_executor,
         kubernetes_backend=backend_kind,
     )
 
 
-def apply_production_scale_probe(adapters: ProductionCapacityAdapters) -> bool:
-    """Exercise K8s and Celery adapter paths for gate evidence."""
-    k8s_ok = adapters.provisioner.apply(
-        ScalingAction(
-            kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
-            target=ScalingTarget.NEXUS_HOST,
-            delta=1,
-            reason="audit-ideal-30.4 probe",
-        ),
-        deployment="nexus-host",
+def apply_production_scale_probe(
+    adapters: ProductionCapacityAdapters,
+    *,
+    principal: RequestIdentity,
+    tenant_id: str,
+    k8s_mutation_id: str,
+    celery_mutation_id: str,
+    deployment: str = "nexus-host",
+    celery_pool_id: str = "default",
+) -> bool:
+    """Exercise governed K8s and Celery adapter paths for gate evidence."""
+    k8s_result = adapters.governed_executor.scale_k8s_deployment(
+        principal=principal,
+        tenant_id=tenant_id,
+        mutation_id=k8s_mutation_id,
+        deployment=deployment,
+        delta=1,
     )
-    celery_ok = adapters.provisioner.apply(
-        ScalingAction(
-            kind=ScalingActionKind.SCALE_CELERY_WORKERS,
-            target=ScalingTarget.CELERY_POOL,
-            delta=1,
-            reason="audit-ideal-30.4 probe",
-        )
+    celery_result = adapters.governed_executor.scale_celery_workers(
+        principal=principal,
+        tenant_id=tenant_id,
+        mutation_id=celery_mutation_id,
+        pool_id=celery_pool_id,
+        delta=1,
     )
     replicas_ok = True
     if adapters.kubernetes_backend == "in_memory":
-        replicas_ok = adapters.kubernetes.get_replicas(deployment="nexus-host") >= 2
-    return k8s_ok and celery_ok and replicas_ok and adapters.celery.worker_count >= 3
+        replicas_ok = adapters.kubernetes.get_replicas(deployment=deployment) >= 3
+    return (
+        k8s_result.authorization_evidence.mutation_id == k8s_mutation_id
+        and celery_result.authorization_evidence.mutation_id == celery_mutation_id
+        and replicas_ok
+        and adapters.celery.worker_count >= 3
+    )
