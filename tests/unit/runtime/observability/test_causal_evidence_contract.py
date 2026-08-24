@@ -61,15 +61,33 @@ def test_transport_and_runtime_identity_domains_remain_distinct() -> None:
     target = _runtime_execution_ref()
 
     assert source.task_id == _TRANSPORT_TASK_ID
-    assert source.task_id != target.task_id
-    assert not str(target.task_id).startswith(_TRANSPORT_TASK_ID)
+    assert source.task_id != str(target.task_id)
 
-    with pytest.raises(ValidationError):
-        MessageBusTaskRef(
-            provider=_PROVIDER,
-            task_id=str(mint_task_id()),
-            tenant_id=_TENANT_A,
-        )
+
+def test_transport_task_id_may_match_runtime_task_id_text_without_domain_collapse() -> None:
+    runtime_task_id = mint_task_id()
+    source = MessageBusTaskRef(
+        provider=_PROVIDER,
+        task_id=str(runtime_task_id),
+        tenant_id=_TENANT_A,
+    )
+    target = RuntimeExecutionRef(
+        task_id=runtime_task_id,
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        tenant_id=_TENANT_A,
+    )
+
+    assert source.task_id == str(target.task_id)
+    evidence = PlatformCausalEvidence(
+        relation_kind=CausalRelationKind.TRANSPORT_TASK_TRIGGERED_EXECUTION,
+        tenant_id=_TENANT_A,
+        source=source,
+        target=target,
+    )
+    assert evidence.source.task_id == str(evidence.target.task_id)
+    assert evidence.source is source
+    assert evidence.target is target
 
 
 def test_causal_evidence_points_to_canonical_execution_identity() -> None:

@@ -812,7 +812,15 @@ await reporter.report(
 
 ### Causal evidence plane (DIAG-1)
 
-`PlatformCausalEvidence` records an immutable, tenant-scoped causal fact between existing identity domains — for example a provider-neutral async transport task (`MessageBusTaskRef`) that **triggered** canonical runtime execution (`RuntimeExecutionRef` with `TaskId` / `RunId` / `AttemptId`). It does **not** extend `RuntimeEvent`, mint synthetic execution IDs for transport, or duplicate retry lineage already expressed by execution history. Emission reuses the HOS export path (`envelope_from_causal_evidence` → `ExportRecordKind.DIAGNOSTIC`).
+`PlatformCausalEvidence` records an immutable, tenant-scoped causal fact between existing identity domains — for example a provider-neutral async transport task (`MessageBusTaskRef`) that **triggered** canonical runtime execution (`RuntimeExecutionRef` with `TaskId` / `RunId` / `AttemptId`). It does **not** extend `RuntimeEvent`, mint synthetic execution IDs for transport, or duplicate retry lineage already expressed by execution history.
+
+`MessageBusTaskRef.task_id` is opaque transport identity (`str`); `RuntimeExecutionRef.task_id` is canonical `TaskId`. Identical text may appear on both sides without collapsing domains — isolation is enforced by typed contracts, not lexical format rules.
+
+**Canonical persistence (R1):** **PLATFORM GAP** — no durable, tenant-scoped, queryable platform persistence boundary exists today for typed non-execution causal evidence. `RuntimeEventPersistence` is execution-scoped only. `PlatformProblemSignal` and `HostedApplicationEvent` share the same export/spine projection path without a dedicated durable causal-evidence store.
+
+**Optional export projection:** `envelope_from_causal_evidence` maps to `ExportRecordKind.DIAGNOSTIC` with typed `CausalEvidenceExportSource` on `ObservabilityExportEnvelope` — a **lossless export projection**, not canonical persistence. Export backends (Sentry, Datadog, OTLP, `InMemoryObservabilityExporter`) are optional sinks; the causal fact must not depend on them.
+
+**Evidence identity:** `PlatformCausalEvidence.evidence_id` currently uses `EventId` (`evt_…`), which may be execution-event scoped — dedicated `CausalEvidenceId` is a deferred decision point if non-execution evidence persistence lands.
 
 **Code references:** `causal_evidence.py` · `causal_evidence_export.py` · `export_boundary.py`.
 

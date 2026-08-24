@@ -11,7 +11,10 @@ from intergrax.runtime.observability.causal_evidence import (
     PlatformCausalEvidence,
     RuntimeExecutionRef,
 )
-from intergrax.runtime.observability.causal_evidence_export import envelope_from_causal_evidence
+from intergrax.runtime.observability.causal_evidence_export import (
+    causal_evidence_export_source_from_evidence,
+    envelope_from_causal_evidence,
+)
 from intergrax.runtime.observability.export_boundary import (
     ExportRecordKind,
     ExportStatus,
@@ -21,9 +24,8 @@ from intergrax.runtime.observability.export_boundary import (
 pytestmark = pytest.mark.unit
 
 
-@pytest.mark.asyncio
-async def test_causal_evidence_exports_through_observability_envelope() -> None:
-    evidence = PlatformCausalEvidence(
+def _causal_evidence() -> PlatformCausalEvidence:
+    return PlatformCausalEvidence(
         relation_kind=CausalRelationKind.TRANSPORT_TASK_TRIGGERED_EXECUTION,
         tenant_id="tenant-a",
         source=MessageBusTaskRef(
@@ -38,6 +40,11 @@ async def test_causal_evidence_exports_through_observability_envelope() -> None:
             tenant_id="tenant-a",
         ),
     )
+
+
+@pytest.mark.asyncio
+async def test_causal_evidence_exports_through_observability_envelope() -> None:
+    evidence = _causal_evidence()
     envelope = envelope_from_causal_evidence(evidence)
     exporter = InMemoryObservabilityExporter()
 
@@ -53,3 +60,20 @@ async def test_causal_evidence_exports_through_observability_envelope() -> None:
     assert stored.event_type == CausalRelationKind.TRANSPORT_TASK_TRIGGERED_EXECUTION.value
     assert stored.source_schema_id == "platform_causal_evidence.v1"
     assert stored.event_id == evidence.evidence_id
+
+
+def test_causal_evidence_export_preserves_full_causal_semantics() -> None:
+    evidence = _causal_evidence()
+    source = causal_evidence_export_source_from_evidence(evidence)
+    envelope = envelope_from_causal_evidence(evidence)
+
+    assert envelope.causal_evidence_source is not None
+    assert envelope.causal_evidence_source == source
+    assert source.transport_provider == evidence.source.provider
+    assert source.transport_task_id == evidence.source.task_id
+    assert source.relation_kind == evidence.relation_kind.value
+    assert source.target_task_id == evidence.target.task_id
+    assert source.target_run_id == evidence.target.run_id
+    assert source.target_attempt_id == evidence.target.attempt_id
+    assert source.tenant_id == evidence.tenant_id
+    assert source.evidence_id == evidence.evidence_id

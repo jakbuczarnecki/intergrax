@@ -52,17 +52,6 @@ class MessageBusTaskRef(BaseModel):
             raise ValueError("field must not contain leading or trailing whitespace")
         return value
 
-    @field_validator("task_id")
-    @classmethod
-    def _reject_canonical_runtime_task_id(cls, value: str) -> str:
-        try:
-            validate_task_id(value)
-        except (TypeError, ValueError):
-            return value
-        raise ValueError(
-            "MessageBus task_id must not use canonical runtime TaskId format",
-        )
-
 
 class RuntimeExecutionRef(BaseModel):
     """Canonical runtime execution identity at the transport→execution boundary."""
