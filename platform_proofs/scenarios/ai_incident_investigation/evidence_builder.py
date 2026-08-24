@@ -8,6 +8,11 @@ from datetime import UTC, datetime
 
 from intergrax.contracts.evidence_claims import EvidenceClaimSet
 from platform_proofs.scenarios.ai_incident_investigation.evaluator import ScenarioEvaluationResult
+from platform_proofs.scenarios.ai_incident_investigation.reproduction import (
+    CANONICAL_REPRODUCTION_PREREQUISITES,
+    PROOF_ID,
+    canonical_reproduction_shell_command,
+)
 from platform_proofs.scenarios.ai_incident_investigation.evaluator_evidence import (
     project_scenario_evaluation_to_evidence,
 )
@@ -49,7 +54,6 @@ from scripts.proof.intergrax_platform_proof_evidence import (
 )
 from scripts.proof.intergrax_proof_contracts import ProofProfile
 
-PROOF_ID = "SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON"
 PROOF_VERSION = "full-1-resolved-full-2-unresolved-0.3.0"
 
 EVIDENCE_RESOLVED_FILENAME = "evidence-resolved.json"
@@ -279,8 +283,8 @@ def build_platform_proof_evidence(
         ),
         reproduction=ReproductionEvidence(
             source_revision=source_revision,
-            command="uv run pytest tests/unit/platform_proofs/scenarios/ai_incident_investigation/",
-            prerequisites=("Python 3.12", "uv"),
+            command=canonical_reproduction_shell_command(),
+            prerequisites=CANONICAL_REPRODUCTION_PREREQUISITES,
         ),
         provenance=ProvenanceEvidence(
             proof_id=PROOF_ID,

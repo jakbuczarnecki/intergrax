@@ -22,6 +22,7 @@ from scripts.proof.intergrax_proof_contracts import (
     SuiteReceipt,
 )
 from scripts.proof.intergrax_proof_runner import (
+    ProofSelectionError,
     RunnerConfig,
     aggregate_overall_status,
     evaluate_environment,
@@ -409,3 +410,70 @@ def test_dry_run_skips_execution() -> None:
     assert receipt.overall_status == SuiteOverallStatus.DRY_RUN
     assert receipt.passed_count == 0
     assert suite_exit_code(receipt) == 0
+
+
+def test_unknown_proof_id_raises_selection_error(repo_root: Path | None = None) -> None:
+    root = repo_root or Path(__file__).resolve().parents[4]
+    config = RunnerConfig(
+        profile=ProofProfile.QUICK,
+        repo_root=root,
+        proof_id="DOES-NOT-EXIST",
+    )
+    with pytest.raises(ProofSelectionError, match="unknown proof_id"):
+        run_suite(config)
+
+
+def test_proof_id_selector_runs_single_proof() -> None:
+    repo_root = Path(__file__).resolve().parents[4]
+    config = RunnerConfig(
+        profile=ProofProfile.QUICK,
+        repo_root=repo_root,
+        proof_id="SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON",
+        dry_run=True,
+    )
+    receipt, _ = run_suite(config)
+    assert len(receipt.results) == 1
+    assert receipt.results[0].proof_id == "SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON"
+
+
+def test_no_proof_id_selector_preserves_suite_breadth() -> None:
+    repo_root = Path(__file__).resolve().parents[4]
+    config = RunnerConfig(
+        profile=ProofProfile.QUICK,
+        repo_root=repo_root,
+        dry_run=True,
+    )
+    receipt, _ = run_suite(config)
+    assert len(receipt.results) > 1
+
+
+def test_render_console_summary_includes_artifact_directories() -> None:
+    repo_root = Path(__file__).resolve().parents[4]
+    receipt = SuiteReceipt(
+        suite_run_id="artifact-test-run",
+        started_at=datetime.now(UTC),
+        completed_at=datetime.now(UTC),
+        git_commit_sha="abc123",
+        git_dirty=False,
+        profile=ProofProfile.QUICK,
+        platform="windows",
+        python_version="3.12",
+        overall_status=SuiteOverallStatus.PASS,
+        results=(
+            ProofRunResult(
+                proof_id="SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON",
+                status=ProofStatus.PASS,
+                duration_seconds=1.0,
+            ),
+        ),
+        passed_count=1,
+        failed_count=0,
+        blocked_count=0,
+        skipped_count=0,
+    )
+    text = render_console_summary(receipt, repo_root=repo_root)
+    assert "suite run: .artifacts/proof/artifact-test-run" in text
+    assert (
+        "SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON: "
+        ".artifacts/proof/artifact-test-run/proofs/SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON"
+    ) in text

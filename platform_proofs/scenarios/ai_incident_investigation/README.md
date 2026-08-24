@@ -93,6 +93,58 @@ Full normative PASS/FAIL contract: [Scenario Specification § B](SCENARIO_SPEC.m
 | **RESOLVED** | Best-supported bounded operational root-cause diagnosis with auditable evidence trail; competing hypotheses weakened |
 | **UNRESOLVED** | Critical distinguishing evidence unavailable or hypotheses indistinguishable — no confident guessing |
 
+## Run the proof
+
+**Prerequisites**
+
+- Python 3.12
+- [uv](https://docs.astral.sh/uv/)
+- Repository checkout with dependencies synced: `uv sync` (from repository root)
+
+No external API credentials are required for this synthetic scenario.
+
+**Command** (from repository root):
+
+```bash
+uv run python scripts/proof/run-intergrax-proof-suite.py --profile quick --proof-id SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON
+```
+
+**Expected proof status:** `PASS`
+
+One canonical parent invocation exercises both evidence paths:
+
+- **RESOLVED** — decisive telemetry exists → bounded H3 diagnosis accepted
+- **UNRESOLVED** — decisive telemetry unavailable → no supported root-cause diagnosis
+
+Parent verification requires both canonical evidence artifacts to pass.
+
+**Artifacts**
+
+The suite prints artifact directories on completion. For this proof, look under:
+
+`.artifacts/proof/<suite-run-id>/proofs/SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON/`
+
+Expected files:
+
+- `evidence-resolved.json`
+- `evidence-unresolved.json`
+- `report-resolved.html`
+- `report-unresolved.html`
+- `domain_result.json`
+
+**Reproducing an exact recorded run**
+
+Evidence and reports record `source_revision` (git commit SHA). To reproduce the behavior of a specific recorded artifact, check out that revision before running the command above. Execution IDs, timestamps, and suite run directories vary between runs; semantic outcomes (H1/H2/H3 dispositions, RESOLVED vs UNRESOLVED, evaluator checks) are stable for a given source revision.
+
+### Development verification
+
+These commands validate implementation but are not the canonical proof reproduction path:
+
+```bash
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run pytest -p pytest_asyncio.plugin \
+  tests/unit/platform_proofs/scenarios/ai_incident_investigation/ -q
+```
+
 ## Latest verified run
 
 > [!NOTE]
