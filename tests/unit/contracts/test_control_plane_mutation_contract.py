@@ -9,9 +9,11 @@ import inspect
 import pytest
 
 from intergrax.contracts.control_plane_mutation import (
+    ControlPlaneMutationApprovalGrant,
     ControlPlaneMutationAuthorizationEvidence,
     ControlPlaneMutationAuthorizationResult,
     ControlPlaneMutationAuthorizationScope,
+    ControlPlaneMutationDenialRecord,
     ControlPlaneMutationRequest,
     ControlPlaneMutationRisk,
     GovernanceEvaluationPoint,
@@ -28,6 +30,8 @@ def test_cp13_authority_critical_fields_are_typed_not_dict_bags() -> None:
         ControlPlaneMutationAuthorizationEvidence,
         ControlPlaneMutationAuthorizationScope,
         ControlPlaneMutationAuthorizationResult,
+        ControlPlaneMutationApprovalGrant,
+        ControlPlaneMutationDenialRecord,
     ):
         hints = model.model_fields
         for field in hints.values():

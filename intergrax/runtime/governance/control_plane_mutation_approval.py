@@ -1,6 +1,18 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Scoped approval consumption for control-plane mutation continuation (CLA-04)."""
+"""Scoped approval consumption for control-plane mutation continuation (CLA-04).
+
+Canonical platform primitive: CONTROL-PLANE-SCOPED-APPROVAL (CLA-CPM-SCOPED-APPROVAL).
+
+Invariants (in-process, evaluation-only):
+- A grant binds exactly one logical mutation (scope + request_digest + service principal).
+- Human approver must be PrincipalType.USER with matching tenant_id.
+- approval_evidence_ref is continuation metadata; excluded from logical request_digest.
+- Grants are single-use: consumption authorizes one execution *attempt* (not success).
+- Provider/stale failure after consumption requires fresh human approval.
+- Coordinator stores/consumes grants; it is not policy engine or mutation executor.
+- Not durable — no restart recovery or distributed coordination.
+"""
 
 from __future__ import annotations
 
@@ -20,6 +32,8 @@ from intergrax.contracts.control_plane_mutation import (
     control_plane_mutation_request_digest,
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+
+_DEFAULT_POLICY_RULE_ID = "control_plane_mutation.policy"
 
 
 class ControlPlaneMutationApprovalError(ValueError):
@@ -42,6 +56,25 @@ def matches_authorization_scope(
         and grant.target_revision == scope.target_revision
         and grant.task_id == scope.task_id
         and grant.run_id == scope.run_id
+    )
+
+
+def authorization_evidence_matches_scope(
+    evidence: ControlPlaneMutationAuthorizationEvidence,
+    scope: ControlPlaneMutationAuthorizationScope,
+) -> bool:
+    """Typed evidence-to-scope binding for grant/denial creation."""
+    return (
+        evidence.mutation_id == scope.mutation_id
+        and evidence.mutation_type == scope.mutation_type
+        and evidence.tenant_id == scope.tenant_id
+        and evidence.resource_scope == scope.resource_scope
+        and evidence.resource_type == scope.resource_type
+        and evidence.resource_id == scope.resource_id
+        and evidence.current_revision == scope.current_revision
+        and evidence.target_revision == scope.target_revision
+        and evidence.task_id == scope.task_id
+        and evidence.run_id == scope.run_id
     )
 
 
@@ -71,9 +104,13 @@ def matches_request_to_grant(
     request_digest = control_plane_mutation_request_digest(request)
     if request_digest != grant.request_digest:
         return False
-    if str(request.task_id) if request.task_id is not None else None != grant.task_id:
+    request_task_id = (
+        str(request.task_id) if request.task_id is not None else None
+    )
+    if request_task_id != grant.task_id:
         return False
-    if str(request.run_id) if request.run_id is not None else None != grant.run_id:
+    request_run_id = str(request.run_id) if request.run_id is not None else None
+    if request_run_id != grant.run_id:
         return False
     if request.principal.user_id != grant.service_principal_user_id:
         return False
@@ -121,11 +158,13 @@ class ControlPlaneMutationApprovalCoordinator:
         authorization_evidence: ControlPlaneMutationAuthorizationEvidence,
     ) -> ControlPlaneMutationApprovalGrant:
         _validate_human_approver(approver, scope.tenant_id)
-        if authorization_evidence.mutation_id != scope.mutation_id:
-            raise ControlPlaneMutationApprovalError("authorization evidence mutation_id mismatch")
+        if not authorization_evidence_matches_scope(authorization_evidence, scope):
+            raise ControlPlaneMutationApprovalError("authorization evidence scope mismatch")
         if authorization_evidence.request_digest.strip() == "":
             raise ControlPlaneMutationApprovalError("authorization evidence request_digest required")
-        policy_rule_id = authorization_evidence.policy_rule_id.strip() or "ecp.control_plane_policy"
+        policy_rule_id = (
+            authorization_evidence.policy_rule_id.strip() or _DEFAULT_POLICY_RULE_ID
+        )
         grant_id = f"cpm-grant:{uuid4().hex}"
         grant = ControlPlaneMutationApprovalGrant(
             grant_id=grant_id,
@@ -160,7 +199,13 @@ class ControlPlaneMutationApprovalCoordinator:
         authorization_evidence: ControlPlaneMutationAuthorizationEvidence,
     ) -> ControlPlaneMutationDenialRecord:
         _validate_human_approver(approver, scope.tenant_id)
-        policy_rule_id = authorization_evidence.policy_rule_id.strip() or "ecp.control_plane_policy"
+        if not authorization_evidence_matches_scope(authorization_evidence, scope):
+            raise ControlPlaneMutationApprovalError("authorization evidence scope mismatch")
+        if authorization_evidence.request_digest.strip() == "":
+            raise ControlPlaneMutationApprovalError("authorization evidence request_digest required")
+        policy_rule_id = (
+            authorization_evidence.policy_rule_id.strip() or _DEFAULT_POLICY_RULE_ID
+        )
         denial = ControlPlaneMutationDenialRecord(
             mutation_id=scope.mutation_id,
             mutation_type=scope.mutation_type,
@@ -188,7 +233,7 @@ class ControlPlaneMutationApprovalCoordinator:
         grant_id: str,
         request: ControlPlaneMutationRequest,
     ) -> ControlPlaneMutationApprovalGrant | None:
-        """Consume grant before mutation execution — at-most-once approval authorization."""
+        """Consume grant before mutation execution — at-most-once attempt authorization."""
         if grant_id in self._consumed_grant_ids:
             return None
         grant = self._grants.get(grant_id)
