@@ -1,11 +1,12 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Control-plane mutation helpers for governed task-control cancel (CLA-CPM-TASK-CONTROL-CANCEL)."""
+"""Control-plane mutation helpers for governed task-control cancel/autonomy (CLA-CPM)."""
 
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.control_plane_mutation import (
@@ -21,6 +22,7 @@ from intergrax.runtime.task.task import TaskState
 
 TASK_EXECUTION_RESOURCE_TYPE = "task_control.task_execution"
 MUTATION_TYPE_CANCEL_TASK_EXECUTION = "task_control.cancel_task_execution"
+MUTATION_TYPE_SET_TASK_AUTONOMY = "task_control.set_task_autonomy"
 
 _TERMINAL_TASK_STATES = frozenset(
     {
@@ -112,6 +114,12 @@ def cancel_requested_target_revision() -> str:
     return task_execution_state_revision(state="cancel_requested")
 
 
+def task_execution_autonomy_revision(*, autonomy_level: AutonomyLevel | None) -> str:
+    if autonomy_level is None:
+        return "autonomy:unset"
+    return f"autonomy:{autonomy_level.value}"
+
+
 def is_task_execution_cancellable(*, state: TaskState, cancellation_requested: bool) -> bool:
     if state in _TERMINAL_TASK_STATES:
         return False
@@ -141,6 +149,37 @@ def build_cancel_task_execution_mutation_request(
         resource_id=task_execution_resource_id(task_id=task_id, run_id=run_id),
         current_revision=task_execution_state_revision(state=current_state.value),
         target_revision=cancel_requested_target_revision(),
+        risk_classification=ControlPlaneMutationRisk.MEDIUM,
+        approval_evidence_ref=approval_evidence_ref,
+        task_id=task_id,
+        run_id=run_id,
+    )
+
+
+def build_set_task_autonomy_mutation_request(
+    *,
+    principal: RequestIdentity,
+    tenant_id: str,
+    task_id: TaskId,
+    run_id: RunId,
+    mutation_id: str,
+    current_autonomy_level: AutonomyLevel | None,
+    target_autonomy_level: AutonomyLevel,
+    approval_evidence_ref: str | None = None,
+) -> ControlPlaneMutationRequest:
+    return ControlPlaneMutationRequest(
+        mutation_id=mutation_id,
+        mutation_type=MUTATION_TYPE_SET_TASK_AUTONOMY,
+        principal=principal,
+        resource_scope=task_execution_resource_scope(
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+        ),
+        resource_type=TASK_EXECUTION_RESOURCE_TYPE,
+        resource_id=task_execution_resource_id(task_id=task_id, run_id=run_id),
+        current_revision=task_execution_autonomy_revision(autonomy_level=current_autonomy_level),
+        target_revision=task_execution_autonomy_revision(autonomy_level=target_autonomy_level),
         risk_classification=ControlPlaneMutationRisk.MEDIUM,
         approval_evidence_ref=approval_evidence_ref,
         task_id=task_id,

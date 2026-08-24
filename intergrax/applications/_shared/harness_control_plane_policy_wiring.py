@@ -12,6 +12,7 @@ from intergrax.agent_distribution.control_plane_governance import (
 )
 from intergrax.applications._shared.task_control_governance import (
     MUTATION_TYPE_CANCEL_TASK_EXECUTION,
+    MUTATION_TYPE_SET_TASK_AUTONOMY,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.runtime_policy_bundle import (
@@ -44,6 +45,12 @@ def build_harness_host_control_plane_policy_bundle() -> ImmutableRuntimePolicyBu
                 rule_id="harness.task_control.cancel_task_execution",
                 description="Explicit allow for governed cooperative task cancel",
                 match_action=MUTATION_TYPE_CANCEL_TASK_EXECUTION,
+                effect="allow",
+            ),
+            PolicyBundleRule(
+                rule_id="harness.task_control.set_task_autonomy",
+                description="Explicit allow for governed active task autonomy mutation",
+                match_action=MUTATION_TYPE_SET_TASK_AUTONOMY,
                 effect="allow",
             ),
         ),

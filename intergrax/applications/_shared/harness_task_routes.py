@@ -24,7 +24,7 @@ from intergrax.applications._shared.task_control import (
     HitlResumeValidationError,
     TaskControlValidationError,
     governed_cancel_active_task,
-    set_task_autonomy,
+    governed_set_task_autonomy,
 )
 from intergrax.applications._shared.task_control_governance import (
     TaskControlGovernanceBlockedError,
@@ -48,7 +48,11 @@ class HarnessAsyncRunRequest(BaseModel):
 
 
 class HarnessAutonomyRequest(BaseModel):
+    mutation_id: str = Field(min_length=1)
+    run_id: str = Field(min_length=1)
     autonomy_level: AutonomyLevel
+    tenant_id: str | None = None
+    approval_evidence_ref: str | None = None
 
 
 class HarnessCancelRequest(BaseModel):
@@ -209,18 +213,68 @@ def mount_harness_task_routes(
         return _task_control_response(result)
 
     @router.post("/{task_id}/autonomy", response_model=HarnessTaskControlResponse)
-    async def set_autonomy(task_id: str, body: HarnessAutonomyRequest) -> HarnessTaskControlResponse:
-        result = await set_task_autonomy(task_id, body.autonomy_level)
+    async def set_autonomy(
+        task_id: str,
+        body: HarnessAutonomyRequest,
+        _request: Request,
+        principal=Depends(resolve_harness_authenticated_principal),
+    ) -> HarnessTaskControlResponse:
+        if principal is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="authenticated_principal_required",
+            )
+        identity = harness_principal_to_request_identity(principal)
+        if body.tenant_id is not None:
+            reject_identity_assertion_conflicts(
+                canonical=identity,
+                asserted_tenant_id=body.tenant_id,
+                asserted_user_id=None,
+            )
+        try:
+            result = await governed_set_task_autonomy(
+                task_id=task_id,
+                run_id=body.run_id,
+                mutation_id=body.mutation_id,
+                target_autonomy_level=body.autonomy_level,
+                principal=identity,
+                mutation_boundary=mutation_boundary,
+                approval_evidence_ref=body.approval_evidence_ref,
+            )
+        except TaskControlGovernanceBlockedError as exc:
+            _raise_task_control_http(exc)
+        except TaskControlValidationError as exc:
+            _raise_task_control_http(exc)
         if not result.accepted:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=result.detail)
-        return HarnessTaskControlResponse(
-            task_id=result.task_id,
-            action=result.action,
-            accepted=result.accepted,
-            detail=result.detail,
-            state=result.state,
-            metadata=dict(result.metadata or {}),
-        )
+            if result.detail == "task_not_active":
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=result.detail,
+                )
+            if result.detail in {"run_id_mismatch", "stale_active_binding"}:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=result.detail,
+                )
+            if result.blocker_code is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail={
+                        "blocker_code": result.blocker_code,
+                        "policy_action": result.policy_action,
+                        "authorization_evidence": (
+                            result.authorization_evidence.model_dump(mode="json")
+                            if result.authorization_evidence is not None
+                            else None
+                        ),
+                        "authorization_scope": (
+                            result.authorization_scope.model_dump(mode="json")
+                            if result.authorization_scope is not None
+                            else None
+                        ),
+                    },
+                )
+        return _task_control_response(result)
 
     @router.post("/{task_id}/resume")
     async def resume_task(

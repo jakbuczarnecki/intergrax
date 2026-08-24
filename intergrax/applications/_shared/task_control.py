@@ -10,8 +10,10 @@ from typing import Any
 from intergrax.applications._shared.task_control_governance import (
     TaskControlGovernanceBlockedError,
     build_cancel_task_execution_mutation_request,
+    build_set_task_autonomy_mutation_request,
     enforce_task_control_authorization_result,
     is_task_execution_cancellable,
+    task_execution_autonomy_revision,
     task_execution_state_revision,
     validate_task_control_principal_tenant_authority,
 )
@@ -64,12 +66,13 @@ def _execute_cooperative_cancel(task: Task, *, reason: str) -> None:
 def _blocked_result(
     *,
     task_id: str,
+    action: str,
     detail: str,
     exc: TaskControlGovernanceBlockedError,
 ) -> TaskControlResult:
     return TaskControlResult(
         task_id=task_id,
-        action="cancel",
+        action=action,
         accepted=False,
         detail=detail,
         blocker_code=exc.blocker_code,
@@ -125,7 +128,12 @@ async def governed_cancel_active_task(
             operation="cancel_task_execution",
         )
     except TaskControlGovernanceBlockedError as exc:
-        return _blocked_result(task_id=task_id, detail="tenant_authority_mismatch", exc=exc)
+        return _blocked_result(
+            task_id=task_id,
+            action="cancel",
+            detail="tenant_authority_mismatch",
+            exc=exc,
+        )
 
     if not is_task_execution_cancellable(
         state=task.state,
@@ -162,7 +170,12 @@ async def governed_cancel_active_task(
             operation="cancel_task_execution",
         )
     except TaskControlGovernanceBlockedError as exc:
-        return _blocked_result(task_id=task_id, detail=exc.blocker_code.lower(), exc=exc)
+        return _blocked_result(
+            task_id=task_id,
+            action="cancel",
+            detail=exc.blocker_code.lower(),
+            exc=exc,
+        )
 
     revalidated = await _revalidate_cancel_binding(
         task_id=task_id,
@@ -214,7 +227,159 @@ async def _revalidate_cancel_binding(
     return binding
 
 
+def _execute_autonomy_change(task: Task, *, target_level: AutonomyLevel) -> AutonomyLevel | None:
+    previous = task.options.governance.autonomy_level
+    task.options.governance.autonomy_level = target_level
+    task.metadata["autonomy_level"] = target_level.value
+    task.metadata["autonomy_level_previous"] = previous.value if previous else None
+    task.metadata["autonomy_level_changed"] = True
+    task.sync_metadata()
+    return previous
+
+
+async def governed_set_task_autonomy(
+    *,
+    task_id: str,
+    run_id: str,
+    mutation_id: str,
+    target_autonomy_level: AutonomyLevel,
+    principal: RequestIdentity,
+    mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None,
+    approval_evidence_ref: str | None = None,
+) -> TaskControlResult:
+    """Governed autonomy mutation for one exact active task/run binding."""
+    normalized_mutation_id = mutation_id.strip()
+    if not normalized_mutation_id:
+        raise TaskControlValidationError("mutation_id_required")
+
+    validated_run_id = validate_run_id(run_id)
+    binding = await ActiveTaskRegistry.get(task_id)
+    if binding is None:
+        return TaskControlResult(
+            task_id=task_id,
+            action="set_autonomy",
+            accepted=False,
+            detail="task_not_active",
+        )
+
+    if binding.run_id != validated_run_id:
+        return TaskControlResult(
+            task_id=task_id,
+            action="set_autonomy",
+            accepted=False,
+            detail="run_id_mismatch",
+        )
+
+    task = binding.task
+    try:
+        validate_task_control_principal_tenant_authority(
+            principal=principal,
+            task_tenant_id=task.tenant_id,
+            task_id=binding.task_id,
+            run_id=binding.run_id,
+            operation="set_task_autonomy",
+        )
+    except TaskControlGovernanceBlockedError as exc:
+        return _blocked_result(
+            task_id=task_id,
+            action="set_autonomy",
+            detail="tenant_authority_mismatch",
+            exc=exc,
+        )
+
+    current_autonomy = task.options.governance.autonomy_level
+    if current_autonomy == target_autonomy_level:
+        return TaskControlResult(
+            task_id=task_id,
+            action="set_autonomy",
+            accepted=True,
+            detail="already_at_target",
+            state=task.state.value,
+            metadata={"previous": current_autonomy.value if current_autonomy else None},
+        )
+
+    if mutation_boundary is None:
+        raise TaskControlGovernanceBlockedError(
+            "TASK_CONTROL_BLOCKED_BY_MISSING_BOUNDARY",
+            "set_task_autonomy requires ControlPlaneMutationAuthorizationBoundary",
+            policy_action="DENY",
+        )
+
+    mutation_request = build_set_task_autonomy_mutation_request(
+        principal=principal,
+        tenant_id=task.tenant_id,
+        task_id=binding.task_id,
+        run_id=binding.run_id,
+        mutation_id=normalized_mutation_id,
+        current_autonomy_level=current_autonomy,
+        target_autonomy_level=target_autonomy_level,
+        approval_evidence_ref=approval_evidence_ref,
+    )
+    authorization_result = mutation_boundary.authorize(mutation_request)
+    try:
+        authorization_result = enforce_task_control_authorization_result(
+            authorization_result,
+            operation="set_task_autonomy",
+        )
+    except TaskControlGovernanceBlockedError as exc:
+        return _blocked_result(
+            task_id=task_id,
+            action="set_autonomy",
+            detail=exc.blocker_code.lower(),
+            exc=exc,
+        )
+
+    revalidated = await _revalidate_autonomy_binding(
+        task_id=task_id,
+        expected_run_id=validated_run_id,
+        expected_tenant_id=task.tenant_id,
+        expected_current_revision=mutation_request.current_revision,
+    )
+    if revalidated is None:
+        return TaskControlResult(
+            task_id=task_id,
+            action="set_autonomy",
+            accepted=False,
+            detail="stale_active_binding",
+            authorization_evidence=authorization_result.evidence,
+        )
+
+    previous = _execute_autonomy_change(revalidated.task, target_level=target_autonomy_level)
+    return TaskControlResult(
+        task_id=task_id,
+        action="set_autonomy",
+        accepted=True,
+        detail=target_autonomy_level.value,
+        state=revalidated.task.state.value,
+        metadata={"previous": previous.value if previous else None},
+        authorization_evidence=authorization_result.evidence,
+    )
+
+
+async def _revalidate_autonomy_binding(
+    *,
+    task_id: str,
+    expected_run_id: RunId,
+    expected_tenant_id: str,
+    expected_current_revision: str,
+) -> ActiveTaskBinding | None:
+    binding = await ActiveTaskRegistry.get(task_id)
+    if binding is None:
+        return None
+    if binding.run_id != expected_run_id:
+        return None
+    if binding.task.tenant_id != expected_tenant_id:
+        return None
+    current_revision = task_execution_autonomy_revision(
+        autonomy_level=binding.task.options.governance.autonomy_level,
+    )
+    if current_revision != expected_current_revision:
+        return None
+    return binding
+
+
 async def set_task_autonomy(task_id: str, level: AutonomyLevel) -> TaskControlResult:
+    """Deprecated raw mutation — use ``governed_set_task_autonomy`` for supported surfaces."""
     binding = await ActiveTaskRegistry.get(task_id)
     if binding is None:
         return TaskControlResult(
@@ -224,12 +389,7 @@ async def set_task_autonomy(task_id: str, level: AutonomyLevel) -> TaskControlRe
             detail="task_not_active",
         )
     task = binding.task
-    previous = task.options.governance.autonomy_level
-    task.options.governance.autonomy_level = level
-    task.metadata["autonomy_level"] = level.value
-    task.metadata["autonomy_level_previous"] = previous.value if previous else None
-    task.metadata["autonomy_level_changed"] = True
-    task.sync_metadata()
+    previous = _execute_autonomy_change(task, target_level=level)
     return TaskControlResult(
         task_id=task_id,
         action="set_autonomy",

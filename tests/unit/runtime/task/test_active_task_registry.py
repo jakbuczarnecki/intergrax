@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from intergrax.applications._shared.task_control import governed_cancel_active_task, set_task_autonomy
+from intergrax.applications._shared.task_control import governed_cancel_active_task, governed_set_task_autonomy
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
@@ -258,10 +258,23 @@ class _AllowCancelEvaluator:
 
 
 @pytest.mark.asyncio
-async def test_taskreg_14_set_task_autonomy_targets_binding_task() -> None:
+async def test_taskreg_14_governed_set_task_autonomy_targets_binding_task() -> None:
     task = _task()
     run_id = mint_run_id()
     await ActiveTaskRegistry.register(task, run_id)
-    result = await set_task_autonomy(str(task.task_id), AutonomyLevel.MANUAL)
+    boundary = ControlPlaneMutationAuthorizationBoundary(evaluator=_AllowCancelEvaluator())
+    result = await governed_set_task_autonomy(
+        task_id=str(task.task_id),
+        run_id=str(run_id),
+        mutation_id="mut-autonomy-reg",
+        target_autonomy_level=AutonomyLevel.MANUAL,
+        principal=RequestIdentity(
+            tenant_id=task.tenant_id,
+            user_id="operator",
+            principal_type=PrincipalType.USER,
+            auth_subject="operator",
+        ),
+        mutation_boundary=boundary,
+    )
     assert result.accepted is True
     assert task.options.governance.autonomy_level is AutonomyLevel.MANUAL
