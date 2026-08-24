@@ -459,10 +459,10 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
         from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
         from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
         from intergrax.runtime.registry.agent_registry import AgentRegistry
-        from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
         from intergrax.applications._shared.task_control_wiring import (
             build_reliability_task_enricher,
             build_task_runner_with_enricher,
+            wire_harness_task_control,
         )
         from {pkg}.host.settings import {pascal}ApplicationSettings
         from {pkg}.host.environment_profile import build_{short}_environment_profile
@@ -537,12 +537,15 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
             app.title = "{title}"
             mount_{short}_routes(app, nexus_loop=nexus_loop, prefix=settings.route_prefix)
             if settings.include_task_control:
-                mount_harness_task_routes(
+                wire_harness_task_control(
                     app,
+                    enabled=True,
                     task_runner=task_runner,
+                    env=env,
                     checkpoint_store=checkpoint_store,
-                    prefix=settings.task_control_route_prefix,
+                    task_route_prefix=settings.task_control_route_prefix,
                     task_enricher=task_enricher,
+                    runtime=runtime,
                 )
             if settings.include_interaction_routes:
                 app.include_router(

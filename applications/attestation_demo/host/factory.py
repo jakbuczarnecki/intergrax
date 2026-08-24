@@ -15,12 +15,12 @@ from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
 )
-from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
     build_task_runner_with_enricher,
+    wire_harness_task_control,
 )
 from intergrax.debug.app import create_debug_app
 from intergrax.debug.hitl_service import DebugHitlResumeService
@@ -105,12 +105,15 @@ def create_attestation_demo_application(
         nexus_loop=nexus_loop,
     )
     if settings.include_task_control:
-        mount_harness_task_routes(
+        wire_harness_task_control(
             app,
+            enabled=True,
             task_runner=task_runner,
+            env=env,
             checkpoint_store=checkpoint_store,
-            prefix=settings.task_control_route_prefix,
+            task_route_prefix=settings.task_control_route_prefix,
             task_enricher=task_enricher,
+            runtime=runtime,
         )
     apply_factory_lifespans(app, runtime, schedulers=None)
     attach_plugin_shutdown(app, platform.shutdown_callbacks)

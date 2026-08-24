@@ -14,13 +14,13 @@ from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
 )
-from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
     build_task_runner_with_enricher,
+    wire_harness_task_control,
 )
 from intergrax.debug.app import create_debug_app
 from intergrax.debug.hitl_service import DebugHitlResumeService
@@ -103,12 +103,15 @@ def create_poc_template_application(
     app.title = "Intergrax Poc Template Lab Application"
     mount_poc_template_routes(app, nexus_loop=nexus_loop, prefix=settings.route_prefix)
     if settings.include_task_control:
-        mount_harness_task_routes(
+        wire_harness_task_control(
             app,
+            enabled=True,
             task_runner=task_runner,
+            env=env,
             checkpoint_store=checkpoint_store,
-            prefix=settings.task_control_route_prefix,
+            task_route_prefix=settings.task_control_route_prefix,
             task_enricher=task_enricher,
+            runtime=runtime,
         )
     if settings.include_interaction_routes:
         app.include_router(
