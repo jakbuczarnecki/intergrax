@@ -1,12 +1,14 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Test boundary doubles for scenario runtime composition (APP-1)."""
+"""Test boundary doubles for scenario runtime composition (APP-1 / APP-2A)."""
 
 from __future__ import annotations
 
 import pytest
 
-from testing_support.builder import FakeLLMAdapter
+from tests.unit.platform_proofs.scenarios.ai_incident_investigation.planner_doubles import (
+    ScriptedIncidentInvestigationLLM,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -16,7 +18,7 @@ def _patch_scenario_llm_resolver(monkeypatch: pytest.MonkeyPatch) -> None:
     def _fake_resolve(*_args, agent_override=None, **_kwargs):
         if agent_override is not None:
             return agent_override
-        return FakeLLMAdapter(fixed_text="investigate")
+        return ScriptedIncidentInvestigationLLM()
 
     monkeypatch.setattr(
         "platform_proofs.scenarios.ai_incident_investigation.runtime_composition.resolve_llm_adapter",

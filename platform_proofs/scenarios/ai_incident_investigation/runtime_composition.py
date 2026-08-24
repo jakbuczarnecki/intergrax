@@ -73,8 +73,7 @@ def resolve_scenario_llm_adapter(
     """
     Resolve the platform LLM adapter for the scenario environment.
 
-    Model calls are not material to deterministic ``run_step()`` yet (APP-2); this
-    only validates that the production adapter boundary is configured.
+    Model calls materialize autonomous evidence gathering via bounded tool loop (APP-2A).
     """
     try:
         return resolve_llm_adapter(environment)
