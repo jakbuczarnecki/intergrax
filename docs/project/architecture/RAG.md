@@ -219,12 +219,12 @@ LKW exercises **indexed** RAG ingest and retrieval — not the full RAG qualific
 | ----------- | ------------ | -------------------- |
 | LKW Product Quick Start / indexed Ask V1 | Managed sample → index → grounded indexed Ask with citation path | Hybrid live+indexed; all providers; production/commercial validation |
 | LKW indexed Hybrid Ask (`indexed_only`) | Production indexed branch; retrieval even when answer assembly returns `insufficient_evidence` | Mixed authorized-live Hybrid Ask |
-| LKW Web URL intake (`LKW-WEB-URL-INDEXED-ASK`) | WEB_URL capture → tenant/workspace Qdrant scope → indexed retrieval | Arbitrary external sites; complete live-provider access |
+| LKW Web URL intake (`LKW-WEB-URL-INDEXED-ASK`) | WEB_URL capture → tenant/workspace Qdrant scope → indexed retrieval | Arbitrary external sites; complete external live-provider access |
 | LKW Trusted Ask / Core Platform proofs | Durable workspace indexed path through real runtime stack | Universal provider certification |
 
 Catalog: [`docs/project/proofs/PROOFS.md`](../proofs/PROOFS.md) · LKW detail: [`LKW_PLATFORM_PROOF.md`](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md).
 
-**Not established by current public or qualification evidence:** mixed indexed + authorized live Hybrid Ask; complete live-provider access; real-user validation; commercial validation; transactional exactly-once replacement across stores.
+**Not established by current public or qualification evidence:** mixed indexed + authorized live Hybrid Ask; complete external live-provider access; real-user validation; commercial validation; transactional exactly-once replacement across stores.
 
 ### Core implementation
 

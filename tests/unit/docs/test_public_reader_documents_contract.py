@@ -28,6 +28,7 @@ HUB_PATH = REPO_ROOT / "docs" / "project" / "README.md"
 WHY_PATH = REPO_ROOT / "docs" / "project" / "overview" / "WHY_INTERGRAX.md"
 USE_CASES_PATH = REPO_ROOT / "docs" / "project" / "overview" / "USE_CASES.md"
 ARCHITECTURE_OVERVIEW_PATH = REPO_ROOT / "docs" / "project" / "architecture" / "ARCHITECTURE_OVERVIEW.md"
+RAG_PATH = REPO_ROOT / "docs" / "project" / "architecture" / "RAG.md"
 BUILD_PATH = REPO_ROOT / "docs" / "project" / "builders" / "BUILD_WITH_INTERGRAX.md"
 BUILDER_QUICKSTART_PATH = REPO_ROOT / "docs" / "project" / "builders" / "BUILDER_QUICKSTART.md"
 PUBLIC_MAP_PATH = REPO_ROOT / "docs" / "project" / "community" / "PUBLIC_DOCUMENTATION_MAP.md"
@@ -1083,6 +1084,7 @@ def test_public_reader_docs_external_live_provider_boundary() -> None:
     """RELEASE-FIX-1: public reader docs must not imply controlled-live is absent."""
     for path in (
         ARCHITECTURE_OVERVIEW_PATH,
+        RAG_PATH,
         ROADMAP_PATH,
         FAQ_PATH,
         EVALUATION_GUIDE_PATH,
