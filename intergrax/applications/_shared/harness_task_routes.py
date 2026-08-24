@@ -24,6 +24,7 @@ from intergrax.applications._shared.task_control import (
     HitlResumeValidationError,
     TaskControlValidationError,
     governed_cancel_active_task,
+    governed_resume_checkpoint_task,
     governed_set_task_autonomy,
 )
 from intergrax.applications._shared.task_control_governance import (
@@ -64,9 +65,11 @@ class HarnessCancelRequest(BaseModel):
 
 
 class HarnessResumeRequest(BaseModel):
-    tenant_id: str = "default"
+    mutation_id: str = Field(min_length=1)
+    tenant_id: str | None = None
     resume_token: str = Field(min_length=1)
     operator_input: dict[str, Any] = Field(default_factory=dict)
+    approval_evidence_ref: str | None = None
 
 
 class HarnessTaskControlResponse(BaseModel):
@@ -280,7 +283,7 @@ def mount_harness_task_routes(
     async def resume_task(
         task_id: str,
         body: HarnessResumeRequest,
-        request: Request,
+        _request: Request,
         principal=Depends(resolve_harness_authenticated_principal),
     ) -> dict[str, Any]:
         if checkpoint_store is None:
@@ -288,38 +291,79 @@ def mount_harness_task_routes(
                 status_code=status.HTTP_501_NOT_IMPLEMENTED,
                 detail="checkpoint_store_not_configured",
             )
-        if principal is not None:
+        if principal is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="authenticated_principal_required",
+            )
+        identity = harness_principal_to_request_identity(principal)
+        if body.tenant_id is not None:
             reject_identity_assertion_conflicts(
-                canonical=harness_principal_to_request_identity(principal),
+                canonical=identity,
                 asserted_tenant_id=body.tenant_id,
                 asserted_user_id=None,
             )
-            approver = harness_principal_to_approver_evidence(principal)
-        else:
-            approver = None
-        checkpoint = checkpoint_store.get_by_token(
-            task_id,
-            body.tenant_id,
-            body.resume_token,
-        )
-        if checkpoint is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="invalid_resume_token")
-        from intergrax.applications._shared.task_control import resume_task_with_token
-
+        approver = harness_principal_to_approver_evidence(principal)
         try:
-            result = await resume_task_with_token(
+            outcome = await governed_resume_checkpoint_task(
                 task_runner,
                 task_id=task_id,
+                tenant_id=identity.tenant_id,
                 resume_token=body.resume_token,
+                mutation_id=body.mutation_id,
+                principal=identity,
+                mutation_boundary=mutation_boundary,
+                checkpoint_store=checkpoint_store,
                 operator_input=body.operator_input,
-                checkpoint=checkpoint,
                 approver=approver,
+                approval_evidence_ref=body.approval_evidence_ref,
             )
+        except TaskControlGovernanceBlockedError as exc:
+            _raise_task_control_http(exc)
+        except TaskControlValidationError as exc:
+            _raise_task_control_http(exc)
         except HitlResumeValidationError as exc:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=str(exc),
             ) from exc
+        if not outcome.accepted:
+            blocked = outcome.blocked
+            assert blocked is not None
+            if blocked.detail == "invalid_resume_token":
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=blocked.detail,
+                )
+            if blocked.detail in {
+                "stale_checkpoint",
+                "task_id_mismatch",
+                "checkpoint_not_resumable",
+            }:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=blocked.detail,
+                )
+            if blocked.blocker_code is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail={
+                        "blocker_code": blocked.blocker_code,
+                        "policy_action": blocked.policy_action,
+                        "authorization_evidence": (
+                            blocked.authorization_evidence.model_dump(mode="json")
+                            if blocked.authorization_evidence is not None
+                            else None
+                        ),
+                        "authorization_scope": (
+                            blocked.authorization_scope.model_dump(mode="json")
+                            if blocked.authorization_scope is not None
+                            else None
+                        ),
+                    },
+                )
+        result = outcome.task_result
+        assert result is not None
         return {
             "task_id": result.task_id,
             "state": result.state.value,

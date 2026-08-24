@@ -386,7 +386,31 @@ class _FakeIdentityProvider:
         return IdentityUser(user_id=APPROVER_ID, tenant_id=TENANT_A)
 
 
+class _RecordingEvaluatorForIdt:
+    def __init__(self) -> None:
+        self.calls: list[object] = []
+
+    def evaluate(self, request: object) -> object:
+        from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
+
+        self.calls.append(request)
+        return PolicyDecision(
+            action=PolicyAction.ALLOW,
+            reason="test_allow",
+            enforcement_level=EnforcementLevel.MANDATORY,
+            policy_rule_id="task_control.test_allow",
+            decision_id="dec-allow",
+        )
+
+
 def test_c7_http_tenant_conflict() -> None:
+    from intergrax.runtime.governance.control_plane_mutation_authorization import (
+        ControlPlaneMutationAuthorizationBoundary,
+    )
+
+    boundary = ControlPlaneMutationAuthorizationBoundary(
+        evaluator=_RecordingEvaluatorForIdt(),
+    )
     app = FastAPI()
     app.state.harness_auth = HarnessAuthState(
         identity_provider=_FakeIdentityProvider(),
@@ -399,11 +423,13 @@ def test_c7_http_tenant_conflict() -> None:
         app,
         task_runner=runner,
         checkpoint_store=_FakeCheckpointStore(_checkpoint_with_pause()),
+        mutation_boundary=boundary,
     )
     client = TestClient(app)
     response = client.post(
         f"/v1/tasks/{TASK_ID}/resume",
         json={
+            "mutation_id": "mut-resume-idt",
             "tenant_id": TENANT_B,
             "resume_token": "resume-token-1",
             "operator_input": {"verdict": "approve"},

@@ -10,9 +10,11 @@ from typing import Any
 from intergrax.applications._shared.task_control_governance import (
     TaskControlGovernanceBlockedError,
     build_cancel_task_execution_mutation_request,
+    build_resume_task_execution_mutation_request,
     build_set_task_autonomy_mutation_request,
     enforce_task_control_authorization_result,
     is_task_execution_cancellable,
+    task_checkpoint_resume_current_revision,
     task_execution_autonomy_revision,
     task_execution_state_revision,
     validate_task_control_principal_tenant_authority,
@@ -30,7 +32,11 @@ from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
 from intergrax.runtime.long_running.models import TaskCheckpoint
-from intergrax.runtime.long_running.resume_planner import build_checkpoint_resume_task
+from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.long_running.resume_planner import (
+    build_checkpoint_resume_task,
+    execution_identity_from_checkpoint,
+)
 from intergrax.runtime.task.active_task_registry import ActiveTaskBinding, ActiveTaskRegistry
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_contract import TaskPauseRecord
@@ -43,6 +49,22 @@ class HitlResumeValidationError(ValueError):
 
 class TaskControlValidationError(ValueError):
     """Fail-closed validation for governed task-control surfaces."""
+
+
+_RESUMABLE_CHECKPOINT_STATES = frozenset(
+    {
+        TaskState.WAITING_FOR_HUMAN,
+        TaskState.WAITING_FOR_RESOURCES,
+        TaskState.NEEDS_MORE_INFORMATION,
+    }
+)
+
+
+@dataclass(frozen=True, slots=True)
+class GovernedResumeResult:
+    accepted: bool
+    task_result: TaskResult | None = None
+    blocked: TaskControlResult | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -376,6 +398,199 @@ async def _revalidate_autonomy_binding(
     if current_revision != expected_current_revision:
         return None
     return binding
+
+
+def _is_checkpoint_resumable(checkpoint: TaskCheckpoint) -> bool:
+    return checkpoint.task_state in _RESUMABLE_CHECKPOINT_STATES
+
+
+def _validate_operator_hitl_input(
+    *,
+    checkpoint: TaskCheckpoint,
+    operator_input: dict[str, Any] | None,
+    approver: HumanApproverEvidence | None,
+) -> None:
+    task = build_checkpoint_resume_task(checkpoint)
+    if operator_input:
+        verdict = operator_input.get("verdict")
+        if verdict:
+            task.options.human.verdict = str(verdict)
+        response_text = operator_input.get("response_text")
+        if response_text:
+            task.options.human.response_text = str(response_text)
+    _materialize_hitl_resume_input(
+        task,
+        checkpoint=checkpoint,
+        operator_input=operator_input,
+        approver=approver,
+    )
+
+
+def _checkpoints_identity_match(
+    *,
+    original: TaskCheckpoint,
+    reloaded: TaskCheckpoint,
+    expected_current_revision: str,
+) -> bool:
+    if original.checkpoint_id != reloaded.checkpoint_id:
+        return False
+    if original.task_id != reloaded.task_id:
+        return False
+    if original.tenant_id != reloaded.tenant_id:
+        return False
+    if original.resume_token != reloaded.resume_token:
+        return False
+    if original.task_state != reloaded.task_state:
+        return False
+    if task_checkpoint_resume_current_revision(reloaded) != expected_current_revision:
+        return False
+    try:
+        original_run_id, _ = execution_identity_from_checkpoint(original)
+        reloaded_run_id, _ = execution_identity_from_checkpoint(reloaded)
+    except ValueError:
+        return False
+    return original_run_id == reloaded_run_id
+
+
+async def governed_resume_checkpoint_task(
+    runner: UnifiedTaskRunner,
+    *,
+    task_id: str,
+    tenant_id: str,
+    resume_token: str,
+    mutation_id: str,
+    principal: RequestIdentity,
+    mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None,
+    checkpoint_store: TaskCheckpointPersistence,
+    operator_input: dict[str, Any] | None = None,
+    approver: HumanApproverEvidence | None = None,
+    approval_evidence_ref: str | None = None,
+) -> GovernedResumeResult:
+    """Governed operator resume for one exact persisted checkpoint."""
+    normalized_mutation_id = mutation_id.strip()
+    if not normalized_mutation_id:
+        raise TaskControlValidationError("mutation_id_required")
+
+    checkpoint = checkpoint_store.get_by_token(task_id, tenant_id, resume_token)
+    if checkpoint is None:
+        return GovernedResumeResult(
+            accepted=False,
+            blocked=TaskControlResult(
+                task_id=task_id,
+                action="resume",
+                accepted=False,
+                detail="invalid_resume_token",
+            ),
+        )
+
+    if checkpoint.task_id != task_id:
+        return GovernedResumeResult(
+            accepted=False,
+            blocked=TaskControlResult(
+                task_id=task_id,
+                action="resume",
+                accepted=False,
+                detail="task_id_mismatch",
+            ),
+        )
+
+    run_id, _ = execution_identity_from_checkpoint(checkpoint)
+    try:
+        validate_task_control_principal_tenant_authority(
+            principal=principal,
+            task_tenant_id=checkpoint.tenant_id,
+            task_id=checkpoint.task_id,
+            run_id=run_id,
+            operation="resume_task_execution",
+        )
+    except TaskControlGovernanceBlockedError as exc:
+        return GovernedResumeResult(
+            accepted=False,
+            blocked=_blocked_result(
+                task_id=task_id,
+                action="resume",
+                detail="tenant_authority_mismatch",
+                exc=exc,
+            ),
+        )
+
+    if not _is_checkpoint_resumable(checkpoint):
+        return GovernedResumeResult(
+            accepted=False,
+            blocked=TaskControlResult(
+                task_id=task_id,
+                action="resume",
+                accepted=False,
+                detail="checkpoint_not_resumable",
+                state=checkpoint.task_state.value,
+            ),
+        )
+
+    _validate_operator_hitl_input(
+        checkpoint=checkpoint,
+        operator_input=operator_input,
+        approver=approver,
+    )
+
+    if mutation_boundary is None:
+        raise TaskControlGovernanceBlockedError(
+            "TASK_CONTROL_BLOCKED_BY_MISSING_BOUNDARY",
+            "resume_task_execution requires ControlPlaneMutationAuthorizationBoundary",
+            policy_action="DENY",
+        )
+
+    mutation_request = build_resume_task_execution_mutation_request(
+        principal=principal,
+        tenant_id=checkpoint.tenant_id,
+        task_id=checkpoint.task_id,
+        run_id=run_id,
+        mutation_id=normalized_mutation_id,
+        checkpoint=checkpoint,
+        approval_evidence_ref=approval_evidence_ref,
+    )
+    authorization_result = mutation_boundary.authorize(mutation_request)
+    try:
+        authorization_result = enforce_task_control_authorization_result(
+            authorization_result,
+            operation="resume_task_execution",
+        )
+    except TaskControlGovernanceBlockedError as exc:
+        return GovernedResumeResult(
+            accepted=False,
+            blocked=_blocked_result(
+                task_id=task_id,
+                action="resume",
+                detail=exc.blocker_code.lower(),
+                exc=exc,
+            ),
+        )
+
+    reloaded = checkpoint_store.get_by_token(task_id, tenant_id, resume_token)
+    if reloaded is None or not _checkpoints_identity_match(
+        original=checkpoint,
+        reloaded=reloaded,
+        expected_current_revision=mutation_request.current_revision,
+    ):
+        return GovernedResumeResult(
+            accepted=False,
+            blocked=TaskControlResult(
+                task_id=task_id,
+                action="resume",
+                accepted=False,
+                detail="stale_checkpoint",
+                authorization_evidence=authorization_result.evidence,
+            ),
+        )
+
+    task_result = await resume_task_with_token(
+        runner,
+        task_id=task_id,
+        resume_token=resume_token,
+        operator_input=operator_input,
+        checkpoint=reloaded,
+        approver=approver,
+    )
+    return GovernedResumeResult(accepted=True, task_result=task_result)
 
 
 async def set_task_autonomy(task_id: str, level: AutonomyLevel) -> TaskControlResult:
