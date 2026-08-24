@@ -6,13 +6,21 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
+from intergrax.contracts.control_plane_mutation import (
+    ControlPlaneMutationAuthorizationEvidence,
+    ControlPlaneMutationAuthorizationScope,
+)
 from intergrax.runtime.capacity.approval_queue import CapacityApprovalQueue
 from intergrax.runtime.capacity.collector import CapacitySignalCollector
 from intergrax.runtime.capacity.contracts import ScalingAction, ScalingActionKind, ScalingActionPlan
-from intergrax.runtime.capacity.control_plane_governance import EcpGovernanceBlockedError
+from intergrax.runtime.capacity.control_plane_governance import (
+    EcpGovernanceBlockedError,
+    EcpTenantScopeDenial,
+)
 from intergrax.runtime.capacity.evaluator import ScalingEvaluator
 from intergrax.runtime.capacity.events import PublishFn, publish_scale_applied, publish_scale_failed
 from intergrax.runtime.capacity.governed_capacity_mutation import GovernedCapacityMutationExecutor
@@ -29,6 +37,18 @@ class SchedulerGovernanceBlockedError(Exception):
     def __init__(self, blocker_code: str, message: str) -> None:
         super().__init__(message)
         self.blocker_code = blocker_code
+
+
+@dataclass(frozen=True, slots=True)
+class SchedulerCapacityMutationBlocked:
+    """Transient scheduler outcome when automatic capacity mutation is blocked."""
+
+    action_id: str
+    blocker_code: str
+    policy_action: str | None = None
+    authorization_evidence: ControlPlaneMutationAuthorizationEvidence | None = None
+    authorization_scope: ControlPlaneMutationAuthorizationScope | None = None
+    tenant_scope_denial: EcpTenantScopeDenial | None = None
 
 
 class CapacityScheduler:
@@ -63,6 +83,7 @@ class CapacityScheduler:
         self._celery_pool_id = celery_pool_id
         self._requires_governed_execution = requires_governed_execution
         self._task: asyncio.Task[None] | None = None
+        self._blocked_outcomes: list[SchedulerCapacityMutationBlocked] = []
 
     async def _apply_plan(self, plan: ScalingActionPlan) -> None:
         for action in plan.actions:
@@ -201,15 +222,46 @@ class CapacityScheduler:
         if self._publish is not None:
             publish_scale_applied(self._publish, action, tenant_id=self._tenant_id or "harness")
 
+    @property
+    def blocked_outcomes(self) -> tuple[SchedulerCapacityMutationBlocked, ...]:
+        return tuple(self._blocked_outcomes)
+
+    def _blocked_outcome_from_governance(
+        self,
+        action: ScalingAction,
+        *,
+        blocker_code: str,
+        governance_error: EcpGovernanceBlockedError | StaleCapacityStateError | None,
+    ) -> SchedulerCapacityMutationBlocked:
+        if isinstance(governance_error, EcpGovernanceBlockedError):
+            return SchedulerCapacityMutationBlocked(
+                action_id=action.action_id,
+                blocker_code=blocker_code,
+                policy_action=governance_error.policy_action,
+                authorization_evidence=governance_error.authorization_evidence,
+                authorization_scope=governance_error.authorization_scope,
+                tenant_scope_denial=governance_error.tenant_scope_denial,
+            )
+        return SchedulerCapacityMutationBlocked(
+            action_id=action.action_id,
+            blocker_code=blocker_code,
+        )
+
     def _record_blocked_action(
         self,
         action: ScalingAction,
         *,
         reason: str,
         blocker_code: str,
-        governance_error: Exception | None = None,
+        governance_error: EcpGovernanceBlockedError | StaleCapacityStateError | None = None,
     ) -> None:
-        del governance_error
+        del reason
+        blocked = self._blocked_outcome_from_governance(
+            action,
+            blocker_code=blocker_code,
+            governance_error=governance_error,
+        )
+        self._blocked_outcomes.append(blocked)
         self._provisioner.failures.append(blocker_code)
         if self._publish is not None:
             publish_scale_failed(self._publish, action, reason=blocker_code)

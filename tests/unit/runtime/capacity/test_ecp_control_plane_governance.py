@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""ECP control-plane mutation governance proofs (ECP-CPM1–ECP-CPM18)."""
+"""ECP control-plane mutation governance proofs (ECP-CPM1–ECP-CPM32)."""
 
 from __future__ import annotations
 
@@ -750,3 +750,130 @@ def test_ecp_cpm28_ceiling_automatic_mutation_fail_closed() -> None:
         "ECP_SCHEDULER_CEILING_UNSUPPORTED" in failure
         for failure in scheduler._provisioner.failures
     )
+
+
+def test_ecp_cpm29_require_human_scheduler_preserves_governance_outcome() -> None:
+    import asyncio
+
+    from intergrax.runtime.capacity.contracts import ScalingActionPlan
+
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(
+            action=PolicyAction.REQUIRE_HUMAN,
+            reason="needs human",
+            policy_rule_id="rule.hitl",
+        ),
+    )
+    scheduler, k8s, _celery, provisioner, _recording = _build_governed_scheduler(
+        evaluator=evaluator,
+    )
+    action = ScalingAction(
+        action_id="scheduler-require-human-action",
+        kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
+        target=ScalingTarget.NEXUS_HOST,
+        delta=1,
+    )
+    plan = ScalingActionPlan(actions=(action,), evaluation_status="planned")
+    asyncio.run(scheduler._apply_plan(plan))
+    assert k8s.scale_calls == []
+    assert provisioner.applied == []
+    assert len(scheduler.blocked_outcomes) == 1
+    blocked = scheduler.blocked_outcomes[0]
+    assert blocked.action_id == "scheduler-require-human-action"
+    assert blocked.blocker_code == "ECP_BLOCKED_BY_REQUIRE_HUMAN"
+    assert blocked.policy_action == PolicyAction.REQUIRE_HUMAN.value
+    assert blocked.authorization_scope is not None
+    assert blocked.authorization_scope.mutation_id == "scheduler-require-human-action"
+    assert blocked.authorization_evidence is not None
+    assert blocked.authorization_evidence.mutation_id == "scheduler-require-human-action"
+    assert blocked.authorization_evidence.policy_action is PolicyAction.REQUIRE_HUMAN
+
+
+def test_ecp_cpm30_deny_scheduler_preserves_canonical_evidence() -> None:
+    import asyncio
+
+    from intergrax.runtime.capacity.contracts import ScalingActionPlan
+
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(action=PolicyAction.DENY, reason="blocked"),
+    )
+    scheduler, k8s, celery, provisioner, _recording = _build_governed_scheduler(
+        evaluator=evaluator,
+    )
+    k8s_action = ScalingAction(
+        action_id="scheduler-deny-k8s",
+        kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
+        target=ScalingTarget.NEXUS_HOST,
+        delta=1,
+    )
+    celery_action = ScalingAction(
+        action_id="scheduler-deny-celery",
+        kind=ScalingActionKind.SCALE_CELERY_WORKERS,
+        target=ScalingTarget.CELERY_POOL,
+        delta=1,
+    )
+    plan = ScalingActionPlan(
+        actions=(k8s_action, celery_action),
+        evaluation_status="planned",
+    )
+    asyncio.run(scheduler._apply_plan(plan))
+    assert k8s.scale_calls == []
+    assert celery.worker_count == 2
+    assert provisioner.applied == []
+    assert len(scheduler.blocked_outcomes) == 2
+    for blocked in scheduler.blocked_outcomes:
+        assert blocked.blocker_code == "ECP_BLOCKED_BY_POLICY"
+        assert blocked.policy_action == PolicyAction.DENY.value
+        assert blocked.authorization_evidence is not None
+        assert blocked.authorization_evidence.policy_action is PolicyAction.DENY
+        assert blocked.authorization_evidence.mutation_id == blocked.action_id
+
+
+def test_ecp_cpm31_wrong_tenant_scheduler_preserves_tenant_denial_without_evidence() -> None:
+    import asyncio
+
+    scheduler, k8s, _celery, provisioner, recording = _build_governed_scheduler(
+        execution_identity=_scheduler_service_principal(tenant_id=_OTHER_TENANT),
+        tenant_id=_TENANT,
+    )
+    scheduler._collector.record_backpressure()
+    asyncio.run(scheduler.tick())
+    assert recording.calls == []
+    assert k8s.scale_calls == []
+    assert provisioner.applied == []
+    assert len(scheduler.blocked_outcomes) == 1
+    blocked = scheduler.blocked_outcomes[0]
+    assert blocked.blocker_code == "ECP_BLOCKED_BY_TENANT_AUTHORITY"
+    assert blocked.policy_action == PolicyAction.DENY.value
+    assert blocked.tenant_scope_denial is not None
+    assert blocked.tenant_scope_denial.reason == "principal_tenant_mismatch"
+    assert blocked.authorization_evidence is None
+    assert blocked.authorization_scope is None
+
+
+def test_ecp_cpm32_stale_state_scheduler_blocked_without_cpm_evidence() -> None:
+    import asyncio
+
+    from intergrax.runtime.capacity.contracts import ScalingActionPlan
+
+    scheduler, k8s, _celery, provisioner, _recording = _build_governed_scheduler(
+        k8s=_FlakyK8s(),
+    )
+    action = ScalingAction(
+        action_id="scheduler-stale-k8s",
+        kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
+        target=ScalingTarget.NEXUS_HOST,
+        delta=1,
+    )
+    plan = ScalingActionPlan(actions=(action,), evaluation_status="planned")
+    asyncio.run(scheduler._apply_plan(plan))
+    assert k8s.scale_calls == []
+    assert provisioner.applied == []
+    assert len(scheduler.blocked_outcomes) == 1
+    blocked = scheduler.blocked_outcomes[0]
+    assert blocked.action_id == "scheduler-stale-k8s"
+    assert blocked.blocker_code == "ECP_SCHEDULER_STALE_STATE"
+    assert blocked.policy_action is None
+    assert blocked.authorization_evidence is None
+    assert blocked.authorization_scope is None
+    assert blocked.tenant_scope_denial is None
