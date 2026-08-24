@@ -12,7 +12,7 @@ It is **not** a feature matrix, competitor attack page, market ranking, performa
 
 Modern alternatives overlap and may be composed. Intergrax is **not** universally superior. The comparison is about **architectural responsibility** and **integration burden** — which layer owns product semantics, enforcement, consequential effects, canonical history, recovery, and evidence — not about whether a listed capability exists somewhere in a stack.
 
-External product capabilities were verified against vendor primary documentation on **2026-08-18**, except **Amazon Bedrock AgentCore** (verified **2026-08-23**). Intergrax claims remain bounded by [PROOFS.md](../proofs/PROOFS.md). Category-level comparison (no vendor names): [Where Intergrax fits](WHY_INTERGRAX.md#where-intergrax-fits).
+External product capabilities were verified against vendor primary documentation on **2026-08-18**, except **Amazon Bedrock AgentCore** (verified **2026-08-23**) and **CrewAI** (verified **2026-08-24**). Intergrax claims remain bounded by [PROOFS.md](../proofs/PROOFS.md). Category-level comparison (no vendor names): [Where Intergrax fits](WHY_INTERGRAX.md#where-intergrax-fits).
 
 ---
 
@@ -190,6 +190,64 @@ Intergrax uses its own Nexus execution model (LangGraph is optional legacy compa
 ### Current Intergrax evidence boundary
 
 Core harness-path mechanisms exist; not every boundary is publicly proof-qualified. See [PROOFS.md](../proofs/PROOFS.md).
+
+---
+
+## CrewAI
+
+Primary sources: [CrewAI Agents](https://docs.crewai.com/concepts/agents), [Crews](https://docs.crewai.com/concepts/crews), [Flows](https://docs.crewai.com/concepts/flows), [CrewAI AMP](https://docs.crewai.com/enterprise/introduction) (verified 2026-08-24).
+
+### Best fit / strengths
+
+A strong agent/application framework and platform path for shipping multi-agent automations quickly: role/goal/task-oriented teams, autonomous collaboration through Crews, deterministic and event-driven workflow control through Flows, hybrid composition of Crews and Flows, a broad tools and integration ecosystem, and a documented deployment and monitoring path via CrewAI AMP.
+
+### Choose it when…
+
+- you want to **ship agent automations quickly** with a ready developer model instead of designing a custom operating layer;
+- Crew, Agent, Task, and Flow abstractions **fit your problem naturally**;
+- you want **autonomous and deterministic workflow composition** in one framework;
+- you prefer a **documented ecosystem and deployment path** (open-source framework plus optional AMP);
+- designing a **shared multi-product operating model** is not your primary architectural goal.
+
+**CrewAI may be the better choice** when agent automation development, crew/flow workflow composition, and an associated operational platform are the center of gravity — not consolidating a cross-product application operating layer.
+
+### What it already solves
+
+Per official documentation (not an exhaustive list):
+
+- **Agents and Tasks** — autonomous units with role, goal, tools, delegation, and task-oriented execution.
+- **Crews** — collaborative agent teams with sequential and hierarchical process models, optional crew-level memory and knowledge sources.
+- **Flows** — structured, event-driven workflows combining tasks and crews with conditional branching and shared state (structured or unstructured).
+- **Persistence and resume** — Flow state persistence via `@persist`, supporting resume and fork semantics across restarts.
+- **Tools, memory, and knowledge** — tool integration, agent/crew memory, knowledge sources, and Flow-accessible unified memory.
+- **Guardrails and structured outputs** — agent-level guardrails and structured output patterns documented in the framework.
+- **Human-in-the-loop** — `@human_feedback` in Flows for approval gates and human review steps (where documented).
+- **Tracing and enterprise platform** — OpenTelemetry tracing on crews; CrewAI AMP for deployment, REST API access, execution traces/logs, and managed monitoring.
+
+### Responsibilities / questions your team still needs to settle
+
+Architecture and adoption questions — not implied CrewAI feature gaps:
+
+- Where do **product-specific decision semantics** and acceptance criteria live across multiple products built with independent crews and flows?
+- How does an organization **standardize evidence and admissibility requirements** across independent crews/flows?
+- What is the **canonical cross-product history** reviewers need when decisions, policies, tool effects, recovery, and evidence must correlate?
+- How are **organization-specific policy semantics** shared across multiple applications?
+- Which **recovery, compensation, and HITL semantics** are local Flow logic versus reusable organization-wide operating contracts?
+- Is CrewAI intended to be the **application framework for all products**, or should multiple frameworks and apps share one platform operating model?
+
+### How Intergrax approaches responsibility differently
+
+CrewAI's center of gravity is the **agent, crew, and flow programming model** — agent automation development, workflow composition, tools/memory/knowledge integration, and an associated operational platform (including AMP).
+
+Intergrax's intended center of gravity is a **shared application operating model across multiple specialized products**: reusable policy, evidence, execution, recovery, identity/history, and other operating boundaries consolidated in a source-available layer, with **product semantics remaining application-owned**.
+
+This is a **different center of architectural responsibility**, not a claim that Intergrax has more complete governance, stronger safety, better reliability, or broader production maturity.
+
+CrewAI may itself be deployed as part of an Intergrax-integrated or broader best-of-breed architecture; these systems are not necessarily mutually exclusive.
+
+### Current Intergrax evidence boundary
+
+Intergrax remains under **active R&D** with **bounded LKW and platform-capability proofs** — see [PROOFS.md](../proofs/PROOFS.md). No demonstrated developer adoption or ecosystem breadth comparable to CrewAI's documented product and platform offering. No claim of managed-platform maturity equivalent to CrewAI AMP's documented capabilities. No production track-record superiority claim. Cross-product delivery acceleration remains a **hypothesis** until demonstrated across additional products.
 
 ---
 

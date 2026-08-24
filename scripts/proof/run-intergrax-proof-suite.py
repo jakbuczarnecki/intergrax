@@ -11,6 +11,7 @@ from pathlib import Path
 
 from scripts.proof.intergrax_proof_contracts import ProofProfile
 from scripts.proof.intergrax_proof_runner import (
+    ProofSelectionError,
     RunnerConfig,
     render_console_summary,
     run_suite,
@@ -45,6 +46,11 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Resolve manifest selection only; do not execute child proofs.",
     )
+    parser.add_argument(
+        "--proof-id",
+        metavar="PROOF_ID",
+        help="Execute only the named proof (exact manifest proof_id match).",
+    )
     return parser
 
 
@@ -56,10 +62,15 @@ def main(argv: list[str] | None = None) -> int:
         verbose=bool(args.verbose),
         allow_external_mutating=bool(args.allow_external_mutating),
         dry_run=bool(args.dry_run),
+        proof_id=args.proof_id,
     )
 
-    receipt, receipt_path = run_suite(config)
-    print(render_console_summary(receipt, verbose=config.verbose))
+    try:
+        receipt, receipt_path = run_suite(config)
+    except ProofSelectionError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print(render_console_summary(receipt, verbose=config.verbose, repo_root=_REPO_ROOT))
     if receipt_path is not None:
         print(f"receipt: {receipt_path.relative_to(_REPO_ROOT)}")
     return suite_exit_code(receipt)

@@ -3,7 +3,7 @@
 **Status:** Canonical architecture (domain pair 1:1)
 **Plan (1:1):** [`plan/PROOF_RECEIPTS.md`](../maintainers/plans/PROOF_RECEIPTS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
-**Proof consumer:** LKW ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md) §LKW-PR)
+**Proof consumer:** LKW ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PR)
 **Last updated:** 2026-07-19 — **LKW.7C2 closed** (PROOF-RECEIPTS-1E remains closed)
 
 ---

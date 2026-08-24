@@ -162,7 +162,7 @@ They are **not** a marketing demo, feature showcase, or product claim. Product, 
 
 Initial production signals make workload overload plausible — but evidence is conflicting, stale, and incomplete. Independent verification must challenge unsupported causality, gather targeted evidence to distinguish competing hypotheses, and produce a bounded **RESOLVED** or honest **UNRESOLVED** outcome.
 
-**Status:** FULL-1 RESOLVED evidence world implemented and executable; UNRESOLVED path and accepted public proof remain pending.
+**Status:** FULL-1 RESOLVED and FULL-2 UNRESOLVED are implemented and executable; public Scenario Proof not yet accepted or published.
 
 <a href="docs/project/assets/public/readme/fullsize/scenario-ai-incident-investigation.md">
 <picture>
@@ -219,7 +219,7 @@ source-management, and daily-use flows remain under productization.
 #### A. Product Quick Start
 
 The easiest supported local executable product path — indexed Ask V1, not Hybrid Ask
-certification:
+qualification:
 
 - **indexed Ask V1** over a bundled sample document
 - **AURORA-17** is the expected success marker
@@ -283,7 +283,7 @@ in the [LKW Quick Start](applications/local_workspace_application/docs/product/Q
 platform-level bounded proof covering startup/readiness, durable knowledge and
 execution, background processing, persisted reviewable evidence, hosting/recovery,
 and watched-folder indexing — not production readiness, commercial validation,
-or all-provider certification.
+or provider-wide qualification.
 
 **Proof families:** Product evaluation (`LKW-PRODUCT-QUICKSTART-*`), Core platform (`LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`), Indexed Hybrid Ask (`LKW-HYBRID-ASK-INDEXED`), Trusted Ask (`LKW-ASK-WORKSPACE-LIVE`), Governed Evidence Decision Proof (`advanced_flagship_proof`).
 
@@ -421,7 +421,7 @@ lack established runtime proof:
 | Direction | What it adds | Current maturity | Explore |
 | --- | --- | --- | --- |
 | **Multiplayer AI** | Governed multi-principal collaboration among humans, agents, services, and external agents | **Architecture / roadmap stage** — runtime proof **not yet established** | [Multiplayer AI architecture](docs/project/capabilities/architecture/MULTIPLAYER_AI.md) |
-| **Platform Extensibility** | Governed extension/package model across domain-owned contracts | **Canonical architecture frozen** — implementation stages planned; complete third-party install-to-runtime E2E proof **not yet established** | [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md) |
+| **Platform Extensibility** | Governed extension/package model across domain-owned contracts | **Canonical architecture frozen** — multiple extension-platform slices implemented; core program closed. Residual Protocol v2 work remains planned; complete third-party install-to-runtime E2E proof **not yet established** | [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md) |
 | **Agent Marketplace** | Future ecosystem layer — discovery and distribution over governed Agent Distribution / Platform Extensibility | **FUTURE PRODUCT — NOT SHIPPED TODAY** | [Agent Marketplace concept](docs/project/overview/AGENT_MARKETPLACE.md) |
 
 ## License and collaboration

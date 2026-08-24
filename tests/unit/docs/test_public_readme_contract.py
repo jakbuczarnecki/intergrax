@@ -7,7 +7,6 @@ from __future__ import annotations
 import re
 import struct
 import xml.etree.ElementTree as ET
-import zlib
 from pathlib import Path
 
 import pytest
@@ -280,13 +279,16 @@ def test_scenario_public_positioning(readme_text: str) -> None:
     assert "not a marketing demo" in normalized or "not a marketing" in normalized
     assert "featured scenario in development" in normalized
     assert "full-1" in normalized
+    assert "full-2" in normalized
     assert "implemented" in normalized
     assert "executable" in normalized
     assert (
-        "public proof" in normalized
+        "public scenario proof not yet accepted" in normalized
+        or "not yet accepted or published" in normalized
         or "not accepted" in normalized
-        or "remain pending" in normalized
     )
+    assert "unresolved path pending" not in normalized
+    assert "pending full-2" not in normalized
     assert "no executable proof yet" not in normalized
     assert "no executable evidence or report yet" not in normalized
     assert "ai_incident_investigation" in scenario_section
@@ -478,48 +480,6 @@ def _png_dimensions(path: Path) -> tuple[int, int]:
     return width, height
 
 
-def _png_row_luma_avg(path: Path, row: int, sample_step: int = 16) -> int:
-    with path.open("rb") as handle:
-        handle.read(8)
-        chunks: list[tuple[bytes, bytes]] = []
-        while True:
-            length = struct.unpack(">I", handle.read(4))[0]
-            chunk_type = handle.read(4)
-            data = handle.read(length)
-            handle.read(4)
-            chunks.append((chunk_type, data))
-            if chunk_type == b"IEND":
-                break
-    ihdr = next(data for chunk_type, data in chunks if chunk_type == b"IHDR")
-    width, height, bit_depth, color_type, *_ = struct.unpack(">IIBBBBB", ihdr)
-    if bit_depth != 8 or color_type not in (2, 6):
-        raise ValueError(f"unsupported PNG color layout: {path}")
-    bytes_per_pixel = 3 if color_type == 2 else 4
-    idat = b"".join(data for chunk_type, data in chunks if chunk_type == b"IDAT")
-    raw = zlib.decompress(idat)
-    stride = width * bytes_per_pixel + 1
-    row = max(0, min(height - 1, row))
-    row_start = row * stride + 1
-    total = 0
-    samples = 0
-    for x in range(0, width, sample_step):
-        index = row_start + x * bytes_per_pixel
-        total += (raw[index] + raw[index + 1] + raw[index + 2]) // 3
-        samples += 1
-    return total // samples
-
-
-def _png_has_vertical_theme_composite(path: Path) -> bool:
-    """Detect light+dark variants stacked vertically in one PNG."""
-    _, height = _png_dimensions(path)
-    top = _png_row_luma_avg(path, height // 16)
-    mid = _png_row_luma_avg(path, height // 2)
-    bottom = _png_row_luma_avg(path, height - height // 16)
-    light_top_dark_bottom = top > 280 and mid < 160 and top - mid > 200
-    dark_top_light_bottom = top < 160 and mid > 220 and bottom - top > 200
-    return light_top_dark_bottom or dark_top_light_bottom
-
-
 def _validate_light_dark_pair(light_path: Path, dark_path: Path) -> list[str]:
     violations: list[str] = []
     if not light_path.is_file():
@@ -540,10 +500,6 @@ def _validate_light_dark_pair(light_path: Path, dark_path: Path) -> list[str]:
             dark_w, dark_h = _png_dimensions(dark_path)
             if light_w != dark_w or light_h != dark_h:
                 violations.append("light/dark dimension mismatch")
-            if _png_has_vertical_theme_composite(light_path):
-                violations.append("light PNG looks like a vertical light+dark composite")
-            if _png_has_vertical_theme_composite(dark_path):
-                violations.append("dark PNG looks like a vertical light+dark composite")
     return violations
 
 

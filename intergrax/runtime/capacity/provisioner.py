@@ -20,16 +20,20 @@ class ProvisionerExecutionMode(StrEnum):
     GOVERNED_ONLY = "governed_only"
 
 
-class KubernetesScaler(Protocol):
-    def scale_workload(self, *, deployment: str, replicas: int) -> int: ...
-
+class KubernetesCapacityReader(Protocol):
     def get_replicas(self, *, deployment: str) -> int: ...
 
 
-class CeleryScaler(Protocol):
-    def scale_workers(self, *, delta: int) -> int: ...
-
+class CeleryCapacityReader(Protocol):
     def get_worker_count(self) -> int: ...
+
+
+class KubernetesScaler(KubernetesCapacityReader, Protocol):
+    def scale_workload(self, *, deployment: str, replicas: int) -> int: ...
+
+
+class CeleryScaler(CeleryCapacityReader, Protocol):
+    def scale_workers(self, *, delta: int) -> int: ...
 
 
 class OrchestrationCeilingPatcher(Protocol):
@@ -85,6 +89,21 @@ class ScalingProvisioner:
         self.applied: list[ScalingAction] = []
         self.failures: list[str] = []
 
+    def attach_scheduler_dependencies(
+        self,
+        *,
+        action_gate: CapacityActionGate | None = None,
+        ceiling_patcher: OrchestrationCeilingPatcher | None = None,
+        publish: PublishFn | None = None,
+    ) -> None:
+        """Attach scheduler-only dependencies to an existing production provisioner."""
+        if action_gate is not None:
+            self._action_gate = action_gate
+        if ceiling_patcher is not None:
+            self._ceiling_patcher = ceiling_patcher
+        if publish is not None:
+            self._publish = publish
+
     def read_k8s_replicas(self, *, deployment: str) -> int:
         if self._kubernetes is None:
             raise RuntimeError("kubernetes backend not configured")
@@ -95,7 +114,7 @@ class ScalingProvisioner:
             raise RuntimeError("celery backend not configured")
         return self._celery.get_worker_count()
 
-    def apply_authorized_k8s_target(
+    def _apply_authorized_k8s_target(
         self,
         *,
         deployment: str,
@@ -113,7 +132,7 @@ class ScalingProvisioner:
             )
         return self._kubernetes.scale_workload(deployment=deployment, replicas=replicas)
 
-    def apply_authorized_celery_target(
+    def _apply_authorized_celery_target(
         self,
         *,
         target_workers: int,

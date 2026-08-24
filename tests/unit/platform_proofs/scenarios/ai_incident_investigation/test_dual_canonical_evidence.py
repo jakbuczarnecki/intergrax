@@ -26,6 +26,7 @@ from platform_proofs.scenarios.ai_incident_investigation.evidence_builder import
     PROOF_ID,
     build_platform_proof_evidence,
 )
+from platform_proofs.scenarios.ai_incident_investigation.evaluator import evaluate_scenario_run
 from platform_proofs.scenarios.ai_incident_investigation.fixtures import ScenarioVariant
 from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
     H3_CLAIM_ID,
@@ -55,9 +56,11 @@ def repo_root() -> Path:
 async def test_unresolved_canonical_evidence_content() -> None:
     bundle = build_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
     result = await execute_resolved_skeleton(bundle)
+    evaluation = evaluate_scenario_run(result, bundle.fixture)
     evidence = build_platform_proof_evidence(
         result,
         variant=ScenarioVariant.UNRESOLVED,
+        evaluation=evaluation,
         source_revision="testsha",
     )
     parsed = PlatformProofEvidence.model_validate(evidence.model_dump(mode="json"))
@@ -89,13 +92,17 @@ async def test_resolved_and_unresolved_artifact_identities_distinct() -> None:
     unresolved_bundle = build_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
     resolved_result = await execute_resolved_skeleton(resolved_bundle)
     unresolved_result = await execute_resolved_skeleton(unresolved_bundle)
+    resolved_evaluation = evaluate_scenario_run(resolved_result, resolved_bundle.fixture)
+    unresolved_evaluation = evaluate_scenario_run(unresolved_result, unresolved_bundle.fixture)
     resolved_evidence = build_platform_proof_evidence(
         resolved_result,
+        evaluation=resolved_evaluation,
         variant=ScenarioVariant.RESOLVED,
         source_revision="same-rev",
     )
     unresolved_evidence = build_platform_proof_evidence(
         unresolved_result,
+        evaluation=unresolved_evaluation,
         variant=ScenarioVariant.UNRESOLVED,
         source_revision="same-rev",
     )

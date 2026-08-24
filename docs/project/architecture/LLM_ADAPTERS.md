@@ -426,7 +426,7 @@ Optional `LLMCallSummary` on `SignalAssemblyInput.last_llm_call` → `HarnessOut
 
 ### M-LLM-R as-built conformance (audit dimensions)
 
-Re-validate per [`audit/LLM_ADAPTERS.md`](../../audit_results/LLM_ADAPTERS.md) §3:
+Re-validate per [`audit/LLM_ADAPTERS.md`](../../audit_results/2026-08-18/LLM_ADAPTERS.md) §3:
 
 | # | Dimension | Status | Evidence |
 |---|-----------|--------|----------|

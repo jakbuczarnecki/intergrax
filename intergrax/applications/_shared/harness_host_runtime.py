@@ -87,10 +87,17 @@ from intergrax.applications._shared.security_wiring import (
 from intergrax.applications._shared.task_memory_wiring import (
     wire_task_memory_from_profile,
 )
+from intergrax.applications._shared.harness_control_plane_governance_wiring import (
+    HarnessControlPlaneGovernance,
+    build_harness_control_plane_governance,
+)
 from intergrax.applications._shared.harness_registry_authority import (
     RegistryAssemblyMode,
     resolve_harness_host_registry,
     resolve_registry_assembly_mode,
+)
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
 )
 from intergrax.applications._shared.registry_projection import (
     MaterializedRegistryProjection,
@@ -138,6 +145,7 @@ class HarnessHostRuntime:
     compensation_queue_store: CompensationQueueStore
     registry_projection_evidence: RegistryProjectionEvidence | None = None
     boundary_event_buffer: BoundaryEventBuffer | None = None
+    control_plane_governance: HarnessControlPlaneGovernance | None = None
 
 
 def build_harness_host_runtime(
@@ -161,6 +169,7 @@ def build_harness_host_runtime(
     application_host: ApplicationHost | None = None,
     document_store: Any | None = None,
     boundary_event_buffer: Any | None = None,
+    mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment wiring → registry → observability → NexusLoop.
@@ -307,6 +316,10 @@ def build_harness_host_runtime(
     )
 
     apply_reliability_governance_wiring(nexus_loop, environment)
+    control_plane_governance = build_harness_control_plane_governance(
+        environment,
+        mutation_authorization_boundary=mutation_authorization_boundary,
+    )
     return HarnessHostRuntime(
         manifest=resolved_manifest,
         environment=environment,
@@ -325,4 +338,5 @@ def build_harness_host_runtime(
         agent_checkpoint_store=resolved_agent_checkpoint_store,
         compensation_queue_store=resolved_compensation_queue_store,
         boundary_event_buffer=boundary_event_buffer,
+        control_plane_governance=control_plane_governance,
     )

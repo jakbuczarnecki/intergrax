@@ -55,6 +55,10 @@ from platform_proofs.scenarios.ai_incident_investigation.investigator_agent impo
     THROUGHPUT_EVIDENCE_ID,
 )
 from platform_proofs.scenarios.ai_incident_investigation.tools import register_scenario_tools
+from platform_proofs.scenarios.ai_incident_investigation.runtime_composition import (
+    ScenarioRuntimeComposition,
+    build_scenario_runtime_composition,
+)
 from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
     COMPLETION_SUPPORTED_DIAGNOSIS,
     COMPLETION_UNRESOLVED,
@@ -62,6 +66,7 @@ from platform_proofs.scenarios.ai_incident_investigation.scenario_contract impor
 from platform_proofs.scenarios.ai_incident_investigation.execution_payload import (
     domain_payload_from_execution,
 )
+from platform_proofs.scenarios.ai_incident_investigation.incident_scope import IncidentScope
 from platform_proofs.scenarios.ai_incident_investigation.validation import (
     IncidentInvestigationValidationEngine,
 )
@@ -137,6 +142,9 @@ class ScenarioExecutionResult:
     leak_scan_blob: str
     failed_critic_verdict: CriticVerdict | None
     evidence_challenge: EvidenceChallenge | None
+    planner_decisions: tuple[dict[str, Any], ...] = ()
+    tool_execution_order: tuple[str, ...] = ()
+    evidence_gathering_stop_reason: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,12 +152,14 @@ class ScenarioRuntimeBundle:
     fixture: IncidentFixture
     registry: ToolRegistry
     investigator: IncidentInvestigatorAgent
+    runtime_composition: ScenarioRuntimeComposition
 
 
 def build_runtime_bundle(
     *,
     variant: ScenarioVariant = ScenarioVariant.RESOLVED,
     fixture: IncidentFixture | None = None,
+    runtime_composition: ScenarioRuntimeComposition | None = None,
 ) -> ScenarioRuntimeBundle:
     resolved_fixture = fixture or (
         build_unresolved_fixture()
@@ -158,14 +168,20 @@ def build_runtime_bundle(
     )
     registry = ToolRegistry()
     register_scenario_tools(registry, resolved_fixture)
+    composition = runtime_composition or build_scenario_runtime_composition(registry=registry)
     investigator = IncidentInvestigatorAgent(
         registry=registry,
         station_id=resolved_fixture.telemetry.station_id,
+        runtime_composition=composition,
+        incident_scope=IncidentScope.from_fixture_defaults(
+            station_id=resolved_fixture.telemetry.station_id,
+        ),
     )
     return ScenarioRuntimeBundle(
         fixture=resolved_fixture,
         registry=registry,
         investigator=investigator,
+        runtime_composition=composition,
     )
 
 
@@ -264,6 +280,13 @@ async def execute_resolved_skeleton(
         initial_evidence_nodes = evidence_nodes
     tool_invocations = int(domain_payload.get("tool_invocations", 0))
     revision_pass = bool(domain_payload.get("revision_pass", False))
+    planner_decisions_raw = domain_payload.get("planner_decisions", [])
+    planner_decisions = tuple(
+        dict(item) for item in planner_decisions_raw if isinstance(item, dict)
+    )
+    tool_order_raw = domain_payload.get("tool_execution_order", [])
+    tool_execution_order = tuple(str(item) for item in tool_order_raw if item)
+    evidence_gathering_stop_reason = str(domain_payload.get("evidence_gathering_stop_reason", ""))
     evaluator_loop_iterations = current_evaluator_loop_iteration(worker)
 
     failed_critic_verdict = first_failed_node_partial_verdict_from_trace(
@@ -345,6 +368,9 @@ async def execute_resolved_skeleton(
         leak_scan_blob=leak_blob,
         failed_critic_verdict=failed_critic_verdict,
         evidence_challenge=evidence_challenge,
+        planner_decisions=planner_decisions,
+        tool_execution_order=tool_execution_order,
+        evidence_gathering_stop_reason=evidence_gathering_stop_reason,
     )
 
 

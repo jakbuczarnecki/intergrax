@@ -1,13 +1,85 @@
 # Platform Plugins
 
-**Status:** Canonical architecture (PLATFORM-PLUGIN-2 frozen) · PLUGIN-5 config/secrets/DI conventions **Done**
+**Platform Plugins** is Intergrax's canonical coordination layer for third-party extension packages: shared packaging, discovery, manifest metadata, configuration, secrets/DI conventions, trust, qualification, compatibility, and lifecycle vocabulary — without replacing domain-owned runtime semantics for Tools, Skills, Integrations, RAG, context, or agents.
+
+## Why it matters
+
+Without a common extension model, each domain can invent its own packaging, discovery, and trust story:
+
+- installable packages get confused with runtime authority,
+- third-party extensions can bypass domain-owned contracts,
+- trust, config, secrets, and lifecycle drift apart across surfaces,
+- a plugin layer risks becoming a monolithic second runtime.
+
+Platform Plugins coordinates **packaging, discovery, manifest/metadata, configuration, secrets/DI, trust, qualification, compatibility, and lifecycle** at the package boundary. It does **not** own runtime semantics that belong to domain architecture documents.
+
+## Current reality / maturity boundary
+
+Read this hub in four layers — do not merge them into a single “shipped” headline.
+
+**A. Canonical / frozen architecture.** PLATFORM-PLUGIN-2 freezes taxonomy, platform-vs-domain boundaries, DO-NOT-UNIFY decisions, and cross-cutting coordination rules. Domain documents ([`INTEGRATIONS.md`](INTEGRATIONS.md), [`TOOLS.md`](TOOLS.md), [`SKILLS.md`](SKILLS.md), [`RAG.md`](RAG.md), [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md), etc.) remain **authoritative for runtime semantics**.
+
+**B. Implemented slices (capability-specific).** PLATFORM-PLUGIN-3..9 program stages delivered package-level contracts, shared discovery primitives, config/secrets/DI conventions (PLUGIN-5 **Done**), lifecycle/compatibility/trust/qualification vocabulary, reference external and host-embedded examples, and a dual-mode Tools E2E proof (`tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py`). These are **partial, surface-specific** outcomes — not a universal plugin runtime.
+
+**C. Program closeout vs ongoing domain work.** The PLATFORM-PLUGIN-1..9 program is **closed** per maintainer plan; residual Protocol v2 audit findings (§Protocol v2 platform extensibility target invariants) remain **planned, not implemented**. Domain programs continue to own capability behavior independently.
+
+**D. Not yet established.** A **complete third-party install-to-runtime E2E proof** across all public extension surfaces is **not** implied. Discoverable ≠ production-qualified. Installation does not imply activation. Platform Plugins ≠ universal execution engine.
+
+> [!NOTE]
+> **Maturity boundary:** Canonical architecture is frozen. Implementation maturity is slice-specific. Frozen architecture documentation is not equivalent to universal production rollout or complete third-party lifecycle qualification.
+
+**Primary audience:** CTOs, principal/staff engineers, and extension authors evaluating how Intergrax coordinates packages without collapsing domain contracts.
+
+**Related canon:** [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) · [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) (agent-specific distribution — parallel concern)
+
+## At a glance
+
+| Concern | Boundary |
+| -------- | -------- |
+| **Package model** | Installable Python distribution; may expose multiple capabilities |
+| **Discovery** | Shared setuptools loader (`intergrax/core/plugins/discovery.py`) — partial adoption; opt-in flags |
+| **Registration** | Domain-owned catalogs and host composition — no global registry merge |
+| **Manifest** | Optional `[tool.intergrax.plugin]` metadata; entry points remain required |
+| **Config** | Host/domain resolves before materialization; PLUGIN-5 matrix (§12.3) |
+| **Secrets** | Host/domain credential bindings — no global secret API |
+| **DI** | Domain-owned injection shapes — no global Platform Plugin container |
+| **Trust** | `platform_qualification.py` vocabulary; trusted in-process model |
+| **Qualification** | Domain- and capability-specific; package ≠ blanket production admission |
+| **Compatibility** | `platform_semantics.py` explicit-version checks |
+| **Lifecycle** | Vocabulary frozen; no global lifecycle engine |
+| **Domain ownership** | Integrations, Tools, Skills, RAG, context, VK, security, agents — domain docs own semantics |
+| **Maturity** | Architecture frozen; slice-specific implementation; universal E2E proof not established — see [Current reality](#current-reality--maturity-boundary) and §26 |
+| **Go deeper** | [Engineering canon](#engineering-canon) · [§6 Platform Plugin definition](#6-platform-plugin-definition) · [§7 responsibility model](#7-platform-vs-domain-responsibility-model) · [plan](../maintainers/plans/PLATFORM_PLUGINS.md) |
+
+## Core mental model
+
+```text
+third-party package
+  → plugin metadata / manifest
+  → discovery
+  → trust + compatibility + config
+  → domain-owned registration / composition
+  → domain runtime
+```
+
+**Platform Plugins ≠ universal execution engine.** Platform Plugins ≠ replacement for Tools / Skills / Integrations / RAG / Agent Distribution. Platform Plugins coordinates packaging, discovery, and trust; **domain contracts own semantics**.
+
+```text
+COMMON PLATFORM COORDINATION
+        +
+DOMAIN-OWNED CAPABILITY CONTRACTS
+```
+
+Third-party authors install Python packages. Hosts and applications decide which discovered capabilities are enabled, configured, injected, and qualified for production.
+
+## Engineering canon
+
+**Status:** Canonical architecture (PLATFORM-PLUGIN-2 frozen) · PLUGIN-5 config/secrets/DI conventions **Done** · PLATFORM-PLUGIN-1..9 program **closed**
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
 **Program roadmap:** [`plan/PLATFORM_PLUGINS.md`](../maintainers/plans/PLATFORM_PLUGINS.md)
 **Audit evidence:** [`plan/PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md`](../maintainers/plans/PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md)
 **Author guide:** [`technical/guides/EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md)
 **Target:** [`technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-
----
 
 ## Cursor read scope (token budget)
 

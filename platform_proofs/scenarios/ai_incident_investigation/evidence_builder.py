@@ -7,6 +7,15 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from intergrax.contracts.evidence_claims import EvidenceClaimSet
+from platform_proofs.scenarios.ai_incident_investigation.evaluator import ScenarioEvaluationResult
+from platform_proofs.scenarios.ai_incident_investigation.reproduction import (
+    CANONICAL_REPRODUCTION_PREREQUISITES,
+    PROOF_ID,
+    canonical_reproduction_shell_command,
+)
+from platform_proofs.scenarios.ai_incident_investigation.evaluator_evidence import (
+    project_scenario_evaluation_to_evidence,
+)
 from platform_proofs.scenarios.ai_incident_investigation.fixtures import ScenarioVariant
 from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
     TELEMETRY_EVIDENCE_ID,
@@ -45,7 +54,6 @@ from scripts.proof.intergrax_platform_proof_evidence import (
 )
 from scripts.proof.intergrax_proof_contracts import ProofProfile
 
-PROOF_ID = "SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON"
 PROOF_VERSION = "full-1-resolved-full-2-unresolved-0.3.0"
 
 EVIDENCE_RESOLVED_FILENAME = "evidence-resolved.json"
@@ -108,9 +116,41 @@ def _evidence_node_summary(node: dict[str, object]) -> ReportSafeText:
     return proof_authored_report_safe_text("observable tool result")
 
 
+def _planner_execution_steps(
+    result: ScenarioExecutionResult,
+) -> tuple[ProofExecutionStep, ...]:
+    steps: list[ProofExecutionStep] = []
+    for index, decision in enumerate(result.planner_decisions):
+        selected = decision.get("selected_tool_ids") or []
+        tool_id = str(selected[0]) if selected else "unknown_tool"
+        basis_ids = tuple(str(item) for item in decision.get("evidence_basis_evidence_ids") or ())
+        created_ids = tuple(
+            str(node["evidence_id"])
+            for node in result.evidence_nodes
+            if str(node.get("source_tool_id", "")) == tool_id
+        )
+        steps.append(
+            ProofExecutionStep(
+                step_index=index,
+                step_id=f"step-planner-{index + 1}",
+                purpose=explicit_runtime_report_safe_text(
+                    str(decision.get("objective", "gather incident evidence"))
+                ),
+                evidence_basis_ids=basis_ids,
+                action=explicit_runtime_report_safe_text(f"Planner selected {tool_id}"),
+                evidence_created_ids=created_ids,
+                status=ProofStepExecutionStatus.OK,
+            )
+        )
+    if not steps:
+        return ()
+    return tuple(steps)
+
+
 def build_platform_proof_evidence(
     result: ScenarioExecutionResult,
     *,
+    evaluation: ScenarioEvaluationResult,
     variant: ScenarioVariant,
     source_revision: str,
     finished_at: datetime | None = None,
@@ -153,17 +193,23 @@ def build_platform_proof_evidence(
     )
 
     step = ProofExecutionStep(
-        step_index=0,
+        step_index=len(result.planner_decisions),
         step_id="step-investigate",
-        purpose=proof_authored_report_safe_text("Investigate incident via platform graph path"),
+        purpose=explicit_runtime_report_safe_text(
+            result.evidence_gathering_stop_reason
+            or "Investigate incident via autonomous bounded tool loop"
+        ),
         evidence_basis_ids=(),
-        action=proof_authored_report_safe_text("Investigator agent with ToolRuntime follow-up"),
+        action=explicit_runtime_report_safe_text(
+            "Investigator agent autonomous evidence gathering and deterministic diagnosis"
+        ),
         observation=ReportSafePayload(
             summary=explicit_runtime_report_safe_text(result.terminal_summary),
         ),
         evidence_created_ids=tuple(str(node["evidence_id"]) for node in result.evidence_nodes),
         status=ProofStepExecutionStatus.OK,
     )
+    execution_steps = _planner_execution_steps(result) + (step,)
 
     execution_id = f"incident-{meta['execution_suffix']}-{int(started.timestamp())}"
     paired_note = (
@@ -171,6 +217,8 @@ def build_platform_proof_evidence(
         if variant is ScenarioVariant.RESOLVED
         else "Paired RESOLVED canonical evidence exists in evidence-resolved.json"
     )
+
+    evaluator_evidence = project_scenario_evaluation_to_evidence(evaluation)
 
     scenario = ScenarioEvidence(
         scenario_id=meta["scenario_id"],
@@ -192,11 +240,12 @@ def build_platform_proof_evidence(
                 value=1 if result.outcome == OUTCOME_RESOLVED else 0,
             ),
         ),
-        steps=(step,),
+        steps=execution_steps,
         final_output=FinalOutputEvidence(
             present=True,
             content=explicit_runtime_report_safe_text(result.terminal_summary),
         ),
+        evaluator=evaluator_evidence,
     )
 
     unsupported_conclusions: tuple[str, ...] = ("Public proof publication",)
@@ -253,10 +302,17 @@ def build_platform_proof_evidence(
             content=explicit_runtime_report_safe_text(result.terminal_summary),
         ),
         limitations=(
-            "FULL-1 RESOLVED and FULL-2 UNRESOLVED evidence worlds implemented.",
+            (
+                "This artifact demonstrates the RESOLVED path only; paired UNRESOLVED "
+                "canonical evidence is produced separately."
+                if variant is ScenarioVariant.RESOLVED
+                else "This artifact demonstrates the UNRESOLVED path only; paired RESOLVED "
+                "canonical evidence is produced separately."
+            ),
             paired_note,
             "Not accepted for public proof publication.",
         ),
+        evaluator=evaluator_evidence,
         conclusion=ConclusionEvidence(
             supported_conclusions=(meta["supported_conclusion"],),
             unsupported_conclusions=unsupported_conclusions,
@@ -264,8 +320,8 @@ def build_platform_proof_evidence(
         ),
         reproduction=ReproductionEvidence(
             source_revision=source_revision,
-            command="uv run pytest tests/unit/platform_proofs/scenarios/ai_incident_investigation/",
-            prerequisites=("Python 3.12", "uv"),
+            command=canonical_reproduction_shell_command(),
+            prerequisites=CANONICAL_REPRODUCTION_PREREQUISITES,
         ),
         provenance=ProvenanceEvidence(
             proof_id=PROOF_ID,

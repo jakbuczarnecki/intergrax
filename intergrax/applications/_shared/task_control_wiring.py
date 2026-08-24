@@ -9,7 +9,11 @@ from typing import Any
 
 from fastapi import FastAPI
 
+from intergrax.applications._shared.harness_control_plane_governance_wiring import (
+    resolve_harness_task_control_mutation_boundary,
+)
 from intergrax.applications._shared.async_task_index_resolver import resolve_async_task_index
+from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
@@ -25,6 +29,9 @@ from intergrax.applications._shared.acp_checkpoint_task_enricher import (
 )
 from intergrax.applications._shared.reliability_wiring import apply_reliability_task_defaults
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
+)
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
@@ -69,13 +76,21 @@ def wire_harness_task_control(
     checkpoint_store: TaskCheckpointPersistence | None = None,
     task_route_prefix: str = "/v1/tasks",
     extra_enricher: TaskEnricher | None = None,
+    mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
+    runtime: HarnessHostRuntime | None = None,
+    task_enricher: TaskEnricher | None = None,
 ) -> TaskEnricher:
     """
     Mount optional harness task HTTP routes and return a task enricher for intake/MCP.
 
     When ``enabled`` is False, only the enricher is returned (reliability defaults still apply).
     """
-    enricher = build_reliability_task_enricher(env, extra=extra_enricher)
+    enricher = task_enricher or build_reliability_task_enricher(env, extra=extra_enricher)
+    resolved_boundary = mutation_boundary
+    if resolved_boundary is None and runtime is not None and runtime.control_plane_governance is not None:
+        resolved_boundary = resolve_harness_task_control_mutation_boundary(
+            runtime.control_plane_governance,
+        )
     if enabled:
         async_index = resolve_async_task_index(env)
         mount_harness_task_routes(
@@ -85,6 +100,7 @@ def wire_harness_task_control(
             prefix=task_route_prefix,
             task_enricher=enricher,
             async_index=async_index,
+            mutation_boundary=resolved_boundary,
         )
     return enricher
 

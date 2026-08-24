@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Investigator agent — lifecycle via UAEP; tools via BoundToolGateway / ToolRuntime."""
+"""Investigator agent — lifecycle via UAEP; autonomous evidence via bounded tool loop."""
 
 from __future__ import annotations
 
@@ -31,45 +31,25 @@ from platform_proofs.scenarios.ai_incident_investigation.scenario_contract impor
     THROUGHPUT_EVIDENCE_ID,
     WORKLOAD_EVIDENCE_ID,
 )
-from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.contracts.tool_request import ToolRequest, ToolResponseStatus
-from intergrax.runtime.nexus.tools.tool_runtime import ToolRuntime
-from unittest.mock import MagicMock
-
-from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
-from intergrax.tools.registry import ToolRegistry
 from intergrax.contracts.capability import CapabilityMatchResult
 from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import (
     IncidentAssessment,
-    IncidentObservations,
     RationaleCode,
     derive_hypothesis_dispositions,
-    parse_comparison_payload,
-    parse_staffing_attendance_payload,
-    parse_staffing_schedule_payload,
-    parse_telemetry_payload,
-    parse_throughput_payload,
-    parse_workload_payload,
+    observations_from_evidence_nodes,
 )
-from platform_proofs.scenarios.ai_incident_investigation.tools import (
-    default_comparison_input,
-    default_line_window_input,
-    default_staffing_input,
-    default_telemetry_input,
-    SCENARIO_TOOL_IDS,
-    TOOL_COMPARISON_READ,
-    TOOL_STAFFING_ATTENDANCE_READ,
-    TOOL_STAFFING_SCHEDULE_READ,
-    TOOL_TELEMETRY_READ,
-    TOOL_THROUGHPUT_READ,
-    TOOL_WORKLOAD_READ,
+from platform_proofs.scenarios.ai_incident_investigation.evidence_gathering import (
+    gather_incident_evidence,
 )
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import HypothesisId
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from platform_proofs.scenarios.ai_incident_investigation.incident_scope import IncidentScope
+from platform_proofs.scenarios.ai_incident_investigation.tools import SCENARIO_TOOL_IDS
+from platform_proofs.scenarios.ai_incident_investigation.runtime_composition import (
+    ScenarioRuntimeComposition,
+    build_agent_runtime_context,
+)
 
 INVESTIGATOR_AGENT_ID = "incident_investigator"
 INVESTIGATOR_CAPABILITY = "incident_investigation.investigate"
@@ -169,10 +149,34 @@ def _build_claims_from_assessment(assessment: IncidentAssessment) -> EvidenceCla
     return EvidenceClaimSet(claims=tuple(claims), challenges=())
 
 
+def _extract_critic_feedback(ctx: RuntimeExecutionContext, is_revision: bool) -> list[str]:
+    if not is_revision:
+        return []
+    request_feedback = (ctx.request.metadata or {}).get("critic_feedback")
+    if isinstance(request_feedback, list):
+        return [str(item) for item in request_feedback]
+    raw_feedback = ctx.metadata.get("critic_feedback")
+    if isinstance(raw_feedback, list):
+        return [str(item) for item in raw_feedback]
+    return []
+
+
 class IncidentInvestigatorAgent(Agent):
-    def __init__(self, registry: ToolRegistry, station_id: str) -> None:
+    def __init__(
+        self,
+        registry: object,
+        station_id: str,
+        runtime_composition: ScenarioRuntimeComposition,
+        incident_scope: IncidentScope,
+    ) -> None:
+        from intergrax.tools.registry import ToolRegistry
+
+        if not isinstance(registry, ToolRegistry):
+            raise TypeError("registry must be ToolRegistry")
         self._registry = registry
         self._station_id = station_id
+        self._runtime_composition = runtime_composition
+        self._incident_scope = incident_scope
 
     def get_contract(self) -> AgentContract:
         return AgentContract(
@@ -195,27 +199,7 @@ class IncidentInvestigatorAgent(Agent):
         return CapabilityMatchResult(matched=False)
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        invoker = RuntimeToolInvoker(
-            registry=self._registry,
-            executor=RegistryToolExecutor(self._registry),
-        )
-        config = RuntimeConfig(
-            llm_adapter=FakeLLMAdapter(fixed_text="investigate"),
-            enable_rag=False,
-            production_mode=False,
-            tenant_id=request.tenant_id,
-            tool_invoker=invoker,
-            tool_registry=self._registry,
-            tools_mode="catalog",
-        )
-        from intergrax.runtime.events.event_bus import RuntimeEventBus
-
-        config.runtime_event_bus = RuntimeEventBus()
-        return RuntimeContext(
-            config=config,
-            session_manager=build_in_memory_session_manager(),
-            prompt_registry=MagicMock(),
-        )
+        return build_agent_runtime_context(request, self._runtime_composition)
 
     def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
         _ = context
@@ -229,34 +213,8 @@ class IncidentInvestigatorAgent(Agent):
             )
         ]
 
-    async def _invoke_tool(
-        self,
-        *,
-        runtime_state: RuntimeState,
-        step: AgentStep,
-        tool_id: str,
-        tool_input: dict[str, str],
-    ) -> dict[str, object]:
-        response = await ToolRuntime.invoke_request(
-            state=runtime_state,
-            request=ToolRequest(
-                tool_name=tool_id,
-                agent_id=INVESTIGATOR_AGENT_ID,
-                step_id=step.step_id,
-                input=tool_input,
-            ),
-            allowed_tools=SCENARIO_TOOL_IDS,
-            trace_step=step.step_id,
-        )
-        if response.status is not ToolResponseStatus.SUCCESS:
-            raise RuntimeError(
-                f"{tool_id} failed: status={response.status.value} error={response.error}"
-            )
-        if response.output is None:
-            raise RuntimeError(f"{tool_id} succeeded but output is missing")
-        return response.output
-
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+        _ = step
         is_revision = bool((ctx.request.metadata or {}).get("critic_feedback"))
         if not is_revision:
             raw_feedback = ctx.metadata.get("critic_feedback")
@@ -266,118 +224,16 @@ class IncidentInvestigatorAgent(Agent):
         if not isinstance(runtime_state, RuntimeState):
             raise RuntimeError("runtime_state_not_bound_for_tool_runtime")
 
-        tool_invocations = 0
-        line_input = default_line_window_input()
-        staffing_input = default_staffing_input()
-
-        workload_output = await self._invoke_tool(
+        gathering = gather_incident_evidence(
             runtime_state=runtime_state,
-            step=step,
-            tool_id=TOOL_WORKLOAD_READ,
-            tool_input=line_input,
-        )
-        tool_invocations += 1
-
-        throughput_output = await self._invoke_tool(
-            runtime_state=runtime_state,
-            step=step,
-            tool_id=TOOL_THROUGHPUT_READ,
-            tool_input=line_input,
-        )
-        tool_invocations += 1
-
-        staffing_output = await self._invoke_tool(
-            runtime_state=runtime_state,
-            step=step,
-            tool_id=TOOL_STAFFING_SCHEDULE_READ,
-            tool_input=staffing_input,
-        )
-        tool_invocations += 1
-
-        evidence_nodes: list[dict[str, object]] = [
-            {
-                "evidence_id": str(WORKLOAD_EVIDENCE_ID),
-                "kind": "tool_result",
-                "label": "workload observation",
-                "payload": workload_output,
-            },
-            {
-                "evidence_id": str(THROUGHPUT_EVIDENCE_ID),
-                "kind": "tool_result",
-                "label": "throughput observation",
-                "payload": throughput_output,
-            },
-            {
-                "evidence_id": str(STAFFING_PRELIMINARY_EVIDENCE_ID),
-                "kind": "tool_result",
-                "label": "staffing schedule observation",
-                "payload": staffing_output,
-            },
-        ]
-
-        observations = IncidentObservations(
-            workload=parse_workload_payload(workload_output),
-            throughput=parse_throughput_payload(throughput_output),
-            staffing_schedule=parse_staffing_schedule_payload(staffing_output),
+            registry=self._registry,
+            scope=self._incident_scope,
+            is_revision=is_revision,
+            critic_feedback=_extract_critic_feedback(ctx, is_revision),
         )
 
-        if is_revision:
-            comparison_output = await self._invoke_tool(
-                runtime_state=runtime_state,
-                step=step,
-                tool_id=TOOL_COMPARISON_READ,
-                tool_input=default_comparison_input(),
-            )
-            tool_invocations += 1
-
-            attendance_output = await self._invoke_tool(
-                runtime_state=runtime_state,
-                step=step,
-                tool_id=TOOL_STAFFING_ATTENDANCE_READ,
-                tool_input=staffing_input,
-            )
-            tool_invocations += 1
-
-            telemetry_output = await self._invoke_tool(
-                runtime_state=runtime_state,
-                step=step,
-                tool_id=TOOL_TELEMETRY_READ,
-                tool_input=default_telemetry_input(self._station_id),
-            )
-            tool_invocations += 1
-
-            evidence_nodes.extend(
-                [
-                    {
-                        "evidence_id": str(COMPARISON_EVIDENCE_ID),
-                        "kind": "tool_result",
-                        "label": "comparison line observation",
-                        "payload": comparison_output,
-                    },
-                    {
-                        "evidence_id": str(STAFFING_ATTENDANCE_EVIDENCE_ID),
-                        "kind": "tool_result",
-                        "label": "staffing attendance observation",
-                        "payload": attendance_output,
-                    },
-                    {
-                        "evidence_id": str(TELEMETRY_EVIDENCE_ID),
-                        "kind": "tool_result",
-                        "label": "station telemetry observation",
-                        "payload": telemetry_output,
-                    },
-                ]
-            )
-
-            observations = IncidentObservations(
-                workload=observations.workload,
-                throughput=observations.throughput,
-                staffing_schedule=observations.staffing_schedule,
-                staffing_attendance=parse_staffing_attendance_payload(attendance_output),
-                comparison=parse_comparison_payload(comparison_output),
-                telemetry=parse_telemetry_payload(telemetry_output),
-            )
-
+        evidence_nodes = list(gathering.evidence_nodes)
+        observations = observations_from_evidence_nodes(evidence_nodes, INCIDENT_EVIDENCE_IDS)
         assessment = derive_hypothesis_dispositions(observations, INCIDENT_EVIDENCE_IDS)
         claim_set = _build_claims_from_assessment(assessment)
         active_hypothesis = assessment.active_hypothesis
@@ -398,13 +254,12 @@ class IncidentInvestigatorAgent(Agent):
             "evidence_nodes": evidence_nodes,
             "active_hypothesis": str(active_hypothesis),
             "completion_mode": completion_mode,
-            "tool_invocations": tool_invocations,
+            "tool_invocations": gathering.tool_invocations,
             "revision_pass": is_revision,
-            "initial_evidence_ids": [
-                str(WORKLOAD_EVIDENCE_ID),
-                str(THROUGHPUT_EVIDENCE_ID),
-                str(STAFFING_PRELIMINARY_EVIDENCE_ID),
-            ],
+            "initial_evidence_ids": list(gathering.initial_evidence_ids),
+            "evidence_gathering_stop_reason": gathering.stop_reason,
+            "tool_execution_order": list(gathering.tool_execution_order),
+            "planner_decisions": list(gathering.planner_decisions),
         }
         return StepOutput(
             step_id=step.step_id,

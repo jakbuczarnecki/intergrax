@@ -143,8 +143,8 @@ through the **Governed Evidence Decision Proof** (`LIVE_ONLY`, four independent
 controlled live providers via real runtime/HTTP execution — not external SaaS
 validation; policy-derived obligations, execution-time authority, temporal
 admissibility, typed failure semantics, LLM gating, persisted structural proof).
-This is **not** complete indexed + authorized live Hybrid Ask certification and
-**not** full Governed Execution domain certification.
+This is **not** complete indexed + authorized live Hybrid Ask qualification and
+**not** full Governed Execution domain qualification.
 
 [Open the Governed Evidence Decision Proof](../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md)
 
@@ -152,7 +152,7 @@ This is **not** complete indexed + authorized live Hybrid Ask certification and
 
 **Platform capability — implemented mechanisms; consolidation / qualification ongoing**
 
-Intergrax provides reusable policy and approval enforcement around agent decisions, tool and action boundaries, meaningful side effects, canonical HITL, and plugin-extensible policy rules. Meaningful enforcement slices exist on bounded paths; a dedicated accepted public **Governed Execution** domain proof is **not yet established**. The Governed Evidence Decision Proof above exercises bounded evidence admissibility — not full Governed Execution certification.
+Intergrax provides reusable policy and approval enforcement around agent decisions, tool and action boundaries, meaningful side effects, canonical HITL, and plugin-extensible policy rules. Meaningful enforcement slices exist on bounded paths; a dedicated accepted public **Governed Execution** domain proof is **not yet established**. The Governed Evidence Decision Proof above exercises bounded evidence admissibility — not full Governed Execution qualification.
 
 [Open the Governed Execution architecture](../architecture/GOVERNED_EXECUTION.md)
 
@@ -178,7 +178,7 @@ Future ecosystem and platform directions — **not** current product proofs and 
 
 ### Platform Extensibility / Plugins
 
-**Future platform-extensibility direction — architecture concept**
+**Strategic platform capability — canonical architecture frozen with implemented slices; complete third-party E2E qualification not established**
 
 [Open the Platform Extensibility / Plugins architecture](../architecture/PLATFORM_PLUGINS.md)
 

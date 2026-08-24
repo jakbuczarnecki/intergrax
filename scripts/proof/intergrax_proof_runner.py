@@ -59,6 +59,10 @@ from scripts.proof.intergrax_proof_manifest import (
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
+class ProofSelectionError(ValueError):
+    """Raised when ``--proof-id`` does not resolve to an executable manifest entry."""
+
+
 @dataclass(frozen=True)
 class RunnerConfig:
     profile: ProofProfile
@@ -66,6 +70,7 @@ class RunnerConfig:
     verbose: bool = False
     allow_external_mutating: bool = False
     dry_run: bool = False
+    proof_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -118,6 +123,7 @@ def select_proofs(
     profile: ProofProfile,
     platform_family: str,
 ) -> list[ProofManifestEntry]:
+    del platform_family
     active_profiles = expanded_profiles(profile)
     selected: list[ProofManifestEntry] = []
     for entry in manifest.entries:
@@ -126,6 +132,34 @@ def select_proofs(
         selected.append(entry)
     selected.sort(key=lambda item: item.proof_id)
     return selected
+
+
+def resolve_proof_selection(
+    manifest: IntergraxProofManifest,
+    *,
+    profile: ProofProfile,
+    platform_family: str,
+    proof_id: str | None,
+) -> list[ProofManifestEntry]:
+    """Select manifest entries for a suite run, optionally narrowed to one proof."""
+    selected = select_proofs(
+        manifest,
+        profile=profile,
+        platform_family=platform_family,
+    )
+    if proof_id is None:
+        return selected
+
+    known_ids = {entry.proof_id for entry in manifest.entries}
+    if proof_id not in known_ids:
+        raise ProofSelectionError(f"unknown proof_id: {proof_id}")
+
+    narrowed = [entry for entry in selected if entry.proof_id == proof_id]
+    if not narrowed:
+        raise ProofSelectionError(
+            f"proof_id {proof_id} is not registered for profile {profile.value}"
+        )
+    return narrowed
 
 
 def _env_present(name: str) -> bool:
@@ -298,6 +332,7 @@ def render_console_summary(
     receipt: SuiteReceipt,
     *,
     verbose: bool = False,
+    repo_root: Path | None = None,
 ) -> str:
     lines = [
         "INTERGRAX PROOF SUITE",
@@ -326,6 +361,37 @@ def render_console_summary(
             f"skipped: {skipped}",
         ]
     )
+    if repo_root is not None:
+        suite_directory = suite_run_artifact_directory(repo_root, receipt.suite_run_id)
+        try:
+            suite_relative = suite_directory.relative_to(repo_root.resolve()).as_posix()
+        except ValueError:
+            suite_relative = suite_directory.as_posix()
+        lines.extend(["", f"suite run: {suite_relative}"])
+        executed = [
+            result
+            for result in receipt.results
+            if result.status
+            not in {
+                ProofStatus.SKIPPED_PLATFORM,
+                ProofStatus.SKIPPED_PROFILE,
+            }
+        ]
+        if executed:
+            lines.append("artifact directories:")
+            for result in executed:
+                proof_directory = proof_run_artifact_directory(
+                    repo_root,
+                    receipt.suite_run_id,
+                    result.proof_id,
+                )
+                try:
+                    proof_relative = proof_directory.relative_to(
+                        repo_root.resolve()
+                    ).as_posix()
+                except ValueError:
+                    proof_relative = proof_directory.as_posix()
+                lines.append(f"  {result.proof_id}: {proof_relative}")
     return "\n".join(lines)
 
 
@@ -477,10 +543,11 @@ def run_suite(
         )
         return receipt, None
 
-    selected = select_proofs(
+    selected = resolve_proof_selection(
         manifest,
         profile=config.profile,
         platform_family=platform_family,
+        proof_id=config.proof_id,
     )
     results: list[ProofRunResult] = []
 

@@ -408,8 +408,8 @@ Accepted Protocol v2 audit layer [`INTEGRATIONS`](../../audit_results/2026-08-18
 
 **Transitional boundary (preserved)**
 
-16. Registry v2 remains additive typed metadata — **not** universal runtime binding authority today ([`INTEGRATIONS-3A`](../../maintainers/plans/INTEGRATIONS.md)).
-17. **INTEGRATIONS-3B** explicit registry-backed runtime binding remains **Planned** — not shipped; remediation coordinates with 3B rather than a competing resolver ([`INTEGRATIONS-3B`](../../maintainers/plans/INTEGRATIONS.md)).
+16. Registry v2 remains additive typed metadata — **not** universal runtime binding authority today ([`INTEGRATIONS-3A`](../maintainers/plans/INTEGRATIONS.md)).
+17. **INTEGRATIONS-3B** explicit registry-backed runtime binding remains **Planned** — not shipped; remediation coordinates with 3B rather than a competing resolver ([`INTEGRATIONS-3B`](../maintainers/plans/INTEGRATIONS.md)).
 18. Broad **194**-slug catalog scale does **not** imply universal production qualification ([catalog-scale ≠ production-qualification](#evidence-and-maturity)).
 
 Remediation tracked as **INTEGRATIONS-RUNTIME-BINDING-INTEGRITY** (findings 01–03) and **INTEGRATIONS-CONTRACT-METADATA-INTEGRITY** (findings 04–05) in [plan](../maintainers/plans/INTEGRATIONS.md#protocol-v2-integrations-remediation-2026-08-18). **Not implemented** by audit persistence.

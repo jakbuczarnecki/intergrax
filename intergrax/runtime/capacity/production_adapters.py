@@ -9,9 +9,15 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from intergrax.contracts.agent_run import RequestIdentity
-from intergrax.runtime.capacity.control_plane_governance import EcpResourceTenantResolver
+from intergrax.runtime.capacity.control_plane_governance import (
+    EcpResourceTenantResolver,
+    parse_celery_workers_revision,
+    parse_k8s_replicas_revision,
+)
 from intergrax.runtime.capacity.governed_capacity_mutation import GovernedCapacityMutationExecutor
 from intergrax.runtime.capacity.provisioner import (
+    CeleryCapacityReader,
+    KubernetesCapacityReader,
     ProvisionerExecutionMode,
     ScalingProvisioner,
 )
@@ -50,6 +56,27 @@ class CeleryProductionAdapter:
         return self.worker_count
 
 
+@dataclass(frozen=True, slots=True)
+class KubernetesCapacityObservation:
+    """Read-only Kubernetes capacity view for production diagnostics."""
+
+    _backend: InMemoryKubernetesScaler | object
+
+    def get_replicas(self, *, deployment: str) -> int:
+        reader = self._backend
+        return reader.get_replicas(deployment=deployment)
+
+
+@dataclass(frozen=True, slots=True)
+class CeleryCapacityObservation:
+    """Read-only Celery capacity view for production diagnostics."""
+
+    _backend: CeleryProductionAdapter
+
+    def get_worker_count(self) -> int:
+        return self._backend.get_worker_count()
+
+
 def resolve_kubernetes_backend() -> tuple[InMemoryKubernetesScaler | object, KubernetesBackendKind]:
     """Use REST K8s client when INTERGRAX_KUBERNETES_URL is configured."""
     if os.environ.get("INTERGRAX_KUBERNETES_URL", "").strip():
@@ -63,11 +90,10 @@ def resolve_kubernetes_backend() -> tuple[InMemoryKubernetesScaler | object, Kub
 
 @dataclass(frozen=True, slots=True)
 class ProductionCapacityAdapters:
-    kubernetes: InMemoryKubernetesScaler | object
-    celery: CeleryProductionAdapter
-    provisioner: ScalingProvisioner
     governed_executor: GovernedCapacityMutationExecutor
     kubernetes_backend: KubernetesBackendKind
+    kubernetes_observation: KubernetesCapacityReader
+    celery_observation: CeleryCapacityReader
 
 
 def build_production_capacity_adapters(
@@ -89,11 +115,10 @@ def build_production_capacity_adapters(
         tenant_resolver=tenant_resolver,
     )
     return ProductionCapacityAdapters(
-        kubernetes=kubernetes,
-        celery=celery,
-        provisioner=provisioner,
         governed_executor=governed_executor,
         kubernetes_backend=backend_kind,
+        kubernetes_observation=KubernetesCapacityObservation(_backend=kubernetes),
+        celery_observation=CeleryCapacityObservation(_backend=celery),
     )
 
 
@@ -122,12 +147,16 @@ def apply_production_scale_probe(
         pool_id=celery_pool_id,
         delta=1,
     )
+    _, k8s_target = parse_k8s_replicas_revision(k8s_result.applied_target_revision)
+    _, celery_target = parse_celery_workers_revision(celery_result.applied_target_revision)
     replicas_ok = True
     if adapters.kubernetes_backend == "in_memory":
-        replicas_ok = adapters.kubernetes.get_replicas(deployment=deployment) >= 3
+        replicas_ok = (
+            adapters.kubernetes_observation.get_replicas(deployment=deployment) >= k8s_target
+        )
     return (
         k8s_result.authorization_evidence.mutation_id == k8s_mutation_id
         and celery_result.authorization_evidence.mutation_id == celery_mutation_id
         and replicas_ok
-        and adapters.celery.worker_count >= 3
+        and adapters.celery_observation.get_worker_count() >= celery_target
     )

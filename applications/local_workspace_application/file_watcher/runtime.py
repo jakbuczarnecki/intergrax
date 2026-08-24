@@ -27,6 +27,7 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 
 from local_workspace_application.background_ingest.contracts import (
     LkwBackgroundIngestJob,
+    background_ingest_idempotency_key,
 )
 from local_workspace_application.background_ingest.enqueue import (
     enqueue_background_ingest_job,
@@ -150,6 +151,8 @@ class FileWatcherCycleResult(BaseModel):
     task_id: str | None = None
     provider: str | None = None
     tenant_id: str | None = None
+    broker_run_id: str | None = None
+    idempotency_key: str | None = None
 
     error_id: str | None = None
 
@@ -182,6 +185,14 @@ class FileWatcherCycleResult(BaseModel):
                 raise ValueError("enqueued requires a non-empty task_id")
             if not self.provider or not self.provider.strip():
                 raise ValueError("enqueued requires a non-empty provider")
+            if not self.broker_run_id or not self.broker_run_id.strip():
+                raise ValueError("enqueued requires a non-empty broker_run_id")
+            if not self.idempotency_key or not self.idempotency_key.strip():
+                raise ValueError("enqueued requires a non-empty idempotency_key")
+            if self.broker_run_id != self.idempotency_key:
+                raise ValueError("enqueued requires broker_run_id == idempotency_key")
+            if self.task_id != self.broker_run_id:
+                raise ValueError("enqueued requires task_id == broker_run_id")
             if self.error_id is not None:
                 raise ValueError("enqueued must not include error_id")
             return self
@@ -480,6 +491,7 @@ class FileWatcherRuntime:
             self._accept_time(now_monotonic)
             return result
 
+        resolved_idempotency_key = background_ingest_idempotency_key(job)
         self._clear_pending()
         result = FileWatcherCycleResult(
             status="enqueued",
@@ -491,6 +503,8 @@ class FileWatcherRuntime:
             task_id=output.task_id,
             provider=output.provider,
             tenant_id=output.tenant_id or self._config.tenant_id,
+            broker_run_id=resolved_idempotency_key,
+            idempotency_key=resolved_idempotency_key,
         )
         self._accept_time(now_monotonic)
         return result

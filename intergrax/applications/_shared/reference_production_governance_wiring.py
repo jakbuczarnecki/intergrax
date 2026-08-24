@@ -19,8 +19,9 @@ from intergrax.applications._shared.production_process_composition import (
 )
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
-from intergrax.contracts.control_plane_mutation import ControlPlaneMutationRequest
-from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.applications._shared.harness_control_plane_policy_wiring import (
+    build_reference_production_control_plane_mutation_boundary,
+)
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
@@ -33,18 +34,6 @@ class ReferenceProductionControlPlaneGovernance:
     principal: RequestIdentity
     mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary
     environment_tenant_resolver: ApplicationEnvironmentTenantResolver
-
-
-class _ReferenceProductionConfiguredAllowEvaluator:
-    """Explicit reference-host policy: configured service principal may activate."""
-
-    def evaluate(self, request: ControlPlaneMutationRequest) -> PolicyDecision:
-        del request
-        return PolicyDecision(
-            action=PolicyAction.ALLOW,
-            reason="reference_production_policy_configured",
-            policy_rule_id="reference_production.lifecycle_activate",
-        )
 
 
 def build_reference_production_control_plane_governance(
@@ -65,8 +54,8 @@ def build_reference_production_control_plane_governance(
     )
     return ReferenceProductionControlPlaneGovernance(
         principal=principal,
-        mutation_authorization_boundary=ControlPlaneMutationAuthorizationBoundary(
-            evaluator=_ReferenceProductionConfiguredAllowEvaluator(),
+        mutation_authorization_boundary=build_reference_production_control_plane_mutation_boundary(
+            env,
         ),
         environment_tenant_resolver=StaticApplicationEnvironmentTenantResolver(
             tenant_id=resolved_tenant,

@@ -38,6 +38,7 @@ Observability addresses this through typed identity, `RuntimeEvent`, HOS, strict
 | **K-only reconstruction** | `HistoricalKnowledgeProjection` at watermark **K** — **Done**; not full bitemporal |
 | **Bitemporal scope** | E and K shipped slices; Valid/System Time + combined E+K query **planned** |
 | **Problem plane** | `PlatformProblemSignal` — classified operator attention; not execution history |
+| **Causal evidence** | `PlatformCausalEvidence` — cross-boundary transport→execution relation; not execution history |
 | **Redaction** | `DiagnosticPayload.redact()` + export policy — strongest on canonical/export paths |
 | **Export** | HOS → policy-safe envelope → Integration vendor backend |
 | **External sinks** | OTLP, Langfuse, Sentry, Phoenix, Datadog — destinations, not semantic owners |
@@ -562,7 +563,7 @@ Intergrax observability is **not** limited to traces and metrics. The **Harness 
 
 OECP transforms spine data into eval-grade artifacts: **evidence ledger** records, **eval snapshots**, **metric results**, **regression gates**, and **perturbation suites**. External workbenches (Langfuse, LangSmith, OTLP, Sentry, Phoenix, Braintrust, Datadog, …) are optional sinks — not semantic owners.
 
-**Target architecture:** [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md) (OECP sections). **Plan:** [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](../maintainers/plans/satellites/OBSERVABILITY_eval_control_plane.md). **Audit source:** [`audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md`](../../audit_results/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md).
+**Target architecture:** [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md) (OECP sections). **Plan:** [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](../maintainers/plans/satellites/OBSERVABILITY_eval_control_plane.md). **Audit source:** [`audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md`](../../audit_results/legacy/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md).
 
 ---
 
@@ -808,6 +809,20 @@ await reporter.report(
 - Do **not** add `ObservabilityEmitter.emit_problem`, automatic global exception hooks, or `RuntimeEventBus` subscribers that auto-emit problems (deferred / out of scope for OBS-PROBLEM-3).
 
 **Code references:** `problem_signal.py` · `problem_export.py` · `problem_reporter.py` · `export_boundary.py` · `export_policy.py`. **Plan:** OBS-PROBLEM-3 in [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md).
+
+### Causal evidence plane (DIAG-1)
+
+`PlatformCausalEvidence` records an immutable, tenant-scoped causal fact between existing identity domains — for example a provider-neutral async transport task (`MessageBusTaskRef`) that **triggered** canonical runtime execution (`RuntimeExecutionRef` with `TaskId` / `RunId` / `AttemptId`). It does **not** extend `RuntimeEvent`, mint synthetic execution IDs for transport, or duplicate retry lineage already expressed by execution history.
+
+`MessageBusTaskRef.task_id` is opaque transport identity (`str`); `RuntimeExecutionRef.task_id` is canonical `TaskId`. Identical text may appear on both sides without collapsing domains — isolation is enforced by typed contracts, not lexical format rules.
+
+**Canonical persistence (R1):** **PLATFORM GAP** — no durable, tenant-scoped, queryable platform persistence boundary exists today for typed non-execution causal evidence. `RuntimeEventPersistence` is execution-scoped only. `PlatformProblemSignal` and `HostedApplicationEvent` share the same export/spine projection path without a dedicated durable causal-evidence store.
+
+**Optional export projection:** `envelope_from_causal_evidence` maps to `ExportRecordKind.DIAGNOSTIC` with typed `CausalEvidenceExportSource` on `ObservabilityExportEnvelope` — a **lossless export projection**, not canonical persistence. Export backends (Sentry, Datadog, OTLP, `InMemoryObservabilityExporter`) are optional sinks; the causal fact must not depend on them.
+
+**Evidence identity:** `PlatformCausalEvidence.evidence_id` currently uses `EventId` (`evt_…`), which may be execution-event scoped — dedicated `CausalEvidenceId` is a deferred decision point if non-execution evidence persistence lands.
+
+**Code references:** `causal_evidence.py` · `causal_evidence_export.py` · `export_boundary.py`.
 
 ---
 

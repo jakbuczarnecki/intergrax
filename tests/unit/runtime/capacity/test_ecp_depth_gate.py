@@ -199,8 +199,9 @@ def test_capacity_event_bridge_records_backpressure() -> None:
             RuntimeEvent(
                 event_type=RuntimeEventType.GRAPH_BACKPRESSURE,
                 tenant_id="t1",
-                task_id="task-1",
-                run_id="run-1",
+                task_id="task_0123456789abcdef0123456789abcdef",
+                run_id="run_0123456789abcdef0123456789abcdef",
+                attempt_id="attempt_0123456789abcdef0123456789abcdef",
                 phase=ExecutionPhase.STEP_EXECUTION,
             ),
         )
@@ -213,12 +214,12 @@ def test_capacity_event_bridge_records_backpressure() -> None:
 def test_capacity_approval_queue_flow() -> None:
     import asyncio
 
+    from intergrax.contracts.agent_run import RequestIdentity
+    from intergrax.contracts.agent_run_enums import PrincipalType
     from intergrax.runtime.capacity.approval_queue import CapacityApprovalQueue
     from intergrax.runtime.capacity.governance import approve_capacity_plan
     from intergrax.runtime.capacity.scheduler import CapacityScheduler
-    from intergrax.runtime.events.runtime_event import RuntimeEventType
 
-    events: list = []
     policy = ScalingPolicy(
         enabled=True,
         require_hitl_for_scale_up=True,
@@ -252,18 +253,17 @@ def test_capacity_approval_queue_flow() -> None:
         evaluator=ScalingEvaluator(policy),
         provisioner=provisioner,
         approval_queue=queue,
-        publish=lambda event: events.append(event),
     )
     collector.record_backpressure()
     asyncio.run(scheduler.tick())
     assert queue.list_pending()
-    assert any(
-        event.event_type is RuntimeEventType.DOMAIN_SIGNAL
-        and event.event_kind == "platform.capacity.scale_requested"
-        for event in events
+    human = RequestIdentity(
+        tenant_id="harness",
+        user_id="operator-1",
+        principal_type=PrincipalType.USER,
+        auth_subject="operator-1",
     )
-    pending_id = queue.list_pending()[0].plan_id
-    approve_capacity_plan(queue, pending_id)
+    approve_capacity_plan(queue, queue.list_pending()[0].plan_id, human)
     asyncio.run(scheduler.tick())
     assert provisioner.applied
 

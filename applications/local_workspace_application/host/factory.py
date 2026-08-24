@@ -24,7 +24,6 @@ from intergrax.applications._shared.harness_host_runtime import (
     build_harness_host_runtime,
 )
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
-from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
 from intergrax.applications._shared.interaction_wiring import (
     wire_interaction_intake_service,
 )
@@ -39,6 +38,7 @@ from intergrax.runtime.observability.operator_wiring import (
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
     build_task_runner_with_enricher,
+    wire_harness_task_control,
 )
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.router import create_interaction_intake_router
@@ -340,12 +340,15 @@ def create_local_workspace_backend_app(
     )
 
     if resolved_settings.include_task_control:
-        mount_harness_task_routes(
+        wire_harness_task_control(
             app,
+            enabled=True,
             task_runner=task_runner,
+            env=env,
             checkpoint_store=checkpoint_store,
-            prefix=resolved_settings.task_control_route_prefix,
+            task_route_prefix=resolved_settings.task_control_route_prefix,
             task_enricher=task_enricher,
+            runtime=runtime,
         )
 
     if resolved_settings.include_interaction_routes:

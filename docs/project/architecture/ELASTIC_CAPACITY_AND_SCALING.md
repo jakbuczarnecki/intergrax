@@ -217,7 +217,7 @@ Four-axis statement per [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TA
 
 | Layer | Artifacts |
 | ----- | --------- |
-| **Architecture** | This hub · [`satellites/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md`](satellites/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md) · [ADR-SCALE-001](../technical/adr/entries/2026-06-08/ADR-SCALE-001.md) · [ADR-SCALE-002](../technical/adr/entries/2026-06-08/ADR-SCALE-002.md) |
+| **Architecture** | This hub · [`satellites/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md`](satellites/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md) · [ADR-SCALE-001](../technical/adr/entries/2026-06-08/ADR-SCALE-001.md) · [ADR-SCALE-002](../technical/adr/entries/2026-06-09/ADR-SCALE-002.md) |
 | **Unit / gate** | `tests/unit/runtime/capacity/test_ecp_depth_gate.py` · `test_capacity_events_gate.py` · `test_kubernetes_scale_client.py` |
 | **Integration** | `tests/integration/runtime/test_ecp_backpressure_scale.py` (sustained backpressure → mocked K8s) |
 | **Public proof** | No dedicated ECP row in [`PROOFS.md`](../proofs/PROOFS.md) — bounded harness tests only |
@@ -621,7 +621,7 @@ Protocol v2 audit **FAIL** at `d2b65885ad1b472bf48254a1e7314dc6a53ca677` — six
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §0.3, §3.8, §12  
 **Audit layers:** 30 (Operational Excellence) · cross-ref 9 (orchestration backpressure), 21 (observability SLIs)  
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
-**ADR:** [ADR-SCALE-001](../technical/adr/entries/2026-06-08/ADR-SCALE-001.md) · [ADR-SCALE-002](../technical/adr/entries/2026-06-08/ADR-SCALE-002.md)  
+**ADR:** [ADR-SCALE-001](../technical/adr/entries/2026-06-08/ADR-SCALE-001.md) · [ADR-SCALE-002](../technical/adr/entries/2026-06-09/ADR-SCALE-002.md)
 **Last updated:** 2026-08-18 — DOC-3T design-system modernization; reconciled loop/back-end wiring truth
 
 ### Document topology

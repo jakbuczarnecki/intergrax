@@ -93,11 +93,7 @@ class _FakeEnqueuer:
         self.jobs: list[LkwBackgroundIngestJob] = []
         self._fail_times = fail_times
         self._invalid_output = invalid_output
-        self._output = output or MessageBusEnqueueOutput(
-            task_id="task-1",
-            provider="fake",
-            tenant_id="tenant-a",
-        )
+        self._output = output
         self._calls = 0
 
     def __call__(self, job: LkwBackgroundIngestJob) -> MessageBusEnqueueOutput:
@@ -107,7 +103,14 @@ class _FakeEnqueuer:
             raise RuntimeError("enqueue boom")
         if self._invalid_output:
             return MessageBusEnqueueOutput(task_id="", provider="")
-        return self._output
+        if self._output is not None:
+            return self._output
+        key = background_ingest_idempotency_key(job)
+        return MessageBusEnqueueOutput(
+            task_id=key,
+            provider="fake",
+            tenant_id=job.tenant_id,
+        )
 
 
 def _runtime(
@@ -134,7 +137,9 @@ class _FakeMessageBus(TaskQueue):
     def enqueue(self, request: TaskRequest) -> TaskHandle:
         self.requests.append(request)
         return TaskHandle(
-            task_id="task-1", provider="fake", tenant_id=request.tenant_id
+            task_id=request.run_id.strip(),
+            provider="fake",
+            tenant_id=request.tenant_id,
         )
 
     def get_status(self, handle: TaskHandle) -> TaskStatus:
@@ -669,7 +674,7 @@ def test_cycle_result_is_safe_for_logs(tmp_path: Path) -> None:
         assert "secret-file" not in payload
         assert "payload_base64" not in payload
         assert "traceback" not in payload.lower()
-        assert "broker" not in payload.lower()
+        assert "broker_url" not in payload.lower()
         assert "credential" not in payload.lower()
         assert "Exception" not in payload
 
@@ -709,6 +714,8 @@ def test_build_file_watcher_runtime_uses_existing_enqueue_helper(
     request = bus.requests[0]
     job = decode_background_ingest_job(request.payload)
     key = background_ingest_idempotency_key(job)
+    assert result.broker_run_id == key
+    assert result.idempotency_key == key
     assert request.task_name == LKW_BACKGROUND_INGEST_TASK_NAME
     assert request.tenant_id == "tenant-a"
     assert job.requested_by == "lkw.file_watcher"

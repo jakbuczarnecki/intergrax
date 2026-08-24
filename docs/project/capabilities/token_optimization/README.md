@@ -57,7 +57,7 @@ flowchart LR
 | [Cache-prefix architecture](../architecture/TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION.md) | Stable-prefix and provider-cache rules |
 | [vLLM live proof](proofs/VLLM_PREFIX_CACHE_LIVE_PROOF.md) | Reviewer execution guide |
 | [Public claim guardrails](../TOKEN_OPTIMIZATION_CLAIMS.md) | What can and cannot be claimed publicly |
-| [Audit instruction](../../../audit_results/TOKEN_OPTIMIZATION.md) | Audit scope and review criteria |
+| [Audit instruction](../../../audit_results/2026-08-18/TOKEN_OPTIMIZATION.md) | Audit scope and review criteria |
 
 ---
 
@@ -621,10 +621,10 @@ Detailed implementation phases, dependencies and review state:
 | Router | [`llm_router.py`](../../../../intergrax/runtime/token_optimization/llm_router.py), [`llm_router_catalog.py`](../../../../intergrax/runtime/token_optimization/llm_router_catalog.py) |
 | Prompt assembly | [`prompt_assembly.py`](../../../../intergrax/runtime/token_optimization/prompt_assembly.py), [`prompt_cache.py`](../../../../intergrax/runtime/token_optimization/prompt_cache.py) |
 | vLLM integration | [`vllm_prefix_cache_proof.py`](../../../../intergrax/runtime/token_optimization/vllm_prefix_cache_proof.py), [`proofs/vllm_prefix_cache_live.py`](../../../../intergrax/runtime/token_optimization/proofs/vllm_prefix_cache_live.py) |
-| Unit tests | [`tests/unit/runtime/token_optimization`](../../../tests/unit/runtime/token_optimization/) |
-| E2E tests | [`tests/e2e/token_optimization`](../../../tests/e2e/token_optimization/) |
+| Unit tests | [`tests/unit/runtime/token_optimization`](../../../../tests/unit/runtime/token_optimization/) |
+| E2E tests | [`tests/e2e/token_optimization`](../../../../tests/e2e/token_optimization/) |
 | Architecture | [TOKEN_OPTIMIZATION.md](../architecture/TOKEN_OPTIMIZATION.md) |
 | Plan | [TOKEN_OPTIMIZATION.md](../plan/TOKEN_OPTIMIZATION.md) |
 | Claims | [TOKEN_OPTIMIZATION_CLAIMS.md](../TOKEN_OPTIMIZATION_CLAIMS.md) |
-| Audit | [TOKEN_OPTIMIZATION.md](../../../audit_results/TOKEN_OPTIMIZATION.md) |
+| Audit | [TOKEN_OPTIMIZATION.md](../../../audit_results/2026-08-18/TOKEN_OPTIMIZATION.md) |
 | Proof guide | [VLLM_PREFIX_CACHE_LIVE_PROOF.md](proofs/VLLM_PREFIX_CACHE_LIVE_PROOF.md) |

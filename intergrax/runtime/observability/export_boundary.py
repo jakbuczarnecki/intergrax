@@ -131,6 +131,7 @@ class ObservabilityExportEnvelope(BaseModel):
 
     application_attributes: ApplicationObservabilityAttributes | None = None
     sanitized_application_attributes: SanitizedApplicationObservabilityAttributes | None = None
+    causal_evidence_source: CausalEvidenceExportSource | None = None
 
 
 class RuntimeEventExportSource(BaseModel):
@@ -147,6 +148,23 @@ class RuntimeEventExportSource(BaseModel):
     tenant_id: str = ""
     correlation_id: str = ""
     safe_payload: dict[str, str | int] = Field(default_factory=dict)
+
+
+class CausalEvidenceExportSource(BaseModel):
+    """Typed causal-evidence source for observability export projection (DIAG-1)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["causal_evidence_export_source.v1"] = "causal_evidence_export_source.v1"
+    evidence_id: str
+    relation_kind: str
+    tenant_id: str
+    transport_provider: str
+    transport_task_id: str
+    target_task_id: str
+    target_run_id: str
+    target_attempt_id: str
+    recorded_at: datetime
 
 
 class PlatformObservabilityExportSource(BaseModel):

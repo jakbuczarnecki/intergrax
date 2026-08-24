@@ -85,3 +85,76 @@ def test_agentcore_aws_primary_sources_linked(alternatives_text: str) -> None:
 def test_agentcore_verification_date_distinct(alternatives_text: str) -> None:
     assert "verified 2026-08-23" in alternatives_text.lower() or "verified **2026-08-23**" in alternatives_text
     assert "2026-08-18" in alternatives_text
+
+
+def _bounded_section(text: str, heading: str) -> str:
+    normalized = _normalize(text)
+    section_heading = f"## {heading}"
+    section_start = normalized.index(section_heading)
+    section_body = normalized[section_start:]
+    next_section = section_body.find("\n## ", len(section_heading))
+    return section_body if next_section == -1 else section_body[:next_section]
+
+
+_CREWAI_STANDARD_HEADINGS = (
+    "best fit / strengths",
+    "choose it when",
+    "what it already solves",
+    "responsibilities / questions your team still needs to settle",
+    "how intergrax approaches responsibility differently",
+    "current intergrax evidence boundary",
+)
+
+_CREWAI_FORBIDDEN_STRAWMAN_PHRASES = (
+    "crewai has no persistence",
+    "crewai has no observability",
+    "crewai is only a multi-agent framework",
+    "crewai requires langchain",
+    "crewai has no hitl",
+    "crewai has no state management",
+    "crewai is cloud-only",
+)
+
+
+def test_crewai_section_present(alternatives_text: str) -> None:
+    assert "## CrewAI" in alternatives_text
+
+
+def test_crewai_standard_structure(alternatives_text: str) -> None:
+    section = _bounded_section(alternatives_text, "crewai")
+    for heading in _CREWAI_STANDARD_HEADINGS:
+        assert heading in section, f"Missing CrewAI subsection: {heading}"
+
+
+def test_crewai_required_fairness_claims(alternatives_text: str) -> None:
+    section = _bounded_section(alternatives_text, "crewai")
+    assert "may be the better choice" in section
+    assert "flows" in section
+    assert "persistence" in section or "persist" in section
+    assert "state" in section
+    assert "enterprise" in section or "amp" in section
+
+
+def test_crewai_no_strawman_claims(alternatives_text: str) -> None:
+    section = _bounded_section(alternatives_text, "crewai")
+    for phrase in _CREWAI_FORBIDDEN_STRAWMAN_PHRASES:
+        assert phrase not in section, f"CrewAI section contains strawman: {phrase!r}"
+
+
+def test_crewai_evidence_boundary_conservative(alternatives_text: str) -> None:
+    section = _bounded_section(alternatives_text, "crewai")
+    assert "active r&d" in section or "active r & d" in section
+    assert "bounded" in section
+    assert "hypothesis" in section
+    forbidden_superiority = (
+        "production maturity superiority",
+        "more mature than crewai",
+        "broader production maturity than crewai",
+        "ecosystem superiority",
+    )
+    for phrase in forbidden_superiority:
+        assert phrase not in section, f"CrewAI evidence boundary overclaims: {phrase!r}"
+
+
+def test_crewai_verification_date_distinct(alternatives_text: str) -> None:
+    assert "verified 2026-08-24" in alternatives_text.lower() or "verified **2026-08-24**" in alternatives_text

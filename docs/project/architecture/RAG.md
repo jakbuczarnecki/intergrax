@@ -14,7 +14,7 @@ Intergrax RAG addresses that gap with a native path from **authorized sources** 
 - **It is not a correctness guarantee** — retrieval improves grounding when sources are good and scope is right; it does not prove answer quality, security authorization for every source, or production scale by itself.
 
 > [!NOTE]
-> **Maturity boundary:** Global status is **`PRODUCTION_QUALIFIED_WITH_LIMITATIONS`** — bounded qualification and documented deployment contracts exist ([handoff](../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md)), not unrestricted production or enterprise-grade operational proof. Public LKW proofs exercise **indexed** RAG paths only; they do not qualify every provider, GraphRAG live backend, or mixed live+indexed Hybrid Ask. See [Current maturity](#current-maturity) and [Evidence / proof](#evidence--proof).
+> **Internal qualification status — not external certification.** Global status **`PRODUCTION_QUALIFIED_WITH_LIMITATIONS`** is an **Intergrax internal engineering qualification status**, based on bounded internal evidence and documented deployment contracts ([handoff](../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md)). It is **not** third-party certification, regulatory or compliance certification, unrestricted production readiness, or enterprise-grade operational proof. Public LKW proofs exercise **indexed** RAG paths only; they do not qualify every provider, GraphRAG live backend, or mixed live+indexed Hybrid Ask. See [Current maturity](#current-maturity) and [Evidence / proof](#evidence--proof).
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring ingest, vector backends, or retrieval profiles — after the platform overview in the root README.
 
@@ -219,12 +219,12 @@ LKW exercises **indexed** RAG ingest and retrieval — not the full RAG qualific
 | ----------- | ------------ | -------------------- |
 | LKW Product Quick Start / indexed Ask V1 | Managed sample → index → grounded indexed Ask with citation path | Hybrid live+indexed; all providers; production/commercial validation |
 | LKW indexed Hybrid Ask (`indexed_only`) | Production indexed branch; retrieval even when answer assembly returns `insufficient_evidence` | Mixed authorized-live Hybrid Ask |
-| LKW Web URL intake (`LKW-WEB-URL-INDEXED-ASK`) | WEB_URL capture → tenant/workspace Qdrant scope → indexed retrieval | Arbitrary external sites; complete live-provider access |
+| LKW Web URL intake (`LKW-WEB-URL-INDEXED-ASK`) | WEB_URL capture → tenant/workspace Qdrant scope → indexed retrieval | Arbitrary external sites; complete external live-provider access |
 | LKW Trusted Ask / Core Platform proofs | Durable workspace indexed path through real runtime stack | Universal provider certification |
 
 Catalog: [`docs/project/proofs/PROOFS.md`](../proofs/PROOFS.md) · LKW detail: [`LKW_PLATFORM_PROOF.md`](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md).
 
-**Not established by current public or qualification evidence:** mixed indexed + authorized live Hybrid Ask; complete live-provider access; real-user validation; commercial validation; transactional exactly-once replacement across stores.
+**Not established by current public or qualification evidence:** mixed indexed + authorized live Hybrid Ask; complete external live-provider access; real-user validation; commercial validation; transactional exactly-once replacement across stores.
 
 ### Core implementation
 

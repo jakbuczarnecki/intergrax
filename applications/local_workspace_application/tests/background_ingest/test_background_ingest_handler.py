@@ -112,7 +112,13 @@ def test_decode_helper_rejects_tenant_mismatch() -> None:
 
 def test_runtime_task_builder_maps_job_to_local_workspace_index_task() -> None:
     broker_run_id = "lkw.background_ingest.v1:abc123"
-    job = _sample_job(requested_by="watcher", correlation_id="corr-1", reason="batch", priority="high")
+    job = _sample_job(
+        requested_by="watcher",
+        correlation_id="corr-1",
+        reason="batch",
+        priority="high",
+        change_token="sha256:" + ("a" * 64),
+    )
     request = _sample_request(job, run_id=broker_run_id)
 
     task = build_background_ingest_runtime_task(request, job)
@@ -121,6 +127,7 @@ def test_runtime_task_builder_maps_job_to_local_workspace_index_task() -> None:
     validate_task_id(task.task_id)
     assert task.task_id != request.run_id
     assert task.metadata["background_ingest_broker_run_id"] == broker_run_id
+    assert task.metadata["background_ingest_change_token"] == job.change_token
     assert task.tenant_id == job.tenant_id
     assert task.user_id == job.requested_by
     assert task.agent_id == LKW_BACKGROUND_INGEST_AGENT_ID
@@ -144,6 +151,21 @@ def test_runtime_task_builder_excludes_raw_content_like_fields() -> None:
     task = build_background_ingest_runtime_task(request, job)
 
     assert _FORBIDDEN_METADATA_KEYS.isdisjoint(task.metadata.keys())
+
+
+@pytest.mark.asyncio
+async def test_handler_output_excludes_execution_identity_block() -> None:
+    job = _sample_job(change_token="sha256:" + ("a" * 64))
+    request = _sample_request(job)
+    runner = _FakeRunner()
+
+    queue_result = await handle_background_ingest_task_request(request, runner)
+
+    assert queue_result.status == TaskStatus.SUCCEEDED
+    assert queue_result.output is not None
+    decoded_output = json.loads(queue_result.output.decode("utf-8"))
+    assert "execution_identity" not in decoded_output
+    assert decoded_output["task_id"] == runner.tasks[0].task_id
 
 
 @pytest.mark.asyncio

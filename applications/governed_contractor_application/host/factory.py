@@ -23,10 +23,10 @@ from intergrax.applications._shared.registry_projection import MaterializedRegis
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.runtime.interactions.router import create_interaction_intake_router
-from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
     build_task_runner_with_enricher,
+    wire_harness_task_control,
 )
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
@@ -116,12 +116,15 @@ def create_governed_contractor_backend_app(
     )
 
     if settings.include_task_control:
-        mount_harness_task_routes(
+        wire_harness_task_control(
             app,
+            enabled=True,
             task_runner=task_runner,
+            env=env,
             checkpoint_store=checkpoint_store,
-            prefix=settings.task_control_route_prefix,
+            task_route_prefix=settings.task_control_route_prefix,
             task_enricher=task_enricher,
+            runtime=runtime,
         )
 
     if settings.include_interaction_routes:

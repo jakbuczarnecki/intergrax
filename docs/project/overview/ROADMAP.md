@@ -165,7 +165,7 @@ See the [Token Optimization guide](../capabilities/token_optimization/README.md)
 
 See the [Multiplayer AI architecture](../capabilities/architecture/MULTIPLAYER_AI.md) for the strategic direction and current boundaries.
 
-**Platform Extensibility / Plugins** is another **strategic platform capability**. Extension mechanisms already exist across multiple domains; the canonical cross-cutting architecture is **frozen**. Implementation stages for harmonization, trust and qualification, and developer experience remain **planned**. Public proof promotion requires accepted executable third-party E2E evidence — a complete install-to-runtime path without modifying Intergrax core is **not yet established**.
+**Platform Extensibility / Plugins** is another **strategic platform capability**. Extension mechanisms already exist across multiple domains; the canonical cross-cutting architecture is **frozen**. Multiple extension-platform implementation slices exist and the core program is **closed**; residual Protocol v2 and breadth work remain **planned**. Public proof promotion requires accepted executable third-party E2E evidence — a complete install-to-runtime path without modifying Intergrax core is **not yet established**.
 
 See the [Platform Plugins architecture](../architecture/PLATFORM_PLUGINS.md) for the strategic direction and current boundaries.
 

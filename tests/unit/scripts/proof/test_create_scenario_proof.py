@@ -236,6 +236,51 @@ def test_scenario_one_readme_has_mandatory_abstract() -> None:
     assert len(abstract_block.strip().split()) >= 40
 
 
+def test_generated_scenario_spec_has_application_survival_test(tmp_path: Path) -> None:
+    package = create_scenario_design_package(
+        ScenarioDesignRequest(
+            slug=validate_scenario_slug("survival_test"),
+            title="Survival Test",
+            repo_root=tmp_path,
+        ),
+    )
+    spec = package.scenario_spec_path.read_text(encoding="utf-8")
+    assert "### Application Survival Test" in spec
+    assert "Required answer: **YES**" in spec
+
+
+def test_generated_scenario_spec_has_observability_contract(tmp_path: Path) -> None:
+    package = create_scenario_design_package(
+        ScenarioDesignRequest(
+            slug=validate_scenario_slug("obs_contract"),
+            title="Obs Contract",
+            repo_root=tmp_path,
+        ),
+    )
+    spec = package.scenario_spec_path.read_text(encoding="utf-8")
+    assert "### Application Observability Test" in spec
+    assert "### Observability / Explainability / Diagnostics Contract" in spec
+    assert "Material decisions:" in spec
+    assert "Application Observability Test result:" in spec
+    assert "MUST NOT be a black box" in spec
+    assert "PROOF DOES NOT OWN" in spec
+    assert "runtime execution trace" in spec
+
+
+def test_generated_scenario_spec_has_application_vs_proof_harness(tmp_path: Path) -> None:
+    package = create_scenario_design_package(
+        ScenarioDesignRequest(
+            slug=validate_scenario_slug("harness_split"),
+            title="Harness Split",
+            repo_root=tmp_path,
+        ),
+    )
+    spec = package.scenario_spec_path.read_text(encoding="utf-8")
+    assert "### APPLICATION vs PROOF HARNESS" in spec
+    assert "business workflow" in spec
+    assert "evaluator" in spec
+
+
 def test_scenario_one_spec_contains_abcde_contract() -> None:
     spec_path = SCENARIOS_ROOT / "ai_incident_investigation" / "SCENARIO_SPEC.md"
     spec = spec_path.read_text(encoding="utf-8")

@@ -107,14 +107,75 @@ Host-side size and `modified_time_ns` are captured after index and after restart
 
 Unchanged source after restart must not increase the Kafka task topic count.
 
+## Execution-identity evidence
+
+### A. Application proof (established)
+
+After search succeeds and Kafka count increases, the proof requires measured
+watcher enqueue evidence from the real sidecar path:
+
+```text
+filesystem change
+  → watcher change_token
+  → MessageBusEnqueueOutput.task_id (MEASURED)
+  → provider
+  → tenant_id
+  → broker_run_id / idempotency_key (provider invariant on Kafka)
+```
+
+The proof fails closed when watcher enqueue evidence is missing or internally
+contradictory. Kafka topic count alone is not sufficient identity evidence.
+
+Watcher evidence is emitted as sidecar JSON with schema
+`lkw.file_watcher_ingest_enqueued.v1`.
+
+### B. Provider invariant (Kafka)
+
+For the current Kafka provider:
+
+```text
+MessageBusEnqueueOutput.task_id == request.run_id
+```
+
+When File Watcher background ingest does not supply an explicit `run_id`, the
+enqueue path resolves `request.run_id` from the background-ingest idempotency
+key derived from the change batch. This is a deterministic provider invariant,
+not an independently measured second identifier.
+
+### C. Unresolved platform diagnostic lineage (PLATFORM GAP)
+
+There is currently no single generic, canonical, operator-facing platform
+contract exposed to this workload that links:
+
+```text
+message-bus / broker task
+  → runtime TaskId
+  → runtime RunId
+  → runtime AttemptId
+```
+
+LKW does not close this gap by serializing runtime identifiers into its own
+worker result payload. `AttemptId` remains platform-owned.
+
+| Boundary | Verdict |
+|---|---|
+| filesystem → watcher change | PROVEN |
+| watcher change_token → MessageBus task_id | PROVEN |
+| enqueue → Kafka provider task | PROVEN (current provider semantics) |
+| MessageBus task → runtime TaskId | PLATFORM GAP |
+| runtime TaskId → RunId | PLATFORM GAP (no canonical cross-boundary linkage) |
+| runtime → AttemptId | PLATFORM GAP |
+| ingest → persistent search | PROVEN |
+| Unified Run Journal | not used by this proof |
+
 ## ProofReceipt mapping
 
 ```text
 proof_kind = file_watcher_persistent_search
 application_id = local_workspace
 run_id = proof marker
-task_id = None
-correlation_id = None
+task_id = message_bus task_id from watcher enqueue evidence
+correlation_id = change_token
 ```
 
 LKW maps in-memory live evidence into a platform `ProofReceipt` and records it through

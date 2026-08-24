@@ -139,6 +139,7 @@ def build_scale_k8s_deployment_mutation_request(
     deployment: str,
     current_replicas: int,
     target_replicas: int,
+    approval_evidence_ref: str | None = None,
 ) -> ControlPlaneMutationRequest:
     return ControlPlaneMutationRequest(
         mutation_id=mutation_id,
@@ -156,6 +157,7 @@ def build_scale_k8s_deployment_mutation_request(
             replicas=target_replicas,
         ),
         risk_classification=ControlPlaneMutationRisk.MEDIUM,
+        approval_evidence_ref=approval_evidence_ref,
     )
 
 
@@ -167,6 +169,7 @@ def build_scale_celery_workers_mutation_request(
     pool_id: str,
     current_workers: int,
     target_workers: int,
+    approval_evidence_ref: str | None = None,
 ) -> ControlPlaneMutationRequest:
     return ControlPlaneMutationRequest(
         mutation_id=mutation_id,
@@ -184,6 +187,7 @@ def build_scale_celery_workers_mutation_request(
             worker_count=target_workers,
         ),
         risk_classification=ControlPlaneMutationRisk.MEDIUM,
+        approval_evidence_ref=approval_evidence_ref,
     )
 
 

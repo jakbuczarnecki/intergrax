@@ -601,11 +601,21 @@ def test_audit_ideal_1_2_architecture_health() -> None:
 
 
 def test_audit_ideal_30_4_production_capacity() -> None:
+    from intergrax.applications._shared.production_capacity_governance_wiring import (
+        build_production_capacity_governance,
+    )
     from intergrax.applications._shared.production_capacity_wiring import resolve_production_capacity_wiring
+    from intergrax.applications.contracts.application_host import ApplicationProfile
 
-    wiring = resolve_production_capacity_wiring(ApplicationEnvironmentProfile.product_defaults())
+    env = ApplicationEnvironmentProfile.product_defaults()
+    assert env.application_profile is ApplicationProfile.PRODUCT
+    assert env.scaling_profile.production_adapters_enabled is True
+    governance = build_production_capacity_governance(env)
+    assert governance.mutation_authorization_boundary is None
+    wiring = resolve_production_capacity_wiring(env, governance=governance)
     assert wiring.enabled is True
-    assert wiring.probe_passed is True
+    assert wiring.adapters is None
+    assert wiring.probe_passed is False
 
 
 def test_audit_ideal_4_1_critical_action_signing() -> None:
