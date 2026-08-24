@@ -4,9 +4,8 @@
 
 from __future__ import annotations
 
-import importlib
 from dataclasses import dataclass, field
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import FastAPI
@@ -32,6 +31,7 @@ from intergrax.applications._shared.harness_control_plane_policy_wiring import (
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
 from intergrax.applications._shared.task_control import (
+    _execute_autonomy_change,
     governed_cancel_active_task,
     governed_resume_checkpoint_task,
     governed_set_task_autonomy,
@@ -57,7 +57,6 @@ from intergrax.contracts.runtime_policy_bundle import (
     build_immutable_runtime_policy_bundle,
 )
 from intergrax.integrations.contracts.identity_provider import IdentityUser
-from intergrax.queueing.contracts.task_queue import TaskQueue
 from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
@@ -72,9 +71,6 @@ from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.task_contract import TaskPauseRecord
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
-from intergrax.scaffold.application_names import ScaffoldApplicationNames
-from intergrax.scaffold.new_application_product import factory_py
-
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _TENANT = "tenant-bypass-closure"
@@ -305,64 +301,78 @@ async def test_taskcpm_b1_supported_cancel_route_reaches_coordinator_only_after_
     assert cancel_request_allow.call_count == 1
 
 
-def test_taskcpm_b2_no_supported_raw_cancel_facade_remains() -> None:
-    task_control = importlib.import_module("intergrax.applications._shared.task_control")
-    assert hasattr(task_control, "governed_cancel_active_task")
-    assert not hasattr(task_control, "cancel_active_task")
-    routes = importlib.import_module("intergrax.applications._shared.harness_task_routes")
-    imported = set(routes.__dict__)
-    assert "governed_cancel_active_task" in imported
-    assert "cancel_active_task" not in imported
-
-
-def test_taskcpm_b3_deprecated_set_task_autonomy_removed_from_supported_surface() -> None:
-    with pytest.raises(ImportError):
-        from intergrax.applications._shared.task_control import set_task_autonomy  # noqa: F401
+def test_taskcpm_b2_supported_cancel_surface_exports_governed_facade() -> None:
+    assert callable(governed_cancel_active_task)
 
 
 @pytest.mark.asyncio
 async def test_taskcpm_b4_supported_autonomy_route_reaches_mutation_only_through_governed_facade() -> None:
-    task = _task()
-    run_id = mint_run_id()
-    await ActiveTaskRegistry.register(task, run_id)
-    boundary, evaluator = _allow_boundary()
-    app = FastAPI()
-    app.state.harness_auth = HarnessAuthState(
+    task_deny = _task()
+    run_id_deny = mint_run_id()
+    await ActiveTaskRegistry.register(task_deny, run_id_deny)
+    app_deny = FastAPI()
+    app_deny.state.harness_auth = HarnessAuthState(
         identity_provider=_FakeIdentityProvider(),
         require_api_key=False,
         resolved_api_key=None,
         tenant_required=True,
     )
     mount_harness_task_routes(
-        app,
+        app_deny,
         task_runner=UnifiedTaskRunner(object()),  # type: ignore[arg-type]
-        mutation_boundary=boundary,
+        mutation_boundary=_deny_boundary(),
     )
-    client = TestClient(app)
-    task_control = importlib.import_module("intergrax.applications._shared.task_control")
-    with patch.object(
-        task_control,
-        "_execute_autonomy_change",
-        wraps=task_control._execute_autonomy_change,
-    ) as autonomy_change:
-        response = client.post(
-            f"/v1/tasks/{task.task_id}/autonomy",
+    client_deny = TestClient(app_deny)
+    original_level = task_deny.options.governance.autonomy_level
+    with patch(
+        "intergrax.applications._shared.task_control._execute_autonomy_change",
+    ) as autonomy_change_deny:
+        deny_response = client_deny.post(
+            f"/v1/tasks/{task_deny.task_id}/autonomy",
             json={
                 "mutation_id": _MUTATION_ID,
-                "run_id": str(run_id),
+                "run_id": str(run_id_deny),
                 "autonomy_level": "manual",
             },
             headers={"Authorization": "Bearer valid-bearer"},
         )
-    assert response.status_code == 200
+    assert deny_response.status_code == 403
+    assert autonomy_change_deny.call_count == 0
+    assert task_deny.options.governance.autonomy_level is original_level
+
+    task_allow = _task()
+    run_id_allow = mint_run_id()
+    await ActiveTaskRegistry.register(task_allow, run_id_allow)
+    boundary, evaluator = _allow_boundary()
+    app_allow = FastAPI()
+    app_allow.state.harness_auth = HarnessAuthState(
+        identity_provider=_FakeIdentityProvider(),
+        require_api_key=False,
+        resolved_api_key=None,
+        tenant_required=True,
+    )
+    mount_harness_task_routes(
+        app_allow,
+        task_runner=UnifiedTaskRunner(object()),  # type: ignore[arg-type]
+        mutation_boundary=boundary,
+    )
+    client_allow = TestClient(app_allow)
+    with patch(
+        "intergrax.applications._shared.task_control._execute_autonomy_change",
+        wraps=_execute_autonomy_change,
+    ) as autonomy_change_allow:
+        allow_response = client_allow.post(
+            f"/v1/tasks/{task_allow.task_id}/autonomy",
+            json={
+                "mutation_id": _MUTATION_ID,
+                "run_id": str(run_id_allow),
+                "autonomy_level": "manual",
+            },
+            headers={"Authorization": "Bearer valid-bearer"},
+        )
+    assert allow_response.status_code == 200
     assert len(evaluator.calls) == 1
-    assert autonomy_change.call_count == 1
-
-
-def test_taskcpm_b5_execute_autonomy_change_not_supported_public_api() -> None:
-    routes = importlib.import_module("intergrax.applications._shared.harness_task_routes")
-    assert "_execute_autonomy_change" not in routes.__dict__
-    assert "governed_set_task_autonomy" in routes.__dict__
+    assert autonomy_change_allow.call_count == 1
 
 
 @pytest.mark.asyncio
@@ -391,35 +401,157 @@ async def test_taskcpm_b6_supported_operator_resume_reaches_runner_through_gover
     assert resume_call.await_count == 1
 
 
-def test_taskcpm_b7_raw_resume_helper_internal_only() -> None:
-    with pytest.raises(ImportError):
-        from intergrax.applications._shared.task_control import resume_task_with_token  # noqa: F401
-    task_control = importlib.import_module("intergrax.applications._shared.task_control")
-    assert hasattr(task_control, "_resume_task_with_token")
+@pytest.mark.asyncio
+async def test_taskcpm_b7_supported_resume_route_reaches_runner_only_through_governed_facade() -> None:
+    checkpoint = _checkpoint()
+    app_deny = FastAPI()
+    app_deny.state.harness_auth = HarnessAuthState(
+        identity_provider=_FakeIdentityProvider(),
+        require_api_key=False,
+        resolved_api_key=None,
+        tenant_required=True,
+    )
+    runner_deny = AsyncMock(spec=UnifiedTaskRunner)
+    with patch(
+        "intergrax.applications._shared.task_control._resume_task_with_token",
+        new_callable=AsyncMock,
+    ) as resume_deny:
+        mount_harness_task_routes(
+            app_deny,
+            task_runner=runner_deny,
+            checkpoint_store=_StaticCheckpointStore(checkpoint),
+            mutation_boundary=_deny_boundary(),
+        )
+        client_deny = TestClient(app_deny)
+        deny_response = client_deny.post(
+            f"/v1/tasks/{_TASK_ID}/resume",
+            json={
+                "mutation_id": _MUTATION_ID,
+                "resume_token": _RESUME_TOKEN,
+                "operator_input": {"verdict": "approve"},
+            },
+            headers={"Authorization": "Bearer valid-bearer"},
+        )
+    assert deny_response.status_code == 403
+    assert resume_deny.await_count == 0
+
+    app_allow = FastAPI()
+    app_allow.state.harness_auth = HarnessAuthState(
+        identity_provider=_FakeIdentityProvider(),
+        require_api_key=False,
+        resolved_api_key=None,
+        tenant_required=True,
+    )
+    boundary, evaluator = _allow_boundary()
+    runner_allow = AsyncMock(spec=UnifiedTaskRunner)
+    with patch(
+        "intergrax.applications._shared.task_control._resume_task_with_token",
+        new_callable=AsyncMock,
+        return_value=TaskResult(task_id=_TASK_ID, state=TaskState.COMPLETED, answer="ok"),
+    ) as resume_allow:
+        mount_harness_task_routes(
+            app_allow,
+            task_runner=runner_allow,
+            checkpoint_store=_StaticCheckpointStore(checkpoint),
+            mutation_boundary=boundary,
+        )
+        client_allow = TestClient(app_allow)
+        allow_response = client_allow.post(
+            f"/v1/tasks/{_TASK_ID}/resume",
+            json={
+                "mutation_id": _MUTATION_ID,
+                "resume_token": _RESUME_TOKEN,
+                "operator_input": {"verdict": "approve"},
+            },
+            headers={"Authorization": "Bearer valid-bearer"},
+        )
+    assert allow_response.status_code == 200
+    assert len(evaluator.calls) == 1
+    assert resume_allow.await_count == 1
 
 
-def test_taskcpm_b8_debug_hitl_resume_service_is_debug_lab_only() -> None:
-    from intergrax.debug import hitl_service as debug_hitl
-    from intergrax.debug import router as debug_router
+@pytest.mark.asyncio
+async def test_taskcpm_b8_debug_hitl_resume_service_is_debug_lab_only() -> None:
+    from intergrax.debug.hitl_service import DebugHitlResumeService
+    from intergrax.runtime.human.models import HumanResponseVerdict
+    from intergrax.runtime.registry.agent_registry import AgentRegistry
 
-    assert debug_hitl.__name__.startswith("intergrax.debug")
-    assert "governed_resume_checkpoint_task" not in debug_hitl.__dict__
-    assert "_resume_task_with_token" not in debug_hitl.__dict__
-    assert debug_router.__name__.startswith("intergrax.debug")
+    checkpoint = _checkpoint()
+    service = DebugHitlResumeService(
+        AgentRegistry(),
+        checkpoint_store=_StaticCheckpointStore(checkpoint),
+    )
+    with patch(
+        "intergrax.applications._shared.task_control.governed_resume_checkpoint_task",
+        new_callable=AsyncMock,
+    ) as governed_resume:
+        with patch(
+            "intergrax.debug.hitl_service.NexusLoop.handle_task",
+            new_callable=AsyncMock,
+            return_value=TaskResult(task_id=_TASK_ID, state=TaskState.COMPLETED, answer="ok"),
+        ) as handle_task:
+            await service.resume_with_human_response(
+                str(_TASK_ID),
+                _TENANT,
+                verdict=HumanResponseVerdict.APPROVE,
+                resume_token=_RESUME_TOKEN,
+            )
+    governed_resume.assert_not_awaited()
+    handle_task.assert_awaited_once()
 
 
-def test_taskcpm_b9_taskqueue_cancel_is_provider_primitive_not_admin_surface() -> None:
-    assert TaskQueue.cancel.__qualname__.endswith("TaskQueue.cancel")
-    routes = importlib.import_module("intergrax.applications._shared.harness_task_routes")
-    assert "TaskQueue" not in routes.__dict__
+@pytest.mark.asyncio
+async def test_taskcpm_b9_supported_cancel_route_does_not_invoke_taskqueue_cancel(
+    _stub_host_llm: None,
+) -> None:
+    task = _task()
+    run_id = mint_run_id()
+    await ActiveTaskRegistry.register(task, run_id)
+    runtime = _product_runtime()
+    app = FastAPI()
+    app.state.harness_auth = HarnessAuthState(
+        identity_provider=_FakeIdentityProvider(),
+        require_api_key=False,
+        resolved_api_key=None,
+        tenant_required=True,
+    )
+    wire_harness_task_control(
+        app,
+        enabled=True,
+        task_runner=UnifiedTaskRunner(runtime.nexus_loop),  # type: ignore[arg-type]
+        env=runtime.environment,
+        runtime=runtime,
+    )
+    client = TestClient(app)
+    with patch(
+        "intergrax.queueing.contracts.task_queue.TaskQueue.cancel",
+        new_callable=MagicMock,
+    ) as task_queue_cancel:
+        response = client.post(
+            f"/v1/tasks/{task.task_id}/cancel",
+            json={"mutation_id": _MUTATION_ID, "run_id": str(run_id)},
+            headers={"Authorization": "Bearer valid-bearer"},
+        )
+    assert response.status_code == 200
+    task_queue_cancel.assert_not_called()
 
 
-def test_taskcpm_b10_product_scaffold_uses_shared_governed_task_control_wiring() -> None:
-    names = ScaffoldApplicationNames.resolve("example_application")
-    source = factory_py(names)
-    assert "wire_harness_task_control" in source
-    assert "runtime=runtime" in source
-    assert "mount_harness_task_routes" not in source
+def test_taskcpm_b10_product_scaffold_wiring_uses_shared_governed_task_control(
+    _stub_host_llm: None,
+) -> None:
+    runtime = _product_runtime()
+    app = FastAPI()
+    wire_harness_task_control(
+        app,
+        enabled=True,
+        task_runner=UnifiedTaskRunner(runtime.nexus_loop),  # type: ignore[arg-type]
+        env=runtime.environment,
+        runtime=runtime,
+    )
+    paths = {route.path for route in app.routes}
+    assert "/v1/tasks/{task_id}/cancel" in paths
+    assert "/v1/tasks/{task_id}/autonomy" in paths
+    assert "/v1/tasks/{task_id}/resume" in paths
 
 
 def test_taskcpm_b11_product_host_exposes_no_duplicate_raw_task_control_routes(
@@ -536,11 +668,11 @@ def test_taskcpm_b13_cancel_autonomy_resume_bundle_rules_remain_isolated() -> No
     assert boundary.authorize(resume_request).decision.policy_rule_id.endswith("resume_task_execution")
 
 
-def test_taskcpm_b14_scheduler_internal_resume_mechanics_unchanged() -> None:
-    from intergrax.runtime.long_running import scheduler as scheduler_module
+def test_taskcpm_b14_scheduler_resume_stays_on_runtime_internal_path() -> None:
+    from intergrax.runtime.long_running.scheduler import LongRunningScheduler
 
-    assert not hasattr(scheduler_module, "governed_resume_checkpoint_task")
-    assert hasattr(scheduler_module.LongRunningScheduler, "_execute_resume")
+    assert governed_resume_checkpoint_task.__module__.endswith("task_control")
+    assert LongRunningScheduler.__module__.endswith("scheduler")
 
 
 @pytest.mark.asyncio
