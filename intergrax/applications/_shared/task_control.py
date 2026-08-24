@@ -582,7 +582,7 @@ async def governed_resume_checkpoint_task(
             ),
         )
 
-    task_result = await resume_task_with_token(
+    task_result = await _resume_task_with_token(
         runner,
         task_id=task_id,
         resume_token=resume_token,
@@ -591,28 +591,6 @@ async def governed_resume_checkpoint_task(
         approver=approver,
     )
     return GovernedResumeResult(accepted=True, task_result=task_result)
-
-
-async def set_task_autonomy(task_id: str, level: AutonomyLevel) -> TaskControlResult:
-    """Deprecated raw mutation — use ``governed_set_task_autonomy`` for supported surfaces."""
-    binding = await ActiveTaskRegistry.get(task_id)
-    if binding is None:
-        return TaskControlResult(
-            task_id=task_id,
-            action="set_autonomy",
-            accepted=False,
-            detail="task_not_active",
-        )
-    task = binding.task
-    previous = _execute_autonomy_change(task, target_level=level)
-    return TaskControlResult(
-        task_id=task_id,
-        action="set_autonomy",
-        accepted=True,
-        detail=level.value,
-        state=task.state.value,
-        metadata={"previous": previous.value if previous else None},
-    )
 
 
 def _pause_record_from_checkpoint(checkpoint: TaskCheckpoint) -> TaskPauseRecord | None:
@@ -660,7 +638,7 @@ def _materialize_hitl_resume_input(
         )
 
 
-async def resume_task_with_token(
+async def _resume_task_with_token(
     runner: UnifiedTaskRunner,
     *,
     task_id: str,

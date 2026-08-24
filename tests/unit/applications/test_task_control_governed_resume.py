@@ -238,7 +238,7 @@ async def test_taskcpm_r1_allow_exact_checkpoint_invokes_runner_once() -> None:
     boundary, evaluator = _allow_boundary()
     runner = AsyncMock(spec=UnifiedTaskRunner)
     with patch(
-        "intergrax.applications._shared.task_control.resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
         return_value=_task_result(),
     ) as resume_call:
@@ -266,7 +266,7 @@ async def test_taskcpm_r2_caller_mutation_id_preserved() -> None:
     boundary, evaluator = _allow_boundary()
     runner = AsyncMock(spec=UnifiedTaskRunner)
     with patch(
-        "intergrax.applications._shared.task_control.resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
         return_value=_task_result(),
     ):
@@ -289,7 +289,7 @@ async def test_taskcpm_r3_mutation_type_is_resume_task_execution() -> None:
     boundary, evaluator = _allow_boundary()
     runner = AsyncMock(spec=UnifiedTaskRunner)
     with patch(
-        "intergrax.applications._shared.task_control.resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
         return_value=_task_result(),
     ):
@@ -312,7 +312,7 @@ async def test_taskcpm_r4_task_id_bound_from_route_and_checkpoint() -> None:
     boundary, evaluator = _allow_boundary()
     runner = AsyncMock(spec=UnifiedTaskRunner)
     with patch(
-        "intergrax.applications._shared.task_control.resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
         return_value=_task_result(),
     ):
@@ -337,7 +337,7 @@ async def test_taskcpm_r5_run_id_from_checkpoint_canonical_identity() -> None:
     boundary, evaluator = _allow_boundary()
     runner = AsyncMock(spec=UnifiedTaskRunner)
     with patch(
-        "intergrax.applications._shared.task_control.resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
         return_value=_task_result(),
     ):
@@ -360,7 +360,7 @@ async def test_taskcpm_r6_wrong_tenant_zero_runner_invocation() -> None:
     boundary, _ = _allow_boundary()
     runner = AsyncMock(spec=UnifiedTaskRunner)
     with patch(
-        "intergrax.applications._shared.task_control.resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
     ) as resume_call:
         outcome = await governed_resume_checkpoint_task(
@@ -395,7 +395,7 @@ async def test_taskcpm_r7_deny_zero_runner_invocation() -> None:
     boundary = ControlPlaneMutationAuthorizationBoundary(evaluator=evaluator)
     runner = AsyncMock(spec=UnifiedTaskRunner)
     with patch(
-        "intergrax.applications._shared.task_control.resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
     ) as resume_call:
         outcome = await governed_resume_checkpoint_task(
@@ -431,7 +431,7 @@ async def test_taskcpm_r8_require_human_zero_runner_invocation() -> None:
     boundary = ControlPlaneMutationAuthorizationBoundary(evaluator=evaluator)
     runner = AsyncMock(spec=UnifiedTaskRunner)
     with patch(
-        "intergrax.applications._shared.task_control.resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
     ) as resume_call:
         outcome = await governed_resume_checkpoint_task(
@@ -457,7 +457,7 @@ async def test_taskcpm_r9_missing_boundary_raises_without_runner() -> None:
     checkpoint = _checkpoint()
     runner = AsyncMock(spec=UnifiedTaskRunner)
     with patch(
-        "intergrax.applications._shared.task_control.resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
     ) as resume_call:
         with pytest.raises(TaskControlGovernanceBlockedError) as exc_info:
@@ -565,7 +565,7 @@ async def test_taskcpm_r13_checkpoint_disappears_after_allow_zero_runner() -> No
     runner = AsyncMock(spec=UnifiedTaskRunner)
     store = _StaleAfterAllowCheckpointStore(checkpoint, stale=None)
     with patch(
-        "intergrax.applications._shared.task_control.resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
     ) as resume_call:
         outcome = await governed_resume_checkpoint_task(
@@ -592,7 +592,7 @@ async def test_taskcpm_r14_checkpoint_identity_changes_after_allow_zero_runner()
     runner = AsyncMock(spec=UnifiedTaskRunner)
     store = _StaleAfterAllowCheckpointStore(checkpoint, stale=replaced)
     with patch(
-        "intergrax.applications._shared.task_control.resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
     ) as resume_call:
         outcome = await governed_resume_checkpoint_task(
@@ -623,7 +623,7 @@ async def test_taskcpm_r15_checkpoint_run_id_conflict_zero_runner() -> None:
     runner = AsyncMock(spec=UnifiedTaskRunner)
     store = _StaleAfterAllowCheckpointStore(checkpoint, stale=conflicting)
     with patch(
-        "intergrax.applications._shared.task_control.resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
     ) as resume_call:
         outcome = await governed_resume_checkpoint_task(
@@ -650,7 +650,7 @@ async def test_taskcpm_r16_resume_token_stale_zero_runner() -> None:
     runner = AsyncMock(spec=UnifiedTaskRunner)
     store = _StaleAfterAllowCheckpointStore(checkpoint, stale=replaced)
     with patch(
-        "intergrax.applications._shared.task_control.resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
     ) as resume_call:
         outcome = await governed_resume_checkpoint_task(
@@ -707,7 +707,7 @@ async def test_taskcpm_r18_execution_hitl_verdict_does_not_bypass_cpm_deny() -> 
     boundary = ControlPlaneMutationAuthorizationBoundary(evaluator=evaluator)
     runner = AsyncMock(spec=UnifiedTaskRunner)
     with patch(
-        "intergrax.applications._shared.task_control.resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
     ) as resume_call:
         outcome = await governed_resume_checkpoint_task(
@@ -732,7 +732,7 @@ async def test_taskcpm_r19_cpm_allow_does_not_fabricate_missing_hitl_verdict() -
     boundary, _ = _allow_boundary()
     runner = AsyncMock(spec=UnifiedTaskRunner)
     with patch(
-        "intergrax.applications._shared.task_control.resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
         return_value=_task_result(),
     ) as resume_call:
@@ -768,7 +768,7 @@ async def test_taskcpm_r20_http_caller_request_identity_preserved() -> None:
     )
     runner = AsyncMock(spec=UnifiedTaskRunner)
     with patch(
-        "intergrax.applications._shared.task_control.resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
         return_value=_task_result(),
     ):
@@ -839,7 +839,7 @@ def test_taskcpm_r24_supported_route_requires_governance_boundary() -> None:
     )
     runner = AsyncMock(spec=UnifiedTaskRunner)
     with patch(
-        "intergrax.applications._shared.task_control.resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
         return_value=_task_result(),
     ) as resume_call:
