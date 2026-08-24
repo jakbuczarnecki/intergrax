@@ -112,6 +112,11 @@ def test_trace_steps_render_in_order() -> None:
     assert first_index < second_index
 
 
+def test_evaluator_executive_summary_shows_check_counts() -> None:
+    html = _render_pass()
+    assert "Evaluator passed: 1/1 checks." in html
+
+
 def test_evaluator_separate_from_final_output() -> None:
     html = _render_pass()
     final_index = html.index("Model / proof final output")

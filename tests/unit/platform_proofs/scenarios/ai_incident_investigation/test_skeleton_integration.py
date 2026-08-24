@@ -458,8 +458,10 @@ async def test_critic_completion_gate_blocks_when_l1_required_synthetic() -> Non
 async def test_platform_proof_evidence_verifier_and_renderer() -> None:
     bundle = build_runtime_bundle()
     result = await execute_resolved_skeleton(bundle)
+    evaluation = evaluate_scenario_run(result, bundle.fixture)
     evidence = build_platform_proof_evidence(
         result,
+        evaluation=evaluation,
         variant=ScenarioVariant.RESOLVED,
         source_revision="testsha",
     )

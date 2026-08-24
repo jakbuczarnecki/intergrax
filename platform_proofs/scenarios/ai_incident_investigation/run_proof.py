@@ -12,6 +12,10 @@ from pathlib import Path
 
 from scripts.proof.intergrax_platform_proof_evidence_io import write_evidence_json
 from scripts.proof.intergrax_platform_proof_html_renderer import render_platform_proof_report
+from platform_proofs.scenarios.ai_incident_investigation.report_sections import (
+    build_incident_report_sections,
+    incident_report_extra_css,
+)
 from platform_proofs.scenarios.ai_incident_investigation.evidence_builder import (
     EVIDENCE_RESOLVED_FILENAME,
     EVIDENCE_UNRESOLVED_FILENAME,
@@ -60,11 +64,13 @@ async def _run_skeleton() -> int:
     source_revision = _source_revision(repo_root)
     resolved_evidence = build_platform_proof_evidence(
         resolved_result,
+        evaluation=resolved_evaluation,
         variant=ScenarioVariant.RESOLVED,
         source_revision=source_revision,
     )
     unresolved_evidence = build_platform_proof_evidence(
         unresolved_result,
+        evaluation=unresolved_evaluation,
         variant=ScenarioVariant.UNRESOLVED,
         source_revision=source_revision,
     )
@@ -84,11 +90,29 @@ async def _run_skeleton() -> int:
             relative_path=EVIDENCE_UNRESOLVED_FILENAME,
         )
         (out_dir / REPORT_RESOLVED_FILENAME).write_text(
-            render_platform_proof_report(resolved_evidence),
+            render_platform_proof_report(
+                resolved_evidence,
+                domain_sections=build_incident_report_sections(
+                    result=resolved_result,
+                    evaluation=resolved_evaluation,
+                    evidence=resolved_evidence,
+                    variant=ScenarioVariant.RESOLVED,
+                ),
+                extra_css=incident_report_extra_css(),
+            ),
             encoding="utf-8",
         )
         (out_dir / REPORT_UNRESOLVED_FILENAME).write_text(
-            render_platform_proof_report(unresolved_evidence),
+            render_platform_proof_report(
+                unresolved_evidence,
+                domain_sections=build_incident_report_sections(
+                    result=unresolved_result,
+                    evaluation=unresolved_evaluation,
+                    evidence=unresolved_evidence,
+                    variant=ScenarioVariant.UNRESOLVED,
+                ),
+                extra_css=incident_report_extra_css(),
+            ),
             encoding="utf-8",
         )
         (out_dir / "domain_result.json").write_text(

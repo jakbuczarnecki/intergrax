@@ -7,6 +7,10 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from intergrax.contracts.evidence_claims import EvidenceClaimSet
+from platform_proofs.scenarios.ai_incident_investigation.evaluator import ScenarioEvaluationResult
+from platform_proofs.scenarios.ai_incident_investigation.evaluator_evidence import (
+    project_scenario_evaluation_to_evidence,
+)
 from platform_proofs.scenarios.ai_incident_investigation.fixtures import ScenarioVariant
 from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
     TELEMETRY_EVIDENCE_ID,
@@ -111,6 +115,7 @@ def _evidence_node_summary(node: dict[str, object]) -> ReportSafeText:
 def build_platform_proof_evidence(
     result: ScenarioExecutionResult,
     *,
+    evaluation: ScenarioEvaluationResult,
     variant: ScenarioVariant,
     source_revision: str,
     finished_at: datetime | None = None,
@@ -172,6 +177,8 @@ def build_platform_proof_evidence(
         else "Paired RESOLVED canonical evidence exists in evidence-resolved.json"
     )
 
+    evaluator_evidence = project_scenario_evaluation_to_evidence(evaluation)
+
     scenario = ScenarioEvidence(
         scenario_id=meta["scenario_id"],
         title=meta["scenario_title"],
@@ -197,6 +204,7 @@ def build_platform_proof_evidence(
             present=True,
             content=explicit_runtime_report_safe_text(result.terminal_summary),
         ),
+        evaluator=evaluator_evidence,
     )
 
     unsupported_conclusions: tuple[str, ...] = ("Public proof publication",)
@@ -253,10 +261,17 @@ def build_platform_proof_evidence(
             content=explicit_runtime_report_safe_text(result.terminal_summary),
         ),
         limitations=(
-            "FULL-1 RESOLVED and FULL-2 UNRESOLVED evidence worlds implemented.",
+            (
+                "This artifact demonstrates the RESOLVED path only; paired UNRESOLVED "
+                "canonical evidence is produced separately."
+                if variant is ScenarioVariant.RESOLVED
+                else "This artifact demonstrates the UNRESOLVED path only; paired RESOLVED "
+                "canonical evidence is produced separately."
+            ),
             paired_note,
             "Not accepted for public proof publication.",
         ),
+        evaluator=evaluator_evidence,
         conclusion=ConclusionEvidence(
             supported_conclusions=(meta["supported_conclusion"],),
             unsupported_conclusions=unsupported_conclusions,

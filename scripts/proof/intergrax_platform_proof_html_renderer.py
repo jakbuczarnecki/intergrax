@@ -396,11 +396,20 @@ def _render_executive_summary(evidence: PlatformProofEvidence) -> str:
     limitation = evidence.limitations[0] if evidence.limitations else "See limitations section."
     evaluator_line = "No evaluator summary recorded."
     if evidence.evaluator is not None:
-        evaluator_line = (
-            "Evaluator passed."
-            if evidence.evaluator.passed
-            else "Evaluator did not pass."
-        )
+        passed_count = sum(1 for check in evidence.evaluator.checks if check.passed)
+        total_count = len(evidence.evaluator.checks)
+        if total_count:
+            evaluator_line = (
+                f"Evaluator passed: {passed_count}/{total_count} checks."
+                if evidence.evaluator.passed
+                else f"Evaluator did not pass: {passed_count}/{total_count} checks passed."
+            )
+        else:
+            evaluator_line = (
+                "Evaluator passed."
+                if evidence.evaluator.passed
+                else "Evaluator did not pass."
+            )
         if evidence.evaluator.failure_reasons:
             evaluator_line += f" Reasons: {', '.join(evidence.evaluator.failure_reasons)}."
     strongest = "execution timeline"
