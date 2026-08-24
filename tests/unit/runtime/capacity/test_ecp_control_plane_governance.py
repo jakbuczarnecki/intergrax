@@ -877,3 +877,564 @@ def test_ecp_cpm32_stale_state_scheduler_blocked_without_cpm_evidence() -> None:
     assert blocked.authorization_evidence is None
     assert blocked.authorization_scope is None
     assert blocked.tenant_scope_denial is None
+
+
+def _human_principal(tenant_id: str = _TENANT) -> RequestIdentity:
+    return RequestIdentity(
+        tenant_id=tenant_id,
+        user_id="capacity-operator",
+        principal_type=PrincipalType.USER,
+        auth_subject="capacity-operator",
+    )
+
+
+def _build_hitl_governed_scheduler(
+    *,
+    k8s: _RecordingK8s | None = None,
+    celery: CeleryProductionAdapter | None = None,
+    evaluator: _RecordingEvaluator | None = None,
+    tenant_id: str = _TENANT,
+    require_hitl_policy: bool = False,
+) -> tuple[
+    "CapacityScheduler",
+    _RecordingK8s,
+    CeleryProductionAdapter,
+    ScalingProvisioner,
+    _RecordingEvaluator,
+    "CapacityApprovalQueue",
+    "ControlPlaneMutationApprovalCoordinator",
+]:
+    import asyncio
+
+    from intergrax.runtime.capacity.approval_queue import CapacityApprovalQueue
+    from intergrax.runtime.capacity.collector import CapacitySignalCollector
+    from intergrax.runtime.capacity.contracts import ScalingPolicy, ScalingRule
+    from intergrax.runtime.capacity.evaluator import ScalingEvaluator
+    from intergrax.runtime.capacity.scheduler import CapacityScheduler
+    from intergrax.runtime.governance.control_plane_mutation_approval import (
+        ApprovalConsumingControlPlaneMutationEvaluator,
+        ControlPlaneMutationApprovalCoordinator,
+    )
+
+    kubernetes = k8s or _RecordingK8s()
+    celery_adapter = celery or CeleryProductionAdapter(worker_count=2)
+    recording = evaluator or _RecordingEvaluator()
+    coordinator = ControlPlaneMutationApprovalCoordinator()
+    queue = CapacityApprovalQueue(coordinator=coordinator)
+    wrapped = ApprovalConsumingControlPlaneMutationEvaluator(
+        inner=recording,
+        coordinator=coordinator,
+    )
+    boundary = ControlPlaneMutationAuthorizationBoundary(evaluator=wrapped)
+    provisioner = ScalingProvisioner(
+        kubernetes=kubernetes,
+        celery=celery_adapter,
+        execution_mode=ProvisionerExecutionMode.GOVERNED_ONLY,
+    )
+    governed_executor = GovernedCapacityMutationExecutor(
+        provisioner=provisioner,
+        mutation_boundary=boundary,
+        tenant_resolver=StaticEcpResourceTenantResolver(tenant_id=tenant_id),
+        approval_coordinator=coordinator,
+    )
+    policy = ScalingPolicy(
+        enabled=True,
+        require_hitl_for_scale_up=require_hitl_policy,
+        rules=[
+            ScalingRule(
+                rule_id="k8s",
+                target=ScalingTarget.NEXUS_HOST,
+                metric_name="graph_backpressure_rate",
+                scale_up_threshold=1.0,
+                scale_down_threshold=0.0,
+                action_kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
+            ),
+            ScalingRule(
+                rule_id="celery",
+                target=ScalingTarget.CELERY_POOL,
+                metric_name="queue_depth",
+                scale_up_threshold=10.0,
+                scale_down_threshold=2.0,
+                action_kind=ScalingActionKind.SCALE_CELERY_WORKERS,
+            ),
+        ],
+    )
+    collector = CapacitySignalCollector()
+    scheduler = CapacityScheduler(
+        collector=collector,
+        evaluator=ScalingEvaluator(policy),
+        provisioner=provisioner,
+        approval_queue=queue,
+        execution_identity=_scheduler_service_principal(tenant_id),
+        governed_capacity_executor=governed_executor,
+        tenant_id=tenant_id,
+        requires_governed_execution=True,
+    )
+    return scheduler, kubernetes, celery_adapter, provisioner, recording, queue, coordinator
+
+
+def test_ecp_cpm33_require_human_k8s_pending_preserves_scope() -> None:
+    import asyncio
+
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(
+            action=PolicyAction.REQUIRE_HUMAN,
+            reason="needs human",
+            policy_rule_id="rule.hitl",
+        ),
+    )
+    scheduler, k8s, _celery, provisioner, _recording, queue, _coordinator = (
+        _build_hitl_governed_scheduler(evaluator=evaluator)
+    )
+    scheduler._collector.record_backpressure()
+    asyncio.run(scheduler.tick())
+    assert k8s.scale_calls == []
+    assert provisioner.applied == []
+    pending = queue.list_pending()
+    assert len(pending) == 1
+    record = pending[0]
+    assert record.mutation_id == record.action.action_id
+    assert record.authorization_scope.mutation_id == record.mutation_id
+    assert record.authorization_evidence.policy_action is PolicyAction.REQUIRE_HUMAN
+
+
+def test_ecp_cpm34_human_approve_k8s_resume_exact_target_once() -> None:
+    import asyncio
+
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(
+            action=PolicyAction.REQUIRE_HUMAN,
+            reason="needs human",
+            policy_rule_id="rule.hitl",
+        ),
+    )
+    scheduler, k8s, _celery, provisioner, _recording, queue, coordinator = (
+        _build_hitl_governed_scheduler(evaluator=evaluator)
+    )
+    scheduler._collector.record_backpressure()
+    asyncio.run(scheduler.tick())
+    mutation_id = queue.list_pending()[0].mutation_id
+    grant = queue.approve_mutation(mutation_id, _human_principal())
+    assert grant is not None
+    asyncio.run(scheduler.tick())
+    assert k8s.scale_calls == [3]
+    assert len(provisioner.applied) == 1
+    assert coordinator.is_consumed(grant.grant_id)
+
+
+def test_ecp_cpm35_human_deny_zero_provider_effect() -> None:
+    import asyncio
+
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(
+            action=PolicyAction.REQUIRE_HUMAN,
+            reason="needs human",
+            policy_rule_id="rule.hitl",
+        ),
+    )
+    scheduler, k8s, _celery, provisioner, _recording, queue, coordinator = (
+        _build_hitl_governed_scheduler(evaluator=evaluator)
+    )
+    scheduler._collector.record_backpressure()
+    asyncio.run(scheduler.tick())
+    mutation_id = queue.list_pending()[0].mutation_id
+    denial = queue.deny_mutation(mutation_id, _human_principal())
+    assert denial is not None
+    asyncio.run(scheduler.tick())
+    assert k8s.scale_calls == []
+    assert provisioner.applied == []
+    assert coordinator.get_denial(mutation_id) is not None
+    assert queue.approve_mutation(mutation_id, _human_principal()) is None
+
+
+def test_ecp_cpm36_wrong_approver_tenant_fail_closed() -> None:
+    import asyncio
+
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(
+            action=PolicyAction.REQUIRE_HUMAN,
+            reason="needs human",
+            policy_rule_id="rule.hitl",
+        ),
+    )
+    scheduler, k8s, _celery, provisioner, _recording, queue, _coordinator = (
+        _build_hitl_governed_scheduler(evaluator=evaluator)
+    )
+    scheduler._collector.record_backpressure()
+    asyncio.run(scheduler.tick())
+    mutation_id = queue.list_pending()[0].mutation_id
+    assert queue.approve_mutation(mutation_id, _human_principal(tenant_id=_OTHER_TENANT)) is None
+    asyncio.run(scheduler.tick())
+    assert k8s.scale_calls == []
+    assert provisioner.applied == []
+
+
+def test_ecp_cpm37_wrong_mutation_approval_cannot_resume_other_action() -> None:
+    import asyncio
+
+    from intergrax.runtime.capacity.contracts import ScalingActionPlan
+
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(
+            action=PolicyAction.REQUIRE_HUMAN,
+            reason="needs human",
+            policy_rule_id="rule.hitl",
+        ),
+    )
+    scheduler, k8s, _celery, provisioner, _recording, queue, coordinator = (
+        _build_hitl_governed_scheduler(evaluator=evaluator)
+    )
+    action_a = ScalingAction(
+        action_id="hitl-action-a",
+        kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
+        target=ScalingTarget.NEXUS_HOST,
+        delta=1,
+    )
+    action_b = ScalingAction(
+        action_id="hitl-action-b",
+        kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
+        target=ScalingTarget.NEXUS_HOST,
+        delta=1,
+    )
+    pending_a = scheduler._governed_capacity_executor.prepare_k8s_pending_authorization(
+        principal=_scheduler_service_principal(),
+        tenant_id=_TENANT,
+        mutation_id=action_a.action_id,
+        deployment=_DEPLOYMENT,
+        delta=1,
+    )
+    pending_b = scheduler._governed_capacity_executor.prepare_k8s_pending_authorization(
+        principal=_scheduler_service_principal(),
+        tenant_id=_TENANT,
+        mutation_id=action_b.action_id,
+        deployment=_DEPLOYMENT,
+        delta=1,
+    )
+    queue.submit_pending(
+        plan_id="plan-a",
+        action=action_a,
+        authorization_scope=pending_a.authorization_scope,
+        authorization_evidence=pending_a.authorization_evidence,
+        service_principal=_scheduler_service_principal(),
+    )
+    queue.submit_pending(
+        plan_id="plan-b",
+        action=action_b,
+        authorization_scope=pending_b.authorization_scope,
+        authorization_evidence=pending_b.authorization_evidence,
+        service_principal=_scheduler_service_principal(),
+    )
+    grant_a = queue.approve_mutation(action_a.action_id, _human_principal())
+    assert grant_a is not None
+    resumable_a = queue.drain_resumable()[0]
+    assert resumable_a.mutation_id == action_a.action_id
+    from intergrax.runtime.capacity.approval_queue import CapacityResumableMutation
+
+    resumable_b = CapacityResumableMutation(
+        mutation_id=action_b.action_id,
+        plan_id="plan-b",
+        action=action_b,
+        authorization_scope=pending_b.authorization_scope,
+        approval_evidence_ref=grant_a.grant_id,
+        service_principal=_scheduler_service_principal(),
+    )
+    scheduler._resume_governed_mutation(resumable_b)
+    assert k8s.scale_calls == []
+    assert provisioner.applied == []
+
+
+def test_ecp_cpm38_resource_mismatch_k8s_approval_not_celery() -> None:
+    import asyncio
+
+    from intergrax.runtime.capacity.contracts import ScalingActionPlan
+
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(
+            action=PolicyAction.REQUIRE_HUMAN,
+            reason="needs human",
+            policy_rule_id="rule.hitl",
+        ),
+    )
+    scheduler, k8s, celery, provisioner, _recording, queue, _coordinator = (
+        _build_hitl_governed_scheduler(evaluator=evaluator)
+    )
+    k8s_action = ScalingAction(
+        action_id="hitl-k8s-only",
+        kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
+        target=ScalingTarget.NEXUS_HOST,
+        delta=1,
+    )
+    celery_action = ScalingAction(
+        action_id="hitl-celery-only",
+        kind=ScalingActionKind.SCALE_CELERY_WORKERS,
+        target=ScalingTarget.CELERY_POOL,
+        delta=1,
+    )
+    plan = ScalingActionPlan(
+        actions=(k8s_action, celery_action),
+        evaluation_status="planned",
+    )
+    asyncio.run(scheduler._apply_plan(plan))
+    assert queue.list_pending()
+    k8s_pending = next(r for r in queue.list_pending() if r.mutation_id == k8s_action.action_id)
+    queue.approve_mutation(k8s_pending.mutation_id, _human_principal())
+    asyncio.run(scheduler.tick())
+    assert k8s.scale_calls == [3]
+    assert celery.worker_count == 2
+    assert len([a for a in provisioner.applied if a.action_id == celery_action.action_id]) == 0
+
+
+def test_ecp_cpm39_stale_current_after_approval_no_provider_write() -> None:
+    import asyncio
+
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(
+            action=PolicyAction.REQUIRE_HUMAN,
+            reason="needs human",
+            policy_rule_id="rule.hitl",
+        ),
+    )
+    flaky = _FlakyK8s()
+    scheduler, k8s, _celery, provisioner, _recording, queue, _coordinator = (
+        _build_hitl_governed_scheduler(evaluator=evaluator, k8s=flaky)
+    )
+    scheduler._collector.record_backpressure()
+    asyncio.run(scheduler.tick())
+    mutation_id = queue.list_pending()[0].mutation_id
+    queue.approve_mutation(mutation_id, _human_principal())
+    asyncio.run(scheduler.tick())
+    assert k8s.scale_calls == []
+    assert provisioner.applied == []
+    assert any("ECP_SCHEDULER_STALE_STATE" in failure for failure in provisioner.failures)
+
+
+def test_ecp_cpm40_target_mismatch_cannot_execute() -> None:
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(
+            action=PolicyAction.REQUIRE_HUMAN,
+            reason="needs human",
+            policy_rule_id="rule.hitl",
+        ),
+    )
+    scheduler, k8s, _celery, provisioner, _recording, queue, coordinator = (
+        _build_hitl_governed_scheduler(evaluator=evaluator)
+    )
+    action = ScalingAction(
+        action_id="target-mismatch",
+        kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
+        target=ScalingTarget.NEXUS_HOST,
+        delta=1,
+    )
+    pending = scheduler._governed_capacity_executor.prepare_k8s_pending_authorization(
+        principal=_scheduler_service_principal(),
+        tenant_id=_TENANT,
+        mutation_id=action.action_id,
+        deployment=_DEPLOYMENT,
+        delta=1,
+    )
+    queue.submit_pending(
+        plan_id="plan-target",
+        action=action,
+        authorization_scope=pending.authorization_scope,
+        authorization_evidence=pending.authorization_evidence,
+        service_principal=_scheduler_service_principal(),
+    )
+    grant = queue.approve_mutation(action.action_id, _human_principal())
+    assert grant is not None
+    mismatched_scope = pending.authorization_scope.model_copy(
+        update={
+            "target_revision": k8s_replicas_revision_token(
+                deployment=_DEPLOYMENT,
+                replicas=4,
+            ),
+        },
+    )
+    from intergrax.runtime.capacity.approval_queue import CapacityResumableMutation
+
+    resumable = CapacityResumableMutation(
+        mutation_id=action.action_id,
+        plan_id="plan-target",
+        action=action,
+        authorization_scope=mismatched_scope,
+        approval_evidence_ref=grant.grant_id,
+        service_principal=_scheduler_service_principal(),
+    )
+    scheduler._resume_governed_mutation(resumable)
+    assert k8s.scale_calls == []
+    assert provisioner.applied == []
+
+
+def test_ecp_cpm41_double_drain_cannot_execute_twice() -> None:
+    import asyncio
+
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(
+            action=PolicyAction.REQUIRE_HUMAN,
+            reason="needs human",
+            policy_rule_id="rule.hitl",
+        ),
+    )
+    scheduler, k8s, _celery, provisioner, _recording, queue, _coordinator = (
+        _build_hitl_governed_scheduler(evaluator=evaluator)
+    )
+    scheduler._collector.record_backpressure()
+    asyncio.run(scheduler.tick())
+    queue.approve_mutation(queue.list_pending()[0].mutation_id, _human_principal())
+    asyncio.run(scheduler.tick())
+    asyncio.run(scheduler.tick())
+    assert k8s.scale_calls == [3]
+    assert len(provisioner.applied) == 1
+
+
+def test_ecp_cpm42_missing_approval_dependency_fail_closed() -> None:
+    import asyncio
+
+    from intergrax.runtime.capacity.approval_queue import CapacityResumableMutation
+
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(
+            action=PolicyAction.REQUIRE_HUMAN,
+            reason="needs human",
+            policy_rule_id="rule.hitl",
+        ),
+    )
+    scheduler, k8s, _celery, provisioner, _recording, queue, _coordinator = (
+        _build_hitl_governed_scheduler(evaluator=evaluator)
+    )
+    action = ScalingAction(
+        action_id="missing-approval",
+        kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
+        target=ScalingTarget.NEXUS_HOST,
+        delta=1,
+    )
+    pending = scheduler._governed_capacity_executor.prepare_k8s_pending_authorization(
+        principal=_scheduler_service_principal(),
+        tenant_id=_TENANT,
+        mutation_id=action.action_id,
+        deployment=_DEPLOYMENT,
+        delta=1,
+    )
+    resumable = CapacityResumableMutation(
+        mutation_id=action.action_id,
+        plan_id="plan-missing",
+        action=action,
+        authorization_scope=pending.authorization_scope,
+        approval_evidence_ref="cpm-grant:missing",
+        service_principal=_scheduler_service_principal(),
+    )
+    scheduler._resume_governed_mutation(resumable)
+    assert k8s.scale_calls == []
+    assert provisioner.applied == []
+
+
+def test_ecp_cpm43_multi_action_per_action_approval_scope() -> None:
+    import asyncio
+
+    from intergrax.runtime.capacity.contracts import ScalingActionPlan
+
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(
+            action=PolicyAction.REQUIRE_HUMAN,
+            reason="needs human",
+            policy_rule_id="rule.hitl",
+        ),
+    )
+    scheduler, k8s, celery, provisioner, _recording, queue, _coordinator = (
+        _build_hitl_governed_scheduler(evaluator=evaluator)
+    )
+    k8s_action = ScalingAction(
+        action_id="multi-k8s",
+        kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
+        target=ScalingTarget.NEXUS_HOST,
+        delta=1,
+    )
+    celery_action = ScalingAction(
+        action_id="multi-celery",
+        kind=ScalingActionKind.SCALE_CELERY_WORKERS,
+        target=ScalingTarget.CELERY_POOL,
+        delta=1,
+    )
+    plan = ScalingActionPlan(
+        actions=(k8s_action, celery_action),
+        evaluation_status="planned",
+    )
+    asyncio.run(scheduler._apply_plan(plan))
+    assert len(queue.list_pending()) == 2
+    queue.approve_mutation(k8s_action.action_id, _human_principal())
+    asyncio.run(scheduler.tick())
+    assert k8s.scale_calls == [3]
+    assert celery.worker_count == 2
+    assert len(provisioner.applied) == 1
+
+
+def test_ecp_cpm44_local_hitl_flag_does_not_bypass_canonical_governance() -> None:
+    import asyncio
+
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(action=PolicyAction.ALLOW, reason="ok"),
+    )
+    scheduler, k8s, _celery, provisioner, _recording, queue, _coordinator = (
+        _build_hitl_governed_scheduler(evaluator=evaluator, require_hitl_policy=True)
+    )
+    scheduler._collector.record_backpressure()
+    asyncio.run(scheduler.tick())
+    assert k8s.scale_calls == []
+    assert provisioner.applied == []
+    pending = queue.list_pending()[0]
+    assert pending.authorization_evidence.policy_action is PolicyAction.REQUIRE_HUMAN
+    assert queue.approve_mutation(pending.mutation_id, _human_principal()) is not None
+    asyncio.run(scheduler.tick())
+    assert k8s.scale_calls == [3]
+
+
+def test_ecp_cpm45_scheduler_require_human_routable_to_pending_flow() -> None:
+    import asyncio
+
+    from intergrax.runtime.capacity.contracts import ScalingActionPlan
+
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(
+            action=PolicyAction.REQUIRE_HUMAN,
+            reason="needs human",
+            policy_rule_id="rule.hitl",
+        ),
+    )
+    scheduler, k8s, _celery, provisioner, _recording, queue, _coordinator = (
+        _build_hitl_governed_scheduler(evaluator=evaluator)
+    )
+    action = ScalingAction(
+        action_id="route-hitl-action",
+        kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
+        target=ScalingTarget.NEXUS_HOST,
+        delta=1,
+    )
+    plan = ScalingActionPlan(actions=(action,), evaluation_status="planned")
+    asyncio.run(scheduler._apply_plan(plan))
+    pending = queue.list_pending()
+    assert len(pending) == 1
+    assert pending[0].mutation_id == action.action_id
+    assert pending[0].authorization_evidence.mutation_id == action.action_id
+    assert k8s.scale_calls == []
+    assert provisioner.applied == []
+
+
+def test_ecp_cpm46_plan_approve_without_approver_cannot_authorize() -> None:
+    import asyncio
+
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(
+            action=PolicyAction.REQUIRE_HUMAN,
+            reason="needs human",
+            policy_rule_id="rule.hitl",
+        ),
+    )
+    scheduler, k8s, _celery, provisioner, _recording, queue, _coordinator = (
+        _build_hitl_governed_scheduler(evaluator=evaluator)
+    )
+    scheduler._collector.record_backpressure()
+    asyncio.run(scheduler.tick())
+    plan_id = queue.list_pending()[0].plan_id
+    assert queue.approve(plan_id) is None
+    asyncio.run(scheduler.tick())
+    assert k8s.scale_calls == []
+    assert provisioner.applied == []

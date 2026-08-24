@@ -25,7 +25,11 @@ from intergrax.runtime.capacity.event_bridge import CapacityEventBridge
 from intergrax.runtime.capacity.events import PublishFn
 from intergrax.runtime.capacity.provisioner import ScalingProvisioner
 from intergrax.runtime.capacity.queue_depth import make_queue_depth_provider
+from intergrax.runtime.capacity.governed_capacity_mutation import GovernedCapacityMutationExecutor
 from intergrax.runtime.capacity.scheduler import CapacityScheduler
+from intergrax.runtime.governance.control_plane_mutation_approval import (
+    ControlPlaneMutationApprovalCoordinator,
+)
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 
 
@@ -70,7 +74,11 @@ def wire_application_scaling(
     resolved_queue_depth = queue_depth_provider
     if resolved_queue_depth is None and kv_store is not None:
         resolved_queue_depth = make_queue_depth_provider(kv_store, resolved_tenant_id)
-    approval_queue = CapacityApprovalQueue() if policy.require_hitl_for_scale_up else None
+    approval_coordinator: ControlPlaneMutationApprovalCoordinator | None = None
+    approval_queue: CapacityApprovalQueue | None = None
+    if policy.require_hitl_for_scale_up or requires_governed_execution:
+        approval_coordinator = ControlPlaneMutationApprovalCoordinator()
+        approval_queue = CapacityApprovalQueue(coordinator=approval_coordinator)
     collector = CapacitySignalCollector(
         publish=publish,
         queue_depth_provider=resolved_queue_depth,
@@ -95,6 +103,17 @@ def wire_application_scaling(
             else ProvisionerExecutionMode.UNRESTRICTED
         ),
     )
+    if (
+        requires_governed_execution
+        and production_capacity_governance is not None
+        and approval_coordinator is not None
+    ):
+        governed_executor = GovernedCapacityMutationExecutor(
+            provisioner=provisioner,
+            mutation_boundary=production_capacity_governance.mutation_authorization_boundary,
+            tenant_resolver=production_capacity_governance.tenant_resolver,
+            approval_coordinator=approval_coordinator,
+        )
     scheduler = CapacityScheduler(
         collector=collector,
         evaluator=evaluator,

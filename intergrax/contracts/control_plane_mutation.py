@@ -28,6 +28,12 @@ SCHEMA_CONTROL_PLANE_MUTATION_REQUEST_V1: Final = "control_plane_mutation_reques
 SCHEMA_CONTROL_PLANE_MUTATION_AUTHORIZATION_EVIDENCE_V1: Final = (
     "control_plane_mutation_authorization_evidence.v1"
 )
+SCHEMA_CONTROL_PLANE_MUTATION_APPROVAL_GRANT_V1: Final = (
+    "control_plane_mutation_approval_grant.v1"
+)
+SCHEMA_CONTROL_PLANE_MUTATION_DENIAL_RECORD_V1: Final = (
+    "control_plane_mutation_denial_record.v1"
+)
 
 _NON_EMPTY = Field(min_length=1)
 
@@ -204,6 +210,125 @@ class ControlPlaneMutationAuthorizationResult(BaseModel):
     validation_failed: bool = False
 
 
+class ControlPlaneMutationApprovalGrant(BaseModel):
+    """Scoped single-use authorization for one exact control-plane mutation continuation."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["control_plane_mutation_approval_grant.v1"] = (
+        SCHEMA_CONTROL_PLANE_MUTATION_APPROVAL_GRANT_V1
+    )
+    grant_id: str = _NON_EMPTY
+    mutation_id: str = _NON_EMPTY
+    mutation_type: str = _NON_EMPTY
+    tenant_id: str = _NON_EMPTY
+    resource_scope: str = _NON_EMPTY
+    resource_type: str = _NON_EMPTY
+    resource_id: str = _NON_EMPTY
+    current_revision: str = _NON_EMPTY
+    target_revision: str = _NON_EMPTY
+    request_digest: str = _NON_EMPTY
+    policy_rule_id: str = _NON_EMPTY
+    service_principal_user_id: str = _NON_EMPTY
+    service_principal_auth_subject: str = _NON_EMPTY
+    service_principal_type: PrincipalType
+    approver_user_id: str = _NON_EMPTY
+    approver_auth_subject: str = _NON_EMPTY
+    approver_principal_type: PrincipalType
+    approved_at: str = _NON_EMPTY
+    task_id: str | None = None
+    run_id: str | None = None
+
+    @field_validator(
+        "grant_id",
+        "mutation_id",
+        "mutation_type",
+        "tenant_id",
+        "resource_scope",
+        "resource_type",
+        "resource_id",
+        "current_revision",
+        "target_revision",
+        "request_digest",
+        "policy_rule_id",
+        "service_principal_user_id",
+        "service_principal_auth_subject",
+        "approver_user_id",
+        "approver_auth_subject",
+        "approved_at",
+    )
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+    @field_validator("request_digest")
+    @classmethod
+    def _validate_request_digest(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized.startswith("sha256:"):
+            raise ValueError("request_digest_must_be_sha256")
+        return normalized
+
+
+class ControlPlaneMutationDenialRecord(BaseModel):
+    """Canonical human denial bound to one exact mutation authorization scope."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["control_plane_mutation_denial_record.v1"] = (
+        SCHEMA_CONTROL_PLANE_MUTATION_DENIAL_RECORD_V1
+    )
+    mutation_id: str = _NON_EMPTY
+    mutation_type: str = _NON_EMPTY
+    tenant_id: str = _NON_EMPTY
+    resource_scope: str = _NON_EMPTY
+    resource_type: str = _NON_EMPTY
+    resource_id: str = _NON_EMPTY
+    current_revision: str = _NON_EMPTY
+    target_revision: str = _NON_EMPTY
+    request_digest: str = _NON_EMPTY
+    policy_rule_id: str = _NON_EMPTY
+    approver_user_id: str = _NON_EMPTY
+    approver_auth_subject: str = _NON_EMPTY
+    approver_principal_type: PrincipalType
+    denied_at: str = _NON_EMPTY
+    task_id: str | None = None
+    run_id: str | None = None
+
+    @field_validator(
+        "mutation_id",
+        "mutation_type",
+        "tenant_id",
+        "resource_scope",
+        "resource_type",
+        "resource_id",
+        "current_revision",
+        "target_revision",
+        "request_digest",
+        "policy_rule_id",
+        "approver_user_id",
+        "approver_auth_subject",
+        "denied_at",
+    )
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+    @field_validator("request_digest")
+    @classmethod
+    def _validate_request_digest(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized.startswith("sha256:"):
+            raise ValueError("request_digest_must_be_sha256")
+        return normalized
+
+
 class ControlPlaneMutationPolicyEvaluator(Protocol):
     """Configured policy/authority evaluator for control-plane mutations."""
 
@@ -216,6 +341,7 @@ def control_plane_mutation_request_digest(
 ) -> str:
     """Canonical digest binding principal, resource, revisions, and mutation identity."""
     payload = request.model_dump(mode="json")
+    payload.pop("approval_evidence_ref", None)
     return request_digest_for_payload(payload)
 
 
