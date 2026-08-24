@@ -17,12 +17,14 @@ from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import
     h1_initially_plausible,
     observations_from_evidence_nodes,
     staffing_record_admissible_for_incident,
+    telemetry_is_unavailable,
     telemetry_supports_degradation,
 )
 from platform_proofs.scenarios.ai_incident_investigation.execution_payload import (
     domain_payload_from_execution,
 )
 from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
+    COMPLETION_UNRESOLVED,
     H2_CLAIM_ID,
     INCIDENT_EVIDENCE_IDS,
     INITIAL_CLAIM_ID,
@@ -43,6 +45,14 @@ TELEMETRY_CONTENT_ERROR = "unsupported_inference:telemetry_content_not_degraded"
 COMPARISON_CONTENT_ERROR = "unsupported_inference:comparison_does_not_weaken_overload"
 H2_DISPOSITION_ERROR = "unsupported_inference:h2_disposition_incompatible_with_staffing"
 H1_NOT_WEAKENED_ERROR = "unsupported_inference:h1_not_weakened_by_comparison"
+H3_FORGED_WITHOUT_TELEMETRY_ERROR = "unsupported_inference:h3_supported_without_decisive_telemetry"
+H1_FALLBACK_ERROR = "unsupported_inference:h1_fallback_without_distinguishing_evidence"
+H2_FALLBACK_ERROR = "unsupported_inference:h2_fallback_incompatible_with_staffing"
+UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR = "unsupported_inference:unresolved_with_supported_diagnosis"
+UNRESOLVED_MISSING_TELEMETRY_UNAVAILABLE_ERROR = (
+    "unsupported_inference:unresolved_missing_telemetry_unavailability"
+)
+UNRESOLVED_H3_NOT_INSUFFICIENT_ERROR = "unsupported_inference:unresolved_h3_not_insufficient"
 
 
 def _observable_evidence_ids(payload: dict[str, object]) -> frozenset[str]:
@@ -133,6 +143,63 @@ def _validate_supported_h3_content(
     return None
 
 
+def _validate_unresolved_completion(
+    claim_set: EvidenceClaimSet,
+    domain_payload: dict[str, object],
+) -> str | None:
+    raw_nodes = domain_payload.get("evidence_nodes")
+    if not isinstance(raw_nodes, list):
+        return "supported_diagnosis_evidence_not_observable"
+    try:
+        observations = observations_from_evidence_nodes(
+            tuple(raw_nodes),  # type: ignore[arg-type]
+            INCIDENT_EVIDENCE_IDS,
+        )
+    except (KeyError, ValueError):
+        return "supported_diagnosis_evidence_not_observable"
+
+    runtime = derive_hypothesis_dispositions(observations, INCIDENT_EVIDENCE_IDS)
+
+    diagnosis_claims = [
+        claim for claim in claim_set.claims if str(claim.claim_kind) == DIAGNOSIS_CLAIM_KIND
+    ]
+    supported = [c for c in diagnosis_claims if c.resolution is ClaimResolution.SUPPORTED]
+    if supported:
+        return UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR
+
+    if runtime.h1.disposition not in {ClaimResolution.SUPERSEDED, ClaimResolution.REJECTED}:
+        return H1_NOT_WEAKENED_ERROR
+    if runtime.h2.disposition is not ClaimResolution.REJECTED:
+        return H2_FALLBACK_ERROR
+    if runtime.h3.disposition is not ClaimResolution.INSUFFICIENT_EVIDENCE:
+        return UNRESOLVED_H3_NOT_INSUFFICIENT_ERROR
+
+    if observations.telemetry is None:
+        return UNRESOLVED_MISSING_TELEMETRY_UNAVAILABLE_ERROR
+    if not telemetry_is_unavailable(observations.telemetry):
+        return UNRESOLVED_MISSING_TELEMETRY_UNAVAILABLE_ERROR
+
+    if observations.comparison is None or not comparison_weakens_overload(
+        observations.workload,
+        observations.throughput,
+        observations.comparison,
+    ):
+        return COMPARISON_CONTENT_ERROR
+
+    h1_claims = [c for c in claim_set.claims if c.claim_id == INITIAL_CLAIM_ID]
+    if h1_claims and h1_claims[0].resolution is ClaimResolution.SUPPORTED:
+        return H1_FALLBACK_ERROR
+
+    h2_claims = [c for c in claim_set.claims if c.claim_id == H2_CLAIM_ID]
+    if h2_claims and h2_claims[0].resolution is ClaimResolution.SUPPORTED:
+        return H2_FALLBACK_ERROR
+
+    if str(domain_payload.get("completion_mode", "")) != COMPLETION_UNRESOLVED:
+        return "diagnosis_claim_not_acceptable"
+
+    return None
+
+
 def validate_claim_set_against_observations(
     claim_set: EvidenceClaimSet,
     domain_payload: dict[str, object],
@@ -151,7 +218,53 @@ def validate_claim_set_against_observations(
 
     supported = [c for c in diagnosis_claims if c.resolution is ClaimResolution.SUPPORTED]
     if supported:
+        if str(domain_payload.get("completion_mode", "")) == COMPLETION_UNRESOLVED:
+            return ValidationResult(
+                valid=False,
+                errors=[UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR],
+            )
+
         latest = supported[-1]
+        h1_claims = [c for c in claim_set.claims if c.claim_id == INITIAL_CLAIM_ID]
+        if h1_claims and h1_claims[0].resolution is ClaimResolution.SUPPORTED:
+            raw_nodes = domain_payload.get("evidence_nodes")
+            if isinstance(raw_nodes, list):
+                try:
+                    observations = observations_from_evidence_nodes(
+                        tuple(raw_nodes),  # type: ignore[arg-type]
+                        INCIDENT_EVIDENCE_IDS,
+                    )
+                    if observations.comparison is not None and comparison_weakens_overload(
+                        observations.workload,
+                        observations.throughput,
+                        observations.comparison,
+                    ):
+                        return ValidationResult(valid=False, errors=[H1_FALLBACK_ERROR])
+                except (KeyError, ValueError):
+                    pass
+            return ValidationResult(valid=False, errors=[H1_FALLBACK_ERROR])
+
+        h2_claims = [c for c in claim_set.claims if c.claim_id == H2_CLAIM_ID]
+        if h2_claims and h2_claims[0].resolution is ClaimResolution.SUPPORTED:
+            raw_nodes = domain_payload.get("evidence_nodes")
+            if isinstance(raw_nodes, list):
+                try:
+                    observations = observations_from_evidence_nodes(
+                        tuple(raw_nodes),  # type: ignore[arg-type]
+                        INCIDENT_EVIDENCE_IDS,
+                    )
+                    runtime_h2 = derive_hypothesis_dispositions(
+                        observations, INCIDENT_EVIDENCE_IDS
+                    ).h2
+                    if runtime_h2.disposition is not ClaimResolution.SUPPORTED:
+                        return ValidationResult(valid=False, errors=[H2_FALLBACK_ERROR])
+                except (KeyError, ValueError):
+                    return ValidationResult(
+                        valid=False,
+                        errors=["supported_diagnosis_evidence_not_observable"],
+                    )
+            return ValidationResult(valid=False, errors=[H2_FALLBACK_ERROR])
+
         telemetry_refs = tuple(
             eid for eid in latest.supporting_evidence_ids
             if str(eid).startswith(TELEMETRY_EVIDENCE_PREFIX)
@@ -180,6 +293,13 @@ def validate_claim_set_against_observations(
         content_error = _validate_supported_h3_content(claim_set, domain_payload)
         if content_error:
             return ValidationResult(valid=False, errors=[content_error])
+        return ValidationResult(valid=True)
+
+    completion_mode = str(domain_payload.get("completion_mode", ""))
+    if completion_mode == COMPLETION_UNRESOLVED:
+        unresolved_error = _validate_unresolved_completion(claim_set, domain_payload)
+        if unresolved_error:
+            return ValidationResult(valid=False, errors=[unresolved_error])
         return ValidationResult(valid=True)
 
     active_hypothesis = str(domain_payload.get("active_hypothesis", ""))

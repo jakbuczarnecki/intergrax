@@ -17,8 +17,11 @@ from intergrax.contracts.evidence_claims import (
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
     COMPARISON_EVIDENCE_ID,
+    COMPLETION_SUPPORTED_DIAGNOSIS,
+    COMPLETION_UNRESOLVED,
     DIAGNOSIS_KIND,
     H2_CLAIM_ID,
+    H3_CLAIM_ID,
     INCIDENT_EVIDENCE_IDS,
     INITIAL_CLAIM_ID,
     REVISED_CLAIM_ID,
@@ -43,6 +46,7 @@ from intergrax.contracts.capability import CapabilityMatchResult
 from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import (
     IncidentAssessment,
     IncidentObservations,
+    RationaleCode,
     derive_hypothesis_dispositions,
     parse_comparison_payload,
     parse_staffing_attendance_payload,
@@ -145,6 +149,22 @@ def _build_claims_from_assessment(assessment: IncidentAssessment) -> EvidenceCla
             supersedes_claim_id=INITIAL_CLAIM_ID,
         )
         claims.append(revised_claim)
+    elif (
+        h3.disposition is ClaimResolution.INSUFFICIENT_EVIDENCE
+        and h3.rationale_code is RationaleCode.H3_INSUFFICIENT_TELEMETRY_UNAVAILABLE
+    ):
+        h3_claim = EvidenceBackedClaim(
+            claim_id=H3_CLAIM_ID,
+            statement=(
+                "Equipment-process degradation hypothesis H3 cannot be accepted: "
+                "decisive station telemetry for the incident window is unavailable."
+            ),
+            claim_kind=DIAGNOSIS_KIND,
+            supporting_evidence_ids=(),
+            contradicting_evidence_ids=(),
+            resolution=ClaimResolution.INSUFFICIENT_EVIDENCE,
+        )
+        claims.append(h3_claim)
 
     return EvidenceClaimSet(claims=tuple(claims), challenges=())
 
@@ -362,13 +382,22 @@ class IncidentInvestigatorAgent(Agent):
         claim_set = _build_claims_from_assessment(assessment)
         active_hypothesis = assessment.active_hypothesis
         summary = assessment.summary
+        completion_mode = COMPLETION_SUPPORTED_DIAGNOSIS
         if is_revision and assessment.h3.disposition is ClaimResolution.SUPPORTED:
             summary = f"revised: {summary}"
+        elif (
+            is_revision
+            and assessment.h3.rationale_code
+            is RationaleCode.H3_INSUFFICIENT_TELEMETRY_UNAVAILABLE
+            and assessment.h3.disposition is ClaimResolution.INSUFFICIENT_EVIDENCE
+        ):
+            completion_mode = COMPLETION_UNRESOLVED
 
         domain_payload = {
             "claim_set": claim_set.model_dump(mode="json"),
             "evidence_nodes": evidence_nodes,
             "active_hypothesis": str(active_hypothesis),
+            "completion_mode": completion_mode,
             "tool_invocations": tool_invocations,
             "revision_pass": is_revision,
             "initial_evidence_ids": [

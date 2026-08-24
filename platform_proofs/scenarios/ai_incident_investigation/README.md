@@ -5,7 +5,7 @@
 A fictional industrial manufacturer needs a defensible root-cause diagnosis when production target attainment collapses — not a fluent story that sounds right under time pressure.
 
 > [!NOTE]
-> **Scenario status:** SCENARIO-1 FULL-1 — full RESOLVED evidence world implemented (H1/H2/H3); UNRESOLVED path pending FULL-2; public proof not yet established; evidence/report not yet accepted for publication.
+> **Scenario status:** SCENARIO-1 FULL-1 and FULL-2 — RESOLVED and UNRESOLVED paths implemented (H1/H2/H3); public Scenario Proof not yet accepted; evidence/report not yet accepted for publication.
 
 > **Synthetic scenario provenance:** This is a fully fictional operational scenario. The organization, facility, incident, datasets, telemetry, staffing records, equipment behavior, and numerical values are synthetic and are not derived from any employer, customer, production environment, confidential source, or proprietary system.
 
@@ -22,7 +22,7 @@ At a fictional industrial manufacturing plant, production target attainment on a
 | **Trap** | Workload rises while throughput declines — correlation presented as causation |
 | **Decision risk** | Wrong overtime, line reallocation, or capacity action before high-volume production window |
 | **Scenario outcome** | RESOLVED or UNRESOLVED |
-| **Status** | FULL-1 RESOLVED evidence world implemented; UNRESOLVED pending FULL-2 |
+| **Status** | FULL-1 RESOLVED and FULL-2 UNRESOLVED implemented; public proof not yet established |
 | **Proof class** | SCENARIO |
 | **Slug** | `ai_incident_investigation` |
 
@@ -105,7 +105,11 @@ Full normative PASS/FAIL contract: [Scenario Specification § B](SCENARIO_SPEC.m
 
 ## Limitations
 
-Single bounded manufacturing incident fixture with designed adversarial conditions — not arbitrary enterprise data. FULL-1 implements RESOLVED path only; UNRESOLVED terminal scenario pending FULL-2. Evaluator semantics are scoped to this scenario's claim.
+Single bounded manufacturing incident fixture with designed adversarial conditions — not arbitrary enterprise data. FULL-1 (RESOLVED) and FULL-2 (UNRESOLVED) are implemented; public proof publication is still pending. Evaluator semantics are scoped to this scenario's claim.
+
+**RESOLVED:** decisive telemetry exists → bounded H3 diagnosis accepted.
+
+**UNRESOLVED:** decisive telemetry unavailable → system refuses to guess; no supported root-cause diagnosis.
 
 Full limitations and excluded claims: [Scenario Specification § B](SCENARIO_SPEC.md#limitations).
 

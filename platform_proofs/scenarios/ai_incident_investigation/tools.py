@@ -13,6 +13,7 @@ from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
     IncidentFixture,
     LINE_ID,
     STATION_ID,
+    TelemetryAvailability,
     TimeWindowLabel,
 )
 from testing_support.builder import tools_agent_make_contract
@@ -122,12 +123,14 @@ class TelemetryInput(BaseModel):
 class TelemetryOutput(BaseModel):
     station_id: str
     window: str
-    signal_state: str
-    complex_assembly_throughput_pct: float
-    baseline_throughput_pct: float
+    availability: str
+    signal_state: str | None = None
+    complex_assembly_throughput_pct: float | None = None
+    baseline_throughput_pct: float | None = None
     observed_from: str
     observed_to: str
     admissible: bool
+    unavailability_reason: str | None = None
 
 
 def _iso(dt: object) -> str:
@@ -333,16 +336,28 @@ class _TelemetryHandler(ToolHandler[TelemetryInput, TelemetryOutput]):
             return TelemetryOutput(
                 station_id=request.input.station_id,
                 window=request.input.window,
-                signal_state="no_data",
-                complex_assembly_throughput_pct=0.0,
-                baseline_throughput_pct=0.0,
+                availability=TelemetryAvailability.UNAVAILABLE.value,
                 observed_from="",
                 observed_to="",
                 admissible=False,
+                unavailability_reason="no_observation_for_window",
+            )
+        if obs.availability is TelemetryAvailability.UNAVAILABLE:
+            return TelemetryOutput(
+                station_id=obs.station_id,
+                window=obs.window.label,
+                availability=TelemetryAvailability.UNAVAILABLE.value,
+                observed_from=_iso(obs.window.observed_from),
+                observed_to=_iso(obs.window.observed_to),
+                admissible=obs.admissible,
+                unavailability_reason=(
+                    obs.unavailability_reason.value if obs.unavailability_reason else None
+                ),
             )
         return TelemetryOutput(
             station_id=obs.station_id,
             window=obs.window.label,
+            availability=TelemetryAvailability.AVAILABLE.value,
             signal_state=obs.signal_state,
             complex_assembly_throughput_pct=obs.complex_assembly_throughput_pct,
             baseline_throughput_pct=obs.baseline_throughput_pct,

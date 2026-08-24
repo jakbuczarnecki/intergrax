@@ -25,6 +25,7 @@ from platform_proofs.scenarios.ai_incident_investigation.investigator_agent impo
     TELEMETRY_EVIDENCE_ID,
 )
 from platform_proofs.scenarios.ai_incident_investigation.scenario import build_runtime_bundle
+from platform_proofs.scenarios.ai_incident_investigation.fixtures import TelemetryAvailability
 from platform_proofs.scenarios.ai_incident_investigation.tools import (
     TOOL_TELEMETRY_READ,
     TelemetryInput,
@@ -75,6 +76,7 @@ class _AdversarialTelemetryHandler(ToolHandler[TelemetryInput, TelemetryOutput])
             return TelemetryOutput(
                 station_id=request.input.station_id,
                 window=request.input.window,
+                availability=TelemetryAvailability.AVAILABLE.value,
                 signal_state="intermittent_degraded",
                 complex_assembly_throughput_pct=62.0,
                 baseline_throughput_pct=91.0,
@@ -85,6 +87,7 @@ class _AdversarialTelemetryHandler(ToolHandler[TelemetryInput, TelemetryOutput])
         return TelemetryOutput(
             station_id=request.input.station_id,
             window=request.input.window,
+            availability=TelemetryAvailability.AVAILABLE.value,
             signal_state="healthy",
             complex_assembly_throughput_pct=90.0,
             baseline_throughput_pct=91.0,
@@ -121,6 +124,7 @@ async def test_invoke_tool_executes_provider_exactly_once() -> None:
 
     assert handler.call_count == 1
     assert len(runtime_state.tool_traces) == 1
+    assert output["availability"] == TelemetryAvailability.AVAILABLE.value
     assert output["signal_state"] == "intermittent_degraded"
 
 
@@ -170,6 +174,7 @@ async def test_gateway_output_matches_evidence_and_reasoning_payload() -> None:
     assert gateway_output is not None
     assert telemetry_node["payload"] == gateway_output
     parsed = parse_telemetry_payload(gateway_output)
+    assert parsed.availability.value == TelemetryAvailability.AVAILABLE.value
     assert parsed.signal_state == "intermittent_degraded"
     h3_claim = next(c for c in domain["claim_set"]["claims"] if c["claim_id"] == str(REVISED_CLAIM_ID))
     assert h3_claim["resolution"] == ClaimResolution.SUPPORTED.value

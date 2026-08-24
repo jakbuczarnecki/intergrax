@@ -409,14 +409,12 @@ class SQLiteAdaptiveProfileMutationStore:
             )
             actual_active = pointer.active_version_id if pointer is not None else None
             if actual_active != expected_active_version_id:
-                conn.execute("ROLLBACK")
                 raise ProfileActivePointerConflictError(
                     "active profile pointer changed before mutation"
                 )
 
             target = self._read_version(conn, target_version_id)
             if target is None:
-                conn.execute("ROLLBACK")
                 raise ValueError(f"Unknown profile version: {target_version_id}")
             _validate_scoped_version(
                 target,
@@ -458,11 +456,6 @@ class SQLiteAdaptiveProfileMutationStore:
             )
             conn.execute("COMMIT")
             return result
-        except ProfileActivePointerConflictError:
-            raise
-        except ProfileLifecycleTransitionError:
-            conn.execute("ROLLBACK")
-            raise
         except Exception:
             conn.execute("ROLLBACK")
             raise
@@ -487,10 +480,8 @@ class SQLiteAdaptiveProfileMutationStore:
                 artifact_type=artifact_type,
             )
             if pointer is None or pointer.previous_version_id is None:
-                conn.execute("ROLLBACK")
                 raise ValueError("No rollback pointer available for active profile version")
             if pointer.active_version_id != expected_active_version_id:
-                conn.execute("ROLLBACK")
                 raise ProfileActivePointerConflictError(
                     "active profile pointer changed before rollback"
                 )
@@ -498,7 +489,6 @@ class SQLiteAdaptiveProfileMutationStore:
             current = self._read_version(conn, pointer.active_version_id)
             previous = self._read_version(conn, pointer.previous_version_id)
             if current is None or previous is None:
-                conn.execute("ROLLBACK")
                 raise ValueError("Rollback requires both current and previous profile versions")
 
             if current.status == ProfileVersionStatus.ACTIVE:
@@ -532,11 +522,6 @@ class SQLiteAdaptiveProfileMutationStore:
             )
             conn.execute("COMMIT")
             return result
-        except ProfileActivePointerConflictError:
-            raise
-        except ProfileLifecycleTransitionError:
-            conn.execute("ROLLBACK")
-            raise
         except Exception:
             conn.execute("ROLLBACK")
             raise

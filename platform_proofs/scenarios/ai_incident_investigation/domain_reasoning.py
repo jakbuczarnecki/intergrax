@@ -12,7 +12,10 @@ from enum import StrEnum
 from pydantic import BaseModel
 
 from intergrax.contracts.evidence_claims import ClaimResolution
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import HypothesisId
+from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
+    HypothesisId,
+    TelemetryAvailability,
+)
 
 # --- Scenario-domain thresholds (bounded, not fixture-overfit) ---
 
@@ -43,6 +46,7 @@ class RationaleCode(StrEnum):
     H3_PENDING_AWAITING_TELEMETRY = "h3_pending_awaiting_telemetry"
     H3_INSUFFICIENT_NO_DISTINGUISHING = "h3_insufficient_no_distinguishing"
     H3_INSUFFICIENT_NO_DEGRADATION = "h3_insufficient_no_degradation"
+    H3_INSUFFICIENT_TELEMETRY_UNAVAILABLE = "h3_insufficient_telemetry_unavailable"
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,10 +87,12 @@ class ObservedComparison:
 
 @dataclass(frozen=True, slots=True)
 class ObservedTelemetry:
-    signal_state: str
-    complex_assembly_throughput_pct: float
-    baseline_throughput_pct: float
-    admissible: bool
+    availability: TelemetryAvailability
+    signal_state: str | None = None
+    complex_assembly_throughput_pct: float | None = None
+    baseline_throughput_pct: float | None = None
+    admissible: bool = True
+    unavailability_reason: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -201,17 +207,35 @@ def comparison_weakens_overload(
     return similar_load and healthier_peer
 
 
+def telemetry_is_unavailable(telemetry: ObservedTelemetry) -> bool:
+    return telemetry.availability is TelemetryAvailability.UNAVAILABLE
+
+
 def telemetry_supports_degradation(telemetry: ObservedTelemetry) -> bool:
+    if telemetry.availability is not TelemetryAvailability.AVAILABLE:
+        return False
     if not telemetry.admissible:
         return False
     if telemetry.signal_state not in DEGRADED_SIGNAL_STATES:
+        return False
+    if (
+        telemetry.complex_assembly_throughput_pct is None
+        or telemetry.baseline_throughput_pct is None
+    ):
         return False
     drop = telemetry.baseline_throughput_pct - telemetry.complex_assembly_throughput_pct
     return drop >= MATERIAL_STATION_THROUGHPUT_DROP_PCT
 
 
 def telemetry_is_healthy(telemetry: ObservedTelemetry) -> bool:
+    if telemetry.availability is not TelemetryAvailability.AVAILABLE:
+        return False
     if telemetry.signal_state in HEALTHY_SIGNAL_STATES:
+        if (
+            telemetry.complex_assembly_throughput_pct is None
+            or telemetry.baseline_throughput_pct is None
+        ):
+            return True
         drop = telemetry.baseline_throughput_pct - telemetry.complex_assembly_throughput_pct
         return drop < MATERIAL_STATION_THROUGHPUT_DROP_PCT
     return False
@@ -354,6 +378,15 @@ def _assess_h3(
             rationale_code=RationaleCode.H3_PENDING_AWAITING_TELEMETRY,
         )
 
+    if telemetry_is_unavailable(telemetry):
+        return HypothesisAssessment(
+            hypothesis_id=HypothesisId.H3,
+            disposition=ClaimResolution.INSUFFICIENT_EVIDENCE,
+            supporting_evidence_ids=(),
+            contradicting_evidence_ids=(),
+            rationale_code=RationaleCode.H3_INSUFFICIENT_TELEMETRY_UNAVAILABLE,
+        )
+
     if not telemetry_supports_degradation(telemetry):
         return HypothesisAssessment(
             hypothesis_id=HypothesisId.H3,
@@ -401,6 +434,18 @@ def derive_hypothesis_dispositions(
         summary = (
             "bounded equipment-process degradation diagnosis supported "
             "by telemetry and comparison evidence"
+        )
+    elif (
+        h3.disposition is ClaimResolution.INSUFFICIENT_EVIDENCE
+        and h3.rationale_code is RationaleCode.H3_INSUFFICIENT_TELEMETRY_UNAVAILABLE
+        and h1.disposition in {ClaimResolution.SUPERSEDED, ClaimResolution.REJECTED}
+        and h2.disposition is ClaimResolution.REJECTED
+    ):
+        active = HypothesisId.H3
+        summary = (
+            "Investigation remains unresolved: workload-only and staffing explanations "
+            "are not supported, while the equipment hypothesis cannot be accepted "
+            "because decisive telemetry for the incident window is unavailable."
         )
     elif h1.disposition is ClaimResolution.PENDING:
         active = HypothesisId.H1
@@ -477,14 +522,31 @@ def parse_comparison_payload(payload: object) -> ObservedComparison:
 
 def parse_telemetry_payload(payload: object) -> ObservedTelemetry:
     data = normalize_tool_payload(payload)
-    return ObservedTelemetry(
-        signal_state=str(data.get("signal_state", "")),
-        complex_assembly_throughput_pct=float(
-            data.get("complex_assembly_throughput_pct", 0.0)
-        ),
-        baseline_throughput_pct=float(data.get("baseline_throughput_pct", 0.0)),
-        admissible=bool(data.get("admissible", False)),
-    )
+    availability_raw = str(data.get("availability", "")).lower()
+    if availability_raw == TelemetryAvailability.UNAVAILABLE.value:
+        return ObservedTelemetry(
+            availability=TelemetryAvailability.UNAVAILABLE,
+            admissible=bool(data.get("admissible", False)),
+            unavailability_reason=(
+                str(data["unavailability_reason"])
+                if data.get("unavailability_reason") is not None
+                else None
+            ),
+        )
+    if availability_raw == TelemetryAvailability.AVAILABLE.value:
+        signal_state = data.get("signal_state")
+        throughput = data.get("complex_assembly_throughput_pct")
+        baseline = data.get("baseline_throughput_pct")
+        if signal_state is None or throughput is None or baseline is None:
+            raise ValueError("available telemetry missing required measurement fields")
+        return ObservedTelemetry(
+            availability=TelemetryAvailability.AVAILABLE,
+            signal_state=str(signal_state),
+            complex_assembly_throughput_pct=float(throughput),
+            baseline_throughput_pct=float(baseline),
+            admissible=bool(data.get("admissible", False)),
+        )
+    raise ValueError("telemetry payload missing or invalid availability")
 
 
 def observations_from_evidence_nodes(

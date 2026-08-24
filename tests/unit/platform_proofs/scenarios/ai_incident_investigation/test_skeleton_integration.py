@@ -37,7 +37,6 @@ from scripts.proof.intergrax_platform_proof_evidence import (
     ReportSafeTextSourceKind,
     project_evidence_claim_set,
 )
-from scripts.proof.intergrax_platform_proof_evidence_io import EVIDENCE_FILENAME
 from scripts.proof.intergrax_platform_proof_execution import (
     INTERGRAX_PROOF_ARTIFACT_DIR_ENV,
     load_manifest_bundle,
@@ -54,12 +53,14 @@ from platform_proofs.scenarios.ai_incident_investigation.critic_adapter import (
     map_critic_verdict_to_challenge,
 )
 from platform_proofs.scenarios.ai_incident_investigation.evidence_builder import (
+    EVIDENCE_RESOLVED_FILENAME,
     PROOF_ID,
     build_platform_proof_evidence,
 )
 from platform_proofs.scenarios.ai_incident_investigation.evaluator import evaluate_scenario_run
 from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
     FORBIDDEN_LEAK_MARKERS,
+    ScenarioVariant,
     TimeWindowLabel,
     build_resolved_fixture,
     staffing_record_admissible_for_incident,
@@ -267,9 +268,8 @@ async def test_completion_gate_required_on_resolved_path() -> None:
 @pytest.mark.asyncio
 async def test_completion_gate_blocks_resolved_on_real_scenario_path() -> None:
     bundle = build_runtime_bundle()
-    result = await execute_with_completion_gate_blocked(bundle)
-    assert result.outcome == OUTCOME_UNRESOLVED
-    assert not result.critic_verdict_passed
+    with pytest.raises(RuntimeError, match="incident_terminal_state_not_accepted"):
+        await execute_with_completion_gate_blocked(bundle)
 
 
 @pytest.mark.asyncio
@@ -458,7 +458,11 @@ async def test_critic_completion_gate_blocks_when_l1_required_synthetic() -> Non
 async def test_platform_proof_evidence_verifier_and_renderer() -> None:
     bundle = build_runtime_bundle()
     result = await execute_resolved_skeleton(bundle)
-    evidence = build_platform_proof_evidence(result, source_revision="testsha")
+    evidence = build_platform_proof_evidence(
+        result,
+        variant=ScenarioVariant.RESOLVED,
+        source_revision="testsha",
+    )
     projected = project_evidence_claim_set(
         EvidenceClaimSet.model_validate(result.claim_set),
         text_source=ReportSafeTextSourceKind.RUNTIME_EXPLICIT,
@@ -501,7 +505,7 @@ async def test_parent_runner_integration_valid_scenario_skeleton(
         assert result.exit_code == 0
         assert result.status == ProofStatus.PASS
         assert result.evidence_verification_status == ContractEvidenceStatus.PASS
-        assert (artifact_dir / EVIDENCE_FILENAME).is_file()
+        assert (artifact_dir / EVIDENCE_RESOLVED_FILENAME).is_file()
 
 
 @pytest.mark.asyncio
@@ -514,7 +518,7 @@ async def test_parent_runner_integration_tampered_evidence_fails(
     def _tamper_runner(command, **kwargs):
         completed = subprocess.run(command, **kwargs)
         artifact_dir = Path(kwargs["env"][INTERGRAX_PROOF_ARTIFACT_DIR_ENV])
-        evidence_path = artifact_dir / EVIDENCE_FILENAME
+        evidence_path = artifact_dir / EVIDENCE_RESOLVED_FILENAME
         tampered = json.loads(evidence_path.read_text(encoding="utf-8"))
         tampered["evidence_claims"]["claims"][0]["supporting_evidence_ids"] = [
             "evidence.tampered.missing"

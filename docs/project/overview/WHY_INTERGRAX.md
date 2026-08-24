@@ -46,9 +46,7 @@ These are recurring engineering responsibilities. Without a reusable operating f
 
 ## What Intergrax is
 
-Intergrax is a reusable governed foundation, or application operating layer, for specialized AI applications. It concentrates repeatable boundaries around knowledge, policy, tools, evidence, context, and execution so product teams can focus on the concrete domain workflow.
-
-Some teams use **Harness AI** to describe this category: an operating layer around model or agent behavior that constrains, coordinates, records, and recovers execution. The term is useful shorthand, not a universal industry taxonomy.
+Intergrax is a shared application operating layer for specialized AI applications — a reusable governed foundation that concentrates repeatable boundaries around knowledge, policy, tools, evidence, context, and execution so product teams can focus on the concrete domain workflow.
 
 | Layer | Primary responsibility |
 | ----- | ---------------------- |
@@ -83,7 +81,7 @@ The diagram contrasts rebuilding foundations per product with reusing one govern
 
 ## Responsibility boundary
 
-Intergrax aims to centralize reusable application foundations:
+Intergrax centralizes reusable application foundations:
 
 - policy and governance mechanisms;
 - knowledge, context, and evidence boundaries;
@@ -98,7 +96,7 @@ The adopting product team still owns:
 - product-specific validation and acceptance criteria; and
 - business responsibility for the product and its outcomes.
 
-Intergrax does not remove those responsibilities. It is intended to reduce repeated foundation-building, not to make a domain product or its risk decisions automatic.
+Intergrax does not remove those responsibilities. It reduces repeated foundation-building; it does not make a domain product or its risk decisions automatic.
 
 ---
 
@@ -128,9 +126,7 @@ For named modern frameworks and platforms — including cases where another stac
 
 ## Business and strategic thesis
 
-If multiple specialized products reuse the same governed foundations, Intergrax can reduce repeated platform construction and concentrate improvement in one shared layer.
-
-Cross-product reuse, commercial outcomes, and adopter profiles below remain strategic hypotheses — not measured results. Commercial and real-user validation remain open; see [Commercialization gates](#commercialization-gates).
+Intergrax centralizes reusable operating boundaries so multiple specialized applications can share governed policy, knowledge, integration, execution, and evidence mechanisms. Measured cross-product acceleration, commercial outcomes, and sustained adopter demand are not yet established; see [Commercialization gates](#commercialization-gates).
 
 ### Repeated organizational cost
 
@@ -149,7 +145,7 @@ Potential adopter or sponsor profiles include:
 
 LKW is the current product path used to test this thesis. It exercises whether a reusable governed foundation can support a concrete, understandable workflow: approved knowledge → grounded Ask → source and evidence → persistence and reviewability.
 
-LKW also serves as the **reference application** for the bounded **Governed Evidence Decision Proof** — demonstrating governed answer admissibility over live organizational evidence with policy-derived obligations, execution-time authority, temporal rules, and persisted structural proof. See the [Governed Evidence Decision Proof](../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) and [PROOFS.md](../proofs/PROOFS.md).
+LKW also serves as the **reference application** for the bounded **Governed Evidence Decision Proof** — demonstrating governed answer admissibility over controlled live organizational evidence through real runtime and HTTP paths, with policy-derived obligations, execution-time authority, temporal rules, and persisted structural proof. Validation is bounded to Docker-backed organizational services and controlled live providers; it is not external SaaS validation. See the [Governed Evidence Decision Proof](../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) and [PROOFS.md](../proofs/PROOFS.md).
 
 ### Compounding value hypothesis
 

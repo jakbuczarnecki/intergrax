@@ -69,11 +69,12 @@ def write_evidence_json(
     evidence: PlatformProofEvidence,
     *,
     proof_directory: Path,
+    relative_path: str = EVIDENCE_FILENAME,
     include_checksum: bool = True,
 ) -> Path:
     proof_directory.mkdir(parents=True, exist_ok=True)
     resolved = with_evidence_checksum(evidence) if include_checksum else evidence
-    path = proof_directory / EVIDENCE_FILENAME
+    path = proof_directory / relative_path
     path.write_text(serialize_evidence_deterministic(resolved), encoding="utf-8")
     return path
 

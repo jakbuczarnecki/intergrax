@@ -35,6 +35,7 @@ from scripts.proof.intergrax_platform_proof_evidence_verifier import (
     EvidenceVerificationResult,
     apply_evidence_verification,
     resolve_expected_evidence_path,
+    verify_all_platform_proof_evidence,
     verify_platform_proof_evidence,
 )
 from scripts.proof.intergrax_platform_proof_publication import (
@@ -381,9 +382,8 @@ def _verify_evidence_if_required(
         proof_artifact_directory,
         execution_spec,
     )
-    verification = verify_platform_proof_evidence(
-        evidence_path=evidence_path,
-        artifact_root=proof_artifact_directory,
+    verification = verify_all_platform_proof_evidence(
+        proof_artifact_directory=proof_artifact_directory,
         spec=execution_spec,
         subprocess_result=transport_result,
         expected_source_revision=git_commit_sha,
@@ -426,13 +426,8 @@ def _verify_post_execution(
                 }
             )
         else:
-            evidence_path = resolve_expected_evidence_path(
-                proof_artifact_directory,
-                execution_spec,
-            )
-            evidence_verification = verify_platform_proof_evidence(
-                evidence_path=evidence_path,
-                artifact_root=proof_artifact_directory,
+            evidence_verification = verify_all_platform_proof_evidence(
+                proof_artifact_directory=proof_artifact_directory,
                 spec=execution_spec,
                 subprocess_result=result,
                 expected_source_revision=git_commit_sha,

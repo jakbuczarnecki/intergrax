@@ -63,7 +63,7 @@ flowchart TD
 
 The diagram is a responsibility-based evaluation route, not a list of completed products. The textual sections below are the authoritative explanation.
 
-**Current evidence boundary:** LKW demonstrates bounded indexed Ask through production Hybrid Ask. **Mixed indexed + authorized live Hybrid Ask is not yet established**; complete live-provider access is incomplete. Real-user and commercial validation remain open — see [PROOFS](../proofs/PROOFS.md).
+**Current evidence boundary:** LKW demonstrates bounded indexed Ask through production Hybrid Ask. **Mixed indexed + authorized live Hybrid Ask is not yet established**; complete external live-provider access is incomplete. Real-user and commercial validation remain open — see [PROOFS](../proofs/PROOFS.md).
 
 ## Strongest current fit
 
@@ -81,7 +81,7 @@ The diagram is a responsibility-based evaluation route, not a list of completed 
 
 **Success signal:** representative questions completed correctly; expected source references present; forbidden or unauthorized sources not used; evidence retained; workflow repeatable; and target users judge answers useful enough to reuse.
 
-**Responsibility fit:** Intergrax can provide reusable mechanisms around approved indexed sources, grounded Ask execution, evidence and provenance, controlled access context, persistence, and reviewable execution. The product team still defines the workspace workflow, source approval, user experience, business permissions, deployment, and acceptance criteria.
+**Responsibility fit:** Intergrax provides reusable mechanisms around approved indexed sources, grounded Ask execution, evidence and provenance, controlled access context, persistence, and reviewable execution. The product team still defines the workspace workflow, source approval, user experience, business permissions, deployment, and acceptance criteria.
 
 **Current evidence class:** **STRONGEST CURRENT FIT**
 
@@ -153,9 +153,7 @@ Bounded technical fits require product-specific validation; the adopting team ow
 
 ## Not yet proven
 
-The stable outcome **“combine indexed knowledge with authorized live evidence”** is **NOT YET PROVEN**. Bounded indexed Ask evidence exists, but mixed indexed + authorized live Hybrid Ask with unified provenance remains incomplete.
-
-This distinction is about evidence, not whether the problem is meaningful. See [PROOFS](../proofs/PROOFS.md) for the authoritative boundary.
+The stable outcome **“combine indexed knowledge with authorized live evidence”** is **NOT YET PROVEN**. This is an evidence boundary, not a judgment that the problem is meaningless — see [PROOFS](../proofs/PROOFS.md).
 
 ## When another approach is better
 

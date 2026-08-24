@@ -14,7 +14,7 @@ from intergrax.contracts.execution_identity import (
     mint_run_id,
     reset_active_execution_identity,
 )
-from intergrax.contracts.evidence_claims import EvidenceChallenge, EvidenceClaimSet
+from intergrax.contracts.evidence_claims import EvidenceChallenge, EvidenceClaimSet, ClaimResolution
 from intergrax.runtime.critic.contracts import CriticVerdict
 from intergrax.runtime.critic.critic_wiring import (
     CriticHookConfig,
@@ -38,8 +38,10 @@ from platform_proofs.scenarios.ai_incident_investigation.critic_adapter import (
     first_failed_node_partial_verdict_from_trace,
 )
 from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
-    build_resolved_fixture,
     IncidentFixture,
+    ScenarioVariant,
+    build_resolved_fixture,
+    build_unresolved_fixture,
 )
 from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
     COMPARISON_EVIDENCE_ID,
@@ -53,6 +55,10 @@ from platform_proofs.scenarios.ai_incident_investigation.investigator_agent impo
     THROUGHPUT_EVIDENCE_ID,
 )
 from platform_proofs.scenarios.ai_incident_investigation.tools import register_scenario_tools
+from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
+    COMPLETION_SUPPORTED_DIAGNOSIS,
+    COMPLETION_UNRESOLVED,
+)
 from platform_proofs.scenarios.ai_incident_investigation.execution_payload import (
     domain_payload_from_execution,
 )
@@ -63,7 +69,55 @@ from platform_proofs.scenarios.ai_incident_investigation.validation import (
 INVESTIGATOR_NODE_ID = "investigator-1"
 OUTCOME_RESOLVED = "RESOLVED"
 OUTCOME_UNRESOLVED = "UNRESOLVED"
+TERMINAL_STATE_NOT_ACCEPTED = "incident_terminal_state_not_accepted"
 EVALUATOR_LOOP_MAX_ITERATIONS = 2
+
+
+def is_resolved_completion(
+    *,
+    critic_verdict_passed: bool,
+    has_supported_diagnosis: bool,
+    completion_mode: str,
+) -> bool:
+    return (
+        critic_verdict_passed
+        and has_supported_diagnosis
+        and completion_mode == COMPLETION_SUPPORTED_DIAGNOSIS
+    )
+
+
+def is_epistemic_unresolved_completion(
+    *,
+    critic_verdict_passed: bool,
+    has_supported_diagnosis: bool,
+    completion_mode: str,
+) -> bool:
+    return (
+        critic_verdict_passed
+        and not has_supported_diagnosis
+        and completion_mode == COMPLETION_UNRESOLVED
+    )
+
+
+def derive_terminal_outcome(
+    *,
+    critic_verdict_passed: bool,
+    has_supported_diagnosis: bool,
+    completion_mode: str,
+) -> str:
+    if is_resolved_completion(
+        critic_verdict_passed=critic_verdict_passed,
+        has_supported_diagnosis=has_supported_diagnosis,
+        completion_mode=completion_mode,
+    ):
+        return OUTCOME_RESOLVED
+    if is_epistemic_unresolved_completion(
+        critic_verdict_passed=critic_verdict_passed,
+        has_supported_diagnosis=has_supported_diagnosis,
+        completion_mode=completion_mode,
+    ):
+        return OUTCOME_UNRESOLVED
+    raise RuntimeError(TERMINAL_STATE_NOT_ACCEPTED)
 
 
 @dataclass(frozen=True, slots=True)
@@ -92,16 +146,24 @@ class ScenarioRuntimeBundle:
     investigator: IncidentInvestigatorAgent
 
 
-def build_runtime_bundle() -> ScenarioRuntimeBundle:
-    fixture = build_resolved_fixture()
+def build_runtime_bundle(
+    *,
+    variant: ScenarioVariant = ScenarioVariant.RESOLVED,
+    fixture: IncidentFixture | None = None,
+) -> ScenarioRuntimeBundle:
+    resolved_fixture = fixture or (
+        build_unresolved_fixture()
+        if variant is ScenarioVariant.UNRESOLVED
+        else build_resolved_fixture()
+    )
     registry = ToolRegistry()
-    register_scenario_tools(registry, fixture)
+    register_scenario_tools(registry, resolved_fixture)
     investigator = IncidentInvestigatorAgent(
         registry=registry,
-        station_id=fixture.telemetry.station_id,
+        station_id=resolved_fixture.telemetry.station_id,
     )
     return ScenarioRuntimeBundle(
-        fixture=fixture,
+        fixture=resolved_fixture,
         registry=registry,
         investigator=investigator,
     )
@@ -233,6 +295,12 @@ async def execute_resolved_skeleton(
     critic_verdict_passed = final_verdict.passed and final_validation.valid
 
     evidence_challenge: EvidenceChallenge | None = None
+    claim_set_model = EvidenceClaimSet.model_validate(claim_set)
+    has_supported_diagnosis = any(
+        claim.resolution is ClaimResolution.SUPPORTED for claim in claim_set_model.claims
+    )
+    completion_mode = str(domain_payload.get("completion_mode", COMPLETION_SUPPORTED_DIAGNOSIS))
+
     if critic_challenged and failed_critic_verdict is not None:
         claim_set, evidence_challenge = apply_challenge_lifecycle(
             claim_set,
@@ -244,7 +312,7 @@ async def execute_resolved_skeleton(
                 COMPARISON_EVIDENCE_ID,
                 STAFFING_ATTENDANCE_EVIDENCE_ID,
             ),
-            resolved=critic_verdict_passed,
+            resolved=critic_verdict_passed and has_supported_diagnosis,
             satisfied_description=(
                 "Follow-up comparison, attendance, and telemetry gathered via platform tools"
             ),
@@ -254,7 +322,11 @@ async def execute_resolved_skeleton(
     if node_status.value != "completed" and critic_verdict_passed:
         raise RuntimeError(f"investigator node not completed: {node_status}")
 
-    outcome = OUTCOME_RESOLVED if critic_verdict_passed else OUTCOME_UNRESOLVED
+    outcome = derive_terminal_outcome(
+        critic_verdict_passed=critic_verdict_passed,
+        has_supported_diagnosis=has_supported_diagnosis,
+        completion_mode=completion_mode,
+    )
     leak_blob = _leak_scan_blob(claim_set, evidence_nodes)
 
     return ScenarioExecutionResult(

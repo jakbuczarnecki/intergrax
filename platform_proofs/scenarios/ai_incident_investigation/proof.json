@@ -2,7 +2,7 @@
   "schema_version": "intergrax.platform_proof_descriptor.v3",
   "library_class": "SCENARIO",
   "proof_id": "SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON",
-  "title": "AI Incident Investigation — full RESOLVED evidence world",
+  "title": "AI Incident Investigation — dual-path evidence world",
   "domains_exercised": ["EXECUTION", "TOOLS", "CRITIC", "EVIDENCE"],
   "proof_kind": "scenario_skeleton",
   "mechanisms_exercised": [
@@ -11,7 +11,7 @@
     "runtime.critic",
     "evidence.gap_1a"
   ],
-  "package_version": "full-1-resolved-0.2.0",
+  "package_version": "full-1-resolved-full-2-unresolved-0.3.0",
   "profiles": ["quick"],
   "command": {
     "executable": "uv",
@@ -25,19 +25,29 @@
   "safety_class": "LOCAL_READ_ONLY",
   "public_evidence_eligible": false,
   "problem_category": "operational_incident_investigation",
-  "problem_summary": "Reject correlation-only overload diagnosis; require comparison, staffing resolution, and telemetry-backed bounded revision.",
+  "problem_summary": "Reject correlation-only overload diagnosis; require comparison, staffing resolution, and telemetry-backed bounded revision or epistemic UNRESOLVED when telemetry is unavailable.",
   "failure_mode_summary": "Unsupported workload-throughput inference or stale staffing accepted without distinguishing follow-up evidence.",
   "evidence_required": true,
   "evidence_schema": "intergrax.platform_proof_evidence.v3",
   "expected_artifacts": [
     {
       "kind": "EVIDENCE_JSON",
-      "relative_path": "evidence.json",
+      "relative_path": "evidence-resolved.json",
+      "required": true
+    },
+    {
+      "kind": "EVIDENCE_JSON",
+      "relative_path": "evidence-unresolved.json",
       "required": true
     },
     {
       "kind": "REPORT_HTML",
-      "relative_path": "report.html",
+      "relative_path": "report-resolved.html",
+      "required": false
+    },
+    {
+      "kind": "REPORT_HTML",
+      "relative_path": "report-unresolved.html",
       "required": false
     },
     {
@@ -46,5 +56,5 @@
       "required": false
     }
   ],
-  "tags": ["scenario_full_1", "platform_native", "resolved_evidence_world"]
+  "tags": ["scenario_full_1", "scenario_full_2", "platform_native", "resolved_evidence_world", "unresolved_evidence_world"]
 }

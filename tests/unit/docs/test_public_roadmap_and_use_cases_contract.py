@@ -178,7 +178,7 @@ def _fit_matrix_section(text: str) -> str:
 _READER_HYBRID_BOUNDARY_MARKERS = (
     "bounded indexed ask through production hybrid ask",
     "mixed indexed + authorized live hybrid ask is not yet established",
-    "complete live-provider access is incomplete",
+    "complete external live-provider access is incomplete",
 )
 
 _FORBIDDEN_READER_MAINTAINER_PHRASES = (
@@ -345,7 +345,11 @@ def test_use_case_classifications(use_cases_text: str) -> None:
 
     assert "indexed knowledge combined with authorized live evidence" in normalized
     assert "mixed indexed + authorized live" in _normalize(use_cases_text)
-    assert "remains incomplete" in _normalize(use_cases_text)
+    use_cases_norm = _normalize(use_cases_text)
+    assert (
+        "mixed indexed + authorized live hybrid ask is not yet established" in use_cases_norm
+        or "remains incomplete" in use_cases_norm
+    )
     assert "planned fit" not in normalized, (
         "USE_CASES must not use ambiguous Planned fit classification"
     )

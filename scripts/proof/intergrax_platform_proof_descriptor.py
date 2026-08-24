@@ -246,13 +246,15 @@ class PlatformProofDescriptor(BaseModel):
             ):
                 required_report_count += 1
 
-        if evidence_json_count > 1:
-            raise ValueError("at most one EVIDENCE_JSON artifact may be declared")
+        if evidence_json_count > 1 and required_evidence_count < 1:
+            raise ValueError(
+                "multiple EVIDENCE_JSON artifacts require at least one required entry"
+            )
 
         if self.evidence_required:
-            if required_evidence_count != 1:
+            if required_evidence_count < 1:
                 raise ValueError(
-                    "evidence_required=true requires exactly one required EVIDENCE_JSON"
+                    "evidence_required=true requires at least one required EVIDENCE_JSON"
                 )
         elif required_evidence_count > 0:
             raise ValueError(

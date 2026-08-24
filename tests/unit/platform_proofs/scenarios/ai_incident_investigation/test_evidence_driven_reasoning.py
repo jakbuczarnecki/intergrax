@@ -34,6 +34,7 @@ from platform_proofs.scenarios.ai_incident_investigation.evaluator import (
     evaluate_scenario_run,
 )
 from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
+    TelemetryAvailability,
     build_resolved_fixture,
 )
 from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
@@ -111,6 +112,7 @@ def _happy_observations() -> IncidentObservations:
             {
                 "evidence_id": INCIDENT_EVIDENCE_IDS.telemetry,
                 "payload": {
+                    "availability": "available",
                     "signal_state": fixture.telemetry.signal_state,
                     "complex_assembly_throughput_pct": fixture.telemetry.complex_assembly_throughput_pct,
                     "baseline_throughput_pct": fixture.telemetry.baseline_throughput_pct,
@@ -181,6 +183,7 @@ def test_real_understaffing_prevents_h2_rejection() -> None:
 def test_healthy_telemetry_prevents_h3_support() -> None:
     observations = _happy_observations()
     healthy_telemetry = ObservedTelemetry(
+        availability=TelemetryAvailability.AVAILABLE,
         signal_state="healthy",
         complex_assembly_throughput_pct=90.0,
         baseline_throughput_pct=91.0,
@@ -194,12 +197,14 @@ def test_healthy_telemetry_prevents_h3_support() -> None:
 
 def test_critical_mutation_same_id_different_payload_different_h3() -> None:
     degraded = ObservedTelemetry(
+        availability=TelemetryAvailability.AVAILABLE,
         signal_state="intermittent_degraded",
         complex_assembly_throughput_pct=62.0,
         baseline_throughput_pct=91.0,
         admissible=True,
     )
     healthy = ObservedTelemetry(
+        availability=TelemetryAvailability.AVAILABLE,
         signal_state="healthy",
         complex_assembly_throughput_pct=90.0,
         baseline_throughput_pct=91.0,
@@ -264,6 +269,7 @@ async def test_critic_rejects_forged_h3_with_healthy_telemetry_async() -> None:
         if str(node.get("evidence_id")) == str(TELEMETRY_EVIDENCE_ID):
             payload = node.get("payload")
             if isinstance(payload, dict):
+                payload["availability"] = "available"
                 payload["signal_state"] = "healthy"
                 payload["complex_assembly_throughput_pct"] = 90.0
 
@@ -361,6 +367,7 @@ async def test_evaluator_mutation_healthy_telemetry_fails() -> None:
     result = await execute_resolved_skeleton(bundle)
 
     def mutate_telemetry(payload: dict[str, object]) -> None:
+        payload["availability"] = "available"
         payload["signal_state"] = "healthy"
         payload["complex_assembly_throughput_pct"] = 90.0
 
