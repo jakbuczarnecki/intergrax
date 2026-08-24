@@ -164,6 +164,7 @@ __all__ = [
     "CausalEvidencePersistence",
     "ApplicationObservabilityAttributePolicyResult",
     "ApplicationObservabilityAttributes",
+    "APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA",
     "ExportRecordKind",
     "ExportStatus",
     "FORBIDDEN_EXPORT_CONTENT_FIELDS",
