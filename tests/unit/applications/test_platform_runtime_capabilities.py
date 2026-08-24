@@ -7,6 +7,7 @@ from intergrax.applications._shared.reliability_wiring import apply_reliability_
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.agent_contract_meta import AgentExecutionMode
 from intergrax.contracts.autonomy_level import AutonomyLevel
+from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
@@ -59,11 +60,16 @@ def test_apply_reliability_task_defaults_sets_autonomy() -> None:
 @pytest.mark.asyncio
 async def test_active_task_registry_tracks_inflight_task() -> None:
     ActiveTaskRegistry.clear_for_tests()
-    task = Task(task_id="active-1", tenant_id="t", user_id="u", message="m")
-    await ActiveTaskRegistry.register(task)
-    assert await ActiveTaskRegistry.get("active-1") is task
-    await ActiveTaskRegistry.unregister("active-1")
-    assert await ActiveTaskRegistry.get("active-1") is None
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    task = Task(task_id=task_id, tenant_id="t", user_id="u", message="m")
+    await ActiveTaskRegistry.register(task, run_id)
+    binding = await ActiveTaskRegistry.get(task_id)
+    assert binding is not None
+    assert binding.task is task
+    assert binding.run_id == run_id
+    await ActiveTaskRegistry.unregister(task_id, run_id)
+    assert await ActiveTaskRegistry.get(task_id) is None
 
 
 def test_agent_contract_default_execution_mode_is_async() -> None:

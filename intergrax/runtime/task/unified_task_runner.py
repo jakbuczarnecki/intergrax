@@ -47,7 +47,6 @@ class UnifiedTaskRunner:
     ) -> TaskResult:
         if self._task_enricher is not None:
             task = self._task_enricher(task)
-        await ActiveTaskRegistry.register(task)
         if resume_checkpoint is not None:
             checkpoint_run_id, checkpoint_attempt_id = execution_identity_from_checkpoint(
                 resume_checkpoint
@@ -67,6 +66,7 @@ class UnifiedTaskRunner:
         else:
             resolved_run_id = run_id or mint_run_id()
             resolved_attempt_id = attempt_id
+        await ActiveTaskRegistry.register(task, resolved_run_id)
         try:
             with llm_tenant_scope(task.tenant_id):
                 return await self._nexus_loop.handle_task(
@@ -75,7 +75,7 @@ class UnifiedTaskRunner:
                     attempt_id=resolved_attempt_id,
                 )
         finally:
-            await ActiveTaskRegistry.unregister(task.task_id)
+            await ActiveTaskRegistry.unregister(task.task_id, resolved_run_id)
 
     async def run_runtime_request(
         self,

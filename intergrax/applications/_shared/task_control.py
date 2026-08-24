@@ -33,14 +33,15 @@ class TaskControlResult:
 
 
 async def cancel_active_task(task_id: str, *, reason: str = "operator_cancel") -> TaskControlResult:
-    task = await ActiveTaskRegistry.get(task_id)
-    if task is None:
+    binding = await ActiveTaskRegistry.get(task_id)
+    if binding is None:
         return TaskControlResult(
             task_id=task_id,
             action="cancel",
             accepted=False,
             detail="task_not_active",
         )
+    task = binding.task
     CancellationCoordinator.request(task, reason=reason)
     return TaskControlResult(
         task_id=task_id,
@@ -52,14 +53,15 @@ async def cancel_active_task(task_id: str, *, reason: str = "operator_cancel") -
 
 
 async def set_task_autonomy(task_id: str, level: AutonomyLevel) -> TaskControlResult:
-    task = await ActiveTaskRegistry.get(task_id)
-    if task is None:
+    binding = await ActiveTaskRegistry.get(task_id)
+    if binding is None:
         return TaskControlResult(
             task_id=task_id,
             action="set_autonomy",
             accepted=False,
             detail="task_not_active",
         )
+    task = binding.task
     previous = task.options.governance.autonomy_level
     task.options.governance.autonomy_level = level
     task.metadata["autonomy_level"] = level.value
