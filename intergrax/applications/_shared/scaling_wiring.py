@@ -87,22 +87,25 @@ def wire_application_scaling(
     ceiling_patcher = BoundedOrchestrationCeilingPatcher(
         max_inflight_nodes=resolve_max_inflight_nodes(env) or 8,
     )
-    kubernetes_backend = None
-    celery_backend = None
-    if production_capacity_adapters is not None:
-        kubernetes_backend = production_capacity_adapters.kubernetes
-        celery_backend = production_capacity_adapters.celery
-    provisioner = ScalingProvisioner(
-        kubernetes=kubernetes_backend,
-        celery=celery_backend,
-        action_gate=CapacityActionGate(),
-        ceiling_patcher=ceiling_patcher,
-        publish=publish,
-        execution_mode=(
-            ProvisionerExecutionMode.GOVERNED_ONLY if requires_governed_execution
-            else ProvisionerExecutionMode.UNRESTRICTED
-        ),
-    )
+    if requires_governed_execution and production_capacity_adapters is not None:
+        provisioner = production_capacity_adapters.governed_executor.provisioner
+        provisioner.attach_scheduler_dependencies(
+            action_gate=CapacityActionGate(),
+            ceiling_patcher=ceiling_patcher,
+            publish=publish,
+        )
+    else:
+        provisioner = ScalingProvisioner(
+            kubernetes=None,
+            celery=None,
+            action_gate=CapacityActionGate(),
+            ceiling_patcher=ceiling_patcher,
+            publish=publish,
+            execution_mode=(
+                ProvisionerExecutionMode.GOVERNED_ONLY if requires_governed_execution
+                else ProvisionerExecutionMode.UNRESTRICTED
+            ),
+        )
     if (
         requires_governed_execution
         and production_capacity_governance is not None

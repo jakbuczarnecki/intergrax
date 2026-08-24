@@ -358,10 +358,10 @@ def test_ecp_cpm11_production_probe_uses_governed_facade() -> None:
     )
     assert len(recording.calls) == 2
     assert {adapter_field.name for adapter_field in fields(ProductionCapacityAdapters)} == {
-        "kubernetes",
-        "celery",
         "governed_executor",
         "kubernetes_backend",
+        "kubernetes_observation",
+        "celery_observation",
     }
 
 
@@ -375,10 +375,10 @@ def test_ecp_cpm12_production_adapters_expose_governed_executor_only() -> None:
     assert isinstance(adapters, ProductionCapacityAdapters)
     assert adapters.governed_executor is not None
     assert {adapter_field.name for adapter_field in fields(ProductionCapacityAdapters)} == {
-        "kubernetes",
-        "celery",
         "governed_executor",
         "kubernetes_backend",
+        "kubernetes_observation",
+        "celery_observation",
     }
 
 
@@ -430,8 +430,8 @@ def test_ecp_cpm15_production_supplied_deny_policy_zero_provider_effect() -> Non
     assert wiring.enabled is True
     assert wiring.adapters is not None
     assert wiring.probe_passed is False
-    assert wiring.adapters.kubernetes.get_replicas(deployment=_DEPLOYMENT) == 2
-    assert wiring.adapters.celery.worker_count == 2
+    assert wiring.adapters.kubernetes_observation.get_replicas(deployment=_DEPLOYMENT) == 2
+    assert wiring.adapters.celery_observation.get_worker_count() == 2
 
 
 def test_ecp_cpm16_no_permissive_local_production_evaluator() -> None:
@@ -1438,3 +1438,185 @@ def test_ecp_cpm46_plan_approve_without_approver_cannot_authorize() -> None:
     asyncio.run(scheduler.tick())
     assert k8s.scale_calls == []
     assert provisioner.applied == []
+
+
+def test_ecp_cpm47_production_adapters_do_not_expose_k8s_mutation_surface() -> None:
+    adapters = build_production_capacity_adapters(
+        mutation_boundary=ControlPlaneMutationAuthorizationBoundary(
+            evaluator=_RecordingEvaluator(),
+        ),
+        tenant_resolver=StaticEcpResourceTenantResolver(tenant_id=_TENANT),
+    )
+    observation = adapters.kubernetes_observation
+    assert observation.get_replicas(deployment=_DEPLOYMENT) == 2
+    with pytest.raises(AttributeError):
+        observation.scale_workload(deployment=_DEPLOYMENT, replicas=3)
+
+
+def test_ecp_cpm48_production_adapters_do_not_expose_celery_mutation_surface() -> None:
+    adapters = build_production_capacity_adapters(
+        mutation_boundary=ControlPlaneMutationAuthorizationBoundary(
+            evaluator=_RecordingEvaluator(),
+        ),
+        tenant_resolver=StaticEcpResourceTenantResolver(tenant_id=_TENANT),
+    )
+    observation = adapters.celery_observation
+    assert observation.get_worker_count() == 2
+    with pytest.raises(AttributeError):
+        observation.scale_workers(delta=1)
+
+
+def test_ecp_cpm49_production_probe_verifies_without_raw_provider_access() -> None:
+    recording = _RecordingEvaluator()
+    adapters = build_production_capacity_adapters(
+        mutation_boundary=ControlPlaneMutationAuthorizationBoundary(evaluator=recording),
+        tenant_resolver=StaticEcpResourceTenantResolver(tenant_id=_TENANT),
+    )
+    assert apply_production_scale_probe(
+        adapters,
+        principal=_service_principal(),
+        tenant_id=_TENANT,
+        k8s_mutation_id="probe-k8s-readonly",
+        celery_mutation_id="probe-celery-readonly",
+    )
+    assert adapters.kubernetes_observation.get_replicas(deployment=_DEPLOYMENT) == 3
+    assert adapters.celery_observation.get_worker_count() == 3
+    assert len(recording.calls) == 2
+
+
+def _build_production_scaling_wiring(
+    *,
+    evaluator: _RecordingEvaluator | None = None,
+) -> tuple:
+    import asyncio
+
+    from intergrax.applications._shared.scaling_wiring import wire_application_scaling
+    from intergrax.applications.contracts.environment_profile.sub_profiles import ScalingProfile
+    from intergrax.runtime.capacity.contracts import ScalingPolicy, ScalingRule
+
+    env = ApplicationEnvironmentProfile.product_defaults()
+    policy = ScalingPolicy(
+        enabled=True,
+        rules=[
+            ScalingRule(
+                rule_id="k8s",
+                target=ScalingTarget.NEXUS_HOST,
+                metric_name="graph_backpressure_rate",
+                scale_up_threshold=1.0,
+                scale_down_threshold=0.0,
+                action_kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
+            ),
+            ScalingRule(
+                rule_id="celery",
+                target=ScalingTarget.CELERY_POOL,
+                metric_name="queue_depth",
+                scale_up_threshold=10.0,
+                scale_down_threshold=2.0,
+                action_kind=ScalingActionKind.SCALE_CELERY_WORKERS,
+            ),
+        ],
+    )
+    env = env.model_copy(
+        update={
+            "governance": env.governance.model_copy(
+                update={
+                    "scaling": ScalingProfile(policy=policy, production_adapters_enabled=True),
+                },
+            ),
+        },
+    )
+    recording = evaluator or _RecordingEvaluator()
+    governance = build_production_capacity_governance(
+        env,
+        mutation_authorization_boundary=ControlPlaneMutationAuthorizationBoundary(
+            evaluator=recording,
+        ),
+    )
+    adapters = build_production_capacity_adapters(
+        mutation_boundary=governance.mutation_authorization_boundary,
+        tenant_resolver=governance.tenant_resolver,
+    )
+    wiring = wire_application_scaling(
+        env,
+        production_capacity_adapters=adapters,
+        production_capacity_governance=governance,
+    )
+    return wiring, adapters, recording, asyncio
+
+
+def test_ecp_cpm50_production_scheduler_k8s_through_governed_executor() -> None:
+    wiring, adapters, recording, asyncio = _build_production_scaling_wiring()
+    assert wiring.scheduler is not None
+    assert wiring.provisioner is adapters.governed_executor.provisioner
+    scheduler = wiring.scheduler
+    scheduler._collector.record_backpressure()
+    asyncio.run(scheduler.tick())
+    assert len(recording.calls) == 1
+    assert recording.calls[0].mutation_type == MUTATION_TYPE_SCALE_K8S_DEPLOYMENT
+    assert adapters.kubernetes_observation.get_replicas(deployment=_DEPLOYMENT) == 3
+
+
+def test_ecp_cpm51_production_scheduler_celery_through_governed_executor() -> None:
+    from intergrax.runtime.capacity.contracts import ScalingActionPlan
+
+    wiring, adapters, recording, asyncio = _build_production_scaling_wiring()
+    assert wiring.scheduler is not None
+    assert wiring.provisioner is adapters.governed_executor.provisioner
+    scheduler = wiring.scheduler
+    action = ScalingAction(
+        kind=ScalingActionKind.SCALE_CELERY_WORKERS,
+        target=ScalingTarget.CELERY_POOL,
+        delta=1,
+    )
+    plan = ScalingActionPlan(actions=(action,), evaluation_status="planned")
+    asyncio.run(scheduler._apply_plan(plan))
+    assert len(recording.calls) == 1
+    assert recording.calls[0].mutation_type == MUTATION_TYPE_SCALE_CELERY_WORKERS
+    assert adapters.celery_observation.get_worker_count() == 3
+
+
+def test_ecp_cpm52_missing_governance_fail_closed_after_composition_refactor() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults()
+    governance = build_production_capacity_governance(env)
+    production_wiring = resolve_production_capacity_wiring(env, governance=governance)
+    assert production_wiring.enabled is True
+    assert production_wiring.adapters is None
+    assert production_wiring.probe_passed is False
+
+
+def test_ecp_cpm53_live_kubernetes_backend_only_behind_governed_write_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _LiveLikeKubernetes:
+        replicas: int = 2
+
+        def get_replicas(self, deployment: str, *, namespace: str | None = None) -> int:
+            del deployment, namespace
+            return self.replicas
+
+        def scale_workload(self, deployment: str, *, replicas: int, namespace: str | None = None) -> int:
+            del deployment, namespace
+            self.replicas = replicas
+            return replicas
+
+    monkeypatch.setattr(
+        "intergrax.runtime.capacity.production_adapters.resolve_kubernetes_backend",
+        lambda: (_LiveLikeKubernetes(), "live"),
+    )
+    adapters = build_production_capacity_adapters(
+        mutation_boundary=ControlPlaneMutationAuthorizationBoundary(
+            evaluator=_RecordingEvaluator(),
+        ),
+        tenant_resolver=StaticEcpResourceTenantResolver(tenant_id=_TENANT),
+    )
+    assert adapters.kubernetes_backend == "live"
+    with pytest.raises(AttributeError):
+        adapters.kubernetes_observation.scale_workload(deployment=_DEPLOYMENT, replicas=3)
+    adapters.governed_executor.scale_k8s_deployment(
+        principal=_service_principal(),
+        tenant_id=_TENANT,
+        mutation_id="live-k8s-governed",
+        deployment=_DEPLOYMENT,
+        delta=1,
+    )
+    assert adapters.kubernetes_observation.get_replicas(deployment=_DEPLOYMENT) == 3

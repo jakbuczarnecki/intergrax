@@ -79,6 +79,10 @@ class GovernedCapacityMutationExecutor:
         self._approval_coordinator = approval_coordinator
         self._mutation_boundary = self._wrap_boundary(mutation_boundary, approval_coordinator)
 
+    @property
+    def provisioner(self) -> ScalingProvisioner:
+        return self._provisioner
+
     @staticmethod
     def _wrap_boundary(
         mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None,
