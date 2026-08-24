@@ -483,3 +483,270 @@ def test_ecp_cpm18_maintenance_path_cannot_manufacture_allow_policy() -> None:
     assert wiring.enabled is True
     assert wiring.adapters is None
     assert wiring.probe_passed is False
+
+
+def _scheduler_service_principal(tenant_id: str = _TENANT) -> RequestIdentity:
+    return RequestIdentity(
+        tenant_id=tenant_id,
+        user_id="capacity-scheduler",
+        principal_type=PrincipalType.SERVICE,
+        auth_subject="capacity-scheduler",
+    )
+
+
+def _build_governed_scheduler(
+    *,
+    k8s: _RecordingK8s | None = None,
+    celery: CeleryProductionAdapter | None = None,
+    evaluator: _RecordingEvaluator | None = None,
+    tenant_id: str = _TENANT,
+    execution_identity: RequestIdentity | None = None,
+    governed_executor: GovernedCapacityMutationExecutor | None = None,
+    requires_governed: bool = True,
+) -> tuple[
+    "CapacityScheduler",
+    _RecordingK8s,
+    CeleryProductionAdapter,
+    ScalingProvisioner,
+    _RecordingEvaluator,
+]:
+    import asyncio
+
+    from intergrax.runtime.capacity.collector import CapacitySignalCollector
+    from intergrax.runtime.capacity.contracts import ScalingPolicy, ScalingRule
+    from intergrax.runtime.capacity.evaluator import ScalingEvaluator
+    from intergrax.runtime.capacity.scheduler import CapacityScheduler
+
+    kubernetes = k8s or _RecordingK8s()
+    celery_adapter = celery or CeleryProductionAdapter(worker_count=2)
+    recording = evaluator or _RecordingEvaluator()
+    if governed_executor is None:
+        governed_executor, _, _, recording = _build_executor(
+            k8s=kubernetes,
+            celery=celery_adapter,
+            evaluator=recording,
+            tenant_id=tenant_id,
+        )
+    provisioner = ScalingProvisioner(
+        kubernetes=kubernetes,
+        celery=celery_adapter,
+        execution_mode=ProvisionerExecutionMode.GOVERNED_ONLY,
+    )
+    policy = ScalingPolicy(
+        enabled=True,
+        rules=[
+            ScalingRule(
+                rule_id="k8s",
+                target=ScalingTarget.NEXUS_HOST,
+                metric_name="graph_backpressure_rate",
+                scale_up_threshold=1.0,
+                scale_down_threshold=0.0,
+                action_kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
+            ),
+            ScalingRule(
+                rule_id="celery",
+                target=ScalingTarget.CELERY_POOL,
+                metric_name="queue_depth",
+                scale_up_threshold=10.0,
+                scale_down_threshold=2.0,
+                action_kind=ScalingActionKind.SCALE_CELERY_WORKERS,
+            ),
+        ],
+    )
+    collector = CapacitySignalCollector()
+    scheduler = CapacityScheduler(
+        collector=collector,
+        evaluator=ScalingEvaluator(policy),
+        provisioner=provisioner,
+        execution_identity=execution_identity or _scheduler_service_principal(tenant_id),
+        governed_capacity_executor=governed_executor,
+        tenant_id=tenant_id,
+        requires_governed_execution=requires_governed,
+    )
+    return scheduler, kubernetes, celery_adapter, provisioner, recording
+
+
+def test_ecp_cpm19_automatic_scheduler_k8s_allow() -> None:
+    import asyncio
+
+    scheduler, k8s, _celery, provisioner, recording = _build_governed_scheduler()
+    scheduler._collector.record_backpressure()
+    asyncio.run(scheduler.tick())
+    assert len(recording.calls) == 1
+    request = recording.calls[0]
+    assert request.mutation_type == MUTATION_TYPE_SCALE_K8S_DEPLOYMENT
+    assert request.principal.principal_type is PrincipalType.SERVICE
+    assert request.principal.user_id == "capacity-scheduler"
+    assert k8s.scale_calls == [3]
+    assert len(provisioner.applied) == 1
+    assert provisioner.applied[0].action_id == request.mutation_id
+
+
+def test_ecp_cpm20_automatic_scheduler_k8s_deny() -> None:
+    import asyncio
+
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(action=PolicyAction.DENY, reason="blocked"),
+    )
+    scheduler, k8s, _celery, provisioner, _recording = _build_governed_scheduler(
+        evaluator=evaluator,
+    )
+    scheduler._collector.record_backpressure()
+    asyncio.run(scheduler.tick())
+    assert k8s.scale_calls == []
+    assert provisioner.applied == []
+    assert provisioner.failures
+
+
+def test_ecp_cpm21_automatic_scheduler_celery_allow() -> None:
+    import asyncio
+
+    from intergrax.runtime.capacity.contracts import ScalingActionPlan
+
+    scheduler, _k8s, celery, provisioner, recording = _build_governed_scheduler()
+    action = ScalingAction(
+        kind=ScalingActionKind.SCALE_CELERY_WORKERS,
+        target=ScalingTarget.CELERY_POOL,
+        delta=1,
+    )
+    plan = ScalingActionPlan(actions=(action,), evaluation_status="planned")
+    asyncio.run(scheduler._apply_plan(plan))
+    celery_calls = [
+        call for call in recording.calls if call.mutation_type == MUTATION_TYPE_SCALE_CELERY_WORKERS
+    ]
+    assert len(celery_calls) == 1
+    assert celery_calls[0].principal.principal_type is PrincipalType.SERVICE
+    assert celery.worker_count == 3
+    assert len(provisioner.applied) == 1
+
+
+def test_ecp_cpm22_automatic_scheduler_celery_deny() -> None:
+    import asyncio
+
+    from intergrax.runtime.capacity.contracts import ScalingActionPlan
+
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(action=PolicyAction.DENY, reason="blocked"),
+    )
+    scheduler, _k8s, celery, provisioner, _recording = _build_governed_scheduler(
+        evaluator=evaluator,
+    )
+    action = ScalingAction(
+        kind=ScalingActionKind.SCALE_CELERY_WORKERS,
+        target=ScalingTarget.CELERY_POOL,
+        delta=1,
+    )
+    plan = ScalingActionPlan(actions=(action,), evaluation_status="planned")
+    asyncio.run(scheduler._apply_plan(plan))
+    assert celery.worker_count == 2
+    assert provisioner.applied == []
+    assert provisioner.failures
+
+
+def test_ecp_cpm23_missing_governed_executor_fail_closed() -> None:
+    import asyncio
+
+    scheduler, k8s, _celery, provisioner, _recording = _build_governed_scheduler(
+        governed_executor=None,
+        requires_governed=True,
+    )
+    scheduler._governed_capacity_executor = None
+    scheduler._collector.record_backpressure()
+    asyncio.run(scheduler.tick())
+    assert k8s.scale_calls == []
+    assert provisioner.applied == []
+    assert any("ECP_SCHEDULER_MISSING_EXECUTOR" in failure for failure in provisioner.failures)
+
+
+def test_ecp_cpm24_wrong_tenant_automatic_scheduler_blocked() -> None:
+    import asyncio
+
+    scheduler, k8s, _celery, provisioner, recording = _build_governed_scheduler(
+        execution_identity=_scheduler_service_principal(tenant_id=_OTHER_TENANT),
+        tenant_id=_TENANT,
+    )
+    scheduler._collector.record_backpressure()
+    asyncio.run(scheduler.tick())
+    assert recording.calls == []
+    assert k8s.scale_calls == []
+    assert provisioner.applied == []
+
+
+def test_ecp_cpm25_scheduler_mutation_id_uses_action_id() -> None:
+    import asyncio
+
+    from intergrax.runtime.capacity.contracts import ScalingActionPlan
+
+    scheduler, _k8s, _celery, provisioner, recording = _build_governed_scheduler()
+    action = ScalingAction(
+        action_id="stable-scheduler-action-id",
+        kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
+        target=ScalingTarget.NEXUS_HOST,
+        delta=1,
+    )
+    plan = ScalingActionPlan(actions=(action,), evaluation_status="planned")
+    asyncio.run(scheduler._apply_plan(plan))
+    assert recording.calls[0].mutation_id == "stable-scheduler-action-id"
+    assert provisioner.applied[0].action_id == "stable-scheduler-action-id"
+
+
+def test_ecp_cpm26_require_human_zero_provider_effect() -> None:
+    import asyncio
+
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(
+            action=PolicyAction.REQUIRE_HUMAN,
+            reason="needs human",
+            policy_rule_id="rule.hitl",
+        ),
+    )
+    scheduler, k8s, _celery, provisioner, _recording = _build_governed_scheduler(
+        evaluator=evaluator,
+    )
+    scheduler._collector.record_backpressure()
+    asyncio.run(scheduler.tick())
+    assert k8s.scale_calls == []
+    assert provisioner.applied == []
+    assert any("ECP_BLOCKED_BY_REQUIRE_HUMAN" in failure for failure in provisioner.failures)
+
+
+def test_ecp_cpm27_scheduler_production_path_no_raw_provisioner_apply() -> None:
+    import asyncio
+    from unittest.mock import patch
+
+    scheduler, k8s, _celery, provisioner, _recording = _build_governed_scheduler()
+    with patch.object(provisioner, "apply", side_effect=AssertionError("raw apply bypass")):
+        scheduler._collector.record_backpressure()
+        asyncio.run(scheduler.tick())
+    assert k8s.scale_calls == [3]
+
+
+def test_ecp_cpm28_ceiling_automatic_mutation_fail_closed() -> None:
+    import asyncio
+
+    from intergrax.runtime.capacity.ceiling_patcher import BoundedOrchestrationCeilingPatcher
+    from intergrax.runtime.capacity.contracts import ScalingActionPlan
+
+    patcher = BoundedOrchestrationCeilingPatcher(max_inflight_nodes=10)
+    scheduler, _k8s, _celery, provisioner, _recording = _build_governed_scheduler()
+    kubernetes = scheduler._provisioner._kubernetes
+    celery_backend = scheduler._provisioner._celery
+    scheduler._provisioner = ScalingProvisioner(
+        kubernetes=kubernetes,
+        celery=celery_backend,
+        ceiling_patcher=patcher,
+        execution_mode=ProvisionerExecutionMode.GOVERNED_ONLY,
+    )
+    action = ScalingAction(
+        kind=ScalingActionKind.RAISE_ORCHESTRATION_CEILING,
+        target=ScalingTarget.ORCHESTRATION_CEILING,
+        delta=1,
+    )
+    plan = ScalingActionPlan(actions=(action,), evaluation_status="planned")
+    asyncio.run(scheduler._apply_plan(plan))
+    assert patcher.max_inflight_nodes == 10
+    assert scheduler._provisioner.applied == []
+    assert any(
+        "ECP_SCHEDULER_CEILING_UNSUPPORTED" in failure
+        for failure in scheduler._provisioner.failures
+    )

@@ -7,8 +7,14 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications._shared.orchestration_wiring import resolve_max_inflight_nodes
+from intergrax.applications._shared.production_capacity_governance_wiring import (
+    ProductionCapacityGovernance,
+)
+from intergrax.runtime.capacity.production_adapters import ProductionCapacityAdapters
+from intergrax.runtime.capacity.provisioner import ProvisionerExecutionMode
 from intergrax.runtime.capacity.ceiling_patcher import BoundedOrchestrationCeilingPatcher
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.runtime.capacity.action_gate import CapacityActionGate
@@ -43,13 +49,27 @@ def wire_application_scaling(
     queue_depth_provider: Callable[[], float] | None = None,
     kv_store: DistributedKVStore | None = None,
     tenant_id: str = "harness",
+    production_capacity_adapters: ProductionCapacityAdapters | None = None,
+    production_capacity_governance: ProductionCapacityGovernance | None = None,
 ) -> ApplicationScalingWiring:
     policy = env.scaling_profile.policy
     if not policy.enabled:
         return ApplicationScalingWiring(None, None, None, None, None, None)
+    requires_governed_execution = (
+        env.application_profile is ApplicationProfile.PRODUCT
+        and env.scaling_profile.production_adapters_enabled
+    )
+    resolved_tenant_id = tenant_id
+    execution_identity = None
+    governed_executor = None
+    if requires_governed_execution and production_capacity_governance is not None:
+        resolved_tenant_id = production_capacity_governance.tenant_id
+        execution_identity = production_capacity_governance.principal
+        if production_capacity_adapters is not None:
+            governed_executor = production_capacity_adapters.governed_executor
     resolved_queue_depth = queue_depth_provider
     if resolved_queue_depth is None and kv_store is not None:
-        resolved_queue_depth = make_queue_depth_provider(kv_store, tenant_id)
+        resolved_queue_depth = make_queue_depth_provider(kv_store, resolved_tenant_id)
     approval_queue = CapacityApprovalQueue() if policy.require_hitl_for_scale_up else None
     collector = CapacitySignalCollector(
         publish=publish,
@@ -59,9 +79,21 @@ def wire_application_scaling(
     ceiling_patcher = BoundedOrchestrationCeilingPatcher(
         max_inflight_nodes=resolve_max_inflight_nodes(env) or 8,
     )
+    kubernetes_backend = None
+    celery_backend = None
+    if production_capacity_adapters is not None:
+        kubernetes_backend = production_capacity_adapters.kubernetes
+        celery_backend = production_capacity_adapters.celery
     provisioner = ScalingProvisioner(
+        kubernetes=kubernetes_backend,
+        celery=celery_backend,
         action_gate=CapacityActionGate(),
         ceiling_patcher=ceiling_patcher,
+        publish=publish,
+        execution_mode=(
+            ProvisionerExecutionMode.GOVERNED_ONLY if requires_governed_execution
+            else ProvisionerExecutionMode.UNRESTRICTED
+        ),
     )
     scheduler = CapacityScheduler(
         collector=collector,
@@ -69,6 +101,10 @@ def wire_application_scaling(
         provisioner=provisioner,
         approval_queue=approval_queue,
         publish=publish,
+        execution_identity=execution_identity,
+        governed_capacity_executor=governed_executor,
+        tenant_id=resolved_tenant_id if requires_governed_execution else None,
+        requires_governed_execution=requires_governed_execution,
     )
     event_bridge: CapacityEventBridge | None = None
     if event_bus is not None:
