@@ -219,7 +219,7 @@ source-management, and daily-use flows remain under productization.
 #### A. Product Quick Start
 
 The easiest supported local executable product path — indexed Ask V1, not Hybrid Ask
-certification:
+qualification:
 
 - **indexed Ask V1** over a bundled sample document
 - **AURORA-17** is the expected success marker

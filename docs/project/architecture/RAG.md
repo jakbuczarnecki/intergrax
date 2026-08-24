@@ -14,7 +14,7 @@ Intergrax RAG addresses that gap with a native path from **authorized sources** 
 - **It is not a correctness guarantee** — retrieval improves grounding when sources are good and scope is right; it does not prove answer quality, security authorization for every source, or production scale by itself.
 
 > [!NOTE]
-> **Maturity boundary:** Global status is **`PRODUCTION_QUALIFIED_WITH_LIMITATIONS`** — bounded qualification and documented deployment contracts exist ([handoff](../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md)), not unrestricted production or enterprise-grade operational proof. Public LKW proofs exercise **indexed** RAG paths only; they do not qualify every provider, GraphRAG live backend, or mixed live+indexed Hybrid Ask. See [Current maturity](#current-maturity) and [Evidence / proof](#evidence--proof).
+> **Internal qualification status — not external certification.** Global status **`PRODUCTION_QUALIFIED_WITH_LIMITATIONS`** is an **Intergrax internal engineering qualification status**, based on bounded internal evidence and documented deployment contracts ([handoff](../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md)). It is **not** third-party certification, regulatory or compliance certification, unrestricted production readiness, or enterprise-grade operational proof. Public LKW proofs exercise **indexed** RAG paths only; they do not qualify every provider, GraphRAG live backend, or mixed live+indexed Hybrid Ask. See [Current maturity](#current-maturity) and [Evidence / proof](#evidence--proof).
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring ingest, vector backends, or retrieval profiles — after the platform overview in the root README.
 

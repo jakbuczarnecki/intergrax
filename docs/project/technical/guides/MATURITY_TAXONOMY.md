@@ -15,6 +15,9 @@ This document is the **single cross-layer maturity vocabulary**. It defines **fo
 
 **This file is not a second canon.** Domain architecture remains authoritative for subsystem semantics. When maturity changes, update the domain pair first, then adjust any cross-layer summary that references it.
 
+> [!IMPORTANT]
+> **Engineering classification, not external certification.** The **A / I / P / E** maturity taxonomy is an **internal Intergrax engineering maturity classification** used in documentation and closeout artifacts. It is **not** third-party certification, regulatory or compliance certification, compliance attestation, an industry-standard rating, or an external auditor endorsement.
+
 ---
 
 ## 2. How to use

@@ -1227,12 +1227,12 @@ def test_proofs_trusted_ask_public_entry() -> None:
     assert "no mixed indexed + authorized-live hybrid ask" in normalized
 
 
-def test_readme_distinguishes_quickstart_from_hybrid_ask_certification(
+def test_readme_distinguishes_quickstart_from_hybrid_ask_qualification(
     readme_text: str,
 ) -> None:
     normalized = " ".join(_normalize(readme_text).split())
     assert "indexed ask v1" in normalized
-    assert "not hybrid ask certification" in normalized
+    assert "not hybrid ask qualification" in normalized
     assert "lkw-hybrid-ask-indexed" in normalized
 
 
