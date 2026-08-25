@@ -8,7 +8,6 @@ It provides reusable governed foundations for knowledge, actions, approvals,
 integrations, recovery, and reviewable evidence so product teams do not rebuild
 those mechanisms for every workflow.
 
-[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![Source-available](https://img.shields.io/badge/source--available-evaluation-6c5ce7.svg)](LICENSE)
 [![Active R&D](https://img.shields.io/badge/active-R%26D-0969da.svg)](#license-and-collaboration)
 [![Documented proof paths](https://img.shields.io/badge/documented-proof%20paths-2ea44e.svg)](docs/project/proofs/PROOFS.md)
