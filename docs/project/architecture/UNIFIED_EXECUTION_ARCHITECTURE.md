@@ -668,7 +668,9 @@ For Cursor and domain implementers:
 
 ## 27. Required architecture views (UE-DOC-0.3)
 
-This slice **does not** produce the diagram pack. UE-DOC-0.3 **MUST** deliver:
+**Diagram pack specification:** Production diagram asset contract, per-view semantics, naming, and embedding targets are defined in [`UNIFIED_EXECUTION_ARCHITECTURE_DIAGRAMS.md`](UNIFIED_EXECUTION_ARCHITECTURE_DIAGRAMS.md) (UE-DOC-0.3A). That document is subordinate to this file; graphic binaries are produced out of band per the asset contract there.
+
+The twelve required views below are specified in detail in the diagram pack document:
 
 | # | View | Purpose | MUST include | Ambiguity to eliminate |
 |---|------|---------|--------------|------------------------|
