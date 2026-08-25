@@ -30,6 +30,7 @@ from intergrax.runtime.observability.causal_evidence import (
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
     CausalEvidencePersistenceConflictError,
+    causal_evidence_query_order_key,
 )
 
 
@@ -215,8 +216,14 @@ def assert_causal_evidence_persistence_conformance(
     }
     assert all(record.tenant_id == tenant_a for record in by_execution)
     assert all(record.tenant_id == tenant_a for record in by_transport)
-    assert by_execution[0].evidence_id == primary.evidence_id
-    assert by_execution[1].evidence_id == secondary.evidence_id
+    expected = tuple(
+        sorted(
+            (primary, secondary),
+            key=causal_evidence_query_order_key,
+        )
+    )
+    assert by_execution == expected
+    assert by_transport == expected
 
     assert store.list_for_execution(
         tenant_id=tenant_b,
