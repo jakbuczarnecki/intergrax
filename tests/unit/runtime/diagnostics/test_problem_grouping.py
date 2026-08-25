@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import pytest
 
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
@@ -10,6 +12,8 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicProblemGroupingBasis,
     DuplicateProblemGroupingStrategyError,
     MissingProblemGroupingStrategyError,
+    ProblemGroupingBasis,
+    ProblemGroupingBasisKind,
     ProblemGroupingCandidate,
     ProblemGroupingEngine,
     ProblemGroupingIntegrityError,
@@ -59,13 +63,15 @@ def _subject_ref(assessment: DiagnosticAssessment) -> ProblemGroupingSubjectRef:
 def _provenance(
     *,
     members: tuple[ProblemGroupingSubjectRef, ...],
+    method: ProblemGroupingMethod = ProblemGroupingMethod.DETERMINISTIC,
+    basis: ProblemGroupingBasis | None = None,
 ) -> ProblemGroupingProvenance:
     return ProblemGroupingProvenance(
         strategy_id=_FAKE_STRATEGY_ID,
         strategy_version=_FAKE_STRATEGY_VERSION,
-        method=ProblemGroupingMethod.DETERMINISTIC,
+        method=method,
         supporting_subject_refs=members,
-        basis=DeterministicProblemGroupingBasis(),
+        basis=basis if basis is not None else DeterministicProblemGroupingBasis(),
     )
 
 
@@ -292,3 +298,225 @@ def test_engine_determinism() -> None:
     )
 
     assert first == second
+
+
+@dataclass(frozen=True, slots=True)
+class _TestSemanticProblemGroupingBasis:
+    """Test-only basis proving plugin extensibility without engine changes."""
+
+    similarity_threshold: float = 0.9
+
+    @property
+    def kind(self) -> ProblemGroupingBasisKind:
+        return ProblemGroupingBasisKind.SEMANTIC
+
+
+def test_extensible_basis_accepted_by_provenance() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    ref_a = _subject_ref(assessment_a)
+    ref_b = _subject_ref(assessment_b)
+    basis = _TestSemanticProblemGroupingBasis()
+
+    provenance = ProblemGroupingProvenance(
+        strategy_id=_FAKE_STRATEGY_ID,
+        strategy_version=_FAKE_STRATEGY_VERSION,
+        method=ProblemGroupingMethod.SEMANTIC,
+        supporting_subject_refs=(ref_a, ref_b),
+        basis=basis,
+    )
+
+    assert isinstance(provenance.basis, ProblemGroupingBasis)
+    assert provenance.basis is not None
+    assert provenance.basis.kind is ProblemGroupingBasisKind.SEMANTIC
+
+
+def test_deterministic_basis_valid_with_deterministic_strategy() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    ref_a = _subject_ref(assessment_a)
+    ref_b = _subject_ref(assessment_b)
+    basis = DeterministicProblemGroupingBasis()
+    strategy = _ConfigurableFakeStrategy(
+        candidates=(
+            ProblemGroupingCandidate(
+                members=(ref_a, ref_b),
+                provenance=_provenance(members=(ref_a, ref_b), basis=basis),
+            ),
+        ),
+    )
+    engine = _engine_with_strategy(strategy)
+
+    result = engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+
+    assert result.candidates[0].provenance.basis == basis
+    assert result.candidates[0].provenance.basis.kind is ProblemGroupingBasisKind.DETERMINISTIC
+
+
+def test_method_spoof_rejected() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    ref_a = _subject_ref(assessment_a)
+    ref_b = _subject_ref(assessment_b)
+    strategy = _ConfigurableFakeStrategy(
+        candidates=(
+            ProblemGroupingCandidate(
+                members=(ref_a, ref_b),
+                provenance=_provenance(
+                    members=(ref_a, ref_b),
+                    method=ProblemGroupingMethod.LLM,
+                ),
+            ),
+        ),
+    )
+    engine = _engine_with_strategy(strategy)
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="method"):
+        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+
+
+def test_basis_method_mismatch_rejected() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    ref_a = _subject_ref(assessment_a)
+    ref_b = _subject_ref(assessment_b)
+    strategy = _ConfigurableFakeStrategy(
+        candidates=(
+            ProblemGroupingCandidate(
+                members=(ref_a, ref_b),
+                provenance=_provenance(
+                    members=(ref_a, ref_b),
+                    basis=_TestSemanticProblemGroupingBasis(),
+                ),
+            ),
+        ),
+    )
+    engine = _engine_with_strategy(strategy)
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="basis kind"):
+        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+
+
+def test_foreign_supporting_ref_rejected() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    ref_a = _subject_ref(assessment_a)
+    ref_b = _subject_ref(assessment_b)
+    foreign = _subject_ref(_assessment())
+    strategy = _ConfigurableFakeStrategy(
+        candidates=(
+            ProblemGroupingCandidate(
+                members=(ref_a, ref_b),
+                provenance=ProblemGroupingProvenance(
+                    strategy_id=_FAKE_STRATEGY_ID,
+                    strategy_version=_FAKE_STRATEGY_VERSION,
+                    method=ProblemGroupingMethod.DETERMINISTIC,
+                    supporting_subject_refs=(ref_a, foreign),
+                    basis=DeterministicProblemGroupingBasis(),
+                ),
+            ),
+        ),
+    )
+    engine = _engine_with_strategy(strategy)
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="supporting_subject_ref"):
+        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+
+
+def test_supporting_refs_must_equal_members() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    assessment_c = _assessment()
+    ref_a = _subject_ref(assessment_a)
+    ref_b = _subject_ref(assessment_b)
+    ref_c = _subject_ref(assessment_c)
+    strategy = _ConfigurableFakeStrategy(
+        candidates=(
+            ProblemGroupingCandidate(
+                members=(ref_a, ref_b),
+                provenance=ProblemGroupingProvenance(
+                    strategy_id=_FAKE_STRATEGY_ID,
+                    strategy_version=_FAKE_STRATEGY_VERSION,
+                    method=ProblemGroupingMethod.DETERMINISTIC,
+                    supporting_subject_refs=(ref_a, ref_c),
+                    basis=DeterministicProblemGroupingBasis(),
+                ),
+            ),
+        ),
+    )
+    engine = _engine_with_strategy(strategy)
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="must equal candidate members"):
+        engine.group(
+            (assessment_a, assessment_b, assessment_c),
+            strategy_id=_FAKE_STRATEGY_ID,
+        )
+
+
+def test_duplicate_supporting_ref_rejected() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    ref_a = _subject_ref(assessment_a)
+    ref_b = _subject_ref(assessment_b)
+    strategy = _ConfigurableFakeStrategy(
+        candidates=(
+            ProblemGroupingCandidate(
+                members=(ref_a, ref_b),
+                provenance=ProblemGroupingProvenance(
+                    strategy_id=_FAKE_STRATEGY_ID,
+                    strategy_version=_FAKE_STRATEGY_VERSION,
+                    method=ProblemGroupingMethod.DETERMINISTIC,
+                    supporting_subject_refs=(ref_a, ref_a),
+                    basis=DeterministicProblemGroupingBasis(),
+                ),
+            ),
+        ),
+    )
+    engine = _engine_with_strategy(strategy)
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="duplicate supporting_subject_ref"):
+        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+
+
+def test_member_order_normalized_to_input_order() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    ref_a = _subject_ref(assessment_a)
+    ref_b = _subject_ref(assessment_b)
+    strategy = _ConfigurableFakeStrategy(
+        candidates=(
+            ProblemGroupingCandidate(
+                members=(ref_b, ref_a),
+                provenance=_provenance(members=(ref_b, ref_a)),
+            ),
+        ),
+    )
+    engine = _engine_with_strategy(strategy)
+
+    result = engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+
+    assert result.candidates[0].members == (ref_a, ref_b)
+    assert result.candidates[0].provenance.supporting_subject_refs == (ref_a, ref_b)
+
+
+def test_registered_strategy_mutation_rejected() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+
+    class _MutableStrategy(_ConfigurableFakeStrategy):
+        def __init__(self) -> None:
+            super().__init__()
+            self._version = _FAKE_STRATEGY_VERSION
+
+        @property
+        def strategy_version(self) -> ProblemGroupingStrategyVersion:
+            return self._version
+
+    strategy = _MutableStrategy()
+    registry = ProblemGroupingStrategyRegistry()
+    registry.register(strategy)
+    engine = ProblemGroupingEngine(registry)
+    strategy._version = ProblemGroupingStrategyVersion("9.9.9")
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="mutated after registration"):
+        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)

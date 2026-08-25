@@ -964,7 +964,7 @@ DiagnosticAssessment[]
 
 **Ungrouped subjects:** `ProblemGroupingResult.ungrouped_subjects` lists input subjects not present in any validated candidate.
 
-**Provenance:** each `ProblemGroupingCandidate` carries `ProblemGroupingProvenance` with `strategy_id`, `strategy_version`, `method` (`ProblemGroupingMethod`), `supporting_subject_refs`, and optional typed `basis` (e.g. `DeterministicProblemGroupingBasis` for DIAG-5B). Future ML/LLM strategies attach strategy-specific basis evidence without altering the engine.
+**Provenance:** each `ProblemGroupingCandidate` carries `ProblemGroupingProvenance` with `strategy_id`, `strategy_version`, `method` (`ProblemGroupingMethod`), `supporting_subject_refs`, and optional typed `basis` implementing `ProblemGroupingBasis` (discriminated by `ProblemGroupingBasisKind`; e.g. `DeterministicProblemGroupingBasis` for DIAG-5B). Platform validates `method`, `supporting_subject_refs` (set-equal to `members`, tenant-scoped, input-bound, no duplicates), and basis kind coherence fail-closed. Future ML/LLM strategies attach strategy-specific basis evidence without altering the engine.
 
 **No universal numeric confidence:** deterministic exact match, embedding similarity, classifier probability, and LLM self-report are not semantically equivalent — strategy-specific scores belong in typed basis/evidence, not a platform-wide `confidence: float`.
 
