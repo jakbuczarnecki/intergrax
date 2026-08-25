@@ -10,6 +10,10 @@ from dataclasses import dataclass
 from typing import Any
 
 from intergrax.llm.messages import ChatMessage
+from pydantic import ValidationError
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.runtime.nexus.tools.tool_planner_protocol import IterativeToolPlannerProtocol
+from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
 from intergrax.runtime.nexus.budget.budget_enforcer import BudgetExceededError
 from intergrax.runtime.nexus.config_types import ToolInvocationMode
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -20,6 +24,7 @@ from intergrax.runtime.nexus.tools.tool_loop import run_bounded_tool_loop
 from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+from intergrax.tools.execution_models import ToolExecutionResult
 from intergrax.tools.registry import ToolRegistry
 from platform_proofs.scenarios.ai_incident_investigation.incident_scope import (
     IncidentScope,
@@ -120,8 +125,119 @@ class _IncidentScopedToolInvoker:
                     investigation_phase=self._investigation_phase,
                 ),
             )
-            raise
+            return ToolExecutionResult.fail("incident_scope_violation", str(exc))
         return self._inner.invoke(state=state, request=request, agent_id=agent_id)
+
+
+class _IncidentCatalogToolPlanner(IterativeToolPlannerProtocol):
+    """Skip malformed planner tool args instead of aborting autonomous gathering."""
+
+    def __init__(
+        self,
+        *,
+        inner: CatalogToolPlanner,
+        runtime_state: RuntimeState,
+        investigation_phase: str,
+        require_tool_calls: bool = False,
+    ) -> None:
+        self._inner = inner
+        self._runtime_state = runtime_state
+        self._investigation_phase = investigation_phase
+        self._require_tool_calls = require_tool_calls
+
+    @property
+    def llm(self):
+        return self._inner.llm
+
+    def attach_routing_runtime_config(self, config: object) -> None:
+        self._inner.attach_routing_runtime_config(config)
+
+    def plan_tools(self, *args: Any, **kwargs: Any):
+        return self._inner.plan_tools(*args, **kwargs)
+
+    def plan_native_round(self, messages: list[ChatMessage], **kwargs: Any):
+        if self._require_tool_calls and kwargs.get("tool_choice") is None:
+            kwargs = {**kwargs, "tool_choice": "required"}
+        return _plan_native_round_skip_invalid_tool_args(
+            self._inner._service,
+            messages,
+            runtime_state=self._runtime_state,
+            investigation_phase=self._investigation_phase,
+            **kwargs,
+        )
+
+
+def _plan_native_round_skip_invalid_tool_args(
+    service: ToolPlanningService,
+    messages: list[ChatMessage],
+    *,
+    runtime_state: RuntimeState,
+    investigation_phase: str,
+    **kwargs: Any,
+) -> tuple[LLMAdapterResponse, ToolCallPlan]:
+    from intergrax.runtime.nexus.tools import tool_planning_service as tps
+
+    allowed_tool_ids = kwargs.get("allowed_tool_ids")
+    run_id = kwargs.get("run_id")
+    tool_choice = kwargs.get("tool_choice")
+    allowed = frozenset(allowed_tool_ids) if allowed_tool_ids is not None else None
+    tools_schema = tps._build_openai_tools_schema(service.tools, allowed_tool_ids=allowed_tool_ids)
+    pruned = tps.canonical_native_planner_messages(messages)
+    provider_messages = tps._build_native_planning_messages(
+        pruned,
+        investigation_instructions=service.cfg.investigation_instructions,
+    )
+    effective_tool_choice = tool_choice if tool_choice is not None else "auto"
+    tps._sync_routing_before_tool_planner_llm(service._routing_runtime_config, run_id=run_id)
+    result = service.llm.generate_with_tools(
+        provider_messages,
+        tools_schema,
+        temperature=service.cfg.temperature,
+        max_tokens=service.cfg.max_answer_tokens,
+        tool_choice=effective_tool_choice,
+        run_id=run_id,
+    )
+    calls: list[PlannedToolCall] = []
+    accepted_tool_calls = []
+    for tool_call in result.tool_calls:
+        name = tool_call.name
+        if allowed is not None and name not in allowed:
+            continue
+        args_json = tool_call.arguments_json or "{}"
+        try:
+            args = json.loads(args_json)
+        except json.JSONDecodeError:
+            args = {}
+        registered = service.tools.get(name)
+        contract = registered.contract
+        try:
+            validated = contract.input_schema.model_validate(args)
+        except ValidationError as exc:
+            runtime_state.trace_event(
+                component=TraceComponent.PLANNER,
+                step="incident_scope_rejection",
+                message="Incident planner tool arguments failed schema validation",
+                level=TraceLevel.WARNING,
+                payload=IncidentScopeRejectionDiagV1(
+                    tool_id=name,
+                    rejection_code=str(exc),
+                    investigation_phase=investigation_phase,
+                ),
+            )
+            continue
+        accepted_tool_calls.append(tool_call)
+        calls.append(
+            PlannedToolCall(
+                step_id="tool",
+                tool_id=name,
+                input=validated,
+            )
+        )
+    filtered_result = LLMAdapterResponse(
+        content=result.content,
+        tool_calls=tuple(accepted_tool_calls),
+    )
+    return filtered_result, ToolCallPlan(calls=calls)
 
 
 def build_catalog_tool_planner(
@@ -158,7 +274,17 @@ def build_investigation_planner_input(
         f"Permitted station_id: {scope.station_id}",
         f"Permitted incident window: {scope.incident_window}",
         f"Permitted comparison window: {scope.comparison_window}",
-        f"Permitted comparison line: {scope.comparison_line_id}",
+        f"Permitted incident reference line: {scope.reference_line_id}",
+        f"Permitted comparison peer line: {scope.comparison_line_id}",
+        (
+            "Window labels: use incident_window for workload, throughput, staffing, and telemetry; "
+            f"use {scope.comparison_window} for production.comparison.read only."
+        ),
+        (
+            "For production.comparison.read use reference_line_id="
+            f"{scope.reference_line_id}, comparison_line_id={scope.comparison_line_id}, "
+            f"and window={scope.comparison_window}."
+        ),
         f"Permitted shift_id: {scope.shift_id}",
     ]
     if critic_feedback:
@@ -172,7 +298,8 @@ def build_investigation_planner_input(
     scope_lines.extend(
         [
             "Objective: gather distinguishing operational evidence for Line 4 target attainment degradation.",
-            "Choose available tools autonomously; do not assume correlation equals causation.",
+            "Choose available scenario tools autonomously based on current information gaps.",
+            "Do not assume correlation equals causation.",
             "Stop tool gathering when sufficient evidence exists for the next reasoning phase.",
             "Do not request entities or windows outside the permitted scope.",
         ]
@@ -245,20 +372,25 @@ def _emit_planner_decision_traces(
 
 
 def _extract_tool_outputs(
-  loop_result: object,
+    loop_result: object,
 ) -> list[tuple[str, str, dict[str, object]]]:
     """Return (tool_call_id, tool_name, output_dict) from native tool messages."""
     outputs: list[tuple[str, str, dict[str, object]]] = []
     for message in getattr(loop_result, "appended_messages", []):
-        if message.role != "tool" or not message.tool_call_id:
+        if message.role != "tool":
             continue
         tool_name = message.name or ""
+        if not tool_name:
+            continue
+        tool_call_id = message.tool_call_id
+        if not tool_call_id:
+            continue
         try:
             payload = json.loads(message.content)
         except json.JSONDecodeError:
             continue
         if isinstance(payload, dict):
-            outputs.append((message.tool_call_id, tool_name, payload))
+            outputs.append((tool_call_id, tool_name, payload))
     return outputs
 
 
@@ -297,7 +429,6 @@ def gather_incident_evidence(
     prior_evidence: Sequence[dict[str, object]] = (),
 ) -> EvidenceGatheringResult:
     investigation_phase = "revision" if is_revision else "initial"
-    planner = build_catalog_tool_planner(runtime_state=runtime_state, registry=registry)
     canonical_invoker = runtime_state.context.config.tool_invoker
     if canonical_invoker is None:
         raise RuntimeError("incident_runtime_tool_invoker_missing")
@@ -307,6 +438,15 @@ def gather_incident_evidence(
         scope=scope,
         runtime_state=runtime_state,
         investigation_phase=investigation_phase,
+    )
+
+    allowed_tool_ids = tuple(SCENARIO_TOOL_IDS)
+    base_planner = build_catalog_tool_planner(runtime_state=runtime_state, registry=registry)
+    planner = _IncidentCatalogToolPlanner(
+        inner=base_planner,
+        runtime_state=runtime_state,
+        investigation_phase=investigation_phase,
+        require_tool_calls=False,
     )
     planner_input = build_investigation_planner_input(
         scope=scope,
@@ -320,7 +460,7 @@ def gather_incident_evidence(
             invoker=invoker,
             tool_planner=planner,
             planner_input=planner_input,
-            allowed_tool_ids=SCENARIO_TOOL_IDS,
+            allowed_tool_ids=allowed_tool_ids,
             max_iterations=MAX_INCIDENT_TOOL_LOOP_ITERATIONS,
             invocation_mode=ToolInvocationMode.BOUNDED_REACT,
         )
@@ -332,7 +472,6 @@ def gather_incident_evidence(
 
     tool_outputs = _extract_tool_outputs(loop_result)
     call_id_to_tool_name = {call_id: tool_name for call_id, tool_name, _payload in tool_outputs}
-
     planner_decisions = _emit_planner_decision_traces(
         runtime_state=runtime_state,
         investigation_phase=investigation_phase,
@@ -355,11 +494,10 @@ def gather_incident_evidence(
         ),
     )
 
-    new_nodes = _evidence_nodes_from_tool_outputs(tool_outputs)
     merged: dict[str, dict[str, object]] = {
         str(node["evidence_id"]): dict(node) for node in prior_evidence if node.get("evidence_id")
     }
-    for node in new_nodes:
+    for node in _evidence_nodes_from_tool_outputs(tool_outputs):
         merged[str(node["evidence_id"])] = dict(node)
     evidence_nodes = tuple(merged.values())
 

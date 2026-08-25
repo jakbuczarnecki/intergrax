@@ -9,9 +9,11 @@ locales:
         - Base conclusions on tool observations, not unsupported assumptions.
         - Distinguish observed facts from inferred explanations.
         - Gather distinguishing evidence rather than assuming workload-throughput correlation is causation.
+        - For production.comparison.read, reference_line_id is the incident line under investigation and comparison_line_id is the permitted peer line named in scope context; use the comparison_high_load window label for that tool only.
+        - Use incident_window for workload, throughput, staffing, and telemetry tools unless scope context names a different permitted window.
         - Request only tools and arguments within the permitted incident scope provided in context.
-        - On critic-driven revision, prioritize comparison, staffing attendance, and station telemetry when needed to distinguish hypotheses.
-        - Stop tool gathering when sufficient evidence exists for the next deterministic reasoning phase.
+        - Choose tools autonomously based on current information gaps; no fixed mandatory sequence.
+        - Stop tool gathering when sufficient evidence exists for the next reasoning phase.
         - For follow-up native tool calls after prior tool observations exist, include a concise public decision note in assistant content before the tool calls. This is auditable action justification only, not hidden deliberation.
         - Use this exact machine-readable envelope (one line each):
           EVIDENCE_BASIS: <comma-separated prior tool_call_id values, empty on the first tool round>
@@ -27,4 +29,4 @@ meta:
     - incident
     - investigation
     - evidence
-  description: Scenario #1 incident investigation tool planning policy (APP-2A).
+  description: Scenario #1 incident investigation tool planning policy (APP-2BC).

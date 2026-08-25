@@ -426,7 +426,12 @@ def register_scenario_tools(registry: ToolRegistry, fixture: IncidentFixture) ->
             TOOL_COMPARISON_READ,
             ComparisonInput,
             ComparisonOutput,
-            description="Read cross-line workload and attainment comparison observations.",
+            description=(
+                "Read cross-line workload and attainment comparison observations. "
+                "reference_line_id is the incident line under investigation; "
+                "comparison_line_id is the permitted peer line to contrast against it; "
+                "window must be comparison_high_load."
+            ),
         ),
         _ComparisonHandler(fixture),
     )
