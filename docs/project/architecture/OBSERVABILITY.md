@@ -828,6 +828,33 @@ await reporter.report(
 
 **Code references:** `causal_evidence.py` · `causal_evidence_persistence.py` · `memory_causal_evidence_persistence.py` · `document_store_causal_evidence_persistence.py` · `causal_evidence_record_codec.py` · `causal_evidence_export.py` · `export_boundary.py`.
 
+### Execution reconstruction (DIAG-2)
+
+**Canonical truth (sources of record):**
+
+| Store | Role |
+|-------|------|
+| `RuntimeEventPersistence` | Execution truth — accepted `RuntimeEvent` history with persistence-owned `ExecutionEventPosition` |
+| `CausalEvidencePersistence` | Relation truth — immutable `PlatformCausalEvidence` linking transport to execution |
+
+**Derived read model (NOT persisted, NOT a source of truth):** `ExecutionReconstruction` is computed at read time by `ExecutionReconstructor.reconstruct_execution(tenant_id, task_id, run_id)`. It joins causal evidence and positioned runtime events for one canonical execution scope. No diagnosis, anomaly classification, or root-cause semantics — factual reconstruction only (DIAG-3+).
+
+**Ordering rules (do not mix):**
+
+| Dimension | Canonical order |
+|-----------|-----------------|
+| Runtime events | `ExecutionEventPosition` via `RuntimeEventPersistence.list_positioned_for_run` — **not** `timestamp` |
+| Causal evidence | `(recorded_at, evidence_id)` ascending — persistence contract |
+| Attempts (projection) | First `ExecutionEventPosition` per attempt when runtime events exist; otherwise earliest causal `(recorded_at, evidence_id)` — display order only, not identity |
+
+**Attempt set:** union of `AttemptId` values from causal evidence targets **and** from runtime events (no inner join). Evidence-only and event-only attempts are retained without anomaly labeling.
+
+**Completeness:** runtime history pagination doubles `limit` until the batch is smaller than `limit` or `max_limit` is reached with a full batch; `runtime_history_completeness` is `complete` or `truncated`. Reconstruction must not claim complete history when truncated.
+
+**Integrity:** facts returned outside the requested `tenant_id` / `TaskId` / `RunId` scope fail closed with `ExecutionReconstructionIntegrityError` — no silent filtering.
+
+**Code references:** `intergrax/runtime/diagnostics/execution_reconstruction.py`.
+
 ---
 
 ## Problem signal routing/fanout boundary
