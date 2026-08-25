@@ -159,6 +159,8 @@ def _resolve_asset_path(doc_path: Path, asset_ref: str) -> Path:
     normalized = asset_ref.strip().replace("\\", "/")
     if normalized.startswith("/"):
         resolved = REPO_ROOT / normalized.lstrip("/")
+    elif normalized.startswith("docs/"):
+        resolved = REPO_ROOT / normalized
     else:
         resolved = doc_path.parent / normalized
     return resolved.resolve()
