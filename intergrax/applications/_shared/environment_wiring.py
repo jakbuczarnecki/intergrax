@@ -193,6 +193,7 @@ def wire_application_environment(
     websearch_executor: Any | None = None,
     conformance_check: bool = True,
     document_store: Any | None = None,
+    key_value_cache: Any | None = None,
     boundary_event_buffer: Any | None = None,
     platform_plugin_package_qualifications: (
         PlatformPluginPackageQualificationBundle | None
@@ -255,6 +256,10 @@ def wire_application_environment(
         from dataclasses import replace
 
         wiring_context = replace(wiring_context, document_store=document_store)
+    if key_value_cache is not None:
+        from dataclasses import replace
+
+        wiring_context = replace(wiring_context, key_value_cache=key_value_cache)
     codecraft_wiring = wire_application_codecraft(
         env, producer_adapter=resolve_environment_llm_adapter(env)
     )

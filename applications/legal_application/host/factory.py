@@ -29,6 +29,10 @@ from intergrax.applications._shared.identity_wiring import wire_application_iden
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
+from intergrax.applications._shared.host_queue_execution_wiring import (
+    apply_queue_worker_environment_profile,
+    resolve_host_queue_execution_dependencies,
+)
 from intergrax.applications._shared.queue_worker_wiring import wire_optional_queue_execution
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
@@ -48,6 +52,8 @@ def create_legal_backend_app(
     settings: Optional[LegalBackendSettings] = None,
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
+    document_store: object | None = None,
+    key_value_cache: object | None = None,
 ) -> FastAPI:
     """
     Production host: Intergrax FastAPI Core (health, runs, middleware) + Legal Agent routes.
@@ -64,6 +70,8 @@ def create_legal_backend_app(
 
     manifest = build_legal_manifest(settings)
     env = manifest.environment or build_legal_environment_profile(settings)
+    if settings.include_queue_worker and document_store is None and key_value_cache is None:
+        env = apply_queue_worker_environment_profile(env)
     runtime = build_harness_host_runtime(
         manifest,
         env,
@@ -71,6 +79,8 @@ def create_legal_backend_app(
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
         registry_projection=registry_projection,
+        document_store=document_store,
+        key_value_cache=key_value_cache,
     )
     nexus_loop = runtime.nexus_loop
     registry = runtime.registry
@@ -100,12 +110,15 @@ def create_legal_backend_app(
     run_service = DefaultRunService(run_store, inline_adapter)
     inline_adapter.bind_run_service(run_service)
     if settings.include_queue_worker:
+        queue_dependencies = resolve_host_queue_execution_dependencies(runtime)
         queue_wiring = wire_optional_queue_execution(
             enabled=True,
             registry=registry,
             task_runner=task_runner,
             run_service=run_service,
             app_name="legal_nexus_worker",
+            kv_store=queue_dependencies.kv_store,
+            causal_evidence_persistence=queue_dependencies.causal_evidence_persistence,
         )
         run_service._execution_adapter = queue_wiring.execution_adapter
 
