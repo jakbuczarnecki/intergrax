@@ -27,6 +27,10 @@ from platform_proofs.scenarios.ai_incident_investigation.evidence_builder import
     build_platform_proof_evidence,
 )
 from platform_proofs.scenarios.ai_incident_investigation.evaluator import evaluate_scenario_run
+from platform_proofs.scenarios.ai_incident_investigation.incident_reasoning import (
+    claim_id_for_hypothesis,
+    parse_claim_hypothesis_bindings,
+)
 from platform_proofs.scenarios.ai_incident_investigation.fixtures import ScenarioVariant
 from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
     H3_CLAIM_ID,
@@ -70,7 +74,10 @@ async def test_unresolved_canonical_evidence_content() -> None:
     assert not any(
         claim.resolution is ClaimResolution.SUPPORTED for claim in claim_set.claims
     )
-    h3 = next(c for c in claim_set.claims if c.claim_id == H3_CLAIM_ID)
+    bindings = parse_claim_hypothesis_bindings(result.claim_hypothesis_bindings)
+    h3_claim_id = claim_id_for_hypothesis(bindings, "H3")
+    assert h3_claim_id is not None
+    h3 = next(c for c in claim_set.claims if str(c.claim_id) == h3_claim_id)
     assert h3.resolution is ClaimResolution.INSUFFICIENT_EVIDENCE
     if parsed.evidence_claims.challenges:
         assert parsed.evidence_claims.challenges[0].resolution.value == "open"
@@ -168,8 +175,9 @@ async def test_parent_runner_tampered_unresolved_evidence_fails(repo_root: Path)
         evidence_path = artifact_dir / EVIDENCE_UNRESOLVED_FILENAME
         tampered = json.loads(evidence_path.read_text(encoding="utf-8"))
         for claim in tampered["evidence_claims"]["claims"]:
-            if claim.get("claim_id") == str(H3_CLAIM_ID):
+            if claim.get("resolution") == "insufficient_evidence":
                 claim["resolution"] = "supported"
+                break
         evidence_path.write_text(json.dumps(tampered), encoding="utf-8")
         return completed
 

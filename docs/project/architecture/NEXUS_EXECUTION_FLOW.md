@@ -10,7 +10,7 @@ Nexus is **not** a second UER, an `AgentEngine` replacement, a tool planner, a c
 
 Without one Nexus flow, different entry points could each implement their own routing, planning, agent selection, retries, handoffs, multi-agent execution, final composition, and HITL behavior. That leads to inconsistent task semantics, duplicated orchestration, divergent policy paths, hidden bypasses, weak observability, and difficult testing.
 
-Nexus enforces **one canonical task path**: every surface normalizes to `Task` → `UnifiedTaskRunner` → `NexusLoop` → `TaskResult`.
+For **orchestrated task intake**, surfaces normalize to `Task` → `UnifiedTaskRunner` → `NexusLoop` → `TaskResult`. Direct execution paths bypass Nexus per [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) **UEA-INV-008** — not every execution must pass Nexus.
 
 > [!NOTE]
 > **Maturity boundary:** UC-1–UC-6 and Phase FLOW (**18/18 harness Done**) prove the Nexus spine in lab and gate tests. That is **not** universal production qualification: `execution_mode=strict` is posture, not taxonomy **P4**; FLOW-8 product multi-agent hosts remain **Deferred** ([plan §6.3](../maintainers/plans/NEXUS_EXECUTION_FLOW.md)). See [Current maturity](#current-maturity) and [Harness-proven vs production-qualified](#harness-proven-vs-not-automatically-production-qualified).
@@ -35,18 +35,20 @@ Nexus enforces **one canonical task path**: every surface normalizes to `Task` �
 
 ## Flagship architecture visual
 
-<a href="assets/fullsize/nexus-execution-flow.md">
+**TARGET ARCHITECTURE** — orchestration-strategy Executions are realized when Nexus schedules **child Executions** at the execution boundary (Nexus does not execute agent internals directly).
+
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/nexus-execution-flow-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="assets/nexus-execution-flow-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-orchestration-nexus-flow-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-orchestration-nexus-flow-light.svg">
   <img
-    alt="Conceptual Nexus flow: Client and surfaces through Tier-3 Host, UnifiedTaskRunner, NexusLoop with intake plan and graph, AgentRouter, AgentEngine and UAEP, Context and Tools, validation and decision, retry HITL handoff merge, to TaskResult."
-    src="assets/nexus-execution-flow-light.svg"
+    alt="Orchestration strategy: parent Execution with orchestration strategy flows through Nexus to child Executions at the execution boundary; child results merge back to parent completion."
+    src="assets/unified-execution-orchestration-nexus-flow-light.svg"
   >
 </picture>
-</a>
 
-The diagram shows the **task path**, not every runtime class. Retry, HITL, handoff, and merge stay on the same spine.
+**CURRENT IMPLEMENTATION / migration state:** Today's harness path is `UnifiedTaskRunner` → `NexusLoop` → `AgentRouter` → `AgentEngine` / UAEP for graph nodes. That agent-centric wiring is implementation debt — not the frozen target abstraction.
+
+The diagram shows the **target orchestration path**, not every runtime class on the current spine. Retry, HITL, handoff, and merge stay on the orchestrated task path.
 
 ## Three planning planes
 

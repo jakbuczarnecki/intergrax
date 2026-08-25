@@ -117,6 +117,7 @@ class SpyIdempotencyStore(InMemoryIdempotencyStore):
         key: str,
         owner_id: str,
         lease_seconds: int,
+        operation_identity=None,
     ) -> ClaimResult:
         self.claim_calls.append((tenant_id, key, owner_id, lease_seconds))
         if self._forced_outcome is not None:
@@ -124,7 +125,13 @@ class SpyIdempotencyStore(InMemoryIdempotencyStore):
                 return ClaimResult(outcome=ClaimOutcome.BLOCKED_ACTIVE)
             if self._forced_outcome == ClaimOutcome.UNCERTAIN:
                 return ClaimResult(outcome=ClaimOutcome.UNCERTAIN)
-        return super().claim(tenant_id, key, owner_id, lease_seconds)
+        return super().claim(
+            tenant_id,
+            key,
+            owner_id,
+            lease_seconds,
+            operation_identity=operation_identity,
+        )
 
     def complete_with_claim(
         self,
@@ -186,8 +193,9 @@ class LegacyOnlyIdempotencyStore(IdempotencyStore):
         key: str,
         owner_id: str,
         lease_seconds: int,
+        operation_identity=None,
     ) -> ClaimResult:
-        del owner_id, lease_seconds
+        del owner_id, lease_seconds, operation_identity
         if (tenant_id, key) in self._started:
             return ClaimResult(outcome=ClaimOutcome.BLOCKED_ACTIVE)
         return ClaimResult(outcome=ClaimOutcome.ACQUIRED, claim=None)
@@ -201,6 +209,14 @@ class LegacyOnlyIdempotencyStore(IdempotencyStore):
         completed_ttl_seconds: int | None = None,
     ) -> None:
         del claim, result, completed_ttl_seconds
+
+    def mark_uncertain_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+    ) -> None:
+        del tenant_id, key, claim
 
     def record_started(
         self,

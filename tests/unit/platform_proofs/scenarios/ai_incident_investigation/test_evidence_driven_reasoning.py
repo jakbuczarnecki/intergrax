@@ -65,6 +65,32 @@ from platform_proofs.scenarios.ai_incident_investigation.validation import (
 pytestmark = pytest.mark.unit
 
 
+def _validation_payload(
+    result,
+    *,
+    evidence_nodes: list[dict[str, object]],
+    active_hypothesis: str = "H3",
+    completion_mode: str = "supported_diagnosis",
+    claim_set: dict | None = None,
+    extra_bindings: list[dict[str, str]] | None = None,
+) -> dict[str, object]:
+    bindings = list(result.claim_hypothesis_bindings)
+    if extra_bindings:
+        bindings = [
+            item
+            for item in bindings
+            if item.get("hypothesis_id")
+            not in {binding.get("hypothesis_id") for binding in extra_bindings}
+        ] + extra_bindings
+    return {
+        "claim_set": claim_set or result.claim_set,
+        "claim_hypothesis_bindings": bindings,
+        "evidence_nodes": evidence_nodes,
+        "active_hypothesis": active_hypothesis,
+        "completion_mode": completion_mode,
+    }
+
+
 def _happy_observations() -> IncidentObservations:
     fixture = build_resolved_fixture()
     return observations_from_evidence_nodes(
@@ -252,6 +278,9 @@ def test_correlation_only_h1_supported_rejected_by_critic() -> None:
             },
         ],
         "active_hypothesis": "H1",
+        "claim_hypothesis_bindings": [
+            {"claim_id": str(INITIAL_CLAIM_ID), "hypothesis_id": "H1"},
+        ],
     }
     result = validate_claim_set_against_observations(claim_set, domain_payload)
     assert not result.valid
@@ -275,13 +304,20 @@ async def test_critic_rejects_forged_h3_with_healthy_telemetry_async() -> None:
                 payload["complex_assembly_throughput_pct"] = 90.0
 
     forged = build_forged_h3_claim_set(result)
+    forged_h3 = next(
+        claim for claim in forged.claims if claim.resolution is ClaimResolution.SUPPORTED
+    )
     validation = validate_claim_set_against_observations(
         forged,
-        {
-            "claim_set": forged.model_dump(mode="json"),
-            "evidence_nodes": mutated_nodes,
-            "active_hypothesis": "H3",
-        },
+        _validation_payload(
+            result,
+            evidence_nodes=mutated_nodes,
+            claim_set=forged.model_dump(mode="json"),
+            completion_mode="supported_diagnosis",
+            extra_bindings=[
+                {"claim_id": str(forged_h3.claim_id), "hypothesis_id": "H3"},
+            ],
+        ),
     )
     assert not validation.valid
     assert TELEMETRY_CONTENT_ERROR in validation.errors
@@ -303,11 +339,7 @@ async def test_bad_comparison_prevents_resolved_outcome() -> None:
     claim_set = EvidenceClaimSet.model_validate(result.claim_set)
     validation = validate_claim_set_against_observations(
         claim_set,
-        {
-            "claim_set": result.claim_set,
-            "evidence_nodes": mutated_nodes,
-            "active_hypothesis": "H3",
-        },
+        _validation_payload(result, evidence_nodes=mutated_nodes),
     )
     assert not validation.valid
     assert COMPARISON_CONTENT_ERROR in validation.errors
@@ -352,11 +384,7 @@ async def test_real_understaffing_prevents_resolved_h2_rejection() -> None:
     claim_set = EvidenceClaimSet.model_validate(result.claim_set)
     validation = validate_claim_set_against_observations(
         claim_set,
-        {
-            "claim_set": result.claim_set,
-            "evidence_nodes": mutated_nodes,
-            "active_hypothesis": "H3",
-        },
+        _validation_payload(result, evidence_nodes=mutated_nodes),
     )
     assert not validation.valid
     assert H2_DISPOSITION_ERROR in validation.errors

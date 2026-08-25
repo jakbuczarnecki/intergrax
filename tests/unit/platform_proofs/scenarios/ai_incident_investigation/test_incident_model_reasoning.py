@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""APP-2BC model-owned reasoning and critic independence tests."""
+"""APP-2BC-R1 model-owned reasoning, critic authority, and claim semantics tests."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ import pytest
 
 from intergrax.contracts.evidence_claims import ClaimResolution, EvidenceClaimSet
 from platform_proofs.scenarios.ai_incident_investigation.incident_reasoning import (
+    ClaimHypothesisBinding,
     ClaimProposal,
     CompletionIntent,
     HypothesisDisposition,
@@ -21,8 +22,9 @@ from platform_proofs.scenarios.ai_incident_investigation.incident_reasoning impo
 )
 from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
     DIAGNOSIS_KIND,
+    H2_CLAIM_ID,
+    H3_CLAIM_ID,
     INITIAL_CLAIM_ID,
-    REVISED_CLAIM_ID,
     WORKLOAD_EVIDENCE_ID,
 )
 from platform_proofs.scenarios.ai_incident_investigation.validation import (
@@ -33,8 +35,28 @@ from platform_proofs.scenarios.ai_incident_investigation.validation import (
 pytestmark = pytest.mark.unit
 
 
-def _sample_proposal() -> IncidentReasoningProposal:
+def _sample_proposal(*, claim_order: tuple[str, ...] = ("H1",)) -> IncidentReasoningProposal:
     workload = str(WORKLOAD_EVIDENCE_ID)
+    proposals = {
+        "H1": ClaimProposal(
+            hypothesis_id="H1",
+            statement="Overload hypothesis H1 pending distinguishing evidence.",
+            claim_kind=str(DIAGNOSIS_KIND),
+            supporting_evidence_ids=(workload,),
+        ),
+        "H2": ClaimProposal(
+            hypothesis_id="H2",
+            statement="Statement mentions H2 but binding is explicit.",
+            claim_kind=str(DIAGNOSIS_KIND),
+            supporting_evidence_ids=(workload,),
+        ),
+        "H3": ClaimProposal(
+            hypothesis_id="H3",
+            statement="Equipment degradation hypothesis H3 pending telemetry.",
+            claim_kind=str(DIAGNOSIS_KIND),
+            supporting_evidence_ids=(workload,),
+        ),
+    }
     return IncidentReasoningProposal(
         hypotheses=(
             HypothesisProposal(
@@ -47,32 +69,72 @@ def _sample_proposal() -> IncidentReasoningProposal:
         preferred_hypothesis_id="H1",
         uncertainty_class="high",
         information_gaps=("comparison evidence",),
-        claim_proposals=(
-            ClaimProposal(
-                statement="Overload hypothesis H1 pending distinguishing evidence.",
-                claim_kind=str(DIAGNOSIS_KIND),
-                supporting_evidence_ids=(workload,),
-            ),
-        ),
+        claim_proposals=tuple(proposals[item] for item in claim_order),
         completion_intent=CompletionIntent.SUPPORTED_DIAGNOSIS,
         action_objective="gather distinguishing evidence",
     )
 
 
+def test_claim_proposal_requires_hypothesis_id() -> None:
+    with pytest.raises(Exception):
+        ClaimProposal.model_validate(
+            {
+                "statement": "missing hypothesis",
+                "claim_kind": str(DIAGNOSIS_KIND),
+            }
+        )
+
+
 def test_model_proposal_converts_to_pending_claims() -> None:
-    proposal = _sample_proposal()
-    claim_set = convert_proposal_to_pending_claims(proposal, prior_claim_set=None, critic_feedback=None)
-    assert claim_set.claims[0].resolution is ClaimResolution.PENDING
-    assert claim_set.claims[0].claim_id == INITIAL_CLAIM_ID
-
-
-def test_model_cannot_control_resolution_via_proposal_conversion() -> None:
-    claim_set = convert_proposal_to_pending_claims(
+    conversion = convert_proposal_to_pending_claims(
         _sample_proposal(),
         prior_claim_set=None,
         critic_feedback=None,
     )
-    assert all(claim.resolution is ClaimResolution.PENDING for claim in claim_set.claims)
+    assert conversion.claim_set.claims[0].resolution is ClaimResolution.PENDING
+    assert conversion.bindings[0].hypothesis_id == "H1"
+    assert str(conversion.claim_set.claims[0].claim_id) != str(INITIAL_CLAIM_ID)
+
+
+def test_reordered_claims_preserve_hypothesis_binding() -> None:
+    conversion = convert_proposal_to_pending_claims(
+        _sample_proposal(claim_order=("H3", "H1", "H2")),
+        prior_claim_set=None,
+        critic_feedback=None,
+    )
+    assert [binding.hypothesis_id for binding in conversion.bindings] == ["H3", "H1", "H2"]
+
+
+def test_missing_h1_claim_allowed() -> None:
+    conversion = convert_proposal_to_pending_claims(
+        _sample_proposal(claim_order=("H2", "H3")),
+        prior_claim_set=None,
+        critic_feedback=None,
+    )
+    assert {binding.hypothesis_id for binding in conversion.bindings} == {"H2", "H3"}
+
+
+def test_claim_ids_are_application_minted() -> None:
+    first = convert_proposal_to_pending_claims(
+        _sample_proposal(),
+        prior_claim_set=None,
+        critic_feedback=None,
+    )
+    second = convert_proposal_to_pending_claims(
+        _sample_proposal(),
+        prior_claim_set=None,
+        critic_feedback=None,
+    )
+    assert first.claim_set.claims[0].claim_id != second.claim_set.claims[0].claim_id
+
+
+def test_model_cannot_control_resolution_via_proposal_conversion() -> None:
+    conversion = convert_proposal_to_pending_claims(
+        _sample_proposal(),
+        prior_claim_set=None,
+        critic_feedback=None,
+    )
+    assert all(claim.resolution is ClaimResolution.PENDING for claim in conversion.claim_set.claims)
 
 
 def test_unknown_evidence_ref_rejected() -> None:
@@ -81,6 +143,7 @@ def test_unknown_evidence_ref_rejected() -> None:
         update={
             "claim_proposals": (
                 ClaimProposal(
+                    hypothesis_id="H1",
                     statement="bad refs",
                     claim_kind=str(DIAGNOSIS_KIND),
                     supporting_evidence_ids=("evidence.unknown.node",),
@@ -93,16 +156,30 @@ def test_unknown_evidence_ref_rejected() -> None:
 
 
 def test_critic_apply_resolutions_rejects_model_self_approval() -> None:
+    conversion = convert_proposal_to_pending_claims(
+        _sample_proposal(),
+        prior_claim_set=None,
+        critic_feedback=None,
+    )
     claim_set = EvidenceClaimSet(
         claims=(
-            convert_proposal_to_pending_claims(_sample_proposal(), prior_claim_set=None, critic_feedback=None)
-            .claims[0]
-            .model_copy(update={"resolution": ClaimResolution.SUPPORTED}),
+            conversion.claim_set.claims[0].model_copy(
+                update={"resolution": ClaimResolution.SUPPORTED}
+            ),
         ),
         challenges=(),
     )
     with pytest.raises(ValueError, match="model_self_approved"):
-        apply_critic_claim_resolutions(claim_set, {"evidence_nodes": []})
+        apply_critic_claim_resolutions(
+            claim_set,
+            {
+                "evidence_nodes": [],
+                "claim_hypothesis_bindings": [
+                    binding.model_dump(mode="json") for binding in conversion.bindings
+                ],
+            },
+            bindings=conversion.bindings,
+        )
 
 
 def test_validation_does_not_call_derive_hypothesis_dispositions() -> None:
@@ -110,21 +187,25 @@ def test_validation_does_not_call_derive_hypothesis_dispositions() -> None:
     assert "derive_hypothesis_dispositions" not in source
 
 
-def test_investigator_canonical_path_has_no_derive_hypothesis_dispositions() -> None:
+def test_investigator_does_not_call_apply_critic_claim_resolutions() -> None:
     from platform_proofs.scenarios.ai_incident_investigation import investigator_agent as mod
 
     source = inspect.getsource(mod.IncidentInvestigatorAgent.run_step)
+    assert "apply_critic_claim_resolutions" not in source
     assert "derive_hypothesis_dispositions" not in source
-    assert "_PRIOR_EVIDENCE_BY_RUN" not in source
-    assert "_build_claims_from_assessment" not in source
 
 
-def test_revision_claim_uses_application_supersedes_lineage() -> None:
-    initial = convert_proposal_to_pending_claims(_sample_proposal(), prior_claim_set=None, critic_feedback=None)
-    proposal = _sample_proposal().model_copy(
+def test_revision_supersedes_same_hypothesis_only() -> None:
+    initial = convert_proposal_to_pending_claims(
+        _sample_proposal(claim_order=("H1", "H2", "H3")),
+        prior_claim_set=None,
+        critic_feedback=None,
+    )
+    proposal = _sample_proposal(claim_order=("H3",)).model_copy(
         update={
             "claim_proposals": (
                 ClaimProposal(
+                    hypothesis_id="H3",
                     statement="Revised bounded diagnosis.",
                     claim_kind=str(DIAGNOSIS_KIND),
                     supporting_evidence_ids=(str(WORKLOAD_EVIDENCE_ID),),
@@ -135,11 +216,33 @@ def test_revision_claim_uses_application_supersedes_lineage() -> None:
     )
     revised = convert_proposal_to_pending_claims(
         proposal,
-        prior_claim_set=initial,
+        prior_claim_set=initial.claim_set,
+        prior_bindings=initial.bindings,
         critic_feedback=["unsupported inference"],
     )
-    revised_claim = next(claim for claim in revised.claims if claim.claim_id == REVISED_CLAIM_ID)
-    assert revised_claim.supersedes_claim_id == str(INITIAL_CLAIM_ID)
+    h3_prior = next(binding.claim_id for binding in initial.bindings if binding.hypothesis_id == "H3")
+    h1_prior = next(binding.claim_id for binding in initial.bindings if binding.hypothesis_id == "H1")
+    revised_h3 = next(
+        claim
+        for claim in revised.claim_set.claims
+        if str(claim.claim_id)
+        in {binding.claim_id for binding in revised.bindings if binding.hypothesis_id == "H3"}
+    )
+    assert revised_h3.supersedes_claim_id == h3_prior
+    h1_claim = next(claim for claim in revised.claim_set.claims if str(claim.claim_id) == h1_prior)
+    assert h1_claim.supersedes_claim_id is None
+
+
+def test_legacy_claim_ids_not_used_for_semantic_conversion() -> None:
+    conversion = convert_proposal_to_pending_claims(
+        _sample_proposal(claim_order=("H1", "H2", "H3")),
+        prior_claim_set=None,
+        critic_feedback=None,
+    )
+    claim_ids = {str(claim.claim_id) for claim in conversion.claim_set.claims}
+    assert str(INITIAL_CLAIM_ID) not in claim_ids
+    assert str(H2_CLAIM_ID) not in claim_ids
+    assert str(H3_CLAIM_ID) not in claim_ids
 
 
 @pytest.mark.asyncio
@@ -156,3 +259,8 @@ async def test_application_survives_without_proof_evaluator() -> None:
     assert result.critic_verdict_passed
     assert result.claim_set
     assert result.evidence_nodes
+    assert all(
+        claim.get("resolution") != ClaimResolution.PENDING.value
+        for claim in result.claim_set.get("claims", [])
+        if claim.get("claim_kind") == str(DIAGNOSIS_KIND)
+    )

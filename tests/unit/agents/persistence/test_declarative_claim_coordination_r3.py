@@ -51,9 +51,16 @@ class _OrderingStore(InMemoryIdempotencyStore):
         key: str,
         owner_id: str,
         lease_seconds: int,
+        operation_identity=None,
     ):
         self.events.append("claim")
-        return super().claim(tenant_id, key, owner_id, lease_seconds)
+        return super().claim(
+            tenant_id,
+            key,
+            owner_id,
+            lease_seconds,
+            operation_identity=operation_identity,
+        )
 
     def complete_with_claim(
         self,
@@ -92,9 +99,16 @@ class _ShortLeaseCrashStore(_CrashOnCompleteStore):
         key: str,
         owner_id: str,
         lease_seconds: int,
+        operation_identity=None,
     ):
         del lease_seconds
-        return super().claim(tenant_id, key, owner_id, 1)
+        return super().claim(
+            tenant_id,
+            key,
+            owner_id,
+            1,
+            operation_identity=operation_identity,
+        )
 
 
 def _action() -> dict[str, Any]:

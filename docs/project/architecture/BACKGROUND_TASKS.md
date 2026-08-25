@@ -95,7 +95,7 @@ If required evidence persistence fails: handler invocation count = 0, no busines
 
 `RuntimeEventBus` best-effort persistence is **not** the admission mechanism for required transport→execution causal evidence.
 
-**Writer integration: NOT YET** (DIAG-1I). Platform contract: `intergrax/runtime/background_execution/required_audit_evidence.py`.
+**Writer integration: DONE** for supported background execution paths (`BrokerWorkerBase`, `WorkerRuntime`, Celery `intergrax.execute`, `DocumentStoreTaskWorker`). Ordering: transport → identity bootstrap → `admit_background_execution_handler` (required `TRANSPORT_TASK_TRIGGERED_EXECUTION`) → `execute_logical_task`. Fail-closed on persistence failure; worker retries mint new `AttemptId` and new causal evidence; `RuntimeEventBus` persistence remains separate execution truth; observability exporter remains optional.
 
 Entry points that invoke the bootstrap: `BrokerWorkerBase.process_message`, `WorkerRuntime.process_request`, Celery `intergrax.execute` dispatcher, and `DocumentStoreTaskWorker`.
 

@@ -353,6 +353,40 @@ Project-level mental model:
 
 ---
 
+## One execution model across the platform
+
+Intergrax uses one execution model across the platform. A workload can be a
+direct inference, an autonomous agent execution, or an orchestration that uses
+Nexus to schedule child Executions — without forcing every request through the
+same orchestration machinery.
+
+Across those paths, Execution is the common governed unit. Identity, authority,
+budgets, observability, diagnostics and recovery remain correlated across the
+execution tree.
+
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="docs/project/architecture/assets/unified-execution-platform-core-dark.svg"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="docs/project/architecture/assets/unified-execution-platform-core-light.svg"
+  >
+  <img
+    src="docs/project/architecture/assets/unified-execution-platform-core-light.svg"
+    alt="Intergrax Execution Core: application requests enter one execution boundary; Execution selects direct inference, agentic execution, or orchestration. Orchestration uses Nexus to schedule child Executions, while identity, governance, budget, observability, diagnostics, and recovery apply across every Execution."
+  >
+</picture>
+
+[Explore the Unified Execution Architecture](docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md)
+
+The unified model is the frozen target architecture; implementation is being
+migrated toward it, and linked domain documents distinguish target semantics
+from current runtime state.
+
+---
+
 ## AI execution should not be a black box
 
 Meaningful AI execution should be reconstructable, reviewable, and attributable.

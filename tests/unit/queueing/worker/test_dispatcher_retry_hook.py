@@ -13,7 +13,10 @@ from intergrax.queueing.worker.dispatcher import register_dispatcher_task
 from intergrax.runtime.background_execution.identity_persistence import (
     wire_background_execution_identity_persistence,
 )
-from tests.unit.queueing.worker.dispatcher_test_kv import DispatcherTestKVStore
+from tests.unit.queueing.worker.dispatcher_test_kv import (
+    DispatcherTestKVStore,
+    dispatcher_test_causal_persistence,
+)
 from intergrax.queueing.worker.execution import RetryableHandlerError
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_policy import RetryPolicy
@@ -34,7 +37,9 @@ class FakeRegistry(TaskExecutionRegistry):
             run_id: str,
             payload: bytes,
             idempotency_key,
+            execution_identity=None,
         ) -> ToolExecutionResult[_DummyOutput]:
+            _ = tenant_id, run_id, payload, idempotency_key, execution_identity
             raise RetryableHandlerError("transient failure")
 
         return handler
@@ -73,6 +78,7 @@ def test_dispatcher_calls_retry_hook() -> None:
         identity_persistence=wire_background_execution_identity_persistence(
             kv_store=DispatcherTestKVStore(),
         ),
+        causal_evidence_persistence=dispatcher_test_causal_persistence(),
     )
 
     task = app.tasks["intergrax.execute"]

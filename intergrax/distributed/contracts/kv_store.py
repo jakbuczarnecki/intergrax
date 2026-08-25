@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Protocol, runtime_checkable
 
 
 class DistributedKVStore(ABC):
@@ -74,3 +74,16 @@ class DistributedKVStore(ABC):
         Returns True if update succeeded, False otherwise.
         """
         ...
+
+
+@runtime_checkable
+class DistributedKVStoreProvider(Protocol):
+    """
+    Explicit platform contract for integrations that expose a ``DistributedKVStore``.
+
+    Queue host composition resolves KV via ``isinstance`` against this protocol
+    (structural, runtime-checkable) — not dynamic attribute lookup.
+    """
+
+    @property
+    def kv_store(self) -> DistributedKVStore: ...

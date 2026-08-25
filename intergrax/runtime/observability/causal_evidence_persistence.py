@@ -6,13 +6,25 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.runtime.observability.causal_evidence import PlatformCausalEvidence
 
 
+def causal_evidence_query_order_key(
+    evidence: PlatformCausalEvidence,
+) -> tuple[datetime, str]:
+    """Canonical deterministic ordering for list_for_execution / list_for_transport_task."""
+    return (evidence.recorded_at, str(evidence.evidence_id))
+
+
 class CausalEvidencePersistenceConflictError(Exception):
     """Raised when append encounters an existing evidence_id with different content."""
+
+
+class CausalEvidencePersistenceIntegrityError(Exception):
+    """Raised when indexed storage is inconsistent with the canonical causal record."""
 
 
 class CausalEvidencePersistence(ABC):

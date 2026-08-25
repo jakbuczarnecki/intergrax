@@ -30,7 +30,6 @@ from platform_proofs.scenarios.ai_incident_investigation.runtime_composition imp
     ScenarioRuntimeComposition,
     build_agent_runtime_context,
 )
-# Re-export scenario contract identifiers for backward-compatible imports.
 from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (  # noqa: F401
     COMPARISON_EVIDENCE_ID,
     COMPLETION_SUPPORTED_DIAGNOSIS,
@@ -47,11 +46,7 @@ from platform_proofs.scenarios.ai_incident_investigation.scenario_contract impor
     THROUGHPUT_EVIDENCE_ID,
     WORKLOAD_EVIDENCE_ID,
 )
-
 from platform_proofs.scenarios.ai_incident_investigation.tools import SCENARIO_TOOL_IDS
-from platform_proofs.scenarios.ai_incident_investigation.validation import (
-    apply_critic_claim_resolutions,
-)
 
 INVESTIGATOR_AGENT_ID = "incident_investigator"
 INVESTIGATOR_CAPABILITY = "incident_investigation.investigate"
@@ -93,8 +88,10 @@ class IncidentInvestigatorAgent(Agent):
         station_id: str,
         runtime_composition: ScenarioRuntimeComposition,
         incident_scope: IncidentScope,
+        evidence_store: object | None = None,
     ) -> None:
         from intergrax.tools.registry import ToolRegistry
+        from platform_proofs.scenarios.ai_incident_investigation.tools import ScenarioEvidenceStore
 
         if not isinstance(registry, ToolRegistry):
             raise TypeError("registry must be ToolRegistry")
@@ -102,6 +99,9 @@ class IncidentInvestigatorAgent(Agent):
         self._station_id = station_id
         self._runtime_composition = runtime_composition
         self._incident_scope = incident_scope
+        self._evidence_store = (
+            evidence_store if isinstance(evidence_store, ScenarioEvidenceStore) else None
+        )
 
     def get_contract(self) -> AgentContract:
         return AgentContract(
@@ -159,6 +159,7 @@ class IncidentInvestigatorAgent(Agent):
             is_revision=is_revision,
             critic_feedback=critic_feedback,
             prior_evidence=prior_state.evidence_nodes,
+            evidence_store=self._evidence_store,
         )
 
         evidence_nodes = list(gathering.evidence_nodes)
@@ -169,29 +170,30 @@ class IncidentInvestigatorAgent(Agent):
             critic_feedback=critic_feedback,
             is_revision=is_revision,
         )
-        pending_claim_set = convert_proposal_to_pending_claims(
+        pending_conversion = convert_proposal_to_pending_claims(
             proposal,
             prior_claim_set=prior_state.claim_set,
+            prior_bindings=prior_state.claim_hypothesis_bindings,
             critic_feedback=critic_feedback,
         )
+        pending_claim_set = pending_conversion.claim_set
+        claim_bindings = pending_conversion.bindings
         completion_mode = completion_mode_from_proposal(proposal)
-        domain_payload_pre = {
-            "evidence_nodes": evidence_nodes,
-            "completion_mode": completion_mode,
-            "active_hypothesis": proposal.preferred_hypothesis_id,
-        }
-        claim_set = apply_critic_claim_resolutions(pending_claim_set, domain_payload_pre)
         emit_reasoning_observability(
             runtime_state=runtime_state,
             proposal=proposal,
             claim_set=pending_claim_set,
+            bindings=claim_bindings,
             is_revision=is_revision,
             critic_feedback=critic_feedback,
         )
 
         summary = build_investigation_summary(proposal, is_revision=is_revision)
         domain_payload = {
-            "claim_set": claim_set.model_dump(mode="json"),
+            "claim_set": pending_claim_set.model_dump(mode="json"),
+            "claim_hypothesis_bindings": [
+                binding.model_dump(mode="json") for binding in claim_bindings
+            ],
             "evidence_nodes": evidence_nodes,
             "reasoning_proposal": proposal.model_dump(mode="json"),
             "active_hypothesis": proposal.preferred_hypothesis_id,

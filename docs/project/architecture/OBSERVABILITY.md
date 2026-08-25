@@ -27,7 +27,7 @@ Observability addresses this through typed identity, `RuntimeEvent`, HOS, strict
 | Concern | Summary |
 | -------- | -------- |
 | **Canonical execution envelope** | `RuntimeEvent` — meaningful execution transition with full typed identity |
-| **Identity** | `TaskId` → `RunId` → `AttemptId` → `EventId` — structural, not metadata fallback |
+| **Identity** | **TARGET:** `TaskId` → `RunId` → `AttemptId` → `ExecutionId` → `EventId`; **CURRENT:** spine stops at `AttemptId` → `EventId` (no canonical `ExecutionId` yet) |
 | **Execution scope** | `RuntimeEvent` is execution-scoped only — all four IDs required |
 | **Non-execution signals** | Platform observability signal — lifecycle without synthetic execution identity |
 | **Persistence** | `RuntimeEventPersistence` — canonical execution history |
@@ -58,7 +58,18 @@ Observability addresses this through typed identity, `RuntimeEvent`, HOS, strict
 </picture>
 </a>
 
-**Primary mental model:**
+**Cross-domain causal view (TARGET ARCHITECTURE):** Execution produces facts; Observability records; DIAG interprets along the canonical causal chain.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-observability-diag-causal-flow-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-observability-diag-causal-flow-light.svg">
+  <img
+    alt="Execution produces lifecycle facts; Observability records canonical evidence; DIAG interprets Event through Execution, parent Executions, Attempt, Run, and Task."
+    src="assets/unified-execution-observability-diag-causal-flow-light.svg"
+  >
+</picture>
+
+**Primary mental model (CURRENT IMPLEMENTATION spine — TARGET adds `ExecutionId` and Execution Tree):**
 
 ```text
 Task
@@ -816,15 +827,152 @@ await reporter.report(
 
 `MessageBusTaskRef.task_id` is opaque transport identity (`str`); `RuntimeExecutionRef.task_id` is canonical `TaskId`. Identical text may appear on both sides without collapsing domains — isolation is enforced by typed contracts, not lexical format rules.
 
-**Canonical persistence (P1):** **contract DONE** — `CausalEvidencePersistence` defines the platform-owned, backend-neutral append/read contract for typed non-execution causal evidence (`append`, `list_for_execution`, `list_for_transport_task`). `InMemoryCausalEvidencePersistence` is the reference implementation for tests and conformance only. **Production durable backend: DONE** — `DocumentStoreCausalEvidencePersistence` (requires `ConditionalDocumentStore`) is wired through `wire_causal_evidence_persistence(document_store=...)`. `DistributedKVStore` is **not** supported for causal evidence persistence (no prefix-query primitives for indexed reads). **Writer integration: NOT YET** (DIAG-1I). `RuntimeEventPersistence` remains execution-scoped only and is unchanged.
+**Canonical persistence (P1):** **contract DONE** — `CausalEvidencePersistence` defines the platform-owned, backend-neutral append/read contract for typed non-execution causal evidence (`append`, `list_for_execution`, `list_for_transport_task`). `InMemoryCausalEvidencePersistence` is the reference implementation for tests and conformance only. **Production durable backend: DONE** — `DocumentStoreCausalEvidencePersistence` (requires `ConditionalDocumentStore`) is wired through `wire_causal_evidence_persistence(document_store=...)`. `DistributedKVStore` is **not** supported for causal evidence persistence (no prefix-query primitives for indexed reads). **Writer integration: DONE** for supported background execution paths (DIAG-1I). Queue-enabled Tier-3 hosts must supply platform `DistributedKVStore` identity persistence and `ConditionalDocumentStore` causal evidence persistence via host composition (`resolve_host_queue_execution_dependencies`); inline-only hosts remain unaffected. `RuntimeEventPersistence` remains execution-scoped only and is unchanged.
 
-**Required vs optional durability (BG-EXEC-3):** Intergrax distinguishes optional telemetry from required audit evidence. Failure to persist evidence required to establish an execution boundary fails closed before business execution begins. The initial required fact is `TRANSPORT_TASK_TRIGGERED_EXECUTION` (transport ref → canonical execution identity). `RuntimeEventBus` best-effort persistence is not the admission mechanism for this causal evidence; admission is platform-owned via `admit_background_execution_handler` in `required_audit_evidence.py` (wired at worker boundary in DIAG-1I).
+**Canonical record vs indexes (DIAG-1D-R1):** `record:<evidence_id>` is the **only** source of truth for full `PlatformCausalEvidence`. Secondary `exec:` / `transport:` rows are discovery references (`evidence_id` only) and are never authoritative copies. Queries resolve index → canonical record → scope validation and return results deterministically ordered by `(recorded_at, evidence_id)` ascending — independent of physical backend insertion order. `append` succeeds only after the canonical record and both required indexes are present; partial writes fail closed and identical retries repair missing indexes.
+
+**Required vs optional durability (BG-EXEC-3):** Intergrax distinguishes optional telemetry from required audit evidence. Failure to persist evidence required to establish an execution boundary fails closed before business execution begins. The initial required fact is `TRANSPORT_TASK_TRIGGERED_EXECUTION` (transport ref → canonical execution identity). `RuntimeEventBus` best-effort persistence is not the admission mechanism for this causal evidence; admission is platform-owned via `admit_background_execution_handler` in `required_audit_evidence.py`, invoked at all supported worker boundaries before `execute_logical_task`. Worker retries/redeliveries mint a new `AttemptId` and persist a new causal evidence record; exporter failure does not invalidate already-persisted required evidence.
 
 **Optional export projection:** `envelope_from_causal_evidence` maps to `ExportRecordKind.DIAGNOSTIC` with typed `CausalEvidenceExportSource` on `ObservabilityExportEnvelope` — a **lossless export projection**, not canonical persistence. Export backends (Sentry, Datadog, OTLP, `InMemoryObservabilityExporter`) are optional sinks; the causal fact must not depend on them.
 
 **Evidence identity:** `PlatformCausalEvidence.evidence_id` currently uses `EventId` (`evt_…`), which may be execution-event scoped — dedicated `CausalEvidenceId` is a deferred decision point if non-execution evidence persistence lands.
 
 **Code references:** `causal_evidence.py` · `causal_evidence_persistence.py` · `memory_causal_evidence_persistence.py` · `document_store_causal_evidence_persistence.py` · `causal_evidence_record_codec.py` · `causal_evidence_export.py` · `export_boundary.py`.
+
+### Execution reconstruction (DIAG-2)
+
+**Canonical truth (sources of record):**
+
+| Store | Role |
+|-------|------|
+| `RuntimeEventPersistence` | Execution truth — accepted `RuntimeEvent` history with persistence-owned `ExecutionEventPosition` |
+| `CausalEvidencePersistence` | Relation truth — immutable `PlatformCausalEvidence` linking transport to execution |
+
+**Derived read model (NOT persisted, NOT a source of truth):** `ExecutionReconstruction` is computed at read time by `ExecutionReconstructor.reconstruct_execution(tenant_id, task_id, run_id)`. It joins causal evidence and positioned runtime events for one canonical execution scope. No diagnosis, anomaly classification, or root-cause semantics — factual reconstruction only (DIAG-3+).
+
+**Ordering rules (do not mix):**
+
+| Dimension | Canonical order |
+|-----------|-----------------|
+| Runtime events | `ExecutionEventPosition` via `RuntimeEventPersistence.list_positioned_for_run` — **not** `timestamp` |
+| Causal evidence | `(recorded_at, evidence_id)` ascending — persistence contract |
+| Attempts (projection) | First `ExecutionEventPosition` per attempt when runtime events exist; otherwise earliest causal `(recorded_at, evidence_id)` — display order only, not identity |
+
+**Attempt set:** union of `AttemptId` values from causal evidence targets **and** from runtime events (no inner join). Evidence-only and event-only attempts are retained without anomaly labeling.
+
+**Completeness:** runtime history pagination doubles `limit` until the batch is smaller than `limit` or `max_limit` is reached with a full batch; `runtime_history_completeness` is `complete` or `truncated`. Reconstruction must not claim complete history when truncated.
+
+**Integrity:** facts returned outside the requested `tenant_id` / `TaskId` / `RunId` scope fail closed with `ExecutionReconstructionIntegrityError` — no silent filtering.
+
+**Code references:** `intergrax/runtime/diagnostics/execution_reconstruction.py`.
+
+### Lifecycle anomaly analysis (DIAG-3)
+
+**Input:** `ExecutionReconstruction` from DIAG-2 — no independent persistence reads.
+
+**Derived read model (NOT persisted, NOT a source of truth):** `LifecycleAnalysis` is computed at read time by `LifecycleAnomalyAnalyzer.analyze(reconstruction)`. It reports deterministic factual invariant violations on the reconstruction. No diagnosis, root cause, confidence, remediation, LLM, or event emission.
+
+**Implemented anomaly kinds (v1):**
+
+| Kind | Scope | Condition |
+|------|-------|-----------|
+| `CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY` | attempt | `has_transport_evidence` and not `has_runtime_events` |
+| `RUNTIME_ATTEMPT_WITHOUT_CAUSAL_EVIDENCE` | attempt | execution has transport evidence elsewhere; attempt has runtime events but no causal evidence |
+| `RUNTIME_HISTORY_TRUNCATED` | execution | `runtime_history_completeness == truncated` |
+| `MULTIPLE_TERMINAL_OUTCOMES` | attempt or execution | conflicting final lifecycle events per TRACE-ASOF-2 reducer semantics |
+| `EVENT_AFTER_TERMINAL` | attempt or execution | lifecycle event after final `COMPLETED`/`CANCELLED` per TRACE-ASOF-2 reducer semantics |
+| `DISALLOWED_AFTER_FAILED` | attempt or execution | disallowed lifecycle transition while run is `FAILED` and before a valid `RETRY_STARTED` per TRACE-ASOF-2 reducer semantics |
+
+**Lifecycle semantics source:** reuse `intergrax/runtime/events/asof_projection.py` (`apply_lifecycle_event`) — do not invent parallel state machines. Retry attempts (`A1` failed + `A2` completed) are evaluated on the canonical positioned stream; cross-attempt contradictions are not flagged when retry semantics allow them.
+
+**Truncation safety:** when history is truncated, only violations provable from the visible prefix are reported; missing terminal events beyond truncation are not inferred.
+
+**Ordering:** findings sorted for presentation by earliest supporting `ExecutionEventPosition`, else earliest causal `(recorded_at, evidence_id)`, then kind, then `AttemptId`.
+
+**Code references:** `intergrax/runtime/diagnostics/lifecycle_analysis.py`.
+
+### Operator diagnostic assessment (DIAG-4)
+
+**Inputs:** `ExecutionReconstruction` (DIAG-2) and `LifecycleAnalysis` (DIAG-3) for the same `tenant_id` / `TaskId` / `RunId` — **no independent persistence reads**.
+
+**Derived read model (NOT persisted, NOT a source of truth):** `DiagnosticAssessment` is computed at read time by `DiagnosticAssessmentBuilder.assess(reconstruction, lifecycle)`. It answers what the platform can **prove** to an operator from canonical facts — not root-cause guessing.
+
+| Layer | Question answered |
+|-------|-------------------|
+| DIAG-2 | What canonical facts exist? |
+| DIAG-3 | Which lifecycle invariants do those facts violate? |
+| DIAG-4 | What can the operator conclude from those violations? |
+
+**Certainty contract (v1):** `DiagnosticCertainty.PROVEN` for emitted findings; `INSUFFICIENT_EVIDENCE` reserved for future use. No numeric confidence scores.
+
+**Findings vs limitations:**
+
+| Output | Role |
+|--------|------|
+| `DiagnosticFinding` | Evidence-backed operator conclusion with provenance |
+| `DiagnosticLimitation` | Factual constraint preventing stronger conclusions (e.g. truncated history) |
+
+**v1 mapping (deterministic, no LLM, no payload heuristics):**
+
+| Lifecycle anomaly | Diagnostic output | Certainty |
+|-------------------|-------------------|-----------|
+| `CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY` | `DiagnosticFinding` | PROVEN |
+| `RUNTIME_ATTEMPT_WITHOUT_CAUSAL_EVIDENCE` | `DiagnosticFinding` | PROVEN |
+| `RUNTIME_HISTORY_TRUNCATED` | `DiagnosticLimitation` | n/a (limitation) |
+| `MULTIPLE_TERMINAL_OUTCOMES` | `DiagnosticFinding` | PROVEN |
+| `EVENT_AFTER_TERMINAL` | `DiagnosticFinding` | PROVEN |
+| `DISALLOWED_AFTER_FAILED` | `DiagnosticFinding` | PROVEN |
+
+Each `DiagnosticFinding` retains `source_anomaly_kind: LifecycleAnomalyKind` for auditability (`canonical facts → anomaly → operator conclusion`). Scope mismatch between reconstruction and lifecycle raises `DiagnosticAssessmentIntegrityError` (fail closed).
+
+**Explicit non-goals (v1):** no root-cause inference (worker crash, network, broker loss, etc. unless canonically proven elsewhere); no “healthy execution” positive diagnosis when anomalies are absent; no remediation suggestions; no event emission back to `RuntimeEventBus`; no persistence layer; no LLM/agent interpretation (future DIAG-8 may consume typed `DiagnosticAssessment` output without rewriting canonical evidence).
+
+**Future boundary:** richer root-cause interpretation may consume `DiagnosticAssessment` plus additional typed observability facts — it must never rewrite canonical evidence.
+
+**Code references:** `intergrax/runtime/diagnostics/diagnostic_assessment.py`.
+
+### Multi-execution problem grouping (DIAG-5A)
+
+**Inputs:** `DiagnosticAssessment[]` from DIAG-4 — **no** re-run of reconstruction, lifecycle analysis, or assessment.
+
+**Derived analytical output (NOT persisted, NOT canonical problem identity):** `ProblemGroupingEngine.group(assessments, strategy_id=...)` answers which executions a **selected strategy** proposes as sharing a recurring problem pattern. A candidate means *"strategy says these subjects are related under this grouping method"* — **not** *"platform has proven identical root cause"*.
+
+| Layer | Question answered |
+|-------|-------------------|
+| DIAG-4 | What can the operator conclude for one execution? |
+| DIAG-5A | Which executions does a strategy propose as the same recurring problem? |
+
+**Pipeline:**
+
+```text
+DiagnosticAssessment[]
+  → ProblemGroupingEngine
+  → ProblemGroupingSubject[]          # normalized immutable view
+  → ProblemGroupingStrategy           # explicit strategy_id selection
+  → ProblemGroupingStrategyResult     # raw plugin output
+  → platform validation
+  → ProblemGroupingResult             # candidates + ungrouped_subjects
+```
+
+**Plugin-capable strategy layer:** one `ProblemGroupingStrategy` Protocol, many implementations behind `ProblemGroupingStrategyRegistry` (explicit register/resolve — no reflection, no entry-point discovery in DIAG-5A). Future strategies may be deterministic structural (DIAG-5B), semantic/embedding, ML clustering, LLM, or hybrid — all behind the same contract.
+
+**Strategy selection:** explicit — `engine.group(..., strategy_id=ProblemGroupingStrategyId(...))`. No silent default strategy.
+
+**Tenant isolation:** one invocation must contain subjects with a single `tenant_id`; mixed tenants fail closed with `ProblemGroupingIntegrityError` before strategy invocation.
+
+**Overlap semantics:** overlapping candidates are **allowed** (one execution may appear in multiple proposed groups). Stable problem assignment is deferred to DIAG-5D.
+
+**Ungrouped subjects:** `ProblemGroupingResult.ungrouped_subjects` lists input subjects not present in any validated candidate.
+
+**Provenance:** each `ProblemGroupingCandidate` carries `ProblemGroupingProvenance` with `strategy_id`, `strategy_version`, `method` (`ProblemGroupingMethod`), `supporting_subject_refs`, and optional typed `basis` (e.g. `DeterministicProblemGroupingBasis` for DIAG-5B). Future ML/LLM strategies attach strategy-specific basis evidence without altering the engine.
+
+**No universal numeric confidence:** deterministic exact match, embedding similarity, classifier probability, and LLM self-report are not semantically equivalent — strategy-specific scores belong in typed basis/evidence, not a platform-wide `confidence: float`.
+
+**Canonical boundary:** no `ProblemId`, no persistence, no `RuntimeEvent` emission, no mutation of `DiagnosticAssessment`. Model output can never rewrite canonical evidence.
+
+**Explicit non-goals (DIAG-5A):** no embeddings, ML, LLM, clustering libraries, vector DB, background jobs, or stable problem lifecycle (DIAG-5D).
+
+**Code references:** `intergrax/runtime/diagnostics/problem_grouping.py`.
 
 ---
 

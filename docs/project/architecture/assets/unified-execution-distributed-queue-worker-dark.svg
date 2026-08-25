@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+<title id="title">Distributed queue / worker execution</title>
+<desc id="desc">Transport changes location, not canonical Task/Run/Attempt/Execution identity.</desc>
+<rect width="1200" height="900" fill="#0d1117"/>
+<rect x="28" y="24" width="1144" height="852" rx="22" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+<text x="600" y="66" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="29" font-weight="700" fill="#f0f6fc">Distributed queue / worker execution</text>
+<text x="600" y="96" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#9da7b3">Transport changes location, not canonical Task/Run/Attempt/Execution identity.</text>
+<rect x="100" y="145" width="240" height="75" rx="12" fill="#22163a" stroke="#a371f7" stroke-width="2"/>
+<text x="220.0" y="179.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#f0f6fc">Execution Runtime</text>
+<text x="220.0" y="202.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#9da7b3">owns runtime identity</text>
+<line x1="340" y1="182" x2="430" y2="182" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M430,182 L421.7,187.6 L421.7,176.4 Z" fill="#c9d1d9"/>
+<rect x="430" y="145" width="300" height="75" rx="12" fill="#0d2540" stroke="#58a6ff" stroke-width="2"/>
+<text x="580.0" y="179.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#f0f6fc">Execution Envelope</text>
+<text x="580.0" y="202.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#9da7b3">TaskId · RunId · AttemptId · ExecutionId</text>
+<line x1="730" y1="182" x2="820" y2="182" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M820,182 L811.7,187.6 L811.7,176.4 Z" fill="#c9d1d9"/>
+<rect x="820" y="145" width="240" height="75" rx="12" fill="#2b240e" stroke="#d29922" stroke-width="2"/>
+<text x="940.0" y="179.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#f0f6fc">Queue / Broker</text>
+<text x="940.0" y="202.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#9da7b3">message_id / delivery_id</text>
+<line x1="940" y1="220" x2="940" y2="310" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M940,310 L934.4,301.7 L945.6,301.7 Z" fill="#c9d1d9"/>
+<rect x="820" y="315" width="240" height="75" rx="12" fill="#102a17" stroke="#3fb950" stroke-width="2"/>
+<text x="940.0" y="349.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#f0f6fc">Worker W-17</text>
+<text x="940.0" y="372.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#9da7b3">location / lease identity</text>
+<line x1="820" y1="352" x2="700" y2="352" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M700,352 L708.3,346.4 L708.3,357.6 Z" fill="#c9d1d9"/>
+<rect x="400" y="315" width="300" height="75" rx="12" fill="#22163a" stroke="#a371f7" stroke-width="2"/>
+<text x="550.0" y="349.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#f0f6fc">same Execution E42</text>
+<text x="550.0" y="372.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#9da7b3">worker does NOT mint runtime identity</text>
+<line x1="550" y1="390" x2="550" y2="470" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M550,470 L544.4,461.7 L555.6,461.7 Z" fill="#c9d1d9"/>
+<rect x="360" y="475" width="380" height="70" rx="12" fill="#102a17" stroke="#3fb950" stroke-width="2"/>
+<text x="550.0" y="507.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#f0f6fc">Meaningful work</text>
+<text x="550.0" y="530.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#9da7b3">only after durable causal admission</text>
+<rect x="90" y="590" width="460" height="150" rx="12" fill="#0d2540" stroke="#58a6ff" stroke-width="2"/>
+<text x="320.0" y="662.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#f0f6fc">Canonical runtime identity</text>
+<text x="320.0" y="685.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#9da7b3">TaskId T9 · RunId R2 · AttemptId A1 · ExecutionId E42 · preserved across enqueue, delivery, redelivery</text>
+<rect x="650" y="590" width="460" height="150" rx="12" fill="#2b240e" stroke="#d29922" stroke-width="2"/>
+<text x="880.0" y="662.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#f0f6fc">Infrastructure identity</text>
+<text x="880.0" y="685.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#9da7b3">broker job · message · delivery · lease · worker · useful evidence, never replacement for ExecutionId</text>
+<line x1="550" y1="665" x2="650" y2="665" stroke="#c9d1d9" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="250" y="785" width="700" height="60" rx="12" fill="#351316" stroke="#f85149" stroke-width="2"/>
+<text x="600.0" y="812.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#f0f6fc">Crash / redelivery</text>
+<text x="600.0" y="835.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#9da7b3">same ExecutionId when resuming or redelivering the same logical work</text>
+<text x="600" y="858" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#9da7b3">Canonical conceptual architecture — see UNIFIED_EXECUTION_ARCHITECTURE.md for normative semantics.</text>
+</svg>

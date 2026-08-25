@@ -16,6 +16,7 @@ from intergrax.runtime.observability.causal_evidence import PlatformCausalEviden
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
     CausalEvidencePersistenceConflictError,
+    CausalEvidencePersistenceIntegrityError,
 )
 from intergrax.runtime.observability.document_store_causal_evidence_persistence import (
     DocumentStoreCausalEvidencePersistence,
@@ -36,6 +37,22 @@ from tests.unit.runtime.vendor_knowledge._fakes import (
 )
 
 pytestmark = pytest.mark.unit
+
+
+class _FailingPutIfAbsentDocumentStore(InMemoryDocumentStore):
+    """In-memory store that raises once on selected put_if_absent keys."""
+
+    def __init__(self, *, fail_keys: frozenset[tuple[str, str]] = frozenset()) -> None:
+        super().__init__()
+        self._fail_keys = fail_keys
+        self._failed_keys: set[tuple[str, str]] = set()
+
+    def put_if_absent(self, document: DocumentRecord) -> bool:
+        key = (document.partition_key, document.row_key)
+        if key in self._fail_keys and key not in self._failed_keys:
+            self._failed_keys.add(key)
+            raise RuntimeError("simulated causal evidence index write failure")
+        return super().put_if_absent(document)
 
 
 class _KV(DistributedKVStore):
@@ -220,11 +237,11 @@ def test_document_store_malformed_record_fails_explicitly() -> None:
         DocumentRecord(
             partition_key=partition_key,
             row_key=row_key,
-            data={"schema_version": "broken", "payload": "not-a-dict"},
+            data={"schema_version": "broken", "evidence_id": "not-valid"},
         )
     )
 
-    with pytest.raises(ValueError, match="causal evidence"):
+    with pytest.raises(CausalEvidencePersistenceIntegrityError):
         persistence.list_for_execution(
             tenant_id=evidence.tenant_id,
             task_id=evidence.target.task_id,
@@ -240,3 +257,190 @@ def test_memory_concurrent_conflicting_append_raises() -> None:
     store.append(first)
     with pytest.raises(CausalEvidencePersistenceConflictError):
         store.append(second)
+
+
+def test_document_store_concurrent_conflicting_append_one_winner() -> None:
+    store = InMemoryDocumentStore()
+    evidence_id = sample_causal_evidence().evidence_id
+    first = sample_causal_evidence(
+        tenant_id="tenant-conflict-race",
+        evidence_id=evidence_id,
+        transport_task_id="winner-transport",
+    )
+    second = sample_causal_evidence(
+        tenant_id="tenant-conflict-race",
+        evidence_id=evidence_id,
+        transport_task_id="loser-transport",
+    )
+    barrier = threading.Barrier(2)
+    results: list[PlatformCausalEvidence] = []
+    errors: list[BaseException] = []
+
+    def _append(evidence: PlatformCausalEvidence) -> None:
+        persistence = DocumentStoreCausalEvidencePersistence(store)
+        try:
+            barrier.wait(timeout=5)
+            results.append(persistence.append(evidence))
+        except BaseException as exc:  # noqa: BLE001
+            errors.append(exc)
+        finally:
+            persistence.close()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [
+            executor.submit(_append, first),
+            executor.submit(_append, second),
+        ]
+        for future in futures:
+            future.result(timeout=10)
+
+    assert len(results) == 1
+    assert len(errors) == 1
+    assert isinstance(errors[0], CausalEvidencePersistenceConflictError)
+    winner = results[0]
+    assert winner in (first, second)
+
+    verifier = DocumentStoreCausalEvidencePersistence(store)
+    try:
+        by_execution = verifier.list_for_execution(
+            tenant_id=winner.tenant_id,
+            task_id=winner.target.task_id,
+            run_id=winner.target.run_id,
+        )
+        by_transport = verifier.list_for_transport_task(
+            tenant_id=winner.tenant_id,
+            provider=winner.source.provider,
+            transport_task_id=winner.source.task_id,
+        )
+        assert by_execution == (winner,)
+        assert by_transport == (winner,)
+        loser = second if winner == first else first
+        assert verifier.list_for_transport_task(
+            tenant_id=loser.tenant_id,
+            provider=loser.source.provider,
+            transport_task_id=loser.source.task_id,
+        ) == ()
+    finally:
+        verifier.close()
+
+
+def test_document_store_conflicting_append_does_not_create_loser_indexes() -> None:
+    store = InMemoryDocumentStore()
+    evidence_id = sample_causal_evidence().evidence_id
+    original = sample_causal_evidence(
+        tenant_id="tenant-conflict-index",
+        evidence_id=evidence_id,
+        transport_task_id="original-transport",
+    )
+    conflicting = sample_causal_evidence(
+        tenant_id="tenant-conflict-index",
+        evidence_id=evidence_id,
+        transport_task_id="conflicting-transport",
+    )
+    persistence = DocumentStoreCausalEvidencePersistence(store)
+    persistence.append(original)
+    with pytest.raises(CausalEvidencePersistenceConflictError):
+        persistence.append(conflicting)
+
+    partition_key = f"intergrax.causal_evidence.v1:{original.tenant_id}"
+    loser_transport_key = (
+        partition_key,
+        f"transport:{conflicting.source.provider}:{conflicting.source.task_id}:{evidence_id}",
+    )
+    assert store.get(*loser_transport_key) is None
+
+
+def test_document_store_append_retries_after_first_index_write_failure() -> None:
+    evidence = sample_causal_evidence(
+        tenant_id="tenant-partial-exec",
+        provider="celery",
+        transport_task_id="partial-exec-transport",
+    )
+    partition_key = f"intergrax.causal_evidence.v1:{evidence.tenant_id}"
+    exec_key = (
+        partition_key,
+        f"exec:{evidence.target.task_id}:{evidence.target.run_id}:{evidence.evidence_id}",
+    )
+    store = _FailingPutIfAbsentDocumentStore(fail_keys=frozenset({exec_key}))
+    persistence = DocumentStoreCausalEvidencePersistence(store)
+
+    with pytest.raises(RuntimeError, match="simulated causal evidence index write failure"):
+        persistence.append(evidence)
+
+    assert DocumentStoreCausalEvidencePersistence(store).append(evidence) == evidence
+
+    verifier = DocumentStoreCausalEvidencePersistence(store)
+    try:
+        assert verifier.list_for_execution(
+            tenant_id=evidence.tenant_id,
+            task_id=evidence.target.task_id,
+            run_id=evidence.target.run_id,
+        ) == (evidence,)
+        assert verifier.list_for_transport_task(
+            tenant_id=evidence.tenant_id,
+            provider=evidence.source.provider,
+            transport_task_id=evidence.source.task_id,
+        ) == (evidence,)
+    finally:
+        verifier.close()
+
+
+def test_document_store_append_retries_after_transport_index_write_failure() -> None:
+    evidence = sample_causal_evidence(
+        tenant_id="tenant-partial-transport",
+        provider="celery",
+        transport_task_id="partial-transport",
+    )
+    partition_key = f"intergrax.causal_evidence.v1:{evidence.tenant_id}"
+    transport_key = (
+        partition_key,
+        f"transport:{evidence.source.provider}:{evidence.source.task_id}:{evidence.evidence_id}",
+    )
+    store = _FailingPutIfAbsentDocumentStore(fail_keys=frozenset({transport_key}))
+    persistence = DocumentStoreCausalEvidencePersistence(store)
+
+    with pytest.raises(RuntimeError, match="simulated causal evidence index write failure"):
+        persistence.append(evidence)
+
+    assert persistence.append(evidence) == evidence
+
+    assert persistence.list_for_execution(
+        tenant_id=evidence.tenant_id,
+        task_id=evidence.target.task_id,
+        run_id=evidence.target.run_id,
+    ) == (evidence,)
+    assert persistence.list_for_transport_task(
+        tenant_id=evidence.tenant_id,
+        provider=evidence.source.provider,
+        transport_task_id=evidence.source.task_id,
+    ) == (evidence,)
+
+
+def test_document_store_orphan_index_without_canonical_fails_closed() -> None:
+    store = InMemoryDocumentStore()
+    evidence = sample_causal_evidence(
+        tenant_id="tenant-orphan",
+        provider="celery",
+        transport_task_id="orphan-transport",
+    )
+    partition_key = f"intergrax.causal_evidence.v1:{evidence.tenant_id}"
+    store.put(
+        DocumentRecord(
+            partition_key=partition_key,
+            row_key=(
+                f"exec:{evidence.target.task_id}:{evidence.target.run_id}:{evidence.evidence_id}"
+            ),
+            data={
+                "schema_version": "intergrax.causal_evidence.index.v1",
+                "evidence_id": str(evidence.evidence_id),
+            },
+        )
+    )
+
+    persistence = DocumentStoreCausalEvidencePersistence(store)
+    with pytest.raises(CausalEvidencePersistenceIntegrityError):
+        persistence.list_for_execution(
+            tenant_id=evidence.tenant_id,
+            task_id=evidence.target.task_id,
+            run_id=evidence.target.run_id,
+        )

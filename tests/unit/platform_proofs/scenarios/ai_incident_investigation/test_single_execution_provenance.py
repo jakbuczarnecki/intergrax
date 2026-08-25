@@ -94,8 +94,14 @@ async def test_run_step_executes_telemetry_once_via_tool_runtime() -> None:
     assert telemetry_node["payload"]["availability"] == "available"
     parsed = parse_telemetry_payload(telemetry_node["payload"])
     assert parsed.signal_state == "intermittent_degraded"
-    h3_claim = next(c for c in domain["claim_set"]["claims"] if c["claim_id"] == str(REVISED_CLAIM_ID))
-    assert h3_claim["resolution"] == ClaimResolution.SUPPORTED.value
+    bindings = domain.get("claim_hypothesis_bindings", [])
+    h3_claim_id = next(
+        binding["claim_id"] for binding in bindings if binding.get("hypothesis_id") == "H3"
+    )
+    h3_claim = next(
+        claim for claim in domain["claim_set"]["claims"] if claim["claim_id"] == h3_claim_id
+    )
+    assert h3_claim["resolution"] == ClaimResolution.PENDING.value
     assert str(TELEMETRY_EVIDENCE_ID) in h3_claim["supporting_evidence_ids"]
 
 

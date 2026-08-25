@@ -22,6 +22,9 @@ from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_policy import RetryPolicy
 from intergrax.queueing.worker.rate_limit_event import RateLimitEvent
 from intergrax.queueing.worker.retry_event import RetryEvent
+from intergrax.runtime.observability.causal_evidence_persistence import (
+    CausalEvidencePersistence,
+)
 
 
 @dataclass(frozen=True)
@@ -100,6 +103,7 @@ def create_celery_worker_app(
     rate_limit_config: Optional[Callable[[str], Tuple[int, float]]] = None,
     on_rate_limited: Optional[Callable[[RateLimitEvent], None]] = None,
     on_retry_scheduled: Optional[Callable[[RetryEvent], None]] = None,
+    causal_evidence_persistence: CausalEvidencePersistence,
     **config_overrides: object,
 ) -> object:
     """Tier-0 worker app with dispatcher registered (``intergrax.execute``)."""
@@ -126,6 +130,7 @@ def create_celery_worker_app(
         rate_limit_config=rate_limit_config,
         on_rate_limited=on_rate_limited,
         on_retry_scheduled=on_retry_scheduled,
+        causal_evidence_persistence=causal_evidence_persistence,
     )
 
 

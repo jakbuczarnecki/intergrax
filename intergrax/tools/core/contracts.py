@@ -20,6 +20,19 @@ class ToolRiskLevel(str, Enum):
     CRITICAL = "critical"
 
 
+class SideEffectRetrySafety(str, Enum):
+    """
+    Positive retry authorization for side-effectful tools (TOOLS-05).
+
+    ``NOT_RETRY_SAFE`` is the default — automatic runtime retry is forbidden
+  until a tool contract explicitly proves retry safety.
+    """
+
+    NOT_RETRY_SAFE = "not_retry_safe"
+    IDEMPOTENT = "idempotent"
+    EXPLICITLY_RETRY_SAFE = "explicitly_retry_safe"
+
+
 @dataclass(frozen=True, slots=True)
 class ToolRetryPolicy:
     """
@@ -66,6 +79,7 @@ class ToolContract:
     risk_level: ToolRiskLevel = ToolRiskLevel.LOW
     timeout_ms: int = 30_000
     retry_policy: ToolRetryPolicy = ToolRetryPolicy()
+    side_effect_retry_safety: SideEffectRetrySafety = SideEffectRetrySafety.NOT_RETRY_SAFE
     injects_context: bool = False
     category: str = ""
     tags: tuple[str, ...] = ()

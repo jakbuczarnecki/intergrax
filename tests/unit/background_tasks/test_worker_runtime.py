@@ -14,6 +14,9 @@ from intergrax.background_tasks.worker_runtime import WorkerRuntime
 from intergrax.runtime.background_execution.identity_persistence import (
     wire_background_execution_identity_persistence,
 )
+from intergrax.runtime.observability.memory_causal_evidence_persistence import (
+    InMemoryCausalEvidencePersistence,
+)
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.queueing.contracts.task_queue import TaskRequest, TaskStatus
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
@@ -120,6 +123,7 @@ def test_worker_runtime_emits_lifecycle_events() -> None:
         provider="kafka",
         event_emitter=collector,
         identity_persistence=wire_background_execution_identity_persistence(kv_store=kv),
+        causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
     )
     request = TaskRequest(
         tenant_id="tenant-a",

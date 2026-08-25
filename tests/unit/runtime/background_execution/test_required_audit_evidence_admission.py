@@ -254,6 +254,6 @@ def test_worker_retry_mints_new_attempt_and_new_evidence() -> None:
         run_id=first_identity.run_id,
     )
     assert len(stored) == 2
-    assert stored[0].target.attempt_id == first_identity.attempt_id
-    assert stored[1].target.attempt_id == second_identity.attempt_id
+    stored_attempts = {record.target.attempt_id for record in stored}
+    assert stored_attempts == {first_identity.attempt_id, second_identity.attempt_id}
     assert stored[0].evidence_id != stored[1].evidence_id

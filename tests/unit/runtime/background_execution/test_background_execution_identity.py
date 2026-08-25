@@ -20,6 +20,9 @@ from intergrax.runtime.background_execution.identity_persistence import (
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
 )
+from intergrax.runtime.observability.memory_causal_evidence_persistence import (
+    InMemoryCausalEvidencePersistence,
+)
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from tests.unit.runtime.vendor_knowledge._fakes import InMemoryDocumentStore as PlainDocumentStore
 
@@ -270,6 +273,7 @@ def test_broker_redelivery_preserves_task_and_run() -> None:
         kv_store=kv,
         provider_name="rabbitmq",
         identity_persistence=KvBackgroundExecutionIdentityPersistence(kv),
+        causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
     )
     message = {
         "task_id": "broker-transport-1",

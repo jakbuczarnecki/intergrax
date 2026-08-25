@@ -178,7 +178,7 @@ Deferred:     hierarchical LLM category pass (default OFF) · optional L1 critic
 
 ### TOOLS-SIDE-EFFECT-SAFETY — Idempotency identity, retry authorization, outcome states (Protocol v2 · 2026-08-18)
 
-**Status:** `PLANNED`
+**Status:** `IMPLEMENTED` (`6746106f9`; R1 effect-certainty correction `9046cfeda` — independent verification pending)
 **Priority:** P1
 **Type:** Arch / Wire / Proof
 **Source:** [`AUDIT-20260818-TOOLS-04`](../../audit_results/2026-08-18/TOOLS.md), [`AUDIT-20260818-TOOLS-05`](../../audit_results/2026-08-18/TOOLS.md), [`AUDIT-20260818-TOOLS-06`](../../audit_results/2026-08-18/TOOLS.md)

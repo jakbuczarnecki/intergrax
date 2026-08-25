@@ -79,10 +79,10 @@ Every canonical architecture artifact is classified **exactly once**. Do not pro
 
 | Class | Meaning | Examples |
 |-------|---------|----------|
-| **META_ARCHITECTURE** | Platform-wide governance or hub index — not a 1:1 domain pair | [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) · this hub |
+| **META_ARCHITECTURE** | Platform-wide architecture governance, canonical cross-domain semantic models, or architecture hubs/indexes — not a 1:1 domain implementation plan | [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) · [UNIFIED_EXECUTION_ARCHITECTURE.md](UNIFIED_EXECUTION_ARCHITECTURE.md) · this hub |
 | **DOMAIN** | One reusable capability — canonical architecture + implementation plan pair | All rows in [Domain pair index (primary 24)](#domain-pair-index-primary-24) plus additional canonical pairs below |
 | **FEATURE** | Cross-layer coordination — feature architecture/plan pair; domain owners retain runtime semantics | [`../capabilities/README.md`](../capabilities/README.md) · `TOKEN_OPTIMIZATION` · `LANGCHAIN_INDEPENDENCE` |
-| **SUPPORTING_MODEL / SATELLITE** | Typed model, ADR-backed adjunct, or domain satellite — subordinate to a domain owner | [`APPLICATION_RUNTIME_GRAPH_MODEL.md`](APPLICATION_RUNTIME_GRAPH_MODEL.md) · [`APPLICATION_DEPENDENCY_MODEL.md`](APPLICATION_DEPENDENCY_MODEL.md) · domain `satellites/` |
+| **SUPPORTING_MODEL / SATELLITE** | Typed model, ADR-backed adjunct, or domain satellite — subordinate to a domain owner | [APPLICATION_RUNTIME_GRAPH_MODEL.md](APPLICATION_RUNTIME_GRAPH_MODEL.md) · [APPLICATION_DEPENDENCY_MODEL.md](APPLICATION_DEPENDENCY_MODEL.md) · domain satellites/ |
 
 **Additional canonical DOMAIN pairs** (not in the primary twenty-four-row table — [`AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-01`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md)):
 
@@ -97,6 +97,13 @@ Every canonical architecture artifact is classified **exactly once**. Do not pro
 
 ---
 
+
+### Unified Execution Architecture (cross-domain meta-architecture)
+
+[UNIFIED_EXECUTION_ARCHITECTURE.md](UNIFIED_EXECUTION_ARCHITECTURE.md) is classified **once** as **META_ARCHITECTURE**. It coordinates platform-wide cross-domain Unified Execution semantics: identity hierarchy (TaskId → RunId → AttemptId → ExecutionId → EventId), Execution Tree, ownership boundaries, and UEA-INV-* invariants. It **does not** create a new platform DOMAIN or 1:1 implementation plan and **does not** compete with domain owners for detailed runtime contracts. DOMAIN architecture/plan pairs remain the owners of detailed contracts and runtime behavior: [UNIFIED_EXECUTION_RUNTIME.md](UNIFIED_EXECUTION_RUNTIME.md), [ORCHESTRATION.md](ORCHESTRATION.md), [NEXUS_EXECUTION_FLOW.md](NEXUS_EXECUTION_FLOW.md), [AGENT_CONTRACTS_AND_ASSEMBLY.md](AGENT_CONTRACTS_AND_ASSEMBLY.md), [GOVERNED_EXECUTION.md](GOVERNED_EXECUTION.md), [OBSERVABILITY.md](OBSERVABILITY.md), [RELIABILITY_FAILURE_AND_HITL.md](RELIABILITY_FAILURE_AND_HITL.md).
+
+**Diagram pack (supporting):** [UNIFIED_EXECUTION_ARCHITECTURE_DIAGRAMS.md](UNIFIED_EXECUTION_ARCHITECTURE_DIAGRAMS.md) — SUPPORTING_MODEL / SATELLITE specification for the twelve UEA architecture views (asset contract, embedding targets, README promotion candidate). Subordinate to UEA; not a domain pair.
+
 ## Four tiers
 
 ```text
@@ -107,7 +114,7 @@ Tier-3  applications/       deployable hosts
 ```
 
 Stack: Integration → Tool → Skill → Agent
-Execution: [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md)
+Execution: [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) (cross-domain model) · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) (UER domain)
 
 ---
 

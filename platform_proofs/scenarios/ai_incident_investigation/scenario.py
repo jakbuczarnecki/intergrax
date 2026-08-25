@@ -54,7 +54,14 @@ from platform_proofs.scenarios.ai_incident_investigation.investigator_agent impo
     WORKLOAD_EVIDENCE_ID,
     THROUGHPUT_EVIDENCE_ID,
 )
-from platform_proofs.scenarios.ai_incident_investigation.tools import register_scenario_tools
+from platform_proofs.scenarios.ai_incident_investigation.incident_reasoning import (
+    claim_id_for_hypothesis,
+    parse_claim_hypothesis_bindings,
+)
+from platform_proofs.scenarios.ai_incident_investigation.tools import (
+    ScenarioEvidenceStore,
+    register_scenario_tools,
+)
 from platform_proofs.scenarios.ai_incident_investigation.runtime_composition import (
     ScenarioRuntimeComposition,
     build_scenario_runtime_composition,
@@ -69,6 +76,7 @@ from platform_proofs.scenarios.ai_incident_investigation.execution_payload impor
 from platform_proofs.scenarios.ai_incident_investigation.incident_scope import IncidentScope
 from platform_proofs.scenarios.ai_incident_investigation.validation import (
     IncidentInvestigationValidationEngine,
+    apply_critic_claim_resolutions,
 )
 
 INVESTIGATOR_NODE_ID = "investigator-1"
@@ -142,6 +150,8 @@ class ScenarioExecutionResult:
     leak_scan_blob: str
     failed_critic_verdict: CriticVerdict | None
     evidence_challenge: EvidenceChallenge | None
+    claim_hypothesis_bindings: tuple[dict[str, Any], ...] = ()
+    challenged_claim_id: str | None = None
     planner_decisions: tuple[dict[str, Any], ...] = ()
     tool_execution_order: tuple[str, ...] = ()
     evidence_gathering_stop_reason: str = ""
@@ -153,6 +163,7 @@ class ScenarioRuntimeBundle:
     registry: ToolRegistry
     investigator: IncidentInvestigatorAgent
     runtime_composition: ScenarioRuntimeComposition
+    evidence_store: ScenarioEvidenceStore
 
 
 def build_runtime_bundle(
@@ -167,7 +178,7 @@ def build_runtime_bundle(
         else build_resolved_fixture()
     )
     registry = ToolRegistry()
-    register_scenario_tools(registry, resolved_fixture)
+    evidence_store = register_scenario_tools(registry, resolved_fixture)
     composition = runtime_composition or build_scenario_runtime_composition(registry=registry)
     investigator = IncidentInvestigatorAgent(
         registry=registry,
@@ -176,12 +187,14 @@ def build_runtime_bundle(
         incident_scope=IncidentScope.from_fixture_defaults(
             station_id=resolved_fixture.telemetry.station_id,
         ),
+        evidence_store=evidence_store,
     )
     return ScenarioRuntimeBundle(
         fixture=resolved_fixture,
         registry=registry,
         investigator=investigator,
         runtime_composition=composition,
+        evidence_store=evidence_store,
     )
 
 
@@ -265,10 +278,23 @@ async def execute_resolved_skeleton(
         if node.execution_result is None:
             raise RuntimeError("no agent executions produced")
         final_execution = node.execution_result
+        first_execution = final_execution
     else:
         final_execution = executions[-1]
+        first_execution = executions[0]
     domain_payload = domain_payload_from_execution(final_execution)
+    first_domain_payload = domain_payload_from_execution(first_execution)
     claim_set = dict(domain_payload.get("claim_set", {}))
+    bindings = parse_claim_hypothesis_bindings(domain_payload.get("claim_hypothesis_bindings"))
+    first_bindings = parse_claim_hypothesis_bindings(
+        first_domain_payload.get("claim_hypothesis_bindings")
+    )
+    resolved_claim_set = apply_critic_claim_resolutions(
+        EvidenceClaimSet.model_validate(claim_set),
+        domain_payload,
+        bindings=bindings,
+    )
+    claim_set = resolved_claim_set.model_dump(mode="json")
     evidence_nodes = tuple(domain_payload.get("evidence_nodes", []))
     initial_ids_raw = domain_payload.get("initial_evidence_ids", [])
     if isinstance(initial_ids_raw, list) and initial_ids_raw:
@@ -318,17 +344,22 @@ async def execute_resolved_skeleton(
     critic_verdict_passed = final_verdict.passed and final_validation.valid
 
     evidence_challenge: EvidenceChallenge | None = None
-    claim_set_model = EvidenceClaimSet.model_validate(claim_set)
+    claim_set_model = resolved_claim_set
     has_supported_diagnosis = any(
         claim.resolution is ClaimResolution.SUPPORTED for claim in claim_set_model.claims
     )
     completion_mode = str(domain_payload.get("completion_mode", COMPLETION_SUPPORTED_DIAGNOSIS))
 
     if critic_challenged and failed_critic_verdict is not None:
+        from intergrax.contracts.evidence_claims import validate_evidence_claim_id
+
+        challenged_claim_id = claim_id_for_hypothesis(first_bindings, "H1")
+        if challenged_claim_id is None:
+            challenged_claim_id = claim_id_for_hypothesis(bindings, "H1")
         claim_set, evidence_challenge = apply_challenge_lifecycle(
             claim_set,
             failed_critic_verdict,
-            claim_id=INITIAL_CLAIM_ID,
+            claim_id=validate_evidence_claim_id(challenged_claim_id or str(INITIAL_CLAIM_ID)),
             initial_evidence_ids=(WORKLOAD_EVIDENCE_ID, THROUGHPUT_EVIDENCE_ID),
             resolving_evidence_ids=(
                 TELEMETRY_EVIDENCE_ID,
@@ -368,6 +399,10 @@ async def execute_resolved_skeleton(
         leak_scan_blob=leak_blob,
         failed_critic_verdict=failed_critic_verdict,
         evidence_challenge=evidence_challenge,
+        claim_hypothesis_bindings=tuple(
+            binding.model_dump(mode="json") for binding in bindings
+        ),
+        challenged_claim_id=claim_id_for_hypothesis(first_bindings, "H1"),
         planner_decisions=planner_decisions,
         tool_execution_order=tool_execution_order,
         evidence_gathering_stop_reason=evidence_gathering_stop_reason,

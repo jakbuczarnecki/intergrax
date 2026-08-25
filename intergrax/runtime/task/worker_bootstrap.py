@@ -27,6 +27,9 @@ from intergrax.runtime.task.worker_payload import NEXUS_TASK_V2_LOGICAL_NAME
 from intergrax.runtime.background_execution.identity_persistence import (
     wire_background_execution_identity_persistence,
 )
+from intergrax.runtime.observability.causal_evidence_persistence import (
+    CausalEvidencePersistence,
+)
 
 
 def build_nexus_task_execution_registry(
@@ -64,6 +67,7 @@ def create_nexus_celery_worker_app(
     task_always_eager: bool = False,
     lifecycle=None,
     kv_store: Optional[DistributedKVStore] = None,
+    causal_evidence_persistence: CausalEvidencePersistence,
 ) -> Celery:
     """Production/lab composition root: Celery + ``nexus.task.v2`` handler."""
     if retry_policy is not None and lock_ttl_seconds is not None:
@@ -106,6 +110,7 @@ def create_nexus_celery_worker_app(
         identity_persistence=wire_background_execution_identity_persistence(
             kv_store=kv_store,
         ),
+        causal_evidence_persistence=causal_evidence_persistence,
     )
 
     return app

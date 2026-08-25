@@ -5,6 +5,9 @@
 from __future__ import annotations
 
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.runtime.observability.memory_causal_evidence_persistence import (
+    InMemoryCausalEvidencePersistence,
+)
 
 
 class DispatcherTestKVStore(DistributedKVStore):
@@ -43,3 +46,7 @@ class DispatcherTestKVStore(DistributedKVStore):
             return False
         self.set(tenant_id, key, new_value, ttl_seconds=ttl_seconds)
         return True
+
+
+def dispatcher_test_causal_persistence() -> InMemoryCausalEvidencePersistence:
+    return InMemoryCausalEvidencePersistence()

@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict
 
 from intergrax.contracts.lease_claim import LeaseOwnership
 from intergrax.contracts.persistence_topology import PersistenceTopology
+from intergrax.contracts.validation import validate_content_digest
 from intergrax.tools.execution_models import ToolExecutionResult
 
 
@@ -38,6 +39,21 @@ class ClaimOutcome(str, Enum):
     UNCERTAIN = "uncertain"
 
 
+class InvocationOperationIdentity(BaseModel):
+    """Logical operation bound to one idempotency ledger entry (TOOLS-04)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    tool_id: str
+    operation_fingerprint: str
+
+    def __init__(self, **data: object) -> None:
+        super().__init__(**data)
+        if not self.tool_id:
+            raise ValueError("tool_id is required for InvocationOperationIdentity")
+        validate_content_digest(self.operation_fingerprint)
+
+
 class InvocationClaim(LeaseOwnership):
     """Active or historical ownership record for one idempotency key."""
 
@@ -45,6 +61,7 @@ class InvocationClaim(LeaseOwnership):
 
     tenant_id: str
     key: str
+    operation_identity: InvocationOperationIdentity | None = None
 
 
 class ClaimResult(BaseModel):
@@ -61,8 +78,25 @@ class InvocationUncertaintyError(RuntimeError):
     """External side-effect outcome cannot be determined; reconciliation required."""
 
 
+class IdempotencyOperationConflictError(RuntimeError):
+    """Same tenant/key reused for a different logical operation; replay forbidden."""
+
+
 class ActiveInvocationClaimError(RuntimeError):
     """Another owner holds a valid active claim."""
+
+
+def assert_operation_identity_compatible(
+    stored: InvocationOperationIdentity | None,
+    requested: InvocationOperationIdentity | None,
+) -> None:
+    """Fail closed when ledger operation identity does not match the request."""
+    if stored is None and requested is None:
+        return
+    if stored is None or requested is None or stored != requested:
+        raise IdempotencyOperationConflictError(
+            "Idempotency key is bound to a different logical operation.",
+        )
 
 
 class IdempotencyStore(ABC):
@@ -96,12 +130,16 @@ class IdempotencyStore(ABC):
         key: str,
         owner_id: str,
         lease_seconds: int,
+        operation_identity: InvocationOperationIdentity | None = None,
     ) -> ClaimResult:
         """
         Atomically acquire invocation ownership or classify existing state.
 
         Only one active owner may succeed. Expired claims without completion
         transition to UNCERTAIN — they must not be treated as safe retry.
+
+        When ``operation_identity`` is provided, replay requires an exact match;
+        a different logical operation under the same key fails closed.
         """
         ...
 
@@ -116,6 +154,20 @@ class IdempotencyStore(ABC):
     ) -> None:
         """
         Transition STARTED -> COMPLETED when ``claim`` matches current ownership.
+
+        Raises ``StaleClaimError`` when fence or owner is superseded.
+        """
+        ...
+
+    @abstractmethod
+    def mark_uncertain_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+    ) -> None:
+        """
+        Transition STARTED -> UNCERTAIN when external outcome cannot be proven.
 
         Raises ``StaleClaimError`` when fence or owner is superseded.
         """

@@ -292,9 +292,16 @@ class _ShortLeaseCrashStore(InMemoryIdempotencyStore):
         key: str,
         owner_id: str,
         lease_seconds: int,
+        operation_identity=None,
     ):
         del lease_seconds
-        return super().claim(tenant_id, key, owner_id, 1)
+        return super().claim(
+            tenant_id,
+            key,
+            owner_id,
+            1,
+            operation_identity=operation_identity,
+        )
 
     def complete_with_claim(
         self,

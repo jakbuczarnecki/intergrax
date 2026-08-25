@@ -19,6 +19,10 @@ from intergrax.runtime.task.queued_nexus_execution_adapter import QueuedNexusExe
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from intergrax.runtime.task.task_run_bridge import task_to_execution_payload
 from intergrax.runtime.task.worker_bootstrap import create_nexus_celery_worker_app
+from intergrax.runtime.observability.memory_causal_evidence_persistence import (
+    InMemoryCausalEvidencePersistence,
+)
+from tests.unit.queueing.worker.dispatcher_test_kv import DispatcherTestKVStore
 from intergrax.runtime.task.worker_payload import (
     decode_execution_request,
     encode_execution_request,
@@ -37,6 +41,8 @@ def _echo_celery_stack(*, wait_for_result: bool = True):
         backend_url="cache+memory://",
         agent_registry=registry,
         task_always_eager=True,
+        kv_store=DispatcherTestKVStore(),
+        causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
     )
     queue = CeleryTaskQueue(app)
     store = DummyRunStore()
@@ -215,6 +221,8 @@ def test_worker_checkpoint_resume_via_queue_payload(tmp_path) -> None:
         agent_registry=registry,
         checkpoint_store=checkpoint_store,
         task_always_eager=True,
+        kv_store=DispatcherTestKVStore(),
+        causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
     )
     queue = CeleryTaskQueue(app)
     store = DummyRunStore()

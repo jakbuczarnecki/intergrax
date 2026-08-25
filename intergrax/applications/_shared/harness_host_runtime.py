@@ -168,6 +168,7 @@ def build_harness_host_runtime(
     notification_adapter: NotificationAdapter | None = None,
     application_host: ApplicationHost | None = None,
     document_store: Any | None = None,
+    key_value_cache: Any | None = None,
     boundary_event_buffer: Any | None = None,
     mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
 ) -> HarnessHostRuntime:
@@ -186,6 +187,7 @@ def build_harness_host_runtime(
         settings=settings,
         tenant_id=tenant_id,
         document_store=document_store,
+        key_value_cache=key_value_cache,
         boundary_event_buffer=boundary_event_buffer,
     )
     assembly_mode = resolve_registry_assembly_mode(

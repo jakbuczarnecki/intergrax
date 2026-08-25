@@ -14,6 +14,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 REPO_ROOT = Path(__file__).resolve().parents[3]
 LKW_DOCS_PREFIX = "applications/local_workspace_application/docs/"
 LKW_ASSET_PREFIX = "applications/local_workspace_application/docs/assets/"
+README_UEA_PLATFORM_CORE_PREFIX = (
+    "docs/project/architecture/assets/unified-execution-platform-core-"
+)
 FULLSIZE_SEGMENT = "/fullsize/"
 
 _PUBLIC_SCOPES = (
@@ -125,6 +128,8 @@ def _is_qualifying_picture_src(src: str, *, allow_lkw_assets: bool) -> bool:
     if not normalized or normalized.startswith(_REMOTE_PREFIXES):
         return False
     if not allow_lkw_assets and LKW_ASSET_PREFIX in normalized:
+        return False
+    if normalized.startswith(README_UEA_PLATFORM_CORE_PREFIX):
         return False
     if _BADGE_SHIELD.search(normalized):
         return False

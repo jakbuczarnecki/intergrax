@@ -13,6 +13,9 @@ from intergrax.runtime.background_execution.bootstrap import BackgroundExecution
 from intergrax.runtime.background_execution.identity_persistence import (
     wire_background_execution_identity_persistence,
 )
+from intergrax.runtime.observability.document_store_causal_evidence_persistence import (
+    wire_causal_evidence_persistence,
+)
 from intergrax.tools.execution_models import ToolExecutionResult
 from pydantic import BaseModel
 
@@ -111,6 +114,9 @@ def test_worker_executes_registered_handler() -> None:
         queue,
         registry,
         identity_persistence=wire_background_execution_identity_persistence(
+            document_store=store,
+        ),
+        causal_evidence_persistence=wire_causal_evidence_persistence(
             document_store=store,
         ),
     )

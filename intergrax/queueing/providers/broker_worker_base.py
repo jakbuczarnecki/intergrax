@@ -20,8 +20,14 @@ from intergrax.runtime.background_execution.bootstrap import bootstrap_backgroun
 from intergrax.runtime.background_execution.identity_persistence import (
     BackgroundExecutionIdentityPersistence,
 )
+from intergrax.runtime.background_execution.required_audit_evidence import (
+    admit_background_execution_handler,
+)
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
+)
+from intergrax.runtime.observability.causal_evidence_persistence import (
+    CausalEvidencePersistence,
 )
 
 
@@ -51,6 +57,7 @@ class BrokerWorkerBase(ABC):
         event_emitter: TaskEventEmitter | None = None,
         provider_name: str = "broker",
         identity_persistence: BackgroundExecutionIdentityPersistence,
+        causal_evidence_persistence: CausalEvidencePersistence,
     ) -> None:
         self._registry: TaskExecutionRegistry = registry
         self._kv_store: DistributedKVStore = kv_store
@@ -58,6 +65,7 @@ class BrokerWorkerBase(ABC):
         self._event_emitter = event_emitter
         self._provider_name = provider_name
         self._identity_persistence = identity_persistence
+        self._causal_evidence_persistence = causal_evidence_persistence
 
     # ------------------------------------------------------------------
     # Storage keys (aligned with BrokerBackedTaskQueueBase)
@@ -163,23 +171,29 @@ class BrokerWorkerBase(ABC):
         )
 
         try:
+            transport_ref = BackgroundTransportExecutionRef(
+                tenant_id=tenant_id,
+                provider=provider_name,
+                transport_task_id=task_id,
+            )
             execution_identity = bootstrap_background_execution(
-                transport_ref=BackgroundTransportExecutionRef(
-                    tenant_id=tenant_id,
-                    provider=provider_name,
-                    transport_task_id=task_id,
-                ),
+                transport_ref=transport_ref,
                 identity_persistence=self._identity_persistence,
             )
-            result = execute_logical_task(
-                registry=self._registry,
-                logical_task_name=task_name,
-                tenant_id=execution_identity.tenant_id,
-                run_id=str(execution_identity.run_id),
-                payload=payload_bytes,
-                idempotency_key=idempotency_key,
-                idempotency_store=self._idempotency_store,
+            result = admit_background_execution_handler(
+                transport_ref=transport_ref,
                 execution_identity=execution_identity,
+                causal_evidence_persistence=self._causal_evidence_persistence,
+                handler=lambda: execute_logical_task(
+                    registry=self._registry,
+                    logical_task_name=task_name,
+                    tenant_id=execution_identity.tenant_id,
+                    run_id=str(execution_identity.run_id),
+                    payload=payload_bytes,
+                    idempotency_key=idempotency_key,
+                    idempotency_store=self._idempotency_store,
+                    execution_identity=execution_identity,
+                ),
             )
 
             if not result.success:

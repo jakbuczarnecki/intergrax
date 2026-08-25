@@ -41,6 +41,9 @@ from intergrax.runtime.background_execution.identity_persistence import (
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
 )
+from intergrax.runtime.observability.memory_causal_evidence_persistence import (
+    InMemoryCausalEvidencePersistence,
+)
 from intergrax.tools.execution_models import ToolExecutionResult
 
 pytestmark = pytest.mark.unit
@@ -181,6 +184,7 @@ def test_broker_worker_path_uses_central_bootstrap() -> None:
         kv_store=kv,
         idempotency_store=None,
         identity_persistence=_persistence(kv),
+        causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
     )
     fixed = BackgroundExecutionIdentity(
         tenant_id="tenant-a",
@@ -237,6 +241,7 @@ def test_worker_runtime_path_uses_central_bootstrap() -> None:
         execution_registry=execution_registry,
         provider="kafka",
         identity_persistence=_persistence(kv),
+        causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
     )
     fixed = BackgroundExecutionIdentity(
         tenant_id="tenant-a",
@@ -290,6 +295,7 @@ def test_identity_propagated_without_re_minting_at_handler() -> None:
         kv_store=_KV(),
         idempotency_store=None,
         identity_persistence=_persistence(),
+        causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
     )
     fixed = BackgroundExecutionIdentity(
         tenant_id="tenant-a",

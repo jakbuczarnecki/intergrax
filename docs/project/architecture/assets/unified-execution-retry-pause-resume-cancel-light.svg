@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 980" role="img" aria-labelledby="title desc">
+<title id="title">Retry / pause / resume / cancellation</title>
+<desc id="desc">Identity-preserving local recovery versus whole-Run retry and scoped cancellation.</desc>
+<rect width="1200" height="980" fill="#f6f8fb"/>
+<rect x="28" y="24" width="1144" height="932" rx="22" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
+<text x="600" y="66" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="29" font-weight="700" fill="#1a1a2e">Retry / pause / resume / cancellation</text>
+<text x="600" y="96" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#526579">Identity-preserving local recovery versus whole-Run retry and scoped cancellation.</text>
+<rect x="90" y="125" width="220" height="34" rx="9" fill="#f0f4f8" stroke="#d0d7de" stroke-width="1.5"/>
+<text x="200.0" y="148" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">LOCAL RETRY</text>
+<rect x="340" y="125" width="220" height="34" rx="9" fill="#f0f4f8" stroke="#d0d7de" stroke-width="1.5"/>
+<text x="450.0" y="148" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">EXECUTION RETRY</text>
+<rect x="590" y="125" width="220" height="34" rx="9" fill="#f0f4f8" stroke="#d0d7de" stroke-width="1.5"/>
+<text x="700.0" y="148" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">WHOLE RUN RETRY</text>
+<rect x="840" y="125" width="220" height="34" rx="9" fill="#f0f4f8" stroke="#d0d7de" stroke-width="1.5"/>
+<text x="950.0" y="148" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">PAUSE / RESUME</text>
+<rect x="105" y="190" width="190" height="65" rx="12" fill="#f3e8ff" stroke="#7c3aed" stroke-width="2"/>
+<text x="200.0" y="219.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#1a1a2e">E1 · A1</text>
+<text x="200.0" y="242.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#526579">provider/tool step</text>
+<line x1="200" y1="255" x2="200" y2="310" stroke="#334155" stroke-width="2"/>
+<path d="M200,310 L194.4,301.7 L205.6,301.7 Z" fill="#334155"/>
+<rect x="105" y="315" width="190" height="65" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="200.0" y="344.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">same E1 · same A1</text>
+<text x="200.0" y="367.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#526579">local retry counter++</text>
+<rect x="355" y="190" width="190" height="65" rx="12" fill="#f3e8ff" stroke="#7c3aed" stroke-width="2"/>
+<text x="450.0" y="219.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">E2 · A1</text>
+<text x="450.0" y="242.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#526579">execution_retry_index=0</text>
+<line x1="450" y1="255" x2="450" y2="310" stroke="#334155" stroke-width="2"/>
+<path d="M450,310 L444.4,301.7 L455.6,301.7 Z" fill="#334155"/>
+<rect x="355" y="315" width="190" height="65" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="450.0" y="344.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">same E2 · same A1</text>
+<text x="450.0" y="367.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#526579">execution_retry_index=1</text>
+<rect x="605" y="190" width="190" height="65" rx="12" fill="#fdecea" stroke="#c62828" stroke-width="2"/>
+<text x="700.0" y="219.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">Run R1 · Attempt A1</text>
+<text x="700.0" y="242.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#526579">fails globally</text>
+<line x1="700" y1="255" x2="700" y2="310" stroke="#334155" stroke-width="2"/>
+<path d="M700,310 L694.4,301.7 L705.6,301.7 Z" fill="#334155"/>
+<rect x="605" y="315" width="190" height="65" rx="12" fill="#fff8e1" stroke="#b88900" stroke-width="2"/>
+<text x="700.0" y="344.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">Run R1 · Attempt A2</text>
+<text x="700.0" y="367.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#526579">NEW ExecutionIds</text>
+<rect x="855" y="190" width="190" height="65" rx="12" fill="#f3e8ff" stroke="#7c3aed" stroke-width="2"/>
+<text x="950.0" y="219.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">E3 · A1</text>
+<text x="950.0" y="242.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#526579">running</text>
+<line x1="950" y1="255" x2="950" y2="295" stroke="#334155" stroke-width="2"/>
+<path d="M950,295 L944.4,286.7 L955.6,286.7 Z" fill="#334155"/>
+<rect x="855" y="300" width="190" height="55" rx="12" fill="#fff8e1" stroke="#b88900" stroke-width="2"/>
+<text x="950.0" y="324.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">paused</text>
+<text x="950.0" y="347.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#526579">HITL / interruption</text>
+<line x1="950" y1="355" x2="950" y2="395" stroke="#334155" stroke-width="2"/>
+<path d="M950,395 L944.4,386.7 L955.6,386.7 Z" fill="#334155"/>
+<rect x="855" y="400" width="190" height="65" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="950.0" y="429.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">same E3 · same A1</text>
+<text x="950.0" y="452.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#526579">resumed</text>
+<rect x="120" y="505" width="960" height="34" rx="9" fill="#f0f4f8" stroke="#d0d7de" stroke-width="1.5"/>
+<text x="600.0" y="528" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">Cancellation scopes use the canonical Execution Tree</text>
+<rect x="455" y="565" width="290" height="60" rx="12" fill="#fdecea" stroke="#c62828" stroke-width="2"/>
+<text x="600.0" y="592.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#1a1a2e">Run R1</text>
+<text x="600.0" y="615.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#526579">cancel → entire Execution Tree</text>
+<line x1="600" y1="625" x2="445" y2="675" stroke="#334155" stroke-width="2"/>
+<path d="M445,675 L451.2,667.1 L454.6,677.8 Z" fill="#334155"/>
+<line x1="600" y1="625" x2="755" y2="675" stroke="#334155" stroke-width="2"/>
+<path d="M755,675 L745.4,677.8 L748.8,667.1 Z" fill="#334155"/>
+<rect x="320" y="680" width="250" height="60" rx="12" fill="#f3e8ff" stroke="#7c3aed" stroke-width="2"/>
+<text x="445.0" y="707.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">Execution E1</text>
+<text x="445.0" y="730.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#526579">subtree root</text>
+<rect x="630" y="680" width="250" height="60" rx="12" fill="#f3e8ff" stroke="#7c3aed" stroke-width="2"/>
+<text x="755.0" y="707.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">Execution E4</text>
+<text x="755.0" y="730.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#526579">sibling subtree</text>
+<line x1="445" y1="740" x2="385" y2="790" stroke="#334155" stroke-width="2"/>
+<path d="M385,790 L387.8,780.4 L394.9,789.0 Z" fill="#334155"/>
+<line x1="445" y1="740" x2="505" y2="790" stroke="#334155" stroke-width="2"/>
+<path d="M505,790 L495.1,789.0 L502.2,780.4 Z" fill="#334155"/>
+<rect x="285" y="795" width="200" height="56" rx="12" fill="#f0f4f8" stroke="#d0d7de" stroke-width="2"/>
+<text x="385.0" y="820.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#1a1a2e">E2</text>
+<text x="385.0" y="843.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#526579">descendant</text>
+<rect x="505" y="795" width="200" height="56" rx="12" fill="#f0f4f8" stroke="#d0d7de" stroke-width="2"/>
+<text x="605.0" y="820.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#1a1a2e">E3</text>
+<text x="605.0" y="843.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#526579">descendant</text>
+<rect x="185" y="875" width="830" height="46" rx="12" fill="#eef4ff" stroke="#1a5fb4" stroke-width="2"/>
+<text x="600.0" y="895.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">Invariant</text>
+<text x="600.0" y="918.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#526579">pause/resume preserves identity · whole-Run retry creates new Attempt + new Executions</text>
+<text x="600" y="938" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#526579">Canonical conceptual architecture — see UNIFIED_EXECUTION_ARCHITECTURE.md for normative semantics.</text>
+</svg>

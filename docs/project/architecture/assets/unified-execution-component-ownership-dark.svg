@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 980" role="img" aria-labelledby="title desc">
+<title id="title">Component ownership / dependency</title>
+<desc id="desc">Execution coordinates subsystem contracts without absorbing their ownership.</desc>
+<rect width="1200" height="980" fill="#0d1117"/>
+<rect x="28" y="24" width="1144" height="932" rx="22" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+<text x="600" y="66" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="29" font-weight="700" fill="#f0f6fc">Component ownership / dependency</text>
+<text x="600" y="96" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#9da7b3">Execution coordinates subsystem contracts without absorbing their ownership.</text>
+<rect x="390" y="115" width="420" height="60" rx="12" fill="#0d2540" stroke="#58a6ff" stroke-width="2"/>
+<text x="600.0" y="142.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#f0f6fc">Unified Execution Architecture</text>
+<text x="600.0" y="165.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#9da7b3">META_ARCHITECTURE · cross-domain semantics</text>
+<line x1="600" y1="175" x2="600" y2="215" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M600,215 L594.4,206.7 L605.6,206.7 Z" fill="#c9d1d9"/>
+<rect x="390" y="220" width="420" height="70" rx="12" fill="#22163a" stroke="#a371f7" stroke-width="2"/>
+<text x="600.0" y="252.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#f0f6fc">Execution Boundary / UER</text>
+<text x="600.0" y="275.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#9da7b3">identity structure + lifecycle coordination</text>
+<rect x="105" y="360" width="210" height="80" rx="12" fill="#2b240e" stroke="#d29922" stroke-width="2"/>
+<text x="210.0" y="397.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#f0f6fc">Orchestration</text>
+<text x="210.0" y="420.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">definition / topology</text>
+<line x1="600" y1="290" x2="210" y2="360" stroke="#d29922" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="345" y="360" width="210" height="80" rx="12" fill="#102a17" stroke="#3fb950" stroke-width="2"/>
+<text x="450.0" y="397.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#f0f6fc">Nexus</text>
+<text x="450.0" y="420.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">readiness / scheduling / merge</text>
+<line x1="600" y1="290" x2="450" y2="360" stroke="#3fb950" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="585" y="360" width="210" height="80" rx="12" fill="#0d2540" stroke="#58a6ff" stroke-width="2"/>
+<text x="690.0" y="397.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#f0f6fc">Agent subsystem</text>
+<text x="690.0" y="420.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">AgentEngine / UAEP</text>
+<line x1="600" y1="290" x2="690" y2="360" stroke="#58a6ff" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="825" y="360" width="210" height="80" rx="12" fill="#22163a" stroke="#a371f7" stroke-width="2"/>
+<text x="930.0" y="397.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#f0f6fc">Governance</text>
+<text x="930.0" y="420.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">policy / authority / HITL</text>
+<line x1="600" y1="290" x2="930" y2="360" stroke="#a371f7" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="105" y="560" width="210" height="80" rx="12" fill="#2b240e" stroke="#d29922" stroke-width="2"/>
+<text x="210.0" y="597.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#f0f6fc">Budget</text>
+<text x="210.0" y="620.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">ledger / reservations</text>
+<line x1="600" y1="290" x2="210" y2="560" stroke="#d29922" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="345" y="560" width="210" height="80" rx="12" fill="#102a17" stroke="#3fb950" stroke-width="2"/>
+<text x="450.0" y="597.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#f0f6fc">Observability</text>
+<text x="450.0" y="620.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">events / evidence / journal</text>
+<line x1="600" y1="290" x2="450" y2="560" stroke="#3fb950" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="585" y="560" width="210" height="80" rx="12" fill="#0d2540" stroke="#58a6ff" stroke-width="2"/>
+<text x="690.0" y="597.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#f0f6fc">DIAG</text>
+<text x="690.0" y="620.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">interpretation / diagnosis</text>
+<line x1="600" y1="290" x2="690" y2="560" stroke="#58a6ff" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="825" y="560" width="210" height="80" rx="12" fill="#21262d" stroke="#30363d" stroke-width="2"/>
+<text x="930.0" y="597.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#f0f6fc">Checkpoint / Queue</text>
+<text x="930.0" y="620.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">durability / transport</text>
+<line x1="600" y1="290" x2="930" y2="560" stroke="#c9d1d9" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="150" y="715" width="900" height="85" rx="12" fill="#351316" stroke="#f85149" stroke-width="2"/>
+<text x="600.0" y="754.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#f0f6fc">Anti-god-object invariant</text>
+<text x="600.0" y="777.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#9da7b3">Execution coordinates contracts. It does not absorb Governance, Budget, Observability, DIAG, Nexus, Agent internals, Queue or Checkpoint persistence.</text>
+<rect x="180" y="835" width="840" height="34" rx="9" fill="#21262d" stroke="#30363d" stroke-width="1.5"/>
+<text x="600.0" y="858" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#f0f6fc">Canonical ownership remains distributed; execution truth remains singular</text>
+<text x="600" y="938" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#9da7b3">Canonical conceptual architecture — see UNIFIED_EXECUTION_ARCHITECTURE.md for normative semantics.</text>
+</svg>

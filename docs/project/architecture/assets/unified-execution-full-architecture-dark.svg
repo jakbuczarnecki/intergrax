@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 980" role="img" aria-labelledby="title desc">
+<title id="title">Unified Execution Architecture</title>
+<desc id="desc">One execution model from Task to strategy-specific execution, with shared governance, evidence and recovery.</desc>
+<rect width="1200" height="980" fill="#0d1117"/>
+<rect x="28" y="24" width="1144" height="932" rx="22" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+<text x="600" y="66" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="29" font-weight="700" fill="#f0f6fc">Unified Execution Architecture</text>
+<text x="600" y="96" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#9da7b3">One execution model from Task to strategy-specific execution, with shared governance, evidence and recovery.</text>
+<rect x="440" y="125" width="320" height="55" rx="12" fill="#0d2540" stroke="#58a6ff" stroke-width="2"/>
+<text x="600.0" y="157.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#f0f6fc">Application / Product</text>
+<line x1="600" y1="180" x2="600" y2="210" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M600,210 L594.4,201.7 L605.6,201.7 Z" fill="#c9d1d9"/>
+<rect x="455" y="215" width="290" height="52" rx="12" fill="#0d2540" stroke="#58a6ff" stroke-width="2"/>
+<text x="600.0" y="246.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" font-weight="700" fill="#f0f6fc">execution.execute(request)</text>
+<line x1="600" y1="267" x2="600" y2="300" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M600,300 L594.4,291.7 L605.6,291.7 Z" fill="#c9d1d9"/>
+<rect x="165" y="305" width="180" height="68" rx="12" fill="#21262d" stroke="#30363d" stroke-width="2"/>
+<text x="255.0" y="336.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#f0f6fc">TASK</text>
+<text x="255.0" y="359.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">TaskId</text>
+<line x1="345" y1="339" x2="380" y2="339" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M380,339 L371.7,344.6 L371.7,333.4 Z" fill="#c9d1d9"/>
+<rect x="380" y="305" width="180" height="68" rx="12" fill="#0d2540" stroke="#58a6ff" stroke-width="2"/>
+<text x="470.0" y="336.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#f0f6fc">RUN</text>
+<text x="470.0" y="359.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">RunId</text>
+<line x1="560" y1="339" x2="595" y2="339" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M595,339 L586.7,344.6 L586.7,333.4 Z" fill="#c9d1d9"/>
+<rect x="595" y="305" width="180" height="68" rx="12" fill="#2b240e" stroke="#d29922" stroke-width="2"/>
+<text x="685.0" y="336.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#f0f6fc">ATTEMPT</text>
+<text x="685.0" y="359.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">AttemptId</text>
+<line x1="775" y1="339" x2="810" y2="339" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M810,339 L801.7,344.6 L801.7,333.4 Z" fill="#c9d1d9"/>
+<rect x="810" y="305" width="180" height="68" rx="12" fill="#22163a" stroke="#a371f7" stroke-width="2"/>
+<text x="900.0" y="336.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#f0f6fc">ROOT EXECUTION</text>
+<text x="900.0" y="359.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">ExecutionId</text>
+<line x1="900" y1="373" x2="900" y2="414" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M900,414 L894.4,405.7 L905.6,405.7 Z" fill="#c9d1d9"/>
+<text x="900" y="402" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" font-weight="500" fill="#9da7b3">deterministic strategy resolution</text>
+<rect x="110" y="420" width="980" height="34" rx="9" fill="#21262d" stroke="#30363d" stroke-width="1.5"/>
+<text x="600.0" y="443" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#f0f6fc">Execution strategy — internal platform choice; public request describes WHAT, not HOW</text>
+<rect x="135" y="480" width="260" height="95" rx="12" fill="#102a17" stroke="#3fb950" stroke-width="2"/>
+<text x="265.0" y="524.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#f0f6fc">Inference strategy</text>
+<text x="265.0" y="547.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#9da7b3">LLM / structured output</text>
+<rect x="470" y="480" width="260" height="95" rx="12" fill="#0d2540" stroke="#58a6ff" stroke-width="2"/>
+<text x="600.0" y="524.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#f0f6fc">Agentic strategy</text>
+<text x="600.0" y="547.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#9da7b3">AgentEngine → UAEP</text>
+<rect x="805" y="480" width="260" height="95" rx="12" fill="#2b240e" stroke="#d29922" stroke-width="2"/>
+<text x="935.0" y="524.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#f0f6fc">Orchestration strategy</text>
+<text x="935.0" y="547.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#9da7b3">Nexus → child Executions</text>
+<line x1="900" y1="575" x2="900" y2="620" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M900,620 L894.4,611.7 L905.6,611.7 Z" fill="#c9d1d9"/>
+<rect x="795" y="625" width="210" height="60" rx="12" fill="#22163a" stroke="#a371f7" stroke-width="2"/>
+<text x="900.0" y="652.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#f0f6fc">Child Execution E2</text>
+<text x="900.0" y="675.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">parent_execution_id = E1</text>
+<line x1="900" y1="685" x2="790" y2="720" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M790,720 L796.2,712.2 L799.6,722.8 Z" fill="#c9d1d9"/>
+<line x1="900" y1="685" x2="1010" y2="720" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M1010,720 L1000.4,722.8 L1003.8,712.2 Z" fill="#c9d1d9"/>
+<rect x="660" y="725" width="260" height="56" rx="12" fill="#22163a" stroke="#a371f7" stroke-width="2"/>
+<text x="790.0" y="750.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#f0f6fc">Child Execution E3</text>
+<text x="790.0" y="773.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">strategy may differ</text>
+<rect x="940" y="725" width="180" height="56" rx="12" fill="#22163a" stroke="#a371f7" stroke-width="2"/>
+<text x="1030.0" y="750.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#f0f6fc">Child Execution E4</text>
+<text x="1030.0" y="773.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">fan-out</text>
+<rect x="95" y="825" width="160" height="68" rx="12" fill="#22163a" stroke="#a371f7" stroke-width="2"/>
+<text x="175.0" y="856.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#f0f6fc">Governance</text>
+<text x="175.0" y="879.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">authority / HITL</text>
+<rect x="270" y="825" width="160" height="68" rx="12" fill="#2b240e" stroke="#d29922" stroke-width="2"/>
+<text x="350.0" y="856.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#f0f6fc">Budget</text>
+<text x="350.0" y="879.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">ledger / reservations</text>
+<rect x="445" y="825" width="160" height="68" rx="12" fill="#102a17" stroke="#3fb950" stroke-width="2"/>
+<text x="525.0" y="856.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#f0f6fc">Observability</text>
+<text x="525.0" y="879.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">canonical evidence</text>
+<rect x="620" y="825" width="160" height="68" rx="12" fill="#0d2540" stroke="#58a6ff" stroke-width="2"/>
+<text x="700.0" y="856.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#f0f6fc">DIAG</text>
+<text x="700.0" y="879.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">interpretation / RCA</text>
+<rect x="795" y="825" width="160" height="68" rx="12" fill="#35200f" stroke="#f0883e" stroke-width="2"/>
+<text x="875.0" y="856.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#f0f6fc">Checkpoint</text>
+<text x="875.0" y="879.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">durable state</text>
+<rect x="970" y="825" width="160" height="68" rx="12" fill="#21262d" stroke="#30363d" stroke-width="2"/>
+<text x="1050.0" y="856.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#f0f6fc">Queue / Workers</text>
+<text x="1050.0" y="879.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">transport only</text>
+<text x="600" y="812" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" font-weight="700" fill="#9da7b3">Cross-cutting subsystem contracts — coordinated by Execution, owned by their respective subsystems</text>
+<text x="600" y="938" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#9da7b3">Canonical conceptual architecture — see UNIFIED_EXECUTION_ARCHITECTURE.md for normative semantics.</text>
+</svg>

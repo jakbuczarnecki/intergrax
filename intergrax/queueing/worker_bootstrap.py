@@ -19,6 +19,9 @@ from intergrax.queueing.worker.retry_policy import RetryPolicy
 from intergrax.runtime.background_execution.identity_persistence import (
     wire_background_execution_identity_persistence,
 )
+from intergrax.runtime.observability.causal_evidence_persistence import (
+    CausalEvidencePersistence,
+)
 
 
 def create_celery_worker_app(
@@ -36,6 +39,7 @@ def create_celery_worker_app(
     on_rate_limited: Optional[Callable[[RateLimitEvent], None]] = None,
     on_retry_scheduled: Optional[Callable[[RetryEvent], None]] = None,
     kv_store: Optional[DistributedKVStore] = None,
+    causal_evidence_persistence: CausalEvidencePersistence,
 ) -> Celery:
     """
     Production composition root for Tier-0 execution plane.
@@ -78,6 +82,7 @@ def create_celery_worker_app(
         identity_persistence=wire_background_execution_identity_persistence(
             kv_store=kv_store,
         ),
+        causal_evidence_persistence=causal_evidence_persistence,
     )
 
     return app

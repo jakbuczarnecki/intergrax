@@ -14,13 +14,13 @@ from intergrax.runtime.observability.causal_evidence import PlatformCausalEviden
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
     CausalEvidencePersistenceConflictError,
+    causal_evidence_query_order_key,
 )
 
 
 class InMemoryCausalEvidencePersistence(CausalEvidencePersistence):
     def __init__(self) -> None:
         self._accepted_by_evidence_id: dict[str, PlatformCausalEvidence] = {}
-        self._insertion_order: list[str] = []
         self._by_execution: DefaultDict[tuple[str, str, str], list[str]] = defaultdict(list)
         self._by_transport: DefaultDict[tuple[str, str, str], list[str]] = defaultdict(list)
         self._lock = Lock()
@@ -35,7 +35,6 @@ class InMemoryCausalEvidencePersistence(CausalEvidencePersistence):
                     )
                 return existing
             self._accepted_by_evidence_id[evidence.evidence_id] = evidence
-            self._insertion_order.append(evidence.evidence_id)
             execution_key = (
                 evidence.tenant_id,
                 evidence.target.task_id,
@@ -71,9 +70,10 @@ class InMemoryCausalEvidencePersistence(CausalEvidencePersistence):
         return self._resolve_ids(self._by_transport.get(key, []))
 
     def _resolve_ids(self, evidence_ids: list[str]) -> tuple[PlatformCausalEvidence, ...]:
-        ordered = [
+        records = [
             self._accepted_by_evidence_id[evidence_id]
-            for evidence_id in self._insertion_order
-            if evidence_id in evidence_ids
+            for evidence_id in evidence_ids
+            if evidence_id in self._accepted_by_evidence_id
         ]
-        return tuple(ordered)
+        records.sort(key=causal_evidence_query_order_key)
+        return tuple(records)
