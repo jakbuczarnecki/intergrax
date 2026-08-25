@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 930" role="img" aria-labelledby="title desc">
+<title id="title">Checkpoint / recovery</title>
+<desc id="desc">A Run-scoped checkpoint persists durable execution state without becoming an identity authority.</desc>
+<rect width="1200" height="930" fill="#f6f8fb"/>
+<rect x="28" y="24" width="1144" height="882" rx="22" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
+<text x="600" y="66" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="29" font-weight="700" fill="#1a1a2e">Checkpoint / recovery</text>
+<text x="600" y="96" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#526579">A Run-scoped checkpoint persists durable execution state without becoming an identity authority.</text>
+<rect x="420" y="120" width="360" height="64" rx="12" fill="#eef4ff" stroke="#1a5fb4" stroke-width="2"/>
+<text x="600.0" y="149.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">Run R1 · Attempt A1</text>
+<text x="600.0" y="172.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#526579">canonical lifecycle identity</text>
+<line x1="600" y1="184" x2="600" y2="225" stroke="#334155" stroke-width="2"/>
+<path d="M600,225 L594.4,216.7 L605.6,216.7 Z" fill="#334155"/>
+<rect x="410" y="230" width="380" height="65" rx="12" fill="#f3e8ff" stroke="#7c3aed" stroke-width="2"/>
+<text x="600.0" y="259.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">Execution Tree</text>
+<text x="600.0" y="282.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#526579">E1 → E2/E3 → descendants</text>
+<line x1="600" y1="295" x2="600" y2="345" stroke="#334155" stroke-width="2"/>
+<path d="M600,345 L594.4,336.7 L605.6,336.7 Z" fill="#334155"/>
+<rect x="300" y="350" width="600" height="75" rx="12" fill="#fff8e1" stroke="#b88900" stroke-width="2"/>
+<text x="600.0" y="384.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="19" font-weight="700" fill="#1a1a2e">Run-scoped checkpoint</text>
+<text x="600.0" y="407.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" fill="#526579">durable snapshot; NOT an identity authority</text>
+<rect x="30" y="485" width="180" height="60" rx="12" fill="#eef4ff" stroke="#1a5fb4" stroke-width="2"/>
+<text x="120.0" y="520.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">Attempt state</text>
+<line x1="600" y1="425" x2="120" y2="485" stroke="#334155" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="235" y="485" width="180" height="60" rx="12" fill="#f3e8ff" stroke="#7c3aed" stroke-width="2"/>
+<text x="325.0" y="520.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">Execution Tree</text>
+<line x1="600" y1="425" x2="325" y2="485" stroke="#334155" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="440" y="485" width="180" height="60" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="530.0" y="520.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">Nexus state</text>
+<line x1="600" y1="425" x2="530" y2="485" stroke="#334155" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="645" y="485" width="180" height="60" rx="12" fill="#eef4ff" stroke="#1a5fb4" stroke-width="2"/>
+<text x="735.0" y="520.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">UAEP / step cursors</text>
+<line x1="600" y1="425" x2="735" y2="485" stroke="#334155" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="850" y="485" width="180" height="60" rx="12" fill="#f3e8ff" stroke="#7c3aed" stroke-width="2"/>
+<text x="940.0" y="520.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">Pending HITL</text>
+<line x1="600" y1="425" x2="940" y2="485" stroke="#334155" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="135" y="605" width="180" height="60" rx="12" fill="#fff8e1" stroke="#b88900" stroke-width="2"/>
+<text x="225.0" y="640.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">Budget reservations</text>
+<line x1="600" y1="425" x2="225" y2="605" stroke="#334155" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="405" y="605" width="180" height="60" rx="12" fill="#fdecea" stroke="#c62828" stroke-width="2"/>
+<text x="495.0" y="640.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">Side-effect fences</text>
+<line x1="600" y1="425" x2="495" y2="605" stroke="#334155" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="675" y="605" width="180" height="60" rx="12" fill="#f0f4f8" stroke="#d0d7de" stroke-width="2"/>
+<text x="765.0" y="640.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#1a1a2e">Transport cursors</text>
+<line x1="600" y1="425" x2="765" y2="605" stroke="#334155" stroke-width="2" stroke-dasharray="7 5"/>
+<line x1="600" y1="665" x2="600" y2="720" stroke="#334155" stroke-width="2"/>
+<path d="M600,720 L594.4,711.7 L605.6,711.7 Z" fill="#334155"/>
+<rect x="370" y="725" width="460" height="75" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="600.0" y="759.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#1a1a2e">Resume same Run / Attempt / Execution identity</text>
+<text x="600.0" y="782.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#526579">restore durable state → continue lifecycle</text>
+<rect x="140" y="830" width="920" height="48" rx="12" fill="#fdecea" stroke="#c62828" stroke-width="2"/>
+<text x="600.0" y="859.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#1a1a2e">Checkpoint persists execution truth; it never invents or reconstructs a competing identity tree.</text>
+<text x="600" y="888" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#526579">Canonical conceptual architecture — see UNIFIED_EXECUTION_ARCHITECTURE.md for normative semantics.</text>
+</svg>

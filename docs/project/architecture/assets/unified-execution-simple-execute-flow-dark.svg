@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 860" role="img" aria-labelledby="title desc">
+<title id="title">Simple execute() flow</title>
+<desc id="desc">Direct governed execution without mandatory Nexus participation.</desc>
+<rect width="1200" height="860" fill="#0d1117"/>
+<rect x="28" y="24" width="1144" height="812" rx="22" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+<text x="600" y="66" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="29" font-weight="700" fill="#f0f6fc">Simple execute() flow</text>
+<text x="600" y="96" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#9da7b3">Direct governed execution without mandatory Nexus participation.</text>
+<rect x="365" y="125" width="470" height="68" rx="12" fill="#0d2540" stroke="#58a6ff" stroke-width="2"/>
+<text x="600.0" y="156.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#f0f6fc">Application</text>
+<text x="600.0" y="179.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#9da7b3">request</text>
+<line x1="600" y1="193" x2="600" y2="220" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M600,220 L594.4,211.7 L605.6,211.7 Z" fill="#c9d1d9"/>
+<rect x="365" y="220" width="470" height="68" rx="12" fill="#22163a" stroke="#a371f7" stroke-width="2"/>
+<text x="600.0" y="251.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#f0f6fc">Execution Boundary</text>
+<text x="600.0" y="274.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#9da7b3">identity + admission</text>
+<line x1="600" y1="288" x2="600" y2="320" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M600,320 L594.4,311.7 L605.6,311.7 Z" fill="#c9d1d9"/>
+<rect x="365" y="320" width="470" height="68" rx="12" fill="#21262d" stroke="#30363d" stroke-width="2"/>
+<text x="600.0" y="351.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#f0f6fc">Task / Run / Attempt</text>
+<text x="600.0" y="374.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#9da7b3">canonical lifecycle</text>
+<line x1="600" y1="388" x2="600" y2="420" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M600,420 L594.4,411.7 L605.6,411.7 Z" fill="#c9d1d9"/>
+<rect x="365" y="420" width="470" height="68" rx="12" fill="#22163a" stroke="#a371f7" stroke-width="2"/>
+<text x="600.0" y="451.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#f0f6fc">Root Execution E1</text>
+<text x="600.0" y="474.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#9da7b3">independent work unit</text>
+<line x1="600" y1="488" x2="600" y2="535" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M600,535 L594.4,526.7 L605.6,526.7 Z" fill="#c9d1d9"/>
+<rect x="365" y="535" width="470" height="68" rx="12" fill="#102a17" stroke="#3fb950" stroke-width="2"/>
+<text x="600.0" y="566.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#f0f6fc">Inference strategy</text>
+<text x="600.0" y="589.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#9da7b3">provider / model</text>
+<line x1="600" y1="603" x2="600" y2="650" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M600,650 L594.4,641.7 L605.6,641.7 Z" fill="#c9d1d9"/>
+<rect x="365" y="650" width="470" height="68" rx="12" fill="#0d2540" stroke="#58a6ff" stroke-width="2"/>
+<text x="600.0" y="681.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#f0f6fc">Structured result</text>
+<text x="600.0" y="704.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#9da7b3">typed output</text>
+<rect x="895" y="350" width="205" height="120" rx="12" fill="#2b240e" stroke="#d29922" stroke-width="2"/>
+<text x="997.5" y="407.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#f0f6fc">Nexus</text>
+<text x="997.5" y="430.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#9da7b3">NOT REQUIRED · for direct execution</text>
+<line x1="835" y1="454" x2="895" y2="410" stroke="#d29922" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="997" y="505" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" font-weight="700" fill="#d29922">No forced orchestration</text>
+<rect x="90" y="350" width="220" height="120" rx="12" fill="#21262d" stroke="#30363d" stroke-width="2"/>
+<text x="200.0" y="407.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#f0f6fc">Shared guarantees</text>
+<text x="200.0" y="430.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">governance · budget · evidence · diagnostics</text>
+<line x1="310" y1="410" x2="365" y2="454" stroke="#c9d1d9" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="600" y="818" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#9da7b3">Canonical conceptual architecture — see UNIFIED_EXECUTION_ARCHITECTURE.md for normative semantics.</text>
+</svg>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 930" role="img" aria-labelledby="title desc">
+<title id="title">Observability + DIAG causal flow</title>
+<desc id="desc">Execution produces facts; Observability records evidence; DIAG interprets that evidence.</desc>
+<rect width="1200" height="930" fill="#0d1117"/>
+<rect x="28" y="24" width="1144" height="882" rx="22" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+<text x="600" y="66" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="29" font-weight="700" fill="#f0f6fc">Observability + DIAG causal flow</text>
+<text x="600" y="96" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#9da7b3">Execution produces facts; Observability records evidence; DIAG interprets that evidence.</text>
+<rect x="380" y="125" width="440" height="70" rx="12" fill="#22163a" stroke="#a371f7" stroke-width="2"/>
+<text x="600.0" y="157.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="19" font-weight="700" fill="#f0f6fc">Execution E17</text>
+<text x="600.0" y="180.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" fill="#9da7b3">produces stable runtime facts</text>
+<line x1="600" y1="195" x2="600" y2="245" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M600,245 L594.4,236.7 L605.6,236.7 Z" fill="#c9d1d9"/>
+<rect x="400" y="250" width="400" height="65" rx="12" fill="#102a17" stroke="#3fb950" stroke-width="2"/>
+<text x="600.0" y="279.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#f0f6fc">RuntimeEvent / causal evidence</text>
+<text x="600.0" y="302.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#9da7b3">includes execution_id</text>
+<line x1="600" y1="315" x2="600" y2="365" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M600,365 L594.4,356.7 L605.6,356.7 Z" fill="#c9d1d9"/>
+<rect x="365" y="370" width="470" height="70" rx="12" fill="#102a17" stroke="#3fb950" stroke-width="2"/>
+<text x="600.0" y="402.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#f0f6fc">Observability / HOS</text>
+<text x="600.0" y="425.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#9da7b3">records · persists · indexes · projects</text>
+<line x1="600" y1="440" x2="600" y2="490" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M600,490 L594.4,481.7 L605.6,481.7 Z" fill="#c9d1d9"/>
+<rect x="360" y="495" width="480" height="70" rx="12" fill="#0d2540" stroke="#58a6ff" stroke-width="2"/>
+<text x="600.0" y="527.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="700" fill="#f0f6fc">Canonical evidence store / Run Journal</text>
+<text x="600.0" y="550.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#9da7b3">source for inspect / as-of / export</text>
+<line x1="600" y1="565" x2="600" y2="615" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M600,615 L594.4,606.7 L605.6,606.7 Z" fill="#c9d1d9"/>
+<rect x="385" y="620" width="430" height="70" rx="12" fill="#22163a" stroke="#a371f7" stroke-width="2"/>
+<text x="600.0" y="652.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="19" font-weight="700" fill="#f0f6fc">DIAG</text>
+<text x="600.0" y="675.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="16" fill="#9da7b3">interprets evidence · anomalies · RCA</text>
+<rect x="110" y="730" width="980" height="34" rx="9" fill="#21262d" stroke="#30363d" stroke-width="1.5"/>
+<text x="600.0" y="753" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#f0f6fc">Diagnostic causal walk</text>
+<rect x="50" y="785" width="140" height="55" rx="12" fill="#21262d" stroke="#30363d" stroke-width="2"/>
+<text x="120.0" y="817.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#f0f6fc">Event</text>
+<line x1="190" y1="812" x2="240" y2="812" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M240,812 L231.7,817.6 L231.7,806.4 Z" fill="#c9d1d9"/>
+<rect x="240" y="785" width="140" height="55" rx="12" fill="#21262d" stroke="#30363d" stroke-width="2"/>
+<text x="310.0" y="817.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#f0f6fc">Execution</text>
+<line x1="380" y1="812" x2="430" y2="812" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M430,812 L421.7,817.6 L421.7,806.4 Z" fill="#c9d1d9"/>
+<rect x="430" y="785" width="140" height="55" rx="12" fill="#21262d" stroke="#30363d" stroke-width="2"/>
+<text x="500.0" y="817.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#f0f6fc">Parent Execution</text>
+<line x1="570" y1="812" x2="620" y2="812" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M620,812 L611.7,817.6 L611.7,806.4 Z" fill="#c9d1d9"/>
+<rect x="620" y="785" width="140" height="55" rx="12" fill="#21262d" stroke="#30363d" stroke-width="2"/>
+<text x="690.0" y="817.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#f0f6fc">Attempt</text>
+<line x1="760" y1="812" x2="780" y2="812" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M780,812 L771.7,817.6 L771.7,806.4 Z" fill="#c9d1d9"/>
+<rect x="780" y="785" width="140" height="55" rx="12" fill="#21262d" stroke="#30363d" stroke-width="2"/>
+<text x="850.0" y="817.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#f0f6fc">Run</text>
+<line x1="920" y1="812" x2="940" y2="812" stroke="#c9d1d9" stroke-width="2"/>
+<path d="M940,812 L931.7,817.6 L931.7,806.4 Z" fill="#c9d1d9"/>
+<rect x="940" y="785" width="140" height="55" rx="12" fill="#21262d" stroke="#30363d" stroke-width="2"/>
+<text x="1010.0" y="817.5" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#f0f6fc">Task</text>
+<rect x="855" y="225" width="250" height="180" rx="12" fill="#351316" stroke="#f85149" stroke-width="2"/>
+<text x="980.0" y="312.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="700" fill="#f0f6fc">DO NOT</text>
+<text x="980.0" y="335.0" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="12" fill="#9da7b3">Observability does not mint ExecutionId · DIAG does not reconstruct truth from text logs · DIAG does not own a second execution tree</text>
+<text x="600" y="888" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="13" fill="#9da7b3">Canonical conceptual architecture — see UNIFIED_EXECUTION_ARCHITECTURE.md for normative semantics.</text>
+</svg>
