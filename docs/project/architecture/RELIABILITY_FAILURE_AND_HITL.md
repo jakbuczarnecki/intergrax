@@ -72,6 +72,21 @@ Reliability keeps recovery **bounded**, **layered**, and **evidence-backed**.
 
 > **Reliability decides recovery. Observability records recovery. Governance authorizes consequential actions.**
 
+### Cross-domain identity semantics (TARGET ARCHITECTURE)
+
+Local/provider retry, Execution-level retry, whole-Run retry, pause/resume, and cancellation each preserve or mint identity per frozen UEA — not every retry creates a new `AttemptId`.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-retry-pause-resume-cancel-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-retry-pause-resume-cancel-light.svg">
+  <img
+    alt="Recovery semantics across retry, pause, resume, and cancel: local retries preserve AttemptId; whole-Run retry mints new Attempt and new Execution instances; pause/resume preserves all runtime ids."
+    src="assets/unified-execution-retry-pause-resume-cancel-light.svg"
+  >
+</picture>
+
+**CURRENT IMPLEMENTATION:** Wired Nexus paths mint a new `AttemptId` for run-level/graph retry as implemented today; target ExecutionId preservation is not yet canonical in Python.
+
 ```text
 failure / timeout / invalid output / policy block
                      ↓

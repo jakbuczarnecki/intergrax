@@ -92,6 +92,32 @@ UER           → execution semantics
 
 Nexus **consumes** orchestration configuration; it is not a substitute for declaring collaboration structure in the host profile.
 
+### Orchestration topology vs runtime Execution Tree (TARGET ARCHITECTURE)
+
+`OrchestrationDefinition` topology (`NodeId`) is **not** the canonical runtime Execution Tree (`ExecutionId`). One topology node may materialize many runtime Executions (fan-out).
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-topology-vs-execution-tree-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-topology-vs-execution-tree-light.svg">
+  <img
+    alt="Definition topology with NodeId versus runtime Execution Tree with ExecutionId: same Node may materialize many Executions."
+    src="assets/unified-execution-topology-vs-execution-tree-light.svg"
+  >
+</picture>
+
+**TARGET:** Nexus schedules **child Executions** from validated topology — it does not equate nodes to runtime instances.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-orchestration-nexus-flow-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-orchestration-nexus-flow-light.svg">
+  <img
+    alt="Orchestration strategy: Nexus schedules child Executions from OrchestrationDefinition at the execution boundary."
+    src="assets/unified-execution-orchestration-nexus-flow-light.svg"
+  >
+</picture>
+
+**CURRENT IMPLEMENTATION:** Nexus `GraphExecutor` remains agent-centric on harness paths — see [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) flagship visual migration note.
+
 ## Orchestration vs Reasoning / Planning
 
 Do not collapse these planes:

@@ -22,7 +22,7 @@ Agents **must not** implement ad hoc lifecycle, retry, HITL, or event semantics.
 | Concern | Summary |
 | -------- | -------- |
 | **Responsibility** | Execution lifecycle semantics — task/run/attempt identity propagation, phases, events, retry, pause/resume, cancellation, HITL, policy interception |
-| **Identity** | `TaskId` → `RunId` → `AttemptId` → `EventId` hierarchy; canonical identity authority in [`OBSERVABILITY.md`](OBSERVABILITY.md) §5 |
+| **Identity** | **TARGET:** `TaskId` → `RunId` → `AttemptId` → `ExecutionId` → `EventId`; **CURRENT:** spine stops at `AttemptId` → `EventId` (no canonical `ExecutionId` yet) — see [Flagship architecture visual](#flagship-architecture-visual) |
 | **Event model** | Every meaningful transition emits `RuntimeEvent`; hooks, policy, recovery, and observability subscribe — no hidden agent callbacks |
 | **UAEP** | Mandatory agent invocation protocol through `AgentEngine` — agents do not bypass context, step, validation, or decision emission |
 | **Nexus relation** | Nexus routes **what** executes; UER defines **how** execution behaves inside the run |
@@ -33,18 +33,29 @@ Agents **must not** implement ad hoc lifecycle, retry, HITL, or event semantics.
 
 ## Flagship architecture visual
 
-<a href="assets/fullsize/unified-execution-runtime-lifecycle.md">
+**TARGET ARCHITECTURE** — canonical identity hierarchy includes `ExecutionId` between `AttemptId` and `EventId` (see [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) §3).
+
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-runtime-lifecycle-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-runtime-lifecycle-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-identity-lifecycle-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-identity-lifecycle-light.svg">
   <img
-    alt="Conceptual lifecycle diagram: Nexus decides what executes; UER defines how execution behaves. Task flows to Run with Attempt 1 failing and Attempt 2 retrying to completion. Every transition emits RuntimeEvent for policy, observability, recovery, and HITL."
-    src="assets/unified-execution-runtime-lifecycle-light.svg"
+    alt="Canonical identity hierarchy: TaskId through EventId with ExecutionId and parent_execution_id on child Executions; Attempt boundary mints new Execution instances on whole-Run retry; pause/resume preserves AttemptId and ExecutionId."
+    src="assets/unified-execution-identity-lifecycle-light.svg"
   >
 </picture>
-</a>
 
-Retry keeps the same `TaskId` and `RunId` and mints a new `AttemptId`. Resume without retry preserves the same `AttemptId`. Each event carries a unique `EventId`.
+**CURRENT IMPLEMENTATION:** Typed `TaskId`, `RunId`, `AttemptId`, and `EventId` exist on main harness paths. **`ExecutionId` is not yet a canonical Python identity** — the event spine currently stops at Task/Run/Attempt/Event.
+
+Retry keeps the same `TaskId` and `RunId`. **TARGET:** whole-Run retry mints a new `AttemptId` and new Execution instances; local retry preserves `AttemptId` and `ExecutionId`. **CURRENT:** run-level retry mints a new `AttemptId` as wired today. Resume without retry preserves the same `AttemptId`. Each event carries a unique `EventId`.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-retry-pause-resume-cancel-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-retry-pause-resume-cancel-light.svg">
+  <img
+    alt="Recovery semantics: local retries preserve AttemptId; whole-Run retry mints new Attempt and new Execution instances; pause/resume preserves all runtime ids."
+    src="assets/unified-execution-retry-pause-resume-cancel-light.svg"
+  >
+</picture>
 
 ## UER vs Nexus vs Agent
 
@@ -56,25 +67,33 @@ Retry keeps the same `TaskId` and `RunId` and mints a new `AttemptId`. Resume wi
 
 Nexus selects agents and interprets `AgentDecision` through `PolicyEngine`. `AgentEngine` / `UAEPExecutor` enforce the step loop inside a graph node. See [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §1.3 for the three planning planes (Nexus graph, UAEP steps, tool planner).
 
-## Task → Run → Attempt → Event
+## Task → Run → Attempt → Execution → Event
 
 | Level | Meaning |
 | ----- | ------- |
 | **Task** | User or system intent — the work unit (`TaskId`) |
 | **Run** | One execution lifecycle of that task (`RunId`) |
 | **Attempt** | One concrete try inside the run (`AttemptId`) — minted at attempt boundaries |
-| **Event** | One meaningful transition inside that attempt (`EventId`) — unique per event |
+| **Execution** | Independently schedulable unit inside the Attempt (`ExecutionId`) — **TARGET**; not yet canonical in Python |
+| **Event** | One meaningful transition (`EventId`) — unique per event |
 
-Canonical hierarchy:
+**TARGET** hierarchy:
 
 ```text
 Task
   1:N Run
       1:N Attempt
-          1:N RuntimeEvent
+          1:N Execution
+              1:N RuntimeEvent
 ```
 
-**Retry:** same `TaskId` + `RunId`, **new** `AttemptId`; emits `RETRY_SCHEDULED` / `RETRY_STARTED` and related events. **Resume without retry:** same `AttemptId`. Full typed-carrier matrix, unified journal, and as-of semantics — [`OBSERVABILITY.md`](OBSERVABILITY.md) §5–§10 (UER does not duplicate that canon).
+**CURRENT IMPLEMENTATION** spine (no `ExecutionId` yet):
+
+```text
+Task → Run → Attempt → RuntimeEvent
+```
+
+**Retry:** **TARGET** whole-Run retry — same `TaskId` + `RunId`, **new** `AttemptId` + new Execution instances; **CURRENT** run-level retry mints new `AttemptId` as wired. **Resume without retry:** same `AttemptId`. Full typed-carrier matrix, unified journal, and as-of semantics — [`OBSERVABILITY.md`](OBSERVABILITY.md) §5–§10 (UER does not duplicate that canon).
 
 ## UER vs Observability
 

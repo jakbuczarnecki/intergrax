@@ -27,7 +27,7 @@ Observability addresses this through typed identity, `RuntimeEvent`, HOS, strict
 | Concern | Summary |
 | -------- | -------- |
 | **Canonical execution envelope** | `RuntimeEvent` — meaningful execution transition with full typed identity |
-| **Identity** | `TaskId` → `RunId` → `AttemptId` → `EventId` — structural, not metadata fallback |
+| **Identity** | **TARGET:** `TaskId` → `RunId` → `AttemptId` → `ExecutionId` → `EventId`; **CURRENT:** spine stops at `AttemptId` → `EventId` (no canonical `ExecutionId` yet) |
 | **Execution scope** | `RuntimeEvent` is execution-scoped only — all four IDs required |
 | **Non-execution signals** | Platform observability signal — lifecycle without synthetic execution identity |
 | **Persistence** | `RuntimeEventPersistence` — canonical execution history |
@@ -58,7 +58,18 @@ Observability addresses this through typed identity, `RuntimeEvent`, HOS, strict
 </picture>
 </a>
 
-**Primary mental model:**
+**Cross-domain causal view (TARGET ARCHITECTURE):** Execution produces facts; Observability records; DIAG interprets along the canonical causal chain.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-observability-diag-causal-flow-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-observability-diag-causal-flow-light.svg">
+  <img
+    alt="Execution produces lifecycle facts; Observability records canonical evidence; DIAG interprets Event through Execution, parent Executions, Attempt, Run, and Task."
+    src="assets/unified-execution-observability-diag-causal-flow-light.svg"
+  >
+</picture>
+
+**Primary mental model (CURRENT IMPLEMENTATION spine — TARGET adds `ExecutionId` and Execution Tree):**
 
 ```text
 Task

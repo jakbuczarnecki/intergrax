@@ -73,7 +73,7 @@ docs/project/architecture/assets/unified-execution-full-architecture-dark.svg
 docs/project/architecture/assets/fullsize/unified-execution-full-architecture.md   # optional companion
 ```
 
-**Alignment with existing repo conventions:** Architecture assets already use `<basename>-light.svg` / `<basename>-dark.svg` (e.g. `nexus-execution-flow-light.svg`, `unified-execution-runtime-lifecycle-light.svg`). UEA pack assets follow the same pattern in the same directory. Optional `fullsize/<basename>.md` companions may hold extended captions and alt text (markdown only), consistent with existing domain diagram companions.
+**Alignment with existing repo conventions:** Architecture assets use `<basename>-light.svg` / `<basename>-dark.svg` (e.g. `unified-execution-identity-lifecycle-light.svg`, `orchestration-control-plane-light.svg`). UEA pack assets follow the same pattern in the same directory. Optional `fullsize/<basename>.md` companions may hold extended captions and alt text (markdown only), consistent with existing domain diagram companions.
 
 ### 3.2 Canonical format strategy
 
@@ -107,7 +107,7 @@ docs/project/architecture/assets/fullsize/unified-execution-full-architecture.md
 
 New UEA diagrams should visually inherit the existing architecture SVG language where appropriate:
 
-- ~1200 px class `viewBox` for engineering diagrams where suitable (existing assets such as `unified-execution-runtime-lifecycle-light.svg` use `viewBox="0 0 1200 900"`)
+- ~1200 px class `viewBox` for engineering diagrams where suitable (UEA pack assets use comparable dimensions)
 - `system-ui` / Segoe UI style typography
 - rounded cards and bounded architecture regions
 - restrained existing palette (light backgrounds `#f6f8fb` / `#ffffff`, dark counterparts in `-dark.svg` pairs)
@@ -165,10 +165,10 @@ This section is **normative** for how existing architecture assets relate to the
 | Diagram ID | Closest existing asset | Decision | Notes |
 |------------|------------------------|----------|-------|
 | **UEA-DIAG-A** | none | **NEW** | No current asset shows the complete frozen model: Task → Run → Attempt → Execution, strategy split, AgentEngine/UAEP, Nexus → child Executions, and cross-cutting subsystem boundaries. |
-| **UEA-DIAG-B** | `unified-execution-runtime-lifecycle` | **NEW / DERIVED VIEW** | Existing UER lifecycle does not show direct execution as a first-class path and lacks canonical Execution level. Do not repurpose the detailed lifecycle asset as the simple developer-facing flow. |
-| **UEA-DIAG-C** | `nexus-execution-flow` | **REPLACE** (semantically; preserve visual language) | Current asset depicts UnifiedTaskRunner → NexusLoop → AgentRouter → AgentEngine/UAEP — current implementation, but conflicts with frozen target abstraction. Target must show: parent Execution → orchestration strategy → Nexus → Execution Boundary → child Executions. AgentEngine/UAEP may appear only below an agentic child Execution. Existing asset may remain useful during migration as **current implementation** evidence but must not stay presented as canonical **target** flow after Nexus docs are rewritten. |
-| **UEA-DIAG-D** | none | **NEW** | Must preserve NodeId vs ExecutionId distinction. |
-| **UEA-DIAG-E** | `unified-execution-runtime-lifecycle` | **UPDATE** (major; eventual replacement of canonical semantics) | Current asset omits ExecutionId and conflates retry/resume under a new Attempt. Frozen target: TaskId → RunId → AttemptId → ExecutionId → EventId. Pause/resume: same AttemptId + ExecutionId. Whole-Run retry: new AttemptId + new runtime ExecutionIds. |
+| **UEA-DIAG-B** | `unified-execution-simple-execute-flow` | **INTEGRATED** | Canonical asset embedded in UEA §3; derived from frozen UEA semantics — not the retired UER lifecycle graphic. |
+| **UEA-DIAG-C** | `unified-execution-orchestration-nexus-flow` | **INTEGRATED** | Canonical asset embedded in UEA §6–§7, NEXUS_EXECUTION_FLOW flagship, ORCHESTRATION; legacy `nexus-execution-flow` asset **removed**. |
+| **UEA-DIAG-D** | `unified-execution-topology-vs-execution-tree` | **INTEGRATED** | Embedded in UEA §5 and ORCHESTRATION. |
+| **UEA-DIAG-E** | `unified-execution-identity-lifecycle` | **INTEGRATED** | Canonical asset embedded in UEA §3 and UER flagship; legacy `unified-execution-runtime-lifecycle` asset **removed**. |
 | **UEA-DIAG-F** | `reliability-recovery-loop` | **COMPANION** + **NEW** cross-domain view | Reliability asset is valuable as domain view of failure → policy → retry/degrade/HITL and ownership boundaries. It does not explain canonical identity preservation, whole-Run retry, subtree cancellation, or pause/resume identity semantics. Do not delete the reliability asset. |
 | **UEA-DIAG-G** | none | **NEW** | — |
 | **UEA-DIAG-H** | none in architecture asset root | **NEW** | No suitable canonical equivalent found in the inspected architecture asset set. This does not claim no distributed diagrams exist elsewhere in the repository. |
@@ -223,7 +223,7 @@ This section is **normative** for how existing architecture assets relate to the
 | **Level of detail** | Minimal boxes; no child Executions |
 | **Target embedding** | UEA §3; UEA §27 view #2 cross-reference |
 | **Asset basename** | `unified-execution-simple-execute-flow` |
-| **Reconciliation** | **NEW / DERIVED VIEW** — closest: `unified-execution-runtime-lifecycle` ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
+| **Reconciliation** | **INTEGRATED** — canonical asset in UEA §3 ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
 | **Caption guidance** | *"Direct execute() path: even the simplest call materializes Task → Run → Attempt → root Execution without Nexus (UEA-INV-008)."* |
 | **README-eligible** | No |
 
@@ -239,9 +239,9 @@ This section is **normative** for how existing architecture assets relate to the
 | **Mandatory relationships/arrows** | OrchestrationDefinition → Nexus (configuration); parent Execution → Nexus; Nexus → child Executions (one or many); child results → merge → parent completion; boundary label: Nexus stops at Execution boundary — does not enter AgentEngine |
 | **Ambiguity to eliminate** | Nexus directly runs agent internals; Node graph equals Execution Tree |
 | **Level of detail** | Show 2–3 child Executions; one child may be agentic (icon only below boundary) |
-| **Target embedding** | UEA §6–§7; future link from NEXUS_EXECUTION_FLOW |
+| **Target embedding** | UEA §6–§7; [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md); [`ORCHESTRATION.md`](ORCHESTRATION.md) |
 | **Asset basename** | `unified-execution-orchestration-nexus-flow` |
-| **Reconciliation** | **REPLACE** semantically — existing `nexus-execution-flow` preserved as migration/current-implementation companion ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
+| **Reconciliation** | **INTEGRATED** — legacy `nexus-execution-flow` removed ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
 | **Caption guidance** | *"Orchestration strategy: Nexus schedules child Executions from a validated OrchestrationDefinition; it does not execute Agent internals directly (UEA-INV-007)."* |
 | **README-eligible** | No |
 
@@ -277,7 +277,7 @@ This section is **normative** for how existing architecture assets relate to the
 | **Level of detail** | Identity types only — no retry table (see F) |
 | **Target embedding** | UEA §3 |
 | **Asset basename** | `unified-execution-identity-lifecycle` |
-| **Reconciliation** | **UPDATE** (major) — existing `unified-execution-runtime-lifecycle` ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
+| **Reconciliation** | **INTEGRATED** — legacy `unified-execution-runtime-lifecycle` removed ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
 | **Caption guidance** | *"Canonical identity hierarchy: five ID layers; every Attempt has at least one root Execution; children link via parent_execution_id (UEA-INV-001, UEA-INV-002)."* |
 | **README-eligible** | No (simplified IDs may appear in §7 derivative) |
 
