@@ -93,6 +93,9 @@ HERO_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "interg
 HERO_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-dark.svg"
 LKW_ASSETS_PREFIX = "applications/local_workspace_application/docs/assets/"
 README_STRATEGIC_PREFIX = "docs/project/assets/public/readme/"
+README_UEA_PLATFORM_CORE_PREFIX = (
+    "docs/project/architecture/assets/unified-execution-platform-core-"
+)
 _README_VISUAL_OWNERSHIP_ROOTS = (
     REPO_ROOT / "docs" / "project" / "assets" / "public" / "readme",
     REPO_ROOT / "applications" / "local_workspace_application" / "docs" / "assets",
@@ -123,6 +126,7 @@ _SECTION_HEADINGS_ORDER = (
     "## Local Knowledge Workspace (LKW)",
     "## Try LKW",
     "## Explore the Intergrax Platform",
+    "## One execution model across the platform",
     "## AI execution should not be a black box",
     "## Responsibility model",
     "## Platform capabilities",
@@ -575,6 +579,10 @@ def _resolve_approved_readme_visual(path_str: str) -> Path:
         except ValueError:
             continue
 
+    normalized = path_str.replace("\\", "/")
+    if normalized.startswith(README_UEA_PLATFORM_CORE_PREFIX) and normalized.endswith(".svg"):
+        return resolved
+
     raise ValueError(
         "README visual outside approved ownership roots: "
         f"{path_str!r} (allowed: {README_STRATEGIC_PREFIX!r}, {LKW_ASSETS_PREFIX!r})"
@@ -958,7 +966,7 @@ def test_quick_start_anchor(readme_text: str) -> None:
 
 def test_brevity() -> None:
     line_count = len(README_PATH.read_text(encoding="utf-8").splitlines())
-    assert line_count <= 450, f"README has {line_count} lines (max 450)"
+    assert line_count <= 480, f"README has {line_count} lines (max 480)"
 
 
 def test_public_architecture_sync() -> None:
