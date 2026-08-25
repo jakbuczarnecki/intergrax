@@ -20,6 +20,7 @@ from intergrax.contracts.idempotency_store import (
 )
 from intergrax.contracts.lease_claim import StaleClaimError
 from intergrax.contracts.persistence_topology import PersistenceTopology
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.queueing.worker.execution import (
     execute_logical_task,
     IdempotencyLockConflictError,
@@ -29,10 +30,69 @@ from intergrax.runtime.background_execution.bootstrap import (
     BackgroundExecutionIdentity,
     bootstrap_background_execution,
 )
+from intergrax.runtime.background_execution.identity_persistence import (
+    KvBackgroundExecutionIdentityPersistence,
+)
+from intergrax.runtime.background_execution.transport_ref import (
+    BackgroundTransportExecutionRef,
+)
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from intergrax.tools.execution_models import ToolExecutionResult
 
 pytestmark = pytest.mark.unit
+
+
+class _ExecKV(DistributedKVStore):
+    def __init__(self) -> None:
+        self._data: dict[tuple[str, str], bytes] = {}
+
+    def get(self, tenant_id: str, key: str) -> bytes | None:
+        return self._data.get((tenant_id, key))
+
+    def set(
+        self,
+        tenant_id: str,
+        key: str,
+        value: bytes,
+        *,
+        ttl_seconds: int | None = None,
+    ) -> None:
+        self._data[(tenant_id, key)] = value
+
+    def delete(self, tenant_id: str, key: str) -> None:
+        self._data.pop((tenant_id, key), None)
+
+    def compare_and_set(
+        self,
+        tenant_id: str,
+        key: str,
+        expected: bytes | None,
+        new_value: bytes,
+        *,
+        ttl_seconds: int | None = None,
+    ) -> bool:
+        current = self.get(tenant_id, key)
+        if expected is None and current is not None:
+            return False
+        if expected is not None and current != expected:
+            return False
+        self.set(tenant_id, key, new_value, ttl_seconds=ttl_seconds)
+        return True
+
+
+def _bootstrap_identity(
+    *,
+    tenant_id: str = "t1",
+    transport_task_id: str = "exec-test-1",
+) -> BackgroundExecutionIdentity:
+    return bootstrap_background_execution(
+        transport_ref=BackgroundTransportExecutionRef(
+            tenant_id=tenant_id,
+            provider="test",
+            transport_task_id=transport_task_id,
+        ),
+        identity_persistence=KvBackgroundExecutionIdentityPersistence(_ExecKV()),
+    )
 
 
 class DummyOutput(BaseModel):
@@ -171,7 +231,7 @@ class LegacyOnlyIdempotencyStore(IdempotencyStore):
 
 @pytest.fixture
 def execution_identity() -> BackgroundExecutionIdentity:
-    return bootstrap_background_execution(transport_tenant_id="t1")
+    return _bootstrap_identity()
 
 
 @pytest.fixture
@@ -463,7 +523,7 @@ def test_r2_7_stale_completion_propagates(registry):
 
 def test_execute_logical_task_passes_exact_execution_identity() -> None:
     registry = TaskExecutionRegistry()
-    fixed = bootstrap_background_execution(transport_tenant_id="tenant-a")
+    fixed = _bootstrap_identity(tenant_id="tenant-a", transport_task_id="identity-pass-through")
     seen: dict[str, object] = {}
 
     def handler(
@@ -505,7 +565,7 @@ def test_execute_logical_task_passes_exact_execution_identity() -> None:
 
 def test_legacy_handler_without_execution_identity_rejected_at_runtime() -> None:
     registry = TaskExecutionRegistry()
-    identity = bootstrap_background_execution(transport_tenant_id="tenant-a")
+    identity = _bootstrap_identity(tenant_id="tenant-a", transport_task_id="legacy-handler")
 
     def legacy_handler(
         *,

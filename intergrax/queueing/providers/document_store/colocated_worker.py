@@ -16,6 +16,13 @@ from intergrax.queueing.providers.document_store.document_store_task_queue impor
 from intergrax.queueing.worker.execution import execute_logical_task
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
+from intergrax.runtime.background_execution.identity_persistence import (
+    BackgroundExecutionIdentityPersistence,
+    DocumentStoreBackgroundExecutionIdentityPersistence,
+)
+from intergrax.runtime.background_execution.transport_ref import (
+    BackgroundTransportExecutionRef,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,12 +40,20 @@ class DocumentStoreTaskWorker:
         poll_interval_seconds: float = 0.25,
         claim_limit: int = 4,
         on_interrupted: InterruptedHandler | None = None,
+        identity_persistence: BackgroundExecutionIdentityPersistence | None = None,
     ) -> None:
         self._queue = queue
         self._registry = registry
         self._poll_interval_seconds = poll_interval_seconds
         self._claim_limit = claim_limit
         self._on_interrupted = on_interrupted
+        self._identity_persistence = (
+            identity_persistence
+            if identity_persistence is not None
+            else DocumentStoreBackgroundExecutionIdentityPersistence(
+                queue.document_store,
+            )
+        )
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -74,7 +89,12 @@ class DocumentStoreTaskWorker:
         for handle, request in claimed:
             try:
                 execution_identity = bootstrap_background_execution(
-                    transport_tenant_id=request.tenant_id,
+                    transport_ref=BackgroundTransportExecutionRef(
+                        tenant_id=request.tenant_id,
+                        provider=handle.provider,
+                        transport_task_id=handle.task_id,
+                    ),
+                    identity_persistence=self._identity_persistence,
                 )
                 result = execute_logical_task(
                     registry=self._registry,

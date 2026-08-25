@@ -9,6 +9,7 @@ from typing import Callable, Optional, Tuple
 from celery import Celery
 
 from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.distributed.contracts.rate_limiter import DistributedRateLimiter
 from intergrax.queueing.worker.dispatcher import register_dispatcher_task
 from intergrax.queueing.worker.rate_limit_event import RateLimitEvent
@@ -31,6 +32,7 @@ def create_celery_worker_app(
     rate_limit_config: Optional[Callable[[str], Tuple[int, float]]] = None,
     on_rate_limited: Optional[Callable[[RateLimitEvent], None]] = None,
     on_retry_scheduled: Optional[Callable[[RetryEvent], None]] = None,
+    kv_store: Optional[DistributedKVStore] = None,
 ) -> Celery:
     """
     Production composition root for Tier-0 execution plane.
@@ -65,6 +67,7 @@ def create_celery_worker_app(
         rate_limit_config=rate_limit_config,
         on_rate_limited=on_rate_limited,
         on_retry_scheduled=on_retry_scheduled,
+        kv_store=kv_store,
     )
 
     return app

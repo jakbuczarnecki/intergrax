@@ -11,6 +11,13 @@ import pytest
 from intergrax.queueing.contracts.task_queue import TaskStatus
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
+from intergrax.runtime.background_execution.identity_persistence import (
+    KvBackgroundExecutionIdentityPersistence,
+)
+from intergrax.runtime.background_execution.transport_ref import (
+    BackgroundTransportExecutionRef,
+)
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.runtime.task.task import Task, TaskResult as RuntimeTaskResult, TaskState
 from local_workspace_application.background_ingest.contracts import (
     LKW_BACKGROUND_INGEST_TASK_NAME,
@@ -24,6 +31,55 @@ from local_workspace_application.tests.background_ingest.test_background_ingest_
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+
+class _KV(DistributedKVStore):
+    def __init__(self) -> None:
+        self._data: dict[tuple[str, str], bytes] = {}
+
+    def get(self, tenant_id: str, key: str) -> bytes | None:
+        return self._data.get((tenant_id, key))
+
+    def set(
+        self,
+        tenant_id: str,
+        key: str,
+        value: bytes,
+        *,
+        ttl_seconds: int | None = None,
+    ) -> None:
+        self._data[(tenant_id, key)] = value
+
+    def delete(self, tenant_id: str, key: str) -> None:
+        self._data.pop((tenant_id, key), None)
+
+    def compare_and_set(
+        self,
+        tenant_id: str,
+        key: str,
+        expected: bytes | None,
+        new_value: bytes,
+        *,
+        ttl_seconds: int | None = None,
+    ) -> bool:
+        current = self.get(tenant_id, key)
+        if expected is None and current is not None:
+            return False
+        if expected is not None and current != expected:
+            return False
+        self.set(tenant_id, key, new_value, ttl_seconds=ttl_seconds)
+        return True
+
+
+def _bootstrap_identity(*, tenant_id: str, transport_task_id: str):
+    return bootstrap_background_execution(
+        transport_ref=BackgroundTransportExecutionRef(
+            tenant_id=tenant_id,
+            provider="test",
+            transport_task_id=transport_task_id,
+        ),
+        identity_persistence=KvBackgroundExecutionIdentityPersistence(_KV()),
+    )
 
 
 class _FakeRunner:
@@ -49,7 +105,10 @@ def test_worker_handler_registers_and_returns_tool_execution_result() -> None:
         run_id="run-worker-1",
         payload=encode_background_ingest_job(job),
         idempotency_key=None,
-        execution_identity=bootstrap_background_execution(transport_tenant_id=job.tenant_id),
+        execution_identity=_bootstrap_identity(
+            tenant_id=job.tenant_id,
+            transport_task_id="ingest-worker-1",
+        ),
     )
 
     assert result.success is True
@@ -68,7 +127,10 @@ def test_worker_handler_returns_failure_for_invalid_payload() -> None:
         run_id="run-worker-2",
         payload=b"not-json",
         idempotency_key=None,
-        execution_identity=bootstrap_background_execution(transport_tenant_id="tenant-a"),
+        execution_identity=_bootstrap_identity(
+            tenant_id="tenant-a",
+            transport_task_id="ingest-worker-2",
+        ),
     )
 
     assert result.success is False

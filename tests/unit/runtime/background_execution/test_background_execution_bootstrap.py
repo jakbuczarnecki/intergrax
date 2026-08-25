@@ -34,6 +34,12 @@ from intergrax.runtime.background_execution.bootstrap import (
     BackgroundExecutionTenantMismatchError,
     bootstrap_background_execution,
 )
+from intergrax.runtime.background_execution.identity_persistence import (
+    KvBackgroundExecutionIdentityPersistence,
+)
+from intergrax.runtime.background_execution.transport_ref import (
+    BackgroundTransportExecutionRef,
+)
 from intergrax.tools.execution_models import ToolExecutionResult
 
 pytestmark = pytest.mark.unit
@@ -99,8 +105,19 @@ def _build_message(*, task_id: str = "queue-handle-1") -> bytes:
     return json.dumps(message).encode("utf-8")
 
 
+def _persistence(kv: _KV | None = None) -> KvBackgroundExecutionIdentityPersistence:
+    return KvBackgroundExecutionIdentityPersistence(kv or _KV())
+
+
 def test_bootstrap_mints_canonical_identity() -> None:
-    identity = bootstrap_background_execution(transport_tenant_id="tenant-a")
+    identity = bootstrap_background_execution(
+        transport_ref=BackgroundTransportExecutionRef(
+            tenant_id="tenant-a",
+            provider="celery",
+            transport_task_id="transport-initial",
+        ),
+        identity_persistence=_persistence(),
+    )
     assert identity.tenant_id == "tenant-a"
     assert str(identity.task_id).startswith("task_")
     assert str(identity.run_id).startswith("run_")
@@ -110,18 +127,33 @@ def test_bootstrap_mints_canonical_identity() -> None:
 def test_bootstrap_rejects_tenant_mismatch() -> None:
     with pytest.raises(BackgroundExecutionTenantMismatchError):
         bootstrap_background_execution(
-            transport_tenant_id="tenant-a",
+            transport_ref=BackgroundTransportExecutionRef(
+                tenant_id="tenant-a",
+                provider="celery",
+                transport_task_id="transport-mismatch",
+            ),
+            identity_persistence=_persistence(),
             task_tenant_id="tenant-b",
         )
 
 
-def test_bootstrap_accepts_canonical_upstream_task_id() -> None:
-    task_id = mint_task_id()
-    identity = bootstrap_background_execution(
-        transport_tenant_id="tenant-a",
-        canonical_task_id=task_id,
+def test_bootstrap_reuses_stable_task_id_for_same_transport() -> None:
+    persistence = _persistence()
+    transport = BackgroundTransportExecutionRef(
+        tenant_id="tenant-a",
+        provider="broker",
+        transport_task_id="queue-handle-stable",
     )
-    assert identity.task_id == task_id
+    first = bootstrap_background_execution(
+        transport_ref=transport,
+        identity_persistence=persistence,
+    )
+    second = bootstrap_background_execution(
+        transport_ref=transport,
+        identity_persistence=persistence,
+    )
+    assert second.task_id == first.task_id
+    assert second.run_id == first.run_id
 
 
 def test_broker_worker_path_uses_central_bootstrap() -> None:
@@ -157,7 +189,13 @@ def test_broker_worker_path_uses_central_bootstrap() -> None:
     ) as bootstrap_mock:
         worker.process_message(raw_payload=_build_message())
 
-    bootstrap_mock.assert_called_once_with(transport_tenant_id="tenant-a")
+    bootstrap_mock.assert_called_once()
+    broker_call = bootstrap_mock.call_args.kwargs
+    assert broker_call["transport_ref"] == BackgroundTransportExecutionRef(
+        tenant_id="tenant-a",
+        provider="broker",
+        transport_task_id="queue-handle-1",
+    )
     assert captured == [fixed]
 
 
@@ -192,6 +230,7 @@ def test_worker_runtime_path_uses_central_bootstrap() -> None:
         result_store=TaskResultStore(kv_store=kv),
         execution_registry=execution_registry,
         provider="kafka",
+        kv_store=kv,
     )
     fixed = BackgroundExecutionIdentity(
         tenant_id="tenant-a",
@@ -212,7 +251,13 @@ def test_worker_runtime_path_uses_central_bootstrap() -> None:
     ) as bootstrap_mock:
         runtime.process_request(request, task_id="queue-handle-1")
 
-    bootstrap_mock.assert_called_once_with(transport_tenant_id="tenant-a")
+    bootstrap_mock.assert_called_once()
+    runtime_call = bootstrap_mock.call_args.kwargs
+    assert runtime_call["transport_ref"] == BackgroundTransportExecutionRef(
+        tenant_id="tenant-a",
+        provider="kafka",
+        transport_task_id="queue-handle-1",
+    )
     assert captured == [fixed]
 
 

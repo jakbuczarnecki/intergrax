@@ -10,6 +10,7 @@ from celery import Celery
 from celery.exceptions import Retry
 
 from intergrax.queueing.worker.dispatcher import register_dispatcher_task
+from tests.unit.queueing.worker.dispatcher_test_kv import DispatcherTestKVStore
 from intergrax.queueing.worker.execution import RetryableHandlerError
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_policy import RetryPolicy
@@ -66,6 +67,7 @@ def test_dispatcher_calls_retry_hook() -> None:
         lock_ttl_seconds=None,
         retry_policy=retry_policy,
         on_retry_scheduled=retry_hook,
+        kv_store=DispatcherTestKVStore(),
     )
 
     task = app.tasks["intergrax.execute"]

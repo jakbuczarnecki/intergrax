@@ -4,7 +4,7 @@
 **Plan (1:1):** [`plan/BACKGROUND_TASKS.md`](../maintainers/plans/BACKGROUND_TASKS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
 **Generalizes:** LKW.4 background ingest proof ([`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/ARCHITECTURE.md) §8.7)
-**Last updated:** 2026-08-24 — **BG-EXEC-1** canonical background execution bootstrap
+**Last updated:** 2026-08-25 — **BG-EXEC-2** retry/redelivery identity semantics
 
 ---
 
@@ -39,14 +39,20 @@ Handlers contain developer custom logic but run through platform contracts.
 - Applications (Tier-3) and agents (Tier-2) **enqueue** work through platform APIs/tools (`message_bus.enqueue`, future `background_tasks.enqueue`). They do **not** import vendor SDKs.
 - Handler code is **registered ahead of time**; the queue carries `task_name` + validated payload bytes, **never arbitrary serialized executable code**.
 
-### Canonical background execution identity (BG-EXEC-1)
+### Canonical background execution identity (BG-EXEC-1 / BG-EXEC-2)
 
-All supported background execution paths use the platform-owned canonical background execution bootstrap (`bootstrap_background_execution` in `intergrax/runtime/background_execution/bootstrap.py`). Applications and scenarios do **not** mint or own runtime execution identity.
+All supported background execution paths use the platform-owned canonical background execution bootstrap (`bootstrap_background_execution` / `resolve_background_execution` in `intergrax/runtime/background_execution/bootstrap.py`). Applications and scenarios do **not** mint or own runtime execution identity.
+
+Redelivery/retry of the same transport task preserves canonical `TaskId` and `RunId` while each actual execution attempt receives a new `AttemptId`. This behavior is provider-neutral and owned by the central background execution mechanism.
 
 ```text
-background transport (TaskRequest / broker message)
+background transport (TaskRequest / broker message / Celery request)
        ↓
-bootstrap_background_execution  →  BackgroundExecutionIdentity
+BackgroundTransportExecutionRef (tenant + provider + transport_task_id)
+       ↓
+BackgroundExecutionIdentityPersistence.resolve_or_create → stable TaskId + RunId
+       ↓
+bootstrap_background_execution → mint new AttemptId
        ↓
 execute_logical_task / NexusWorkerRuntime.run_task
        ↓
@@ -55,9 +61,9 @@ runtime (TaskId, RunId, AttemptId)
 
 | Field | Owner at worker boundary |
 |-------|--------------------------|
-| `TaskId` | Central bootstrap (mint) unless canonical upstream `TaskId` is supplied |
-| `RunId` | Central bootstrap (mint) — **not** `TaskRequest.run_id` |
-| `AttemptId` | Central bootstrap (mint) — propagated into Nexus before handler execution |
+| `TaskId` | Central identity persistence (`resolve_or_create`) keyed by transport ref |
+| `RunId` | Central identity persistence — **not** `TaskRequest.run_id`; stable across retry/redelivery |
+| `AttemptId` | Central bootstrap (mint per actual execution entry) — **not** Celery `request.retries` |
 | `tenant_id` | Validated single scope; mismatch fails closed |
 
 `TaskRequest.run_id` and broker message `run_id` remain **transport queue correlation** for status/events indexing; they are not canonical runtime `RunId`.

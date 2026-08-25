@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Canonical background execution identity bootstrap (BG-EXEC-1)."""
+"""Canonical background execution identity bootstrap (BG-EXEC-1 / BG-EXEC-2)."""
 
 from __future__ import annotations
 
@@ -12,9 +12,12 @@ from intergrax.contracts.execution_identity import (
     RunId,
     TaskId,
     mint_attempt_id,
-    mint_run_id,
-    mint_task_id,
-    validate_task_id,
+)
+from intergrax.runtime.background_execution.identity_persistence import (
+    BackgroundExecutionIdentityPersistence,
+)
+from intergrax.runtime.background_execution.transport_ref import (
+    BackgroundTransportExecutionRef,
 )
 
 
@@ -52,30 +55,45 @@ def _resolve_tenant_scope(
     return transport
 
 
-def bootstrap_background_execution(
+def resolve_background_execution(
     *,
-    transport_tenant_id: str,
+    transport_ref: BackgroundTransportExecutionRef,
+    identity_persistence: BackgroundExecutionIdentityPersistence,
     task_tenant_id: str | None = None,
-    canonical_task_id: TaskId | None = None,
 ) -> BackgroundExecutionIdentity:
     """
-    Mint canonical runtime identity at the background worker boundary.
+    Resolve stable canonical TaskId/RunId for one transport execution and mint AttemptId.
 
     ``TaskRequest.run_id`` and broker message ``run_id`` are transport queue
     correlation only and must not be passed here as canonical ``RunId``.
     """
     tenant_id = _resolve_tenant_scope(
-        transport_tenant_id=transport_tenant_id,
+        transport_tenant_id=transport_ref.tenant_id,
         task_tenant_id=task_tenant_id,
     )
-    task_id = (
-        validate_task_id(canonical_task_id)
-        if canonical_task_id is not None
-        else mint_task_id()
+    scoped_ref = BackgroundTransportExecutionRef(
+        tenant_id=tenant_id,
+        provider=transport_ref.provider,
+        transport_task_id=transport_ref.transport_task_id,
     )
+    task_id, run_id = identity_persistence.resolve_or_create(scoped_ref)
     return BackgroundExecutionIdentity(
         tenant_id=tenant_id,
         task_id=task_id,
-        run_id=mint_run_id(),
+        run_id=run_id,
         attempt_id=mint_attempt_id(),
+    )
+
+
+def bootstrap_background_execution(
+    *,
+    transport_ref: BackgroundTransportExecutionRef,
+    identity_persistence: BackgroundExecutionIdentityPersistence,
+    task_tenant_id: str | None = None,
+) -> BackgroundExecutionIdentity:
+    """Worker-boundary alias for ``resolve_background_execution``."""
+    return resolve_background_execution(
+        transport_ref=transport_ref,
+        identity_persistence=identity_persistence,
+        task_tenant_id=task_tenant_id,
     )

@@ -10,6 +10,7 @@ from typing import Callable, Optional, Tuple
 from celery import Celery
 
 from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.distributed.contracts.rate_limiter import (
     DistributedRateLimiter,
     RateLimitResult,
@@ -21,6 +22,13 @@ from intergrax.queueing.worker.execution import (
 )
 from intergrax.queueing.worker.result_codec import encode_logical_task_result
 from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
+from intergrax.runtime.background_execution.identity_persistence import (
+    BackgroundExecutionIdentityPersistence,
+    KvBackgroundExecutionIdentityPersistence,
+)
+from intergrax.runtime.background_execution.transport_ref import (
+    BackgroundTransportExecutionRef,
+)
 from intergrax.queueing.worker.rate_limit_event import RateLimitEvent
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_event import RetryEvent
@@ -40,6 +48,8 @@ def register_dispatcher_task(
     on_retry_scheduled: Optional[Callable[[RetryEvent], None]] = None,
     rate_limit_config: Optional[Callable[[str], Tuple[int, float]]] = None,
     on_rate_limited: Optional[Callable[[RateLimitEvent], None]] = None,
+    identity_persistence: Optional[BackgroundExecutionIdentityPersistence] = None,
+    kv_store: Optional[DistributedKVStore] = None,
 ) -> None:
     """
     Registers the generic execution task into Celery app.
@@ -52,6 +62,14 @@ def register_dispatcher_task(
 
     if rate_limiter is not None and retry_policy is None:
         raise ValueError("retry_policy must be provided when rate_limiter is enabled.")
+
+    resolved_identity_persistence = identity_persistence
+    if resolved_identity_persistence is None and kv_store is not None:
+        resolved_identity_persistence = KvBackgroundExecutionIdentityPersistence(kv_store)
+    if resolved_identity_persistence is None:
+        raise ValueError(
+            "identity_persistence or kv_store is required for BG-EXEC-2 retry semantics",
+        )
 
     @app.task(name="intergrax.execute", bind=True)
     def intergrax_execute(
@@ -141,7 +159,12 @@ def register_dispatcher_task(
         # -------------------------
         try:
             execution_identity = bootstrap_background_execution(
-                transport_tenant_id=tenant_id,
+                transport_ref=BackgroundTransportExecutionRef(
+                    tenant_id=tenant_id,
+                    provider="celery",
+                    transport_task_id=str(self.request.id),
+                ),
+                identity_persistence=resolved_identity_persistence,
             )
             return encode_logical_task_result(
                 execute_logical_task(

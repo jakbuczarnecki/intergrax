@@ -116,6 +116,7 @@ def test_worker_runtime_emits_lifecycle_events() -> None:
         execution_registry=execution_registry,
         provider="kafka",
         event_emitter=collector,
+        kv_store=kv,
     )
     request = TaskRequest(
         tenant_id="tenant-a",

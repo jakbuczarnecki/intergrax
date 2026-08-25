@@ -17,6 +17,13 @@ from intergrax.queueing.task_index import record_task_index
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.execution import execute_logical_task
 from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
+from intergrax.runtime.background_execution.identity_persistence import (
+    BackgroundExecutionIdentityPersistence,
+    KvBackgroundExecutionIdentityPersistence,
+)
+from intergrax.runtime.background_execution.transport_ref import (
+    BackgroundTransportExecutionRef,
+)
 
 
 class BrokerWorkerBase(ABC):
@@ -44,12 +51,18 @@ class BrokerWorkerBase(ABC):
         idempotency_store: Optional[IdempotencyStore] = None,
         event_emitter: TaskEventEmitter | None = None,
         provider_name: str = "broker",
+        identity_persistence: BackgroundExecutionIdentityPersistence | None = None,
     ) -> None:
         self._registry: TaskExecutionRegistry = registry
         self._kv_store: DistributedKVStore = kv_store
         self._idempotency_store: Optional[IdempotencyStore] = idempotency_store
         self._event_emitter = event_emitter
         self._provider_name = provider_name
+        self._identity_persistence = (
+            identity_persistence
+            if identity_persistence is not None
+            else KvBackgroundExecutionIdentityPersistence(kv_store)
+        )
 
     # ------------------------------------------------------------------
     # Storage keys (aligned with BrokerBackedTaskQueueBase)
@@ -156,7 +169,12 @@ class BrokerWorkerBase(ABC):
 
         try:
             execution_identity = bootstrap_background_execution(
-                transport_tenant_id=tenant_id,
+                transport_ref=BackgroundTransportExecutionRef(
+                    tenant_id=tenant_id,
+                    provider=provider_name,
+                    transport_task_id=task_id,
+                ),
+                identity_persistence=self._identity_persistence,
             )
             result = execute_logical_task(
                 registry=self._registry,

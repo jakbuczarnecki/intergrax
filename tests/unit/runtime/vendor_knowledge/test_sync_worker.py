@@ -17,6 +17,13 @@ from intergrax.integrations._shared.in_memory_document_store import InMemoryDocu
 from intergrax.queueing.providers.document_store import DocumentStoreTaskQueue
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
+from intergrax.runtime.background_execution.identity_persistence import (
+    KvBackgroundExecutionIdentityPersistence,
+)
+from intergrax.runtime.background_execution.transport_ref import (
+    BackgroundTransportExecutionRef,
+)
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeError,
     VendorKnowledgeErrorCode,
@@ -39,7 +46,51 @@ from intergrax.runtime.vendor_knowledge.sync_worker import (
 
 
 def _execution_identity(*, tenant_id: str = "tenant-1"):
-    return bootstrap_background_execution(transport_tenant_id=tenant_id)
+    class _KV(DistributedKVStore):
+        def __init__(self) -> None:
+            self._data: dict[tuple[str, str], bytes] = {}
+
+        def get(self, tenant_id: str, key: str) -> bytes | None:
+            return self._data.get((tenant_id, key))
+
+        def set(
+            self,
+            tenant_id: str,
+            key: str,
+            value: bytes,
+            *,
+            ttl_seconds: int | None = None,
+        ) -> None:
+            self._data[(tenant_id, key)] = value
+
+        def delete(self, tenant_id: str, key: str) -> None:
+            self._data.pop((tenant_id, key), None)
+
+        def compare_and_set(
+            self,
+            tenant_id: str,
+            key: str,
+            expected: bytes | None,
+            new_value: bytes,
+            *,
+            ttl_seconds: int | None = None,
+        ) -> bool:
+            current = self.get(tenant_id, key)
+            if expected is None and current is not None:
+                return False
+            if expected is not None and current != expected:
+                return False
+            self.set(tenant_id, key, new_value, ttl_seconds=ttl_seconds)
+            return True
+
+    return bootstrap_background_execution(
+        transport_ref=BackgroundTransportExecutionRef(
+            tenant_id=tenant_id,
+            provider="document_store",
+            transport_task_id=f"sync-worker-{tenant_id}",
+        ),
+        identity_persistence=KvBackgroundExecutionIdentityPersistence(_KV()),
+    )
 
 
 def _sha(value: str) -> str:
