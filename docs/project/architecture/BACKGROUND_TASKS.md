@@ -4,7 +4,7 @@
 **Plan (1:1):** [`plan/BACKGROUND_TASKS.md`](../maintainers/plans/BACKGROUND_TASKS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
 **Generalizes:** LKW.4 background ingest proof ([`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/ARCHITECTURE.md) §8.7)
-**Last updated:** 2026-08-25 — **BG-EXEC-2** retry/redelivery identity semantics
+**Last updated:** 2026-08-25 — **BG-EXEC-3** required audit evidence admission semantics
 
 ---
 
@@ -69,6 +69,33 @@ runtime (TaskId, RunId, AttemptId)
 Stable `TaskId`/`RunId` across process restart and concurrent workers requires atomic identity persistence: `DistributedKVStore.compare_and_set` or `ConditionalDocumentStore.put_if_absent`. Generic `DocumentStore` without conditional create is rejected at composition; there is no process-local fallback.
 
 `TaskRequest.run_id` and broker message `run_id` remain **transport queue correlation** for status/events indexing; they are not canonical runtime `RunId`.
+
+### Required audit evidence admission (BG-EXEC-3)
+
+Intergrax distinguishes **optional telemetry** from **required audit evidence**. Failure to persist evidence required to establish an execution boundary fails closed before business execution begins.
+
+| Class | Examples | Failure semantics |
+|-------|----------|-------------------|
+| **Optional observability** | metrics export, vendor export, supplemental telemetry, non-critical subscribers | best-effort / degraded |
+| **Required audit evidence** | `TRANSPORT_TASK_TRIGGERED_EXECUTION` linking `BackgroundTransportExecutionRef` → `BackgroundExecutionIdentity` | fail-closed before handler |
+
+Required ordering at the worker admission boundary (DIAG-1I writer integration):
+
+```text
+transport task received
+       ↓
+BackgroundExecutionIdentity established (bootstrap)
+       ↓
+required causal evidence persisted (admit_background_execution_handler)
+       ↓
+execute_logical_task / handler
+```
+
+If required evidence persistence fails: handler invocation count = 0, no business side effects, failure propagates through existing worker/reliability handling (`RequiredAuditEvidencePersistenceError` → `FailureClass.DEPENDENCY_ERROR`). No new recovery engine.
+
+`RuntimeEventBus` best-effort persistence is **not** the admission mechanism for required transport→execution causal evidence.
+
+**Writer integration: NOT YET** (DIAG-1I). Platform contract: `intergrax/runtime/background_execution/required_audit_evidence.py`.
 
 Entry points that invoke the bootstrap: `BrokerWorkerBase.process_message`, `WorkerRuntime.process_request`, Celery `intergrax.execute` dispatcher, and `DocumentStoreTaskWorker`.
 

@@ -12,6 +12,14 @@ from intergrax.runtime.background_execution.identity_persistence import (
     KvBackgroundExecutionIdentityPersistence,
     wire_background_execution_identity_persistence,
 )
+from intergrax.runtime.background_execution.required_audit_evidence import (
+    EvidenceDurabilityClass,
+    REQUIRED_BACKGROUND_CAUSAL_RELATIONS,
+    RequiredAuditEvidencePersistenceError,
+    admit_background_execution_handler,
+    build_transport_triggered_execution_evidence,
+    persist_required_audit_evidence,
+)
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
 )
@@ -26,4 +34,10 @@ __all__ = [
     "wire_background_execution_identity_persistence",
     "bootstrap_background_execution",
     "resolve_background_execution",
+    "EvidenceDurabilityClass",
+    "REQUIRED_BACKGROUND_CAUSAL_RELATIONS",
+    "RequiredAuditEvidencePersistenceError",
+    "admit_background_execution_handler",
+    "build_transport_triggered_execution_evidence",
+    "persist_required_audit_evidence",
 ]
