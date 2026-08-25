@@ -117,8 +117,6 @@ def resolve_local_target(base_dir: Path, ref: str) -> Path | None:
         return None
     if path_part.startswith("/"):
         return (REPO_ROOT / path_part.lstrip("/")).resolve()
-    if path_part.startswith("docs/"):
-        return (REPO_ROOT / path_part).resolve()
     return (base_dir / path_part).resolve()
 
 

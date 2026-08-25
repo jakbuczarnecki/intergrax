@@ -57,13 +57,13 @@ result = await execution.execute(request=..., output_type=...)
 
 conceptually becomes Task → Run → Attempt → root Execution. The developer describes **what** is required; the platform resolves **how** internally.
 
-<a href="docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md">
+<a href="UNIFIED_EXECUTION_ARCHITECTURE.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-simple-execute-flow-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-simple-execute-flow-light.svg">
   <img
     alt="Direct execute path: even the simplest call materializes Task, Run, Attempt, and root Execution without requiring Nexus."
-    src="docs/project/architecture/assets/unified-execution-simple-execute-flow-light.svg"
+    src="assets/unified-execution-simple-execute-flow-light.svg"
   >
 </picture>
 </a>
@@ -108,13 +108,13 @@ TaskId
 
 Every Attempt has at least one **root Execution** (`parent_execution_id = None`). Child Executions link via `parent_execution_id`, forming one canonical **Execution Tree** per Attempt.
 
-<a href="docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md">
+<a href="UNIFIED_EXECUTION_ARCHITECTURE.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-identity-lifecycle-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-identity-lifecycle-light.svg">
   <img
     alt="Canonical identity hierarchy: TaskId through EventId with ExecutionId and parent_execution_id on child Executions."
-    src="docs/project/architecture/assets/unified-execution-identity-lifecycle-light.svg"
+    src="assets/unified-execution-identity-lifecycle-light.svg"
   >
 </picture>
 </a>
@@ -264,13 +264,13 @@ Do **not** create a second generic graph runtime inside each Execution.
 
 Pause/resume is **not** retry. Whole-Run retry mints a new `AttemptId` and new runtime Execution instances; local retries do **not** automatically mint a new `AttemptId`.
 
-<a href="docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md">
+<a href="UNIFIED_EXECUTION_ARCHITECTURE.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-retry-pause-resume-cancel-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-retry-pause-resume-cancel-light.svg">
   <img
     alt="Recovery semantics: local retries preserve AttemptId; whole-Run retry mints new Attempt and new Execution instances; pause/resume preserves all runtime ids."
-    src="docs/project/architecture/assets/unified-execution-retry-pause-resume-cancel-light.svg"
+    src="assets/unified-execution-retry-pause-resume-cancel-light.svg"
   >
 </picture>
 </a>
@@ -374,13 +374,13 @@ Checkpoint subsystem owns durable checkpoint persistence. UER coordinates lifecy
 
 **CURRENT IMPLEMENTATION / MIGRATION GAP:** `RuntimeCheckpoint` does not persist canonical Execution Tree.
 
-<a href="docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md">
+<a href="UNIFIED_EXECUTION_ARCHITECTURE.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-checkpoint-recovery-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-checkpoint-recovery-light.svg">
   <img
     alt="Checkpoint and recovery: Run-scoped durable state preserving Attempt, Execution Tree, orchestration state, agent cursors, pending HITL, and budget reservations."
-    src="docs/project/architecture/assets/unified-execution-checkpoint-recovery-light.svg"
+    src="assets/unified-execution-checkpoint-recovery-light.svg"
   >
 </picture>
 </a>
@@ -393,13 +393,13 @@ Worker must **not** mint a new `ExecutionId` because work was queued, broker red
 
 Reference: UEA [§11 Distributed execution](UNIFIED_EXECUTION_ARCHITECTURE.md#11-distributed-execution-and-transport) (UEA-DIAG-H cross-ref in distributed scenarios).
 
-<a href="docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md">
+<a href="UNIFIED_EXECUTION_ARCHITECTURE.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-distributed-queue-worker-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-distributed-queue-worker-light.svg">
   <img
     alt="Distributed execution: transport identity is infrastructure-only; workers receive and continue the same runtime identity."
-    src="docs/project/architecture/assets/unified-execution-distributed-queue-worker-light.svg"
+    src="assets/unified-execution-distributed-queue-worker-light.svg"
   >
 </picture>
 </a>
@@ -433,13 +433,13 @@ From the developer perspective, UER **coordinates**:
 
 UER does **not** absorb Governance, Budget, Observability, DIAG, Checkpoint persistence, Queue transport, or Agent internals.
 
-<a href="docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md">
+<a href="UNIFIED_EXECUTION_ARCHITECTURE.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-component-ownership-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-component-ownership-light.svg">
   <img
     alt="Component ownership: UER coordinates lifecycle and identity; Governance, Budget, Observability, DIAG, and Checkpoint own their respective authorities."
-    src="docs/project/architecture/assets/unified-execution-component-ownership-light.svg"
+    src="assets/unified-execution-component-ownership-light.svg"
   >
 </picture>
 </a>
