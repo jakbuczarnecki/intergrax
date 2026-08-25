@@ -8,7 +8,10 @@ from dataclasses import dataclass
 
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.distributed.contracts.kv_store import (
+    DistributedKVStore,
+    DistributedKVStoreProvider,
+)
 from intergrax.integrations._shared.conformance import assert_conditional_document_store
 from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.core.binding import IntegrationBinding
@@ -80,12 +83,17 @@ def apply_queue_worker_environment_profile(
 def _resolve_distributed_kv_store(key_value_cache: object) -> DistributedKVStore:
     if isinstance(key_value_cache, DistributedKVStore):
         return key_value_cache
-    kv_store = getattr(key_value_cache, "kv_store", None)
-    if isinstance(kv_store, DistributedKVStore):
-        return kv_store
+    if isinstance(key_value_cache, DistributedKVStoreProvider):
+        kv_store = key_value_cache.kv_store
+        if isinstance(kv_store, DistributedKVStore):
+            return kv_store
+        raise ValueError(
+            "queue-enabled host requires platform key_value_cache provider exposing "
+            "DistributedKVStore via kv_store",
+        )
     raise ValueError(
         "queue-enabled host requires platform key_value_cache exposing "
-        "DistributedKVStore (directly or via .kv_store)",
+        "DistributedKVStore (directly or via DistributedKVStoreProvider)",
     )
 
 
