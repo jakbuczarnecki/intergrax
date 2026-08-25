@@ -44,6 +44,10 @@ from platform_proofs.scenarios.ai_incident_investigation.scenario import (
     build_runtime_bundle,
     execute_resolved_skeleton,
 )
+from platform_proofs.scenarios.ai_incident_investigation.incident_reasoning import (
+    claim_id_for_hypothesis,
+    parse_claim_hypothesis_bindings,
+)
 from platform_proofs.scenarios.ai_incident_investigation.validation import (
     H1_FALLBACK_ERROR,
     H2_FALLBACK_ERROR,
@@ -55,6 +59,33 @@ from tests.unit.platform_proofs.scenarios.ai_incident_investigation.test_evidenc
 )
 
 pytestmark = pytest.mark.unit
+
+
+def _validation_payload(
+    result,
+    *,
+    claim_set: dict | EvidenceClaimSet | None = None,
+    evidence_nodes: list | None = None,
+    active_hypothesis: str = "H3",
+    completion_mode: str = COMPLETION_UNRESOLVED,
+    extra_bindings: list[dict[str, str]] | None = None,
+) -> dict[str, object]:
+    bindings = list(result.claim_hypothesis_bindings)
+    if extra_bindings:
+        replaced = {item["hypothesis_id"] for item in extra_bindings}
+        bindings = [item for item in bindings if item.get("hypothesis_id") not in replaced]
+        bindings.extend(extra_bindings)
+    if isinstance(claim_set, EvidenceClaimSet):
+        claim_payload = claim_set.model_dump(mode="json")
+    else:
+        claim_payload = claim_set or result.claim_set
+    return {
+        "claim_set": claim_payload,
+        "claim_hypothesis_bindings": bindings,
+        "evidence_nodes": evidence_nodes if evidence_nodes is not None else list(result.evidence_nodes),
+        "active_hypothesis": active_hypothesis,
+        "completion_mode": completion_mode,
+    }
 
 
 def test_unresolved_fixture_telemetry_unavailable() -> None:
@@ -151,13 +182,17 @@ async def test_unresolved_forged_h3_supported_fails_critic() -> None:
     bundle = build_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
     result = await execute_resolved_skeleton(bundle)
     forged = build_forged_h3_claim_set(result)
+    forged_h3 = next(
+        claim for claim in forged.claims if claim.resolution is ClaimResolution.SUPPORTED
+    )
     validation = validate_claim_set_against_observations(
         forged,
-        {
-            "claim_set": forged.model_dump(mode="json"),
-            "evidence_nodes": list(result.evidence_nodes),
-            "active_hypothesis": "H3",
-        },
+        _validation_payload(
+            result,
+            claim_set=forged,
+            completion_mode="supported_diagnosis",
+            extra_bindings=[{"claim_id": str(forged_h3.claim_id), "hypothesis_id": "H3"}],
+        ),
     )
     assert not validation.valid
     assert TELEMETRY_CONTENT_ERROR in validation.errors
@@ -181,11 +216,13 @@ async def test_unresolved_forged_h1_fallback_fails() -> None:
     forged = EvidenceClaimSet(claims=(forged_h1, *other), challenges=claim_set.challenges)
     validation = validate_claim_set_against_observations(
         forged,
-        {
-            "claim_set": forged.model_dump(mode="json"),
-            "evidence_nodes": list(result.evidence_nodes),
-            "active_hypothesis": "H1",
-        },
+        _validation_payload(
+            result,
+            claim_set=forged,
+            active_hypothesis="H1",
+            completion_mode="supported_diagnosis",
+            extra_bindings=[{"claim_id": str(INITIAL_CLAIM_ID), "hypothesis_id": "H1"}],
+        ),
     )
     assert not validation.valid
     assert H1_FALLBACK_ERROR in validation.errors
@@ -207,11 +244,13 @@ async def test_unresolved_forged_h2_fallback_fails() -> None:
     forged = EvidenceClaimSet(claims=(*other, forged_h2), challenges=claim_set.challenges)
     validation = validate_claim_set_against_observations(
         forged,
-        {
-            "claim_set": forged.model_dump(mode="json"),
-            "evidence_nodes": list(result.evidence_nodes),
-            "active_hypothesis": "H2",
-        },
+        _validation_payload(
+            result,
+            claim_set=forged,
+            active_hypothesis="H2",
+            completion_mode="supported_diagnosis",
+            extra_bindings=[{"claim_id": str(H2_CLAIM_ID), "hypothesis_id": "H2"}],
+        ),
     )
     assert not validation.valid
     assert H2_FALLBACK_ERROR in validation.errors
@@ -224,12 +263,7 @@ async def test_unresolved_positive_claim_set_passes_validation() -> None:
     claim_set = EvidenceClaimSet.model_validate(result.claim_set)
     validation = validate_claim_set_against_observations(
         claim_set,
-        {
-            "claim_set": result.claim_set,
-            "evidence_nodes": list(result.evidence_nodes),
-            "active_hypothesis": "H3",
-            "completion_mode": COMPLETION_UNRESOLVED,
-        },
+        _validation_payload(result),
     )
     assert validation.valid
 
@@ -258,8 +292,14 @@ async def test_mutation_available_resolved_unavailable_unresolved() -> None:
     assert unresolved.outcome == OUTCOME_UNRESOLVED
     resolved_claims = EvidenceClaimSet.model_validate(resolved.claim_set)
     unresolved_claims = EvidenceClaimSet.model_validate(unresolved.claim_set)
-    assert any(c.claim_id == REVISED_CLAIM_ID for c in resolved_claims.claims)
-    assert any(c.claim_id == H3_CLAIM_ID for c in unresolved_claims.claims)
+    resolved_bindings = parse_claim_hypothesis_bindings(resolved.claim_hypothesis_bindings)
+    unresolved_bindings = parse_claim_hypothesis_bindings(unresolved.claim_hypothesis_bindings)
+    resolved_h3_id = claim_id_for_hypothesis(resolved_bindings, "H3")
+    unresolved_h3_id = claim_id_for_hypothesis(unresolved_bindings, "H3")
+    assert resolved_h3_id is not None
+    assert unresolved_h3_id is not None
+    assert any(str(c.claim_id) == resolved_h3_id and c.resolution is ClaimResolution.SUPPORTED for c in resolved_claims.claims)
+    assert any(str(c.claim_id) == unresolved_h3_id for c in unresolved_claims.claims)
     assert not any(
         c.resolution is ClaimResolution.SUPPORTED for c in unresolved_claims.claims
     )

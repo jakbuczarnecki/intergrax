@@ -188,10 +188,11 @@ async def test_real_critic_provenance_maps_to_challenge_with_stable_id() -> None
     assert result.failed_critic_verdict is not None
     assert UNSUPPORTED_INFERENCE_ERROR in result.failed_critic_verdict.failure_reasons
     assert result.evidence_challenge is not None
-    assert result.evidence_challenge.claim_id == INITIAL_CLAIM_ID
+    assert result.challenged_claim_id is not None
+    assert result.evidence_challenge.claim_id == result.challenged_claim_id
     open_challenge = map_critic_verdict_to_challenge(
         result.failed_critic_verdict,
-        claim_id=INITIAL_CLAIM_ID,
+        claim_id=result.evidence_challenge.claim_id,
     )
     assert open_challenge is not None
     assert UNSUPPORTED_INFERENCE_ERROR in open_challenge.description
@@ -321,11 +322,14 @@ async def test_summary_revised_with_missing_telemetry_evidence_fails() -> None:
                             "supporting_evidence_ids": [
                             "evidence.telemetry.fake.not_in_graph"
                             ],
-                            "resolution": "supported",
+                            "resolution": "pending",
                         }
                     ],
                     "challenges": [],
                 },
+                "claim_hypothesis_bindings": [
+                    {"claim_id": str(REVISED_CLAIM_ID), "hypothesis_id": "H3"},
+                ],
                 "evidence_nodes": [],
                 "active_hypothesis": "H3",
             }
@@ -340,6 +344,7 @@ async def test_summary_revised_with_missing_telemetry_evidence_fails() -> None:
     assert (
         "supported_diagnosis_telemetry_not_observable" in validation.errors
         or "supported_diagnosis_evidence_not_observable" in validation.errors
+        or "h3_diagnosis_telemetry_not_observable" in validation.errors
         or "unsupported_inference:missing_comparison_evidence" in validation.errors
     )
 

@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.evidence_claims import (
@@ -27,13 +29,13 @@ from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import
 from platform_proofs.scenarios.ai_incident_investigation.execution_payload import (
     domain_payload_from_execution,
 )
+from platform_proofs.scenarios.ai_incident_investigation.incident_reasoning import (
+    ClaimHypothesisBinding,
+    parse_claim_hypothesis_bindings,
+)
 from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
     COMPLETION_UNRESOLVED,
-    H2_CLAIM_ID,
-    H3_CLAIM_ID,
     INCIDENT_EVIDENCE_IDS,
-    INITIAL_CLAIM_ID,
-    REVISED_CLAIM_ID,
     TELEMETRY_EVIDENCE_ID,
 )
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
@@ -179,13 +181,38 @@ def _resolve_h3_claim(observations: IncidentObservations) -> ClaimResolution:
     return ClaimResolution.INSUFFICIENT_EVIDENCE
 
 
+def _hypothesis_for_claim(
+    claim: EvidenceBackedClaim,
+    bindings: tuple[ClaimHypothesisBinding, ...],
+) -> Literal["H1", "H2", "H3"] | None:
+    for binding in bindings:
+        if str(binding.claim_id) == str(claim.claim_id):
+            return binding.hypothesis_id
+    return None
+
+
+def _claims_for_hypothesis(
+    claim_set: EvidenceClaimSet,
+    bindings: tuple[ClaimHypothesisBinding, ...],
+    hypothesis_id: Literal["H1", "H2", "H3"],
+) -> list[EvidenceBackedClaim]:
+    claim_ids = {
+        binding.claim_id
+        for binding in bindings
+        if binding.hypothesis_id == hypothesis_id
+    }
+    return [claim for claim in claim_set.claims if str(claim.claim_id) in claim_ids]
+
+
 def _classify_diagnosis_claim(
     claim: EvidenceBackedClaim,
     observations: IncidentObservations,
+    *,
+    hypothesis_id: Literal["H1", "H2", "H3"],
 ) -> ClaimResolution:
-    if str(claim.claim_id) == str(H3_CLAIM_ID) or str(claim.claim_id) == str(REVISED_CLAIM_ID):
+    if hypothesis_id == "H3":
         return _resolve_h3_claim(observations)
-    if str(claim.claim_id) == str(H2_CLAIM_ID) or "H2" in claim.statement:
+    if hypothesis_id == "H2":
         return _resolve_h2_claim(observations)
     return _resolve_h1_claim(claim, observations)
 
@@ -193,12 +220,17 @@ def _classify_diagnosis_claim(
 def apply_critic_claim_resolutions(
     claim_set: EvidenceClaimSet,
     domain_payload: dict[str, object],
+    *,
+    bindings: tuple[ClaimHypothesisBinding, ...] | None = None,
 ) -> EvidenceClaimSet:
     """Transition model PENDING claims to authoritative critic resolutions."""
     for claim in claim_set.claims:
         if claim.resolution is not ClaimResolution.PENDING:
             raise ValueError(MODEL_SELF_APPROVED_ERROR)
 
+    resolved_bindings = bindings or parse_claim_hypothesis_bindings(
+        domain_payload.get("claim_hypothesis_bindings")
+    )
     observations = _parse_observations(domain_payload)
     if observations is None:
         return claim_set
@@ -208,9 +240,15 @@ def apply_critic_claim_resolutions(
         if str(claim.claim_kind) != DIAGNOSIS_CLAIM_KIND:
             updated.append(claim)
             continue
-        resolution = _classify_diagnosis_claim(claim, observations)
-        if str(claim.claim_id) == str(REVISED_CLAIM_ID) and resolution is ClaimResolution.SUPPORTED:
-            resolution = ClaimResolution.SUPPORTED
+        hypothesis_id = _hypothesis_for_claim(claim, resolved_bindings)
+        if hypothesis_id is None:
+            updated.append(claim)
+            continue
+        resolution = _classify_diagnosis_claim(
+            claim,
+            observations,
+            hypothesis_id=hypothesis_id,
+        )
         updated.append(claim.model_copy(update={"resolution": resolution}))
     return EvidenceClaimSet(claims=tuple(updated), challenges=claim_set.challenges)
 
@@ -247,6 +285,8 @@ def validate_h3_supported_claim(
 def _validate_unresolved_completion(
     claim_set: EvidenceClaimSet,
     domain_payload: dict[str, object],
+    *,
+    bindings: tuple[ClaimHypothesisBinding, ...],
 ) -> str | None:
     observations = _parse_observations(domain_payload)
     if observations is None:
@@ -259,8 +299,9 @@ def _validate_unresolved_completion(
     if supported:
         return UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR
 
+    h1_claims = _claims_for_hypothesis(claim_set, bindings, "H1")
     h1_resolution = _resolve_h1_claim(
-        next((c for c in diagnosis_claims if str(c.claim_id) == str(INITIAL_CLAIM_ID)), diagnosis_claims[0]),
+        h1_claims[0] if h1_claims else diagnosis_claims[0],
         observations,
     )
     h2_resolution = _resolve_h2_claim(observations)
@@ -283,11 +324,10 @@ def _validate_unresolved_completion(
     ):
         return COMPARISON_CONTENT_ERROR
 
-    h1_claims = [c for c in claim_set.claims if c.claim_id == INITIAL_CLAIM_ID]
     if h1_claims and h1_claims[0].resolution is ClaimResolution.SUPPORTED:
         return H1_FALLBACK_ERROR
 
-    h2_claims = [c for c in claim_set.claims if c.claim_id == H2_CLAIM_ID]
+    h2_claims = _claims_for_hypothesis(claim_set, bindings, "H2")
     if h2_claims and h2_claims[0].resolution is ClaimResolution.SUPPORTED:
         return H2_FALLBACK_ERROR
 
@@ -300,8 +340,13 @@ def _validate_unresolved_completion(
 def validate_claim_set_against_observations(
     claim_set: EvidenceClaimSet,
     domain_payload: dict[str, object],
+    *,
+    bindings: tuple[ClaimHypothesisBinding, ...] | None = None,
 ) -> ValidationResult:
     """Scenario-local independent validation of claim semantics vs observed evidence."""
+    resolved_bindings = bindings or parse_claim_hypothesis_bindings(
+        domain_payload.get("claim_hypothesis_bindings")
+    )
     observable_ids = _observable_evidence_ids(domain_payload)
 
     if _claim_uses_stale_staffing_as_current_support(claim_set, domain_payload):
@@ -323,7 +368,7 @@ def validate_claim_set_against_observations(
 
         latest = supported[-1]
         observations = _parse_observations(domain_payload)
-        h1_claims = [c for c in claim_set.claims if c.claim_id == INITIAL_CLAIM_ID]
+        h1_claims = _claims_for_hypothesis(claim_set, resolved_bindings, "H1")
         if h1_claims and h1_claims[0].resolution is ClaimResolution.SUPPORTED:
             if observations is not None and observations.comparison is not None:
                 if comparison_weakens_overload(
@@ -334,7 +379,7 @@ def validate_claim_set_against_observations(
                     return ValidationResult(valid=False, errors=[H1_FALLBACK_ERROR])
             return ValidationResult(valid=False, errors=[H1_FALLBACK_ERROR])
 
-        h2_claims = [c for c in claim_set.claims if c.claim_id == H2_CLAIM_ID]
+        h2_claims = _claims_for_hypothesis(claim_set, resolved_bindings, "H2")
         if h2_claims and observations is not None:
             h2_expected = _resolve_h2_claim(observations)
             if (
@@ -346,6 +391,10 @@ def validate_claim_set_against_observations(
             if observations is not None and not _h2_claim_supported_by_evidence(observations):
                 return ValidationResult(valid=False, errors=[H2_FALLBACK_ERROR])
             return ValidationResult(valid=False, errors=[H2_FALLBACK_ERROR])
+
+        latest_hypothesis = _hypothesis_for_claim(latest, resolved_bindings)
+        if latest_hypothesis != "H3":
+            return ValidationResult(valid=False, errors=["diagnosis_claim_not_acceptable"])
 
         if observations is None:
             return ValidationResult(
@@ -359,7 +408,11 @@ def validate_claim_set_against_observations(
 
     completion_mode = str(domain_payload.get("completion_mode", ""))
     if completion_mode == COMPLETION_UNRESOLVED:
-        unresolved_error = _validate_unresolved_completion(claim_set, domain_payload)
+        unresolved_error = _validate_unresolved_completion(
+            claim_set,
+            domain_payload,
+            bindings=resolved_bindings,
+        )
         if unresolved_error:
             return ValidationResult(valid=False, errors=[unresolved_error])
         return ValidationResult(valid=True)
@@ -425,7 +478,17 @@ class IncidentInvestigationValidationEngine(NexusValidationEngine):
             )
 
         claim_set = EvidenceClaimSet.model_validate(raw_claim_set)
-        content_result = validate_claim_set_against_observations(claim_set, domain_payload)
+        bindings = parse_claim_hypothesis_bindings(domain_payload.get("claim_hypothesis_bindings"))
+        resolved_claim_set = apply_critic_claim_resolutions(
+            claim_set,
+            domain_payload,
+            bindings=bindings,
+        )
+        content_result = validate_claim_set_against_observations(
+            resolved_claim_set,
+            domain_payload,
+            bindings=bindings,
+        )
         if not content_result.valid:
             return ValidationResult(
                 valid=False,

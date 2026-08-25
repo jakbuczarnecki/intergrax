@@ -172,6 +172,7 @@ def build_scripted_reasoning_proposal(
             information_gaps=("decisive station telemetry unavailable for incident window",),
             claim_proposals=(
                 ClaimProposal(
+                    hypothesis_id="H1",
                     statement=(
                         "Production workload on Line 4 increased during the incident window "
                         "while throughput declined — overload hypothesis H1."
@@ -180,6 +181,7 @@ def build_scripted_reasoning_proposal(
                     supporting_evidence_ids=(workload, throughput),
                 ),
                 ClaimProposal(
+                    hypothesis_id="H2",
                     statement=(
                         "Understaffing on the affected shift is not supported as initiating cause: "
                         "preliminary roster export conflicts with confirmed attendance for the "
@@ -190,6 +192,7 @@ def build_scripted_reasoning_proposal(
                     contradicting_evidence_ids=(attendance,),
                 ),
                 ClaimProposal(
+                    hypothesis_id="H3",
                     statement=(
                         "Equipment-process degradation hypothesis H3 cannot be accepted: "
                         "decisive station telemetry for the incident window is unavailable."
@@ -233,6 +236,7 @@ def build_scripted_reasoning_proposal(
             information_gaps=(),
             claim_proposals=(
                 ClaimProposal(
+                    hypothesis_id="H1",
                     statement=(
                         "Production workload on Line 4 increased during the incident window "
                         "while throughput declined — overload hypothesis H1."
@@ -241,6 +245,7 @@ def build_scripted_reasoning_proposal(
                     supporting_evidence_ids=(workload, throughput),
                 ),
                 ClaimProposal(
+                    hypothesis_id="H2",
                     statement=(
                         "Understaffing on the affected shift is not supported as initiating cause: "
                         "preliminary roster export conflicts with confirmed attendance for the "
@@ -251,6 +256,7 @@ def build_scripted_reasoning_proposal(
                     contradicting_evidence_ids=(attendance,),
                 ),
                 ClaimProposal(
+                    hypothesis_id="H3",
                     statement=(
                         "Intermittent station signal degradation on the complex-assembly step "
                         "is the best-supported initiating cause; comparison evidence shows "
@@ -296,6 +302,7 @@ def build_scripted_reasoning_proposal(
         information_gaps=("comparison line evidence", "staffing attendance confirmation", "station telemetry"),
         claim_proposals=(
             ClaimProposal(
+                hypothesis_id="H1",
                 statement=(
                     "Sustained production overload from workload growth caused Line 4 "
                     "target attainment degradation — hypothesis H1."
@@ -305,6 +312,7 @@ def build_scripted_reasoning_proposal(
             ),
         ) if initial_support else (
             ClaimProposal(
+                hypothesis_id="H1",
                 statement="Incident investigation pending operational evidence gathering.",
                 claim_kind=str(DIAGNOSIS_KIND),
             ),

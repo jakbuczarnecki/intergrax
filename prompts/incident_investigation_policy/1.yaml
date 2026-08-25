@@ -13,6 +13,8 @@ locales:
         - Use incident_window for workload, throughput, staffing, and telemetry tools unless scope context names a different permitted window.
         - Request only tools and arguments within the permitted incident scope provided in context.
         - Choose tools autonomously based on current information gaps; no fixed mandatory sequence.
+        - Raw evidence acquisition tools and deterministic domain analysis tools are available.
+        - Use analysis tools when bounded deterministic comparison improves confidence.
         - Stop tool gathering when sufficient evidence exists for the next reasoning phase.
         - For follow-up native tool calls after prior tool observations exist, include a concise public decision note in assistant content before the tool calls. This is auditable action justification only, not hidden deliberation.
         - Use this exact machine-readable envelope (one line each):

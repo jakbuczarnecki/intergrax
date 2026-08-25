@@ -158,6 +158,7 @@ class IncidentEvidenceGapDiagV1(DiagnosticPayload):
 @dataclass(frozen=True, slots=True)
 class IncidentClaimProposedDiagV1(DiagnosticPayload):
     claim_id: str
+    hypothesis_id: str | None
     statement: str
     supporting_evidence_count: int
 
@@ -168,6 +169,7 @@ class IncidentClaimProposedDiagV1(DiagnosticPayload):
     def to_dict(self) -> dict[str, Any]:
         return {
             "claim_id": self.claim_id,
+            "hypothesis_id": self.hypothesis_id,
             "statement": self.statement,
             "supporting_evidence_count": self.supporting_evidence_count,
         }
@@ -175,6 +177,7 @@ class IncidentClaimProposedDiagV1(DiagnosticPayload):
     def redact(self) -> IncidentClaimProposedDiagV1:
         return IncidentClaimProposedDiagV1(
             claim_id=self.claim_id,
+            hypothesis_id=self.hypothesis_id,
             statement=DEFAULT_REDACTED_TEXT,
             supporting_evidence_count=self.supporting_evidence_count,
         )
@@ -183,6 +186,7 @@ class IncidentClaimProposedDiagV1(DiagnosticPayload):
 @dataclass(frozen=True, slots=True)
 class IncidentClaimRevisedDiagV1(DiagnosticPayload):
     claim_id: str
+    hypothesis_id: str | None
     statement: str
     critic_feedback: tuple[str, ...]
 
@@ -193,6 +197,7 @@ class IncidentClaimRevisedDiagV1(DiagnosticPayload):
     def to_dict(self) -> dict[str, Any]:
         return {
             "claim_id": self.claim_id,
+            "hypothesis_id": self.hypothesis_id,
             "statement": self.statement,
             "critic_feedback": list(self.critic_feedback),
         }
@@ -200,6 +205,7 @@ class IncidentClaimRevisedDiagV1(DiagnosticPayload):
     def redact(self) -> IncidentClaimRevisedDiagV1:
         return IncidentClaimRevisedDiagV1(
             claim_id=self.claim_id,
+            hypothesis_id=self.hypothesis_id,
             statement=DEFAULT_REDACTED_TEXT,
             critic_feedback=self.critic_feedback,
         )

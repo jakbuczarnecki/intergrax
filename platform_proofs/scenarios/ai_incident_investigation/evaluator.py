@@ -13,6 +13,7 @@ from intergrax.contracts.evidence_claims import (
     ClaimResolution,
     EvidenceBackedClaim,
     EvidenceClaimSet,
+    mint_evidence_claim_id,
 )
 from platform_proofs.scenarios.ai_incident_investigation.critic_adapter import (
     UNSUPPORTED_INFERENCE_DEFECT,
@@ -53,8 +54,13 @@ from platform_proofs.scenarios.ai_incident_investigation.scenario import (
     OUTCOME_UNRESOLVED,
     ScenarioExecutionResult,
 )
+from platform_proofs.scenarios.ai_incident_investigation.incident_reasoning import (
+    claim_id_for_hypothesis,
+    parse_claim_hypothesis_bindings,
+)
 from platform_proofs.scenarios.ai_incident_investigation.validation import (
     UNSUPPORTED_INFERENCE_ERROR,
+    apply_critic_claim_resolutions,
     validate_claim_set_against_observations,
 )
 
@@ -83,10 +89,28 @@ def _runtime_observations(result: ScenarioExecutionResult):
     return observations_from_evidence_nodes(result.evidence_nodes, INCIDENT_EVIDENCE_IDS)
 
 
+def _bindings_from_result(result: ScenarioExecutionResult):
+    return parse_claim_hypothesis_bindings(result.claim_hypothesis_bindings)
+
+
+def _claims_for_hypothesis(result: ScenarioExecutionResult, hypothesis_id: str) -> list[EvidenceBackedClaim]:
+    bindings = _bindings_from_result(result)
+    claim_ids = {
+        str(binding.claim_id)
+        for binding in bindings
+        if binding.hypothesis_id == hypothesis_id
+    }
+    claim_set = EvidenceClaimSet.model_validate(result.claim_set)
+    return [claim for claim in claim_set.claims if str(claim.claim_id) in claim_ids]
+
+
 def _domain_payload_from_result(result: ScenarioExecutionResult) -> dict[str, object]:
+    completion_mode = COMPLETION_UNRESOLVED if result.outcome == OUTCOME_UNRESOLVED else "supported_diagnosis"
     return {
         "claim_set": result.claim_set,
+        "claim_hypothesis_bindings": list(result.claim_hypothesis_bindings),
         "evidence_nodes": list(result.evidence_nodes),
+        "completion_mode": completion_mode,
         "active_hypothesis": "H3" if result.revision_pass else "H1",
     }
 
@@ -151,7 +175,10 @@ def evaluate_resolved_scenario_run(
         failures.append("evidence_challenge_missing")
     else:
         challenge = result.evidence_challenge
-        if challenge.claim_id != INITIAL_CLAIM_ID:
+        challenged_claim_id = result.challenged_claim_id
+        if challenged_claim_id is None:
+            challenged_claim_id = claim_id_for_hypothesis(_bindings_from_result(result), "H1")
+        if challenged_claim_id is None or str(challenge.claim_id) != challenged_claim_id:
             failures.append("challenge_target_claim_mismatch")
         elif challenge.defect_family is not ChallengeDefectFamily.UNSUPPORTED_INFERENCE:
             failures.append("challenge_defect_family_mismatch")
@@ -222,7 +249,7 @@ def evaluate_resolved_scenario_run(
     runtime_assessment = derive_hypothesis_dispositions(observations, INCIDENT_EVIDENCE_IDS)
 
     claim_set = EvidenceClaimSet.model_validate(result.claim_set)
-    h2_claims = [c for c in claim_set.claims if c.claim_id == H2_CLAIM_ID]
+    h2_claims = _claims_for_hypothesis(result, "H2")
     if not h2_claims:
         failures.append("h2_claim_missing")
     elif h2_claims[0].resolution is not runtime_assessment.h2.disposition:
@@ -269,7 +296,15 @@ def evaluate_resolved_scenario_run(
     else:
         checks.append("terminal_supported_claim_present")
         supported = diagnosis_claims[-1]
-        if supported.claim_id != REVISED_CLAIM_ID:
+        supported_hypothesis = next(
+            (
+                binding.hypothesis_id
+                for binding in _bindings_from_result(result)
+                if str(binding.claim_id) == str(supported.claim_id)
+            ),
+            None,
+        )
+        if supported_hypothesis != "H3":
             failures.append("final_supported_claim_not_h3")
         else:
             checks.append("final_supported_claim_is_h3")
@@ -284,7 +319,7 @@ def evaluate_resolved_scenario_run(
         else:
             checks.append("supported_claim_references_comparison_evidence")
 
-    h1_claims = [c for c in claim_set.claims if c.claim_id == INITIAL_CLAIM_ID]
+    h1_claims = _claims_for_hypothesis(result, "H1")
     if h1_claims and h1_claims[0].resolution is ClaimResolution.PENDING:
         failures.append("h1_still_pending_at_end")
     elif h1_claims and h1_claims[0].resolution not in {
@@ -307,13 +342,11 @@ def evaluate_resolved_scenario_run(
     if not any(f.startswith("cited_evidence_not_in_graph:") for f in failures):
         checks.append("all_cited_evidence_in_graph")
 
+    bindings = _bindings_from_result(result)
     critic_validation = validate_claim_set_against_observations(
         claim_set,
-        {
-            "claim_set": result.claim_set,
-            "evidence_nodes": list(result.evidence_nodes),
-            "active_hypothesis": str(runtime_assessment.active_hypothesis),
-        },
+        _domain_payload_from_result(result),
+        bindings=bindings,
     )
     if not critic_validation.valid:
         failures.append("critic_content_validation_failed")
@@ -461,20 +494,24 @@ def evaluate_unresolved_scenario_run(
     else:
         checks.append("comparison_weakens_h1_from_runtime")
 
-    h3_claims = [c for c in claim_set.claims if c.claim_id == H3_CLAIM_ID]
+    h3_claims = _claims_for_hypothesis(result, "H3")
     if not h3_claims:
         failures.append("h3_claim_missing")
     elif h3_claims[0].resolution is not ClaimResolution.INSUFFICIENT_EVIDENCE:
         failures.append("h3_claim_not_insufficient")
 
+    bindings = _bindings_from_result(result)
+    unresolved_payload = {
+        "claim_set": result.claim_set,
+        "claim_hypothesis_bindings": list(result.claim_hypothesis_bindings),
+        "evidence_nodes": list(result.evidence_nodes),
+        "active_hypothesis": str(runtime_assessment.active_hypothesis),
+        "completion_mode": COMPLETION_UNRESOLVED,
+    }
     critic_validation = validate_claim_set_against_observations(
         claim_set,
-        {
-            "claim_set": result.claim_set,
-            "evidence_nodes": list(result.evidence_nodes),
-            "active_hypothesis": str(runtime_assessment.active_hypothesis),
-            "completion_mode": COMPLETION_UNRESOLVED,
-        },
+        unresolved_payload,
+        bindings=bindings,
     )
     if not critic_validation.valid:
         failures.append("critic_content_validation_failed")
@@ -530,13 +567,18 @@ def evaluate_mutated_evidence_fails(
             break
 
     claim_set = EvidenceClaimSet.model_validate(result.claim_set)
+    bindings = _bindings_from_result(result)
+    domain_payload = {
+        "claim_set": result.claim_set,
+        "claim_hypothesis_bindings": list(result.claim_hypothesis_bindings),
+        "evidence_nodes": mutated_nodes,
+        "active_hypothesis": "H3",
+        "completion_mode": "supported_diagnosis",
+    }
     validation = validate_claim_set_against_observations(
         claim_set,
-        {
-            "claim_set": result.claim_set,
-            "evidence_nodes": mutated_nodes,
-            "active_hypothesis": "H3",
-        },
+        domain_payload,
+        bindings=bindings,
     )
     if not validation.valid:
         return True
@@ -549,8 +591,10 @@ def evaluate_mutated_evidence_fails(
 def build_forged_h3_claim_set(result: ScenarioExecutionResult) -> EvidenceClaimSet:
     """Construct a deliberately false H3 SUPPORTED claim using real telemetry evidence ID."""
     claim_set = EvidenceClaimSet.model_validate(result.claim_set)
+    bindings = _bindings_from_result(result)
+    prior_h3_id = claim_id_for_hypothesis(bindings, "H3")
     forged = EvidenceBackedClaim(
-        claim_id=REVISED_CLAIM_ID,
+        claim_id=mint_evidence_claim_id(),
         statement=(
             "Forged H3 diagnosis — equipment degradation claimed without degraded telemetry content."
         ),
@@ -562,7 +606,9 @@ def build_forged_h3_claim_set(result: ScenarioExecutionResult) -> EvidenceClaimS
             TELEMETRY_EVIDENCE_ID,
         ),
         resolution=ClaimResolution.SUPPORTED,
-        supersedes_claim_id=INITIAL_CLAIM_ID,
+        supersedes_claim_id=None,
     )
-    other = [c for c in claim_set.claims if c.claim_id != REVISED_CLAIM_ID]
+    if prior_h3_id is None:
+        return EvidenceClaimSet(claims=(*claim_set.claims, forged), challenges=claim_set.challenges)
+    other = [c for c in claim_set.claims if str(c.claim_id) != prior_h3_id]
     return EvidenceClaimSet(claims=(*other, forged), challenges=claim_set.challenges)

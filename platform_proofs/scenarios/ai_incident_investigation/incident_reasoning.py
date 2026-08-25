@@ -34,11 +34,7 @@ from platform_proofs.scenarios.ai_incident_investigation.scenario_contract impor
     COMPLETION_SUPPORTED_DIAGNOSIS,
     COMPLETION_UNRESOLVED,
     DIAGNOSIS_KIND,
-    H2_CLAIM_ID,
-    H3_CLAIM_ID,
     INCIDENT_EVIDENCE_IDS,
-    INITIAL_CLAIM_ID,
-    REVISED_CLAIM_ID,
 )
 
 LEGAL_HYPOTHESIS_IDS: frozenset[str] = frozenset({"H1", "H2", "H3"})
@@ -84,6 +80,7 @@ class HypothesisProposal(BaseModel):
 class ClaimProposal(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    hypothesis_id: Literal["H1", "H2", "H3"]
     statement: str = Field(min_length=1, max_length=4096)
     claim_kind: str = Field(min_length=1, max_length=128)
     supporting_evidence_ids: tuple[str, ...] = ()
@@ -132,11 +129,27 @@ class IncidentReasoningProposal(BaseModel):
         return self
 
 
+class ClaimHypothesisBinding(BaseModel):
+    """Scenario-local semantic binding — claim identity is independent of hypothesis."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    claim_id: str
+    hypothesis_id: Literal["H1", "H2", "H3"]
+
+
+@dataclass(frozen=True, slots=True)
+class PendingClaimsConversion:
+    claim_set: EvidenceClaimSet
+    bindings: tuple[ClaimHypothesisBinding, ...]
+
+
 @dataclass(frozen=True, slots=True)
 class PriorInvestigationState:
     evidence_nodes: tuple[dict[str, object], ...]
     reasoning_proposal: IncidentReasoningProposal | None
     claim_set: EvidenceClaimSet | None
+    claim_hypothesis_bindings: tuple[ClaimHypothesisBinding, ...]
     completion_intent: CompletionIntent | None
     summary: str
 
@@ -187,35 +200,60 @@ def validate_reasoning_proposal(
                 )
 
 
+def parse_claim_hypothesis_bindings(
+    raw_bindings: object,
+) -> tuple[ClaimHypothesisBinding, ...]:
+    if not isinstance(raw_bindings, (list, tuple)):
+        return ()
+    bindings: list[ClaimHypothesisBinding] = []
+    for item in raw_bindings:
+        if isinstance(item, dict):
+            bindings.append(ClaimHypothesisBinding.model_validate(item))
+    return tuple(bindings)
+
+
+def bindings_for_claim_set(
+    claim_set: EvidenceClaimSet,
+    bindings: Sequence[ClaimHypothesisBinding],
+) -> dict[str, Literal["H1", "H2", "H3"]]:
+    by_claim_id = {binding.claim_id: binding.hypothesis_id for binding in bindings}
+    return {
+        str(claim.claim_id): by_claim_id[str(claim.claim_id)]
+        for claim in claim_set.claims
+        if str(claim.claim_id) in by_claim_id
+    }
+
+
+def claim_id_for_hypothesis(
+    bindings: Sequence[ClaimHypothesisBinding],
+    hypothesis_id: Literal["H1", "H2", "H3"],
+) -> str | None:
+    for binding in bindings:
+        if binding.hypothesis_id == hypothesis_id:
+            return binding.claim_id
+    return None
+
+
 def convert_proposal_to_pending_claims(
     proposal: IncidentReasoningProposal,
     *,
     prior_claim_set: EvidenceClaimSet | None,
+    prior_bindings: Sequence[ClaimHypothesisBinding] = (),
     critic_feedback: Sequence[str] | None,
-) -> EvidenceClaimSet:
-    prior_by_statement: dict[str, EvidenceBackedClaim] = {}
-    if prior_claim_set is not None:
-        prior_by_statement = {claim.statement: claim for claim in prior_claim_set.claims}
+) -> PendingClaimsConversion:
+    prior_by_hypothesis: dict[str, str] = {
+        binding.hypothesis_id: binding.claim_id for binding in prior_bindings
+    }
 
     claims: list[EvidenceBackedClaim] = []
-    for index, claim_proposal in enumerate(proposal.claim_proposals):
+    bindings: list[ClaimHypothesisBinding] = []
+    for claim_proposal in proposal.claim_proposals:
+        if claim_proposal.hypothesis_id not in LEGAL_HYPOTHESIS_IDS:
+            raise ReasoningProposalValidationError("illegal hypothesis_id on claim proposal")
         supersedes: str | None = None
-        if claim_proposal.replaces_prior_claim and prior_claim_set is not None:
-            for prior in prior_claim_set.claims:
-                if str(prior.claim_kind) == claim_proposal.claim_kind:
-                    supersedes = str(prior.claim_id)
-                    break
         if claim_proposal.replaces_prior_claim:
-            claim_id = REVISED_CLAIM_ID
-        elif index == 0:
-            claim_id = INITIAL_CLAIM_ID
-        elif index == 1:
-            claim_id = H2_CLAIM_ID
-        elif index == 2:
-            claim_id = H3_CLAIM_ID
-        else:
-            claim_id = mint_evidence_claim_id()
-
+            supersedes = prior_by_hypothesis.get(claim_proposal.hypothesis_id)
+        claim_id = mint_evidence_claim_id()
         claims.append(
             EvidenceBackedClaim(
                 claim_id=claim_id,
@@ -233,6 +271,19 @@ def convert_proposal_to_pending_claims(
                 supersedes_claim_id=supersedes,
             )
         )
+        bindings.append(
+            ClaimHypothesisBinding(
+                claim_id=str(claim_id),
+                hypothesis_id=claim_proposal.hypothesis_id,
+            )
+        )
+
+    merged_bindings: list[ClaimHypothesisBinding] = list(prior_bindings)
+    for binding in bindings:
+        merged_bindings = [
+            item for item in merged_bindings if item.hypothesis_id != binding.hypothesis_id
+        ]
+        merged_bindings.append(binding)
 
     if prior_claim_set is not None:
         new_ids = {claim.claim_id for claim in claims}
@@ -240,7 +291,10 @@ def convert_proposal_to_pending_claims(
             if prior.claim_id not in new_ids:
                 claims.insert(0, prior)
 
-    return EvidenceClaimSet(claims=tuple(claims), challenges=())
+    return PendingClaimsConversion(
+        claim_set=EvidenceClaimSet(claims=tuple(claims), challenges=()),
+        bindings=tuple(merged_bindings),
+    )
 
 
 def _prior_outputs_from_context(metadata: dict[str, object]) -> dict[str, Any]:
@@ -267,6 +321,7 @@ def extract_prior_investigation_state(
             evidence_nodes=(),
             reasoning_proposal=None,
             claim_set=None,
+            claim_hypothesis_bindings=(),
             completion_intent=None,
             summary="",
         )
@@ -305,10 +360,14 @@ def extract_prior_investigation_state(
         else None
     )
 
+    raw_bindings = domain_summary.get("claim_hypothesis_bindings")
+    claim_hypothesis_bindings = parse_claim_hypothesis_bindings(raw_bindings)
+
     return PriorInvestigationState(
         evidence_nodes=evidence_nodes,
         reasoning_proposal=reasoning_proposal,
         claim_set=claim_set,
+        claim_hypothesis_bindings=claim_hypothesis_bindings,
         completion_intent=completion_intent,
         summary=str(selected.get("summary") or domain_summary.get("summary") or ""),
     )
@@ -324,6 +383,8 @@ def build_reasoning_messages(
     lines = [
         "Investigate Line 4 target attainment degradation using gathered evidence only.",
         "Compare competing hypotheses H1 sustained overload, H2 understaffing, H3 equipment degradation.",
+        "Raw evidence acquisition tools and deterministic domain analysis tools are available.",
+        "Use analysis tools when bounded deterministic comparison improves confidence.",
         "Do not treat workload-throughput correlation as causation.",
         "Propose only evidence-backed claims; cite evidence IDs from observations.",
         "Do not output claim_id, resolution, or supersedes_claim_id.",
@@ -391,9 +452,11 @@ def emit_reasoning_observability(
     runtime_state: RuntimeState,
     proposal: IncidentReasoningProposal,
     claim_set: EvidenceClaimSet,
+    bindings: Sequence[ClaimHypothesisBinding],
     is_revision: bool,
     critic_feedback: Sequence[str] | None,
 ) -> None:
+    binding_by_claim = {binding.claim_id: binding.hypothesis_id for binding in bindings}
     runtime_state.trace_event(
         component=TraceComponent.PLANNER,
         step="incident_reasoning_update",
@@ -419,15 +482,18 @@ def emit_reasoning_observability(
             ),
         )
     for claim in claim_set.claims:
+        hypothesis_id = binding_by_claim.get(str(claim.claim_id))
         payload = (
             IncidentClaimRevisedDiagV1(
                 claim_id=str(claim.claim_id),
+                hypothesis_id=hypothesis_id,
                 statement=claim.statement,
                 critic_feedback=tuple(critic_feedback or ()),
             )
             if is_revision
             else IncidentClaimProposedDiagV1(
                 claim_id=str(claim.claim_id),
+                hypothesis_id=hypothesis_id,
                 statement=claim.statement,
                 supporting_evidence_count=len(claim.supporting_evidence_ids),
             )
