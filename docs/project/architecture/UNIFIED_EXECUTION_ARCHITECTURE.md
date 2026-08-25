@@ -1,7 +1,7 @@
 # Unified Execution Architecture
 
-**Status:** Canonical cross-domain supporting model (frozen target semantics)  
-**Classification:** `SUPPORTING_MODEL` — coordinates execution semantics across existing domain owners; **not** a new platform DOMAIN and **not** paired with a 1:1 implementation plan  
+**Status:** Canonical cross-domain meta-architecture (frozen target semantics)  
+**Classification:** `META_ARCHITECTURE` — coordinates platform-wide cross-domain execution semantics across existing domain owners; **not** a new platform DOMAIN and **not** paired with a 1:1 implementation plan  
 **Owner:** Intergrax Platform Architecture (semantic coordination)  
 **Audience:** Principal architects, domain owners, implementers, Cursor implementation sessions  
 **Registered in:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md#architecture-artifact-classification-register)
@@ -33,7 +33,7 @@ What MUST / MUST NOT happen at runtime?
 
 | Property | Value |
 |----------|-------|
-| **Topology class** | `SUPPORTING_MODEL` (cross-domain meta-level execution model) |
+| **Topology class** | `META_ARCHITECTURE` (cross-domain semantic coordination model) |
 | **Domain pair** | **None** — no `maintainers/plans/UNIFIED_EXECUTION_ARCHITECTURE.md` |
 | **Relationship to UER** | UER owns Run/Attempt lifecycle and execution coordination contracts; this model defines cross-domain identity and tree semantics UER and others MUST align with |
 | **Relationship to domain pairs** | Each row in [§16](#16-canonical-ownership-matrix) retains detailed semantic ownership |
