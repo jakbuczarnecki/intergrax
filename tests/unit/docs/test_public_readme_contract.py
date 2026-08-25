@@ -231,6 +231,48 @@ def test_opening_architecture_differentiator(readme_text: str) -> None:
         assert phrase not in normalized, f"Forbidden opening claim: {phrase}"
 
 
+def test_opening_positioning_against_agent_platforms(readme_text: str) -> None:
+    """POS-1: opening answers skeptical question without feature-count framing."""
+    opening = readme_text[: readme_text.index("<a href=\"docs/project/assets/public/readme/fullsize/intergrax-ecosystem-hero.md\">")]
+    normalized = re.sub(r"[*_`]", "", opening).lower()
+    assert "agent framework" in normalized or "agent-framework" in normalized
+    assert "managed platform" in normalized or "managed agent" in normalized
+    assert (
+        "not trying to win" in normalized
+        or "not claiming differentiation" in normalized
+        or "not feature" in normalized
+        or "more agent-framework features" in normalized
+    )
+    assert "shared operating" in normalized or "shared application operating" in normalized
+    assert "product owns meaning" not in normalized  # stays in WHY, not required in README hero block
+    for boundary in ("policy", "authority", "evidence", "recovery"):
+        assert boundary in normalized
+    assert "not yet established" in normalized or "remains a validation goal" in normalized
+    assert "hypothesis" in normalized or "validation goal" in normalized
+    superiority_claims = (
+        "better than langgraph",
+        "superior to crewai",
+        "outperforms",
+        "more mature than",
+        "safer than",
+    )
+    for phrase in superiority_claims:
+        assert phrase not in normalized, f"Forbidden superiority claim in opening: {phrase!r}"
+
+
+def test_hero_graphic_remains_immediately_after_opening_cta(readme_text: str) -> None:
+    """POS-1: ecosystem hero stays very early — after badges/CTA, before Choose your path."""
+    hero_marker = _ECOSYSTEM_HERO_LIGHT
+    choose_idx = readme_text.index("## Choose your path")
+    hero_idx = readme_text.index(hero_marker)
+    assert hero_idx < choose_idx, "Hero must appear before Choose your path"
+    pre_hero = readme_text[:hero_idx]
+    line_before_hero = pre_hero.count("\n") + 1
+    assert line_before_hero <= 30, (
+        f"Hero displaced too far down README (line {line_before_hero}, max ~30)"
+    )
+
+
 def test_section_order(readme_text: str) -> None:
     positions = [readme_text.index(heading) for heading in _SECTION_HEADINGS_ORDER]
     assert positions == sorted(positions), "README section headings are out of required order"

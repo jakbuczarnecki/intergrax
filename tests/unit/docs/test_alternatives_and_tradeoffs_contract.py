@@ -72,6 +72,22 @@ def test_cross_product_reuse_remains_hypothesis(alternatives_text: str) -> None:
         assert phrase not in normalized, f"Alternatives doc claims proven reuse: {phrase!r}"
 
 
+def test_shared_positioning_framing_across_sections(alternatives_text: str) -> None:
+    """POS-1: common framing derives comparisons from operating-model responsibility."""
+    normalized = _normalize(alternatives_text)
+    assert "not whether the competitor has tracing" in normalized or (
+        "question is not whether the competitor has tracing" in normalized
+    )
+    assert "shared application operating model" in normalized
+    assert "feature matrix" in normalized
+    assert "where architectural responsibility sits" in normalized or (
+        "architectural responsibility" in normalized
+    )
+    assert "not treated as intergrax differentiators by default" in normalized or (
+        "not" in normalized and "differentiators by default" in normalized
+    )
+
+
 def test_agentcore_aws_primary_sources_linked(alternatives_text: str) -> None:
     for url in (
         "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/what-is-bedrock-agentcore.html",

@@ -29,6 +29,8 @@ Each alternative follows the same structure. Vendor capability facts come from p
 
 Common platform facilities — persistence, memory, tracing, guardrails, approvals, workflows, durability, identity, HITL, observability — are **not** treated as Intergrax differentiators by default. Modern stacks may provide them; the comparison is about **where architectural responsibility sits**, not whether a capability exists somewhere in a vendor portfolio.
 
+**Shared framing for every section below:** the question is not whether the competitor has tracing, HITL, memory, persistence, or similar facilities. The question is whether the adopter wants those operating responsibilities consolidated into one **shared application operating model across multiple products**, or primarily owned within the selected framework, platform, or application stack.
+
 ---
 
 ## OpenAI Agents SDK

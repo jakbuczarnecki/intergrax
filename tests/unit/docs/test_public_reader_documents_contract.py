@@ -1048,6 +1048,23 @@ def test_why_problem_category_and_reader_fit(why_text: str) -> None:
         assert marker in normalized, f"WHY missing solution-category marker: {marker!r}"
 
 
+def test_why_skeptical_framework_platform_answer(why_text: str) -> None:
+    """POS-1: early section answers why Intergrax when frameworks/platforms exist."""
+    normalized = _normalize(why_text)
+    skeptical_idx = normalized.find("why not just use an agent framework")
+    at_glance_idx = normalized.find("at a glance")
+    assert skeptical_idx != -1, "WHY missing skeptical framework/platform section"
+    assert skeptical_idx < at_glance_idx, "Skeptical answer must precede At a glance"
+    early = normalized[skeptical_idx : at_glance_idx]
+    assert "not claiming differentiation" in early or "not" in early and "checklist" in early
+    assert "shared application operating model" in early
+    assert "product owns meaning" in early
+    assert "platform owns enforcement" in early
+    assert "semantic reuse" in early or "mean the same thing" in early
+    assert "not yet established" in early or "unproven" in early or "remains unproven" in early
+    assert "feature scorecard" not in early.replace("not a feature scorecard", "")
+
+
 def test_why_business_strategic_thesis(why_text: str) -> None:
     normalized = _normalize(why_text)
     for phrase in (
