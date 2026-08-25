@@ -14,10 +14,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 REPO_ROOT = Path(__file__).resolve().parents[3]
 LKW_DOCS_PREFIX = "applications/local_workspace_application/docs/"
 LKW_ASSET_PREFIX = "applications/local_workspace_application/docs/assets/"
-README_UEA_PLATFORM_CORE_PREFIX = (
-    "docs/project/architecture/assets/unified-execution-platform-core-"
-)
 FULLSIZE_SEGMENT = "/fullsize/"
+_ARCHITECTURE_DOC_PREFIX = "docs/project/architecture/"
+_ARCHITECTURE_ASSET_PREFIX = "docs/project/architecture/assets/"
 
 _PUBLIC_SCOPES = (
     REPO_ROOT / "README.md",
@@ -123,13 +122,22 @@ def _anchor_href_before_picture(text: str, start: int) -> str | None:
     return anchor_match.group(1).strip() if anchor_match else None
 
 
+def _is_canonical_architecture_doc_navigation(href: str, src: str) -> bool:
+    normalized_href = href.strip().replace("\\", "/")
+    normalized_src = src.strip().replace("\\", "/")
+    return (
+        normalized_src.startswith(_ARCHITECTURE_ASSET_PREFIX)
+        and normalized_href.startswith(_ARCHITECTURE_DOC_PREFIX)
+        and FULLSIZE_SEGMENT not in normalized_href
+        and normalized_href.endswith(".md")
+    )
+
+
 def _is_qualifying_picture_src(src: str, *, allow_lkw_assets: bool) -> bool:
     normalized = src.strip().replace("\\", "/")
     if not normalized or normalized.startswith(_REMOTE_PREFIXES):
         return False
     if not allow_lkw_assets and LKW_ASSET_PREFIX in normalized:
-        return False
-    if normalized.startswith(README_UEA_PLATFORM_CORE_PREFIX):
         return False
     if _BADGE_SHIELD.search(normalized):
         return False
@@ -301,6 +309,8 @@ def _picture_clickability_violations(
                     violations.append(
                         f"{rel}: missing theme-aware preview page for href={href!r}"
                     )
+                    continue
+                if _is_canonical_architecture_doc_navigation(href, src):
                     continue
                 violations.extend(
                     _preview_contains_theme_pair(
