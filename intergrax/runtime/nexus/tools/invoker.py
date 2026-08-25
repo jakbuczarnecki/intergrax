@@ -32,7 +32,11 @@ from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
 from intergrax.runtime.policy.rules.schema import PolicyRuleAction
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.contracts import SideEffectRetrySafety, ToolContract
-from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
+from intergrax.tools.execution_models import (
+    ToolEffectCertainty,
+    ToolExecutionRequest,
+    ToolExecutionResult,
+)
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.tool_executor import ToolExecutor
 
@@ -186,7 +190,11 @@ class RuntimeToolInvoker:
                     error_message=msg,
                 ),
             )
-            return ToolExecutionResult.fail(RuntimeErrorCode.TOOL_ERROR, msg)
+            return ToolExecutionResult.fail(
+                RuntimeErrorCode.TOOL_ERROR,
+                msg,
+                effect_certainty=ToolEffectCertainty.NOT_STARTED,
+            )
 
         contract = reg.contract
 
@@ -208,7 +216,11 @@ class RuntimeToolInvoker:
                     error_message=msg,
                 ),
             )
-            result = ToolExecutionResult.fail(RuntimeErrorCode.VALIDATION_ERROR, msg)
+            result = ToolExecutionResult.fail(
+                RuntimeErrorCode.VALIDATION_ERROR,
+                msg,
+                effect_certainty=ToolEffectCertainty.NOT_STARTED,
+            )
             self._emit_boundary_event(
                 state=state,
                 agent_id=agent_id,

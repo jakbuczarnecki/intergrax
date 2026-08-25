@@ -30,6 +30,7 @@ from intergrax.runtime.tools.operation_identity import compute_invocation_operat
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.execution_models import (
+    ToolEffectCertainty,
     ToolExecutionRequest,
     ToolExecutionResult,
 )
@@ -39,27 +40,16 @@ if TYPE_CHECKING:
 
 _DEFAULT_LEASE_SECONDS = 300
 
-_SAFE_TERMINAL_ERROR_CODES = frozenset(
-    {
-        RuntimeErrorCode.VALIDATION_ERROR,
-        RuntimeErrorCode.PERMISSION_ERROR,
-        RuntimeErrorCode.POLICY_ERROR,
-    },
-)
-
-
 def classify_idempotency_outcome(
     contract: ToolContract,
     result: ToolExecutionResult[BaseModel],
 ) -> Literal["safe_terminal", "uncertain"]:
     """Classify ledger terminal transition for a side-effect tool invocation."""
+    if not contract.side_effects:
+        return "safe_terminal"
     if result.success:
         return "safe_terminal"
-    if result.error is None:
-        return "uncertain"
-    if result.error.error_code in _SAFE_TERMINAL_ERROR_CODES:
-        return "safe_terminal"
-    if not contract.side_effects:
+    if result.effect_certainty == ToolEffectCertainty.NOT_STARTED:
         return "safe_terminal"
     return "uncertain"
 
@@ -171,6 +161,7 @@ class IdempotentToolInvoker:
             result = ToolExecutionResult.fail(
                 RuntimeErrorCode.POLICY_ERROR,
                 str(exc),
+                effect_certainty=ToolEffectCertainty.NOT_STARTED,
             )
             self._store.complete_with_claim(tenant_id, key, claim, result)
             raise

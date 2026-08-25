@@ -5,9 +5,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 from typing import Generic, Optional, TypeVar
 
 from pydantic import BaseModel
+
+
+class ToolEffectCertainty(str, Enum):
+    """Whether a tool invocation may have crossed the external-effect boundary."""
+
+    NOT_STARTED = "not_started"
+    COMPLETED = "completed"
+    UNCERTAIN = "uncertain"
 
 InModelT = TypeVar("InModelT", bound=BaseModel)
 OutModelT = TypeVar("OutModelT", bound=BaseModel)
@@ -81,16 +90,28 @@ class ToolExecutionResult(Generic[OutModelT]):
     success: bool
     output: Optional[OutModelT]
     error: Optional[ToolExecutionError]
+    effect_certainty: ToolEffectCertainty = ToolEffectCertainty.UNCERTAIN
 
     @staticmethod
     def ok(output: OutModelT) -> "ToolExecutionResult[OutModelT]":
-        return ToolExecutionResult(success=True, output=output, error=None)
+        return ToolExecutionResult(
+            success=True,
+            output=output,
+            error=None,
+            effect_certainty=ToolEffectCertainty.COMPLETED,
+        )
 
     @staticmethod
-    def fail(code: str, message: str) -> "ToolExecutionResult[OutModelT]":
+    def fail(
+        code: str,
+        message: str,
+        *,
+        effect_certainty: ToolEffectCertainty = ToolEffectCertainty.UNCERTAIN,
+    ) -> "ToolExecutionResult[OutModelT]":
         return ToolExecutionResult(
             success=False,
             output=None,
             error=ToolExecutionError(error_code=code, error_message=message),
+            effect_certainty=effect_certainty,
         )
 
