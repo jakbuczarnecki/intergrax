@@ -8,6 +8,24 @@
 
 **Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md). UER owns runtime policy resolution, shared contract placement, output profile resolution, compression-level selection, and safety bypass enforcement.
 
+**Meta-architecture (frozen):** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](../../architecture/UNIFIED_EXECUTION_ARCHITECTURE.md) — semantic authority over UER target model. UER plan rows must not contradict Execution-centric identity, neutral Execution Boundary, or strategy resolution semantics.
+
+### Architecture sync — UE-DOC-0.4 (2026-08-25)
+
+**Target model (from rewritten UER hub):**
+
+- Fundamental unit: **Execution** (`TaskId` → `RunId` → `AttemptId` → `ExecutionId` → `EventId`)
+- Public entry: `execution.execute(request=..., output_type=...)` — no public engine/mode selection
+- Strategies: inference · agentic (AgentEngine → UAEP) · orchestration (Nexus → child Executions)
+- UAEP is **agent-specific**; Nexus is **not** required for direct inference or ordinary agentic execution
+- UER coordinates Governance/Budget/Observability/Checkpoint; does not own their authorities
+
+**Known implementation gaps (CURRENT):** no canonical `ExecutionId`; `RuntimeEvent` lacks `ExecutionId`; `UnifiedTaskRunner` routes through Nexus; agent-centric `GraphExecutor`; incomplete hierarchical budget; node-centric authority in places.
+
+**High-level migration order:** see UER hub [Implementation readiness §5](../../architecture/UNIFIED_EXECUTION_RUNTIME.md#5-migration-order-high-level). Detailed code mapping deferred to **UE-DOC-0.9**.
+
+**Plan debt:** substantial row restructuring against Execution-centric slices is **not** in UE-DOC-0.4 — track in UE-DOC-0.9.
+
 ---
 
 ## Cursor read scope (token budget)
