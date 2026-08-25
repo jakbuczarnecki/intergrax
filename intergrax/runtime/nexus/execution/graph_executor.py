@@ -423,6 +423,7 @@ class GraphExecutor:
         on_node_complete: Optional[Callable[[ExecutionNode], None]],
         critic_trace_emitter: Optional["CriticTraceEmitter"] = None,
         root_execution_authority: ParentExecutionAuthority,
+        evaluator_loop_active: bool = False,
     ) -> tuple[AgentExecutionResult, List[RetryRecord], bool, bool, List[HandoffExtra]]:
         if should_skip_graph_node(
             node,
@@ -718,6 +719,7 @@ class GraphExecutor:
             not validation.valid
             and last_critic_verdict is not None
             and self._critic_graph_hooks is not None
+            and not evaluator_loop_active
         ):
             execution, validation, retries = await self._maybe_run_evaluator_loop(
                 graph,
@@ -858,20 +860,23 @@ class GraphExecutor:
                     node.metadata["critic_feedback"] = list(current_verdict.failure_reasons)
                 merged_prior = dict(prior_outputs)
                 merged_prior[node.node_id] = current_execution
-                revise_node = graph.node_by_id(outcome.revise_node_id)
-                await self._execute_node(
-                    graph,
-                    task,
-                    revise_node,
-                    merged_prior,
-                    runtime_ckpt=runtime_ckpt,
-                    plan_criteria=plan_criteria,
-                    on_retry=on_retry,
-                    on_node_start=on_node_start,
-                    on_node_complete=on_node_complete,
-                    critic_trace_emitter=critic_trace_emitter,
-                    root_execution_authority=root_execution_authority,
-                )
+                revise_node_id = outcome.revise_node_id
+                if revise_node_id != node.node_id:
+                    revise_node = graph.node_by_id(revise_node_id)
+                    await self._execute_node(
+                        graph,
+                        task,
+                        revise_node,
+                        merged_prior,
+                        runtime_ckpt=runtime_ckpt,
+                        plan_criteria=plan_criteria,
+                        on_retry=on_retry,
+                        on_node_start=on_node_start,
+                        on_node_complete=on_node_complete,
+                        critic_trace_emitter=critic_trace_emitter,
+                        root_execution_authority=root_execution_authority,
+                        evaluator_loop_active=True,
+                    )
                 state = loop_executor.bump_iteration(state)
                 set_evaluator_loop_iteration(node, state.iteration)
                 current_execution, loop_retries, current_validation = (
