@@ -26,6 +26,7 @@ from intergrax.runtime.background_execution.required_audit_evidence import (
     RequiredAuditEvidencePersistenceError,
     admit_background_execution_handler,
     build_transport_triggered_execution_evidence,
+    persist_required_audit_evidence,
 )
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
@@ -122,12 +123,16 @@ def test_required_evidence_success_invokes_handler_once() -> None:
     assert stored[0].relation_kind == CausalRelationKind.TRANSPORT_TASK_TRIGGERED_EXECUTION
 
 
-def test_required_evidence_persistence_failure_blocks_handler() -> None:
+def test_required_evidence_backend_failure_blocks_handler_and_wraps_cause() -> None:
+    backend_error = RuntimeError("database unavailable")
     persistence = Mock(spec=CausalEvidencePersistence)
-    persistence.append.side_effect = RequiredAuditEvidencePersistenceError("store down")
+    persistence.append.side_effect = backend_error
     handler = Mock()
 
-    with pytest.raises(RequiredAuditEvidencePersistenceError, match="store down"):
+    with pytest.raises(
+        RequiredAuditEvidencePersistenceError,
+        match="required audit evidence persistence failed",
+    ) as exc_info:
         admit_background_execution_handler(
             transport_ref=_transport_ref(),
             execution_identity=_identity(),
@@ -135,7 +140,40 @@ def test_required_evidence_persistence_failure_blocks_handler() -> None:
             handler=handler,
         )
 
+    assert exc_info.value.__cause__ is backend_error
     handler.assert_not_called()
+    assert (
+        ErrorClassifier.classify(exc_info.value) == RuntimeErrorCode.DEPENDENCY_ERROR
+    )
+
+
+def test_already_typed_persistence_error_propagates_without_double_wrap() -> None:
+    original = RequiredAuditEvidencePersistenceError("store down")
+    persistence = Mock(spec=CausalEvidencePersistence)
+    persistence.append.side_effect = original
+    handler = Mock()
+
+    with pytest.raises(RequiredAuditEvidencePersistenceError, match="store down") as exc_info:
+        admit_background_execution_handler(
+            transport_ref=_transport_ref(),
+            execution_identity=_identity(),
+            causal_evidence_persistence=persistence,
+            handler=handler,
+        )
+
+    assert exc_info.value is original
+    handler.assert_not_called()
+
+
+def test_unsupported_relation_kind_raises_value_error_not_persistence_error() -> None:
+    persistence = Mock(spec=CausalEvidencePersistence)
+    evidence = Mock()
+    evidence.relation_kind = "unsupported_relation"
+
+    with pytest.raises(ValueError, match="not required audit evidence"):
+        persist_required_audit_evidence(persistence, evidence)
+
+    persistence.append.assert_not_called()
 
 
 def test_required_evidence_failure_classified_as_dependency_error() -> None:

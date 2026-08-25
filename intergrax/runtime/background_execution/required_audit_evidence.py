@@ -87,7 +87,14 @@ def persist_required_audit_evidence(
         raise ValueError(
             f"relation_kind {evidence.relation_kind!r} is not required audit evidence"
         )
-    return persistence.append(evidence)
+    try:
+        return persistence.append(evidence)
+    except RequiredAuditEvidencePersistenceError:
+        raise
+    except Exception as exc:
+        raise RequiredAuditEvidencePersistenceError(
+            "required audit evidence persistence failed"
+        ) from exc
 
 
 def admit_background_execution_handler(
