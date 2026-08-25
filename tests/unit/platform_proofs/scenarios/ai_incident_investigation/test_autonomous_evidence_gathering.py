@@ -33,6 +33,9 @@ from platform_proofs.scenarios.ai_incident_investigation.investigation_observabi
 from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
     INVESTIGATOR_AGENT_ID,
 )
+from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
+    COMPLETION_UNRESOLVED,
+)
 from platform_proofs.scenarios.ai_incident_investigation.scenario import (
     OUTCOME_RESOLVED,
     build_runtime_bundle,
@@ -294,9 +297,10 @@ async def test_scope_violation_emits_diagnostic_without_unresolved_conversion(
         request=request,
         metadata={"runtime_state": state},
     )
-    with pytest.raises(IncidentScopeViolationError):
-        await bundle.investigator.run_step(step, exec_ctx)
+    output = await bundle.investigator.run_step(step, exec_ctx)
     assert any(event.step == "incident_scope_rejection" for event in state.trace_events)
+    domain_payload = output.data["domain_summary"]
+    assert domain_payload["completion_mode"] != COMPLETION_UNRESOLVED
 
 
 def test_gather_incident_evidence_requires_runtime_config_tool_invoker() -> None:
@@ -381,16 +385,16 @@ def test_scope_rejection_does_not_invoke_canonical_tool_invoker(
     sentinel = _SentinelCanonicalInvoker(inner=canonical, registry=bundle.registry)
     state.context.config.tool_invoker = sentinel
 
-    with pytest.raises(IncidentScopeViolationError):
-        gather_incident_evidence(
-            runtime_state=state,
-            registry=bundle.registry,
-            scope=IncidentScope.from_fixture_defaults(station_id=bundle.fixture.telemetry.station_id),
-            is_revision=False,
-        )
+    gathering = gather_incident_evidence(
+        runtime_state=state,
+        registry=bundle.registry,
+        scope=IncidentScope.from_fixture_defaults(station_id=bundle.fixture.telemetry.station_id),
+        is_revision=False,
+    )
 
     assert sentinel.invoke_count == 0
     assert any(event.step == "incident_scope_rejection" for event in state.trace_events)
+    assert gathering.tool_invocations >= 1
 
 
 def test_evidence_gathering_has_no_local_runtime_tool_invoker_construction() -> None:
