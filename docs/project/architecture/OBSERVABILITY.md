@@ -855,6 +855,30 @@ await reporter.report(
 
 **Code references:** `intergrax/runtime/diagnostics/execution_reconstruction.py`.
 
+### Lifecycle anomaly analysis (DIAG-3)
+
+**Input:** `ExecutionReconstruction` from DIAG-2 — no independent persistence reads.
+
+**Derived read model (NOT persisted, NOT a source of truth):** `LifecycleAnalysis` is computed at read time by `LifecycleAnomalyAnalyzer.analyze(reconstruction)`. It reports deterministic factual invariant violations on the reconstruction. No diagnosis, root cause, confidence, remediation, LLM, or event emission.
+
+**Implemented anomaly kinds (v1):**
+
+| Kind | Scope | Condition |
+|------|-------|-----------|
+| `CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY` | attempt | `has_transport_evidence` and not `has_runtime_events` |
+| `RUNTIME_ATTEMPT_WITHOUT_CAUSAL_EVIDENCE` | attempt | execution has transport evidence elsewhere; attempt has runtime events but no causal evidence |
+| `RUNTIME_HISTORY_TRUNCATED` | execution | `runtime_history_completeness == truncated` |
+| `MULTIPLE_TERMINAL_OUTCOMES` | attempt or execution | conflicting final lifecycle events per TRACE-ASOF-2 reducer semantics |
+| `EVENT_AFTER_TERMINAL` | attempt or execution | lifecycle event after terminal `COMPLETED`/`CANCELLED` per TRACE-ASOF-2 reducer semantics |
+
+**Lifecycle semantics source:** reuse `intergrax/runtime/events/asof_projection.py` (`_apply_lifecycle_event`) — do not invent parallel state machines. Retry attempts (`A1` failed + `A2` completed) are evaluated on the canonical positioned stream; cross-attempt contradictions are not flagged when retry semantics allow them.
+
+**Truncation safety:** when history is truncated, only violations provable from the visible prefix are reported; missing terminal events beyond truncation are not inferred.
+
+**Ordering:** findings sorted for presentation by earliest supporting `ExecutionEventPosition`, else earliest causal `(recorded_at, evidence_id)`, then kind, then `AttemptId`.
+
+**Code references:** `intergrax/runtime/diagnostics/lifecycle_analysis.py`.
+
 ---
 
 ## Problem signal routing/fanout boundary

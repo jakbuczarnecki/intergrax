@@ -10,11 +10,23 @@ from intergrax.runtime.diagnostics.execution_reconstruction import (
     ReconstructedAttempt,
     RuntimeHistoryCompleteness,
 )
+from intergrax.runtime.diagnostics.lifecycle_analysis import (
+    LifecycleAnalysis,
+    LifecycleAnomaly,
+    LifecycleAnomalyAnalyzer,
+    LifecycleAnomalyKind,
+    LifecycleAnomalyScope,
+)
 
 __all__ = [
     "ExecutionReconstruction",
     "ExecutionReconstructionIntegrityError",
     "ExecutionReconstructor",
+    "LifecycleAnalysis",
+    "LifecycleAnomaly",
+    "LifecycleAnomalyAnalyzer",
+    "LifecycleAnomalyKind",
+    "LifecycleAnomalyScope",
     "ReconstructedAttempt",
     "RuntimeHistoryCompleteness",
 ]
