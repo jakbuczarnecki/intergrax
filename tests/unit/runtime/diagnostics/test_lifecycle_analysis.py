@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import ast
+import inspect
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import pytest
 
@@ -24,6 +27,12 @@ from intergrax.runtime.diagnostics.lifecycle_analysis import (
     LifecycleAnomalyAnalyzer,
     LifecycleAnomalyKind,
     LifecycleAnomalyScope,
+)
+from intergrax.runtime.events.asof_projection import (
+    apply_lifecycle_event,
+    InvalidRunExecutionHistoryError,
+    RunExecutionLifecycleStatus,
+    RunLifecycleViolationKind,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
@@ -372,7 +381,14 @@ def test_lifecycle_violation_uses_execution_position_not_timestamp() -> None:
         if anomaly.kind is LifecycleAnomalyKind.MULTIPLE_TERMINAL_OUTCOMES
     ]
     assert len(conflicting) == 1
-    assert conflicting[0].supporting_positions[0].value == 3
+    assert conflicting[0].supporting_positions == (
+        reconstruction.positioned_events[1].position,
+        reconstruction.positioned_events[2].position,
+    )
+    assert conflicting[0].supporting_event_ids == (
+        reconstruction.positioned_events[1].event.event_id,
+        reconstruction.positioned_events[2].event.event_id,
+    )
 
 
 def test_completed_run_cannot_reopen_execution_scope() -> None:
@@ -419,7 +435,14 @@ def test_completed_run_cannot_reopen_execution_scope() -> None:
     ]
     assert len(after_terminal) == 1
     assert after_terminal[0].scope is LifecycleAnomalyScope.EXECUTION
-    assert after_terminal[0].supporting_positions[0].value == 3
+    assert after_terminal[0].supporting_positions == (
+        reconstruction.positioned_events[1].position,
+        reconstruction.positioned_events[2].position,
+    )
+    assert after_terminal[0].supporting_event_ids == (
+        reconstruction.positioned_events[1].event.event_id,
+        reconstruction.positioned_events[2].event.event_id,
+    )
 
 
 def test_step_failure_does_not_count_as_execution_terminal() -> None:
@@ -448,6 +471,73 @@ def test_step_failure_does_not_count_as_execution_terminal() -> None:
     analysis = _ANALYZER.analyze(reconstruction)
 
     assert analysis.anomalies == ()
+
+
+def test_tool_failure_does_not_count_as_execution_terminal() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    runtime_store = InMemoryRuntimeEventStore()
+    _append_sequence(
+        runtime_store,
+        tenant_id=_TENANT_A,
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        event_types=[
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TOOL_REQUESTED,
+            RuntimeEventType.TOOL_FAILED,
+            RuntimeEventType.TASK_COMPLETED,
+        ],
+    )
+
+    reconstruction = ExecutionReconstructor(
+        runtime_events=runtime_store,
+        causal_evidence=InMemoryCausalEvidencePersistence(),
+    ).reconstruct_execution(_TENANT_A, task_id, run_id)
+    analysis = _ANALYZER.analyze(reconstruction)
+
+    assert analysis.anomalies == ()
+
+
+def test_lifecycle_analysis_imports_no_private_asof_helpers() -> None:
+    import intergrax.runtime.diagnostics.lifecycle_analysis as lifecycle_analysis
+
+    module_path = Path(inspect.getfile(lifecycle_analysis))
+    tree = ast.parse(module_path.read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module == "intergrax.runtime.events.asof_projection":
+            for alias in node.names:
+                assert not alias.name.startswith("_")
+
+
+def test_lifecycle_violation_classification_uses_typed_kind_not_message() -> None:
+    with pytest.raises(InvalidRunExecutionHistoryError) as exc_info:
+        apply_lifecycle_event(
+            RunExecutionLifecycleStatus.FAILED,
+            RuntimeEventType.TASK_COMPLETED,
+        )
+    exc = exc_info.value
+    assert exc.kind is RunLifecycleViolationKind.CONFLICTING_FINAL_OUTCOME
+    assert exc.current_status is RunExecutionLifecycleStatus.FAILED
+    assert exc.event_type is RuntimeEventType.TASK_COMPLETED
+
+    with pytest.raises(InvalidRunExecutionHistoryError) as exc_info:
+        apply_lifecycle_event(
+            RunExecutionLifecycleStatus.COMPLETED,
+            RuntimeEventType.RETRY_STARTED,
+        )
+    exc = exc_info.value
+    assert exc.kind is RunLifecycleViolationKind.EVENT_AFTER_TERMINAL
+
+    remapped = InvalidRunExecutionHistoryError(
+        "presentation-only message unrelated to semantics",
+        kind=RunLifecycleViolationKind.CONFLICTING_FINAL_OUTCOME,
+        current_status=RunExecutionLifecycleStatus.FAILED,
+        event_type=RuntimeEventType.TASK_COMPLETED,
+    )
+    assert remapped.kind is RunLifecycleViolationKind.CONFLICTING_FINAL_OUTCOME
 
 
 def test_analysis_preserves_execution_scope_fields() -> None:

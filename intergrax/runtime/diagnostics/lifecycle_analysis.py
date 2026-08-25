@@ -15,10 +15,11 @@ from intergrax.runtime.diagnostics.execution_reconstruction import (
     ReconstructedAttempt,
 )
 from intergrax.runtime.events.asof_projection import (
+    apply_lifecycle_event,
     InvalidRunExecutionHistoryError,
+    is_final_run_lifecycle_status,
     RunExecutionLifecycleStatus,
-    _apply_lifecycle_event,
-    _FINAL_RUN_STATUSES,
+    RunLifecycleViolationKind,
 )
 from intergrax.runtime.events.execution_position import ExecutionEventPosition, PositionedRuntimeEvent
 from intergrax.runtime.observability.causal_evidence import PlatformCausalEvidence
@@ -40,6 +41,17 @@ class LifecycleAnomalyScope(StrEnum):
 
     EXECUTION = "execution"
     ATTEMPT = "attempt"
+
+
+_LIFECYCLE_VIOLATION_TO_ANOMALY_KIND: dict[
+    RunLifecycleViolationKind, LifecycleAnomalyKind
+] = {
+    RunLifecycleViolationKind.CONFLICTING_FINAL_OUTCOME: (
+        LifecycleAnomalyKind.MULTIPLE_TERMINAL_OUTCOMES
+    ),
+    RunLifecycleViolationKind.EVENT_AFTER_TERMINAL: LifecycleAnomalyKind.EVENT_AFTER_TERMINAL,
+    RunLifecycleViolationKind.DISALLOWED_AFTER_FAILED: LifecycleAnomalyKind.EVENT_AFTER_TERMINAL,
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -173,52 +185,83 @@ def _lifecycle_violation_anomalies(
 
     findings: list[LifecycleAnomaly] = []
     status = RunExecutionLifecycleStatus.CREATED
+    last_status_event: PositionedRuntimeEvent | None = None
     last_terminal_event: PositionedRuntimeEvent | None = None
 
     for row in positioned_events:
         try:
-            status = _apply_lifecycle_event(status, row.event.event_type)
+            new_status = apply_lifecycle_event(status, row.event.event_type)
         except InvalidRunExecutionHistoryError as exc:
-            kind = _classify_lifecycle_violation(str(exc))
+            if exc.kind is None:
+                raise
+            prior_event = _prior_lifecycle_event_for_violation(
+                exc.kind,
+                last_terminal_event=last_terminal_event,
+                last_status_event=last_status_event,
+            )
             scope = _lifecycle_violation_scope(
                 row,
-                last_terminal_event=last_terminal_event,
+                prior_event=prior_event,
+            )
+            supporting_event_ids, supporting_positions = _lifecycle_violation_provenance(
+                prior_event,
+                row,
             )
             findings.append(
                 LifecycleAnomaly(
-                    kind=kind,
+                    kind=_LIFECYCLE_VIOLATION_TO_ANOMALY_KIND[exc.kind],
                     scope=scope,
                     attempt_id=row.event.attempt_id if scope is LifecycleAnomalyScope.ATTEMPT else None,
-                    supporting_event_ids=(row.event.event_id,),
-                    supporting_positions=(row.position,),
+                    supporting_event_ids=supporting_event_ids,
+                    supporting_positions=supporting_positions,
                     supporting_evidence_ids=(),
                     factual_message=str(exc),
                 )
             )
             continue
 
-        if status in _FINAL_RUN_STATUSES:
+        if new_status != status:
+            last_status_event = row
+        status = new_status
+        if is_final_run_lifecycle_status(status):
             last_terminal_event = row
 
     return tuple(findings)
 
 
-def _classify_lifecycle_violation(message: str) -> LifecycleAnomalyKind:
-    if "conflicting final lifecycle event" in message:
-        return LifecycleAnomalyKind.MULTIPLE_TERMINAL_OUTCOMES
-    return LifecycleAnomalyKind.EVENT_AFTER_TERMINAL
+def _prior_lifecycle_event_for_violation(
+    kind: RunLifecycleViolationKind,
+    *,
+    last_terminal_event: PositionedRuntimeEvent | None,
+    last_status_event: PositionedRuntimeEvent | None,
+) -> PositionedRuntimeEvent | None:
+    if kind is RunLifecycleViolationKind.EVENT_AFTER_TERMINAL:
+        return last_terminal_event
+    return last_status_event
+
+
+def _lifecycle_violation_provenance(
+    prior_event: PositionedRuntimeEvent | None,
+    violating_event: PositionedRuntimeEvent,
+) -> tuple[tuple[EventId, ...], tuple[ExecutionEventPosition, ...]]:
+    if prior_event is None:
+        return (violating_event.event.event_id,), (violating_event.position,)
+    return (
+        (prior_event.event.event_id, violating_event.event.event_id),
+        (prior_event.position, violating_event.position),
+    )
 
 
 def _lifecycle_violation_scope(
     violating_event: PositionedRuntimeEvent,
     *,
-    last_terminal_event: PositionedRuntimeEvent | None,
+    prior_event: PositionedRuntimeEvent | None,
 ) -> LifecycleAnomalyScope:
-    if last_terminal_event is None:
+    if prior_event is None:
         return LifecycleAnomalyScope.ATTEMPT
     if (
         violating_event.event.attempt_id
-        == last_terminal_event.event.attempt_id
+        == prior_event.event.attempt_id
     ):
         return LifecycleAnomalyScope.ATTEMPT
     return LifecycleAnomalyScope.EXECUTION

@@ -20,6 +20,8 @@ from intergrax.runtime.events.asof_projection import (
     RunExecutionHistoryNotFoundError,
     RunExecutionHistoryTruncatedError,
     RunExecutionLifecycleStatus,
+    RunLifecycleViolationKind,
+    apply_lifecycle_event,
     project_run_execution_as_of,
     reconstruct_run_execution_as_of,
 )
@@ -668,6 +670,29 @@ def test_cancelled_run_cannot_reopen() -> None:
             positioned_events=tuple(store.list_positioned_through(boundary, tenant_id=_TENANT)),
             tenant_id=_TENANT,
         )
+
+
+@pytest.mark.unit
+def test_apply_lifecycle_event_raises_typed_violation_fields() -> None:
+    with pytest.raises(InvalidRunExecutionHistoryError) as exc_info:
+        apply_lifecycle_event(
+            RunExecutionLifecycleStatus.FAILED,
+            RuntimeEventType.TASK_COMPLETED,
+        )
+    exc = exc_info.value
+    assert exc.kind is RunLifecycleViolationKind.CONFLICTING_FINAL_OUTCOME
+    assert exc.current_status is RunExecutionLifecycleStatus.FAILED
+    assert exc.event_type is RuntimeEventType.TASK_COMPLETED
+
+    with pytest.raises(InvalidRunExecutionHistoryError) as exc_info:
+        apply_lifecycle_event(
+            RunExecutionLifecycleStatus.COMPLETED,
+            RuntimeEventType.TASK_CREATED,
+        )
+    exc = exc_info.value
+    assert exc.kind is RunLifecycleViolationKind.EVENT_AFTER_TERMINAL
+    assert exc.current_status is RunExecutionLifecycleStatus.COMPLETED
+    assert exc.event_type is RuntimeEventType.TASK_CREATED
 
 
 @pytest.mark.unit

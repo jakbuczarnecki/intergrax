@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, StrEnum
 
 from intergrax.contracts.execution_identity import AttemptId, EventId, RunId, TaskId
 from intergrax.runtime.events.execution_position import (
@@ -39,8 +39,29 @@ class RunExecutionHistoryTruncatedError(RunExecutionProjectionError):
     """Persistence read limit truncated the prefix required for reconstruction."""
 
 
+class RunLifecycleViolationKind(StrEnum):
+    """Typed lifecycle transition violations raised by ``apply_lifecycle_event``."""
+
+    EVENT_AFTER_TERMINAL = "event_after_terminal"
+    CONFLICTING_FINAL_OUTCOME = "conflicting_final_outcome"
+    DISALLOWED_AFTER_FAILED = "disallowed_after_failed"
+
+
 class InvalidRunExecutionHistoryError(RunExecutionProjectionError):
     """Positioned input violates canonical execution-history ordering or identity."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        kind: RunLifecycleViolationKind | None = None,
+        current_status: RunExecutionLifecycleStatus | None = None,
+        event_type: RuntimeEventType | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.kind = kind
+        self.current_status = current_status
+        self.event_type = event_type
 
 
 class RunExecutionLifecycleStatus(str, Enum):
@@ -114,7 +135,7 @@ class RunExecutionAsOfProjection:
 
     @property
     def is_terminal(self) -> bool:
-        return self.lifecycle_status in _FINAL_RUN_STATUSES
+        return is_final_run_lifecycle_status(self.lifecycle_status)
 
 
 def project_run_execution_as_of(
@@ -170,7 +191,7 @@ def project_run_execution_as_of(
             first_pos, _last_pos, count = attempt_stats[attempt_id]
             attempt_stats[attempt_id] = (first_pos, positioned.position, count + 1)
 
-        lifecycle_status = _apply_lifecycle_event(
+        lifecycle_status = apply_lifecycle_event(
             lifecycle_status,
             event.event_type,
         )
@@ -241,15 +262,24 @@ def reconstruct_run_execution_as_of(
     )
 
 
-def _apply_lifecycle_event(
+def is_final_run_lifecycle_status(status: RunExecutionLifecycleStatus) -> bool:
+    """Whether ``status`` is a terminal run closure (``COMPLETED`` or ``CANCELLED``)."""
+    return status in _FINAL_RUN_STATUSES
+
+
+def apply_lifecycle_event(
     current: RunExecutionLifecycleStatus,
     event_type: RuntimeEventType,
 ) -> RunExecutionLifecycleStatus:
+    """Apply one canonical lifecycle transition; raise typed error on violation."""
     if event_type == RuntimeEventType.RETRY_SCHEDULED:
         if current in _FINAL_RUN_STATUSES:
             raise InvalidRunExecutionHistoryError(
                 f"retry lifecycle event {event_type.value!r} after terminal "
-                f"{current.value}"
+                f"{current.value}",
+                kind=RunLifecycleViolationKind.EVENT_AFTER_TERMINAL,
+                current_status=current,
+                event_type=event_type,
             )
         return current
 
@@ -257,7 +287,10 @@ def _apply_lifecycle_event(
     if mapped is not None:
         if current in _FINAL_RUN_STATUSES:
             raise InvalidRunExecutionHistoryError(
-                f"lifecycle event {event_type.value!r} after terminal {current.value}"
+                f"lifecycle event {event_type.value!r} after terminal {current.value}",
+                kind=RunLifecycleViolationKind.EVENT_AFTER_TERMINAL,
+                current_status=current,
+                event_type=event_type,
             )
         if current == RunExecutionLifecycleStatus.FAILED:
             if event_type == RuntimeEventType.RETRY_STARTED:
@@ -265,12 +298,18 @@ def _apply_lifecycle_event(
             if mapped in _FINAL_RUN_STATUSES:
                 raise InvalidRunExecutionHistoryError(
                     f"conflicting final lifecycle event {event_type.value!r} after "
-                    f"{current.value}"
+                    f"{current.value}",
+                    kind=RunLifecycleViolationKind.CONFLICTING_FINAL_OUTCOME,
+                    current_status=current,
+                    event_type=event_type,
                 )
             if mapped != RunExecutionLifecycleStatus.FAILED:
                 raise InvalidRunExecutionHistoryError(
                     f"disallowed lifecycle event {event_type.value!r} after "
-                    f"{current.value}"
+                    f"{current.value}",
+                    kind=RunLifecycleViolationKind.DISALLOWED_AFTER_FAILED,
+                    current_status=current,
+                    event_type=event_type,
                 )
             return mapped
         return mapped
@@ -279,7 +318,10 @@ def _apply_lifecycle_event(
         return RunExecutionLifecycleStatus.RUNNING
     if current == RunExecutionLifecycleStatus.FAILED:
         raise InvalidRunExecutionHistoryError(
-            f"disallowed lifecycle event {event_type.value!r} after {current.value}"
+            f"disallowed lifecycle event {event_type.value!r} after {current.value}",
+            kind=RunLifecycleViolationKind.DISALLOWED_AFTER_FAILED,
+            current_status=current,
+            event_type=event_type,
         )
     return current
 

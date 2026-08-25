@@ -871,7 +871,7 @@ await reporter.report(
 | `MULTIPLE_TERMINAL_OUTCOMES` | attempt or execution | conflicting final lifecycle events per TRACE-ASOF-2 reducer semantics |
 | `EVENT_AFTER_TERMINAL` | attempt or execution | lifecycle event after terminal `COMPLETED`/`CANCELLED` per TRACE-ASOF-2 reducer semantics |
 
-**Lifecycle semantics source:** reuse `intergrax/runtime/events/asof_projection.py` (`_apply_lifecycle_event`) — do not invent parallel state machines. Retry attempts (`A1` failed + `A2` completed) are evaluated on the canonical positioned stream; cross-attempt contradictions are not flagged when retry semantics allow them.
+**Lifecycle semantics source:** reuse `intergrax/runtime/events/asof_projection.py` (`apply_lifecycle_event`) — do not invent parallel state machines. Retry attempts (`A1` failed + `A2` completed) are evaluated on the canonical positioned stream; cross-attempt contradictions are not flagged when retry semantics allow them.
 
 **Truncation safety:** when history is truncated, only violations provable from the visible prefix are reported; missing terminal events beyond truncation are not inferred.
 
