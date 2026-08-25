@@ -880,6 +880,46 @@ await reporter.report(
 
 **Code references:** `intergrax/runtime/diagnostics/lifecycle_analysis.py`.
 
+### Operator diagnostic assessment (DIAG-4)
+
+**Inputs:** `ExecutionReconstruction` (DIAG-2) and `LifecycleAnalysis` (DIAG-3) for the same `tenant_id` / `TaskId` / `RunId` — **no independent persistence reads**.
+
+**Derived read model (NOT persisted, NOT a source of truth):** `DiagnosticAssessment` is computed at read time by `DiagnosticAssessmentBuilder.assess(reconstruction, lifecycle)`. It answers what the platform can **prove** to an operator from canonical facts — not root-cause guessing.
+
+| Layer | Question answered |
+|-------|-------------------|
+| DIAG-2 | What canonical facts exist? |
+| DIAG-3 | Which lifecycle invariants do those facts violate? |
+| DIAG-4 | What can the operator conclude from those violations? |
+
+**Certainty contract (v1):** `DiagnosticCertainty.PROVEN` for emitted findings; `INSUFFICIENT_EVIDENCE` reserved for future use. No numeric confidence scores.
+
+**Findings vs limitations:**
+
+| Output | Role |
+|--------|------|
+| `DiagnosticFinding` | Evidence-backed operator conclusion with provenance |
+| `DiagnosticLimitation` | Factual constraint preventing stronger conclusions (e.g. truncated history) |
+
+**v1 mapping (deterministic, no LLM, no payload heuristics):**
+
+| Lifecycle anomaly | Diagnostic output | Certainty |
+|-------------------|-------------------|-----------|
+| `CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY` | `DiagnosticFinding` | PROVEN |
+| `RUNTIME_ATTEMPT_WITHOUT_CAUSAL_EVIDENCE` | `DiagnosticFinding` | PROVEN |
+| `RUNTIME_HISTORY_TRUNCATED` | `DiagnosticLimitation` | n/a (limitation) |
+| `MULTIPLE_TERMINAL_OUTCOMES` | `DiagnosticFinding` | PROVEN |
+| `EVENT_AFTER_TERMINAL` | `DiagnosticFinding` | PROVEN |
+| `DISALLOWED_AFTER_FAILED` | `DiagnosticFinding` | PROVEN |
+
+Each `DiagnosticFinding` retains `source_anomaly_kind: LifecycleAnomalyKind` for auditability (`canonical facts → anomaly → operator conclusion`). Scope mismatch between reconstruction and lifecycle raises `DiagnosticAssessmentIntegrityError` (fail closed).
+
+**Explicit non-goals (v1):** no root-cause inference (worker crash, network, broker loss, etc. unless canonically proven elsewhere); no “healthy execution” positive diagnosis when anomalies are absent; no remediation suggestions; no event emission back to `RuntimeEventBus`; no persistence layer; no LLM/agent interpretation (future DIAG-8 may consume typed `DiagnosticAssessment` output without rewriting canonical evidence).
+
+**Future boundary:** richer root-cause interpretation may consume `DiagnosticAssessment` plus additional typed observability facts — it must never rewrite canonical evidence.
+
+**Code references:** `intergrax/runtime/diagnostics/diagnostic_assessment.py`.
+
 ---
 
 ## Problem signal routing/fanout boundary

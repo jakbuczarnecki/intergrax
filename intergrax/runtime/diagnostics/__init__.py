@@ -10,6 +10,16 @@ from intergrax.runtime.diagnostics.execution_reconstruction import (
     ReconstructedAttempt,
     RuntimeHistoryCompleteness,
 )
+from intergrax.runtime.diagnostics.diagnostic_assessment import (
+    DiagnosticAssessment,
+    DiagnosticAssessmentBuilder,
+    DiagnosticAssessmentIntegrityError,
+    DiagnosticCertainty,
+    DiagnosticFinding,
+    DiagnosticFindingKind,
+    DiagnosticLimitation,
+    DiagnosticLimitationKind,
+)
 from intergrax.runtime.diagnostics.lifecycle_analysis import (
     LifecycleAnalysis,
     LifecycleAnomaly,
@@ -19,6 +29,14 @@ from intergrax.runtime.diagnostics.lifecycle_analysis import (
 )
 
 __all__ = [
+    "DiagnosticAssessment",
+    "DiagnosticAssessmentBuilder",
+    "DiagnosticAssessmentIntegrityError",
+    "DiagnosticCertainty",
+    "DiagnosticFinding",
+    "DiagnosticFindingKind",
+    "DiagnosticLimitation",
+    "DiagnosticLimitationKind",
     "ExecutionReconstruction",
     "ExecutionReconstructionIntegrityError",
     "ExecutionReconstructor",
