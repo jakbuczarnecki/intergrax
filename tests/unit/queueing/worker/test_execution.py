@@ -24,7 +24,11 @@ from intergrax.queueing.worker.execution import (
     execute_logical_task,
     IdempotencyLockConflictError,
 )
-from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.queueing.worker.registry import BackgroundTaskHandler, TaskExecutionRegistry
+from intergrax.runtime.background_execution.bootstrap import (
+    BackgroundExecutionIdentity,
+    bootstrap_background_execution,
+)
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from intergrax.tools.execution_models import ToolExecutionResult
 
@@ -166,10 +170,23 @@ class LegacyOnlyIdempotencyStore(IdempotencyStore):
 
 
 @pytest.fixture
+def execution_identity() -> BackgroundExecutionIdentity:
+    return bootstrap_background_execution(transport_tenant_id="t1")
+
+
+@pytest.fixture
 def registry() -> TaskExecutionRegistry:
     registry = TaskExecutionRegistry()
 
-    def handler(**kwargs):
+    def handler(
+        *,
+        tenant_id: str,
+        run_id: str,
+        payload: bytes,
+        idempotency_key: Optional[str],
+        execution_identity: BackgroundExecutionIdentity,
+    ) -> ToolExecutionResult[DummyOutput]:
+        _ = tenant_id, run_id, payload, idempotency_key, execution_identity
         return ToolExecutionResult(
             success=True,
             output=DummyOutput(value="ok"),
@@ -183,7 +200,15 @@ def registry() -> TaskExecutionRegistry:
 def _counting_registry(counter: list[int]) -> TaskExecutionRegistry:
     registry = TaskExecutionRegistry()
 
-    def handler(**kwargs):
+    def handler(
+        *,
+        tenant_id: str,
+        run_id: str,
+        payload: bytes,
+        idempotency_key: Optional[str],
+        execution_identity: BackgroundExecutionIdentity,
+    ) -> ToolExecutionResult[DummyOutput]:
+        _ = tenant_id, run_id, payload, idempotency_key, execution_identity
         counter[0] += 1
         return ToolExecutionResult(
             success=True,
@@ -195,7 +220,7 @@ def _counting_registry(counter: list[int]) -> TaskExecutionRegistry:
     return registry
 
 
-def test_execute_without_idempotency(registry):
+def test_execute_without_idempotency(registry, execution_identity):
     result = execute_logical_task(
         registry=registry,
         logical_task_name="task.a",
@@ -204,6 +229,7 @@ def test_execute_without_idempotency(registry):
         payload=b"data",
         idempotency_key=None,
         idempotency_store=None,
+        execution_identity=execution_identity,
     )
 
     assert result.success is True
@@ -211,7 +237,7 @@ def test_execute_without_idempotency(registry):
     assert isinstance(result.output, DummyOutput)
 
 
-def test_r2_1_logical_task_uses_claim_protocol(registry):
+def test_r2_1_logical_task_uses_claim_protocol(registry, execution_identity):
     store = SpyIdempotencyStore()
 
     execute_logical_task(
@@ -223,6 +249,7 @@ def test_r2_1_logical_task_uses_claim_protocol(registry):
         idempotency_key="k1",
         idempotency_store=store,
         lease_seconds=60,
+        execution_identity=execution_identity,
     )
 
     assert len(store.claim_calls) == 1
@@ -231,7 +258,7 @@ def test_r2_1_logical_task_uses_claim_protocol(registry):
     assert store.record_completed_calls == 0
 
 
-def test_execute_with_idempotency_fresh(registry):
+def test_execute_with_idempotency_fresh(registry, execution_identity):
     store = SpyIdempotencyStore()
 
     result = execute_logical_task(
@@ -243,6 +270,7 @@ def test_execute_with_idempotency_fresh(registry):
         idempotency_key="k1",
         idempotency_store=store,
         lease_seconds=60,
+        execution_identity=execution_identity,
     )
 
     assert result.success is True
@@ -250,7 +278,7 @@ def test_execute_with_idempotency_fresh(registry):
     assert isinstance(result.output, DummyOutput)
 
 
-def test_r2_5_completed_replay(registry):
+def test_r2_5_completed_replay(execution_identity):
     store = SpyIdempotencyStore()
     counter: list[int] = [0]
     counting_registry = _counting_registry(counter)
@@ -264,6 +292,7 @@ def test_r2_5_completed_replay(registry):
         idempotency_key="k1",
         idempotency_store=store,
         lease_seconds=60,
+        execution_identity=execution_identity,
     )
 
     result2 = execute_logical_task(
@@ -275,6 +304,7 @@ def test_r2_5_completed_replay(registry):
         idempotency_key="k1",
         idempotency_store=store,
         lease_seconds=60,
+        execution_identity=execution_identity,
     )
 
     assert result1.success is True
@@ -283,7 +313,7 @@ def test_r2_5_completed_replay(registry):
     assert counter[0] == 1
 
 
-def test_r2_2_active_claim_is_retryable_contention(registry):
+def test_r2_2_active_claim_is_retryable_contention(execution_identity):
     store = SpyIdempotencyStore()
     store._forced_outcome = ClaimOutcome.BLOCKED_ACTIVE
     counter: list[int] = [0]
@@ -299,12 +329,13 @@ def test_r2_2_active_claim_is_retryable_contention(registry):
             idempotency_key="k1",
             idempotency_store=store,
             lease_seconds=60,
+            execution_identity=execution_identity,
         )
 
     assert counter[0] == 0
 
 
-def test_r2_3_uncertain_is_not_lock_conflict(registry):
+def test_r2_3_uncertain_is_not_lock_conflict(execution_identity):
     store = SpyIdempotencyStore()
     store._forced_outcome = ClaimOutcome.UNCERTAIN
     counter: list[int] = [0]
@@ -320,12 +351,13 @@ def test_r2_3_uncertain_is_not_lock_conflict(registry):
             idempotency_key="k1",
             idempotency_store=store,
             lease_seconds=60,
+            execution_identity=execution_identity,
         )
 
     assert counter[0] == 0
 
 
-def test_execute_lock_held(registry):
+def test_execute_lock_held(registry, execution_identity):
     store = LegacyOnlyIdempotencyStore()
     store._started.add(("t1", "task.a:k1"))
 
@@ -339,10 +371,11 @@ def test_execute_lock_held(registry):
             idempotency_key="k1",
             idempotency_store=store,
             lease_seconds=60,
+            execution_identity=execution_identity,
         )
 
 
-def test_r2_4_crash_after_handler_effect():
+def test_r2_4_crash_after_handler_effect(execution_identity):
     store = SpyIdempotencyStore()
     counter: list[int] = [0]
     counting_registry = _counting_registry(counter)
@@ -358,6 +391,7 @@ def test_r2_4_crash_after_handler_effect():
             idempotency_key="k1",
             idempotency_store=store,
             lease_seconds=1,
+            execution_identity=execution_identity,
         )
 
     assert counter[0] == 1
@@ -373,12 +407,13 @@ def test_r2_4_crash_after_handler_effect():
             idempotency_key="k1",
             idempotency_store=store,
             lease_seconds=1,
+            execution_identity=execution_identity,
         )
 
     assert counter[0] == 1
 
 
-def test_r2_6_completion_uses_original_claim(registry):
+def test_r2_6_completion_uses_original_claim(registry, execution_identity):
     store = SpyIdempotencyStore()
 
     execute_logical_task(
@@ -390,6 +425,7 @@ def test_r2_6_completion_uses_original_claim(registry):
         idempotency_key="k1",
         idempotency_store=store,
         lease_seconds=60,
+        execution_identity=execution_identity,
     )
 
     acquired_claim = store.complete_with_claim_calls[0][2]
@@ -423,3 +459,93 @@ def test_r2_7_stale_completion_propagates(registry):
 
     with pytest.raises(StaleClaimError):
         store.complete_with_claim("t1", "task.a:k1", stale_claim, result)
+
+
+def test_execute_logical_task_passes_exact_execution_identity() -> None:
+    registry = TaskExecutionRegistry()
+    fixed = bootstrap_background_execution(transport_tenant_id="tenant-a")
+    seen: dict[str, object] = {}
+
+    def handler(
+        *,
+        tenant_id: str,
+        run_id: str,
+        payload: bytes,
+        idempotency_key: Optional[str],
+        execution_identity: BackgroundExecutionIdentity,
+    ) -> ToolExecutionResult[DummyOutput]:
+        seen["tenant_id"] = tenant_id
+        seen["run_id"] = run_id
+        seen["execution_identity"] = execution_identity
+        seen["task_id"] = execution_identity.task_id
+        seen["run_id_obj"] = execution_identity.run_id
+        seen["attempt_id"] = execution_identity.attempt_id
+        _ = payload, idempotency_key
+        return ToolExecutionResult.ok(DummyOutput(value="ok"))
+
+    registry.register("task.a", handler)
+    execute_logical_task(
+        registry=registry,
+        logical_task_name="task.a",
+        tenant_id=fixed.tenant_id,
+        run_id=str(fixed.run_id),
+        payload=b"data",
+        idempotency_key=None,
+        idempotency_store=None,
+        execution_identity=fixed,
+    )
+
+    assert seen["execution_identity"] is fixed
+    assert seen["task_id"] == fixed.task_id
+    assert seen["run_id_obj"] == fixed.run_id
+    assert seen["attempt_id"] == fixed.attempt_id
+    assert seen["tenant_id"] == fixed.tenant_id
+    assert seen["run_id"] == str(fixed.run_id)
+
+
+def test_legacy_handler_without_execution_identity_rejected_at_runtime() -> None:
+    registry = TaskExecutionRegistry()
+    identity = bootstrap_background_execution(transport_tenant_id="tenant-a")
+
+    def legacy_handler(
+        *,
+        tenant_id: str,
+        run_id: str,
+        payload: bytes,
+        idempotency_key: Optional[str],
+    ) -> ToolExecutionResult[DummyOutput]:
+        _ = tenant_id, run_id, payload, idempotency_key
+        return ToolExecutionResult.ok(DummyOutput(value="legacy"))
+
+    registry.register("task.a", legacy_handler)  # type: ignore[arg-type]
+
+    with pytest.raises(TypeError):
+        execute_logical_task(
+            registry=registry,
+            logical_task_name="task.a",
+            tenant_id=identity.tenant_id,
+            run_id=str(identity.run_id),
+            payload=b"data",
+            idempotency_key=None,
+            idempotency_store=None,
+            execution_identity=identity,
+        )
+
+
+def test_task_execution_registry_stores_background_task_handler() -> None:
+    registry = TaskExecutionRegistry()
+
+    def handler(
+        *,
+        tenant_id: str,
+        run_id: str,
+        payload: bytes,
+        idempotency_key: Optional[str],
+        execution_identity: BackgroundExecutionIdentity,
+    ) -> ToolExecutionResult[DummyOutput]:
+        _ = tenant_id, run_id, payload, idempotency_key, execution_identity
+        return ToolExecutionResult.ok(DummyOutput(value="ok"))
+
+    registry.register("task.a", handler)
+    resolved: BackgroundTaskHandler = registry.get_handler("task.a")
+    assert resolved is handler

@@ -9,6 +9,7 @@ from intergrax.queueing.contracts.task_queue import TaskRequest, TaskStatus
 from intergrax.queueing.providers.document_store import DocumentStoreTaskQueue
 from intergrax.queueing.providers.document_store.colocated_worker import DocumentStoreTaskWorker
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
 from intergrax.tools.execution_models import ToolExecutionResult
 from pydantic import BaseModel
 
@@ -83,8 +84,15 @@ def test_worker_executes_registered_handler() -> None:
     queue = DocumentStoreTaskQueue(store)
     registry = TaskExecutionRegistry()
 
-    def handler(*, tenant_id: str, run_id: str, payload: bytes, idempotency_key=None):
-        _ = tenant_id, run_id, payload, idempotency_key
+    def handler(
+        *,
+        tenant_id: str,
+        run_id: str,
+        payload: bytes,
+        idempotency_key=None,
+        execution_identity: BackgroundExecutionIdentity,
+    ):
+        _ = tenant_id, run_id, payload, idempotency_key, execution_identity
         return ToolExecutionResult.ok(_Out())
 
     registry.register("demo.task", handler)

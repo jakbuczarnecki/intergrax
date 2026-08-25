@@ -2,26 +2,49 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-from typing import Callable, Dict
+from __future__ import annotations
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Dict, Optional, Protocol
 
 from pydantic import BaseModel
+
 from intergrax.tools.execution_models import ToolExecutionResult
+
+if TYPE_CHECKING:
+    from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
+
+
+class BackgroundTaskHandler(Protocol):
+    """Canonical handler contract for supported background logical tasks."""
+
+    def __call__(
+        self,
+        *,
+        tenant_id: str,
+        run_id: str,
+        payload: bytes,
+        idempotency_key: Optional[str],
+        execution_identity: BackgroundExecutionIdentity,
+    ) -> ToolExecutionResult[BaseModel]:
+        ...
 
 
 class TaskExecutionRegistry:
     """
     Registry for logical task handlers executed by worker.
 
-    Maps logical task names to callable handlers.
+    Maps logical task names to canonical BackgroundTaskHandler callables.
     """
 
     def __init__(self) -> None:
-        self._handlers: Dict[str, Callable[..., ToolExecutionResult[BaseModel]]] = {}
+        self._handlers: Dict[str, BackgroundTaskHandler] = {}
 
     def register(
         self,
         task_name: str,
-        handler: Callable[..., ToolExecutionResult[BaseModel]],
+        handler: BackgroundTaskHandler,
     ) -> None:
         if task_name in self._handlers:
             raise ValueError(
@@ -33,7 +56,7 @@ class TaskExecutionRegistry:
     def get_handler(
         self,
         task_name: str,
-    ) -> Callable[..., ToolExecutionResult[BaseModel]]:
+    ) -> BackgroundTaskHandler:
         if task_name not in self._handlers:
             raise ValueError(
                 f"Task '{task_name}' is not registered."

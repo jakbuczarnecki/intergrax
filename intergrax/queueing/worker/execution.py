@@ -4,8 +4,7 @@
 
 from __future__ import annotations
 
-import inspect
-from typing import Any, Callable, Optional
+from typing import Optional
 from uuid import uuid4
 
 from pydantic import BaseModel
@@ -15,7 +14,10 @@ from intergrax.contracts.idempotency_store import (
     IdempotencyStore,
     InvocationUncertaintyError,
 )
-from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.queueing.worker.registry import (
+    BackgroundTaskHandler,
+    TaskExecutionRegistry,
+)
 from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
 from intergrax.tools.execution_models import ToolExecutionResult
 
@@ -32,25 +34,21 @@ class IdempotencyLockConflictError(RuntimeError):
 
 
 def _invoke_logical_task_handler(
-    handler: Callable[..., ToolExecutionResult[BaseModel]],
+    handler: BackgroundTaskHandler,
     *,
     tenant_id: str,
     run_id: str,
     payload: bytes,
     idempotency_key: Optional[str],
-    execution_identity: BackgroundExecutionIdentity | None,
+    execution_identity: BackgroundExecutionIdentity,
 ) -> ToolExecutionResult[BaseModel]:
-    kwargs: dict[str, Any] = {
-        "tenant_id": tenant_id,
-        "run_id": run_id,
-        "payload": payload,
-        "idempotency_key": idempotency_key,
-    }
-    if execution_identity is not None:
-        parameters = inspect.signature(handler).parameters
-        if "execution_identity" in parameters:
-            kwargs["execution_identity"] = execution_identity
-    return handler(**kwargs)
+    return handler(
+        tenant_id=tenant_id,
+        run_id=run_id,
+        payload=payload,
+        idempotency_key=idempotency_key,
+        execution_identity=execution_identity,
+    )
 
 
 class RetryableHandlerError(RuntimeError):
@@ -71,9 +69,9 @@ def execute_logical_task(
     payload: bytes,
     idempotency_key: Optional[str],
     idempotency_store: Optional[IdempotencyStore],
+    execution_identity: BackgroundExecutionIdentity,
     lease_seconds: Optional[int] = None,
     completed_ttl_seconds: Optional[int] = None,
-    execution_identity: BackgroundExecutionIdentity | None = None,
 ) -> ToolExecutionResult[BaseModel]:
     """
     Pure execution core for logical task dispatch.
@@ -87,14 +85,8 @@ def execute_logical_task(
     """
 
     handler = registry.get_handler(logical_task_name)
-    resolved_tenant_id = (
-        execution_identity.tenant_id if execution_identity is not None else tenant_id
-    )
-    resolved_run_id = (
-        str(execution_identity.run_id)
-        if execution_identity is not None
-        else run_id
-    )
+    resolved_tenant_id = execution_identity.tenant_id
+    resolved_run_id = str(execution_identity.run_id)
 
     # No idempotency configured or no idempotency_key -> execute directly.
     if idempotency_store is None or idempotency_key is None:

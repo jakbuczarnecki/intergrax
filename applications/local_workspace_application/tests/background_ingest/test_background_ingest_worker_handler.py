@@ -10,6 +10,7 @@ import pytest
 
 from intergrax.queueing.contracts.task_queue import TaskStatus
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
 from intergrax.runtime.task.task import Task, TaskResult as RuntimeTaskResult, TaskState
 from local_workspace_application.background_ingest.contracts import (
     LKW_BACKGROUND_INGEST_TASK_NAME,
@@ -48,6 +49,7 @@ def test_worker_handler_registers_and_returns_tool_execution_result() -> None:
         run_id="run-worker-1",
         payload=encode_background_ingest_job(job),
         idempotency_key=None,
+        execution_identity=bootstrap_background_execution(transport_tenant_id=job.tenant_id),
     )
 
     assert result.success is True
@@ -66,6 +68,7 @@ def test_worker_handler_returns_failure_for_invalid_payload() -> None:
         run_id="run-worker-2",
         payload=b"not-json",
         idempotency_key=None,
+        execution_identity=bootstrap_background_execution(transport_tenant_id="tenant-a"),
     )
 
     assert result.success is False

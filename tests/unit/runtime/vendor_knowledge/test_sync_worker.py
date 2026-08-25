@@ -16,6 +16,7 @@ import pytest
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.queueing.providers.document_store import DocumentStoreTaskQueue
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
 from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeError,
     VendorKnowledgeErrorCode,
@@ -35,6 +36,10 @@ from intergrax.runtime.vendor_knowledge.sync_worker import (
     make_vendor_knowledge_sync_worker_handler,
     register_vendor_knowledge_sync_worker_handler,
 )
+
+
+def _execution_identity(*, tenant_id: str = "tenant-1"):
+    return bootstrap_background_execution(transport_tenant_id=tenant_id)
 
 
 def _sha(value: str) -> str:
@@ -167,13 +172,23 @@ def test_worker_invalid_payload_and_tenant_mismatch() -> None:
         scheduler=scheduler,
         sleeper=lambda _: None,
     )
-    bad = handler(tenant_id="tenant-1", run_id="run-1", payload=b"{")
+    bad = handler(
+        tenant_id="tenant-1",
+        run_id="run-1",
+        payload=b"{",
+        execution_identity=_execution_identity(),
+    )
     assert bad.success is False
     assert bad.error is not None
     assert bad.error.error_code == "vendor_knowledge_sync_invalid_job"
 
     payload = encode_vendor_knowledge_sync_job(_job())
-    mismatch = handler(tenant_id="other", run_id="run-1", payload=payload)
+    mismatch = handler(
+        tenant_id="other",
+        run_id="run-1",
+        payload=payload,
+        execution_identity=_execution_identity(tenant_id="other"),
+    )
     assert mismatch.success is False
     assert mismatch.error is not None
     assert mismatch.error.error_code == "vendor_knowledge_sync_tenant_mismatch"
@@ -192,6 +207,7 @@ def test_worker_incremental_and_reconciliation_paths() -> None:
         tenant_id="tenant-1",
         run_id="run-1",
         payload=encode_vendor_knowledge_sync_job(_job()),
+        execution_identity=_execution_identity(),
     )
     assert result.success is True
     assert len(coordinator.sync_calls) == 1
@@ -205,6 +221,7 @@ def test_worker_incremental_and_reconciliation_paths() -> None:
         payload=encode_vendor_knowledge_sync_job(
             _job(mode=KnowledgeSyncMode.RECONCILIATION, restart=True)
         ),
+        execution_identity=_execution_identity(),
     )
     assert recon.success is True
     assert coordinator.reconcile_calls[0]["restart"] is True
@@ -219,6 +236,7 @@ def test_worker_incremental_and_reconciliation_paths() -> None:
                 trigger_delivery_id=_sha("prev"),
             )
         ),
+        execution_identity=_execution_identity(),
     )
     assert cont.success is True
     assert coordinator.reconcile_calls[-1]["restart"] is False
@@ -239,6 +257,7 @@ def test_worker_schedules_continuation_when_has_more() -> None:
         tenant_id="tenant-1",
         run_id="run-1",
         payload=encode_vendor_knowledge_sync_job(_job()),
+        execution_identity=_execution_identity(),
     )
     assert result.success is True
     assert result.output is not None
@@ -249,6 +268,7 @@ def test_worker_schedules_continuation_when_has_more() -> None:
         tenant_id="tenant-1",
         run_id="run-1",
         payload=encode_vendor_knowledge_sync_job(_job()),
+        execution_identity=_execution_identity(),
     )
     assert result2.success is True
     assert result2.output is not None
@@ -287,6 +307,7 @@ def test_worker_retries_lease_busy_and_retryable_errors() -> None:
         tenant_id="tenant-1",
         run_id="run-1",
         payload=encode_vendor_knowledge_sync_job(_job()),
+        execution_identity=_execution_identity(),
     )
     assert result.success is True
     assert delays == [0.1]
@@ -308,6 +329,7 @@ def test_worker_retries_lease_busy_and_retryable_errors() -> None:
         tenant_id="tenant-1",
         run_id="run-1",
         payload=encode_vendor_knowledge_sync_job(_job()),
+        execution_identity=_execution_identity(),
     )
     assert ok.success is True
     assert delays == [0.1]
@@ -334,6 +356,7 @@ def test_worker_non_retryable_and_exhausted_and_safe_errors() -> None:
         tenant_id="tenant-1",
         run_id="run-1",
         payload=encode_vendor_knowledge_sync_job(_job()),
+        execution_identity=_execution_identity(),
     )
     assert failed.success is False
     assert failed.error is not None
@@ -360,6 +383,7 @@ def test_worker_non_retryable_and_exhausted_and_safe_errors() -> None:
         tenant_id="tenant-1",
         run_id="run-1",
         payload=encode_vendor_knowledge_sync_job(_job()),
+        execution_identity=_execution_identity(),
     )
     assert exhausted.success is False
     assert exhausted.error is not None
@@ -371,6 +395,7 @@ def test_worker_non_retryable_and_exhausted_and_safe_errors() -> None:
         tenant_id="tenant-1",
         run_id="run-1",
         payload=encode_vendor_knowledge_sync_job(_job()),
+        execution_identity=_execution_identity(),
     )
     assert boom.success is False
     assert boom.error is not None
@@ -401,6 +426,7 @@ def test_worker_retries_continuation_enqueue_and_new_delivery() -> None:
         tenant_id="tenant-1",
         run_id="run-1",
         payload=encode_vendor_knowledge_sync_job(_job()),
+        execution_identity=_execution_identity(),
     )
     assert result.success is True
     assert delays == [0.05]
@@ -427,6 +453,7 @@ def test_worker_main_loop_and_asyncio_run_fallback() -> None:
             tenant_id="tenant-1",
             run_id="run-1",
             payload=encode_vendor_knowledge_sync_job(_job()),
+            execution_identity=_execution_identity(),
         )
         assert result.success is True
     finally:
@@ -445,6 +472,7 @@ def test_worker_main_loop_and_asyncio_run_fallback() -> None:
         tenant_id="tenant-1",
         run_id="run-1",
         payload=encode_vendor_knowledge_sync_job(_job()),
+        execution_identity=_execution_identity(),
     )
     assert ok.success is True
 

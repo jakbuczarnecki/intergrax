@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 
 from intergrax.queueing.contracts.task_queue import TaskRequest, TaskStatus
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
 from intergrax.runtime.task.task import TaskResult as RuntimeTaskResult
 from intergrax.tools.execution_models import ToolExecutionResult
 from local_workspace_application.background_ingest.contracts import (
@@ -61,7 +62,9 @@ def make_background_ingest_worker_handler(
         run_id: str,
         payload: bytes,
         idempotency_key: Optional[str] = None,
+        execution_identity: BackgroundExecutionIdentity,
     ) -> ToolExecutionResult[BackgroundIngestWorkerOutput]:
+        _ = execution_identity
         try:
             job = decode_background_ingest_job(payload)
             if job.tenant_id != tenant_id:

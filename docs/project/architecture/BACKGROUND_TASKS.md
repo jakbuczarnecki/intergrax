@@ -78,6 +78,8 @@ Entry points that invoke the bootstrap: `BrokerWorkerBase.process_message`, `Wor
 | **TaskStatus** | Lifecycle enum: `PENDING`, `RUNNING`, `SUCCEEDED`, `FAILED` (current contract; extended states may map to events) |
 | **WorkerRuntime** | Platform process/component that consumes `TaskRequest` messages, resolves handlers, runs execution context, stores results, acks/retry/dead-letters vendor messages |
 | **TaskHandler** | Developer-implemented function bound to a `TaskDefinition`; receives decoded payload + execution context; returns `TaskResult` through platform contracts |
+
+All supported background handlers implement one canonical platform handler contract (`BackgroundTaskHandler`) and receive `BackgroundExecutionIdentity` explicitly through `execute_logical_task`.
 | **TaskEvent** | Lifecycle/progress fact emitted on an event channel (separate from work transport) |
 | **MessageBus / TaskQueue** | Tier-0 transport contract for enqueue, status, result, list, cancel, purge — [`MessageBus`](../../../intergrax/integrations/contracts/message_bus.py) aliases `TaskQueue` |
 | **Provider adapter** | Integration implementing `MessageBus` for a vendor (e.g. Kafka publish/consume, SQS poll/lease); serializes/deserializes `TaskRequest`, does not execute handlers |

@@ -15,6 +15,7 @@ from intergrax.queueing.contracts.task_queue import TaskStatus
 from intergrax.queueing.providers.broker_worker_base import BrokerWorkerBase
 from intergrax.queueing.task_index import list_tasks_from_index
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
 from intergrax.tools.execution_models import ToolExecutionResult
 
 
@@ -97,7 +98,9 @@ def test_broker_worker_base_transitions_to_succeeded() -> None:
         run_id: str,
         payload: bytes,
         idempotency_key,
+        execution_identity: BackgroundExecutionIdentity,
     ) -> ToolExecutionResult[DummyOutput]:
+        _ = tenant_id, run_id, payload, idempotency_key, execution_identity
         return ToolExecutionResult(
             success=True,
             output=DummyOutput(value="OK"),
@@ -142,7 +145,9 @@ def test_broker_worker_base_transitions_to_failed_on_controlled_result() -> None
         run_id: str,
         payload: bytes,
         idempotency_key,
+        execution_identity: BackgroundExecutionIdentity,
     ) -> ToolExecutionResult[DummyOutput]:
+        _ = tenant_id, run_id, payload, idempotency_key, execution_identity
         return ToolExecutionResult.fail(
             code="index.embedding_failed",
             message="embedding provider unavailable",
@@ -189,7 +194,9 @@ def test_broker_worker_base_transitions_to_failed_on_exception() -> None:
         run_id: str,
         payload: bytes,
         idempotency_key,
+        execution_identity: BackgroundExecutionIdentity,
     ) -> ToolExecutionResult[DummyOutput]:
+        _ = tenant_id, run_id, payload, idempotency_key, execution_identity
         raise RuntimeError("unexpected worker crash")
 
     registry.register("dummy", handler)

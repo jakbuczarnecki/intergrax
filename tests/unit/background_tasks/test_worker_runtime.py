@@ -14,6 +14,7 @@ from intergrax.background_tasks.worker_runtime import WorkerRuntime
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.queueing.contracts.task_queue import TaskRequest, TaskStatus
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
 from intergrax.tools.execution_models import ToolExecutionResult
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -62,7 +63,15 @@ class _Collector:
         self.events.append(event)
 
 
-def _handler(*, tenant_id: str, run_id: str, payload: bytes, idempotency_key: str | None = None):
+def _handler(
+    *,
+    tenant_id: str,
+    run_id: str,
+    payload: bytes,
+    idempotency_key: str | None = None,
+    execution_identity: BackgroundExecutionIdentity,
+):
+    _ = tenant_id, run_id, payload, idempotency_key, execution_identity
     return ToolExecutionResult.ok(_Output(answer="indexed"))
 
 

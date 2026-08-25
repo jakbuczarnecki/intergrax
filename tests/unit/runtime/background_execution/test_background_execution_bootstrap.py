@@ -135,9 +135,8 @@ def test_broker_worker_path_uses_central_bootstrap() -> None:
         run_id: str,
         payload: bytes,
         idempotency_key,
-        execution_identity: BackgroundExecutionIdentity | None = None,
+        execution_identity: BackgroundExecutionIdentity,
     ) -> ToolExecutionResult[_Output]:
-        assert execution_identity is not None
         captured.append(execution_identity)
         assert tenant_id == execution_identity.tenant_id
         assert run_id == str(execution_identity.run_id)
@@ -174,9 +173,8 @@ def test_worker_runtime_path_uses_central_bootstrap() -> None:
         run_id: str,
         payload: bytes,
         idempotency_key: str | None = None,
-        execution_identity: BackgroundExecutionIdentity | None = None,
+        execution_identity: BackgroundExecutionIdentity,
     ):
-        assert execution_identity is not None
         captured.append(execution_identity)
         return ToolExecutionResult.ok(_Output())
 
@@ -228,7 +226,7 @@ def test_identity_propagated_without_re_minting_at_handler() -> None:
         run_id: str,
         payload: bytes,
         idempotency_key,
-        execution_identity: BackgroundExecutionIdentity | None = None,
+        execution_identity: BackgroundExecutionIdentity,
     ) -> ToolExecutionResult[_Output]:
         seen["tenant_id"] = tenant_id
         seen["run_id"] = run_id

@@ -18,7 +18,7 @@ from pydantic import BaseModel
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.queueing.contracts.task_queue import TaskHandle, TaskQueue
-from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.queueing.worker.registry import BackgroundTaskHandler, TaskExecutionRegistry
 from intergrax.runtime.vendor_knowledge.indexed_source_eligibility import (
     IndexedSourceSyncHandlerRegistrationView,
 )
@@ -61,7 +61,7 @@ class VendorKnowledgeSyncHandlerRegistration:
 class VendorKnowledgeSyncExecutableRegistration:
     """Published identity of the canonical Vendor Knowledge sync executable."""
 
-    handler: Callable[..., ToolExecutionResult[BaseModel]]
+    handler: BackgroundTaskHandler
     registration_token: str
 
 
@@ -98,10 +98,7 @@ class VendorKnowledgeSyncHandlerRegistry:
             if task_handler is None:
                 self._task_registry.register(
                     VENDOR_KNOWLEDGE_SYNC_TASK_NAME,
-                    cast(
-                        Callable[..., ToolExecutionResult[BaseModel]],
-                        handler,
-                    ),
+                    cast(BackgroundTaskHandler, handler),
                 )
                 self._owns_executable = True
             elif task_handler is not handler:
@@ -242,10 +239,7 @@ class VendorKnowledgeSyncHandlerRegistry:
             if task_added:
                 self._task_registry.register(
                     VENDOR_KNOWLEDGE_SYNC_TASK_NAME,
-                    cast(
-                        Callable[..., ToolExecutionResult[BaseModel]],
-                        handler,
-                    ),
+                    cast(BackgroundTaskHandler, handler),
                 )
                 self._owns_executable = True
             try:
@@ -546,7 +540,7 @@ def register_vendor_knowledge_sync_executable(
             raise TypeError("coordinator_factory and dispatcher are required")
         registration = VendorKnowledgeSyncExecutableRegistration(
             handler=cast(
-                Callable[..., ToolExecutionResult[BaseModel]],
+                BackgroundTaskHandler,
                 make_vendor_knowledge_sync_handler(
                     coordinator_factory,
                     dispatcher,
@@ -635,16 +629,10 @@ def register_vendor_knowledge_sync_handler(
             )
             effective_task_registry.register(
                 VENDOR_KNOWLEDGE_SYNC_TASK_NAME,
-                cast(
-                    Callable[..., ToolExecutionResult[BaseModel]],
-                    handler,
-                ),
+                cast(BackgroundTaskHandler, handler),
             )
             return VendorKnowledgeSyncExecutableRegistration(
-                handler=cast(
-                    Callable[..., ToolExecutionResult[BaseModel]],
-                    handler,
-                ),
+                handler=cast(BackgroundTaskHandler, handler),
                 registration_token=_normalize_registration_token(registration_token),
             )
     dimension_requested = any(value is not None for value in dimensions)

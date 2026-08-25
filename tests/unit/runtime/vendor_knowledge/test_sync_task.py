@@ -23,6 +23,7 @@ from intergrax.queueing.providers.document_store import (
     DocumentStoreTaskWorker,
 )
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
 from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeError,
     VendorKnowledgeErrorCode,
@@ -61,6 +62,10 @@ from intergrax.runtime.vendor_knowledge.sync_worker import (
 
 def _sha(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _execution_identity(*, tenant_id: str = "tenant-1"):
+    return bootstrap_background_execution(transport_tenant_id=tenant_id)
 
 
 def _job(
@@ -193,6 +198,7 @@ def test_handler_rejects_tenant_mismatch() -> None:
         tenant_id="other-tenant",
         run_id="run-1",
         payload=payload,
+        execution_identity=_execution_identity(tenant_id="other-tenant"),
     )
     assert tenant_mismatch.success is False
     assert tenant_mismatch.error is not None
@@ -249,6 +255,7 @@ def test_handler_incremental_and_reconciliation_dispatch() -> None:
         tenant_id="tenant-1",
         run_id="run-1",
         payload=encode_vendor_knowledge_sync_job(_job(page_size=25)),
+        execution_identity=_execution_identity(),
     )
     assert incremental.success is True
     assert coordinator.sync_calls == [{"binding_id": "binding-1", "page_size": 25}]
@@ -264,6 +271,7 @@ def test_handler_incremental_and_reconciliation_dispatch() -> None:
                 page_size=10,
             )
         ),
+        execution_identity=_execution_identity(),
     )
     assert reconciliation.success is True
     assert coordinator.reconcile_calls == [
@@ -313,6 +321,7 @@ def test_handler_error_normalization() -> None:
         tenant_id="tenant-1",
         run_id="run-1",
         payload=encode_vendor_knowledge_sync_job(_job()),
+        execution_identity=_execution_identity(),
     )
     assert failed.success is False
     assert failed.error is not None
@@ -331,6 +340,7 @@ def test_handler_error_normalization() -> None:
         tenant_id="tenant-1",
         run_id="run-1",
         payload=encode_vendor_knowledge_sync_job(_job()),
+        execution_identity=_execution_identity(),
     )
     assert unknown.success is False
     assert unknown.error is not None
