@@ -10,6 +10,7 @@ from typing import Callable, Optional, Tuple
 from celery import Celery
 
 from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.distributed.contracts.rate_limiter import DistributedRateLimiter
 from intergrax.queueing.worker.dispatcher import register_dispatcher_task
 from intergrax.queueing.worker.rate_limit_event import RateLimitEvent
@@ -23,6 +24,9 @@ from intergrax.runtime.task.nexus_worker_execution import (
     register_nexus_task_worker,
 )
 from intergrax.runtime.task.worker_payload import NEXUS_TASK_V2_LOGICAL_NAME
+from intergrax.runtime.background_execution.identity_persistence import (
+    wire_background_execution_identity_persistence,
+)
 
 
 def build_nexus_task_execution_registry(
@@ -59,6 +63,7 @@ def create_nexus_celery_worker_app(
     on_retry_scheduled: Optional[Callable[[RetryEvent], None]] = None,
     task_always_eager: bool = False,
     lifecycle=None,
+    kv_store: Optional[DistributedKVStore] = None,
 ) -> Celery:
     """Production/lab composition root: Celery + ``nexus.task.v2`` handler."""
     if retry_policy is not None and lock_ttl_seconds is not None:
@@ -82,6 +87,11 @@ def create_nexus_celery_worker_app(
     if task_always_eager:
         app.conf.task_store_eager_result = True
 
+    if kv_store is None:
+        raise ValueError(
+            "create_nexus_celery_worker_app requires kv_store for BG-EXEC-2 identity persistence",
+        )
+
     register_dispatcher_task(
         app=app,
         registry=worker_registry,
@@ -93,6 +103,9 @@ def create_nexus_celery_worker_app(
         rate_limit_config=rate_limit_config,
         on_rate_limited=on_rate_limited,
         on_retry_scheduled=on_retry_scheduled,
+        identity_persistence=wire_background_execution_identity_persistence(
+            kv_store=kv_store,
+        ),
     )
 
     return app

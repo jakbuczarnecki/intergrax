@@ -17,6 +17,13 @@ from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.queueing.contracts.task_queue import TaskRequest, TaskResult, TaskStatus
 from intergrax.queueing.worker.execution import execute_logical_task
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
+from intergrax.runtime.background_execution.identity_persistence import (
+    BackgroundExecutionIdentityPersistence,
+)
+from intergrax.runtime.background_execution.transport_ref import (
+    BackgroundTransportExecutionRef,
+)
 from intergrax.tools.execution_models import ToolExecutionResult
 
 
@@ -38,6 +45,7 @@ class WorkerRuntime:
         provider: str,
         idempotency_store: Optional[IdempotencyStore] = None,
         event_emitter: TaskEventEmitter | None = None,
+        identity_persistence: BackgroundExecutionIdentityPersistence,
     ) -> None:
         self._registry = registry
         self._state_store = state_store
@@ -46,6 +54,7 @@ class WorkerRuntime:
         self._provider = provider
         self._idempotency_store = idempotency_store
         self._event_emitter = event_emitter
+        self._identity_persistence = identity_persistence
 
     def _emit(
         self,
@@ -105,14 +114,23 @@ class WorkerRuntime:
         )
 
         try:
+            execution_identity = bootstrap_background_execution(
+                transport_ref=BackgroundTransportExecutionRef(
+                    tenant_id=request.tenant_id,
+                    provider=self._provider,
+                    transport_task_id=task_id,
+                ),
+                identity_persistence=self._identity_persistence,
+            )
             tool_result: ToolExecutionResult[BaseModel] = execute_logical_task(
                 registry=self._execution_registry,
                 logical_task_name=request.task_name,
-                tenant_id=request.tenant_id,
-                run_id=request.run_id,
+                tenant_id=execution_identity.tenant_id,
+                run_id=str(execution_identity.run_id),
                 payload=request.payload,
                 idempotency_key=request.idempotency_key,
                 idempotency_store=self._idempotency_store,
+                execution_identity=execution_identity,
             )
         except Exception as exc:
             self._state_store.set_status(

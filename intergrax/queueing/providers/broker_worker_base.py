@@ -16,6 +16,13 @@ from intergrax.queueing.contracts.task_queue import TaskStatus
 from intergrax.queueing.task_index import record_task_index
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.execution import execute_logical_task
+from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
+from intergrax.runtime.background_execution.identity_persistence import (
+    BackgroundExecutionIdentityPersistence,
+)
+from intergrax.runtime.background_execution.transport_ref import (
+    BackgroundTransportExecutionRef,
+)
 
 
 class BrokerWorkerBase(ABC):
@@ -43,12 +50,14 @@ class BrokerWorkerBase(ABC):
         idempotency_store: Optional[IdempotencyStore] = None,
         event_emitter: TaskEventEmitter | None = None,
         provider_name: str = "broker",
+        identity_persistence: BackgroundExecutionIdentityPersistence,
     ) -> None:
         self._registry: TaskExecutionRegistry = registry
         self._kv_store: DistributedKVStore = kv_store
         self._idempotency_store: Optional[IdempotencyStore] = idempotency_store
         self._event_emitter = event_emitter
         self._provider_name = provider_name
+        self._identity_persistence = identity_persistence
 
     # ------------------------------------------------------------------
     # Storage keys (aligned with BrokerBackedTaskQueueBase)
@@ -154,14 +163,23 @@ class BrokerWorkerBase(ABC):
         )
 
         try:
+            execution_identity = bootstrap_background_execution(
+                transport_ref=BackgroundTransportExecutionRef(
+                    tenant_id=tenant_id,
+                    provider=provider_name,
+                    transport_task_id=task_id,
+                ),
+                identity_persistence=self._identity_persistence,
+            )
             result = execute_logical_task(
                 registry=self._registry,
                 logical_task_name=task_name,
-                tenant_id=tenant_id,
-                run_id=run_id,
+                tenant_id=execution_identity.tenant_id,
+                run_id=str(execution_identity.run_id),
                 payload=payload_bytes,
                 idempotency_key=idempotency_key,
                 idempotency_store=self._idempotency_store,
+                execution_identity=execution_identity,
             )
 
             if not result.success:

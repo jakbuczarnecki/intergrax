@@ -10,6 +10,10 @@ from celery import Celery
 from celery.exceptions import Retry
 
 from intergrax.queueing.worker.dispatcher import register_dispatcher_task
+from intergrax.runtime.background_execution.identity_persistence import (
+    wire_background_execution_identity_persistence,
+)
+from tests.unit.queueing.worker.dispatcher_test_kv import DispatcherTestKVStore
 from intergrax.queueing.worker.execution import IdempotencyLockConflictError
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_policy import RetryPolicy
@@ -30,7 +34,9 @@ class FakeRegistry(TaskExecutionRegistry):
             run_id: str,
             payload: bytes,
             idempotency_key,
+            execution_identity=None,
         ) -> ToolExecutionResult[_DummyOutput]:
+            _ = tenant_id, run_id, payload, idempotency_key, execution_identity
             raise IdempotencyLockConflictError("lock held")
 
         return handler
@@ -61,6 +67,9 @@ def test_dispatcher_retries_on_lock_conflict() -> None:
         lock_ttl_seconds=None,
         completed_ttl_seconds=None,
         retry_policy=retry_policy,
+        identity_persistence=wire_background_execution_identity_persistence(
+            kv_store=DispatcherTestKVStore(),
+        ),
     )
 
     task = app.tasks["intergrax.execute"]

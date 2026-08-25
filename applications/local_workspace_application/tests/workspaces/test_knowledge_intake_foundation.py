@@ -10,6 +10,7 @@ import pytest
 from pydantic import ValidationError
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.runtime.background_execution.identity_persistence import wire_background_execution_identity_persistence
 from intergrax.queueing.contracts.task_queue import TaskHandle, TaskQueue, TaskRequest, TaskResult, TaskStatus
 from intergrax.queueing.providers.document_store import DocumentStoreTaskQueue
 from intergrax.queueing.providers.document_store.colocated_worker import DocumentStoreTaskWorker
@@ -172,11 +173,11 @@ def _build_stack(
     ingestion = KnowledgeIngestionService(repo, processor)
     registry = TaskExecutionRegistry()
     register_knowledge_ingestion_worker_handler(registry, ingestion)
-    worker = DocumentStoreTaskWorker(queue if isinstance(bus, DocumentStoreTaskQueue) else queue, registry)
+    worker = DocumentStoreTaskWorker(queue if isinstance(bus, DocumentStoreTaskQueue) else queue, registry, identity_persistence=wire_background_execution_identity_persistence(document_store=store))
     if not isinstance(bus, DocumentStoreTaskQueue):
         # Raising bus path still needs a DocumentStoreTaskQueue reference for typing; unused.
         queue = DocumentStoreTaskQueue(store)
-        worker = DocumentStoreTaskWorker(queue, registry)
+        worker = DocumentStoreTaskWorker(queue, registry, identity_persistence=wire_background_execution_identity_persistence(document_store=store))
     return store, repo, intake, ingestion, queue, worker, resolver, processor
 
 
@@ -623,7 +624,7 @@ def test_reconcile_workspace_requeues_accepted_operation() -> None:
     ingestion = KnowledgeIngestionService(repo, processor)
     registry = TaskExecutionRegistry()
     register_knowledge_ingestion_worker_handler(registry, ingestion)
-    worker = DocumentStoreTaskWorker(queue, registry)
+    worker = DocumentStoreTaskWorker(queue, registry, identity_persistence=wire_background_execution_identity_persistence(document_store=store))
 
     resumed = intake.reconcile_workspace(tenant_id=TENANT, workspace_id=WORKSPACE)
     assert resumed >= 1

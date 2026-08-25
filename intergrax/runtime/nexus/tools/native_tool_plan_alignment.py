@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 from collections.abc import Sequence
 
-from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.llm_adapters.contracts.tool_call import LLMToolCall, validate_tool_call_identities
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
 
 
@@ -34,6 +34,7 @@ def validate_native_tool_plan_alignment(
     tool_plan: ToolCallPlan,
 ) -> None:
     """Ensure provider-visible native calls match the ToolCallPlan execution batch."""
+    validate_tool_call_identities(llm_tool_calls)
     planned_calls = tool_plan.calls
     if len(llm_tool_calls) != len(planned_calls):
         raise NativeToolPlanAlignmentError(

@@ -48,6 +48,10 @@ class DocumentStoreTaskQueue(TaskQueue):
         self._store = document_store
         self._lock = threading.RLock()
 
+    @property
+    def document_store(self) -> DocumentStore:
+        return self._store
+
     def enqueue(self, request: TaskRequest) -> TaskHandle:
         with self._lock:
             if request.idempotency_key:

@@ -100,6 +100,9 @@ def open_kafka_worker(
     poll_timeout_seconds: float = 1.0,
 ) -> object:
     from intergrax.queueing.providers.kafka.kafka_worker import KafkaWorker
+    from intergrax.runtime.background_execution.identity_persistence import (
+        wire_background_execution_identity_persistence,
+    )
 
     resolved_consumer = open_kafka_consumer(
         config,
@@ -116,5 +119,8 @@ def open_kafka_worker(
         config=config,
         lifecycle_emitter=lifecycle_emitter,
         idempotency_store=idempotency_store,
+        identity_persistence=wire_background_execution_identity_persistence(
+            kv_store=kv_store,
+        ),
         poll_timeout_seconds=poll_timeout_seconds,
     )

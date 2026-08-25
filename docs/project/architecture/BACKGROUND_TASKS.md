@@ -4,7 +4,7 @@
 **Plan (1:1):** [`plan/BACKGROUND_TASKS.md`](../maintainers/plans/BACKGROUND_TASKS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
 **Generalizes:** LKW.4 background ingest proof ([`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/ARCHITECTURE.md) §8.7)
-**Last updated:** 2026-07-08 — **BG-TASKS-ARCH-1** / **LKW.4E-ARCH-1** / **LKW.4E-PROOF-DOC-1**
+**Last updated:** 2026-08-25 — **BG-EXEC-3** required audit evidence admission semantics
 
 ---
 
@@ -39,6 +39,66 @@ Handlers contain developer custom logic but run through platform contracts.
 - Applications (Tier-3) and agents (Tier-2) **enqueue** work through platform APIs/tools (`message_bus.enqueue`, future `background_tasks.enqueue`). They do **not** import vendor SDKs.
 - Handler code is **registered ahead of time**; the queue carries `task_name` + validated payload bytes, **never arbitrary serialized executable code**.
 
+### Canonical background execution identity (BG-EXEC-1 / BG-EXEC-2)
+
+All supported background execution paths use the platform-owned canonical background execution bootstrap (`bootstrap_background_execution` / `resolve_background_execution` in `intergrax/runtime/background_execution/bootstrap.py`). Applications and scenarios do **not** mint or own runtime execution identity.
+
+Redelivery/retry of the same transport task preserves canonical `TaskId` and `RunId` while each actual execution attempt receives a new `AttemptId`. This behavior is provider-neutral and owned by the central background execution mechanism.
+
+```text
+background transport (TaskRequest / broker message / Celery request)
+       ↓
+BackgroundTransportExecutionRef (tenant + provider + transport_task_id)
+       ↓
+BackgroundExecutionIdentityPersistence.resolve_or_create → stable TaskId + RunId
+       ↓
+bootstrap_background_execution → mint new AttemptId
+       ↓
+execute_logical_task / NexusWorkerRuntime.run_task
+       ↓
+runtime (TaskId, RunId, AttemptId)
+```
+
+| Field | Owner at worker boundary |
+|-------|--------------------------|
+| `TaskId` | Central identity persistence (`resolve_or_create`) keyed by transport ref |
+| `RunId` | Central identity persistence — **not** `TaskRequest.run_id`; stable across retry/redelivery |
+| `AttemptId` | Central bootstrap (mint per actual execution entry) — **not** Celery `request.retries` |
+| `tenant_id` | Validated single scope; mismatch fails closed |
+
+Stable `TaskId`/`RunId` across process restart and concurrent workers requires atomic identity persistence: `DistributedKVStore.compare_and_set` or `ConditionalDocumentStore.put_if_absent`. Generic `DocumentStore` without conditional create is rejected at composition; there is no process-local fallback.
+
+`TaskRequest.run_id` and broker message `run_id` remain **transport queue correlation** for status/events indexing; they are not canonical runtime `RunId`.
+
+### Required audit evidence admission (BG-EXEC-3)
+
+Intergrax distinguishes **optional telemetry** from **required audit evidence**. Failure to persist evidence required to establish an execution boundary fails closed before business execution begins.
+
+| Class | Examples | Failure semantics |
+|-------|----------|-------------------|
+| **Optional observability** | metrics export, vendor export, supplemental telemetry, non-critical subscribers | best-effort / degraded |
+| **Required audit evidence** | `TRANSPORT_TASK_TRIGGERED_EXECUTION` linking `BackgroundTransportExecutionRef` → `BackgroundExecutionIdentity` | fail-closed before handler |
+
+Required ordering at the worker admission boundary (DIAG-1I writer integration):
+
+```text
+transport task received
+       ↓
+BackgroundExecutionIdentity established (bootstrap)
+       ↓
+required causal evidence persisted (admit_background_execution_handler)
+       ↓
+execute_logical_task / handler
+```
+
+If required evidence persistence fails: handler invocation count = 0, no business side effects, failure propagates through existing worker/reliability handling (`RequiredAuditEvidencePersistenceError` → `FailureClass.DEPENDENCY_ERROR`). No new recovery engine.
+
+`RuntimeEventBus` best-effort persistence is **not** the admission mechanism for required transport→execution causal evidence.
+
+**Writer integration: NOT YET** (DIAG-1I). Platform contract: `intergrax/runtime/background_execution/required_audit_evidence.py`.
+
+Entry points that invoke the bootstrap: `BrokerWorkerBase.process_message`, `WorkerRuntime.process_request`, Celery `intergrax.execute` dispatcher, and `DocumentStoreTaskWorker`.
+
 ---
 
 ## C. Main concepts
@@ -53,6 +113,8 @@ Handlers contain developer custom logic but run through platform contracts.
 | **TaskStatus** | Lifecycle enum: `PENDING`, `RUNNING`, `SUCCEEDED`, `FAILED` (current contract; extended states may map to events) |
 | **WorkerRuntime** | Platform process/component that consumes `TaskRequest` messages, resolves handlers, runs execution context, stores results, acks/retry/dead-letters vendor messages |
 | **TaskHandler** | Developer-implemented function bound to a `TaskDefinition`; receives decoded payload + execution context; returns `TaskResult` through platform contracts |
+
+All supported background handlers implement one canonical platform handler contract (`BackgroundTaskHandler`) and receive `BackgroundExecutionIdentity` explicitly through `execute_logical_task`.
 | **TaskEvent** | Lifecycle/progress fact emitted on an event channel (separate from work transport) |
 | **MessageBus / TaskQueue** | Tier-0 transport contract for enqueue, status, result, list, cancel, purge — [`MessageBus`](../../../intergrax/integrations/contracts/message_bus.py) aliases `TaskQueue` |
 | **Provider adapter** | Integration implementing `MessageBus` for a vendor (e.g. Kafka publish/consume, SQS poll/lease); serializes/deserializes `TaskRequest`, does not execute handlers |

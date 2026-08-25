@@ -816,13 +816,15 @@ await reporter.report(
 
 `MessageBusTaskRef.task_id` is opaque transport identity (`str`); `RuntimeExecutionRef.task_id` is canonical `TaskId`. Identical text may appear on both sides without collapsing domains — isolation is enforced by typed contracts, not lexical format rules.
 
-**Canonical persistence (R1):** **PLATFORM GAP** — no durable, tenant-scoped, queryable platform persistence boundary exists today for typed non-execution causal evidence. `RuntimeEventPersistence` is execution-scoped only. `PlatformProblemSignal` and `HostedApplicationEvent` share the same export/spine projection path without a dedicated durable causal-evidence store.
+**Canonical persistence (P1):** **contract DONE** — `CausalEvidencePersistence` defines the platform-owned, backend-neutral append/read contract for typed non-execution causal evidence (`append`, `list_for_execution`, `list_for_transport_task`). `InMemoryCausalEvidencePersistence` is the reference implementation for tests and conformance only. **Production durable backend: DONE** — `DocumentStoreCausalEvidencePersistence` (requires `ConditionalDocumentStore`) is wired through `wire_causal_evidence_persistence(document_store=...)`. `DistributedKVStore` is **not** supported for causal evidence persistence (no prefix-query primitives for indexed reads). **Writer integration: NOT YET** (DIAG-1I). `RuntimeEventPersistence` remains execution-scoped only and is unchanged.
+
+**Required vs optional durability (BG-EXEC-3):** Intergrax distinguishes optional telemetry from required audit evidence. Failure to persist evidence required to establish an execution boundary fails closed before business execution begins. The initial required fact is `TRANSPORT_TASK_TRIGGERED_EXECUTION` (transport ref → canonical execution identity). `RuntimeEventBus` best-effort persistence is not the admission mechanism for this causal evidence; admission is platform-owned via `admit_background_execution_handler` in `required_audit_evidence.py` (wired at worker boundary in DIAG-1I).
 
 **Optional export projection:** `envelope_from_causal_evidence` maps to `ExportRecordKind.DIAGNOSTIC` with typed `CausalEvidenceExportSource` on `ObservabilityExportEnvelope` — a **lossless export projection**, not canonical persistence. Export backends (Sentry, Datadog, OTLP, `InMemoryObservabilityExporter`) are optional sinks; the causal fact must not depend on them.
 
 **Evidence identity:** `PlatformCausalEvidence.evidence_id` currently uses `EventId` (`evt_…`), which may be execution-event scoped — dedicated `CausalEvidenceId` is a deferred decision point if non-execution evidence persistence lands.
 
-**Code references:** `causal_evidence.py` · `causal_evidence_export.py` · `export_boundary.py`.
+**Code references:** `causal_evidence.py` · `causal_evidence_persistence.py` · `memory_causal_evidence_persistence.py` · `document_store_causal_evidence_persistence.py` · `causal_evidence_record_codec.py` · `causal_evidence_export.py` · `export_boundary.py`.
 
 ---
 

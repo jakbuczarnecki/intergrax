@@ -12,6 +12,7 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
 from intergrax.runtime.vendor_knowledge.errors import VendorKnowledgeError
 from intergrax.runtime.vendor_knowledge.sync_coordinator import (
     VendorKnowledgeSyncCoordinator,
@@ -78,8 +79,9 @@ def make_vendor_knowledge_sync_worker_handler(
         run_id: str,
         payload: bytes,
         idempotency_key: Optional[str] = None,
+        execution_identity: BackgroundExecutionIdentity,
     ) -> ToolExecutionResult[VendorKnowledgeSyncWorkerOutput]:
-        _ = idempotency_key
+        _ = idempotency_key, execution_identity
         try:
             job = decode_vendor_knowledge_sync_job(payload)
         except (ValueError, ValidationError, TypeError):

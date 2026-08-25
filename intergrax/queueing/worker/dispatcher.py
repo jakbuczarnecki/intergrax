@@ -20,6 +20,13 @@ from intergrax.queueing.worker.execution import (
     IdempotencyLockConflictError,
 )
 from intergrax.queueing.worker.result_codec import encode_logical_task_result
+from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
+from intergrax.runtime.background_execution.identity_persistence import (
+    BackgroundExecutionIdentityPersistence,
+)
+from intergrax.runtime.background_execution.transport_ref import (
+    BackgroundTransportExecutionRef,
+)
 from intergrax.queueing.worker.rate_limit_event import RateLimitEvent
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_event import RetryEvent
@@ -39,6 +46,7 @@ def register_dispatcher_task(
     on_retry_scheduled: Optional[Callable[[RetryEvent], None]] = None,
     rate_limit_config: Optional[Callable[[str], Tuple[int, float]]] = None,
     on_rate_limited: Optional[Callable[[RateLimitEvent], None]] = None,
+    identity_persistence: BackgroundExecutionIdentityPersistence,
 ) -> None:
     """
     Registers the generic execution task into Celery app.
@@ -51,6 +59,8 @@ def register_dispatcher_task(
 
     if rate_limiter is not None and retry_policy is None:
         raise ValueError("retry_policy must be provided when rate_limiter is enabled.")
+
+    resolved_identity_persistence = identity_persistence
 
     @app.task(name="intergrax.execute", bind=True)
     def intergrax_execute(
@@ -139,17 +149,26 @@ def register_dispatcher_task(
         # Core Execution
         # -------------------------
         try:
+            execution_identity = bootstrap_background_execution(
+                transport_ref=BackgroundTransportExecutionRef(
+                    tenant_id=tenant_id,
+                    provider="celery",
+                    transport_task_id=str(self.request.id),
+                ),
+                identity_persistence=resolved_identity_persistence,
+            )
             return encode_logical_task_result(
                 execute_logical_task(
                     registry=registry,
                     logical_task_name=logical_task_name,
-                    tenant_id=tenant_id,
-                    run_id=run_id,
+                    tenant_id=execution_identity.tenant_id,
+                    run_id=str(execution_identity.run_id),
                     payload=payload,
                     idempotency_key=idempotency_key,
                     idempotency_store=idempotency_store,
                     lease_seconds=lock_ttl_seconds,
                     completed_ttl_seconds=completed_ttl_seconds,
+                    execution_identity=execution_identity,
                 )
             )
 

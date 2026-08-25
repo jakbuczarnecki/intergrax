@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.runtime.background_execution.identity_persistence import wire_background_execution_identity_persistence
 from intergrax.integrations.contracts.object_storage import StoredObject
 from intergrax.queueing.contracts.task_queue import TaskHandle, TaskStatus
 from intergrax.queueing.providers.document_store import DocumentStoreTaskQueue
@@ -175,7 +176,7 @@ def _build_intake(
     ingestion = KnowledgeIngestionService(repo, processor)
     registry = TaskExecutionRegistry()
     register_knowledge_ingestion_worker_handler(registry, ingestion)
-    worker = DocumentStoreTaskWorker(queue, registry)
+    worker = DocumentStoreTaskWorker(queue, registry, identity_persistence=wire_background_execution_identity_persistence(document_store=store))
     managed = ManagedFileIntakeService(
         repo,
         storage,
@@ -502,7 +503,7 @@ def test_hash_mismatch_and_missing_object_processor(tmp_path: Path) -> None:
     ingestion = KnowledgeIngestionService(repo, processor)
     registry = TaskExecutionRegistry()
     register_knowledge_ingestion_worker_handler(registry, ingestion)
-    worker = DocumentStoreTaskWorker(queue, registry)
+    worker = DocumentStoreTaskWorker(queue, registry, identity_persistence=wire_background_execution_identity_persistence(document_store=store))
 
     acceptance = managed.accept_one(
         tenant_id=TENANT,
@@ -567,7 +568,7 @@ def test_processor_uses_shared_indexing_only(tmp_path: Path) -> None:
     ingestion = KnowledgeIngestionService(repo, processor)
     registry = TaskExecutionRegistry()
     register_knowledge_ingestion_worker_handler(registry, ingestion)
-    worker = DocumentStoreTaskWorker(queue, registry)
+    worker = DocumentStoreTaskWorker(queue, registry, identity_persistence=wire_background_execution_identity_persistence(document_store=store))
     acceptance = managed.accept_one(
         tenant_id=TENANT,
         workspace_id=WORKSPACE,
@@ -1609,7 +1610,7 @@ def test_materialization_failure_marks_managed_object_error(tmp_path: Path) -> N
     ingestion = KnowledgeIngestionService(repo, processor)
     registry = TaskExecutionRegistry()
     register_knowledge_ingestion_worker_handler(registry, ingestion)
-    worker = DocumentStoreTaskWorker(queue, registry)
+    worker = DocumentStoreTaskWorker(queue, registry, identity_persistence=wire_background_execution_identity_persistence(document_store=store))
 
     acceptance = managed.accept_one(
         tenant_id=TENANT,
@@ -1668,7 +1669,7 @@ def test_indexing_failure_marks_managed_object_error(tmp_path: Path) -> None:
     ingestion = KnowledgeIngestionService(repo, processor)
     registry = TaskExecutionRegistry()
     register_knowledge_ingestion_worker_handler(registry, ingestion)
-    worker = DocumentStoreTaskWorker(queue, registry)
+    worker = DocumentStoreTaskWorker(queue, registry, identity_persistence=wire_background_execution_identity_persistence(document_store=store))
 
     acceptance = managed.accept_one(
         tenant_id=TENANT,

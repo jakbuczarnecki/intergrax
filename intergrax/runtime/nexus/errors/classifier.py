@@ -9,12 +9,17 @@ from intergrax.runtime.nexus.budget.budget_enforcer import BudgetExceededError
 from intergrax.runtime.nexus.budget.production_budget_policy import (
     ProductionBudgetPolicyError,
 )
+from intergrax.runtime.background_execution.required_audit_evidence import (
+    RequiredAuditEvidencePersistenceError,
+)
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 
 
 class ErrorClassifier:
     @staticmethod
     def classify(exc: Exception) -> RuntimeErrorCode:
+        if isinstance(exc, RequiredAuditEvidencePersistenceError):
+            return RuntimeErrorCode.DEPENDENCY_ERROR
         if isinstance(exc, BudgetExceededError):
             return RuntimeErrorCode.POLICY_ERROR
         if isinstance(exc, (PermissionError, DataClassificationPolicyError)):

@@ -23,7 +23,10 @@ from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExte
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
-from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.llm_adapters.contracts.tool_call import (
+    LLMToolCall,
+    finalize_accepted_tool_call_identities,
+)
 from intergrax.llm_adapters.providers._ollama_schema import (
     prepare_ollama_generation_schema,
 )
@@ -524,7 +527,7 @@ class NativeOllamaAdapter(LLMAdapter):
                     arguments_json=arguments_json,
                 )
             )
-        return tuple(calls)
+        return finalize_accepted_tool_call_identities(calls)
 
     @staticmethod
     def _estimate_tool_output_text(

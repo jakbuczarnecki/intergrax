@@ -18,11 +18,14 @@ from intergrax.contracts.control_plane_mutation import (
 )
 from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.contracts.runtime_policy import PolicyAction
-from intergrax.runtime.task.task import TaskState
+from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.task.task import Task, TaskState
+from intergrax.runtime.task.task_contract import TaskPauseRecord
 
 TASK_EXECUTION_RESOURCE_TYPE = "task_control.task_execution"
 MUTATION_TYPE_CANCEL_TASK_EXECUTION = "task_control.cancel_task_execution"
 MUTATION_TYPE_SET_TASK_AUTONOMY = "task_control.set_task_autonomy"
+MUTATION_TYPE_RESUME_TASK_EXECUTION = "task_control.resume_task_execution"
 
 _TERMINAL_TASK_STATES = frozenset(
     {
@@ -120,6 +123,30 @@ def task_execution_autonomy_revision(*, autonomy_level: AutonomyLevel | None) ->
     return f"autonomy:{autonomy_level.value}"
 
 
+def _pause_id_from_checkpoint(checkpoint: TaskCheckpoint) -> str | None:
+    snapshot = Task.model_validate(checkpoint.task_snapshot)
+    pause_record: TaskPauseRecord | None = snapshot.runtime.governance.pause_record
+    if pause_record is None:
+        return None
+    return pause_record.pause_id
+
+
+def task_checkpoint_stable_identity(checkpoint: TaskCheckpoint) -> str:
+    pause_id = _pause_id_from_checkpoint(checkpoint) or "none"
+    return (
+        f"{checkpoint.checkpoint_id}:{checkpoint.resume_token}:"
+        f"{checkpoint.task_state.value}:{pause_id}"
+    )
+
+
+def task_checkpoint_resume_current_revision(checkpoint: TaskCheckpoint) -> str:
+    return f"checkpoint:{task_checkpoint_stable_identity(checkpoint)}:paused"
+
+
+def task_checkpoint_resume_requested_target_revision(checkpoint: TaskCheckpoint) -> str:
+    return f"checkpoint:{task_checkpoint_stable_identity(checkpoint)}:resume_requested"
+
+
 def is_task_execution_cancellable(*, state: TaskState, cancellation_requested: bool) -> bool:
     if state in _TERMINAL_TASK_STATES:
         return False
@@ -149,6 +176,36 @@ def build_cancel_task_execution_mutation_request(
         resource_id=task_execution_resource_id(task_id=task_id, run_id=run_id),
         current_revision=task_execution_state_revision(state=current_state.value),
         target_revision=cancel_requested_target_revision(),
+        risk_classification=ControlPlaneMutationRisk.MEDIUM,
+        approval_evidence_ref=approval_evidence_ref,
+        task_id=task_id,
+        run_id=run_id,
+    )
+
+
+def build_resume_task_execution_mutation_request(
+    *,
+    principal: RequestIdentity,
+    tenant_id: str,
+    task_id: TaskId,
+    run_id: RunId,
+    mutation_id: str,
+    checkpoint: TaskCheckpoint,
+    approval_evidence_ref: str | None = None,
+) -> ControlPlaneMutationRequest:
+    return ControlPlaneMutationRequest(
+        mutation_id=mutation_id,
+        mutation_type=MUTATION_TYPE_RESUME_TASK_EXECUTION,
+        principal=principal,
+        resource_scope=task_execution_resource_scope(
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+        ),
+        resource_type=TASK_EXECUTION_RESOURCE_TYPE,
+        resource_id=task_execution_resource_id(task_id=task_id, run_id=run_id),
+        current_revision=task_checkpoint_resume_current_revision(checkpoint),
+        target_revision=task_checkpoint_resume_requested_target_revision(checkpoint),
         risk_classification=ControlPlaneMutationRisk.MEDIUM,
         approval_evidence_ref=approval_evidence_ref,
         task_id=task_id,

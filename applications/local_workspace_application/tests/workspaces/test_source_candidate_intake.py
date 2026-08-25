@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.runtime.background_execution.identity_persistence import wire_background_execution_identity_persistence
 from intergrax.queueing.providers.document_store import DocumentStoreTaskQueue
 from intergrax.queueing.providers.document_store.colocated_worker import DocumentStoreTaskWorker
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
@@ -233,7 +234,7 @@ def _build_stack(
     )
     registry_tasks = TaskExecutionRegistry()
     register_knowledge_ingestion_worker_handler(registry_tasks, ingestion)
-    worker = DocumentStoreTaskWorker(queue, registry_tasks)
+    worker = DocumentStoreTaskWorker(queue, registry_tasks, identity_persistence=wire_background_execution_identity_persistence(document_store=store))
     candidate_intake = SourceCandidateIntakeService(
         repo,
         registry,

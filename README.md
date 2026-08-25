@@ -15,6 +15,10 @@ those mechanisms for every workflow.
 
 **[Explore Proof Library](docs/project/proofs/PROOF_LIBRARY.md)** · **[See LKW](applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md)** · **[Run LKW locally](applications/local_workspace_application/docs/product/QUICKSTART.md)** · **[Why Intergrax](docs/project/overview/WHY_INTERGRAX.md)**
 
+> Intergrax is not trying to win by having more agent-framework features. Agent frameworks help build agent behavior and workflows; managed platforms help deploy and operate agentic workloads. Intergrax targets the **shared operating boundaries** across specialized AI products — policy, authority, evidence, execution, recovery, and canonical history — so they do not have to be rebuilt independently around every application.
+>
+> The hypothesis is that each next governed AI product can reuse more of this operating model. That acceleration is **not yet established** and remains a validation goal.
+
 <a href="docs/project/assets/public/readme/fullsize/intergrax-ecosystem-hero.md">
 <picture>
   <source
@@ -130,6 +134,8 @@ Scenario Proofs are executable falsification attempts against bounded real-world
 system claims — designed to be run, inspected, challenged, and reproduced.
 
 Each accepted Scenario Proof exposes: problem → failure risk → adversarial scenario → execution → evidence → verdict → reproduction.
+
+Scenario Proofs are how Intergrax intends to show the same governed mechanisms surviving different bounded problems — observable evidence of reuse, not just a claim of reuse.
 
 They are **not** a marketing demo, feature showcase, or product claim. Product, user, and commercial validation are tracked separately.
 

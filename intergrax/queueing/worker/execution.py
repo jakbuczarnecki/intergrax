@@ -14,7 +14,11 @@ from intergrax.contracts.idempotency_store import (
     IdempotencyStore,
     InvocationUncertaintyError,
 )
-from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.queueing.worker.registry import (
+    BackgroundTaskHandler,
+    TaskExecutionRegistry,
+)
+from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
 from intergrax.tools.execution_models import ToolExecutionResult
 
 _DEFAULT_LEASE_SECONDS = 300
@@ -27,6 +31,24 @@ class IdempotencyLockConflictError(RuntimeError):
     This is considered a retryable infrastructure-level exception.
     """
     pass
+
+
+def _invoke_logical_task_handler(
+    handler: BackgroundTaskHandler,
+    *,
+    tenant_id: str,
+    run_id: str,
+    payload: bytes,
+    idempotency_key: Optional[str],
+    execution_identity: BackgroundExecutionIdentity,
+) -> ToolExecutionResult[BaseModel]:
+    return handler(
+        tenant_id=tenant_id,
+        run_id=run_id,
+        payload=payload,
+        idempotency_key=idempotency_key,
+        execution_identity=execution_identity,
+    )
 
 
 class RetryableHandlerError(RuntimeError):
@@ -47,6 +69,7 @@ def execute_logical_task(
     payload: bytes,
     idempotency_key: Optional[str],
     idempotency_store: Optional[IdempotencyStore],
+    execution_identity: BackgroundExecutionIdentity,
     lease_seconds: Optional[int] = None,
     completed_ttl_seconds: Optional[int] = None,
 ) -> ToolExecutionResult[BaseModel]:
@@ -62,14 +85,18 @@ def execute_logical_task(
     """
 
     handler = registry.get_handler(logical_task_name)
+    resolved_tenant_id = execution_identity.tenant_id
+    resolved_run_id = str(execution_identity.run_id)
 
     # No idempotency configured or no idempotency_key -> execute directly.
     if idempotency_store is None or idempotency_key is None:
-        return handler(
-            tenant_id=tenant_id,
-            run_id=run_id,
+        return _invoke_logical_task_handler(
+            handler,
+            tenant_id=resolved_tenant_id,
+            run_id=resolved_run_id,
             payload=payload,
             idempotency_key=idempotency_key,
+            execution_identity=execution_identity,
         )
 
     ledger_key = f"{logical_task_name}:{idempotency_key}"
@@ -77,7 +104,7 @@ def execute_logical_task(
     lease = lease_seconds if lease_seconds is not None else _DEFAULT_LEASE_SECONDS
 
     claim_result = idempotency_store.claim(
-        tenant_id=tenant_id,
+        tenant_id=resolved_tenant_id,
         key=ledger_key,
         owner_id=owner_id,
         lease_seconds=lease,
@@ -87,7 +114,7 @@ def execute_logical_task(
         cached = claim_result.completed_result
         if cached is None:
             cached = idempotency_store.get_completed_result(
-                tenant_id=tenant_id,
+                tenant_id=resolved_tenant_id,
                 key=ledger_key,
             )
         if cached is None:
@@ -111,15 +138,17 @@ def execute_logical_task(
     if claim is None:
         raise RuntimeError("Ledger inconsistency: ACQUIRED without claim.")
 
-    result: ToolExecutionResult[BaseModel] = handler(
-        tenant_id=tenant_id,
-        run_id=run_id,
+    result: ToolExecutionResult[BaseModel] = _invoke_logical_task_handler(
+        handler,
+        tenant_id=resolved_tenant_id,
+        run_id=resolved_run_id,
         payload=payload,
         idempotency_key=idempotency_key,
+        execution_identity=execution_identity,
     )
 
     idempotency_store.complete_with_claim(
-        tenant_id=tenant_id,
+        tenant_id=resolved_tenant_id,
         key=ledger_key,
         claim=claim,
         result=result,

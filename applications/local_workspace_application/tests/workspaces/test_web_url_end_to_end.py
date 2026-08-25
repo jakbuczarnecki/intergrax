@@ -15,6 +15,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from intergrax.integrations._shared.in_memory_document_store import (
+from intergrax.runtime.background_execution.identity_persistence import wire_background_execution_identity_persistence
     InMemoryDocumentStore,
 )
 from intergrax.llm.messages import ChatMessage
@@ -301,7 +302,7 @@ def e2e_bundle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     ingestion = app.state.lkw_knowledge_ingestion_service
     registry = TaskExecutionRegistry()
     register_knowledge_ingestion_worker_handler(registry, ingestion)
-    worker = DocumentStoreTaskWorker(runtime.wiring_context.message_bus, registry)  # type: ignore[arg-type]
+    worker = DocumentStoreTaskWorker(runtime.wiring_context.message_bus, registry, identity_persistence=wire_background_execution_identity_persistence(document_store=store))  # type: ignore[arg-type]
 
     async def _search_execute(task: Any) -> TaskResult:
         metadata = getattr(task, "metadata", {}) or {}

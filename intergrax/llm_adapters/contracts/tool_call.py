@@ -6,8 +6,66 @@ from __future__ import annotations
 from intergrax.utils import attribute_access
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Iterable, Sequence
+from uuid import uuid4
+
+
+_TOOL_CALL_ID_PREFIX = "toolcall-"
+
+
+class ToolCallIdentityError(ValueError):
+    """Accepted tool call is missing a stable non-empty identity."""
+
+
+def _is_blank_tool_call_id(call_id: str) -> bool:
+    return not call_id or not call_id.strip()
+
+
+def mint_tool_call_id() -> str:
+    """Mint a non-empty tool-call identity safe for logs and provenance."""
+    return f"{_TOOL_CALL_ID_PREFIX}{uuid4().hex}"
+
+
+def finalize_accepted_tool_call_identities(
+    calls: Sequence[LLMToolCall],
+) -> tuple[LLMToolCall, ...]:
+    """Normalize accepted adapter output — sole minting owner for tool-call IDs."""
+    seen: set[str] = set()
+    finalized: list[LLMToolCall] = []
+    for index, call in enumerate(calls):
+        call_id = call.id
+        if _is_blank_tool_call_id(call_id):
+            while True:
+                candidate = mint_tool_call_id()
+                if candidate not in seen:
+                    call_id = candidate
+                    break
+        elif call_id in seen:
+            raise ToolCallIdentityError(
+                f"duplicate tool call identity at index {index}: {call_id!r}"
+            )
+        seen.add(call_id)
+        if call_id == call.id:
+            finalized.append(call)
+        else:
+            finalized.append(replace(call, id=call_id))
+    return tuple(finalized)
+
+
+def validate_tool_call_identities(calls: Sequence[LLMToolCall]) -> None:
+    """Fail closed when an invalid tool-call identity reaches planner/runtime."""
+    seen: set[str] = set()
+    for index, call in enumerate(calls):
+        if _is_blank_tool_call_id(call.id):
+            raise ToolCallIdentityError(
+                f"tool call at index {index} has empty identity"
+            )
+        if call.id in seen:
+            raise ToolCallIdentityError(
+                f"duplicate tool call identity at index {index}: {call.id!r}"
+            )
+        seen.add(call.id)
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,32 +118,39 @@ def tool_calls_from_openai_message(message: Any) -> tuple[LLMToolCall, ...]:
                 arguments=args,
             )
         )
-    return tuple(out)
+    return finalize_accepted_tool_call_identities(out)
 
 
 def merge_streaming_tool_calls(chunks: Sequence[LLMToolCall]) -> tuple[LLMToolCall, ...]:
     """Merge incremental streaming tool-call fragments by id."""
-    by_id: dict[str, list[LLMToolCall]] = {}
+    by_key: dict[str, list[LLMToolCall]] = {}
+    key_had_provider_id: dict[str, bool] = {}
     order: list[str] = []
     for tc in chunks:
-        key = tc.id or tc.name or f"idx-{len(order)}"
-        if key not in by_id:
-            by_id[key] = []
+        if not _is_blank_tool_call_id(tc.id):
+            key = tc.id
+            key_had_provider_id[key] = True
+        else:
+            key = tc.name or f"idx-{len(order)}"
+            key_had_provider_id.setdefault(key, False)
+        if key not in by_key:
+            by_key[key] = []
             order.append(key)
-        by_id[key].append(tc)
+        by_key[key].append(tc)
     merged: list[LLMToolCall] = []
     for key in order:
-        parts = by_id[key]
+        parts = by_key[key]
         name = next((p.name for p in parts if p.name), "")
         args = "".join(p.arguments_json for p in parts)
+        provider_call_id = key if key_had_provider_id.get(key) else ""
         merged.append(
             LLMToolCall.from_openai_shape(
-                call_id=key,
+                call_id=provider_call_id,
                 name=name,
                 arguments=args or "{}",
             )
         )
-    return tuple(merged)
+    return finalize_accepted_tool_call_identities(merged)
 
 
 def tool_calls_from_langchain_message(message: Any) -> tuple[LLMToolCall, ...]:
@@ -117,4 +182,4 @@ def tool_calls_from_openai_dicts(items: Iterable[Any]) -> tuple[LLMToolCall, ...
                 arguments=fn.get("arguments") or tc.get("arguments"),
             )
         )
-    return tuple(out)
+    return finalize_accepted_tool_call_identities(out)

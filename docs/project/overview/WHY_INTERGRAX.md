@@ -15,6 +15,18 @@ Intergrax exists for teams building specialized agent applications that would ot
 
 ---
 
+## Why not just use an agent framework or managed platform?
+
+Strong agent frameworks and managed agent platforms already exist and solve many important problems well. Intergrax is **not** claiming differentiation through a larger checklist of tracing, memory, HITL, tools, persistence, approvals, or orchestration.
+
+The differentiation is a different responsibility layer: a **shared application operating model** across multiple specialized AI products. Product teams retain domain meaning, UX, workflow semantics, required permissions, product-specific validation, and business responsibility. Intergrax concentrates reusable operating boundaries — policy, authority, evidence, governed execution, recovery, and structural identity / canonical history — so those semantics can mean the same thing across applications rather than being independently reinvented around each product.
+
+**Product owns meaning; platform owns enforcement.** Semantic reuse across products matters, not just code reuse. Measured cross-product acceleration remains unproven; see [Business and strategic thesis](#business-and-strategic-thesis).
+
+For named alternatives and honest trade-offs, see [ALTERNATIVES_AND_TRADEOFFS.md](ALTERNATIVES_AND_TRADEOFFS.md).
+
+---
+
 ## At a glance
 
 | Question | Answer |

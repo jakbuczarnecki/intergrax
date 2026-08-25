@@ -14,6 +14,7 @@ from intergrax.contracts.execution_identity import (
     validate_task_id,
 )
 from intergrax.fastapi_core.execution.models import ExecutionRequest
+from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
@@ -56,12 +57,24 @@ def task_from_runtime_request(
     )
 
 
-def task_from_execution_request(request: ExecutionRequest) -> Task:
+def task_from_execution_request(
+    request: ExecutionRequest,
+    *,
+    execution_identity: BackgroundExecutionIdentity | None = None,
+) -> Task:
     """Deserialize Task from FastAPI Core ExecutionRequest payload."""
     payload = request.input_payload or {}
     task_payload = payload.get("task")
     if isinstance(task_payload, dict):
-        return Task.model_validate(task_payload)
+        task = Task.model_validate(task_payload)
+        if execution_identity is not None:
+            if task.tenant_id != execution_identity.tenant_id:
+                raise ValueError(
+                    "tenant mismatch between task payload and background execution identity: "
+                    f"task={task.tenant_id!r} identity={execution_identity.tenant_id!r}"
+                )
+            return task.model_copy(update={"task_id": execution_identity.task_id})
+        return task
 
     message = str(payload.get("message", ""))
     capability = payload.get("capability")
@@ -69,8 +82,16 @@ def task_from_execution_request(request: ExecutionRequest) -> Task:
     session_id = payload.get("session_id")
 
     return Task(
-        task_id=mint_task_id(),
-        tenant_id=request.tenant_id,
+        task_id=(
+            execution_identity.task_id
+            if execution_identity is not None
+            else mint_task_id()
+        ),
+        tenant_id=(
+            execution_identity.tenant_id
+            if execution_identity is not None
+            else request.tenant_id
+        ),
         user_id=request.user_id or "",
         session_id=str(session_id) if session_id else None,
         agent_id=str(agent_id) if agent_id else None,

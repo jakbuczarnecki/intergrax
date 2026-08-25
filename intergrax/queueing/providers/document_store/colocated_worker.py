@@ -15,6 +15,13 @@ from intergrax.queueing.providers.document_store.document_store_task_queue impor
 )
 from intergrax.queueing.worker.execution import execute_logical_task
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
+from intergrax.runtime.background_execution.identity_persistence import (
+    BackgroundExecutionIdentityPersistence,
+)
+from intergrax.runtime.background_execution.transport_ref import (
+    BackgroundTransportExecutionRef,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,12 +39,14 @@ class DocumentStoreTaskWorker:
         poll_interval_seconds: float = 0.25,
         claim_limit: int = 4,
         on_interrupted: InterruptedHandler | None = None,
+        identity_persistence: BackgroundExecutionIdentityPersistence,
     ) -> None:
         self._queue = queue
         self._registry = registry
         self._poll_interval_seconds = poll_interval_seconds
         self._claim_limit = claim_limit
         self._on_interrupted = on_interrupted
+        self._identity_persistence = identity_persistence
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -72,14 +81,23 @@ class DocumentStoreTaskWorker:
         claimed = self._queue.claim_pending(limit=self._claim_limit)
         for handle, request in claimed:
             try:
+                execution_identity = bootstrap_background_execution(
+                    transport_ref=BackgroundTransportExecutionRef(
+                        tenant_id=request.tenant_id,
+                        provider=handle.provider,
+                        transport_task_id=handle.task_id,
+                    ),
+                    identity_persistence=self._identity_persistence,
+                )
                 result = execute_logical_task(
                     registry=self._registry,
                     logical_task_name=request.task_name,
-                    tenant_id=request.tenant_id,
-                    run_id=request.run_id,
+                    tenant_id=execution_identity.tenant_id,
+                    run_id=str(execution_identity.run_id),
                     payload=request.payload,
                     idempotency_key=request.idempotency_key,
                     idempotency_store=None,
+                    execution_identity=execution_identity,
                 )
                 if result.success:
                     output = None

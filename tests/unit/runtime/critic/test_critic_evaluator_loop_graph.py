@@ -12,6 +12,12 @@ from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_run_id,
+    reset_active_execution_identity,
+)
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.critic.critic_wiring import (
@@ -126,7 +132,13 @@ async def test_graph_executor_evaluator_loop_two_iterations() -> None:
         nodes=[worker],
     )
     executor = GraphExecutor(registry, validation_engine=validation, critic_graph_hooks=hooks)
-    executions, _, graph_out, _ = await executor.execute(graph, task)
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    try:
+        executions, _, graph_out, _ = await executor.execute(graph, task)
+    finally:
+        reset_active_execution_identity(token)
 
     assert graph_out.node_by_id("worker-1").status == ExecutionNodeStatus.COMPLETED
     assert any("revised:" in (e.summary or "") for e in executions)

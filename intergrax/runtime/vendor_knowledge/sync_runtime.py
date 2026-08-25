@@ -49,6 +49,9 @@ from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
 from intergrax.runtime.vendor_knowledge.sync_worker import (
     register_vendor_knowledge_sync_worker_handler,
 )
+from intergrax.runtime.background_execution.identity_persistence import (
+    wire_background_execution_identity_persistence,
+)
 
 _QUEUE_NAMESPACE_TEMPLATE = "vendor_knowledge.sync_queue.v1:{tenant_id}:"
 
@@ -282,6 +285,9 @@ def build_vendor_knowledge_sync_runtime(
         poll_interval_seconds=poll_interval_seconds,
         claim_limit=claim_limit,
         on_interrupted=_on_interrupted,
+        identity_persistence=wire_background_execution_identity_persistence(
+            document_store=document_store,
+        ),
     )
     runtime = VendorKnowledgeSyncRuntime(
         task_queue=task_queue,

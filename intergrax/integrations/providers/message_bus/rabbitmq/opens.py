@@ -17,6 +17,9 @@ from intergrax.integrations.providers.message_bus.rabbitmq.config import RabbitM
 from intergrax.queueing.contracts.message_consumer import MessageConsumer
 from intergrax.queueing.contracts.message_producer import MessageProducer
 from intergrax.queueing.contracts.task_queue import TaskQueue
+from intergrax.runtime.background_execution.identity_persistence import (
+    wire_background_execution_identity_persistence,
+)
 
 
 def open_rabbitmq_producer(
@@ -100,5 +103,8 @@ def open_rabbitmq_worker(
         registry=registry,
         kv_store=kv_store,
         idempotency_store=idempotency_store,
+        identity_persistence=wire_background_execution_identity_persistence(
+            kv_store=kv_store,
+        ),
         poll_timeout_seconds=poll_timeout_seconds,
     )
