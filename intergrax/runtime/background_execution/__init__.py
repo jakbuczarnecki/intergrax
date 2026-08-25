@@ -10,6 +10,7 @@ from intergrax.runtime.background_execution.identity_persistence import (
     BackgroundExecutionIdentityPersistence,
     DocumentStoreBackgroundExecutionIdentityPersistence,
     KvBackgroundExecutionIdentityPersistence,
+    wire_background_execution_identity_persistence,
 )
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
@@ -22,6 +23,7 @@ __all__ = [
     "BackgroundTransportExecutionRef",
     "DocumentStoreBackgroundExecutionIdentityPersistence",
     "KvBackgroundExecutionIdentityPersistence",
+    "wire_background_execution_identity_persistence",
     "bootstrap_background_execution",
     "resolve_background_execution",
 ]

@@ -9,6 +9,9 @@ from intergrax.integrations.providers.message_bus.kafka.config import KafkaInteg
 from intergrax.integrations.providers.message_bus.kafka.lifecycle import KafkaTaskLifecycleEmitter
 from intergrax.queueing.contracts.message_consumer import MessageConsumer
 from intergrax.queueing.providers.broker_worker_base import BrokerWorkerBase
+from intergrax.runtime.background_execution.identity_persistence import (
+    BackgroundExecutionIdentityPersistence,
+)
 
 
 class KafkaWorker(BrokerWorkerBase):
@@ -30,6 +33,7 @@ class KafkaWorker(BrokerWorkerBase):
         config: KafkaIntegrationConfig,
         lifecycle_emitter: KafkaTaskLifecycleEmitter | None = None,
         idempotency_store=None,
+        identity_persistence: BackgroundExecutionIdentityPersistence,
         poll_timeout_seconds: float = 1.0,
     ) -> None:
         super().__init__(
@@ -38,6 +42,7 @@ class KafkaWorker(BrokerWorkerBase):
             idempotency_store=idempotency_store,
             event_emitter=lifecycle_emitter,
             provider_name="kafka",
+            identity_persistence=identity_persistence,
         )
         self._consumer: MessageConsumer = consumer
         self._config = config

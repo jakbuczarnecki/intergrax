@@ -10,6 +10,9 @@ from celery import Celery
 from celery.exceptions import Retry
 
 from intergrax.queueing.worker.dispatcher import register_dispatcher_task
+from intergrax.runtime.background_execution.identity_persistence import (
+    wire_background_execution_identity_persistence,
+)
 from tests.unit.queueing.worker.dispatcher_test_kv import DispatcherTestKVStore
 from intergrax.queueing.worker.execution import RetryableHandlerError
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
@@ -60,7 +63,9 @@ def test_dispatcher_retries_on_retryable_handler_error() -> None:
         idempotency_store=None,
         lock_ttl_seconds=None,
         retry_policy=retry_policy,
-        kv_store=DispatcherTestKVStore(),
+        identity_persistence=wire_background_execution_identity_persistence(
+            kv_store=DispatcherTestKVStore(),
+        ),
     )
 
     task = app.tasks["intergrax.execute"]

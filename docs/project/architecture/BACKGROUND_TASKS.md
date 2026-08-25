@@ -66,6 +66,8 @@ runtime (TaskId, RunId, AttemptId)
 | `AttemptId` | Central bootstrap (mint per actual execution entry) — **not** Celery `request.retries` |
 | `tenant_id` | Validated single scope; mismatch fails closed |
 
+Stable `TaskId`/`RunId` across process restart and concurrent workers requires atomic identity persistence: `DistributedKVStore.compare_and_set` or `ConditionalDocumentStore.put_if_absent`. Generic `DocumentStore` without conditional create is rejected at composition; there is no process-local fallback.
+
 `TaskRequest.run_id` and broker message `run_id` remain **transport queue correlation** for status/events indexing; they are not canonical runtime `RunId`.
 
 Entry points that invoke the bootstrap: `BrokerWorkerBase.process_message`, `WorkerRuntime.process_request`, Celery `intergrax.execute` dispatcher, and `DocumentStoreTaskWorker`.

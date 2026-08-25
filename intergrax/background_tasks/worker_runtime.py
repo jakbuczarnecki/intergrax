@@ -14,14 +14,12 @@ from intergrax.background_tasks.events import TaskEvent, TaskEventEmitter, TaskE
 from intergrax.background_tasks.registry import TaskRegistry, UnknownTaskError
 from intergrax.background_tasks.state_store import TaskResultStore, TaskStateStore
 from intergrax.contracts.idempotency_store import IdempotencyStore
-from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.queueing.contracts.task_queue import TaskRequest, TaskResult, TaskStatus
 from intergrax.queueing.worker.execution import execute_logical_task
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
 from intergrax.runtime.background_execution.identity_persistence import (
     BackgroundExecutionIdentityPersistence,
-    KvBackgroundExecutionIdentityPersistence,
 )
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
@@ -47,8 +45,7 @@ class WorkerRuntime:
         provider: str,
         idempotency_store: Optional[IdempotencyStore] = None,
         event_emitter: TaskEventEmitter | None = None,
-        identity_persistence: BackgroundExecutionIdentityPersistence | None = None,
-        kv_store: DistributedKVStore | None = None,
+        identity_persistence: BackgroundExecutionIdentityPersistence,
     ) -> None:
         self._registry = registry
         self._state_store = state_store
@@ -57,14 +54,7 @@ class WorkerRuntime:
         self._provider = provider
         self._idempotency_store = idempotency_store
         self._event_emitter = event_emitter
-        if identity_persistence is not None:
-            self._identity_persistence = identity_persistence
-        elif kv_store is not None:
-            self._identity_persistence = KvBackgroundExecutionIdentityPersistence(kv_store)
-        else:
-            raise ValueError(
-                "WorkerRuntime requires identity_persistence or kv_store for BG-EXEC-2",
-            )
+        self._identity_persistence = identity_persistence
 
     def _emit(
         self,

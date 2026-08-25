@@ -17,6 +17,7 @@ from pydantic import ValidationError
 
 import intergrax.runtime.vendor_knowledge as vk
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.runtime.background_execution.identity_persistence import wire_background_execution_identity_persistence
 from intergrax.queueing.contracts.task_queue import TaskHandle
 from intergrax.queueing.providers.document_store import (
     DocumentStoreTaskQueue,
@@ -341,7 +342,7 @@ def test_lkw_style_composition_without_vendor_runtime() -> None:
         retry_delays_seconds=(),
         sleeper=lambda _: None,
     )
-    worker = DocumentStoreTaskWorker(queue, registry, claim_limit=4)
+    worker = DocumentStoreTaskWorker(queue, registry, claim_limit=4, identity_persistence=wire_background_execution_identity_persistence(document_store=store))
     start = dispatcher.enqueue_incremental(
         tenant_id="tenant-1",
         binding_id="binding-1",

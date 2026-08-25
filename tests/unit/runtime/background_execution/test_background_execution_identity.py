@@ -15,11 +15,17 @@ from intergrax.runtime.background_execution.bootstrap import (
 from intergrax.runtime.background_execution.identity_persistence import (
     DocumentStoreBackgroundExecutionIdentityPersistence,
     KvBackgroundExecutionIdentityPersistence,
+    wire_background_execution_identity_persistence,
 )
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
 )
-from tests.unit.runtime.vendor_knowledge._fakes import InMemoryDocumentStore
+from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from tests.unit.runtime.vendor_knowledge._fakes import InMemoryDocumentStore as PlainDocumentStore
+
+import inspect
+import importlib
+from pathlib import Path
 
 import pytest
 
@@ -259,7 +265,12 @@ def test_broker_redelivery_preserves_task_and_run() -> None:
         return ToolExecutionResult.ok(_Output())
 
     registry.register("demo.task.v1", handler)
-    worker = _Worker(registry=registry, kv_store=kv, provider_name="rabbitmq")
+    worker = _Worker(
+        registry=registry,
+        kv_store=kv,
+        provider_name="rabbitmq",
+        identity_persistence=KvBackgroundExecutionIdentityPersistence(kv),
+    )
     message = {
         "task_id": "broker-transport-1",
         "tenant_id": "tenant-a",
@@ -297,3 +308,46 @@ def test_bootstrap_persists_task_and_run_in_identity_store() -> None:
     assert stored is not None
     assert str(identity.task_id).encode("utf-8") in stored
     assert str(identity.run_id).encode("utf-8") in stored
+
+
+def test_plain_document_store_rejected_for_identity_persistence() -> None:
+    store = PlainDocumentStore()
+    with pytest.raises(TypeError, match="ConditionalDocumentStore"):
+        DocumentStoreBackgroundExecutionIdentityPersistence(store)
+
+
+_EXECUTION_MODULES = (
+    "intergrax.queueing.providers.broker_worker_base",
+    "intergrax.background_tasks.worker_runtime",
+    "intergrax.queueing.worker.dispatcher",
+    "intergrax.queueing.providers.document_store.colocated_worker",
+)
+
+
+@pytest.mark.parametrize("module_name", _EXECUTION_MODULES)
+def test_execution_entry_points_depend_on_abstraction_only(module_name: str) -> None:
+    module = importlib.import_module(module_name)
+    source = Path(inspect.getfile(module)).read_text(encoding="utf-8")
+    assert "KvBackgroundExecutionIdentityPersistence" not in source
+    assert "DocumentStoreBackgroundExecutionIdentityPersistence" not in source
+    assert "KvBackgroundExecutionIdentityPersistence(" not in source
+    assert "DocumentStoreBackgroundExecutionIdentityPersistence(" not in source
+    assert "threading.Lock" not in source
+
+
+def test_wire_selects_kv_backend_from_distributed_store() -> None:
+    kv = _KV()
+    persistence = wire_background_execution_identity_persistence(kv_store=kv)
+    assert isinstance(persistence, KvBackgroundExecutionIdentityPersistence)
+
+
+def test_wire_selects_document_backend_from_conditional_store() -> None:
+    store = InMemoryDocumentStore()
+    persistence = wire_background_execution_identity_persistence(document_store=store)
+    assert isinstance(persistence, DocumentStoreBackgroundExecutionIdentityPersistence)
+
+
+def test_wire_rejects_non_conditional_document_store() -> None:
+    store = PlainDocumentStore()
+    with pytest.raises(TypeError, match="ConditionalDocumentStore"):
+        wire_background_execution_identity_persistence(document_store=store)

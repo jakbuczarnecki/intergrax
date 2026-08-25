@@ -35,6 +35,9 @@ from local_workspace_application.workspaces.sync_service import ManagedWorkspace
 from local_workspace_application.workspaces.sync_worker import (
     register_managed_workspace_sync_worker_handler,
 )
+from intergrax.runtime.background_execution.identity_persistence import (
+    wire_background_execution_identity_persistence,
+)
 
 if TYPE_CHECKING:
     from local_workspace_application.workspaces.connected_source_recovery import (
@@ -190,6 +193,9 @@ def build_managed_workspace_sync_runtime(
             placeholder,
             registry,
             on_interrupted=_on_interrupted,
+            identity_persistence=wire_background_execution_identity_persistence(
+                document_store=document_store,
+            ),
         )
         runtime = ManagedWorkspaceSyncRuntime(
             message_bus=existing_message_bus,
@@ -218,6 +224,9 @@ def build_managed_workspace_sync_runtime(
         durable_queue,
         registry,
         on_interrupted=_on_interrupted,
+        identity_persistence=wire_background_execution_identity_persistence(
+            document_store=document_store,
+        ),
     )
     runtime = ManagedWorkspaceSyncRuntime(
         message_bus=durable_queue,

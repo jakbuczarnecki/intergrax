@@ -16,6 +16,9 @@ from intergrax.distributed.contracts.rate_limiter import (
     RateLimitResult,
 )
 from intergrax.queueing.worker.dispatcher import register_dispatcher_task
+from intergrax.runtime.background_execution.identity_persistence import (
+    wire_background_execution_identity_persistence,
+)
 from tests.unit.queueing.worker.dispatcher_test_kv import DispatcherTestKVStore
 from intergrax.queueing.worker.rate_limit_event import RateLimitEvent
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
@@ -71,7 +74,9 @@ def test_rate_limited_triggers_retry() -> None:
         rate_limiter=rate_limiter,
         retry_policy=retry_policy,
         rate_limit_config=rate_limit_config,
-        kv_store=DispatcherTestKVStore(),
+        identity_persistence=wire_background_execution_identity_persistence(
+            kv_store=DispatcherTestKVStore(),
+        ),
     )
 
     task = app.tasks["intergrax.execute"]
@@ -112,7 +117,9 @@ def test_rate_limited_retry_applies_jitter() -> None:
         rate_limiter=rate_limiter,
         retry_policy=retry_policy,
         rate_limit_config=rate_limit_config,
-        kv_store=DispatcherTestKVStore(),
+        identity_persistence=wire_background_execution_identity_persistence(
+            kv_store=DispatcherTestKVStore(),
+        ),
     )
 
     task = app.tasks["intergrax.execute"]
@@ -159,7 +166,9 @@ def test_rate_limit_event_hook_is_emitted() -> None:
         retry_policy=retry_policy,
         rate_limit_config=rate_limit_config,
         on_rate_limited=rate_limit_hook,
-        kv_store=DispatcherTestKVStore(),
+        identity_persistence=wire_background_execution_identity_persistence(
+            kv_store=DispatcherTestKVStore(),
+        ),
     )
 
     task = app.tasks["intergrax.execute"]

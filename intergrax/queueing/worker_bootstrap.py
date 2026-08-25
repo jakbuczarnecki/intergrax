@@ -16,6 +16,9 @@ from intergrax.queueing.worker.rate_limit_event import RateLimitEvent
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_event import RetryEvent
 from intergrax.queueing.worker.retry_policy import RetryPolicy
+from intergrax.runtime.background_execution.identity_persistence import (
+    wire_background_execution_identity_persistence,
+)
 
 
 def create_celery_worker_app(
@@ -56,6 +59,11 @@ def create_celery_worker_app(
 
     app = Celery(app_name, broker=broker_url, backend=backend_url)
 
+    if kv_store is None:
+        raise ValueError(
+            "create_celery_worker_app requires kv_store for BG-EXEC-2 identity persistence",
+        )
+
     register_dispatcher_task(
         app=app,
         registry=registry,
@@ -67,7 +75,9 @@ def create_celery_worker_app(
         rate_limit_config=rate_limit_config,
         on_rate_limited=on_rate_limited,
         on_retry_scheduled=on_retry_scheduled,
-        kv_store=kv_store,
+        identity_persistence=wire_background_execution_identity_persistence(
+            kv_store=kv_store,
+        ),
     )
 
     return app

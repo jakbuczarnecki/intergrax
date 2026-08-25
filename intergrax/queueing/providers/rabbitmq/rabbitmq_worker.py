@@ -6,6 +6,9 @@ from __future__ import annotations
 
 from intergrax.queueing.contracts.message_consumer import MessageConsumer
 from intergrax.queueing.providers.broker_worker_base import BrokerWorkerBase
+from intergrax.runtime.background_execution.identity_persistence import (
+    BackgroundExecutionIdentityPersistence,
+)
 
 
 class RabbitMQWorker(BrokerWorkerBase):
@@ -30,12 +33,14 @@ class RabbitMQWorker(BrokerWorkerBase):
         registry,
         kv_store,
         idempotency_store=None,
+        identity_persistence: BackgroundExecutionIdentityPersistence,
         poll_timeout_seconds: float = 1.0,
     ) -> None:
         super().__init__(
             registry=registry,
             kv_store=kv_store,
             idempotency_store=idempotency_store,
+            identity_persistence=identity_persistence,
         )
         self._consumer: MessageConsumer = consumer
         self._poll_timeout_seconds = poll_timeout_seconds

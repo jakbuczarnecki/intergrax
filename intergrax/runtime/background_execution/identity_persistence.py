@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import threading
 from abc import ABC, abstractmethod
 
 from intergrax.contracts.execution_identity import (
@@ -104,11 +103,14 @@ class KvBackgroundExecutionIdentityPersistence(BackgroundExecutionIdentityPersis
 class DocumentStoreBackgroundExecutionIdentityPersistence(
     BackgroundExecutionIdentityPersistence,
 ):
-    """DocumentStore-backed execution identity registry."""
+    """ConditionalDocumentStore-backed execution identity registry."""
 
-    def __init__(self, document_store: DocumentStore) -> None:
+    def __init__(self, document_store: ConditionalDocumentStore) -> None:
+        if not isinstance(document_store, ConditionalDocumentStore):
+            raise TypeError(
+                "background execution identity persistence requires ConditionalDocumentStore"
+            )
         self._document_store = document_store
-        self._lock = threading.Lock()
 
     def resolve_or_create(
         self,
@@ -130,16 +132,8 @@ class DocumentStoreBackgroundExecutionIdentityPersistence(
                 "run_id": str(run_id),
             },
         )
-        if isinstance(self._document_store, ConditionalDocumentStore):
-            if self._document_store.put_if_absent(document):
-                return task_id, run_id
-        else:
-            with self._lock:
-                raced = self._document_store.get(partition_key, row_key)
-                if raced is not None:
-                    return self._record_to_identity(raced)
-                self._document_store.put(document)
-                return task_id, run_id
+        if self._document_store.put_if_absent(document):
+            return task_id, run_id
 
         raced = self._document_store.get(partition_key, row_key)
         if raced is None:
@@ -153,3 +147,23 @@ class DocumentStoreBackgroundExecutionIdentityPersistence(
         if not isinstance(task_raw, str) or not isinstance(run_raw, str):
             raise RuntimeError("invalid background execution identity record")
         return validate_task_id(task_raw), validate_run_id(run_raw)
+
+
+def wire_background_execution_identity_persistence(
+    *,
+    kv_store: DistributedKVStore | None = None,
+    document_store: DocumentStore | None = None,
+) -> BackgroundExecutionIdentityPersistence:
+    """Platform composition boundary: storage capability → identity persistence."""
+    if kv_store is not None and document_store is not None:
+        raise ValueError(
+            "wire_background_execution_identity_persistence accepts kv_store or "
+            "document_store, not both",
+        )
+    if kv_store is not None:
+        return KvBackgroundExecutionIdentityPersistence(kv_store)
+    if document_store is not None:
+        return DocumentStoreBackgroundExecutionIdentityPersistence(document_store)
+    raise ValueError(
+        "wire_background_execution_identity_persistence requires kv_store or document_store",
+    )

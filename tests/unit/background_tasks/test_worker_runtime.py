@@ -11,6 +11,9 @@ from intergrax.background_tasks.definition import TaskDefinition
 from intergrax.background_tasks.events import TaskEvent, TaskEventName
 from intergrax.background_tasks.registry import TaskRegistry, UnknownTaskError
 from intergrax.background_tasks.worker_runtime import WorkerRuntime
+from intergrax.runtime.background_execution.identity_persistence import (
+    wire_background_execution_identity_persistence,
+)
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.queueing.contracts.task_queue import TaskRequest, TaskStatus
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
@@ -116,7 +119,7 @@ def test_worker_runtime_emits_lifecycle_events() -> None:
         execution_registry=execution_registry,
         provider="kafka",
         event_emitter=collector,
-        kv_store=kv,
+        identity_persistence=wire_background_execution_identity_persistence(kv_store=kv),
     )
     request = TaskRequest(
         tenant_id="tenant-a",

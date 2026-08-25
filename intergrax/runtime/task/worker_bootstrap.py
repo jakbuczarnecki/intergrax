@@ -24,6 +24,9 @@ from intergrax.runtime.task.nexus_worker_execution import (
     register_nexus_task_worker,
 )
 from intergrax.runtime.task.worker_payload import NEXUS_TASK_V2_LOGICAL_NAME
+from intergrax.runtime.background_execution.identity_persistence import (
+    wire_background_execution_identity_persistence,
+)
 
 
 def build_nexus_task_execution_registry(
@@ -84,6 +87,11 @@ def create_nexus_celery_worker_app(
     if task_always_eager:
         app.conf.task_store_eager_result = True
 
+    if kv_store is None:
+        raise ValueError(
+            "create_nexus_celery_worker_app requires kv_store for BG-EXEC-2 identity persistence",
+        )
+
     register_dispatcher_task(
         app=app,
         registry=worker_registry,
@@ -95,7 +103,9 @@ def create_nexus_celery_worker_app(
         rate_limit_config=rate_limit_config,
         on_rate_limited=on_rate_limited,
         on_retry_scheduled=on_retry_scheduled,
-        kv_store=kv_store,
+        identity_persistence=wire_background_execution_identity_persistence(
+            kv_store=kv_store,
+        ),
     )
 
     return app

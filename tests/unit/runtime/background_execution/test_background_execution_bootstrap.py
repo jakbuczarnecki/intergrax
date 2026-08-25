@@ -36,6 +36,7 @@ from intergrax.runtime.background_execution.bootstrap import (
 )
 from intergrax.runtime.background_execution.identity_persistence import (
     KvBackgroundExecutionIdentityPersistence,
+    wire_background_execution_identity_persistence,
 )
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
@@ -175,7 +176,12 @@ def test_broker_worker_path_uses_central_bootstrap() -> None:
         return ToolExecutionResult.ok(_Output())
 
     registry.register("demo.task.v1", handler)
-    worker = _TestWorker(registry=registry, kv_store=kv, idempotency_store=None)
+    worker = _TestWorker(
+        registry=registry,
+        kv_store=kv,
+        idempotency_store=None,
+        identity_persistence=_persistence(kv),
+    )
     fixed = BackgroundExecutionIdentity(
         tenant_id="tenant-a",
         task_id=mint_task_id(),
@@ -230,7 +236,7 @@ def test_worker_runtime_path_uses_central_bootstrap() -> None:
         result_store=TaskResultStore(kv_store=kv),
         execution_registry=execution_registry,
         provider="kafka",
-        kv_store=kv,
+        identity_persistence=_persistence(kv),
     )
     fixed = BackgroundExecutionIdentity(
         tenant_id="tenant-a",
@@ -279,7 +285,12 @@ def test_identity_propagated_without_re_minting_at_handler() -> None:
         return ToolExecutionResult.ok(_Output())
 
     registry.register("demo.task.v1", handler)
-    worker = _TestWorker(registry=registry, kv_store=_KV(), idempotency_store=None)
+    worker = _TestWorker(
+        registry=registry,
+        kv_store=_KV(),
+        idempotency_store=None,
+        identity_persistence=_persistence(),
+    )
     fixed = BackgroundExecutionIdentity(
         tenant_id="tenant-a",
         task_id=TaskId("task_" + "a" * 32),

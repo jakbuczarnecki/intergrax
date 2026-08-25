@@ -19,6 +19,7 @@ from intergrax.runtime.background_execution.bootstrap import (
 )
 from intergrax.runtime.background_execution.identity_persistence import (
     KvBackgroundExecutionIdentityPersistence,
+    wire_background_execution_identity_persistence,
 )
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
@@ -78,7 +79,9 @@ def test_celery_dispatcher_bootstrap_receives_celery_transport_ref() -> None:
     register_dispatcher_task(
         app=app,
         registry=registry,
-        kv_store=DispatcherTestKVStore(),
+        identity_persistence=wire_background_execution_identity_persistence(
+            kv_store=DispatcherTestKVStore(),
+        ),
     )
 
     captured: list[BackgroundTransportExecutionRef] = []

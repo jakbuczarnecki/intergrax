@@ -16,6 +16,10 @@ from pydantic import ValidationError
 from intergrax.integrations._shared.in_memory_document_store import (
     InMemoryDocumentStore,
 )
+from intergrax.runtime.background_execution.identity_persistence import (
+    KvBackgroundExecutionIdentityPersistence,
+    wire_background_execution_identity_persistence,
+)
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.queueing.contracts.task_queue import TaskHandle
 from intergrax.queueing.providers.document_store import (
@@ -24,9 +28,6 @@ from intergrax.queueing.providers.document_store import (
 )
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
-from intergrax.runtime.background_execution.identity_persistence import (
-    KvBackgroundExecutionIdentityPersistence,
-)
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
 )
@@ -440,7 +441,7 @@ def test_registry_and_worker_schedules_continuation() -> None:
         )
 
     handle = dispatcher.enqueue(job=_job(page_size=7), run_id="run-1")
-    worker = DocumentStoreTaskWorker(queue, registry, claim_limit=4)
+    worker = DocumentStoreTaskWorker(queue, registry, claim_limit=4, identity_persistence=wire_background_execution_identity_persistence(document_store=store))
     assert worker.drain_once() == 1
     assert calls == [{"binding_id": "binding-1", "page_size": 7}]
     result = queue.get_result(handle)

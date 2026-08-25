@@ -19,7 +19,6 @@ from intergrax.queueing.worker.execution import execute_logical_task
 from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
 from intergrax.runtime.background_execution.identity_persistence import (
     BackgroundExecutionIdentityPersistence,
-    KvBackgroundExecutionIdentityPersistence,
 )
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
@@ -51,18 +50,14 @@ class BrokerWorkerBase(ABC):
         idempotency_store: Optional[IdempotencyStore] = None,
         event_emitter: TaskEventEmitter | None = None,
         provider_name: str = "broker",
-        identity_persistence: BackgroundExecutionIdentityPersistence | None = None,
+        identity_persistence: BackgroundExecutionIdentityPersistence,
     ) -> None:
         self._registry: TaskExecutionRegistry = registry
         self._kv_store: DistributedKVStore = kv_store
         self._idempotency_store: Optional[IdempotencyStore] = idempotency_store
         self._event_emitter = event_emitter
         self._provider_name = provider_name
-        self._identity_persistence = (
-            identity_persistence
-            if identity_persistence is not None
-            else KvBackgroundExecutionIdentityPersistence(kv_store)
-        )
+        self._identity_persistence = identity_persistence
 
     # ------------------------------------------------------------------
     # Storage keys (aligned with BrokerBackedTaskQueueBase)
