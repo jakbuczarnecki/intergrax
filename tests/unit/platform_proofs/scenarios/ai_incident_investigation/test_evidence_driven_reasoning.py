@@ -57,6 +57,7 @@ from platform_proofs.scenarios.ai_incident_investigation.scenario import (
 from platform_proofs.scenarios.ai_incident_investigation.validation import (
     COMPARISON_CONTENT_ERROR,
     H2_DISPOSITION_ERROR,
+    H2_FALLBACK_ERROR,
     TELEMETRY_CONTENT_ERROR,
     validate_claim_set_against_observations,
 )

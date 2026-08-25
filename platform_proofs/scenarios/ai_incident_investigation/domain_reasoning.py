@@ -559,8 +559,18 @@ def observations_from_evidence_nodes(
         if "evidence_id" in node:
             by_id[str(node["evidence_id"])] = node.get("payload")
 
-    workload = parse_workload_payload(by_id[evidence_ids.workload])
-    throughput = parse_throughput_payload(by_id[evidence_ids.throughput])
+    workload_raw = by_id.get(evidence_ids.workload)
+    throughput_raw = by_id.get(evidence_ids.throughput)
+    if workload_raw is None or throughput_raw is None:
+        workload = ObservedWorkload(order_volume_delta_pct=0.0, admissible=False)
+        throughput = ObservedThroughput(
+            target_attainment_pct=0.0,
+            baseline_attainment_pct=0.0,
+            admissible=False,
+        )
+    else:
+        workload = parse_workload_payload(workload_raw)
+        throughput = parse_throughput_payload(throughput_raw)
 
     schedule: ObservedStaffingSchedule | None = None
     if evidence_ids.staffing_schedule in by_id:

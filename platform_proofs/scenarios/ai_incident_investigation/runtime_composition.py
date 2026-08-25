@@ -18,7 +18,9 @@ from intergrax.applications.contracts.environment_profile import (
 from intergrax.integrations.registry.catalog_manifests import LOG
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
@@ -67,6 +69,32 @@ def build_scenario_runtime_composition(
     )
 
 
+class _IncidentToolCallIdAdapter:
+    """Assign stable tool_call_id values when local providers omit them."""
+
+    def __init__(self, inner: LLMAdapter) -> None:
+        self._inner = inner
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._inner, name)
+
+    def generate_with_tools(self, *args: object, **kwargs: object) -> LLMAdapterResponse:
+        result = self._inner.generate_with_tools(*args, **kwargs)
+        if not result.tool_calls:
+            return result
+        fixed_calls: list[LLMToolCall] = []
+        for index, call in enumerate(result.tool_calls, start=1):
+            call_id = call.id.strip() if call.id else f"incident_tool_call_{index}"
+            fixed_calls.append(
+                LLMToolCall(
+                    id=call_id,
+                    name=call.name,
+                    arguments_json=call.arguments_json,
+                )
+            )
+        return LLMAdapterResponse(content=result.content, tool_calls=tuple(fixed_calls))
+
+
 def resolve_scenario_llm_adapter(
     environment: ApplicationEnvironmentProfile,
 ) -> LLMAdapter:
@@ -76,7 +104,7 @@ def resolve_scenario_llm_adapter(
     Model calls materialize autonomous evidence gathering via bounded tool loop (APP-2A).
     """
     try:
-        return resolve_llm_adapter(environment)
+        return _IncidentToolCallIdAdapter(resolve_llm_adapter(environment))
     except Exception as exc:
         raise RuntimeError(
             "incident_scenario_llm_configuration_missing: failed to resolve a configured "

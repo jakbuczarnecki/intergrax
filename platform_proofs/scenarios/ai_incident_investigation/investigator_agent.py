@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Investigator agent — lifecycle via UAEP; autonomous evidence via bounded tool loop."""
+"""Investigator agent — lifecycle via UAEP; model-owned reasoning with bounded tool loop."""
 
 from __future__ import annotations
 
@@ -8,14 +8,30 @@ from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
-from intergrax.contracts.evidence_claims import (
-    ClaimResolution,
-    EvidenceBackedClaim,
-    EvidenceClaimSet,
-    validate_evidence_reference_id,
-)
+from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
+from intergrax.runtime.nexus.context.metadata_keys import PRIOR_AGENT_OUTPUTS_KEY
+from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from platform_proofs.scenarios.ai_incident_investigation.evidence_gathering import (
+    gather_incident_evidence,
+)
+from platform_proofs.scenarios.ai_incident_investigation.incident_reasoning import (
+    build_investigation_summary,
+    completion_mode_from_proposal,
+    convert_proposal_to_pending_claims,
+    extract_prior_investigation_state,
+    propose_incident_reasoning,
+    emit_reasoning_observability,
+)
+from platform_proofs.scenarios.ai_incident_investigation.incident_scope import IncidentScope
+from platform_proofs.scenarios.ai_incident_investigation.runtime_composition import (
+    ScenarioRuntimeComposition,
+    build_agent_runtime_context,
+)
+# Re-export scenario contract identifiers for backward-compatible imports.
+from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (  # noqa: F401
     COMPARISON_EVIDENCE_ID,
     COMPLETION_SUPPORTED_DIAGNOSIS,
     COMPLETION_UNRESOLVED,
@@ -31,122 +47,14 @@ from platform_proofs.scenarios.ai_incident_investigation.scenario_contract impor
     THROUGHPUT_EVIDENCE_ID,
     WORKLOAD_EVIDENCE_ID,
 )
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.contracts.capability import CapabilityMatchResult
-from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import (
-    IncidentAssessment,
-    RationaleCode,
-    derive_hypothesis_dispositions,
-    observations_from_evidence_nodes,
-)
-from platform_proofs.scenarios.ai_incident_investigation.evidence_gathering import (
-    gather_incident_evidence,
-)
-from platform_proofs.scenarios.ai_incident_investigation.incident_scope import IncidentScope
+
 from platform_proofs.scenarios.ai_incident_investigation.tools import SCENARIO_TOOL_IDS
-from platform_proofs.scenarios.ai_incident_investigation.runtime_composition import (
-    ScenarioRuntimeComposition,
-    build_agent_runtime_context,
+from platform_proofs.scenarios.ai_incident_investigation.validation import (
+    apply_critic_claim_resolutions,
 )
 
 INVESTIGATOR_AGENT_ID = "incident_investigator"
 INVESTIGATOR_CAPABILITY = "incident_investigation.investigate"
-
-
-def _build_claims_from_assessment(assessment: IncidentAssessment) -> EvidenceClaimSet:
-    h1 = assessment.h1
-    h2 = assessment.h2
-    h3 = assessment.h3
-
-    h1_statement = (
-        "Production workload on Line 4 increased during the incident window "
-        "while throughput declined — overload hypothesis H1."
-        if h1.disposition is not ClaimResolution.PENDING
-        else (
-            "Sustained production overload from workload growth caused Line 4 "
-            "target attainment degradation — hypothesis H1."
-        )
-    )
-    initial_claim = EvidenceBackedClaim(
-        claim_id=INITIAL_CLAIM_ID,
-        statement=h1_statement,
-        claim_kind=DIAGNOSIS_KIND,
-        supporting_evidence_ids=tuple(
-            validate_evidence_reference_id(eid) for eid in h1.supporting_evidence_ids
-        ),
-        contradicting_evidence_ids=tuple(
-            validate_evidence_reference_id(eid) for eid in h1.contradicting_evidence_ids
-        ),
-        resolution=h1.disposition,
-    )
-
-    h2_statement = (
-        "Understaffing on the affected shift is not supported as initiating cause: "
-        "preliminary roster export conflicts with confirmed attendance for the "
-        "incident window — hypothesis H2 rejected."
-        if h2.disposition is ClaimResolution.REJECTED
-        else (
-            "Understaffing on the affected shift is supported by confirmed attendance "
-            "below required headcount — hypothesis H2."
-            if h2.disposition is ClaimResolution.SUPPORTED
-            else "Understaffing hypothesis H2 pending further staffing evidence."
-        )
-    )
-    h2_claim = EvidenceBackedClaim(
-        claim_id=H2_CLAIM_ID,
-        statement=h2_statement,
-        claim_kind=DIAGNOSIS_KIND,
-        supporting_evidence_ids=tuple(
-            validate_evidence_reference_id(eid) for eid in h2.supporting_evidence_ids
-        ),
-        contradicting_evidence_ids=tuple(
-            validate_evidence_reference_id(eid) for eid in h2.contradicting_evidence_ids
-        ),
-        resolution=h2.disposition,
-    )
-
-    claims: list[EvidenceBackedClaim] = [initial_claim, h2_claim]
-
-    if h3.disposition is ClaimResolution.SUPPORTED:
-        revised_claim = EvidenceBackedClaim(
-            claim_id=REVISED_CLAIM_ID,
-            statement=(
-                "Intermittent station signal degradation on the complex-assembly step "
-                "is the best-supported initiating cause; comparison evidence shows "
-                "similar elevated workload elsewhere without comparable degradation; "
-                "workload growth plausibly amplified impact — bounded H3 diagnosis."
-            ),
-            claim_kind=DIAGNOSIS_KIND,
-            supporting_evidence_ids=tuple(
-                validate_evidence_reference_id(eid) for eid in h3.supporting_evidence_ids
-            ),
-            contradicting_evidence_ids=tuple(
-                validate_evidence_reference_id(eid) for eid in h3.contradicting_evidence_ids
-            ),
-            resolution=ClaimResolution.SUPPORTED,
-            supersedes_claim_id=INITIAL_CLAIM_ID,
-        )
-        claims.append(revised_claim)
-    elif (
-        h3.disposition is ClaimResolution.INSUFFICIENT_EVIDENCE
-        and h3.rationale_code is RationaleCode.H3_INSUFFICIENT_TELEMETRY_UNAVAILABLE
-    ):
-        h3_claim = EvidenceBackedClaim(
-            claim_id=H3_CLAIM_ID,
-            statement=(
-                "Equipment-process degradation hypothesis H3 cannot be accepted: "
-                "decisive station telemetry for the incident window is unavailable."
-            ),
-            claim_kind=DIAGNOSIS_KIND,
-            supporting_evidence_ids=(),
-            contradicting_evidence_ids=(),
-            resolution=ClaimResolution.INSUFFICIENT_EVIDENCE,
-        )
-        claims.append(h3_claim)
-
-    return EvidenceClaimSet(claims=tuple(claims), challenges=())
 
 
 def _extract_critic_feedback(ctx: RuntimeExecutionContext, is_revision: bool) -> list[str]:
@@ -159,6 +67,23 @@ def _extract_critic_feedback(ctx: RuntimeExecutionContext, is_revision: bool) ->
     if isinstance(raw_feedback, list):
         return [str(item) for item in raw_feedback]
     return []
+
+
+def _is_revision(ctx: RuntimeExecutionContext) -> bool:
+    if (ctx.request.metadata or {}).get("critic_feedback"):
+        return True
+    raw_feedback = ctx.metadata.get("critic_feedback")
+    return isinstance(raw_feedback, list) and bool(raw_feedback)
+
+
+def _prior_metadata(ctx: RuntimeExecutionContext) -> dict[str, object]:
+    request_meta = dict(ctx.request.metadata or {}) if ctx.request is not None else {}
+    if PRIOR_AGENT_OUTPUTS_KEY in request_meta:
+        return request_meta
+    prior = ctx.metadata.get(PRIOR_AGENT_OUTPUTS_KEY)
+    if isinstance(prior, dict):
+        return {PRIOR_AGENT_OUTPUTS_KEY: prior}
+    return request_meta
 
 
 class IncidentInvestigatorAgent(Agent):
@@ -215,44 +140,61 @@ class IncidentInvestigatorAgent(Agent):
 
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         _ = step
-        is_revision = bool((ctx.request.metadata or {}).get("critic_feedback"))
-        if not is_revision:
-            raw_feedback = ctx.metadata.get("critic_feedback")
-            if isinstance(raw_feedback, list) and raw_feedback:
-                is_revision = True
+        is_revision = _is_revision(ctx)
         runtime_state = ctx.metadata.get("runtime_state")
         if not isinstance(runtime_state, RuntimeState):
             raise RuntimeError("runtime_state_not_bound_for_tool_runtime")
+
+        node_id = str((ctx.request.metadata or {}).get("graph_node_id") or ctx.node_id or "")
+        prior_state = extract_prior_investigation_state(
+            _prior_metadata(ctx),
+            node_id=node_id or None,
+        )
+        critic_feedback = _extract_critic_feedback(ctx, is_revision)
 
         gathering = gather_incident_evidence(
             runtime_state=runtime_state,
             registry=self._registry,
             scope=self._incident_scope,
             is_revision=is_revision,
-            critic_feedback=_extract_critic_feedback(ctx, is_revision),
+            critic_feedback=critic_feedback,
+            prior_evidence=prior_state.evidence_nodes,
         )
 
         evidence_nodes = list(gathering.evidence_nodes)
-        observations = observations_from_evidence_nodes(evidence_nodes, INCIDENT_EVIDENCE_IDS)
-        assessment = derive_hypothesis_dispositions(observations, INCIDENT_EVIDENCE_IDS)
-        claim_set = _build_claims_from_assessment(assessment)
-        active_hypothesis = assessment.active_hypothesis
-        summary = assessment.summary
-        completion_mode = COMPLETION_SUPPORTED_DIAGNOSIS
-        if is_revision and assessment.h3.disposition is ClaimResolution.SUPPORTED:
-            summary = f"revised: {summary}"
-        elif (
-            is_revision
-            and assessment.h3.rationale_code
-            is RationaleCode.H3_INSUFFICIENT_TELEMETRY_UNAVAILABLE
-            and assessment.h3.disposition is ClaimResolution.INSUFFICIENT_EVIDENCE
-        ):
-            completion_mode = COMPLETION_UNRESOLVED
+        proposal = propose_incident_reasoning(
+            runtime_state=runtime_state,
+            evidence_nodes=evidence_nodes,
+            prior_state=prior_state,
+            critic_feedback=critic_feedback,
+            is_revision=is_revision,
+        )
+        pending_claim_set = convert_proposal_to_pending_claims(
+            proposal,
+            prior_claim_set=prior_state.claim_set,
+            critic_feedback=critic_feedback,
+        )
+        completion_mode = completion_mode_from_proposal(proposal)
+        domain_payload_pre = {
+            "evidence_nodes": evidence_nodes,
+            "completion_mode": completion_mode,
+            "active_hypothesis": proposal.preferred_hypothesis_id,
+        }
+        claim_set = apply_critic_claim_resolutions(pending_claim_set, domain_payload_pre)
+        emit_reasoning_observability(
+            runtime_state=runtime_state,
+            proposal=proposal,
+            claim_set=pending_claim_set,
+            is_revision=is_revision,
+            critic_feedback=critic_feedback,
+        )
 
+        summary = build_investigation_summary(proposal, is_revision=is_revision)
         domain_payload = {
             "claim_set": claim_set.model_dump(mode="json"),
             "evidence_nodes": evidence_nodes,
-            "active_hypothesis": str(active_hypothesis),
+            "reasoning_proposal": proposal.model_dump(mode="json"),
+            "active_hypothesis": proposal.preferred_hypothesis_id,
             "completion_mode": completion_mode,
             "tool_invocations": gathering.tool_invocations,
             "revision_pass": is_revision,

@@ -111,7 +111,9 @@ def test_build_agent_runtime_context_uses_production_platform_paths(monkeypatch:
     ctx = build_agent_runtime_context(_runtime_request(), bundle.runtime_composition)
 
     assert resolve_calls == 1
-    assert ctx.config.llm_adapter is sentinel
+    adapter = ctx.config.llm_adapter
+    inner = getattr(adapter, "_inner", adapter)
+    assert inner is sentinel
     assert isinstance(ctx.prompt_registry, YamlPromptRegistry)
     assert ctx.session_manager is not None
 
@@ -145,7 +147,9 @@ def test_build_agent_runtime_context_reuses_scenario_adapter_without_second_prov
     ctx = build_agent_runtime_context(_runtime_request(), bundle.runtime_composition)
 
     assert provider_constructions == 1
-    assert ctx.config.llm_adapter is sentinel
+    adapter = ctx.config.llm_adapter
+    inner = getattr(adapter, "_inner", adapter)
+    assert inner is sentinel
 
 
 def test_prompt_registry_resolved_through_platform_wiring() -> None:
