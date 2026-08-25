@@ -270,6 +270,7 @@ def test_retry_a1_failed_a2_completed_no_contradiction() -> None:
     lifecycle_kinds = {
         LifecycleAnomalyKind.MULTIPLE_TERMINAL_OUTCOMES,
         LifecycleAnomalyKind.EVENT_AFTER_TERMINAL,
+        LifecycleAnomalyKind.DISALLOWED_AFTER_FAILED,
     }
     assert not any(anomaly.kind in lifecycle_kinds for anomaly in analysis.anomalies)
 
@@ -388,6 +389,53 @@ def test_lifecycle_violation_uses_execution_position_not_timestamp() -> None:
     assert conflicting[0].supporting_event_ids == (
         reconstruction.positioned_events[1].event.event_id,
         reconstruction.positioned_events[2].event.event_id,
+    )
+
+
+def test_disallowed_after_failed_emits_distinct_anomaly_not_event_after_terminal() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    runtime_store = InMemoryRuntimeEventStore()
+    _append_sequence(
+        runtime_store,
+        tenant_id=_TENANT_A,
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        event_types=[
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_FAILED,
+            RuntimeEventType.PAUSE_REQUESTED,
+        ],
+    )
+
+    reconstruction = ExecutionReconstructor(
+        runtime_events=runtime_store,
+        causal_evidence=InMemoryCausalEvidencePersistence(),
+    ).reconstruct_execution(_TENANT_A, task_id, run_id)
+    analysis = _ANALYZER.analyze(reconstruction)
+
+    disallowed = [
+        anomaly
+        for anomaly in analysis.anomalies
+        if anomaly.kind is LifecycleAnomalyKind.DISALLOWED_AFTER_FAILED
+    ]
+    assert len(disallowed) == 1
+    assert not any(
+        anomaly.kind is LifecycleAnomalyKind.EVENT_AFTER_TERMINAL
+        for anomaly in analysis.anomalies
+    )
+    failed_row = reconstruction.positioned_events[1]
+    violating_row = reconstruction.positioned_events[2]
+    assert failed_row.event.event_type is RuntimeEventType.TASK_FAILED
+    assert disallowed[0].supporting_event_ids == (
+        failed_row.event.event_id,
+        violating_row.event.event_id,
+    )
+    assert disallowed[0].supporting_positions == (
+        failed_row.position,
+        violating_row.position,
     )
 
 

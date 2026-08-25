@@ -34,6 +34,7 @@ class LifecycleAnomalyKind(StrEnum):
     RUNTIME_HISTORY_TRUNCATED = "runtime_history_truncated"
     MULTIPLE_TERMINAL_OUTCOMES = "multiple_terminal_outcomes"
     EVENT_AFTER_TERMINAL = "event_after_terminal"
+    DISALLOWED_AFTER_FAILED = "disallowed_after_failed"
 
 
 class LifecycleAnomalyScope(StrEnum):
@@ -50,7 +51,9 @@ _LIFECYCLE_VIOLATION_TO_ANOMALY_KIND: dict[
         LifecycleAnomalyKind.MULTIPLE_TERMINAL_OUTCOMES
     ),
     RunLifecycleViolationKind.EVENT_AFTER_TERMINAL: LifecycleAnomalyKind.EVENT_AFTER_TERMINAL,
-    RunLifecycleViolationKind.DISALLOWED_AFTER_FAILED: LifecycleAnomalyKind.EVENT_AFTER_TERMINAL,
+    RunLifecycleViolationKind.DISALLOWED_AFTER_FAILED: (
+        LifecycleAnomalyKind.DISALLOWED_AFTER_FAILED
+    ),
 }
 
 

@@ -869,7 +869,8 @@ await reporter.report(
 | `RUNTIME_ATTEMPT_WITHOUT_CAUSAL_EVIDENCE` | attempt | execution has transport evidence elsewhere; attempt has runtime events but no causal evidence |
 | `RUNTIME_HISTORY_TRUNCATED` | execution | `runtime_history_completeness == truncated` |
 | `MULTIPLE_TERMINAL_OUTCOMES` | attempt or execution | conflicting final lifecycle events per TRACE-ASOF-2 reducer semantics |
-| `EVENT_AFTER_TERMINAL` | attempt or execution | lifecycle event after terminal `COMPLETED`/`CANCELLED` per TRACE-ASOF-2 reducer semantics |
+| `EVENT_AFTER_TERMINAL` | attempt or execution | lifecycle event after final `COMPLETED`/`CANCELLED` per TRACE-ASOF-2 reducer semantics |
+| `DISALLOWED_AFTER_FAILED` | attempt or execution | disallowed lifecycle transition while run is `FAILED` and before a valid `RETRY_STARTED` per TRACE-ASOF-2 reducer semantics |
 
 **Lifecycle semantics source:** reuse `intergrax/runtime/events/asof_projection.py` (`apply_lifecycle_event`) — do not invent parallel state machines. Retry attempts (`A1` failed + `A2` completed) are evaluated on the canonical positioned stream; cross-attempt contradictions are not flagged when retry semantics allow them.
 
