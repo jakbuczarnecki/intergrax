@@ -29,6 +29,7 @@ from intergrax.runtime.observability.causal_evidence import (
 )
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
+    CausalEvidencePersistenceConflictError,
 )
 
 
@@ -269,3 +270,96 @@ def assert_causal_evidence_persistence_conformance(
         provider="unknown-provider",
         transport_task_id="missing-transport",
     ) == ()
+
+
+def assert_causal_evidence_conflicting_append_fails_closed(
+    store: CausalEvidencePersistence,
+    *,
+    label: str,
+) -> None:
+    tenant_id = f"{label}-conflict-tenant"
+    evidence_id = mint_event_id()
+    original = sample_causal_evidence(tenant_id=tenant_id, evidence_id=evidence_id)
+    conflicting = sample_causal_evidence(
+        tenant_id=tenant_id,
+        evidence_id=evidence_id,
+        transport_task_id="different-transport",
+    )
+
+    store.append(original)
+    try:
+        store.append(conflicting)
+    except CausalEvidencePersistenceConflictError:
+        pass
+    else:
+        raise AssertionError(f"{label}: expected conflicting append to fail closed")
+
+    by_execution = store.list_for_execution(
+        tenant_id=tenant_id,
+        task_id=original.target.task_id,
+        run_id=original.target.run_id,
+    )
+    assert by_execution == (original,)
+
+
+def assert_causal_evidence_provider_isolation(
+    store: CausalEvidencePersistence,
+    *,
+    label: str,
+) -> None:
+    tenant_id = f"{label}-provider-tenant"
+    transport_task_id = f"{label}-shared-transport-id"
+    celery = sample_causal_evidence(
+        tenant_id=tenant_id,
+        provider="celery",
+        transport_task_id=transport_task_id,
+    )
+    rabbitmq = sample_causal_evidence(
+        tenant_id=tenant_id,
+        provider="rabbitmq",
+        transport_task_id=transport_task_id,
+    )
+    store.append(celery)
+    store.append(rabbitmq)
+
+    assert store.list_for_transport_task(
+        tenant_id=tenant_id,
+        provider="celery",
+        transport_task_id=transport_task_id,
+    ) == (celery,)
+    assert store.list_for_transport_task(
+        tenant_id=tenant_id,
+        provider="rabbitmq",
+        transport_task_id=transport_task_id,
+    ) == (rabbitmq,)
+
+
+def assert_causal_evidence_typed_round_trip(
+    store: CausalEvidencePersistence,
+    *,
+    label: str,
+) -> None:
+    tenant_id = f"{label}-roundtrip-tenant"
+    evidence = sample_causal_evidence(
+        tenant_id=tenant_id,
+        provider="document_store",
+        transport_task_id=f"{label}-transport",
+    )
+    stored = store.append(evidence)
+    assert stored == evidence
+
+    by_execution = store.list_for_execution(
+        tenant_id=tenant_id,
+        task_id=evidence.target.task_id,
+        run_id=evidence.target.run_id,
+    )
+    by_transport = store.list_for_transport_task(
+        tenant_id=tenant_id,
+        provider=evidence.source.provider,
+        transport_task_id=evidence.source.task_id,
+    )
+    assert by_execution == (evidence,)
+    assert by_transport == (evidence,)
+    assert by_execution[0].source.provider == evidence.source.provider
+    assert by_execution[0].source.task_id == evidence.source.task_id
+    assert by_execution[0].target.attempt_id == evidence.target.attempt_id

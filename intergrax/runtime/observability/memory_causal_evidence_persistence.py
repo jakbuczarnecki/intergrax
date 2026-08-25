@@ -13,6 +13,7 @@ from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.runtime.observability.causal_evidence import PlatformCausalEvidence
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
+    CausalEvidencePersistenceConflictError,
 )
 
 
@@ -28,6 +29,10 @@ class InMemoryCausalEvidencePersistence(CausalEvidencePersistence):
         with self._lock:
             existing = self._accepted_by_evidence_id.get(evidence.evidence_id)
             if existing is not None:
+                if existing != evidence:
+                    raise CausalEvidencePersistenceConflictError(
+                        "conflicting causal evidence for evidence_id",
+                    )
                 return existing
             self._accepted_by_evidence_id[evidence.evidence_id] = evidence
             self._insertion_order.append(evidence.evidence_id)

@@ -11,6 +11,10 @@ from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.runtime.observability.causal_evidence import PlatformCausalEvidence
 
 
+class CausalEvidencePersistenceConflictError(Exception):
+    """Raised when append encounters an existing evidence_id with different content."""
+
+
 class CausalEvidencePersistence(ABC):
     """
     Append-only store for ``PlatformCausalEvidence``.
