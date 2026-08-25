@@ -33,14 +33,18 @@ def finalize_accepted_tool_call_identities(
     """Normalize accepted adapter output — sole minting owner for tool-call IDs."""
     seen: set[str] = set()
     finalized: list[LLMToolCall] = []
-    for call in calls:
+    for index, call in enumerate(calls):
         call_id = call.id
-        if _is_blank_tool_call_id(call_id) or call_id in seen:
+        if _is_blank_tool_call_id(call_id):
             while True:
                 candidate = mint_tool_call_id()
                 if candidate not in seen:
                     call_id = candidate
                     break
+        elif call_id in seen:
+            raise ToolCallIdentityError(
+                f"duplicate tool call identity at index {index}: {call_id!r}"
+            )
         seen.add(call_id)
         if call_id == call.id:
             finalized.append(call)

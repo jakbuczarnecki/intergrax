@@ -57,6 +57,39 @@ def test_blank_id_becomes_non_empty(blank_id: str) -> None:
     assert normalized.id.strip()
 
 
+def test_duplicate_explicit_provider_ids_fail() -> None:
+    calls = (
+        LLMToolCall.from_openai_shape(
+            call_id="provider-call-1",
+            name="a",
+            arguments={},
+        ),
+        LLMToolCall.from_openai_shape(
+            call_id="provider-call-1",
+            name="b",
+            arguments={},
+        ),
+    )
+    with pytest.raises(ToolCallIdentityError, match="duplicate tool call identity"):
+        finalize_accepted_tool_call_identities(calls)
+
+
+def test_openai_dicts_duplicate_explicit_ids_fail() -> None:
+    with pytest.raises(ToolCallIdentityError, match="duplicate tool call identity"):
+        tool_calls_from_openai_dicts(
+            [
+                {
+                    "id": "provider-call-1",
+                    "function": {"name": "a", "arguments": "{}"},
+                },
+                {
+                    "id": "provider-call-1",
+                    "function": {"name": "b", "arguments": "{}"},
+                },
+            ]
+        )
+
+
 def test_two_blank_calls_receive_distinct_ids() -> None:
     calls = (
         LLMToolCall.from_openai_shape(call_id="", name="a", arguments={}),
@@ -180,6 +213,15 @@ def test_streaming_merge_multiple_empty_ids_distinct() -> None:
     )
     assert len(merged) == 2
     assert merged[0].id != merged[1].id
+
+
+def test_validate_tool_call_identities_rejects_duplicate() -> None:
+    calls = (
+        LLMToolCall(id="provider-call-1", name="a", arguments_json="{}"),
+        LLMToolCall(id="provider-call-1", name="b", arguments_json="{}"),
+    )
+    with pytest.raises(ToolCallIdentityError, match="duplicate tool call identity"):
+        validate_tool_call_identities(calls)
 
 
 def test_validate_tool_call_identities_rejects_blank() -> None:
