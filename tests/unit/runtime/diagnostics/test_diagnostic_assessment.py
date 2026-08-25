@@ -399,11 +399,17 @@ def test_all_lifecycle_anomaly_kinds_accounted_for() -> None:
     assert mapped_kinds == set(LifecycleAnomalyKind)
     for kind in LifecycleAnomalyKind:
         output = diagnostic_assessment._ANOMALY_OUTPUT_KIND[kind]
-        assert output in {"finding", "limitation"}
-        if output == "finding":
+        assert isinstance(output, diagnostic_assessment.DiagnosticOutputKind)
+        if output is diagnostic_assessment.DiagnosticOutputKind.FINDING:
             assert kind in diagnostic_assessment._ANOMALY_TO_FINDING_KIND
+        if output is diagnostic_assessment.DiagnosticOutputKind.LIMITATION:
+            assert kind in diagnostic_assessment._ANOMALY_TO_LIMITATION_KIND
         if kind is LifecycleAnomalyKind.RUNTIME_HISTORY_TRUNCATED:
-            assert output == "limitation"
+            assert output is diagnostic_assessment.DiagnosticOutputKind.LIMITATION
+            assert (
+                diagnostic_assessment._ANOMALY_TO_LIMITATION_KIND[kind]
+                is DiagnosticLimitationKind.RUNTIME_HISTORY_TRUNCATED
+            )
 
 
 def test_finding_order_preserves_lifecycle_anomaly_order() -> None:

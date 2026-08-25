@@ -46,6 +46,13 @@ class DiagnosticLimitationKind(StrEnum):
     RUNTIME_HISTORY_TRUNCATED = "runtime_history_truncated"
 
 
+class DiagnosticOutputKind(StrEnum):
+    """Typed routing category for lifecycle anomalies in assessment output."""
+
+    FINDING = "finding"
+    LIMITATION = "limitation"
+
+
 _ANOMALY_TO_FINDING_KIND: dict[LifecycleAnomalyKind, DiagnosticFindingKind] = {
     LifecycleAnomalyKind.CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY: (
         DiagnosticFindingKind.CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY
@@ -58,6 +65,12 @@ _ANOMALY_TO_FINDING_KIND: dict[LifecycleAnomalyKind, DiagnosticFindingKind] = {
     ),
     LifecycleAnomalyKind.EVENT_AFTER_TERMINAL: DiagnosticFindingKind.EVENT_AFTER_TERMINAL,
     LifecycleAnomalyKind.DISALLOWED_AFTER_FAILED: DiagnosticFindingKind.DISALLOWED_AFTER_FAILED,
+}
+
+_ANOMALY_TO_LIMITATION_KIND: dict[LifecycleAnomalyKind, DiagnosticLimitationKind] = {
+    LifecycleAnomalyKind.RUNTIME_HISTORY_TRUNCATED: (
+        DiagnosticLimitationKind.RUNTIME_HISTORY_TRUNCATED
+    ),
 }
 
 _PROVEN_CLAIMS: dict[DiagnosticFindingKind, str] = {
@@ -90,13 +103,13 @@ _LIMITATION_MESSAGES: dict[DiagnosticLimitationKind, str] = {
 }
 
 # Exhaustive mapping contract: every LifecycleAnomalyKind must map to finding or limitation.
-_ANOMALY_OUTPUT_KIND: dict[LifecycleAnomalyKind, str] = {
-    LifecycleAnomalyKind.CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY: "finding",
-    LifecycleAnomalyKind.RUNTIME_ATTEMPT_WITHOUT_CAUSAL_EVIDENCE: "finding",
-    LifecycleAnomalyKind.RUNTIME_HISTORY_TRUNCATED: "limitation",
-    LifecycleAnomalyKind.MULTIPLE_TERMINAL_OUTCOMES: "finding",
-    LifecycleAnomalyKind.EVENT_AFTER_TERMINAL: "finding",
-    LifecycleAnomalyKind.DISALLOWED_AFTER_FAILED: "finding",
+_ANOMALY_OUTPUT_KIND: dict[LifecycleAnomalyKind, DiagnosticOutputKind] = {
+    LifecycleAnomalyKind.CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY: DiagnosticOutputKind.FINDING,
+    LifecycleAnomalyKind.RUNTIME_ATTEMPT_WITHOUT_CAUSAL_EVIDENCE: DiagnosticOutputKind.FINDING,
+    LifecycleAnomalyKind.RUNTIME_HISTORY_TRUNCATED: DiagnosticOutputKind.LIMITATION,
+    LifecycleAnomalyKind.MULTIPLE_TERMINAL_OUTCOMES: DiagnosticOutputKind.FINDING,
+    LifecycleAnomalyKind.EVENT_AFTER_TERMINAL: DiagnosticOutputKind.FINDING,
+    LifecycleAnomalyKind.DISALLOWED_AFTER_FAILED: DiagnosticOutputKind.FINDING,
 }
 
 
@@ -169,10 +182,14 @@ class DiagnosticAssessmentBuilder:
 
         for anomaly in lifecycle.anomalies:
             output_kind = _ANOMALY_OUTPUT_KIND[anomaly.kind]
-            if output_kind == "limitation":
+            if output_kind is DiagnosticOutputKind.LIMITATION:
                 limitations.append(_limitation_from_anomaly(anomaly))
-            else:
+            elif output_kind is DiagnosticOutputKind.FINDING:
                 findings.append(_finding_from_anomaly(anomaly))
+            else:
+                raise DiagnosticAssessmentIntegrityError(
+                    f"unmapped diagnostic output kind for anomaly {anomaly.kind!r}"
+                )
 
         return DiagnosticAssessment(
             tenant_id=reconstruction.tenant_id,
@@ -217,7 +234,7 @@ def _finding_from_anomaly(anomaly: LifecycleAnomaly) -> DiagnosticFinding:
 
 
 def _limitation_from_anomaly(anomaly: LifecycleAnomaly) -> DiagnosticLimitation:
-    limitation_kind = DiagnosticLimitationKind.RUNTIME_HISTORY_TRUNCATED
+    limitation_kind = _ANOMALY_TO_LIMITATION_KIND[anomaly.kind]
     return DiagnosticLimitation(
         kind=limitation_kind,
         factual_message=_LIMITATION_MESSAGES[limitation_kind],
