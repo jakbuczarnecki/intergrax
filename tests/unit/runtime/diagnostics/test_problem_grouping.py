@@ -1,0 +1,294 @@
+# © Artur Czarnecki. All rights reserved.
+
+from __future__ import annotations
+
+import pytest
+
+from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
+from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessment
+from intergrax.runtime.diagnostics.problem_grouping import (
+    DeterministicProblemGroupingBasis,
+    DuplicateProblemGroupingStrategyError,
+    MissingProblemGroupingStrategyError,
+    ProblemGroupingCandidate,
+    ProblemGroupingEngine,
+    ProblemGroupingIntegrityError,
+    ProblemGroupingMethod,
+    ProblemGroupingProvenance,
+    ProblemGroupingStrategy,
+    ProblemGroupingStrategyCharacteristics,
+    ProblemGroupingStrategyId,
+    ProblemGroupingStrategyRegistry,
+    ProblemGroupingStrategyResult,
+    ProblemGroupingStrategyVersion,
+    ProblemGroupingSubject,
+    ProblemGroupingSubjectRef,
+)
+
+pytestmark = pytest.mark.unit
+
+_TENANT_A = "tenant-a"
+_TENANT_B = "tenant-b"
+_FAKE_STRATEGY_ID = ProblemGroupingStrategyId("test.fake_pair")
+_FAKE_STRATEGY_VERSION = ProblemGroupingStrategyVersion("1.0.0")
+
+
+def _assessment(
+    *,
+    tenant_id: str = _TENANT_A,
+    task_id=None,
+    run_id=None,
+) -> DiagnosticAssessment:
+    return DiagnosticAssessment(
+        tenant_id=tenant_id,
+        task_id=task_id or mint_task_id(),
+        run_id=run_id or mint_run_id(),
+        findings=(),
+        limitations=(),
+    )
+
+
+def _subject_ref(assessment: DiagnosticAssessment) -> ProblemGroupingSubjectRef:
+    return ProblemGroupingSubjectRef(
+        tenant_id=assessment.tenant_id,
+        task_id=assessment.task_id,
+        run_id=assessment.run_id,
+    )
+
+
+def _provenance(
+    *,
+    members: tuple[ProblemGroupingSubjectRef, ...],
+) -> ProblemGroupingProvenance:
+    return ProblemGroupingProvenance(
+        strategy_id=_FAKE_STRATEGY_ID,
+        strategy_version=_FAKE_STRATEGY_VERSION,
+        method=ProblemGroupingMethod.DETERMINISTIC,
+        supporting_subject_refs=members,
+        basis=DeterministicProblemGroupingBasis(),
+    )
+
+
+class _ConfigurableFakeStrategy:
+    """Test-only strategy — not a production grouping algorithm."""
+
+    def __init__(
+        self,
+        *,
+        candidates: tuple[ProblemGroupingCandidate, ...] = (),
+    ) -> None:
+        self._candidates = candidates
+
+    @property
+    def strategy_id(self) -> ProblemGroupingStrategyId:
+        return _FAKE_STRATEGY_ID
+
+    @property
+    def strategy_version(self) -> ProblemGroupingStrategyVersion:
+        return _FAKE_STRATEGY_VERSION
+
+    @property
+    def characteristics(self) -> ProblemGroupingStrategyCharacteristics:
+        return ProblemGroupingStrategyCharacteristics(
+            method=ProblemGroupingMethod.DETERMINISTIC,
+            deterministic=True,
+        )
+
+    def group(
+        self,
+        subjects: tuple[ProblemGroupingSubject, ...],
+    ) -> ProblemGroupingStrategyResult:
+        if not self._candidates and len(subjects) >= 2:
+            members = (subjects[0].ref, subjects[1].ref)
+            self._candidates = (
+                ProblemGroupingCandidate(
+                    members=members,
+                    provenance=_provenance(members=members),
+                ),
+            )
+        return ProblemGroupingStrategyResult(
+            strategy_id=self.strategy_id,
+            strategy_version=self.strategy_version,
+            candidates=self._candidates,
+        )
+
+
+def _engine_with_strategy(strategy: ProblemGroupingStrategy) -> ProblemGroupingEngine:
+    registry = ProblemGroupingStrategyRegistry()
+    registry.register(strategy)
+    return ProblemGroupingEngine(registry)
+
+
+def test_registry_register_resolve_and_list() -> None:
+    registry = ProblemGroupingStrategyRegistry()
+    strategy = _ConfigurableFakeStrategy()
+
+    registry.register(strategy)
+    resolved = registry.resolve(_FAKE_STRATEGY_ID)
+
+    assert resolved.strategy_id == _FAKE_STRATEGY_ID
+    assert registry.registered_strategy_ids() == (_FAKE_STRATEGY_ID,)
+
+
+def test_registry_duplicate_id_fails() -> None:
+    registry = ProblemGroupingStrategyRegistry()
+    registry.register(_ConfigurableFakeStrategy())
+
+    with pytest.raises(DuplicateProblemGroupingStrategyError):
+        registry.register(_ConfigurableFakeStrategy())
+
+
+def test_registry_unknown_id_fails() -> None:
+    registry = ProblemGroupingStrategyRegistry()
+
+    with pytest.raises(MissingProblemGroupingStrategyError):
+        registry.resolve(ProblemGroupingStrategyId("missing.strategy"))
+
+
+def test_engine_groups_first_pair_and_leaves_third_ungrouped() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    assessment_c = _assessment()
+    engine = _engine_with_strategy(_ConfigurableFakeStrategy())
+
+    result = engine.group(
+        (assessment_a, assessment_b, assessment_c),
+        strategy_id=_FAKE_STRATEGY_ID,
+    )
+
+    assert len(result.candidates) == 1
+    assert result.candidates[0].members == (_subject_ref(assessment_a), _subject_ref(assessment_b))
+    assert result.ungrouped_subjects == (_subject_ref(assessment_c),)
+    assert result.tenant_id == _TENANT_A
+    assert result.strategy_id == _FAKE_STRATEGY_ID
+    assert result.strategy_version == _FAKE_STRATEGY_VERSION
+    assert result.method is ProblemGroupingMethod.DETERMINISTIC
+
+
+def test_foreign_member_rejected() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    foreign = _assessment(tenant_id=_TENANT_A)
+    members = (_subject_ref(assessment_a), _subject_ref(foreign))
+    strategy = _ConfigurableFakeStrategy(
+        candidates=(
+            ProblemGroupingCandidate(
+                members=members,
+                provenance=_provenance(members=members),
+            ),
+        ),
+    )
+    engine = _engine_with_strategy(strategy)
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="not present"):
+        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+
+
+def test_mixed_tenants_fail_before_strategy() -> None:
+    assessment_a = _assessment(tenant_id=_TENANT_A)
+    assessment_b = _assessment(tenant_id=_TENANT_B)
+    engine = _engine_with_strategy(_ConfigurableFakeStrategy())
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="mixed tenant_id"):
+        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+
+
+def test_duplicate_input_rejected() -> None:
+    assessment = _assessment()
+    engine = _engine_with_strategy(_ConfigurableFakeStrategy())
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="duplicate subject"):
+        engine.group((assessment, assessment), strategy_id=_FAKE_STRATEGY_ID)
+
+
+def test_overlapping_candidates_allowed() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    assessment_c = _assessment()
+    ref_a = _subject_ref(assessment_a)
+    ref_b = _subject_ref(assessment_b)
+    ref_c = _subject_ref(assessment_c)
+    strategy = _ConfigurableFakeStrategy(
+        candidates=(
+            ProblemGroupingCandidate(
+                members=(ref_a, ref_b),
+                provenance=_provenance(members=(ref_a, ref_b)),
+            ),
+            ProblemGroupingCandidate(
+                members=(ref_b, ref_c),
+                provenance=_provenance(members=(ref_b, ref_c)),
+            ),
+        ),
+    )
+    engine = _engine_with_strategy(strategy)
+
+    result = engine.group(
+        (assessment_a, assessment_b, assessment_c),
+        strategy_id=_FAKE_STRATEGY_ID,
+    )
+
+    assert len(result.candidates) == 2
+    assert result.ungrouped_subjects == ()
+
+
+def test_singleton_candidate_rejected() -> None:
+    assessment_a = _assessment()
+    ref_a = _subject_ref(assessment_a)
+    strategy = _ConfigurableFakeStrategy(
+        candidates=(
+            ProblemGroupingCandidate(
+                members=(ref_a,),
+                provenance=_provenance(members=(ref_a,)),
+            ),
+        ),
+    )
+    engine = _engine_with_strategy(strategy)
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="at least two members"):
+        engine.group((assessment_a,), strategy_id=_FAKE_STRATEGY_ID)
+
+
+def test_strategy_identity_mismatch_rejected() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    ref_a = _subject_ref(assessment_a)
+    ref_b = _subject_ref(assessment_b)
+
+    class _SpoofedStrategy(_ConfigurableFakeStrategy):
+        def group(
+            self,
+            subjects: tuple[ProblemGroupingSubject, ...],
+        ) -> ProblemGroupingStrategyResult:
+            return ProblemGroupingStrategyResult(
+                strategy_id=ProblemGroupingStrategyId("spoofed.strategy"),
+                strategy_version=_FAKE_STRATEGY_VERSION,
+                candidates=(
+                    ProblemGroupingCandidate(
+                        members=(ref_a, ref_b),
+                        provenance=_provenance(members=(ref_a, ref_b)),
+                    ),
+                ),
+            )
+
+    engine = _engine_with_strategy(_SpoofedStrategy())
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="strategy_id"):
+        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+
+
+def test_engine_determinism() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    assessment_c = _assessment()
+    engine = _engine_with_strategy(_ConfigurableFakeStrategy())
+
+    first = engine.group(
+        (assessment_a, assessment_b, assessment_c),
+        strategy_id=_FAKE_STRATEGY_ID,
+    )
+    second = engine.group(
+        (assessment_a, assessment_b, assessment_c),
+        strategy_id=_FAKE_STRATEGY_ID,
+    )
+
+    assert first == second

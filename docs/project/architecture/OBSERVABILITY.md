@@ -931,6 +931,49 @@ Each `DiagnosticFinding` retains `source_anomaly_kind: LifecycleAnomalyKind` for
 
 **Code references:** `intergrax/runtime/diagnostics/diagnostic_assessment.py`.
 
+### Multi-execution problem grouping (DIAG-5A)
+
+**Inputs:** `DiagnosticAssessment[]` from DIAG-4 — **no** re-run of reconstruction, lifecycle analysis, or assessment.
+
+**Derived analytical output (NOT persisted, NOT canonical problem identity):** `ProblemGroupingEngine.group(assessments, strategy_id=...)` answers which executions a **selected strategy** proposes as sharing a recurring problem pattern. A candidate means *"strategy says these subjects are related under this grouping method"* — **not** *"platform has proven identical root cause"*.
+
+| Layer | Question answered |
+|-------|-------------------|
+| DIAG-4 | What can the operator conclude for one execution? |
+| DIAG-5A | Which executions does a strategy propose as the same recurring problem? |
+
+**Pipeline:**
+
+```text
+DiagnosticAssessment[]
+  → ProblemGroupingEngine
+  → ProblemGroupingSubject[]          # normalized immutable view
+  → ProblemGroupingStrategy           # explicit strategy_id selection
+  → ProblemGroupingStrategyResult     # raw plugin output
+  → platform validation
+  → ProblemGroupingResult             # candidates + ungrouped_subjects
+```
+
+**Plugin-capable strategy layer:** one `ProblemGroupingStrategy` Protocol, many implementations behind `ProblemGroupingStrategyRegistry` (explicit register/resolve — no reflection, no entry-point discovery in DIAG-5A). Future strategies may be deterministic structural (DIAG-5B), semantic/embedding, ML clustering, LLM, or hybrid — all behind the same contract.
+
+**Strategy selection:** explicit — `engine.group(..., strategy_id=ProblemGroupingStrategyId(...))`. No silent default strategy.
+
+**Tenant isolation:** one invocation must contain subjects with a single `tenant_id`; mixed tenants fail closed with `ProblemGroupingIntegrityError` before strategy invocation.
+
+**Overlap semantics:** overlapping candidates are **allowed** (one execution may appear in multiple proposed groups). Stable problem assignment is deferred to DIAG-5D.
+
+**Ungrouped subjects:** `ProblemGroupingResult.ungrouped_subjects` lists input subjects not present in any validated candidate.
+
+**Provenance:** each `ProblemGroupingCandidate` carries `ProblemGroupingProvenance` with `strategy_id`, `strategy_version`, `method` (`ProblemGroupingMethod`), `supporting_subject_refs`, and optional typed `basis` (e.g. `DeterministicProblemGroupingBasis` for DIAG-5B). Future ML/LLM strategies attach strategy-specific basis evidence without altering the engine.
+
+**No universal numeric confidence:** deterministic exact match, embedding similarity, classifier probability, and LLM self-report are not semantically equivalent — strategy-specific scores belong in typed basis/evidence, not a platform-wide `confidence: float`.
+
+**Canonical boundary:** no `ProblemId`, no persistence, no `RuntimeEvent` emission, no mutation of `DiagnosticAssessment`. Model output can never rewrite canonical evidence.
+
+**Explicit non-goals (DIAG-5A):** no embeddings, ML, LLM, clustering libraries, vector DB, background jobs, or stable problem lifecycle (DIAG-5D).
+
+**Code references:** `intergrax/runtime/diagnostics/problem_grouping.py`.
+
 ---
 
 ## Problem signal routing/fanout boundary
