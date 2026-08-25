@@ -13,7 +13,11 @@ from intergrax.applications._shared.production_queue_resolver import (
 )
 from intergrax.fastapi_core.execution.adapters.adapter import ExecutionAdapter
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.observability.causal_evidence_persistence import (
+    CausalEvidencePersistence,
+)
 from intergrax.runtime.task.nexus_task_execution_adapter import NexusTaskExecutionAdapter
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
@@ -35,6 +39,8 @@ def wire_optional_queue_execution(
     wait_for_result: bool = True,
     app_name: str = "tier3_nexus_worker",
     queue_backend: ProductionQueueBackend | None = None,
+    kv_store: DistributedKVStore | None = None,
+    causal_evidence_persistence: CausalEvidencePersistence | None = None,
 ) -> QueueWorkerWiring:
     """
     Return inline Nexus adapter or Celery queue adapter.
@@ -54,12 +60,24 @@ def wire_optional_queue_execution(
     from intergrax.runtime.task.queued_nexus_execution_adapter import QueuedNexusExecutionAdapter
     from intergrax.runtime.task.worker_bootstrap import create_nexus_celery_worker_app
 
+    if kv_store is None:
+        raise ValueError(
+            "wire_optional_queue_execution requires kv_store for Celery worker identity persistence",
+        )
+    if causal_evidence_persistence is None:
+        raise ValueError(
+            "wire_optional_queue_execution requires causal_evidence_persistence "
+            "for required transport→execution audit evidence admission",
+        )
+
     worker_app = create_nexus_celery_worker_app(
         app_name=app_name,
         broker_url="memory://",
         backend_url="cache+memory://",
         agent_registry=registry,
         task_always_eager=True,
+        kv_store=kv_store,
+        causal_evidence_persistence=causal_evidence_persistence,
     )
     queue = CeleryTaskQueue(worker_app)
     adapter = QueuedNexusExecutionAdapter(

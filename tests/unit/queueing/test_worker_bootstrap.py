@@ -11,6 +11,10 @@ import pytest
 from intergrax.queueing.worker_bootstrap import create_celery_worker_app
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_policy import RetryPolicy
+from intergrax.runtime.observability.memory_causal_evidence_persistence import (
+    InMemoryCausalEvidencePersistence,
+)
+from tests.unit.queueing.worker.dispatcher_test_kv import DispatcherTestKVStore
 from intergrax.tools.execution_models import ToolExecutionResult
 
 pytestmark = pytest.mark.unit
@@ -60,6 +64,8 @@ def test_create_celery_worker_app_registers_dispatcher() -> None:
         retry_policy=retry_policy,
         lock_ttl_seconds=None,
         completed_ttl_seconds=None,
+        kv_store=DispatcherTestKVStore(),
+        causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
     )
 
     assert isinstance(app, Celery)

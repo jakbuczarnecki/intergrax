@@ -191,6 +191,11 @@ def test_a6_worker_bootstrap_contract_accepts_fake_port() -> None:
         checkpoint_store=fake,
     )
     assert registry is not None
+    from intergrax.runtime.observability.memory_causal_evidence_persistence import (
+        InMemoryCausalEvidencePersistence,
+    )
+    from tests.unit.queueing.worker.dispatcher_test_kv import DispatcherTestKVStore
+
     app = create_nexus_celery_worker_app(
         app_name="pba-fix-a",
         broker_url="memory://",
@@ -198,6 +203,8 @@ def test_a6_worker_bootstrap_contract_accepts_fake_port() -> None:
         agent_registry=AgentRegistry(),
         checkpoint_store=fake,
         task_always_eager=True,
+        kv_store=DispatcherTestKVStore(),
+        causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
     )
     assert app is not None
 

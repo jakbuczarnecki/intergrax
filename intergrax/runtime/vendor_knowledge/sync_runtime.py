@@ -52,6 +52,9 @@ from intergrax.runtime.vendor_knowledge.sync_worker import (
 from intergrax.runtime.background_execution.identity_persistence import (
     wire_background_execution_identity_persistence,
 )
+from intergrax.runtime.observability.document_store_causal_evidence_persistence import (
+    wire_causal_evidence_persistence,
+)
 
 _QUEUE_NAMESPACE_TEMPLATE = "vendor_knowledge.sync_queue.v1:{tenant_id}:"
 
@@ -286,6 +289,9 @@ def build_vendor_knowledge_sync_runtime(
         claim_limit=claim_limit,
         on_interrupted=_on_interrupted,
         identity_persistence=wire_background_execution_identity_persistence(
+            document_store=document_store,
+        ),
+        causal_evidence_persistence=wire_causal_evidence_persistence(
             document_store=document_store,
         ),
     )

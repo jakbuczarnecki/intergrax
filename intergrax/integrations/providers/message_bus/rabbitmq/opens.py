@@ -20,6 +20,9 @@ from intergrax.queueing.contracts.task_queue import TaskQueue
 from intergrax.runtime.background_execution.identity_persistence import (
     wire_background_execution_identity_persistence,
 )
+from intergrax.runtime.observability.causal_evidence_persistence import (
+    CausalEvidencePersistence,
+)
 
 
 def open_rabbitmq_producer(
@@ -90,6 +93,7 @@ def open_rabbitmq_worker(
     queue: Optional[str] = None,
     consumer: Optional[MessageConsumer] = None,
     poll_timeout_seconds: float = 1.0,
+    causal_evidence_persistence: CausalEvidencePersistence,
 ) -> object:
     from intergrax.queueing.providers.rabbitmq.rabbitmq_worker import RabbitMQWorker
 
@@ -106,5 +110,6 @@ def open_rabbitmq_worker(
         identity_persistence=wire_background_execution_identity_persistence(
             kv_store=kv_store,
         ),
+        causal_evidence_persistence=causal_evidence_persistence,
         poll_timeout_seconds=poll_timeout_seconds,
     )

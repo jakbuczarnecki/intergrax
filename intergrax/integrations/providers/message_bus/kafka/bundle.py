@@ -26,6 +26,9 @@ from intergrax.integrations.providers.message_bus.kafka.opens import (
 from intergrax.queueing.contracts.message_consumer import MessageConsumer
 from intergrax.queueing.contracts.message_producer import MessageProducer
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.runtime.observability.causal_evidence_persistence import (
+    CausalEvidencePersistence,
+)
 
 
 @dataclass(frozen=True)
@@ -123,6 +126,7 @@ def create_kafka_worker(
     consumer_group: Optional[str] = None,
     consumer: Optional[MessageConsumer] = None,
     poll_timeout_seconds: float = 1.0,
+    causal_evidence_persistence: CausalEvidencePersistence,
     **config_overrides: object,
 ) -> object:
     overrides: dict[str, object] = dict(config_overrides)
@@ -143,6 +147,7 @@ def create_kafka_worker(
         consumer_group=consumer_group,
         consumer=consumer,
         poll_timeout_seconds=poll_timeout_seconds,
+        causal_evidence_persistence=causal_evidence_persistence,
     )
 
 
@@ -156,6 +161,7 @@ def build_kafka_transport(
     bootstrap_servers: Optional[str] = None,
     producer: Optional[MessageProducer] = None,
     consumer: Optional[MessageConsumer] = None,
+    causal_evidence_persistence: CausalEvidencePersistence,
     **config_overrides: object,
 ) -> object:
     """
@@ -180,6 +186,7 @@ def build_kafka_transport(
         topic=topic or bundle.config.topic,
         consumer_group=consumer_group or bundle.config.consumer_group,
         consumer=bundle.consumer,
+        causal_evidence_persistence=causal_evidence_persistence,
     )
     return TransportBundle(task_queue=bundle.message_bus, worker=worker)
 

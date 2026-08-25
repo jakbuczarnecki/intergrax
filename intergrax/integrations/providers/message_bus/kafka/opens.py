@@ -17,6 +17,9 @@ from intergrax.integrations.providers.message_bus.kafka.config import KafkaInteg
 from intergrax.queueing.contracts.message_consumer import MessageConsumer
 from intergrax.queueing.contracts.message_producer import MessageProducer
 from intergrax.queueing.contracts.task_queue import TaskQueue
+from intergrax.runtime.observability.causal_evidence_persistence import (
+    CausalEvidencePersistence,
+)
 
 
 def open_kafka_producer(
@@ -98,6 +101,7 @@ def open_kafka_worker(
     consumer_group: Optional[str] = None,
     consumer: Optional[MessageConsumer] = None,
     poll_timeout_seconds: float = 1.0,
+    causal_evidence_persistence: CausalEvidencePersistence,
 ) -> object:
     from intergrax.queueing.providers.kafka.kafka_worker import KafkaWorker
     from intergrax.runtime.background_execution.identity_persistence import (
@@ -122,5 +126,6 @@ def open_kafka_worker(
         identity_persistence=wire_background_execution_identity_persistence(
             kv_store=kv_store,
         ),
+        causal_evidence_persistence=causal_evidence_persistence,
         poll_timeout_seconds=poll_timeout_seconds,
     )

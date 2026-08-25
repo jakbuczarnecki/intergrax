@@ -25,7 +25,10 @@ from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
 )
 from intergrax.tools.execution_models import ToolExecutionResult
-from tests.unit.queueing.worker.dispatcher_test_kv import DispatcherTestKVStore
+from tests.unit.queueing.worker.dispatcher_test_kv import (
+    DispatcherTestKVStore,
+    dispatcher_test_causal_persistence,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -82,6 +85,7 @@ def test_celery_dispatcher_bootstrap_receives_celery_transport_ref() -> None:
         identity_persistence=wire_background_execution_identity_persistence(
             kv_store=DispatcherTestKVStore(),
         ),
+        causal_evidence_persistence=dispatcher_test_causal_persistence(),
     )
 
     captured: list[BackgroundTransportExecutionRef] = []

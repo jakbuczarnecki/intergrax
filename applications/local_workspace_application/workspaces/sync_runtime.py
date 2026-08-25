@@ -38,6 +38,9 @@ from local_workspace_application.workspaces.sync_worker import (
 from intergrax.runtime.background_execution.identity_persistence import (
     wire_background_execution_identity_persistence,
 )
+from intergrax.runtime.observability.document_store_causal_evidence_persistence import (
+    wire_causal_evidence_persistence,
+)
 
 if TYPE_CHECKING:
     from local_workspace_application.workspaces.connected_source_recovery import (
@@ -196,6 +199,9 @@ def build_managed_workspace_sync_runtime(
             identity_persistence=wire_background_execution_identity_persistence(
                 document_store=document_store,
             ),
+            causal_evidence_persistence=wire_causal_evidence_persistence(
+                document_store=document_store,
+            ),
         )
         runtime = ManagedWorkspaceSyncRuntime(
             message_bus=existing_message_bus,
@@ -225,6 +231,9 @@ def build_managed_workspace_sync_runtime(
         registry,
         on_interrupted=_on_interrupted,
         identity_persistence=wire_background_execution_identity_persistence(
+            document_store=document_store,
+        ),
+        causal_evidence_persistence=wire_causal_evidence_persistence(
             document_store=document_store,
         ),
     )

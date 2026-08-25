@@ -19,6 +19,9 @@ from intergrax.runtime.background_execution.bootstrap import BackgroundExecution
 from intergrax.runtime.background_execution.identity_persistence import (
     wire_background_execution_identity_persistence,
 )
+from intergrax.runtime.observability.memory_causal_evidence_persistence import (
+    InMemoryCausalEvidencePersistence,
+)
 from intergrax.tools.execution_models import ToolExecutionResult
 
 
@@ -117,6 +120,7 @@ def test_broker_worker_base_transitions_to_succeeded() -> None:
         kv_store=kv,
         idempotency_store=None,
         identity_persistence=wire_background_execution_identity_persistence(kv_store=kv),
+        causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
     )
 
     worker.process_message(raw_payload=_build_message())
@@ -165,6 +169,7 @@ def test_broker_worker_base_transitions_to_failed_on_controlled_result() -> None
         idempotency_store=None,
         event_emitter=collector,
         identity_persistence=wire_background_execution_identity_persistence(kv_store=kv),
+        causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
     )
 
     worker.process_message(raw_payload=_build_message(task_id="t-fail"))
@@ -211,6 +216,7 @@ def test_broker_worker_base_transitions_to_failed_on_exception() -> None:
         kv_store=kv,
         idempotency_store=None,
         identity_persistence=wire_background_execution_identity_persistence(kv_store=kv),
+        causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
     )
 
     with pytest.raises(RuntimeError, match="unexpected worker crash"):

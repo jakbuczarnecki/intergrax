@@ -1,16 +1,21 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Shared KV fake for Celery dispatcher unit tests."""
+"""Test doubles for DIAG-1I causal evidence admission path tests."""
 
 from __future__ import annotations
 
+from unittest.mock import Mock
+
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.runtime.observability.causal_evidence_persistence import (
+    CausalEvidencePersistence,
+)
 from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
 )
 
 
-class DispatcherTestKVStore(DistributedKVStore):
+class _KV(DistributedKVStore):
     def __init__(self) -> None:
         self._data: dict[tuple[str, str], bytes] = {}
 
@@ -48,5 +53,15 @@ class DispatcherTestKVStore(DistributedKVStore):
         return True
 
 
-def dispatcher_test_causal_persistence() -> InMemoryCausalEvidencePersistence:
+def make_kv_store() -> _KV:
+    return _KV()
+
+
+def make_causal_persistence() -> InMemoryCausalEvidencePersistence:
     return InMemoryCausalEvidencePersistence()
+
+
+def failing_causal_persistence() -> CausalEvidencePersistence:
+    persistence = Mock(spec=CausalEvidencePersistence)
+    persistence.append.side_effect = RuntimeError("backend unavailable")
+    return persistence

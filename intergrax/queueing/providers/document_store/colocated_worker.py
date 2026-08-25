@@ -19,8 +19,14 @@ from intergrax.runtime.background_execution.bootstrap import bootstrap_backgroun
 from intergrax.runtime.background_execution.identity_persistence import (
     BackgroundExecutionIdentityPersistence,
 )
+from intergrax.runtime.background_execution.required_audit_evidence import (
+    admit_background_execution_handler,
+)
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
+)
+from intergrax.runtime.observability.causal_evidence_persistence import (
+    CausalEvidencePersistence,
 )
 
 logger = logging.getLogger(__name__)
@@ -40,6 +46,7 @@ class DocumentStoreTaskWorker:
         claim_limit: int = 4,
         on_interrupted: InterruptedHandler | None = None,
         identity_persistence: BackgroundExecutionIdentityPersistence,
+        causal_evidence_persistence: CausalEvidencePersistence,
     ) -> None:
         self._queue = queue
         self._registry = registry
@@ -47,6 +54,7 @@ class DocumentStoreTaskWorker:
         self._claim_limit = claim_limit
         self._on_interrupted = on_interrupted
         self._identity_persistence = identity_persistence
+        self._causal_evidence_persistence = causal_evidence_persistence
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -81,23 +89,29 @@ class DocumentStoreTaskWorker:
         claimed = self._queue.claim_pending(limit=self._claim_limit)
         for handle, request in claimed:
             try:
+                transport_ref = BackgroundTransportExecutionRef(
+                    tenant_id=request.tenant_id,
+                    provider=handle.provider,
+                    transport_task_id=handle.task_id,
+                )
                 execution_identity = bootstrap_background_execution(
-                    transport_ref=BackgroundTransportExecutionRef(
-                        tenant_id=request.tenant_id,
-                        provider=handle.provider,
-                        transport_task_id=handle.task_id,
-                    ),
+                    transport_ref=transport_ref,
                     identity_persistence=self._identity_persistence,
                 )
-                result = execute_logical_task(
-                    registry=self._registry,
-                    logical_task_name=request.task_name,
-                    tenant_id=execution_identity.tenant_id,
-                    run_id=str(execution_identity.run_id),
-                    payload=request.payload,
-                    idempotency_key=request.idempotency_key,
-                    idempotency_store=None,
+                result = admit_background_execution_handler(
+                    transport_ref=transport_ref,
                     execution_identity=execution_identity,
+                    causal_evidence_persistence=self._causal_evidence_persistence,
+                    handler=lambda: execute_logical_task(
+                        registry=self._registry,
+                        logical_task_name=request.task_name,
+                        tenant_id=execution_identity.tenant_id,
+                        run_id=str(execution_identity.run_id),
+                        payload=request.payload,
+                        idempotency_key=request.idempotency_key,
+                        idempotency_store=None,
+                        execution_identity=execution_identity,
+                    ),
                 )
                 if result.success:
                     output = None

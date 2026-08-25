@@ -24,8 +24,14 @@ from intergrax.runtime.background_execution.bootstrap import bootstrap_backgroun
 from intergrax.runtime.background_execution.identity_persistence import (
     BackgroundExecutionIdentityPersistence,
 )
+from intergrax.runtime.background_execution.required_audit_evidence import (
+    admit_background_execution_handler,
+)
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
+)
+from intergrax.runtime.observability.causal_evidence_persistence import (
+    CausalEvidencePersistence,
 )
 from intergrax.queueing.worker.rate_limit_event import RateLimitEvent
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
@@ -47,6 +53,7 @@ def register_dispatcher_task(
     rate_limit_config: Optional[Callable[[str], Tuple[int, float]]] = None,
     on_rate_limited: Optional[Callable[[RateLimitEvent], None]] = None,
     identity_persistence: BackgroundExecutionIdentityPersistence,
+    causal_evidence_persistence: CausalEvidencePersistence,
 ) -> None:
     """
     Registers the generic execution task into Celery app.
@@ -61,6 +68,7 @@ def register_dispatcher_task(
         raise ValueError("retry_policy must be provided when rate_limiter is enabled.")
 
     resolved_identity_persistence = identity_persistence
+    resolved_causal_evidence_persistence = causal_evidence_persistence
 
     @app.task(name="intergrax.execute", bind=True)
     def intergrax_execute(
@@ -149,26 +157,32 @@ def register_dispatcher_task(
         # Core Execution
         # -------------------------
         try:
+            transport_ref = BackgroundTransportExecutionRef(
+                tenant_id=tenant_id,
+                provider="celery",
+                transport_task_id=str(self.request.id),
+            )
             execution_identity = bootstrap_background_execution(
-                transport_ref=BackgroundTransportExecutionRef(
-                    tenant_id=tenant_id,
-                    provider="celery",
-                    transport_task_id=str(self.request.id),
-                ),
+                transport_ref=transport_ref,
                 identity_persistence=resolved_identity_persistence,
             )
             return encode_logical_task_result(
-                execute_logical_task(
-                    registry=registry,
-                    logical_task_name=logical_task_name,
-                    tenant_id=execution_identity.tenant_id,
-                    run_id=str(execution_identity.run_id),
-                    payload=payload,
-                    idempotency_key=idempotency_key,
-                    idempotency_store=idempotency_store,
-                    lease_seconds=lock_ttl_seconds,
-                    completed_ttl_seconds=completed_ttl_seconds,
+                admit_background_execution_handler(
+                    transport_ref=transport_ref,
                     execution_identity=execution_identity,
+                    causal_evidence_persistence=resolved_causal_evidence_persistence,
+                    handler=lambda: execute_logical_task(
+                        registry=registry,
+                        logical_task_name=logical_task_name,
+                        tenant_id=execution_identity.tenant_id,
+                        run_id=str(execution_identity.run_id),
+                        payload=payload,
+                        idempotency_key=idempotency_key,
+                        idempotency_store=idempotency_store,
+                        lease_seconds=lock_ttl_seconds,
+                        completed_ttl_seconds=completed_ttl_seconds,
+                        execution_identity=execution_identity,
+                    ),
                 )
             )
 
