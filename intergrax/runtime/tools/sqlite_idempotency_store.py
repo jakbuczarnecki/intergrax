@@ -14,10 +14,12 @@ from uuid import uuid4
 from pydantic import BaseModel
 
 from intergrax.contracts.idempotency_store import (
+    assert_operation_identity_compatible,
     ClaimOutcome,
     ClaimResult,
     IdempotencyStore,
     InvocationClaim,
+    InvocationOperationIdentity,
     InvocationStatus,
 )
 from intergrax.contracts.lease_claim import StaleClaimError
@@ -55,6 +57,8 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                     owner_id TEXT,
                     lease_expires_at TEXT,
                     fence INTEGER NOT NULL DEFAULT 0,
+                    operation_tool_id TEXT,
+                    operation_fingerprint TEXT,
                     PRIMARY KEY (tenant_id, key)
                 )
                 """
@@ -72,16 +76,35 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                 conn.execute(
                     "ALTER TABLE idempotency_ledger ADD COLUMN fence INTEGER NOT NULL DEFAULT 0",
                 )
+            if "operation_tool_id" not in columns:
+                conn.execute("ALTER TABLE idempotency_ledger ADD COLUMN operation_tool_id TEXT")
+            if "operation_fingerprint" not in columns:
+                conn.execute(
+                    "ALTER TABLE idempotency_ledger ADD COLUMN operation_fingerprint TEXT",
+                )
 
     def _row_to_claim(self, row: sqlite3.Row) -> InvocationClaim | None:
         if row["owner_id"] is None or row["lease_expires_at"] is None:
             return None
+        operation_identity = self._row_operation_identity(row)
         return InvocationClaim(
             tenant_id=row["tenant_id"],
             key=row["key"],
             owner_id=row["owner_id"],
             lease_expires_at=datetime.fromisoformat(row["lease_expires_at"]),
             fence=int(row["fence"]),
+            operation_identity=operation_identity,
+        )
+
+    @staticmethod
+    def _row_operation_identity(row: sqlite3.Row) -> InvocationOperationIdentity | None:
+        tool_id = row["operation_tool_id"]
+        fingerprint = row["operation_fingerprint"]
+        if tool_id is None or fingerprint is None:
+            return None
+        return InvocationOperationIdentity(
+            tool_id=tool_id,
+            operation_fingerprint=fingerprint,
         )
 
     def get_status(
@@ -107,6 +130,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
         key: str,
         owner_id: str,
         lease_seconds: int,
+        operation_identity: InvocationOperationIdentity | None = None,
     ) -> ClaimResult:
         now = datetime.now(UTC)
         lease_expires_at = now + timedelta(seconds=lease_seconds)
@@ -114,7 +138,8 @@ class SQLiteIdempotencyStore(IdempotencyStore):
             conn.execute("BEGIN IMMEDIATE")
             row = conn.execute(
                 """
-                SELECT status, result_blob, owner_id, lease_expires_at, fence
+                SELECT status, result_blob, owner_id, lease_expires_at, fence,
+                       operation_tool_id, operation_fingerprint
                 FROM idempotency_ledger
                 WHERE tenant_id = ? AND key = ?
                 """,
@@ -128,12 +153,14 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                     owner_id=owner_id,
                     lease_expires_at=lease_expires_at,
                     fence=1,
+                    operation_identity=operation_identity,
                 )
                 conn.execute(
                     """
                     INSERT INTO idempotency_ledger
-                        (tenant_id, key, status, owner_id, lease_expires_at, fence)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                        (tenant_id, key, status, owner_id, lease_expires_at, fence,
+                         operation_tool_id, operation_fingerprint)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         tenant_id,
@@ -142,6 +169,12 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                         owner_id,
                         lease_expires_at.isoformat(),
                         claim.fence,
+                        operation_identity.tool_id if operation_identity else None,
+                        (
+                            operation_identity.operation_fingerprint
+                            if operation_identity
+                            else None
+                        ),
                     ),
                 )
                 conn.commit()
@@ -149,6 +182,10 @@ class SQLiteIdempotencyStore(IdempotencyStore):
 
             status = InvocationStatus(row["status"])
             if status == InvocationStatus.COMPLETED:
+                assert_operation_identity_compatible(
+                    self._row_operation_identity(row),
+                    operation_identity,
+                )
                 result_blob = row["result_blob"]
                 if result_blob is None:
                     raise RuntimeError("Ledger inconsistency: COMPLETED without result_blob.")
@@ -169,6 +206,10 @@ class SQLiteIdempotencyStore(IdempotencyStore):
 
             if stored_claim.lease_expires_at > now:
                 if stored_claim.owner_id == owner_id:
+                    assert_operation_identity_compatible(
+                        self._row_operation_identity(row),
+                        operation_identity,
+                    )
                     conn.commit()
                     return ClaimResult(outcome=ClaimOutcome.ACQUIRED, claim=stored_claim)
                 conn.commit()
@@ -227,6 +268,39 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                 conn.rollback()
                 raise StaleClaimError(
                     f"Stale completion rejected for key={key} fence={claim.fence}.",
+                )
+            conn.commit()
+
+    def mark_uncertain_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+    ) -> None:
+        with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            updated = conn.execute(
+                """
+                UPDATE idempotency_ledger
+                SET status = ?
+                WHERE tenant_id = ? AND key = ?
+                  AND status = ?
+                  AND owner_id = ?
+                  AND fence = ?
+                """,
+                (
+                    InvocationStatus.UNCERTAIN.value,
+                    tenant_id,
+                    key,
+                    InvocationStatus.STARTED.value,
+                    claim.owner_id,
+                    claim.fence,
+                ),
+            )
+            if updated.rowcount != 1:
+                conn.rollback()
+                raise StaleClaimError(
+                    f"Stale uncertain transition rejected for key={key} fence={claim.fence}.",
                 )
             conn.commit()
 

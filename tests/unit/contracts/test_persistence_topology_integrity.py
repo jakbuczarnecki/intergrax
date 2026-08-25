@@ -79,6 +79,15 @@ class _UndeclaredTopologyIdempotencyStore(IdempotencyStore):
         del tenant_id, key, claim, result, completed_ttl_seconds
         raise NotImplementedError
 
+    def mark_uncertain_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+    ) -> None:
+        del tenant_id, key, claim
+        raise NotImplementedError
+
     def record_started(
         self,
         tenant_id: str,
@@ -133,6 +142,15 @@ class _BrandNameOnlyIdempotencyStore(IdempotencyStore):
         completed_ttl_seconds: Optional[int] = None,
     ) -> None:
         del tenant_id, key, claim, result, completed_ttl_seconds
+        raise NotImplementedError
+
+    def mark_uncertain_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+    ) -> None:
+        del tenant_id, key, claim
         raise NotImplementedError
 
     def record_started(

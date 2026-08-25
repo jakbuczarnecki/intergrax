@@ -31,7 +31,7 @@ from intergrax.runtime.policy.declarative_enforcer import resolve_declarative_po
 from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
 from intergrax.runtime.policy.rules.schema import PolicyRuleAction
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
-from intergrax.tools.core.contracts import ToolContract
+from intergrax.tools.core.contracts import SideEffectRetrySafety, ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.tool_executor import ToolExecutor
@@ -253,7 +253,7 @@ class RuntimeToolInvoker:
         request: ToolExecutionRequest[BaseModel],
     ) -> ToolExecutionResult[BaseModel]:
         policy = contract.retry_policy
-        attempts = policy.max_attempts
+        attempts = self._effective_max_attempts(contract)
         last_exc: Optional[Exception] = None
 
         for attempt in range(1, attempts + 1):
@@ -382,6 +382,16 @@ class RuntimeToolInvoker:
             result=result,
         )
         return result
+
+    @staticmethod
+    def _effective_max_attempts(contract: ToolContract) -> int:
+        """Side-effect tools require positive retry-safety proof before automatic retry."""
+        policy_attempts = contract.retry_policy.max_attempts
+        if not contract.side_effects:
+            return policy_attempts
+        if contract.side_effect_retry_safety == SideEffectRetrySafety.NOT_RETRY_SAFE:
+            return 1
+        return policy_attempts
 
     @staticmethod
     def _emit_boundary_event(

@@ -4,12 +4,18 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel
 
 from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import RuntimeStateContract
+from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
+    DeclarativePolicyHitlRequiredError,
+    DeclarativePolicyViolationError,
+)
+from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
+from intergrax.runtime.nexus.errors.tool_scope_violation_error import ToolScopeViolationError
 from intergrax.runtime.nexus.tracing.trace_models import (
     TraceComponent,
     TraceLevel,
@@ -20,6 +26,8 @@ from intergrax.contracts.idempotency_store import (
     IdempotencyStore,
     InvocationUncertaintyError,
 )
+from intergrax.runtime.tools.operation_identity import compute_invocation_operation_identity
+from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.execution_models import (
     ToolExecutionRequest,
@@ -30,6 +38,30 @@ if TYPE_CHECKING:
     from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 
 _DEFAULT_LEASE_SECONDS = 300
+
+_SAFE_TERMINAL_ERROR_CODES = frozenset(
+    {
+        RuntimeErrorCode.VALIDATION_ERROR,
+        RuntimeErrorCode.PERMISSION_ERROR,
+        RuntimeErrorCode.POLICY_ERROR,
+    },
+)
+
+
+def classify_idempotency_outcome(
+    contract: ToolContract,
+    result: ToolExecutionResult[BaseModel],
+) -> Literal["safe_terminal", "uncertain"]:
+    """Classify ledger terminal transition for a side-effect tool invocation."""
+    if result.success:
+        return "safe_terminal"
+    if result.error is None:
+        return "uncertain"
+    if result.error.error_code in _SAFE_TERMINAL_ERROR_CODES:
+        return "safe_terminal"
+    if not contract.side_effects:
+        return "safe_terminal"
+    return "uncertain"
 
 
 class IdempotentToolInvoker:
@@ -77,12 +109,17 @@ class IdempotentToolInvoker:
         tenant_id = state.tenant_id
         key = request.idempotency_key
         owner_id = f"invoker-{uuid4().hex}"
+        operation_identity = compute_invocation_operation_identity(
+            request.tool_id,
+            request.input,
+        )
 
         claim_result = self._store.claim(
             tenant_id,
             key,
             owner_id,
             self._lease_seconds,
+            operation_identity=operation_identity,
         )
 
         if claim_result.outcome == ClaimOutcome.REPLAY_COMPLETED:
@@ -120,13 +157,29 @@ class IdempotentToolInvoker:
         if claim is None:
             raise RuntimeError("Ledger inconsistency: ACQUIRED without claim.")
 
-        result = self._base_invoker.invoke(
-            state=state,
-            agent_id=agent_id,
-            request=request,
-        )
+        try:
+            result = self._base_invoker.invoke(
+                state=state,
+                agent_id=agent_id,
+                request=request,
+            )
+        except (
+            ToolScopeViolationError,
+            DeclarativePolicyViolationError,
+            DeclarativePolicyHitlRequiredError,
+        ) as exc:
+            result = ToolExecutionResult.fail(
+                RuntimeErrorCode.POLICY_ERROR,
+                str(exc),
+            )
+            self._store.complete_with_claim(tenant_id, key, claim, result)
+            raise
 
-        self._store.complete_with_claim(tenant_id, key, claim, result)
+        outcome_kind = classify_idempotency_outcome(contract, result)
+        if outcome_kind == "safe_terminal":
+            self._store.complete_with_claim(tenant_id, key, claim, result)
+        else:
+            self._store.mark_uncertain_with_claim(tenant_id, key, claim)
 
         return result
 

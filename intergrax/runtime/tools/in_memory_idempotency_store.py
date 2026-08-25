@@ -12,10 +12,12 @@ from uuid import uuid4
 from pydantic import BaseModel
 
 from intergrax.contracts.idempotency_store import (
+    assert_operation_identity_compatible,
     ClaimOutcome,
     ClaimResult,
     IdempotencyStore,
     InvocationClaim,
+    InvocationOperationIdentity,
     InvocationStatus,
 )
 from intergrax.contracts.lease_claim import StaleClaimError
@@ -24,17 +26,19 @@ from intergrax.tools.execution_models import ToolExecutionResult
 
 
 class _LedgerEntry:
-    __slots__ = ("status", "result", "claim")
+    __slots__ = ("status", "result", "claim", "operation_identity")
 
     def __init__(
         self,
         status: InvocationStatus,
         result: Optional[ToolExecutionResult[BaseModel]],
         claim: InvocationClaim | None,
+        operation_identity: InvocationOperationIdentity | None,
     ) -> None:
         self.status = status
         self.result = result
         self.claim = claim
+        self.operation_identity = operation_identity
 
 
 class InMemoryIdempotencyStore(IdempotencyStore):
@@ -65,6 +69,7 @@ class InMemoryIdempotencyStore(IdempotencyStore):
         key: str,
         owner_id: str,
         lease_seconds: int,
+        operation_identity: InvocationOperationIdentity | None = None,
     ) -> ClaimResult:
         now = datetime.now(UTC)
         lease_expires_at = now + timedelta(seconds=lease_seconds)
@@ -79,15 +84,21 @@ class InMemoryIdempotencyStore(IdempotencyStore):
                     owner_id=owner_id,
                     lease_expires_at=lease_expires_at,
                     fence=1,
+                    operation_identity=operation_identity,
                 )
                 self._store[composite_key] = _LedgerEntry(
                     InvocationStatus.STARTED,
                     None,
                     claim,
+                    operation_identity,
                 )
                 return ClaimResult(outcome=ClaimOutcome.ACQUIRED, claim=claim)
 
             if entry.status == InvocationStatus.COMPLETED:
+                assert_operation_identity_compatible(
+                    entry.operation_identity,
+                    operation_identity,
+                )
                 return ClaimResult(
                     outcome=ClaimOutcome.REPLAY_COMPLETED,
                     completed_result=entry.result,
@@ -99,6 +110,10 @@ class InMemoryIdempotencyStore(IdempotencyStore):
             assert entry.claim is not None
             if entry.claim.lease_expires_at > now:
                 if entry.claim.owner_id == owner_id:
+                    assert_operation_identity_compatible(
+                        entry.operation_identity,
+                        operation_identity,
+                    )
                     return ClaimResult(outcome=ClaimOutcome.ACQUIRED, claim=entry.claim)
                 return ClaimResult(outcome=ClaimOutcome.BLOCKED_ACTIVE)
 
@@ -106,6 +121,7 @@ class InMemoryIdempotencyStore(IdempotencyStore):
                 InvocationStatus.UNCERTAIN,
                 None,
                 entry.claim,
+                entry.operation_identity,
             )
             return ClaimResult(outcome=ClaimOutcome.UNCERTAIN)
 
@@ -134,6 +150,32 @@ class InMemoryIdempotencyStore(IdempotencyStore):
                 InvocationStatus.COMPLETED,
                 result,
                 current,
+                entry.operation_identity,
+            )
+
+    def mark_uncertain_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+    ) -> None:
+        composite_key = (tenant_id, key)
+        with self._lock:
+            entry = self._store.get(composite_key)
+            if entry is None or entry.status != InvocationStatus.STARTED or entry.claim is None:
+                raise StaleClaimError(
+                    f"Cannot mark uncertain key={key}: missing or invalid active claim.",
+                )
+            current = entry.claim
+            if current.owner_id != claim.owner_id or current.fence != claim.fence:
+                raise StaleClaimError(
+                    f"Stale uncertain transition rejected for key={key} fence={claim.fence}.",
+                )
+            self._store[composite_key] = _LedgerEntry(
+                InvocationStatus.UNCERTAIN,
+                None,
+                current,
+                entry.operation_identity,
             )
 
     def record_started(
@@ -171,6 +213,7 @@ class InMemoryIdempotencyStore(IdempotencyStore):
                 InvocationStatus.COMPLETED,
                 result,
                 entry.claim,
+                entry.operation_identity,
             )
 
     def get_completed_result(

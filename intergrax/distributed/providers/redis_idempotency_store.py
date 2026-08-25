@@ -19,10 +19,13 @@ from uuid import uuid4
 from pydantic import BaseModel
 
 from intergrax.contracts.idempotency_store import (
+    assert_operation_identity_compatible,
     ClaimOutcome,
     ClaimResult,
+    IdempotencyOperationConflictError,
     IdempotencyStore,
     InvocationClaim,
+    InvocationOperationIdentity,
     InvocationStatus,
 )
 from intergrax.contracts.lease_claim import StaleClaimError
@@ -52,9 +55,26 @@ class RedisIdempotencyStore(IdempotencyStore):
             -- ARGV[1] = owner_id
             -- ARGV[2] = lease_expires_at (ISO)
             -- ARGV[3] = now (ISO)
+            -- ARGV[4] = operation_tool_id
+            -- ARGV[5] = operation_fingerprint
             --
             -- Returns array: {outcome_code, owner_id, lease_expires_at, fence, result_blob}
-            -- outcome_code: acquired=1, replay=2, blocked=3, uncertain=4
+            -- outcome_code: acquired=1, replay=2, blocked=3, uncertain=4, conflict=5
+
+            local op_tool = ARGV[4]
+            local op_fp = ARGV[5]
+
+            local function identity_matches()
+                local stored_tool = redis.call("HGET", KEYS[1], "operation_tool_id")
+                local stored_fp = redis.call("HGET", KEYS[1], "operation_fingerprint")
+                if not stored_tool and not stored_fp and op_tool == "" and op_fp == "" then
+                    return true
+                end
+                if not stored_tool or not stored_fp or op_tool == "" or op_fp == "" then
+                    return false
+                end
+                return stored_tool == op_tool and stored_fp == op_fp
+            end
 
             local status = redis.call("HGET", KEYS[1], "status")
             if not status then
@@ -62,11 +82,16 @@ class RedisIdempotencyStore(IdempotencyStore):
                     "status", "started",
                     "owner_id", ARGV[1],
                     "lease_expires_at", ARGV[2],
-                    "fence", "1")
+                    "fence", "1",
+                    "operation_tool_id", op_tool,
+                    "operation_fingerprint", op_fp)
                 return {"1", ARGV[1], ARGV[2], "1", ""}
             end
 
             if status == "completed" then
+                if not identity_matches() then
+                    return {"5", "", "", "", ""}
+                end
                 local blob = redis.call("HGET", KEYS[1], "result_blob") or ""
                 return {"2", "", "", "", blob}
             end
@@ -80,6 +105,9 @@ class RedisIdempotencyStore(IdempotencyStore):
             local fence = redis.call("HGET", KEYS[1], "fence")
 
             if lease_expires_at > ARGV[3] then
+                if not identity_matches() then
+                    return {"5", "", "", "", ""}
+                end
                 if owner_id == ARGV[1] then
                     return {"1", owner_id, lease_expires_at, fence, ""}
                 end
@@ -124,6 +152,34 @@ class RedisIdempotencyStore(IdempotencyStore):
             """
         )
 
+        self._mark_uncertain_with_claim_script = self._redis.register_script(
+            """
+            -- KEYS[1] = ledger key
+            -- ARGV[1] = owner_id
+            -- ARGV[2] = fence
+            --
+            -- Returns: 1 success, 0 missing, 2 stale/invalid
+
+            if redis.call("EXISTS", KEYS[1]) == 0 then
+                return 0
+            end
+
+            local status = redis.call("HGET", KEYS[1], "status")
+            if status ~= "started" then
+                return 2
+            end
+
+            local owner_id = redis.call("HGET", KEYS[1], "owner_id")
+            local fence = redis.call("HGET", KEYS[1], "fence")
+            if owner_id ~= ARGV[1] or fence ~= ARGV[2] then
+                return 2
+            end
+
+            redis.call("HSET", KEYS[1], "status", "uncertain")
+            return 1
+            """
+        )
+
         self._record_started_script = self._redis.register_script(
             """
             if redis.call("EXISTS", KEYS[1]) == 1 then
@@ -156,19 +212,39 @@ class RedisIdempotencyStore(IdempotencyStore):
             return value.decode("utf-8")
         return str(value)
 
+    @staticmethod
+    def _operation_args(
+        operation_identity: InvocationOperationIdentity | None,
+    ) -> tuple[str, str]:
+        if operation_identity is None:
+            return "", ""
+        return (
+            operation_identity.tool_id,
+            operation_identity.operation_fingerprint,
+        )
+
+
     def claim(
         self,
         tenant_id: str,
         key: str,
         owner_id: str,
         lease_seconds: int,
+        operation_identity: InvocationOperationIdentity | None = None,
     ) -> ClaimResult:
         now = datetime.now(UTC)
         lease_expires_at = now + timedelta(seconds=lease_seconds)
         ledger_key = self._ledger_key(tenant_id, key)
+        op_tool, op_fp = self._operation_args(operation_identity)
         raw = self._claim_script(
             keys=[ledger_key],
-            args=[owner_id, lease_expires_at.isoformat(), now.isoformat()],
+            args=[
+                owner_id,
+                lease_expires_at.isoformat(),
+                now.isoformat(),
+                op_tool,
+                op_fp,
+            ],
         )
         outcome_code = self._decode(raw[0])
         if outcome_code == "1":
@@ -178,6 +254,7 @@ class RedisIdempotencyStore(IdempotencyStore):
                 owner_id=self._decode(raw[1]),
                 lease_expires_at=datetime.fromisoformat(self._decode(raw[2])),
                 fence=int(self._decode(raw[3])),
+                operation_identity=operation_identity,
             )
             return ClaimResult(outcome=ClaimOutcome.ACQUIRED, claim=claim)
         if outcome_code == "2":
@@ -190,6 +267,10 @@ class RedisIdempotencyStore(IdempotencyStore):
             )
         if outcome_code == "3":
             return ClaimResult(outcome=ClaimOutcome.BLOCKED_ACTIVE)
+        if outcome_code == "5":
+            raise IdempotencyOperationConflictError(
+                "Idempotency key is bound to a different logical operation.",
+            )
         return ClaimResult(outcome=ClaimOutcome.UNCERTAIN)
 
     def complete_with_claim(
@@ -210,6 +291,22 @@ class RedisIdempotencyStore(IdempotencyStore):
         if script_result != 1:
             raise StaleClaimError(
                 f"Stale completion rejected for key={key} fence={claim.fence}.",
+            )
+
+    def mark_uncertain_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+    ) -> None:
+        ledger_key = self._ledger_key(tenant_id, key)
+        script_result = self._mark_uncertain_with_claim_script(
+            keys=[ledger_key],
+            args=[claim.owner_id, str(claim.fence)],
+        )
+        if script_result != 1:
+            raise StaleClaimError(
+                f"Stale uncertain transition rejected for key={key} fence={claim.fence}.",
             )
 
     def record_started(
