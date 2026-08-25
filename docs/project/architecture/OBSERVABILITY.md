@@ -885,6 +885,8 @@ await reporter.report(
 
 **Lifecycle semantics source:** reuse `intergrax/runtime/events/asof_projection.py` (`apply_lifecycle_event`) — do not invent parallel state machines. Retry attempts (`A1` failed + `A2` completed) are evaluated on the canonical positioned stream; cross-attempt contradictions are not flagged when retry semantics allow them.
 
+**Typed structural transition:** TRACE-ASOF lifecycle violations retain a typed `LifecycleViolationTransition` on `LifecycleAnomaly` (`violation_kind`, `prior_status`, `violating_event_type`). DIAG-4 `DiagnosticFinding` and DIAG-5A `ProblemGroupingSubjectFinding` normalization pass it through unchanged — enabling defensible structural incident grouping without re-reading raw events.
+
 **Truncation safety:** when history is truncated, only violations provable from the visible prefix are reported; missing terminal events beyond truncation are not inferred.
 
 **Ordering:** findings sorted for presentation by earliest supporting `ExecutionEventPosition`, else earliest causal `(recorded_at, evidence_id)`, then kind, then `AttemptId`.

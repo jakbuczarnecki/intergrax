@@ -17,7 +17,7 @@ from intergrax.runtime.diagnostics.diagnostic_assessment import (
     DiagnosticLimitation,
     DiagnosticLimitationKind,
 )
-from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyKind, LifecycleAnomalyScope
+from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyKind, LifecycleAnomalyScope, LifecycleViolationTransition
 
 ProblemGroupingStrategyId = NewType("ProblemGroupingStrategyId", str)
 ProblemGroupingStrategyVersion = NewType("ProblemGroupingStrategyVersion", str)
@@ -110,6 +110,7 @@ class ProblemGroupingSubjectFinding:
     kind: DiagnosticFindingKind
     scope: LifecycleAnomalyScope
     source_anomaly_kind: LifecycleAnomalyKind
+    lifecycle_transition: LifecycleViolationTransition | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -352,6 +353,7 @@ def _normalize_finding(finding: DiagnosticFinding) -> ProblemGroupingSubjectFind
         kind=finding.kind,
         scope=finding.scope,
         source_anomaly_kind=finding.source_anomaly_kind,
+        lifecycle_transition=finding.lifecycle_transition,
     )
 
 

@@ -15,6 +15,8 @@ from intergrax.runtime.diagnostics.lifecycle_analysis import (
     LifecycleAnomaly,
     LifecycleAnomalyKind,
     LifecycleAnomalyScope,
+    LifecycleViolationTransition,
+    LIFECYCLE_TRANSITION_ANOMALY_KINDS,
 )
 from intergrax.runtime.events.execution_position import ExecutionEventPosition
 
@@ -126,6 +128,7 @@ class DiagnosticFinding:
     supporting_event_ids: tuple[EventId, ...]
     supporting_evidence_ids: tuple[EventId, ...]
     supporting_positions: tuple[ExecutionEventPosition, ...]
+    lifecycle_transition: LifecycleViolationTransition | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -220,6 +223,7 @@ def _validate_assessment_scope(
 
 def _finding_from_anomaly(anomaly: LifecycleAnomaly) -> DiagnosticFinding:
     finding_kind = _ANOMALY_TO_FINDING_KIND[anomaly.kind]
+    _validate_lifecycle_transition_for_anomaly(anomaly)
     return DiagnosticFinding(
         kind=finding_kind,
         scope=anomaly.scope,
@@ -230,7 +234,17 @@ def _finding_from_anomaly(anomaly: LifecycleAnomaly) -> DiagnosticFinding:
         supporting_event_ids=anomaly.supporting_event_ids,
         supporting_evidence_ids=anomaly.supporting_evidence_ids,
         supporting_positions=anomaly.supporting_positions,
+        lifecycle_transition=anomaly.lifecycle_transition,
     )
+
+
+def _validate_lifecycle_transition_for_anomaly(anomaly: LifecycleAnomaly) -> None:
+    expects_transition = anomaly.kind in LIFECYCLE_TRANSITION_ANOMALY_KINDS
+    has_transition = anomaly.lifecycle_transition is not None
+    if expects_transition != has_transition:
+        raise DiagnosticAssessmentIntegrityError(
+            f"lifecycle_transition contract violated for anomaly {anomaly.kind!r}"
+        )
 
 
 def _limitation_from_anomaly(anomaly: LifecycleAnomaly) -> DiagnosticLimitation:

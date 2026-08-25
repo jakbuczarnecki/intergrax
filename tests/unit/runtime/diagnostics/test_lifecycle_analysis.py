@@ -606,3 +606,198 @@ def test_analysis_preserves_execution_scope_fields() -> None:
     assert analysis.task_id == task_id
     assert analysis.run_id == run_id
     assert analysis.has_anomalies is True
+
+
+def _analyze_attempt_sequence(
+    event_types: list[RuntimeEventType],
+) -> LifecycleAnalysis:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    runtime_store = InMemoryRuntimeEventStore()
+    _append_sequence(
+        runtime_store,
+        tenant_id=_TENANT_A,
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        event_types=event_types,
+    )
+    reconstruction = ExecutionReconstructor(
+        runtime_events=runtime_store,
+        causal_evidence=InMemoryCausalEvidencePersistence(),
+    ).reconstruct_execution(_TENANT_A, task_id, run_id)
+    return _ANALYZER.analyze(reconstruction)
+
+
+def test_event_after_terminal_propagates_lifecycle_transition() -> None:
+    analysis = _analyze_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_COMPLETED,
+            RuntimeEventType.RETRY_SCHEDULED,
+        ]
+    )
+
+    after_terminal = [
+        anomaly
+        for anomaly in analysis.anomalies
+        if anomaly.kind is LifecycleAnomalyKind.EVENT_AFTER_TERMINAL
+    ]
+    assert len(after_terminal) == 1
+    anomaly = after_terminal[0]
+    transition = anomaly.lifecycle_transition
+    assert transition is not None
+    assert transition.violation_kind is RunLifecycleViolationKind.EVENT_AFTER_TERMINAL
+    assert transition.prior_status is RunExecutionLifecycleStatus.COMPLETED
+    assert transition.violating_event_type is RuntimeEventType.RETRY_SCHEDULED
+
+
+def test_structural_collision_completed_retry_scheduled_vs_task_failed() -> None:
+    analysis_a = _analyze_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_COMPLETED,
+            RuntimeEventType.RETRY_SCHEDULED,
+        ]
+    )
+    analysis_b = _analyze_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_COMPLETED,
+            RuntimeEventType.TASK_FAILED,
+        ]
+    )
+
+    anomaly_a = next(
+        anomaly
+        for anomaly in analysis_a.anomalies
+        if anomaly.kind is LifecycleAnomalyKind.EVENT_AFTER_TERMINAL
+    )
+    anomaly_b = next(
+        anomaly
+        for anomaly in analysis_b.anomalies
+        if anomaly.kind is LifecycleAnomalyKind.EVENT_AFTER_TERMINAL
+    )
+
+    assert anomaly_a.lifecycle_transition is not None
+    assert anomaly_b.lifecycle_transition is not None
+    assert anomaly_a.lifecycle_transition != anomaly_b.lifecycle_transition
+    assert anomaly_a.lifecycle_transition.violating_event_type is RuntimeEventType.RETRY_SCHEDULED
+    assert anomaly_b.lifecycle_transition.violating_event_type is RuntimeEventType.TASK_FAILED
+    assert anomaly_a.lifecycle_transition.prior_status is RunExecutionLifecycleStatus.COMPLETED
+    assert anomaly_b.lifecycle_transition.prior_status is RunExecutionLifecycleStatus.COMPLETED
+
+
+def test_cancelled_vs_completed_prior_status_distinguishes_descriptors() -> None:
+    cancelled_analysis = _analyze_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.CANCELLED,
+            RuntimeEventType.RETRY_SCHEDULED,
+        ]
+    )
+    completed_analysis = _analyze_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_COMPLETED,
+            RuntimeEventType.RETRY_SCHEDULED,
+        ]
+    )
+
+    cancelled_transition = next(
+        anomaly.lifecycle_transition
+        for anomaly in cancelled_analysis.anomalies
+        if anomaly.kind is LifecycleAnomalyKind.EVENT_AFTER_TERMINAL
+    )
+    completed_transition = next(
+        anomaly.lifecycle_transition
+        for anomaly in completed_analysis.anomalies
+        if anomaly.kind is LifecycleAnomalyKind.EVENT_AFTER_TERMINAL
+    )
+
+    assert cancelled_transition is not None
+    assert completed_transition is not None
+    assert cancelled_transition.prior_status is RunExecutionLifecycleStatus.CANCELLED
+    assert completed_transition.prior_status is RunExecutionLifecycleStatus.COMPLETED
+    assert cancelled_transition.violating_event_type is RuntimeEventType.RETRY_SCHEDULED
+    assert completed_transition.violating_event_type is RuntimeEventType.RETRY_SCHEDULED
+    assert cancelled_transition != completed_transition
+
+
+def test_disallowed_after_failed_lifecycle_transition_descriptor() -> None:
+    analysis = _analyze_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_FAILED,
+            RuntimeEventType.PAUSE_REQUESTED,
+        ]
+    )
+
+    disallowed = next(
+        anomaly
+        for anomaly in analysis.anomalies
+        if anomaly.kind is LifecycleAnomalyKind.DISALLOWED_AFTER_FAILED
+    )
+    transition = disallowed.lifecycle_transition
+    assert transition is not None
+    assert transition.violation_kind is RunLifecycleViolationKind.DISALLOWED_AFTER_FAILED
+    assert transition.prior_status is RunExecutionLifecycleStatus.FAILED
+    assert transition.violating_event_type is RuntimeEventType.PAUSE_REQUESTED
+
+
+def test_conflicting_final_outcome_lifecycle_transition_descriptor() -> None:
+    analysis = _analyze_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_FAILED,
+            RuntimeEventType.TASK_COMPLETED,
+        ]
+    )
+
+    conflicting = next(
+        anomaly
+        for anomaly in analysis.anomalies
+        if anomaly.kind is LifecycleAnomalyKind.MULTIPLE_TERMINAL_OUTCOMES
+    )
+    transition = conflicting.lifecycle_transition
+    assert transition is not None
+    assert transition.violation_kind is RunLifecycleViolationKind.CONFLICTING_FINAL_OUTCOME
+    assert transition.prior_status is RunExecutionLifecycleStatus.FAILED
+    assert transition.violating_event_type is RuntimeEventType.TASK_COMPLETED
+
+
+def test_non_lifecycle_anomaly_lifecycle_transition_is_none() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    causal_store = InMemoryCausalEvidencePersistence()
+    evidence = _causal_evidence(task_id=task_id, run_id=run_id, attempt_id=attempt_id)
+    causal_store.append(evidence)
+
+    reconstruction = ExecutionReconstructor(
+        runtime_events=InMemoryRuntimeEventStore(),
+        causal_evidence=causal_store,
+    ).reconstruct_execution(_TENANT_A, task_id, run_id)
+    analysis = _ANALYZER.analyze(reconstruction)
+
+    anomaly = analysis.anomalies[0]
+    assert anomaly.kind is LifecycleAnomalyKind.CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY
+    assert anomaly.lifecycle_transition is None
+
+
+def test_lifecycle_violation_descriptor_fails_closed_on_incomplete_typed_error() -> None:
+    from intergrax.runtime.diagnostics.lifecycle_analysis import (
+        LifecycleAnalysisIntegrityError,
+        _lifecycle_violation_descriptor_from_exc,
+    )
+
+    incomplete = InvalidRunExecutionHistoryError(
+        "incomplete typed violation",
+        kind=RunLifecycleViolationKind.EVENT_AFTER_TERMINAL,
+        current_status=None,
+        event_type=RuntimeEventType.RETRY_SCHEDULED,
+    )
+
+    with pytest.raises(LifecycleAnalysisIntegrityError, match="current_status or event_type"):
+        _lifecycle_violation_descriptor_from_exc(incomplete)

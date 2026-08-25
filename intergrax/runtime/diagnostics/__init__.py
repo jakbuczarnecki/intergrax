@@ -26,6 +26,9 @@ from intergrax.runtime.diagnostics.lifecycle_analysis import (
     LifecycleAnomalyAnalyzer,
     LifecycleAnomalyKind,
     LifecycleAnomalyScope,
+    LifecycleAnalysisIntegrityError,
+    LifecycleViolationTransition,
+    LIFECYCLE_TRANSITION_ANOMALY_KINDS,
 )
 from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicProblemGroupingBasis,
@@ -68,6 +71,9 @@ __all__ = [
     "LifecycleAnomalyAnalyzer",
     "LifecycleAnomalyKind",
     "LifecycleAnomalyScope",
+    "LifecycleAnalysisIntegrityError",
+    "LifecycleViolationTransition",
+    "LIFECYCLE_TRANSITION_ANOMALY_KINDS",
     "DeterministicProblemGroupingBasis",
     "DuplicateProblemGroupingStrategyError",
     "MissingProblemGroupingStrategyError",

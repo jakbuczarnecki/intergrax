@@ -22,8 +22,13 @@ from intergrax.runtime.events.asof_projection import (
     RunLifecycleViolationKind,
 )
 from intergrax.runtime.events.execution_position import ExecutionEventPosition, PositionedRuntimeEvent
+from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.observability.causal_evidence import PlatformCausalEvidence
 from intergrax.runtime.observability.causal_evidence_persistence import causal_evidence_query_order_key
+
+
+class LifecycleAnalysisIntegrityError(Exception):
+    """Raised when lifecycle analysis encounters inconsistent typed facts."""
 
 
 class LifecycleAnomalyKind(StrEnum):
@@ -56,6 +61,23 @@ _LIFECYCLE_VIOLATION_TO_ANOMALY_KIND: dict[
     ),
 }
 
+LIFECYCLE_TRANSITION_ANOMALY_KINDS: frozenset[LifecycleAnomalyKind] = frozenset(
+    {
+        LifecycleAnomalyKind.MULTIPLE_TERMINAL_OUTCOMES,
+        LifecycleAnomalyKind.EVENT_AFTER_TERMINAL,
+        LifecycleAnomalyKind.DISALLOWED_AFTER_FAILED,
+    }
+)
+
+
+@dataclass(frozen=True, slots=True)
+class LifecycleViolationTransition:
+    """Typed TRACE-ASOF lifecycle violation descriptor — not a lifecycle model."""
+
+    violation_kind: RunLifecycleViolationKind
+    prior_status: RunExecutionLifecycleStatus
+    violating_event_type: RuntimeEventType
+
 
 @dataclass(frozen=True, slots=True)
 class LifecycleAnomaly:
@@ -68,6 +90,7 @@ class LifecycleAnomaly:
     supporting_evidence_ids: tuple[EventId, ...]
     supporting_positions: tuple[ExecutionEventPosition, ...]
     factual_message: str
+    lifecycle_transition: LifecycleViolationTransition | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -210,6 +233,7 @@ def _lifecycle_violation_anomalies(
                 prior_event,
                 row,
             )
+            lifecycle_transition = _lifecycle_violation_descriptor_from_exc(exc)
             findings.append(
                 LifecycleAnomaly(
                     kind=_LIFECYCLE_VIOLATION_TO_ANOMALY_KIND[exc.kind],
@@ -219,6 +243,7 @@ def _lifecycle_violation_anomalies(
                     supporting_positions=supporting_positions,
                     supporting_evidence_ids=(),
                     factual_message=str(exc),
+                    lifecycle_transition=lifecycle_transition,
                 )
             )
             continue
@@ -230,6 +255,24 @@ def _lifecycle_violation_anomalies(
             last_terminal_event = row
 
     return tuple(findings)
+
+
+def _lifecycle_violation_descriptor_from_exc(
+    exc: InvalidRunExecutionHistoryError,
+) -> LifecycleViolationTransition:
+    if exc.kind is None:
+        raise LifecycleAnalysisIntegrityError(
+            "typed lifecycle violation missing violation kind"
+        )
+    if exc.current_status is None or exc.event_type is None:
+        raise LifecycleAnalysisIntegrityError(
+            "typed lifecycle violation missing current_status or event_type"
+        )
+    return LifecycleViolationTransition(
+        violation_kind=exc.kind,
+        prior_status=exc.current_status,
+        violating_event_type=exc.event_type,
+    )
 
 
 def _prior_lifecycle_event_for_violation(

@@ -6,8 +6,12 @@ from dataclasses import dataclass
 
 import pytest
 
-from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
-from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessment
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id, mint_task_id
+from intergrax.runtime.diagnostics.diagnostic_assessment import (
+    DiagnosticAssessment,
+    DiagnosticAssessmentBuilder,
+    DiagnosticFindingKind,
+)
 from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicProblemGroupingBasis,
     DuplicateProblemGroupingStrategyError,
@@ -27,7 +31,16 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingStrategyVersion,
     ProblemGroupingSubject,
     ProblemGroupingSubjectRef,
+    normalize_assessment,
 )
+from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
+from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
+from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
+from intergrax.runtime.observability.memory_causal_evidence_persistence import (
+    InMemoryCausalEvidencePersistence,
+)
+from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
 
 pytestmark = pytest.mark.unit
 
@@ -520,3 +533,96 @@ def test_registered_strategy_mutation_rejected() -> None:
 
     with pytest.raises(ProblemGroupingIntegrityError, match="mutated after registration"):
         engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+
+
+def _assess_attempt_sequence(event_types: list[RuntimeEventType]) -> DiagnosticAssessment:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    runtime_store = InMemoryRuntimeEventStore()
+    for event_type in event_types:
+        event = sample_runtime_event(
+            tenant_id=_TENANT_A,
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+        ).model_copy(update={"event_type": event_type})
+        runtime_store.append(event, tenant_id=_TENANT_A)
+
+    reconstruction = ExecutionReconstructor(
+        runtime_events=runtime_store,
+        causal_evidence=InMemoryCausalEvidencePersistence(),
+    ).reconstruct_execution(_TENANT_A, task_id, run_id)
+    lifecycle = LifecycleAnomalyAnalyzer().analyze(reconstruction)
+    return DiagnosticAssessmentBuilder().assess(reconstruction, lifecycle)
+
+
+def test_normalize_assessment_passes_lifecycle_transition() -> None:
+    assessment = _assess_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_COMPLETED,
+            RuntimeEventType.RETRY_SCHEDULED,
+        ]
+    )
+    finding = next(
+        item
+        for item in assessment.findings
+        if item.kind is DiagnosticFindingKind.EVENT_AFTER_TERMINAL
+    )
+    subject = normalize_assessment(assessment)
+    subject_finding = next(
+        item
+        for item in subject.findings
+        if item.kind is DiagnosticFindingKind.EVENT_AFTER_TERMINAL
+    )
+
+    assert subject_finding.lifecycle_transition is finding.lifecycle_transition
+    assert subject_finding.lifecycle_transition is not None
+
+
+def test_normalized_subject_findings_differ_for_structural_collision() -> None:
+    assessment_a = _assess_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_COMPLETED,
+            RuntimeEventType.RETRY_SCHEDULED,
+        ]
+    )
+    assessment_b = _assess_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_COMPLETED,
+            RuntimeEventType.TASK_FAILED,
+        ]
+    )
+
+    subject_a = normalize_assessment(assessment_a)
+    subject_b = normalize_assessment(assessment_b)
+    finding_a = next(
+        item
+        for item in subject_a.findings
+        if item.kind is DiagnosticFindingKind.EVENT_AFTER_TERMINAL
+    )
+    finding_b = next(
+        item
+        for item in subject_b.findings
+        if item.kind is DiagnosticFindingKind.EVENT_AFTER_TERMINAL
+    )
+
+    assert finding_a.lifecycle_transition != finding_b.lifecycle_transition
+    assert finding_a.kind == finding_b.kind
+    assert finding_a.scope == finding_b.scope
+    assert finding_a.source_anomaly_kind == finding_b.source_anomaly_kind
+
+
+def test_normalized_non_lifecycle_finding_lifecycle_transition_is_none() -> None:
+    assessment = DiagnosticAssessment(
+        tenant_id=_TENANT_A,
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        findings=(),
+        limitations=(),
+    )
+    subject = normalize_assessment(assessment)
+    assert subject.findings == ()
