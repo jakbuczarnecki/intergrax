@@ -81,6 +81,12 @@ Load **only** the satellite matching your task or cited gap ID.
 
 **Delivery rule:** One **AUDIT-IDEAL-*** ID per PR → update this table + master register → gate green.
 
+### Architecture sync — UE-DOC-0.8 (2026-08-26)
+
+**Status:** documentation frozen in architecture hub — **no runtime implementation in this slice**. Code transformation mapping: **UE-DOC-0.9**.
+
+Architecture hub additions: five orthogonal axes; loop ownership (`bounded_react` under UAEP); monotonic selection; TOOLS-INV; implementation readiness. Cross-ref: [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md#execution-first-agentic-model-ue-doc-08).
+
 ---
 
 ## Phase TOOL-PRODUCT-ROI — Catalog extension by product value (Planned)

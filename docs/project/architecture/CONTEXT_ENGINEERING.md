@@ -203,6 +203,85 @@ CE follows the same catalog pattern as other Intergrax plugin libraries:
 
 Builtin provider inventory and wiring detail: [`satellites/CONTEXT_ENGINEERING_extended_depth.md`](satellites/CONTEXT_ENGINEERING_extended_depth.md) §8.
 
+## Iterative tool feedback (UE-DOC-0.8)
+
+Frozen alignment with [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md). Context Engineering owns **what enters the next model context** after each tool round in an agentic Execution.
+
+```text
+ToolResult
+  ↓
+typed step/context state
+  ↓
+Context Engineering (collect → normalize → score → budget → format)
+  ↓
+policy / provenance / budget
+  ↓
+next ChatMessage[] / AssembledContext
+  ↓
+next model call
+```
+
+**Rules:**
+
+- `ToolRuntime` does **not** concatenate prompts.
+- Agent must **not** build private prompt-history strings to bypass CE.
+- Each model iteration in a bounded tool loop **should** obtain context through the canonical CE path (target: **must** on certified paths).
+- Tool outputs are **attributable fragments** — not ad-hoc string joins.
+
+Reference scenario: [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md#reference-scenario--iterative-incident-investigation).
+
+### Domain invariants (CE-INV)
+
+| ID | Invariant |
+| -- | --------- |
+| **CE-INV-01** | Each model iteration obtains context through canonical CE path (target paths) |
+| **CE-INV-02** | Tool outputs are attributable fragments — not ad-hoc prompt concatenation |
+| **CE-INV-03** | CE decides inclusion under budget/policy — ToolRuntime does not assemble model prompts |
+
+## Implementation readiness
+
+For future implementation sessions — derive slices without making new architecture decisions. Detailed code mapping: **UE-DOC-0.9**.
+
+### 1. TARGET STATE
+
+Every model iteration in agentic Execution rebuilds governed, bounded context through CE; tool results enter as typed fragments with provenance; iterative loops do not bypass compile/preflight.
+
+### 2. CURRENT STATE
+
+`ContextCompiler` on ACP hot path; `ContextEngine.assemble()` on graph/UAEP UCL paths; tool outputs consumable as provider fragments. Non-uniform surfaces: `ContextOrchestrator`, `ContextManager` fallback; not all iterative paths proven through single CE contract.
+
+### 3. GAPS
+
+Uniform CE path for all agentic model iterations; Execution-boundary context request identity; tool-result fragment contract on every hot path; TOKEN-CE runtime wiring.
+
+### 4. DEPENDENCIES
+
+- UEA / UER Execution Boundary
+- Tools `ToolResult` boundary ([`TOOLS.md`](TOOLS.md))
+- UAEP session progression ([`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md))
+- UCL ephemeral assembly closeout ([`UNIFIED_CONTEXT_LIFECYCLE.md`](UNIFIED_CONTEXT_LIFECYCLE.md))
+
+### 5. MIGRATION ORDER (high level)
+
+1. Canonical Execution-bound context requests
+2. Tool results → CE fragments on all agentic iterations
+3. Remove agent private prompt concatenation paths
+4. Align streaming final output with CE preflight where applicable
+5. TOKEN-CE wiring and regression gates
+
+### 6. DO NOT VIOLATE
+
+- UEA-INV-* without explicit reopen
+- Tool result → direct prompt string concat bypassing CE
+- CE owning Memory persistence or tool execution
+- `ContextOrchestrator` becoming a second agent runtime
+
+### 7. ACCEPTANCE CONDITIONS
+
+- Tool feedback flows through CE on target agentic paths
+- Each iteration is budgeted and attributable
+- TARGET/CURRENT labeled where implementation lags
+
 ## Current maturity
 
 Architecture maturity: **A4**  
@@ -274,7 +353,7 @@ Context Engineering evidence is **engineering- and qualification-oriented** — 
 **Related:** [`architecture/MEMORY.md`](MEMORY.md) (stores + lifecycle) · [`architecture/UNIFIED_CONTEXT_LIFECYCLE.md`](UNIFIED_CONTEXT_LIFECYCLE.md) (single budget authority + lifecycle) · [`architecture/RAG.md`](RAG.md) (retrieval) · [`architecture/TOOLS.md`](TOOLS.md) (tool outputs) · [`architecture/NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) (turn narrative) · [`architecture/OBSERVABILITY.md`](OBSERVABILITY.md) (event spine) · [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Appendix L  
 **Third-party extension / developer guide:** [`guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md`](../technical/guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md) (implementation workflow) · [`guides/EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) (catalog routing)  
 **Implementation (as-built):** `intergrax/context` · `intergrax/runtime/nexus/context` · `intergrax/runtime/architecture/context_engineering.py` · `intergrax/contracts/context_assembly.py` · `applications/_shared/context_*`  
-**Last architecture pass:** 2026-06-17 — **Full Harness LC** (re-validates iteration III); CE-LLM-X doc sync
+**Last architecture pass:** 2026-08-26 — **UE-DOC-0.8** iterative tool feedback alignment with frozen UEA
 
 ### Cursor read scope (token budget)
 

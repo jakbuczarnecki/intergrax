@@ -14,6 +14,12 @@
 
 **LCI-4D decision:** Memory indexing preserves stable identity, tenant, namespace, workspace, provenance and user metadata without using user metadata as system scope transport. Session and profile vector writes use `VectorStoreRecord` with `VectorStoreScope`; LCI-5A remains planned for the next native text-loader stream.
 
+### Architecture sync — UE-DOC-0.8 (2026-08-26)
+
+**Status:** documentation frozen in architecture hub — **no runtime implementation in this slice**. Code transformation mapping: **UE-DOC-0.9**.
+
+Architecture hub additions: tool-result feedback ≠ automatic durable memory; MEM-INV; implementation readiness.
+
 <a id="protocol-v2-memory-remediation-2026-08-18"></a>
 
 ## Protocol v2 — Memory remediation (2026-08-18)

@@ -391,6 +391,121 @@ Some tools are platform/runtime-bound (`workspace.*`, `memory.*`, `harness.*`, `
 
 Platform tool plugins register `ToolContract` rows at bootstrap (`ToolPlugin` → catalog → `ToolProfile` → registry → invoker). Quickstart: [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) §3 · §16 · §17. Deeper selection/plugin semantics: [`satellites/TOOLS_selection_and_plugins.md`](satellites/TOOLS_selection_and_plugins.md).
 
+## Five orthogonal axes (UE-DOC-0.8)
+
+Frozen separation — do **not** collapse into one `mode` (authority: [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md)):
+
+| Axis | Question | Owner domain |
+| ---- | -------- | ------------ |
+| **A. Execution strategy** | How is work realized? | UER / Execution Boundary |
+| **B. Agent reasoning strategy** | How does the agent think/plan? | ACP / Reasoning |
+| **C. Tool selection strategy** | Which subset of allowed tools is model-visible? | Tools |
+| **D. Tool invocation strategy** | How are proposed calls executed? | Tools (`ToolInvocationPattern`) |
+| **E. Tool interaction loop** | How many tool rounds in the session? | UAEP / agentic Execution |
+| **F. Output delivery** | Stream or batch delivery of **one** model invocation? | LLM Adapters + output release |
+
+**Streaming (F)** is a delivery property of a single model call — not an Execution strategy, not an agent iteration identity, not a retry.
+
+## Loop ownership — ToolInvocationPattern vs UAEP
+
+| Owner | Owns | Does not own |
+| ----- | ---- | ------------ |
+| **UAEP / AgentEngine** | Agent session iteration lifecycle; continue/terminal/HITL intent; step advancement; Execution-level agent progression | Tool call mechanics, Run/Execution lifecycle minting, global retry |
+| **ToolInvocationPattern** | Reusable single/sequential/parallel/bounded tool interaction mechanics inside agent Execution | Run lifecycle, Execution lifecycle, agent identity, HITL lifecycle, final Execution terminalization |
+
+`bounded_react` is a **bounded reusable sub-loop** for tool interaction mechanics under UAEP — not a second agent runtime. See [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md#loop-ownership--uaep-vs-toolinvocationpattern).
+
+## Monotonic tool selection
+
+Selection answers: **which subset of otherwise allowed tools is exposed to the planner/model?** Selection does **not** grant permission.
+
+```text
+host available
+∩ agent/skill allowed
+∩ runtime policy
+∩ modality
+∩ plan constraints
+∩ selection strategy
+= model-visible tools
+```
+
+Semantic retrieval may rank/select only within effective allowed scope. A semantic match **must not** re-enable a tool denied upstream.
+
+## Tool planning vs selection vs execution
+
+| Phase | Output | Permission? |
+| ----- | ------ | ----------- |
+| **Selection** | Visible schemas | Narrows authority only — monotonic |
+| **Planning** | `ToolPlanDecision` / `LLMToolCall` | Intent only — not permission |
+| **Execution** | `ToolResult` via `ToolRuntime` | Governed invocation only |
+
+Every actual call crosses: tool intent → `ToolRuntime` → effective permissions → governance/side-effect policy → budget reservation/check → schema validation → `RuntimeToolInvoker` → handler. No agent/model/Nexus direct handler/vendor calls.
+
+## Bounded iteration
+
+Forbidden target pattern: unbounded `while True: llm(); tools()`. Bounded loops enforce platform caps — max iterations, model calls, tool calls, tokens, cost, duration, per-tool limits, policy/authority limits — all consuming canonical Run/Execution budget. No private ReAct budget ledger.
+
+## Domain invariants (TOOLS-INV)
+
+| ID | Invariant |
+| -- | --------- |
+| **TOOLS-INV-01** | Selection ≠ planning ≠ execution |
+| **TOOLS-INV-02** | Selection only narrows authority — never expands |
+| **TOOLS-INV-03** | All actual calls cross `ToolRuntime` |
+| **TOOLS-INV-04** | Invocation pattern does not own agent/Execution lifecycle |
+| **TOOLS-INV-05** | Tool result returns through typed context boundary — not ad-hoc prompt concat |
+| **TOOLS-INV-06** | Parallel invocation preserves per-call policy and budget |
+
+## Implementation readiness
+
+For future implementation sessions — derive slices without making new architecture decisions. Detailed code mapping: **UE-DOC-0.9**.
+
+### 1. TARGET STATE
+
+Frozen UEA + this document: monotonic selection; planning as intent; governed execution via `ToolRuntime`; invocation patterns as mechanics under UAEP; parallel/sequential/chain/bounded patterns preserve per-call governance and budget.
+
+### 2. CURRENT STATE
+
+`ToolRuntime`, selection strategies (standard/semantic/hierarchical), `ToolInvocationPattern` modes (`single_pass`, `bounded_react`, `parallel_batch`, `parallel_semantic_batch`, `deterministic_chain`), planner paths — implemented on harness path. UAEP vs `bounded_react` ownership not fully unified; Execution Boundary not canonical.
+
+### 3. GAPS
+
+Unified Execution Boundary integration; resolve `bounded_react` vs UAEP loop ownership; canonical iterative loop under one Execution; pre-invoke budget hard gate (Protocol v2); platform-wide tool-result → CE contract on all paths.
+
+### 4. DEPENDENCIES
+
+- UEA / UER Execution Boundary
+- ACP / UAEP session progression ([`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md))
+- CE tool-output fragments ([`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md))
+- Governance meaningful-side-effect wiring ([`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md))
+
+### 5. MIGRATION ORDER (high level)
+
+1. Canonical Execution Boundary / `ExecutionId`
+2. UAEP owns agent session loop; patterns own invocation mechanics
+3. Monotonic selection integration at Execution boundary
+4. Invocation patterns invoked from UAEP agentic path only
+5. Tool results → CE typed fragments on all hot paths
+6. Parallel/bounded patterns under unified budget admission
+7. Remove competing private tool loops
+
+### 6. DO NOT VIOLATE
+
+- UEA-INV-* without explicit reopen
+- Semantic selection expanding permissions
+- Planner proposal == permission grant
+- `ToolInvocationPattern` owning Run/Execution lifecycle
+- Direct handler/vendor calls bypassing `ToolRuntime`
+- New `ToolLoopRuntime` or second generic tool-loop engine
+
+### 7. ACCEPTANCE CONDITIONS
+
+- Selection, planning, execution remain distinct
+- Semantic match cannot re-enable denied tools
+- Sequential and parallel invocation through governed patterns
+- Selection strategy can differ from invocation strategy
+- TARGET/CURRENT labeled where implementation lags
+
 ## Current maturity
 
 Architecture maturity: **A4**  
@@ -466,6 +581,7 @@ Remediation: **TOOLS-GOVERNED-BOUNDARY-INTEGRITY** (01, 02, 03) and **TOOLS-SIDE
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 11  
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)
+**Last updated:** 2026-08-26 — **UE-DOC-0.8** iterative tools/streaming alignment with frozen UEA
 
 ## Cursor read scope (token budget)
 

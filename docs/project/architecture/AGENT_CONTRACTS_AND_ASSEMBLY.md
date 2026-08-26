@@ -392,6 +392,161 @@ Accepted Protocol v2 audit layer [`AGENT_SYSTEM`](../../audit_results/2026-08-18
 
 Remediation tracked as **AGSYS-CONTRACT-INTEGRITY** in [plan](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md). Registry identity projection (**AGSYS-IDENTITY-PROJECTION**) owned by [Agent Distribution](AGENT_DISTRIBUTION.md). **Not implemented** by audit persistence.
 
+## Execution-first agentic model (UE-DOC-0.8)
+
+Frozen alignment with [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) (UEA-INV-003, UEA-INV-008, UEA-INV-018, UEA-INV-021). **Documentation only** — runtime migration deferred to UE-DOC-0.9+.
+
+### Canonical agentic Execution path
+
+```text
+Execution (strategy = agentic)
+  ↓
+AgentExecutor
+  ↓
+AgentEngine
+  ↓
+UAEP / HarnessKernel
+  ↓
+bounded model ↔ tool iterations
+  ↓
+terminal result
+```
+
+**Agent** is reusable domain behavior — **not** Execution, Run, lifecycle owner, governance owner, budget ledger, tool runtime, or orchestration engine. **UAEP** is agent-specific execution protocol — **not** universal Execution protocol.
+
+Autonomous multi-iteration `LLM → tool → result → LLM → …` is **agentic Execution** behavior. It does **not** require Nexus. Simple inference remains direct. Nexus appears only when independently schedulable child Executions/topology are needed.
+
+### Iterative model ↔ tool loop
+
+One agentic Execution may perform many model calls and many tool calls under **one** `ExecutionId`, **one** authority envelope, and **one** Run/Execution budget hierarchy:
+
+```text
+Execution E1
+  ↓ LLM #1 → Tool A → LLM #2 → Tool B → LLM #3 → Tool C → LLM #4 → FINAL
+```
+
+Do **not** create child Execution for every LLM call, tool call, agent step, observation, or reasoning iteration. Promote to child Execution only when work is independently **schedulable, governable, retryable as standalone work, budget-allocatable, cancellable, delegatable, and observable as standalone platform work** — for example delegated financial vs infrastructure investigations under one parent incident.
+
+### Loop ownership — UAEP vs ToolInvocationPattern
+
+| Owner | Responsibility |
+| ----- | -------------- |
+| **UAEP / AgentEngine** | Agent session iteration lifecycle; continue/terminal/HITL intent; step advancement; Execution-level agent progression |
+| **ToolInvocationPattern** | Reusable mechanics for executing tool interaction patterns **inside** the agent Execution — single/sequential/parallel/bounded tool interaction mechanics |
+
+`ToolInvocationPattern` **must not** own Run lifecycle, Execution lifecycle, agent identity, global retry, HITL lifecycle, or final Execution terminalization. Do **not** create a second agent runtime inside Tools. If `bounded_react` contains LLM↔tool sub-loop behavior, it is a **bounded reusable sub-loop under UAEP/agentic Execution** — not a competing lifecycle owner. See [`TOOLS.md`](TOOLS.md#loop-ownership--toolinvocationpattern-vs-uaep).
+
+### Five orthogonal axes (+ streaming delivery)
+
+Do **not** collapse into one `mode`:
+
+| Axis | Examples |
+| ---- | -------- |
+| **A. Execution strategy** | inference / agentic / orchestration |
+| **B. Agent reasoning strategy** | ReAct / reflection / decomposition / custom |
+| **C. Tool selection strategy** | standard / semantic / hierarchical / plugin |
+| **D. Tool invocation strategy** | single / sequential / parallel / parallel semantic / deterministic chain / bounded interaction pattern |
+| **E. Tool interaction loop** | zero tool calls / one-shot / bounded iterative use |
+| **F. Output delivery** | non-stream / stream — orthogonal delivery property, not a strategy axis |
+
+Selection, planning, invocation pattern, and interaction loop are separate — see [`TOOLS.md`](TOOLS.md#five-orthogonal-axes-ue-doc-08).
+
+### Domain invariants (AGENT-INV)
+
+| ID | Invariant |
+| -- | --------- |
+| **AGENT-INV-01** | Agent does not own Execution lifecycle |
+| **AGENT-INV-02** | Iterative agent work remains under one Execution unless UEA child criterion met |
+| **AGENT-INV-03** | UAEP owns agentic progression; ToolRuntime executes tools — not vice versa |
+| **AGENT-INV-04** | Agent must not implement private `while True` tool loops bypassing UAEP |
+| **AGENT-INV-05** | Each model iteration obtains context through canonical Context Engineering path — not ad-hoc prompt concatenation |
+
+### Reference scenario — iterative incident investigation
+
+**Positive** — one agentic Execution, no Nexus required:
+
+```text
+Execution E1 (strategy: agentic; catalog: 200 tools)
+  → effective permission narrowing → 43 tools
+  → semantic selection → top 12 schemas to model
+  → LLM #1 → query_logs → ToolRuntime → logs
+  → Context Engineering → next context
+  → LLM #2 → query_metrics + query_traces
+  → ToolInvocationPattern: parallel → ToolRuntime (metrics, traces)
+  → Context Engineering
+  → LLM #3 → inspect_deployment → ToolRuntime
+  → LLM #4 → FINAL answer streamed to user (authorized output channel only)
+```
+
+Properties: **one** `ExecutionId`, **one** authority envelope, **one** budget hierarchy, **one** UAEP lifecycle; selection may rerun; invocation strategy may vary per round; only final authorized output is user-visible.
+
+**Negative — forbidden:**
+
+- `Execution E1` → model partial tool args → direct handler execution
+- Agent → private `while True` tool loop bypassing UAEP
+- Tool result → string concatenation directly into next prompt bypassing CE
+
+Cross-domain negatives (streaming governance, semantic permission expansion): [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md#streaming-governance-and-release-semantics-ue-doc-08) · [`TOOLS.md`](TOOLS.md#domain-invariants-tools-inv).
+
+## Implementation readiness
+
+For future implementation sessions — derive slices without making new architecture decisions. Detailed code mapping: **UE-DOC-0.9**.
+
+### 1. TARGET STATE
+
+Frozen UEA + this document: agentic Execution via `AgentExecutor` → `AgentEngine` → UAEP; bounded iterative model/tool loop under one Execution; UAEP owns session progression; `ToolInvocationPattern` owns invocation mechanics only; tool results and next model context flow through CE; streaming delivery orthogonal to iteration identity.
+
+### 2. CURRENT STATE
+
+ACP `run()` / `on_next_step()` + HarnessKernel/UAEP on harness path; `bounded_react` and tool patterns exist; iterative semantics on ACP/Nexus paths; **no** canonical `ExecutionId` or neutral Execution Boundary; UAEP vs `bounded_react` ownership may overlap in places.
+
+### 3. GAPS
+
+Canonical Execution Boundary / `ExecutionId`; `AgentExecutor` behind Execution strategy; unified UAEP session progression vs `bounded_react` sub-loop; direct/agentic convergence under Execution Boundary; platform-wide stream release semantics above adapter; legacy agent-centric entry/result shapes.
+
+### 4. DEPENDENCIES
+
+- UEA frozen semantics ([`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md))
+- UER Execution Boundary ([`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md))
+- Tools selection/invocation alignment ([`TOOLS.md`](TOOLS.md))
+- CE iterative context path ([`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md))
+- LLM streaming contract ([`LLM_ADAPTERS.md`](LLM_ADAPTERS.md))
+
+### 5. MIGRATION ORDER (high level)
+
+1. Canonical Execution Boundary / `ExecutionId`
+2. `AgentExecutor` behind Execution strategy boundary
+3. UAEP canonical agent session progression
+4. Resolve `bounded_react` vs UAEP loop ownership
+5. Canonical iterative model/tool loop
+6. Monotonic tool selection integration
+7. Invocation patterns under UAEP
+8. Tool results through CE
+9. Canonical stream semantic contract above adapter
+10. Streaming tool-call completion gate
+11. User-output stream release policy
+12. Budget/cancel/failure stream integration
+13. Final structured/output completion
+14. Remove private/direct legacy loop paths
+15. End-to-end proof
+
+### 6. DO NOT VIOLATE
+
+- UEA-INV-001..021 without explicit architecture reopen
+- Agent == Execution or private agent runtime trees
+- UAEP as universal platform Execution protocol
+- Nexus as mandatory path for ordinary agentic tool loops
+- `ToolInvocationPattern` owning full agent/Execution lifecycle
+- New `ToolLoopRuntime`, `StreamingRuntime`, `ReActRuntime`, or `AgentOrchestrationRuntime`
+
+### 7. ACCEPTANCE CONDITIONS
+
+- One Execution can perform model → tool → result → … → final without Nexus
+- Ordinary tool/LLM iterations do not mint child Executions
+- UAEP owns agentic progression; patterns own invocation mechanics only
+- Each model iteration rebuilds governed context through CE (target paths)
+- TARGET/CURRENT labeled where implementation lags
+
 ## Current maturity
 
 Architecture maturity: **A4** *(target)* — **current invariant closure reopened** by Protocol v2 [`STRATEGIC_HARNESS_MODEL`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) and [`AGENT_SYSTEM`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)
@@ -446,6 +601,7 @@ Evidence maturity: **E3**
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 17–20, 31 (+ ACP cognitive patterns §21)  
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
+**Last updated:** 2026-08-26 — **UE-DOC-0.8** iterative tools/streaming alignment with frozen UEA
 **ADR:** [`adr/entries/2026-06-11/ADR-AGENT-001.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-001.md) · [`adr/entries/2026-06-11/ADR-AGENT-002.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-002.md) · [`adr/entries/2026-06-11/ADR-AGENT-003.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-003.md) · [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../technical/adr/entries/2026-08-12/ADR-AGENT-004.md) — ACP · `run()` · `on_next_step` · dual observability · distribution boundary  
 
 **Distribution (execution-adjacent — do not duplicate here):** [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) — catalog · install · binding · runtime lock · activation (AGENT-PLATFORM-2)

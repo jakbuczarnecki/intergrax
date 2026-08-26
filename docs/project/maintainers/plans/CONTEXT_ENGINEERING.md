@@ -24,6 +24,12 @@ Load **only** the satellite matching your task or cited gap ID.
 
 **Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md). CE owns `ContextPackOptimizer`, source-aware context compression, post-compression token recalculation, receipt references in provenance/metadata, and fallback to original fragments on validation failure.
 
+### Architecture sync — UE-DOC-0.8 (2026-08-26)
+
+**Status:** documentation frozen in architecture hub — **no runtime implementation in this slice**. Code transformation mapping: **UE-DOC-0.9**.
+
+Architecture hub additions: iterative tool feedback → CE path; CE-INV; implementation readiness. Cross-ref: [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md#reference-scenario--iterative-incident-investigation).
+
 <a id="protocol-v2-context-engineering-remediation-2026-08-18"></a>
 
 ## Protocol v2 — Context Engineering remediation (2026-08-18)

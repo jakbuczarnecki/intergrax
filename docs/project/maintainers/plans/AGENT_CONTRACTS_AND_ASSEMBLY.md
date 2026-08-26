@@ -74,6 +74,12 @@
 - If parallel work already fixed a finding, do not duplicate — independently verify before lifecycle advancement.
 - Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
 
+### Architecture sync — UE-DOC-0.8 (2026-08-26)
+
+**Status:** documentation frozen in architecture hub — **no runtime implementation in this slice**. Code transformation mapping: **UE-DOC-0.9**.
+
+Architecture hub additions: execution-first agentic path; UAEP vs `ToolInvocationPattern` loop ownership; AGENT-INV; iterative incident investigation reference scenario; implementation readiness (TARGET/CURRENT/GAPS/migration). Paired domains: [`TOOLS.md`](../../architecture/TOOLS.md), [`CONTEXT_ENGINEERING.md`](../../architecture/CONTEXT_ENGINEERING.md), [`MEMORY.md`](../../architecture/MEMORY.md), [`LLM_ADAPTERS.md`](../../architecture/LLM_ADAPTERS.md).
+
 ---
 
 ## Phase TOKEN-ACP — Optional token optimization agent hints (Deferred)

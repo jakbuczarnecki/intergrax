@@ -135,7 +135,144 @@ The canonical Pydantic `output_model` remains the **final validation contract**.
 
 Streaming uses `LLMStreamEvent` at the same adapter boundary as non-stream paths. Provider streaming parity **may differ** — audit conformance marks streaming/tool-call streaming as **Partial** where provider-specific gaps remain. Do not claim full streaming parity across all providers.
 
-## Tool calling boundary
+### PARTIAL vs FINAL (frozen semantics)
+
+| Kind | Role |
+| ---- | ---- |
+| **PARTIAL** | Provisional delivery data — **not** completed model result, final structured output, terminal Execution result, governance-approved final response, or complete tool invocation |
+| **FINAL** | Semantic completion point for **one** model invocation — carries canonical `LLMAdapterResponse` (finish reason, usage, refusal, tool calls, final content) |
+
+Streaming is a **delivery mode of one model invocation** — not a new Execution, Attempt, retry, or agent iteration identity.
+
+### Streaming tool calls
+
+For `stream_with_tools`, providers may emit incremental text/tool-call fragments. Runtime **must not** execute a tool using incomplete arguments:
+
+```text
+provider partials
+  ↓
+adapter normalization / accumulation
+  ↓
+complete canonical LLMToolCall
+  ↓
+validation
+  ↓
+ToolRuntime
+```
+
+If the normalized ABI exposes complete `tool_calls` only on FINAL, that is a valid safe baseline. Do not invent provider-specific tool execution paths.
+
+### Streaming + iterative tool loop
+
+```text
+model invocation #1 stream → complete turn → ToolRuntime → ToolResult → CE → model invocation #2 stream → …
+```
+
+Each model invocation remains in the same parent Execution unless UEA child criterion is crossed. Final user-visible answer may itself stream.
+
+### Internal stream vs user output stream
+
+Intermediate agent/model streams (reasoning, tool planning, internal deliberation, tool-call assembly) **must not** automatically become user-visible. Only authorized output channels may publish user-visible deltas.
+
+Delivery chain (conceptual):
+
+```text
+LLMAdapter stream → Execution/Agent consumer → output policy / visibility → stream delivery projection → Tier-3 transport (SSE / WebSocket / CLI / UI)
+```
+
+Tier-3 delivery protocol does not own model semantics.
+
+<a id="streaming-governance-and-release-semantics-ue-doc-08"></a>
+
+### Streaming governance and release semantics (UE-DOC-0.8)
+
+Streaming **must not** bypass PRE_OUTPUT/output policy. Forbidden when policy requires blocking before disclosure:
+
+```text
+raw provider stream → user → final policy check afterwards  ❌
+```
+
+Valid models:
+
+- **Incremental-safe streaming** — each releasable chunk crosses incremental release policy before publication
+- **Buffered governed streaming** — provider streams internally → buffer → final/output policy → release after approval
+
+### Streaming + structured output
+
+Partial JSON/schema fragments are **not** canonical structured results. Target: stream partials → complete response → parse/`output_model` validation → `LLMStructuredResult[T]` → Execution result.
+
+### Streaming + budget, cancellation, failure
+
+- **Budget:** reserve/check before call; reconcile on FINAL; cancel/failure reconciles best available usage — no streaming-specific budget ledger
+- **Cancellation:** client delivery disconnect ≠ automatic Execution cancellation; Execution cancel stops future tool calls/iterations and requests provider cancel when supported
+- **Failure before FINAL:** model invocation has **not** succeeded — do not treat partial output as SUCCESS
+- **Backpressure:** bounded buffering between provider stream and consumer — slow UI must not imply unbounded memory growth
+- **Observability:** semantic lifecycle facts (started/completed/failed/cancelled, final usage/tool outcomes) — not one `RuntimeEvent` per token by default
+
+### Domain invariants (LLM-STREAM-INV)
+
+| ID | Invariant |
+| -- | --------- |
+| **LLM-STREAM-INV-01** | Stream does not create runtime identity |
+| **LLM-STREAM-INV-02** | PARTIAL is not semantic final result |
+| **LLM-STREAM-INV-03** | Incomplete streamed tool call cannot execute |
+| **LLM-STREAM-INV-04** | FINAL carries/produces canonical completed result |
+| **LLM-STREAM-INV-05** | User-visible streaming cannot bypass required output governance |
+| **LLM-STREAM-INV-06** | Stream failure before FINAL is not success |
+| **LLM-STREAM-INV-07** | Streaming budget uses canonical budget subsystem |
+| **LLM-STREAM-INV-08** | Client disconnect ≠ automatic Execution cancellation |
+
+**Negative — forbidden:** `Execution E1` → raw provider token stream → user → final governance DENY.
+
+## Implementation readiness
+
+For future implementation sessions — derive slices without making new architecture decisions. Detailed code mapping: **UE-DOC-0.9**.
+
+### 1. TARGET STATE
+
+Provider-neutral `stream_messages` / `stream_with_tools` with PARTIAL/FINAL contract; platform-wide output release policy above adapter; complete tool-call gate before `ToolRuntime`; budget/cancel/failure integrated with canonical subsystem.
+
+### 2. CURRENT STATE
+
+`LLMStreamEvent` PARTIAL/FINAL at adapter ABI; `generate_*` and `stream_*` families implemented; provider parity **Partial**; streaming governance before user disclosure not universally proven.
+
+### 3. GAPS
+
+Unified output release semantics above adapter; incremental-safe vs buffered governed streaming product contract; stream cancel/backpressure uniformity; Execution-bound stream observability.
+
+### 4. DEPENDENCIES
+
+- UEA / UER Execution Boundary
+- Governance PRE_OUTPUT policy ([`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md))
+- Tools complete tool-call gate ([`TOOLS.md`](TOOLS.md))
+- CE context path for post-stream turns ([`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md))
+
+### 5. MIGRATION ORDER (high level)
+
+1. Freeze adapter PARTIAL/FINAL contract (done at ABI)
+2. Streaming tool-call completion gate before ToolRuntime
+3. Output release policy layer above adapter
+4. Budget/cancel/failure stream integration
+5. Internal vs user-visible stream separation
+6. Structured output completion on FINAL only
+7. Backpressure/bounded buffering contract
+
+### 6. DO NOT VIOLATE
+
+- UEA-INV-* without explicit reopen
+- PARTIAL triggering tool execution or terminal success
+- Raw stream bypassing output policy when blocking required
+- New `StreamingRuntime` or stream-specific Execution identity
+- Streaming-specific budget ledger
+
+### 7. ACCEPTANCE CONDITIONS
+
+- FINAL is sole semantic completion for one model invocation
+- Incomplete streamed tool calls never execute
+- User-visible stream respects governance (target paths)
+- TARGET/CURRENT labeled where implementation lags
+
+## Current maturity
 
 ```text
 LLM Adapter  → describes tool call (LLMToolCall)
@@ -310,6 +447,7 @@ Evidence maturity: **E3**
 **Plan (1:1):** [`plan/LLM_ADAPTERS.md`](../maintainers/plans/LLM_ADAPTERS.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5  
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
+**Last updated:** 2026-08-26 — **UE-DOC-0.8** streaming semantics alignment with frozen UEA
 **Developer guide:** [`intergrax/llm_adapters/USAGE.md`](../../../intergrax/llm_adapters/USAGE.md)  
 **ADR:** [ADR-LLM-001](../technical/adr/entries/2026-06-06/ADR-LLM-001.md) (envelope) · [ADR-LLM-002](../technical/adr/entries/2026-06-14/ADR-LLM-002.md) (ModelCatalog) · [ADR-LLM-003](../technical/adr/entries/2026-06-19/ADR-LLM-003.md) (routing rules)
 
