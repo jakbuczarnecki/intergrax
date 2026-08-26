@@ -38,7 +38,10 @@ from intergrax.runtime.diagnostics.in_memory_problem_persistence import (
     InMemoryProblemPersistence,
 )
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
-from intergrax.runtime.diagnostics.persistence_conformance import sample_problem
+from intergrax.runtime.diagnostics.persistence_conformance import (
+    sample_problem,
+    _sample_reconciliation_key,
+)
 from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicProblemSignature,
     ProblemGroupingEngine,
@@ -291,6 +294,15 @@ def test_document_store_concurrent_conflicting_same_problem_id() -> None:
     verifier = DocumentStoreProblemPersistence(store)
     try:
         assert verifier.list_for_tenant("tenant-conflict-id") == (winner,)
+        loser = second if winner == first else first
+        if loser.provenance.reconciliation_key != winner.provenance.reconciliation_key:
+            assert (
+                verifier.find_by_reconciliation_key(
+                    tenant_id="tenant-conflict-id",
+                    reconciliation_key=loser.provenance.reconciliation_key,
+                )
+                is None
+            )
     finally:
         verifier.close()
 
@@ -382,10 +394,20 @@ def test_document_store_concurrent_subject_collision() -> None:
     store = InMemoryDocumentStore()
     tenant_id = "tenant-subject-race"
     shared = sample_problem(tenant_id=tenant_id).current_subject_refs[0]
-    first = sample_problem(tenant_id=tenant_id, subject_refs=(shared,))
+    first_key = _sample_reconciliation_key(tenant_id=tenant_id)
+    second_key = _sample_reconciliation_key(
+        tenant_id=tenant_id,
+        signature=DeterministicProblemSignature(findings=(), limitations=()),
+    )
+    first = sample_problem(
+        tenant_id=tenant_id,
+        subject_refs=(shared,),
+        reconciliation_key=first_key,
+    )
     second = sample_problem(
         tenant_id=tenant_id,
         subject_refs=(shared,),
+        reconciliation_key=second_key,
     )
     barrier = threading.Barrier(2)
     results: list[Problem] = []
@@ -409,6 +431,116 @@ def test_document_store_concurrent_subject_collision() -> None:
     assert len(results) == 1
     assert len(errors) == 1
     assert isinstance(errors[0], ProblemPersistenceConflictError)
+    winner = results[0]
+    assert winner in (first, second)
+    loser = second if winner == first else first
+    verifier = DocumentStoreProblemPersistence(store)
+    try:
+        assert verifier.list_for_tenant(tenant_id) == (winner,)
+        assert verifier.get(tenant_id=tenant_id, problem_id=loser.problem_id) is None
+        assert (
+            verifier.find_by_reconciliation_key(
+                tenant_id=tenant_id,
+                reconciliation_key=loser.provenance.reconciliation_key,
+            )
+            is None
+        )
+        assert (
+            verifier.find_by_subject_ref(
+                tenant_id=tenant_id,
+                subject_ref=shared,
+            )
+            == winner
+        )
+
+        reuse_subject = sample_problem(tenant_id=tenant_id).current_subject_refs[0]
+        reused = sample_problem(
+            tenant_id=tenant_id,
+            subject_refs=(reuse_subject,),
+            reconciliation_key=loser.provenance.reconciliation_key,
+        )
+        assert verifier.create(reused) == reused
+    finally:
+        verifier.close()
+
+
+def test_document_store_multi_subject_partial_claim_rolls_back() -> None:
+    store = InMemoryDocumentStore()
+    tenant_id = "tenant-partial-subject-claim"
+    owned_subject = sample_problem(tenant_id=tenant_id).current_subject_refs[0]
+    free_subject = sample_problem(tenant_id=tenant_id).current_subject_refs[0]
+    key_a = _sample_reconciliation_key(tenant_id=tenant_id)
+    key_b = _sample_reconciliation_key(
+        tenant_id=tenant_id,
+        signature=DeterministicProblemSignature(findings=(), limitations=()),
+    )
+    problem_a = sample_problem(
+        tenant_id=tenant_id,
+        subject_refs=(owned_subject,),
+        reconciliation_key=key_a,
+    )
+    problem_b = sample_problem(
+        tenant_id=tenant_id,
+        subject_refs=(free_subject, owned_subject),
+        reconciliation_key=key_b,
+    )
+    persistence = DocumentStoreProblemPersistence(store)
+    persistence.create(problem_a)
+
+    with pytest.raises(ProblemPersistenceConflictError):
+        persistence.create(problem_b)
+
+    assert (
+        persistence.find_by_reconciliation_key(
+            tenant_id=tenant_id,
+            reconciliation_key=problem_b.provenance.reconciliation_key,
+        )
+        is None
+    )
+    assert (
+        persistence.find_by_subject_ref(
+            tenant_id=tenant_id,
+            subject_ref=free_subject,
+        )
+        is None
+    )
+    assert (
+        persistence.find_by_subject_ref(
+            tenant_id=tenant_id,
+            subject_ref=owned_subject,
+        )
+        == problem_a
+    )
+    assert persistence.get(tenant_id=tenant_id, problem_id=problem_b.problem_id) is None
+
+
+def test_document_store_create_rolls_back_after_canonical_write_failure() -> None:
+    record = sample_problem(tenant_id="tenant-canonical-failure")
+    partition_key = f"intergrax.diagnostic_problem.v1:{record.tenant_id}"
+    canonical_key = (partition_key, f"record:{record.problem_id}")
+    store = _FailingPutIfAbsentDocumentStore(fail_keys=frozenset({canonical_key}))
+    persistence = DocumentStoreProblemPersistence(store)
+
+    with pytest.raises(RuntimeError, match="simulated diagnostic problem index write failure"):
+        persistence.create(record)
+
+    assert (
+        persistence.find_by_reconciliation_key(
+            tenant_id=record.tenant_id,
+            reconciliation_key=record.provenance.reconciliation_key,
+        )
+        is None
+    )
+    for subject_ref in record.current_subject_refs:
+        assert (
+            persistence.find_by_subject_ref(
+                tenant_id=record.tenant_id,
+                subject_ref=subject_ref,
+            )
+            is None
+        )
+    assert persistence.get(tenant_id=record.tenant_id, problem_id=record.problem_id) is None
+    assert persistence.create(record) == record
 
 
 def test_document_store_create_retries_after_reconciliation_index_write_failure() -> None:

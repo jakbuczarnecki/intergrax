@@ -75,6 +75,78 @@ def _decode_index_ref(data: object) -> ProblemId:
     return ProblemId(problem_id)
 
 
+class _CreateIndexClaims:
+    """Tracks index documents newly inserted by a single create() invocation."""
+
+    def __init__(self, document_store: ConditionalDocumentStore) -> None:
+        self._document_store = document_store
+        self._claimed: list[DocumentRecord] = []
+
+    def try_claim(self, document: DocumentRecord) -> bool:
+        if self._document_store.put_if_absent(document):
+            self._claimed.append(document)
+            return True
+        return False
+
+    def rollback_all(self, *, partition_key: str) -> None:
+        for document in reversed(self._claimed):
+            self._rollback_one(document, partition_key=partition_key)
+
+    def rollback_except_required_by(
+        self,
+        canonical: Problem,
+        *,
+        partition_key: str,
+    ) -> None:
+        required_keys = {
+            (document.partition_key, document.row_key)
+            for document in _required_index_documents(
+                canonical,
+                partition_key=partition_key,
+            )
+        }
+        for document in reversed(self._claimed):
+            if (document.partition_key, document.row_key) in required_keys:
+                continue
+            self._rollback_one(document, partition_key=partition_key)
+
+    def _rollback_one(self, document: DocumentRecord, *, partition_key: str) -> None:
+        if self._document_store.delete_if_match(expected=document):
+            return
+        existing = self._document_store.get(document.partition_key, document.row_key)
+        if existing is None:
+            return
+        indexed_id = _decode_index_ref(dict(existing.data))
+        record = self._document_store.get(partition_key, _record_row_key(indexed_id))
+        if record is None:
+            raise ProblemPersistenceIntegrityError(
+                "orphan diagnostic problem index remains after failed create rollback",
+            )
+
+
+def _required_index_documents(
+    canonical: Problem,
+    *,
+    partition_key: str,
+) -> tuple[DocumentRecord, ...]:
+    documents = [
+        DocumentRecord(
+            partition_key=partition_key,
+            row_key=_reconciliation_row_key(canonical.provenance.reconciliation_key),
+            data=_encode_index_ref(canonical.problem_id),
+        ),
+    ]
+    for subject_ref in canonical.current_subject_refs:
+        documents.append(
+            DocumentRecord(
+                partition_key=partition_key,
+                row_key=_subject_row_key(subject_ref),
+                data=_encode_index_ref(canonical.problem_id),
+            ),
+        )
+    return tuple(documents)
+
+
 class DocumentStoreProblemPersistence(ProblemPersistence):
     """ConditionalDocumentStore-backed durable Problem store."""
 
@@ -193,28 +265,47 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
 
     def create(self, record: Problem) -> Problem:
         partition_key = _document_partition(record.tenant_id)
-        self._ensure_reconciliation_index(record=record, partition_key=partition_key)
-        for subject_ref in record.current_subject_refs:
-            self._ensure_subject_index(
+        claims = _CreateIndexClaims(self._document_store)
+        try:
+            self._claim_indexes_for_create(
                 record=record,
-                subject_ref=subject_ref,
                 partition_key=partition_key,
+                claims=claims,
             )
+        except ProblemPersistenceConflictError:
+            claims.rollback_all(partition_key=partition_key)
+            raise
+        except Exception:
+            claims.rollback_all(partition_key=partition_key)
+            raise
 
         canonical_document = self._canonical_document(record)
-        if self._document_store.put_if_absent(canonical_document):
-            return record
+        try:
+            if self._document_store.put_if_absent(canonical_document):
+                return record
+        except Exception:
+            existing_record = self._document_store.get(
+                partition_key,
+                canonical_document.row_key,
+            )
+            if existing_record is None:
+                claims.rollback_all(partition_key=partition_key)
+                raise
+            stored = decode_problem_record(dict(existing_record.data))
+            if stored == record:
+                return self._resolve_existing_record_and_repair_indexes(
+                    existing_record,
+                    record,
+                    partition_key=partition_key,
+                )
+            claims.rollback_except_required_by(stored, partition_key=partition_key)
+            raise ProblemPersistenceConflictError("conflicting Problem for problem_id")
 
-        existing_record = self._document_store.get(
-            partition_key,
-            canonical_document.row_key,
-        )
-        if existing_record is None:
-            raise RuntimeError("diagnostic problem persistence create failed")
-        return self._resolve_existing_record_and_repair_indexes(
-            existing_record,
-            record,
+        return self._resolve_canonical_create_race(
+            record=record,
+            canonical_document=canonical_document,
             partition_key=partition_key,
+            claims=claims,
         )
 
     def update(self, record: Problem, *, expected_version: int) -> Problem:
@@ -252,6 +343,53 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
                 partition_key=partition_key,
             )
         return record
+
+    def _claim_indexes_for_create(
+        self,
+        *,
+        record: Problem,
+        partition_key: str,
+        claims: _CreateIndexClaims,
+    ) -> None:
+        reconciliation_document = self._reconciliation_index_document(
+            record=record,
+            partition_key=partition_key,
+        )
+        if not claims.try_claim(reconciliation_document):
+            self._verify_index_document(reconciliation_document, record)
+
+        for subject_ref in record.current_subject_refs:
+            subject_document = self._subject_index_document(
+                record=record,
+                subject_ref=subject_ref,
+                partition_key=partition_key,
+            )
+            if not claims.try_claim(subject_document):
+                self._verify_index_document(subject_document, record)
+
+    def _resolve_canonical_create_race(
+        self,
+        *,
+        record: Problem,
+        canonical_document: DocumentRecord,
+        partition_key: str,
+        claims: _CreateIndexClaims,
+    ) -> Problem:
+        existing_record = self._document_store.get(
+            partition_key,
+            canonical_document.row_key,
+        )
+        if existing_record is None:
+            raise RuntimeError("diagnostic problem persistence create failed")
+        stored = decode_problem_record(dict(existing_record.data))
+        if stored == record:
+            return self._resolve_existing_record_and_repair_indexes(
+                existing_record,
+                record,
+                partition_key=partition_key,
+            )
+        claims.rollback_except_required_by(stored, partition_key=partition_key)
+        raise ProblemPersistenceConflictError("conflicting Problem for problem_id")
 
     def _canonical_document(self, record: Problem) -> DocumentRecord:
         return DocumentRecord(

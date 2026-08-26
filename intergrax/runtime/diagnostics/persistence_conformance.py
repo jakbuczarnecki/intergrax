@@ -284,6 +284,100 @@ def assert_problem_persistence_conformance(
         store.create(loser)
     assert store.list_for_tenant(f"{label}-collision-tenant") == (winner,)
 
+    assert_failed_create_leaves_no_orphan_indexes(store, label=label)
+
+
+def assert_failed_create_leaves_no_orphan_indexes(
+    store: ProblemPersistence,
+    *,
+    label: str,
+) -> None:
+    """Failed logical create must not leave orphan indexes or poisoned keys."""
+    tenant_id = f"{label}-orphan-free"
+    shared = _sample_subject_ref(tenant_id=tenant_id)
+    winner_key = _sample_reconciliation_key(tenant_id=tenant_id)
+    loser_key = _sample_reconciliation_key(
+        tenant_id=tenant_id,
+        signature=DeterministicProblemSignature(findings=(), limitations=()),
+    )
+    winner = sample_problem(
+        tenant_id=tenant_id,
+        subject_refs=(shared,),
+        reconciliation_key=winner_key,
+    )
+    loser = sample_problem(
+        tenant_id=tenant_id,
+        subject_refs=(shared,),
+        reconciliation_key=loser_key,
+    )
+    store.create(winner)
+    with pytest_raises_conflict():
+        store.create(loser)
+
+    assert store.list_for_tenant(tenant_id) == (winner,)
+    assert store.get(tenant_id=tenant_id, problem_id=loser.problem_id) is None
+    assert (
+        store.find_by_reconciliation_key(
+            tenant_id=tenant_id,
+            reconciliation_key=loser.provenance.reconciliation_key,
+        )
+        is None
+    )
+    assert store.find_by_subject_ref(tenant_id=tenant_id, subject_ref=shared) == winner
+
+    reuse_subject = _sample_subject_ref(tenant_id=tenant_id)
+    reused = sample_problem(
+        tenant_id=tenant_id,
+        subject_refs=(reuse_subject,),
+        reconciliation_key=loser.provenance.reconciliation_key,
+    )
+    assert store.create(reused) == reused
+
+    partial_tenant = f"{label}-partial-claim"
+    owned_subject = _sample_subject_ref(tenant_id=partial_tenant)
+    free_subject = _sample_subject_ref(tenant_id=partial_tenant)
+    partial_key_a = _sample_reconciliation_key(tenant_id=partial_tenant)
+    partial_key_b = _sample_reconciliation_key(
+        tenant_id=partial_tenant,
+        signature=DeterministicProblemSignature(findings=(), limitations=()),
+    )
+    problem_a = sample_problem(
+        tenant_id=partial_tenant,
+        subject_refs=(owned_subject,),
+        reconciliation_key=partial_key_a,
+    )
+    store.create(problem_a)
+    problem_b = sample_problem(
+        tenant_id=partial_tenant,
+        subject_refs=(free_subject, owned_subject),
+        reconciliation_key=partial_key_b,
+    )
+    with pytest_raises_conflict():
+        store.create(problem_b)
+
+    assert (
+        store.find_by_reconciliation_key(
+            tenant_id=partial_tenant,
+            reconciliation_key=problem_b.provenance.reconciliation_key,
+        )
+        is None
+    )
+    assert (
+        store.find_by_subject_ref(
+            tenant_id=partial_tenant,
+            subject_ref=free_subject,
+        )
+        is None
+    )
+    assert (
+        store.find_by_subject_ref(
+            tenant_id=partial_tenant,
+            subject_ref=owned_subject,
+        )
+        == problem_a
+    )
+    assert store.get(tenant_id=partial_tenant, problem_id=problem_b.problem_id) is None
+
 
 def assert_problem_persistence_typed_round_trip(
     store: ProblemPersistence,
