@@ -1,53 +1,270 @@
 # Unified Execution Runtime
 
-**Intergrax Unified Execution Runtime (UER)** defines the common lifecycle, identity, event, policy interception, retry, interruption, and completion semantics that every agent execution follows.
+**Intergrax Unified Execution Runtime (UER)** owns Run/Attempt lifecycle structure, Execution identity coordination, executor strategy routing, and lifecycle facts for every platform work unit.
 
-> **Nexus decides what should execute. Unified Execution Runtime defines how execution behaves.**
+> **Nexus asks: WHAT EXECUTES NEXT?**
+> **Unified Execution Runtime asks: HOW DOES AN EXECUTION BEHAVE?**
+
+**Semantic authority:** This document is subordinate to the frozen [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) (UEA). Where UER and UEA conflict, **UEA wins**.
+
+**Primary audience:** Principal / Staff architects and implementation sessions (including Cursor) that will migrate runtime code toward the frozen execution model.
+
+> [!NOTE]
+> **Maturity boundary:** Architecture semantics are frozen per UEA; **implementation is incomplete**. Core harness paths implement typed `TaskId`/`RunId`/`AttemptId`/`EventId`, UAEP on agent paths, and `RuntimeEvent` emission — this is **not** a production-qualification claim. Canonical `ExecutionId` and neutral Execution Boundary are **target**, not yet implemented in Python. Extended engineering sections (§42.8+) live in the [runtime extended satellite](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md).
 
 ## Why it matters
 
-Without a platform-owned execution runtime, every agent path could independently implement its own IDs, retries, failure handling, cancellation, pause/resume, HITL, event emission, policy checks, and terminal states. That produces inconsistent behavior, untraceable retries, hidden callbacks, policy bypass, incompatible audit histories, and difficult recovery.
+Without a platform-owned execution runtime, every path could independently implement IDs, retries, failure handling, cancellation, pause/resume, HITL, event emission, policy checks, and terminal states. That produces inconsistent behavior, untraceable retries, hidden callbacks, policy bypass, incompatible audit histories, and difficult recovery.
 
-UER makes execution behavior **platform-owned**. Agents express domain work and control-flow **intent** (`AgentDecision`); the runtime enforces lifecycle transitions, emits `RuntimeEvent` on every meaningful change, and applies policy consequences — proceed, deny, interrupt, wait, retry, cancel, or fail.
-
-Agents **must not** implement ad hoc lifecycle, retry, HITL, or event semantics. They run through **UAEP** (`AgentEngine` / `HarnessKernel`) and the `RuntimeEventBus`.
-
-> [!NOTE]
-> **Maturity boundary:** Core runtime semantics — `RuntimeEvent` spine, UAEP, typed execution identity, retry/HITL/cancellation events — are **implemented** on the Nexus harness path. This is **not** a production-qualification claim: `execution_mode=strict` and `production_mode` are policy posture, not taxonomy **P4** evidence. Extended engineering sections (§42.8+) live in the [runtime extended satellite](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md) (intentional progressive disclosure); Token Optimization runtime policy rows (`TOKEN-UER-*`) are **planned** in the plan — see [Current maturity](#current-maturity) and [unresolved documentation drift](#unresolved-documentation-drift-outside-scope).
-
-**Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring runtime policy, hooks, and application hosts — after the platform overview in the root README.
+UER makes **Execution** the fundamental independently executable, schedulable, governable, observable, retryable, cancellable, and checkpointable unit of platform work — and makes lifecycle behavior **platform-owned**.
 
 ## At a glance
 
 | Concern | Summary |
 | -------- | -------- |
-| **Responsibility** | Execution lifecycle semantics — task/run/attempt identity propagation, phases, events, retry, pause/resume, cancellation, HITL, policy interception |
-| **Identity** | **TARGET:** `TaskId` → `RunId` → `AttemptId` → `ExecutionId` → `EventId`; **CURRENT:** spine stops at `AttemptId` → `EventId` (no canonical `ExecutionId` yet) — see [Flagship architecture visual](#flagship-architecture-visual) |
-| **Event model** | Every meaningful transition emits `RuntimeEvent`; hooks, policy, recovery, and observability subscribe — no hidden agent callbacks |
-| **UAEP** | Mandatory agent invocation protocol through `AgentEngine` — agents do not bypass context, step, validation, or decision emission |
-| **Nexus relation** | Nexus routes **what** executes; UER defines **how** execution behaves inside the run |
-| **Observability relation** | UER emits events; Observability owns journal, persistence, as-of/bitemporal interpretation |
-| **Governance relation** | Policy decides allow/deny/approval; UER enforces lifecycle consequences |
+| **Responsibility** | Run/Attempt lifecycle, Execution identity coordination, executor strategy routing, lifecycle transitions, `RuntimeEvent` emission, Governance/Budget/Observability/Checkpoint coordination |
+| **Core question** | How does an Execution behave? (Nexus owns what executes next) |
+| **Identity** | **TARGET:** `TaskId` → `RunId` → `AttemptId` → `ExecutionId` → `EventId`; **CURRENT:** spine stops at `AttemptId` → `EventId` |
+| **Fundamental unit** | **Execution** — not Agent, Node, Nexus, LLM call, or Worker |
+| **Strategies** | inference · agentic (AgentEngine → UAEP) · orchestration (Nexus → child Executions) |
+| **UAEP** | **Agent-specific** governed loop — not the universal Execution Runtime contract |
+| **Observability** | UER emits lifecycle facts; Observability records canonical evidence |
 | **Maturity** | Four-axis statement in [Current maturity](#current-maturity) — no dedicated public UER proof route |
-| **Go deeper** | [Engineering canon](#engineering-canon) · [runtime extended satellite](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md) · [plan](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md) |
+| **Go deeper** | [Engineering canon](#engineering-canon) · [runtime extended satellite](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md) · [plan](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md) · [UEA](UNIFIED_EXECUTION_ARCHITECTURE.md) |
 
-## Flagship architecture visual
+## Mental model
 
-**TARGET ARCHITECTURE** — canonical identity hierarchy includes `ExecutionId` between `AttemptId` and `EventId` (see [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) §3).
+**TARGET ARCHITECTURE** — every public execution path materializes:
 
+```text
+TASK
+  ↓
+RUN
+  ↓
+ATTEMPT
+  ↓
+ROOT EXECUTION
+  ├─ inference strategy
+  ├─ agentic strategy
+  └─ orchestration strategy → Nexus → child Executions
+```
+
+Even the simplest call:
+
+```text
+result = await execution.execute(request=..., output_type=...)
+```
+
+conceptually becomes Task → Run → Attempt → root Execution. The developer describes **what** is required; the platform resolves **how** internally.
+
+<a href="UNIFIED_EXECUTION_ARCHITECTURE.md">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-simple-execute-flow-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-simple-execute-flow-light.svg">
+  <img
+    alt="Direct execute path: even the simplest call materializes Task, Run, Attempt, and root Execution without requiring Nexus."
+    src="assets/unified-execution-simple-execute-flow-light.svg"
+  >
+</picture>
+</a>
+
+### What is NOT Execution
+
+| Concept | Role | Execution? |
+| ------- | ---- | ---------- |
+| **Agent** | Reusable executor definition | No |
+| **Node / NodeId** | Definition topology slot | No |
+| **Nexus** | Orchestration control plane when strategy = orchestration | No |
+| **LLM call** | Internal operation — may stay inside one Execution | Not automatically separate |
+| **Worker** | Transport/infrastructure host | No |
+
+Do **not** invent `NodeRunId`, `AgentRunId`, `StepRunId`, `OrchestrationRunId`, or `WorkerRunId`. Local identities (`node_id`, `agent_id`, `step_id`, `tool_call_id`, broker/worker IDs) remain local. **`NodeId` ≠ `ExecutionId`.**
+
+## UER vs Nexus vs neighboring domains
+
+| Domain | Core question | Owns |
+| ------ | ------------- | ---- |
+| **Nexus** | What should execute next? | Topology execution, dependency readiness, scheduling, fan-out, delegation/handoff, merge, orchestration-level failure handling, **requesting child Executions** |
+| **UER** | How does an Execution behave? | Run/Attempt lifecycle, Execution identity coordination, executor strategy routing, lifecycle transitions, lifecycle fact emission |
+| **Governance** | Is this allowed? Who may act? | Policy, authority, approval **decisions** |
+| **Budget** | What allowance remains? | Ledger, reservation, consumption, release, enforcement |
+| **Observability** | What happened? | Persistence, indexing, as-of projection, export |
+| **DIAG** | Why did it happen? | Evidence interpretation along canonical relationships |
+| **Agent (Tier-2)** | What domain work? | Agent-specific steps, tools, `AgentDecision` intent |
+
+UER does **not** decide business policy, authority, budget allocation policy, orchestration topology, diagnosis, canonical observability persistence, or queue transport semantics.
+
+## Identity hierarchy
+
+**TARGET ARCHITECTURE**
+
+```text
+TaskId
+  → RunId
+    → AttemptId
+      → ExecutionId
+        → EventId
+```
+
+Every Attempt has at least one **root Execution** (`parent_execution_id = None`). Child Executions link via `parent_execution_id`, forming one canonical **Execution Tree** per Attempt.
+
+<a href="UNIFIED_EXECUTION_ARCHITECTURE.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-identity-lifecycle-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-identity-lifecycle-light.svg">
   <img
-    alt="Canonical identity hierarchy: TaskId through EventId with ExecutionId and parent_execution_id on child Executions; Attempt boundary mints new Execution instances on whole-Run retry; pause/resume preserves AttemptId and ExecutionId."
+    alt="Canonical identity hierarchy: TaskId through EventId with ExecutionId and parent_execution_id on child Executions."
     src="assets/unified-execution-identity-lifecycle-light.svg"
   >
 </picture>
+</a>
+
+| Level | Meaning |
+| ----- | ------- |
+| **Task** | User or system intent (`TaskId`) |
+| **Run** | One complete governed lifecycle of that task (`RunId`) |
+| **Attempt** | One global try inside the run (`AttemptId`) |
+| **Execution** | Independently schedulable work unit inside the Attempt (`ExecutionId`) |
+| **Event** | One meaningful lifecycle transition (`EventId`) |
 
 **CURRENT IMPLEMENTATION:** Typed `TaskId`, `RunId`, `AttemptId`, and `EventId` exist on main harness paths. **`ExecutionId` is not yet a canonical Python identity** — the event spine currently stops at Task/Run/Attempt/Event.
 
-Retry keeps the same `TaskId` and `RunId`. **TARGET:** whole-Run retry mints a new `AttemptId` and new Execution instances; local retry preserves `AttemptId` and `ExecutionId`. **CURRENT:** run-level retry mints a new `AttemptId` as wired today. Resume without retry preserves the same `AttemptId`. Each event carries a unique `EventId`.
+## Public execution entry
 
+**TARGET ARCHITECTURE**
+
+```text
+result = await execution.execute(
+    request=...,
+    output_type=...,
+)
+```
+
+The request describes **what** is required. The developer does **not** select `LLMAdapter`, `AgentEngine`, UAEP, `BoundedReact`, Nexus, planner, or graph executor.
+
+**Forbidden public API direction:** `execute_agent(...)`, `execute_with_nexus(...)`, `mode="react"`, `mode="agent"`, `mode="nexus"`. Strategy resolution is deterministic from explicit request requirements / capabilities.
+
+Exact Python signature is **not** frozen here.
+
+## Execution Boundary and strategies
+
+**TARGET ARCHITECTURE** — conceptual coordination boundary (exact class/module names are **not** frozen):
+
+```text
+Execution Boundary
+├─ InferenceExecutor        # direct inference strategy
+├─ AgentExecutor
+│    └─ AgentEngine
+│         └─ UAEP           # agent-internal governed loop
+└─ OrchestrationExecutor
+     └─ Nexus
+          └─ child Executions
+```
+
+Illustrative names (`ExecutionEnvelope`, `ExecutionResult`, `InferenceExecutor`) denote **target responsibility**, not mandatory implementation classes unless separately frozen.
+
+### Internal executor strategies
+
+| Strategy | When | Nexus required? |
+| -------- | ---- | --------------- |
+| **inference** | Direct model/provider call satisfies requirements | No |
+| **agentic** | Agent loop with tools/decisions required | No |
+| **orchestration** | Multi-unit topology, fan-out, delegation | Yes (behind orchestration strategy) |
+| **future** | Additional executor strategies | Per capability contract |
+
+Direct inference is still a **full Execution** with Task, Run, Attempt, Execution, governance, budget, observability, diagnostics, and recovery semantics where applicable. Nexus is **not** required for direct inference or ordinary agentic execution.
+
+**CURRENT IMPLEMENTATION:** `UnifiedTaskRunner` currently routes through Nexus on many paths; strategy resolution is not yet neutral.
+
+## Direct execution (inference strategy)
+
+**TARGET ARCHITECTURE**
+
+```text
+Execution (inference strategy)
+  → provider/model invocation
+  → lifecycle facts + governance/budget/observability coordination
+```
+
+One root Execution; internal provider/tool retries remain inside the same `ExecutionId` unless policy escalates to Execution-level or whole-Run retry.
+
+## Agentic execution and UAEP
+
+**TARGET ARCHITECTURE**
+
+```text
+Execution
+  → agentic strategy
+  → AgentEngine
+  → UAEP
+```
+
+UAEP owns **agent-internal** governed loop semantics (context build, steps, tools, validation, `AgentDecision`). It is **agent-specific** — not the generic Execution Runtime contract.
+
+Do **not** state "every execution runs through UAEP." Do **not** treat `RuntimeExecutionContext` (agent-specific today despite its generic name) as the future universal execution context.
+
+**CURRENT IMPLEMENTATION:** Agent paths run through `AgentEngine` / UAEP / `HarnessKernel` on the Nexus harness route. See [§42.5](#425-unified-agent-execution-protocol-current-agent-path).
+
+## Orchestration and Nexus boundary
+
+**TARGET ARCHITECTURE**
+
+```text
+Parent Execution
+  → orchestration strategy
+  → Nexus
+  → request/admit child Execution
+  → child Execution(s)
+```
+
+Nexus owns topology execution, dependency readiness, scheduling, fan-out, parallelism coordination, delegation/handoff topology, merge, orchestration-level failure handling, and **requesting** child Executions.
+
+Nexus does **not**: execute AI internals as the canonical abstraction; own generic Run lifecycle; own `ExecutionId` authority; own budget ledger; own Governance; own Observability persistence; own DIAG.
+
+Nested orchestration is legal. A child orchestration does **not** create a new `RunId`.
+
+**CURRENT IMPLEMENTATION:** Nexus `GraphExecutor` remains agent-centric; `AgentExecutionResult` leaks orchestration concerns in places.
+
+## Execution Tree
+
+**TARGET ARCHITECTURE**
+
+```text
+Execution E1 (root)
+├── Execution E2
+├── Execution E3
+│   ├── Execution E5
+│   └── Execution E6
+└── Execution E4
+```
+
+Each Execution: `execution_id`, `parent_execution_id` (`None` for root). No subsystem may maintain a competing canonical execution tree.
+
+Cross-reference: UEA [§4 Execution tree](UNIFIED_EXECUTION_ARCHITECTURE.md#4-execution-tree), [§5 Node vs Execution](UNIFIED_EXECUTION_ARCHITECTURE.md#5-node-vs-execution).
+
+## Step vs Execution
+
+Internal operations — LLM call, reasoning step, tool call, validation, agent loop iteration — may remain **inside one Execution**.
+
+A **child Execution** is created when the unit is independently meaningful as runtime work: independently schedulable, governable, retryable, budgetable, delegatable, cancellable, observable.
+
+Do **not** create a second generic graph runtime inside each Execution.
+
+## Lifecycle: retry, pause, resume, cancellation
+
+**TARGET ARCHITECTURE**
+
+| Scenario | TaskId | RunId | AttemptId | ExecutionId |
+| -------- | ------ | ----- | --------- | ----------- |
+| Provider/tool/internal-step retry | same | same | same | same |
+| Execution-level retry (same logical execution) | same | same | same | same (+ retry generation/index) |
+| Whole-Run retry | same | same | **new** | **new** instances |
+| Pause/resume (incl. HITL) | same | same | same | same |
+| Worker crash / redelivery (same work) | same | same | same | same |
+
+Pause/resume is **not** retry. Whole-Run retry mints a new `AttemptId` and new runtime Execution instances; local retries do **not** automatically mint a new `AttemptId`.
+
+<a href="UNIFIED_EXECUTION_ARCHITECTURE.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-retry-pause-resume-cancel-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-retry-pause-resume-cancel-light.svg">
@@ -56,282 +273,347 @@ Retry keeps the same `TaskId` and `RunId`. **TARGET:** whole-Run retry mints a n
     src="assets/unified-execution-retry-pause-resume-cancel-light.svg"
   >
 </picture>
+</a>
 
-## UER vs Nexus vs Agent
+**CURRENT IMPLEMENTATION:** Run-level retry mints a new `AttemptId` as wired today. Two independent retry layers exist (graph/validation `RetryEngine` and run-level `AgentEngine`/`HarnessKernel`) plus protocol-level backend retries. Agents emit `AgentDecision.RETRY` intent; runtime owns policy and counts.
 
-| Domain | Core question | Owns |
-| ------ | ------------- | ---- |
-| **Nexus** | What should execute next? | Routing, orchestration, graph/task flow, planner, agent selection, completion decisions |
-| **UER** | How does execution behave? | Lifecycle, runtime semantics, attempts, transitions, `RuntimeEvent` emission, UAEP enforcement |
-| **Agent (Tier-2)** | What domain work should be done? | Agent-specific steps, tools, and `AgentDecision` intent — not global lifecycle or retry policy |
+### Cancellation
 
-Nexus selects agents and interprets `AgentDecision` through `PolicyEngine`. `AgentEngine` / `UAEPExecutor` enforce the step loop inside a graph node. See [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §1.3 for the three planning planes (Nexus graph, UAEP steps, tool planner).
+**TARGET ARCHITECTURE**
 
-## Task → Run → Attempt → Execution → Event
+- **Run cancellation** → cancels the complete Execution Tree
+- **Execution cancellation** → cancels that Execution subtree
 
-| Level | Meaning |
-| ----- | ------- |
-| **Task** | User or system intent — the work unit (`TaskId`) |
-| **Run** | One execution lifecycle of that task (`RunId`) |
-| **Attempt** | One concrete try inside the run (`AttemptId`) — minted at attempt boundaries |
-| **Execution** | Independently schedulable unit inside the Attempt (`ExecutionId`) — **TARGET**; not yet canonical in Python |
-| **Event** | One meaningful transition (`EventId`) — unique per event |
+Cancellation follows canonical `parent_execution_id` lineage. No Nexus-private cancellation tree.
 
-**TARGET** hierarchy:
+## Governance and authority
+
+UER **invokes** Governance at defined boundaries. Governance owns policy, authority, and approval **decisions**. UER enforces lifecycle **consequences** (proceed, deny, interrupt, wait, retry, cancel, fail).
 
 ```text
-Task
-  1:N Run
-      1:N Attempt
-          1:N Execution
-              1:N RuntimeEvent
+Run/root authority
+  → Execution
+  → child Execution
+  → Agent
+  → Tool
 ```
 
-**CURRENT IMPLEMENTATION** spine (no `ExecutionId` yet):
+Child effective authority ≤ parent; may narrow, never expand. UER does **not** own a private policy engine. `PolicyEngine` wiring inside Nexus/UAEP reflects **current implementation**, not architectural ownership.
+
+**CURRENT IMPLEMENTATION / MIGRATION GAP:** Authority propagation is substantially graph/node-centric today.
+
+## Budget
+
+`RunBudget` is the root source. An Execution receives a bounded allowance/reservation; child allowance ≤ parent allowance.
+
+Budget subsystem owns ledger, reservation, consumption, release, and enforcement. UER coordinates budget lifecycle interaction. UER and Nexus must **not** own private independent token/cost counters as the canonical architecture.
+
+**CURRENT IMPLEMENTATION / MIGRATION GAP:** Hierarchical `RunBudget` reservations are incomplete.
+
+## Observability
+
+> **Observability records execution truth; it does not invent execution truth.**
+
+**TARGET ARCHITECTURE**
 
 ```text
-Task → Run → Attempt → RuntimeEvent
+Task → Run → Attempt → Execution Tree → RuntimeEvents
+  → HOS → persistence → Unified Run Journal
 ```
 
-**Retry:** **TARGET** whole-Run retry — same `TaskId` + `RunId`, **new** `AttemptId` + new Execution instances; **CURRENT** run-level retry mints new `AttemptId` as wired. **Resume without retry:** same `AttemptId`. Full typed-carrier matrix, unified journal, and as-of semantics — [`OBSERVABILITY.md`](OBSERVABILITY.md) §5–§10 (UER does not duplicate that canon).
+UER produces lifecycle facts/events. Observability owns persistence, indexing/read models, historical/as-of projection, and external export.
 
-## UER vs Observability
+`RuntimeEvent` target identity includes `ExecutionId`. Execution lineage: `parent_execution_id`. Event causality: `parent_event_id` — these are **different** relationships.
 
-| UER | Observability |
-| --- | ------------- |
-| Defines execution transition semantics | Owns canonical execution identity model |
-| Emits `RuntimeEvent` on lifecycle changes | Owns journal/read model, persistence, export |
-| Participates in identity propagation (`EmitContext`) | Owns as-of/bitemporal historical interpretation |
-| Defines `ExecutionPhase` and event catalog mapping | Enforces execution-scoped `RuntimeEvent` contract |
+Do **not** state that Observability owns `ExecutionId` or creates the Execution Tree.
 
-**Normative rule:** every execution-scoped `RuntimeEvent` **must** carry `TaskId`, `RunId`, `AttemptId`, and `EventId` — all required ([`OBSERVABILITY.md`](OBSERVABILITY.md) § Execution-scoped signals). UER is **not** the owner of the Unified Run Journal or bitemporal history.
+**CURRENT IMPLEMENTATION / MIGRATION GAP:** `RuntimeEvent` lacks canonical `ExecutionId`.
 
-## UER vs Governance / Policy
+Normative rule (current spine): every execution-scoped `RuntimeEvent` **must** carry `TaskId`, `RunId`, `AttemptId`, and `EventId` — see [`OBSERVABILITY.md`](OBSERVABILITY.md) § Execution-scoped signals.
 
-| Governance / policy | UER |
-| ------------------- | --- |
-| Decides allowed, denied, approval-required, escalate | Enforces lifecycle consequences on wired paths |
-| Owns business policy rules and evaluation points | Owns transition mechanics — proceed, deny, interrupt, wait, retry, cancel, fail |
-| `RuntimePolicyEngine`, `PolicyEngine`, declarative tool policy | UAEP step loop, hooks, `AgentDecision` interpretation, event emission |
+## DIAG
 
-UER does **not** own business policy rules. Policy hooks fire at defined `HookPoint` boundaries **around** execution — see [Engineering canon §42.3](#423-hook-system).
-
-## How execution works
-
-At a high level, every harness execution follows the same runtime path:
-
-1. **Intake** — surface adapters normalize input; `TASK_CREATED` and classification events.
-2. **Planning / classification** — Nexus selects graph topology and agents.
-3. **Execution** — UAEP step loop: context build → steps → tools → decisions.
-4. **Validation** — agent output validation before completion.
-5. **Interruption** — retry, HITL, pause/resume, or cancellation when policy or failure requires it.
-6. **Completion** — terminal `TASK_COMPLETED`, `TASK_FAILED`, or `CANCELLED` with observable events.
+UER does **not** diagnose.
 
 ```text
-intake → planning/classification → execution → validation
-    → retry / HITL / interruption when needed → completion / failure / cancellation
+Execution produces facts
+  → Observability records evidence
+  → DIAG interprets evidence
 ```
 
-```mermaid
-flowchart TB
-    INT[Intake + TASK_CREATED]
-    PLN[Planning / agent selection]
-    EXE[UAEP execution loop]
-    VAL[Validation]
-    BR{Interrupt?}
-    RET[Retry — new AttemptId]
-    HITL[HITL / pause / resume]
-    DONE[Terminal completion]
-    EVT[RuntimeEvent on every transition]
+DIAG reconstructs: Event → Execution → parent Execution(s) → Attempt → Run → Task.
 
-    INT --> PLN --> EXE --> VAL --> BR
-    BR -->|retry| RET --> EXE
-    BR -->|human| HITL --> EXE
-    BR -->|none| DONE
-    INT -.-> EVT
-    PLN -.-> EVT
-    EXE -.-> EVT
-    VAL -.-> EVT
-    RET -.-> EVT
-    HITL -.-> EVT
-    DONE -.-> EVT
+DIAG must **not** mint `ExecutionId`, maintain a second execution tree, or infer canonical identity from text logs.
+
+**CURRENT IMPLEMENTATION / MIGRATION GAP:** DIAG `RuntimeExecutionRef` stops at `TaskId`/`RunId`/`AttemptId`.
+
+## Causal admission
+
+**TARGET ARCHITECTURE** (UEA-INV-017)
+
+Every independently schedulable child Execution must establish durable causal lineage **before** meaningful work begins:
+
+```text
+mint child Execution identity
+  → persist parent_execution_id / causal relation
+  → admit
+  → execute meaningful work
 ```
 
-Exact `RuntimeEventType` catalog and `ExecutionPhase` mapping live in [Engineering canon §42.1](#421-runtime-event-model) — not duplicated here.
+For distributed execution: transport → Execution causal relation must be durable before meaningful worker work.
 
-## Event-first runtime
+Distinguish **required audit/causal evidence** (may be fail-closed) from **optional telemetry** (not universally fail-closed).
 
-Every meaningful runtime transition **must** emit a `RuntimeEvent`. Orchestration, recovery, policy, HITL, audit, and observability depend on **platform-visible state**, not hidden callbacks inside agents.
+## Checkpoint and recovery
 
-- **UER** defines what transitions mean and emits events through producers (`NexusLoop`, `AgentEngine`, `ToolRuntime`, `ValidationEngine`).
-- **Observability** persists, journals, and interprets execution history — including strict identity and export paths.
+Checkpoint is **durable state**, not identity authority.
 
-Agents **must not** publish directly to external queues or webhooks; they emit through the runtime bus ([§42.2.3](#4223-anti-pattern)).
+One canonical Run-scoped checkpoint model must preserve enough state to restore: Attempt; root Execution; Execution Tree; per-Execution lifecycle state; Nexus orchestration state where applicable; UAEP cursors where applicable; pending HITL; budget reservations; relevant side-effect fences / transport cursors.
 
-## Retry semantics
+Checkpoint subsystem owns durable checkpoint persistence. UER coordinates lifecycle restore/resume. Do **not** define a competing Nexus checkpoint tree.
 
-- Retry is **not** a new task — it stays within the same `TaskId` and `RunId`.
-- A new attempt mints a **new** `AttemptId`; retry events (`RETRY_SCHEDULED`, `RETRY_STARTED`) make the decision observable.
-- Terminal outcome belongs to the **run** lifecycle; the Attempt Ledger must be reconstructable from events ([`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger)).
+**CURRENT IMPLEMENTATION / MIGRATION GAP:** `RuntimeCheckpoint` does not persist canonical Execution Tree.
 
-Intergrax has **two independent retry layers** today — graph/validation (`RetryEngine`) and run-level (`AgentEngine` / `HarnessKernel`) — plus protocol-level backend retries. Agents emit `AgentDecision.RETRY` intent; runtime owns policy and counts. A future `RetryCoordinator` may unify scheduling; see REL §31.1.
+<a href="UNIFIED_EXECUTION_ARCHITECTURE.md">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-checkpoint-recovery-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-checkpoint-recovery-light.svg">
+  <img
+    alt="Checkpoint and recovery: Run-scoped durable state preserving Attempt, Execution Tree, orchestration state, agent cursors, pending HITL, and budget reservations."
+    src="assets/unified-execution-checkpoint-recovery-light.svg"
+  >
+</picture>
+</a>
 
-## Pause, resume, and HITL
+## Distributed execution
 
-The runtime may enter controlled interrupted or waiting states (`PAUSE_REQUESTED`, `PAUSED`, `HUMAN_APPROVAL_*`, `INTERRUPT_*`). Operator or human approval unblocks execution through observable transitions (`RESUMED`, `HUMAN_APPROVAL_RECEIVED`) — resume is **not** a silent restart from scratch when checkpointed state exists.
+Worker receives canonical execution identity/envelope. Transport changes **location**, not runtime identity.
 
-Agents **must not** block the event loop waiting for humans; they return `REQUEST_HUMAN` or `INTERRUPT` decisions. HITL ownership and Attempt Ledger rules — [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md).
+Worker must **not** mint a new `ExecutionId` because work was queued, broker redelivered, or another worker picked it up. Broker IDs and worker IDs are infrastructure identities only.
 
-## Cancellation and terminal states
+Reference: UEA [§11 Distributed execution](UNIFIED_EXECUTION_ARCHITECTURE.md#11-distributed-execution-and-transport) (UEA-DIAG-H cross-ref in distributed scenarios).
 
-Cancellation is **explicit** (`CANCELLATION_REQUESTED`, `CANCELLED`). Failures emit classified terminal events (`TASK_FAILED`, `STEP_FAILED`, `TOOL_FAILED`) — executions do not silently disappear. Handler failures emit `RUNTIME_HANDLER_FAILED` per escalation policy.
+<a href="UNIFIED_EXECUTION_ARCHITECTURE.md">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-distributed-queue-worker-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-distributed-queue-worker-light.svg">
+  <img
+    alt="Distributed execution: transport identity is infrastructure-only; workers receive and continue the same runtime identity."
+    src="assets/unified-execution-distributed-queue-worker-light.svg"
+  >
+</picture>
+</a>
+
+## HITL
+
+Governance / HITL subsystem owns the human **decision** and authorization semantics. UER owns lifecycle **consequences**: pause, wait, resume, terminate/cancel where required.
+
+Resume preserves execution identity. Approval must be causally linked to resumed work. HITL is **not** a second workflow engine.
+
+```text
+RUNNING → WAITING_FOR_HUMAN / PAUSED → RESUMED
+```
+
+Agents return `REQUEST_HUMAN` or `INTERRUPT` decisions; they must not block the event loop waiting for humans. Details: [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md).
+
+## Execution Runtime anti-god-object rule
+
+> **Execution Runtime owns execution structure and lifecycle facts; platform subsystems own their respective decisions and state; Observability records canonical evidence; DIAG interprets that evidence. No subsystem recreates execution truth.**
+
+From the developer perspective, UER **coordinates**:
+
+- identity minting and propagation
+- lifecycle transitions
+- executor strategy resolution
+- Governance calls at boundaries
+- Budget calls at boundaries
+- Observability emission
+- Checkpoint interaction
+- child Execution creation/admission boundary
+
+UER does **not** absorb Governance, Budget, Observability, DIAG, Checkpoint persistence, Queue transport, or Agent internals.
+
+<a href="UNIFIED_EXECUTION_ARCHITECTURE.md">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-component-ownership-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-component-ownership-light.svg">
+  <img
+    alt="Component ownership: UER coordinates lifecycle and identity; Governance, Budget, Observability, DIAG, and Checkpoint own their respective authorities."
+    src="assets/unified-execution-component-ownership-light.svg"
+  >
+</picture>
+</a>
 
 ## Responsibility boundaries
 
 ### UER owns
 
-- `RuntimeEvent` contract and emission on lifecycle transitions.
-- UAEP mandatory sequence and `AgentDecision` interpretation boundary.
-- Hook points, middleware ordering, and runtime policy interception surfaces.
-- Retry, pause/resume, cancellation, and HITL **semantics** on the harness path.
-- Agent and step micro-lifecycles inside a run.
+- Run/Attempt lifecycle semantics and Execution identity coordination (target)
+- Executor strategy routing (target) and lifecycle transition mechanics
+- `RuntimeEvent` contract and emission on lifecycle transitions
+- Hook points, middleware ordering, and runtime policy interception **surfaces**
+- Retry, pause/resume, cancellation, and HITL **lifecycle semantics**
+- Child Execution admission boundary (target)
+- Coordination with Governance, Budget, Observability, Checkpoint at defined boundaries
 
 ### UER does not own
 
-- Nexus routing, planning, and graph orchestration — [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md).
-- Canonical execution identity authority, unified journal, as-of/bitemporal history — [`OBSERVABILITY.md`](OBSERVABILITY.md).
-- Business policy rule definitions — [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md).
-- Context assembly — [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md).
-- Application product semantics — Tier-3 configures profiles and hooks.
+- Nexus routing, planning, and graph orchestration — [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md)
+- Business policy rule definitions — [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md)
+- Budget ledger enforcement semantics — Budget subsystem
+- Canonical evidence persistence, journal, as-of/bitemporal history — [`OBSERVABILITY.md`](OBSERVABILITY.md)
+- Diagnostic interpretation — DIAG
+- Context assembly — [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md)
+- Application product semantics — Tier-3 configures profiles and hooks
 
 ### Applications (Tier-3) configure
 
-- `ApplicationEnvironmentProfile`, `RuntimePolicyBundle`, hook registration at bootstrap.
-- `execution_mode`, `production_mode`, and observability export profiles — posture, not UER implementation substitutes.
+- `ApplicationEnvironmentProfile`, `RuntimePolicyBundle`, hook registration at bootstrap
+- `execution_mode`, `production_mode`, and observability export profiles — posture, not UER implementation substitutes
 
-## Relationship to Intergrax
+## UER-specific invariants (UER-INV-*)
 
-| Neighbor | Relationship |
-| -------- | ------------- |
-| [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) | Control-flow owner — invokes UER through `AgentEngine` / UAEP |
-| [`OBSERVABILITY.md`](OBSERVABILITY.md) | Event persistence, identity canon, journal, as-of projections |
-| [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) | Policy evaluation; UER enforces consequences at UAEP/hook boundaries |
-| [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) | Retry layers, Attempt Ledger, HITL ownership |
-| [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) | Agent interface; `execute()` delegates to UAEP |
-| [`TOOLS.md`](TOOLS.md) | `ToolRuntime` emits `TOOL_*` events; tool policy at invocation |
-| [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) | Context build inside UAEP; `CONTEXT_*` events |
-| [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) | Host bootstrap wires runtime, hooks, and policy bundles |
-| [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) | Platform hub — UER is Tier-1 execution semantics |
+UER-INV specialize frozen UEA invariants for the runtime domain. Full cross-domain set: [UEA §24](UNIFIED_EXECUTION_ARCHITECTURE.md#24-architectural-invariants-uea-inv).
 
-## Extensibility
+| ID | Invariant |
+| -- | --------- |
+| **UER-INV-001** | Every independently schedulable platform work unit is represented by Execution |
+| **UER-INV-002** | Every Attempt has at least one root Execution |
+| **UER-INV-003** | A child Execution establishes `parent_execution_id` before meaningful work |
+| **UER-INV-004** | Direct execution does not require Nexus |
+| **UER-INV-005** | UAEP is agent-specific, not the universal Execution Runtime |
+| **UER-INV-006** | Whole-Run retry creates a new Attempt and new runtime Execution instances; pause/resume preserves identity |
+| **UER-INV-007** | Cancellation follows the canonical Execution Tree |
+| **UER-INV-008** | UER coordinates Governance/Budget/Observability/Checkpoint contracts but does not own their decision/state authorities |
+| **UER-INV-009** | Transport changes execution location, not Execution identity |
+| **UER-INV-010** | Checkpoint state preserves execution state but is not an identity authority |
+| **UER-INV-011** | Observability records lifecycle facts; it does not create execution identity |
+| **UER-INV-012** | No runtime subsystem may maintain a competing canonical execution tree |
 
-UER is not a plugin marketplace. Real extension surfaces:
+## Target vs current implementation
 
-| Surface | Role | Guide |
-| ------- | ---- | ----- |
-| `HookRegistry` / `HookPoint` | Ordered interceptors at lifecycle boundaries | [`AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Appendix H–I |
-| `RuntimeEventBus` handlers | Subscribers on event types or categories | Engineering canon §42.2 |
-| `RuntimePolicyBundle` / profiles | Runtime policy and output posture | [`PLATFORM_CONFIGURATION.md`](../technical/guides/PLATFORM_CONFIGURATION.md) |
-| Tier-3 bootstrap | Hook and middleware registration at application startup | Application host `*_wiring.py` patterns |
+### TARGET ARCHITECTURE
 
-Do not expose internal `HarnessKernel` or `NexusLoop` details as public extension APIs without canonical evidence.
+- Neutral Execution Boundary with deterministic strategy resolution
+- Canonical `ExecutionId` / `parent_execution_id` on all Executions
+- One Execution Tree per Attempt; Nexus behind orchestration strategy only
+- UAEP only on agentic strategy path
+- Full retry/pause/resume/cancel taxonomy per frozen UEA
+- Governance/Budget/Observability/Checkpoint coordination without ownership absorption
 
-<a id="protocol-v2-strategic-harness-target-invariants-2026-08-18"></a>
+### CURRENT IMPLEMENTATION (descriptive)
 
-## Protocol v2 strategic harness target invariants (2026-08-18)
+| Area | As-built |
+| ---- | -------- |
+| Identity spine | `TaskId`/`RunId`/`AttemptId`/`EventId` typed; **no canonical `ExecutionId`** |
+| Runtime events | `RuntimeEvent` lacks `ExecutionId` |
+| Evidence refs | `RuntimeExecutionRef` lacks full Execution identity |
+| Checkpoints | `RuntimeCheckpoint` has no canonical Execution Tree |
+| Entry routing | `UnifiedTaskRunner` routes through Nexus on many paths |
+| Agent path | Nexus `GraphExecutor` agent-centric; UAEP on harness path |
+| Results | `AgentExecutionResult` leaks orchestration concerns |
+| Context | `RuntimeExecutionContext` agent-specific despite generic name |
+| Budget | Hierarchical reservations incomplete |
+| Authority | Partly node-centric |
+| Task contracts | `Task`/`TaskResult` agent-centric in places |
 
-Accepted Protocol v2 audit layer [`STRATEGIC_HARNESS_MODEL`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) (**FAIL**, 10 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only:
+Do **not** claim target semantics are implemented unless repository evidence at HEAD proves it.
 
-1. **Equivalent governed boundaries** — normal, retry, and resume execution use the same canonical governed step boundary (HarnessKernel-equivalent semantics), including UAEP resume ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-01`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-02`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-2. **Fail closed without kernel** — certified production paths must fail closed when required kernel/governance context is missing; dev/test bypasses must be explicit and separately named ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-03`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-3. **Continuous identity** — `TaskId`/`RunId`/`AttemptId` propagate across internal bridges (e.g. Nexus → ACP) unless an explicit typed parent/child attempt relationship exists ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-08`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-09`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-4. **Attempt boundaries** — a new `AttemptId` is minted only at a defined attempt boundary (retry), not at arbitrary internal handoffs.
-5. **Production host/profile** — production execution requires explicit production host/profile wiring; hostless paths are dev/test/lab only ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-05`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-6. **Mandatory guarantees** — "mandatory path" means mandatory **guarantees** (policy, trace, gateways, identity, kernel-equivalent step semantics), not merely that common code usually passes through `AgentEngine` ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-01`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md), [`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-04`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-7. **Maturity honesty** — historical Done rows remain historical; **current** maturity references accepted Protocol v2 findings until SHM-FIX remediation is independently verified ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-10`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+## Implementation readiness
 
-<a id="protocol-v22-execution-identity-closure-target-invariants-2026-08-18"></a>
+For future implementation sessions — derive slices without making new architecture decisions.
 
-## Protocol v2.2 execution identity closure target invariants (2026-08-18)
+### 1. TARGET STATE
 
-Accepted [`IDENTITY_TRUST`](../../audit_results/2026-08-18/IDENTITY_TRUST.md) findings **05** (primary) and **01, 06** (supporting principal spine) (2026-08-18). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-IDENTITY-TRUST-PERSIST.
+Frozen UEA + this document: Execution-centric lifecycle, neutral boundary, strategy resolution, causal admission, canonical retry/cancel/checkpoint/distributed identity.
 
-1. `TaskId`, `RunId`, `AttemptId` remain distinct canonical identities.
-2. Once `ActiveExecutionIdentity` is bound, runtime events/hooks/HITL provenance **MUST** consume canonical `RunId` + `AttemptId`.
-3. `TaskId` **MUST NOT** be substituted for `RunId` on production HITL/lifecycle/runtime-event paths.
-4. Identity-bearing hooks/events must not reconstruct execution identity from mutable task metadata.
-5. Principal identity and execution identity are distinct concepts but must remain explicitly correlated.
+### 2. CURRENT STATE
 
-Remediation blocks: **IDT-FIX-D** (execution identity closure), **IDT-FIX-A** (principal spine). Finding 05 is internal provenance after valid execution identity is bound — not duplicate public intake TaskId/RunId minting ([`INTERFACE_TASK_INTAKE`](../../audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md)).
+Agent-centric harness path with typed Task/Run/Attempt/Event spine; UAEP on agent routes; Nexus as de facto entry for many workloads.
 
-<a id="protocol-v22-uer-runtime-target-invariants-2026-08-18"></a>
+### 3. GAPS
 
-## Protocol v2.2 UER runtime target invariants (2026-08-18)
+See [Target vs current](#target-vs-current-implementation) table. Primary: missing `ExecutionId`, non-neutral entry, agent-centric graph executor, incomplete budget/authority/checkpoint tree.
 
-Accepted [`EXECUTION_RUNTIME`](../../audit_results/2026-08-18/EXECUTION_RUNTIME.md) findings **01–06** (layer audited 2026-08-19). **Target state** — **ACCEPTED / PLANNED**; **not implemented** by audit persistence.
+### 4. DEPENDENCIES
 
-1. One canonical runtime policy environment propagates across Nexus, AgentEngine, ACP/UAEP, and HarnessKernel (**UER-FIX-A**).
-2. Step outcome semantics are atomic: failure cannot leave committed platform state that contradicts `outcome_applied=false` (**UER-FIX-B**).
-3. Attempt identity: retry ⇒ new `AttemptId`; resume without retry ⇒ preserved `AttemptId` (**UER-FIX-C**).
-4. Runtime owns normal unexpected-exception containment: classify → terminal evidence → cleanup → typed FAILED result (**UER-FIX-D**).
-5. Replan/human/fail execution intent is preserved through runtime bridges (**UER-FIX-D** cross-ref RPL-FIX-C).
+- UEA frozen semantics (authority)
+- Observability `ExecutionId` on `RuntimeEvent` (OBS domain)
+- Governance authority model alignment (GOV domain)
+- Nexus child Execution admission (NEXUS domain)
+- Detailed code mapping: **UE-DOC-0.9** (not this slice)
 
-Remediation blocks: **UER-FIX-A** … **UER-FIX-E** in [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md).
+### 5. MIGRATION ORDER (high level)
 
-<a id="protocol-v2-security-runtime-target-invariants-2026-08-18"></a>
+1. Introduce canonical `ExecutionId` / `parent_execution_id` contracts
+2. Propagate Execution identity into `RuntimeEvent` / evidence references
+3. Establish neutral Execution Boundary
+4. Implement deterministic internal strategy resolution
+5. Route direct inference through Execution
+6. Route agentic execution through Agentic strategy / AgentEngine / UAEP
+7. Place Nexus behind orchestration strategy
+8. Create child Execution admission boundary
+9. Align retry/pause/resume/cancel semantics
+10. Align checkpoint/distributed identity
+11. Migrate old agent-centric entry/result contracts
+12. Remove obsolete bypasses/duplicate lifecycle ownership
 
-## Protocol v2 security runtime target invariants (2026-08-18)
+### 6. DO NOT VIOLATE
 
-Accepted [`SECURITY_BOUNDARIES`](../../audit_results/2026-08-18/SECURITY_BOUNDARIES.md) findings **03–06** (2026-08-21). **Target state** — **ACCEPTED / PLANNED**; **not implemented** by audit persistence.
+- UEA-INV-* and UER-INV-* without explicit architecture reopen
+- Public engine-selection APIs
+- Competing execution trees or identity minting in Observability/DIAG/workers
+- UAEP as universal runtime contract
+- Nexus as mandatory path for direct inference
 
-1. **Encryption fail-closed** — when cryptographic protection is required, configured secure backend resolution failure **blocks or fails startup**; no silent downgrade to non-cryptographic transforms (**SEC-BND-03** / **SEC-DATA-PROTECTION-INTEGRITY**).
-2. **Cryptographic vs lab transform** — `HarnessEnvelopeEncryptor` and similar transforms must be explicitly LAB/DEMO/non-cryptographic or replaced with real cryptography; a contract named `RestrictedPayloadEncryptor` must not claim cryptographic security for Base64 encoding. Preserve `SecretsStorePayloadEncryptor` provider-neutral architecture.
-3. **Security defense qualification** — runtime enforcement position for security toggles (including retrieval-poisoning defense) must be proven at assembly; cross-link **SEC-DEFENSE-QUALIFICATION-INTEGRITY** in Tier-3 plan where wiring originates.
-4. **Action-signature enforcement** — critical operations require exact signed action evidence (action, actor, tenant, resource, revision/nonce, expiry) immediately before effect; verification failure blocks effect; signing supplements Governance authorization (**SEC-BND-05**).
-5. **Durable audit authority** — separate in-memory audit simulation from production audit authority; multi-region qualification requires independently durable replicas and explicit replication/tamper evidence (**SEC-BND-06** / **SEC-AUDIT-AUTHORITY-INTEGRITY**).
-6. **No second Governance engine** — authorization for signed or audited operations reuses canonical Governance/identity authority.
+### 7. ACCEPTANCE CONDITIONS
+
+- Canonical `ExecutionId` on all independently schedulable work units (target paths)
+- Strategy resolution without public mode flags
+- Retry taxonomy matches frozen table
+- Cancellation follows Execution Tree
+- No subsystem recreates execution truth
+- TARGET/CURRENT labeled where implementation lags
 
 ## Current maturity
 
 Architecture maturity: **A4** *(target)* — **current invariant closure reopened** by Protocol v2 [`STRATEGIC_HARNESS_MODEL`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)
-Implementation maturity: **I4** *(target)* — same reopening
+Implementation maturity: **I3–I4** *(target I4)* — ExecutionId and neutral boundary **not** implemented
 Production readiness: **P2**
 Evidence maturity: **E3**
 
-- **A4 (target)** — Foundational cross-domain canon: UAEP, `RuntimeEvent` spine, hook model, identity sync with Observability (TRACE-ARCH-SYNC-1, §42.1.8), REL retry/HITL ownership, Governed Execution evaluation-point map; Post-L3 AUDIT-IDEAL Band 2ay rows closed historically ([plan](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md)). **Current:** accepted Protocol v2 findings block universal invariant closure until remediated.
-- **I4 (target)** — Typed `TaskId`/`RunId`/`AttemptId`/`EventId` implemented (TRACE-1A/B/C **Done** per [OBS plan](../maintainers/plans/OBSERVABILITY.md)); UAEP/HarnessKernel path, event catalog gates, retry layers, HITL/cancellation events wired; §6.1av UAEP maintenance **closed** historically. Not I5 — resume/kernel equivalence, identity bridge continuity, and production host structural requirements remain open per Protocol v2.
-- **P2** — Harness lab/reference profiles and strict-mode policy posture; **no UER-domain production handoff or operational SLO package** — `production_mode` ≠ taxonomy P4.
-- **E3** — Unit/gate evidence (event catalog, tenant propagation, single `STEP_COMPLETED` per step), audit slice, 2026-06-19 audit results. **No dedicated public UER proof route** — not E4/E5.
-
-> **Phase vs maturity:** AUDIT-IDEAL and UAEP-MAINT **Done** rows are plan delivery states, not P-axis or public proof claims. Protocol v2 accepted findings reopen **current** maturity until SHM-FIX blocks are verified.
+- **A4 (target)** — Cross-domain canon aligned with frozen UEA; Protocol v2 findings block universal closure until remediated.
+- **I3–I4** — Typed identity spine and UAEP harness path implemented; canonical Execution model and neutral boundary are **planned**, not done.
+- **P2** — Harness lab/reference profiles; **no UER-domain production handoff**.
+- **E3** — Unit/gate evidence; **no dedicated public UER proof route**.
 
 ### Capability coverage (summary)
 
 | Area | Status |
 | ---- | ------ |
-| `RuntimeEvent` spine + catalog | **Implemented** — phase coverage gates in code |
-| Typed execution identity | **Implemented** — TRACE-1A/B/C closed ([OBS plan](../maintainers/plans/OBSERVABILITY.md)) |
-| UAEP / `AgentEngine` / `HarnessKernel` | **Target:** mandatory governed guarantees on all certified paths — see [Protocol v2 strategic harness target invariants](#protocol-v2-strategic-harness-target-invariants-2026-08-18) |
-| Hook system + policy interception | **Implemented** on wired harness paths |
-| Graph + run-level retry | **Implemented** — two layers per REL §31.1 |
-| HITL / pause / resume / cancel events | **Implemented** — REL + HITL plan **Done** |
-| `TOKEN-UER-1` / `TOKEN-UER-2` | **Planned** in UER plan — may be stale vs Token Optimization feature canon; not evidence of missing core runtime |
-| Extended §42.8+ engineering sections | **Satellite-referenced** — intentional progressive disclosure in [runtime extended satellite](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md) |
+| Frozen execution architecture alignment | **This document** — UE-DOC-0.4 |
+| Canonical `ExecutionId` | **Target** — not implemented |
+| `RuntimeEvent` spine + catalog | **Implemented** — phase coverage gates |
+| Typed Task/Run/Attempt/Event | **Implemented** — TRACE-1A/B/C |
+| Neutral Execution Boundary | **Target** |
+| UAEP on agent paths | **Implemented** (CURRENT wiring) |
+| Nexus orchestration strategy placement | **Target** |
+| HITL / pause / resume / cancel events | **Implemented** on wired paths |
 | Public UER lifecycle proof | **Not claimed** |
 
 ## Verify / inspect implementation
 
 ### Evidence
 
-UER evidence is **engineering- and audit-oriented** — there is **no** dedicated public proof route in [`docs/project/proofs/`](../proofs/) for UER lifecycle semantics. LKW and other product proofs may run on the harness stack; they do **not** qualify the UER domain.
+UER evidence is **engineering- and audit-oriented** — there is **no** dedicated public proof route in [`docs/project/proofs/`](../proofs/) for UER lifecycle semantics.
 
 | Evidence class | What exists | What it does not prove |
 | -------------- | ----------- | ---------------------- |
-| Architecture | This hub, TRACE-ARCH-SYNC-1, REL/Governed Execution boundaries | Production operation at scale |
+| Architecture | This hub, UEA, TRACE-ARCH-SYNC-1, REL/Governed Execution boundaries | Production operation at scale |
 | Unit / gate | Event catalog phase coverage, UAEP tenant propagation, single `STEP_COMPLETED` gate | Full multi-tenant SLO |
 | Integration / runtime | Nexus harness path, unified journal strictness (TRACE-1C) | Universal product-host qualification |
-| Audit | [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/legacy/2026-06-19/UNIFIED_EXECUTION_RUNTIME.md), 2026-06-19 audit closeout | Customer production window |
-| Public product proof | **None** for UER domain | Do not infer UER qualification from RAG, Token Optimization, or LKW proofs that merely run on the harness stack |
+| Audit | [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md) | Customer production window |
+| Public product proof | **None** for UER domain | Do not infer UER qualification from product proofs |
 
 ### Core implementation
 
@@ -344,31 +626,49 @@ UER evidence is **engineering- and audit-oriented** — there is **no** dedicate
 
 | Depth | Route |
 | ----- | ----- |
+| **Meta-architecture** | [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) |
 | **Engineering canon** | [Below](#engineering-canon) — `RuntimeEvent`, UAEP, hooks, decisions (§42.1–§42.7) |
-| **Runtime extended** | [`satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md`](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md) — §42.8+ depth on demand |
+| **Runtime extended** | [`satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md`](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md) — §42.8+ |
 | **Implementation plan** | [`maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md) |
 | **Observability identity** | [`OBSERVABILITY.md`](OBSERVABILITY.md) §5–§10 |
 | **Nexus flow** | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) |
 | **Reliability / HITL** | [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) |
-| **Governance** | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) |
-| **Platform audit** | [`AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md) · [`audit_results/`](../../audit_results/README.md) |
-| **Target architecture** | [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §8 |
 
-### Documentation layout (hub / satellite)
+## Relationship to Intergrax
 
-Intentional progressive disclosure — **not** unresolved drift.
+| Neighbor | Relationship |
+| -------- | ------------- |
+| [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) | Frozen meta-architecture — semantic authority over UER |
+| [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) | Orchestration control flow — behind orchestration strategy |
+| [`OBSERVABILITY.md`](OBSERVABILITY.md) | Records lifecycle facts; journal and as-of projections |
+| [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) | Policy evaluation; UER enforces lifecycle consequences |
+| [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) | Retry layers, Attempt Ledger, HITL ownership |
+| [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) | Agent interface; agentic path delegates to UAEP |
+| [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) | Platform hub — UER is Tier-1 execution semantics |
 
-| Layer | Owns | Notes |
-| ----- | ---- | ----- |
-| Hub (engineering canon below) | §42.1–§42.7 | Default implement/audit read scope |
-| [Runtime extended satellite](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md) | §42.8+ | Interrupt, pause/resume, HITL flow, policy engine, tool runtime, shared contracts |
-| Audit slice | §42.1–§42.15 | Valid when read against hub + satellite |
+## Extensibility
 
-### Unresolved documentation drift (outside scope)
+| Surface | Role |
+| ------- | ---- |
+| `HookRegistry` / `HookPoint` | Ordered interceptors at lifecycle boundaries |
+| `RuntimeEventBus` handlers | Subscribers on event types or categories |
+| `RuntimePolicyBundle` / profiles | Runtime policy and output posture |
+| Tier-3 bootstrap | Hook and middleware registration at application startup |
 
-| Item | Notes |
-| ---- | ----- |
-| `TOKEN-UER-1` / `TOKEN-UER-2` (**Planned** in UER plan) | May be stale relative to Token Optimization feature canon — plan not modified in DOC-3E-R1 |
+Do not expose internal `HarnessKernel` or `NexusLoop` details as public extension APIs without canonical evidence.
+
+---
+
+## Historical audit target invariants
+
+Accepted Protocol v2 / v2.2 audit findings remain **target state** until independently verified. Remediation blocks live in [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md).
+
+| Register | Source | Status |
+| -------- | ------ | ------ |
+| Strategic harness model | [`STRATEGIC_HARNESS_MODEL`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) | ACCEPTED / PLANNED |
+| Execution identity closure | [`IDENTITY_TRUST`](../../audit_results/2026-08-18/IDENTITY_TRUST.md) | ACCEPTED / PLANNED |
+| UER runtime | [`EXECUTION_RUNTIME`](../../audit_results/2026-08-18/EXECUTION_RUNTIME.md) | ACCEPTED / PLANNED |
+| Security boundaries | [`SECURITY_BOUNDARIES`](../../audit_results/2026-08-18/SECURITY_BOUNDARIES.md) | ACCEPTED / PLANNED |
 
 ---
 
@@ -377,37 +677,31 @@ Intentional progressive disclosure — **not** unresolved drift.
 **Status:** Canonical architecture (domain pair 1:1)
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
 **Plan (1:1):** [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Meta-architecture:** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md)
 **Audit layers:** 4–5, 8, 23–24
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
-**Last updated:** 2026-08-17 — DOC-3E-R1 hub/satellite layout correction; DOC-3E public front modernization; TRACE identity supersession in §42.1.1
+**Last updated:** 2026-08-25 — UE-DOC-0.4 rewrite aligned with frozen UEA
 
 ### Cursor read scope (token budget)
 
-**Do not read this entire file in one session** (UNIFIED_EXECUTION_RUNTIME canon).
+**Do not read this entire file in one session.**
 
-- **Implement / audit default:** UAEP + RuntimeEvent spine (§42.1–§42.7). Extended §42.8+: [`satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md`](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md).
-- **Use** table of contents below — `Read` with offset/limit per §.
-- **Plan hub:** [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md) (scoped §6 only).
-- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
+- **Architecture default:** Purpose through [Implementation readiness](#implementation-readiness) + UER-INV.
+- **Implement / audit UAEP+events:** [Engineering canon](#engineering-canon) §42.1–§42.7 only.
+- **Extended §42.8+:** [`satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md`](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md).
+- **Plan hub:** [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md) — scoped § only.
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ### Architecture satellites (read on demand)
-
-Large § blocks moved out of the architecture hub to reduce Cursor context use.
-Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
 | [`satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md`](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md) | runtime extended (§42.8+) |
 
-> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
-
 ---
 
 ## Engineering canon
 
-Authoritative technical specification (§42.1–§42.7). Public front section above; extended depth in the [runtime extended satellite](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md) (§42.8+).
+Authoritative technical specification (§42.1–§42.7) for **current harness implementation surfaces**. Target Execution-centric model is defined in the sections above; where §42 text reflects agent/Nexus-centric wiring, treat it as **CURRENT IMPLEMENTATION** detail.
 
 ## 42.1 Runtime Event Model
 
@@ -415,34 +709,34 @@ Every meaningful runtime transition MUST emit a `RuntimeEvent`.
 
 Events are the **primary audit and orchestration signal**. Hooks, observability, policy, and recovery subscribe to events — they MUST NOT rely on hidden callbacks inside agents.
 
-**Event spine canon:** [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine) — signal-plane boundaries, [event ownership rules](OBSERVABILITY.md#event-ownership-rules), [required correlation fields](OBSERVABILITY.md#required-correlation-fields), [Cursor review checklist](OBSERVABILITY.md#cursor-review-checklist).
+**Event spine canon:** [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine).
 
-**CodeCraft canon:** [`CODE_CRAFT.md`](CODE_CRAFT.md#codecraft-safety-boundary) — ephemeral codegen orchestration through ToolRuntime; not a second agent runtime.
+**CodeCraft canon:** [`CODE_CRAFT.md`](CODE_CRAFT.md#codecraft-safety-boundary) — ephemeral codegen through ToolRuntime; not a second agent runtime.
 
 ### 42.1.1 RuntimeEvent Contract
 
+**TARGET** fields include `execution_id` and `parent_execution_id` (see [Identity hierarchy](#identity-hierarchy)). **CURRENT** contract:
+
 ```text
 RuntimeEvent:
-    event_id: EventId          # UUID, globally unique
-    task_id: TaskId            # Nexus task identifier
-    run_id: RunId               # execution run (may span retries)
-    attempt_id: AttemptId      # attempt within the run
-    node_id: str | null        # ExecutionGraph node, if applicable
-    agent_id: str | null       # agent responsible for this event
-    step_id: str | null        # AgentStep identifier, if applicable
+    event_id: EventId
+    task_id: TaskId
+    run_id: RunId
+    attempt_id: AttemptId
+    node_id: str | null        # local — not ExecutionId
+    agent_id: str | null
+    step_id: str | null
     event_type: RuntimeEventType
-    phase: ExecutionPhase      # see §42.31
-    severity: EventSeverity    # DEBUG | INFO | WARNING | ERROR | CRITICAL
-    payload: dict              # structured, schema-versioned
-    timestamp: datetime        # UTC, ISO-8601
-    correlation_id: str        # ties related events across agents/tools
-    parent_event_id: str | null # causal chain
-    schema_version: str         # e.g. "runtime_event.v1"
+    phase: ExecutionPhase
+    severity: EventSeverity
+    payload: dict
+    timestamp: datetime
+    correlation_id: str
+    parent_event_id: str | null
+    schema_version: str
 ```
 
-**As-built (2026-08):** strongly typed `TaskId` / `RunId` / `AttemptId` / `EventId` via `typing.NewType(..., str)`; wire representation remains flat string at storage/export boundaries. Every canonical `RuntimeEvent` **must** carry all four identifiers — enforced per TRACE-1A/B/C ([`OBSERVABILITY.md`](OBSERVABILITY.md) §5, [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) Phase TRACE).
-
-> **Supersession:** Pre-TRACE hub text stated identity was "planned in TRACE-1A / TRACE-1B." TRACE-1A, TRACE-1B, and TRACE-1C are **Done / Closed** — that wording is historical only.
+**As-built:** typed `TaskId`/`RunId`/`AttemptId`/`EventId` via `typing.NewType(..., str)`; enforced per TRACE-1A/B/C. **`execution_id` not yet on wire.**
 
 ### 42.1.2 RuntimeEventType (minimum set)
 
@@ -506,7 +800,7 @@ TASK_COMPLETED | TASK_FAILED
 
 ### 42.1.5 Runtime event catalog (ops filters)
 
-**Phase DX-5.7.** Canonical mapping lives in code: `intergrax.runtime.events.phase_coverage` (`EVENT_PHASE_COVERAGE`, `EVENT_OPS_FILTER_HINTS`). Gate: `test_all_runtime_event_types_have_execution_phase` and `test_all_runtime_event_types_have_ops_filter_hint`.
+**Phase DX-5.7.** Canonical mapping: `intergrax.runtime.events.phase_coverage`. Gate: `test_all_runtime_event_types_have_execution_phase` and `test_all_runtime_event_types_have_ops_filter_hint`.
 
 | `RuntimeEventType` | `ExecutionPhase` | Ops filter hint | Typical subscriber |
 |--------------------|------------------|-----------------|-------------------|
@@ -556,23 +850,9 @@ TASK_COMPLETED | TASK_FAILED
 | `TASK_FAILED` | `COMPLETION` | `ops:alert` | Alerting, SLO burn |
 | `TRACE_PERSISTED` | `TRACE_PERSISTENCE` | `trace:persistence` | TraceStore |
 
-**Filter token legend:** `trace:*` — default observability scrape; `ops:alert` — page-worthy failures; `ops:hitl` — human-in-the-loop queues; `ops:tool_audit` — tool policy audits; `ops:completion` — terminal task outcomes; `ops:retry` — retry scheduler; `ops:planning` — planner failures/updates; `ops:handoff` — graph delegation; `ops:memory` — memory store access; `ops:progress` — checkpointed long runs.
-
 ### 42.1.6 Layered event identity (OBS-EVOL-9)
 
-**Canon:** [`architecture/OBSERVABILITY.md`](OBSERVABILITY.md) §4.4 · **ADR:** [`ADR-OBS-003`](../technical/adr/entries/2026-06-17/ADR-OBS-003.md)
-
-`RuntimeEvent` carries:
-
-```text
-event_type      # spine — platform lifecycle (~50 at publication)
-event_kind      # semantic namespaced id (domain extensions)
-event_category  # derived ops grouping
-```
-
-- **Tier-2/3** extend via `emit_domain_signal(kind, payload)` → spine `DOMAIN_SIGNAL`.
-- **Platform** adds spine types only via ADR + `EventCatalog` entry.
-- **Pre-release:** consolidate adaptive/capacity/hook enums to `platform.*` kinds (OBS-EVOL-9.7).
+**Canon:** [`OBSERVABILITY.md`](OBSERVABILITY.md) §4.4 · **ADR:** [`ADR-OBS-003`](../technical/adr/entries/2026-06-17/ADR-OBS-003.md)
 
 ### 42.1.7 Event catalog governance
 
@@ -583,28 +863,28 @@ event_category  # derived ops grouping
 | Debug detail | `DiagnosticPayload` (Plane B) — not spine unless operator-facing |
 | Bus subscription | Prefer `event_category` / `kind_prefix` over enum lists |
 
-**Code (target):** `intergrax/runtime/events/event_catalog.py`, `signals.py`
-
 ### 42.1.8 Execution identity ownership (TRACE-ARCH-SYNC-1)
 
-Runtime lifecycle emits through `RuntimeEvent`; **canonical execution identity**, journal/as-of semantics, and bitemporal historical state are owned by [`OBSERVABILITY.md`](OBSERVABILITY.md) §5–§10.
+**TARGET:** UER / execution lifecycle layer mints `ExecutionId` and maintains the canonical Execution Tree. Observability **records** lifecycle facts and owns journal/as-of/bitemporal interpretation — it does **not** mint execution identity (**UER-INV-011**, UEA-INV-015).
 
-| Identifier | Runtime role |
-|------------|----------------|
+| Identifier | Role |
+|------------|------|
 | `TaskId` | **WHAT** task / intent |
-| `RunId` | **WHICH** execution of the task |
-| `AttemptId` | **WHICH** attempt inside the run — minted at attempt boundaries; all events in an attempt share it |
+| `RunId` | **WHICH** governed lifecycle of the task |
+| `AttemptId` | **WHICH** global attempt — minted at attempt boundaries |
+| `ExecutionId` | **WHICH** independently schedulable work unit (**target**) |
+| `EventId` | **WHICH** lifecycle transition |
 
-Hierarchy: `Task 1:N Run 1:N Attempt 1:N RuntimeEvent`. Retry: same `TaskId` + `RunId`, new `AttemptId`. Resume without retry: same `AttemptId`. Typed carrier matrix, unified journal, as-of projections, and bitemporal historical state — [`OBSERVABILITY.md`](OBSERVABILITY.md) §5–§10. TRACE-1A/B/C implementation **Done / Closed** — [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) Phase TRACE.
+**CURRENT:** hierarchy stops at `TaskId` → `RunId` → `AttemptId` → `RuntimeEvent` without canonical `ExecutionId`. Typed carrier matrix and unified journal — [`OBSERVABILITY.md`](OBSERVABILITY.md) §5–§10.
 
 ---
 
 ## 42.2 Event Bus Architecture
 
-The **Runtime Event Bus** is the Tier-1 pub/sub backbone for all runtime signals.
+The **Runtime Event Bus** is the Tier-1 pub/sub backbone for runtime signals.
 
 ```text
-Producer (NexusLoop, AgentEngine, ToolRuntime, ValidationEngine)
+Producer (execution lifecycle, AgentEngine, ToolRuntime, ValidationEngine, NexusLoop)
     → RuntimeEventBus.publish(RuntimeEvent)
         → subscribers: HookRegistry, TraceStore, PolicyEngine, Metrics, RecoveryCoordinator
 ```
@@ -627,21 +907,18 @@ interface RuntimeEventBus:
 
 ### 42.2.3 Anti-Pattern
 
-Agents MUST NOT publish directly to external queues, webhooks, or Slack. They emit decisions and events **through** the runtime bus only.
+Agents MUST NOT publish directly to external queues, webhooks, or Slack. They emit through the runtime bus only.
 
 ---
 
 ## 42.3 Hook System
 
-Hooks are **registered, ordered, inspectable interceptors** invoked by the runtime at defined points.
-
-Hooks are NOT agent code. Hooks are Tier-1 runtime extensions (§42.22).
+Hooks are **registered, ordered, inspectable interceptors** at defined lifecycle boundaries. Hooks are Tier-1 runtime extensions (§42.22), not agent code.
 
 ### 42.3.1 HookPoint Enum
 
 ```text
-BEFORE_TASK_INTAKE
-AFTER_TASK_INTAKE
+BEFORE_TASK_INTAKE | AFTER_TASK_INTAKE
 BEFORE_CLASSIFICATION | AFTER_CLASSIFICATION
 BEFORE_PLANNING | AFTER_PLANNING
 BEFORE_AGENT_SELECTION | AFTER_AGENT_SELECTION
@@ -664,7 +941,7 @@ BEFORE_TRACE_PERSIST | AFTER_TRACE_PERSIST
 HookContext:
     task_id, run_id, node_id, agent_id, step_id
     phase: ExecutionPhase
-    mutable_runtime_state: RuntimeStateView   # read-mostly; mutation via approved APIs only
+    mutable_runtime_state: RuntimeStateView
     event: RuntimeEvent | null
 
 HookResult:
@@ -673,101 +950,78 @@ HookResult:
     reason: str | null
 ```
 
-### 42.3.3 Example — Cost Guard Hook
-
-```text
-@hook(BEFORE_TOOL_CALL)
-def enforce_cost_ceiling(ctx: HookContext) -> HookResult:
-    if ctx.runtime_state.accumulated_cost_usd > ctx.runtime_state.cost_ceiling:
-        return HookResult(action=BLOCK, reason="cost_ceiling_exceeded")
-    return HookResult(action=ALLOW)
-```
-
 ### 42.3.4 Rules
 
 - Hooks run in **priority order** (integer priority, lower first).
 - Hooks MUST NOT call adapters directly; they influence policy and decisions only.
-- Hooks MUST be registered in `HookRegistry` at application startup (Tier-3) or Nexus bootstrap.
-
-**Authoring reference:** full `HookPoint` list and orchestration hook placement — [`guides/AGENT_CREATION_GUIDE.md` Appendix I §I.2](../technical/guides/AGENT_CREATION_GUIDE.md#i2-orchestration-control-plane-map) · governance hooks Appendix H.
+- Hooks MUST be registered in `HookRegistry` at application startup (Tier-3) or host bootstrap.
 
 ---
 
 ## 42.4 Standard Agent Lifecycle
 
-Every agent execution follows the **same lifecycle**, enforced by `AgentEngine` and `NexusLoop`.
+**CURRENT IMPLEMENTATION** — agent lifecycle **within an agentic Execution**, enforced by `AgentEngine` (and Nexus when orchestration strategy applies):
 
 ```text
-REGISTERED          # in AgentRegistry
-    → SELECTED      # Nexus chose agent for task/node
-    → CONTEXT_BUILDING
-    → READY
-    → RUNNING       # one or more AgentSteps
-    → DECIDING      # AgentDecision emitted
-    → VALIDATING
+REGISTERED → SELECTED → CONTEXT_BUILDING → READY → RUNNING
+    → DECIDING → VALIDATING
     → [PAUSED | INTERRUPTED | RETRYING | HANDOFF]
     → COMPLETED | FAILED | CANCELLED
 ```
 
+Agent lifecycle is **not** the same as Execution lifecycle. One Attempt may contain multiple agent lifecycles across one or more Executions.
+
 ### 42.4.1 State Transition Rules
 
-- Only Nexus / AgentEngine MAY transition global agent lifecycle states.
-- Agents MUST NOT set lifecycle state directly.
 - Agents signal intent via `AgentDecision` only.
 - Every transition MUST emit a `RuntimeEvent`.
-
-### 42.4.2 Lifecycle vs Task Lifecycle
-
-- **Task lifecycle** (§23): global user-facing task states.
-- **Agent lifecycle** (this section): per-agent execution within a task.
-- One task may contain multiple agent lifecycles (sequential, parallel, handoff).
+- Agents MUST NOT set global lifecycle state directly.
 
 ---
 
 ## 42.5 Unified Agent Execution Protocol
 
-The **Unified Agent Execution Protocol (UAEP)** is the mandatory sequence for all agent invocations.
+**CURRENT IMPLEMENTATION — agentic strategy path only.** UAEP is **not** the universal Execution Runtime contract (**UER-INV-005**).
 
 ```text
 protocol UnifiedAgentExecution:
 
-    1. Nexus selects agent (capability match + policy)
+    1. Agent selected (orchestration or direct agentic admission)
     2. AgentEngine.prepare_execution(agent, RuntimeExecutionContext)
     3. Middleware: BEFORE_CONTEXT_BUILD hooks
     4. agent.build_context(request) → context
     5. Middleware: AFTER_CONTEXT_BUILD hooks
-    6. FOR each AgentStep in agent.get_steps(context) OR runtime-controlled step plan:
+    6. FOR each AgentStep:
            a. Middleware: BEFORE_STEP
            b. AgentEngine.execute_step(agent, step, context)
            c. emit STEP_* events
            d. collect AgentDecision from step
            e. Middleware: AFTER_STEP
-           f. IF decision != CONTINUE: break loop (Nexus handles)
+           f. IF decision != CONTINUE: break loop
     7. agent.validate(output, context) → ValidationResult
     8. Middleware: BEFORE_VALIDATION / AFTER_VALIDATION
     9. AgentEngine.build_execution_result(...) → AgentExecutionResult
-   10. Return to Nexus with AgentDecision + result
+   10. Return AgentDecision + result to caller
 ```
 
 ### 42.5.1 Rules
 
-- No agent MAY bypass steps 3–8.
-- `execute()` on `Agent` interface (§13) MUST delegate to UAEP via `AgentEngine`.
+- No agent MAY bypass steps 3–8 on the agentic path.
+- `execute()` on `Agent` interface MUST delegate to UAEP via `AgentEngine`.
 - Direct `Agent.run()` from agent code is **forbidden** outside AgentEngine (§42.41).
 
 ---
 
 ## 42.6 Agent Step Lifecycle
 
-Each internal agent step follows a micro-lifecycle:
+Each internal agent step follows a micro-lifecycle **inside the parent Execution**:
 
 ```text
-STEP_PLANNED
-    → STEP_STARTED
-    → [TOOL_REQUESTED → TOOL_COMPLETED]*   # via ToolRuntime only
-    → STEP_DECIDING
+STEP_PLANNED → STEP_STARTED → [TOOL_*]* → STEP_DECIDING
     → STEP_COMPLETED | STEP_FAILED | STEP_SKIPPED
 ```
+
+Steps are **not** Executions unless independently schedulable per [Step vs Execution](#step-vs-execution).
 
 ### 42.6.1 AgentStep Contract
 
@@ -778,56 +1032,31 @@ AgentStep:
     step_index: int
     input_schema: JSONSchema
     output_schema: JSONSchema
-    allowed_tools: list[str]          # subset of agent contract
+    allowed_tools: list[str]
     max_duration_ms: int
-    max_retries: int                  # runtime-managed (§42.34)
+    max_retries: int
     idempotent: bool
     trace_label: str
-```
-
-### 42.6.2 Step Execution Pseudocode
-
-```text
-async def execute_step(agent, step, context):
-    emit(STEP_STARTED)
-    middleware.run(BEFORE_STEP)
-    try:
-        output = await agent.run_step(step, context, tool_gateway=ToolRuntime)
-        decision = agent.decide_after_step(step, output, context)
-        emit(DECISION_EMITTED, decision=decision)
-        middleware.run(AFTER_STEP)
-        emit(STEP_COMPLETED)
-        return output, decision
-    except Exception as e:
-        emit(STEP_FAILED, error=str(e))
-        return None, AgentDecision(type=FAIL, reason=str(e))
 ```
 
 ---
 
 ## 42.7 Agent Decision Model
 
-Agents express control flow intent through **`AgentDecision`** — never through side effects or direct runtime manipulation.
+Agents express control-flow intent through **`AgentDecision`** — never through side effects or direct runtime manipulation.
 
 ### 42.7.1 AgentDecision Contract
 
 ```text
 AgentDecisionType:
-    CONTINUE          # proceed to next step
-    COMPLETE          # agent finished successfully
-    RETRY             # request runtime-managed retry (§42.34)
-    REQUEST_HUMAN     # pause for human input/approval
-    INTERRUPT         # structured interrupt (§42.8)
-    ESCALATE          # elevate to supervisor/policy/human
-    MODIFY_PLAN       # request Nexus replanning
-    FAIL              # terminal failure for this agent/node
-    CANCEL            # request task cancellation
+    CONTINUE | COMPLETE | RETRY | REQUEST_HUMAN | INTERRUPT
+    ESCALATE | MODIFY_PLAN | FAIL | CANCEL
 
 AgentDecision:
     type: AgentDecisionType
     reason: str
     severity: EventSeverity
-    payload: dict                    # structured context for Nexus
+    payload: dict
     interrupt: ExecutionInterrupt | null
     suggested_plan_delta: PlanDelta | null
     human_request: HumanRequest | null
@@ -835,36 +1064,11 @@ AgentDecision:
     confidence: float | null
 ```
 
-### 42.7.2 Example — LegalAgent Critical Clause
-
-```text
-# LegalAgent detects a severe contract issue during step "clause_analysis"
-
-return AgentDecision(
-    type=INTERRUPT,
-    reason="critical_liability_clause_detected",
-    severity=CRITICAL,
-    payload={
-        "clause_id": "§14.2",
-        "issue": "unlimited_liability",
-        "evidence_artifact": "artifact_clause_flags.json"
-    },
-    interrupt=ExecutionInterrupt(
-        interrupt_type=POLICY_REVIEW_REQUIRED,
-        source_agent_id="legal",
-        source_step_id="step_clause_analysis",
-        recommended_action=REQUEST_HUMAN,
-        blocking=True,
-        metadata={"risk_level": "critical"}
-    )
-)
-```
-
 ### 42.7.3 Rules
 
-- Agent MUST NOT call `pause()`, `sleep()` waiting for human, or stop the event loop.
-- Agent MUST NOT send Slack messages directly for approval.
-- Nexus interprets `AgentDecision` via **PolicyEngine** (§42.11).
-- `DECISION_EMITTED` event MUST precede any Nexus action on the decision.
+- Agent MUST NOT block the event loop waiting for humans.
+- Agent MUST NOT send approval requests outside the runtime bus.
+- `DECISION_EMITTED` MUST precede runtime action on the decision.
+- Retry intent from agents does **not** automatically mint a new `AttemptId` — see [Lifecycle](#lifecycle-retry-pause-resume-cancellation).
 
 ---

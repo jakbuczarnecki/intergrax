@@ -2,16 +2,26 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import pytest
 
-from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
-from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessment
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id, mint_task_id
+from intergrax.runtime.diagnostics.diagnostic_assessment import (
+    DiagnosticAssessment,
+    DiagnosticAssessmentBuilder,
+    DiagnosticFindingKind,
+)
 from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicProblemGroupingBasis,
+    DeterministicProblemSignature,
     DuplicateProblemGroupingStrategyError,
     MissingProblemGroupingStrategyError,
+    ProblemGroupingBasis,
+    ProblemGroupingBasisKind,
     ProblemGroupingCandidate,
     ProblemGroupingEngine,
+    ProblemGroupingInput,
     ProblemGroupingIntegrityError,
     ProblemGroupingMethod,
     ProblemGroupingProvenance,
@@ -21,9 +31,24 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingStrategyRegistry,
     ProblemGroupingStrategyResult,
     ProblemGroupingStrategyVersion,
-    ProblemGroupingSubject,
     ProblemGroupingSubjectRef,
+    normalize_assessment,
 )
+from intergrax.runtime.diagnostics.problem_grouping_features import (
+    REPRESENTATION_VERSION_V1,
+    REPRESENTATION_VERSION_V2,
+    ProblemGroupingFeatureSet,
+    ProblemGroupingRepresentationVersion,
+    project_assessment_features,
+)
+from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
+from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
+from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
+from intergrax.runtime.observability.memory_causal_evidence_persistence import (
+    InMemoryCausalEvidencePersistence,
+)
+from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
 
 pytestmark = pytest.mark.unit
 
@@ -31,6 +56,12 @@ _TENANT_A = "tenant-a"
 _TENANT_B = "tenant-b"
 _FAKE_STRATEGY_ID = ProblemGroupingStrategyId("test.fake_pair")
 _FAKE_STRATEGY_VERSION = ProblemGroupingStrategyVersion("1.0.0")
+
+
+def _empty_basis() -> DeterministicProblemGroupingBasis:
+    return DeterministicProblemGroupingBasis(
+        signature=DeterministicProblemSignature(findings=(), limitations=())
+    )
 
 
 def _assessment(
@@ -59,13 +90,15 @@ def _subject_ref(assessment: DiagnosticAssessment) -> ProblemGroupingSubjectRef:
 def _provenance(
     *,
     members: tuple[ProblemGroupingSubjectRef, ...],
+    method: ProblemGroupingMethod = ProblemGroupingMethod.DETERMINISTIC,
+    basis: ProblemGroupingBasis | None = None,
 ) -> ProblemGroupingProvenance:
     return ProblemGroupingProvenance(
         strategy_id=_FAKE_STRATEGY_ID,
         strategy_version=_FAKE_STRATEGY_VERSION,
-        method=ProblemGroupingMethod.DETERMINISTIC,
+        method=method,
         supporting_subject_refs=members,
-        basis=DeterministicProblemGroupingBasis(),
+        basis=basis if basis is not None else _empty_basis(),
     )
 
 
@@ -96,10 +129,10 @@ class _ConfigurableFakeStrategy:
 
     def group(
         self,
-        subjects: tuple[ProblemGroupingSubject, ...],
+        inputs: tuple[ProblemGroupingInput, ...],
     ) -> ProblemGroupingStrategyResult:
-        if not self._candidates and len(subjects) >= 2:
-            members = (subjects[0].ref, subjects[1].ref)
+        if not self._candidates and len(inputs) >= 2:
+            members = (inputs[0].subject.ref, inputs[1].subject.ref)
             self._candidates = (
                 ProblemGroupingCandidate(
                     members=members,
@@ -257,7 +290,7 @@ def test_strategy_identity_mismatch_rejected() -> None:
     class _SpoofedStrategy(_ConfigurableFakeStrategy):
         def group(
             self,
-            subjects: tuple[ProblemGroupingSubject, ...],
+            inputs: tuple[ProblemGroupingInput, ...],
         ) -> ProblemGroupingStrategyResult:
             return ProblemGroupingStrategyResult(
                 strategy_id=ProblemGroupingStrategyId("spoofed.strategy"),
@@ -292,3 +325,491 @@ def test_engine_determinism() -> None:
     )
 
     assert first == second
+
+
+@dataclass(frozen=True, slots=True)
+class _TestSemanticProblemGroupingBasis:
+    """Test-only basis proving plugin extensibility without engine changes."""
+
+    similarity_threshold: float = 0.9
+
+    @property
+    def kind(self) -> ProblemGroupingBasisKind:
+        return ProblemGroupingBasisKind.SEMANTIC
+
+
+def test_extensible_basis_accepted_by_provenance() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    ref_a = _subject_ref(assessment_a)
+    ref_b = _subject_ref(assessment_b)
+    basis = _TestSemanticProblemGroupingBasis()
+
+    provenance = ProblemGroupingProvenance(
+        strategy_id=_FAKE_STRATEGY_ID,
+        strategy_version=_FAKE_STRATEGY_VERSION,
+        method=ProblemGroupingMethod.SEMANTIC,
+        supporting_subject_refs=(ref_a, ref_b),
+        basis=basis,
+    )
+
+    assert isinstance(provenance.basis, ProblemGroupingBasis)
+    assert provenance.basis is not None
+    assert provenance.basis.kind is ProblemGroupingBasisKind.SEMANTIC
+
+
+def test_deterministic_basis_valid_with_deterministic_strategy() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    ref_a = _subject_ref(assessment_a)
+    ref_b = _subject_ref(assessment_b)
+    basis = _empty_basis()
+    strategy = _ConfigurableFakeStrategy(
+        candidates=(
+            ProblemGroupingCandidate(
+                members=(ref_a, ref_b),
+                provenance=_provenance(members=(ref_a, ref_b), basis=basis),
+            ),
+        ),
+    )
+    engine = _engine_with_strategy(strategy)
+
+    result = engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+
+    assert result.candidates[0].provenance.basis == basis
+    assert result.candidates[0].provenance.basis.kind is ProblemGroupingBasisKind.DETERMINISTIC
+
+
+def test_method_spoof_rejected() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    ref_a = _subject_ref(assessment_a)
+    ref_b = _subject_ref(assessment_b)
+    strategy = _ConfigurableFakeStrategy(
+        candidates=(
+            ProblemGroupingCandidate(
+                members=(ref_a, ref_b),
+                provenance=_provenance(
+                    members=(ref_a, ref_b),
+                    method=ProblemGroupingMethod.LLM,
+                ),
+            ),
+        ),
+    )
+    engine = _engine_with_strategy(strategy)
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="method"):
+        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+
+
+def test_basis_method_mismatch_rejected() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    ref_a = _subject_ref(assessment_a)
+    ref_b = _subject_ref(assessment_b)
+    strategy = _ConfigurableFakeStrategy(
+        candidates=(
+            ProblemGroupingCandidate(
+                members=(ref_a, ref_b),
+                provenance=_provenance(
+                    members=(ref_a, ref_b),
+                    basis=_TestSemanticProblemGroupingBasis(),
+                ),
+            ),
+        ),
+    )
+    engine = _engine_with_strategy(strategy)
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="basis kind"):
+        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+
+
+def test_foreign_supporting_ref_rejected() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    ref_a = _subject_ref(assessment_a)
+    ref_b = _subject_ref(assessment_b)
+    foreign = _subject_ref(_assessment())
+    strategy = _ConfigurableFakeStrategy(
+        candidates=(
+            ProblemGroupingCandidate(
+                members=(ref_a, ref_b),
+                provenance=ProblemGroupingProvenance(
+                    strategy_id=_FAKE_STRATEGY_ID,
+                    strategy_version=_FAKE_STRATEGY_VERSION,
+                    method=ProblemGroupingMethod.DETERMINISTIC,
+                    supporting_subject_refs=(ref_a, foreign),
+                    basis=_empty_basis(),
+                ),
+            ),
+        ),
+    )
+    engine = _engine_with_strategy(strategy)
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="supporting_subject_ref"):
+        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+
+
+def test_supporting_refs_must_equal_members() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    assessment_c = _assessment()
+    ref_a = _subject_ref(assessment_a)
+    ref_b = _subject_ref(assessment_b)
+    ref_c = _subject_ref(assessment_c)
+    strategy = _ConfigurableFakeStrategy(
+        candidates=(
+            ProblemGroupingCandidate(
+                members=(ref_a, ref_b),
+                provenance=ProblemGroupingProvenance(
+                    strategy_id=_FAKE_STRATEGY_ID,
+                    strategy_version=_FAKE_STRATEGY_VERSION,
+                    method=ProblemGroupingMethod.DETERMINISTIC,
+                    supporting_subject_refs=(ref_a, ref_c),
+                    basis=_empty_basis(),
+                ),
+            ),
+        ),
+    )
+    engine = _engine_with_strategy(strategy)
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="must equal candidate members"):
+        engine.group(
+            (assessment_a, assessment_b, assessment_c),
+            strategy_id=_FAKE_STRATEGY_ID,
+        )
+
+
+def test_duplicate_supporting_ref_rejected() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    ref_a = _subject_ref(assessment_a)
+    ref_b = _subject_ref(assessment_b)
+    strategy = _ConfigurableFakeStrategy(
+        candidates=(
+            ProblemGroupingCandidate(
+                members=(ref_a, ref_b),
+                provenance=ProblemGroupingProvenance(
+                    strategy_id=_FAKE_STRATEGY_ID,
+                    strategy_version=_FAKE_STRATEGY_VERSION,
+                    method=ProblemGroupingMethod.DETERMINISTIC,
+                    supporting_subject_refs=(ref_a, ref_a),
+                    basis=_empty_basis(),
+                ),
+            ),
+        ),
+    )
+    engine = _engine_with_strategy(strategy)
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="duplicate supporting_subject_ref"):
+        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+
+
+def test_member_order_normalized_to_input_order() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    ref_a = _subject_ref(assessment_a)
+    ref_b = _subject_ref(assessment_b)
+    strategy = _ConfigurableFakeStrategy(
+        candidates=(
+            ProblemGroupingCandidate(
+                members=(ref_b, ref_a),
+                provenance=_provenance(members=(ref_b, ref_a)),
+            ),
+        ),
+    )
+    engine = _engine_with_strategy(strategy)
+
+    result = engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+
+    assert result.candidates[0].members == (ref_a, ref_b)
+    assert result.candidates[0].provenance.supporting_subject_refs == (ref_a, ref_b)
+
+
+def test_registered_strategy_mutation_rejected() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+
+    class _MutableStrategy(_ConfigurableFakeStrategy):
+        def __init__(self) -> None:
+            super().__init__()
+            self._version = _FAKE_STRATEGY_VERSION
+
+        @property
+        def strategy_version(self) -> ProblemGroupingStrategyVersion:
+            return self._version
+
+    strategy = _MutableStrategy()
+    registry = ProblemGroupingStrategyRegistry()
+    registry.register(strategy)
+    engine = ProblemGroupingEngine(registry)
+    strategy._version = ProblemGroupingStrategyVersion("9.9.9")
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="mutated after registration"):
+        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+
+
+def _assess_attempt_sequence(event_types: list[RuntimeEventType]) -> DiagnosticAssessment:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    runtime_store = InMemoryRuntimeEventStore()
+    for event_type in event_types:
+        event = sample_runtime_event(
+            tenant_id=_TENANT_A,
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+        ).model_copy(update={"event_type": event_type})
+        runtime_store.append(event, tenant_id=_TENANT_A)
+
+    reconstruction = ExecutionReconstructor(
+        runtime_events=runtime_store,
+        causal_evidence=InMemoryCausalEvidencePersistence(),
+    ).reconstruct_execution(_TENANT_A, task_id, run_id)
+    lifecycle = LifecycleAnomalyAnalyzer().analyze(reconstruction)
+    return DiagnosticAssessmentBuilder().assess(reconstruction, lifecycle)
+
+
+def test_normalize_assessment_passes_lifecycle_transition() -> None:
+    assessment = _assess_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_COMPLETED,
+            RuntimeEventType.RETRY_SCHEDULED,
+        ]
+    )
+    finding = next(
+        item
+        for item in assessment.findings
+        if item.kind is DiagnosticFindingKind.EVENT_AFTER_TERMINAL
+    )
+    subject = normalize_assessment(assessment)
+    subject_finding = next(
+        item
+        for item in subject.findings
+        if item.kind is DiagnosticFindingKind.EVENT_AFTER_TERMINAL
+    )
+
+    assert subject_finding.lifecycle_transition is finding.lifecycle_transition
+    assert subject_finding.lifecycle_transition is not None
+
+
+def test_normalized_subject_findings_differ_for_structural_collision() -> None:
+    assessment_a = _assess_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_COMPLETED,
+            RuntimeEventType.RETRY_SCHEDULED,
+        ]
+    )
+    assessment_b = _assess_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_COMPLETED,
+            RuntimeEventType.TASK_FAILED,
+        ]
+    )
+
+    subject_a = normalize_assessment(assessment_a)
+    subject_b = normalize_assessment(assessment_b)
+    finding_a = next(
+        item
+        for item in subject_a.findings
+        if item.kind is DiagnosticFindingKind.EVENT_AFTER_TERMINAL
+    )
+    finding_b = next(
+        item
+        for item in subject_b.findings
+        if item.kind is DiagnosticFindingKind.EVENT_AFTER_TERMINAL
+    )
+
+    assert finding_a.lifecycle_transition != finding_b.lifecycle_transition
+    assert finding_a.kind == finding_b.kind
+    assert finding_a.scope == finding_b.scope
+    assert finding_a.source_anomaly_kind == finding_b.source_anomaly_kind
+
+
+def test_normalized_non_lifecycle_finding_lifecycle_transition_is_none() -> None:
+    assessment = DiagnosticAssessment(
+        tenant_id=_TENANT_A,
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        findings=(),
+        limitations=(),
+    )
+    subject = normalize_assessment(assessment)
+    assert subject.findings == ()
+
+
+class _AssessmentFeatureProjector:
+    @property
+    def representation_version(self) -> ProblemGroupingRepresentationVersion:
+        return REPRESENTATION_VERSION_V2
+
+    def project(
+        self,
+        assessment: DiagnosticAssessment,
+        subject,
+    ) -> ProblemGroupingFeatureSet:
+        return project_assessment_features(assessment, subject=subject)
+
+
+class _FeatureRequiringFakeStrategy(_ConfigurableFakeStrategy):
+    def __init__(self) -> None:
+        super().__init__()
+        self.received_versions: tuple[ProblemGroupingRepresentationVersion, ...] = ()
+
+    @property
+    def characteristics(self) -> ProblemGroupingStrategyCharacteristics:
+        return ProblemGroupingStrategyCharacteristics(
+            method=ProblemGroupingMethod.SEMANTIC,
+            deterministic=False,
+            requires_features=True,
+        )
+
+    def group(
+        self,
+        inputs: tuple[ProblemGroupingInput, ...],
+    ) -> ProblemGroupingStrategyResult:
+        self.received_versions = tuple(
+            input_item.features.representation_version
+            for input_item in inputs
+            if input_item.features is not None
+        )
+        if any(input_item.features is None for input_item in inputs):
+            raise AssertionError("expected features on every input")
+        if not self._candidates and len(inputs) >= 2:
+            members = (inputs[0].subject.ref, inputs[1].subject.ref)
+            self._candidates = (
+                ProblemGroupingCandidate(
+                    members=members,
+                    provenance=ProblemGroupingProvenance(
+                        strategy_id=self.strategy_id,
+                        strategy_version=self.strategy_version,
+                        method=ProblemGroupingMethod.SEMANTIC,
+                        supporting_subject_refs=members,
+                        basis=None,
+                    ),
+                ),
+            )
+        return ProblemGroupingStrategyResult(
+            strategy_id=self.strategy_id,
+            strategy_version=self.strategy_version,
+            candidates=self._candidates,
+        )
+
+
+def test_feature_requiring_strategy_receives_projected_features() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    strategy = _FeatureRequiringFakeStrategy()
+    engine = ProblemGroupingEngine(
+        _engine_with_strategy(strategy)._registry,
+        feature_projector=_AssessmentFeatureProjector(),
+    )
+
+    result = engine.group(
+        (assessment_a, assessment_b),
+        strategy_id=_FAKE_STRATEGY_ID,
+    )
+
+    assert len(result.candidates) == 1
+    assert strategy.received_versions == (REPRESENTATION_VERSION_V2, REPRESENTATION_VERSION_V2)
+
+
+def test_feature_requiring_strategy_fails_without_projector() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    engine = _engine_with_strategy(_FeatureRequiringFakeStrategy())
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="requires features"):
+        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+
+
+def test_feature_subject_ref_mismatch_rejected() -> None:
+    assessment_a = _assessment()
+    assessment_b = _assessment()
+    subject_a = normalize_assessment(assessment_a)
+    subject_b = normalize_assessment(assessment_b)
+    mismatched_features = project_assessment_features(assessment_b, subject=subject_b)
+
+    class _MismatchedRefProjector:
+        @property
+        def representation_version(self) -> ProblemGroupingRepresentationVersion:
+            return REPRESENTATION_VERSION_V1
+
+        def project(self, assessment: DiagnosticAssessment, subject) -> ProblemGroupingFeatureSet:
+            if subject.ref == subject_a.ref:
+                return mismatched_features
+            return project_assessment_features(assessment, subject=subject)
+
+    engine = ProblemGroupingEngine(
+        _engine_with_strategy(_ConfigurableFakeStrategy())._registry,
+        feature_projector=_MismatchedRefProjector(),
+    )
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="subject_ref"):
+        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+
+
+def test_feature_structural_signature_mismatch_rejected() -> None:
+    from intergrax.runtime.diagnostics.diagnostic_assessment import (
+        DiagnosticCertainty,
+        DiagnosticFinding,
+        DiagnosticFindingKind,
+    )
+    from intergrax.runtime.diagnostics.lifecycle_analysis import (
+        LifecycleAnomalyKind,
+        LifecycleAnomalyScope,
+    )
+    from intergrax.contracts.execution_identity import mint_event_id
+
+    finding = DiagnosticFinding(
+        kind=DiagnosticFindingKind.EVENT_AFTER_TERMINAL,
+        scope=LifecycleAnomalyScope.EXECUTION,
+        attempt_id=None,
+        certainty=DiagnosticCertainty.PROVEN,
+        claim="A lifecycle event was recorded after canonical run closure.",
+        source_anomaly_kind=LifecycleAnomalyKind.EVENT_AFTER_TERMINAL,
+        supporting_event_ids=(mint_event_id(),),
+        supporting_evidence_ids=(),
+        supporting_positions=(),
+    )
+    assessment_a = DiagnosticAssessment(
+        tenant_id=_TENANT_A,
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        findings=(finding,),
+        limitations=(),
+    )
+    assessment_b = _assessment()
+    subject_a = normalize_assessment(assessment_a)
+    correct_features = project_assessment_features(assessment_a, subject=subject_a)
+    wrong_signature_features = ProblemGroupingFeatureSet(
+        subject_ref=subject_a.ref,
+        representation_version=REPRESENTATION_VERSION_V1,
+        structural_signature=project_assessment_features(
+            assessment_b,
+            subject=normalize_assessment(assessment_b),
+        ).structural_signature,
+        text_evidence=correct_features.text_evidence,
+    )
+
+    class _MismatchedSignatureProjector:
+        @property
+        def representation_version(self) -> ProblemGroupingRepresentationVersion:
+            return REPRESENTATION_VERSION_V1
+
+        def project(self, assessment: DiagnosticAssessment, subject) -> ProblemGroupingFeatureSet:
+            if subject.ref == subject_a.ref:
+                return wrong_signature_features
+            return project_assessment_features(assessment, subject=subject)
+
+    engine = ProblemGroupingEngine(
+        _engine_with_strategy(_ConfigurableFakeStrategy())._registry,
+        feature_projector=_MismatchedSignatureProjector(),
+    )
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="structural_signature"):
+        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)

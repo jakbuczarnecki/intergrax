@@ -4,7 +4,8 @@
 **Classification:** `META_ARCHITECTURE` — coordinates platform-wide cross-domain execution semantics across existing domain owners; **not** a new platform DOMAIN and **not** paired with a 1:1 implementation plan  
 **Owner:** Intergrax Platform Architecture (semantic coordination)  
 **Audience:** Principal architects, domain owners, implementers, Cursor implementation sessions  
-**Registered in:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md#architecture-artifact-classification-register)
+**Registered in:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md#architecture-artifact-classification-register)  
+**Last updated:** 2026-08-26 — **UE-DOC-0.7** shared execution guarantees, **UEA-INV-021** no-bypass invariant
 
 ---
 
@@ -343,9 +344,22 @@ Examples: `message_id`, broker task id, `delivery_id`, `lease_id`, `worker_id`.
 
 Workers **receive** runtime identity; they do **not** invent a new Run because transport changed (**UEA-INV-011**).
 
+Canonical distributed target:
+
+```text
+Execution Boundary / scheduler
+  ↓ canonical Execution identity established
+  ↓ immutable transport-safe execution envelope / reference
+MessageBus / queue
+  ↓ worker receives SAME runtime identity
+  ↓ required transport → Execution causal evidence
+Execution Boundary admission
+  ↓ strategy executor / registered work
+```
+
 Conceptual future transport envelope preserves: `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, tenant, effective authority, bounded budget allowance, input/context/policy references, causal/trace correlation. Exact Python schema is **not** frozen here.
 
-**Owner:** Queue/transport → [`BACKGROUND_TASKS.md`](BACKGROUND_TASKS.md), [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) where applicable.
+**Owner:** Queue/transport/worker execution → [`BACKGROUND_TASKS.md`](BACKGROUND_TASKS.md). [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) covers package installation/activation only — not distributed execution identity. [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) may constrain worker capacity but does not own Execution identity.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-distributed-queue-worker-dark.svg">
@@ -364,6 +378,8 @@ Conceptual future transport envelope preserves: `TaskId`, `RunId`, `AttemptId`, 
 
 Governance owns policy/authority **decisions**. Execution **coordinates** with Governance but does **not** absorb it.
 
+Every Execution enters governance with canonical identity, tenant/scope, effective authority, execution requirements, and relevant action/effect context. Governance answers whether the Execution or operation is allowed; UER/Execution Runtime applies the lifecycle consequence.
+
 ```text
 Run authority
   ↓
@@ -376,7 +392,7 @@ Agent
 Tool
 ```
 
-**Invariant:** child effective authority ≤ parent effective authority. A child may narrow authority; it **MUST NOT** expand it (**UEA-INV-009**).
+**Invariant:** child effective authority ≤ parent effective authority. A child may narrow authority; it **MUST NOT** expand it merely because Nexus scheduled it, another worker executes it, another agent is selected, HITL resumed it, or transport redelivered it. Human approval does not implicitly expand unrelated authority (**UEA-INV-009**).
 
 **Owner:** [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md).
 
@@ -396,7 +412,9 @@ Run Budget
     └── child Execution allowance
 ```
 
-Budget subsystem owns accounting, reservations, consumption, release/reconciliation, and enforcement. Execution and Nexus **MUST NOT** implement competing budget ledgers (**UEA-INV-010**). Parallel child admission must respect reservations so children cannot collectively overcommit the parent budget.
+Budget subsystem owns accounting, reservations, consumption, release/reconciliation, and enforcement. Execution coordinates access; Nexus requests work under available reservation; Agent/Tool consume through platform budget contracts. Execution and Nexus **MUST NOT** implement competing budget ledgers in StrategyResolver, inference executor, AgentEngine, or workers (**UEA-INV-010**).
+
+**Budget is part of admission:** a child Execution **MUST NOT** be admitted when required bounded budget cannot be reserved or authorized. For parallel fan-out, children collectively **MUST NOT** overcommit the parent allowance (`parent allowance → reservations for E2/E3/… → consumption → release/reconciliation`).
 
 **CURRENT IMPLEMENTATION / MIGRATION GAP:** Hierarchical budget reservation is not yet the full target model.
 
@@ -417,8 +435,10 @@ Budget subsystem owns accounting, reservations, consumption, release/reconciliat
 
 Cancellation follows the Execution Tree.
 
-- **Cancel Run** → entire tree
-- **Cancel Execution E** → E and descendants, subject to orchestration dependency/failure policy
+- **Cancel Run** → root and entire Execution Tree
+- **Cancel Execution E** → E and all descendants
+
+Nexus may stop scheduling dependent topology nodes after cancellation. Worker transport cancellation may carry infrastructure-specific mechanics, but transport cancellation **MUST NOT** create a second canonical cancellation tree.
 
 No new cancellation identity hierarchy is required.
 
@@ -431,12 +451,22 @@ No new cancellation identity hierarchy is required.
 HITL/Governance owns the **human decision**. Execution owns the **lifecycle consequence**:
 
 ```text
-RUNNING → WAITING_FOR_HUMAN / PAUSED → RESUMED
+Execution
+  ↓ governance outcome REQUIRE_HUMAN
+UER → PAUSED / WAITING_FOR_HUMAN
+  ↓ canonical HITL decision store / evidence
+authorized decision
+  ↓
+UER resumes SAME Execution identity
+  ↓
+strategy continues
 ```
+
+Human decision is **not** a retry, new Attempt, new Run, or automatic authority expansion. Nexus involvement is conditional — only when the paused Execution uses orchestration strategy. Direct inference or agentic Executions may use HITL without Nexus.
 
 Resume causality must be auditable: authorized decision → Execution resumed. Identity preserved across pause/resume (**UEA-INV-012**).
 
-**Owners:** HITL decision → Governance/HITL ([`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md), [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md)); lifecycle transitions → UER.
+**Owners:** HITL decision → Governance/HITL ([`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md), [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md)); lifecycle transitions → UER; Reliability may recommend or escalate to HITL but does not own human decision authority.
 
 ---
 
@@ -444,11 +474,13 @@ Resume causality must be auditable: authorized decision → Execution resumed. I
 
 **TARGET ARCHITECTURE**
 
-Checkpointing remains **Run-scoped** durable lifecycle state.
+Checkpoint subsystem persists durable recovery state. Checkpoint is **not** execution identity authority.
 
-Future checkpoint state must be capable of preserving: Attempt identity, root `ExecutionId`, Execution Tree, per-Execution state, orchestration state, agent/step cursors, pending HITL, budget reservations where required.
+One canonical Run-scoped checkpoint model must be capable of preserving: `RunId`, current `AttemptId`, root `ExecutionId`, Execution Tree, per-Execution lifecycle state, orchestration readiness/scheduling state, Agent/UAEP cursors, pending HITL, budget reservations/reconciliation where required, cancellation state, and required recovery/idempotency state.
 
-Checkpoint is **not** an independent source of execution identity truth.
+There is **no** separate Nexus checkpoint truth, Agent checkpoint truth, or worker checkpoint identity tree — subsystem-local snapshot structures may exist only as components of canonical recovery state.
+
+Pause/resume preserves identity. Checkpoint restoration must resume canonical logical work and **MUST NOT** mint a new `ExecutionId` solely because process or worker changed. Whole-Run retry restoration is an explicit lifecycle decision and follows whole-Run retry identity semantics (**UEA-INV-014**).
 
 **CURRENT IMPLEMENTATION / MIGRATION GAP:** `RuntimeCheckpoint` has no canonical Execution Tree representation.
 
@@ -561,11 +593,96 @@ Relationships required for audit/causality may be fail-closed evidence. Not ever
 
 > **Execution coordinates contracts; it does not absorb subsystem ownership.**
 
-The execution layer is a **coordination boundary**, not a monolithic subsystem owner.
+The execution layer is a **coordination boundary**, not a monolithic subsystem owner or a god object.
 
-It may coordinate: lifecycle through UER, Governance, Budget, Observability facts, executor selection, Nexus for orchestration, checkpoint/cancellation interfaces.
+It may coordinate: lifecycle through UER, Governance admission, Budget reservation/consultation, Observability/evidence establishment, executor strategy selection, Nexus for orchestration, checkpoint/cancellation interfaces, and reliability coordination.
 
-It **MUST NOT** absorb implementation ownership of: Governance, Budget, Observability, DIAG, Queue, Checkpoint persistence, or Agent internals.
+It **MUST NOT** absorb implementation ownership of: policy definitions or evaluation semantics, budget ledger, observability persistence, diagnostic interpretation, checkpoint persistence backend, transport backend, or Agent internals.
+
+Preferred mental model:
+
+```text
+Execution Boundary
+  → asks Governance
+  → reserves/consults Budget
+  → establishes evidence
+  → invokes executor strategy
+  → emits lifecycle facts
+  → coordinates reliability / checkpoint / cancellation
+```
+
+Subsystem owners retain their state and decision semantics.
+
+### 20.1 Shared execution guarantees
+
+**Execution strategy may vary. Mandatory platform guarantees may not.**
+
+Every independently executable unit enters the canonical Execution Boundary. Every child Execution **re-enters** that same boundary. This is **not** middleware decoration around the public API only — the guarantee is **per Execution**. Nested work **MUST NOT** assume “the parent was governed, therefore the child can call executor internals directly.”
+
+**Mandatory for every Execution:**
+
+- canonical runtime identity
+- tenant/scope isolation
+- effective authority context
+- governance admission / relevant policy evaluation
+- budget context / bounded allowance
+- lifecycle/audit facts
+- observability correlation/evidence
+- cancellation semantics
+- explicit terminal lifecycle state
+
+**Conditionally activated but platform-enforced when applicable:**
+
+- detailed guardrails
+- tool policy
+- meaningful side-effect authorization
+- HITL
+- checkpointing
+- recovery
+- distributed causal admission
+- compensation
+- side-effect fencing/idempotency
+
+**Important distinction:** “mandatory guarantee” does **not** mean every Execution executes every possible policy rule or persists a checkpoint. It means the canonical platform boundary decides whether the mechanism applies, and an executor **may not bypass** that decision.
+
+Examples:
+
+- **Simple inference:** governance boundary exists; result may be ALLOW; no tool side-effect policy when there is no tool effect.
+- **Mutating tool:** governance boundary exists; may require authority, side-effect policy, guardrail, or HITL.
+
+Do **not** model this as identical middleware actions for all strategies.
+
+### 20.2 Strategy-independent admission
+
+```text
+execution.execute(...)
+        ↓
+canonical Execution Boundary
+        ↓
+mandatory shared guarantees
+        ↓
+strategy resolution
+   ┌──────────┼───────────┐
+   ↓          ↓           ↓
+inference   agentic   orchestration
+                        ↓
+                      Nexus
+                        ↓
+                 child Execution
+                        ↓
+             canonical Execution Boundary
+                        ↓
+              mandatory guarantees again
+```
+
+| Strategy | Target admission path |
+|----------|----------------------|
+| **Direct inference** | Execution Boundary → governance/budget/evidence → InferenceExecutor |
+| **Agentic** | Execution Boundary → governance/budget/evidence → AgentEngine/UAEP |
+| **Orchestration** | Execution Boundary → governance/budget/evidence → Nexus |
+| **Nexus child** | Nexus → request child Execution → Execution Boundary → governance/budget/evidence → child's strategy executor |
+
+Nexus **MUST NOT** rely on “parent governance already happened” to call AgentEngine or another executor directly. Hard requirement for UE-1+.
 
 ---
 
@@ -578,6 +695,10 @@ Developer-facing requests express **what** is required, not low-level engine sel
 Strategy resolution **MUST NOT** silently invent orchestration topology. Dynamically generated topology must become an explicit, validated, governable, and auditable `OrchestrationDefinition` (or equivalent planning artifact) **before** Nexus executes it.
 
 Do **not** freeze target public APIs such as `mode="react"`, `execute_agent()`, etc.
+
+**TARGET ARCHITECTURE — UEA-INV-021**
+
+No execution strategy may bypass the canonical Execution Boundary or its mandatory platform guarantees. Every child Execution re-enters the same canonical boundary.
 
 ---
 
@@ -722,6 +843,7 @@ Stable IDs for implementation constraints. Map to domain invariants where they e
 | **UEA-INV-018** | Execution boundary coordinates contracts; does not absorb subsystem ownership | — |
 | **UEA-INV-019** | Nested orchestration is legal; depth/fan-out may be bounded in implementation | ORCHESTRATION, Nexus |
 | **UEA-INV-020** | Strategy resolver must not silently invent unaudited orchestration topology | ORCHESTRATION |
+| **UEA-INV-021** | No strategy may bypass Execution Boundary or mandatory guarantees; every child Execution re-enters the canonical boundary | GOVERNED_EXECUTION, UER, NEXUS |
 
 **Follow-up (later consistency slice):** reconcile UER/OBS identity tables that today list TaskId→RunId→AttemptId→EventId without ExecutionId; update `SYSTEM_INVARIANTS.md` cross-references — **not** in UE-DOC-0.2.
 

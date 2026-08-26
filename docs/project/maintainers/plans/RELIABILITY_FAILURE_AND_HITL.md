@@ -4,6 +4,8 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
+> **UE-DOC-0.7 (2026-08-26):** architecture hub aligned with UEA — Execution-centric reliability ownership, R0–R4 → identity semantics, HITL owned by Governance (not Nexus), `RETRY_STARTED`/AttemptId whole-Run-only target. Plan rows unchanged.
+
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
 **Last updated:** 2026-06-20 — **P2-ARCH-09** Attempt Ledger canon.

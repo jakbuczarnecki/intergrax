@@ -443,3 +443,95 @@ def test_finding_order_preserves_lifecycle_anomaly_order() -> None:
     ]
     actual_kinds = [finding.source_anomaly_kind for finding in assessment.findings]
     assert actual_kinds == expected_kinds
+
+
+def _assess_attempt_sequence(event_types: list[RuntimeEventType]):
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    runtime_store = InMemoryRuntimeEventStore()
+    _append_sequence(
+        runtime_store,
+        tenant_id=_TENANT_A,
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        event_types=event_types,
+    )
+    return _assess(runtime_store=runtime_store, task_id=task_id, run_id=run_id)
+
+
+def test_diagnostic_finding_passes_lifecycle_transition_from_anomaly() -> None:
+    _, lifecycle, assessment = _assess_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_COMPLETED,
+            RuntimeEventType.RETRY_SCHEDULED,
+        ]
+    )
+
+    anomaly = next(
+        item
+        for item in lifecycle.anomalies
+        if item.kind is LifecycleAnomalyKind.EVENT_AFTER_TERMINAL
+    )
+    finding = next(
+        item
+        for item in assessment.findings
+        if item.kind is DiagnosticFindingKind.EVENT_AFTER_TERMINAL
+    )
+
+    assert finding.lifecycle_transition is anomaly.lifecycle_transition
+    assert finding.lifecycle_transition is not None
+
+
+def test_structural_collision_diagnostic_findings_differ() -> None:
+    _, lifecycle_a, assessment_a = _assess_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_COMPLETED,
+            RuntimeEventType.RETRY_SCHEDULED,
+        ]
+    )
+    _, lifecycle_b, assessment_b = _assess_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_COMPLETED,
+            RuntimeEventType.TASK_FAILED,
+        ]
+    )
+
+    finding_a = next(
+        item
+        for item in assessment_a.findings
+        if item.kind is DiagnosticFindingKind.EVENT_AFTER_TERMINAL
+    )
+    finding_b = next(
+        item
+        for item in assessment_b.findings
+        if item.kind is DiagnosticFindingKind.EVENT_AFTER_TERMINAL
+    )
+
+    assert finding_a.lifecycle_transition != finding_b.lifecycle_transition
+    assert finding_a.kind == finding_b.kind
+    assert finding_a.scope == finding_b.scope
+    assert finding_a.source_anomaly_kind == finding_b.source_anomaly_kind
+
+
+def test_non_lifecycle_finding_lifecycle_transition_is_none() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    causal_store = InMemoryCausalEvidencePersistence()
+    causal_store.append(_causal_evidence(task_id=task_id, run_id=run_id, attempt_id=attempt_id))
+
+    _, lifecycle, assessment = _assess(
+        causal_store=causal_store,
+        task_id=task_id,
+        run_id=run_id,
+    )
+
+    anomaly = lifecycle.anomalies[0]
+    finding = assessment.findings[0]
+    assert anomaly.lifecycle_transition is None
+    assert finding.lifecycle_transition is None

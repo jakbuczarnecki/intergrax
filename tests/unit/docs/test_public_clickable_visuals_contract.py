@@ -14,10 +14,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 REPO_ROOT = Path(__file__).resolve().parents[3]
 LKW_DOCS_PREFIX = "applications/local_workspace_application/docs/"
 LKW_ASSET_PREFIX = "applications/local_workspace_application/docs/assets/"
-README_UEA_PLATFORM_CORE_PREFIX = (
-    "docs/project/architecture/assets/unified-execution-platform-core-"
-)
 FULLSIZE_SEGMENT = "/fullsize/"
+_ARCHITECTURE_ROOT = REPO_ROOT / "docs" / "project" / "architecture"
+_ARCHITECTURE_ASSETS_ROOT = _ARCHITECTURE_ROOT / "assets"
 
 _PUBLIC_SCOPES = (
     REPO_ROOT / "README.md",
@@ -123,13 +122,37 @@ def _anchor_href_before_picture(text: str, start: int) -> str | None:
     return anchor_match.group(1).strip() if anchor_match else None
 
 
+def _is_path_within(child: Path, parent: Path) -> bool:
+    try:
+        child.resolve().relative_to(parent.resolve())
+    except ValueError:
+        return False
+    return True
+
+
+def _is_canonical_architecture_doc_navigation(
+    doc_path: Path,
+    href: str,
+    src: str,
+) -> bool:
+    resolved_href = _resolve_asset_path(doc_path, href)
+    resolved_src = _resolve_asset_path(doc_path, src)
+    if resolved_href.suffix.lower() != ".md" or not resolved_href.is_file():
+        return False
+    if not _is_path_within(resolved_href, _ARCHITECTURE_ROOT):
+        return False
+    if FULLSIZE_SEGMENT in resolved_href.relative_to(REPO_ROOT).as_posix():
+        return False
+    if not resolved_src.is_file() or not _is_path_within(resolved_src, _ARCHITECTURE_ASSETS_ROOT):
+        return False
+    return True
+
+
 def _is_qualifying_picture_src(src: str, *, allow_lkw_assets: bool) -> bool:
     normalized = src.strip().replace("\\", "/")
     if not normalized or normalized.startswith(_REMOTE_PREFIXES):
         return False
     if not allow_lkw_assets and LKW_ASSET_PREFIX in normalized:
-        return False
-    if normalized.startswith(README_UEA_PLATFORM_CORE_PREFIX):
         return False
     if _BADGE_SHIELD.search(normalized):
         return False
@@ -301,6 +324,8 @@ def _picture_clickability_violations(
                     violations.append(
                         f"{rel}: missing theme-aware preview page for href={href!r}"
                     )
+                    continue
+                if _is_canonical_architecture_doc_navigation(doc_path, href, src):
                     continue
                 violations.extend(
                     _preview_contains_theme_pair(

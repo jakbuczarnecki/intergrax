@@ -20,18 +20,9 @@ those mechanisms for every workflow.
 
 <a href="docs/project/assets/public/readme/fullsize/intergrax-ecosystem-hero.md">
 <picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="docs/project/assets/public/readme/intergrax-ecosystem-hero-dark.png"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png"
-  >
-  <img
-    src="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png"
-    alt="Specialized AI products share the Intergrax governed foundation and may evolve toward a connected ecosystem; Local Knowledge Workspace is Backend Product Alpha while four portfolio directions remain selected pre-bootstrap."
-  >
+  <source media="(prefers-color-scheme: dark)" srcset="docs/project/assets/public/readme/intergrax-ecosystem-hero-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png">
+  <img src="docs/project/assets/public/readme/intergrax-ecosystem-hero-light.png" alt="Specialized AI products share the Intergrax governed foundation and may evolve toward a connected ecosystem; Local Knowledge Workspace is Backend Product Alpha while four portfolio directions remain selected pre-bootstrap.">
 </picture>
 </a>
 
@@ -75,18 +66,9 @@ for the category, problem, and fit.
 
 <a href="docs/project/assets/public/readme/fullsize/intergrax-why.md">
 <picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="docs/project/assets/public/readme/intergrax-why-dark.png"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="docs/project/assets/public/readme/intergrax-why-light.png"
-  >
-  <img
-    src="docs/project/assets/public/readme/intergrax-why-light.png"
-    alt="Comparison between rebuilding duplicated AI foundations per product and reusing a shared Intergrax foundation beneath specialized products."
-  >
+  <source media="(prefers-color-scheme: dark)" srcset="docs/project/assets/public/readme/intergrax-why-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/project/assets/public/readme/intergrax-why-light.png">
+  <img src="docs/project/assets/public/readme/intergrax-why-light.png" alt="Comparison between rebuilding duplicated AI foundations per product and reusing a shared Intergrax foundation beneath specialized products.">
 </picture>
 </a>
 
@@ -100,18 +82,9 @@ Three useful ways to evaluate Intergrax — each answers a different question. T
 
 <a href="docs/project/assets/public/readme/fullsize/intergrax-three-entry-points.md">
 <picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="docs/project/assets/public/readme/intergrax-three-entry-points-dark.png"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="docs/project/assets/public/readme/intergrax-three-entry-points-light.png"
-  >
-  <img
-    src="docs/project/assets/public/readme/intergrax-three-entry-points-light.png"
-    alt="Three public entry points — Scenario Proofs for difficult problems and executable evidence, Products for user workflows and reference applications, Platform for governed foundations and architecture."
-  >
+  <source media="(prefers-color-scheme: dark)" srcset="docs/project/assets/public/readme/intergrax-three-entry-points-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/project/assets/public/readme/intergrax-three-entry-points-light.png">
+  <img src="docs/project/assets/public/readme/intergrax-three-entry-points-light.png" alt="Three public entry points — Scenario Proofs for difficult problems and executable evidence, Products for user workflows and reference applications, Platform for governed foundations and architecture.">
 </picture>
 </a>
 
@@ -140,18 +113,9 @@ They are **not** a marketing demo, feature showcase, or product claim. Product, 
 
 <a href="docs/project/assets/public/readme/fullsize/intergrax-scenarios-overview.md">
 <picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="docs/project/assets/public/readme/intergrax-scenarios-overview-dark.png"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="docs/project/assets/public/readme/intergrax-scenarios-overview-light.png"
-  >
-  <img
-    src="docs/project/assets/public/readme/intergrax-scenarios-overview-light.png"
-    alt="Scenario Proof path from real problem through adversarial test and execution to evidence, verdict, and reproduction."
-  >
+  <source media="(prefers-color-scheme: dark)" srcset="docs/project/assets/public/readme/intergrax-scenarios-overview-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/project/assets/public/readme/intergrax-scenarios-overview-light.png">
+  <img src="docs/project/assets/public/readme/intergrax-scenarios-overview-light.png" alt="Scenario Proof path from real problem through adversarial test and execution to evidence, verdict, and reproduction.">
 </picture>
 </a>
 
@@ -171,18 +135,9 @@ Initial production signals make workload overload plausible — but evidence is 
 
 <a href="docs/project/assets/public/readme/fullsize/scenario-ai-incident-investigation.md">
 <picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="docs/project/assets/public/readme/scenario-ai-incident-investigation-dark.png"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="docs/project/assets/public/readme/scenario-ai-incident-investigation-light.png"
-  >
-  <img
-    src="docs/project/assets/public/readme/scenario-ai-incident-investigation-light.png"
-    alt="AI incident investigation scenario — operational signals, conflicting evidence, independent verification, and bounded RESOLVED or UNRESOLVED outcomes."
-  >
+  <source media="(prefers-color-scheme: dark)" srcset="docs/project/assets/public/readme/scenario-ai-incident-investigation-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/project/assets/public/readme/scenario-ai-incident-investigation-light.png">
+  <img src="docs/project/assets/public/readme/scenario-ai-incident-investigation-light.png" alt="AI incident investigation scenario — operational signals, conflicting evidence, independent verification, and bounded RESOLVED or UNRESOLVED outcomes.">
 </picture>
 </a>
 
@@ -246,18 +201,9 @@ proof's scope — see the [Governed Evidence Decision Proof](applications/local_
 
 <a href="applications/local_workspace_application/docs/assets/fullsize/lkw-governed-evidence-gate.md">
 <picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-dark.png"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-light.png"
-  >
-  <img
-    alt="LKW advanced governed proof showing versioned policy-derived evidence requirements, four controlled live organizational sources via real runtime/HTTP, execution-time authority, temporal validity, evidence admissibility, LLM gating, and persisted structural proof."
-    src="applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-light.png"
-  >
+  <source media="(prefers-color-scheme: dark)" srcset="applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-light.png">
+  <img alt="LKW advanced governed proof showing versioned policy-derived evidence requirements, four controlled live organizational sources via real runtime/HTTP, execution-time authority, temporal validity, evidence admissibility, LLM gating, and persisted structural proof." src="applications/local_workspace_application/docs/assets/lkw-governed-evidence-gate-light.png">
 </picture>
 </a>
 
@@ -308,18 +254,9 @@ not as a first-contact route.
 
 <a href="docs/project/assets/public/readme/fullsize/intergrax-platform-map.md">
 <picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="docs/project/assets/public/readme/intergrax-platform-map-dark.png"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="docs/project/assets/public/readme/intergrax-platform-map-light.png"
-  >
-  <img
-    src="docs/project/assets/public/readme/intergrax-platform-map-light.png"
-    alt="Intergrax platform architecture map showing execution core, intelligence/context, knowledge/action, governance, evidence/observability, platform foundation, specialized product surface and connected resources."
-  >
+  <source media="(prefers-color-scheme: dark)" srcset="docs/project/assets/public/readme/intergrax-platform-map-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/project/assets/public/readme/intergrax-platform-map-light.png">
+  <img src="docs/project/assets/public/readme/intergrax-platform-map-light.png" alt="Intergrax platform architecture map showing execution core, intelligence/context, knowledge/action, governance, evidence/observability, platform foundation, specialized product surface and connected resources.">
 </picture>
 </a>
 
@@ -355,35 +292,25 @@ Project-level mental model:
 
 ## One execution model across the platform
 
-Intergrax uses one execution model across the platform. A workload can be a
-direct inference, an autonomous agent execution, or an orchestration that uses
-Nexus to schedule child Executions — without forcing every request through the
-same orchestration machinery.
+Intergrax uses one execution model across the platform: workloads may be direct
+inference, autonomous agent execution, or orchestration through Nexus for child
+Executions — without forcing every request through the same orchestration machinery.
+Execution is the common governed unit; identity, authority, budgets, observability,
+diagnostics, and recovery stay correlated across the execution tree.
 
-Across those paths, Execution is the common governed unit. Identity, authority,
-budgets, observability, diagnostics and recovery remain correlated across the
-execution tree.
-
+<a href="docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md">
 <picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="docs/project/architecture/assets/unified-execution-platform-core-dark.svg"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="docs/project/architecture/assets/unified-execution-platform-core-light.svg"
-  >
-  <img
-    src="docs/project/architecture/assets/unified-execution-platform-core-light.svg"
-    alt="Intergrax Execution Core: application requests enter one execution boundary; Execution selects direct inference, agentic execution, or orchestration. Orchestration uses Nexus to schedule child Executions, while identity, governance, budget, observability, diagnostics, and recovery apply across every Execution."
-  >
+  <source media="(prefers-color-scheme: dark)" srcset="docs/project/architecture/assets/unified-execution-platform-core-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/project/architecture/assets/unified-execution-platform-core-light.svg">
+  <img src="docs/project/architecture/assets/unified-execution-platform-core-light.svg" alt="Intergrax Execution Core: application requests enter one execution boundary; Execution selects direct inference, agentic execution, or orchestration. Orchestration uses Nexus to schedule child Executions, while identity, governance, budget, observability, diagnostics, and recovery apply across every Execution.">
 </picture>
+</a>
 
 [Explore the Unified Execution Architecture](docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md)
 
-The unified model is the frozen target architecture; implementation is being
-migrated toward it, and linked domain documents distinguish target semantics
-from current runtime state.
+The unified model is the frozen target architecture; implementation is migrating
+toward it, and linked domain documents distinguish target semantics from current
+runtime state.
 
 ---
 
@@ -394,18 +321,9 @@ Intergrax is designed so important actions do not disappear inside an opaque age
 
 <a href="docs/project/assets/public/readme/fullsize/intergrax-governed-execution.md">
 <picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="docs/project/assets/public/readme/intergrax-governed-execution-dark.png"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="docs/project/assets/public/readme/intergrax-governed-execution-light.png"
-  >
-  <img
-    src="docs/project/assets/public/readme/intergrax-governed-execution-light.png"
-    alt="Illustrative governed agentic execution loop with iterative reasoning, capability selection, governance gate, optional human approval, durable state, evidence plane and validated outcome."
-  >
+  <source media="(prefers-color-scheme: dark)" srcset="docs/project/assets/public/readme/intergrax-governed-execution-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/project/assets/public/readme/intergrax-governed-execution-light.png">
+  <img src="docs/project/assets/public/readme/intergrax-governed-execution-light.png" alt="Illustrative governed agentic execution loop with iterative reasoning, capability selection, governance gate, optional human approval, durable state, evidence plane and validated outcome.">
 </picture>
 </a>
 

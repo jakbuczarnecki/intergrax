@@ -6,6 +6,7 @@
 
 - The architecture document owns target design and invariants for Governed Execution.
 - This plan owns implementation and remediation work for the Governed Execution domain.
+- **UE-DOC-0.7 (2026-08-26):** architecture hub frozen Execution-centric governance, admission vs inner evaluation points, authority inheritance, guardrails terminology, and **UEA-INV-021** no-bypass invariant — plan rows unchanged; future implementation must not reintroduce executor-local governance bypass.
 - Audit source for current accepted blocks: [`docs/audit_results/2026-08-18/POLICY_GOVERNANCE.md`](../../audit_results/2026-08-18/POLICY_GOVERNANCE.md) (AUDIT-5, audited 2026-08-19).
 
 ## Current state

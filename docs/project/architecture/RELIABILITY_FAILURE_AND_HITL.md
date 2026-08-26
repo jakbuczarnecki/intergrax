@@ -166,6 +166,18 @@ Public grouping (mapping is illustrative — runtime codes remain authoritative)
 | **R3** | Nexus / graph (`RetryEngine`, `graph_runner`) | Graph/node retry, alternate agent, whole-run graph retry, partial lifecycle |
 | **R4** | HITL runtime | Human correction, approval, rejection, mediated re-run |
 
+### R0–R4 mapping to canonical identity semantics
+
+R0–R4 remain useful as implementation/recovery classification when mapped without contradicting UEA identity:
+
+| Layer | Typical identity class (UEA §10) | AttemptId on retry |
+| ----- | -------------------------------- | ------------------ |
+| **R0** | A — provider/tool/internal-step | same |
+| **R1** | A — tool/internal-step | same |
+| **R2** | A or B — step/Execution-level | same |
+| **R3** | B, C, or graph-local per policy — graph/node vs whole-Run | same for graph-local; **new** only for whole-Run retry |
+| **R4** | D — HITL pause/resume | same (not a retry) |
+
 ### Two concrete mechanisms vs five semantic layers
 
 Intergrax documents **both**:
@@ -189,13 +201,25 @@ Configure each layer explicitly; prefer trace-visible, bounded values. Retry lay
 
 ## Retry lifecycle
 
-On wired Nexus graph paths, `RetryCoordinator` publishes:
+On wired Nexus graph paths (**CURRENT IMPLEMENTATION**), `RetryCoordinator` publishes:
 
 ```text
 failure → retry decision → RETRY_SCHEDULED → RETRY_STARTED → success / failure
 ```
 
-`RETRY_STARTED` mints a new `AttemptId` (see [`OBSERVABILITY.md`](OBSERVABILITY.md)). Run-level retries use the same event vocabulary with `scope: "run"` or `scope: "agent"`.
+**Identity semantics (TARGET ARCHITECTURE — aligned with UEA §10):**
+
+| Recovery class | TaskId | RunId | AttemptId | ExecutionId |
+| -------------- | ------ | ----- | --------- | ----------- |
+| **A.** Provider/tool/internal-step retry (R0/R1) | same | same | same | same |
+| **B.** Execution-level retry of same logical Execution (R2 where applicable) | same | same | same | same (+ retry generation) |
+| **C.** Whole-Run retry (R3 whole-run / Layer C when enabled) | same | same | **new** | **new** instances |
+| **D.** Pause/resume incl. HITL (R4) | same | same | same | same |
+| **E.** Worker crash / queue redelivery of same logical work | same | same | same | same |
+
+`RETRY_STARTED` minting a **new** `AttemptId` is valid **only** when the event represents a **whole-Run retry boundary** (class C). It **MUST NOT** be stated as blanket semantics for every `RETRY_STARTED` or for local/Execution-level retries. See [`OBSERVABILITY.md`](OBSERVABILITY.md) and [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) §10.
+
+Run-level retry events may carry `scope: "run"` or `scope: "agent"` on wired paths — interpret scope together with identity class above, not as permission to mint AttemptId for local retries.
 
 ---
 
@@ -273,17 +297,23 @@ Controlled by `ResiliencePolicy.allow_partial_result` and degrade responses wher
 
 ## HITL
 
+**TARGET ARCHITECTURE** — Governance/HITL owns human decision; UER/Execution owns pause/wait/resume lifecycle; Reliability may recommend/escalate; Nexus orchestration continuation applies only when the paused Execution uses orchestration strategy.
+
 ```text
-execution → ExecutionInterrupt → HITL store / HumanDecisionRecord
-         → approve | reject | escalate | correct
-         → resume or terminate
+Execution
+  ↓ governance REQUIRE_HUMAN / ExecutionInterrupt
+UER → PAUSED / WAITING_FOR_HUMAN
+  ↓ canonical HITL store / HumanDecisionRecord
+approve | reject | escalate | correct
+  ↓ authorized decision
+UER resumes SAME Execution identity → strategy continues or terminates
 ```
 
-Nexus manages human approval. Agents use `AgentDecision.REQUEST_HUMAN` or interrupt decisions — **not** ad-hoc approval channels.
+Direct inference or agentic Executions may use HITL without Nexus. Agents use `AgentDecision.REQUEST_HUMAN` or interrupt decisions — **not** ad-hoc approval channels.
 
 `HumanResponseVerdict`: `approve`, `reject`, `escalate`. Store: `SQLiteHumanDecisionStore` (durable records; **not** a full production operator workflow or distributed queue).
 
-Checkpoints (`checkpoint_on_pause`) support resume — distinct from a durable async scheduler.
+Checkpoints (`checkpoint_on_pause`) support resume — distinct from a durable async scheduler. Human decision is **not** a retry, new Attempt, new Run, or automatic authority expansion.
 
 ---
 
@@ -292,8 +322,10 @@ Checkpoints (`checkpoint_on_pause`) support resume — distinct from a durable a
 High-level composition — **not** a new runtime:
 
 ```text
-ExecutionInterrupt → governance decision / evidence → Nexus resume
+ExecutionInterrupt → governance decision / evidence → UER resume (same Execution identity)
 ```
+
+When orchestration strategy applies, Nexus may continue topology scheduling after authorized resume. **CURRENT IMPLEMENTATION:** wired Nexus graph paths may phrase this as interrupt → evidence → Nexus resume.
 
 > **Governed Continuation composes existing interrupt / HITL / resume primitives.** Forbidden: `ContinuationRuntime`.
 
@@ -378,13 +410,17 @@ Representative terminal reasons: `completed`, `validation_failed`, `policy_denie
 
 ## Responsibility boundaries
 
+Reliability answers: **given a failure/outcome, what bounded recovery action is appropriate?**
+
 | Domain | Owns | Does not own |
 | ------ | ---- | ------------- |
-| **Reliability** | Failure classification input, recovery choice, retry layer, budgets, HITL pause/resume semantics, compensation enqueue | Business permission rules, journal persistence, critic rubrics |
-| **Governance** | ALLOW / DENY / REQUIRE_HUMAN on consequential actions | Retry loop execution, attempt history |
+| **Reliability** | Failure classification input, recovery choice, retry layer mapping, compensation enqueue recommendation, HITL escalation recommendation | Runtime identity minting, policy authority decisions, budget ledger, human approval authority, Nexus topology, checkpoint identity |
+| **Governance / HITL** | ALLOW / DENY / REQUIRE_HUMAN; canonical human decision store | Retry loop execution, attempt history, lifecycle pause/resume mechanics |
+| **UER / Execution** | Lifecycle transitions, pause/resume, cancellation tree, checkpoint coordination interfaces | Policy definitions, recovery policy semantics |
 | **Observability** | `RuntimeEvent` journal, as-of reconstruction, export | Recovery policy decisions |
 | **Critic** | Verdict on correctness | Retry orchestration — Reliability responds to verdict |
 | **LLM adapters** | Provider/model failover on retriable provider errors | Workflow-level graph retry (separate concern) |
+| **Nexus** | Orchestration scheduling/continuation when strategy is orchestration | Human decision authority; canonical recovery identity |
 
 ### Meaningful side effects (high level)
 
@@ -488,11 +524,13 @@ Four-axis statement ([`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXON
 ```text
 Failure is expected. Recovery is bounded.
 Agents may request recovery. Runtime owns retry policy.
-Every retry belongs to one semantic retry layer.
+Every retry belongs to one semantic retry layer mapped to UEA identity semantics.
+RETRY_STARTED mints new AttemptId only for whole-Run retry — not for local/Execution-level retries.
 Attempt Ledger is reconstructable evidence, not a second source of truth.
 High-risk side effects are not blindly retried.
 More autonomy does not mean more permission.
-Reliability decides recovery. Governance authorizes. Observability records.
+Reliability recommends recovery. Governance authorizes. UER owns lifecycle. Observability records.
+HITL human decision is not a retry and does not expand unrelated authority.
 ```
 
 ---
@@ -624,11 +662,12 @@ Attempt Ledger **SHOULD** allow an operator to reconstruct:
 - Agents **MUST NOT** implement unbounded retry loops.
 - Tools **MAY** expose retryable failure metadata, but **MUST NOT** silently retry high-risk side effects beyond backend/protocol-safe retry rules.
 - Integrations **MAY** perform protocol-level retries only when safe and compatible with runtime retry policy.
-- Nexus / runtime owns orchestration-level retry, escalation, HITL and terminal stop decisions.
+- Runtime / Reliability owns recovery choice and retry layer mapping; UER owns lifecycle consequences; Governance authorizes consequential recovery actions.
+- Nexus owns orchestration-level scheduling/retry on orchestration paths — **not** human approval authority.
 - Validation / critic failures must be recorded as retry inputs, not hidden inside final narrative.
 - Retry decisions must be traceable through `RuntimeEvent` / observability spine.
 - High-risk side effects require idempotency or explicit policy exception before retry.
-- A retry layer **MUST** be identifiable for every retry attempt.
+- A retry layer **MUST** be identifiable for every retry attempt and **MUST** map to UEA identity semantics (§10).
 
 ---
 
@@ -815,9 +854,9 @@ Human approval may be required for:
 - risky automation
 - uncertain results
 
-Nexus manages human approval.
+**TARGET ARCHITECTURE:** Governance/HITL owns human decision; UER/Execution owns pause/wait/resume; Reliability may escalate; Nexus orchestration continuation applies only when the paused Execution uses orchestration strategy.
 
-Agents may request approval via `AgentDecision.REQUEST_HUMAN`, but Nexus controls the approval flow (§42.10).
+Agents may request approval via `AgentDecision.REQUEST_HUMAN`. **CURRENT IMPLEMENTATION:** wired Nexus harness paths coordinate interrupt/resume with graph orchestration (§42.10) — not a claim that Nexus owns human approval on all strategies.
 
 Agents MUST NOT implement ad-hoc human gates or send approval messages directly.
 

@@ -966,7 +966,7 @@ def test_quick_start_anchor(readme_text: str) -> None:
 
 def test_brevity() -> None:
     line_count = len(README_PATH.read_text(encoding="utf-8").splitlines())
-    assert line_count <= 480, f"README has {line_count} lines (max 480)"
+    assert line_count <= 450, f"README has {line_count} lines (max 450)"
 
 
 def test_public_architecture_sync() -> None:

@@ -6,6 +6,24 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
 
+**Meta-architecture (frozen):** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](../../architecture/UNIFIED_EXECUTION_ARCHITECTURE.md) — semantic authority over Orchestration target model. Plan rows must not contradict `OrchestrationDefinition`, planner proposal vs accepted topology, or `NodeId` ≠ `ExecutionId`.
+
+### Architecture sync — UE-DOC-0.5 (2026-08-26)
+
+**Target model (from rewritten Orchestration hub):**
+
+- **OrchestrationDefinition** — accepted topology/structure (configured, planned/proposed, accepted provenance)
+- Topology is definition state — not runtime `ExecutionId`
+- Orchestration coordinates heterogeneous executor strategies per topology slot — not “how agents collaborate” only
+- Single-agent direct agentic Execution does **not** require orchestration
+- `StrategyResolver` must not silently invent topology
+
+**Known implementation gaps (CURRENT):** `ApplicationGraphSpec` → `NexusPlan` seed; graph nodes map to agent execution units; `OrchestrationProfile` as primary wiring surface without separate accepted-topology contract.
+
+**High-level migration order:** see Orchestration hub [Implementation readiness §5](../../architecture/ORCHESTRATION.md#5-migration-order-high-level). Detailed code mapping deferred to **UE-DOC-0.9**.
+
+**Plan debt:** substantial row restructuring is **not** in UE-DOC-0.5 — track in UE-DOC-0.9.
+
 ---
 
 ## Cursor read scope (token budget)

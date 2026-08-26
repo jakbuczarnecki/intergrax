@@ -6,9 +6,11 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Governed Execution
 
-**Governance & Policy Enforcement** — reusable platform mechanisms that enforce configured execution boundaries around agent and model behavior.
+**Governance & Policy Enforcement** — reusable platform mechanisms that enforce configured execution boundaries around **every Execution** and its meaningful operations.
 
-Agent and model behavior may propose decisions and actions. The product or application owns the business rule — who may do what, which actions require approval, and what outcomes are acceptable. Intergrax supplies reusable mechanisms that carry identity and context, evaluate configured policy, enforce decisions, pause for human approval when required, and record governance evidence.
+Every Execution enters governance with canonical identity, tenant/scope, effective authority, execution requirements, and relevant action/effect context. Governance answers whether an Execution or operation is allowed under effective authority and policy. UER/Execution Runtime applies the lifecycle consequence (allow, deny, pause, terminate, resume).
+
+Agent and model behavior are common **examples** of inner evaluation points — not the scope boundary of governance. The product or application owns business rules; Intergrax supplies reusable mechanisms that carry identity and context, evaluate configured policy, enforce decisions, pause for human approval when required, and record governance evidence.
 
 **Applications define the rules; Intergrax enforces the execution boundaries.**
 
@@ -24,7 +26,7 @@ Primary audience: Principal / Staff engineers, architects, CTOs, security and go
 | Concern | What Intergrax provides |
 | -------- | --------------------- |
 | **Policy definition** | Built-in, application-configured, and plugin-extensible policy rules bound to evaluation contexts |
-| **Policy enforcement** | Evaluation at configured boundaries before or after meaningful execution steps |
+| **Policy enforcement** | Evaluation at configured boundaries before or after meaningful execution steps (per Execution and inner operation) |
 | **Approval / HITL** | One canonical human-in-the-loop path when policy requires human decision |
 | **Tool and action boundaries** | Controlled tool invocation and meaningful side-effect authorization on demonstrated paths |
 | **Evidence / provenance** | Governance decisions correlated with execution evidence where mechanisms are wired |
@@ -50,12 +52,93 @@ Primary audience: Principal / Staff engineers, architects, CTOs, security and go
 - Pausing for canonical HITL and scoped governed continuation
 - Recording governance evidence where mechanisms are connected
 
-### Agent / model
+### Agent / model (examples)
 
-- Proposes reasoning, decisions, and actions within supplied context
+- Proposes reasoning, decisions, and actions within supplied context on agentic paths
 - Does **not** grant business permission or bypass configured boundaries
 
+Agent/model paths illustrate inner governance evaluation points; governance scope is **Execution-centric**, not agent-only.
+
 Intergrax does **not** decide business permissions on behalf of the application.
+
+---
+
+## Execution-centric governance
+
+**TARGET ARCHITECTURE** (aligned with [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) §12, §20, **UEA-INV-009**, **UEA-INV-021**)
+
+Every Execution enters the canonical Execution Boundary with:
+
+- canonical runtime identity (`TaskId`/`RunId`/`AttemptId`/`ExecutionId` context)
+- tenant/scope
+- effective authority (narrowed from parent when applicable)
+- execution requirements and strategy context
+- relevant action/effect context for admission
+
+| Question | Owner |
+| -------- | ----- |
+| Is this Execution / operation allowed under effective authority and policy? | **Governance** |
+| What lifecycle consequence follows (RUNNING, PAUSED, FAILED, RESUMED, …)? | **UER / Execution Runtime** |
+
+No strategy — inference, agentic, orchestration, distributed worker, or future executor — may bypass governance admission or applicable inner evaluation points merely because it runs inside another Execution.
+
+---
+
+## Execution admission vs inner evaluation points
+
+Two levels — do **not** conflate them.
+
+### A. Execution admission / effective authority
+
+Per-Execution platform guarantee at the canonical Execution Boundary:
+
+- establish effective authority
+- bind policy context and tenant scope
+- apply applicable admission restrictions
+- coordinate with budget reservation where required
+
+### B. Inner governance evaluation points
+
+Conditional boundaries **inside** an Execution when applicable:
+
+- pre-model
+- agent decision
+- tool plan/access
+- tool invocation
+- meaningful external side effect
+- output
+- control-plane mutation
+- post-run
+
+Not every inner point executes for every strategy (simple inference may have no tool invocation boundary). No strategy may **bypass** an applicable inner point. Inner evaluation remains reachable only through platform-owned boundaries — no executor-local private governance engine and no competing general systems such as `InferenceGuardrailRuntime`, `AgentGuardrailRuntime`, or `NexusGuardrailRuntime`.
+
+---
+
+## Authority inheritance
+
+**TARGET ARCHITECTURE**
+
+```text
+Run/root authority
+  ↓
+Execution
+  ↓
+child Execution
+  ↓
+Agent
+  ↓
+Tool
+```
+
+**Invariant:** child effective authority ≤ parent effective authority. Child may narrow; child **MUST NOT** expand authority because Nexus scheduled it, another worker executes it, another agent is selected, HITL resumed it, or transport redelivered it. Human approval does not implicitly expand unrelated authority.
+
+---
+
+## Policy, guardrails, and enforcement
+
+**Governance/policy** = decision authority (ALLOW, DENY, REQUIRE_HUMAN, …).
+
+**Guardrails** = one class of enforcement mechanisms/constraints — not a parallel policy system. Applicable guardrails participate at model, tool, input/output, side-effect, or other platform-owned boundaries. They must be reached through those boundaries; they do not replace governance admission.
 
 ---
 
@@ -120,7 +203,7 @@ Each decision may carry **advisory** or **mandatory** enforcement level. Mandato
 
 ## Evaluation boundaries
 
-Conceptual boundary classes in the governance plane model:
+Conceptual boundary classes in the governance plane model. These are **inner evaluation points** (level B) where policy may apply inside an Execution — not substitutes for Execution admission (level A). Coverage varies by strategy; applicable boundaries must not be bypassed.
 
 | Boundary class | Role |
 | -------------- | ---- |
@@ -189,14 +272,22 @@ Frozen audit baseline (G3) closed only where a live mechanism is wired to a mand
 
 ## Human-in-the-loop
 
-Intergrax has **one canonical HITL system**. `REQUIRE_HUMAN` connects conceptually to:
+Intergrax has **one canonical HITL system**. **Governance/HITL owns the human decision; UER/Execution owns pause/wait/resume lifecycle.** Reliability may recommend or escalate to HITL; Nexus decides orchestration continuation only when the paused Execution uses orchestration strategy. Direct inference or agentic Executions may use HITL without Nexus.
+
+`REQUIRE_HUMAN` connects conceptually to:
 
 ```text
-policy → pause → human decision → scoped continuation / resume → evidence
+Execution → governance REQUIRE_HUMAN
+  → UER PAUSED / WAITING_FOR_HUMAN
+  → canonical HITL decision store / evidence
+  → authorized decision
+  → UER resumes SAME Execution identity
+  → strategy continues
 ```
 
 Canonical owners and invariants:
 
+- Human decision is **not** a retry, new Attempt, new Run, or automatic authority expansion
 - Human approval does **not** generically bypass **DENY**
 - Authorization and continuation must remain **scoped** to the governed request
 - HITL is **not** a generic tool failure or retry substitute
