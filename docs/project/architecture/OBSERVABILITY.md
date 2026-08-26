@@ -1160,7 +1160,9 @@ DiagnosticAssessment[]
 
 **Owner:** `ProblemGroupingFeatureProjector` (or equivalent) — injected into `ProblemGroupingEngine`, not another diagnostic engine. v1 reference projection: `project_assessment_features()` maps assessment + normalized subject → `ProblemGroupingFeatureSet` with `subject_ref`, deterministic `structural_signature` (link to DIAG-5B), and bounded `ProblemGroupingTextEvidence` from `DiagnosticFinding.claim` and `DiagnosticLimitation.factual_message` with typed `ProblemGroupingTextEvidenceSourceKind` and supporting event/evidence ids. v2 (DIAG-5C-B) extends the envelope with typed execution/component/operation/integration/failure/causal tuples — empty until DIAG-5C-C population. No `dict[str, Any]`, no metadata bags, no raw logs. Strategies declaring `requires_features=True` fail closed when no projector is configured.
 
-**Representation versioning:** `ProblemGroupingRepresentationVersion` (v1 = `"1"` structural+text only; v2 = `"2"` full typed envelope). Changing projection semantics requires a version bump — model inputs must not change silently.
+**Representation versioning:** `ProblemGroupingRepresentationVersion` (v1 = `"1"` structural+text only; v2 = `"2"` full typed envelope). `representation_version` is an **enforced shape/semantics contract**, not informational metadata — v1 instances **must** keep all extended tuples (`execution_context`, `component_context`, `operation_context`, `integration_context`, `failure_context`, `causal_context`) empty; v2 allows them. Supported versions are closed to `{v1, v2}`; unknown values fail closed via `ProblemGroupingFeatureIntegrityError`. Changing projection semantics requires a version bump — model inputs must not change silently.
+
+**Canonical platform enums:** where upstream contracts exist, grouping features preserve them — `ProblemGroupingExecutionFeature.event_type` is `RuntimeEventType | None`; `ProblemGroupingCausalFeature.relation_kind` is `CausalRelationKind`. Extensible provider/component identifiers (`source_component`, `provider`, `integration_id`, `namespace`, `tool_id`, `capability`, `operation`, `problem_kind`, `error_code`, `exception_type`, `severity`, causal `source_ref_kind` / `target_ref_kind`) remain validated semantic strings because no reusable platform enum is intended for those namespaces.
 
 #### Candidate generation vs adjudication
 
@@ -1233,7 +1235,9 @@ Grouping proposes **"these incidents are likely related under this method"** —
 
 **Production grouping strategies after this slice:** **1** — `DeterministicProblemGroupingStrategy` only. No `SemanticProblemGroupingStrategy`, `MLProblemGroupingStrategy`, `LLMProblemGroupingStrategy`, or `HybridProblemGroupingStrategy`.
 
-`ProblemGroupingEngine` now exposes a complete typed strategy data envelope via `ProblemGroupingFeatureSet` (representation v2 = `"2"`). v1 (`"1"`) remains documented as `structural_signature` + `text_evidence` only; v2 adds optional typed tuples without altering v1 meaning.
+`ProblemGroupingEngine` now exposes a complete typed strategy data envelope via `ProblemGroupingFeatureSet` (representation v2 = `"2"`). v1 (`"1"`) is enforced as `structural_signature` + `text_evidence` only — extended tuples are rejected at validation when `representation_version` is v1. v2 adds optional typed tuples; supported versions are `{v1, v2}` only.
+
+**Enforced representation contract (DIAG-5C-B-R1):** `validate_problem_grouping_feature_set` rejects unknown `representation_version` values and v1 envelopes that carry v2 feature categories. Canonical upstream enums (`RuntimeEventType`, `CausalRelationKind`) are preserved on typed fields; plugin-extensible identifiers remain validated semantic strings.
 
 | Envelope field | Typed category | Upstream source (future projector) |
 |----------------|----------------|-------------------------------------|

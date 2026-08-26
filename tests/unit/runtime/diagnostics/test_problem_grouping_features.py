@@ -38,13 +38,16 @@ from intergrax.runtime.diagnostics.problem_grouping_features import (
     ProblemGroupingFeatureSet,
     ProblemGroupingIntegrationFeature,
     ProblemGroupingOperationFeature,
+    ProblemGroupingRepresentationVersion,
     ProblemGroupingTextEvidence,
     ProblemGroupingTextEvidenceSourceKind,
+    REPRESENTATION_VERSION_V1,
     REPRESENTATION_VERSION_V2,
     project_assessment_features,
 )
 from intergrax.runtime.events.event_taxonomy import EventCategory
 from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.observability.causal_evidence import CausalRelationKind
 
 pytestmark = pytest.mark.unit
 
@@ -153,7 +156,7 @@ def test_feature_set_carries_all_typed_categories_simultaneously() -> None:
             ProblemGroupingExecutionFeature(
                 phase=ExecutionPhase.STEP_EXECUTION,
                 event_category=EventCategory.TOOL,
-                event_type=RuntimeEventType.TOOL_FAILED.value,
+                event_type=RuntimeEventType.TOOL_FAILED,
                 is_retry_related=False,
                 supporting_event_ids=(event_id,),
             ),
@@ -192,7 +195,7 @@ def test_feature_set_carries_all_typed_categories_simultaneously() -> None:
         ),
         causal_context=(
             ProblemGroupingCausalFeature(
-                relation_kind="transport_task.triggered_execution",
+                relation_kind=CausalRelationKind.TRANSPORT_TASK_TRIGGERED_EXECUTION,
                 source_ref_kind=CAUSAL_SOURCE_REF_KIND_MESSAGE_BUS_TASK,
                 target_ref_kind=CAUSAL_TARGET_REF_KIND_RUNTIME_EXECUTION,
                 source_provider="celery",
@@ -217,8 +220,8 @@ def test_feature_set_carries_all_typed_categories_simultaneously() -> None:
     assert grouping_input.features.operation_context[0].tool_id == "tool-b"
     assert grouping_input.features.integration_context[0].provider == "celery"
     assert grouping_input.features.failure_context[0].error_code == "TOOL_TIMEOUT"
-    assert grouping_input.features.causal_context[0].relation_kind == (
-        "transport_task.triggered_execution"
+    assert grouping_input.features.causal_context[0].relation_kind is (
+        CausalRelationKind.TRANSPORT_TASK_TRIGGERED_EXECUTION
     )
     assert grouping_input.features.text_evidence[0].source_kind is (
         ProblemGroupingTextEvidenceSourceKind.PROBLEM_SIGNAL_SAFE_MESSAGE
@@ -281,7 +284,7 @@ def test_instance_ids_remain_provenance_not_semantic_identity() -> None:
         ),
         causal_context=(
             ProblemGroupingCausalFeature(
-                relation_kind="transport_task.triggered_execution",
+                relation_kind=CausalRelationKind.TRANSPORT_TASK_TRIGGERED_EXECUTION,
                 source_ref_kind=CAUSAL_SOURCE_REF_KIND_MESSAGE_BUS_TASK,
                 target_ref_kind=CAUSAL_TARGET_REF_KIND_RUNTIME_EXECUTION,
                 supporting_evidence_ids=(evidence_id,),
@@ -327,3 +330,186 @@ def test_rejects_operation_feature_without_dimensions() -> None:
             structural_signature=build_deterministic_problem_signature(subject),
             operation_context=(ProblemGroupingOperationFeature(),),
         )
+
+
+def _v1_feature_set(subject, **kwargs) -> ProblemGroupingFeatureSet:
+    return ProblemGroupingFeatureSet(
+        subject_ref=subject.ref,
+        representation_version=REPRESENTATION_VERSION_V1,
+        structural_signature=build_deterministic_problem_signature(subject),
+        **kwargs,
+    )
+
+
+def test_v1_with_empty_extended_contexts_is_valid() -> None:
+    assessment = _assessment(findings=(_finding(),))
+    subject = normalize_assessment(assessment)
+
+    features = _v1_feature_set(
+        subject,
+        text_evidence=(
+            ProblemGroupingTextEvidence(
+                source_kind=ProblemGroupingTextEvidenceSourceKind.OPERATOR_CLAIM,
+                text="Lifecycle anomaly after terminal closure.",
+                supporting_event_ids=(mint_event_id(),),
+                supporting_evidence_ids=(),
+            ),
+        ),
+    )
+
+    assert features.representation_version == REPRESENTATION_VERSION_V1
+    assert features.execution_context == ()
+    assert features.component_context == ()
+
+
+def test_v1_rejects_component_context() -> None:
+    assessment = _assessment(findings=(_finding(),))
+    subject = normalize_assessment(assessment)
+
+    with pytest.raises(ProblemGroupingFeatureIntegrityError, match="v1 allows only"):
+        _v1_feature_set(
+            subject,
+            component_context=(
+                ProblemGroupingComponentFeature(
+                    source_layer="tool",
+                    source_component="planner",
+                ),
+            ),
+        )
+
+
+def test_v1_rejects_execution_context() -> None:
+    assessment = _assessment(findings=(_finding(),))
+    subject = normalize_assessment(assessment)
+
+    with pytest.raises(ProblemGroupingFeatureIntegrityError, match="v1 allows only"):
+        _v1_feature_set(
+            subject,
+            execution_context=(
+                ProblemGroupingExecutionFeature(
+                    phase=ExecutionPhase.STEP_EXECUTION,
+                    event_type=RuntimeEventType.STEP_FAILED,
+                ),
+            ),
+        )
+
+
+def test_v2_carries_all_typed_categories() -> None:
+    assessment = _assessment(findings=(_finding(),))
+    subject = normalize_assessment(assessment)
+    event_id = mint_event_id()
+    evidence_id = mint_event_id()
+
+    features = ProblemGroupingFeatureSet(
+        subject_ref=subject.ref,
+        representation_version=REPRESENTATION_VERSION_V2,
+        structural_signature=build_deterministic_problem_signature(subject),
+        execution_context=(
+            ProblemGroupingExecutionFeature(
+                phase=ExecutionPhase.STEP_EXECUTION,
+                event_category=EventCategory.TOOL,
+                event_type=RuntimeEventType.TOOL_FAILED,
+            ),
+        ),
+        component_context=(
+            ProblemGroupingComponentFeature(
+                source_layer="tool",
+                source_component="mcp_connector",
+            ),
+        ),
+        operation_context=(
+            ProblemGroupingOperationFeature(tool_id="tool-b"),
+        ),
+        integration_context=(
+            ProblemGroupingIntegrationFeature(provider="celery"),
+        ),
+        failure_context=(
+            ProblemGroupingFailureFeature(
+                problem_kind="platform.tool_failure",
+                severity="error",
+            ),
+        ),
+        causal_context=(
+            ProblemGroupingCausalFeature(
+                relation_kind=CausalRelationKind.TRANSPORT_TASK_TRIGGERED_EXECUTION,
+                source_ref_kind=CAUSAL_SOURCE_REF_KIND_MESSAGE_BUS_TASK,
+                target_ref_kind=CAUSAL_TARGET_REF_KIND_RUNTIME_EXECUTION,
+            ),
+        ),
+        text_evidence=(
+            ProblemGroupingTextEvidence(
+                source_kind=ProblemGroupingTextEvidenceSourceKind.OPERATOR_CLAIM,
+                text="Bounded diagnostic text.",
+                supporting_event_ids=(event_id,),
+                supporting_evidence_ids=(evidence_id,),
+            ),
+        ),
+    )
+
+    assert features.representation_version == REPRESENTATION_VERSION_V2
+    assert features.execution_context
+    assert features.component_context
+    assert features.operation_context
+    assert features.integration_context
+    assert features.failure_context
+    assert features.causal_context
+
+
+def test_rejects_unknown_representation_version() -> None:
+    assessment = _assessment(findings=(_finding(),))
+    subject = normalize_assessment(assessment)
+
+    with pytest.raises(ProblemGroupingFeatureIntegrityError, match="unsupported"):
+        ProblemGroupingFeatureSet(
+            subject_ref=subject.ref,
+            representation_version=ProblemGroupingRepresentationVersion("3"),
+            structural_signature=build_deterministic_problem_signature(subject),
+        )
+
+
+def test_execution_event_type_uses_runtime_event_type() -> None:
+    assessment = _assessment(findings=(_finding(),))
+    subject = normalize_assessment(assessment)
+
+    features = ProblemGroupingFeatureSet(
+        subject_ref=subject.ref,
+        representation_version=REPRESENTATION_VERSION_V2,
+        structural_signature=build_deterministic_problem_signature(subject),
+        execution_context=(
+            ProblemGroupingExecutionFeature(event_type=RuntimeEventType.TASK_FAILED),
+        ),
+    )
+
+    event_type = features.execution_context[0].event_type
+    assert isinstance(event_type, RuntimeEventType)
+    assert event_type is RuntimeEventType.TASK_FAILED
+
+
+def test_causal_relation_kind_uses_causal_relation_kind_enum() -> None:
+    assessment = _assessment(findings=(_finding(),))
+    subject = normalize_assessment(assessment)
+
+    features = ProblemGroupingFeatureSet(
+        subject_ref=subject.ref,
+        representation_version=REPRESENTATION_VERSION_V2,
+        structural_signature=build_deterministic_problem_signature(subject),
+        causal_context=(
+            ProblemGroupingCausalFeature(
+                relation_kind=CausalRelationKind.TRANSPORT_TASK_TRIGGERED_EXECUTION,
+                source_ref_kind=CAUSAL_SOURCE_REF_KIND_MESSAGE_BUS_TASK,
+                target_ref_kind=CAUSAL_TARGET_REF_KIND_RUNTIME_EXECUTION,
+            ),
+        ),
+    )
+
+    relation_kind = features.causal_context[0].relation_kind
+    assert isinstance(relation_kind, CausalRelationKind)
+    assert relation_kind is CausalRelationKind.TRANSPORT_TASK_TRIGGERED_EXECUTION
+
+
+def test_default_projector_emits_v2_representation_version() -> None:
+    assessment = _assessment(findings=(_finding(),))
+    features = project_assessment_features(assessment)
+
+    assert features.representation_version == REPRESENTATION_VERSION_V2
+    assert features.representation_version == "2"

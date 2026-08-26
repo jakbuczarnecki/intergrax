@@ -34,11 +34,16 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     normalize_assessment,
 )
 from intergrax.runtime.events.event_taxonomy import EventCategory
+from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.observability.causal_evidence import CausalRelationKind
 
 ProblemGroupingRepresentationVersion = NewType("ProblemGroupingRepresentationVersion", str)
 
 REPRESENTATION_VERSION_V1 = ProblemGroupingRepresentationVersion("1")
 REPRESENTATION_VERSION_V2 = ProblemGroupingRepresentationVersion("2")
+SUPPORTED_REPRESENTATION_VERSIONS: frozenset[ProblemGroupingRepresentationVersion] = frozenset(
+    {REPRESENTATION_VERSION_V1, REPRESENTATION_VERSION_V2}
+)
 MAX_TEXT_EVIDENCE_CHARS = 2_048
 
 # Semantic causal ref-kind labels for bounded causal descriptors (not instance ids).
@@ -84,7 +89,7 @@ class ProblemGroupingExecutionFeature:
 
     phase: ExecutionPhase | None = None
     event_category: EventCategory | None = None
-    event_type: str | None = None
+    event_type: RuntimeEventType | None = None
     is_retry_related: bool | None = None
     supporting_event_ids: tuple[EventId, ...] = ()
     supporting_evidence_ids: tuple[EventId, ...] = ()
@@ -165,7 +170,7 @@ class ProblemGroupingCausalFeature:
     exposing instance-heavy refs or persistence queries.
     """
 
-    relation_kind: str
+    relation_kind: CausalRelationKind
     source_ref_kind: str
     target_ref_kind: str
     source_provider: str | None = None
@@ -279,11 +284,6 @@ def _optional_semantic_identifier(value: str | None, *, field_name: str) -> str 
     return _semantic_identifier(value, field_name=field_name)
 
 
-def _validate_execution_feature(feature: ProblemGroupingExecutionFeature) -> None:
-    if feature.event_type is not None:
-        _semantic_identifier(feature.event_type, field_name="execution.event_type")
-
-
 def _validate_component_feature(feature: ProblemGroupingComponentFeature) -> None:
     _semantic_identifier(feature.source_layer, field_name="component.source_layer")
     _semantic_identifier(feature.source_component, field_name="component.source_component")
@@ -332,7 +332,6 @@ def _validate_failure_feature(feature: ProblemGroupingFailureFeature) -> None:
 
 
 def _validate_causal_feature(feature: ProblemGroupingCausalFeature) -> None:
-    _semantic_identifier(feature.relation_kind, field_name="causal.relation_kind")
     _semantic_identifier(feature.source_ref_kind, field_name="causal.source_ref_kind")
     _semantic_identifier(feature.target_ref_kind, field_name="causal.target_ref_kind")
     _optional_semantic_identifier(
@@ -345,15 +344,32 @@ def _validate_text_evidence(evidence: ProblemGroupingTextEvidence) -> None:
     _bounded_text(evidence.text, field_name="text_evidence.text")
 
 
+def _extended_context_tuples_nonempty(features: ProblemGroupingFeatureSet) -> bool:
+    return any(
+        (
+            features.execution_context,
+            features.component_context,
+            features.operation_context,
+            features.integration_context,
+            features.failure_context,
+            features.causal_context,
+        )
+    )
+
+
 def validate_problem_grouping_feature_set(features: ProblemGroupingFeatureSet) -> None:
     """Validate bounded typing and semantic identifier constraints."""
-    if not str(features.representation_version).strip():
+    version = features.representation_version
+    if version not in SUPPORTED_REPRESENTATION_VERSIONS:
         raise ProblemGroupingFeatureIntegrityError(
-            "representation_version must be non-empty"
+            f"unsupported representation_version: {version!r}"
         )
 
-    for feature in features.execution_context:
-        _validate_execution_feature(feature)
+    if version == REPRESENTATION_VERSION_V1 and _extended_context_tuples_nonempty(features):
+        raise ProblemGroupingFeatureIntegrityError(
+            "representation_version v1 allows only structural_signature and text_evidence"
+        )
+
     for feature in features.component_context:
         _validate_component_feature(feature)
     for feature in features.operation_context:
@@ -404,9 +420,9 @@ def project_assessment_features(
     no invented dimensions, no raw logs. Extended feature tuples remain empty
     until DIAG-5C-C populates them from typed platform facts.
     """
-    if not str(representation_version).strip():
+    if representation_version not in SUPPORTED_REPRESENTATION_VERSIONS:
         raise ProblemGroupingFeatureIntegrityError(
-            "representation_version must be non-empty"
+            f"unsupported representation_version: {representation_version!r}"
         )
 
     resolved_subject = subject if subject is not None else normalize_assessment(assessment)
