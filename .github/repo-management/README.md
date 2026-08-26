@@ -104,16 +104,45 @@ GitHub limits:
 
 ---
 
+## Manual repository feature settings
+
+The metadata sync workflow updates **only** description, homepage, and topics. Repository **feature toggles** and the Social Preview image are **manual** — set in GitHub **Settings → General** by a maintainer, not by CI.
+
+| Category | Settings |
+|----------|----------|
+| **Auto-synced** | Description, homepage, topics |
+| **Manual** | Social preview image ([below](#social-preview)), Wiki, Projects, Discussions, Pages |
+
+### Approved public state
+
+| Feature | Target | Reason |
+|---------|--------|--------|
+| Issues | ON | Canonical public feedback / bug / scenario / partner intake |
+| Projects | OFF | No intentionally curated public project board yet |
+| Wiki | OFF | Canonical documentation lives in version-controlled repo docs |
+| Discussions | OFF | Enable only when real community discussion volume justifies it |
+| Pages | OFF | No dedicated public landing/docs site yet |
+
+---
+
+## Release checklist (manual GitHub settings)
+
+After the relevant release reaches `main`:
+
+1. Repository **Settings → General**
+2. Disable **Wiki**
+3. Disable **Projects**
+4. Confirm **Issues** remains enabled
+5. Confirm **Discussions** remains disabled
+6. Confirm **Pages** remains disabled
+7. Upload canonical Social Preview if not already applied — see [Social preview](#social-preview)
+8. Verify About description/homepage/topics after metadata CI completes
+
+---
+
 ## Social preview
 
-GitHub repository settings fall into two categories:
-
-| Setting | How it is applied |
-|---------|-------------------|
-| Description | Auto-synced by the metadata workflow |
-| Homepage | Auto-synced by the metadata workflow |
-| Topics | Auto-synced by the metadata workflow |
-| Social preview image | **Manual** GitHub repository setting |
+**Manual** repository setting — not applied by the metadata sync workflow. See [Manual repository feature settings](#manual-repository-feature-settings) for the auto-sync vs manual boundary.
 
 **Canonical source asset (version-controlled):**
 
