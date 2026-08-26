@@ -75,8 +75,8 @@ def _decode_index_ref(data: object) -> ProblemId:
     return ProblemId(problem_id)
 
 
-class _CreateIndexClaims:
-    """Tracks index documents newly inserted by a single create() invocation."""
+class _IndexClaims:
+    """Tracks index documents newly inserted by a single persistence invocation."""
 
     def __init__(self, document_store: ConditionalDocumentStore) -> None:
         self._document_store = document_store
@@ -145,6 +145,18 @@ def _required_index_documents(
             ),
         )
     return tuple(documents)
+
+
+def _new_subject_refs(
+    existing: Problem,
+    record: Problem,
+) -> tuple[ProblemGroupingSubjectRef, ...]:
+    existing_refs = set(existing.current_subject_refs)
+    return tuple(
+        subject_ref
+        for subject_ref in record.current_subject_refs
+        if subject_ref not in existing_refs
+    )
 
 
 class DocumentStoreProblemPersistence(ProblemPersistence):
@@ -265,7 +277,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
 
     def create(self, record: Problem) -> Problem:
         partition_key = _document_partition(record.tenant_id)
-        claims = _CreateIndexClaims(self._document_store)
+        claims = _IndexClaims(self._document_store)
         try:
             self._claim_indexes_for_create(
                 record=record,
@@ -326,30 +338,63 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
                 "optimistic concurrency conflict for Problem",
             )
 
-        replacement = self._canonical_document(record)
-        if not self._document_store.replace_if_match(
-            expected=existing_record,
-            replacement=replacement,
-        ):
-            raise ProblemPersistenceConflictError(
-                "optimistic concurrency conflict for Problem",
-            )
-
-        self._ensure_reconciliation_index(record=record, partition_key=partition_key)
-        for subject_ref in record.current_subject_refs:
-            self._ensure_subject_index(
+        self._verify_reconciliation_index_for_update(
+            record=record,
+            partition_key=partition_key,
+        )
+        for subject_ref in existing.current_subject_refs:
+            self._verify_subject_index_for_update(
                 record=record,
                 subject_ref=subject_ref,
                 partition_key=partition_key,
             )
-        return record
+
+        new_subject_refs = _new_subject_refs(existing, record)
+        claims = _IndexClaims(self._document_store)
+        try:
+            self._claim_new_subject_indexes_for_update(
+                record=record,
+                new_subject_refs=new_subject_refs,
+                partition_key=partition_key,
+                claims=claims,
+            )
+        except ProblemPersistenceConflictError:
+            claims.rollback_all(partition_key=partition_key)
+            raise
+        except Exception:
+            claims.rollback_all(partition_key=partition_key)
+            raise
+
+        replacement = self._canonical_document(record)
+        try:
+            if self._document_store.replace_if_match(
+                expected=existing_record,
+                replacement=replacement,
+            ):
+                return record
+        except Exception as exc:
+            return self._resolve_uncertain_update_cas(
+                record=record,
+                existing=existing,
+                claims=claims,
+                partition_key=partition_key,
+                original_exc=exc,
+            )
+
+        return self._resolve_update_cas_race(
+            record=record,
+            existing=existing,
+            claims=claims,
+            partition_key=partition_key,
+            row_key=row_key,
+        )
 
     def _claim_indexes_for_create(
         self,
         *,
         record: Problem,
         partition_key: str,
-        claims: _CreateIndexClaims,
+        claims: _IndexClaims,
     ) -> None:
         reconciliation_document = self._reconciliation_index_document(
             record=record,
@@ -373,7 +418,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
         record: Problem,
         canonical_document: DocumentRecord,
         partition_key: str,
-        claims: _CreateIndexClaims,
+        claims: _IndexClaims,
     ) -> Problem:
         existing_record = self._document_store.get(
             partition_key,
@@ -466,6 +511,116 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
                 if document.row_key.startswith(_RECONCILE_ROW_PREFIX)
                 else "subject_ref already bound to another Problem",
             )
+
+    def _verify_reconciliation_index_for_update(
+        self,
+        *,
+        record: Problem,
+        partition_key: str,
+    ) -> None:
+        document = self._reconciliation_index_document(
+            record=record,
+            partition_key=partition_key,
+        )
+        self._verify_index_document(document, record)
+
+    def _verify_subject_index_for_update(
+        self,
+        *,
+        record: Problem,
+        subject_ref: ProblemGroupingSubjectRef,
+        partition_key: str,
+    ) -> None:
+        document = self._subject_index_document(
+            record=record,
+            subject_ref=subject_ref,
+            partition_key=partition_key,
+        )
+        self._verify_index_document(document, record)
+
+    def _claim_new_subject_indexes_for_update(
+        self,
+        *,
+        record: Problem,
+        new_subject_refs: tuple[ProblemGroupingSubjectRef, ...],
+        partition_key: str,
+        claims: _IndexClaims,
+    ) -> None:
+        for subject_ref in new_subject_refs:
+            subject_document = self._subject_index_document(
+                record=record,
+                subject_ref=subject_ref,
+                partition_key=partition_key,
+            )
+            if not claims.try_claim(subject_document):
+                self._verify_index_document(subject_document, record)
+
+    def _resolve_update_cas_race(
+        self,
+        *,
+        record: Problem,
+        existing: Problem,
+        claims: _IndexClaims,
+        partition_key: str,
+        row_key: str,
+    ) -> Problem:
+        existing_record = self._document_store.get(partition_key, row_key)
+        if existing_record is None:
+            claims.rollback_all(partition_key=partition_key)
+            raise ProblemPersistenceConflictError(
+                "optimistic concurrency conflict for Problem",
+            )
+        stored = decode_problem_record(dict(existing_record.data))
+        if stored == record:
+            return self._repair_indexes_for_record(stored, partition_key=partition_key)
+        if stored == existing:
+            claims.rollback_all(partition_key=partition_key)
+        else:
+            claims.rollback_except_required_by(stored, partition_key=partition_key)
+        raise ProblemPersistenceConflictError(
+            "optimistic concurrency conflict for Problem",
+        )
+
+    def _resolve_uncertain_update_cas(
+        self,
+        *,
+        record: Problem,
+        existing: Problem,
+        claims: _IndexClaims,
+        partition_key: str,
+        original_exc: BaseException,
+    ) -> Problem:
+        row_key = _record_row_key(record.problem_id)
+        existing_record = self._document_store.get(partition_key, row_key)
+        if existing_record is None:
+            claims.rollback_all(partition_key=partition_key)
+            raise original_exc
+
+        stored = decode_problem_record(dict(existing_record.data))
+        if stored == record:
+            return self._repair_indexes_for_record(stored, partition_key=partition_key)
+        if stored == existing:
+            claims.rollback_all(partition_key=partition_key)
+            raise original_exc
+        claims.rollback_except_required_by(stored, partition_key=partition_key)
+        raise ProblemPersistenceConflictError(
+            "optimistic concurrency conflict for Problem",
+        ) from original_exc
+
+    def _repair_indexes_for_record(
+        self,
+        record: Problem,
+        *,
+        partition_key: str,
+    ) -> Problem:
+        self._ensure_reconciliation_index(record=record, partition_key=partition_key)
+        for subject_ref in record.current_subject_refs:
+            self._ensure_subject_index(
+                record=record,
+                subject_ref=subject_ref,
+                partition_key=partition_key,
+            )
+        return record
 
     def _resolve_existing_record_and_repair_indexes(
         self,

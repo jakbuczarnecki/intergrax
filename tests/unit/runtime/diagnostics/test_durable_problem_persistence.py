@@ -41,6 +41,7 @@ from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAna
 from intergrax.runtime.diagnostics.persistence_conformance import (
     sample_problem,
     _sample_reconciliation_key,
+    _sample_subject_ref,
 )
 from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicProblemSignature,
@@ -50,6 +51,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
 from intergrax.runtime.diagnostics.problem_lifecycle import (
     Problem,
     ProblemLifecycleEngine,
+    ProblemStatus,
     mint_problem_id,
 )
 from intergrax.runtime.diagnostics.problem_persistence import (
@@ -89,6 +91,40 @@ class _FailingPutIfAbsentDocumentStore(InMemoryDocumentStore):
         if key in self._fail_keys and key not in self._failed_keys:
             self._failed_keys.add(key)
             raise RuntimeError("simulated diagnostic problem index write failure")
+        return super().put_if_absent(document)
+
+
+class _FailingReplaceIfMatchDocumentStore(InMemoryDocumentStore):
+    """Raises once on replace_if_match after optionally applying the write."""
+
+    def __init__(self, *, write_before_raise: bool = True) -> None:
+        super().__init__()
+        self._write_before_raise = write_before_raise
+        self._failed_once = False
+
+    def replace_if_match(
+        self,
+        *,
+        expected: DocumentRecord,
+        replacement: DocumentRecord,
+    ) -> bool:
+        if not self._failed_once:
+            self._failed_once = True
+            if self._write_before_raise:
+                super().replace_if_match(expected=expected, replacement=replacement)
+            raise RuntimeError("simulated uncertain diagnostic problem CAS")
+        return super().replace_if_match(expected=expected, replacement=replacement)
+
+
+class _CountingPutIfAbsentDocumentStore(InMemoryDocumentStore):
+    """Tracks put_if_absent calls for resolve-path assertions."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.put_if_absent_calls = 0
+
+    def put_if_absent(self, document: DocumentRecord) -> bool:
+        self.put_if_absent_calls += 1
         return super().put_if_absent(document)
 
 
@@ -514,6 +550,355 @@ def test_document_store_multi_subject_partial_claim_rolls_back() -> None:
     assert persistence.get(tenant_id=tenant_id, problem_id=problem_b.problem_id) is None
 
 
+def test_document_store_update_adds_subject_index_before_canonical_cas() -> None:
+    store = InMemoryDocumentStore()
+    tenant_id = "tenant-update-subject-index"
+    subject_a = _sample_subject_ref(tenant_id=tenant_id)
+    subject_b = _sample_subject_ref(tenant_id=tenant_id)
+    created = sample_problem(tenant_id=tenant_id, subject_refs=(subject_a,))
+    persistence = DocumentStoreProblemPersistence(store)
+    persistence.create(created)
+    updated = Problem(
+        problem_id=created.problem_id,
+        tenant_id=created.tenant_id,
+        status=created.status,
+        first_seen_at=created.first_seen_at,
+        last_seen_at=_OBSERVED_AT_LATER,
+        occurrence_count=created.occurrence_count + 1,
+        current_subject_refs=(subject_a, subject_b),
+        occurrences=created.occurrences,
+        provenance=created.provenance,
+        record_version=2,
+    )
+    assert persistence.update(updated, expected_version=1) == updated
+    assert persistence.find_by_subject_ref(
+        tenant_id=tenant_id,
+        subject_ref=subject_b,
+    ) == updated
+
+
+def test_document_store_update_subject_collision_leaves_canonical_unchanged() -> None:
+    store = InMemoryDocumentStore()
+    tenant_id = "tenant-update-subject-collision"
+    owned_subject = _sample_subject_ref(tenant_id=tenant_id)
+    problem_q = sample_problem(tenant_id=tenant_id, subject_refs=(owned_subject,))
+    persistence = DocumentStoreProblemPersistence(store)
+    persistence.create(problem_q)
+    problem_p = sample_problem(
+        tenant_id=tenant_id,
+        subject_refs=(_sample_subject_ref(tenant_id=tenant_id),),
+        reconciliation_key=_sample_reconciliation_key(
+            tenant_id=tenant_id,
+            signature=DeterministicProblemSignature(findings=(), limitations=()),
+        ),
+    )
+    persistence.create(problem_p)
+    collision_update = Problem(
+        problem_id=problem_p.problem_id,
+        tenant_id=problem_p.tenant_id,
+        status=problem_p.status,
+        first_seen_at=problem_p.first_seen_at,
+        last_seen_at=_OBSERVED_AT_LATER,
+        occurrence_count=problem_p.occurrence_count + 1,
+        current_subject_refs=problem_p.current_subject_refs + (owned_subject,),
+        occurrences=problem_p.occurrences,
+        provenance=problem_p.provenance,
+        record_version=2,
+    )
+    with pytest.raises(ProblemPersistenceConflictError):
+        persistence.update(collision_update, expected_version=1)
+    assert persistence.get(tenant_id=tenant_id, problem_id=problem_p.problem_id) == problem_p
+    assert (
+        persistence.find_by_subject_ref(
+            tenant_id=tenant_id,
+            subject_ref=owned_subject,
+        )
+        == problem_q
+    )
+
+
+def test_document_store_update_multi_subject_partial_claim_rolls_back() -> None:
+    store = InMemoryDocumentStore()
+    tenant_id = "tenant-update-partial-claim"
+    owned_subject = _sample_subject_ref(tenant_id=tenant_id)
+    free_subject = _sample_subject_ref(tenant_id=tenant_id)
+    only_a = _sample_subject_ref(tenant_id=tenant_id)
+    problem_q = sample_problem(tenant_id=tenant_id, subject_refs=(owned_subject,))
+    persistence = DocumentStoreProblemPersistence(store)
+    persistence.create(problem_q)
+    problem_p = sample_problem(
+        tenant_id=tenant_id,
+        subject_refs=(only_a,),
+        reconciliation_key=_sample_reconciliation_key(
+            tenant_id=tenant_id,
+            signature=DeterministicProblemSignature(findings=(), limitations=()),
+        ),
+    )
+    persistence.create(problem_p)
+    partial_update = Problem(
+        problem_id=problem_p.problem_id,
+        tenant_id=problem_p.tenant_id,
+        status=problem_p.status,
+        first_seen_at=problem_p.first_seen_at,
+        last_seen_at=_OBSERVED_AT_LATER,
+        occurrence_count=problem_p.occurrence_count + 2,
+        current_subject_refs=(only_a, free_subject, owned_subject),
+        occurrences=problem_p.occurrences,
+        provenance=problem_p.provenance,
+        record_version=2,
+    )
+    with pytest.raises(ProblemPersistenceConflictError):
+        persistence.update(partial_update, expected_version=1)
+    assert (
+        persistence.find_by_subject_ref(
+            tenant_id=tenant_id,
+            subject_ref=free_subject,
+        )
+        is None
+    )
+    assert (
+        persistence.find_by_subject_ref(
+            tenant_id=tenant_id,
+            subject_ref=owned_subject,
+        )
+        == problem_q
+    )
+    assert persistence.get(tenant_id=tenant_id, problem_id=problem_p.problem_id) == problem_p
+
+
+def test_document_store_update_concurrent_cas_after_new_subject_claim() -> None:
+    store = InMemoryDocumentStore()
+    tenant_id = "tenant-update-cas-new-subject"
+    subject_a = _sample_subject_ref(tenant_id=tenant_id)
+    subject_b = _sample_subject_ref(tenant_id=tenant_id)
+    created = sample_problem(tenant_id=tenant_id, subject_refs=(subject_a,))
+    persistence = DocumentStoreProblemPersistence(store)
+    persistence.create(created)
+    with_subject_b = Problem(
+        problem_id=created.problem_id,
+        tenant_id=created.tenant_id,
+        status=created.status,
+        first_seen_at=created.first_seen_at,
+        last_seen_at=_OBSERVED_AT_LATER,
+        occurrence_count=created.occurrence_count + 1,
+        current_subject_refs=(subject_a, subject_b),
+        occurrences=created.occurrences,
+        provenance=created.provenance,
+        record_version=2,
+    )
+    without_subject_b = Problem(
+        problem_id=created.problem_id,
+        tenant_id=created.tenant_id,
+        status=created.status,
+        first_seen_at=created.first_seen_at,
+        last_seen_at=_OBSERVED_AT_LATER,
+        occurrence_count=created.occurrence_count + 1,
+        current_subject_refs=(subject_a,),
+        occurrences=created.occurrences,
+        provenance=created.provenance,
+        record_version=2,
+    )
+    barrier = threading.Barrier(2)
+    results: list[Problem] = []
+    errors: list[BaseException] = []
+
+    def _update(candidate: Problem) -> None:
+        worker = DocumentStoreProblemPersistence(store)
+        try:
+            barrier.wait(timeout=5)
+            results.append(worker.update(candidate, expected_version=1))
+        except BaseException as exc:  # noqa: BLE001
+            errors.append(exc)
+        finally:
+            worker.close()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [
+            executor.submit(_update, with_subject_b),
+            executor.submit(_update, without_subject_b),
+        ]
+        for future in futures:
+            future.result(timeout=10)
+
+    assert len(results) == 1
+    assert len(errors) == 1
+    assert isinstance(errors[0], ProblemPersistenceConflictError)
+    winner = results[0]
+    verifier = DocumentStoreProblemPersistence(store)
+    try:
+        assert verifier.get(tenant_id=tenant_id, problem_id=created.problem_id) == winner
+        if subject_b in winner.current_subject_refs:
+            assert (
+                verifier.find_by_subject_ref(
+                    tenant_id=tenant_id,
+                    subject_ref=subject_b,
+                )
+                == winner
+            )
+        else:
+            assert (
+                verifier.find_by_subject_ref(
+                    tenant_id=tenant_id,
+                    subject_ref=subject_b,
+                )
+                is None
+            )
+    finally:
+        verifier.close()
+
+
+def test_document_store_update_uncertain_cas_with_durable_replacement_succeeds() -> None:
+    store = _FailingReplaceIfMatchDocumentStore(write_before_raise=True)
+    tenant_id = "tenant-update-uncertain-success"
+    subject_a = _sample_subject_ref(tenant_id=tenant_id)
+    subject_b = _sample_subject_ref(tenant_id=tenant_id)
+    created = sample_problem(tenant_id=tenant_id, subject_refs=(subject_a,))
+    persistence = DocumentStoreProblemPersistence(store)
+    persistence.create(created)
+    updated = Problem(
+        problem_id=created.problem_id,
+        tenant_id=created.tenant_id,
+        status=created.status,
+        first_seen_at=created.first_seen_at,
+        last_seen_at=_OBSERVED_AT_LATER,
+        occurrence_count=created.occurrence_count + 1,
+        current_subject_refs=(subject_a, subject_b),
+        occurrences=created.occurrences,
+        provenance=created.provenance,
+        record_version=2,
+    )
+    assert persistence.update(updated, expected_version=1) == updated
+    assert persistence.find_by_subject_ref(
+        tenant_id=tenant_id,
+        subject_ref=subject_b,
+    ) == updated
+
+
+def test_document_store_update_uncertain_cas_without_write_rolls_back_claims() -> None:
+    store = _FailingReplaceIfMatchDocumentStore(write_before_raise=False)
+    tenant_id = "tenant-update-uncertain-rollback"
+    subject_a = _sample_subject_ref(tenant_id=tenant_id)
+    subject_b = _sample_subject_ref(tenant_id=tenant_id)
+    created = sample_problem(tenant_id=tenant_id, subject_refs=(subject_a,))
+    persistence = DocumentStoreProblemPersistence(store)
+    persistence.create(created)
+    updated = Problem(
+        problem_id=created.problem_id,
+        tenant_id=created.tenant_id,
+        status=created.status,
+        first_seen_at=created.first_seen_at,
+        last_seen_at=_OBSERVED_AT_LATER,
+        occurrence_count=created.occurrence_count + 1,
+        current_subject_refs=(subject_a, subject_b),
+        occurrences=created.occurrences,
+        provenance=created.provenance,
+        record_version=2,
+    )
+    with pytest.raises(RuntimeError, match="simulated uncertain diagnostic problem CAS"):
+        persistence.update(updated, expected_version=1)
+    assert persistence.get(tenant_id=tenant_id, problem_id=created.problem_id) == created
+    assert (
+        persistence.find_by_subject_ref(
+            tenant_id=tenant_id,
+            subject_ref=subject_b,
+        )
+        is None
+    )
+    assert persistence.update(updated, expected_version=1) == updated
+
+
+def test_document_store_update_rolls_back_claims_after_pre_cas_failure() -> None:
+    store = _FailingReplaceIfMatchDocumentStore(write_before_raise=False)
+    tenant_id = "tenant-update-pre-cas-failure"
+    subject_a = _sample_subject_ref(tenant_id=tenant_id)
+    subject_b = _sample_subject_ref(tenant_id=tenant_id)
+    created = sample_problem(tenant_id=tenant_id, subject_refs=(subject_a,))
+    persistence = DocumentStoreProblemPersistence(store)
+    persistence.create(created)
+    updated = Problem(
+        problem_id=created.problem_id,
+        tenant_id=created.tenant_id,
+        status=created.status,
+        first_seen_at=created.first_seen_at,
+        last_seen_at=_OBSERVED_AT_LATER,
+        occurrence_count=created.occurrence_count + 1,
+        current_subject_refs=(subject_a, subject_b),
+        occurrences=created.occurrences,
+        provenance=created.provenance,
+        record_version=2,
+    )
+    with pytest.raises(RuntimeError, match="simulated uncertain diagnostic problem CAS"):
+        persistence.update(updated, expected_version=1)
+    assert persistence.get(tenant_id=tenant_id, problem_id=created.problem_id) == created
+    retry_store = DocumentStoreProblemPersistence(store)
+    assert retry_store.update(updated, expected_version=1) == updated
+
+
+def test_document_store_resolve_update_does_not_claim_new_subject_indexes() -> None:
+    store = _CountingPutIfAbsentDocumentStore()
+    tenant_id = "tenant-resolve-no-claims"
+    created = sample_problem(tenant_id=tenant_id)
+    persistence = DocumentStoreProblemPersistence(store)
+    persistence.create(created)
+    store.put_if_absent_calls = 0
+    resolved = Problem(
+        problem_id=created.problem_id,
+        tenant_id=created.tenant_id,
+        status=ProblemStatus.RESOLVED,
+        first_seen_at=created.first_seen_at,
+        last_seen_at=created.last_seen_at,
+        occurrence_count=created.occurrence_count,
+        current_subject_refs=created.current_subject_refs,
+        occurrences=created.occurrences,
+        provenance=created.provenance,
+        record_version=2,
+    )
+    assert persistence.update(resolved, expected_version=1) == resolved
+    assert store.put_if_absent_calls == 0
+
+
+def test_document_store_restart_after_subject_adding_update_resolves_lookup() -> None:
+    store = InMemoryDocumentStore()
+    tenant_id = "tenant-update-restart-lookup"
+    subject_a = _sample_subject_ref(tenant_id=tenant_id)
+    subject_b = _sample_subject_ref(tenant_id=tenant_id)
+    created = sample_problem(tenant_id=tenant_id, subject_refs=(subject_a,))
+    first = DocumentStoreProblemPersistence(store)
+    first.create(created)
+    updated = Problem(
+        problem_id=created.problem_id,
+        tenant_id=created.tenant_id,
+        status=created.status,
+        first_seen_at=created.first_seen_at,
+        last_seen_at=_OBSERVED_AT_LATER,
+        occurrence_count=created.occurrence_count + 1,
+        current_subject_refs=(subject_a, subject_b),
+        occurrences=created.occurrences,
+        provenance=created.provenance,
+        record_version=2,
+    )
+    first.update(updated, expected_version=1)
+    first.close()
+
+    second = DocumentStoreProblemPersistence(store)
+    try:
+        assert second.find_by_subject_ref(
+            tenant_id=tenant_id,
+            subject_ref=subject_b,
+        ) == updated
+    finally:
+        second.close()
+
+    third = DocumentStoreProblemPersistence(store)
+    try:
+        assert third.find_by_subject_ref(
+            tenant_id=tenant_id,
+            subject_ref=subject_b,
+        ) == updated
+    finally:
+        third.close()
+
+
 def test_document_store_create_rolls_back_after_canonical_write_failure() -> None:
     record = sample_problem(tenant_id="tenant-canonical-failure")
     partition_key = f"intergrax.diagnostic_problem.v1:{record.tenant_id}"
@@ -721,6 +1106,18 @@ def test_orchestrator_durable_problem_persistence_survives_adapter_restart() -> 
     updated = second.lifecycle_result.updated[0]
     assert updated.problem_id == problem_id
     assert updated.occurrence_count == 3
+    third_subject = updated.current_subject_refs[2]
+    assert persistence.find_by_subject_ref(
+        tenant_id=_TENANT_A,
+        subject_ref=third_subject,
+    ) == updated
+
+    persistence.close()
+    persistence = DocumentStoreProblemPersistence(store)
+    assert persistence.find_by_subject_ref(
+        tenant_id=_TENANT_A,
+        subject_ref=third_subject,
+    ) == updated
 
 
 def test_orchestrator_semantics_equivalent_across_problem_persistence_backends() -> None:

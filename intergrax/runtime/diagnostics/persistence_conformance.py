@@ -379,6 +379,158 @@ def assert_failed_create_leaves_no_orphan_indexes(
     assert store.get(tenant_id=partial_tenant, problem_id=problem_b.problem_id) is None
 
 
+def assert_problem_update_publishes_subject_indexes_atomically(
+    store: ProblemPersistence,
+    *,
+    label: str,
+) -> None:
+    """Update must publish new subject indexes before canonical CAS becomes durable."""
+    tenant_id = f"{label}-update-publish"
+    subject_a = _sample_subject_ref(tenant_id=tenant_id)
+    subject_b = _sample_subject_ref(tenant_id=tenant_id)
+    reconciliation_key = _sample_reconciliation_key(tenant_id=tenant_id)
+    created = sample_problem(
+        tenant_id=tenant_id,
+        subject_refs=(subject_a,),
+        reconciliation_key=reconciliation_key,
+    )
+    store.create(created)
+
+    updated = Problem(
+        problem_id=created.problem_id,
+        tenant_id=created.tenant_id,
+        status=created.status,
+        first_seen_at=created.first_seen_at,
+        last_seen_at=_OBSERVED_AT_LATER,
+        occurrence_count=created.occurrence_count + 1,
+        current_subject_refs=(subject_a, subject_b),
+        occurrences=created.occurrences,
+        provenance=created.provenance,
+        record_version=2,
+    )
+    assert store.update(updated, expected_version=1) == updated
+    assert store.get(tenant_id=tenant_id, problem_id=created.problem_id) == updated
+    assert store.find_by_subject_ref(tenant_id=tenant_id, subject_ref=subject_b) == updated
+
+    collision_tenant = f"{label}-update-collision"
+    owned_subject = _sample_subject_ref(tenant_id=collision_tenant)
+    free_subject = _sample_subject_ref(tenant_id=collision_tenant)
+    problem_q = sample_problem(
+        tenant_id=collision_tenant,
+        subject_refs=(owned_subject,),
+        reconciliation_key=_sample_reconciliation_key(tenant_id=collision_tenant),
+    )
+    store.create(problem_q)
+    problem_p = sample_problem(
+        tenant_id=collision_tenant,
+        subject_refs=(_sample_subject_ref(tenant_id=collision_tenant),),
+        reconciliation_key=_sample_reconciliation_key(
+            tenant_id=collision_tenant,
+            signature=DeterministicProblemSignature(findings=(), limitations=()),
+        ),
+    )
+    store.create(problem_p)
+    collision_update = Problem(
+        problem_id=problem_p.problem_id,
+        tenant_id=problem_p.tenant_id,
+        status=problem_p.status,
+        first_seen_at=problem_p.first_seen_at,
+        last_seen_at=_OBSERVED_AT_LATER,
+        occurrence_count=problem_p.occurrence_count + 1,
+        current_subject_refs=problem_p.current_subject_refs + (owned_subject,),
+        occurrences=problem_p.occurrences,
+        provenance=problem_p.provenance,
+        record_version=2,
+    )
+    with pytest_raises_conflict():
+        store.update(collision_update, expected_version=1)
+    assert store.get(tenant_id=collision_tenant, problem_id=problem_p.problem_id) == problem_p
+    assert (
+        store.find_by_subject_ref(
+            tenant_id=collision_tenant,
+            subject_ref=owned_subject,
+        )
+        == problem_q
+    )
+
+    partial_tenant = f"{label}-update-partial"
+    owned = _sample_subject_ref(tenant_id=partial_tenant)
+    free = _sample_subject_ref(tenant_id=partial_tenant)
+    only_a = _sample_subject_ref(tenant_id=partial_tenant)
+    partial_q = sample_problem(
+        tenant_id=partial_tenant,
+        subject_refs=(owned,),
+        reconciliation_key=_sample_reconciliation_key(tenant_id=partial_tenant),
+    )
+    store.create(partial_q)
+    partial_p = sample_problem(
+        tenant_id=partial_tenant,
+        subject_refs=(only_a,),
+        reconciliation_key=_sample_reconciliation_key(
+            tenant_id=partial_tenant,
+            signature=DeterministicProblemSignature(findings=(), limitations=()),
+        ),
+    )
+    store.create(partial_p)
+    partial_update = Problem(
+        problem_id=partial_p.problem_id,
+        tenant_id=partial_p.tenant_id,
+        status=partial_p.status,
+        first_seen_at=partial_p.first_seen_at,
+        last_seen_at=_OBSERVED_AT_LATER,
+        occurrence_count=partial_p.occurrence_count + 2,
+        current_subject_refs=(only_a, free, owned),
+        occurrences=partial_p.occurrences,
+        provenance=partial_p.provenance,
+        record_version=2,
+    )
+    with pytest_raises_conflict():
+        store.update(partial_update, expected_version=1)
+    assert (
+        store.find_by_subject_ref(
+            tenant_id=partial_tenant,
+            subject_ref=free,
+        )
+        is None
+    )
+    assert (
+        store.find_by_subject_ref(
+            tenant_id=partial_tenant,
+            subject_ref=owned,
+        )
+        == partial_q
+    )
+    assert store.get(tenant_id=partial_tenant, problem_id=partial_p.problem_id) == partial_p
+
+    resolve_tenant = f"{label}-update-resolve"
+    resolve_subject = _sample_subject_ref(tenant_id=resolve_tenant)
+    resolve_problem = sample_problem(
+        tenant_id=resolve_tenant,
+        subject_refs=(resolve_subject,),
+    )
+    store.create(resolve_problem)
+    resolved = Problem(
+        problem_id=resolve_problem.problem_id,
+        tenant_id=resolve_problem.tenant_id,
+        status=ProblemStatus.RESOLVED,
+        first_seen_at=resolve_problem.first_seen_at,
+        last_seen_at=resolve_problem.last_seen_at,
+        occurrence_count=resolve_problem.occurrence_count,
+        current_subject_refs=resolve_problem.current_subject_refs,
+        occurrences=resolve_problem.occurrences,
+        provenance=resolve_problem.provenance,
+        record_version=2,
+    )
+    assert store.update(resolved, expected_version=1) == resolved
+    assert (
+        store.find_by_subject_ref(
+            tenant_id=resolve_tenant,
+            subject_ref=resolve_subject,
+        )
+        == resolved
+    )
+
+
 def assert_problem_persistence_typed_round_trip(
     store: ProblemPersistence,
     *,
