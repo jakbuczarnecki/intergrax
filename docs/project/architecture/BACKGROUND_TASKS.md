@@ -4,7 +4,7 @@
 **Plan (1:1):** [`plan/BACKGROUND_TASKS.md`](../maintainers/plans/BACKGROUND_TASKS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
 **Generalizes:** LKW.4 background ingest proof ([`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/ARCHITECTURE.md) §8.7)
-**Last updated:** 2026-08-25 — **BG-EXEC-3** required audit evidence admission semantics
+**Last updated:** 2026-08-26 — **UE-DOC-0.7** cross-strategy execution guarantees; distributed Execution Boundary admission target
 
 ---
 
@@ -38,6 +38,25 @@ Handlers contain developer custom logic but run through platform contracts.
 - **WorkerRuntime** (platform) receives messages, resolves `task_name` in **TaskRegistry**, and invokes the registered **TaskHandler** inside a platform execution context.
 - Applications (Tier-3) and agents (Tier-2) **enqueue** work through platform APIs/tools (`message_bus.enqueue`, future `background_tasks.enqueue`). They do **not** import vendor SDKs.
 - Handler code is **registered ahead of time**; the queue carries `task_name` + validated payload bytes, **never arbitrary serialized executable code**.
+
+### Distributed execution target (UE-DOC-0.7)
+
+**TARGET ARCHITECTURE** — aligned with [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) §11, §20, **UEA-INV-011**, **UEA-INV-021**:
+
+```text
+Execution Boundary / scheduler
+  ↓ canonical Execution identity established
+  ↓ immutable transport-safe execution envelope / reference
+MessageBus / queue
+  ↓ worker receives SAME runtime identity
+  ↓ required transport → Execution causal evidence (BG-EXEC-3)
+Execution Boundary admission
+  ↓ strategy executor / registered TaskHandler
+```
+
+Workers **re-enter** the canonical Execution Boundary — they do not bypass governance, budget, evidence, or lifecycle guarantees because transport delivered the message. [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) is package installation/activation only. [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) may constrain worker capacity but does not own Execution identity.
+
+Future transport envelopes carry canonical runtime identity including `ExecutionId` where the admitted unit is an Execution (see UEA §11). Exact Python schema is not frozen in this slice.
 
 ### Canonical background execution identity (BG-EXEC-1 / BG-EXEC-2)
 
@@ -391,7 +410,7 @@ Operators and developers should be able to answer:
 | **No arbitrary code from queue** | Payload is data; handler code is pre-registered |
 | **Permissions / capabilities** | Handler declares required capabilities; runtime enforces tool/integration allowlists |
 | **Rate limits / concurrency** | `TaskPolicy` per task type and per tenant |
-| **Cancellation** | Cooperative cancel signal through runtime |
+| **Cancellation** | Cooperative cancel signal through runtime; follows Execution Tree semantics — transport cancel must not create a second canonical cancellation tree |
 | **Retry / dead-letter** | Policy-driven; terminal failure → `task.dead_lettered` |
 | **Payload redaction** | Logs, events, and traces redact sensitive payload fields |
 | **No vendor SDK in apps/agents** | Tier-2/3 use `message_bus.*` tools only |

@@ -3,7 +3,9 @@
 **Architecture (1:1):** [`architecture/BACKGROUND_TASKS.md`](../../architecture/BACKGROUND_TASKS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Proof consumer:** LKW.4 ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §6)
-**Last updated:** 2026-07-08 — **BG-TASKS-ARCH-1** / **LKW.4E-ARCH-1** / **LKW.4E-PROOF-DOC-1**
+**Last updated:** 2026-08-26 — **UE-DOC-0.7** distributed Execution Boundary admission target (architecture hub)
+
+> **UE-DOC-0.7:** Worker transport must re-enter canonical Execution Boundary with same runtime identity and required causal evidence — see architecture §B distributed execution target. BG-TASKS phases unchanged.
 
 ---
 
