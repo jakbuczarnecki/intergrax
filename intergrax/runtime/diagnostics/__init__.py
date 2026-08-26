@@ -36,6 +36,35 @@ from intergrax.runtime.diagnostics.diagnostic_problem_grouping_feature_projector
 from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
     DeterministicProblemGroupingStrategy,
 )
+from intergrax.runtime.diagnostics.deterministic_problem_reconciliation import (
+    DeterministicProblemReconciliationKey,
+    ProblemReconciliationKeyKind,
+    extract_deterministic_reconciliation_key,
+)
+from intergrax.runtime.diagnostics.in_memory_problem_persistence import (
+    InMemoryProblemPersistence,
+)
+from intergrax.runtime.diagnostics.problem_lifecycle import (
+    DeterministicProblemReconciliationPolicy,
+    Problem,
+    ProblemId,
+    ProblemLifecycleEngine,
+    ProblemLifecycleIntegrityError,
+    ProblemLifecycleProvenance,
+    ProblemLifecycleResult,
+    ProblemOccurrence,
+    ProblemReconciliationKey,
+    ProblemReconciliationPolicy,
+    ProblemStatus,
+    mint_problem_id,
+    reconciliation_keys_equal,
+    validate_problem_id,
+)
+from intergrax.runtime.diagnostics.problem_persistence import (
+    ProblemPersistence,
+    ProblemPersistenceConflictError,
+    ProblemPersistenceIntegrityError,
+)
 from intergrax.runtime.diagnostics.problem_grouping_features import (
     CAUSAL_SOURCE_REF_KIND_MESSAGE_BUS_TASK,
     CAUSAL_TARGET_REF_KIND_RUNTIME_EXECUTION,
@@ -113,6 +142,27 @@ __all__ = [
     "DeterministicLimitationSignature",
     "DeterministicProblemGroupingBasis",
     "DeterministicProblemGroupingStrategy",
+    "DeterministicProblemReconciliationKey",
+    "DeterministicProblemReconciliationPolicy",
+    "InMemoryProblemPersistence",
+    "Problem",
+    "ProblemId",
+    "ProblemLifecycleEngine",
+    "ProblemLifecycleIntegrityError",
+    "ProblemLifecycleProvenance",
+    "ProblemLifecycleResult",
+    "ProblemOccurrence",
+    "ProblemPersistence",
+    "ProblemPersistenceConflictError",
+    "ProblemPersistenceIntegrityError",
+    "ProblemReconciliationKey",
+    "ProblemReconciliationKeyKind",
+    "ProblemReconciliationPolicy",
+    "ProblemStatus",
+    "extract_deterministic_reconciliation_key",
+    "mint_problem_id",
+    "reconciliation_keys_equal",
+    "validate_problem_id",
     "DiagnosticProblemGroupingFeatureProjector",
     "DeterministicProblemSignature",
     "DuplicateProblemGroupingStrategyError",

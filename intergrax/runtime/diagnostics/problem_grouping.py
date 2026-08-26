@@ -347,7 +347,8 @@ class ProblemGroupingEngine:
     Owns subject normalization, strategy resolution, invocation, and validation.
 
     Strategies propose candidates; the engine enforces tenant isolation and
-    contract integrity. Stable ProblemId lifecycle is out of scope (DIAG-5D).
+    contract integrity. Stable ProblemId lifecycle is owned by
+    ``ProblemLifecycleEngine`` (DIAG-5D).
     """
 
     def __init__(

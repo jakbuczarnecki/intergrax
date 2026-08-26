@@ -451,7 +451,7 @@ Frozen UEA + this document: Execution-centric five-ID evidence spine; canonical 
 
 ### 2. CURRENT STATE
 
-Closed TRACE-1A–1C four-ID event spine; active DIAG-1..5C implementation; as-of and K-only reconstruction integrated; no canonical `ExecutionId` on `RuntimeEvent`.
+Closed TRACE-1A–1C four-ID event spine; active DIAG-1..5D implementation; as-of and K-only reconstruction integrated; no canonical `ExecutionId` on `RuntimeEvent`.
 
 ### 3. GAPS
 
@@ -1301,6 +1301,50 @@ DiagnosticAssessment + ProblemGroupingFeatureSourceFacts (optional)
 
 **Code references:** `intergrax/runtime/diagnostics/diagnostic_problem_grouping_feature_projector.py`, `intergrax/runtime/diagnostics/problem_grouping.py` (`ProblemGroupingAssessmentInput`, `validate_feature_source_facts_scope`), `intergrax/runtime/diagnostics/problem_grouping_features.py` (`ProblemGroupingFeatureSourceFacts`).
 
+### Stable Problem identity and lifecycle (DIAG-5D)
+
+**Scope:** reconcile validated grouping hypotheses into tenant-scoped stable `ProblemId` records — without changing grouping algorithms, assessment semantics, or canonical execution truth.
+
+**Production grouping strategies after this slice:** **1** — `DeterministicProblemGroupingStrategy` only. Intelligent semantic/ML/LLM/hybrid grouping remains **scenario-stage** (future strategy plugins supply their own typed reconciliation keys).
+
+**Three concepts (never collapse):**
+
+| Concept | Meaning |
+|---------|---------|
+| **A — candidate membership** | Ephemeral `ProblemGroupingCandidate` from one invocation — hypothesis only |
+| **B — stable Problem identity** | Opaque minted `ProblemId` — recurring operational pattern tracked over time |
+| **C — root cause** | Evidence-backed causal conclusion — **not** implied by grouping or Problem persistence |
+
+`ProblemId` denotes **B** only. Grouping remains hypothesis-producing; root-cause proof is future DIAG-8 / evidence work.
+
+**Pipeline:**
+
+```text
+DiagnosticAssessment[]
+  → ProblemGroupingEngine
+  → ProblemGroupingResult              # validated, ephemeral hypotheses
+  → ProblemLifecycleEngine.reconcile(observed_at=...)
+  → stable ProblemId / Problem records
+```
+
+**`ProblemLifecycleEngine` owns:** reconciliation-key extraction (via registered `ProblemReconciliationPolicy` per `ProblemGroupingBasisKind`), lookup, create/update, occurrence history, conflict detection, and persistence. It does **not** re-run grouping logic or mutate `ProblemGroupingEngine`.
+
+**Deterministic recurrence key (v1):** `DeterministicProblemReconciliationKey` = `tenant_id` + `strategy_id` + `strategy_version` + `DeterministicProblemSignature`. This is **not** `ProblemId` — only conservative auditable evidence to find the same tracked Problem. A different `strategy_version` must not silently attach to Problems established under prior semantics.
+
+**Matching rules (conservative):** attach to an existing Problem when reconciliation key matches **or** a `ProblemGroupingSubjectRef` already belongs to that Problem; fail closed when one subject would attach to incompatible Problems in the same operation or across conflicting keys.
+
+**Problem record:** persisted **derived diagnostic state** — rebuildable in principle from canonical evidence plus validated grouping output. `RuntimeEvent` / causal evidence remain canonical facts.
+
+**Status (minimal):** `OPEN` (default), `RESOLVED` (explicit `ProblemLifecycleEngine.resolve` only). New accepted occurrence on a `RESOLVED` Problem returns status to `OPEN`. **No** auto-resolve when a pattern is absent from a later grouping invocation.
+
+**Persistence:** `ProblemPersistence` protocol + `InMemoryProblemPersistence` (contract proof; not enterprise durable storage). Optimistic `record_version` CAS on update; idempotent create; subject-ref and reconciliation-key indexes for tenant isolation and concurrency safety.
+
+**Explicit non-goals (DIAG-5D):** Problem merge/split, auto-resolve-on-absence, root-cause fields, second production grouping strategy, LLM/embeddings/vector/confidence.
+
+**Roadmap:** **DIAG-5C complete.** **DIAG-5D** — stable Problem identity/lifecycle (this slice). **DIAG-6** — operator surfacing / diagnostic read APIs (planned). **DIAG-7** — cross-run diagnostic orchestration (planned). **DIAG-8 / scenario** — intelligent grouping + root-cause investigation consuming typed assessments without rewriting canonical evidence (scenario-stage).
+
+**Code references:** `intergrax/runtime/diagnostics/problem_lifecycle.py`, `intergrax/runtime/diagnostics/problem_persistence.py`, `intergrax/runtime/diagnostics/in_memory_problem_persistence.py`, `intergrax/runtime/diagnostics/deterministic_problem_reconciliation.py`.
+
 ### Multi-execution problem grouping (DIAG-5A)
 
 **Inputs:** `ProblemGroupingAssessmentInput[]` (each bundles one `DiagnosticAssessment` plus optional `ProblemGroupingFeatureSourceFacts`) from DIAG-4 + upstream reconstruction/signal collection — **no** re-run of reconstruction, lifecycle analysis, or assessment inside the engine.
@@ -1333,7 +1377,7 @@ ProblemGroupingAssessmentInput[]
 
 **Tenant isolation:** one invocation must contain subjects with a single `tenant_id`; mixed tenants fail closed with `ProblemGroupingIntegrityError` before strategy invocation.
 
-**Overlap semantics:** overlapping candidates are **allowed** (one execution may appear in multiple proposed groups). Stable problem assignment is deferred to DIAG-5D.
+**Overlap semantics:** overlapping candidates are **allowed** in grouping (one execution may appear in multiple proposed groups). `ProblemLifecycleEngine` reconciles them fail-closed when a subject would attach to incompatible stable Problems.
 
 **Ungrouped subjects:** `ProblemGroupingResult.ungrouped_subjects` lists input subjects not present in any validated candidate.
 
@@ -1343,7 +1387,7 @@ ProblemGroupingAssessmentInput[]
 
 **Canonical boundary:** no `ProblemId`, no persistence, no `RuntimeEvent` emission, no mutation of `DiagnosticAssessment`. Model output can never rewrite canonical evidence.
 
-**Explicit non-goals (DIAG-5A):** no embeddings, ML, LLM, clustering libraries, vector DB, background jobs, or stable problem lifecycle (DIAG-5D).
+**Explicit non-goals (DIAG-5A):** no embeddings, ML, LLM, clustering libraries, vector DB, background jobs, or stable problem lifecycle (delivered in DIAG-5D).
 
 **Code references:** `intergrax/runtime/diagnostics/problem_grouping.py`.
 
