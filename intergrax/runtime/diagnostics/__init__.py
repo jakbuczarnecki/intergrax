@@ -14,6 +14,15 @@ from intergrax.runtime.diagnostics.diagnostic_read_models import (
     DiagnosticReadUnavailableReason,
     grouping_provenance_from_problem_provenance,
 )
+from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
+    DiagnosticExecutionAnalysis,
+    DiagnosticExecutionScope,
+    DiagnosticOrchestrationIntegrityError,
+    DiagnosticOrchestrationRequest,
+    DiagnosticOrchestrationResult,
+    MAX_DIAGNOSTIC_ORCHESTRATION_EXECUTIONS,
+)
+from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrchestrator
 from intergrax.runtime.diagnostics.diagnostic_read_service import (
     DEFAULT_OCCURRENCE_LIMIT,
     DEFAULT_PROBLEM_LIST_LIMIT,
@@ -139,6 +148,13 @@ from intergrax.runtime.diagnostics.problem_grouping import (
 __all__ = [
     "DEFAULT_OCCURRENCE_LIMIT",
     "DEFAULT_PROBLEM_LIST_LIMIT",
+    "DiagnosticExecutionAnalysis",
+    "DiagnosticExecutionScope",
+    "DiagnosticOrchestrationIntegrityError",
+    "DiagnosticOrchestrationRequest",
+    "DiagnosticOrchestrationResult",
+    "DiagnosticOrchestrator",
+    "MAX_DIAGNOSTIC_ORCHESTRATION_EXECUTIONS",
     "DiagnosticAssessment",
     "DiagnosticAssessmentBuilder",
     "DiagnosticAssessmentIntegrityError",

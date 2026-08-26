@@ -1343,7 +1343,7 @@ DiagnosticAssessment[]
 
 **Explicit non-goals (DIAG-5D):** Problem merge/split, auto-resolve-on-absence, root-cause fields, second production grouping strategy, LLM/embeddings/vector/confidence.
 
-**Roadmap:** **DIAG-5C complete.** **DIAG-5D complete.** **DIAG-6** — operator surfacing / diagnostic read API (this slice). **DIAG-7** — cross-run diagnostic orchestration (planned). **DIAG-8 / scenario** — intelligent grouping + root-cause investigation consuming typed assessments without rewriting canonical evidence (scenario-stage).
+**Roadmap:** **DIAG-5C complete.** **DIAG-5D complete.** **DIAG-6 complete.** **DIAG-7** — cross-run canonical diagnostic orchestration (this slice). **DIAG-8 / scenario** — intelligent grouping + root-cause investigation consuming typed assessments without rewriting canonical evidence (scenario-stage).
 
 **Code references:** `intergrax/runtime/diagnostics/problem_lifecycle.py`, `intergrax/runtime/diagnostics/problem_persistence.py`, `intergrax/runtime/diagnostics/in_memory_problem_persistence.py`, `intergrax/runtime/diagnostics/deterministic_problem_reconciliation.py`.
 
@@ -1378,9 +1378,59 @@ DiagnosticReadService
 
 **Explicit non-goals (DIAG-6):** HTTP/REST/GraphQL/CLI/UI, cache/materialized views, semantic search, root-cause fields (`root_cause`, `confidence`, `likely_root_cause`), raw `RuntimeEvent.payload` / logs / tracebacks / prompts / documents, `get_execution_diagnostic` (deferred **DIAG-6B** — full `ExecutionReconstruction` would expose raw event payloads).
 
-**Roadmap:** **DIAG-6B** — execution lookup via the same read surface without raw payload exposure. **DIAG-7** — cross-run diagnostic orchestration. **DIAG-8 / scenario** — intelligent grouping + root-cause investigation.
+**Roadmap:** **DIAG-6B** — execution lookup via the same read surface without raw payload exposure. **DIAG-7 complete** — cross-run canonical diagnostic orchestration. **DIAG-8 / scenario** — intelligent grouping + root-cause investigation.
 
 **Code references:** `intergrax/runtime/diagnostics/diagnostic_read_service.py`, `intergrax/runtime/diagnostics/diagnostic_read_models.py`.
+
+### Cross-run diagnostic orchestration (DIAG-7)
+
+**Scope:** one canonical synchronous composition layer that runs the existing DIAG-2→5 spine across multiple execution scopes for a single tenant — without schedulers, daemons, queues, background workers, or new diagnostic truth.
+
+**Canonical entry point:** `DiagnosticOrchestrator` — explicit multi-execution diagnostic processing. Operators and applications should not manually compose `ExecutionReconstructor` → `LifecycleAnomalyAnalyzer` → `DiagnosticAssessmentBuilder` → `ProblemGroupingEngine` → `ProblemLifecycleEngine` at call sites.
+
+**Write/process path:**
+
+```text
+DiagnosticExecutionScope[]
+  ↓
+DiagnosticOrchestrator.run(DiagnosticOrchestrationRequest)
+  ↓
+ExecutionReconstructor.reconstruct_execution (per scope)
+  ↓
+LifecycleAnomalyAnalyzer.analyze
+  ↓
+DiagnosticAssessmentBuilder.assess
+  ↓
+ProblemGroupingFeatureSourceFacts (reconstruction + optional problem_signals)
+  ↓
+ProblemGroupingEngine.group(strategy_id=...)
+  ↓
+ProblemLifecycleEngine.reconcile(observed_at=...)
+```
+
+**Operator read path (unchanged):**
+
+```text
+ProblemPersistence
+  ↓
+DiagnosticReadService
+```
+
+**Request contract:** `DiagnosticOrchestrationRequest` — one `tenant_id`, `executions: DiagnosticExecutionScope[]` (canonical `TaskId` / `RunId`, optional `problem_signals`), explicit `grouping_strategy_id`, timezone-aware `observed_at`. One invocation = one tenant; mixed-tenant or duplicate `(tenant_id, task_id, run_id)` scopes fail closed **before** reconstruction. Batch size: `1..MAX_DIAGNOSTIC_ORCHESTRATION_EXECUTIONS` (100).
+
+**Result contract:** `DiagnosticOrchestrationResult` — bounded `DiagnosticExecutionAnalysis[]` (assessment + `runtime_history_completeness` + safe booleans; **no** `ExecutionReconstruction`), plus `ProblemGroupingResult` and `ProblemLifecycleResult`. No raw `RuntimeEvent.payload`, causal evidence objects, logs, or root-cause fields.
+
+**Mutation boundary:** DIAG-2→4 and grouping remain read/derived. The only persistence mutation is `ProblemLifecycleEngine.reconcile`, and it runs only after **all** execution analyses succeed and grouping validates. No per-execution Problem writes. No auto-resolve.
+
+**Atomic failure model:** either all requested execution assessments complete and grouping/lifecycle run, or the operation fails before grouping/lifecycle (reconstruction integrity errors, assessment errors, grouping errors). No partial success bags in this slice.
+
+**Cost model:** O(N) reconstruction/assessment per execution scope plus grouping strategy cost. Synchronous — no asyncio/thread pools in DIAG-7.
+
+**Explicit non-goals (DIAG-7):** scheduler/daemon/queue/cron/event subscriber, `DiagnosticReadService` for analysis, direct `RuntimeEventPersistence` / `CausalEvidencePersistence` reads in orchestrator, root-cause inference (`root_cause`, `confidence`), raw payload output, partial grouping on failed execution analysis, default magic grouping strategy.
+
+**Roadmap:** **DIAG-7 complete.** **DIAG-8 / scenario** — intelligent grouping + root-cause investigation. Real external/vendor E2E remains mandatory after orchestration closure.
+
+**Code references:** `intergrax/runtime/diagnostics/diagnostic_orchestrator.py`, `intergrax/runtime/diagnostics/diagnostic_orchestration_models.py`.
 
 ### Multi-execution problem grouping (DIAG-5A)
 
