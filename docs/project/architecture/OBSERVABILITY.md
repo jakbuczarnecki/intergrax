@@ -957,6 +957,119 @@ Each `DiagnosticFinding` retains `source_anomaly_kind: LifecycleAnomalyKind` for
 
 **Code references:** `intergrax/runtime/diagnostics/deterministic_problem_grouping.py`, `intergrax/runtime/diagnostics/problem_grouping.py` (`DeterministicProblemSignature`, `DeterministicProblemGroupingBasis`).
 
+### Model-assisted grouping architecture (DIAG-5C-A)
+
+**Scope:** contracts and architecture only — no live LLM calls, prompts, embeddings execution, vector DB, or persistence.
+
+**Key decision — current semantic sufficiency:** **NO.** `ProblemGroupingSubject` (DIAG-5A/B) exposes only lifecycle-structural enums (`DiagnosticFindingKind`, `LifecycleAnomalyScope`, `LifecycleAnomalyKind`, optional `LifecycleViolationTransition`, `DiagnosticLimitationKind`). That is sufficient for exact structural equality (DIAG-5B) but **not** for meaningful semantic/root-cause similarity. Missing feature classes that exist elsewhere in the platform but are **not yet projected into the diagnostic grouping spine**:
+
+| Missing semantic dimension | Platform facts exist today? | In DIAG-4 / grouping subject? |
+|----------------------------|------------------------------|--------------------------------|
+| Component / subsystem identity (`source_component`, `source_layer`) | Yes — `PlatformProblemSignal` | **No** — problem signals are a parallel observability plane, not joined in DIAG-2..5 |
+| Integration / provider identity | Yes — runtime trace payloads, problem signals | **No** — not projected into `DiagnosticAssessment` |
+| Tool / operation identity (`tool_id`, `capability`) | Yes — problem signals, runtime events | **No** |
+| Normalized failure / error code (`error_code`, `problem_kind`) | Yes — `PlatformProblemSignal` | **No** |
+| Bounded sanitized diagnostic text | Yes — `DiagnosticFinding.claim`, `DiagnosticLimitation.factual_message` | **Stripped** by `normalize_assessment` — present on assessment, absent from subject |
+| Causal relation type beyond lifecycle enums | Partial — `PlatformCausalEvidence` in reconstruction | **No** — lifecycle analysis consumes reconstruction but grouping subject does not retain causal descriptors |
+| Configuration / policy context | Partial — application observability attributes | **No** — not in diagnostic spine |
+| Raw logs | Upstream ingestion may exist | **Must not** enter grouping subject — bounded derived evidence only |
+
+**Implication:** do **not** implement `LLMProblemGroupingStrategy` that serializes existing enum fields to an LLM — that adds cost and non-determinism without additional signal. First model slice requires upstream feature projection (below) and, for richer similarity, future DIAG work to join typed problem-signal facts into the diagnostic projection boundary.
+
+#### Facts vs model features vs hypotheses (A / B / C)
+
+| Layer | Role | Mutability |
+|-------|------|------------|
+| **A — canonical facts** | `DiagnosticAssessment`, reconstruction, lifecycle analysis | Immutable source; model output must never rewrite |
+| **B — semantic representation** | `ProblemGroupingFeatureSet` + `ProblemGroupingRepresentationVersion` | Derived, versioned, bounded; disposable for reprojection |
+| **C — grouping hypothesis** | `ProblemGroupingCandidate` + typed `ProblemGroupingBasis` | Analytical output only; not canonical problem identity |
+
+`ProblemGroupingSubject` remains the structural view for deterministic strategies. Model strategies consume `ProblemGroupingSemanticInput` (`subject` + optional `features`) so DIAG-5B semantics stay unchanged when `features` is absent.
+
+#### Feature projection boundary (one-spine invariant)
+
+Strategies **must not** independently query `RuntimeEventPersistence`, `CausalEvidencePersistence`, raw log stores, or observability backends. The diagnostic spine prepares grouping representation upstream.
+
+```text
+DiagnosticAssessment[]
+  → ProblemGroupingFeatureProjector.project()     # facts → bounded features (B)
+  → ProblemGroupingSemanticInput[]                # subject + features
+  → ProblemGroupingStrategy.group()               # unchanged engine entry for structural path
+       OR future model strategy internal pipeline:
+         SemanticCandidateGenerator               # cheap neighborhoods
+         → ProblemGroupingAdjudicator             # expensive per-neighborhood decision
+  → ProblemGroupingStrategyResult → engine validation → ProblemGroupingResult
+```
+
+**Owner:** `ProblemGroupingFeatureProjector` (or equivalent) — **not** another diagnostic engine. v1 reference projection: `project_assessment_features()` maps assessment → `ProblemGroupingFeatureSet` using only assessment-local facts: deterministic `structural_signature` (link to DIAG-5B) plus bounded `ProblemGroupingTextEvidence` from `DiagnosticFinding.claim` and `DiagnosticLimitation.factual_message` with typed `ProblemGroupingTextEvidenceSourceKind` and supporting event/evidence ids. No `dict[str, Any]`, no metadata bags, no raw logs.
+
+**Representation versioning:** `ProblemGroupingRepresentationVersion` (v1 = `"1"`). Changing projection semantics (new fields, text normalization, evidence selection) requires a version bump — model inputs must not change silently.
+
+#### Candidate generation vs adjudication
+
+| Stage | Responsibility | Scale characteristic |
+|-------|----------------|----------------------|
+| **Candidate generation** (`SemanticCandidateGenerator`) | Narrow search space — embedding NN, coarse signature, ML classifier, structural pre-bucket | O(n) or O(n log n); cheap |
+| **Adjudication** (`ProblemGroupingAdjudicator`) | Decide whether one neighborhood truly shares a recurring problem pattern | O(k) neighborhoods, not O(n²) pairs |
+
+Architecture **forbids** all-pairs LLM comparison at scale. Flow: N subjects → cheap neighborhoods → bounded expensive adjudication only for candidates.
+
+**Future hybrid end-state** (`HybridProblemGroupingStrategy`, not implemented here):
+
+```text
+DeterministicProblemGroupingStrategy   # exact structural buckets (DIAG-5B baseline)
+  + SemanticCandidateGenerator         # cross-bucket / residual similarity
+  + ProblemGroupingAdjudicator         # LLM or rules over one neighborhood
+```
+
+Composes **inside** one `ProblemGroupingStrategy` implementation — `ProblemGroupingEngine` unchanged.
+
+#### Platform LLM reuse
+
+Future LLM adjudication **must** use existing `LLMAdapter` via `intergrax/llm_adapters/` (`LLMAdapter.generate_messages`, structured output where applicable, tenant quota/resilience). **No** direct OpenAI/Anthropic clients or ad-hoc HTTP in diagnostics. Strategy holds an injected adjudicator port; engine does not call models.
+
+#### Embedding reuse
+
+**Unsafe** for diagnostics to depend on RAG internals (`EmbeddingEngine`, `EmbeddingProviderRegistry`, vectorstore managers) for incident grouping. `EmbeddingProvider` ABC lives under `intergrax/rag/embedding/` and is RAG-orchestrated even though the interface is small.
+
+**Smallest prerequisite (future platform slice, not DIAG-5C-A):** extract a neutral `TextEmbeddingPort` (or relocate `EmbeddingProvider` to a non-RAG contracts module) that RAG providers implement — diagnostics inject the port, not `intergrax.rag.*` retrieval stack. Vector index remains disposable/rebuildable analytical infrastructure, not canonical truth.
+
+#### Model basis and provenance (future)
+
+Reuse existing `ProblemGroupingBasis` / `ProblemGroupingProvenance` — engine validation unchanged. Future typed basis examples (documented, not all implemented):
+
+| Basis type | Records |
+|------------|---------|
+| `SemanticProblemGroupingBasis` | `representation_version`, embedding provider/model id, neighbor refs, similarity metric + typed score |
+| `LLMProblemGroupingBasis` | `representation_version`, adapter provider/model, prompt/schema version, bounded evidence refs, adjudication rationale ref |
+| `HybridProblemGroupingBasis` | deterministic signature + semantic/LLM sub-basis |
+
+No universal `confidence: float`. Deterministic match, embedding distance, classifier probability, and LLM judgement are distinct — strategy-specific typed fields only. Model strategies declare `deterministic=False` in `ProblemGroupingStrategyCharacteristics`; provenance must identify strategy version, model identity, config version, candidate-generation mechanism, and input `representation_version`. Byte-identical LLM reproducibility is not promised.
+
+#### Tenant scope and indexing
+
+DIAG-5A single-tenant invocation remains mandatory. Semantic features and any future per-tenant semantic index are tenant-scoped — no cross-tenant ANN by accident. Vector persistence is out of scope for DIAG-5C-A; architecture must not prevent later rebuildable semantic indexes over derived representations.
+
+#### Root-cause boundary
+
+Grouping proposes **"these incidents are likely related under this method"** — not **"same root cause proven."** Even hybrid semantic + LLM grouping is a recurring-pattern hypothesis. Root-cause investigation (DIAG-8) consumes grouped evidence later; it must not rewrite canonical facts.
+
+#### Recommended first model implementation slice
+
+**Direction:** hybrid end-state; **first implemented slice:** **semantic candidate generation** (after embedding port prerequisite), not direct all-pairs LLM.
+
+| Option | Scale | Cost | Auditability | Readiness |
+|--------|-------|------|--------------|-----------|
+| A — embedding neighborhoods | Good at large N | Low per subject | High (typed basis + refs) | Blocked on neutral embedding port |
+| B — direct LLM | Poor at large N | High | Medium | `LLMAdapter` ready, but O(n²) unacceptable |
+| C — hybrid | Best | Adjudication cost bounded | Highest | Requires A + selective B |
+
+**Smallest next task:** DIAG-5C-B — implement `AssessmentFeatureProjector` (concrete `ProblemGroupingFeatureProjector`) + unit tests; optionally extend projection with typed problem-signal joins once a diagnostic-side join contract exists.
+
+**Explicit non-goals (DIAG-5C-A):** live models, prompts, embeddings execution, vector DB, `HybridProblemGroupingStrategy`, engine changes, problem-signal join, persistence, `ProblemId`.
+
+**Code references:** `intergrax/runtime/diagnostics/problem_grouping_features.py`, `intergrax/runtime/diagnostics/problem_grouping.py`, `intergrax/llm_adapters/contracts/llm_adapter.py`, `intergrax/rag/embedding/contracts/embedding_provider.py`.
+
 ### Multi-execution problem grouping (DIAG-5A)
 
 **Inputs:** `DiagnosticAssessment[]` from DIAG-4 — **no** re-run of reconstruction, lifecycle analysis, or assessment.
