@@ -1,6 +1,6 @@
 # Intergrax Observability
 
-**Intergrax Observability** is the canonical execution evidence layer that assigns typed identity to runtime events, reconstructs runs deterministically, and exports policy-safe projections to operators and external telemetry systems.
+**Intergrax Observability** is the canonical execution evidence layer that **records** runtime identity and lifecycle facts on durable evidence, reconstructs runs deterministically from persisted envelopes, and exports policy-safe projections to operators and external telemetry systems. Execution Runtime establishes canonical identity; Observability persists it; DIAG (documented here, implemented under `intergrax/runtime/diagnostics/`) interprets it — no layer below may recreate runtime truth.
 
 ## Why it matters
 
@@ -15,10 +15,32 @@ Without the Harness Observability Spine (HOS):
 - platform lifecycle forces fake execution IDs,
 - evaluation builds a separate telemetry stack.
 
-Observability addresses this through typed identity, `RuntimeEvent`, HOS, strict persistence, the Unified Run Journal, deterministic execution positions, as-of projection, canonical knowledge revision ordering, and policy-safe export.
+Observability addresses this through canonical identity **recording** on `RuntimeEvent`, HOS, strict persistence, the Unified Run Journal, deterministic execution positions, as-of projection, canonical knowledge revision ordering, embedded DIAG interpretation, and policy-safe export.
 
 > [!NOTE]
-> **Maturity boundary:** Core execution evidence (TRACE-1A–1C, ASOF-1/2, BITEMP-1/3) is **implemented and closed** on the harness path. Canonical revision ordering provider (**TRACE-BITEMP-2**) is an **implemented slice — acceptance in review**. Full **E + K + Valid Time + System Time** query semantics, public as-of query API, OECP code phases, and **OBS-VENDOR** production hardening remain **planned**. External sinks visualize Intergrax evidence — they do **not** define execution truth.
+> **Maturity boundary:** Core execution evidence (TRACE-1A–1C, ASOF-1/2, BITEMP-1/3) is **implemented and closed** on the harness path for the **CURRENT** Task/Run/Attempt/Event spine. Canonical `ExecutionId` and Execution Tree are **TARGET** — not implemented unless HEAD proves otherwise. Canonical revision ordering provider (**TRACE-BITEMP-2**) is an **implemented slice — acceptance in review**. Full **E + K + Valid Time + System Time** query semantics, public as-of query API, OECP code phases, and **OBS-VENDOR** production hardening remain **planned**. External sinks visualize Intergrax evidence — they do **not** define Intergrax execution semantics.
+
+**Meta-architecture (frozen):** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) — semantic authority for execution identity and lifecycle. [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) · [`ORCHESTRATION.md`](ORCHESTRATION.md) are synchronized domain authorities. This document does **not** create a separate IDENTITY or DIAGNOSTICS architecture domain — DIAG semantics remain an analytical subsystem under OBS.
+
+## Domain topology and identity ownership
+
+```text
+Execution Runtime establishes runtime identity and lifecycle facts
+        ↓
+Observability records canonical evidence
+        ↓
+DIAG interprets that evidence
+```
+
+| Layer | Owns | Must not |
+| ----- | ---- | -------- |
+| **Execution Runtime** | Task/Run/Attempt/Execution lifecycle coordination; `ExecutionId` / `parent_execution_id` runtime lineage; mint at lifecycle boundaries | Delegate identity minting to Observability or DIAG |
+| **Observability** | Record IDs on `RuntimeEvent`/evidence; validate required evidence contracts; persist/index/project/export | Mint `ExecutionId` as observability semantics; become competing execution-tree authority |
+| **DIAG** | Reference canonical IDs; reconstruct/analyze/group over persisted evidence | Mint Task/Run/Attempt/Execution identity; maintain competing canonical Execution Tree; infer lineage from free-text logs |
+
+**Frozen principle:** Observability records execution truth; it does not invent execution truth.
+
+**Local identities are not canonical runtime IDs:** `node_id`, `agent_id`, `step_id`, `tool_call_id`, `correlation_id`, `message_id`, broker transport task id, worker id, and provider request id are topology/transport/component identities. They **must not** substitute `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, or `EventId`. `NodeId` ≠ `ExecutionId`. Transport task id ≠ `TaskId` merely because strings match. Forbidden competing run identities: `NodeRunId`, `AgentRunId`, `StepRunId`, `OrchestrationRunId`, `WorkerRunId`.
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring observability profiles, export policies, or domain signals — after the platform overview in the root README.
 
@@ -28,9 +50,9 @@ Observability addresses this through typed identity, `RuntimeEvent`, HOS, strict
 | -------- | -------- |
 | **Canonical execution envelope** | `RuntimeEvent` — meaningful execution transition with full typed identity |
 | **Identity** | **TARGET:** `TaskId` → `RunId` → `AttemptId` → `ExecutionId` → `EventId`; **CURRENT:** spine stops at `AttemptId` → `EventId` (no canonical `ExecutionId` yet) |
-| **Execution scope** | `RuntimeEvent` is execution-scoped only — all four IDs required |
+| **Execution scope** | `RuntimeEvent` is execution-scoped only — **CURRENT:** `TaskId` + `RunId` + `AttemptId` + `EventId` required; **TARGET:** adds `ExecutionId` |
 | **Non-execution signals** | Platform observability signal — lifecycle without synthetic execution identity |
-| **Persistence** | `RuntimeEventPersistence` — canonical execution history |
+| **Persistence** | `RuntimeEventPersistence` — canonical persisted evidence authority for accepted `RuntimeEvent`s |
 | **Read model** | Unified Run Journal — derived chronological view, not a second source of truth |
 | **Historical coordinate (E)** | `ExecutionEventPosition` + inclusive `AsOfBoundary` — not timestamp-only ordering |
 | **As-of reconstruction** | `RunExecutionAsOfProjection` via pure reducer at boundary **E** — **Done** (TRACE-ASOF-2) |
@@ -52,7 +74,7 @@ Observability addresses this through typed identity, `RuntimeEvent`, HOS, strict
   <source media="(prefers-color-scheme: dark)" srcset="assets/observability-evidence-spine-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/observability-evidence-spine-light.svg">
   <img
-    alt="Conceptual diagram: Task to Run to Attempt to RuntimeEvent through Harness Observability Spine to persistence, Unified Run Journal, inspect, metrics, export, and as-of historical reconstruction."
+    alt="Conceptual diagram: CURRENT Task to Run to Attempt to RuntimeEvent through Harness Observability Spine to persistence, Unified Run Journal, inspect, metrics, export, and as-of historical reconstruction. TARGET inserts Execution Tree between Attempt and RuntimeEvents."
     src="assets/observability-evidence-spine-light.svg"
   >
 </picture>
@@ -60,6 +82,7 @@ Observability addresses this through typed identity, `RuntimeEvent`, HOS, strict
 
 **Cross-domain causal view (TARGET ARCHITECTURE):** Execution produces facts; Observability records; DIAG interprets along the canonical causal chain.
 
+<a href="UNIFIED_EXECUTION_ARCHITECTURE.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-observability-diag-causal-flow-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-observability-diag-causal-flow-light.svg">
@@ -68,8 +91,9 @@ Observability addresses this through typed identity, `RuntimeEvent`, HOS, strict
     src="assets/unified-execution-observability-diag-causal-flow-light.svg"
   >
 </picture>
+</a>
 
-**Primary mental model (CURRENT IMPLEMENTATION spine — TARGET adds `ExecutionId` and Execution Tree):**
+**TARGET observability spine (CURRENT implementation omits `ExecutionId` / Execution Tree):**
 
 ```text
 Task
@@ -78,15 +102,23 @@ Run
  ↓
 Attempt
  ↓
+Execution Tree          # TARGET — parent_execution_id lineage
+ ↓
 RuntimeEvents
  ↓
 Harness Observability Spine
  ↓
 canonical persistence
  ↓
-Unified Run Journal
+Unified Run Journal / projections / export
  ↓
-inspect / reconstruct / export / evaluate
+DIAG interpretation
+```
+
+**CURRENT implementation spine (historical TRACE-1A–1C milestone):**
+
+```text
+Task → Run → Attempt → RuntimeEvents → HOS → persistence → journal → inspect / reconstruct / export
 ```
 
 > **Logs tell you something happened. The execution journal tells you what the Harness says happened.**
@@ -94,11 +126,11 @@ inspect / reconstruct / export / evaluate
 **Signal families:**
 
 ```text
-RuntimeEvent  → execution truth
+RuntimeEvent  → canonical persisted execution evidence (lifecycle fact recorded)
 TraceEvent    → diagnostic / read-model detail
-Logs          → local diagnosis
+Logs          → local diagnosis (not canonical execution evidence)
 Metrics       → aggregates
-External sink → destination
+External sink → destination (not semantic owner)
 ```
 
 > **One spine. Multiple signal families. No private observability stacks.**
@@ -133,7 +165,19 @@ flowchart TB
 
 Platform lifecycle, problem, and diagnostic signals use the **same HOS infrastructure** with their own envelope families — no synthetic `TaskId`/`RunId`/`AttemptId`.
 
-## Task → Run → Attempt → Event
+## Task → Run → Attempt → Execution → Event
+
+**TARGET hierarchy:**
+
+```text
+TaskId
+  → RunId
+    → AttemptId
+      → ExecutionId (+ parent_execution_id)
+        → EventId
+```
+
+**CURRENT persisted event spine (TRACE-1B milestone):** `TaskId` + `RunId` + `AttemptId` + `EventId` — no canonical `ExecutionId` on `RuntimeEvent` yet.
 
 ```text
 Task
@@ -148,14 +192,15 @@ Task
 
 | Level | Meaning |
 | ----- | ------- |
-| **Task** | User or system work item |
-| **Run** | One run lifecycle for that task |
-| **Attempt** | One concrete execution try inside the run |
-| **Event** | One meaningful transition inside an attempt |
+| **Task** | User or system work intent (`TaskId`) |
+| **Run** | One full governed lifecycle of the Task (`RunId`) |
+| **Attempt** | One global try of the Run (`AttemptId`) |
+| **Execution** | One independently schedulable/governable work unit inside the Attempt (`ExecutionId`; root: `parent_execution_id = None`) — **TARGET** |
+| **Event** | One runtime fact / transition (`EventId`) |
 
-> **One arbitrary signal ≠ one Attempt.** Attempt identity tracks execution tries — not every log line or diagnostic row.
+> **One arbitrary signal ≠ one Attempt.** Attempt identity tracks global execution tries — not every log line, tool retry, or diagnostic row.
 
-Identity is **structural** on the canonical contract — not best-effort metadata fallback (TRACE-1C strict journal).
+Identity is **structural** on the canonical contract — not best-effort metadata fallback (TRACE-1C strict journal). Execution Runtime establishes and propagates identity; Observability **records** it on evidence; DIAG **consumes** it.
 
 ## RuntimeEvent ≠ TraceEvent ≠ logs ≠ metrics
 
@@ -194,7 +239,7 @@ Semantic contract ≠ transport. HOS does **not** mean one universal envelope ty
 
 | Fact | Envelope | Identity |
 | ---- | -------- | -------- |
-| Tool invocation during a run | `RuntimeEvent` | `TaskId` + `RunId` + `AttemptId` + `EventId` required |
+| Tool invocation during a run | `RuntimeEvent` | **CURRENT:** `TaskId` + `RunId` + `AttemptId` + `EventId`; **TARGET:** + `ExecutionId` |
 | Application instance started | Platform observability signal | No fake `TaskId`/`RunId`/`AttemptId` |
 
 Hosting lifecycle routes through `ObservabilityHostedApplicationEventPublisher` on the canonical platform path (TRACE-1B-HOS-FIX **Done**).
@@ -211,7 +256,7 @@ Unified Run Journal
 
 The journal is a **derived read model** — chronological operator view, attempt-aware ordering, foundation for Execution Story surfaces. It is **not** a new persistence authority.
 
-**Source of truth:** `RuntimeEventPersistence` → canonical execution history. `TraceEvent` / `RunTraceWriter` → diagnostic compatibility detail.
+**Source chain:** runtime lifecycle facts → canonical persisted `RuntimeEvent`s/evidence → Unified Run Journal. The journal does **not** mint runtime identity, repair missing lineage by guessing, or become execution lifecycle authority.
 
 ## Historical execution coordinate and as-of projection
 
@@ -313,7 +358,7 @@ HOS
   → OTLP / Langfuse / Sentry / Phoenix / Datadog / …
 ```
 
-> **External telemetry systems visualize Intergrax evidence. They do not define Intergrax execution truth.**
+> **External telemetry systems visualize Intergrax evidence. They do not define Intergrax execution semantics.**
 
 Observability owns signal semantics, identity, canonical history, and export policy. Integration owns transport/backend ([`INTEGRATIONS.md`](INTEGRATIONS.md)).
 
@@ -351,25 +396,102 @@ Depth: [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_e
 
 ## Public invariants
 
-```text
-RuntimeEvent is canonical execution evidence.
-```
+**OBS-INV (Observability):**
 
-```text
-Execution identity is structural: Task → Run → Attempt → Event.
-```
+| ID | Invariant |
+| -- | --------- |
+| **OBS-INV-001** | Observability records execution truth; it does not invent execution truth. |
+| **OBS-INV-002** | **TARGET:** execution-scoped `RuntimeEvent` carries `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, `EventId`. **CURRENT:** four-ID spine without `ExecutionId`. |
+| **OBS-INV-003** | `parent_execution_id` (execution lineage) and `parent_event_id` (event causality) are distinct relation types — do not collapse or derive one from the other. |
+| **OBS-INV-004** | Observability projections/read models may project the Execution Tree but may not become competing identity/tree authority. |
+| **OBS-INV-005** | Canonical persisted evidence retains structural links to runtime identity; free-text/log heuristics are not identity authority. |
+| **OBS-INV-006** | Required causal/audit evidence and optional telemetry have distinct durability semantics. |
+| **OBS-INV-007** | Unified Run Journal and as-of/bitemporal views are derived from persisted evidence and do not create new runtime facts. |
+| **OBS-INV-008** | External observability vendors are sinks/projections, never semantic authorities. |
 
-```text
-Unified Run Journal is a read model, not a second source of truth.
-```
+**DIAG-INV (embedded diagnostics subsystem):**
 
-```text
-External sinks do not define Intergrax event semantics.
-```
+| ID | Invariant |
+| -- | --------- |
+| **DIAG-INV-001** | DIAG interprets canonical evidence; it does not create runtime truth. |
+| **DIAG-INV-002** | DIAG never mints canonical Task/Run/Attempt/Execution identity. |
+| **DIAG-INV-003** | DIAG never maintains a competing canonical Execution Tree. |
+| **DIAG-INV-004** | Diagnostic reconstruction distinguishes execution lineage, event causality, topology association, transport relations, and side-effect evidence. |
+| **DIAG-INV-005** | Free-text logs/correlation strings are not authoritative runtime identity. |
+| **DIAG-INV-006** | Incomplete evidence yields explicit limitations/uncertainty — never invented lineage or certainty. |
+| **DIAG-INV-007** | Diagnostic findings/groupings/root-cause hypotheses retain provenance to canonical evidence. |
+| **DIAG-INV-008** | Model-assisted diagnostics consume bounded typed projections; model strategies do not independently query canonical persistence or vendor backends. |
+| **DIAG-INV-009** | Grouping/incident hypotheses do not rewrite canonical facts or prove shared root cause merely because subjects are grouped. |
+| **DIAG-INV-010** | Nested/distributed causality is reconstructed through canonical Execution lineage plus typed transport/external relations. |
 
-```text
-K-only reconstruction ≠ full bitemporal reconstruction.
-```
+Canonical runtime identity invariants remain owned by UEA/UER — not duplicated here as ID-INV-*.
+
+## Target vs current (identity and evidence)
+
+| Area | TARGET | CURRENT (HEAD) |
+| ---- | ------ | -------------- |
+| Identity spine | `TaskId` → `RunId` → `AttemptId` → `ExecutionId` → `EventId` | Typed `TaskId`/`RunId`/`AttemptId`/`EventId` on main harness paths; **no canonical `ExecutionId`** |
+| Execution Tree | `ExecutionId` + `parent_execution_id` — one canonical tree | Not implemented on `RuntimeEvent` or persistence |
+| `RuntimeEvent` IDs | Five-ID envelope + optional `parent_event_id` | Four-ID envelope (`TaskId`, `RunId`, `AttemptId`, `EventId`) |
+| `RuntimeExecutionRef` | `TaskId` + `RunId` + `AttemptId` + `ExecutionId` | `TaskId` + `RunId` + `AttemptId` only |
+| Causal evidence target | Canonical `ExecutionId` on execution side | Joins `TaskId`/`RunId`/`AttemptId` |
+| Journal / projections | Execution Tree projections derived from persisted evidence | Task/Run/Attempt/Event spine |
+| DIAG reconstruction | Event → Execution → parent Executions → Attempt → Run → Task | Run-scoped reconstruction (`task_id`, `run_id`) |
+| Background worker bootstrap | Same `ExecutionId` on transport redelivery of same logical work | `resolve_background_execution` mints **new `AttemptId` on every worker boundary** — **implementation debt** vs frozen UEA redelivery semantics |
+
+Do **not** claim a gap is fixed unless repository evidence at HEAD proves it.
+
+## Implementation readiness
+
+For future implementation sessions — derive slices without making new architecture decisions. Detailed code-file mapping: **UE-DOC-0.9**.
+
+### 1. TARGET STATE
+
+Frozen UEA + this document: Execution-centric five-ID evidence spine; canonical Execution Tree via `parent_execution_id`; Observability records identity minted by Execution Runtime; DIAG interprets persisted evidence and typed projections; journal/tree projections remain derived.
+
+### 2. CURRENT STATE
+
+Closed TRACE-1A–1C four-ID event spine; active DIAG-1..5C implementation; as-of and K-only reconstruction integrated; no canonical `ExecutionId` on `RuntimeEvent`.
+
+### 3. GAPS
+
+See [Target vs current](#target-vs-current-identity-and-evidence). Primary: missing `ExecutionId`, run-scoped DIAG reconstruction, causal evidence without Execution target, background worker AttemptId minting on redelivery.
+
+### 4. DEPENDENCIES
+
+- UEA frozen semantics (authority)
+- UER Execution boundary / lifecycle mint ownership
+- Nexus/Orchestration child Execution admission (distributed causal admission)
+- Detailed code mapping: **UE-DOC-0.9**
+
+### 5. MIGRATION ORDER (high level)
+
+1. Introduce canonical `ExecutionId` / `parent_execution_id` in execution contracts
+2. Propagate `ExecutionId` to `RuntimeEvent`
+3. Extend `RuntimeExecutionRef` / causal evidence target references
+4. Persist/index Execution-scoped evidence without breaking Task/Run/Attempt lineage
+5. Project Execution Tree in Unified Run Journal/read models
+6. Update DIAG reconstruction to Execution-aware references
+7. Update lifecycle analysis/assessment/grouping subjects where Execution specificity is required
+8. Align distributed causal admission/redelivery semantics
+9. Remove identity fallbacks / log-derived reconstruction paths
+10. Migrate external/export projections without making vendors authorities
+
+### 6. DO NOT VIOLATE
+
+- UEA-INV-* / UER-INV-* without explicit architecture reopen
+- Observability or DIAG minting canonical Execution identity
+- Competing execution trees (diagnostic tree, HOS-owned tree, journal-owned identity tree, log-derived tree)
+- `correlation_id` promoted to canonical lineage
+- Model/grouping strategies querying `RuntimeEventPersistence` or vendor backends directly
+
+### 7. ACCEPTANCE CONDITIONS
+
+- `ExecutionId` on target execution-scoped evidence paths when UER delivers contracts
+- DIAG reconstruction path Event → Execution → lineage without inventing identity
+- Retry/redelivery semantics match frozen UEA taxonomy (labeled CURRENT debt until migrated)
+- TARGET/CURRENT labeled where implementation lags
+- DIAG-5C-A architecture preserved under ownership framing
 
 ## Current maturity
 
@@ -430,7 +552,7 @@ Bounded public proof routes: [`PROOFS.md`](../proofs/PROOFS.md) — LKW Core Pla
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 21, 30  
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
-**Last updated:** 2026-08-18 — DOC-3P public front modernization · TRACE-BITEMP-3 K-only **Done** · TRACE-ASOF-2 **Done** · TRACE-BITEMP-2 provider **Planned / In Review** (implemented slice) · TRACE-BITEMP-1 **Done** · TRACE-ASOF-1 **Done** · TRACE-1C **Done**
+**Last updated:** 2026-08-26 — UE-DOC-0.6 identity/DIAG alignment with frozen UEA · DIAG-5C-A-R1 preserved · TRACE-BITEMP-3 K-only **Done** · TRACE-ASOF-2 **Done** · TRACE-BITEMP-2 provider **Planned / In Review** · TRACE-1C **Done**
 
 ## Cursor read scope (token budget)
 
@@ -460,7 +582,7 @@ Large § blocks moved out of the architecture hub to reduce Cursor context use. 
 
 ### 1.1 What this document defines
 
-This is the **single source of truth** for how observability works across the Intergrax Harness:
+This is the **canonical architecture authority** for how observability and embedded DIAG semantics work across the Intergrax Harness — not the runtime lifecycle owner of execution identity (UEA/UER):
 
 - **Harness (Tier-0 / Tier-1)** — Nexus, AgentEngine, ToolRuntime, policy, critic, adaptive loops
 - **Applications (Tier-3)** — composition roots that wire stores and profiles; no parallel telemetry stack
@@ -499,7 +621,7 @@ For every user interaction (question → answer), an operator MUST be able to re
 | **Event-first** | `RuntimeEvent` is the primary audit signal (canon §42.1). Traces and metrics are derived views. |
 | **Typed extension** | Platform steps use `DiagnosticPayload` subclasses with stable `schema_id`. Domain extensions inherit the same contract. |
 | **Emit at the boundary** | Signals are recorded where the Harness enforces policy (ToolRuntime, AgentRouter, GraphExecutor) — not inside ad-hoc agent helpers. |
-| **Correlation by construction** | `TaskId`, `RunId`, `AttemptId`, `EventId`, `correlation_id`, `parent_event_id` are set by the spine — not passed manually in business code. |
+| **Correlation by construction** | `TaskId`, `RunId`, `AttemptId`, `EventId` (and **TARGET** `ExecutionId`) are established by Execution Runtime and recorded by the spine — not passed manually in business code. `correlation_id` and `parent_event_id` are operational/causal metadata — not substitutes for execution lineage. |
 | **Redact before persist** | `DiagnosticPayload.redact()` + `production_mode` run before any store append. |
 | **Pluggable persistence** | SQLite default; Cassandra/Elasticsearch/OTLP as integration profiles — same API, different backend. |
 | **Read-model unification** | Operators consume **one chronological journal** per run (`build_unified_run_journal`) — a derived read model, not the persistence source of truth (§6). |
@@ -553,7 +675,7 @@ The Harness Observability Spine (§3) is the write/read/export path; this sectio
 
 | Signal | Role | Must not become |
 |--------|------|-----------------|
-| **`RuntimeEvent`** | Canonical event/audit envelope on `RuntimeEventBus`; primary source of execution truth for lifecycle, policy, HITL, and operator reconstruction | A optional add-on beside private agent logs |
+| **`RuntimeEvent`** | Canonical event/audit envelope on `RuntimeEventBus`; primary persisted execution evidence for lifecycle, policy, HITL, and operator reconstruction | An optional add-on beside private agent logs |
 | **`TraceEvent`** | Compatibility / read-model / diagnostic view (Plane B); fine-grained timeline via `RuntimeState.trace_event()` and `RunTraceWriter`; bridged to the bus by `trace_bridge` | A competing event bus or private audit store |
 | **Logs** | Local diagnostic output (stdlib logging, host logs, integration transport traces) | Canonical audit evidence or execution history |
 | **Metrics** | Aggregated operational signals (Prometheus, OTLP counters, SLO ratios) derived from events or counters | A substitute for the unified run journal |
@@ -618,9 +740,9 @@ Harness Observability Spine (HOS)
 | Property | Requirement |
 |----------|-------------|
 | Scope | Meaningful **execution** transitions inside a Task → Run → Attempt lifecycle |
-| Identity | `event_id`, `task_id`, `run_id`, `attempt_id` — all required |
-| `AttemptId` semantics | One concrete execution try inside a Run; **one arbitrary observable event ≠ one Attempt** |
-| Source of execution truth | `RuntimeEvent` persistence is canonical execution history; Unified Run Journal reconstructs execution from `RuntimeEvent` only |
+| Identity | `event_id`, `task_id`, `run_id`, `attempt_id` — all required (**CURRENT**); **TARGET:** + `execution_id` |
+| `AttemptId` semantics | One global try inside a Run; local tool/provider/step retries do **not** mint new `AttemptId` (frozen UEA) |
+| Persisted execution evidence | `RuntimeEventPersistence` is the canonical persisted evidence authority for accepted `RuntimeEvent`s; lifecycle facts originate from execution producers; Unified Run Journal reconstructs from persisted events |
 | Forbidden | Optional execution identity; multiplexed identity modes; synthetic `TaskId`/`RunId`/`AttemptId` for non-execution events |
 
 `emit_domain_signal()` and `RuntimeEventType.DOMAIN_SIGNAL` are **execution-attached** in practice: both require `EmitContext` with validated `TaskId`, `RunId`, and `AttemptId`. A domain signal on the bus is a `RuntimeEvent` carrying a namespaced `event_kind` and typed payload **within an active execution correlation** — not a generic non-execution lifecycle channel. Platform lifecycle facts that occur **during** execution (for example `platform.adaptive.*` on `DOMAIN_SIGNAL`) remain execution-scoped because they are correlated to a real attempt.
@@ -641,7 +763,7 @@ Harness Observability Spine (HOS)
 
 `DiagnosticPayload` is **payload detail** (`schema_id`, `redact()`) carried by Plane B `TraceEvent` rows or execution-attached `DOMAIN_SIGNAL` envelopes. It is **not** an independent non-execution lifecycle channel.
 
-`TraceEvent` remains a **compatibility / read-model / diagnostic view** (Plane B). It **MUST NOT** become the canonical non-execution signal bus or execution truth source.
+`TraceEvent` remains a **compatibility / read-model / diagnostic view** (Plane B). It **MUST NOT** become the canonical non-execution signal bus or substitute for persisted execution evidence.
 
 `PlatformProblemSignal` remains the specialized **problem/error plane** (`what broke / requires attention`). It **MUST NOT** be abused for routine hosting lifecycle events.
 
@@ -821,17 +943,49 @@ await reporter.report(
 
 **Code references:** `problem_signal.py` · `problem_export.py` · `problem_reporter.py` · `export_boundary.py` · `export_policy.py`. **Plan:** OBS-PROBLEM-3 in [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md).
 
+### DIAG subsystem (analytical over canonical evidence)
+
+DIAG is **one** canonical diagnostic engine/subsystem (`intergrax/runtime/diagnostics/`). It consumes canonical evidence and typed derived projections. It does **not** own execution lifecycle, mint Task/Run/Attempt/Execution identity, maintain a competing canonical Execution Tree, infer canonical identity from free-text logs, independently query arbitrary vendor observability stores as runtime truth, or silently repair missing causal lineage.
+
+**Canonical reconstruction path (TARGET):**
+
+```text
+Event → Execution → parent Execution(s) → Attempt → Run → Task
+```
+
+plus optional typed associations: Execution/Event ↔ `NodeId`; Execution ↔ transport relation; Execution/Event ↔ side-effect/integration evidence.
+
+Diagnostic projections (`ExecutionReconstruction`, `LifecycleAnalysis`, `DiagnosticAssessment`, problem grouping candidates, future incident/root-cause projections) are **derived analytical/read models**. If DIAG needs an investigation graph, it is explicitly a **diagnostic relation/projection graph** — not the canonical Execution Tree. Every diagnostic conclusion retains provenance to canonical evidence.
+
+**Incomplete evidence:** missing evidence does **not** authorize DIAG to invent lineage — represent truncation/limitation, retain uncertainty, do not guess parent Execution, do not promote `correlation_id` to lineage, do not claim root cause as proven.
+
 ### Causal evidence plane (DIAG-1)
 
-`PlatformCausalEvidence` records an immutable, tenant-scoped causal fact between existing identity domains — for example a provider-neutral async transport task (`MessageBusTaskRef`) that **triggered** canonical runtime execution (`RuntimeExecutionRef` with `TaskId` / `RunId` / `AttemptId`). It does **not** extend `RuntimeEvent`, mint synthetic execution IDs for transport, or duplicate retry lineage already expressed by execution history.
+`PlatformCausalEvidence` records an immutable, tenant-scoped causal fact between existing identity domains — for example a provider-neutral async transport task (`MessageBusTaskRef`) that **triggered** canonical runtime execution (`RuntimeExecutionRef` with `TaskId` / `RunId` / `AttemptId`; **TARGET:** + `ExecutionId`). It does **not** extend `RuntimeEvent`, mint synthetic execution identity, redefine `ExecutionId`, duplicate the Execution Tree, or replace `RuntimeEvent` history.
 
 `MessageBusTaskRef.task_id` is opaque transport identity (`str`); `RuntimeExecutionRef.task_id` is canonical `TaskId`. Identical text may appear on both sides without collapsing domains — isolation is enforced by typed contracts, not lexical format rules.
 
 **Canonical persistence (P1):** **contract DONE** — `CausalEvidencePersistence` defines the platform-owned, backend-neutral append/read contract for typed non-execution causal evidence (`append`, `list_for_execution`, `list_for_transport_task`). `InMemoryCausalEvidencePersistence` is the reference implementation for tests and conformance only. **Production durable backend: DONE** — `DocumentStoreCausalEvidencePersistence` (requires `ConditionalDocumentStore`) is wired through `wire_causal_evidence_persistence(document_store=...)`. `DistributedKVStore` is **not** supported for causal evidence persistence (no prefix-query primitives for indexed reads). **Writer integration: DONE** for supported background execution paths (DIAG-1I). Queue-enabled Tier-3 hosts must supply platform `DistributedKVStore` identity persistence and `ConditionalDocumentStore` causal evidence persistence via host composition (`resolve_host_queue_execution_dependencies`); inline-only hosts remain unaffected. `RuntimeEventPersistence` remains execution-scoped only and is unchanged.
 
-**Canonical record vs indexes (DIAG-1D-R1):** `record:<evidence_id>` is the **only** source of truth for full `PlatformCausalEvidence`. Secondary `exec:` / `transport:` rows are discovery references (`evidence_id` only) and are never authoritative copies. Queries resolve index → canonical record → scope validation and return results deterministically ordered by `(recorded_at, evidence_id)` ascending — independent of physical backend insertion order. `append` succeeds only after the canonical record and both required indexes are present; partial writes fail closed and identical retries repair missing indexes.
+**Canonical record vs indexes (DIAG-1D-R1):** `record:<evidence_id>` is the **only** authoritative store for full `PlatformCausalEvidence`. Secondary `exec:` / `transport:` rows are discovery references (`evidence_id` only) and are never authoritative copies. Queries resolve index → canonical record → scope validation and return results deterministically ordered by `(recorded_at, evidence_id)` ascending — independent of physical backend insertion order. `append` succeeds only after the canonical record and both required indexes are present; partial writes fail closed and identical retries repair missing indexes.
 
-**Required vs optional durability (BG-EXEC-3):** Intergrax distinguishes optional telemetry from required audit evidence. Failure to persist evidence required to establish an execution boundary fails closed before business execution begins. The initial required fact is `TRANSPORT_TASK_TRIGGERED_EXECUTION` (transport ref → canonical execution identity). `RuntimeEventBus` best-effort persistence is not the admission mechanism for this causal evidence; admission is platform-owned via `admit_background_execution_handler` in `required_audit_evidence.py`, invoked at all supported worker boundaries before `execute_logical_task`. Worker retries/redeliveries mint a new `AttemptId` and persist a new causal evidence record; exporter failure does not invalidate already-persisted required evidence.
+**Required vs optional durability (BG-EXEC-3):** Intergrax distinguishes optional telemetry from required audit evidence. Failure to persist evidence required to establish an execution boundary fails closed before business execution begins. The initial required fact is `TRANSPORT_TASK_TRIGGERED_EXECUTION` (transport ref → canonical execution identity). `RuntimeEventBus` best-effort persistence is not the admission mechanism for this causal evidence; admission is platform-owned via `admit_background_execution_handler` in `required_audit_evidence.py`, invoked at all supported worker boundaries before `execute_logical_task`. Exporter failure does not invalidate already-persisted required evidence.
+
+**Causal admission (frozen UEA):** every independently schedulable child Execution must establish durable causal lineage before meaningful work begins — mint/adopt canonical child `ExecutionId` → persist required parent/causal relation → admit → execute. For distributed work, transport relation → canonical Execution must be durable when classified as required audit evidence.
+
+**Retry / redelivery identity (frozen UEA taxonomy):**
+
+| Scenario | TaskId | RunId | AttemptId | ExecutionId |
+| -------- | ------ | ----- | --------- | ----------- |
+| A. Provider/tool/internal-step retry | same | same | same | same |
+| B. Execution retry (same logical execution) | same | same | same | same (+ retry generation/index) |
+| C. Whole-Run retry | same | same | **new** | **new** instances |
+| D. Pause/resume | same | same | same | same |
+| E. Worker crash / broker redelivery (same logical work) | same | same | same | same |
+
+Transport redelivery alone must **not** create new runtime identity.
+
+**CURRENT implementation debt:** `resolve_background_execution` in `background_execution/bootstrap.py` mints a **new `AttemptId` on every worker boundary invocation**, including transport redelivery of the same logical work — this conflicts with row E above and is a migration gap (remediation tracked in UE-DOC-0.7 / distributed slices; not rewritten here). Required causal evidence may still be appended per delivery until admission semantics align.
 
 **Optional export projection:** `envelope_from_causal_evidence` maps to `ExportRecordKind.DIAGNOSTIC` with typed `CausalEvidenceExportSource` on `ObservabilityExportEnvelope` — a **lossless export projection**, not canonical persistence. Export backends (Sentry, Datadog, OTLP, `InMemoryObservabilityExporter`) are optional sinks; the causal fact must not depend on them.
 
@@ -841,12 +995,12 @@ await reporter.report(
 
 ### Execution reconstruction (DIAG-2)
 
-**Canonical truth (sources of record):**
+**Canonical persisted evidence (sources for reconstruction):**
 
 | Store | Role |
 |-------|------|
-| `RuntimeEventPersistence` | Execution truth — accepted `RuntimeEvent` history with persistence-owned `ExecutionEventPosition` |
-| `CausalEvidencePersistence` | Relation truth — immutable `PlatformCausalEvidence` linking transport to execution |
+| `RuntimeEventPersistence` | Canonical persisted evidence authority — accepted `RuntimeEvent` history with persistence-owned `ExecutionEventPosition` |
+| `CausalEvidencePersistence` | Canonical persisted relation evidence authority — immutable `PlatformCausalEvidence` linking transport to execution |
 
 **Derived read model (NOT persisted, NOT a source of truth):** `ExecutionReconstruction` is computed at read time by `ExecutionReconstructor.reconstruct_execution(tenant_id, task_id, run_id)`. It joins causal evidence and positioned runtime events for one canonical execution scope. No diagnosis, anomaly classification, or root-cause semantics — factual reconstruction only (DIAG-3+).
 
@@ -1194,24 +1348,45 @@ Problem/error/issue information flows through the shared `ObservabilityVendorInt
 
 ## Required correlation fields
 
-Meaningful runtime events **SHOULD** preserve all correlation identifiers available at the emission boundary:
+Meaningful runtime events **SHOULD** preserve all correlation identifiers available at the emission boundary.
+
+**Canonical runtime IDs (established by Execution Runtime, recorded by Observability):**
 
 | Field | Purpose |
 |-------|---------|
-| `task_id` (`TaskId`) | User-facing work unit / intent — **WHAT** task |
-| `run_id` (`RunId`) | Single execution of the task — **WHICH** run |
-| `attempt_id` (`AttemptId`) | Attempt within the run — **WHICH** attempt (target canon §5) |
-| `node_id` | Graph node placement |
+| `task_id` (`TaskId`) | Work intent — **WHAT** task |
+| `run_id` (`RunId`) | One full governed lifecycle — **WHICH** run |
+| `attempt_id` (`AttemptId`) | One global try of the run — **WHICH** attempt |
+| `execution_id` (`ExecutionId`) | Independently schedulable work unit — **TARGET** |
+| `parent_execution_id` | Parent Execution in canonical Execution Tree — **TARGET**; `None` for root Execution |
+| `event_id` (`EventId`) | Unique runtime event — **WHICH** event |
+| `parent_event_id` | Causal parent **event** — event causality graph; **not** execution lineage |
+
+**Local / topology / transport IDs (not canonical runtime identity):**
+
+| Field | Purpose |
+|-------|---------|
+| `node_id` | Graph topology placement — **not** `ExecutionId` |
 | `agent_id` | Responsible agent |
 | `step_id` | UAEP / pipeline step |
 | `tool_call_id` | Tool invocation chain (when applicable) |
-| `correlation_id` | Cross-agent/tool chain (default: `task_id`) |
-| `parent_event_id` | Causal parent in the spine tree |
-| `event_id` (`EventId`) | Unique runtime event identity — **WHICH** event |
+| `correlation_id` | Cross-agent/tool operational chain (default: `task_id`) — **not** canonical lineage |
 | `timestamp` | UTC ordering |
 | `schema_version` | Envelope version (e.g. `runtime_event.v1`) |
 
-`EmitContext` and `TraceScope` (§6.2) populate these by construction on approved emit paths. A component that **drops** correlation identifiers **MUST** document **why** and **what observability is lost** (e.g. in PR description or module docstring).
+**Canonical relation types (do not collapse):**
+
+| Type | Meaning | Key |
+| ---- | ------- | --- |
+| **EXECUTION LINEAGE** | Execution → parent Execution | `parent_execution_id` |
+| **EVENT CAUSALITY** | Event → parent Event | `parent_event_id` |
+| **TOPOLOGY ASSOCIATION** | Execution/Event → `NodeId` | logical definition placement only |
+| **TRANSPORT RELATION** | message/broker task → Execution | typed `PlatformCausalEvidence` |
+| **EXTERNAL/SIDE-EFFECT** | execution/event → tool/integration/provider/artifact evidence | typed causal/side-effect evidence where applicable |
+
+**One canonical Execution Tree:** only `ExecutionId` + `parent_execution_id` defines the runtime Execution Tree. Observability may build projections; DIAG may build diagnostic projection graphs — neither may become a second execution-tree authority. Forbidden: diagnostic execution tree as runtime authority; HOS-owned competing tree; journal-owned identity tree; reconstruction-owned runtime identity; log-derived canonical execution tree.
+
+`EmitContext` and `TraceScope` (§6.2) populate available fields by construction on approved emit paths. A component that **drops** correlation identifiers **MUST** document **why** and **what observability is lost** (e.g. in PR description or module docstring).
 
 ---
 
@@ -1260,10 +1435,11 @@ Intergrax observability deliberately separates three planes (pattern: event sour
 | `phase` | `ExecutionPhase` — where in the Nexus lifecycle |
 | `severity` | `EventSeverity` — alert routing |
 | `task_id` | Logical work unit (user request scope) — **target:** `TaskId` |
-| `run_id` | Single execution of the task — **target:** `RunId`; retries mint new `AttemptId` under the same `RunId` (§5.4) |
-| `attempt_id` | Attempt within the run — **target:** `AttemptId` on every canonical `RuntimeEvent` (§5) |
-| `correlation_id` | Cross-agent/tool chain (default: `task_id`) |
-| `parent_event_id` | Causal parent in the spine tree (**target:** populated by `TraceScope`) |
+| `run_id` | Single execution of the task — **target:** `RunId`; whole-Run retry mints new `AttemptId` under same `RunId` (§5.4) |
+| `attempt_id` | Global try within the run — **target:** `AttemptId` on every canonical `RuntimeEvent` (§5) |
+| `execution_id` | Independently schedulable work unit — **TARGET:** on every canonical `RuntimeEvent` |
+| `correlation_id` | Cross-agent/tool operational chain (default: `task_id`) — not canonical lineage |
+| `parent_event_id` | Causal parent event (**target:** populated by `TraceScope`) — distinct from `parent_execution_id` |
 | `node_id` / `agent_id` / `step_id` | Graph and UAEP placement |
 | `payload` | Structured facts (**today:** `dict`; **target:** typed `RuntimeEventPayload`) |
 | `schema_version` | Envelope version (`runtime_event.v1`) |
@@ -1454,38 +1630,39 @@ Metrics are **third** in priority (canon §42.24): derived from events/trace, no
 
 ---
 
-## 5. Canonical execution identity (TRACE-ARCH-SYNC-1)
+## 5. Canonical execution identity (TRACE-ARCH-SYNC-1 · UE-DOC-0.6)
 
-**Status:** Target canon (**accepted** 2026-08-15) · implementation **Planned** (TRACE-1A–TRACE-1C)  
+**Status:** **TARGET** five-level hierarchy (**accepted** frozen UEA) · **CURRENT** four-ID event spine **Done / Closed** (TRACE-1A–TRACE-1C) · `ExecutionId` **not implemented**
 **Plan:** [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) — Phase TRACE  
-**Cross-layer:** [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.1.8 (identity ownership cross-ref)
+**Cross-layer:** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.1.8 (identity ownership)
 
 ### 5.1 Identity hierarchy
 
-Canonical execution identity is a **frozen** four-level hierarchy:
+**TARGET (frozen UEA):**
 
 ```text
-Task
-  1:N
-Run
-  1:N
-Attempt
-  1:N
-RuntimeEvent
+TaskId
+  → RunId
+    → AttemptId
+      → ExecutionId (+ parent_execution_id)
+        → EventId
 ```
 
 | Identifier | Meaning |
 |------------|---------|
-| `TaskId` | **WHAT** task / intent |
-| `RunId` | **WHICH** execution of the task |
-| `AttemptId` | **WHICH** attempt inside the run |
-| `EventId` | **WHICH** runtime event |
+| `TaskId` | Work intent |
+| `RunId` | One full governed lifecycle of the Task |
+| `AttemptId` | One global try of the Run |
+| `ExecutionId` | One independently schedulable/governable work unit inside the Attempt |
+| `EventId` | One runtime fact / transition |
 
-Every canonical `RuntimeEvent` **MUST** carry all four: `TaskId`, `RunId`, `AttemptId`, `EventId` — without exception.
+Root Execution: `parent_execution_id = None`. Only `ExecutionId` + `parent_execution_id` defines the canonical runtime Execution Tree.
+
+**CURRENT (TRACE-1B milestone):** every canonical `RuntimeEvent` carries `TaskId`, `RunId`, `AttemptId`, `EventId` — without `ExecutionId`. Historical TRACE rows that say "all four IDs required" describe this **CURRENT** spine — not proof that `ExecutionId` target exists.
 
 ### 5.2 Strong typing (target canon)
 
-Canonical in-process identifiers **`TaskId`**, **`RunId`**, **`AttemptId`** **MUST** be non-interchangeable typed identifiers.
+Canonical in-process identifiers **`TaskId`**, **`RunId`**, **`AttemptId`** **MUST** be non-interchangeable typed identifiers. **TARGET:** add non-interchangeable **`ExecutionId`**.
 
 **Normative implementation pattern:**
 
@@ -1493,74 +1670,77 @@ Canonical in-process identifiers **`TaskId`**, **`RunId`**, **`AttemptId`** **MU
 TaskId = typing.NewType("TaskId", str)
 RunId = typing.NewType("RunId", str)
 AttemptId = typing.NewType("AttemptId", str)
+# TARGET: ExecutionId = typing.NewType("ExecutionId", str)
 ```
 
-Wire representation remains a flat string. Architecture describes this as the normative target; the plan marks it **planned until implementation exists** (TRACE-1A).
+Wire representation remains a flat string. `EventId` is the unique identity of a single persisted runtime event.
 
-`EventId` is the unique identity of a single persisted runtime event.
-
-### 5.3 Identity carrier matrix (target canon)
+### 5.3 Identity carrier matrix
 
 Canonical identity **MUST NOT** come from metadata. Forbidden patterns include `metadata["run_id"]`, `task_id or run_id`, `run_id or task_id`, fallback of one identity into another, dynamic identity binding, and `dict[str, Any]` as the canonical identity carrier.
 
-| Carrier | `TaskId` | `RunId` | `AttemptId` |
-|---------|----------|---------|-------------|
-| Task | REQUIRED | NOT PRESENT | NOT PRESENT |
-| `RuntimeRequest` execute boundary | REQUIRED | REQUIRED | NOT PRESENT |
-| `RuntimeExecutionContext` | REQUIRED | REQUIRED | REQUIRED |
-| `EmitContext` | REQUIRED | REQUIRED | REQUIRED |
-| `RuntimeEvent` | REQUIRED | REQUIRED | REQUIRED |
+| Carrier | `TaskId` | `RunId` | `AttemptId` | `ExecutionId` |
+|---------|----------|---------|-------------|---------------|
+| Task | REQUIRED | NOT PRESENT | NOT PRESENT | NOT PRESENT |
+| `RuntimeRequest` execute boundary | REQUIRED | REQUIRED | NOT PRESENT | NOT PRESENT |
+| `RuntimeExecutionContext` | REQUIRED | REQUIRED | REQUIRED | **TARGET** |
+| `EmitContext` | REQUIRED | REQUIRED | REQUIRED | **TARGET** |
+| `RuntimeEvent` | REQUIRED | REQUIRED | REQUIRED | **TARGET** (**CURRENT:** absent) |
 
-**Mint ownership (lifecycle boundary, not observability):**
+**Mint ownership (Execution Runtime — not Observability):**
 
 | Identifier | Minted by |
 |------------|-----------|
-| `TaskId` | Task lifecycle owner |
-| `RunId` | Run lifecycle owner |
-| `AttemptId` | Attempt lifecycle owner |
-| `EventId` | RuntimeEvent / event creation owner |
+| `TaskId` | Task lifecycle owner (UER) |
+| `RunId` | Run lifecycle owner (UER) |
+| `AttemptId` | Attempt lifecycle owner at defined attempt boundaries (UER) — e.g. whole-Run retry |
+| `ExecutionId` | Execution boundary / child admission (UER) — **TARGET** |
+| `EventId` | Runtime event creation owner |
 
-`AttemptId` is minted by the owning attempt lifecycle boundary. The observability spine **receives and propagates** canonical identity by construction — it does **not** mint `TaskId`, `RunId`, or `AttemptId` as lifecycle owner. Observability records and propagates them; carriers receive identity by construction — not by ad-hoc metadata lookup.
+The observability spine **records and propagates** canonical identity on evidence — it does **not** mint `TaskId`, `RunId`, `AttemptId`, or `ExecutionId` as lifecycle owner. Carriers receive identity by construction — not by ad-hoc metadata lookup.
 
-### 5.4 Attempt lifecycle, retry, resume, replay
+### 5.4 Attempt lifecycle, retry, resume, replay (frozen UEA)
+
+**AttemptId** is minted only at defined **whole-Run retry** and similar global attempt boundaries — not on every local tool/provider/step retry, execution-level retry of the same logical Execution, pause/resume, or transport redelivery of the same logical work.
+
+| Scenario | `TaskId` | `RunId` | `AttemptId` | `ExecutionId` |
+|----------|----------|---------|-------------|---------------|
+| A. Provider/tool/internal-step retry | same | same | same | same |
+| B. Execution retry (same logical execution) | same | same | same | same (+ retry generation) |
+| C. **Whole-Run retry** | same | same | **new** | **new** instances |
+| D. Pause/resume | same | same | same | same |
+| E. Worker crash / broker redelivery (same work) | same | same | same | same |
+| Explicit new Run for same Task | same | **new** | new A1 | new instances |
 
 ```text
-Run starts
-  ↓
-AttemptId A1 minted
-  ↓
-all RuntimeEvents belong to A1
-  ↓
-retry
-  ↓
-same TaskId
-same RunId
-new AttemptId A2
+Whole-Run retry (C):
+  same TaskId + RunId
+  new AttemptId A2
+  new Execution instances under A2
 ```
 
-| Scenario | `TaskId` | `RunId` | `AttemptId` |
-|----------|----------|---------|-------------|
-| **Retry** | same | same | **new** |
-| **Resume** (without retry) | same | same | **same** |
-| **Explicit new execution** of same task | same | **new** | **new** A1 |
+Replay semantics are attempt-scoped: reconstruction and as-of projections respect attempt boundaries (§7). TRACE-ASOF-2 `RETRY_STARTED` semantics align with **whole-Run retry** (new Attempt) — not local retries.
 
-Replay semantics are attempt-scoped: reconstruction and as-of projections respect attempt boundaries (§7).
+**CURRENT implementation debt:** background worker `resolve_background_execution` mints new `AttemptId` per worker boundary — see [DIAG-1](#causal-evidence-plane-diag-1) and [Target vs current](#target-vs-current-identity-and-evidence).
 
 ### 5.5 `TASK_CREATED` semantics
 
 `TASK_CREATED` is the **first runtime journal event** inside Run R1 / Attempt A1. It does **not** denote the moment the `Task` object was created in memory or registered in a product store.
 
-### 5.6 Implementation gap (documentation truth)
+### 5.6 Implementation boundary (documentation truth)
 
-The **target canon** above is **not** fully implemented. Known legacy gaps in code today include:
+**TRACE-1A–TRACE-1C (Done / Closed)** delivered the **CURRENT** four-ID strict journal on the harness path. **TARGET** `ExecutionId`, `parent_execution_id`, Execution Tree projections, and Execution-scoped DIAG remain **not implemented** unless HEAD proves otherwise.
 
-- `run_id == task_id` aliasing
-- identity carried in metadata instead of typed carriers
-- missing `AttemptId` on emit paths and persisted events
-- identity fallbacks (`task_id or run_id`, `run_id or task_id`)
-- loose journal adapters that tolerate missing or aliased identity
+Known **TARGET** gaps at documentation time:
 
-TRACE-1A–TRACE-1C close these gaps. Do **not** treat current runtime behavior as satisfying §5.
+- no canonical Python `ExecutionId` on `RuntimeEvent`
+- `RuntimeExecutionRef` lacks `ExecutionId`
+- causal evidence joins Task/Run/Attempt without Execution target
+- DIAG reconstruction remains run-scoped (`task_id`, `run_id`)
+- background worker bootstrap mints `AttemptId` on redelivery (UEA conflict)
+- node/agent/correlation metadata exist but are not Execution identity
+
+Do **not** treat CURRENT runtime behavior as satisfying frozen UEA **TARGET** semantics without explicit TARGET/CURRENT labeling.
 
 ### 5.7 Pre-production clean-cut policy
 

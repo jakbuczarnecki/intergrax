@@ -6,6 +6,28 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
 
+**Meta-architecture (frozen):** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](../../architecture/UNIFIED_EXECUTION_ARCHITECTURE.md) — semantic authority for execution identity. Observability records identity; it does not mint it. DIAG is analytical over canonical evidence.
+
+### Architecture sync — UE-DOC-0.6 (2026-08-26)
+
+**Target model (from rewritten Observability hub):**
+
+- Execution Runtime establishes canonical Task/Run/Attempt/Execution identity; Observability **records** it on evidence; DIAG **interprets** — no competing execution tree
+- **TARGET** identity spine: `TaskId` → `RunId` → `AttemptId` → `ExecutionId` → `EventId` + `parent_execution_id` Execution Tree
+- `parent_execution_id` (lineage) ≠ `parent_event_id` (event causality) ≠ `correlation_id` (operational)
+- Unified Run Journal and as-of/bitemporal views are **derived** — not lifecycle authority
+- Embedded DIAG subsystem (DIAG-1..5C-A) preserved under ownership framing; model/grouping output is hypothesis not canonical truth
+
+**CURRENT implementation (descriptive):** TRACE-1A–1C **Done / Closed** four-ID event spine (`TaskId`/`RunId`/`AttemptId`/`EventId`); no canonical `ExecutionId` on `RuntimeEvent`; DIAG reconstruction run-scoped; `resolve_background_execution` mints new `AttemptId` on worker boundary (UEA redelivery debt).
+
+**Architecture clarification:** Historical TRACE-1A/B/C Done rows that cite "canonical" four-ID spine describe the **then-current** milestone — frozen UEA **TARGET** adds `ExecutionId`. TRACE-1A/B/C rows are **not** silently rewritten or deleted.
+
+**High-level migration order:** see Observability hub [Implementation readiness §5](../../architecture/OBSERVABILITY.md#5-migration-order-high-level). Detailed code mapping deferred to **UE-DOC-0.9**.
+
+**Plan debt:** substantial ExecutionId / DIAG Execution-scoped row restructuring is **not** in UE-DOC-0.6 — track in UE-DOC-0.9. Background redelivery identity remediation deferred UE-DOC-0.7.
+
+---
+
 **Cross-plan — Agent layer (ACP):** Dual observability planes (architecture §31) — `AgentRunTrace` on `AgentRunResult` (Plane B) and `ApplicationRunSummary` on Task completion (Plane A). Delivered in [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 3** (`ACP-OBS-1`, `ACP-OBS-2`) and **Wave 7** redaction (`ACP-PROD-8`). Trace spine changes MUST keep step records compatible with `AgentStepRecord` tool/RAG/LLM fields.
 
 **Cross-plan — Event catalog (OBS-EVOL-9 · P1-ARCH-02):** Layered spine + `event_kind` (architecture §4.4 · ADR-OBS-003). Developers extend via `emit_domain_signal`, not new `RuntimeEventType`. Pre-release spine consolidation before publication.
