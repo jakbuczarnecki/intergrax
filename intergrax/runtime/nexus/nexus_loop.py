@@ -152,6 +152,7 @@ class NexusLoop:
         denied_planner_model_ids: tuple[str, ...] = (),
         planner_model_id: str | None = None,
         governance_service: Any = None,
+        terminal_diagnostic_trigger: Any = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -178,6 +179,7 @@ class NexusLoop:
         self._lifecycle_hooks = NexusLifecycleHookCoordinator(self._middleware)
         self._policy_engine = coerce_policy_engine(policy_engine)
         self._governance_service = governance_service
+        self._terminal_diagnostic_trigger = terminal_diagnostic_trigger
         self._interrupt_handler = interrupt_handler or ExecutionInterruptHandler(
             policy_engine=self._policy_engine,
             allow_dynamic_replan=allow_dynamic_replan,
@@ -648,8 +650,26 @@ class NexusLoop:
         if isinstance(event, RuntimeEvent):
             await self._events.publish(event, task=task)
 
+    def attach_terminal_diagnostic_trigger(self, trigger: Any) -> None:
+        """Attach platform terminal diagnostic trigger after host composition."""
+        self._terminal_diagnostic_trigger = trigger
+
     async def _publish_terminal_runtime_event(self, task: Task) -> None:
-        await self._events.publish_terminal(task)
+        terminal_event = await self._events.publish_terminal(task)
+        if self._terminal_diagnostic_trigger is None:
+            return
+        from intergrax.runtime.diagnostics.terminal_execution_diagnostic_bridge import (
+            invoke_terminal_execution_diagnostics,
+        )
+
+        run_id, _ = self._execution_identity.require()
+        invoke_terminal_execution_diagnostics(
+            self._terminal_diagnostic_trigger,
+            tenant_id=task.tenant_id,
+            task_id=task.task_id,
+            run_id=run_id,
+            observed_at=terminal_event.timestamp,
+        )
 
     def _resolve_lifecycle(self, task: Task) -> tuple[TaskLifecycle, TaskTraceEmitter]:
         return resolve_nexus_lifecycle(

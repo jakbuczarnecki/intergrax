@@ -318,6 +318,16 @@ def build_harness_host_runtime(
     )
 
     apply_reliability_governance_wiring(nexus_loop, environment)
+    from intergrax.applications._shared.diagnostic_runtime_wiring import (
+        try_build_terminal_execution_diagnostic_trigger,
+    )
+
+    terminal_diagnostic_trigger = try_build_terminal_execution_diagnostic_trigger(
+        env_wiring=env_wiring,
+        observability=observability,
+    )
+    if terminal_diagnostic_trigger is not None:
+        nexus_loop.attach_terminal_diagnostic_trigger(terminal_diagnostic_trigger)
     control_plane_governance = build_harness_control_plane_governance(
         environment,
         mutation_authorization_boundary=mutation_authorization_boundary,

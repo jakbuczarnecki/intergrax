@@ -1400,6 +1400,24 @@ DiagnosticReadService
 
 **Product observability dashboard (ONE-SPINE-1 / ONE-SPINE-2):** Tier-3 product hosts expose `ProductObservabilityDashboard` via GOV-PROD.1 wiring. Host composition (`wire_harness_product_observability_dashboard`) resolves the central `DiagnosticReadService` from shared platform persistence on the harness runtime — `wire_problem_persistence`, harness `RuntimeEventPersistence`, and `wire_causal_evidence_persistence` over the same `document_store` — then injects it into `resolve_product_observability_dashboard_wiring`. The `diagnostics` pane (`DiagnosticOperationsPane`) projects tenant-scoped `problem_count` / `open_problem_count`; `ready=True` means the central read service is connected to that shared diagnostic persistence, not a dashboard-local store. No synthetic causal chains, bootstrap run/task identities, or direct `ProblemPersistence` / `CausalEvidencePersistence` reads from dashboard code. `PlatformCausalEvidence` remains canonical relationship truth; the Diagnostic Engine is the only diagnostic interpretation spine.
 
+**Production terminal diagnostic trigger (ONE-SPINE-3):** After Nexus terminal execution truth is persisted (`NexusLoop._publish_terminal_runtime_event` → `NexusRuntimeEventPublisher.publish_terminal` → `RuntimeEventBus.publish`), harness hosts with shared `document_store` capabilities wire `TerminalExecutionDiagnosticTrigger` via `try_build_terminal_execution_diagnostic_trigger` / `diagnostic_runtime_wiring.py`. The trigger submits one bounded `DiagnosticOrchestrationRequest` per terminal execution scope to the canonical `DiagnosticOrchestrator` using the deterministic grouping strategy. Diagnostic post-processing failures are logged through `IntergraxLogging` (`component="diagnostics"`) and must not alter already-established business execution outcomes. Background MessageBus workers inherit this path when handlers execute through the same harness `NexusLoop`.
+
+```text
+business execution completes
+  ↓
+terminal RuntimeEvent persisted (canonical)
+  ↓
+invoke_terminal_execution_diagnostics(...)
+  ↓
+DiagnosticOrchestrator (derived)
+  ↓
+ProblemPersistence (shared document_store)
+  ↓
+DiagnosticReadService / dashboard read path
+```
+
+**Code references:** `intergrax/runtime/diagnostics/terminal_execution_diagnostic_trigger.py`, `intergrax/runtime/diagnostics/terminal_execution_diagnostic_bridge.py`, `intergrax/applications/_shared/diagnostic_runtime_wiring.py`, `intergrax/runtime/nexus/nexus_loop.py`.
+
 **Code references:** `intergrax/runtime/observability/product_observability_dashboard.py`, `intergrax/applications/_shared/product_observability_dashboard_wiring.py`, `intergrax/applications/_shared/diagnostic_read_wiring.py`.
 
 ### Cross-run diagnostic orchestration (DIAG-7)
