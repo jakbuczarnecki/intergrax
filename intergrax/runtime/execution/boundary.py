@@ -18,6 +18,13 @@ class ExecutionDelegate(Protocol[RequestT, ResultT]):
         ...
 
 
+class ExecutionAdmissionHook(Protocol[RequestT]):
+    """Admission gate evaluated before delegate execution."""
+
+    async def admit(self, request: RequestT) -> None:
+        ...
+
+
 class ExecutionBoundary(Generic[RequestT, ResultT]):
     """
     Canonical coordination boundary skeleton (UE-1B).
@@ -28,10 +35,19 @@ class ExecutionBoundary(Generic[RequestT, ResultT]):
     Strategy-neutral. Production routing is unchanged at UE-1B.
     """
 
-    __slots__ = ("_delegate",)
+    __slots__ = ("_delegate", "_admission_hooks")
 
-    def __init__(self, delegate: ExecutionDelegate[RequestT, ResultT]) -> None:
+    def __init__(
+        self,
+        delegate: ExecutionDelegate[RequestT, ResultT],
+        *,
+        admission_hooks: tuple[ExecutionAdmissionHook[RequestT], ...] = (),
+    ) -> None:
         self._delegate = delegate
+        self._admission_hooks = admission_hooks
 
     async def execute(self, request: RequestT) -> ResultT:
+        for hook in self._admission_hooks:
+            await hook.admit(request)
+
         return await self._delegate.execute(request)

@@ -9,7 +9,8 @@ from pathlib import Path
 import pytest
 
 from intergrax.contracts.execution_identity import mint_task_id
-from intergrax.runtime.execution.boundary import ExecutionBoundary
+from intergrax.runtime.execution import __all__ as execution_public_api
+from intergrax.runtime.execution.boundary import ExecutionAdmissionHook, ExecutionBoundary
 from intergrax.runtime.execution.task_compat import UnifiedTaskRunnerExecutionDelegate
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
@@ -58,6 +59,25 @@ class ExplicitPingDelegate:
 
     async def execute(self, request: Ping) -> Pong:
         return Pong(value=f"explicit:{request.value}")
+
+
+class RecordingAdmissionHook:
+    def __init__(self, events: list[str], label: str) -> None:
+        self._events = events
+        self._label = label
+        self.last_request: Ping | None = None
+
+    async def admit(self, request: Ping) -> None:
+        self._events.append(f"admit:{self._label}")
+        self.last_request = request
+
+
+class FailingAdmissionHook:
+    def __init__(self, exc: BaseException) -> None:
+        self._exc = exc
+
+    async def admit(self, request: Ping) -> None:
+        raise self._exc
 
 
 class FakeTaskRunner:
@@ -173,6 +193,154 @@ async def test_unified_task_runner_compat_delegate_invokes_runner_once() -> None
     assert runner.call_count == 1
     assert runner.last_task is task
     assert result is expected
+
+
+@pytest.mark.asyncio
+async def test_boundary_with_zero_hooks_invokes_delegate_once() -> None:
+    delegate = CountingPingDelegate(Pong(value="pong"))
+    boundary = ExecutionBoundary[Ping, Pong](delegate)
+
+    await boundary.execute(Ping(value="ping"))
+
+    assert delegate.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_boundary_runs_single_admission_hook_before_delegate() -> None:
+    events: list[str] = []
+    delegate = CountingPingDelegate(Pong(value="pong"))
+    hook = RecordingAdmissionHook(events, "only")
+    boundary = ExecutionBoundary[Ping, Pong](delegate, admission_hooks=(hook,))
+
+    await boundary.execute(Ping(value="ping"))
+
+    assert events == ["admit:only"]
+    assert delegate.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_boundary_runs_multiple_admission_hooks_in_tuple_order() -> None:
+    events: list[str] = []
+    delegate = CountingPingDelegate(Pong(value="pong"))
+    boundary = ExecutionBoundary[Ping, Pong](
+        delegate,
+        admission_hooks=(
+            RecordingAdmissionHook(events, "first"),
+            RecordingAdmissionHook(events, "second"),
+            RecordingAdmissionHook(events, "third"),
+        ),
+    )
+
+    await boundary.execute(Ping(value="ping"))
+
+    assert events == ["admit:first", "admit:second", "admit:third"]
+    assert delegate.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_boundary_passes_exact_same_request_to_hooks_and_delegate() -> None:
+    request = Ping(value="shared")
+    events: list[str] = []
+    hook_a = RecordingAdmissionHook(events, "a")
+    hook_b = RecordingAdmissionHook(events, "b")
+    delegate = CountingPingDelegate(Pong(value="pong"))
+    boundary = ExecutionBoundary[Ping, Pong](
+        delegate,
+        admission_hooks=(hook_a, hook_b),
+    )
+
+    await boundary.execute(request)
+
+    assert hook_a.last_request is request
+    assert hook_b.last_request is request
+    assert delegate.last_request is request
+
+
+@pytest.mark.asyncio
+async def test_admission_hooks_do_not_transform_request_or_result() -> None:
+    request = Ping(value="unchanged")
+    expected = Pong(value="unchanged-result")
+    boundary = ExecutionBoundary[Ping, Pong](
+        CountingPingDelegate(expected),
+        admission_hooks=(RecordingAdmissionHook([], "noop"),),
+    )
+
+    result = await boundary.execute(request)
+
+    assert result is expected
+
+
+@pytest.mark.asyncio
+async def test_first_admission_hook_failure_skips_later_hooks_and_delegate() -> None:
+    events: list[str] = []
+    delegate = CountingPingDelegate(Pong(value="pong"))
+    exc = RuntimeError("first-hook-fail")
+    boundary = ExecutionBoundary[Ping, Pong](
+        delegate,
+        admission_hooks=(
+            FailingAdmissionHook(exc),
+            RecordingAdmissionHook(events, "second"),
+        ),
+    )
+
+    with pytest.raises(RuntimeError) as raised:
+        await boundary.execute(Ping(value="ping"))
+
+    assert raised.value is exc
+    assert events == []
+    assert delegate.call_count == 0
+
+
+@pytest.mark.asyncio
+async def test_middle_admission_hook_failure_skips_later_hooks_and_delegate() -> None:
+    events: list[str] = []
+    delegate = CountingPingDelegate(Pong(value="pong"))
+    exc = ValueError("middle-hook-fail")
+    boundary = ExecutionBoundary[Ping, Pong](
+        delegate,
+        admission_hooks=(
+            RecordingAdmissionHook(events, "first"),
+            FailingAdmissionHook(exc),
+            RecordingAdmissionHook(events, "third"),
+        ),
+    )
+
+    with pytest.raises(ValueError) as raised:
+        await boundary.execute(Ping(value="ping"))
+
+    assert raised.value is exc
+    assert events == ["admit:first"]
+    assert delegate.call_count == 0
+
+
+@pytest.mark.asyncio
+async def test_boundary_propagates_delegate_exception_after_successful_admission() -> None:
+    events: list[str] = []
+    boundary = ExecutionBoundary[Ping, Pong](
+        FailingPingDelegate(),
+        admission_hooks=(RecordingAdmissionHook(events, "ok"),),
+    )
+
+    with pytest.raises(ValueError, match="boom:fail"):
+        await boundary.execute(Ping(value="fail"))
+
+    assert events == ["admit:ok"]
+
+
+def test_boundary_delegate_only_constructor_remains_compatible() -> None:
+    delegate = CountingPingDelegate(Pong(value="pong"))
+    boundary = ExecutionBoundary[Ping, Pong](delegate)
+
+    assert boundary._admission_hooks == ()
+
+
+def test_execution_admission_hook_is_generic_protocol() -> None:
+    hook: ExecutionAdmissionHook[Ping] = RecordingAdmissionHook([], "typed")
+    assert hook is not None
+
+
+def test_execution_admission_hook_not_exported_from_package_root() -> None:
+    assert "ExecutionAdmissionHook" not in execution_public_api
 
 
 def test_core_boundary_module_has_no_forbidden_imports() -> None:
