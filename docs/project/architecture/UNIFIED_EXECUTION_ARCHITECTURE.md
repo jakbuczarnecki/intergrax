@@ -904,6 +904,8 @@ Sections §3–§21 above.
 
 Do **not** claim target behavior is already implemented.
 
+**Detailed implementation mapping (UE-DOC-0.9):** canonical target→current→gap→transformation map — [`UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md`](UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md). Subordinate to this document; not an architecture authority.
+
 ---
 
 ## 26. Implementation interpretation rules

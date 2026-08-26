@@ -541,7 +541,7 @@ See [Target vs current](#target-vs-current-implementation) table. Primary: missi
 - Observability `ExecutionId` on `RuntimeEvent` (OBS domain)
 - Governance authority model alignment (GOV domain)
 - Nexus child Execution admission (NEXUS domain)
-- Detailed code mapping: **UE-DOC-0.9** (not this slice)
+- Detailed code mapping: [`UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md`](UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md) (**UE-DOC-0.9**)
 
 ### 5. MIGRATION ORDER (high level)
 
