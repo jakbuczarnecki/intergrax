@@ -7,14 +7,21 @@ from collections.abc import Callable
 from typing import Optional
 
 from intergrax.contracts.execution_identity import AttemptId, RunId, mint_run_id
+from intergrax.llm_adapters.tracking.context import llm_tenant_scope
+from intergrax.runtime.execution.boundary import ExecutionBoundary
+from intergrax.runtime.execution.nexus_compat import NexusTaskExecutionDelegate
+from intergrax.runtime.execution.request import ExecutionCapability
+from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
+from intergrax.runtime.execution.task_adapter import execution_request_from_task
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.task.task import Task, TaskResult
-from intergrax.llm_adapters.tracking.context import llm_tenant_scope
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
+from intergrax.runtime.task.task import Task, TaskResult
 from intergrax.runtime.task.task_run_bridge import task_from_runtime_request
+
+_LEGACY_ORCHESTRATION_CAPABILITIES = frozenset({ExecutionCapability.ORCHESTRATION})
 
 
 class UnifiedTaskRunner:
@@ -32,6 +39,7 @@ class UnifiedTaskRunner:
     ) -> None:
         self._nexus_loop = nexus_loop
         self._task_enricher = task_enricher
+        self._strategy_resolver = StrategyResolver()
 
     @property
     def nexus_loop(self) -> NexusLoop:
@@ -69,11 +77,22 @@ class UnifiedTaskRunner:
         await ActiveTaskRegistry.register(task, resolved_run_id)
         try:
             with llm_tenant_scope(task.tenant_id):
-                return await self._nexus_loop.handle_task(
+                request = execution_request_from_task(
                     task,
+                    capabilities=_LEGACY_ORCHESTRATION_CAPABILITIES,
+                )
+                strategy = self._strategy_resolver.resolve(request)
+                if strategy is not ExecutionStrategy.ORCHESTRATION:
+                    raise RuntimeError(
+                        "legacy UnifiedTaskRunner compatibility path requires orchestration"
+                    )
+                delegate = NexusTaskExecutionDelegate(
+                    self._nexus_loop,
                     run_id=resolved_run_id,
                     attempt_id=resolved_attempt_id,
                 )
+                boundary = ExecutionBoundary[Task, TaskResult](delegate)
+                return await boundary.execute(task)
         finally:
             await ActiveTaskRegistry.unregister(task.task_id, resolved_run_id)
 
