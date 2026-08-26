@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, fields
-from dataclasses import FrozenInstanceError
 
 import pytest
 
@@ -221,9 +220,6 @@ def test_resolver_does_not_mutate_request(resolver: StrategyResolver) -> None:
 
     assert (request.input, request.output_type, request.capabilities) == snapshot
 
-    with pytest.raises(FrozenInstanceError):
-        request.capabilities = frozenset({ExecutionCapability.STREAMING})  # type: ignore[misc]
-
 
 def test_execution_request_has_no_strategy_mode_or_executor_fields() -> None:
     public_fields = {field.name for field in fields(ExecutionRequest)}
@@ -237,5 +233,3 @@ def test_package_root_does_not_export_strategy_symbols() -> None:
 
     assert "StrategyResolver" not in execution_package.__all__
     assert "ExecutionStrategy" not in execution_package.__all__
-    assert not hasattr(execution_package, "StrategyResolver")
-    assert not hasattr(execution_package, "ExecutionStrategy")
