@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import fields, is_dataclass
+from dataclasses import fields, is_dataclass, replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -463,6 +463,85 @@ def test_get_problem_does_not_mutate_persistence() -> None:
     after = persistence.get(tenant_id=_TENANT_A, problem_id=problem.problem_id)
 
     assert before == after
+
+
+def _read_service_with_list_records(
+    records: tuple[Problem, ...],
+) -> DiagnosticReadService:
+    persistence = MagicMock(spec=InMemoryProblemPersistence)
+    persistence.list_for_tenant.return_value = records
+    return DiagnosticReadService(
+        problem_persistence=persistence,
+        execution_reconstructor=MagicMock(spec=ExecutionReconstructor),
+    )
+
+
+def test_list_matching_tenant_records_unchanged() -> None:
+    persistence = InMemoryProblemPersistence()
+    problem, _, _ = _persist_problem(persistence=persistence)
+    service = _read_service(persistence)
+
+    result = service.list_problems(tenant_id=_TENANT_A)
+
+    assert len(result.problems) == 1
+    assert result.problems[0].problem_id == problem.problem_id
+    assert result.problems[0].tenant_id == _TENANT_A
+
+
+def test_list_cross_tenant_record_raises_integrity_error() -> None:
+    problem, _, _ = _persist_problem(tenant_id=_TENANT_A)
+    cross_tenant = replace(problem, tenant_id=_TENANT_B)
+    service = _read_service_with_list_records((cross_tenant,))
+
+    with pytest.raises(
+        DiagnosticReadIntegrityError,
+        match="tenant_id does not match lookup tenant scope",
+    ):
+        service.list_problems(tenant_id=_TENANT_A)
+
+
+def test_list_mixed_tenant_records_raises_without_partial_result() -> None:
+    problem_a, _, _ = _persist_problem(tenant_id=_TENANT_A)
+    problem_b, _, _ = _persist_problem(tenant_id=_TENANT_B)
+    service = _read_service_with_list_records((problem_a, problem_b))
+
+    with pytest.raises(DiagnosticReadIntegrityError):
+        service.list_problems(tenant_id=_TENANT_A)
+
+
+def test_list_cross_tenant_fails_before_summary_conversion() -> None:
+    problem, _, _ = _persist_problem(tenant_id=_TENANT_A)
+    cross_tenant = replace(problem, tenant_id=_TENANT_B)
+    service = _read_service_with_list_records((cross_tenant,))
+
+    with patch(
+        "intergrax.runtime.diagnostics.diagnostic_read_service._summary_from_problem",
+    ) as summary_mock:
+        with pytest.raises(DiagnosticReadIntegrityError):
+            service.list_problems(tenant_id=_TENANT_A)
+
+    summary_mock.assert_not_called()
+
+
+def test_list_status_open_filter_works() -> None:
+    persistence = InMemoryProblemPersistence()
+    problem, _, _ = _persist_problem(persistence=persistence)
+    service = _read_service(persistence)
+
+    result = service.list_problems(tenant_id=_TENANT_A, status=ProblemStatus.OPEN)
+
+    assert len(result.problems) == 1
+    assert result.problems[0].problem_id == problem.problem_id
+    assert result.problems[0].status is ProblemStatus.OPEN
+
+
+def test_list_rejects_raw_string_status() -> None:
+    persistence = InMemoryProblemPersistence()
+    _persist_problem(persistence=persistence)
+    service = _read_service(persistence)
+
+    with pytest.raises(TypeError, match="status must be ProblemStatus"):
+        service.list_problems(tenant_id=_TENANT_A, status="open")  # type: ignore[arg-type]
 
 
 def test_diagnostic_read_service_has_no_direct_persistence_imports() -> None:

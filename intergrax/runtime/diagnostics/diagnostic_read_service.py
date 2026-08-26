@@ -75,8 +75,11 @@ class DiagnosticReadService:
     ) -> DiagnosticProblemListResult:
         tenant_id = _require_tenant_id(tenant_id)
         limit = _validate_bounded_limit(limit, max_limit=MAX_PROBLEM_LIST_LIMIT)
+        if status is not None:
+            _require_problem_status(status)
 
         records = self._persistence.list_for_tenant(tenant_id)
+        _validate_problem_list_tenant_scope(records, tenant_id)
         if status is not None:
             records = tuple(record for record in records if record.status is status)
 
@@ -270,6 +273,23 @@ def _is_execution_evidence_unavailable(reconstruction: ExecutionReconstruction) 
         and not reconstruction.has_runtime_events
         and not reconstruction.has_transport_evidence
     )
+
+
+def _validate_problem_list_tenant_scope(
+    records: tuple[Problem, ...],
+    tenant_id: str,
+) -> None:
+    for problem in records:
+        if problem.tenant_id != tenant_id:
+            raise DiagnosticReadIntegrityError(
+                "persisted Problem tenant_id does not match lookup tenant scope",
+            )
+
+
+def _require_problem_status(status: ProblemStatus) -> ProblemStatus:
+    if type(status) is not ProblemStatus:
+        raise TypeError(f"status must be ProblemStatus, got {type(status).__name__}")
+    return status
 
 
 def _require_tenant_id(tenant_id: str) -> str:
