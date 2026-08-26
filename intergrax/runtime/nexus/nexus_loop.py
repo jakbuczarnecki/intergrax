@@ -16,6 +16,7 @@ from intergrax.contracts.execution_identity import (
     RunId,
     bind_active_execution_identity,
     mint_attempt_id,
+    peek_active_execution_id,
     require_active_execution_identity,
     reset_active_execution_identity,
     validate_attempt_id,
@@ -392,6 +393,29 @@ class NexusLoop:
         attempt_id: Optional[AttemptId] = None,
     ) -> TaskResult:
         resolved_run_id = validate_run_id(run_id)
+        active_execution_id = peek_active_execution_id()
+        if active_execution_id is not None:
+            active_run_id, active_attempt_id = require_active_execution_identity()
+            resolved_attempt_id = (
+                validate_attempt_id(attempt_id)
+                if attempt_id is not None
+                else active_attempt_id
+            )
+            if resolved_run_id != active_run_id:
+                raise RuntimeError(
+                    "active execution identity run_id mismatch with Nexus handle_task",
+                )
+            if resolved_attempt_id != active_attempt_id:
+                raise RuntimeError(
+                    "active execution identity attempt_id mismatch with Nexus handle_task",
+                )
+            self._current_task = task
+            try:
+                return await self._handle_task_impl(task)
+            finally:
+                self._current_task = None
+
+        # TRANSITIONAL — remove in UE-9D once all production execution enters Boundary.
         resolved_attempt_id = (
             validate_attempt_id(attempt_id)
             if attempt_id is not None

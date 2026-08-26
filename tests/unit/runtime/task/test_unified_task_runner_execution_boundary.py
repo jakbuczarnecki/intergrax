@@ -8,7 +8,16 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    mint_attempt_id,
+    mint_run_id,
+    mint_task_id,
+    validate_attempt_id,
+    validate_execution_id,
+)
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput
@@ -80,6 +89,20 @@ async def test_run_task_preserves_explicit_run_and_attempt_id() -> None:
         run_id=run_id,
         attempt_id=attempt_id,
     )
+    passed_attempt_id = handle_task.await_args.kwargs["attempt_id"]
+    assert validate_attempt_id(passed_attempt_id) == attempt_id
+
+
+@pytest.mark.asyncio
+async def test_run_task_mints_concrete_attempt_id_when_omitted() -> None:
+    task = _task()
+    runner, _loop, handle_task = _runner_with_handle()
+
+    await runner.run_task(task)
+
+    passed_attempt_id = handle_task.await_args.kwargs["attempt_id"]
+    assert passed_attempt_id is not None
+    assert validate_attempt_id(passed_attempt_id) == passed_attempt_id
 
 
 @pytest.mark.asyncio
@@ -318,7 +341,8 @@ async def test_concurrent_run_task_calls_use_isolated_delegate_identity() -> Non
         runner.run_task(task_b, run_id=run_id_b, attempt_id=attempt_id_b)
     )
     await asyncio.sleep(0)
-    assert ("a", run_id_a, None) in seen
+    assert ("a", run_id_a, None) not in seen
+    assert any(entry[0] == "a" and entry[1] == run_id_a and entry[2] is not None for entry in seen)
     assert ("b", run_id_b, attempt_id_b) in seen
     gate.set()
     await asyncio.gather(first, second)
