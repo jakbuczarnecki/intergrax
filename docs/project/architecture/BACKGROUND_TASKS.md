@@ -62,7 +62,14 @@ Future transport envelopes carry canonical runtime identity including `Execution
 
 All supported background execution paths use the platform-owned canonical background execution bootstrap (`bootstrap_background_execution` / `resolve_background_execution` in `intergrax/runtime/background_execution/bootstrap.py`). Applications and scenarios do **not** mint or own runtime execution identity.
 
-Redelivery/retry of the same transport task preserves canonical `TaskId` and `RunId` while each actual execution attempt receives a new `AttemptId`. This behavior is provider-neutral and owned by the central background execution mechanism.
+#### CURRENT IMPLEMENTATION
+
+**CURRENT IMPLEMENTATION / UEA MIGRATION DEBT:** The as-built worker admission path below is factual current behavior — **not** frozen UEA target semantics.
+
+- `BackgroundExecutionIdentityPersistence.resolve_or_create` stabilizes `TaskId` and `RunId` keyed by `BackgroundTransportExecutionRef` (tenant + provider + transport_task_id).
+- Current `bootstrap_background_execution` mints a **fresh** `AttemptId` on each worker execution entry, including transport redelivery/retry of the same logical work.
+- Canonical `ExecutionId` is **not** propagated yet.
+- This is implementation debt relative to frozen UEA §10/§11.
 
 ```text
 background transport (TaskRequest / broker message / Celery request)
@@ -71,23 +78,29 @@ BackgroundTransportExecutionRef (tenant + provider + transport_task_id)
        ↓
 BackgroundExecutionIdentityPersistence.resolve_or_create → stable TaskId + RunId
        ↓
-bootstrap_background_execution → mint new AttemptId
+bootstrap_background_execution → mint new AttemptId (CURRENT — per execution entry/redelivery)
        ↓
 execute_logical_task / NexusWorkerRuntime.run_task
        ↓
 runtime (TaskId, RunId, AttemptId)
 ```
 
-| Field | Owner at worker boundary |
-|-------|--------------------------|
+| Field | Owner at worker boundary (CURRENT) |
+|-------|-------------------------------------|
 | `TaskId` | Central identity persistence (`resolve_or_create`) keyed by transport ref |
 | `RunId` | Central identity persistence — **not** `TaskRequest.run_id`; stable across retry/redelivery |
-| `AttemptId` | Central bootstrap (mint per actual execution entry) — **not** Celery `request.retries` |
+| `AttemptId` | Central bootstrap — mint per worker execution entry/redelivery (**CURRENT debt**) — **not** Celery `request.retries` |
 | `tenant_id` | Validated single scope; mismatch fails closed |
 
 Stable `TaskId`/`RunId` across process restart and concurrent workers requires atomic identity persistence: `DistributedKVStore.compare_and_set` or `ConditionalDocumentStore.put_if_absent`. Generic `DocumentStore` without conditional create is rejected at composition; there is no process-local fallback.
 
 `TaskRequest.run_id` and broker message `run_id` remain **transport queue correlation** for status/events indexing; they are not canonical runtime `RunId`.
+
+#### TARGET ARCHITECTURE
+
+Redelivery/retry of the **same logical Execution** preserves canonical `TaskId`, `RunId`, `AttemptId`, and `ExecutionId`. Only infrastructure identity may change: `delivery_id`, `lease_id`, `worker_id`, broker/message identity.
+
+A **new** `AttemptId` requires an explicit whole-Run retry boundary (UEA §10), not transport redelivery alone.
 
 ### Required audit evidence admission (BG-EXEC-3)
 
@@ -114,7 +127,13 @@ If required evidence persistence fails: handler invocation count = 0, no busines
 
 `RuntimeEventBus` best-effort persistence is **not** the admission mechanism for required transport→execution causal evidence.
 
-**Writer integration: DONE** for supported background execution paths (`BrokerWorkerBase`, `WorkerRuntime`, Celery `intergrax.execute`, `DocumentStoreTaskWorker`). Ordering: transport → identity bootstrap → `admit_background_execution_handler` (required `TRANSPORT_TASK_TRIGGERED_EXECUTION`) → `execute_logical_task`. Fail-closed on persistence failure; worker retries mint new `AttemptId` and new causal evidence; `RuntimeEventBus` persistence remains separate execution truth; observability exporter remains optional.
+**Writer integration: DONE** for supported background execution paths (`BrokerWorkerBase`, `WorkerRuntime`, Celery `intergrax.execute`, `DocumentStoreTaskWorker`). Ordering: transport → identity bootstrap → `admit_background_execution_handler` (required `TRANSPORT_TASK_TRIGGERED_EXECUTION`) → `execute_logical_task`. Fail-closed on persistence failure.
+
+**CURRENT implementation:** worker retry/redelivery currently mints new `AttemptId` and causal evidence through the existing bootstrap — known UEA migration debt.
+
+**TARGET:** same-work redelivery preserves `AttemptId`/`ExecutionId`; new transport-delivery causal evidence may record the changed transport delivery/worker relation without minting new runtime identity.
+
+`RuntimeEventBus` persistence remains separate execution truth; observability exporter remains optional.
 
 Entry points that invoke the bootstrap: `BrokerWorkerBase.process_message`, `WorkerRuntime.process_request`, Celery `intergrax.execute` dispatcher, and `DocumentStoreTaskWorker`.
 

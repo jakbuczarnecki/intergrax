@@ -76,6 +76,7 @@ Reliability keeps recovery **bounded**, **layered**, and **evidence-backed**.
 
 Local/provider retry, Execution-level retry, whole-Run retry, pause/resume, and cancellation each preserve or mint identity per frozen UEA — not every retry creates a new `AttemptId`.
 
+<a href="UNIFIED_EXECUTION_ARCHITECTURE.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-retry-pause-resume-cancel-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-retry-pause-resume-cancel-light.svg">
@@ -84,6 +85,7 @@ Local/provider retry, Execution-level retry, whole-Run retry, pause/resume, and 
     src="assets/unified-execution-retry-pause-resume-cancel-light.svg"
   >
 </picture>
+</a>
 
 **CURRENT IMPLEMENTATION:** Wired Nexus paths mint a new `AttemptId` for run-level/graph retry as implemented today; target ExecutionId preservation is not yet canonical in Python.
 
