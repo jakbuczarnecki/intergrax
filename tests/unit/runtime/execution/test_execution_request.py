@@ -76,7 +76,16 @@ def test_output_type_declaration_is_preserved_exactly() -> None:
     assert request.output_type is SummaryOutput
 
 
-def test_capabilities_are_immutable_and_normalized_to_frozenset() -> None:
+def test_capabilities_default_to_empty_frozenset() -> None:
+    request = ExecutionRequest[PromptInput, SummaryOutput](
+        input=PromptInput(text="default-caps"),
+    )
+
+    assert isinstance(request.capabilities, frozenset)
+    assert request.capabilities == frozenset()
+
+
+def test_capabilities_explicit_frozenset_is_preserved() -> None:
     request = ExecutionRequest[PromptInput, SummaryOutput](
         input=PromptInput(text="caps"),
         capabilities=frozenset({ExecutionCapability.TOOLS, ExecutionCapability.STREAMING}),
@@ -86,13 +95,6 @@ def test_capabilities_are_immutable_and_normalized_to_frozenset() -> None:
     assert request.capabilities == frozenset(
         {ExecutionCapability.TOOLS, ExecutionCapability.STREAMING}
     )
-
-    normalized = ExecutionRequest[PromptInput, SummaryOutput](
-        input=PromptInput(text="sequence-caps"),
-        capabilities=(ExecutionCapability.TOOLS,),  # type: ignore[arg-type]
-    )
-    assert isinstance(normalized.capabilities, frozenset)
-    assert normalized.capabilities == frozenset({ExecutionCapability.TOOLS})
 
 
 def test_direct_inference_requirements_without_strategy_controls() -> None:

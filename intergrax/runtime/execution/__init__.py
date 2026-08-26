@@ -10,13 +10,4 @@ __all__ = [
     "ExecutionDelegate",
     "ExecutionCapability",
     "ExecutionRequest",
-    "UnifiedTaskRunnerExecutionDelegate",
 ]
-
-
-def __getattr__(name: str) -> object:
-    if name == "UnifiedTaskRunnerExecutionDelegate":
-        from intergrax.runtime.execution.task_compat import UnifiedTaskRunnerExecutionDelegate
-
-        return UnifiedTaskRunnerExecutionDelegate
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

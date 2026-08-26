@@ -38,7 +38,3 @@ class ExecutionRequest(Generic[InputT, OutputT]):
     input: InputT
     output_type: type[OutputT] | None = None
     capabilities: frozenset[ExecutionCapability] = field(default_factory=frozenset)
-
-    def __post_init__(self) -> None:
-        if not isinstance(self.capabilities, frozenset):
-            object.__setattr__(self, "capabilities", frozenset(self.capabilities))
