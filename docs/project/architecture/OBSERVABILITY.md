@@ -1343,9 +1343,44 @@ DiagnosticAssessment[]
 
 **Explicit non-goals (DIAG-5D):** Problem merge/split, auto-resolve-on-absence, root-cause fields, second production grouping strategy, LLM/embeddings/vector/confidence.
 
-**Roadmap:** **DIAG-5C complete.** **DIAG-5D** — stable Problem identity/lifecycle (this slice). **DIAG-6** — operator surfacing / diagnostic read APIs (planned). **DIAG-7** — cross-run diagnostic orchestration (planned). **DIAG-8 / scenario** — intelligent grouping + root-cause investigation consuming typed assessments without rewriting canonical evidence (scenario-stage).
+**Roadmap:** **DIAG-5C complete.** **DIAG-5D complete.** **DIAG-6** — operator surfacing / diagnostic read API (this slice). **DIAG-7** — cross-run diagnostic orchestration (planned). **DIAG-8 / scenario** — intelligent grouping + root-cause investigation consuming typed assessments without rewriting canonical evidence (scenario-stage).
 
 **Code references:** `intergrax/runtime/diagnostics/problem_lifecycle.py`, `intergrax/runtime/diagnostics/problem_persistence.py`, `intergrax/runtime/diagnostics/in_memory_problem_persistence.py`, `intergrax/runtime/diagnostics/deterministic_problem_reconciliation.py`.
+
+### Operator diagnostic read surface (DIAG-6)
+
+**Scope:** one read-only operator-facing composition layer over persisted Problems and the existing DIAG-2→4 reconstruction spine — without HTTP/CLI/UI transport, without new diagnostic truth, and without root-cause inference.
+
+**Canonical entry point:** `DiagnosticReadService` — orchestrates Problem reads and bounded occurrence reconstruction. Operators should not query `ProblemPersistence`, `ExecutionReconstructor`, `RuntimeEventPersistence`, or `CausalEvidencePersistence` directly to assemble Problem views.
+
+**Operator read path:**
+
+```text
+ProblemPersistence
+  ↓
+DiagnosticReadService
+  ├── list_problems()          # cheap summaries — Problem records only
+  └── get_problem()            # bounded detail
+        ProblemOccurrence
+          ↓
+        ExecutionReconstructor
+          ↓
+        LifecycleAnomalyAnalyzer
+          ↓
+        DiagnosticAssessmentBuilder
+```
+
+**Read model:** ephemeral operator projection — `DiagnosticProblemSummary`, `DiagnosticProblemDetail`, `DiagnosticProblemOccurrenceView`. `DiagnosticAssessment` is derived at read time for detail; it is **not** persisted by this slice.
+
+**List semantics:** tenant-scoped, optional `ProblemStatus` filter, deterministic order (`last_seen_at` descending, `problem_id` tie-break), explicit `limit` / `is_truncated`. **No** execution reconstruction on list.
+
+**Detail semantics:** snapshot of the Problem record at request start (`record_version`); occurrences ordered newest-first; `occurrence_limit` with explicit `total_occurrence_count` / `is_occurrences_truncated`. Occurrence tenant mismatch fails closed (`DiagnosticReadIntegrityError`). Expected missing canonical execution evidence surfaces as `DiagnosticOccurrenceReadStatus.UNAVAILABLE` — structural corruption fails closed.
+
+**Explicit non-goals (DIAG-6):** HTTP/REST/GraphQL/CLI/UI, cache/materialized views, semantic search, root-cause fields (`root_cause`, `confidence`, `likely_root_cause`), raw `RuntimeEvent.payload` / logs / tracebacks / prompts / documents, `get_execution_diagnostic` (deferred **DIAG-6B** — full `ExecutionReconstruction` would expose raw event payloads).
+
+**Roadmap:** **DIAG-6B** — execution lookup via the same read surface without raw payload exposure. **DIAG-7** — cross-run diagnostic orchestration. **DIAG-8 / scenario** — intelligent grouping + root-cause investigation.
+
+**Code references:** `intergrax/runtime/diagnostics/diagnostic_read_service.py`, `intergrax/runtime/diagnostics/diagnostic_read_models.py`.
 
 ### Multi-execution problem grouping (DIAG-5A)
 
