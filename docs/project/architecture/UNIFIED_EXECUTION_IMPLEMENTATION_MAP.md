@@ -1,10 +1,14 @@
 # Unified Execution Implementation Map
 
-**Status:** Canonical implementation-mapping artifact (UE-DOC-0.9)  
+**Status:** Canonical implementation-mapping artifact (UE-DOC-0.9R1)
 **Classification:** `SUPPORTING_MODEL / SATELLITE` — subordinate to [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) (`META_ARCHITECTURE`); **not** a new DOMAIN, **not** an architecture authority, **not** paired with a separate implementation plan  
 **Owner:** Intergrax Platform Architecture (migration coordination)  
 **Audience:** Cursor UE-1+ implementers, domain maintainers, audit/review sessions  
-**Evidence baseline:** `development` @ `0398101abb5374a060013400656eb0838b744bc2` (start pin verified as ancestor; no intersecting commits after pin at mapping time)
+**Evidence baseline (UE-DOC-0.9R1):**
+- Original architecture mapping pin: `development` @ `0398101abb5374a060013400656eb0838b744bc2`
+- Concurrent runtime change during UE-DOC-0.9 mapping: `49e765377935469566f7d265e1129f735b7f2ae9` (DIAG-5D — stable `ProblemId` / lifecycle reconciliation)
+- UE-DOC-0.9 mapping commit: `4ce7dfee540b8cce770aa9a447096dcfa83c4b75`
+- UE-DOC-0.9R1 revalidation baseline: `development` @ `862c0dc57928c3af34329a836482df89fec786f4` (includes DIAG-5D-R1 — occurrence-derived `first_seen_at` / `last_seen_at`)
 
 ---
 
@@ -86,7 +90,7 @@ IMPLEMENTATION ORDER
 | **ExecutionId** | **Missing** | UEA §25; no `ExecutionId` type in `execution_identity.py` | Canonical gap #1 | Add typed `ExecutionId`, `parent_execution_id`, minting authority at execution lifecycle layer | **TRANSFORM** (new contract) |
 | **EventId** | `RuntimeEvent.event_id` | `runtime_event.py:90` | Events lack `execution_id` field | Add optional-then-required `execution_id` on `RuntimeEvent` | **TRANSFORM** |
 | **Active identity propagation** | `ContextVar` via `bind_active_execution_identity` | `execution_identity.py:18-98` | Run+Attempt only; no Execution | Extend binding or parallel execution-scoped context | **TRANSFORM** |
-| **RuntimeEvent identity** | Task/Run/Attempt + optional `node_id` | `runtime_event.py:89-110` | No `ExecutionId`; `node_id` ≠ execution | Add `execution_id`, `parent_execution_id` on events | **TRANSFORM** |
+| **RuntimeEvent identity** | Task/Run/Attempt + `EventId` + optional `parent_event_id`; optional `node_id` | `runtime_event.py:89-110` | No `ExecutionId`; `node_id` ≠ execution; `parent_event_id` is event causality only | Add `execution_id` where target contract requires full spine (`TaskId`/`RunId`/`AttemptId`/`ExecutionId`/`EventId`); keep `parent_event_id` for event causality; do **not** mandate `parent_execution_id` on every event — canonical execution lineage stays on Execution Tree | **TRANSFORM** |
 | **Background bootstrap** | `BackgroundExecutionIdentity` | `background_execution/bootstrap.py:29-85` | Mints new Attempt every resolve | Same-work redelivery must preserve AttemptId | **TRANSFORM** |
 | **Checkpoint identity** | `RuntimeCheckpoint.run_id/attempt_id` | `runtime_checkpoint.py:61-75` | No Execution Tree fields | Extend checkpoint with tree snapshot | **TRANSFORM** |
 | **DIAG refs** | `RuntimeExecutionRef` | `observability/causal_evidence.py:56-64` | Stops at Attempt | Add `execution_id` when contract exists | **TRANSFORM** |
@@ -412,10 +416,12 @@ Nexus owns **what executes next**; requests child Executions through canonical b
 
 | Area | Current | Target | Disposition |
 |------|---------|--------|-------------|
-| `RuntimeEvent` factory paths | GraphExecutor, UAEP, Nexus runners, middleware | All carry `execution_id` | **TRANSFORM** |
+| `RuntimeEvent` factory paths | GraphExecutor, UAEP, Nexus runners, middleware | All carry `execution_id` where contract requires full identity spine | **TRANSFORM** |
 | `RuntimeEventBus` | Central emit | Unchanged role | **KEEP** |
 | Event persistence | `RuntimeEventPersistence` | | **KEEP** |
 | Mandatory vs telemetry | `event_category`, `ops_hint` | Preserve distinction | **KEEP** |
+
+**RuntimeEvent identity vs lineage (frozen):** `RuntimeEvent` must structurally carry `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, and `EventId` where the target contract requires all five. `parent_event_id` expresses **event causality** when applicable. Canonical execution lineage (`parent_execution_id`) is owned by the **Execution Tree** / execution lifecycle layer — it may be projected into evidence or event contracts only when explicitly justified; it must **not** become a second canonical lineage authority on every `RuntimeEvent`.
 
 **Do not propose per-token RuntimeEvent streaming.**
 
@@ -423,13 +429,37 @@ Nexus owns **what executes next**; requests child Executions through canonical b
 
 ## 20. DIAG
 
-| Structure | Current | Needs | Disposition |
-|-----------|---------|-------|-------------|
-| `RuntimeExecutionRef` | Task/Run/Attempt | `execution_id` | **TRANSFORM** |
-| `problem_lifecycle` / grouping | Event-driven reconstruction | Execution-scoped grouping | **TRANSFORM** |
-| Causal evidence | `PlatformCausalEvidence` | Link to Execution | **KEEP_AND_REWIRE** |
+Post **DIAG-5D** / **DIAG-5D-R1** (revalidated at UE-DOC-0.9R1 baseline).
+
+### Ownership (frozen)
+
+| Layer | Role |
+|-------|------|
+| Execution Runtime | Owns canonical `ExecutionId` + Execution Tree (`parent_execution_id` on Execution records) |
+| Observability | Records/persists canonical execution evidence |
+| DIAG reconstruction | Interprets those facts; **never** mints `ExecutionId` |
+| `ProblemGroupingEngine` | Groups diagnostic assessments into ephemeral grouping hypotheses |
+| `ProblemLifecycleEngine` | Reconciles validated hypotheses into stable derived `Problem` records |
+| `ProblemPersistence` | Durable store for derived Problems — not execution truth |
+
+**Forbidden substitutions:** `ProblemId`, grouping signature, reconciliation key, and `ProblemGroupingSubjectRef` must **not** become substitutes for `ExecutionId` or canonical execution lineage.
+
+### Component mapping
+
+| Structure | Current (HEAD) | Unified-execution need | Disposition |
+|-----------|----------------|------------------------|-------------|
+| `RuntimeExecutionRef` | `task_id`, `run_id`, `attempt_id`, `tenant_id` | `execution_id` when contract exists | **TRANSFORM** |
+| `ProblemGroupingSubjectRef` | `tenant_id`, `task_id`, `run_id` | Execution-aware diagnostic subject identity/provenance (e.g. `ExecutionId` when the diagnostic subject is one Execution) | **TRANSFORM** |
+| `ProblemGroupingEngine` | Consumes typed `DiagnosticAssessment`-derived subject data; proposes ephemeral candidates; does not own canonical runtime execution identity | Consume richer Execution-aware typed refs/provenance when `ExecutionId` is canonical | **KEEP_AND_REWIRE** |
+| `ProblemLifecycleEngine` | Reconciles validated grouping hypotheses into stable derived `Problem` identity; does not re-run reconstruction; does not own RuntimeEvent/Execution truth | Preserve derived Problem lifecycle role; subject ref shape flows from `ProblemGroupingSubjectRef` transform | **KEEP** |
+| `ProblemPersistence` / deterministic reconciliation | Derived Problem durability; occurrence-derived timestamps (DIAG-5D-R1) | No Execution identity ownership | **KEEP** |
+| `PlatformCausalEvidence` | Links transport → execution refs | Wire through `execution_id` on refs | **KEEP_AND_REWIRE** |
+
+**`ProblemId`:** derived diagnostic identity (stable recurrence bucket) — **not** `ExecutionId`, **not** root cause, **not** canonical execution lineage.
 
 **DIAG consumes migrated identity; never mints ExecutionId.**
+
+**Evidence:** `intergrax/runtime/observability/causal_evidence.py`, `intergrax/runtime/diagnostics/problem_grouping.py`, `intergrax/runtime/diagnostics/problem_lifecycle.py`, `intergrax/runtime/diagnostics/problem_persistence.py`, `intergrax/runtime/diagnostics/deterministic_problem_reconciliation.py`.
 
 ---
 
@@ -500,12 +530,16 @@ Nexus owns **what executes next**; requests child Executions through canonical b
 | `run_bounded_tool_loop` | Tool iteration mechanics | UAEP, Nexus tools | ToolInvocationPattern | KEEP | Bind ExecutionId | ExecutionId | None | Medium |
 | `ToolRuntime` / `RuntimeToolInvoker` | Tool exec | Tool loop, UAEP | Tools domain | KEEP | Authority via boundary | Governance | None | Low |
 | `RuntimeExecutionContext` | UAEP step ctx | UAEP | Agent strategy | KEEP | Add execution_id field | ExecutionId | None | Low |
-| `RuntimeEvent` | Audit spine | All runtime | Observability | TRANSFORM | Add execution_id | ExecutionId contract | None | Medium |
+| `RuntimeEvent` | Audit spine | All runtime | Observability | TRANSFORM | Add `execution_id`; full spine where required; `parent_event_id` = event causality; lineage via Execution Tree — not mandatory `parent_execution_id` on every event | ExecutionId contract | None | Medium |
 | `ActiveExecutionIdentity` | Run/Attempt CV | Nexus, GraphExecutor | Execution lifecycle | TRANSFORM | Execution scope | ExecutionId | None | Medium |
 | `RunBudget` / `BudgetEnforcer` | Run limits | Nexus, RuntimeState | Budget domain | TRANSFORM | Hierarchical reservations | Execution tree | None | High |
 | `RuntimeCheckpoint` | Recovery | Nexus, UAEP, long-running | Checkpoint owner | TRANSFORM | Tree-aware state | ExecutionId | None | High |
 | `bootstrap_background_execution` | Worker identity | WorkerRuntime | Background + boundary | TRANSFORM | Attempt preservation | Execution envelope | Redelivery tests pass | High |
-| `RuntimeExecutionRef` | DIAG transport ref | Causal evidence, DIAG | Observability | TRANSFORM | execution_id | ExecutionId | None | Medium |
+| `RuntimeExecutionRef` | DIAG transport ref | Causal evidence, DIAG | Observability | TRANSFORM | Add `execution_id` after canonical identity contract | ExecutionId | None | Medium |
+| `ProblemGroupingSubjectRef` | Diagnostic subject key | `ProblemGroupingEngine`, `ProblemLifecycleEngine` | DIAG (derived) | TRANSFORM | Execution-aware subject identity/provenance | ExecutionId, `ProblemGroupingEngine` | None | Medium |
+| `ProblemGroupingEngine` | Ephemeral grouping hypotheses | DIAG reconstruction pipeline | DIAG | KEEP_AND_REWIRE | Consume Execution-aware typed refs; no Execution identity ownership | ExecutionId on refs | None | Medium |
+| `ProblemLifecycleEngine` | Stable derived `Problem` reconciliation | Post-grouping pipeline | DIAG | KEEP | Preserve lifecycle role; no RuntimeEvent/Execution truth ownership | `ProblemGroupingEngine` | None | Low |
+| `ProblemPersistence` | Derived Problem durability | `ProblemLifecycleEngine` | DIAG | KEEP | No Execution identity ownership | DIAG-5D contract | None | Low |
 | `Task` / `TaskResult` | Harness DTO | Apps | Task intake (not Execution) | KEEP_AND_REWIRE | Map to execution request | Boundary | Optional later | Medium |
 | `AgentExecutionResult` | Node result | GraphExecutor | Agentic private | DEPRECATE | Stop universal promotion | Neutral result | Consumers migrated | Medium |
 | `HarnessKernel` | ACP steps | ACP agents | ACP domain | KEEP | None | None | None | Low |
@@ -722,7 +756,7 @@ High-level roadmap preserved; subdivided where evidence requires safe staging.
 
 ## 34. Current implementation evidence index
 
-Primary symbols verified at HEAD pin:
+Primary symbols verified at UE-DOC-0.9R1 baseline (`862c0dc57928c3af34329a836482df89fec786f4`):
 
 | Domain | Symbols / paths |
 |--------|-------------------|
@@ -735,7 +769,7 @@ Primary symbols verified at HEAD pin:
 | Budget | `intergrax/runtime/nexus/budget/budget_models.py`, `budget_ticks.py` |
 | Governance | `intergrax/runtime/policy/policy_engine.py`, `runtime_policy_engine.py` |
 | Events/OBS | `intergrax/runtime/events/runtime_event.py`, `event_bus.py` |
-| DIAG | `intergrax/runtime/observability/causal_evidence.py`, `intergrax/runtime/diagnostics/problem_lifecycle.py` |
+| DIAG | `intergrax/runtime/observability/causal_evidence.py`, `intergrax/runtime/diagnostics/problem_grouping.py`, `intergrax/runtime/diagnostics/problem_lifecycle.py`, `intergrax/runtime/diagnostics/problem_persistence.py`, `intergrax/runtime/diagnostics/deterministic_problem_reconciliation.py` |
 | Checkpoint | `intergrax/runtime/long_running/runtime_checkpoint.py` |
 | Background | `intergrax/runtime/background_execution/bootstrap.py`, `intergrax/background_tasks/worker_runtime.py`, `intergrax/queueing/providers/broker_worker_base.py` |
 | Streaming | `intergrax/llm_adapters/contracts/stream_event.py`, adapter `stream_messages`/`stream_with_tools` |
@@ -743,7 +777,7 @@ Primary symbols verified at HEAD pin:
 
 ---
 
-## Acceptance self-check (UE-DOC-0.9)
+## Acceptance self-check (UE-DOC-0.9R1)
 
 | Question | Answer |
 |----------|--------|
@@ -762,6 +796,15 @@ Primary symbols verified at HEAD pin:
 | Redelivery/new-Attempt mapped as debt? | **YES** — §17, §21, §33 |
 | Streaming governance gap before user release? | **YES** — §22 |
 | Removals gated after consumer migration? | **YES** — §33 |
+| Evidence baseline reports concurrent DIAG-5D during UE-DOC-0.9? | **YES** — header baseline |
+| DIAG mapping reflects DIAG-5D / DIAG-5D-R1 (not stale grouping/lifecycle TRANSFORM)? | **YES** — §20, §25 |
+| `ProblemLifecycleEngine` preserved as derived Problem owner, not runtime identity? | **YES** — §20 |
+| `ProblemId` distinct from `ExecutionId`? | **YES** — §20 |
+| DIAG remains derived interpretation only? | **YES** — §20 |
+| `RuntimeEvent` requires `execution_id` at target? | **YES** — §2, §19 |
+| Every `RuntimeEvent` requires `parent_execution_id`? | **NO** — §2, §19 |
+| Canonical execution lineage owned by Execution Tree? | **YES** — §14, §19 |
+| `parent_event_id` is event causality only? | **YES** — §2, §19 |
 
 ---
 
