@@ -451,7 +451,14 @@ def validate_feature_source_facts_scope(
     assessment: DiagnosticAssessment,
     source_facts: ProblemGroupingFeatureSourceFacts,
 ) -> None:
-    """Fail closed when supplied source facts do not belong to the assessment."""
+    """
+    Fail closed when supplied source facts do not belong to the assessment.
+
+    ``ProblemGroupingFeatureSourceFacts`` is the execution-scope authority.
+    ``PlatformProblemSignal`` rows inherit scope from the enclosing validated
+    bundle; populated signal ids must agree with the bundle, not merely the
+    assessment object passed alongside.
+    """
     from intergrax.runtime.diagnostics.problem_grouping_features import (
         ProblemGroupingFeatureSourceFacts,
     )
@@ -459,29 +466,42 @@ def validate_feature_source_facts_scope(
     if type(source_facts) is not ProblemGroupingFeatureSourceFacts:
         raise TypeError("source_facts must be ProblemGroupingFeatureSourceFacts")
 
+    if source_facts.tenant_id != assessment.tenant_id:
+        raise ProblemGroupingIntegrityError(
+            "source_facts tenant_id does not match assessment tenant_id"
+        )
+    if source_facts.task_id != assessment.task_id:
+        raise ProblemGroupingIntegrityError(
+            "source_facts task_id does not match assessment task_id"
+        )
+    if source_facts.run_id != assessment.run_id:
+        raise ProblemGroupingIntegrityError(
+            "source_facts run_id does not match assessment run_id"
+        )
+
     reconstruction = source_facts.reconstruction
     if reconstruction is not None:
-        if reconstruction.tenant_id != assessment.tenant_id:
+        if reconstruction.tenant_id != source_facts.tenant_id:
             raise ProblemGroupingIntegrityError(
-                "reconstruction tenant_id does not match assessment tenant_id"
+                "reconstruction tenant_id does not match source_facts tenant_id"
             )
-        if reconstruction.task_id != assessment.task_id:
+        if reconstruction.task_id != source_facts.task_id:
             raise ProblemGroupingIntegrityError(
-                "reconstruction task_id does not match assessment task_id"
+                "reconstruction task_id does not match source_facts task_id"
             )
-        if reconstruction.run_id != assessment.run_id:
+        if reconstruction.run_id != source_facts.run_id:
             raise ProblemGroupingIntegrityError(
-                "reconstruction run_id does not match assessment run_id"
+                "reconstruction run_id does not match source_facts run_id"
             )
 
     for index, signal in enumerate(source_facts.problem_signals):
-        if signal.task_id and signal.task_id != str(assessment.task_id):
+        if signal.task_id and signal.task_id != str(source_facts.task_id):
             raise ProblemGroupingIntegrityError(
-                f"problem signal[{index}] task_id does not match assessment task_id"
+                f"problem signal[{index}] task_id does not match source_facts task_id"
             )
-        if signal.run_id and signal.run_id != str(assessment.run_id):
+        if signal.run_id and signal.run_id != str(source_facts.run_id):
             raise ProblemGroupingIntegrityError(
-                f"problem signal[{index}] run_id does not match assessment run_id"
+                f"problem signal[{index}] run_id does not match source_facts run_id"
             )
 
 

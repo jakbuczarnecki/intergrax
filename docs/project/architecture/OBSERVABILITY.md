@@ -1272,7 +1272,9 @@ Grouping proposes **"these incidents are likely related under this method"** —
 
 **Production grouping strategies after this slice:** **1** — `DeterministicProblemGroupingStrategy` only.
 
-**Source-fact delivery:** per-assessment `ProblemGroupingAssessmentInput` carries `DiagnosticAssessment` plus optional `ProblemGroupingFeatureSourceFacts` (`reconstruction: ExecutionReconstruction | None`, `problem_signals: tuple[PlatformProblemSignal, ...]`). `ProblemGroupingEngine.group(assessment_inputs, strategy_id=...)` validates source-fact scope (tenant/task/run alignment) fail-closed before invoking the projector.
+**Source-fact delivery:** per-assessment `ProblemGroupingAssessmentInput` carries `DiagnosticAssessment` plus optional `ProblemGroupingFeatureSourceFacts` — an **explicitly tenant/task/run-scoped** bundle (`tenant_id: str`, `task_id: TaskId`, `run_id: RunId`, optional `reconstruction`, optional `problem_signals`). When no source facts exist, `feature_source_facts=None`. `ProblemGroupingEngine.group(assessment_inputs, strategy_id=...)` validates bundle scope against the assessment and nested reconstruction/signal ids fail-closed **before** invoking the projector.
+
+**Scope authority:** `PlatformProblemSignal` may omit its own `task_id` / `run_id` when the observability contract permits empty values; diagnostic grouping inherits execution scope from the enclosing validated `ProblemGroupingFeatureSourceFacts` bundle. Populated signal ids must agree with the bundle. No cross-tenant or cross-execution fact mixing.
 
 **Production projector:** `DiagnosticProblemGroupingFeatureProjector` — representation v2, no models, no grouping decisions, no persistence reads.
 

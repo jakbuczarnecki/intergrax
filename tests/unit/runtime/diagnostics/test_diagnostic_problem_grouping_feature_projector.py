@@ -86,6 +86,23 @@ _FAKE_STRATEGY_ID = ProblemGroupingStrategyId("test.feature_inspector")
 _FAKE_STRATEGY_VERSION = ProblemGroupingStrategyVersion("1")
 
 
+def _source_facts(
+    *,
+    tenant_id: str = _TENANT,
+    task_id,
+    run_id,
+    reconstruction: ExecutionReconstruction | None = None,
+    problem_signals: tuple[PlatformProblemSignal, ...] = (),
+) -> ProblemGroupingFeatureSourceFacts:
+    return ProblemGroupingFeatureSourceFacts(
+        tenant_id=tenant_id,
+        task_id=task_id,
+        run_id=run_id,
+        reconstruction=reconstruction,
+        problem_signals=problem_signals,
+    )
+
+
 def _assessment_input(
     assessment: DiagnosticAssessment,
     *,
@@ -321,7 +338,9 @@ def test_e2e_engine_projects_all_feature_categories() -> None:
         findings=(_finding(supporting_event_id=tool_failed_id),),
         limitations=(),
     )
-    source_facts = ProblemGroupingFeatureSourceFacts(
+    source_facts = _source_facts(
+        task_id=task_id,
+        run_id=run_id,
         reconstruction=reconstruction,
         problem_signals=(signal,),
     )
@@ -412,7 +431,9 @@ def test_reconstruction_scope_mismatch_fails_closed() -> None:
             (
                 _assessment_input(
                     assessment,
-                    source_facts=ProblemGroupingFeatureSourceFacts(
+                    source_facts=_source_facts(
+                        task_id=task_id,
+                        run_id=run_id,
                         reconstruction=reconstruction,
                     ),
                 ),
@@ -444,12 +465,16 @@ def test_problem_signal_task_run_mismatch_fails_closed() -> None:
         feature_projector=DiagnosticProblemGroupingFeatureProjector(),
     )
 
-    with pytest.raises(ProblemGroupingIntegrityError, match="problem signal"):
+    with pytest.raises(ProblemGroupingIntegrityError, match="problem signal.*source_facts task_id"):
         engine.group(
             (
                 _assessment_input(
                     assessment,
-                    source_facts=ProblemGroupingFeatureSourceFacts(problem_signals=(signal,)),
+                    source_facts=_source_facts(
+                        task_id=task_id,
+                        run_id=run_id,
+                        problem_signals=(signal,),
+                    ),
                 ),
             ),
             strategy_id=STRATEGY_ID,
@@ -492,7 +517,11 @@ def test_causal_provider_maps_integration_and_causal_features() -> None:
     features = projector.project(
         assessment,
         normalize_assessment(assessment),
-        source_facts=ProblemGroupingFeatureSourceFacts(reconstruction=reconstruction),
+        source_facts=_source_facts(
+            task_id=task_id,
+            run_id=run_id,
+            reconstruction=reconstruction,
+        ),
     )
 
     assert features.causal_context[0].source_provider == "rabbitmq"
@@ -526,7 +555,11 @@ def test_runtime_event_type_and_causal_relation_remain_typed_enums() -> None:
     features = DiagnosticProblemGroupingFeatureProjector().project(
         assessment,
         normalize_assessment(assessment),
-        source_facts=ProblemGroupingFeatureSourceFacts(reconstruction=reconstruction),
+        source_facts=_source_facts(
+            task_id=task_id,
+            run_id=run_id,
+            reconstruction=reconstruction,
+        ),
     )
 
     assert isinstance(features.execution_context[0].event_type, RuntimeEventType)
@@ -554,7 +587,11 @@ def test_problem_signal_safe_message_is_bounded_and_source_typed() -> None:
         DiagnosticProblemGroupingFeatureProjector().project(
             assessment,
             normalize_assessment(assessment),
-            source_facts=ProblemGroupingFeatureSourceFacts(problem_signals=(signal,)),
+            source_facts=_source_facts(
+                task_id=task_id,
+                run_id=run_id,
+                problem_signals=(signal,),
+            ),
         )
 
 
@@ -579,7 +616,11 @@ def test_empty_optional_problem_signal_fields_do_not_create_fake_values() -> Non
     features = DiagnosticProblemGroupingFeatureProjector().project(
         assessment,
         normalize_assessment(assessment),
-        source_facts=ProblemGroupingFeatureSourceFacts(problem_signals=(signal,)),
+        source_facts=_source_facts(
+            task_id=task_id,
+            run_id=run_id,
+            problem_signals=(signal,),
+        ),
     )
 
     assert features.component_context == ()
@@ -610,7 +651,11 @@ def test_invalid_problem_signal_event_id_fails_closed() -> None:
         DiagnosticProblemGroupingFeatureProjector().project(
             assessment,
             normalize_assessment(assessment),
-            source_facts=ProblemGroupingFeatureSourceFacts(problem_signals=(signal,)),
+            source_facts=_source_facts(
+                task_id=task_id,
+                run_id=run_id,
+                problem_signals=(signal,),
+            ),
         )
 
 
@@ -645,7 +690,9 @@ def test_deterministic_grouping_unchanged_with_or_without_source_facts() -> None
         positioned_events=(_positioned(event, 1),),
         causal_evidence=(_causal_evidence(task_id=task_id, run_id=run_id, attempt_id=attempt_id),),
     )
-    source_facts = ProblemGroupingFeatureSourceFacts(
+    source_facts = _source_facts(
+        task_id=task_id,
+        run_id=run_id,
         reconstruction=reconstruction,
         problem_signals=(
             PlatformProblemSignal(
@@ -749,3 +796,225 @@ def test_event_selection_includes_failure_retry_and_referenced_events() -> None:
         retry.event_id,
         referenced.event_id,
     ]
+
+
+def _deterministic_engine() -> ProblemGroupingEngine:
+    registry = ProblemGroupingStrategyRegistry()
+    registry.register(DeterministicProblemGroupingStrategy())
+    return ProblemGroupingEngine(
+        registry,
+        feature_projector=DiagnosticProblemGroupingFeatureProjector(),
+    )
+
+
+def test_bundle_scope_matching_assessment_is_valid() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    assessment = DiagnosticAssessment(
+        tenant_id=_TENANT,
+        task_id=task_id,
+        run_id=run_id,
+        findings=(_finding(),),
+        limitations=(),
+    )
+    signal = PlatformProblemSignal(
+        problem_kind=PROBLEM_KIND_PLATFORM_TOOL_FAILURE,
+        severity=PROBLEM_SEVERITY_ERROR,
+        source_layer=PROBLEM_SOURCE_LAYER_TOOL,
+        source_component="invoke_tool",
+    )
+    source_facts = _source_facts(
+        tenant_id=_TENANT,
+        task_id=task_id,
+        run_id=run_id,
+        problem_signals=(signal,),
+    )
+    engine, strategy = _engine_with_inspector()
+    engine.group(
+        (_assessment_input(assessment, source_facts=source_facts),),
+        strategy_id=_FAKE_STRATEGY_ID,
+    )
+    assert strategy.inspected_inputs[0].features is not None
+
+
+def test_wrong_bundle_tenant_fails_closed_before_strategy() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    assessment = DiagnosticAssessment(
+        tenant_id="tenant-a",
+        task_id=task_id,
+        run_id=run_id,
+        findings=(),
+        limitations=(),
+    )
+    signal = PlatformProblemSignal(
+        problem_kind=PROBLEM_KIND_PLATFORM_TOOL_FAILURE,
+        severity=PROBLEM_SEVERITY_ERROR,
+        source_layer=PROBLEM_SOURCE_LAYER_TOOL,
+        source_component="invoke_tool",
+    )
+    source_facts = _source_facts(
+        tenant_id="tenant-b",
+        task_id=task_id,
+        run_id=run_id,
+        problem_signals=(signal,),
+    )
+    engine, strategy = _engine_with_inspector()
+    with pytest.raises(ProblemGroupingIntegrityError, match="source_facts tenant_id"):
+        engine.group(
+            (_assessment_input(assessment, source_facts=source_facts),),
+            strategy_id=_FAKE_STRATEGY_ID,
+        )
+    assert strategy.inspected_inputs == ()
+
+
+def test_two_tenant_source_bundle_contamination_fails_closed() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    assessment = DiagnosticAssessment(
+        tenant_id="tenant-a",
+        task_id=task_id,
+        run_id=run_id,
+        findings=(_finding(),),
+        limitations=(),
+    )
+    signal = PlatformProblemSignal(
+        problem_kind=PROBLEM_KIND_PLATFORM_TOOL_FAILURE,
+        severity=PROBLEM_SEVERITY_ERROR,
+        source_layer=PROBLEM_SOURCE_LAYER_TOOL,
+        source_component="invoke_tool",
+        error_code="TOOL_TIMEOUT",
+        safe_message="Plausible cross-tenant signal payload.",
+    )
+    source_facts = _source_facts(
+        tenant_id="tenant-b",
+        task_id=task_id,
+        run_id=run_id,
+        problem_signals=(signal,),
+    )
+    engine, strategy = _engine_with_inspector()
+    with pytest.raises(ProblemGroupingIntegrityError, match="source_facts tenant_id"):
+        engine.group(
+            (_assessment_input(assessment, source_facts=source_facts),),
+            strategy_id=_FAKE_STRATEGY_ID,
+        )
+    assert strategy.inspected_inputs == ()
+
+
+def test_wrong_bundle_task_fails_closed() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    other_task = mint_task_id()
+    assessment = DiagnosticAssessment(
+        tenant_id=_TENANT,
+        task_id=task_id,
+        run_id=run_id,
+        findings=(),
+        limitations=(),
+    )
+    engine = _deterministic_engine()
+    with pytest.raises(ProblemGroupingIntegrityError, match="source_facts task_id"):
+        engine.group(
+            (
+                _assessment_input(
+                    assessment,
+                    source_facts=_source_facts(task_id=other_task, run_id=run_id),
+                ),
+            ),
+            strategy_id=STRATEGY_ID,
+        )
+
+
+def test_wrong_bundle_run_fails_closed() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    other_run = mint_run_id()
+    assessment = DiagnosticAssessment(
+        tenant_id=_TENANT,
+        task_id=task_id,
+        run_id=run_id,
+        findings=(),
+        limitations=(),
+    )
+    engine = _deterministic_engine()
+    with pytest.raises(ProblemGroupingIntegrityError, match="source_facts run_id"):
+        engine.group(
+            (
+                _assessment_input(
+                    assessment,
+                    source_facts=_source_facts(task_id=task_id, run_id=other_run),
+                ),
+            ),
+            strategy_id=STRATEGY_ID,
+        )
+
+
+def test_problem_signal_run_id_mismatch_fails_closed() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    assessment = DiagnosticAssessment(
+        tenant_id=_TENANT,
+        task_id=task_id,
+        run_id=run_id,
+        findings=(),
+        limitations=(),
+    )
+    signal = PlatformProblemSignal(
+        problem_kind=PROBLEM_KIND_PLATFORM_TOOL_FAILURE,
+        severity=PROBLEM_SEVERITY_ERROR,
+        task_id=str(task_id),
+        run_id=str(mint_run_id()),
+    )
+    engine = _deterministic_engine()
+    with pytest.raises(ProblemGroupingIntegrityError, match="problem signal.*source_facts run_id"):
+        engine.group(
+            (
+                _assessment_input(
+                    assessment,
+                    source_facts=_source_facts(
+                        task_id=task_id,
+                        run_id=run_id,
+                        problem_signals=(signal,),
+                    ),
+                ),
+            ),
+            strategy_id=STRATEGY_ID,
+        )
+
+
+def test_problem_signal_empty_task_run_inherits_bundle_scope() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    signal = PlatformProblemSignal(
+        problem_kind=PROBLEM_KIND_PLATFORM_TOOL_FAILURE,
+        severity=PROBLEM_SEVERITY_ERROR,
+        source_layer=PROBLEM_SOURCE_LAYER_TOOL,
+        source_component="invoke_tool",
+    )
+    assessment = DiagnosticAssessment(
+        tenant_id=_TENANT,
+        task_id=task_id,
+        run_id=run_id,
+        findings=(),
+        limitations=(),
+    )
+    features = DiagnosticProblemGroupingFeatureProjector().project(
+        assessment,
+        normalize_assessment(assessment),
+        source_facts=_source_facts(
+            task_id=task_id,
+            run_id=run_id,
+            problem_signals=(signal,),
+        ),
+    )
+    assert features.failure_context
+    assert features.component_context
+
+
+def test_source_facts_empty_tenant_id_rejected_at_construction() -> None:
+    with pytest.raises(ValueError, match="tenant_id is required"):
+        ProblemGroupingFeatureSourceFacts(
+            tenant_id="",
+            task_id=mint_task_id(),
+            run_id=mint_run_id(),
+        )
