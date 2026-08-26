@@ -36,6 +36,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
 )
 from intergrax.runtime.diagnostics.problem_grouping_features import (
     REPRESENTATION_VERSION_V1,
+    REPRESENTATION_VERSION_V2,
     ProblemGroupingFeatureSet,
     ProblemGroupingRepresentationVersion,
     project_assessment_features,
@@ -644,7 +645,7 @@ def test_normalized_non_lifecycle_finding_lifecycle_transition_is_none() -> None
 class _AssessmentFeatureProjector:
     @property
     def representation_version(self) -> ProblemGroupingRepresentationVersion:
-        return REPRESENTATION_VERSION_V1
+        return REPRESENTATION_VERSION_V2
 
     def project(
         self,
@@ -714,7 +715,7 @@ def test_feature_requiring_strategy_receives_projected_features() -> None:
     )
 
     assert len(result.candidates) == 1
-    assert strategy.received_versions == (REPRESENTATION_VERSION_V1, REPRESENTATION_VERSION_V1)
+    assert strategy.received_versions == (REPRESENTATION_VERSION_V2, REPRESENTATION_VERSION_V2)
 
 
 def test_feature_requiring_strategy_fails_without_projector() -> None:

@@ -1158,9 +1158,9 @@ DiagnosticAssessment[]
   → ProblemGroupingStrategyResult → engine validation → ProblemGroupingResult
 ```
 
-**Owner:** `ProblemGroupingFeatureProjector` (or equivalent) — injected into `ProblemGroupingEngine`, not another diagnostic engine. v1 reference projection: `project_assessment_features()` maps assessment + normalized subject → `ProblemGroupingFeatureSet` with `subject_ref`, deterministic `structural_signature` (link to DIAG-5B), and bounded `ProblemGroupingTextEvidence` from `DiagnosticFinding.claim` and `DiagnosticLimitation.factual_message` with typed `ProblemGroupingTextEvidenceSourceKind` and supporting event/evidence ids. No `dict[str, Any]`, no metadata bags, no raw logs. Strategies declaring `requires_features=True` fail closed when no projector is configured.
+**Owner:** `ProblemGroupingFeatureProjector` (or equivalent) — injected into `ProblemGroupingEngine`, not another diagnostic engine. v1 reference projection: `project_assessment_features()` maps assessment + normalized subject → `ProblemGroupingFeatureSet` with `subject_ref`, deterministic `structural_signature` (link to DIAG-5B), and bounded `ProblemGroupingTextEvidence` from `DiagnosticFinding.claim` and `DiagnosticLimitation.factual_message` with typed `ProblemGroupingTextEvidenceSourceKind` and supporting event/evidence ids. v2 (DIAG-5C-B) extends the envelope with typed execution/component/operation/integration/failure/causal tuples — empty until DIAG-5C-C population. No `dict[str, Any]`, no metadata bags, no raw logs. Strategies declaring `requires_features=True` fail closed when no projector is configured.
 
-**Representation versioning:** `ProblemGroupingRepresentationVersion` (v1 = `"1"`). Changing projection semantics (new fields, text normalization, evidence selection) requires a version bump — model inputs must not change silently.
+**Representation versioning:** `ProblemGroupingRepresentationVersion` (v1 = `"1"` structural+text only; v2 = `"2"` full typed envelope). Changing projection semantics requires a version bump — model inputs must not change silently.
 
 #### Candidate generation vs adjudication
 
@@ -1226,6 +1226,41 @@ Grouping proposes **"these incidents are likely related under this method"** —
 **Explicit non-goals (DIAG-5C-A):** live models, prompts, embeddings execution, vector DB, `HybridProblemGroupingStrategy`, problem-signal join, persistence, `ProblemId`. Engine input-contract wiring is DIAG-5C-A-R1.
 
 **Code references:** `intergrax/runtime/diagnostics/problem_grouping_features.py`, `intergrax/runtime/diagnostics/problem_grouping.py`, `intergrax/llm_adapters/contracts/llm_adapter.py`, `intergrax/rag/embedding/contracts/embedding_provider.py`.
+
+### Future-proof typed strategy data envelope (DIAG-5C-B)
+
+**Scope:** contracts, validation, and tests only — no second grouping strategy, no model calls, no feature population from `RuntimeEvent` / `PlatformProblemSignal` yet (DIAG-5C-C).
+
+**Production grouping strategies after this slice:** **1** — `DeterministicProblemGroupingStrategy` only. No `SemanticProblemGroupingStrategy`, `MLProblemGroupingStrategy`, `LLMProblemGroupingStrategy`, or `HybridProblemGroupingStrategy`.
+
+`ProblemGroupingEngine` now exposes a complete typed strategy data envelope via `ProblemGroupingFeatureSet` (representation v2 = `"2"`). v1 (`"1"`) remains documented as `structural_signature` + `text_evidence` only; v2 adds optional typed tuples without altering v1 meaning.
+
+| Envelope field | Typed category | Upstream source (future projector) |
+|----------------|----------------|-------------------------------------|
+| `subject_ref` | execution identity anchor | `ProblemGroupingSubject` normalization |
+| `representation_version` | version gate | projector contract |
+| `structural_signature` | exact structural diagnostic facts | DIAG-5B deterministic signature |
+| `execution_context` | `ProblemGroupingExecutionFeature` | `RuntimeEvent` phase/category/type, retry shape |
+| `component_context` | `ProblemGroupingComponentFeature` | `PlatformProblemSignal.source_layer` / `source_component` |
+| `operation_context` | `ProblemGroupingOperationFeature` | problem signals, runtime events, `ApplicationObservabilityAttributes.operation` |
+| `integration_context` | `ProblemGroupingIntegrationFeature` | causal `MessageBusTaskRef.provider`, integration identifiers |
+| `failure_context` | `ProblemGroupingFailureFeature` | `PlatformProblemSignal` problem_kind / severity / error_code / exception_type |
+| `causal_context` | `ProblemGroupingCausalFeature` | `PlatformCausalEvidence` relation_kind + bounded ref-kind shape |
+| `text_evidence` | `ProblemGroupingTextEvidence` | assessment claims/limitations; future `safe_message` |
+
+**Current deterministic strategy:** uses `input.subject` only — ignores all extended feature fields. No strategy version bump.
+
+**Default projector (`project_assessment_features`):** populates `structural_signature` and `text_evidence` only; extended tuples default to empty. Proves backward deterministic operation while exposing future capability.
+
+**Tuple order:** analytical context in source presentation order — not canonical sequence and not grouping equality semantics.
+
+**Raw data boundary:** strategies never receive `RuntimeEvent` payloads, raw logs, `dict[str, Any]`, or `PlatformProblemSignal` objects. Projectors map platform facts → bounded typed descriptors.
+
+**Scenario-stage future strategy:** consumes the same `ProblemGroupingInput` without `ProblemGroupingEngine` redesign.
+
+**Explicit non-goals (DIAG-5C-B):** embeddings, LLM, vector DB, persistence queries, second strategy, `ProblemId`, population from raw events/signals (DIAG-5C-C).
+
+**Code references:** `intergrax/runtime/diagnostics/problem_grouping_features.py` (`ProblemGroupingFeatureSet`, `validate_problem_grouping_feature_set`, `REPRESENTATION_VERSION_V2`).
 
 ### Multi-execution problem grouping (DIAG-5A)
 

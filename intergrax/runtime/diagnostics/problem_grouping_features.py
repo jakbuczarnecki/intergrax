@@ -2,7 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 
 """
-Typed semantic grouping features and model ports (DIAG-5C-A).
+Typed semantic grouping features and model ports (DIAG-5C-A / DIAG-5C-B).
 
 Separates canonical diagnostic facts (A) from bounded model input (B) and
 strategy hypotheses (C). Does not perform grouping, model calls, or persistence
@@ -16,6 +16,7 @@ from enum import StrEnum
 from typing import NewType, Protocol, runtime_checkable
 
 from intergrax.contracts.execution_identity import EventId
+from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
     build_deterministic_problem_signature,
 )
@@ -32,11 +33,17 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingSubjectRef,
     normalize_assessment,
 )
+from intergrax.runtime.events.event_taxonomy import EventCategory
 
 ProblemGroupingRepresentationVersion = NewType("ProblemGroupingRepresentationVersion", str)
 
 REPRESENTATION_VERSION_V1 = ProblemGroupingRepresentationVersion("1")
+REPRESENTATION_VERSION_V2 = ProblemGroupingRepresentationVersion("2")
 MAX_TEXT_EVIDENCE_CHARS = 2_048
+
+# Semantic causal ref-kind labels for bounded causal descriptors (not instance ids).
+CAUSAL_SOURCE_REF_KIND_MESSAGE_BUS_TASK = "message_bus_task"
+CAUSAL_TARGET_REF_KIND_RUNTIME_EXECUTION = "runtime_execution"
 
 
 class ProblemGroupingTextEvidenceSourceKind(StrEnum):
@@ -44,6 +51,7 @@ class ProblemGroupingTextEvidenceSourceKind(StrEnum):
 
     OPERATOR_CLAIM = "operator_claim"
     FACTUAL_LIMITATION = "factual_limitation"
+    PROBLEM_SIGNAL_SAFE_MESSAGE = "problem_signal_safe_message"
 
 
 class ProblemGroupingFeatureIntegrityError(Exception):
@@ -66,19 +74,132 @@ class ProblemGroupingTextEvidence:
 
 
 @dataclass(frozen=True, slots=True)
+class ProblemGroupingExecutionFeature:
+    """
+    Execution-level operational context for grouping strategies.
+
+    Models phase, event taxonomy, and retry shape — not execution identity.
+    ``TaskId`` / ``RunId`` / ``AttemptId`` belong in ``subject_ref`` only.
+    """
+
+    phase: ExecutionPhase | None = None
+    event_category: EventCategory | None = None
+    event_type: str | None = None
+    is_retry_related: bool | None = None
+    supporting_event_ids: tuple[EventId, ...] = ()
+    supporting_evidence_ids: tuple[EventId, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ProblemGroupingComponentFeature:
+    """
+    Component/subsystem context derived from platform problem signals.
+
+    ``source_layer`` and ``source_component`` mirror ``PlatformProblemSignal``
+    dimensions without importing observability models into strategy contracts.
+    """
+
+    source_layer: str
+    source_component: str
+    supporting_event_ids: tuple[EventId, ...] = ()
+    supporting_evidence_ids: tuple[EventId, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ProblemGroupingOperationFeature:
+    """
+    Operation/tool context for grouping strategies.
+
+    Instance-specific node/step identifiers are contextual evidence, not
+    deterministic problem-class identity.
+    """
+
+    agent_id: str | None = None
+    tool_id: str | None = None
+    capability: str | None = None
+    node_id: str | None = None
+    step_id: str | None = None
+    operation: str | None = None
+    supporting_event_ids: tuple[EventId, ...] = ()
+    supporting_evidence_ids: tuple[EventId, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ProblemGroupingIntegrationFeature:
+    """
+    Integration/provider context for grouping strategies.
+
+    Uses validated semantic string identifiers — no global provider enum.
+    """
+
+    provider: str
+    integration_id: str | None = None
+    namespace: str | None = None
+    supporting_event_ids: tuple[EventId, ...] = ()
+    supporting_evidence_ids: tuple[EventId, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ProblemGroupingFailureFeature:
+    """
+    Normalized failure context for grouping strategies.
+
+    Mirrors ``PlatformProblemSignal`` failure dimensions without coupling
+    strategies to observability export models.
+    """
+
+    problem_kind: str
+    severity: str
+    error_code: str | None = None
+    exception_type: str | None = None
+    supporting_event_ids: tuple[EventId, ...] = ()
+    supporting_evidence_ids: tuple[EventId, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ProblemGroupingCausalFeature:
+    """
+    Bounded causal-shape descriptor for grouping strategies.
+
+    Captures relation semantics from ``PlatformCausalEvidence`` without
+    exposing instance-heavy refs or persistence queries.
+    """
+
+    relation_kind: str
+    source_ref_kind: str
+    target_ref_kind: str
+    source_provider: str | None = None
+    supporting_event_ids: tuple[EventId, ...] = ()
+    supporting_evidence_ids: tuple[EventId, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class ProblemGroupingFeatureSet:
     """
     Bounded model/grouping input derived from one execution assessment.
 
     Links back to deterministic structural identity without rewriting canonical
-    facts. Additional typed dimensions (component, provider, error code, etc.)
-    are added only when upstream diagnostic projection supplies real facts.
+    facts. Feature tuples are analytical context in source presentation order —
+    order does not define grouping equality; strategies decide consumption.
+
+    v2 envelope adds typed execution, component, operation, integration,
+    failure, and causal descriptors. Categories may be empty until a projector
+    supplies real platform facts (DIAG-5C-C).
     """
 
     subject_ref: ProblemGroupingSubjectRef
     representation_version: ProblemGroupingRepresentationVersion
     structural_signature: DeterministicProblemSignature
-    text_evidence: tuple[ProblemGroupingTextEvidence, ...]
+    execution_context: tuple[ProblemGroupingExecutionFeature, ...] = ()
+    component_context: tuple[ProblemGroupingComponentFeature, ...] = ()
+    operation_context: tuple[ProblemGroupingOperationFeature, ...] = ()
+    integration_context: tuple[ProblemGroupingIntegrationFeature, ...] = ()
+    failure_context: tuple[ProblemGroupingFailureFeature, ...] = ()
+    causal_context: tuple[ProblemGroupingCausalFeature, ...] = ()
+    text_evidence: tuple[ProblemGroupingTextEvidence, ...] = ()
+
+    def __post_init__(self) -> None:
+        validate_problem_grouping_feature_set(self)
 
 
 @runtime_checkable
@@ -143,6 +264,110 @@ def _bounded_text(value: str, *, field_name: str) -> str:
     return normalized
 
 
+def _semantic_identifier(value: str, *, field_name: str) -> str:
+    if type(value) is not str:
+        raise ProblemGroupingFeatureIntegrityError(f"{field_name} must be str")
+    normalized = value.strip()
+    if not normalized:
+        raise ProblemGroupingFeatureIntegrityError(f"{field_name} must be non-empty")
+    return normalized
+
+
+def _optional_semantic_identifier(value: str | None, *, field_name: str) -> str | None:
+    if value is None:
+        return None
+    return _semantic_identifier(value, field_name=field_name)
+
+
+def _validate_execution_feature(feature: ProblemGroupingExecutionFeature) -> None:
+    if feature.event_type is not None:
+        _semantic_identifier(feature.event_type, field_name="execution.event_type")
+
+
+def _validate_component_feature(feature: ProblemGroupingComponentFeature) -> None:
+    _semantic_identifier(feature.source_layer, field_name="component.source_layer")
+    _semantic_identifier(feature.source_component, field_name="component.source_component")
+
+
+def _validate_operation_feature(feature: ProblemGroupingOperationFeature) -> None:
+    has_context = any(
+        (
+            feature.agent_id,
+            feature.tool_id,
+            feature.capability,
+            feature.node_id,
+            feature.step_id,
+            feature.operation,
+        )
+    )
+    if not has_context:
+        raise ProblemGroupingFeatureIntegrityError(
+            "operation feature must declare at least one operation dimension"
+        )
+    _optional_semantic_identifier(feature.agent_id, field_name="operation.agent_id")
+    _optional_semantic_identifier(feature.tool_id, field_name="operation.tool_id")
+    _optional_semantic_identifier(feature.capability, field_name="operation.capability")
+    _optional_semantic_identifier(feature.node_id, field_name="operation.node_id")
+    _optional_semantic_identifier(feature.step_id, field_name="operation.step_id")
+    _optional_semantic_identifier(feature.operation, field_name="operation.operation")
+
+
+def _validate_integration_feature(feature: ProblemGroupingIntegrationFeature) -> None:
+    _semantic_identifier(feature.provider, field_name="integration.provider")
+    _optional_semantic_identifier(
+        feature.integration_id,
+        field_name="integration.integration_id",
+    )
+    _optional_semantic_identifier(feature.namespace, field_name="integration.namespace")
+
+
+def _validate_failure_feature(feature: ProblemGroupingFailureFeature) -> None:
+    _semantic_identifier(feature.problem_kind, field_name="failure.problem_kind")
+    _semantic_identifier(feature.severity, field_name="failure.severity")
+    _optional_semantic_identifier(feature.error_code, field_name="failure.error_code")
+    _optional_semantic_identifier(
+        feature.exception_type,
+        field_name="failure.exception_type",
+    )
+
+
+def _validate_causal_feature(feature: ProblemGroupingCausalFeature) -> None:
+    _semantic_identifier(feature.relation_kind, field_name="causal.relation_kind")
+    _semantic_identifier(feature.source_ref_kind, field_name="causal.source_ref_kind")
+    _semantic_identifier(feature.target_ref_kind, field_name="causal.target_ref_kind")
+    _optional_semantic_identifier(
+        feature.source_provider,
+        field_name="causal.source_provider",
+    )
+
+
+def _validate_text_evidence(evidence: ProblemGroupingTextEvidence) -> None:
+    _bounded_text(evidence.text, field_name="text_evidence.text")
+
+
+def validate_problem_grouping_feature_set(features: ProblemGroupingFeatureSet) -> None:
+    """Validate bounded typing and semantic identifier constraints."""
+    if not str(features.representation_version).strip():
+        raise ProblemGroupingFeatureIntegrityError(
+            "representation_version must be non-empty"
+        )
+
+    for feature in features.execution_context:
+        _validate_execution_feature(feature)
+    for feature in features.component_context:
+        _validate_component_feature(feature)
+    for feature in features.operation_context:
+        _validate_operation_feature(feature)
+    for feature in features.integration_context:
+        _validate_integration_feature(feature)
+    for feature in features.failure_context:
+        _validate_failure_feature(feature)
+    for feature in features.causal_context:
+        _validate_causal_feature(feature)
+    for evidence in features.text_evidence:
+        _validate_text_evidence(evidence)
+
+
 def _text_evidence_from_finding(finding: DiagnosticFinding) -> ProblemGroupingTextEvidence:
     return ProblemGroupingTextEvidence(
         source_kind=ProblemGroupingTextEvidenceSourceKind.OPERATOR_CLAIM,
@@ -170,13 +395,14 @@ def project_assessment_features(
     assessment: DiagnosticAssessment,
     *,
     subject: ProblemGroupingSubject | None = None,
-    representation_version: ProblemGroupingRepresentationVersion = REPRESENTATION_VERSION_V1,
+    representation_version: ProblemGroupingRepresentationVersion = REPRESENTATION_VERSION_V2,
 ) -> ProblemGroupingFeatureSet:
     """
-    Default v1 feature projection from one ``DiagnosticAssessment``.
+    Default feature projection from one ``DiagnosticAssessment``.
 
     Uses only facts already present on the assessment — no persistence access,
-    no invented dimensions, no raw logs.
+    no invented dimensions, no raw logs. Extended feature tuples remain empty
+    until DIAG-5C-C populates them from typed platform facts.
     """
     if not str(representation_version).strip():
         raise ProblemGroupingFeatureIntegrityError(
