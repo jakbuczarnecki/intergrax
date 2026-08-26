@@ -338,7 +338,7 @@
           "marketplace_catalog_enabled": true
         },
         "observability": {
-          "causal_diagnostics_enabled": true,
+          "diagnostics_pane_enabled": true,
           "debug_surface_override": false,
           "event_subscriptions": [],
           "health_dashboard_enabled": true,

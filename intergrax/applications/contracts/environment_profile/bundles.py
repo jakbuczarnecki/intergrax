@@ -319,7 +319,7 @@ class GovernanceBundle(BaseModel):
                 otel_enabled=True,
                 metrics_plugins_enabled=True,
                 debug_surface_override=False,
-                causal_diagnostics_enabled=True,
+                diagnostics_pane_enabled=True,
                 health_dashboard_enabled=True,
                 unified_observability_dashboard_enabled=True,
             ),

@@ -245,7 +245,7 @@ class ObservabilityProfile(BaseModel):
     otel_enabled: bool = False
     metrics_plugins_enabled: bool = True
     debug_surface_override: bool | None = None
-    causal_diagnostics_enabled: bool = False
+    diagnostics_pane_enabled: bool = False
     health_dashboard_enabled: bool = False
     unified_observability_dashboard_enabled: bool = False
     event_subscriptions: list[EventSubscriptionSpec] = Field(default_factory=list)

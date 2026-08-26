@@ -493,14 +493,6 @@ def test_audit_ideal_20_2_policy_change_impact_cli() -> None:
     assert "Policy change impact" in rendered
 
 
-def test_audit_ideal_21_1_causal_diagnostics() -> None:
-    from intergrax.applications._shared.causal_diagnostics_wiring import resolve_causal_diagnostics_wiring
-
-    wiring = resolve_causal_diagnostics_wiring(ApplicationEnvironmentProfile.product_defaults())
-    assert wiring.enabled is True
-    assert wiring.chain is not None
-
-
 def test_audit_ideal_21_2_health_dashboard() -> None:
     from intergrax.applications._shared.health_dashboard_wiring import resolve_health_dashboard_wiring
 

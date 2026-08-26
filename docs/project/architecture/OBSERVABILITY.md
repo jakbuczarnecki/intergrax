@@ -1398,6 +1398,10 @@ DiagnosticReadService
 
 **Code references:** `intergrax/runtime/diagnostics/diagnostic_read_service.py`, `intergrax/runtime/diagnostics/diagnostic_read_models.py`.
 
+**Product observability dashboard (ONE-SPINE-1):** Tier-3 product hosts expose `ProductObservabilityDashboard` via GOV-PROD.1 wiring. The `diagnostics` pane projects central diagnostic capability through injected `DiagnosticReadService` — tenant-scoped `problem_count` / `open_problem_count` with `ready=True` when the read service is wired. No synthetic causal chains, bootstrap run/task identities, or direct `ProblemPersistence` / `CausalEvidencePersistence` reads from dashboard code. `PlatformCausalEvidence` remains canonical relationship truth; the Diagnostic Engine is the only diagnostic interpretation spine.
+
+**Code references:** `intergrax/runtime/observability/product_observability_dashboard.py`, `intergrax/applications/_shared/product_observability_dashboard_wiring.py`.
+
 ### Cross-run diagnostic orchestration (DIAG-7)
 
 **Scope:** one canonical synchronous composition layer that runs the existing DIAG-2→5 spine across multiple execution scopes for a single tenant — without schedulers, daemons, queues, background workers, or new diagnostic truth.

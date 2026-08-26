@@ -70,7 +70,6 @@ def main() -> int:
         ("check_capability_negotiation.py", ()),
         ("check_cost_optimization_wiring.py", ()),
         ("check_policy_change_impact_cli.py", ()),
-        ("check_causal_diagnostics_wiring.py", ()),
         ("check_health_dashboard_contracts.py", ()),
         ("check_agent_simulator_wiring.py", ()),
         ("check_architecture_debt_burn_down.py", ()),
