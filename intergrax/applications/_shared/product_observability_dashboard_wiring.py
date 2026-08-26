@@ -7,9 +7,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from fastapi import APIRouter
+from fastapi import APIRouter, FastAPI
 
 from intergrax.applications._shared.architecture_health_wiring import resolve_architecture_health_wiring
+from intergrax.applications._shared.diagnostic_read_wiring import resolve_host_diagnostic_read_service
+from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications._shared.compliance_profile_wiring import resolve_compliance_profile_wiring
 from intergrax.applications._shared.health_dashboard_wiring import resolve_health_dashboard_wiring
 from intergrax.applications._shared.product_observability_dashboard_routes import (
@@ -139,3 +141,34 @@ def resolve_product_observability_dashboard_wiring(
         router=create_product_observability_dashboard_router(dashboard=dashboard, enabled=True),
         dashboard=dashboard,
     )
+
+
+def _diagnostics_pane_requires_read_service(env: ApplicationEnvironmentProfile) -> bool:
+    return env.observability_profile.diagnostics_pane_enabled
+
+
+def wire_harness_product_observability_dashboard(
+    app: FastAPI,
+    *,
+    runtime: HarnessHostRuntime,
+    repo_root: Path | None = None,
+) -> ProductObservabilityDashboardWiring:
+    """
+    Mount GOV-PROD.1 dashboard routes on a Tier-3 product harness host.
+
+    When ``diagnostics_pane_enabled`` is true, wires the central ``DiagnosticReadService``
+    from shared platform persistence on the same harness runtime — no dashboard-local stores.
+    """
+    env = runtime.environment
+    diagnostic_read_service: DiagnosticReadService | None = None
+    if _diagnostics_pane_requires_read_service(env):
+        diagnostic_read_service = resolve_host_diagnostic_read_service(runtime)
+
+    wiring = resolve_product_observability_dashboard_wiring(
+        env,
+        repo_root=repo_root,
+        diagnostic_read_service=diagnostic_read_service,
+    )
+    if wiring.enabled and wiring.router is not None:
+        app.include_router(wiring.router)
+    return wiring

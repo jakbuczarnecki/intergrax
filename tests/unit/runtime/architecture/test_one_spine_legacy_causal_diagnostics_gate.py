@@ -98,3 +98,38 @@ def test_causal_diagnostics_module_removed() -> None:
     root = _repo_root()
     assert not (root / "intergrax/runtime/observability/causal_diagnostics.py").exists()
     assert not (root / "intergrax/applications/_shared/causal_diagnostics_wiring.py").exists()
+
+
+_FORBIDDEN_DASHBOARD_DIAGNOSTIC_STORES = frozenset(
+    {
+        "InMemoryProblemPersistence",
+        "InMemoryRuntimeEventStore",
+        "InMemoryCausalEvidencePersistence",
+    }
+)
+
+_DASHBOARD_WIRING_FILES = (
+    "intergrax/applications/_shared/product_observability_dashboard_wiring.py",
+    "intergrax/applications/_shared/diagnostic_read_wiring.py",
+)
+
+
+def _collect_forbidden_dashboard_store_instantiations(path: Path) -> list[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            if node.func.id in _FORBIDDEN_DASHBOARD_DIAGNOSTIC_STORES:
+                violations.append(
+                    f"{path.relative_to(_repo_root())}:{node.lineno} instantiates {node.func.id}()",
+                )
+    return violations
+
+
+def test_product_dashboard_wiring_cannot_instantiate_private_diagnostic_stores() -> None:
+    root = Path(__file__).resolve().parents[4]
+    violations: list[str] = []
+    for rel in _DASHBOARD_WIRING_FILES:
+        path = root / rel
+        violations.extend(_collect_forbidden_dashboard_store_instantiations(path))
+    assert violations == []
