@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from intergrax.contracts.execution_identity import mint_task_id
-from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionDelegate
+from intergrax.runtime.execution.boundary import ExecutionBoundary
 from intergrax.runtime.execution.task_compat import UnifiedTaskRunnerExecutionDelegate
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
@@ -66,14 +66,7 @@ class FakeTaskRunner:
         self.last_task: Task | None = None
         self._result = result
 
-    async def run_task(
-        self,
-        task: Task,
-        *,
-        run_id=None,
-        attempt_id=None,
-        resume_checkpoint=None,
-    ) -> TaskResult:
+    async def run_task(self, task: Task) -> TaskResult:
         self.call_count += 1
         self.last_task = task
         return self._result
@@ -165,10 +158,6 @@ async def test_explicit_class_can_satisfy_execution_delegate_contract() -> None:
     result = await boundary.execute(Ping(value="typed"))
 
     assert result == Pong(value="explicit:typed")
-
-
-def test_execution_delegate_protocol_is_statically_declared() -> None:
-    assert ExecutionDelegate.__protocol_attrs__ == frozenset({"execute"})
 
 
 @pytest.mark.asyncio

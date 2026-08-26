@@ -7,22 +7,13 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from intergrax.contracts.execution_identity import AttemptId, RunId
-from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.task.task import Task, TaskResult
 
 
 class TaskRunnerPort(Protocol):
     """Narrow port for existing UnifiedTaskRunner task execution."""
 
-    async def run_task(
-        self,
-        task: Task,
-        *,
-        run_id: RunId | None = None,
-        attempt_id: AttemptId | None = None,
-        resume_checkpoint: TaskCheckpoint | None = None,
-    ) -> TaskResult:
+    async def run_task(self, task: Task) -> TaskResult:
         ...
 
 
