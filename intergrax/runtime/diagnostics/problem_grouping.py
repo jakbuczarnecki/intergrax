@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import NewType, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, NewType, Protocol, runtime_checkable
 
 from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.runtime.diagnostics.diagnostic_assessment import (
@@ -18,6 +18,12 @@ from intergrax.runtime.diagnostics.diagnostic_assessment import (
     DiagnosticLimitationKind,
 )
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyKind, LifecycleAnomalyScope, LifecycleViolationTransition
+
+if TYPE_CHECKING:
+    from intergrax.runtime.diagnostics.problem_grouping_features import (
+        ProblemGroupingFeatureProjector,
+        ProblemGroupingFeatureSet,
+    )
 
 ProblemGroupingStrategyId = NewType("ProblemGroupingStrategyId", str)
 ProblemGroupingStrategyVersion = NewType("ProblemGroupingStrategyVersion", str)
@@ -210,11 +216,25 @@ class ProblemGroupingCandidate:
 
 
 @dataclass(frozen=True, slots=True)
+class ProblemGroupingInput:
+    """
+    Central strategy invocation input: normalized subject plus optional features.
+
+    The engine constructs inputs; strategies must not rebuild subjects from
+  persistence or duplicate normalization pipelines.
+    """
+
+    subject: ProblemGroupingSubject
+    features: ProblemGroupingFeatureSet | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class ProblemGroupingStrategyCharacteristics:
     """Declarative metadata for reproducibility and audit."""
 
     method: ProblemGroupingMethod
     deterministic: bool
+    requires_features: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -264,7 +284,7 @@ class ProblemGroupingStrategy(Protocol):
 
     def group(
         self,
-        subjects: tuple[ProblemGroupingSubject, ...],
+        inputs: tuple[ProblemGroupingInput, ...],
     ) -> ProblemGroupingStrategyResult: ...
 
 
@@ -321,21 +341,42 @@ class ProblemGroupingEngine:
     contract integrity. Stable ProblemId lifecycle is out of scope (DIAG-5D).
     """
 
-    def __init__(self, registry: ProblemGroupingStrategyRegistry) -> None:
+    def __init__(
+        self,
+        registry: ProblemGroupingStrategyRegistry,
+        *,
+        feature_projector: ProblemGroupingFeatureProjector | None = None,
+    ) -> None:
         self._registry = registry
+        self._feature_projector = feature_projector
 
     def group(
         self,
         assessments: tuple[DiagnosticAssessment, ...],
         *,
         strategy_id: ProblemGroupingStrategyId,
+        feature_projector: ProblemGroupingFeatureProjector | None = None,
     ) -> ProblemGroupingResult:
-        subjects = _normalize_and_validate_subjects(assessments)
+        projector = (
+            feature_projector
+            if feature_projector is not None
+            else self._feature_projector
+        )
+        inputs = _normalize_and_validate_inputs(
+            assessments,
+            feature_projector=projector,
+        )
         registration = self._registry._resolve_registration(strategy_id)
         strategy = registration.strategy
 
+        _validate_inputs_for_strategy(
+            inputs=inputs,
+            registration=registration,
+            feature_projector=projector,
+        )
+
         try:
-            strategy_result = strategy.group(subjects)
+            strategy_result = strategy.group(inputs)
         except ProblemGroupingIntegrityError:
             raise
         except ProblemGroupingStrategyError:
@@ -345,6 +386,7 @@ class ProblemGroupingEngine:
                 f"grouping strategy {registration.strategy_id!r} failed"
             ) from exc
 
+        subjects = tuple(input_item.subject for input_item in inputs)
         tenant_id = subjects[0].tenant_id
         input_order = tuple(subject.ref for subject in subjects)
         validated_candidates = _validate_strategy_result(
@@ -396,13 +438,15 @@ def _normalize_limitation(
     )
 
 
-def _normalize_and_validate_subjects(
+def _normalize_and_validate_inputs(
     assessments: tuple[DiagnosticAssessment, ...],
-) -> tuple[ProblemGroupingSubject, ...]:
+    *,
+    feature_projector: ProblemGroupingFeatureProjector | None,
+) -> tuple[ProblemGroupingInput, ...]:
     if not assessments:
         raise ProblemGroupingIntegrityError("grouping requires at least one assessment")
 
-    subjects: list[ProblemGroupingSubject] = []
+    inputs: list[ProblemGroupingInput] = []
     seen_refs: set[ProblemGroupingSubjectRef] = set()
     tenant_id: str | None = None
 
@@ -421,9 +465,62 @@ def _normalize_and_validate_subjects(
                 f"duplicate subject in grouping input: {ref.task_id!r}/{ref.run_id!r}"
             )
         seen_refs.add(ref)
-        subjects.append(subject)
 
-    return tuple(subjects)
+        features = None
+        if feature_projector is not None:
+            features = feature_projector.project(assessment, subject)
+        inputs.append(ProblemGroupingInput(subject=subject, features=features))
+
+    return tuple(inputs)
+
+
+def _validate_inputs_for_strategy(
+    *,
+    inputs: tuple[ProblemGroupingInput, ...],
+    registration: _RegisteredProblemGroupingStrategy,
+    feature_projector: ProblemGroupingFeatureProjector | None,
+) -> None:
+    if registration.characteristics.requires_features:
+        if feature_projector is None or any(
+            input_item.features is None for input_item in inputs
+        ):
+            raise ProblemGroupingIntegrityError(
+                "strategy requires features but features are not available"
+            )
+
+    for input_item in inputs:
+        _validate_input_feature_coherence(input_item)
+
+
+def _validate_input_feature_coherence(input_item: ProblemGroupingInput) -> None:
+    features = input_item.features
+    if features is None:
+        return
+
+    subject = input_item.subject
+    if features.subject_ref != subject.ref:
+        raise ProblemGroupingIntegrityError(
+            "feature subject_ref does not match input subject"
+        )
+    if features.subject_ref.tenant_id != subject.tenant_id:
+        raise ProblemGroupingIntegrityError(
+            "feature subject_ref tenant_id does not match grouping invocation tenant"
+        )
+
+    from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
+        build_deterministic_problem_signature,
+    )
+
+    expected_signature = build_deterministic_problem_signature(subject)
+    if features.structural_signature != expected_signature:
+        raise ProblemGroupingIntegrityError(
+            "feature structural_signature does not match input subject"
+        )
+
+    if not str(features.representation_version).strip():
+        raise ProblemGroupingIntegrityError(
+            "feature representation_version must be non-empty"
+        )
 
 
 def _validate_strategy_registration(
@@ -449,6 +546,8 @@ def _validate_strategy_characteristics(
         raise TypeError("strategy characteristics method must be ProblemGroupingMethod")
     if type(value.deterministic) is not bool:
         raise TypeError("strategy characteristics deterministic must be bool")
+    if type(value.requires_features) is not bool:
+        raise TypeError("strategy characteristics requires_features must be bool")
     return value
 
 

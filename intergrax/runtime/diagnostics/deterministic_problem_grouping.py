@@ -16,6 +16,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicProblemGroupingBasis,
     DeterministicProblemSignature,
     ProblemGroupingCandidate,
+    ProblemGroupingInput,
     ProblemGroupingMethod,
     ProblemGroupingProvenance,
     ProblemGroupingStrategyCharacteristics,
@@ -124,16 +125,18 @@ class DeterministicProblemGroupingStrategy:
         return ProblemGroupingStrategyCharacteristics(
             method=ProblemGroupingMethod.DETERMINISTIC,
             deterministic=True,
+            requires_features=False,
         )
 
     def group(
         self,
-        subjects: tuple[ProblemGroupingSubject, ...],
+        inputs: tuple[ProblemGroupingInput, ...],
     ) -> ProblemGroupingStrategyResult:
         buckets: dict[DeterministicProblemSignature, list[ProblemGroupingSubjectRef]] = {}
         signature_first_seen: list[DeterministicProblemSignature] = []
 
-        for subject in subjects:
+        for input_item in inputs:
+            subject = input_item.subject
             if not subject.findings:
                 continue
 

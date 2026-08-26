@@ -30,12 +30,18 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicProblemGroupingBasis,
     ProblemGroupingBasisKind,
     ProblemGroupingEngine,
+    ProblemGroupingInput,
     ProblemGroupingMethod,
     ProblemGroupingStrategyRegistry,
     ProblemGroupingSubject,
     ProblemGroupingSubjectFinding,
     ProblemGroupingSubjectLimitation,
     ProblemGroupingSubjectRef,
+)
+from intergrax.runtime.diagnostics.problem_grouping_features import (
+    REPRESENTATION_VERSION_V1,
+    ProblemGroupingRepresentationVersion,
+    project_assessment_features,
 )
 from intergrax.runtime.events.asof_projection import (
     RunExecutionLifecycleStatus,
@@ -119,10 +125,26 @@ def _truncation_limitation() -> ProblemGroupingSubjectLimitation:
     )
 
 
-def _engine_with_deterministic_strategy() -> ProblemGroupingEngine:
+def _input(subject: ProblemGroupingSubject) -> ProblemGroupingInput:
+    return ProblemGroupingInput(subject=subject)
+
+
+class _AssessmentFeatureProjector:
+    @property
+    def representation_version(self) -> ProblemGroupingRepresentationVersion:
+        return REPRESENTATION_VERSION_V1
+
+    def project(self, assessment, subject: ProblemGroupingSubject):
+        return project_assessment_features(assessment, subject=subject)
+
+
+def _engine_with_deterministic_strategy(
+    *,
+    feature_projector: _AssessmentFeatureProjector | None = None,
+) -> ProblemGroupingEngine:
     registry = ProblemGroupingStrategyRegistry()
     registry.register(DeterministicProblemGroupingStrategy())
-    return ProblemGroupingEngine(registry)
+    return ProblemGroupingEngine(registry, feature_projector=feature_projector)
 
 
 def _assess_attempt_sequence(event_types: list[RuntimeEventType]) -> DiagnosticAssessment:
@@ -182,6 +204,7 @@ def test_strategy_metadata() -> None:
     assert strategy.strategy_version == STRATEGY_VERSION
     assert strategy.characteristics.method is ProblemGroupingMethod.DETERMINISTIC
     assert strategy.characteristics.deterministic is True
+    assert strategy.characteristics.requires_features is False
 
 
 def test_engine_integration_groups_same_structure() -> None:
@@ -254,7 +277,7 @@ def test_prior_status_difference_not_grouped() -> None:
     )
     strategy = DeterministicProblemGroupingStrategy()
 
-    result = strategy.group((subject_a, subject_b))
+    result = strategy.group((_input(subject_a), _input(subject_b)))
 
     assert result.candidates == ()
 
@@ -274,7 +297,7 @@ def test_finding_order_independent() -> None:
     subject_b = _subject(findings=(finding_y, finding_x))
     strategy = DeterministicProblemGroupingStrategy()
 
-    result = strategy.group((subject_a, subject_b))
+    result = strategy.group((_input(subject_a), _input(subject_b)))
 
     assert len(result.candidates) == 1
     assert result.candidates[0].provenance.basis is not None
@@ -289,7 +312,7 @@ def test_multiplicity_preserved_not_grouped() -> None:
     subject_b = _subject(findings=(finding, finding))
     strategy = DeterministicProblemGroupingStrategy()
 
-    result = strategy.group((subject_a, subject_b))
+    result = strategy.group((_input(subject_a), _input(subject_b)))
 
     assert result.candidates == ()
 
@@ -307,7 +330,7 @@ def test_scope_difference_not_grouped() -> None:
     )
     strategy = DeterministicProblemGroupingStrategy()
 
-    result = strategy.group((subject_a, subject_b))
+    result = strategy.group((_input(subject_a), _input(subject_b)))
 
     assert result.candidates == ()
 
@@ -318,7 +341,7 @@ def test_limitation_difference_not_grouped() -> None:
     subject_b = _subject(findings=(finding,), limitations=(_truncation_limitation(),))
     strategy = DeterministicProblemGroupingStrategy()
 
-    result = strategy.group((subject_a, subject_b))
+    result = strategy.group((_input(subject_a), _input(subject_b)))
 
     assert result.candidates == ()
 
@@ -328,7 +351,7 @@ def test_empty_subjects_not_grouped() -> None:
     subject_b = _subject()
     strategy = DeterministicProblemGroupingStrategy()
 
-    result = strategy.group((subject_a, subject_b))
+    result = strategy.group((_input(subject_a), _input(subject_b)))
 
     assert result.candidates == ()
 
@@ -339,7 +362,7 @@ def test_limitation_only_subjects_not_grouped() -> None:
     subject_b = _subject(limitations=(limitation,))
     strategy = DeterministicProblemGroupingStrategy()
 
-    result = strategy.group((subject_a, subject_b))
+    result = strategy.group((_input(subject_a), _input(subject_b)))
 
     assert result.candidates == ()
 
@@ -349,7 +372,7 @@ def test_three_member_group() -> None:
     subjects = tuple(_subject(findings=(finding,)) for _ in range(3))
     strategy = DeterministicProblemGroupingStrategy()
 
-    result = strategy.group(subjects)
+    result = strategy.group(tuple(_input(subject) for subject in subjects))
 
     assert len(result.candidates) == 1
     assert len(result.candidates[0].members) == 3
@@ -377,7 +400,15 @@ def test_two_groups_plus_singleton() -> None:
     subject_e = _subject(findings=(finding_z,))
     strategy = DeterministicProblemGroupingStrategy()
 
-    result = strategy.group((subject_a, subject_b, subject_c, subject_d, subject_e))
+    result = strategy.group(
+        (
+            _input(subject_a),
+            _input(subject_b),
+            _input(subject_c),
+            _input(subject_d),
+            _input(subject_e),
+        )
+    )
 
     assert len(result.candidates) == 2
     member_sets = {frozenset(candidate.members) for candidate in result.candidates}
@@ -395,7 +426,7 @@ def test_basis_and_supporting_refs() -> None:
     subject_b = _subject(findings=(finding,))
     strategy = DeterministicProblemGroupingStrategy()
 
-    result = strategy.group((subject_a, subject_b))
+    result = strategy.group((_input(subject_a), _input(subject_b)))
     candidate = result.candidates[0]
     basis = candidate.provenance.basis
 
@@ -436,8 +467,8 @@ def test_input_shuffle_preserves_group_membership() -> None:
     shuffled = list(subjects)
     random.Random(42).shuffle(shuffled)
 
-    baseline = strategy.group(subjects)
-    shuffled_result = strategy.group(tuple(shuffled))
+    baseline = strategy.group(tuple(_input(subject) for subject in subjects))
+    shuffled_result = strategy.group(tuple(_input(subject) for subject in shuffled))
 
     baseline_sets = {frozenset(candidate.members) for candidate in baseline.candidates}
     shuffled_sets = {frozenset(candidate.members) for candidate in shuffled_result.candidates}
@@ -489,8 +520,34 @@ def test_non_lifecycle_finding_groups_without_instance_ids() -> None:
     subject_b = _subject(findings=(finding,))
     strategy = DeterministicProblemGroupingStrategy()
 
-    result = strategy.group((subject_a, subject_b))
+    result = strategy.group((_input(subject_a), _input(subject_b)))
 
     assert len(result.candidates) == 1
     assert subject_a.ref.task_id != subject_b.ref.task_id
     assert subject_a.ref.run_id != subject_b.ref.run_id
+
+
+def test_deterministic_result_unchanged_with_feature_projector() -> None:
+    assessment_a = _assess_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_COMPLETED,
+            RuntimeEventType.RETRY_SCHEDULED,
+        ]
+    )
+    assessment_b = _assess_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_COMPLETED,
+            RuntimeEventType.RETRY_SCHEDULED,
+        ]
+    )
+    without_projector = _engine_with_deterministic_strategy()
+    with_projector = _engine_with_deterministic_strategy(
+        feature_projector=_AssessmentFeatureProjector(),
+    )
+
+    baseline = without_projector.group((assessment_a, assessment_b), strategy_id=STRATEGY_ID)
+    featured = with_projector.group((assessment_a, assessment_b), strategy_id=STRATEGY_ID)
+
+    assert featured == baseline

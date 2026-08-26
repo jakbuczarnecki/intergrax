@@ -984,7 +984,7 @@ Each `DiagnosticFinding` retains `source_anomaly_kind: LifecycleAnomalyKind` for
 | **B — semantic representation** | `ProblemGroupingFeatureSet` + `ProblemGroupingRepresentationVersion` | Derived, versioned, bounded; disposable for reprojection |
 | **C — grouping hypothesis** | `ProblemGroupingCandidate` + typed `ProblemGroupingBasis` | Analytical output only; not canonical problem identity |
 
-`ProblemGroupingSubject` remains the structural view for deterministic strategies. Model strategies consume `ProblemGroupingSemanticInput` (`subject` + optional `features`) so DIAG-5B semantics stay unchanged when `features` is absent.
+`ProblemGroupingSubject` remains the structural view inside every `ProblemGroupingInput`. Model strategies consume `ProblemGroupingInput` (`subject` + optional `features`) projected by `ProblemGroupingEngine`; deterministic strategies use only `input.subject` and ignore `input.features`.
 
 #### Feature projection boundary (one-spine invariant)
 
@@ -992,16 +992,19 @@ Strategies **must not** independently query `RuntimeEventPersistence`, `CausalEv
 
 ```text
 DiagnosticAssessment[]
-  → ProblemGroupingFeatureProjector.project()     # facts → bounded features (B)
-  → ProblemGroupingSemanticInput[]                # subject + features
-  → ProblemGroupingStrategy.group()               # unchanged engine entry for structural path
+  → ProblemGroupingEngine
+  → normalize ProblemGroupingSubject
+  → optional ProblemGroupingFeatureProjector.project(assessment, subject)
+  → ProblemGroupingInput[]                         # subject + features
+  → validate feature coherence + strategy requirements
+  → ProblemGroupingStrategy.group(inputs)
        OR future model strategy internal pipeline:
          SemanticCandidateGenerator               # cheap neighborhoods
          → ProblemGroupingAdjudicator             # expensive per-neighborhood decision
   → ProblemGroupingStrategyResult → engine validation → ProblemGroupingResult
 ```
 
-**Owner:** `ProblemGroupingFeatureProjector` (or equivalent) — **not** another diagnostic engine. v1 reference projection: `project_assessment_features()` maps assessment → `ProblemGroupingFeatureSet` using only assessment-local facts: deterministic `structural_signature` (link to DIAG-5B) plus bounded `ProblemGroupingTextEvidence` from `DiagnosticFinding.claim` and `DiagnosticLimitation.factual_message` with typed `ProblemGroupingTextEvidenceSourceKind` and supporting event/evidence ids. No `dict[str, Any]`, no metadata bags, no raw logs.
+**Owner:** `ProblemGroupingFeatureProjector` (or equivalent) — injected into `ProblemGroupingEngine`, not another diagnostic engine. v1 reference projection: `project_assessment_features()` maps assessment + normalized subject → `ProblemGroupingFeatureSet` with `subject_ref`, deterministic `structural_signature` (link to DIAG-5B), and bounded `ProblemGroupingTextEvidence` from `DiagnosticFinding.claim` and `DiagnosticLimitation.factual_message` with typed `ProblemGroupingTextEvidenceSourceKind` and supporting event/evidence ids. No `dict[str, Any]`, no metadata bags, no raw logs. Strategies declaring `requires_features=True` fail closed when no projector is configured.
 
 **Representation versioning:** `ProblemGroupingRepresentationVersion` (v1 = `"1"`). Changing projection semantics (new fields, text normalization, evidence selection) requires a version bump — model inputs must not change silently.
 
@@ -1022,7 +1025,7 @@ DeterministicProblemGroupingStrategy   # exact structural buckets (DIAG-5B basel
   + ProblemGroupingAdjudicator         # LLM or rules over one neighborhood
 ```
 
-Composes **inside** one `ProblemGroupingStrategy` implementation — `ProblemGroupingEngine` unchanged.
+Composes **inside** one `ProblemGroupingStrategy` implementation. `ProblemGroupingEngine` supplies `ProblemGroupingInput[]` including optional projected features.
 
 #### Platform LLM reuse
 
@@ -1066,7 +1069,7 @@ Grouping proposes **"these incidents are likely related under this method"** —
 
 **Smallest next task:** DIAG-5C-B — implement `AssessmentFeatureProjector` (concrete `ProblemGroupingFeatureProjector`) + unit tests; optionally extend projection with typed problem-signal joins once a diagnostic-side join contract exists.
 
-**Explicit non-goals (DIAG-5C-A):** live models, prompts, embeddings execution, vector DB, `HybridProblemGroupingStrategy`, engine changes, problem-signal join, persistence, `ProblemId`.
+**Explicit non-goals (DIAG-5C-A):** live models, prompts, embeddings execution, vector DB, `HybridProblemGroupingStrategy`, problem-signal join, persistence, `ProblemId`. Engine input-contract wiring is DIAG-5C-A-R1.
 
 **Code references:** `intergrax/runtime/diagnostics/problem_grouping_features.py`, `intergrax/runtime/diagnostics/problem_grouping.py`, `intergrax/llm_adapters/contracts/llm_adapter.py`, `intergrax/rag/embedding/contracts/embedding_provider.py`.
 
@@ -1086,11 +1089,13 @@ Grouping proposes **"these incidents are likely related under this method"** —
 ```text
 DiagnosticAssessment[]
   → ProblemGroupingEngine
-  → ProblemGroupingSubject[]          # normalized immutable view
-  → ProblemGroupingStrategy           # explicit strategy_id selection
-  → ProblemGroupingStrategyResult     # raw plugin output
+  → normalize ProblemGroupingSubject
+  → optional ProblemGroupingFeatureProjector
+  → ProblemGroupingInput[]              # subject + optional features
+  → ProblemGroupingStrategy             # explicit strategy_id selection
+  → ProblemGroupingStrategyResult       # raw plugin output
   → platform validation
-  → ProblemGroupingResult             # candidates + ungrouped_subjects
+  → ProblemGroupingResult               # candidates + ungrouped_subjects
 ```
 
 **Plugin-capable strategy layer:** one `ProblemGroupingStrategy` Protocol, many implementations behind `ProblemGroupingStrategyRegistry` (explicit register/resolve — no reflection, no entry-point discovery in DIAG-5A). Production deterministic structural grouping is DIAG-5B; future strategies may be semantic/embedding, ML clustering, LLM, or hybrid — all behind the same contract.

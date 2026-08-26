@@ -27,6 +27,7 @@ from intergrax.runtime.diagnostics.diagnostic_assessment import (
 from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicProblemSignature,
     ProblemGroupingCandidate,
+    ProblemGroupingInput,
     ProblemGroupingSubject,
     ProblemGroupingSubjectRef,
     normalize_assessment,
@@ -74,22 +75,10 @@ class ProblemGroupingFeatureSet:
     are added only when upstream diagnostic projection supplies real facts.
     """
 
+    subject_ref: ProblemGroupingSubjectRef
     representation_version: ProblemGroupingRepresentationVersion
     structural_signature: DeterministicProblemSignature
     text_evidence: tuple[ProblemGroupingTextEvidence, ...]
-
-
-@dataclass(frozen=True, slots=True)
-class ProblemGroupingSemanticInput:
-    """
-    Strategy-facing bundle: structural subject plus optional semantic features.
-
-    Deterministic strategies may ignore ``features``; model-assisted strategies
-    require features projected upstream — never by querying persistence.
-    """
-
-    subject: ProblemGroupingSubject
-    features: ProblemGroupingFeatureSet | None = None
 
 
 @runtime_checkable
@@ -104,7 +93,11 @@ class ProblemGroupingFeatureProjector(Protocol):
     @property
     def representation_version(self) -> ProblemGroupingRepresentationVersion: ...
 
-    def project(self, assessment: DiagnosticAssessment) -> ProblemGroupingFeatureSet: ...
+    def project(
+        self,
+        assessment: DiagnosticAssessment,
+        subject: ProblemGroupingSubject,
+    ) -> ProblemGroupingFeatureSet: ...
 
 
 @runtime_checkable
@@ -113,12 +106,12 @@ class SemanticCandidateGenerator(Protocol):
     Cheap candidate narrowing for model-assisted grouping.
 
     Returns neighborhoods (size >= 2) that merit deeper adjudication. Must not
-    query persistence — consumes pre-projected semantic inputs only.
+    query persistence — consumes pre-projected strategy inputs only.
     """
 
     def generate_neighborhoods(
         self,
-        inputs: tuple[ProblemGroupingSemanticInput, ...],
+        inputs: tuple[ProblemGroupingInput, ...],
     ) -> tuple[tuple[ProblemGroupingSubjectRef, ...], ...]: ...
 
 
@@ -133,7 +126,7 @@ class ProblemGroupingAdjudicator(Protocol):
 
     def adjudicate(
         self,
-        neighborhood: tuple[ProblemGroupingSemanticInput, ...],
+        neighborhood: tuple[ProblemGroupingInput, ...],
     ) -> ProblemGroupingCandidate | None: ...
 
 
@@ -176,6 +169,7 @@ def _text_evidence_from_limitation(
 def project_assessment_features(
     assessment: DiagnosticAssessment,
     *,
+    subject: ProblemGroupingSubject | None = None,
     representation_version: ProblemGroupingRepresentationVersion = REPRESENTATION_VERSION_V1,
 ) -> ProblemGroupingFeatureSet:
     """
@@ -189,7 +183,7 @@ def project_assessment_features(
             "representation_version must be non-empty"
         )
 
-    subject = normalize_assessment(assessment)
+    resolved_subject = subject if subject is not None else normalize_assessment(assessment)
     text_evidence = tuple(
         _text_evidence_from_finding(finding) for finding in assessment.findings
     ) + tuple(
@@ -198,21 +192,8 @@ def project_assessment_features(
     )
 
     return ProblemGroupingFeatureSet(
+        subject_ref=resolved_subject.ref,
         representation_version=representation_version,
-        structural_signature=build_deterministic_problem_signature(subject),
+        structural_signature=build_deterministic_problem_signature(resolved_subject),
         text_evidence=text_evidence,
     )
-
-
-def semantic_input_from_assessment(
-    assessment: DiagnosticAssessment,
-    *,
-    representation_version: ProblemGroupingRepresentationVersion = REPRESENTATION_VERSION_V1,
-) -> ProblemGroupingSemanticInput:
-    """Bundle structural subject and v1 semantic features for one assessment."""
-    subject = normalize_assessment(assessment)
-    features = project_assessment_features(
-        assessment,
-        representation_version=representation_version,
-    )
-    return ProblemGroupingSemanticInput(subject=subject, features=features)

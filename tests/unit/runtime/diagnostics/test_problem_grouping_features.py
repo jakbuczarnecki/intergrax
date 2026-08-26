@@ -17,12 +17,15 @@ from intergrax.runtime.diagnostics.lifecycle_analysis import (
     LifecycleAnomalyKind,
     LifecycleAnomalyScope,
 )
+from intergrax.runtime.diagnostics.problem_grouping import (
+    ProblemGroupingInput,
+    normalize_assessment,
+)
 from intergrax.runtime.diagnostics.problem_grouping_features import (
     MAX_TEXT_EVIDENCE_CHARS,
     ProblemGroupingFeatureIntegrityError,
     ProblemGroupingTextEvidenceSourceKind,
     project_assessment_features,
-    semantic_input_from_assessment,
 )
 
 pytestmark = pytest.mark.unit
@@ -75,6 +78,9 @@ def test_project_assessment_features_links_structural_signature_and_text() -> No
     assessment = _assessment(findings=(_finding(),), limitations=(_limitation(),))
     features = project_assessment_features(assessment)
 
+    assert features.subject_ref.tenant_id == assessment.tenant_id
+    assert features.subject_ref.task_id == assessment.task_id
+    assert features.subject_ref.run_id == assessment.run_id
     assert features.representation_version == "1"
     assert len(features.text_evidence) == 2
     assert features.text_evidence[0].source_kind is ProblemGroupingTextEvidenceSourceKind.OPERATOR_CLAIM
@@ -83,14 +89,17 @@ def test_project_assessment_features_links_structural_signature_and_text() -> No
     assert features.structural_signature.limitations
 
 
-def test_semantic_input_preserves_subject_identity() -> None:
+def test_grouping_input_preserves_subject_identity() -> None:
     assessment = _assessment(findings=(_finding(),))
-    semantic_input = semantic_input_from_assessment(assessment)
+    subject = normalize_assessment(assessment)
+    features = project_assessment_features(assessment, subject=subject)
+    grouping_input = ProblemGroupingInput(subject=subject, features=features)
 
-    assert semantic_input.subject.tenant_id == assessment.tenant_id
-    assert semantic_input.subject.task_id == assessment.task_id
-    assert semantic_input.subject.run_id == assessment.run_id
-    assert semantic_input.features is not None
+    assert grouping_input.subject.tenant_id == assessment.tenant_id
+    assert grouping_input.subject.task_id == assessment.task_id
+    assert grouping_input.subject.run_id == assessment.run_id
+    assert grouping_input.features is not None
+    assert grouping_input.features.subject_ref == subject.ref
 
 
 def test_project_rejects_oversized_text() -> None:
