@@ -14,6 +14,7 @@ from intergrax.runtime.diagnostics.diagnostic_assessment import (
 )
 from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicProblemGroupingBasis,
+    DeterministicProblemSignature,
     DuplicateProblemGroupingStrategyError,
     MissingProblemGroupingStrategyError,
     ProblemGroupingBasis,
@@ -50,6 +51,12 @@ _FAKE_STRATEGY_ID = ProblemGroupingStrategyId("test.fake_pair")
 _FAKE_STRATEGY_VERSION = ProblemGroupingStrategyVersion("1.0.0")
 
 
+def _empty_basis() -> DeterministicProblemGroupingBasis:
+    return DeterministicProblemGroupingBasis(
+        signature=DeterministicProblemSignature(findings=(), limitations=())
+    )
+
+
 def _assessment(
     *,
     tenant_id: str = _TENANT_A,
@@ -84,7 +91,7 @@ def _provenance(
         strategy_version=_FAKE_STRATEGY_VERSION,
         method=method,
         supporting_subject_refs=members,
-        basis=basis if basis is not None else DeterministicProblemGroupingBasis(),
+        basis=basis if basis is not None else _empty_basis(),
     )
 
 
@@ -349,7 +356,7 @@ def test_deterministic_basis_valid_with_deterministic_strategy() -> None:
     assessment_b = _assessment()
     ref_a = _subject_ref(assessment_a)
     ref_b = _subject_ref(assessment_b)
-    basis = DeterministicProblemGroupingBasis()
+    basis = _empty_basis()
     strategy = _ConfigurableFakeStrategy(
         candidates=(
             ProblemGroupingCandidate(
@@ -425,7 +432,7 @@ def test_foreign_supporting_ref_rejected() -> None:
                     strategy_version=_FAKE_STRATEGY_VERSION,
                     method=ProblemGroupingMethod.DETERMINISTIC,
                     supporting_subject_refs=(ref_a, foreign),
-                    basis=DeterministicProblemGroupingBasis(),
+                    basis=_empty_basis(),
                 ),
             ),
         ),
@@ -452,7 +459,7 @@ def test_supporting_refs_must_equal_members() -> None:
                     strategy_version=_FAKE_STRATEGY_VERSION,
                     method=ProblemGroupingMethod.DETERMINISTIC,
                     supporting_subject_refs=(ref_a, ref_c),
-                    basis=DeterministicProblemGroupingBasis(),
+                    basis=_empty_basis(),
                 ),
             ),
         ),
@@ -480,7 +487,7 @@ def test_duplicate_supporting_ref_rejected() -> None:
                     strategy_version=_FAKE_STRATEGY_VERSION,
                     method=ProblemGroupingMethod.DETERMINISTIC,
                     supporting_subject_refs=(ref_a, ref_a),
-                    basis=DeterministicProblemGroupingBasis(),
+                    basis=_empty_basis(),
                 ),
             ),
         ),

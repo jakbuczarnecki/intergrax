@@ -933,6 +933,30 @@ Each `DiagnosticFinding` retains `source_anomaly_kind: LifecycleAnomalyKind` for
 
 **Code references:** `intergrax/runtime/diagnostics/diagnostic_assessment.py`.
 
+### Deterministic structural grouping (DIAG-5B)
+
+**First production grouping strategy:** `DeterministicProblemGroupingStrategy` (`strategy_id=intergrax.diagnostics.structural.v1`, `strategy_version=1`) answers *"which executions have exactly the same typed diagnostic structure?"* — conservative, high-precision baseline.
+
+**Exact typed structural equality:** subjects group iff their `DeterministicProblemSignature` (typed `DeterministicFindingSignature` + `DeterministicLimitationSignature` tuples) are equal. No opaque fingerprint string, no fuzzy similarity, no ML, no LLM, no semantic inference.
+
+**`lifecycle_transition` participates:** `LifecycleViolationTransition` (`violation_kind`, `prior_status`, `violating_event_type`) is part of each finding signature — e.g. `COMPLETED → RETRY_SCHEDULED` and `COMPLETED → TASK_FAILED` do **not** group even when other finding fields match.
+
+**Findings order-independent:** canonical sort by typed enum/descriptor fields before signature construction; presentation order does not change structural class.
+
+**Multiplicity preserved:** sorted tuples, not sets — one `EVENT_AFTER_TERMINAL` vs two produce different signatures.
+
+**Limitations participate:** same positive finding plus `RUNTIME_HISTORY_TRUNCATED` on one subject only → different signatures. Limitation-only subjects (no findings) remain ungrouped.
+
+**Empty subjects remain ungrouped:** no findings → no candidate; DIAG-4 does not prove health.
+
+**Algorithm:** O(n) bucket grouping by signature hash/equality; candidate order = first input appearance of each signature; members preserve input order.
+
+**Strategy semantics versioned:** changing signature field semantics requires `strategy_version` bump — do not silently alter v1 meaning.
+
+**Explicit non-goals (DIAG-5B):** no embeddings, ML, LLM, persistence, `ProblemId`, or default engine strategy selection. Future **DIAG-5C** may discover semantic similarity beyond exact signature.
+
+**Code references:** `intergrax/runtime/diagnostics/deterministic_problem_grouping.py`, `intergrax/runtime/diagnostics/problem_grouping.py` (`DeterministicProblemSignature`, `DeterministicProblemGroupingBasis`).
+
 ### Multi-execution problem grouping (DIAG-5A)
 
 **Inputs:** `DiagnosticAssessment[]` from DIAG-4 — **no** re-run of reconstruction, lifecycle analysis, or assessment.
@@ -956,7 +980,7 @@ DiagnosticAssessment[]
   → ProblemGroupingResult             # candidates + ungrouped_subjects
 ```
 
-**Plugin-capable strategy layer:** one `ProblemGroupingStrategy` Protocol, many implementations behind `ProblemGroupingStrategyRegistry` (explicit register/resolve — no reflection, no entry-point discovery in DIAG-5A). Future strategies may be deterministic structural (DIAG-5B), semantic/embedding, ML clustering, LLM, or hybrid — all behind the same contract.
+**Plugin-capable strategy layer:** one `ProblemGroupingStrategy` Protocol, many implementations behind `ProblemGroupingStrategyRegistry` (explicit register/resolve — no reflection, no entry-point discovery in DIAG-5A). Production deterministic structural grouping is DIAG-5B; future strategies may be semantic/embedding, ML clustering, LLM, or hybrid — all behind the same contract.
 
 **Strategy selection:** explicit — `engine.group(..., strategy_id=ProblemGroupingStrategyId(...))`. No silent default strategy.
 

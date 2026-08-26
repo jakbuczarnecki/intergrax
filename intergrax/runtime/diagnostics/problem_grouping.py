@@ -146,10 +146,40 @@ class ProblemGroupingSubject:
 
 
 @dataclass(frozen=True, slots=True)
-class DeterministicProblemGroupingBasis:
-    """Deterministic strategy evidence (DIAG-5B-ready)."""
+class DeterministicFindingSignature:
+    """Typed structural descriptor for one normalized grouping finding."""
 
-    matched_finding_kinds: tuple[DiagnosticFindingKind, ...] = ()
+    kind: DiagnosticFindingKind
+    scope: LifecycleAnomalyScope
+    source_anomaly_kind: LifecycleAnomalyKind
+    lifecycle_transition: LifecycleViolationTransition | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DeterministicLimitationSignature:
+    """Typed structural descriptor for one normalized grouping limitation."""
+
+    kind: DiagnosticLimitationKind
+    source_anomaly_kind: LifecycleAnomalyKind
+
+
+@dataclass(frozen=True, slots=True)
+class DeterministicProblemSignature:
+    """
+    Exact structural identity for deterministic problem grouping (DIAG-5B).
+
+    Equality is typed field equality — not an opaque fingerprint string.
+    """
+
+    findings: tuple[DeterministicFindingSignature, ...]
+    limitations: tuple[DeterministicLimitationSignature, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class DeterministicProblemGroupingBasis:
+    """Deterministic strategy evidence: the exact signature that grouped members."""
+
+    signature: DeterministicProblemSignature
 
     @property
     def kind(self) -> ProblemGroupingBasisKind:

@@ -30,8 +30,14 @@ from intergrax.runtime.diagnostics.lifecycle_analysis import (
     LifecycleViolationTransition,
     LIFECYCLE_TRANSITION_ANOMALY_KINDS,
 )
+from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
+    DeterministicProblemGroupingStrategy,
+)
 from intergrax.runtime.diagnostics.problem_grouping import (
+    DeterministicFindingSignature,
+    DeterministicLimitationSignature,
     DeterministicProblemGroupingBasis,
+    DeterministicProblemSignature,
     DuplicateProblemGroupingStrategyError,
     MissingProblemGroupingStrategyError,
     ProblemGroupingCandidate,
@@ -74,7 +80,11 @@ __all__ = [
     "LifecycleAnalysisIntegrityError",
     "LifecycleViolationTransition",
     "LIFECYCLE_TRANSITION_ANOMALY_KINDS",
+    "DeterministicFindingSignature",
+    "DeterministicLimitationSignature",
     "DeterministicProblemGroupingBasis",
+    "DeterministicProblemGroupingStrategy",
+    "DeterministicProblemSignature",
     "DuplicateProblemGroupingStrategyError",
     "MissingProblemGroupingStrategyError",
     "ProblemGroupingCandidate",
