@@ -31,7 +31,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingEngine,
     ProblemGroupingMethod,
     ProblemGroupingStrategyRegistry,
-    ProblemGroupingSubjectRef,
+    problem_grouping_subject_ref_for_execution,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import (
     Problem,
@@ -348,7 +348,7 @@ def test_get_problem_malformed_occurrence_tenant_mismatch_fails_closed() -> None
     persistence = InMemoryProblemPersistence()
     problem, _, runtime_store = _persist_problem(persistence=persistence)
     bad_occurrence = ProblemOccurrence(
-        subject_ref=ProblemGroupingSubjectRef(
+        subject_ref=problem_grouping_subject_ref_for_execution(
             tenant_id=_TENANT_B,
             task_id=mint_task_id(),
             run_id=mint_run_id(),

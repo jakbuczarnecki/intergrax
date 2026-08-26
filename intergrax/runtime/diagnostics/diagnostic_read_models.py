@@ -36,6 +36,7 @@ class DiagnosticReadUnavailableReason(StrEnum):
     """Expected absence of canonical execution evidence — not structural corruption."""
 
     EXECUTION_EVIDENCE_UNAVAILABLE = "execution_evidence_unavailable"
+    NON_EXECUTION_SUBJECT = "non_execution_subject"
 
 
 class DiagnosticOccurrenceReadStatus(StrEnum):

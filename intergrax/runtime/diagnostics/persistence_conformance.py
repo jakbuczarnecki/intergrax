@@ -26,6 +26,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicProblemSignature,
     ProblemGroupingMethod,
     ProblemGroupingSubjectRef,
+    problem_grouping_subject_ref_for_execution,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import (
     Problem,
@@ -87,7 +88,7 @@ def _sample_subject_ref(
     task_id: TaskId | None = None,
     run_id: RunId | None = None,
 ) -> ProblemGroupingSubjectRef:
-    return ProblemGroupingSubjectRef(
+    return problem_grouping_subject_ref_for_execution(
         tenant_id=tenant_id,
         task_id=task_id or mint_task_id(),
         run_id=run_id or mint_run_id(),

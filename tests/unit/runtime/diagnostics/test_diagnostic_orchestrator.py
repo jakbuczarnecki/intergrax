@@ -605,14 +605,13 @@ def test_max_execution_scope_validation() -> None:
         orchestrator.run(_request(*scopes))
 
 
-def test_empty_execution_list_rejected() -> None:
+def test_empty_subject_inputs_rejected() -> None:
     orchestrator, _, _, _ = _build_orchestrator()
 
     with pytest.raises(DiagnosticOrchestrationIntegrityError):
         orchestrator.run(
             DiagnosticOrchestrationRequest(
                 tenant_id=_TENANT_A,
-                executions=(),
                 grouping_strategy_id=STRATEGY_ID,
                 observed_at=_OBSERVED_AT,
             ),

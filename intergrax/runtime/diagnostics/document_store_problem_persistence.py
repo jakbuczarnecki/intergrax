@@ -10,6 +10,7 @@ from intergrax.integrations.contracts.document_store import (
     DocumentRecord,
     DocumentStore,
 )
+from intergrax.runtime.diagnostics.diagnostic_subject import diagnostic_subject_index_token
 from intergrax.runtime.diagnostics.problem_grouping import ProblemGroupingSubjectRef
 from intergrax.runtime.diagnostics.problem_lifecycle import (
     Problem,
@@ -49,7 +50,14 @@ def _reconciliation_row_key(reconciliation_key: ProblemReconciliationKey) -> str
 
 
 def _subject_row_key(subject_ref: ProblemGroupingSubjectRef) -> str:
-    return f"{_SUBJECT_ROW_PREFIX}{subject_ref.task_id}:{subject_ref.run_id}"
+    return f"{_SUBJECT_ROW_PREFIX}{diagnostic_subject_index_token(subject_ref.subject)}"
+
+
+def _legacy_execution_subject_row_key(subject_ref: ProblemGroupingSubjectRef) -> str | None:
+    execution = subject_ref.execution()
+    if execution is None:
+        return None
+    return f"{_SUBJECT_ROW_PREFIX}{execution.task_id}:{execution.run_id}"
 
 
 def _encode_index_ref(problem_id: ProblemId) -> dict[str, str]:
@@ -255,6 +263,10 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
             partition_key,
             _subject_row_key(subject_ref),
         )
+        if index_document is None:
+            legacy_key = _legacy_execution_subject_row_key(subject_ref)
+            if legacy_key is not None:
+                index_document = self._document_store.get(partition_key, legacy_key)
         if index_document is None:
             return None
         problem_id = _decode_index_ref(dict(index_document.data))

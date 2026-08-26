@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from threading import Lock
 
+from intergrax.runtime.diagnostics.diagnostic_subject import diagnostic_subject_index_token
 from intergrax.runtime.diagnostics.problem_grouping import ProblemGroupingSubjectRef
 from intergrax.runtime.diagnostics.problem_lifecycle import (
     Problem,
@@ -158,14 +159,9 @@ def _reconciliation_index_key(
 def _subject_index_key(
     tenant_id: str,
     subject_ref: ProblemGroupingSubjectRef,
-) -> tuple[str, str, str, str]:
+) -> tuple[str, str]:
     if subject_ref.tenant_id != tenant_id:
         raise ProblemPersistenceIntegrityError(
             "subject_ref tenant_id does not match lookup tenant scope",
         )
-    return (
-        tenant_id,
-        str(subject_ref.task_id),
-        str(subject_ref.run_id),
-        subject_ref.tenant_id,
-    )
+    return (tenant_id, diagnostic_subject_index_token(subject_ref.subject))

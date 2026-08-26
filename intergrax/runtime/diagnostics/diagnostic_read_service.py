@@ -174,8 +174,7 @@ def _order_occurrences_newest_first(
             occurrences,
             key=lambda occurrence: (
                 -occurrence.observed_at.timestamp(),
-                str(occurrence.subject_ref.task_id),
-                str(occurrence.subject_ref.run_id),
+                occurrence.subject_ref.index_token,
             ),
         )
     )
@@ -198,6 +197,18 @@ def _reconstruct_occurrence_view(
     if subject_ref.tenant_id != problem.tenant_id:
         raise DiagnosticReadIntegrityError(
             "occurrence subject_ref tenant_id does not match Problem tenant_id",
+        )
+
+    if subject_ref.application_instance() is not None:
+        return DiagnosticProblemOccurrenceView(
+            subject_ref=subject_ref,
+            observed_at=occurrence.observed_at,
+            strategy_id=occurrence.strategy_id,
+            strategy_version=occurrence.strategy_version,
+            method=occurrence.method,
+            read_status=DiagnosticOccurrenceReadStatus.UNAVAILABLE,
+            assessment=None,
+            unavailable_reason=DiagnosticReadUnavailableReason.NON_EXECUTION_SUBJECT,
         )
 
     try:
@@ -257,11 +268,16 @@ def _validate_reconstruction_scope(
         raise DiagnosticReadIntegrityError(
             "reconstructed tenant_id does not match occurrence subject_ref",
         )
-    if reconstruction.task_id != subject_ref.task_id:
+    execution = subject_ref.execution()
+    if execution is None:
+        raise DiagnosticReadIntegrityError(
+            "reconstruction scope requires execution diagnostic subject",
+        )
+    if reconstruction.task_id != execution.task_id:
         raise DiagnosticReadIntegrityError(
             "reconstructed task_id does not match occurrence subject_ref",
         )
-    if reconstruction.run_id != subject_ref.run_id:
+    if reconstruction.run_id != execution.run_id:
         raise DiagnosticReadIntegrityError(
             "reconstructed run_id does not match occurrence subject_ref",
         )

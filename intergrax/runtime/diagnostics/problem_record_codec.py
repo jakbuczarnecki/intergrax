@@ -23,14 +23,22 @@ from intergrax.runtime.diagnostics.lifecycle_analysis import (
     LifecycleAnomalyScope,
     LifecycleViolationTransition,
 )
+from intergrax.runtime.diagnostics.diagnostic_subject import (
+    ApplicationDiagnosticSubjectRef,
+    DiagnosticSubjectKind,
+    ExecutionDiagnosticSubjectRef,
+)
 from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicFindingSignature,
     DeterministicLimitationSignature,
     DeterministicProblemSignature,
+    DeterministicSignalFindingSignature,
     ProblemGroupingMethod,
     ProblemGroupingStrategyId,
     ProblemGroupingStrategyVersion,
     ProblemGroupingSubjectRef,
+    problem_grouping_subject_ref_for_application_instance,
+    problem_grouping_subject_ref_for_execution,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import (
     Problem,
@@ -137,21 +145,48 @@ def _decode_datetime(value: object) -> datetime:
 
 
 def _encode_subject_ref(subject_ref: ProblemGroupingSubjectRef) -> dict[str, str]:
-    return {
-        "tenant_id": subject_ref.tenant_id,
-        "task_id": str(subject_ref.task_id),
-        "run_id": str(subject_ref.run_id),
-    }
+    subject = subject_ref.subject
+    if type(subject) is ExecutionDiagnosticSubjectRef:
+        return {
+            "kind": DiagnosticSubjectKind.EXECUTION.value,
+            "tenant_id": subject.tenant_id,
+            "task_id": str(subject.task_id),
+            "run_id": str(subject.run_id),
+        }
+    if type(subject) is ApplicationDiagnosticSubjectRef:
+        return {
+            "kind": DiagnosticSubjectKind.APPLICATION_INSTANCE.value,
+            "tenant_id": subject.tenant_id,
+            "application_id": subject.application_id,
+            "instance_id": subject.instance_id,
+        }
+    raise TypeError(f"unsupported diagnostic subject type: {type(subject).__name__}")
 
 
 def _decode_subject_ref(value: object) -> ProblemGroupingSubjectRef:
     if not isinstance(value, dict):
         raise ValueError("invalid subject_ref")
-    return ProblemGroupingSubjectRef(
-        tenant_id=str(value["tenant_id"]),
-        task_id=TaskId(str(value["task_id"])),
-        run_id=RunId(str(value["run_id"])),
-    )
+    tenant_id = str(value["tenant_id"])
+    kind = value.get("kind")
+    if kind is None:
+        return problem_grouping_subject_ref_for_execution(
+            tenant_id=tenant_id,
+            task_id=TaskId(str(value["task_id"])),
+            run_id=RunId(str(value["run_id"])),
+        )
+    if kind == DiagnosticSubjectKind.EXECUTION.value:
+        return problem_grouping_subject_ref_for_execution(
+            tenant_id=tenant_id,
+            task_id=TaskId(str(value["task_id"])),
+            run_id=RunId(str(value["run_id"])),
+        )
+    if kind == DiagnosticSubjectKind.APPLICATION_INSTANCE.value:
+        return problem_grouping_subject_ref_for_application_instance(
+            tenant_id=tenant_id,
+            application_id=str(value["application_id"]),
+            instance_id=str(value["instance_id"]),
+        )
+    raise ValueError("unsupported diagnostic subject kind")
 
 
 def _encode_occurrence(occurrence: ProblemOccurrence) -> dict[str, object]:
@@ -231,15 +266,24 @@ def _decode_reconciliation_key(value: object) -> ProblemReconciliationKey:
 
 
 def _encode_signature(signature: DeterministicProblemSignature) -> dict[str, object]:
-    return {
+    encoded: dict[str, object] = {
         "findings": [_encode_finding(item) for item in signature.findings],
         "limitations": [_encode_limitation(item) for item in signature.limitations],
     }
+    if signature.subject_domain is not None:
+        encoded["subject_domain"] = signature.subject_domain.value
+    return encoded
 
 
 def _decode_signature(value: object) -> DeterministicProblemSignature:
     if not isinstance(value, dict):
         raise ValueError("invalid deterministic signature")
+    subject_domain_raw = value.get("subject_domain")
+    subject_domain = (
+        DiagnosticSubjectKind(str(subject_domain_raw))
+        if subject_domain_raw is not None
+        else None
+    )
     return DeterministicProblemSignature(
         findings=tuple(
             _decode_finding(item) for item in _require_sequence(value["findings"])
@@ -248,11 +292,29 @@ def _decode_signature(value: object) -> DeterministicProblemSignature:
             _decode_limitation(item)
             for item in _require_sequence(value["limitations"])
         ),
+        subject_domain=subject_domain,
     )
 
 
-def _encode_finding(finding: DeterministicFindingSignature) -> dict[str, object]:
-    encoded: dict[str, object] = {
+def _encode_finding(
+    finding: DeterministicFindingSignature | DeterministicSignalFindingSignature,
+) -> dict[str, object]:
+    if type(finding) is DeterministicSignalFindingSignature:
+        encoded: dict[str, object] = {
+            "source": "platform_signal",
+            "problem_kind": finding.problem_kind,
+            "severity": finding.severity,
+            "source_layer": finding.source_layer,
+            "source_component": finding.source_component,
+            "status": finding.status,
+        }
+        if finding.error_code is not None:
+            encoded["error_code"] = finding.error_code
+        if finding.exception_type is not None:
+            encoded["exception_type"] = finding.exception_type
+        return encoded
+    encoded = {
+        "source": "lifecycle",
         "kind": finding.kind.value,
         "scope": finding.scope.value,
         "source_anomaly_kind": finding.source_anomaly_kind.value,
@@ -264,9 +326,26 @@ def _encode_finding(finding: DeterministicFindingSignature) -> dict[str, object]
     return encoded
 
 
-def _decode_finding(value: object) -> DeterministicFindingSignature:
+def _decode_finding(
+    value: object,
+) -> DeterministicFindingSignature | DeterministicSignalFindingSignature:
     if not isinstance(value, dict):
         raise ValueError("invalid finding signature")
+    source = value.get("source")
+    if source == "platform_signal":
+        error_code_raw = value.get("error_code")
+        exception_type_raw = value.get("exception_type")
+        return DeterministicSignalFindingSignature(
+            problem_kind=str(value["problem_kind"]),
+            severity=str(value["severity"]),
+            source_layer=str(value["source_layer"]),
+            source_component=str(value["source_component"]),
+            status=str(value["status"]),
+            error_code=str(error_code_raw) if error_code_raw is not None else None,
+            exception_type=(
+                str(exception_type_raw) if exception_type_raw is not None else None
+            ),
+        )
     transition_raw = value.get("lifecycle_transition")
     transition = (
         _decode_lifecycle_transition(transition_raw)

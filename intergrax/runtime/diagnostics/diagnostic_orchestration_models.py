@@ -18,7 +18,10 @@ from intergrax.runtime.diagnostics.problem_grouping import (
 from intergrax.runtime.diagnostics.problem_lifecycle import ProblemLifecycleResult
 from intergrax.runtime.observability.problem_signal import PlatformProblemSignal
 
+from intergrax.runtime.diagnostics.signal_diagnostic_assessment import SignalDiagnosticAssessment
+
 MAX_DIAGNOSTIC_ORCHESTRATION_EXECUTIONS = 100
+MAX_DIAGNOSTIC_ORCHESTRATION_SIGNAL_SUBJECTS = 100
 
 
 class DiagnosticOrchestrationIntegrityError(Exception):
@@ -36,19 +39,31 @@ class DiagnosticExecutionScope:
 
 
 @dataclass(frozen=True, slots=True)
+class DiagnosticSignalSubjectScope:
+    """One tenant/application/instance non-execution diagnostic input."""
+
+    tenant_id: str
+    application_id: str
+    instance_id: str
+    problem_signals: tuple[PlatformProblemSignal, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class DiagnosticOrchestrationRequest:
     """
-    Explicit multi-execution diagnostic processing request.
+    Explicit multi-subject diagnostic processing request.
 
-    One invocation processes exactly one tenant across one or more execution scopes.
+    One invocation processes exactly one tenant across execution scopes and/or
+    non-execution signal subjects. At least one subject input is required.
 
-    Cost is O(N) over execution scopes plus grouping strategy cost.
+    Cost is O(N) over subject scopes plus grouping strategy cost.
     """
 
     tenant_id: str
-    executions: tuple[DiagnosticExecutionScope, ...]
     grouping_strategy_id: ProblemGroupingStrategyId
     observed_at: datetime
+    executions: tuple[DiagnosticExecutionScope, ...] = ()
+    signal_subjects: tuple[DiagnosticSignalSubjectScope, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,11 +85,22 @@ class DiagnosticExecutionAnalysis:
 
 
 @dataclass(frozen=True, slots=True)
+class DiagnosticSignalSubjectAnalysis:
+    """Bounded per-application-instance diagnostic output for one signal subject scope."""
+
+    tenant_id: str
+    application_id: str
+    instance_id: str
+    assessment: SignalDiagnosticAssessment
+
+
+@dataclass(frozen=True, slots=True)
 class DiagnosticOrchestrationResult:
     """Auditable outcome of one synchronous cross-run diagnostic orchestration."""
 
     tenant_id: str
     execution_results: tuple[DiagnosticExecutionAnalysis, ...]
+    signal_subject_results: tuple[DiagnosticSignalSubjectAnalysis, ...]
     grouping_result: ProblemGroupingResult
     lifecycle_result: ProblemLifecycleResult
 
@@ -97,6 +123,28 @@ def _validate_observed_at(observed_at: datetime) -> None:
         raise ValueError("observed_at must be timezone-aware")
 
 
+def _validate_application_id(application_id: str) -> str:
+    if type(application_id) is not str:
+        raise TypeError("application_id must be str")
+    normalized = application_id.strip()
+    if not normalized:
+        raise ValueError("application_id must be non-empty and not whitespace-only")
+    if application_id != normalized:
+        raise ValueError("application_id must not contain leading or trailing whitespace")
+    return normalized
+
+
+def _validate_instance_id(instance_id: str) -> str:
+    if type(instance_id) is not str:
+        raise TypeError("instance_id must be str")
+    normalized = instance_id.strip()
+    if not normalized:
+        raise ValueError("instance_id must be non-empty and not whitespace-only")
+    if instance_id != normalized:
+        raise ValueError("instance_id must not contain leading or trailing whitespace")
+    return normalized
+
+
 def validate_orchestration_request(request: DiagnosticOrchestrationRequest) -> str:
     """
     Validate orchestration request before any reconstruction reads.
@@ -106,17 +154,24 @@ def validate_orchestration_request(request: DiagnosticOrchestrationRequest) -> s
     tenant_id = _require_tenant_id(request.tenant_id)
     _validate_observed_at(request.observed_at)
     execution_count = len(request.executions)
-    if execution_count < 1:
+    signal_subject_count = len(request.signal_subjects)
+    total_subjects = execution_count + signal_subject_count
+    if total_subjects < 1:
         raise DiagnosticOrchestrationIntegrityError(
-            "orchestration requires at least one execution scope",
+            "orchestration requires at least one execution or signal subject scope",
         )
     if execution_count > MAX_DIAGNOSTIC_ORCHESTRATION_EXECUTIONS:
         raise DiagnosticOrchestrationIntegrityError(
             f"orchestration exceeds max execution scopes "
             f"({MAX_DIAGNOSTIC_ORCHESTRATION_EXECUTIONS})",
         )
+    if signal_subject_count > MAX_DIAGNOSTIC_ORCHESTRATION_SIGNAL_SUBJECTS:
+        raise DiagnosticOrchestrationIntegrityError(
+            f"orchestration exceeds max signal subject scopes "
+            f"({MAX_DIAGNOSTIC_ORCHESTRATION_SIGNAL_SUBJECTS})",
+        )
 
-    seen: set[tuple[TaskId, RunId]] = set()
+    seen_executions: set[tuple[TaskId, RunId]] = set()
     for scope in request.executions:
         scope_tenant_id = _require_tenant_id(scope.tenant_id)
         if scope_tenant_id != tenant_id:
@@ -126,10 +181,26 @@ def validate_orchestration_request(request: DiagnosticOrchestrationRequest) -> s
         task_id = validate_task_id(scope.task_id)
         run_id = validate_run_id(scope.run_id)
         key = (task_id, run_id)
-        if key in seen:
+        if key in seen_executions:
             raise DiagnosticOrchestrationIntegrityError(
                 "duplicate execution scope in orchestration request",
             )
-        seen.add(key)
+        seen_executions.add(key)
+
+    seen_signal_subjects: set[tuple[str, str]] = set()
+    for scope in request.signal_subjects:
+        scope_tenant_id = _require_tenant_id(scope.tenant_id)
+        if scope_tenant_id != tenant_id:
+            raise DiagnosticOrchestrationIntegrityError(
+                "all signal subject scopes must match request tenant_id",
+            )
+        application_id = _validate_application_id(scope.application_id)
+        instance_id = _validate_instance_id(scope.instance_id)
+        key = (application_id, instance_id)
+        if key in seen_signal_subjects:
+            raise DiagnosticOrchestrationIntegrityError(
+                "duplicate signal subject scope in orchestration request",
+            )
+        seen_signal_subjects.add(key)
 
     return tenant_id

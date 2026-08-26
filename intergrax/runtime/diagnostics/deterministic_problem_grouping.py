@@ -15,6 +15,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicLimitationSignature,
     DeterministicProblemGroupingBasis,
     DeterministicProblemSignature,
+    DeterministicSignalFindingSignature,
     ProblemGroupingCandidate,
     ProblemGroupingInput,
     ProblemGroupingMethod,
@@ -25,9 +26,11 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingStrategyVersion,
     ProblemGroupingSubject,
     ProblemGroupingSubjectFinding,
+    ProblemGroupingSubjectFindingSource,
     ProblemGroupingSubjectLimitation,
     ProblemGroupingSubjectRef,
 )
+from intergrax.runtime.diagnostics.diagnostic_subject import DiagnosticSubjectKind
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleViolationTransition
 
 STRATEGY_ID = ProblemGroupingStrategyId("intergrax.diagnostics.structural.v1")
@@ -51,10 +54,22 @@ def _lifecycle_transition_sort_key(
 
 
 def _finding_sort_key(finding: ProblemGroupingSubjectFinding) -> tuple[object, ...]:
+    if finding.source is ProblemGroupingSubjectFindingSource.PLATFORM_SIGNAL:
+        return (
+            finding.source.value,
+            finding.problem_kind or "",
+            finding.severity or "",
+            finding.signal_source_layer or "",
+            finding.signal_source_component or "",
+            finding.signal_status or "",
+            finding.error_code or "",
+            finding.exception_type or "",
+        )
     return (
-        finding.kind.value,
-        finding.scope.value,
-        finding.source_anomaly_kind.value,
+        finding.source.value,
+        finding.kind.value if finding.kind is not None else "",
+        finding.scope.value if finding.scope is not None else "",
+        finding.source_anomaly_kind.value if finding.source_anomaly_kind is not None else "",
         _lifecycle_transition_sort_key(finding.lifecycle_transition),
     )
 
@@ -68,7 +83,21 @@ def _limitation_sort_key(
     )
 
 
-def _finding_signature(finding: ProblemGroupingSubjectFinding) -> DeterministicFindingSignature:
+def _finding_signature(
+    finding: ProblemGroupingSubjectFinding,
+) -> DeterministicFindingSignature | DeterministicSignalFindingSignature:
+    if finding.source is ProblemGroupingSubjectFindingSource.PLATFORM_SIGNAL:
+        return DeterministicSignalFindingSignature(
+            problem_kind=finding.problem_kind or "",
+            severity=finding.severity or "",
+            source_layer=finding.signal_source_layer or "",
+            source_component=finding.signal_source_component or "",
+            status=finding.signal_status or "",
+            error_code=finding.error_code,
+            exception_type=finding.exception_type,
+        )
+    if finding.kind is None or finding.scope is None or finding.source_anomaly_kind is None:
+        raise ValueError("lifecycle grouping finding missing required fields")
     return DeterministicFindingSignature(
         kind=finding.kind,
         scope=finding.scope,
@@ -98,9 +127,13 @@ def build_deterministic_problem_signature(
         _limitation_signature(limitation)
         for limitation in sorted(subject.limitations, key=_limitation_sort_key)
     )
+    subject_domain: DiagnosticSubjectKind | None = None
+    if subject.ref.kind is DiagnosticSubjectKind.APPLICATION_INSTANCE:
+        subject_domain = DiagnosticSubjectKind.APPLICATION_INSTANCE
     return DeterministicProblemSignature(
         findings=sorted_findings,
         limitations=sorted_limitations,
+        subject_domain=subject_domain,
     )
 
 

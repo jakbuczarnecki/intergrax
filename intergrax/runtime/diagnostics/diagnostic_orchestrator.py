@@ -16,6 +16,8 @@ from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
     DiagnosticExecutionScope,
     DiagnosticOrchestrationRequest,
     DiagnosticOrchestrationResult,
+    DiagnosticSignalSubjectAnalysis,
+    DiagnosticSignalSubjectScope,
     validate_orchestration_request,
 )
 from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
@@ -28,6 +30,9 @@ from intergrax.runtime.diagnostics.problem_grouping_features import (
     ProblemGroupingFeatureSourceFacts,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import ProblemLifecycleEngine
+from intergrax.runtime.diagnostics.signal_diagnostic_assessment import (
+    SignalDiagnosticAssessmentBuilder,
+)
 
 
 class DiagnosticOrchestrator:
@@ -45,23 +50,34 @@ class DiagnosticOrchestrator:
         assessment_builder: DiagnosticAssessmentBuilder,
         grouping_engine: ProblemGroupingEngine,
         problem_lifecycle_engine: ProblemLifecycleEngine,
+        *,
+        signal_assessment_builder: SignalDiagnosticAssessmentBuilder | None = None,
     ) -> None:
         self._execution_reconstructor = execution_reconstructor
         self._lifecycle_analyzer = lifecycle_analyzer
         self._assessment_builder = assessment_builder
         self._grouping_engine = grouping_engine
         self._problem_lifecycle_engine = problem_lifecycle_engine
+        self._signal_assessment_builder = (
+            signal_assessment_builder or SignalDiagnosticAssessmentBuilder()
+        )
 
     def run(self, request: DiagnosticOrchestrationRequest) -> DiagnosticOrchestrationResult:
         tenant_id = validate_orchestration_request(request)
 
         assessment_inputs: list[ProblemGroupingAssessmentInput] = []
         execution_results: list[DiagnosticExecutionAnalysis] = []
+        signal_subject_results: list[DiagnosticSignalSubjectAnalysis] = []
 
         for scope in request.executions:
             analysis = self._analyze_execution_scope(tenant_id, scope)
             assessment_inputs.append(analysis.assessment_input)
             execution_results.append(analysis.execution_analysis)
+
+        for scope in request.signal_subjects:
+            signal_analysis = self._analyze_signal_subject_scope(tenant_id, scope)
+            assessment_inputs.append(signal_analysis.assessment_input)
+            signal_subject_results.append(signal_analysis.signal_subject_analysis)
 
         grouping_result = self._grouping_engine.group(
             tuple(assessment_inputs),
@@ -75,6 +91,7 @@ class DiagnosticOrchestrator:
         return DiagnosticOrchestrationResult(
             tenant_id=tenant_id,
             execution_results=tuple(execution_results),
+            signal_subject_results=tuple(signal_subject_results),
             grouping_result=grouping_result,
             lifecycle_result=lifecycle_result,
         )
@@ -114,6 +131,34 @@ class DiagnosticOrchestrator:
             ),
         )
 
+    def _analyze_signal_subject_scope(
+        self,
+        tenant_id: str,
+        scope: DiagnosticSignalSubjectScope,
+    ) -> _ScopedSignalSubjectAnalysis:
+        from intergrax.runtime.diagnostics.diagnostic_subject import ApplicationDiagnosticSubjectRef
+
+        subject_ref = ApplicationDiagnosticSubjectRef(
+            tenant_id=tenant_id,
+            application_id=scope.application_id,
+            instance_id=scope.instance_id,
+        )
+        assessment = self._signal_assessment_builder.assess(
+            subject_ref,
+            scope.problem_signals,
+        )
+        return _ScopedSignalSubjectAnalysis(
+            assessment_input=ProblemGroupingAssessmentInput(
+                signal_assessment=assessment,
+            ),
+            signal_subject_analysis=DiagnosticSignalSubjectAnalysis(
+                tenant_id=tenant_id,
+                application_id=scope.application_id,
+                instance_id=scope.instance_id,
+                assessment=assessment,
+            ),
+        )
+
 
 class _ScopedExecutionAnalysis:
     """Internal pairing of grouping input and bounded execution analysis."""
@@ -128,3 +173,18 @@ class _ScopedExecutionAnalysis:
     ) -> None:
         self.assessment_input = assessment_input
         self.execution_analysis = execution_analysis
+
+
+class _ScopedSignalSubjectAnalysis:
+    """Internal pairing of grouping input and bounded signal subject analysis."""
+
+    __slots__ = ("assessment_input", "signal_subject_analysis")
+
+    def __init__(
+        self,
+        *,
+        assessment_input: ProblemGroupingAssessmentInput,
+        signal_subject_analysis: DiagnosticSignalSubjectAnalysis,
+    ) -> None:
+        self.assessment_input = assessment_input
+        self.signal_subject_analysis = signal_subject_analysis

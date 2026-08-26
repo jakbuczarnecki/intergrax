@@ -17,7 +17,20 @@ from intergrax.runtime.diagnostics.diagnostic_assessment import (
     DiagnosticLimitation,
     DiagnosticLimitationKind,
 )
+from intergrax.runtime.diagnostics.diagnostic_subject import (
+    ApplicationDiagnosticSubjectRef,
+    DiagnosticSubjectKind,
+    DiagnosticSubjectRef,
+    ExecutionDiagnosticSubjectRef,
+    diagnostic_subject_index_token,
+    validate_application_diagnostic_subject_ref,
+    validate_execution_diagnostic_subject_ref,
+)
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyKind, LifecycleAnomalyScope, LifecycleViolationTransition
+from intergrax.runtime.diagnostics.signal_diagnostic_assessment import (
+    SignalDiagnosticAssessment,
+    SignalDiagnosticFinding,
+)
 
 if TYPE_CHECKING:
     from intergrax.runtime.diagnostics.problem_grouping_features import (
@@ -103,21 +116,104 @@ def _validate_strategy_version(value: object) -> ProblemGroupingStrategyVersion:
 
 @dataclass(frozen=True, slots=True)
 class ProblemGroupingSubjectRef:
-    """Stable identity for one execution assessment in a grouping invocation."""
+    """Stable identity for one diagnostic subject in a grouping invocation."""
 
-    tenant_id: str
-    task_id: TaskId
-    run_id: RunId
+    subject: DiagnosticSubjectRef
+
+    @property
+    def tenant_id(self) -> str:
+        return self.subject.tenant_id
+
+    @property
+    def kind(self) -> DiagnosticSubjectKind:
+        return self.subject.kind
+
+    @property
+    def task_id(self) -> TaskId:
+        execution = self.execution()
+        if execution is None:
+            raise AttributeError("task_id requires execution diagnostic subject")
+        return execution.task_id
+
+    @property
+    def run_id(self) -> RunId:
+        execution = self.execution()
+        if execution is None:
+            raise AttributeError("run_id requires execution diagnostic subject")
+        return execution.run_id
+
+    def execution(self) -> ExecutionDiagnosticSubjectRef | None:
+        if type(self.subject) is ExecutionDiagnosticSubjectRef:
+            return self.subject
+        return None
+
+    def application_instance(self) -> ApplicationDiagnosticSubjectRef | None:
+        if type(self.subject) is ApplicationDiagnosticSubjectRef:
+            return self.subject
+        return None
+
+    @property
+    def index_token(self) -> str:
+        return diagnostic_subject_index_token(self.subject)
+
+
+def problem_grouping_subject_ref_for_execution(
+    *,
+    tenant_id: str,
+    task_id: TaskId,
+    run_id: RunId,
+) -> ProblemGroupingSubjectRef:
+    return ProblemGroupingSubjectRef(
+        subject=validate_execution_diagnostic_subject_ref(
+            ExecutionDiagnosticSubjectRef(
+                tenant_id=tenant_id,
+                task_id=task_id,
+                run_id=run_id,
+            ),
+        ),
+    )
+
+
+def problem_grouping_subject_ref_for_application_instance(
+    *,
+    tenant_id: str,
+    application_id: str,
+    instance_id: str,
+) -> ProblemGroupingSubjectRef:
+    return ProblemGroupingSubjectRef(
+        subject=validate_application_diagnostic_subject_ref(
+            ApplicationDiagnosticSubjectRef(
+                tenant_id=tenant_id,
+                application_id=application_id,
+                instance_id=instance_id,
+            ),
+        ),
+    )
+
+
+class ProblemGroupingSubjectFindingSource(StrEnum):
+    """Typed origin for one normalized grouping finding."""
+
+    LIFECYCLE = "lifecycle"
+    PLATFORM_SIGNAL = "platform_signal"
 
 
 @dataclass(frozen=True, slots=True)
 class ProblemGroupingSubjectFinding:
     """Normalized finding characteristics exposed to grouping strategies."""
 
-    kind: DiagnosticFindingKind
-    scope: LifecycleAnomalyScope
-    source_anomaly_kind: LifecycleAnomalyKind
+    source: ProblemGroupingSubjectFindingSource
+    kind: DiagnosticFindingKind | None = None
+    scope: LifecycleAnomalyScope | None = None
+    source_anomaly_kind: LifecycleAnomalyKind | None = None
     lifecycle_transition: LifecycleViolationTransition | None = None
+    problem_kind: str | None = None
+    severity: str | None = None
+    signal_source_layer: str | None = None
+    signal_source_component: str | None = None
+    signal_status: str | None = None
+    error_code: str | None = None
+    exception_type: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -131,25 +227,44 @@ class ProblemGroupingSubjectLimitation:
 @dataclass(frozen=True, slots=True)
 class ProblemGroupingSubject:
     """
-    Normalized, immutable view of one DiagnosticAssessment for grouping.
+    Normalized, immutable view of one diagnostic assessment for grouping.
 
     Does not expose arbitrary assessment internals; retains provenance fields
     needed for later validation and deterministic basis evidence.
     """
 
-    tenant_id: str
-    task_id: TaskId
-    run_id: RunId
+    subject_ref: ProblemGroupingSubjectRef
     findings: tuple[ProblemGroupingSubjectFinding, ...]
     limitations: tuple[ProblemGroupingSubjectLimitation, ...]
 
     @property
+    def tenant_id(self) -> str:
+        return self.subject_ref.tenant_id
+
+    @property
+    def task_id(self) -> TaskId:
+        return self.subject_ref.task_id
+
+    @property
+    def run_id(self) -> RunId:
+        return self.subject_ref.run_id
+
+    @property
     def ref(self) -> ProblemGroupingSubjectRef:
-        return ProblemGroupingSubjectRef(
-            tenant_id=self.tenant_id,
-            task_id=self.task_id,
-            run_id=self.run_id,
-        )
+        return self.subject_ref
+
+
+@dataclass(frozen=True, slots=True)
+class DeterministicSignalFindingSignature:
+    """Typed structural descriptor for one platform-signal grouping finding."""
+
+    problem_kind: str
+    severity: str
+    source_layer: str
+    source_component: str
+    status: str
+    error_code: str | None
+    exception_type: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -176,10 +291,12 @@ class DeterministicProblemSignature:
     Exact structural identity for deterministic problem grouping (DIAG-5B).
 
     Equality is typed field equality — not an opaque fingerprint string.
+    ``subject_domain`` is ``None`` for legacy execution signatures.
     """
 
-    findings: tuple[DeterministicFindingSignature, ...]
+    findings: tuple[DeterministicFindingSignature | DeterministicSignalFindingSignature, ...]
     limitations: tuple[DeterministicLimitationSignature, ...]
+    subject_domain: DiagnosticSubjectKind | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -220,7 +337,8 @@ class ProblemGroupingCandidate:
 class ProblemGroupingAssessmentInput:
     """One assessment plus optional upstream source facts for feature projection."""
 
-    assessment: DiagnosticAssessment
+    assessment: DiagnosticAssessment | None = None
+    signal_assessment: SignalDiagnosticAssessment | None = None
     feature_source_facts: ProblemGroupingFeatureSourceFacts | None = None
 
 
@@ -418,11 +536,13 @@ class ProblemGroupingEngine:
 
 
 def normalize_assessment(assessment: DiagnosticAssessment) -> ProblemGroupingSubject:
-    """Map one DiagnosticAssessment to a grouping subject."""
+    """Map one execution DiagnosticAssessment to a grouping subject."""
     return ProblemGroupingSubject(
-        tenant_id=assessment.tenant_id,
-        task_id=assessment.task_id,
-        run_id=assessment.run_id,
+        subject_ref=problem_grouping_subject_ref_for_execution(
+            tenant_id=assessment.tenant_id,
+            task_id=assessment.task_id,
+            run_id=assessment.run_id,
+        ),
         findings=tuple(_normalize_finding(finding) for finding in assessment.findings),
         limitations=tuple(
             _normalize_limitation(limitation) for limitation in assessment.limitations
@@ -430,12 +550,41 @@ def normalize_assessment(assessment: DiagnosticAssessment) -> ProblemGroupingSub
     )
 
 
+def normalize_signal_assessment(assessment: SignalDiagnosticAssessment) -> ProblemGroupingSubject:
+    """Map one signal DiagnosticAssessment to a grouping subject."""
+    return ProblemGroupingSubject(
+        subject_ref=problem_grouping_subject_ref_for_application_instance(
+            tenant_id=assessment.tenant_id,
+            application_id=assessment.application_id,
+            instance_id=assessment.instance_id,
+        ),
+        findings=tuple(
+            _normalize_signal_finding(finding) for finding in assessment.findings
+        ),
+        limitations=(),
+    )
+
+
 def _normalize_finding(finding: DiagnosticFinding) -> ProblemGroupingSubjectFinding:
     return ProblemGroupingSubjectFinding(
+        source=ProblemGroupingSubjectFindingSource.LIFECYCLE,
         kind=finding.kind,
         scope=finding.scope,
         source_anomaly_kind=finding.source_anomaly_kind,
         lifecycle_transition=finding.lifecycle_transition,
+    )
+
+
+def _normalize_signal_finding(finding: SignalDiagnosticFinding) -> ProblemGroupingSubjectFinding:
+    return ProblemGroupingSubjectFinding(
+        source=ProblemGroupingSubjectFindingSource.PLATFORM_SIGNAL,
+        problem_kind=finding.problem_kind,
+        severity=finding.severity,
+        signal_source_layer=finding.source_layer,
+        signal_source_component=finding.source_component,
+        signal_status=finding.status,
+        error_code=finding.error_code,
+        exception_type=finding.exception_type,
     )
 
 
@@ -519,8 +668,24 @@ def _normalize_and_validate_inputs(
     tenant_id: str | None = None
 
     for assessment_input in assessment_inputs:
-        assessment = assessment_input.assessment
-        subject = normalize_assessment(assessment)
+        if assessment_input.signal_assessment is not None:
+            if assessment_input.assessment is not None:
+                raise ProblemGroupingIntegrityError(
+                    "grouping input cannot include both assessment and signal_assessment",
+                )
+            subject = normalize_signal_assessment(assessment_input.signal_assessment)
+            source_facts = None
+        elif assessment_input.assessment is not None:
+            assessment = assessment_input.assessment
+            subject = normalize_assessment(assessment)
+            source_facts = assessment_input.feature_source_facts
+            if source_facts is not None:
+                validate_feature_source_facts_scope(assessment, source_facts)
+        else:
+            raise ProblemGroupingIntegrityError(
+                "grouping input requires assessment or signal_assessment",
+            )
+
         if tenant_id is None:
             tenant_id = subject.tenant_id
         elif subject.tenant_id != tenant_id:
@@ -531,18 +696,14 @@ def _normalize_and_validate_inputs(
         ref = subject.ref
         if ref in seen_refs:
             raise ProblemGroupingIntegrityError(
-                f"duplicate subject in grouping input: {ref.task_id!r}/{ref.run_id!r}"
+                f"duplicate subject in grouping input: {ref.index_token!r}"
             )
         seen_refs.add(ref)
 
-        source_facts = assessment_input.feature_source_facts
-        if source_facts is not None:
-            validate_feature_source_facts_scope(assessment, source_facts)
-
         features = None
-        if feature_projector is not None:
+        if feature_projector is not None and assessment_input.assessment is not None:
             features = feature_projector.project(
-                assessment,
+                assessment_input.assessment,
                 subject,
                 source_facts=source_facts,
             )

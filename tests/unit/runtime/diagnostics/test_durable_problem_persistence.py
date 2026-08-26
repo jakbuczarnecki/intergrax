@@ -948,7 +948,7 @@ def test_document_store_create_retries_after_subject_index_write_failure() -> No
     record = sample_problem(tenant_id="tenant-partial-subject")
     partition_key = f"intergrax.diagnostic_problem.v1:{record.tenant_id}"
     subject_ref = record.current_subject_refs[0]
-    subject_key = (partition_key, f"subject:{subject_ref.task_id}:{subject_ref.run_id}")
+    subject_key = (partition_key, f"subject:{subject_ref.index_token}")
     store = _FailingPutIfAbsentDocumentStore(fail_keys=frozenset({subject_key}))
     persistence = DocumentStoreProblemPersistence(store)
 
@@ -1010,7 +1010,7 @@ def test_document_store_orphan_subject_index_fails_closed() -> None:
     store.put(
         DocumentRecord(
             partition_key=partition_key,
-            row_key=f"subject:{subject_ref.task_id}:{subject_ref.run_id}",
+            row_key=f"subject:{subject_ref.index_token}",
             data={
                 "schema_version": "intergrax.diagnostic_problem.index.v1",
                 "problem_id": str(record.problem_id),

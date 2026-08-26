@@ -36,8 +36,10 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingStrategyRegistry,
     ProblemGroupingSubject,
     ProblemGroupingSubjectFinding,
+    ProblemGroupingSubjectFindingSource,
     ProblemGroupingSubjectLimitation,
     ProblemGroupingSubjectRef,
+    problem_grouping_subject_ref_for_execution,
 )
 from intergrax.runtime.diagnostics.problem_grouping_features import (
     REPRESENTATION_VERSION_V1,
@@ -70,7 +72,7 @@ def _subject_ref(
     task_id=None,
     run_id=None,
 ) -> ProblemGroupingSubjectRef:
-    return ProblemGroupingSubjectRef(
+    return problem_grouping_subject_ref_for_execution(
         tenant_id=tenant_id,
         task_id=task_id or mint_task_id(),
         run_id=run_id or mint_run_id(),
@@ -97,6 +99,7 @@ def _event_after_terminal_finding(
     violating_event_type: RuntimeEventType = RuntimeEventType.RETRY_SCHEDULED,
 ) -> ProblemGroupingSubjectFinding:
     return ProblemGroupingSubjectFinding(
+        source=ProblemGroupingSubjectFindingSource.LIFECYCLE,
         kind=DiagnosticFindingKind.EVENT_AFTER_TERMINAL,
         scope=scope,
         source_anomaly_kind=LifecycleAnomalyKind.EVENT_AFTER_TERMINAL,
@@ -115,9 +118,7 @@ def _subject(
 ) -> ProblemGroupingSubject:
     resolved_ref = ref or _subject_ref()
     return ProblemGroupingSubject(
-        tenant_id=resolved_ref.tenant_id,
-        task_id=resolved_ref.task_id,
-        run_id=resolved_ref.run_id,
+        subject_ref=resolved_ref,
         findings=findings,
         limitations=limitations,
     )
@@ -301,6 +302,7 @@ def test_finding_order_independent() -> None:
         violating_event_type=RuntimeEventType.RETRY_SCHEDULED,
     )
     finding_y = ProblemGroupingSubjectFinding(
+        source=ProblemGroupingSubjectFindingSource.LIFECYCLE,
         kind=DiagnosticFindingKind.CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY,
         scope=LifecycleAnomalyScope.ATTEMPT,
         source_anomaly_kind=LifecycleAnomalyKind.CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY,
@@ -421,6 +423,7 @@ def test_two_groups_plus_singleton() -> None:
         violating_event_type=RuntimeEventType.TASK_FAILED,
     )
     finding_z = ProblemGroupingSubjectFinding(
+        source=ProblemGroupingSubjectFindingSource.LIFECYCLE,
         kind=DiagnosticFindingKind.CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY,
         scope=LifecycleAnomalyScope.ATTEMPT,
         source_anomaly_kind=LifecycleAnomalyKind.CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY,
@@ -543,6 +546,7 @@ def test_empty_assessments_not_grouped_via_engine() -> None:
 
 def test_non_lifecycle_finding_groups_without_instance_ids() -> None:
     finding = ProblemGroupingSubjectFinding(
+        source=ProblemGroupingSubjectFindingSource.LIFECYCLE,
         kind=DiagnosticFindingKind.CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY,
         scope=LifecycleAnomalyScope.ATTEMPT,
         source_anomaly_kind=LifecycleAnomalyKind.CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY,

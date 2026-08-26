@@ -1431,22 +1431,19 @@ DiagnosticReadService / dashboard read path
 **Write/process path:**
 
 ```text
-DiagnosticExecutionScope[]
+DiagnosticExecutionScope[]  +  DiagnosticSignalSubjectScope[]  (at least one)
   ↓
 DiagnosticOrchestrator.run(DiagnosticOrchestrationRequest)
   ↓
-ExecutionReconstructor.reconstruct_execution (per scope)
+[execution] ExecutionReconstructor → LifecycleAnomalyAnalyzer → DiagnosticAssessmentBuilder
+[signal]    SignalDiagnosticAssessmentBuilder (PlatformProblemSignal → bounded facts)
   ↓
-LifecycleAnomalyAnalyzer.analyze
-  ↓
-DiagnosticAssessmentBuilder.assess
-  ↓
-ProblemGroupingFeatureSourceFacts (reconstruction + optional problem_signals)
-  ↓
-ProblemGroupingEngine.group(strategy_id=...)
+ProblemGroupingEngine.group(strategy_id=...)   # typed DiagnosticSubjectRef subjects meet here
   ↓
 ProblemLifecycleEngine.reconcile(observed_at=...)
 ```
+
+**Typed diagnostic subjects (HOST-DIAG-2):** ONE spine does not mean one identity model. Canonical truths remain: `RuntimeEvent` = execution truth; `HostedApplicationEvent` = hosting truth (projection slice HOST-DIAG-3); `PlatformProblemSignal` = bounded operational problem signal. The Diagnostic Engine consumes multiple tenant-scoped subject domains via explicit `DiagnosticSubjectRef` (`execution`: `tenant_id` + `TaskId` + `RunId`; `application_instance`: `tenant_id` + `application_id` + `instance_id`). Non-execution subjects do not synthesize `TaskId`/`RunId`. `intergrax/runtime/diagnostics/` does not import `intergrax.hosting.*`.
 
 **Operator read path (unchanged):**
 
@@ -1456,9 +1453,9 @@ ProblemPersistence
 DiagnosticReadService
 ```
 
-**Request contract:** `DiagnosticOrchestrationRequest` — one `tenant_id`, `executions: DiagnosticExecutionScope[]` (canonical `TaskId` / `RunId`, optional `problem_signals`), explicit `grouping_strategy_id`, timezone-aware `observed_at`. One invocation = one tenant; mixed-tenant or duplicate `(tenant_id, task_id, run_id)` scopes fail closed **before** reconstruction. Batch size: `1..MAX_DIAGNOSTIC_ORCHESTRATION_EXECUTIONS` (100).
+**Request contract:** `DiagnosticOrchestrationRequest` — one `tenant_id`, optional `executions: DiagnosticExecutionScope[]` (canonical `TaskId` / `RunId`, optional `problem_signals`), optional `signal_subjects: DiagnosticSignalSubjectScope[]` (`application_id` + `instance_id` + `problem_signals`; tenant explicit), explicit `grouping_strategy_id`, timezone-aware `observed_at`. At least one execution or signal subject required. One invocation = one tenant; mixed-tenant or duplicate scopes fail closed **before** reconstruction. Batch size per family: `1..MAX` (100).
 
-**Result contract:** `DiagnosticOrchestrationResult` — bounded `DiagnosticExecutionAnalysis[]` (assessment + `runtime_history_completeness` + safe booleans; **no** `ExecutionReconstruction`), plus `ProblemGroupingResult` and `ProblemLifecycleResult`. No raw `RuntimeEvent.payload`, causal evidence objects, logs, or root-cause fields.
+**Result contract:** `DiagnosticOrchestrationResult` — bounded `DiagnosticExecutionAnalysis[]`, `DiagnosticSignalSubjectAnalysis[]`, plus `ProblemGroupingResult` and `ProblemLifecycleResult`. No raw `RuntimeEvent.payload`, causal evidence objects, logs, or root-cause fields.
 
 **Mutation boundary:** DIAG-2→4 and grouping remain read/derived. The only persistence mutation is `ProblemLifecycleEngine.reconcile`, and it runs only after **all** execution analyses succeed and grouping validates. No per-execution Problem writes. No auto-resolve.
 
@@ -1470,7 +1467,7 @@ DiagnosticReadService
 
 **Roadmap:** **DIAG-7 complete.** **DIAG-8 / scenario** — intelligent grouping + root-cause investigation. Real external/vendor E2E remains mandatory after orchestration closure.
 
-**Code references:** `intergrax/runtime/diagnostics/diagnostic_orchestrator.py`, `intergrax/runtime/diagnostics/diagnostic_orchestration_models.py`.
+**Code references:** `intergrax/runtime/diagnostics/diagnostic_orchestrator.py`, `intergrax/runtime/diagnostics/diagnostic_orchestration_models.py`, `intergrax/runtime/diagnostics/diagnostic_subject.py`, `intergrax/runtime/diagnostics/signal_diagnostic_assessment.py`.
 
 ### Multi-execution problem grouping (DIAG-5A)
 

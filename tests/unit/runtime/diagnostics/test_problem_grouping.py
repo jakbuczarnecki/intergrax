@@ -34,6 +34,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingStrategyVersion,
     ProblemGroupingSubjectRef,
     normalize_assessment,
+    problem_grouping_subject_ref_for_execution,
 )
 from intergrax.runtime.diagnostics.problem_grouping_features import (
     REPRESENTATION_VERSION_V1,
@@ -85,7 +86,7 @@ def _assessment(
 
 
 def _subject_ref(assessment: DiagnosticAssessment) -> ProblemGroupingSubjectRef:
-    return ProblemGroupingSubjectRef(
+    return problem_grouping_subject_ref_for_execution(
         tenant_id=assessment.tenant_id,
         task_id=assessment.task_id,
         run_id=assessment.run_id,
