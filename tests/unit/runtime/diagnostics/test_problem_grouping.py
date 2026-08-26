@@ -17,6 +17,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicProblemSignature,
     DuplicateProblemGroupingStrategyError,
     MissingProblemGroupingStrategyError,
+    ProblemGroupingAssessmentInput,
     ProblemGroupingBasis,
     ProblemGroupingBasisKind,
     ProblemGroupingCandidate,
@@ -33,6 +34,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingStrategyVersion,
     ProblemGroupingSubjectRef,
     normalize_assessment,
+    problem_grouping_subject_ref_for_execution,
 )
 from intergrax.runtime.diagnostics.problem_grouping_features import (
     REPRESENTATION_VERSION_V1,
@@ -58,6 +60,10 @@ _FAKE_STRATEGY_ID = ProblemGroupingStrategyId("test.fake_pair")
 _FAKE_STRATEGY_VERSION = ProblemGroupingStrategyVersion("1.0.0")
 
 
+def _assessment_input(assessment: DiagnosticAssessment) -> ProblemGroupingAssessmentInput:
+    return ProblemGroupingAssessmentInput(assessment=assessment)
+
+
 def _empty_basis() -> DeterministicProblemGroupingBasis:
     return DeterministicProblemGroupingBasis(
         signature=DeterministicProblemSignature(findings=(), limitations=())
@@ -80,7 +86,7 @@ def _assessment(
 
 
 def _subject_ref(assessment: DiagnosticAssessment) -> ProblemGroupingSubjectRef:
-    return ProblemGroupingSubjectRef(
+    return problem_grouping_subject_ref_for_execution(
         tenant_id=assessment.tenant_id,
         task_id=assessment.task_id,
         run_id=assessment.run_id,
@@ -185,7 +191,11 @@ def test_engine_groups_first_pair_and_leaves_third_ungrouped() -> None:
     engine = _engine_with_strategy(_ConfigurableFakeStrategy())
 
     result = engine.group(
-        (assessment_a, assessment_b, assessment_c),
+        (
+            _assessment_input(assessment_a),
+            _assessment_input(assessment_b),
+            _assessment_input(assessment_c),
+        ),
         strategy_id=_FAKE_STRATEGY_ID,
     )
 
@@ -214,7 +224,7 @@ def test_foreign_member_rejected() -> None:
     engine = _engine_with_strategy(strategy)
 
     with pytest.raises(ProblemGroupingIntegrityError, match="not present"):
-        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+        engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=_FAKE_STRATEGY_ID)
 
 
 def test_mixed_tenants_fail_before_strategy() -> None:
@@ -223,7 +233,7 @@ def test_mixed_tenants_fail_before_strategy() -> None:
     engine = _engine_with_strategy(_ConfigurableFakeStrategy())
 
     with pytest.raises(ProblemGroupingIntegrityError, match="mixed tenant_id"):
-        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+        engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=_FAKE_STRATEGY_ID)
 
 
 def test_duplicate_input_rejected() -> None:
@@ -231,7 +241,7 @@ def test_duplicate_input_rejected() -> None:
     engine = _engine_with_strategy(_ConfigurableFakeStrategy())
 
     with pytest.raises(ProblemGroupingIntegrityError, match="duplicate subject"):
-        engine.group((assessment, assessment), strategy_id=_FAKE_STRATEGY_ID)
+        engine.group((_assessment_input(assessment), _assessment_input(assessment)), strategy_id=_FAKE_STRATEGY_ID)
 
 
 def test_overlapping_candidates_allowed() -> None:
@@ -256,7 +266,11 @@ def test_overlapping_candidates_allowed() -> None:
     engine = _engine_with_strategy(strategy)
 
     result = engine.group(
-        (assessment_a, assessment_b, assessment_c),
+        (
+            _assessment_input(assessment_a),
+            _assessment_input(assessment_b),
+            _assessment_input(assessment_c),
+        ),
         strategy_id=_FAKE_STRATEGY_ID,
     )
 
@@ -264,7 +278,7 @@ def test_overlapping_candidates_allowed() -> None:
     assert result.ungrouped_subjects == ()
 
 
-def test_singleton_candidate_rejected() -> None:
+def test_singleton_candidate_accepted() -> None:
     assessment_a = _assessment()
     ref_a = _subject_ref(assessment_a)
     strategy = _ConfigurableFakeStrategy(
@@ -277,8 +291,26 @@ def test_singleton_candidate_rejected() -> None:
     )
     engine = _engine_with_strategy(strategy)
 
-    with pytest.raises(ProblemGroupingIntegrityError, match="at least two members"):
-        engine.group((assessment_a,), strategy_id=_FAKE_STRATEGY_ID)
+    result = engine.group((_assessment_input(assessment_a),), strategy_id=_FAKE_STRATEGY_ID)
+
+    assert len(result.candidates) == 1
+    assert result.candidates[0].members == (ref_a,)
+
+
+def test_empty_member_candidate_rejected() -> None:
+    assessment_a = _assessment()
+    strategy = _ConfigurableFakeStrategy(
+        candidates=(
+            ProblemGroupingCandidate(
+                members=(),
+                provenance=_provenance(members=()),
+            ),
+        ),
+    )
+    engine = _engine_with_strategy(strategy)
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="at least one member"):
+        engine.group((_assessment_input(assessment_a),), strategy_id=_FAKE_STRATEGY_ID)
 
 
 def test_strategy_identity_mismatch_rejected() -> None:
@@ -306,7 +338,7 @@ def test_strategy_identity_mismatch_rejected() -> None:
     engine = _engine_with_strategy(_SpoofedStrategy())
 
     with pytest.raises(ProblemGroupingIntegrityError, match="strategy_id"):
-        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+        engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=_FAKE_STRATEGY_ID)
 
 
 def test_engine_determinism() -> None:
@@ -316,11 +348,19 @@ def test_engine_determinism() -> None:
     engine = _engine_with_strategy(_ConfigurableFakeStrategy())
 
     first = engine.group(
-        (assessment_a, assessment_b, assessment_c),
+        (
+            _assessment_input(assessment_a),
+            _assessment_input(assessment_b),
+            _assessment_input(assessment_c),
+        ),
         strategy_id=_FAKE_STRATEGY_ID,
     )
     second = engine.group(
-        (assessment_a, assessment_b, assessment_c),
+        (
+            _assessment_input(assessment_a),
+            _assessment_input(assessment_b),
+            _assessment_input(assessment_c),
+        ),
         strategy_id=_FAKE_STRATEGY_ID,
     )
 
@@ -374,7 +414,7 @@ def test_deterministic_basis_valid_with_deterministic_strategy() -> None:
     )
     engine = _engine_with_strategy(strategy)
 
-    result = engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+    result = engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=_FAKE_STRATEGY_ID)
 
     assert result.candidates[0].provenance.basis == basis
     assert result.candidates[0].provenance.basis.kind is ProblemGroupingBasisKind.DETERMINISTIC
@@ -399,7 +439,7 @@ def test_method_spoof_rejected() -> None:
     engine = _engine_with_strategy(strategy)
 
     with pytest.raises(ProblemGroupingIntegrityError, match="method"):
-        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+        engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=_FAKE_STRATEGY_ID)
 
 
 def test_basis_method_mismatch_rejected() -> None:
@@ -421,7 +461,7 @@ def test_basis_method_mismatch_rejected() -> None:
     engine = _engine_with_strategy(strategy)
 
     with pytest.raises(ProblemGroupingIntegrityError, match="basis kind"):
-        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+        engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=_FAKE_STRATEGY_ID)
 
 
 def test_foreign_supporting_ref_rejected() -> None:
@@ -447,7 +487,7 @@ def test_foreign_supporting_ref_rejected() -> None:
     engine = _engine_with_strategy(strategy)
 
     with pytest.raises(ProblemGroupingIntegrityError, match="supporting_subject_ref"):
-        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+        engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=_FAKE_STRATEGY_ID)
 
 
 def test_supporting_refs_must_equal_members() -> None:
@@ -475,7 +515,11 @@ def test_supporting_refs_must_equal_members() -> None:
 
     with pytest.raises(ProblemGroupingIntegrityError, match="must equal candidate members"):
         engine.group(
-            (assessment_a, assessment_b, assessment_c),
+            (
+                _assessment_input(assessment_a),
+                _assessment_input(assessment_b),
+                _assessment_input(assessment_c),
+            ),
             strategy_id=_FAKE_STRATEGY_ID,
         )
 
@@ -502,7 +546,7 @@ def test_duplicate_supporting_ref_rejected() -> None:
     engine = _engine_with_strategy(strategy)
 
     with pytest.raises(ProblemGroupingIntegrityError, match="duplicate supporting_subject_ref"):
-        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+        engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=_FAKE_STRATEGY_ID)
 
 
 def test_member_order_normalized_to_input_order() -> None:
@@ -520,7 +564,7 @@ def test_member_order_normalized_to_input_order() -> None:
     )
     engine = _engine_with_strategy(strategy)
 
-    result = engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+    result = engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=_FAKE_STRATEGY_ID)
 
     assert result.candidates[0].members == (ref_a, ref_b)
     assert result.candidates[0].provenance.supporting_subject_refs == (ref_a, ref_b)
@@ -546,7 +590,7 @@ def test_registered_strategy_mutation_rejected() -> None:
     strategy._version = ProblemGroupingStrategyVersion("9.9.9")
 
     with pytest.raises(ProblemGroupingIntegrityError, match="mutated after registration"):
-        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+        engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=_FAKE_STRATEGY_ID)
 
 
 def _assess_attempt_sequence(event_types: list[RuntimeEventType]) -> DiagnosticAssessment:
@@ -651,6 +695,8 @@ class _AssessmentFeatureProjector:
         self,
         assessment: DiagnosticAssessment,
         subject,
+        *,
+        source_facts=None,
     ) -> ProblemGroupingFeatureSet:
         return project_assessment_features(assessment, subject=subject)
 
@@ -710,7 +756,7 @@ def test_feature_requiring_strategy_receives_projected_features() -> None:
     )
 
     result = engine.group(
-        (assessment_a, assessment_b),
+        (_assessment_input(assessment_a), _assessment_input(assessment_b)),
         strategy_id=_FAKE_STRATEGY_ID,
     )
 
@@ -724,7 +770,7 @@ def test_feature_requiring_strategy_fails_without_projector() -> None:
     engine = _engine_with_strategy(_FeatureRequiringFakeStrategy())
 
     with pytest.raises(ProblemGroupingIntegrityError, match="requires features"):
-        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+        engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=_FAKE_STRATEGY_ID)
 
 
 def test_feature_subject_ref_mismatch_rejected() -> None:
@@ -739,7 +785,13 @@ def test_feature_subject_ref_mismatch_rejected() -> None:
         def representation_version(self) -> ProblemGroupingRepresentationVersion:
             return REPRESENTATION_VERSION_V1
 
-        def project(self, assessment: DiagnosticAssessment, subject) -> ProblemGroupingFeatureSet:
+        def project(
+            self,
+            assessment: DiagnosticAssessment,
+            subject,
+            *,
+            source_facts=None,
+        ) -> ProblemGroupingFeatureSet:
             if subject.ref == subject_a.ref:
                 return mismatched_features
             return project_assessment_features(assessment, subject=subject)
@@ -750,7 +802,7 @@ def test_feature_subject_ref_mismatch_rejected() -> None:
     )
 
     with pytest.raises(ProblemGroupingIntegrityError, match="subject_ref"):
-        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+        engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=_FAKE_STRATEGY_ID)
 
 
 def test_feature_structural_signature_mismatch_rejected() -> None:
@@ -801,7 +853,13 @@ def test_feature_structural_signature_mismatch_rejected() -> None:
         def representation_version(self) -> ProblemGroupingRepresentationVersion:
             return REPRESENTATION_VERSION_V1
 
-        def project(self, assessment: DiagnosticAssessment, subject) -> ProblemGroupingFeatureSet:
+        def project(
+            self,
+            assessment: DiagnosticAssessment,
+            subject,
+            *,
+            source_facts=None,
+        ) -> ProblemGroupingFeatureSet:
             if subject.ref == subject_a.ref:
                 return wrong_signature_features
             return project_assessment_features(assessment, subject=subject)
@@ -812,4 +870,4 @@ def test_feature_structural_signature_mismatch_rejected() -> None:
     )
 
     with pytest.raises(ProblemGroupingIntegrityError, match="structural_signature"):
-        engine.group((assessment_a, assessment_b), strategy_id=_FAKE_STRATEGY_ID)
+        engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=_FAKE_STRATEGY_ID)

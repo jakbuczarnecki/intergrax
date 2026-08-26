@@ -7,10 +7,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from fastapi import APIRouter
+from fastapi import APIRouter, FastAPI
 
 from intergrax.applications._shared.architecture_health_wiring import resolve_architecture_health_wiring
-from intergrax.applications._shared.causal_diagnostics_wiring import resolve_causal_diagnostics_wiring
+from intergrax.applications._shared.diagnostic_read_wiring import resolve_host_diagnostic_read_service
+from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications._shared.compliance_profile_wiring import resolve_compliance_profile_wiring
 from intergrax.applications._shared.health_dashboard_wiring import resolve_health_dashboard_wiring
 from intergrax.applications._shared.product_observability_dashboard_routes import (
@@ -20,9 +21,11 @@ from intergrax.applications._shared.strategy_review_wiring import resolve_strate
 from intergrax.applications._shared.tenant_storage_wiring import tenant_storage_isolation_ready
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.runtime.diagnostics.diagnostic_read_service import DiagnosticReadService
+from intergrax.runtime.diagnostics.problem_lifecycle import ProblemStatus
 from intergrax.runtime.observability.product_observability_dashboard import (
     ArchitectureHealthPane,
-    CausalDiagnosticsPane,
+    DiagnosticOperationsPane,
     GovernanceDashboardPane,
     ProductObservabilityDashboard,
     build_product_observability_dashboard,
@@ -36,17 +39,40 @@ class ProductObservabilityDashboardWiring:
     dashboard: ProductObservabilityDashboard | None
 
 
+def _build_diagnostic_operations_pane(
+    env: ApplicationEnvironmentProfile,
+    diagnostic_read_service: DiagnosticReadService | None,
+) -> DiagnosticOperationsPane:
+    """Project central diagnostic read capability for the host tenant scope."""
+    if not env.observability_profile.diagnostics_pane_enabled:
+        return DiagnosticOperationsPane(ready=False, problem_count=0, open_problem_count=0)
+    if diagnostic_read_service is None:
+        return DiagnosticOperationsPane(ready=False, problem_count=0, open_problem_count=0)
+
+    tenant_id = env.profile_id
+    all_problems = diagnostic_read_service.list_problems(tenant_id=tenant_id)
+    open_problems = diagnostic_read_service.list_problems(
+        tenant_id=tenant_id,
+        status=ProblemStatus.OPEN,
+    )
+    return DiagnosticOperationsPane(
+        ready=True,
+        problem_count=all_problems.total_count,
+        open_problem_count=open_problems.total_count,
+    )
+
+
 def _build_dashboard(
     env: ApplicationEnvironmentProfile,
     *,
     repo_root: Path | None = None,
+    diagnostic_read_service: DiagnosticReadService | None = None,
 ) -> ProductObservabilityDashboard | None:
     health_wiring = resolve_health_dashboard_wiring(env)
     if not health_wiring.enabled or health_wiring.contract is None:
         return None
 
     architecture_wiring = resolve_architecture_health_wiring(env)
-    causal_wiring = resolve_causal_diagnostics_wiring(env)
     compliance_wiring = resolve_compliance_profile_wiring(env)
     strategy_wiring = resolve_strategy_review_wiring(
         env,
@@ -64,17 +90,7 @@ def _build_dashboard(
             debt_index = summary.architecture_debt_index
             capability_count = summary.nodes_total
 
-    causal = CausalDiagnosticsPane(
-        run_id="bootstrap",
-        link_count=0,
-        ready=False,
-    )
-    if causal_wiring.enabled and causal_wiring.chain is not None:
-        causal = CausalDiagnosticsPane(
-            run_id=causal_wiring.chain.run_id,
-            link_count=len(causal_wiring.chain.links),
-            ready=True,
-        )
+    diagnostics = _build_diagnostic_operations_pane(env, diagnostic_read_service)
 
     governance = GovernanceDashboardPane(
         compliance_profile_enabled=compliance_wiring.enabled,
@@ -93,7 +109,7 @@ def _build_dashboard(
         governance=governance,
         health=health_wiring.contract,
         architecture=architecture,
-        causal=causal,
+        diagnostics=diagnostics,
     )
 
 
@@ -101,6 +117,7 @@ def resolve_product_observability_dashboard_wiring(
     env: ApplicationEnvironmentProfile,
     *,
     repo_root: Path | None = None,
+    diagnostic_read_service: DiagnosticReadService | None = None,
 ) -> ProductObservabilityDashboardWiring:
     """Mount GOV-PROD.1 dashboard routes when product observability flags are enabled."""
     if env.application_profile is not ApplicationProfile.PRODUCT:
@@ -111,7 +128,11 @@ def resolve_product_observability_dashboard_wiring(
     if not obs.unified_observability_dashboard_enabled and not gov.governance_dashboard_enabled:
         return ProductObservabilityDashboardWiring(enabled=False, router=None, dashboard=None)
 
-    dashboard = _build_dashboard(env, repo_root=repo_root)
+    dashboard = _build_dashboard(
+        env,
+        repo_root=repo_root,
+        diagnostic_read_service=diagnostic_read_service,
+    )
     if dashboard is None:
         return ProductObservabilityDashboardWiring(enabled=False, router=None, dashboard=None)
 
@@ -120,3 +141,34 @@ def resolve_product_observability_dashboard_wiring(
         router=create_product_observability_dashboard_router(dashboard=dashboard, enabled=True),
         dashboard=dashboard,
     )
+
+
+def _diagnostics_pane_requires_read_service(env: ApplicationEnvironmentProfile) -> bool:
+    return env.observability_profile.diagnostics_pane_enabled
+
+
+def wire_harness_product_observability_dashboard(
+    app: FastAPI,
+    *,
+    runtime: HarnessHostRuntime,
+    repo_root: Path | None = None,
+) -> ProductObservabilityDashboardWiring:
+    """
+    Mount GOV-PROD.1 dashboard routes on a Tier-3 product harness host.
+
+    When ``diagnostics_pane_enabled`` is true, wires the central ``DiagnosticReadService``
+    from shared platform persistence on the same harness runtime — no dashboard-local stores.
+    """
+    env = runtime.environment
+    diagnostic_read_service: DiagnosticReadService | None = None
+    if _diagnostics_pane_requires_read_service(env):
+        diagnostic_read_service = resolve_host_diagnostic_read_service(runtime)
+
+    wiring = resolve_product_observability_dashboard_wiring(
+        env,
+        repo_root=repo_root,
+        diagnostic_read_service=diagnostic_read_service,
+    )
+    if wiring.enabled and wiring.router is not None:
+        app.include_router(wiring.router)
+    return wiring

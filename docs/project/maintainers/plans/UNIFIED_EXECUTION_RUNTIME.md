@@ -22,9 +22,17 @@
 
 **Known implementation gaps (CURRENT):** no canonical `ExecutionId`; `RuntimeEvent` lacks `ExecutionId`; `UnifiedTaskRunner` routes through Nexus; agent-centric `GraphExecutor`; incomplete hierarchical budget; node-centric authority in places.
 
-**High-level migration order:** see UER hub [Implementation readiness §5](../../architecture/UNIFIED_EXECUTION_RUNTIME.md#5-migration-order-high-level). Detailed code mapping deferred to **UE-DOC-0.9**.
+**High-level migration order:** see UER hub [Implementation readiness §5](../../architecture/UNIFIED_EXECUTION_RUNTIME.md#5-migration-order-high-level). Detailed code mapping: [`UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md`](../../architecture/UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md) (**UE-DOC-0.9**).
 
-**Plan debt:** substantial row restructuring against Execution-centric slices is **not** in UE-DOC-0.4 — track in UE-DOC-0.9.
+### Architecture sync — UE-DOC-0.9 (2026-08-26)
+
+**Status:** canonical implementation map delivered — **no runtime implementation in this slice**. Use map for UE-1+ slice derivation; do not reopen UEA semantics.
+
+**Plan debt:** substantial row restructuring against Execution-centric slices remains in plan rows — align incrementally per map waves §26.
+
+### Implementation gate — UE-DOC-0.10 (2026-08-26)
+
+**Status:** final pre-runtime consistency audit complete — [`UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md`](../../architecture/UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md). **IMPLEMENTATION GATE: PASS** (baseline `fc7c76c999e3d49d0532c4bdd07941c688e2553c`). UE-1+ runtime work may proceed; first slice UE-1A.
 
 ---
 

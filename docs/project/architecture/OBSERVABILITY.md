@@ -451,7 +451,7 @@ Frozen UEA + this document: Execution-centric five-ID evidence spine; canonical 
 
 ### 2. CURRENT STATE
 
-Closed TRACE-1A–1C four-ID event spine; active DIAG-1..5C implementation; as-of and K-only reconstruction integrated; no canonical `ExecutionId` on `RuntimeEvent`.
+Closed TRACE-1A–1C four-ID event spine; active DIAG-1..5D implementation; as-of and K-only reconstruction integrated; no canonical `ExecutionId` on `RuntimeEvent`.
 
 ### 3. GAPS
 
@@ -1101,6 +1101,8 @@ Each `DiagnosticFinding` retains `source_anomaly_kind: LifecycleAnomalyKind` for
 
 **Limitations participate:** same positive finding plus `RUNTIME_HISTORY_TRUNCATED` on one subject only → different signatures. Limitation-only subjects (no findings) remain ungrouped.
 
+**Singleton eligibility:** one subject with at least one real finding may emit a grouping candidate. A stable `Problem` therefore represents an operational diagnostic pattern observed once or more — not proof that recurrence was already established in the same batch. `occurrence_count` tracks distinct accepted executions; recurrence means `occurrence_count > 1`. Singleton membership does **not** imply root cause.
+
 **Empty subjects remain ungrouped:** no findings → no candidate; DIAG-4 does not prove health.
 
 **Algorithm:** O(n) bucket grouping by signature hash/equality; candidate order = first input appearance of each signature; members preserve input order.
@@ -1266,9 +1268,210 @@ Grouping proposes **"these incidents are likely related under this method"** —
 
 **Code references:** `intergrax/runtime/diagnostics/problem_grouping_features.py` (`ProblemGroupingFeatureSet`, `validate_problem_grouping_feature_set`, `REPRESENTATION_VERSION_V2`).
 
+### Typed feature projection from platform facts (DIAG-5C-C)
+
+**Scope:** populate `ProblemGroupingFeatureSet` v2 extended tuples from typed upstream facts already collected by diagnostic orchestration — no persistence queries, no second grouping engine, no problem-signal store.
+
+**Production grouping strategies after this slice:** **1** — `DeterministicProblemGroupingStrategy` only.
+
+**Source-fact delivery:** per-assessment `ProblemGroupingAssessmentInput` carries `DiagnosticAssessment` plus optional `ProblemGroupingFeatureSourceFacts` — an **explicitly tenant/task/run-scoped** bundle (`tenant_id: str`, `task_id: TaskId`, `run_id: RunId`, optional `reconstruction`, optional `problem_signals`). When no source facts exist, `feature_source_facts=None`. `ProblemGroupingEngine.group(assessment_inputs, strategy_id=...)` validates bundle scope against the assessment and nested reconstruction/signal ids fail-closed **before** invoking the projector.
+
+**Scope authority:** `PlatformProblemSignal` may omit its own `task_id` / `run_id` when the observability contract permits empty values; diagnostic grouping inherits execution scope from the enclosing validated `ProblemGroupingFeatureSourceFacts` bundle. Populated signal ids must agree with the bundle. No cross-tenant or cross-execution fact mixing.
+
+**Production projector:** `DiagnosticProblemGroupingFeatureProjector` — representation v2, no models, no grouping decisions, no persistence reads.
+
+**Pipeline:**
+
+```text
+DiagnosticAssessment + ProblemGroupingFeatureSourceFacts (optional)
+  → ProblemGroupingEngine (scope validation)
+  → normalize ProblemGroupingSubject
+  → DiagnosticProblemGroupingFeatureProjector.project(assessment, subject, source_facts=...)
+  → ProblemGroupingFeatureSet
+  → ProblemGroupingStrategy.group(ProblemGroupingInput[])
+```
+
+**Runtime event selection (deterministic):** from `reconstruction.positioned_events` in source order, include an event when `event_type` is failure/anomaly-relevant (`PLAN_FAILED`, `*_FAILED`, `TOOL_DENIED`, `INTERRUPT_ESCALATED`, `HUMAN_APPROVAL_TIMEOUT`, `GUARDRAIL_BLOCKED`, `BUDGET_EXCEEDED`, …), retry-related (`RETRY_SCHEDULED`, `RETRY_STARTED`), or `event_id` is referenced by `DiagnosticFinding.supporting_event_ids` / `DiagnosticLimitation.supporting_event_ids`. Informational events matching none of the above are excluded.
+
+**Problem signals:** optional supplied observability facts only — no `ProblemSignalPersistence`, no exporter queries. When absent, component/failure/operation/text tuples from signals remain empty.
+
+**Raw-data boundary:** strategies receive only `ProblemGroupingInput` (`subject` + optional `ProblemGroupingFeatureSet`). No `ExecutionReconstruction`, `RuntimeEvent`, `PlatformProblemSignal`, `PlatformCausalEvidence`, payloads, or raw logs reach strategies. Projector performs no `.payload` access.
+
+**Deterministic strategy:** `DeterministicProblemGroupingStrategy` still consumes `input.subject` only — ignores all feature fields; `strategy_version` remains `"1"`.
+
+**Explicit non-goals (DIAG-5C-C):** semantic/ML/LLM/hybrid strategies, embeddings, vector DB, problem-signal persistence, payload parsing.
+
+**Code references:** `intergrax/runtime/diagnostics/diagnostic_problem_grouping_feature_projector.py`, `intergrax/runtime/diagnostics/problem_grouping.py` (`ProblemGroupingAssessmentInput`, `validate_feature_source_facts_scope`), `intergrax/runtime/diagnostics/problem_grouping_features.py` (`ProblemGroupingFeatureSourceFacts`).
+
+### Stable Problem identity and lifecycle (DIAG-5D)
+
+**Scope:** reconcile validated grouping hypotheses into tenant-scoped stable `ProblemId` records — without changing grouping algorithms, assessment semantics, or canonical execution truth.
+
+**Production grouping strategies after this slice:** **1** — `DeterministicProblemGroupingStrategy` only. Intelligent semantic/ML/LLM/hybrid grouping remains **scenario-stage** (future strategy plugins supply their own typed reconciliation keys).
+
+**Three concepts (never collapse):**
+
+| Concept | Meaning |
+|---------|---------|
+| **A — candidate membership** | Ephemeral `ProblemGroupingCandidate` from one invocation — hypothesis only |
+| **B — stable Problem identity** | Opaque minted `ProblemId` — tracked operational diagnostic pattern observed one or more times |
+| **C — root cause** | Evidence-backed causal conclusion — **not** implied by grouping or Problem persistence |
+
+`ProblemId` denotes **B** only. Grouping remains hypothesis-producing; root-cause proof is future DIAG-8 / evidence work.
+
+**Pipeline:**
+
+```text
+DiagnosticAssessment[]
+  → ProblemGroupingEngine
+  → ProblemGroupingResult              # validated, ephemeral hypotheses
+  → ProblemLifecycleEngine.reconcile(observed_at=...)
+  → stable ProblemId / Problem records
+```
+
+**`ProblemLifecycleEngine` owns:** reconciliation-key extraction (via registered `ProblemReconciliationPolicy` per `ProblemGroupingBasisKind`), lookup, create/update, occurrence history, conflict detection, and persistence. It does **not** re-run grouping logic or mutate `ProblemGroupingEngine`.
+
+**Deterministic recurrence key (v1):** `DeterministicProblemReconciliationKey` = `tenant_id` + `strategy_id` + `strategy_version` + `DeterministicProblemSignature`. This is **not** `ProblemId` — only conservative auditable evidence to find the same tracked Problem. A different `strategy_version` must not silently attach to Problems established under prior semantics.
+
+**Matching rules (conservative):** attach to an existing Problem when reconciliation key matches **or** a `ProblemGroupingSubjectRef` already belongs to that Problem; fail closed when one subject would attach to incompatible Problems in the same operation or across conflicting keys.
+
+**Problem record:** persisted **derived diagnostic state** — rebuildable in principle from canonical evidence plus validated grouping output. `RuntimeEvent` / causal evidence remain canonical facts.
+
+**Status (minimal):** `OPEN` (default), `RESOLVED` (explicit `ProblemLifecycleEngine.resolve` only). New accepted occurrence on a `RESOLVED` Problem returns status to `OPEN`. **No** auto-resolve when a pattern is absent from a later grouping invocation.
+
+**Occurrence timestamps:** `first_seen_at` and `last_seen_at` are derived from accepted `ProblemOccurrence.observed_at` values (min / max). They reflect observation time, not reconciliation or resolution processing time. `occurrence_count` is the number of distinct accepted executions attached to the Problem; recurrence is `occurrence_count > 1` and is separate from candidate membership cardinality. Out-of-order delivery is handled correctly: a later reconciliation with an older `observed_at` on a new subject lowers `first_seen_at`; replaying an already-known `subject_ref` does not change timestamps or `occurrence_count`. `resolve()` changes status and `record_version` only — it does not advance `last_seen_at`.
+
+**Persistence:** `ProblemPersistence` protocol with optimistic `record_version` CAS on update, idempotent create, and subject-ref / reconciliation-key indexes for tenant isolation and concurrency safety. **Durable backend (DIAG-STORAGE):** `DocumentStoreProblemPersistence` (requires `ConditionalDocumentStore`) is wired through `wire_problem_persistence(document_store=...)`. `InMemoryProblemPersistence` is test/local reference only.
+
+```text
+ProblemLifecycleEngine
+  ↓
+ProblemPersistence
+  ↓
+DocumentStoreProblemPersistence
+  ↓
+ConditionalDocumentStore
+  ↓
+vendor adapter (Cassandra / MongoDB / DynamoDB / …)
+```
+
+Stable Problem state is **derived, durable operational state** — rebuildable from canonical evidence plus validated grouping output. The persistence backend is replaceable; CAS semantics and structural tenant isolation are mandatory. Reconciliation and subject rows are internal persistence indexes (`ProblemReconciliationKey.index_token()` is not public identity). Diagnostic Engine semantics are independent of backend choice.
+
+**Canonical record vs indexes:** `record:<problem_id>` is the only authoritative store for the full `Problem`. `reconcile:` and `subject:` rows hold `problem_id` references only. Reads resolve index → canonical record → scope validation. `create` claims reconciliation and subject indexes before the canonical record; identical retries repair missing indexes after partial writes.
+
+**Explicit non-goals (DIAG-5D):** Problem merge/split, auto-resolve-on-absence, root-cause fields, second production grouping strategy, LLM/embeddings/vector/confidence.
+
+**Roadmap:** **DIAG-5C complete.** **DIAG-5D complete.** **DIAG-6 complete.** **DIAG-7** — cross-run canonical diagnostic orchestration (this slice). **DIAG-8 / scenario** — intelligent grouping + root-cause investigation consuming typed assessments without rewriting canonical evidence (scenario-stage).
+
+**Code references:** `intergrax/runtime/diagnostics/problem_lifecycle.py`, `intergrax/runtime/diagnostics/problem_persistence.py`, `intergrax/runtime/diagnostics/in_memory_problem_persistence.py`, `intergrax/runtime/diagnostics/document_store_problem_persistence.py`, `intergrax/runtime/diagnostics/problem_record_codec.py`, `intergrax/runtime/diagnostics/deterministic_problem_reconciliation.py`.
+
+### Operator diagnostic read surface (DIAG-6)
+
+**Scope:** one read-only operator-facing composition layer over persisted Problems and the existing DIAG-2→4 reconstruction spine — without HTTP/CLI/UI transport, without new diagnostic truth, and without root-cause inference.
+
+**Canonical entry point:** `DiagnosticReadService` — orchestrates Problem reads and bounded occurrence reconstruction. Operators should not query `ProblemPersistence`, `ExecutionReconstructor`, `RuntimeEventPersistence`, or `CausalEvidencePersistence` directly to assemble Problem views.
+
+**Operator read path:**
+
+```text
+ProblemPersistence
+  ↓
+DiagnosticReadService
+  ├── list_problems()          # cheap summaries — Problem records only
+  └── get_problem()            # bounded detail
+        ProblemOccurrence
+          ↓
+        ExecutionReconstructor
+          ↓
+        LifecycleAnomalyAnalyzer
+          ↓
+        DiagnosticAssessmentBuilder
+```
+
+**Read model:** ephemeral operator projection — `DiagnosticProblemSummary`, `DiagnosticProblemDetail`, `DiagnosticProblemOccurrenceView`. `DiagnosticAssessment` is derived at read time for detail; it is **not** persisted by this slice.
+
+**List semantics:** tenant-scoped, optional `ProblemStatus` filter, deterministic order (`last_seen_at` descending, `problem_id` tie-break), explicit `limit` / `is_truncated`. **No** execution reconstruction on list.
+
+**Detail semantics:** snapshot of the Problem record at request start (`record_version`); occurrences ordered newest-first; `occurrence_limit` with explicit `total_occurrence_count` / `is_occurrences_truncated`. Occurrence tenant mismatch fails closed (`DiagnosticReadIntegrityError`). Expected missing canonical execution evidence surfaces as `DiagnosticOccurrenceReadStatus.UNAVAILABLE` — structural corruption fails closed.
+
+**Explicit non-goals (DIAG-6):** HTTP/REST/GraphQL/CLI/UI, cache/materialized views, semantic search, root-cause fields (`root_cause`, `confidence`, `likely_root_cause`), raw `RuntimeEvent.payload` / logs / tracebacks / prompts / documents, `get_execution_diagnostic` (deferred **DIAG-6B** — full `ExecutionReconstruction` would expose raw event payloads).
+
+**Roadmap:** **DIAG-6B** — execution lookup via the same read surface without raw payload exposure. **DIAG-7 complete** — cross-run canonical diagnostic orchestration. **DIAG-8 / scenario** — intelligent grouping + root-cause investigation.
+
+**Code references:** `intergrax/runtime/diagnostics/diagnostic_read_service.py`, `intergrax/runtime/diagnostics/diagnostic_read_models.py`.
+
+**Product observability dashboard (ONE-SPINE-1 / ONE-SPINE-2):** Tier-3 product hosts expose `ProductObservabilityDashboard` via GOV-PROD.1 wiring. Host composition (`wire_harness_product_observability_dashboard`) resolves the central `DiagnosticReadService` from shared platform persistence on the harness runtime — `wire_problem_persistence`, harness `RuntimeEventPersistence`, and `wire_causal_evidence_persistence` over the same `document_store` — then injects it into `resolve_product_observability_dashboard_wiring`. The `diagnostics` pane (`DiagnosticOperationsPane`) projects tenant-scoped `problem_count` / `open_problem_count`; `ready=True` means the central read service is connected to that shared diagnostic persistence, not a dashboard-local store. No synthetic causal chains, bootstrap run/task identities, or direct `ProblemPersistence` / `CausalEvidencePersistence` reads from dashboard code. `PlatformCausalEvidence` remains canonical relationship truth; the Diagnostic Engine is the only diagnostic interpretation spine.
+
+**Production terminal diagnostic trigger (ONE-SPINE-3):** After Nexus terminal execution truth is persisted (`NexusLoop._publish_terminal_runtime_event` → `NexusRuntimeEventPublisher.publish_terminal` → `RuntimeEventBus.publish`), harness hosts with shared `document_store` capabilities wire `TerminalExecutionDiagnosticTrigger` via `try_build_terminal_execution_diagnostic_trigger` / `diagnostic_runtime_wiring.py`. The trigger submits one bounded `DiagnosticOrchestrationRequest` per terminal execution scope to the canonical `DiagnosticOrchestrator` using the deterministic grouping strategy. Diagnostic post-processing failures are logged through `IntergraxLogging` (`component="diagnostics"`) and must not alter already-established business execution outcomes. Background MessageBus workers inherit this path when handlers execute through the same harness `NexusLoop`.
+
+```text
+business execution completes
+  ↓
+terminal RuntimeEvent persisted (canonical)
+  ↓
+invoke_terminal_execution_diagnostics(...)
+  ↓
+DiagnosticOrchestrator (derived)
+  ↓
+ProblemPersistence (shared document_store)
+  ↓
+DiagnosticReadService / dashboard read path
+```
+
+**Code references:** `intergrax/runtime/diagnostics/terminal_execution_diagnostic_trigger.py`, `intergrax/runtime/diagnostics/terminal_execution_diagnostic_bridge.py`, `intergrax/applications/_shared/diagnostic_runtime_wiring.py`, `intergrax/runtime/nexus/nexus_loop.py`.
+
+**Code references:** `intergrax/runtime/observability/product_observability_dashboard.py`, `intergrax/applications/_shared/product_observability_dashboard_wiring.py`, `intergrax/applications/_shared/diagnostic_read_wiring.py`.
+
+### Cross-run diagnostic orchestration (DIAG-7)
+
+**Scope:** one canonical synchronous composition layer that runs the existing DIAG-2→5 spine across multiple execution scopes for a single tenant — without schedulers, daemons, queues, background workers, or new diagnostic truth.
+
+**Canonical entry point:** `DiagnosticOrchestrator` — explicit multi-execution diagnostic processing. Operators and applications should not manually compose `ExecutionReconstructor` → `LifecycleAnomalyAnalyzer` → `DiagnosticAssessmentBuilder` → `ProblemGroupingEngine` → `ProblemLifecycleEngine` at call sites.
+
+**Write/process path:**
+
+```text
+DiagnosticExecutionScope[]  +  DiagnosticSignalSubjectScope[]  (at least one)
+  ↓
+DiagnosticOrchestrator.run(DiagnosticOrchestrationRequest)
+  ↓
+[execution] ExecutionReconstructor → LifecycleAnomalyAnalyzer → DiagnosticAssessmentBuilder
+[signal]    SignalDiagnosticAssessmentBuilder (PlatformProblemSignal → bounded facts)
+  ↓
+ProblemGroupingEngine.group(strategy_id=...)   # typed DiagnosticSubjectRef subjects meet here
+  ↓
+ProblemLifecycleEngine.reconcile(observed_at=...)
+```
+
+**Typed diagnostic subjects (HOST-DIAG-2):** ONE spine does not mean one identity model. Canonical truths remain: `RuntimeEvent` = execution truth; `HostedApplicationEvent` = hosting truth (projection slice HOST-DIAG-3); `PlatformProblemSignal` = bounded operational problem signal. The Diagnostic Engine consumes multiple tenant-scoped subject domains via explicit `DiagnosticSubjectRef` (`execution`: `tenant_id` + `TaskId` + `RunId`; `application_instance`: `tenant_id` + `application_id` + `instance_id`). Non-execution subjects do not synthesize `TaskId`/`RunId`. `intergrax/runtime/diagnostics/` does not import `intergrax.hosting.*`.
+
+**Operator read path (unchanged):**
+
+```text
+ProblemPersistence
+  ↓
+DiagnosticReadService
+```
+
+**Request contract:** `DiagnosticOrchestrationRequest` — one `tenant_id`, optional `executions: DiagnosticExecutionScope[]` (canonical `TaskId` / `RunId`, optional `problem_signals`), optional `signal_subjects: DiagnosticSignalSubjectScope[]` (`application_id` + `instance_id` + `problem_signals`; tenant explicit), explicit `grouping_strategy_id`, timezone-aware `observed_at`. At least one execution or signal subject required. One invocation = one tenant; mixed-tenant or duplicate scopes fail closed **before** reconstruction. Batch size per family: `1..MAX` (100).
+
+**Result contract:** `DiagnosticOrchestrationResult` — bounded `DiagnosticExecutionAnalysis[]`, `DiagnosticSignalSubjectAnalysis[]`, plus `ProblemGroupingResult` and `ProblemLifecycleResult`. No raw `RuntimeEvent.payload`, causal evidence objects, logs, or root-cause fields.
+
+**Mutation boundary:** DIAG-2→4 and grouping remain read/derived. The only persistence mutation is `ProblemLifecycleEngine.reconcile`, and it runs only after **all** execution analyses succeed and grouping validates. No per-execution Problem writes. No auto-resolve.
+
+**Atomic failure model:** either all requested execution assessments complete and grouping/lifecycle run, or the operation fails before grouping/lifecycle (reconstruction integrity errors, assessment errors, grouping errors). No partial success bags in this slice.
+
+**Cost model:** O(N) reconstruction/assessment per execution scope plus grouping strategy cost. Synchronous — no asyncio/thread pools in DIAG-7.
+
+**Explicit non-goals (DIAG-7):** scheduler/daemon/queue/cron/event subscriber, `DiagnosticReadService` for analysis, direct `RuntimeEventPersistence` / `CausalEvidencePersistence` reads in orchestrator, root-cause inference (`root_cause`, `confidence`), raw payload output, partial grouping on failed execution analysis, default magic grouping strategy.
+
+**Roadmap:** **DIAG-7 complete.** **DIAG-8 / scenario** — intelligent grouping + root-cause investigation. Real external/vendor E2E remains mandatory after orchestration closure.
+
+**Code references:** `intergrax/runtime/diagnostics/diagnostic_orchestrator.py`, `intergrax/runtime/diagnostics/diagnostic_orchestration_models.py`, `intergrax/runtime/diagnostics/diagnostic_subject.py`, `intergrax/runtime/diagnostics/signal_diagnostic_assessment.py`.
+
 ### Multi-execution problem grouping (DIAG-5A)
 
-**Inputs:** `DiagnosticAssessment[]` from DIAG-4 — **no** re-run of reconstruction, lifecycle analysis, or assessment.
+**Inputs:** `ProblemGroupingAssessmentInput[]` (each bundles one `DiagnosticAssessment` plus optional `ProblemGroupingFeatureSourceFacts`) from DIAG-4 + upstream reconstruction/signal collection — **no** re-run of reconstruction, lifecycle analysis, or assessment inside the engine.
 
 **Derived analytical output (NOT persisted, NOT canonical problem identity):** `ProblemGroupingEngine.group(assessments, strategy_id=...)` answers which executions a **selected strategy** proposes as sharing a recurring problem pattern. A candidate means *"strategy says these subjects are related under this grouping method"* — **not** *"platform has proven identical root cause"*.
 
@@ -1280,10 +1483,11 @@ Grouping proposes **"these incidents are likely related under this method"** —
 **Pipeline:**
 
 ```text
-DiagnosticAssessment[]
+ProblemGroupingAssessmentInput[]
   → ProblemGroupingEngine
+  → validate feature_source_facts scope (fail-closed)
   → normalize ProblemGroupingSubject
-  → optional ProblemGroupingFeatureProjector
+  → optional DiagnosticProblemGroupingFeatureProjector
   → ProblemGroupingInput[]              # subject + optional features
   → ProblemGroupingStrategy             # explicit strategy_id selection
   → ProblemGroupingStrategyResult       # raw plugin output
@@ -1297,7 +1501,7 @@ DiagnosticAssessment[]
 
 **Tenant isolation:** one invocation must contain subjects with a single `tenant_id`; mixed tenants fail closed with `ProblemGroupingIntegrityError` before strategy invocation.
 
-**Overlap semantics:** overlapping candidates are **allowed** (one execution may appear in multiple proposed groups). Stable problem assignment is deferred to DIAG-5D.
+**Overlap semantics:** overlapping candidates are **allowed** in grouping (one execution may appear in multiple proposed groups). `ProblemLifecycleEngine` reconciles them fail-closed when a subject would attach to incompatible stable Problems.
 
 **Ungrouped subjects:** `ProblemGroupingResult.ungrouped_subjects` lists input subjects not present in any validated candidate.
 
@@ -1307,7 +1511,7 @@ DiagnosticAssessment[]
 
 **Canonical boundary:** no `ProblemId`, no persistence, no `RuntimeEvent` emission, no mutation of `DiagnosticAssessment`. Model output can never rewrite canonical evidence.
 
-**Explicit non-goals (DIAG-5A):** no embeddings, ML, LLM, clustering libraries, vector DB, background jobs, or stable problem lifecycle (DIAG-5D).
+**Explicit non-goals (DIAG-5A):** no embeddings, ML, LLM, clustering libraries, vector DB, background jobs, or stable problem lifecycle (delivered in DIAG-5D).
 
 **Code references:** `intergrax/runtime/diagnostics/problem_grouping.py`.
 

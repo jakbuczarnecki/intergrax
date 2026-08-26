@@ -28,6 +28,9 @@ from intergrax.applications._shared.task_control_wiring import (
     build_task_runner_with_enricher,
     wire_harness_task_control,
 )
+from intergrax.applications._shared.product_observability_dashboard_wiring import (
+    wire_harness_product_observability_dashboard,
+)
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
@@ -43,6 +46,7 @@ def create_governed_contractor_backend_app(
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
+    document_store: object | None = None,
 ) -> FastAPI:
     settings = settings or GovernedContractorBackendSettings.from_env()
     api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
@@ -56,8 +60,8 @@ def create_governed_contractor_backend_app(
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
-        use_in_memory_trace=trace_db_path is None,
         registry_projection=registry_projection,
+        document_store=document_store,
     )
     nexus_loop = runtime.nexus_loop
     registry = runtime.registry
@@ -114,6 +118,8 @@ def create_governed_contractor_backend_app(
         prefix=settings.route_prefix,
         default_agent_id=settings.default_agent_id,
     )
+
+    wire_harness_product_observability_dashboard(app, runtime=runtime)
 
     if settings.include_task_control:
         wire_harness_task_control(

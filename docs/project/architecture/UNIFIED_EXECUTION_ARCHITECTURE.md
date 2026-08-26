@@ -41,6 +41,7 @@ What MUST / MUST NOT happen at runtime?
 
 Do not promote this file to a DOMAIN. Do not create competing owners for capabilities already assigned to UER, ORCHESTRATION, NEXUS_EXECUTION_FLOW, OBSERVABILITY, GOVERNED_EXECUTION, RELIABILITY_FAILURE_AND_HITL, or AGENT_CONTRACTS_AND_ASSEMBLY.
 
+<a href="intergrax_runtime_architecture.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-full-architecture-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-full-architecture-light.svg">
@@ -49,6 +50,7 @@ Do not promote this file to a DOMAIN. Do not create competing owners for capabil
     src="assets/unified-execution-full-architecture-light.svg"
   >
 </picture>
+</a>
 
 ---
 
@@ -87,6 +89,7 @@ Task
 
 Direct execution **MUST NOT** require Nexus merely because execution identity, governance, or observability exist (see **UEA-INV-008**).
 
+<a href="UNIFIED_EXECUTION_RUNTIME.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-simple-execute-flow-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-simple-execute-flow-light.svg">
@@ -95,6 +98,7 @@ Direct execution **MUST NOT** require Nexus merely because execution identity, g
     src="assets/unified-execution-simple-execute-flow-light.svg"
   >
 </picture>
+</a>
 
 ### 3.1 Layer definitions (summary)
 
@@ -108,6 +112,7 @@ Direct execution **MUST NOT** require Nexus merely because execution identity, g
 
 **CURRENT IMPLEMENTATION:** Typed `TaskId`, `RunId`, `AttemptId`, and `EventId` exist. **`ExecutionId` is not yet a canonical Python identity** (see [§18 Migration gaps](#18-target-vs-current-implementation-and-migration-gaps)).
 
+<a href="UNIFIED_EXECUTION_RUNTIME.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-identity-lifecycle-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-identity-lifecycle-light.svg">
@@ -116,6 +121,7 @@ Direct execution **MUST NOT** require Nexus merely because execution identity, g
     src="assets/unified-execution-identity-lifecycle-light.svg"
   >
 </picture>
+</a>
 
 ---
 
@@ -167,6 +173,7 @@ Same `NodeId`. Different `ExecutionId`s. Orchestration topology **MUST NOT** be 
 
 **Owner:** Orchestration topology → [`ORCHESTRATION.md`](ORCHESTRATION.md); runtime Execution Tree → execution lifecycle layer / UER.
 
+<a href="ORCHESTRATION.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-topology-vs-execution-tree-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-topology-vs-execution-tree-light.svg">
@@ -175,6 +182,7 @@ Same `NodeId`. Different `ExecutionId`s. Orchestration topology **MUST NOT** be 
     src="assets/unified-execution-topology-vs-execution-tree-light.svg"
   >
 </picture>
+</a>
 
 ---
 
@@ -199,6 +207,7 @@ Execution E1
 
 **Owner:** Orchestration topology and configuration → [`ORCHESTRATION.md`](ORCHESTRATION.md). Runtime scheduling/control flow → [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md).
 
+<a href="ORCHESTRATION.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-nested-orchestration-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-nested-orchestration-light.svg">
@@ -207,6 +216,7 @@ Execution E1
     src="assets/unified-execution-nested-orchestration-light.svg"
   >
 </picture>
+</a>
 
 ---
 
@@ -249,6 +259,7 @@ Nexus orchestrates **Executions**, not Agents as the canonical abstraction. Agen
 
 **Owner:** [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md).
 
+<a href="NEXUS_EXECUTION_FLOW.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-orchestration-nexus-flow-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-orchestration-nexus-flow-light.svg">
@@ -257,6 +268,7 @@ Nexus orchestrates **Executions**, not Agents as the canonical abstraction. Agen
     src="assets/unified-execution-orchestration-nexus-flow-light.svg"
   >
 </picture>
+</a>
 
 ---
 
@@ -323,6 +335,7 @@ Pause/resume is **not** retry (**UEA-INV-012**, **UEA-INV-013**, **UEA-INV-014**
 
 **Owners:** Attempt boundaries and Run lifecycle → UER; retry policy layers → [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md); HITL decision → Governance/HITL.
 
+<a href="RELIABILITY_FAILURE_AND_HITL.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-retry-pause-resume-cancel-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-retry-pause-resume-cancel-light.svg">
@@ -331,6 +344,7 @@ Pause/resume is **not** retry (**UEA-INV-012**, **UEA-INV-013**, **UEA-INV-014**
     src="assets/unified-execution-retry-pause-resume-cancel-light.svg"
   >
 </picture>
+</a>
 
 ---
 
@@ -361,6 +375,7 @@ Conceptual future transport envelope preserves: `TaskId`, `RunId`, `AttemptId`, 
 
 **Owner:** Queue/transport/worker execution → [`BACKGROUND_TASKS.md`](BACKGROUND_TASKS.md). [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) covers package installation/activation only — not distributed execution identity. [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) may constrain worker capacity but does not own Execution identity.
 
+<a href="BACKGROUND_TASKS.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-distributed-queue-worker-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-distributed-queue-worker-light.svg">
@@ -369,6 +384,7 @@ Conceptual future transport envelope preserves: `TaskId`, `RunId`, `AttemptId`, 
     src="assets/unified-execution-distributed-queue-worker-light.svg"
   >
 </picture>
+</a>
 
 ---
 
@@ -418,6 +434,7 @@ Budget subsystem owns accounting, reservations, consumption, release/reconciliat
 
 **CURRENT IMPLEMENTATION / MIGRATION GAP:** Hierarchical budget reservation is not yet the full target model.
 
+<a href="GOVERNED_EXECUTION.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-governance-budget-inheritance-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-governance-budget-inheritance-light.svg">
@@ -426,6 +443,7 @@ Budget subsystem owns accounting, reservations, consumption, release/reconciliat
     src="assets/unified-execution-governance-budget-inheritance-light.svg"
   >
 </picture>
+</a>
 
 ---
 
@@ -484,6 +502,7 @@ Pause/resume preserves identity. Checkpoint restoration must resume canonical lo
 
 **CURRENT IMPLEMENTATION / MIGRATION GAP:** `RuntimeCheckpoint` has no canonical Execution Tree representation.
 
+<a href="RELIABILITY_FAILURE_AND_HITL.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-checkpoint-recovery-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-checkpoint-recovery-light.svg">
@@ -492,6 +511,7 @@ Pause/resume preserves identity. Checkpoint restoration must resume canonical lo
     src="assets/unified-execution-checkpoint-recovery-light.svg"
   >
 </picture>
+</a>
 
 ---
 
@@ -513,6 +533,7 @@ Task → Run → Attempt → Execution Tree → RuntimeEvents
 
 **CURRENT IMPLEMENTATION / MIGRATION GAP:** `RuntimeEvent` currently lacks `ExecutionId`; identity spine stops at `TaskId`/`RunId`/`AttemptId`/`EventId`.
 
+<a href="OBSERVABILITY.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-observability-diag-causal-flow-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-observability-diag-causal-flow-light.svg">
@@ -521,6 +542,7 @@ Task → Run → Attempt → Execution Tree → RuntimeEvents
     src="assets/unified-execution-observability-diag-causal-flow-light.svg"
   >
 </picture>
+</a>
 
 ---
 
@@ -719,9 +741,10 @@ No execution strategy may bypass the canonical Execution Boundary or its mandato
 | Checkpoint persistence / state | Long-running / checkpoint owner | UER, BACKGROUND_TASKS |
 | Runtime event / evidence recording | OBSERVABILITY | [`OBSERVABILITY.md`](OBSERVABILITY.md) |
 | Diagnostic interpretation | DIAG | Observability DIAG plane + future DIAG domain docs |
-| Transport identity | Queue / transport subsystem | [`BACKGROUND_TASKS.md`](BACKGROUND_TASKS.md), [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) |
+| Transport identity | Queue / transport subsystem | [`BACKGROUND_TASKS.md`](BACKGROUND_TASKS.md) |
 | **Cross-domain execution semantics (this document)** | Platform Architecture | Coordinates only — does not steal ownership |
 
+<a href="intergrax_runtime_architecture.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-component-ownership-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-component-ownership-light.svg">
@@ -730,6 +753,7 @@ No execution strategy may bypass the canonical Execution Boundary or its mandato
     src="assets/unified-execution-component-ownership-light.svg"
   >
 </picture>
+</a>
 
 ---
 
@@ -741,11 +765,11 @@ Terms follow: **What it is** · **Who owns semantics** · **What it is not**.
 
 **Task** — Canonical work intent (`TaskId`). **Owner:** intake/Task contract. **Not:** a Run or an Execution instance.
 
-**TaskId** — Stable identifier for work intent across retries and surfaces. **Owner:** intake + Observability identity spine. **Not:** interchangeable with `RunId`.
+**TaskId** — Stable identifier for work intent across retries and surfaces. **Owner:** Task/intake contract. Observability records/carries it; does not own creation semantics. **Not:** interchangeable with `RunId`.
 
 **Run** — One complete governed lifecycle of a Task (`RunId`). **Owner:** UER. **Not:** an Attempt or a single agent session alias.
 
-**RunId** — Identifier for one Run. **Owner:** UER / Observability. **Not:** `TaskId` or `AttemptId`.
+**RunId** — Identifier for one Run. **Owner:** UER. Observability records/carries it. **Not:** `TaskId` or `AttemptId`.
 
 **Attempt** — One global try within a Run (`AttemptId`). **Owner:** UER. **Not:** every local tool retry or internal step retry.
 
@@ -757,7 +781,7 @@ Terms follow: **What it is** · **Who owns semantics** · **What it is not**.
 
 **Child Execution** — Execution with non-null `parent_execution_id`. **Owner:** execution lifecycle layer. **Not:** a UAEP step.
 
-**ExecutionId** — Runtime identity of one Execution instance. **Owner:** execution lifecycle layer. **Not:** `NodeId`, `EventId`, or broker task id.
+**ExecutionId** — Runtime identity of one Execution instance. **Owner:** execution lifecycle layer / UER coordination. **Not:** `NodeId`, `EventId`, or broker task id.
 
 **Execution Tree** — Canonical parent/child graph of Executions within an Attempt. **Owner:** execution lifecycle layer. **Not:** orchestration topology or agent step list.
 
@@ -765,7 +789,7 @@ Terms follow: **What it is** · **Who owns semantics** · **What it is not**.
 
 **Event** — One canonical runtime fact/transition. **Owner:** UER event model + Observability. **Not:** ad-hoc log lines.
 
-**EventId** — Unique id per canonical event. **Owner:** Observability spine. **Not:** reusable across events.
+**EventId** — Unique id per canonical event. **Owner:** UER event contract; Observability records event identity. **Not:** reusable across events.
 
 ### Orchestration and Nexus
 
@@ -845,7 +869,7 @@ Stable IDs for implementation constraints. Map to domain invariants where they e
 | **UEA-INV-020** | Strategy resolver must not silently invent unaudited orchestration topology | ORCHESTRATION |
 | **UEA-INV-021** | No strategy may bypass Execution Boundary or mandatory guarantees; every child Execution re-enters the canonical boundary | GOVERNED_EXECUTION, UER, NEXUS |
 
-**Follow-up (later consistency slice):** reconcile UER/OBS identity tables that today list TaskId→RunId→AttemptId→EventId without ExecutionId; update `SYSTEM_INVARIANTS.md` cross-references — **not** in UE-DOC-0.2.
+**Follow-up:** UER/OBS identity tables aligned with five-ID target in UE-DOC-0.6. Remaining `SYSTEM_INVARIANTS.md` cross-reference sync is implementation hygiene, not an open architecture question.
 
 ---
 
@@ -879,6 +903,10 @@ Sections §3–§21 above.
 6. Authority propagation not yet Execution-tree-centric.
 
 Do **not** claim target behavior is already implemented.
+
+**Detailed implementation mapping (UE-DOC-0.9):** canonical target→current→gap→transformation map — [`UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md`](UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md). Subordinate to this document; not an architecture authority.
+
+**Implementation readiness gate (UE-DOC-0.10):** final pre-runtime audit — [`UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md`](UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md). **IMPLEMENTATION GATE: PASS** (baseline `fc7c76c999e3d49d0532c4bdd07941c688e2553c`).
 
 ---
 

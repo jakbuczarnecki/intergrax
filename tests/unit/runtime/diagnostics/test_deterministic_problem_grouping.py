@@ -28,6 +28,7 @@ from intergrax.runtime.diagnostics.lifecycle_analysis import (
 )
 from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicProblemGroupingBasis,
+    ProblemGroupingAssessmentInput,
     ProblemGroupingBasisKind,
     ProblemGroupingEngine,
     ProblemGroupingInput,
@@ -35,8 +36,10 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingStrategyRegistry,
     ProblemGroupingSubject,
     ProblemGroupingSubjectFinding,
+    ProblemGroupingSubjectFindingSource,
     ProblemGroupingSubjectLimitation,
     ProblemGroupingSubjectRef,
+    problem_grouping_subject_ref_for_execution,
 )
 from intergrax.runtime.diagnostics.problem_grouping_features import (
     REPRESENTATION_VERSION_V1,
@@ -59,13 +62,17 @@ pytestmark = pytest.mark.unit
 _TENANT_A = "tenant-a"
 
 
+def _assessment_input(assessment: DiagnosticAssessment) -> ProblemGroupingAssessmentInput:
+    return ProblemGroupingAssessmentInput(assessment=assessment)
+
+
 def _subject_ref(
     *,
     tenant_id: str = _TENANT_A,
     task_id=None,
     run_id=None,
 ) -> ProblemGroupingSubjectRef:
-    return ProblemGroupingSubjectRef(
+    return problem_grouping_subject_ref_for_execution(
         tenant_id=tenant_id,
         task_id=task_id or mint_task_id(),
         run_id=run_id or mint_run_id(),
@@ -92,6 +99,7 @@ def _event_after_terminal_finding(
     violating_event_type: RuntimeEventType = RuntimeEventType.RETRY_SCHEDULED,
 ) -> ProblemGroupingSubjectFinding:
     return ProblemGroupingSubjectFinding(
+        source=ProblemGroupingSubjectFindingSource.LIFECYCLE,
         kind=DiagnosticFindingKind.EVENT_AFTER_TERMINAL,
         scope=scope,
         source_anomaly_kind=LifecycleAnomalyKind.EVENT_AFTER_TERMINAL,
@@ -110,9 +118,7 @@ def _subject(
 ) -> ProblemGroupingSubject:
     resolved_ref = ref or _subject_ref()
     return ProblemGroupingSubject(
-        tenant_id=resolved_ref.tenant_id,
-        task_id=resolved_ref.task_id,
-        run_id=resolved_ref.run_id,
+        subject_ref=resolved_ref,
         findings=findings,
         limitations=limitations,
     )
@@ -134,7 +140,13 @@ class _AssessmentFeatureProjector:
     def representation_version(self) -> ProblemGroupingRepresentationVersion:
         return REPRESENTATION_VERSION_V1
 
-    def project(self, assessment, subject: ProblemGroupingSubject):
+    def project(
+        self,
+        assessment,
+        subject: ProblemGroupingSubject,
+        *,
+        source_facts=None,
+    ):
         return project_assessment_features(assessment, subject=subject)
 
 
@@ -224,7 +236,7 @@ def test_engine_integration_groups_same_structure() -> None:
     )
     engine = _engine_with_deterministic_strategy()
 
-    result = engine.group((assessment_a, assessment_b), strategy_id=STRATEGY_ID)
+    result = engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=STRATEGY_ID)
 
     assert len(result.candidates) == 1
     assert len(result.candidates[0].members) == 2
@@ -248,10 +260,11 @@ def test_primary_collision_not_grouped() -> None:
     )
     engine = _engine_with_deterministic_strategy()
 
-    result = engine.group((assessment_a, assessment_b), strategy_id=STRATEGY_ID)
+    result = engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=STRATEGY_ID)
 
-    assert result.candidates == ()
-    assert len(result.ungrouped_subjects) == 2
+    assert len(result.candidates) == 2
+    assert all(len(candidate.members) == 1 for candidate in result.candidates)
+    assert result.ungrouped_subjects == ()
 
 
 def test_prior_status_difference_not_grouped() -> None:
@@ -279,7 +292,8 @@ def test_prior_status_difference_not_grouped() -> None:
 
     result = strategy.group((_input(subject_a), _input(subject_b)))
 
-    assert result.candidates == ()
+    assert len(result.candidates) == 2
+    assert all(len(candidate.members) == 1 for candidate in result.candidates)
 
 
 def test_finding_order_independent() -> None:
@@ -288,6 +302,7 @@ def test_finding_order_independent() -> None:
         violating_event_type=RuntimeEventType.RETRY_SCHEDULED,
     )
     finding_y = ProblemGroupingSubjectFinding(
+        source=ProblemGroupingSubjectFindingSource.LIFECYCLE,
         kind=DiagnosticFindingKind.CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY,
         scope=LifecycleAnomalyScope.ATTEMPT,
         source_anomaly_kind=LifecycleAnomalyKind.CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY,
@@ -314,7 +329,8 @@ def test_multiplicity_preserved_not_grouped() -> None:
 
     result = strategy.group((_input(subject_a), _input(subject_b)))
 
-    assert result.candidates == ()
+    assert len(result.candidates) == 2
+    assert all(len(candidate.members) == 1 for candidate in result.candidates)
 
 
 def test_scope_difference_not_grouped() -> None:
@@ -332,7 +348,8 @@ def test_scope_difference_not_grouped() -> None:
 
     result = strategy.group((_input(subject_a), _input(subject_b)))
 
-    assert result.candidates == ()
+    assert len(result.candidates) == 2
+    assert all(len(candidate.members) == 1 for candidate in result.candidates)
 
 
 def test_limitation_difference_not_grouped() -> None:
@@ -343,7 +360,8 @@ def test_limitation_difference_not_grouped() -> None:
 
     result = strategy.group((_input(subject_a), _input(subject_b)))
 
-    assert result.candidates == ()
+    assert len(result.candidates) == 2
+    assert all(len(candidate.members) == 1 for candidate in result.candidates)
 
 
 def test_empty_subjects_not_grouped() -> None:
@@ -378,6 +396,23 @@ def test_three_member_group() -> None:
     assert len(result.candidates[0].members) == 3
 
 
+def test_singleton_finding_emits_candidate() -> None:
+    assessment = _assess_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_COMPLETED,
+            RuntimeEventType.RETRY_SCHEDULED,
+        ]
+    )
+    engine = _engine_with_deterministic_strategy()
+
+    result = engine.group((_assessment_input(assessment),), strategy_id=STRATEGY_ID)
+
+    assert len(result.candidates) == 1
+    assert len(result.candidates[0].members) == 1
+    assert result.ungrouped_subjects == ()
+
+
 def test_two_groups_plus_singleton() -> None:
     finding_x = _event_after_terminal_finding(
         prior_status=RunExecutionLifecycleStatus.COMPLETED,
@@ -388,6 +423,7 @@ def test_two_groups_plus_singleton() -> None:
         violating_event_type=RuntimeEventType.TASK_FAILED,
     )
     finding_z = ProblemGroupingSubjectFinding(
+        source=ProblemGroupingSubjectFindingSource.LIFECYCLE,
         kind=DiagnosticFindingKind.CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY,
         scope=LifecycleAnomalyScope.ATTEMPT,
         source_anomaly_kind=LifecycleAnomalyKind.CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY,
@@ -410,14 +446,13 @@ def test_two_groups_plus_singleton() -> None:
         )
     )
 
-    assert len(result.candidates) == 2
+    assert len(result.candidates) == 3
     member_sets = {frozenset(candidate.members) for candidate in result.candidates}
     assert member_sets == {
         frozenset({subject_a.ref, subject_b.ref}),
         frozenset({subject_c.ref, subject_d.ref}),
+        frozenset({subject_e.ref}),
     }
-    grouped_refs = {ref for candidate in result.candidates for ref in candidate.members}
-    assert subject_e.ref not in grouped_refs
 
 
 def test_basis_and_supporting_refs() -> None:
@@ -454,8 +489,8 @@ def test_determinism_same_input() -> None:
     )
     engine = _engine_with_deterministic_strategy()
 
-    first = engine.group((assessment_a, assessment_b), strategy_id=STRATEGY_ID)
-    second = engine.group((assessment_a, assessment_b), strategy_id=STRATEGY_ID)
+    first = engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=STRATEGY_ID)
+    second = engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=STRATEGY_ID)
 
     assert first == second
 
@@ -480,7 +515,7 @@ def test_truncation_only_assessments_not_grouped_via_engine() -> None:
     assessment_b = _assessment_with_truncation()
     engine = _engine_with_deterministic_strategy()
 
-    result = engine.group((assessment_a, assessment_b), strategy_id=STRATEGY_ID)
+    result = engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=STRATEGY_ID)
 
     assert result.candidates == ()
     assert len(result.ungrouped_subjects) == 2
@@ -503,7 +538,7 @@ def test_empty_assessments_not_grouped_via_engine() -> None:
     )
     engine = _engine_with_deterministic_strategy()
 
-    result = engine.group((assessment_a, assessment_b), strategy_id=STRATEGY_ID)
+    result = engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=STRATEGY_ID)
 
     assert result.candidates == ()
     assert len(result.ungrouped_subjects) == 2
@@ -511,6 +546,7 @@ def test_empty_assessments_not_grouped_via_engine() -> None:
 
 def test_non_lifecycle_finding_groups_without_instance_ids() -> None:
     finding = ProblemGroupingSubjectFinding(
+        source=ProblemGroupingSubjectFindingSource.LIFECYCLE,
         kind=DiagnosticFindingKind.CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY,
         scope=LifecycleAnomalyScope.ATTEMPT,
         source_anomaly_kind=LifecycleAnomalyKind.CAUSAL_ATTEMPT_WITHOUT_RUNTIME_HISTORY,
@@ -547,7 +583,13 @@ def test_deterministic_result_unchanged_with_feature_projector() -> None:
         feature_projector=_AssessmentFeatureProjector(),
     )
 
-    baseline = without_projector.group((assessment_a, assessment_b), strategy_id=STRATEGY_ID)
-    featured = with_projector.group((assessment_a, assessment_b), strategy_id=STRATEGY_ID)
+    baseline = without_projector.group(
+        (_assessment_input(assessment_a), _assessment_input(assessment_b)),
+        strategy_id=STRATEGY_ID,
+    )
+    featured = with_projector.group(
+        (_assessment_input(assessment_a), _assessment_input(assessment_b)),
+        strategy_id=STRATEGY_ID,
+    )
 
     assert featured == baseline

@@ -91,6 +91,9 @@ from intergrax.runtime.adaptive.signal_collector import SignalCollector
 from intergrax.runtime.adaptive.signal_emission import record_task_outcome_signal
 from intergrax.runtime.architecture.online_evaluation_registry import OnlineEvaluationRegistry
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
+    TerminalExecutionDiagnosticTriggerProtocol,
+)
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
 
@@ -152,6 +155,7 @@ class NexusLoop:
         denied_planner_model_ids: tuple[str, ...] = (),
         planner_model_id: str | None = None,
         governance_service: Any = None,
+        terminal_diagnostic_trigger: TerminalExecutionDiagnosticTriggerProtocol | None = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -178,6 +182,7 @@ class NexusLoop:
         self._lifecycle_hooks = NexusLifecycleHookCoordinator(self._middleware)
         self._policy_engine = coerce_policy_engine(policy_engine)
         self._governance_service = governance_service
+        self._terminal_diagnostic_trigger = terminal_diagnostic_trigger
         self._interrupt_handler = interrupt_handler or ExecutionInterruptHandler(
             policy_engine=self._policy_engine,
             allow_dynamic_replan=allow_dynamic_replan,
@@ -648,8 +653,29 @@ class NexusLoop:
         if isinstance(event, RuntimeEvent):
             await self._events.publish(event, task=task)
 
+    def attach_terminal_diagnostic_trigger(
+        self,
+        trigger: TerminalExecutionDiagnosticTriggerProtocol,
+    ) -> None:
+        """Attach platform terminal diagnostic trigger after host composition."""
+        self._terminal_diagnostic_trigger = trigger
+
     async def _publish_terminal_runtime_event(self, task: Task) -> None:
-        await self._events.publish_terminal(task)
+        terminal_event = await self._events.publish_terminal(task)
+        if self._terminal_diagnostic_trigger is None:
+            return
+        from intergrax.runtime.diagnostics.terminal_execution_diagnostic_bridge import (
+            invoke_terminal_execution_diagnostics,
+        )
+
+        run_id, _ = self._execution_identity.require()
+        invoke_terminal_execution_diagnostics(
+            self._terminal_diagnostic_trigger,
+            tenant_id=task.tenant_id,
+            task_id=task.task_id,
+            run_id=run_id,
+            observed_at=terminal_event.timestamp,
+        )
 
     def _resolve_lifecycle(self, task: Task) -> tuple[TaskLifecycle, TaskTraceEmitter]:
         return resolve_nexus_lifecycle(

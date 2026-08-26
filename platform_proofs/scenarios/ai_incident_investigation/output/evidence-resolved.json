@@ -1,0 +1,1164 @@
+{
+  "architecture": {
+    "edges": [],
+    "participants": [
+      {
+        "implementation": "Intergrax",
+        "name": "Intergrax Nexus Runtime",
+        "participant_class": "PLATFORM",
+        "participant_id": "nexus_runtime",
+        "role": "Graph execution, ToolRuntime, Critic",
+        "version_or_model": "development"
+      },
+      {
+        "implementation": "scenario-local",
+        "name": "Synthetic manufacturing fixture",
+        "participant_class": "CONTROLLED_FIXTURE",
+        "participant_id": "synthetic_fixture",
+        "role": "Controlled operational observations",
+        "version_or_model": "full-1-resolved-full-2-unresolved-0.3.0"
+      }
+    ]
+  },
+  "claim": {
+    "claim": "No material incident diagnosis without auditable evidence and falsification.",
+    "excluded_claims": [
+      "Full manufacturing dataset",
+      "Public proof established"
+    ],
+    "falsification_criteria": [
+      "Unsupported causal diagnosis accepted"
+    ],
+    "success_criteria": [
+      "ToolRuntime exercised",
+      "Critic challenge and revision bounded",
+      "Comparison and staffing conflict handled"
+    ],
+    "user_relevance": "FULL-1/FULL-2 prove RESOLVED and UNRESOLVED paths with H1/H2/H3 adversarial evidence."
+  },
+  "conclusion": {
+    "open_questions": [
+      "Accepted public proof run"
+    ],
+    "supported_conclusions": [
+      "RESOLVED path with decisive telemetry and bounded H3 diagnosis"
+    ],
+    "unsupported_conclusions": [
+      "Public proof publication",
+      "UNRESOLVED path proven solely by this artifact's claim graph"
+    ]
+  },
+  "domain_extension": {
+    "tools": null
+  },
+  "environment": {
+    "dataset": null
+  },
+  "evaluator": {
+    "checks": [
+      {
+        "check_id": "no_initial_decisive_telemetry",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Initial investigation did not expose resolving telemetry prematurely.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "No decisive telemetry before revision",
+        "passed": true
+      },
+      {
+        "check_id": "initial_observable_excludes_follow_up_evidence",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Comparison, attendance, and telemetry were not visible in the initial pass.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Follow-up evidence gathered after challenge",
+        "passed": true
+      },
+      {
+        "check_id": "h1_initially_plausible",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Workload rose while throughput fell during the incident window.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Initial overload hypothesis was genuinely plausible",
+        "passed": true
+      },
+      {
+        "check_id": "tool_runtime_exercised",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Investigation used bounded platform tool invocations.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Platform ToolRuntime was exercised",
+        "passed": true
+      },
+      {
+        "check_id": "critic_falsification_occurred",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Unsupported causal inference was challenged before diagnosis acceptance.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Critic issued a falsification challenge",
+        "passed": true
+      },
+      {
+        "check_id": "failed_critic_verdict_provenance",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "The initial unsupported-inference rejection is auditable.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Failed critic verdict recorded",
+        "passed": true
+      },
+      {
+        "check_id": "critic_challenge_mapped_from_verdict",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "The evidence challenge reflects the critic rejection.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Challenge mapped from critic verdict",
+        "passed": true
+      },
+      {
+        "check_id": "challenge_satisfied_after_revision",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Follow-up evidence addressed the falsification challenge.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Challenge satisfied after targeted follow-up",
+        "passed": true
+      },
+      {
+        "check_id": "satisfied_challenge_includes_telemetry_evidence",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Resolving telemetry is part of the satisfied challenge basis.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Satisfied challenge includes telemetry",
+        "passed": true
+      },
+      {
+        "check_id": "satisfied_challenge_includes_comparison_evidence",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Comparison evidence is part of the satisfied challenge basis.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Satisfied challenge includes comparison evidence",
+        "passed": true
+      },
+      {
+        "check_id": "telemetry_evidence_observable_in_graph",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Station telemetry appears in the auditable evidence graph.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Telemetry observable in evidence graph",
+        "passed": true
+      },
+      {
+        "check_id": "bounded_recovery_within_platform",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Revision stayed within the configured evaluator-loop budget.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Bounded recovery within platform limits",
+        "passed": true
+      },
+      {
+        "check_id": "follow_up_via_platform_tools",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Targeted evidence was gathered through ToolRuntime.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Follow-up used platform tools",
+        "passed": true
+      },
+      {
+        "check_id": "comparison_evidence_gathered",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "A high-load comparison window was queried for context.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Comparison evidence gathered",
+        "passed": true
+      },
+      {
+        "check_id": "staffing_preliminary_gathered",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Schedule export for the incident window was collected.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Preliminary staffing evidence gathered",
+        "passed": true
+      },
+      {
+        "check_id": "staffing_attendance_gathered",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Confirmed attendance for the incident window was collected.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Attendance evidence gathered",
+        "passed": true
+      },
+      {
+        "check_id": "staffing_preliminary_stale_for_incident",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Stale roster export was not treated as decisive support.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Preliminary staffing treated as stale",
+        "passed": true
+      },
+      {
+        "check_id": "h2_rejected_with_evidence",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Attendance evidence removed understaffing as initiating cause.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Understaffing hypothesis rejected",
+        "passed": true
+      },
+      {
+        "check_id": "stale_staffing_not_final_support",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Preliminary roster alone did not support a diagnosis.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Stale staffing not promoted to support",
+        "passed": true
+      },
+      {
+        "check_id": "comparison_weakens_h1_from_runtime",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "High-load comparison weakened overload-only explanation.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Comparison evidence weakened H1",
+        "passed": true
+      },
+      {
+        "check_id": "telemetry_supports_h3_from_runtime",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Station telemetry supported equipment/process degradation.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Telemetry supported H3",
+        "passed": true
+      },
+      {
+        "check_id": "terminal_supported_claim_present",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "A bounded supported diagnosis remained at completion.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Terminal supported diagnosis present",
+        "passed": true
+      },
+      {
+        "check_id": "final_supported_claim_is_h3",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Equipment/process degradation was the accepted diagnosis.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Final supported claim is H3",
+        "passed": true
+      },
+      {
+        "check_id": "supported_claim_references_telemetry_evidence",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Accepted diagnosis references station telemetry evidence.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Supported claim cites telemetry",
+        "passed": true
+      },
+      {
+        "check_id": "supported_claim_references_comparison_evidence",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Accepted diagnosis references comparison evidence.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Supported claim cites comparison evidence",
+        "passed": true
+      },
+      {
+        "check_id": "h1_materially_weakened",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Overload hypothesis was superseded rather than supported.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "H1 materially weakened",
+        "passed": true
+      },
+      {
+        "check_id": "all_cited_evidence_in_graph",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Every cited evidence identifier appears in the evidence graph.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "All cited evidence present in graph",
+        "passed": true
+      },
+      {
+        "check_id": "critic_content_validation_passed",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Claim and challenge content passed structural validation.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Critic content validation passed",
+        "passed": true
+      },
+      {
+        "check_id": "resolved_outcome",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Execution completed with a bounded supported diagnosis.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Incident outcome is RESOLVED",
+        "passed": true
+      },
+      {
+        "check_id": "ground_truth_isolated",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Fixture oracle data did not leak into observable artifacts.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Private oracle isolated from report surface",
+        "passed": true
+      },
+      {
+        "check_id": "private_truth_consistent",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Post-run oracle checks matched the resolved execution path.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Evaluator oracle consistency check passed",
+        "passed": true
+      },
+      {
+        "check_id": "final_summary_bounded",
+        "evidence_ids": [],
+        "explanation": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Terminal narrative did not over-claim beyond evidence.",
+          "visibility": "REPORT_SAFE"
+        },
+        "label": "Final summary stayed bounded",
+        "passed": true
+      }
+    ],
+    "failure_reasons": [],
+    "passed": true
+  },
+  "evidence_claims": {
+    "challenges": [
+      {
+        "challenge_id": "echlg_4e0380d87127482886f4f544225144b1",
+        "claim_id": "eclaim_a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "defect_code": "incident.unsupported_inference",
+        "defect_family": "unsupported_inference",
+        "description": {
+          "redaction_applied": false,
+          "source_kind": "RUNTIME_EXPLICIT",
+          "text": "Follow-up comparison, attendance, and telemetry gathered via platform tools",
+          "visibility": "REPORT_SAFE"
+        },
+        "evidence_ids": [
+          "evidence.comparison.line3.high_load_window",
+          "evidence.staffing.attendance.line4.incident_window",
+          "evidence.telemetry.complex_assembly_station.incident_window",
+          "evidence.throughput.line4.incident_window",
+          "evidence.workload.line4.incident_window"
+        ],
+        "resolution": "satisfied"
+      }
+    ],
+    "claims": [
+      {
+        "claim_id": "eclaim_a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "claim_kind": "incident.root_cause_diagnosis",
+        "contradicting_evidence_ids": [
+          "evidence.comparison.line3.high_load_window"
+        ],
+        "resolution": "superseded",
+        "statement": {
+          "redaction_applied": false,
+          "source_kind": "RUNTIME_EXPLICIT",
+          "text": "Production workload on Line 4 increased during the incident window while throughput declined — overload hypothesis H1.",
+          "visibility": "REPORT_SAFE"
+        },
+        "supersedes_claim_id": null,
+        "supporting_evidence_ids": [
+          "evidence.throughput.line4.incident_window",
+          "evidence.workload.line4.incident_window"
+        ]
+      },
+      {
+        "claim_id": "eclaim_c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+        "claim_kind": "incident.root_cause_diagnosis",
+        "contradicting_evidence_ids": [
+          "evidence.staffing.attendance.line4.incident_window"
+        ],
+        "resolution": "rejected",
+        "statement": {
+          "redaction_applied": false,
+          "source_kind": "RUNTIME_EXPLICIT",
+          "text": "Understaffing on the affected shift is not supported as initiating cause: preliminary roster export conflicts with confirmed attendance for the incident window — hypothesis H2 rejected.",
+          "visibility": "REPORT_SAFE"
+        },
+        "supersedes_claim_id": null,
+        "supporting_evidence_ids": [
+          "evidence.staffing.schedule.line4.incident_window"
+        ]
+      },
+      {
+        "claim_id": "eclaim_b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+        "claim_kind": "incident.root_cause_diagnosis",
+        "contradicting_evidence_ids": [],
+        "resolution": "supported",
+        "statement": {
+          "redaction_applied": false,
+          "source_kind": "RUNTIME_EXPLICIT",
+          "text": "Intermittent station signal degradation on the complex-assembly step is the best-supported initiating cause; comparison evidence shows similar elevated workload elsewhere without comparable degradation; workload growth plausibly amplified impact — bounded H3 diagnosis.",
+          "visibility": "REPORT_SAFE"
+        },
+        "supersedes_claim_id": "eclaim_a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "supporting_evidence_ids": [
+          "evidence.comparison.line3.high_load_window",
+          "evidence.telemetry.complex_assembly_station.incident_window",
+          "evidence.throughput.line4.incident_window",
+          "evidence.workload.line4.incident_window"
+        ]
+      }
+    ]
+  },
+  "evidence_graph": {
+    "edges": [],
+    "nodes": [
+      {
+        "evidence_id": "evidence.workload.line4.incident_window",
+        "kind": "TOOL_RESULT",
+        "label": "workload observation",
+        "producing_step_id": "step-investigate",
+        "summary": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "observable tool result",
+          "visibility": "REPORT_SAFE"
+        }
+      },
+      {
+        "evidence_id": "evidence.throughput.line4.incident_window",
+        "kind": "TOOL_RESULT",
+        "label": "throughput observation",
+        "producing_step_id": "step-investigate",
+        "summary": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "observable tool result",
+          "visibility": "REPORT_SAFE"
+        }
+      },
+      {
+        "evidence_id": "evidence.staffing.schedule.line4.incident_window",
+        "kind": "TOOL_RESULT",
+        "label": "staffing schedule observation",
+        "producing_step_id": "step-investigate",
+        "summary": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "observable tool result",
+          "visibility": "REPORT_SAFE"
+        }
+      },
+      {
+        "evidence_id": "evidence.comparison.line3.high_load_window",
+        "kind": "TOOL_RESULT",
+        "label": "comparison line observation",
+        "producing_step_id": "step-investigate",
+        "summary": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "observable tool result",
+          "visibility": "REPORT_SAFE"
+        }
+      },
+      {
+        "evidence_id": "evidence.staffing.attendance.line4.incident_window",
+        "kind": "TOOL_RESULT",
+        "label": "staffing attendance observation",
+        "producing_step_id": "step-investigate",
+        "summary": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "observable tool result",
+          "visibility": "REPORT_SAFE"
+        }
+      },
+      {
+        "evidence_id": "evidence.telemetry.complex_assembly_station.incident_window",
+        "kind": "TOOL_RESULT",
+        "label": "station telemetry observation",
+        "producing_step_id": "step-investigate",
+        "summary": {
+          "redaction_applied": false,
+          "source_kind": "PROOF_AUTHORED",
+          "text": "Telemetry available; station signal degraded (intermittent_degraded)",
+          "visibility": "REPORT_SAFE"
+        }
+      }
+    ]
+  },
+  "execution": {
+    "command_argv": [],
+    "command_executable": null,
+    "duration_ms": null,
+    "finished_at": "2026-08-24T08:49:33.497260Z",
+    "platform": "intergrax",
+    "runtime_version": null,
+    "source_dirty": null,
+    "started_at": "2026-08-24T08:49:33.497260Z",
+    "status": "PASS"
+  },
+  "failure": null,
+  "final_output": {
+    "content": {
+      "redaction_applied": false,
+      "source_kind": "RUNTIME_EXPLICIT",
+      "text": "revised: bounded equipment-process degradation diagnosis supported by telemetry and comparison evidence",
+      "visibility": "REPORT_SAFE"
+    },
+    "evidence_basis_ids": [],
+    "output_type": "text",
+    "present": true,
+    "report_safe": true
+  },
+  "limitations": [
+    "This artifact demonstrates the RESOLVED path only; paired UNRESOLVED canonical evidence is produced separately.",
+    "Paired UNRESOLVED canonical evidence exists in evidence-unresolved.json",
+    "Not accepted for public proof publication."
+  ],
+  "participants": [
+    {
+      "implementation": "Intergrax",
+      "name": "Intergrax Nexus Runtime",
+      "participant_class": "PLATFORM",
+      "participant_id": "nexus_runtime",
+      "role": "Graph execution, ToolRuntime, Critic",
+      "version_or_model": "development"
+    },
+    {
+      "implementation": "scenario-local",
+      "name": "Synthetic manufacturing fixture",
+      "participant_class": "CONTROLLED_FIXTURE",
+      "participant_id": "synthetic_fixture",
+      "role": "Controlled operational observations",
+      "version_or_model": "full-1-resolved-full-2-unresolved-0.3.0"
+    }
+  ],
+  "proof_identity": {
+    "domains_exercised": [
+      "CRITIC",
+      "EVIDENCE",
+      "EXECUTION",
+      "TOOLS"
+    ],
+    "execution_profile": "quick",
+    "proof_id": "SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON",
+    "proof_version": "full-1-resolved-full-2-unresolved-0.3.0",
+    "source_revision": "27041cb4a3578c85a5c0709dbe1d0b6dfdd5ff8c",
+    "title": "AI Incident Investigation — RESOLVED evidence path"
+  },
+  "provenance": {
+    "artifact_identity": "intergrax.platform_proof_evidence.v3:SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON:incident-resolved-1787561373",
+    "evidence_checksum": "5add991bdb4795194aef710f51958ffbe5a7870cbddd8f608a5b271d9ac00546",
+    "evidence_schema_version": "intergrax.platform_proof_evidence.v3",
+    "execution_id": "incident-resolved-1787561373",
+    "generated_at": "2026-08-24T08:49:33.497260Z",
+    "proof_id": "SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON",
+    "source_revision": "27041cb4a3578c85a5c0709dbe1d0b6dfdd5ff8c"
+  },
+  "reproduction": {
+    "command": "uv run python scripts/proof/run-intergrax-proof-suite.py --profile quick --proof-id SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON",
+    "dataset_fingerprint_sha256": null,
+    "prerequisites": [
+      "Python 3.12",
+      "uv",
+      "uv sync (from repository root)"
+    ],
+    "required_env_variable_names": [],
+    "source_revision": "27041cb4a3578c85a5c0709dbe1d0b6dfdd5ff8c"
+  },
+  "scenarios": [
+    {
+      "evaluator": {
+        "checks": [
+          {
+            "check_id": "no_initial_decisive_telemetry",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Initial investigation did not expose resolving telemetry prematurely.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "No decisive telemetry before revision",
+            "passed": true
+          },
+          {
+            "check_id": "initial_observable_excludes_follow_up_evidence",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Comparison, attendance, and telemetry were not visible in the initial pass.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Follow-up evidence gathered after challenge",
+            "passed": true
+          },
+          {
+            "check_id": "h1_initially_plausible",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Workload rose while throughput fell during the incident window.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Initial overload hypothesis was genuinely plausible",
+            "passed": true
+          },
+          {
+            "check_id": "tool_runtime_exercised",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Investigation used bounded platform tool invocations.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Platform ToolRuntime was exercised",
+            "passed": true
+          },
+          {
+            "check_id": "critic_falsification_occurred",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Unsupported causal inference was challenged before diagnosis acceptance.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Critic issued a falsification challenge",
+            "passed": true
+          },
+          {
+            "check_id": "failed_critic_verdict_provenance",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "The initial unsupported-inference rejection is auditable.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Failed critic verdict recorded",
+            "passed": true
+          },
+          {
+            "check_id": "critic_challenge_mapped_from_verdict",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "The evidence challenge reflects the critic rejection.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Challenge mapped from critic verdict",
+            "passed": true
+          },
+          {
+            "check_id": "challenge_satisfied_after_revision",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Follow-up evidence addressed the falsification challenge.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Challenge satisfied after targeted follow-up",
+            "passed": true
+          },
+          {
+            "check_id": "satisfied_challenge_includes_telemetry_evidence",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Resolving telemetry is part of the satisfied challenge basis.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Satisfied challenge includes telemetry",
+            "passed": true
+          },
+          {
+            "check_id": "satisfied_challenge_includes_comparison_evidence",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Comparison evidence is part of the satisfied challenge basis.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Satisfied challenge includes comparison evidence",
+            "passed": true
+          },
+          {
+            "check_id": "telemetry_evidence_observable_in_graph",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Station telemetry appears in the auditable evidence graph.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Telemetry observable in evidence graph",
+            "passed": true
+          },
+          {
+            "check_id": "bounded_recovery_within_platform",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Revision stayed within the configured evaluator-loop budget.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Bounded recovery within platform limits",
+            "passed": true
+          },
+          {
+            "check_id": "follow_up_via_platform_tools",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Targeted evidence was gathered through ToolRuntime.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Follow-up used platform tools",
+            "passed": true
+          },
+          {
+            "check_id": "comparison_evidence_gathered",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "A high-load comparison window was queried for context.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Comparison evidence gathered",
+            "passed": true
+          },
+          {
+            "check_id": "staffing_preliminary_gathered",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Schedule export for the incident window was collected.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Preliminary staffing evidence gathered",
+            "passed": true
+          },
+          {
+            "check_id": "staffing_attendance_gathered",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Confirmed attendance for the incident window was collected.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Attendance evidence gathered",
+            "passed": true
+          },
+          {
+            "check_id": "staffing_preliminary_stale_for_incident",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Stale roster export was not treated as decisive support.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Preliminary staffing treated as stale",
+            "passed": true
+          },
+          {
+            "check_id": "h2_rejected_with_evidence",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Attendance evidence removed understaffing as initiating cause.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Understaffing hypothesis rejected",
+            "passed": true
+          },
+          {
+            "check_id": "stale_staffing_not_final_support",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Preliminary roster alone did not support a diagnosis.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Stale staffing not promoted to support",
+            "passed": true
+          },
+          {
+            "check_id": "comparison_weakens_h1_from_runtime",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "High-load comparison weakened overload-only explanation.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Comparison evidence weakened H1",
+            "passed": true
+          },
+          {
+            "check_id": "telemetry_supports_h3_from_runtime",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Station telemetry supported equipment/process degradation.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Telemetry supported H3",
+            "passed": true
+          },
+          {
+            "check_id": "terminal_supported_claim_present",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "A bounded supported diagnosis remained at completion.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Terminal supported diagnosis present",
+            "passed": true
+          },
+          {
+            "check_id": "final_supported_claim_is_h3",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Equipment/process degradation was the accepted diagnosis.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Final supported claim is H3",
+            "passed": true
+          },
+          {
+            "check_id": "supported_claim_references_telemetry_evidence",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Accepted diagnosis references station telemetry evidence.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Supported claim cites telemetry",
+            "passed": true
+          },
+          {
+            "check_id": "supported_claim_references_comparison_evidence",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Accepted diagnosis references comparison evidence.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Supported claim cites comparison evidence",
+            "passed": true
+          },
+          {
+            "check_id": "h1_materially_weakened",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Overload hypothesis was superseded rather than supported.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "H1 materially weakened",
+            "passed": true
+          },
+          {
+            "check_id": "all_cited_evidence_in_graph",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Every cited evidence identifier appears in the evidence graph.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "All cited evidence present in graph",
+            "passed": true
+          },
+          {
+            "check_id": "critic_content_validation_passed",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Claim and challenge content passed structural validation.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Critic content validation passed",
+            "passed": true
+          },
+          {
+            "check_id": "resolved_outcome",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Execution completed with a bounded supported diagnosis.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Incident outcome is RESOLVED",
+            "passed": true
+          },
+          {
+            "check_id": "ground_truth_isolated",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Fixture oracle data did not leak into observable artifacts.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Private oracle isolated from report surface",
+            "passed": true
+          },
+          {
+            "check_id": "private_truth_consistent",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Post-run oracle checks matched the resolved execution path.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Evaluator oracle consistency check passed",
+            "passed": true
+          },
+          {
+            "check_id": "final_summary_bounded",
+            "evidence_ids": [],
+            "explanation": {
+              "redaction_applied": false,
+              "source_kind": "PROOF_AUTHORED",
+              "text": "Terminal narrative did not over-claim beyond evidence.",
+              "visibility": "REPORT_SAFE"
+            },
+            "label": "Final summary stayed bounded",
+            "passed": true
+          }
+        ],
+        "failure_reasons": [],
+        "passed": true
+      },
+      "execution_status": "PASS",
+      "expected_behavior": "Reject H1 overload; resolve H2 staffing conflict; gather comparison and telemetry; accept bounded H3 diagnosis",
+      "failure": null,
+      "falsification_condition": "Unsupported overload diagnosis accepted without distinguishing evidence",
+      "final_output": {
+        "content": {
+          "redaction_applied": false,
+          "source_kind": "RUNTIME_EXPLICIT",
+          "text": "revised: bounded equipment-process degradation diagnosis supported by telemetry and comparison evidence",
+          "visibility": "REPORT_SAFE"
+        },
+        "evidence_basis_ids": [],
+        "output_type": "text",
+        "present": true,
+        "report_safe": true
+      },
+      "metrics": [
+        {
+          "description": null,
+          "name": "tool_invocations",
+          "unit": null,
+          "value": 6
+        },
+        {
+          "description": null,
+          "name": "evaluator_loop_iterations",
+          "unit": null,
+          "value": 1
+        },
+        {
+          "description": null,
+          "name": "scenario_outcome",
+          "unit": null,
+          "value": 1
+        }
+      ],
+      "question": "Can workload-throughput correlation become accepted diagnosis without comparison, staffing resolution, and telemetry follow-up?",
+      "scenario_id": "resolved_full_evidence_world",
+      "steps": [
+        {
+          "action": {
+            "redaction_applied": false,
+            "source_kind": "PROOF_AUTHORED",
+            "text": "Investigator agent with ToolRuntime follow-up",
+            "visibility": "REPORT_SAFE"
+          },
+          "duration_ms": null,
+          "error": null,
+          "evidence_basis_ids": [],
+          "evidence_created_ids": [
+            "evidence.workload.line4.incident_window",
+            "evidence.throughput.line4.incident_window",
+            "evidence.staffing.schedule.line4.incident_window",
+            "evidence.comparison.line3.high_load_window",
+            "evidence.staffing.attendance.line4.incident_window",
+            "evidence.telemetry.complex_assembly_station.incident_window"
+          ],
+          "input": null,
+          "observation": {
+            "fields": [],
+            "summary": {
+              "redaction_applied": false,
+              "source_kind": "RUNTIME_EXPLICIT",
+              "text": "revised: bounded equipment-process degradation diagnosis supported by telemetry and comparison evidence",
+              "visibility": "REPORT_SAFE"
+            },
+            "visibility": "REPORT_SAFE"
+          },
+          "participant_id": null,
+          "purpose": {
+            "redaction_applied": false,
+            "source_kind": "PROOF_AUTHORED",
+            "text": "Investigate incident via platform graph path",
+            "visibility": "REPORT_SAFE"
+          },
+          "started_at": null,
+          "status": "ok",
+          "step_id": "step-investigate",
+          "step_index": 0,
+          "tool_invocation": null
+        }
+      ],
+      "title": "RESOLVED FULL — H1/H2/H3 evidence world"
+    }
+  ],
+  "schema_version": "intergrax.platform_proof_evidence.v3"
+}

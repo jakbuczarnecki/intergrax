@@ -47,7 +47,7 @@ class NexusRuntimeEventPublisher:
                 event = event.model_copy(update={"tenant_id": scoped_task.tenant_id})
         await self._event_bus.publish(event)
 
-    async def publish_terminal(self, task: Task) -> None:
+    async def publish_terminal(self, task: Task) -> RuntimeEvent:
         run_id, attempt_id = self._execution_identity.require()
         base = runtime_event_from_task_state(
             task,
@@ -60,6 +60,7 @@ class NexusRuntimeEventPublisher:
             merged = {**base.payload, **terminal_payload}
             base = base.model_copy(update={"payload": merged})
         await self.publish(base, task=task)
+        return base
 
     def _read_persisted_run(self, task: Task) -> PersistedRun | None:
         if self._trace_reader is None:

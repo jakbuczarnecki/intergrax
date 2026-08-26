@@ -507,6 +507,9 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
             build_task_runner_with_enricher,
             wire_harness_task_control,
         )
+        from intergrax.applications._shared.product_observability_dashboard_wiring import (
+            wire_harness_product_observability_dashboard,
+        )
         from intergrax.debug.store import open_default_task_checkpoint_persistence
         from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
         from {pkg}.host.settings import {pascal}BackendSettings
@@ -593,6 +596,8 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
                 prefix=settings.route_prefix,
                 default_agent_id=settings.default_agent_id,
             )
+
+            wire_harness_product_observability_dashboard(app, runtime=runtime)
 
             if settings.include_task_control:
                 wire_harness_task_control(

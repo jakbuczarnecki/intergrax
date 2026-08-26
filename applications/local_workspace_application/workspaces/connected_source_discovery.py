@@ -173,3 +173,5 @@ class WorkspaceRemoteResourceDiscoveryService:
             )
         except VendorKnowledgeError as exc:
             raise ConnectedSourceDiscoveryError("connection_unavailable") from exc
+
+

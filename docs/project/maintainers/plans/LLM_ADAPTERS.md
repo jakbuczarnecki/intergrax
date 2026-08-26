@@ -8,6 +8,12 @@
 
 **Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md). LLM_ADAPTERS provides tokenizer-consistent token counting, context window metadata, usage accounting, and model/cost signals consumed by Token Optimization. Do not create a parallel tokenizer or duplicate adapter usage accounting.
 
+### Architecture sync — UE-DOC-0.8 (2026-08-26)
+
+**Status:** documentation frozen in architecture hub — **no runtime implementation in this slice**. Code transformation mapping: **UE-DOC-0.9**.
+
+Architecture hub additions: PARTIAL/FINAL semantics; streaming tool-call safety; governance/release; budget/cancel/failure; LLM-STREAM-INV; implementation readiness.
+
 ---
 
 ## LCI-6A — Native Ollama adapter architecture and parity matrix

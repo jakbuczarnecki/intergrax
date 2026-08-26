@@ -135,6 +135,68 @@ Memory exposes pluggable store surfaces for hosts that need non-default backends
 
 Tier-3 hosts wire the integration RAG stack (`EmbeddingManager`, `VectorstoreManager`, `RetrievalService`) into memory facades — agents never open vector databases directly. Routing overview: [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) §9.
 
+## Tool result feedback vs durable memory (UE-DOC-0.8)
+
+Frozen alignment with [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md). Iterative agent tool-use must **not** turn Memory into a hidden agent scratchpad.
+
+| Concern | Owner | Rule |
+| ------- | ----- | ---- |
+| **Session/step context** | Execution / CE path | Tool results may feed the **next model call** via CE fragments without automatic LTM write |
+| **Durable memory** | Memory | Write/consolidation remains **explicit, governed, attributable** |
+| **Recall into CE** | Memory → CE | CE consumes Memory recall as fragments under budget |
+
+Not every `ToolResult` becomes durable memory. Iterative tool feedback can live in Execution/session/context state without automatic long-term persistence.
+
+### Domain invariants (MEM-INV)
+
+| ID | Invariant |
+| -- | --------- |
+| **MEM-INV-01** | Tool result feedback ≠ automatic durable memory |
+| **MEM-INV-02** | Memory write/consolidation is explicit and governed — not implicit per tool call |
+| **MEM-INV-03** | CE consumes Memory recall; Memory does not assemble model prompts |
+
+## Implementation readiness
+
+For future implementation sessions — derive slices without making new architecture decisions. Detailed code mapping: **UE-DOC-0.9**.
+
+### 1. TARGET STATE
+
+Tool results feed CE/session state for iterative loops; durable Memory writes only through explicit governed paths; no agent-private scratchpad store.
+
+### 2. CURRENT STATE
+
+Session turns, consolidation, and `MemoryView` paths exist; tool results may reach session/history on wired Nexus paths. Boundary between ephemeral iterative feedback and durable write not uniformly enforced at Execution boundary.
+
+### 3. GAPS
+
+Execution-bound memory write policy for tool loops; explicit vs ephemeral tool-result classification; canonical identity on memory scopes under new Execution model.
+
+### 4. DEPENDENCIES
+
+- UEA / UER Execution Boundary
+- CE fragment model ([`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md))
+- Protocol v2 scope authority remediation
+
+### 5. MIGRATION ORDER (high level)
+
+1. Classify tool-result persistence (ephemeral vs durable) at Execution boundary
+2. Block implicit LTM writes from ordinary tool loops
+3. Align consolidation triggers with explicit governance
+4. CE recall paths unchanged — Memory supplies fragments only
+
+### 6. DO NOT VIOLATE
+
+- UEA-INV-* without explicit reopen
+- Automatic durable write on every tool result
+- Memory owning context assembly or tool execution
+- Hidden agent scratchpad bypassing Memory write policy
+
+### 7. ACCEPTANCE CONDITIONS
+
+- Ordinary iterative tool feedback does not auto-persist to LTM
+- Explicit writes remain governed and attributable
+- TARGET/CURRENT labeled where implementation lags
+
 ## Current maturity
 
 Architecture maturity: **A4**  
@@ -201,7 +263,7 @@ There is **no** dedicated public proof route in [`docs/project/proofs/`](../proo
 **Related:** [`architecture/RAG.md`](RAG.md) — Tier-0 retrieval engine; this doc covers **memory stores, lifecycle**, and the **Knowledge vs LTM** boundary.  
 **Third-party extension / developer guide:** [`guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](../technical/guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) (factory protocols, bootstrap semantics, wiring) · [`guides/EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) §9 (routing)  
 **ADR:** [ADR-MEM-001](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler) · [ADR-MEM-002](../technical/adr/entries/2026-06-14/ADR-MEM-002.md) (vector catalog)  
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates layer completion); MEM-VEC + MEM-DEPTH **Done**
+**Last updated:** 2026-08-26 — **UE-DOC-0.8** tool-result/memory boundary alignment with frozen UEA
 
 ### Cursor read scope (token budget)
 

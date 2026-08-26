@@ -18,13 +18,13 @@ class ArchitectureHealthPane(BaseModel):
     capability_count: int = Field(ge=0)
 
 
-class CausalDiagnosticsPane(BaseModel):
-    """Causal chain summary for the active host."""
+class DiagnosticOperationsPane(BaseModel):
+    """Central diagnostic capability summary for the product host."""
 
     schema_version: str = "1.0.0"
-    run_id: str
-    link_count: int = Field(ge=0)
     ready: bool
+    problem_count: int = Field(ge=0)
+    open_problem_count: int = Field(ge=0)
 
 
 class GovernanceDashboardPane(BaseModel):
@@ -46,7 +46,7 @@ class ProductObservabilityDashboard(BaseModel):
     governance: GovernanceDashboardPane
     health: HarnessHealthDashboardContract
     architecture: ArchitectureHealthPane
-    causal: CausalDiagnosticsPane
+    diagnostics: DiagnosticOperationsPane
 
 
 def build_product_observability_dashboard(
@@ -55,7 +55,7 @@ def build_product_observability_dashboard(
     governance: GovernanceDashboardPane,
     health: HarnessHealthDashboardContract,
     architecture: ArchitectureHealthPane,
-    causal: CausalDiagnosticsPane,
+    diagnostics: DiagnosticOperationsPane,
 ) -> ProductObservabilityDashboard:
     """Assemble the unified observability dashboard payload."""
     return ProductObservabilityDashboard(
@@ -63,5 +63,5 @@ def build_product_observability_dashboard(
         governance=governance,
         health=health,
         architecture=architecture,
-        causal=causal,
+        diagnostics=diagnostics,
     )

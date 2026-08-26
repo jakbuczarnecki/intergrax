@@ -105,7 +105,6 @@ SCRIPT_PATHS: dict[str, str] = {
     "check_capability_negotiation.py": "maintenance/check_capability_negotiation.py",
     "check_capability_routing.py": "maintenance/check_capability_routing.py",
     "check_catalog_hot_reload.py": "maintenance/check_catalog_hot_reload.py",
-    "check_causal_diagnostics_wiring.py": "maintenance/check_causal_diagnostics_wiring.py",
     "check_checkpoint_introspection_api.py": "maintenance/check_checkpoint_introspection_api.py",
     "check_codecraft_layer.py": "maintenance/check_codecraft_layer.py",
     "check_compliance_profile_wiring.py": "maintenance/check_compliance_profile_wiring.py",

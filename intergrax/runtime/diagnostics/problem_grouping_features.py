@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import NewType, Protocol, runtime_checkable
 
-from intergrax.contracts.execution_identity import EventId
+from intergrax.contracts.execution_identity import EventId, RunId, TaskId, validate_run_id, validate_task_id
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
     build_deterministic_problem_signature,
@@ -25,6 +25,7 @@ from intergrax.runtime.diagnostics.diagnostic_assessment import (
     DiagnosticFinding,
     DiagnosticLimitation,
 )
+from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstruction
 from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicProblemSignature,
     ProblemGroupingCandidate,
@@ -33,6 +34,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingSubjectRef,
     normalize_assessment,
 )
+from intergrax.runtime.observability.problem_signal import PlatformProblemSignal
 from intergrax.runtime.events.event_taxonomy import EventCategory
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.observability.causal_evidence import CausalRelationKind
@@ -61,6 +63,47 @@ class ProblemGroupingTextEvidenceSourceKind(StrEnum):
 
 class ProblemGroupingFeatureIntegrityError(Exception):
     """Raised when semantic feature projection violates contracts."""
+
+
+def _require_tenant_id(tenant_id: str) -> str:
+    if type(tenant_id) is not str:
+        raise TypeError(f"tenant_id must be str, got {type(tenant_id).__name__}")
+    if not tenant_id.strip():
+        raise ValueError("tenant_id is required")
+    return tenant_id
+
+
+@dataclass(frozen=True, slots=True)
+class ProblemGroupingFeatureSourceFacts:
+    """
+    Explicitly tenant/task/run-scoped facts collected upstream for feature projection.
+
+    Scope authority for bundled ``PlatformProblemSignal`` rows: signals may omit
+    their own ``task_id`` / ``run_id`` when observability permits empty values;
+    populated signal ids must agree with this bundle. Do not treat a standalone
+    unscoped signal as tenant-safe — only signals inside a validated bundle.
+
+    Data only — no persistence ports. When no source facts exist, pass
+    ``feature_source_facts=None`` on ``ProblemGroupingAssessmentInput``.
+    """
+
+    tenant_id: str
+    task_id: TaskId
+    run_id: RunId
+    reconstruction: ExecutionReconstruction | None = None
+    problem_signals: tuple[PlatformProblemSignal, ...] = ()
+
+    def __post_init__(self) -> None:
+        validate_problem_grouping_feature_source_facts(self)
+
+
+def validate_problem_grouping_feature_source_facts(
+    source_facts: ProblemGroupingFeatureSourceFacts,
+) -> None:
+    """Validate explicit tenant/task/run scope on a source-facts bundle."""
+    _require_tenant_id(source_facts.tenant_id)
+    validate_task_id(source_facts.task_id)
+    validate_run_id(source_facts.run_id)
 
 
 @dataclass(frozen=True, slots=True)
@@ -223,6 +266,8 @@ class ProblemGroupingFeatureProjector(Protocol):
         self,
         assessment: DiagnosticAssessment,
         subject: ProblemGroupingSubject,
+        *,
+        source_facts: ProblemGroupingFeatureSourceFacts | None = None,
     ) -> ProblemGroupingFeatureSet: ...
 
 
