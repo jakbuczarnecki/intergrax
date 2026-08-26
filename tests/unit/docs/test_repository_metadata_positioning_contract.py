@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import struct
 import tomllib
 from pathlib import Path
 
@@ -15,6 +16,15 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 REPO_ROOT = Path(__file__).resolve().parents[3]
 REPOSITORY_METADATA_PATH = REPO_ROOT / ".github" / "repo-management" / "repository-metadata.json"
 PYPROJECT_PATH = REPO_ROOT / "pyproject.toml"
+WHY_INTERGRAX_PATH = REPO_ROOT / "docs" / "project" / "overview" / "WHY_INTERGRAX.md"
+SOCIAL_PREVIEW_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "github" / "intergrax-social-preview.png"
+CANONICAL_HOMEPAGE = (
+    "https://github.com/jakbuczarnecki/intergrax/blob/main/docs/project/overview/WHY_INTERGRAX.md"
+)
+SOCIAL_PREVIEW_WIDTH = 1280
+SOCIAL_PREVIEW_HEIGHT = 640
+GITHUB_SOCIAL_PREVIEW_MAX_BYTES = 1_048_576
+REPOSITORY_SOCIAL_PREVIEW_TARGET_BYTES = 1_000_000
 
 REQUIRED_TOPIC_SUBSET = frozenset(
     {
@@ -103,3 +113,34 @@ def test_pyproject_keywords_match_repository_topics(
     repo_topics = [str(topic).strip().lower() for topic in repository_metadata["topics"]]
     pyproject_keywords = [str(keyword).strip().lower() for keyword in pyproject_project["keywords"]]
     assert pyproject_keywords == repo_topics
+
+
+def test_repository_metadata_homepage_points_to_why_intergrax(
+    repository_metadata: dict[str, object],
+) -> None:
+    assert repository_metadata["homepage"] == CANONICAL_HOMEPAGE
+
+
+def test_why_intergrax_overview_exists_for_homepage() -> None:
+    assert WHY_INTERGRAX_PATH.is_file(), f"missing homepage target: {WHY_INTERGRAX_PATH}"
+
+
+def _png_dimensions(path: Path) -> tuple[int, int]:
+    with path.open("rb") as handle:
+        signature = handle.read(8)
+        assert signature == b"\x89PNG\r\n\x1a\n", f"not a PNG: {path}"
+        length = struct.unpack(">I", handle.read(4))[0]
+        chunk_type = handle.read(4)
+        assert chunk_type == b"IHDR", f"missing IHDR: {path}"
+        data = handle.read(length)
+    width, height = struct.unpack(">II", data[:8])
+    return width, height
+
+
+def test_social_preview_asset_contract() -> None:
+    assert SOCIAL_PREVIEW_PATH.is_file(), f"missing social preview asset: {SOCIAL_PREVIEW_PATH}"
+    width, height = _png_dimensions(SOCIAL_PREVIEW_PATH)
+    assert (width, height) == (SOCIAL_PREVIEW_WIDTH, SOCIAL_PREVIEW_HEIGHT)
+    size_bytes = SOCIAL_PREVIEW_PATH.stat().st_size
+    assert size_bytes <= GITHUB_SOCIAL_PREVIEW_MAX_BYTES
+    assert size_bytes <= REPOSITORY_SOCIAL_PREVIEW_TARGET_BYTES

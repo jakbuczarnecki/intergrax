@@ -104,6 +104,33 @@ GitHub limits:
 
 ---
 
+## Social preview
+
+GitHub repository settings fall into two categories:
+
+| Setting | How it is applied |
+|---------|-------------------|
+| Description | Auto-synced by the metadata workflow |
+| Homepage | Auto-synced by the metadata workflow |
+| Topics | Auto-synced by the metadata workflow |
+| Social preview image | **Manual** GitHub repository setting |
+
+**Canonical source asset (version-controlled):**
+
+`docs/project/assets/public/github/intergrax-social-preview.png`
+
+The PNG in the repository is the canonical source for the social preview graphic. The existing metadata synchronization workflow (`sync_github_repository_metadata.py`, CI on `main`) updates description, homepage, and topics only — it does **not** upload or change the Social Preview image.
+
+**Manual upload (maintainer):**
+
+1. Repository **Settings → General**
+2. **Social preview → Edit**
+3. Upload `docs/project/assets/public/github/intergrax-social-preview.png`
+
+Apply this step after the asset is released on `main`; do not assume CI will set it.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Fix |
