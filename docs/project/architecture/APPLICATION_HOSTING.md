@@ -219,6 +219,17 @@ Observability → owns evidence spine, persistence, export semantics
 
 Hosting publishes through `ObservabilityHostedApplicationEventPublisher` as platform observability signals — **no private hosting event bus**.
 
+### Central diagnostics boundary
+
+```text
+HostedApplicationEvent     → platform observability signal (PLATFORM_SIGNAL export)
+Task/Run execution truth   → RuntimeEvent + Nexus terminal diagnostics (separate path)
+```
+
+Hosting lifecycle is **not** Task/Run execution. It has no canonical `TaskId`/`RunId`/`AttemptId` and **must not** synthesize them for diagnostics. `DiagnosticsRecorder` owns bounded local failure snapshots only — not cross-run `ProblemId`, grouping, or root-cause lifecycle.
+
+`TerminalExecutionDiagnosticTrigger` / `DiagnosticOrchestrator` apply to terminal **execution** scopes (`tenant_id` + `TaskId` + `RunId`) wired through Nexus. Work executed inside a hosted application already uses that path. Hosting lifecycle failures (`APPLICATION_FAILED`, startup paths) are exported as typed hosting events and safe diagnostic snapshots; central Problem lifecycle for non-execution hosting subjects requires an explicit future DIAG subject seam — not a synthetic execution identity bridge.
+
 ### ECP boundary
 
 ```text

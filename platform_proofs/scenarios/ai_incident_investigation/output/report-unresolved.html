@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platform Proof Report — SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON</title>
+<style>
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --text: #1a2332;
+  --muted: #5c6b7a;
+  --border: #d8dee6;
+  --accent: #2563eb;
+  --pass: #15803d;
+  --pass-bg: #ecfdf3;
+  --fail: #b91c1c;
+  --fail-bg: #fef2f2;
+  --blocked: #b45309;
+  --blocked-bg: #fffbeb;
+  --crash: #7f1d1d;
+  --crash-bg: #fef2f2;
+  --card-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --max-width: 960px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: var(--sans);
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.5;
+}
+main {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+h1, h2, h3 { line-height: 1.25; margin: 0 0 0.75rem; }
+h1 { font-size: 1.75rem; }
+h2 {
+  font-size: 1.25rem;
+  margin-top: 2rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+}
+h3 { font-size: 1.05rem; margin-top: 1.25rem; }
+p { margin: 0 0 0.75rem; }
+ul, ol { margin: 0 0 0.75rem 1.25rem; }
+.muted { color: var(--muted); }
+.card-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-bottom: 1rem;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  box-shadow: var(--card-shadow);
+}
+.card-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+.card-value { font-weight: 600; word-break: break-word; }
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border: 1px solid transparent;
+}
+.status-pass { color: var(--pass); background: var(--pass-bg); border-color: #86efac; }
+.status-fail { color: var(--fail); background: var(--fail-bg); border-color: #fecaca; }
+.status-blocked { color: var(--blocked); background: var(--blocked-bg); border-color: #fde68a; }
+.status-crash { color: var(--crash); background: var(--crash-bg); border-color: #fca5a5; }
+.executive-summary {
+  background: var(--surface);
+  border-left: 4px solid var(--accent);
+  padding: 1rem 1.1rem;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 1.25rem;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  background: var(--surface);
+}
+th, td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.6rem;
+  vertical-align: top;
+  text-align: left;
+}
+th { background: #f8fafc; }
+tbody tr:nth-child(even) { background: #fbfdff; }
+.trace-desktop { display: block; }
+.trace-mobile { display: none; }
+.trace-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.trace-card dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 0.5rem;
+}
+.trace-card dd { margin: 0.15rem 0 0; }
+pre, .payload-value {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  margin: 0;
+  max-height: 14rem;
+  overflow: auto;
+}
+.evidence-id {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+}
+.ground-truth-panel {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+.ground-truth-panel section {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: var(--surface);
+}
+.ground-truth-panel h3 { margin-top: 0; font-size: 0.95rem; }
+.verdict-panel {
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  background: var(--surface);
+}
+.verdict-panel.pass { border-color: #86efac; }
+.verdict-panel.fail { border-color: #fecaca; }
+.final-output-panel {
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  background: #fafbfc;
+}
+.failure-panel {
+  border-left: 4px solid var(--fail);
+  background: var(--fail-bg);
+  padding: 0.9rem 1rem;
+  border-radius: 0 8px 8px 0;
+}
+.arch-diagram, .graph-diagram {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.section-empty {
+  color: var(--muted);
+  font-style: italic;
+  padding: 0.5rem 0;
+}
+.step-ok { color: var(--pass); font-weight: 600; }
+.step-fail { color: var(--fail); font-weight: 600; }
+.step-skipped { color: var(--muted); font-weight: 600; }
+@media (max-width: 720px) {
+  .trace-desktop { display: none; }
+  .trace-mobile { display: block; }
+}
+@media print {
+  body { background: #fff; }
+  main { max-width: none; padding: 0; }
+  .card, .trace-card, table { break-inside: avoid; }
+  pre { max-height: none; overflow: visible; }
+}
+.incident-outcome-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  margin: 1rem 0;
+}
+.incident-outcome-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  background: var(--surface);
+}
+.incident-journey {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+.incident-journey-step {
+  border-left: 3px solid var(--accent);
+  padding: 0.5rem 0 0.5rem 0.75rem;
+  background: #f8fafc;
+  border-radius: 0 6px 6px 0;
+}
+.incident-hypothesis-grid {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin: 0.75rem 0;
+}
+.incident-hypothesis-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: var(--surface);
+}
+.incident-hypothesis-card .disposition {
+  font-weight: 700;
+  margin-top: 0.35rem;
+}
+.incident-pass-unresolved-note {
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  margin: 0.75rem 0 1rem;
+}
+.incident-evaluator-summary {
+  margin-top: 0.75rem;
+}
+</style>
+</head>
+<body>
+<main>
+<section id="report-identity" aria-labelledby="report-identity-heading"><h2 id="report-identity-heading">Report identity</h2><h1>AI Incident Investigation — UNRESOLVED evidence path</h1><p class="muted">Platform Proof Report · standard v1</p><div class="card-grid"><div class="card"><div class="card-label">Proof ID</div><div class="card-value">SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON</div></div><div class="card"><div class="card-label">Domains exercised</div><div class="card-value">CRITIC, EVIDENCE, EXECUTION, TOOLS</div></div><div class="card"><div class="card-label">Status</div><div class="card-value"><span class="status-badge status-pass" role="status" aria-label="PASS"><span class="status-icon" aria-hidden="true">✓</span><span class="status-label">PASS</span></span></div></div><div class="card"><div class="card-label">Revision</div><div class="card-value">27041cb4a3578c85a5c0709dbe1d0b6dfdd5ff8c</div></div><div class="card"><div class="card-label">Platform</div><div class="card-value">intergrax</div></div><div class="card"><div class="card-label">Started</div><div class="card-value">2026-08-24T08:49:33.498251+00:00</div></div></div></section>
+<section id="executive-summary" aria-labelledby="executive-summary-heading"><h2 id="executive-summary-heading">Executive summary</h2><div class="executive-summary"><p>This report documents proof SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON (AI Incident Investigation — UNRESOLVED evidence path) exercising domains CRITIC, EVIDENCE, EXECUTION, TOOLS.</p><p>Execution result: PASS on platform intergrax at revision 27041cb4a3578c85a5c0709dbe1d0b6dfdd5ff8c.</p><p>Claim under test: No material incident diagnosis without auditable evidence and falsification.</p><p>Primary evaluator conclusion: Evaluator passed: 22/22 checks.</p><p>Strongest evidence pointer: evidence graph (evidence.workload.line4.incident_window).</p><p>Primary limitation: This artifact demonstrates the UNRESOLVED path only; paired RESOLVED canonical evidence is produced separately.</p></div></section>
+<section id="claim-under-test" aria-labelledby="claim-under-test-heading"><h2 id="claim-under-test-heading">Claim under test</h2><p><strong>Claim:</strong> No material incident diagnosis without auditable evidence and falsification.</p><p><strong>User relevance:</strong> FULL-1/FULL-2 prove RESOLVED and UNRESOLVED paths with H1/H2/H3 adversarial evidence.</p><h3>Success criteria</h3><ul><li>ToolRuntime exercised</li><li>Critic challenge and revision bounded</li><li>Comparison and staffing conflict handled</li></ul><h3>Falsification criteria</h3><ul><li>Unsupported causal diagnosis accepted</li></ul></section>
+<section id="excluded-claims" aria-labelledby="excluded-claims-heading"><h2 id="excluded-claims-heading">What this proof does not prove</h2><ul><li>Full manufacturing dataset</li><li>Public proof established</li></ul></section>
+<section id="architecture-under-proof" aria-labelledby="architecture-under-proof-heading"><h2 id="architecture-under-proof-heading">Architecture under proof</h2><svg class="arch-diagram" viewBox="0 0 640 152" role="img" aria-labelledby="arch-diagram-title"><title id="arch-diagram-title">Architecture under proof</title><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#64748b"/></marker></defs><rect x="40" y="10" width="220" height="40" rx="6" fill="#f8fafc" stroke="#94a3b8"/><text x="50" y="35" font-size="12" fill="#1e293b">Intergrax Nexus Runtime</text><text x="280" y="35" font-size="11" fill="#64748b">PLATFORM</text><rect x="40" y="66" width="220" height="40" rx="6" fill="#f8fafc" stroke="#94a3b8"/><text x="50" y="91" font-size="12" fill="#1e293b">Synthetic manufacturing fixture</text><text x="280" y="91" font-size="11" fill="#64748b">CONTROLLED_FIXTURE</text></svg></section>
+<section id="participants" aria-labelledby="participants-heading"><h2 id="participants-heading">Participants / components</h2><table><thead><tr><th>Component</th><th>Implementation</th><th>Version</th><th>Role</th><th>Class</th></tr></thead><tbody><tr><td>Intergrax Nexus Runtime</td><td>Intergrax</td><td>development</td><td>Graph execution, ToolRuntime, Critic</td><td>PLATFORM</td></tr><tr><td>Synthetic manufacturing fixture</td><td>scenario-local</td><td>full-1-resolved-full-2-unresolved-0.3.0</td><td>Controlled operational observations</td><td>CONTROLLED_FIXTURE</td></tr></tbody></table></section>
+<section id="data-environment" aria-labelledby="data-environment-heading"><h2 id="data-environment-heading">Data / environment</h2><p class="section-empty">No environment or dataset context recorded.</p></section>
+<section id="scenario-overview" aria-labelledby="scenario-overview-heading"><h2 id="scenario-overview-heading">Scenario overview</h2><div class="card-grid"><article class="card"><h3>unresolved_full_evidence_world — UNRESOLVED FULL — telemetry unavailable evidence world</h3><p><strong>Question:</strong> Can workload-throughput correlation become accepted diagnosis without comparison, staffing resolution, and telemetry follow-up?</p><p><strong>Expected:</strong> Reject H1 overload; resolve H2 staffing conflict; gather comparison; accept epistemic UNRESOLVED when telemetry is unavailable for incident window</p><p><strong>Falsification:</strong> Unsupported overload diagnosis accepted without distinguishing evidence</p><p><strong>Result:</strong> <span class="status-badge status-pass" role="status" aria-label="PASS"><span class="status-icon" aria-hidden="true">✓</span><span class="status-label">PASS</span></span></p><p><strong>Metrics:</strong> tool_invocations=6, evaluator_loop_iterations=1, scenario_outcome=0</p></article></div></section>
+<section id="incident-investigation-result" aria-labelledby="incident-investigation-result-heading"><h2 id="incident-investigation-result-heading">Investigation Result</h2><div class="incident-outcome-grid"><div class="incident-outcome-card"><div class="card-label">Proof Result</div><div class="card-value"><span class="status-badge status-pass" role="status" aria-label="PASS"><span class="status-icon" aria-hidden="true">✓</span><span class="status-label">PASS</span></span></div></div><div class="incident-outcome-card"><div class="card-label">Incident Outcome</div><div class="card-value"><span class="status-badge status-blocked" role="status" aria-label="UNRESOLVED"><span class="status-label">UNRESOLVED</span></span></div></div></div><div class="incident-pass-unresolved-note" role="note"><p><strong>Proof PASS vs incident UNRESOLVED</strong></p><p>PASS means the proof behaved correctly. UNRESOLVED means the available evidence did not justify accepting a root-cause diagnosis.</p></div><h3>What happened</h3><p>Platform proof execution completed with proof result <strong>PASS</strong> and incident outcome <strong>UNRESOLVED</strong>.</p><div class="incident-journey"><div class="incident-journey-step"><p>Initial H1 plausible — workload rose while throughput fell.</p></div><div class="incident-journey-step"><p>Critic challenge — correlation alone is not causation.</p></div><div class="incident-journey-step"><p>Targeted follow-up via platform tools.</p></div><div class="incident-journey-step"><p>Comparison, attendance, and telemetry gathered.</p></div><div class="incident-journey-step"><p>Final dispositions — H1 superseded, H2 rejected, H3 insufficient evidence. Challenge remains OPEN.</p></div></div><h3>Initial hypothesis</h3><p>H1 — Production overload looked plausible because workload increased while throughput fell.</p><h3>Independent challenge</h3><p>The verifier rejected correlation as sufficient causal evidence (unsupported inference challenge).</p><h3>Follow-up evidence</h3><ul><li>Comparison line evidence</li><li>Confirmed attendance</li><li>Station telemetry</li></ul><h3>Final hypothesis state</h3><div class="incident-hypothesis-grid"><article class="incident-hypothesis-card"><p><strong>H1</strong> — Production overload</p><p class="disposition">SUPERSEDED</p></article><article class="incident-hypothesis-card"><p><strong>H2</strong> — Understaffing</p><p class="disposition">REJECTED</p></article><article class="incident-hypothesis-card"><p><strong>H3</strong> — Equipment/process degradation</p><p class="disposition">INSUFFICIENT EVIDENCE</p></article></div><h3>Why this path is UNRESOLVED</h3><p>The telemetry source was queried successfully, but no admissible observation was available for the incident window; therefore no root-cause diagnosis was accepted.</p><h3>Final decision</h3><p>No root-cause diagnosis accepted.</p><h3>Evaluator result</h3><div class="incident-evaluator-summary verdict-panel pass"><p><strong>AI Incident Investigation deterministic evaluator</strong></p><p><strong>PASS</strong> — 22/22 checks passed</p><p class="muted">Representative checks:</p><ul><li>Initial overload hypothesis was genuinely plausible</li><li>Critic issued a falsification challenge</li><li>Telemetry unavailable for incident window</li><li>No measurement was fabricated</li><li>No supported root-cause diagnosis</li><li>Final Critic accepted bounded uncertainty</li></ul></div></section>
+<section id="incident-defensibility" aria-labelledby="incident-defensibility-heading"><h2 id="incident-defensibility-heading">Why this result is defensible</h2><p>The initial overload diagnosis was rejected because workload growth and throughput loss established correlation, not causation.</p><p>The initial causal diagnosis remained unsupported. Comparison and staffing evidence removed fallback explanations, but decisive telemetry was unavailable; therefore the challenge remained open and no diagnosis was promoted to SUPPORTED.</p></section>
+<section id="execution-timeline" aria-labelledby="execution-timeline-heading"><h2 id="execution-timeline-heading">Execution timeline</h2><div class="trace-desktop"><table><thead><tr><th>Step</th><th>Purpose</th><th>Evidence basis</th><th>Action</th><th>Input</th><th>Observation</th><th>Evidence created</th><th>Status</th></tr></thead><tbody><tr><td>0</td><td>Investigate incident via platform graph path</td><td>—</td><td>Investigator agent with ToolRuntime follow-up</td><td><span class="muted">—</span></td><td><p class="payload-summary">Investigation remains unresolved: workload-only and staffing explanations are not supported, while the equipment hypothesis cannot be accepted because decisive telemetry for the incident window is unavailable.</p></td><td><span class="evidence-id">evidence.workload.line4.incident_window</span> <span class="evidence-id">evidence.throughput.line4.incident_window</span> <span class="evidence-id">evidence.staffing.schedule.line4.incident_window</span> <span class="evidence-id">evidence.comparison.line3.high_load_window</span> <span class="evidence-id">evidence.staffing.attendance.line4.incident_window</span> <span class="evidence-id">evidence.telemetry.complex_assembly_station.incident_window</span></td><td><span class="step-status step-ok">ok</span></td></tr></tbody></table></div><div class="trace-mobile"><div class="trace-card"><h3>Step 0</h3><dl><dt>Purpose</dt><dd>Investigate incident via platform graph path</dd><dt>Evidence basis</dt><dd>—</dd><dt>Action</dt><dd>Investigator agent with ToolRuntime follow-up</dd><dt>Input</dt><dd>—</dd><dt>Observation</dt><dd><p class="payload-summary">Investigation remains unresolved: workload-only and staffing explanations are not supported, while the equipment hypothesis cannot be accepted because decisive telemetry for the incident window is unavailable.</p></dd><dt>Evidence created</dt><dd>evidence.workload.line4.incident_window, evidence.throughput.line4.incident_window, evidence.staffing.schedule.line4.incident_window, evidence.comparison.line3.high_load_window, evidence.staffing.attendance.line4.incident_window, evidence.telemetry.complex_assembly_station.incident_window</dd><dt>Status</dt><dd><span class="step-status step-ok">ok</span></dd></dl></div></div></section>
+<section id="evidence-graph" aria-labelledby="evidence-graph-heading"><h2 id="evidence-graph-heading">Evidence graph</h2><svg class="graph-diagram" viewBox="0 0 260 236" role="img" aria-labelledby="graph-diagram-title"><title id="graph-diagram-title">Evidence graph</title><rect x="20" y="16" width="200" height="28" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="34" font-size="11">workload observation</text><rect x="20" y="52" width="200" height="28" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="70" font-size="11">throughput observation</text><rect x="20" y="88" width="200" height="28" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="106" font-size="11">staffing schedule observation</text><rect x="20" y="124" width="200" height="28" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="142" font-size="11">comparison line observation</text><rect x="20" y="160" width="200" height="28" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="178" font-size="11">staffing attendance observation</text><rect x="20" y="196" width="200" height="28" rx="4" fill="#eef2ff" stroke="#c7d2fe"/><text x="28" y="214" font-size="11">station telemetry observation</text></svg><table><thead><tr><th>ID</th><th>Kind</th><th>Label</th><th>Summary</th><th>Step</th></tr></thead><tbody><tr><td><span class="evidence-id">evidence.workload.line4.incident_window</span></td><td>TOOL_RESULT</td><td>workload observation</td><td>observable tool result</td><td>step-investigate</td></tr><tr><td><span class="evidence-id">evidence.throughput.line4.incident_window</span></td><td>TOOL_RESULT</td><td>throughput observation</td><td>observable tool result</td><td>step-investigate</td></tr><tr><td><span class="evidence-id">evidence.staffing.schedule.line4.incident_window</span></td><td>TOOL_RESULT</td><td>staffing schedule observation</td><td>observable tool result</td><td>step-investigate</td></tr><tr><td><span class="evidence-id">evidence.comparison.line3.high_load_window</span></td><td>TOOL_RESULT</td><td>comparison line observation</td><td>observable tool result</td><td>step-investigate</td></tr><tr><td><span class="evidence-id">evidence.staffing.attendance.line4.incident_window</span></td><td>TOOL_RESULT</td><td>staffing attendance observation</td><td>observable tool result</td><td>step-investigate</td></tr><tr><td><span class="evidence-id">evidence.telemetry.complex_assembly_station.incident_window</span></td><td>TOOL_RESULT</td><td>station telemetry observation</td><td>Telemetry source queried successfully; observation unavailable for incident window (no_observation_for_window)</td><td>step-investigate</td></tr></tbody></table><h3>Relationships</h3><p class="section-empty">No graph edges.</p></section>
+<section id="material-claims" aria-labelledby="material-claims-heading"><h2 id="material-claims-heading">Material claims</h2><div class="card-grid"><article class="card material-claim"><h3>Claim</h3><p><strong>Statement:</strong> Production workload on Line 4 increased during the incident window while throughput declined — overload hypothesis H1.</p><p><strong>Kind:</strong> incident.root_cause_diagnosis</p><p><strong>Status:</strong> superseded</p><p><strong>Supporting evidence:</strong> <span class="evidence-id">evidence.throughput.line4.incident_window</span> <span class="evidence-id">evidence.workload.line4.incident_window</span></p><p><strong>Contradicting evidence:</strong> <span class="evidence-id">evidence.comparison.line3.high_load_window</span></p><h3>Challenges</h3><div class="trace-card material-challenge"><p><strong>Challenge:</strong> unsupported_inference (incident.unsupported_inference)</p><p>unsupported_inference:missing_distinguishing_equipment_evidence</p><p><strong>Resolution:</strong> open</p><p><strong>Challenge evidence:</strong> <span class="evidence-id">evidence.throughput.line4.incident_window</span> <span class="evidence-id">evidence.workload.line4.incident_window</span></p></div></article><article class="card material-claim"><h3>Claim</h3><p><strong>Statement:</strong> Understaffing on the affected shift is not supported as initiating cause: preliminary roster export conflicts with confirmed attendance for the incident window — hypothesis H2 rejected.</p><p><strong>Kind:</strong> incident.root_cause_diagnosis</p><p><strong>Status:</strong> rejected</p><p><strong>Supporting evidence:</strong> <span class="evidence-id">evidence.staffing.schedule.line4.incident_window</span></p><p><strong>Contradicting evidence:</strong> <span class="evidence-id">evidence.staffing.attendance.line4.incident_window</span></p></article><article class="card material-claim"><h3>Claim</h3><p><strong>Statement:</strong> Equipment-process degradation hypothesis H3 cannot be accepted: decisive station telemetry for the incident window is unavailable.</p><p><strong>Kind:</strong> incident.root_cause_diagnosis</p><p><strong>Status:</strong> insufficient_evidence</p><p><strong>Supporting evidence:</strong> <span class="muted">—</span></p><p><strong>Contradicting evidence:</strong> <span class="muted">—</span></p></article></div></section>
+<section id="final-output" aria-labelledby="final-output-heading"><h2 id="final-output-heading">Final output</h2><div class="final-output-panel"><h3>Model / proof final output</h3><pre>Investigation remains unresolved: workload-only and staffing explanations are not supported, while the equipment hypothesis cannot be accepted because decisive telemetry for the incident window is unavailable.</pre><p class="muted">Evidence basis: —</p><p class="muted">This section is not the evaluator verdict.</p></div></section>
+<section id="evaluator-verdict" aria-labelledby="evaluator-verdict-heading"><h2 id="evaluator-verdict-heading">Evaluator verdict</h2><div class="verdict-panel pass"><h3>Evaluator verdict</h3><p><strong>Overall:</strong> passed</p><table><thead><tr><th>Check</th><th>Result</th><th>Explanation</th><th>Evidence</th></tr></thead><tbody><tr><td>Initial overload hypothesis was genuinely plausible</td><td>pass</td><td>Workload rose while throughput fell during the incident window.</td><td>—</td></tr><tr><td>Critic issued a falsification challenge</td><td>pass</td><td>Unsupported causal inference was challenged before diagnosis acceptance.</td><td>—</td></tr><tr><td>Failed critic verdict recorded</td><td>pass</td><td>The initial unsupported-inference rejection is auditable.</td><td>—</td></tr><tr><td>Challenge remains open</td><td>pass</td><td>Falsification challenge stayed open without resolving telemetry.</td><td>—</td></tr><tr><td>Bounded recovery within platform limits</td><td>pass</td><td>Revision stayed within the configured evaluator-loop budget.</td><td>—</td></tr><tr><td>Follow-up used platform tools</td><td>pass</td><td>Targeted evidence was gathered through ToolRuntime.</td><td>—</td></tr><tr><td>Comparison evidence gathered</td><td>pass</td><td>A high-load comparison window was queried for context.</td><td>—</td></tr><tr><td>Attendance evidence gathered</td><td>pass</td><td>Confirmed attendance for the incident window was collected.</td><td>—</td></tr><tr><td>Telemetry source was queried</td><td>pass</td><td>Station telemetry was requested for the incident window.</td><td>—</td></tr><tr><td>Telemetry unavailable for incident window</td><td>pass</td><td>Telemetry source responded without an admissible observation.</td><td>—</td></tr><tr><td>No measurement was fabricated</td><td>pass</td><td>Unavailable telemetry did not produce invented readings.</td><td>—</td></tr><tr><td>H1 not supported at completion</td><td>pass</td><td>Overload was not accepted as root cause.</td><td>—</td></tr><tr><td>Understaffing hypothesis rejected</td><td>pass</td><td>Attendance evidence removed understaffing as initiating cause.</td><td>—</td></tr><tr><td>H3 insufficient evidence</td><td>pass</td><td>Equipment/process degradation could not be supported.</td><td>—</td></tr><tr><td>No supported root-cause diagnosis</td><td>pass</td><td>No claim reached supported diagnosis at completion.</td><td>—</td></tr><tr><td>Comparison evidence weakened H1</td><td>pass</td><td>High-load comparison weakened overload-only explanation.</td><td>—</td></tr><tr><td>Critic content validation passed</td><td>pass</td><td>Claim and challenge content passed structural validation.</td><td>—</td></tr><tr><td>Incident outcome is UNRESOLVED</td><td>pass</td><td>Execution completed without an accepted root-cause diagnosis.</td><td>—</td></tr><tr><td>Final Critic accepted bounded uncertainty</td><td>pass</td><td>Completion remained epistemically unresolved rather than forced.</td><td>—</td></tr><tr><td>Private oracle isolated from report surface</td><td>pass</td><td>Fixture oracle data did not leak into observable artifacts.</td><td>—</td></tr><tr><td>Evaluator oracle consistency check passed</td><td>pass</td><td>Post-run oracle checks matched the unresolved execution path.</td><td>—</td></tr><tr><td>Final summary stayed bounded</td><td>pass</td><td>Terminal narrative did not over-claim beyond evidence.</td><td>—</td></tr></tbody></table></div></section>
+<section id="failure-analysis" aria-labelledby="failure-analysis-heading"><h2 id="failure-analysis-heading">Failure analysis</h2><p class="section-empty">No failure analysis — execution passed.</p></section>
+<section id="limitations" aria-labelledby="limitations-heading"><h2 id="limitations-heading">Limitations</h2><ul><li>This artifact demonstrates the UNRESOLVED path only; paired RESOLVED canonical evidence is produced separately.</li><li>Paired RESOLVED canonical evidence exists in evidence-resolved.json</li><li>Not accepted for public proof publication.</li></ul></section>
+<section id="conclusion" aria-labelledby="conclusion-heading"><h2 id="conclusion-heading">Conclusion</h2><h3>Supported</h3><ul><li>UNRESOLVED path when decisive telemetry is unavailable for incident window</li></ul><h3>Not supported</h3><ul><li>Public proof publication</li><li>RESOLVED path proven solely by this artifact&#x27;s claim graph</li></ul><h3>Open questions</h3><ul><li>Accepted public proof run</li></ul></section>
+<section id="reproduction" aria-labelledby="reproduction-heading"><h2 id="reproduction-heading">Reproduction</h2><p><strong>Source revision:</strong> 27041cb4a3578c85a5c0709dbe1d0b6dfdd5ff8c</p><p><strong>Profile env vars:</strong> —</p><p><strong>Dataset fingerprint:</strong> —</p><h3>Prerequisites</h3><ul><li>Python 3.12</li><li>uv</li><li>uv sync (from repository root)</li></ul><h3>Command</h3><pre>uv run python scripts/proof/run-intergrax-proof-suite.py --profile quick --proof-id SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON</pre></section>
+<section id="provenance" aria-labelledby="provenance-heading"><h2 id="provenance-heading">Provenance</h2><table><tbody><tr><th scope="row">proof_id</th><td>SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON</td></tr><tr><th scope="row">execution_id</th><td>incident-unresolved-1787561373</td></tr><tr><th scope="row">source revision</th><td>27041cb4a3578c85a5c0709dbe1d0b6dfdd5ff8c</td></tr><tr><th scope="row">evidence schema</th><td>intergrax.platform_proof_evidence.v3</td></tr><tr><th scope="row">report schema</th><td>intergrax.platform_proof_report.v1</td></tr><tr><th scope="row">report standard</th><td>v1</td></tr><tr><th scope="row">renderer version</th><td>1.0.0</td></tr><tr><th scope="row">evidence checksum</th><td>—</td></tr><tr><th scope="row">artifact identity</th><td>intergrax.platform_proof_evidence.v3:SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON:incident-unresolved-1787561373</td></tr><tr><th scope="row">generated at</th><td>2026-08-24T08:49:33.498251+00:00</td></tr><tr><th scope="row">execution profile</th><td>quick</td></tr></tbody></table></section>
+</main>
+</body>
+</html>
