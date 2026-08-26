@@ -1,210 +1,310 @@
 # Nexus Execution Flow
 
-**Intergrax Nexus Execution Flow** is the canonical Tier-1 control path that turns an incoming `Task` into a governed, observable `TaskResult` across single-agent and multi-agent execution.
+**Intergrax Nexus Execution Flow** is the canonical architecture for the Nexus orchestration control plane: traversal of accepted orchestration topology, dependency readiness, scheduling of child Executions, fan-out/fan-in, delegation/handoff coordination, and orchestration-level failure decisions.
 
-> **Unified Execution Runtime defines how execution behaves. Nexus Execution Flow defines how a concrete task moves through the platform.**
+> **Orchestration defines HOW work is structured. Nexus decides WHAT EXECUTES NEXT. Unified Execution Runtime owns HOW each Execution behaves.**
 
-Nexus is **not** a second UER, an `AgentEngine` replacement, a tool planner, a context engine, or a business agent. It is the Tier-1 **control-flow coordinator** that leads `Task` intake through planning, graph execution, routing, delegation, handoff, merge, and terminal completion.
+**Semantic authority:** Subordinate to frozen [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) (UEA). Where Nexus docs and UEA conflict, **UEA wins**.
+
+Nexus is **not** a second UER, an `AgentEngine` replacement, a tool planner, a context engine, a business agent, or the mandatory entry for every platform workload. It operates when a parent **Execution** uses **orchestration strategy**.
 
 ## Why it matters
 
-Without one Nexus flow, different entry points could each implement their own routing, planning, agent selection, retries, handoffs, multi-agent execution, final composition, and HITL behavior. That leads to inconsistent task semantics, duplicated orchestration, divergent policy paths, hidden bypasses, weak observability, and difficult testing.
+Without a single Nexus control plane for orchestration strategy, each path could invent its own topology interpretation, scheduling model, merge semantics, and recovery behavior. That produces inconsistent orchestration, duplicate lifecycle ownership, hidden agent-centric bypasses, and execution trees that compete with the canonical Execution Tree.
 
-For **orchestrated task intake**, surfaces normalize to `Task` → `UnifiedTaskRunner` → `NexusLoop` → `TaskResult`. Direct execution paths bypass Nexus per [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) **UEA-INV-008** — not every execution must pass Nexus.
-
-> [!NOTE]
-> **Maturity boundary:** UC-1–UC-6 and Phase FLOW (**18/18 harness Done**) prove the Nexus spine in lab and gate tests. That is **not** universal production qualification: `execution_mode=strict` is posture, not taxonomy **P4**; FLOW-8 product multi-agent hosts remain **Deferred** ([plan §6.3](../maintainers/plans/NEXUS_EXECUTION_FLOW.md)). See [Current maturity](#current-maturity) and [Harness-proven vs production-qualified](#harness-proven-vs-not-automatically-production-qualified).
-
-**Primary audience:** Principal / Staff engineers, harness integrators, and Tier-3 host authors — after the platform overview in the root README.
+Nexus centralizes **orchestration runtime control** — what logical work is ready, which child Executions to request, and how topology-level fan-in and failure propagate — while UER owns Execution lifecycle and the Execution Boundary owns child admission.
 
 ## At a glance
 
 | Concern | Summary |
 | -------- | -------- |
-| **Responsibility** | Task control-flow from intake to `TaskResult` — classification, planning, graph execution, routing, delegation/handoff, merge |
-| **Entry point** | All surfaces converge on `UnifiedTaskRunner.run_task()` → `NexusLoop.handle_task()` |
-| **Control-flow** | Intake → plan → `ExecutionGraph` → per-node `AgentRouter` → `AgentEngine` / UAEP |
-| **Planning planes** | Nexus graph (who/when) · UAEP steps (steps in node) · tool planner (tools in step) |
-| **Single-agent** | One graph node → same spine as multi-agent |
-| **Multi-agent** | Graph nodes, dependencies, parallelism, merge — **not** a separate runtime |
-| **Retry / HITL** | Graph/node retry runtime-managed; HITL returns to canonical flow ([`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md)) |
-| **UER relation** | Nexus decides **what** executes; UER defines **how** execution behaves inside the run |
-| **Production boundary** | Harness-proven; product-host multi-agent scale and ops evidence not universally qualified |
-| **Maturity** | Four-axis statement in [Current maturity](#current-maturity) — no dedicated public Nexus proof route |
-| **Go deeper** | [Engineering canon](#engineering-canon) · [runtime extended](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md) · [plan](../maintainers/plans/NEXUS_EXECUTION_FLOW.md) · [Orchestration](ORCHESTRATION.md) · [UER](UNIFIED_EXECUTION_RUNTIME.md) |
+| **Core question** | What executes next? (Orchestration = structure; UER = Execution behavior) |
+| **Activation** | Parent Execution with **orchestration strategy** → Nexus interprets accepted topology |
+| **Canonical output** | Child **Execution** requests through Execution Boundary — not direct `AgentEngine` calls as target abstraction |
+| **Topology vs runtime** | `NodeId` ≠ `ExecutionId` — one node may materialize many Executions |
+| **Planning planes** | Nexus topology/control-flow · UAEP steps (inside agentic child) · tool planner (inside step) |
+| **Direct paths** | Inference and ordinary agentic Executions do **not** require Nexus |
+| **Nested orchestration** | Child orchestration Executions under same Run/Attempt — no `OrchestrationRunId` |
+| **UER relation** | Nexus schedules; UER owns Run/Attempt/Execution lifecycle and retry/cancel identity |
+| **Production boundary** | Harness FLOW Done ≠ Execution-centric target implemented; product multi-agent not universally qualified |
+| **Maturity** | Four-axis statement in [Current maturity](#current-maturity) |
+| **Go deeper** | [Engineering canon](#engineering-canon) · [runtime extended](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md) · [plan](../maintainers/plans/NEXUS_EXECUTION_FLOW.md) · [Orchestration](ORCHESTRATION.md) · [UEA](UNIFIED_EXECUTION_ARCHITECTURE.md) · [UER](UNIFIED_EXECUTION_RUNTIME.md) |
+
+> [!NOTE]
+> **Maturity boundary:** UC-1–UC-6 and Phase FLOW (**18/18 harness Done**) prove the **CURRENT** harness spine in lab and gate tests. That is **not** universal production qualification, **not** proof that child Execution admission or Execution-centric Nexus is implemented, and **not** proof that every future Execution strategy must pass Nexus. See [Current maturity](#current-maturity).
+
+**Primary audience:** Principal / Staff engineers, harness integrators, and Tier-3 host authors — after the platform overview in the root README.
 
 ## Flagship architecture visual
 
-**TARGET ARCHITECTURE** — orchestration-strategy Executions are realized when Nexus schedules **child Executions** at the execution boundary (Nexus does not execute agent internals directly).
+**TARGET ARCHITECTURE** — orchestration-strategy Executions: Nexus schedules **child Executions** at the Execution Boundary. Nexus does not execute Agent internals as the canonical abstraction.
 
+<a href="UNIFIED_EXECUTION_ARCHITECTURE.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-orchestration-nexus-flow-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-orchestration-nexus-flow-light.svg">
   <img
-    alt="Orchestration strategy: parent Execution with orchestration strategy flows through Nexus to child Executions at the execution boundary; child results merge back to parent completion."
+    alt="Orchestration strategy: parent Execution flows through Nexus to child Executions at the execution boundary; child results merge back to parent completion."
     src="assets/unified-execution-orchestration-nexus-flow-light.svg"
   >
 </picture>
+</a>
 
-**CURRENT IMPLEMENTATION / migration state:** Today's harness path is `UnifiedTaskRunner` → `NexusLoop` → `AgentRouter` → `AgentEngine` / UAEP for graph nodes. That agent-centric wiring is implementation debt — not the frozen target abstraction.
+**CURRENT IMPLEMENTATION / migration state:** Many harness workloads still enter via `UnifiedTaskRunner` → `NexusLoop` → `GraphExecutor` → `AgentRouter` → `AgentEngine` / UAEP. That agent-centric graph-node wiring is implementation debt — not the frozen target abstraction.
 
-The diagram shows the **target orchestration path**, not every runtime class on the current spine. Retry, HITL, handoff, and merge stay on the orchestrated task path.
+## Mental model — TARGET ARCHITECTURE
+
+```text
+TASK
+  ↓
+RUN
+  ↓
+ATTEMPT
+  ↓
+PARENT EXECUTION (strategy = orchestration)
+        ↓
+       NEXUS
+        ↓
+Execution Boundary
+        ↓
+child Execution(s)
+```
+
+A child Execution may use:
+
+- **inference** strategy
+- **agentic** strategy → `AgentEngine` → UAEP
+- **orchestration** strategy → nested Nexus → further child Executions
+
+Nexus **requests/schedules** child Executions. The Execution Boundary / UER owns child Execution lifecycle admission.
+
+### Topology NodeId ≠ runtime ExecutionId
+
+| Concept | Role |
+| ------- | ---- |
+| **NodeId** | Definition slot in accepted topology — stable logical position; may instantiate zero, one, or many times |
+| **ExecutionId** | Runtime instance — independently schedulable/governable work in the canonical Execution Tree |
+
+Fan-out example: `NodeId = researcher` may produce `Execution E2`, `E3`, `E4` — same node, different Executions.
+
+**Do not use** “graph node = one agent execution unit” as target architecture. Where that phrase appears in engineering canon, it is **CURRENT implementation** terminology.
+
+<a href="UNIFIED_EXECUTION_ARCHITECTURE.md">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-topology-vs-execution-tree-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-topology-vs-execution-tree-light.svg">
+  <img
+    alt="Orchestration topology NodeId versus runtime Execution Tree ExecutionId: one node may materialize many Executions."
+    src="assets/unified-execution-topology-vs-execution-tree-light.svg"
+  >
+</picture>
+</a>
+
+### One canonical Execution Tree
+
+Runtime lineage: `ExecutionId` + `parent_execution_id`. This is the **one** canonical Execution Tree.
+
+Nexus may maintain topology state, readiness state, scheduling state, and orchestration projections — but **MUST NOT** maintain a competing canonical runtime execution tree. No `NexusRunTree`, no `OrchestrationRunId`, no graph-node runtime identity replacing `ExecutionId`.
+
+### Nested orchestration
+
+```text
+Execution E1 (orchestration)
+  → Nexus N1
+      → E2 (agentic)
+      → E3 (orchestration)
+           → Nexus N2
+               → E4
+               → E5
+```
+
+Same Run / Attempt unless a lifecycle boundary explicitly changes them. Safety limits (max execution depth, orchestration depth, fan-out, active children, budgets) are conceptual guardrails — exact config names are not frozen here.
+
+<a href="UNIFIED_EXECUTION_ARCHITECTURE.md">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-nested-orchestration-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-nested-orchestration-light.svg">
+  <img
+    alt="Nested orchestration: child Executions may use orchestration strategy under the same Run and Attempt."
+    src="assets/unified-execution-nested-orchestration-light.svg"
+  >
+</picture>
+</a>
+
+## Nexus vs Orchestration vs UER
+
+| Layer | Core question | Owns |
+| ----- | ------------- | ---- |
+| **Orchestration** | How is work **structured**? | Accepted topology / `OrchestrationDefinition`, profile configuration, planner proposal → acceptance |
+| **Nexus** | What executes **next**? | Topology traversal, readiness, scheduling child Executions, fan-out/fan-in, orchestration-level failure coordination |
+| **UER** | How does an **Execution** behave? | Run/Attempt lifecycle, Execution identity, strategy resolution mechanics, retry/cancel/checkpoint identity |
+
+```text
+Orchestration → topology / collaboration structure (definition)
+Nexus         → interpret topology → schedule child Executions
+UER           → Execution lifecycle and behavior
+```
+
+Full UER boundary: [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md). Orchestration configuration: [`ORCHESTRATION.md`](ORCHESTRATION.md).
+
+## Nexus owns (TARGET)
+
+- Traversal and interpretation of **accepted** orchestration topology
+- Dependency readiness and deciding which logical work is ready
+- Scheduling / **requesting** child Executions (fan-out, parallel readiness)
+- Delegation and handoff **topology** decisions (bounded child work, not agent-to-agent calls)
+- Merge / fan-in coordination over **child Execution results**
+- Orchestration-level failure handling (alternative branch, skip/partial, authorized replan)
+- Nested orchestration coordination
+- Requesting child work through the Execution Boundary
+
+## Nexus does not own
+
+- Generic Run/Attempt lifecycle — UER
+- Canonical `ExecutionId` authority — UER / execution lifecycle
+- Generic retry identity semantics — UER ([`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md))
+- `AgentEngine` internals, UAEP, provider/model execution — agentic child Executions
+- Governance authority, policy ownership — [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md)
+- Budget ledger / reservations — Budget subsystem
+- Observability persistence, DIAG, checkpoint persistence — respective domains
+- Queue transport identity, canonical cancellation tree — UER + transport
+
+No second UER inside Nexus.
+
+## Agent is not Nexus's fundamental unit
+
+**TARGET:** Nexus → Execution Boundary → child Execution. Only when a child resolves to **agentic** strategy: Execution → `AgentEngine` → UAEP.
+
+**CURRENT IMPLEMENTATION:** `GraphExecutor` → `AgentRouter` → `AgentEngine` on harness paths — label as migration wiring only.
+
+Direct agentic execution (`Execution` → agentic → `AgentEngine` → UAEP) does **not** require Nexus. Orchestration with one logical node is possible but is **not** the definition of single-agent execution.
+
+## Multi-agent vs orchestration
+
+**Multi-agent is not synonymous with orchestration.** Orchestration is topology/control-flow. It may coordinate multiple agents, multiple direct inference Executions, nested orchestrations, or mixed executor strategies. Agents are one executor type among others.
 
 ## Three planning planes
 
-Intergrax separates orchestration across three planes — do not conflate them.
-
-| Plane | Decides |
-| ----- | ------- |
-| **Nexus graph** | Which agent/node runs, order, dependencies, parallelism |
-| **UAEP steps** | Which steps the agent performs inside one graph node |
-| **Tool planner** | Which tools are called inside a step |
+| Plane | Decides | Owner |
+| ----- | ------- | ----- |
+| **Nexus topology** | Which logical work is ready, order, dependencies, parallelism | Nexus (orchestration strategy) |
+| **UAEP steps** | Steps inside an **agentic** child Execution | `AgentEngine` / UAEP |
+| **Tool planner** | Tool calls inside a UAEP step | Tool planner + `ToolRuntime` |
 
 ```text
-Nexus:        who / what node / when
-UAEP:         what steps inside that node
+Nexus:        which child Execution / topology position / when
+UAEP:         what steps inside an agentic Execution
 Tool planner: what tool calls inside the step
 ```
 
-All three converge through `ToolRuntime` for side effects and policy engines for governance on UAEP decisions. Engineering detail: [Engineering canon §1.3](#13-three-planning-planes-do-not-confuse).
-
-## How a task moves through Nexus
-
-```text
-Client / HTTP / MCP / Queue
-      ↓
-Tier-3 Host  (normalize request, wire profile, register agents)
-      ↓
-UnifiedTaskRunner
-      ↓
-NexusLoop
-      ↓
-Intake → Planning / classification → Graph execution
-      ↓
-AgentRouter → AgentEngine / UAEP
-      ↓
-Context Engineering · Tools · LLM  (under UAEP)
-      ↓
-Validation / decision
-      ↓
-retry / HITL / handoff / merge
-      ↓
-TaskResult
-```
-
-HTTP, MCP, workers, schedulers, eval runners, and lab harnesses all normalize input to `Task` and invoke the same `UnifiedTaskRunner → NexusLoop` path. Exact modules and adapters: [Engineering canon §3](#3-entry-points--how-tasks-appear).
-
-## Tier-3 Host vs Nexus
-
-| Tier-3 Host | Nexus |
-| ----------- | ----- |
-| Accepts external request or event | Owns execution control-flow **after** task entry |
-| Normalizes payload, wires environment/profile | Intake, classification, planning, graph execution |
-| Registers agents in `AgentRegistry` | Routing, delegation, handoff, result composition |
-| Invokes `UnifiedTaskRunner` | Does **not** replace UAEP or business agent logic |
-
-Application hosts **must not** implement a parallel orchestration path that bypasses `NexusLoop`.
-
-## Nexus vs Unified Execution Runtime
-
-| Nexus | UER |
-| ----- | --- |
-| Decides what should execute next | Defines how execution behaves |
-| Owns task/graph control-flow | Owns lifecycle/runtime semantics |
-| Routing, planning, graph, merge | Attempts, events, retry/HITL semantics |
-| Calls `AgentEngine` / UAEP | UAEP enforces execution contract |
-
-Full UER boundary: [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md).
-
-## Nexus vs Orchestration
-
-| Document | Owns |
-| -------- | ---- |
-| **This hub** | Runtime control-flow narrative — sequences, UC-*, code paths, retry/HITL on the task spine |
-| [`ORCHESTRATION.md`](ORCHESTRATION.md) | Public configuration model — `OrchestrationProfile`, graph specs, engineering canon |
-| [`satellites/ORCHESTRATION_production_gates.md`](satellites/ORCHESTRATION_production_gates.md) §50–§56 | Strategy catalog and detailed CFG canon |
-
-Nexus **executes** orchestration configuration; it does not duplicate the full Orchestration architecture.
-
-## Single-agent and multi-agent — same spine
-
-**Single agent:**
-
-```text
-Task → one graph node → AgentRouter → AgentEngine/UAEP → TaskResult
-```
-
-**Multi-agent:**
-
-```text
-Task → graph → node A / B / C → dependencies / parallelism → merge → TaskResult
-```
-
-There is no separate multi-agent runtime — only graph topology and profile differ.
-
-## Graph execution (summary)
-
-- **Graph node** — one agent execution unit mapped from a `PlanStep`.
-- **Dependencies** — `depends_on` defines batch order; independent nodes may run in parallel.
-- **Routing** — `AgentRouter` selects the Tier-2 agent per node (`production_mode` in strict hosts).
-- **Completion** — `NexusGraphRunner` validates graph outcome; `allow_partial_result` controls partial graph success.
-- **Merge** — `FinalResponseComposer` applies `merge_strategy` — not a raw list of agent answers.
-
-Detail: [runtime extended §9](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md#9-graph-execution--batches-routing-merge).
+Do not conflate **Execution StrategyResolver** (“does this Execution need inference, agentic, orchestration?”) with **orchestration planning** (“what topology should orchestration strategy execute?”). StrategyResolver must not silently invent topology.
 
 ## Delegation vs handoff
 
-| Mechanism | When | Nexus role |
-| --------- | ---- | ------------ |
-| **`DELEGATES_TO`** (declarative) | Graph spec expands to child node with `DelegationSpec` | Plan expansion + `GraphExecutor` child run |
-| **`AgentDecision.HANDOFF`** (runtime) | Agent transfers work mid-node | `HandoffCoordinator` inserts a new graph node |
-| **`DEPENDS_ON`** | Sequential/parallel graph ordering | Separate nodes sharing context via `ContextManager` |
+| Mechanism | TARGET | CURRENT IMPLEMENTATION |
+| --------- | ------ | ---------------------- |
+| **Delegation** | Bounded sub-work → child Execution via topology decision | `DELEGATES_TO`, `DelegationSpec`, graph expansion |
+| **Handoff** | Runtime discovery → route to another child Execution / topology position | `HandoffCoordinator` dynamic graph node insertion |
+| **Agent-to-agent call** | **Anti-pattern** — not target architecture | — |
 
-Both delegation and handoff remain under Nexus control-flow — not ad-hoc agent-to-agent calls. Detail: [runtime extended §13](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md#13-delegation-vs-depends_on-vs-handoff).
+Delegation and handoff must not transfer canonical runtime identity by replacing the parent Execution, create hidden agent-to-agent calls, or bypass child Execution admission.
+
+## Merge / fan-in
+
+Nexus owns orchestration-level fan-in. Merge consumes **child Execution results** — not “combine agent answers” only; outputs may be heterogeneous (inference + agentic + nested orchestration).
+
+`FinalResponseComposer` and profile `merge_strategy` values are **CURRENT IMPLEMENTATION** — not necessarily the frozen universal contract.
 
 ## Retry, partial results, and failure
 
-- **Graph/node retry** — runtime-managed (`RetryEngine`, optional `RetryCoordinator` for whole-graph retry).
-- **`allow_partial_result`** — `ResiliencePolicy` controls whether a partial graph may end in `PARTIALLY_COMPLETED`.
-- **Failure** — explicit terminal states (`FAILED`, `CANCELLED`, …); not a custom agent retry loop.
-- **Protocol/backend retry** — separate from Nexus graph retry ([`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md)).
+- **Orchestration-level recovery** — Nexus may choose alternative branch, skip/partial, authorized replan; must request lifecycle action through runtime boundary
+- **Identity / Attempt semantics** — UER owns; do **not** state “graph retry creates new AttemptId” as a Nexus rule
+- **`allow_partial_result`** — orchestration policy posture; UER/REL own detailed semantics
 
 Detail: [runtime extended §14](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md#14-retry-failure-and-abandonment).
 
-## HITL, pause, and resume
+## Cancellation
 
-Nexus may enter `WAITING_FOR_HUMAN` from a planning gate or UAEP `REQUEST_HUMAN` / interrupt resolution. Human response resumes the **same** canonical path — no second custom execution stack. UER/REL own detailed lifecycle semantics; Nexus owns where the flow continues, replans, or routes next.
+Canonical cancellation follows the **Execution Tree**: Run cancel → whole tree; Execution cancel → subtree. Nexus may stop scheduling topology work and coordinate orchestration consequence — it does not own a separate cancellation tree.
 
-## Merge and final result
+## HITL
 
-Multi-agent output is composed through `FinalResponseComposer` and `merge_strategy` (`concat`, `last_wins`, `structured_json`). Not every merge strategy or product graph is production-qualified — advanced synthesis remains profile- and evidence-bound.
+Governance/HITL owns human **decision**. UER owns pause/wait/resume lifecycle. Nexus owns where orchestration continues or replans after the decision. Nexus is not an approval engine.
 
-## Governance on the flow
+## Governance, budget, observability, checkpoint
 
-Policy may evaluate at pre-plan, pre-step, tool call, validation/completion, and HITL boundaries. Nexus is **not** the rule owner — it coordinates flow according to policy results ([`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md)).
+| Concern | Authority | Nexus role |
+| ------- | --------- | ------------ |
+| **Governance** | Policy / HITL domains | Coordinate flow per policy results; authority inherits Run → Execution → child → Agent → Tool |
+| **Budget** | Budget subsystem; `RunBudget` root | Schedule only within effective reservation; not private cost counters |
+| **Observability** | Observability persistence | Emit orchestration facts on canonical event path; tie to relevant `ExecutionId` once it exists |
+| **Checkpoint** | Checkpoint domain + UER | Orchestration state is a **component** of canonical Run checkpoint — no separate Nexus checkpoint tree |
 
-## Observability
+<a href="UNIFIED_EXECUTION_ARCHITECTURE.md">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/unified-execution-governance-budget-inheritance-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/unified-execution-governance-budget-inheritance-light.svg">
+  <img
+    alt="Governance and budget inheritance from Run through Execution tree to Agent and Tool."
+    src="assets/unified-execution-governance-budget-inheritance-light.svg"
+  >
+</picture>
+</a>
 
-Task, graph, and agent transitions emit `RuntimeEvent` through the platform bus. Flow is reconstructable from the observability spine — Nexus does not maintain a private trace stack ([`OBSERVABILITY.md`](OBSERVABILITY.md)).
+## Nexus-specific invariants (NEXUS-INV-*)
+
+NEXUS-INV specialize frozen UEA for the Nexus domain. Full cross-domain set: [UEA §24](UNIFIED_EXECUTION_ARCHITECTURE.md#24-architectural-invariants-uea-inv).
+
+| ID | Invariant |
+| -- | --------- |
+| **NEXUS-INV-001** | Nexus operates only when an Execution uses orchestration strategy |
+| **NEXUS-INV-002** | Nexus schedules/requests child Executions; it does not execute Agent internals as the canonical abstraction |
+| **NEXUS-INV-003** | Topology `NodeId` is never runtime `ExecutionId` |
+| **NEXUS-INV-004** | Nexus does not own generic Run/Attempt/Execution lifecycle |
+| **NEXUS-INV-005** | Nexus does not maintain a competing canonical execution tree |
+| **NEXUS-INV-006** | Nested orchestration is represented through child Executions, not `OrchestrationRunId` |
+| **NEXUS-INV-007** | Delegation and handoff create/route bounded child work through the canonical Execution boundary |
+| **NEXUS-INV-008** | Nexus coordinates merge/fan-in over child Execution results |
+| **NEXUS-INV-009** | Governance/Budget/Observability/Checkpoint remain external subsystem authorities |
+| **NEXUS-INV-010** | Direct inference and ordinary agentic execution do not require Nexus |
+
+## CURRENT IMPLEMENTATION — harness spine
+
+Today's primary harness path (not frozen target):
+
+```text
+Task → UnifiedTaskRunner → NexusLoop
+      → planning / classification → ExecutionGraph / NexusPlan
+      → GraphExecutor → AgentRouter → AgentEngine / UAEP (per graph node)
+      → TaskResult
+```
+
+HTTP, MCP, workers, schedulers, and lab harnesses on this path normalize to `Task` and invoke `UnifiedTaskRunner` → `NexusLoop`. Modules: [Engineering canon §3](#3-entry-points--how-tasks-appear).
+
+**Tier-3 Host vs Nexus (CURRENT wiring):** hosts wire profile, register agents, invoke `UnifiedTaskRunner`. Application hosts **should not** add parallel orchestration runtimes that bypass platform boundaries — target admission is through Execution Boundary, not ad-hoc `NexusLoop` reconstruction per surface.
 
 ## Harness-proven vs not automatically production-qualified
 
-### Harness-proven (lab / gate)
+### Harness-proven (lab / gate) — CURRENT spine
 
-Single-agent canonical path; multi-agent graph mechanics (sequential, parallel, declarative `graph_spec`); delegation; LLM-backed planner (`planner_kind=engine`); merge; partial-result policy; graph retries; evaluation hooks; graph backpressure (`max_inflight_nodes`).
+Orchestrated harness path; multi-agent graph mechanics; delegation; LLM-backed planner; merge; partial-result policy; graph retries; `max_inflight_nodes` backpressure.
 
 ### Not automatically production-qualified
 
-Every product host deployment; multi-agent scale in real operations; universal SLO/capacity evidence; production/customer operational windows. **18/18 harness FLOW Done ≠ production ready.**
-
+- Execution-centric child admission **implemented**
+- Every product host deployment at operational scale
+- Nested orchestration production-qualified
+- **18/18 harness FLOW Done ≠** target architecture implemented
 <a id="protocol-v22-task-intake-execution-convergence-target-invariants-2026-08-18"></a>
 
 ## Protocol v2.2 task-intake execution convergence target invariants (2026-08-18)
 
 Accepted [`INTERFACE_TASK_INTAKE`](../../audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md) findings **02, 03, 05** (2026-08-18). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-INTERFACE-TASK-INTAKE-PERSIST.
 
-1. Supported execution surfaces **MUST** converge through the canonical public execution boundary before `NexusLoop`.
-2. Intended canonical path:
+> **Architecture clarification (UE-DOC-0.5):** Remediation **ITI-FIX-C** preserves runner guarantees on supported surfaces during migration. The **frozen UEA target** does **not** require every future Execution strategy to pass through Nexus — only that supported intake surfaces converge through canonical runner guarantees where orchestration/harness paths apply.
+
+1. Supported execution surfaces **MUST** converge through the canonical public execution boundary before `NexusLoop` on **CURRENT orchestrated intake paths**.
+2. Intended canonical path (CURRENT harness):
 
 ```text
 surface-specific edge parsing
@@ -264,10 +364,12 @@ Remediation: **RPL-FIX-A/B/C** in matching plans.
 
 Accepted [`END_TO_END_SYSTEM`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md) findings **02, 03, 05** (2026-08-21). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-END-TO-END-SYSTEM-PERSIST.
 
+> **Architecture clarification (UE-DOC-0.5):** Invariant 4 below records **then-current** harness spine evidence. Frozen UEA target allows direct inference and agentic Executions without Nexus; remediation preserves runner/enricher parity during migration — not universal Nexus mandate for all future strategies.
+
 1. Supported surfaces consume one **configured task execution service** — same mandatory host-owned `task_enricher` and runner guarantees — not independent `UnifiedTaskRunner(nexus_loop)` reconstruction per surface. Cross-link **E2E-EXECUTION-CONTEXT-INTEGRITY** and **ITI-FIX-C** (direct-Nexus bypass is a separate recorded defect; this invariant is **equal enricher semantics**).
 2. `ActiveTaskRegistry` registration is **ownership-aware**: bind `TaskId` to concrete execution identity (`RunId`/attempt/registration token) or treat duplicate `TaskId` as explicit conflict; `unregister` removes only the owned registration — no silent overwrite. Cross-link **E2E-CONTROL-AUTHORITY-INTEGRITY**.
 3. Autonomy and other security-sensitive task-control mutations cross **canonical Governance authorization** (authenticated principal + Task/Run + requested transition → authorized transition evidence → runtime application). Do not create a second task-control policy engine. Cross-link **POLICY_GOVERNANCE**, **SECURITY_BOUNDARIES**.
-4. Preserve one Nexus execution spine (`Task` → `UnifiedTaskRunner` → `NexusLoop` → `TaskResult`); no second end-to-end runtime subsystem.
+4. Preserve one Nexus execution spine on **CURRENT orchestrated harness paths** (`Task` → `UnifiedTaskRunner` → `NexusLoop` → `TaskResult`); no second end-to-end runtime subsystem — **does not** freeze Nexus as mandatory for all Execution strategies.
 
 Historical harness FLOW Done facts and existing **ITI-FIX-***, **IDT-FIX-***, **LLM-FIX-*** remediation remain **PLANNED** — coordinate; do not duplicate.
 
@@ -275,103 +377,151 @@ Historical harness FLOW Done facts and existing **ITI-FIX-***, **IDT-FIX-***, **
 
 | Capability | State |
 | ---------- | ----- |
-| Single-agent canonical path | **Harness-proven** (UC-1–UC-3, S1) |
+| Orchestrated harness path (CURRENT) | **Harness-proven** (UC-1–UC-3, S1) |
 | Multi-agent sequential | **Harness-proven** (UC-4, acceptance) |
 | Multi-agent parallel | **Harness-proven** (UC-5, CFG simulation) |
 | Delegation | **Harness-proven** (FLOW-2/14, ADR-FLOW-001) |
 | LLM-backed planning | **Harness-proven** (FLOW-1, `engine` planner) |
-| Retry / partial result | **Harness-proven** ([§14](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md#14-retry-failure-and-abandonment), resilience tests) |
+| Retry / partial result | **Harness-proven** ([§14](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md#14-retry-failure-and-abandonment)) |
 | HITL | **Controlled / lab** — production queue profile-driven (S7) |
+| Child Execution admission (TARGET) | **Not implemented** |
 | Production multi-agent product flow | **Bounded / deferred** — FLOW-8 harness Done; product host **Deferred** plan §6.3 |
 
 Full S1–S8 matrix: [runtime extended §12.2](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md#122-scenario-production-status).
 
 ## Current maturity
 
-Architecture maturity: **A4**
-Implementation maturity: **I4**
+Architecture maturity: **A4** *(target aligned with UEA)*
+Implementation maturity: **I3–I4** *(CURRENT harness I4; Execution-centric Nexus not implemented)*
 Production readiness: **P2**
 Evidence maturity: **E3**
 
-- **A4** — Explicit control-flow canon, three planning planes, tier boundaries, UC-1–UC-9 and S1–S8 scenario model, ADR-FLOW-* family, normative entry convergence on `UnifiedTaskRunner` ([§12.2](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md#122-scenario-production-status)).
-- **I4** — Phase FLOW **18/18 harness Done** (planner, delegation, graph retry, merge, backpressure, policy hooks, maintenance closeout). Product-host multi-agent paths (FLOW-8 product slice) and UC-6 production agents remain plan **Deferred** — not I5.
-- **P2** — Harness and reference-host proven; `execution_mode=strict` is posture, not **P4**. FLOW-8 / §42.43 product graphs require explicit product decision and ops evidence.
-- **E3** — Unit/gate and integration evidence (`test_orchestration_cfg_simulation.py`, multi-agent acceptance, graph runner resilience, FLOW maintenance gates). **No dedicated public Nexus proof route** in [`PROOFS.md`](../proofs/PROOFS.md) — LKW/orchestration proofs do not automatically qualify the Nexus domain.
+- **A4 (target)** — Nexus/Orchestration canon aligned with frozen UEA; NEXUS-INV closure on hub.
+- **I3–I4** — Phase FLOW **18/18 harness Done** on **CURRENT** agent-centric spine. Child Execution admission, neutral orchestration boundary, and Execution-centric graph executor are **target / planned** — not I5.
+- **P2** — Harness and reference-host proven; `execution_mode=strict` is posture, not **P4**. Product multi-agent (FLOW-8) requires explicit product decision.
+- **E3** — Unit/gate and integration evidence. **No dedicated public Nexus proof route** in [`PROOFS.md`](../proofs/PROOFS.md).
+
+Harness FLOW/ORCH **Done** does **not** mean: Execution-centric target implemented; nested orchestration production-qualified; child Execution admission implemented.
 
 ## Evidence / proof
 
 ### Architecture
 
-- This hub (engineering canon §1–§8) · [runtime extended](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md) (§9+)
+- This hub · [runtime extended](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md) · [UEA](UNIFIED_EXECUTION_ARCHITECTURE.md)
 - ADR-FLOW-001…005 ([`technical/adr/README.md`](../technical/adr/README.md))
 
 ### Unit / gate
 
-- Cycle detection, topological ordering, delegation depth, partial-result behavior, planner fail-fast (`test_graph_spec_to_plan.py`, `test_graph_runner_resilience.py`, orchestration wiring tests)
+- Cycle detection, topological ordering, delegation depth, partial-result behavior, planner fail-fast
 
 ### Integration
 
-- `tests/integration/runtime/test_orchestration_cfg_simulation.py` (CFG / multi-agent)
-- Multi-agent acceptance (`test_acceptance_02_*`, `03_*`, `06_*`, `07_*`)
-- UAEP integration on graph path
+- `tests/integration/runtime/test_orchestration_cfg_simulation.py`
+- Multi-agent acceptance suites
+- UAEP integration on **CURRENT** graph path
 
 ### Public proof
 
-**No dedicated Nexus-domain entry** in [`PROOFS.md`](../proofs/PROOFS.md). LKW and orchestration CFG tests provide **bounded** integration evidence only — do not inherit as Nexus public qualification.
-
-### Production evidence
-
-Not claimed without W-OPS SLO persistence and product-host operational windows per deployment.
+**No dedicated Nexus-domain entry** in [`PROOFS.md`](../proofs/PROOFS.md).
 
 ## Relationship to Intergrax
 
 | Neighbor | Relationship |
 | -------- | ------------- |
-| [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) | Lifecycle semantics inside each node — Nexus invokes UAEP |
-| [`ORCHESTRATION.md`](ORCHESTRATION.md) | Graph/orchestration configuration — Nexus executes the wired result |
-| [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) | Tier-2 agent contracts consumed per graph node |
-| [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) | Model context assembly on Nexus hot paths — not owned by Nexus |
-| [`TOOLS.md`](TOOLS.md) | Tool selection and `ToolRuntime` — third planning plane |
-| [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) | Policy evaluation at flow boundaries |
+| [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) | Semantic authority — identity, Execution Tree, Nexus placement |
+| [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) | Execution lifecycle; child admission boundary (target) |
+| [`ORCHESTRATION.md`](ORCHESTRATION.md) | Accepted topology configuration — Nexus interprets |
+| [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) | Agent contracts consumed by **agentic** child Executions |
+| [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) | Context assembly on hot paths — not owned by Nexus |
+| [`TOOLS.md`](TOOLS.md) | Third planning plane |
+| [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) | Policy at flow boundaries |
 | [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) | Retry ownership, Attempt Ledger, HITL semantics |
-| [`OBSERVABILITY.md`](OBSERVABILITY.md) | Event spine and journal — Nexus emits, Observability persists |
-| [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) | Tier-3 bootstrap wires `NexusLoop` and profiles |
+| [`OBSERVABILITY.md`](OBSERVABILITY.md) | Event spine — Nexus emits, Observability persists |
+| [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) | Tier-3 bootstrap wires **CURRENT** `NexusLoop` |
 
 ## Extensibility
 
-Real configuration surfaces (not internal class APIs):
+Configuration surfaces (not frozen internal class APIs):
 
-- `ApplicationGraphSpec` / `AgentGraph` declarative graphs
+- `ApplicationGraphSpec` / `AgentGraph` — **CURRENT** declarative graphs
 - `OrchestrationProfile` — planner, classifier, merge, parallelism, resilience
 - Planners (`TaskPlanner`, `EngineBackedNexusPlanner`, graph-spec seeding)
 - Merge policy / `FinalResponseComposerProfile`
-- Application environment profiles and host wiring (`nexus_factory`, `orchestration_wiring`)
+- Host wiring (`nexus_factory`, `orchestration_wiring`)
 
-Authoring: [`satellites/ORCHESTRATION_production_gates.md`](satellites/ORCHESTRATION_production_gates.md#56-platform-interaction--multi-agent-configuration-canon) §56 · [`AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Appendix I.
+Authoring: [`satellites/ORCHESTRATION_production_gates.md`](satellites/ORCHESTRATION_production_gates.md#56-platform-interaction--multi-agent-configuration-canon) §56.
 
 ## Go deeper
 
 | Depth | Route |
 | ----- | ----- |
-| **Engineering canon** | [Below](#engineering-canon) — §1–§8 boundaries, sequences, entry points, planning |
-| **Runtime extended** | [`satellites/NEXUS_EXECUTION_FLOW_extended_depth.md`](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md) — §9+ graph, UAEP, UC-*, S1–S8 matrix, retry, tools |
+| **Engineering canon** | [Below](#engineering-canon) — §1–§8 boundaries, **CURRENT** sequences, entry points |
+| **Runtime extended** | [`satellites/NEXUS_EXECUTION_FLOW_extended_depth.md`](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md) — §9+ |
 | **Implementation plan** | [`maintainers/plans/NEXUS_EXECUTION_FLOW.md`](../maintainers/plans/NEXUS_EXECUTION_FLOW.md) |
-| **Orchestration config** | [`satellites/ORCHESTRATION_production_gates.md`](satellites/ORCHESTRATION_production_gates.md#56-platform-interaction--multi-agent-configuration-canon) §56 |
+| **Orchestration config** | [`ORCHESTRATION.md`](ORCHESTRATION.md) |
 | **UER / REL / Governance** | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) · [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) |
-| **Platform audit** | [`AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md) · [`audit_results/`](../../audit_results/README.md) |
 
 ### Documentation layout (hub / satellite)
 
-Intentional progressive disclosure — **not** unresolved drift.
-
 | Layer | Owns | Notes |
 | ----- | ---- | ----- |
-| Hub (engineering canon below) | §1–§8 | Default implement/audit read scope |
-| [Runtime extended satellite](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md) | §9+ | Graph execution, UAEP, UC-*, delegation, retry, tools, governance timeline, observability, evaluation |
-| Audit slice | §1–§15 | Valid when read against hub + satellite |
+| Hub public front | TARGET + CURRENT + NEXUS-INV | Default read scope |
+| [Runtime extended satellite](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md) | §9+ | **CURRENT** implementation depth |
+| Engineering canon §1–§8 | Sequences, entry points | Label CURRENT where agent-centric |
+
+## Implementation readiness
+
+For future implementation sessions — derive slices without making new architecture decisions.
+
+### 1. TARGET STATE
+
+Frozen UEA + this document: Nexus behind orchestration strategy only; schedules child Executions; `NodeId` ≠ `ExecutionId`; one Execution Tree; no competing Nexus runtime tree; external Governance/Budget/Obs/Obs/Checkpoint authorities.
+
+### 2. CURRENT STATE
+
+`UnifiedTaskRunner` → `NexusLoop` de facto entry for many tasks; `GraphExecutor` → `AgentRouter` → `AgentEngine`; topology nodes treated as agent execution units on harness path; orchestration events not fully tied to canonical `ExecutionId`.
+
+### 3. GAPS
+
+Child Execution request/admission boundary; Execution-centric graph executor; topology metadata on Execution evidence; lifecycle/retry/cancel at UER boundary; delegation/handoff as child Execution semantics; nested orchestration via child orchestration Executions.
+
+### 4. DEPENDENCIES
+
+- UEA frozen semantics (authority)
+- UER `ExecutionId` / Execution Boundary ([`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md))
+- Orchestration accepted topology contract ([`ORCHESTRATION.md`](ORCHESTRATION.md))
+- Observability `ExecutionId` on events
+- Detailed code mapping: **UE-DOC-0.9**
+
+### 5. MIGRATION ORDER (high level)
+
+1. Introduce canonical child Execution request/admission boundary
+2. Stop treating `AgentRouter`/`AgentEngine` as Nexus's canonical target
+3. Map topology `NodeId` → child Execution creation
+4. Preserve topology metadata on Execution evidence
+5. Move generic lifecycle/retry/cancel identity to UER boundary
+6. Migrate delegation/handoff to child Execution semantics
+7. Align merge with Execution results
+8. Support nested orchestration through child orchestration Executions
+9. Remove direct agent-centric bypasses / duplicate lifecycle ownership
+
+### 6. DO NOT VIOLATE
+
+- NEXUS-INV-* and UEA-INV-* without explicit architecture reopen
+- Nexus as mandatory path for direct inference or ordinary agentic execution
+- `OrchestrationRunId` or competing execution trees
+- Agent == Execution or Node == Execution
+- Nexus as budget/governance/observability authority
+
+### 7. ACCEPTANCE CONDITIONS
+
+- Nexus activates only for orchestration strategy Executions (target paths)
+- Child work admitted as Executions through canonical boundary
+- Topology scheduling distinct from Execution Tree identity
+- Orchestration events causally tied to relevant `ExecutionId`
+- TARGET/CURRENT labeled where implementation lags
 
 ---
-
 ## Maintainer and Cursor context
 
 **Status:** Canonical architecture (domain pair 1:1)
@@ -380,7 +530,7 @@ Intentional progressive disclosure — **not** unresolved drift.
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 8, 9, 10 (flow narrative) · cognition depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §7–§10
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
-**Last updated:** 2026-08-17 — DOC-3F-R1 hub/satellite topology correction; DOC-3F public front preserved
+**Last updated:** 2026-08-26 — UE-DOC-0.5 alignment with frozen UEA (NEXUS-INV, Execution-centric target)
 
 ### Cursor read scope (token budget)
 
@@ -439,7 +589,7 @@ Intergrax has **three independent planning/orchestration planes**:
 | Plane | Owner | Decides | Example |
 |-------|-------|---------|---------|
 | **Nexus graph** | Tier-1 `NexusLoop` | Which **agent** runs, order, parallelism | PM → UX → Legal |
-| **UAEP steps** | Tier-2 agent + `AgentEngine` | **Steps** inside one graph node | gather → analyze → summarize |
+| **UAEP steps** | Tier-2 agent + `AgentEngine` | **Steps** inside one **agentic** child Execution (**CURRENT:** one graph node) | gather → analyze → summarize |
 | **Tool planner** | Tier-1 `CatalogToolPlanner` | Which **tools** LLM invokes in a step loop | `rag.retrieve`, `websearch.query` |
 
 All three converge through `ToolRuntime` for side effects and `PolicyEngine` for governance on UAEP decisions.
@@ -473,6 +623,8 @@ All three converge through `ToolRuntime` for side effects and `PolicyEngine` for
 ---
 
 ## 2. Layer model at runtime
+
+**CURRENT IMPLEMENTATION** — harness wiring diagram. **TARGET:** orchestration parent Execution → Nexus → child Executions; agentic children → `AgentEngine` / UAEP below the Execution boundary.
 
 ```mermaid
 flowchart TB
@@ -533,6 +685,8 @@ flowchart TB
 
 ## 3. Entry points — how tasks appear
 
+**CURRENT IMPLEMENTATION** — orchestrated harness intake converges on `UnifiedTaskRunner` → `NexusLoop`. **TARGET:** not every Execution strategy requires this path (see hub [CURRENT IMPLEMENTATION — harness spine](#current-implementation--harness-spine)).
+
 | Entry | Module | Same path as HTTP? |
 |-------|--------|-------------------|
 | HTTP `POST /runs` or `/v1/*/run` | `NexusTaskExecutionAdapter` → `UnifiedTaskRunner` | Baseline |
@@ -564,13 +718,13 @@ ApplicationManifest
 
 Key wiring: `intergrax/applications/_shared/nexus_factory.py`, `orchestration_wiring.py`, `harness_host_runtime.py`.
 
-### 3.1 Application interaction scenarios (same Nexus path)
+### 3.1 Application interaction scenarios (CURRENT orchestrated harness path)
 
-Every scenario below uses **`UnifiedTaskRunner.run_task()`**. Differences are **host posture** (when tasks appear) and **profile orchestration** (how many agents, in what order).
+Every scenario below uses **`UnifiedTaskRunner.run_task()`** on the **CURRENT** harness spine. Differences are **host posture** and **profile orchestration**. **TARGET:** direct agentic Executions may bypass Nexus when strategy is not orchestration.
 
-| Scenario | Host posture | Task creation | Orchestration config | Agent execution |
-|----------|--------------|---------------|----------------------|-----------------|
-| **S1 — Single reactive Q&A** | HTTP/MCP on demand | `POST …/run` builds `Task` with `capability` | `planner_kind=default`, 1 agent | One graph node → UAEP |
+| Scenario | Host posture | Task creation | Orchestration config | Execution (**CURRENT**) |
+|----------|--------------|---------------|----------------------|-------------------------|
+| **S1 — Single reactive Q&A** | HTTP/MCP on demand | `POST …/run` builds `Task` with `capability` | `planner_kind=default`, 1 agent | One graph node → `AgentRouter` → UAEP |
 | **S2 — Free-text chat** | Daemon + intake | Slack/HTTP; capability from adapter or classifier | `classifier_kind=rules` (ORCH-CONFIG.1) or COG-3 LLM when done | As S1 or pipeline |
 | **S3 — Multi-agent sequential** | On demand | `capability=*.pipeline` or orchestration token | `graph_spec` `DEPENDS_ON` chain | Nodes A→B→C sequentially |
 | **S4 — Multi-agent parallel** | On demand | One `Task`, graph with independent nodes | `max_parallel_nodes`, `merge_strategy` | Batch gather in `GraphExecutor` |
@@ -605,7 +759,7 @@ sequenceDiagram
 |-----------|-------------|-----------|
 | Tier-3 host process (uvicorn, worker) | Can be always-on | Accepts work on demand |
 | `NexusLoop` | Loaded at bootstrap | Invoked per `Task` |
-| Tier-2 agent instances in registry | Registered at bootstrap | Executed per graph node |
+| Tier-2 agent instances in registry | Registered at bootstrap | Executed per graph node (**CURRENT** agent-centric mapping) |
 | Background index / queue consumer | Separate `Task` triggers | N/A |
 
 **Routing:** configuration cases **CFG-*** [`satellites/ORCHESTRATION_production_gates.md`](satellites/ORCHESTRATION_production_gates.md#56-platform-interaction--multi-agent-configuration-canon) §56.7 · Tier-3 summary [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23 · routing modes [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9.4.

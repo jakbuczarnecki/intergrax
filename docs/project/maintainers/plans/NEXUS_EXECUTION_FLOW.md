@@ -4,7 +4,25 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
+**Meta-architecture (frozen):** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](../../architecture/UNIFIED_EXECUTION_ARCHITECTURE.md) — semantic authority over Nexus target model. Nexus plan rows must not contradict Execution-centric child scheduling, `NodeId` ≠ `ExecutionId`, or Nexus-only-for-orchestration-strategy semantics.
+
+### Architecture sync — UE-DOC-0.5 (2026-08-26)
+
+**Target model (from rewritten Nexus hub):**
+
+- Nexus activates only for parent Executions with **orchestration strategy**
+- Nexus schedules **child Executions** through Execution Boundary — not `AgentRouter`/`AgentEngine` as canonical target
+- `NodeId` (topology) ≠ `ExecutionId` (runtime tree); one node may instantiate many Executions
+- No `OrchestrationRunId`; nested orchestration via child orchestration Executions under same Run/Attempt
+- Direct inference and ordinary agentic execution do **not** require Nexus
+
+**Known implementation gaps (CURRENT):** `UnifiedTaskRunner` → `NexusLoop` de facto entry; `GraphExecutor` → `AgentRouter` → `AgentEngine`; graph nodes as agent execution units; no child Execution admission boundary.
+
+**High-level migration order:** see Nexus hub [Implementation readiness §5](../../architecture/NEXUS_EXECUTION_FLOW.md#5-migration-order-high-level). Detailed code mapping deferred to **UE-DOC-0.9**.
+
+**Remediation clarification:** **ITI-FIX-C** preserves runner guarantees during migration — frozen UEA target does **not** require every future Execution strategy to pass through Nexus. Historical audit/remediation rows remain evidence of then-current architecture.
+
+**Plan debt:** substantial row restructuring against Execution-centric slices is **not** in UE-DOC-0.5 — track in UE-DOC-0.9.
 
 ---
 
@@ -61,7 +79,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | Block | Status | Findings | Acceptance intent |
 |-------|--------|----------|-------------------|
 | **ITI-FIX-B** | ACCEPTED / PLANNED | [`AUDIT-20260818-INTERFACE_TASK_INTAKE-02`](../../audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md) | Canonical distinct `TaskId`/`RunId` minting and propagation on every supported public intake surface; migrate all audited consumers; regression coverage proves no `RunId`-as-`TaskId` consumer path; canonical identity helper/factory reused; focused public-surface tests |
-| **ITI-FIX-C** | ACCEPTED / PLANNED | [`AUDIT-20260818-INTERFACE_TASK_INTAKE-03`](../../audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md), [`05`](../../audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md) | Production interaction execution converges through `UnifiedTaskRunner`; remove production reliance on direct-Nexus backward-compat path; replace `hasattr` `execute_prepared` discovery with typed interface; preserve readiness/enrichment semantics; HTTP/interactions/MCP/worker/scheduler supported surfaces retain canonical runner guarantees |
+| **ITI-FIX-C** | ACCEPTED / PLANNED | [`AUDIT-20260818-INTERFACE_TASK_INTAKE-03`](../../audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md), [`05`](../../audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md) | Production interaction execution converges through `UnifiedTaskRunner` on **CURRENT orchestrated intake paths**; remove production reliance on direct-Nexus backward-compat path; typed `execute_prepared` interface; preserve readiness/enrichment semantics. **UE-DOC-0.5:** frozen UEA does **not** require every future Execution strategy to pass Nexus — remediation preserves runner guarantees during migration. |
 
 **Remediation rules:**
 
