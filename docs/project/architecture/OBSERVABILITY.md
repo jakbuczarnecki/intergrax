@@ -360,7 +360,7 @@ HOS
 
 > **External telemetry systems visualize Intergrax evidence. They do not define Intergrax execution semantics.**
 
-Observability owns signal semantics, identity, canonical history, and export policy. Integration owns transport/backend ([`INTEGRATIONS.md`](INTEGRATIONS.md)).
+Observability owns observability signal/event semantics, canonical persisted evidence authority for accepted evidence, journal/read-model/projection semantics, and export policy. Execution Runtime owns canonical runtime identity (`ExecutionId`, `parent_execution_id`) and lifecycle structure. Integration owns transport/backend ([`INTEGRATIONS.md`](INTEGRATIONS.md)).
 
 ## Relationship to Intergrax
 
