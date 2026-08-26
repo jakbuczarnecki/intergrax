@@ -65,11 +65,13 @@ def test_trigger_replay_is_idempotent_for_same_execution() -> None:
     )
 
     assert first.execution_results[0].assessment.has_findings
-    assert first.lifecycle_result.created == ()
+    assert len(first.lifecycle_result.created) == 1
+    assert first.lifecycle_result.created[0].occurrence_count == 1
     assert second.lifecycle_result.created == ()
     assert second.lifecycle_result.updated == ()
-    assert second.lifecycle_result.unchanged == ()
-    assert persistence.list_for_tenant("tenant-a") == ()
+    assert len(second.lifecycle_result.unchanged) == 1
+    assert second.lifecycle_result.unchanged[0].occurrence_count == 1
+    assert len(persistence.list_for_tenant("tenant-a")) == 1
 
 
 def test_bridge_returns_none_when_trigger_not_configured() -> None:

@@ -1101,6 +1101,8 @@ Each `DiagnosticFinding` retains `source_anomaly_kind: LifecycleAnomalyKind` for
 
 **Limitations participate:** same positive finding plus `RUNTIME_HISTORY_TRUNCATED` on one subject only → different signatures. Limitation-only subjects (no findings) remain ungrouped.
 
+**Singleton eligibility:** one subject with at least one real finding may emit a grouping candidate. A stable `Problem` therefore represents an operational diagnostic pattern observed once or more — not proof that recurrence was already established in the same batch. `occurrence_count` tracks distinct accepted executions; recurrence means `occurrence_count > 1`. Singleton membership does **not** imply root cause.
+
 **Empty subjects remain ungrouped:** no findings → no candidate; DIAG-4 does not prove health.
 
 **Algorithm:** O(n) bucket grouping by signature hash/equality; candidate order = first input appearance of each signature; members preserve input order.
@@ -1312,7 +1314,7 @@ DiagnosticAssessment + ProblemGroupingFeatureSourceFacts (optional)
 | Concept | Meaning |
 |---------|---------|
 | **A — candidate membership** | Ephemeral `ProblemGroupingCandidate` from one invocation — hypothesis only |
-| **B — stable Problem identity** | Opaque minted `ProblemId` — recurring operational pattern tracked over time |
+| **B — stable Problem identity** | Opaque minted `ProblemId` — tracked operational diagnostic pattern observed one or more times |
 | **C — root cause** | Evidence-backed causal conclusion — **not** implied by grouping or Problem persistence |
 
 `ProblemId` denotes **B** only. Grouping remains hypothesis-producing; root-cause proof is future DIAG-8 / evidence work.
@@ -1337,7 +1339,7 @@ DiagnosticAssessment[]
 
 **Status (minimal):** `OPEN` (default), `RESOLVED` (explicit `ProblemLifecycleEngine.resolve` only). New accepted occurrence on a `RESOLVED` Problem returns status to `OPEN`. **No** auto-resolve when a pattern is absent from a later grouping invocation.
 
-**Occurrence timestamps:** `first_seen_at` and `last_seen_at` are derived from accepted `ProblemOccurrence.observed_at` values (min / max). They reflect observation time, not reconciliation or resolution processing time. Out-of-order delivery is handled correctly: a later reconciliation with an older `observed_at` on a new subject lowers `first_seen_at`; replaying an already-known `subject_ref` does not change timestamps or `occurrence_count`. `resolve()` changes status and `record_version` only — it does not advance `last_seen_at`.
+**Occurrence timestamps:** `first_seen_at` and `last_seen_at` are derived from accepted `ProblemOccurrence.observed_at` values (min / max). They reflect observation time, not reconciliation or resolution processing time. `occurrence_count` is the number of distinct accepted executions attached to the Problem; recurrence is `occurrence_count > 1` and is separate from candidate membership cardinality. Out-of-order delivery is handled correctly: a later reconciliation with an older `observed_at` on a new subject lowers `first_seen_at`; replaying an already-known `subject_ref` does not change timestamps or `occurrence_count`. `resolve()` changes status and `record_version` only — it does not advance `last_seen_at`.
 
 **Persistence:** `ProblemPersistence` protocol with optimistic `record_version` CAS on update, idempotent create, and subject-ref / reconciliation-key indexes for tenant isolation and concurrency safety. **Durable backend (DIAG-STORAGE):** `DocumentStoreProblemPersistence` (requires `ConditionalDocumentStore`) is wired through `wire_problem_persistence(document_store=...)`. `InMemoryProblemPersistence` is test/local reference only.
 

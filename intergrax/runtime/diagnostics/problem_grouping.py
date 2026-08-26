@@ -693,9 +693,9 @@ def _validate_candidate(
     tenant_id: str,
     registration: _RegisteredProblemGroupingStrategy,
 ) -> ProblemGroupingCandidate:
-    if len(candidate.members) < 2:
+    if len(candidate.members) < 1:
         raise ProblemGroupingIntegrityError(
-            "grouping candidate must contain at least two members"
+            "grouping candidate must contain at least one member"
         )
 
     provenance = candidate.provenance

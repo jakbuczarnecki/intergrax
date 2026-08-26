@@ -151,8 +151,6 @@ class DeterministicProblemGroupingStrategy:
         candidates: list[ProblemGroupingCandidate] = []
         for signature in signature_first_seen:
             members = tuple(buckets[signature])
-            if len(members) < 2:
-                continue
             candidates.append(
                 ProblemGroupingCandidate(
                     members=members,

@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Protocol
 
 from intergrax.contracts.execution_identity import RunId, TaskId, validate_run_id, validate_task_id
 from intergrax.runtime.diagnostics.deterministic_problem_grouping import STRATEGY_ID
@@ -16,6 +17,20 @@ from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
 )
 from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrchestrator
 from intergrax.runtime.observability.problem_signal import PlatformProblemSignal
+
+
+class TerminalExecutionDiagnosticTriggerProtocol(Protocol):
+    """Runtime-checkable contract for terminal diagnostic post-processing."""
+
+    def trigger_for_terminal_execution(
+        self,
+        *,
+        tenant_id: str,
+        task_id: TaskId,
+        run_id: RunId,
+        observed_at: datetime,
+        problem_signals: tuple[PlatformProblemSignal, ...] = (),
+    ) -> DiagnosticOrchestrationResult: ...
 
 
 class TerminalExecutionDiagnosticTrigger:
@@ -62,4 +77,7 @@ class TerminalExecutionDiagnosticTrigger:
         return self._orchestrator.run(request)
 
 
-__all__ = ["TerminalExecutionDiagnosticTrigger"]
+__all__ = [
+    "TerminalExecutionDiagnosticTrigger",
+    "TerminalExecutionDiagnosticTriggerProtocol",
+]

@@ -134,6 +134,52 @@ def _group_pair(
     return grouping_result, first, second
 
 
+def test_singleton_invocation_creates_problem_with_occurrence_one() -> None:
+    assessment, _ = _assess_retry_pair()
+    grouping_result = _engine().group((assessment,), strategy_id=STRATEGY_ID)
+    lifecycle = _lifecycle_engine()
+
+    result = lifecycle.reconcile(grouping_result, observed_at=_OBSERVED_AT)
+
+    assert len(result.created) == 1
+    assert result.created[0].occurrence_count == 1
+
+
+def test_separate_singleton_invocations_reconcile_same_problem() -> None:
+    first, second = _assess_retry_pair()
+    lifecycle = _lifecycle_engine()
+
+    first_grouping = _engine().group((first,), strategy_id=STRATEGY_ID)
+    first_result = lifecycle.reconcile(first_grouping, observed_at=_OBSERVED_AT)
+    problem_id = first_result.created[0].problem_id
+
+    second_grouping = _engine().group((second,), strategy_id=STRATEGY_ID)
+    second_result = lifecycle.reconcile(second_grouping, observed_at=_OBSERVED_AT_LATER)
+
+    assert len(first_result.created) == 1
+    assert first_result.created[0].occurrence_count == 1
+    assert second_result.created == ()
+    assert len(second_result.updated) == 1
+    assert second_result.updated[0].problem_id == problem_id
+    assert second_result.updated[0].occurrence_count == 2
+
+
+def test_singleton_replay_does_not_duplicate_occurrence() -> None:
+    assessment, _ = _assess_retry_pair()
+    grouping_result = _engine().group((assessment,), strategy_id=STRATEGY_ID)
+    lifecycle = _lifecycle_engine()
+
+    first = lifecycle.reconcile(grouping_result, observed_at=_OBSERVED_AT)
+    second = lifecycle.reconcile(grouping_result, observed_at=_OBSERVED_AT_LATER)
+
+    assert len(first.created) == 1
+    assert first.created[0].occurrence_count == 1
+    assert second.created == ()
+    assert second.updated == ()
+    assert len(second.unchanged) == 1
+    assert second.unchanged[0].occurrence_count == 1
+
+
 def test_first_candidate_creates_one_problem_id() -> None:
     grouping_result, _, _ = _group_pair()
     lifecycle = _lifecycle_engine()

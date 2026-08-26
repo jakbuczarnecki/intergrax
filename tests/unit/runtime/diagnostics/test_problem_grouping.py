@@ -277,7 +277,7 @@ def test_overlapping_candidates_allowed() -> None:
     assert result.ungrouped_subjects == ()
 
 
-def test_singleton_candidate_rejected() -> None:
+def test_singleton_candidate_accepted() -> None:
     assessment_a = _assessment()
     ref_a = _subject_ref(assessment_a)
     strategy = _ConfigurableFakeStrategy(
@@ -290,7 +290,25 @@ def test_singleton_candidate_rejected() -> None:
     )
     engine = _engine_with_strategy(strategy)
 
-    with pytest.raises(ProblemGroupingIntegrityError, match="at least two members"):
+    result = engine.group((_assessment_input(assessment_a),), strategy_id=_FAKE_STRATEGY_ID)
+
+    assert len(result.candidates) == 1
+    assert result.candidates[0].members == (ref_a,)
+
+
+def test_empty_member_candidate_rejected() -> None:
+    assessment_a = _assessment()
+    strategy = _ConfigurableFakeStrategy(
+        candidates=(
+            ProblemGroupingCandidate(
+                members=(),
+                provenance=_provenance(members=()),
+            ),
+        ),
+    )
+    engine = _engine_with_strategy(strategy)
+
+    with pytest.raises(ProblemGroupingIntegrityError, match="at least one member"):
         engine.group((_assessment_input(assessment_a),), strategy_id=_FAKE_STRATEGY_ID)
 
 

@@ -14,11 +14,12 @@ from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
 )
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTrigger,
+    TerminalExecutionDiagnosticTriggerProtocol,
 )
 
 
 def invoke_terminal_execution_diagnostics(
-    trigger: TerminalExecutionDiagnosticTrigger | None,
+    trigger: TerminalExecutionDiagnosticTriggerProtocol | None,
     *,
     tenant_id: str,
     task_id: TaskId,

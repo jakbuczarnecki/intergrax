@@ -22,7 +22,7 @@ from intergrax.runtime.events.asof_projection import (
     RunLifecycleViolationKind,
 )
 from intergrax.runtime.events.execution_position import ExecutionEventPosition, PositionedRuntimeEvent
-from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.observability.causal_evidence import PlatformCausalEvidence
 from intergrax.runtime.observability.causal_evidence_persistence import causal_evidence_query_order_key
 
@@ -203,6 +203,15 @@ def _attempt_evidence_anomalies(
     return tuple(findings)
 
 
+def _is_terminal_publish_marker(event: RuntimeEvent) -> bool:
+    """Nexus terminal bookkeeping replay — not an operational lifecycle violation."""
+    payload = event.payload or {}
+    return (
+        payload.get("source") == "task_lifecycle"
+        and payload.get("message") == "task terminal"
+    )
+
+
 def _lifecycle_violation_anomalies(
     positioned_events: tuple[PositionedRuntimeEvent, ...],
 ) -> tuple[LifecycleAnomaly, ...]:
@@ -215,6 +224,8 @@ def _lifecycle_violation_anomalies(
     last_terminal_event: PositionedRuntimeEvent | None = None
 
     for row in positioned_events:
+        if _is_terminal_publish_marker(row.event):
+            continue
         try:
             new_status = apply_lifecycle_event(status, row.event.event_type)
         except InvalidRunExecutionHistoryError as exc:

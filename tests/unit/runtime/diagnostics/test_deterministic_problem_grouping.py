@@ -261,8 +261,9 @@ def test_primary_collision_not_grouped() -> None:
 
     result = engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=STRATEGY_ID)
 
-    assert result.candidates == ()
-    assert len(result.ungrouped_subjects) == 2
+    assert len(result.candidates) == 2
+    assert all(len(candidate.members) == 1 for candidate in result.candidates)
+    assert result.ungrouped_subjects == ()
 
 
 def test_prior_status_difference_not_grouped() -> None:
@@ -290,7 +291,8 @@ def test_prior_status_difference_not_grouped() -> None:
 
     result = strategy.group((_input(subject_a), _input(subject_b)))
 
-    assert result.candidates == ()
+    assert len(result.candidates) == 2
+    assert all(len(candidate.members) == 1 for candidate in result.candidates)
 
 
 def test_finding_order_independent() -> None:
@@ -325,7 +327,8 @@ def test_multiplicity_preserved_not_grouped() -> None:
 
     result = strategy.group((_input(subject_a), _input(subject_b)))
 
-    assert result.candidates == ()
+    assert len(result.candidates) == 2
+    assert all(len(candidate.members) == 1 for candidate in result.candidates)
 
 
 def test_scope_difference_not_grouped() -> None:
@@ -343,7 +346,8 @@ def test_scope_difference_not_grouped() -> None:
 
     result = strategy.group((_input(subject_a), _input(subject_b)))
 
-    assert result.candidates == ()
+    assert len(result.candidates) == 2
+    assert all(len(candidate.members) == 1 for candidate in result.candidates)
 
 
 def test_limitation_difference_not_grouped() -> None:
@@ -354,7 +358,8 @@ def test_limitation_difference_not_grouped() -> None:
 
     result = strategy.group((_input(subject_a), _input(subject_b)))
 
-    assert result.candidates == ()
+    assert len(result.candidates) == 2
+    assert all(len(candidate.members) == 1 for candidate in result.candidates)
 
 
 def test_empty_subjects_not_grouped() -> None:
@@ -389,6 +394,23 @@ def test_three_member_group() -> None:
     assert len(result.candidates[0].members) == 3
 
 
+def test_singleton_finding_emits_candidate() -> None:
+    assessment = _assess_attempt_sequence(
+        [
+            RuntimeEventType.TASK_CREATED,
+            RuntimeEventType.TASK_COMPLETED,
+            RuntimeEventType.RETRY_SCHEDULED,
+        ]
+    )
+    engine = _engine_with_deterministic_strategy()
+
+    result = engine.group((_assessment_input(assessment),), strategy_id=STRATEGY_ID)
+
+    assert len(result.candidates) == 1
+    assert len(result.candidates[0].members) == 1
+    assert result.ungrouped_subjects == ()
+
+
 def test_two_groups_plus_singleton() -> None:
     finding_x = _event_after_terminal_finding(
         prior_status=RunExecutionLifecycleStatus.COMPLETED,
@@ -421,14 +443,13 @@ def test_two_groups_plus_singleton() -> None:
         )
     )
 
-    assert len(result.candidates) == 2
+    assert len(result.candidates) == 3
     member_sets = {frozenset(candidate.members) for candidate in result.candidates}
     assert member_sets == {
         frozenset({subject_a.ref, subject_b.ref}),
         frozenset({subject_c.ref, subject_d.ref}),
+        frozenset({subject_e.ref}),
     }
-    grouped_refs = {ref for candidate in result.candidates for ref in candidate.members}
-    assert subject_e.ref not in grouped_refs
 
 
 def test_basis_and_supporting_refs() -> None:

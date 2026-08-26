@@ -801,3 +801,48 @@ def test_lifecycle_violation_descriptor_fails_closed_on_incomplete_typed_error()
 
     with pytest.raises(LifecycleAnalysisIntegrityError, match="current_status or event_type"):
         _lifecycle_violation_descriptor_from_exc(incomplete)
+
+
+def test_terminal_publish_marker_does_not_create_event_after_terminal_finding() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    runtime_store = InMemoryRuntimeEventStore()
+    for event_type in (
+        RuntimeEventType.TASK_CREATED,
+        RuntimeEventType.TASK_COMPLETED,
+    ):
+        runtime_store.append(
+            sample_runtime_event(
+                tenant_id=_TENANT_A,
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+            ).model_copy(update={"event_type": event_type}),
+            tenant_id=_TENANT_A,
+        )
+    runtime_store.append(
+        sample_runtime_event(
+            tenant_id=_TENANT_A,
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+        ).model_copy(
+            update={
+                "event_type": RuntimeEventType.TASK_COMPLETED,
+                "payload": {
+                    "source": "task_lifecycle",
+                    "message": "task terminal",
+                },
+            },
+        ),
+        tenant_id=_TENANT_A,
+    )
+
+    reconstruction = ExecutionReconstructor(
+        runtime_events=runtime_store,
+        causal_evidence=InMemoryCausalEvidencePersistence(),
+    ).reconstruct_execution(_TENANT_A, task_id, run_id)
+    analysis = _ANALYZER.analyze(reconstruction)
+
+    assert analysis.anomalies == ()

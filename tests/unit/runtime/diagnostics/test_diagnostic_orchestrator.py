@@ -268,18 +268,18 @@ def test_later_run_adds_matching_execution_increments_count() -> None:
     assert second.lifecycle_result.updated[0].occurrence_count == 3
 
 
-def test_single_execution_succeeds_without_lifecycle_failure() -> None:
-    orchestrator, runtime_store, _, _ = _build_orchestrator()
+def test_single_execution_with_findings_creates_singleton_problem() -> None:
+    orchestrator, runtime_store, _, persistence = _build_orchestrator()
     task_id, run_id = _seed_retry_violation_sequence(runtime_store)
 
     result = orchestrator.run(_request(_scope(task_id, run_id)))
 
     assert len(result.execution_results) == 1
     assert result.execution_results[0].assessment.has_findings
-    assert result.grouping_result.candidates == ()
-    assert result.lifecycle_result.created == ()
-    assert result.lifecycle_result.updated == ()
-    assert result.lifecycle_result.unchanged == ()
+    assert len(result.grouping_result.candidates) == 1
+    assert len(result.lifecycle_result.created) == 1
+    assert result.lifecycle_result.created[0].occurrence_count == 1
+    assert persistence.list_for_tenant("tenant-a") == (result.lifecycle_result.created)
 
 
 def test_mixed_tenant_fails_before_reconstruction() -> None:

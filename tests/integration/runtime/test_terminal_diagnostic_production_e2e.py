@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import concurrent.futures
-from datetime import UTC, datetime
+from dataclasses import replace
 
 import pytest
 
@@ -39,8 +39,7 @@ from intergrax.runtime.background_execution.required_audit_evidence import (
     admit_background_execution_handler,
 )
 from intergrax.runtime.background_execution.transport_ref import BackgroundTransportExecutionRef
-from intergrax.runtime.diagnostics.deterministic_problem_grouping import STRATEGY_ID
-from intergrax.runtime.diagnostics.problem_lifecycle import ProblemLifecycleEngine
+from intergrax.runtime.diagnostics.in_memory_problem_persistence import InMemoryProblemPersistence
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -62,8 +61,6 @@ from governed_contractor_application.tests.governed_contractor_ac3_projection im
     build_governed_contractor_test_registry_projection,
 )
 from tests.unit.applications.test_product_observability_dashboard_wiring import (
-    _assess_retry_pair,
-    _grouping_engine,
     _product_env,
 )
 
@@ -72,7 +69,6 @@ pytestmark = [pytest.mark.integration, pytest.mark.gate]
 _TENANT_A = "tenant-terminal-diag-a"
 _TENANT_B = "tenant-terminal-diag-b"
 _TASK_NAME = "terminal_diag.echo.v1"
-_OBSERVED_AT = datetime(2026, 8, 26, 12, 0, tzinfo=UTC)
 
 
 def _run_coro_sync(coro: object) -> object:
@@ -111,8 +107,10 @@ class _HarnessRuntimeStub:
         self.nexus_loop = nexus_loop
 
 
-def _inject_retry_after_completed(
+def _inject_violation_after_completed(
     runtime_store: InMemoryRuntimeEventStore,
+    *,
+    violating_event_type: RuntimeEventType,
 ):
     def _handler(event: RuntimeEvent) -> None:
         if event.event_type is not RuntimeEventType.TASK_COMPLETED:
@@ -123,7 +121,7 @@ def _inject_retry_after_completed(
                 task_id=event.task_id,
                 run_id=event.run_id,
                 attempt_id=event.attempt_id,
-            ).model_copy(update={"event_type": RuntimeEventType.RETRY_SCHEDULED}),
+            ).model_copy(update={"event_type": violating_event_type}),
             tenant_id=event.tenant_id,
         )
 
@@ -133,6 +131,8 @@ def _inject_retry_after_completed(
 def _build_diagnostic_nexus_loop(
     *,
     inject_violation: bool,
+    violating_event_type: RuntimeEventType = RuntimeEventType.RETRY_SCHEDULED,
+    problem_persistence: object | None = None,
 ) -> tuple[NexusLoop, InMemoryRuntimeEventStore, object]:
     document_store = InMemoryDocumentStore()
     runtime_store = InMemoryRuntimeEventStore()
@@ -145,6 +145,8 @@ def _build_diagnostic_nexus_loop(
         observability=stores,
     )
     assert deps is not None
+    if problem_persistence is not None:
+        deps = replace(deps, problem_persistence=problem_persistence)
     trigger = build_terminal_execution_diagnostic_trigger(deps)
 
     registry = AgentRegistry()
@@ -157,29 +159,14 @@ def _build_diagnostic_nexus_loop(
     loop.attach_terminal_diagnostic_trigger(trigger)
     if inject_violation:
         loop.event_bus.subscribe(
-            _inject_retry_after_completed(runtime_store),
+            _inject_violation_after_completed(
+                runtime_store,
+                violating_event_type=violating_event_type,
+            ),
             event_types={RuntimeEventType.TASK_COMPLETED},
             priority=10,
         )
     return loop, runtime_store, deps.problem_persistence
-
-
-def _seed_problem_on_shared_persistence(
-    persistence: object,
-    *,
-    tenant_id: str,
-) -> None:
-    runtime_store = InMemoryRuntimeEventStore()
-    lifecycle = ProblemLifecycleEngine(persistence)
-    grouping = _grouping_engine().group(
-        _assess_retry_pair(
-            tenant_id=tenant_id,
-            runtime_store=runtime_store,
-            violating_event_type=RuntimeEventType.RETRY_SCHEDULED,
-        ),
-        strategy_id=STRATEGY_ID,
-    )
-    lifecycle.reconcile(grouping, observed_at=_OBSERVED_AT)
 
 
 @pytest.mark.asyncio
@@ -341,6 +328,93 @@ def test_background_execution_inherits_terminal_diagnostic_trigger(
 
 
 @pytest.mark.asyncio
+async def test_separate_terminal_executions_reconcile_same_problem() -> None:
+    loop, _, persistence = _build_diagnostic_nexus_loop(inject_violation=True)
+    runner = UnifiedTaskRunner(loop)
+    read_deps = HostDiagnosticReadDependencies(
+        problem_persistence=persistence,
+        runtime_event_persistence=loop._runtime_event_store,  # noqa: SLF001
+        causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
+    )
+    read_service = build_diagnostic_read_service(read_deps)
+
+    await runner.run_task(
+        Task(
+            tenant_id=_TENANT_A,
+            user_id="user-1",
+            message="terminal diagnostics run a",
+            context=TaskContext(capability="echo.basic"),
+        ),
+        run_id=mint_run_id(),
+    )
+    problems_after_a = persistence.list_for_tenant(_TENANT_A)
+    assert len(problems_after_a) == 1
+    problem_id = problems_after_a[0].problem_id
+    assert problems_after_a[0].occurrence_count == 1
+
+    await runner.run_task(
+        Task(
+            tenant_id=_TENANT_A,
+            user_id="user-1",
+            message="terminal diagnostics run b",
+            context=TaskContext(capability="echo.basic"),
+        ),
+        run_id=mint_run_id(),
+    )
+    problems_after_b = persistence.list_for_tenant(_TENANT_A)
+    assert len(problems_after_b) == 1
+    assert problems_after_b[0].problem_id == problem_id
+    assert problems_after_b[0].occurrence_count == 2
+
+    listed = read_service.list_problems(tenant_id=_TENANT_A)
+    assert listed.total_count == 1
+    assert listed.problems[0].problem_id == problem_id
+    assert listed.problems[0].occurrence_count == 2
+
+
+@pytest.mark.asyncio
+async def test_different_terminal_signatures_create_distinct_problems() -> None:
+    shared_persistence = InMemoryProblemPersistence()
+    loop_retry, _, _ = _build_diagnostic_nexus_loop(
+        inject_violation=True,
+        violating_event_type=RuntimeEventType.RETRY_SCHEDULED,
+        problem_persistence=shared_persistence,
+    )
+    runner_retry = UnifiedTaskRunner(loop_retry)
+
+    await runner_retry.run_task(
+        Task(
+            tenant_id=_TENANT_A,
+            user_id="user-1",
+            message="retry anomaly",
+            context=TaskContext(capability="echo.basic"),
+        ),
+        run_id=mint_run_id(),
+    )
+
+    loop_failed, _, _ = _build_diagnostic_nexus_loop(
+        inject_violation=True,
+        violating_event_type=RuntimeEventType.TASK_FAILED,
+        problem_persistence=shared_persistence,
+    )
+    runner_failed = UnifiedTaskRunner(loop_failed)
+
+    await runner_failed.run_task(
+        Task(
+            tenant_id=_TENANT_A,
+            user_id="user-1",
+            message="failed anomaly",
+            context=TaskContext(capability="echo.basic"),
+        ),
+        run_id=mint_run_id(),
+    )
+
+    problems = shared_persistence.list_for_tenant(_TENANT_A)
+    assert len(problems) == 2
+    assert problems[0].problem_id != problems[1].problem_id
+
+
+@pytest.mark.asyncio
 async def test_replay_terminal_trigger_does_not_duplicate_occurrence() -> None:
     loop, _, persistence = _build_diagnostic_nexus_loop(inject_violation=True)
     runner = UnifiedTaskRunner(loop)
@@ -354,6 +428,9 @@ async def test_replay_terminal_trigger_does_not_duplicate_occurrence() -> None:
     attempt_id = mint_attempt_id()
 
     await runner.run_task(task, run_id=run_id, attempt_id=attempt_id)
+    problems_before_replay = persistence.list_for_tenant(_TENANT_A)
+    assert len(problems_before_replay) == 1
+    assert problems_before_replay[0].occurrence_count == 1
     token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
     try:
         await loop._publish_terminal_runtime_event(task)  # noqa: SLF001
@@ -361,7 +438,9 @@ async def test_replay_terminal_trigger_does_not_duplicate_occurrence() -> None:
     finally:
         reset_active_execution_identity(token)
 
-    assert persistence.list_for_tenant(_TENANT_A) == ()
+    problems_after_replay = persistence.list_for_tenant(_TENANT_A)
+    assert len(problems_after_replay) == 1
+    assert problems_after_replay[0].occurrence_count == 1
 
 
 @pytest.mark.asyncio
@@ -465,7 +544,7 @@ def test_dashboard_sees_problem_on_shared_persistence_after_runtime_trigger(
         _resolve,
     )
 
-    loop, _, persistence = _build_diagnostic_nexus_loop(inject_violation=False)
+    loop, _, persistence = _build_diagnostic_nexus_loop(inject_violation=True)
     env = _product_env()
     tenant_id = env.profile_id
     deps = HostDiagnosticReadDependencies(
@@ -486,10 +565,21 @@ def test_dashboard_sees_problem_on_shared_persistence_after_runtime_trigger(
             run_id=mint_run_id(),
         ),
     )
-    _seed_problem_on_shared_persistence(persistence, tenant_id=tenant_id)
+    _run_coro_sync(
+        runner.run_task(
+            Task(
+                tenant_id=tenant_id,
+                user_id="user-1",
+                message="shared persistence proof recurrence",
+                context=TaskContext(capability="echo.basic"),
+            ),
+            run_id=mint_run_id(),
+        ),
+    )
 
     problems = read_service.list_problems(tenant_id=tenant_id)
     assert problems.total_count == 1
+    assert problems.problems[0].occurrence_count == 2
 
     pane = _build_diagnostic_operations_pane(env, read_service)
     assert pane is not None

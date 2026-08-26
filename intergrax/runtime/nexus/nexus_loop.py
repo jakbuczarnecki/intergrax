@@ -91,6 +91,9 @@ from intergrax.runtime.adaptive.signal_collector import SignalCollector
 from intergrax.runtime.adaptive.signal_emission import record_task_outcome_signal
 from intergrax.runtime.architecture.online_evaluation_registry import OnlineEvaluationRegistry
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
+    TerminalExecutionDiagnosticTriggerProtocol,
+)
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
 
@@ -152,7 +155,7 @@ class NexusLoop:
         denied_planner_model_ids: tuple[str, ...] = (),
         planner_model_id: str | None = None,
         governance_service: Any = None,
-        terminal_diagnostic_trigger: Any = None,
+        terminal_diagnostic_trigger: TerminalExecutionDiagnosticTriggerProtocol | None = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -650,7 +653,10 @@ class NexusLoop:
         if isinstance(event, RuntimeEvent):
             await self._events.publish(event, task=task)
 
-    def attach_terminal_diagnostic_trigger(self, trigger: Any) -> None:
+    def attach_terminal_diagnostic_trigger(
+        self,
+        trigger: TerminalExecutionDiagnosticTriggerProtocol,
+    ) -> None:
         """Attach platform terminal diagnostic trigger after host composition."""
         self._terminal_diagnostic_trigger = trigger
 
