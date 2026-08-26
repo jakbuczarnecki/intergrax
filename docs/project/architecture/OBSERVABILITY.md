@@ -1339,13 +1339,29 @@ DiagnosticAssessment[]
 
 **Occurrence timestamps:** `first_seen_at` and `last_seen_at` are derived from accepted `ProblemOccurrence.observed_at` values (min / max). They reflect observation time, not reconciliation or resolution processing time. Out-of-order delivery is handled correctly: a later reconciliation with an older `observed_at` on a new subject lowers `first_seen_at`; replaying an already-known `subject_ref` does not change timestamps or `occurrence_count`. `resolve()` changes status and `record_version` only — it does not advance `last_seen_at`.
 
-**Persistence:** `ProblemPersistence` protocol + `InMemoryProblemPersistence` (contract proof; not enterprise durable storage). Optimistic `record_version` CAS on update; idempotent create; subject-ref and reconciliation-key indexes for tenant isolation and concurrency safety.
+**Persistence:** `ProblemPersistence` protocol with optimistic `record_version` CAS on update, idempotent create, and subject-ref / reconciliation-key indexes for tenant isolation and concurrency safety. **Durable backend (DIAG-STORAGE):** `DocumentStoreProblemPersistence` (requires `ConditionalDocumentStore`) is wired through `wire_problem_persistence(document_store=...)`. `InMemoryProblemPersistence` is test/local reference only.
+
+```text
+ProblemLifecycleEngine
+  ↓
+ProblemPersistence
+  ↓
+DocumentStoreProblemPersistence
+  ↓
+ConditionalDocumentStore
+  ↓
+vendor adapter (Cassandra / MongoDB / DynamoDB / …)
+```
+
+Stable Problem state is **derived, durable operational state** — rebuildable from canonical evidence plus validated grouping output. The persistence backend is replaceable; CAS semantics and structural tenant isolation are mandatory. Reconciliation and subject rows are internal persistence indexes (`ProblemReconciliationKey.index_token()` is not public identity). Diagnostic Engine semantics are independent of backend choice.
+
+**Canonical record vs indexes:** `record:<problem_id>` is the only authoritative store for the full `Problem`. `reconcile:` and `subject:` rows hold `problem_id` references only. Reads resolve index → canonical record → scope validation. `create` claims reconciliation and subject indexes before the canonical record; identical retries repair missing indexes after partial writes.
 
 **Explicit non-goals (DIAG-5D):** Problem merge/split, auto-resolve-on-absence, root-cause fields, second production grouping strategy, LLM/embeddings/vector/confidence.
 
 **Roadmap:** **DIAG-5C complete.** **DIAG-5D complete.** **DIAG-6 complete.** **DIAG-7** — cross-run canonical diagnostic orchestration (this slice). **DIAG-8 / scenario** — intelligent grouping + root-cause investigation consuming typed assessments without rewriting canonical evidence (scenario-stage).
 
-**Code references:** `intergrax/runtime/diagnostics/problem_lifecycle.py`, `intergrax/runtime/diagnostics/problem_persistence.py`, `intergrax/runtime/diagnostics/in_memory_problem_persistence.py`, `intergrax/runtime/diagnostics/deterministic_problem_reconciliation.py`.
+**Code references:** `intergrax/runtime/diagnostics/problem_lifecycle.py`, `intergrax/runtime/diagnostics/problem_persistence.py`, `intergrax/runtime/diagnostics/in_memory_problem_persistence.py`, `intergrax/runtime/diagnostics/document_store_problem_persistence.py`, `intergrax/runtime/diagnostics/problem_record_codec.py`, `intergrax/runtime/diagnostics/deterministic_problem_reconciliation.py`.
 
 ### Operator diagnostic read surface (DIAG-6)
 

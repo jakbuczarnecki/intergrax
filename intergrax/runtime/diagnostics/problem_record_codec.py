@@ -1,0 +1,325 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework — proprietary and confidential.
+
+"""Versioned persistence encoding for diagnostic ``Problem`` records (DIAG-STORAGE)."""
+
+from __future__ import annotations
+
+from collections.abc import Mapping
+from datetime import datetime
+from typing import Any
+
+from intergrax.contracts.execution_identity import RunId, TaskId
+from intergrax.runtime.diagnostics.deterministic_problem_reconciliation import (
+    DeterministicProblemReconciliationKey,
+    ProblemReconciliationKeyKind,
+)
+from intergrax.runtime.diagnostics.diagnostic_assessment import (
+    DiagnosticFindingKind,
+    DiagnosticLimitationKind,
+)
+from intergrax.runtime.diagnostics.lifecycle_analysis import (
+    LifecycleAnomalyKind,
+    LifecycleAnomalyScope,
+    LifecycleViolationTransition,
+)
+from intergrax.runtime.diagnostics.problem_grouping import (
+    DeterministicFindingSignature,
+    DeterministicLimitationSignature,
+    DeterministicProblemSignature,
+    ProblemGroupingMethod,
+    ProblemGroupingStrategyId,
+    ProblemGroupingStrategyVersion,
+    ProblemGroupingSubjectRef,
+)
+from intergrax.runtime.diagnostics.problem_lifecycle import (
+    Problem,
+    ProblemId,
+    ProblemLifecycleProvenance,
+    ProblemOccurrence,
+    ProblemReconciliationKey,
+    ProblemStatus,
+)
+from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistenceIntegrityError
+from intergrax.runtime.events.asof_projection import (
+    RunExecutionLifecycleStatus,
+    RunLifecycleViolationKind,
+)
+from intergrax.runtime.events.runtime_event import RuntimeEventType
+
+_PERSISTENCE_SCHEMA = "intergrax.diagnostic_problem.persistence.v1"
+_PAYLOAD_FIELD = "payload"
+
+
+def encode_problem_record(problem: Problem) -> dict[str, Any]:
+    """Serialize a Problem for document/KV storage."""
+    return {
+        "schema_version": _PERSISTENCE_SCHEMA,
+        _PAYLOAD_FIELD: _encode_problem_payload(problem),
+    }
+
+
+def decode_problem_record(data: object) -> Problem:
+    """Reconstruct a typed Problem from stored representation."""
+    if not isinstance(data, dict):
+        raise ProblemPersistenceIntegrityError("invalid diagnostic problem persistence record")
+    schema_version = data.get("schema_version")
+    if schema_version != _PERSISTENCE_SCHEMA:
+        raise ProblemPersistenceIntegrityError(
+            "unsupported diagnostic problem persistence schema",
+        )
+    payload = data.get(_PAYLOAD_FIELD)
+    if not isinstance(payload, dict):
+        raise ProblemPersistenceIntegrityError(
+            "invalid diagnostic problem persistence payload",
+        )
+    try:
+        return _decode_problem_payload(payload)
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ProblemPersistenceIntegrityError(
+            "malformed diagnostic problem persistence payload",
+        ) from exc
+
+
+def _encode_problem_payload(problem: Problem) -> dict[str, Any]:
+    return {
+        "problem_id": str(problem.problem_id),
+        "tenant_id": problem.tenant_id,
+        "status": problem.status.value,
+        "first_seen_at": _encode_datetime(problem.first_seen_at),
+        "last_seen_at": _encode_datetime(problem.last_seen_at),
+        "occurrence_count": problem.occurrence_count,
+        "current_subject_refs": [
+            _encode_subject_ref(subject_ref)
+            for subject_ref in problem.current_subject_refs
+        ],
+        "occurrences": [
+            _encode_occurrence(occurrence) for occurrence in problem.occurrences
+        ],
+        "provenance": _encode_provenance(problem.provenance),
+        "record_version": problem.record_version,
+    }
+
+
+def _decode_problem_payload(payload: Mapping[str, object]) -> Problem:
+    return Problem(
+        problem_id=ProblemId(str(payload["problem_id"])),
+        tenant_id=str(payload["tenant_id"]),
+        status=ProblemStatus(str(payload["status"])),
+        first_seen_at=_decode_datetime(payload["first_seen_at"]),
+        last_seen_at=_decode_datetime(payload["last_seen_at"]),
+        occurrence_count=int(payload["occurrence_count"]),  # type: ignore[arg-type]
+        current_subject_refs=tuple(
+            _decode_subject_ref(item)
+            for item in _require_sequence(payload["current_subject_refs"])
+        ),
+        occurrences=tuple(
+            _decode_occurrence(item) for item in _require_sequence(payload["occurrences"])
+        ),
+        provenance=_decode_provenance(payload["provenance"]),
+        record_version=int(payload["record_version"]),  # type: ignore[arg-type]
+    )
+
+
+def _encode_datetime(value: datetime) -> str:
+    if value.tzinfo is None:
+        raise ValueError("timezone-aware datetime required")
+    return value.isoformat()
+
+
+def _decode_datetime(value: object) -> datetime:
+    if not isinstance(value, str):
+        raise ValueError("datetime must be ISO string")
+    parsed = datetime.fromisoformat(value)
+    if parsed.tzinfo is None:
+        raise ValueError("timezone-aware datetime required")
+    return parsed
+
+
+def _encode_subject_ref(subject_ref: ProblemGroupingSubjectRef) -> dict[str, str]:
+    return {
+        "tenant_id": subject_ref.tenant_id,
+        "task_id": str(subject_ref.task_id),
+        "run_id": str(subject_ref.run_id),
+    }
+
+
+def _decode_subject_ref(value: object) -> ProblemGroupingSubjectRef:
+    if not isinstance(value, dict):
+        raise ValueError("invalid subject_ref")
+    return ProblemGroupingSubjectRef(
+        tenant_id=str(value["tenant_id"]),
+        task_id=TaskId(str(value["task_id"])),
+        run_id=RunId(str(value["run_id"])),
+    )
+
+
+def _encode_occurrence(occurrence: ProblemOccurrence) -> dict[str, object]:
+    return {
+        "subject_ref": _encode_subject_ref(occurrence.subject_ref),
+        "observed_at": _encode_datetime(occurrence.observed_at),
+        "strategy_id": str(occurrence.strategy_id),
+        "strategy_version": str(occurrence.strategy_version),
+        "method": occurrence.method.value,
+    }
+
+
+def _decode_occurrence(value: object) -> ProblemOccurrence:
+    if not isinstance(value, dict):
+        raise ValueError("invalid occurrence")
+    return ProblemOccurrence(
+        subject_ref=_decode_subject_ref(value["subject_ref"]),
+        observed_at=_decode_datetime(value["observed_at"]),
+        strategy_id=ProblemGroupingStrategyId(str(value["strategy_id"])),
+        strategy_version=ProblemGroupingStrategyVersion(str(value["strategy_version"])),
+        method=ProblemGroupingMethod(str(value["method"])),
+    )
+
+
+def _encode_provenance(provenance: ProblemLifecycleProvenance) -> dict[str, object]:
+    return {
+        "strategy_id": str(provenance.strategy_id),
+        "strategy_version": str(provenance.strategy_version),
+        "method": provenance.method.value,
+        "reconciliation_key": _encode_reconciliation_key(
+            provenance.reconciliation_key,
+        ),
+    }
+
+
+def _decode_provenance(value: object) -> ProblemLifecycleProvenance:
+    if not isinstance(value, dict):
+        raise ValueError("invalid provenance")
+    return ProblemLifecycleProvenance(
+        strategy_id=ProblemGroupingStrategyId(str(value["strategy_id"])),
+        strategy_version=ProblemGroupingStrategyVersion(str(value["strategy_version"])),
+        method=ProblemGroupingMethod(str(value["method"])),
+        reconciliation_key=_decode_reconciliation_key(value["reconciliation_key"]),
+    )
+
+
+def _encode_reconciliation_key(
+    reconciliation_key: ProblemReconciliationKey,
+) -> dict[str, object]:
+    if reconciliation_key.kind is ProblemReconciliationKeyKind.DETERMINISTIC:
+        if not isinstance(reconciliation_key, DeterministicProblemReconciliationKey):
+            raise TypeError("deterministic reconciliation key type mismatch")
+        return {
+            "kind": reconciliation_key.kind.value,
+            "tenant_id": reconciliation_key.tenant_id,
+            "strategy_id": str(reconciliation_key.strategy_id),
+            "strategy_version": str(reconciliation_key.strategy_version),
+            "signature": _encode_signature(reconciliation_key.signature),
+        }
+    raise TypeError(f"unsupported reconciliation key kind: {reconciliation_key.kind}")
+
+
+def _decode_reconciliation_key(value: object) -> ProblemReconciliationKey:
+    if not isinstance(value, dict):
+        raise ValueError("invalid reconciliation key")
+    kind = value.get("kind")
+    if kind == ProblemReconciliationKeyKind.DETERMINISTIC.value:
+        return DeterministicProblemReconciliationKey(
+            tenant_id=str(value["tenant_id"]),
+            strategy_id=ProblemGroupingStrategyId(str(value["strategy_id"])),
+            strategy_version=ProblemGroupingStrategyVersion(
+                str(value["strategy_version"]),
+            ),
+            signature=_decode_signature(value["signature"]),
+        )
+    raise ValueError("unsupported reconciliation key kind")
+
+
+def _encode_signature(signature: DeterministicProblemSignature) -> dict[str, object]:
+    return {
+        "findings": [_encode_finding(item) for item in signature.findings],
+        "limitations": [_encode_limitation(item) for item in signature.limitations],
+    }
+
+
+def _decode_signature(value: object) -> DeterministicProblemSignature:
+    if not isinstance(value, dict):
+        raise ValueError("invalid deterministic signature")
+    return DeterministicProblemSignature(
+        findings=tuple(
+            _decode_finding(item) for item in _require_sequence(value["findings"])
+        ),
+        limitations=tuple(
+            _decode_limitation(item)
+            for item in _require_sequence(value["limitations"])
+        ),
+    )
+
+
+def _encode_finding(finding: DeterministicFindingSignature) -> dict[str, object]:
+    encoded: dict[str, object] = {
+        "kind": finding.kind.value,
+        "scope": finding.scope.value,
+        "source_anomaly_kind": finding.source_anomaly_kind.value,
+    }
+    if finding.lifecycle_transition is not None:
+        encoded["lifecycle_transition"] = _encode_lifecycle_transition(
+            finding.lifecycle_transition,
+        )
+    return encoded
+
+
+def _decode_finding(value: object) -> DeterministicFindingSignature:
+    if not isinstance(value, dict):
+        raise ValueError("invalid finding signature")
+    transition_raw = value.get("lifecycle_transition")
+    transition = (
+        _decode_lifecycle_transition(transition_raw)
+        if transition_raw is not None
+        else None
+    )
+    return DeterministicFindingSignature(
+        kind=DiagnosticFindingKind(str(value["kind"])),
+        scope=LifecycleAnomalyScope(str(value["scope"])),
+        source_anomaly_kind=LifecycleAnomalyKind(str(value["source_anomaly_kind"])),
+        lifecycle_transition=transition,
+    )
+
+
+def _encode_limitation(
+    limitation: DeterministicLimitationSignature,
+) -> dict[str, str]:
+    return {
+        "kind": limitation.kind.value,
+        "source_anomaly_kind": limitation.source_anomaly_kind.value,
+    }
+
+
+def _decode_limitation(value: object) -> DeterministicLimitationSignature:
+    if not isinstance(value, dict):
+        raise ValueError("invalid limitation signature")
+    return DeterministicLimitationSignature(
+        kind=DiagnosticLimitationKind(str(value["kind"])),
+        source_anomaly_kind=LifecycleAnomalyKind(str(value["source_anomaly_kind"])),
+    )
+
+
+def _encode_lifecycle_transition(
+    transition: LifecycleViolationTransition,
+) -> dict[str, str]:
+    return {
+        "violation_kind": transition.violation_kind.value,
+        "prior_status": transition.prior_status.value,
+        "violating_event_type": transition.violating_event_type.value,
+    }
+
+
+def _decode_lifecycle_transition(value: object) -> LifecycleViolationTransition:
+    if not isinstance(value, dict):
+        raise ValueError("invalid lifecycle transition")
+    return LifecycleViolationTransition(
+        violation_kind=RunLifecycleViolationKind(str(value["violation_kind"])),
+        prior_status=RunExecutionLifecycleStatus(str(value["prior_status"])),
+        violating_event_type=RuntimeEventType(str(value["violating_event_type"])),
+    )
+
+
+def _require_sequence(value: object) -> tuple[object, ...]:
+    if not isinstance(value, list):
+        raise ValueError("expected JSON array")
+    return tuple(value)
