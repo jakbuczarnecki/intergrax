@@ -1266,9 +1266,42 @@ Grouping proposes **"these incidents are likely related under this method"** —
 
 **Code references:** `intergrax/runtime/diagnostics/problem_grouping_features.py` (`ProblemGroupingFeatureSet`, `validate_problem_grouping_feature_set`, `REPRESENTATION_VERSION_V2`).
 
+### Typed feature projection from platform facts (DIAG-5C-C)
+
+**Scope:** populate `ProblemGroupingFeatureSet` v2 extended tuples from typed upstream facts already collected by diagnostic orchestration — no persistence queries, no second grouping engine, no problem-signal store.
+
+**Production grouping strategies after this slice:** **1** — `DeterministicProblemGroupingStrategy` only.
+
+**Source-fact delivery:** per-assessment `ProblemGroupingAssessmentInput` carries `DiagnosticAssessment` plus optional `ProblemGroupingFeatureSourceFacts` (`reconstruction: ExecutionReconstruction | None`, `problem_signals: tuple[PlatformProblemSignal, ...]`). `ProblemGroupingEngine.group(assessment_inputs, strategy_id=...)` validates source-fact scope (tenant/task/run alignment) fail-closed before invoking the projector.
+
+**Production projector:** `DiagnosticProblemGroupingFeatureProjector` — representation v2, no models, no grouping decisions, no persistence reads.
+
+**Pipeline:**
+
+```text
+DiagnosticAssessment + ProblemGroupingFeatureSourceFacts (optional)
+  → ProblemGroupingEngine (scope validation)
+  → normalize ProblemGroupingSubject
+  → DiagnosticProblemGroupingFeatureProjector.project(assessment, subject, source_facts=...)
+  → ProblemGroupingFeatureSet
+  → ProblemGroupingStrategy.group(ProblemGroupingInput[])
+```
+
+**Runtime event selection (deterministic):** from `reconstruction.positioned_events` in source order, include an event when `event_type` is failure/anomaly-relevant (`PLAN_FAILED`, `*_FAILED`, `TOOL_DENIED`, `INTERRUPT_ESCALATED`, `HUMAN_APPROVAL_TIMEOUT`, `GUARDRAIL_BLOCKED`, `BUDGET_EXCEEDED`, …), retry-related (`RETRY_SCHEDULED`, `RETRY_STARTED`), or `event_id` is referenced by `DiagnosticFinding.supporting_event_ids` / `DiagnosticLimitation.supporting_event_ids`. Informational events matching none of the above are excluded.
+
+**Problem signals:** optional supplied observability facts only — no `ProblemSignalPersistence`, no exporter queries. When absent, component/failure/operation/text tuples from signals remain empty.
+
+**Raw-data boundary:** strategies receive only `ProblemGroupingInput` (`subject` + optional `ProblemGroupingFeatureSet`). No `ExecutionReconstruction`, `RuntimeEvent`, `PlatformProblemSignal`, `PlatformCausalEvidence`, payloads, or raw logs reach strategies. Projector performs no `.payload` access.
+
+**Deterministic strategy:** `DeterministicProblemGroupingStrategy` still consumes `input.subject` only — ignores all feature fields; `strategy_version` remains `"1"`.
+
+**Explicit non-goals (DIAG-5C-C):** semantic/ML/LLM/hybrid strategies, embeddings, vector DB, problem-signal persistence, payload parsing.
+
+**Code references:** `intergrax/runtime/diagnostics/diagnostic_problem_grouping_feature_projector.py`, `intergrax/runtime/diagnostics/problem_grouping.py` (`ProblemGroupingAssessmentInput`, `validate_feature_source_facts_scope`), `intergrax/runtime/diagnostics/problem_grouping_features.py` (`ProblemGroupingFeatureSourceFacts`).
+
 ### Multi-execution problem grouping (DIAG-5A)
 
-**Inputs:** `DiagnosticAssessment[]` from DIAG-4 — **no** re-run of reconstruction, lifecycle analysis, or assessment.
+**Inputs:** `ProblemGroupingAssessmentInput[]` (each bundles one `DiagnosticAssessment` plus optional `ProblemGroupingFeatureSourceFacts`) from DIAG-4 + upstream reconstruction/signal collection — **no** re-run of reconstruction, lifecycle analysis, or assessment inside the engine.
 
 **Derived analytical output (NOT persisted, NOT canonical problem identity):** `ProblemGroupingEngine.group(assessments, strategy_id=...)` answers which executions a **selected strategy** proposes as sharing a recurring problem pattern. A candidate means *"strategy says these subjects are related under this grouping method"* — **not** *"platform has proven identical root cause"*.
 
@@ -1280,10 +1313,11 @@ Grouping proposes **"these incidents are likely related under this method"** —
 **Pipeline:**
 
 ```text
-DiagnosticAssessment[]
+ProblemGroupingAssessmentInput[]
   → ProblemGroupingEngine
+  → validate feature_source_facts scope (fail-closed)
   → normalize ProblemGroupingSubject
-  → optional ProblemGroupingFeatureProjector
+  → optional DiagnosticProblemGroupingFeatureProjector
   → ProblemGroupingInput[]              # subject + optional features
   → ProblemGroupingStrategy             # explicit strategy_id selection
   → ProblemGroupingStrategyResult       # raw plugin output

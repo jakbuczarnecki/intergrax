@@ -25,6 +25,7 @@ from intergrax.runtime.diagnostics.diagnostic_assessment import (
     DiagnosticFinding,
     DiagnosticLimitation,
 )
+from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstruction
 from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicProblemSignature,
     ProblemGroupingCandidate,
@@ -33,6 +34,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingSubjectRef,
     normalize_assessment,
 )
+from intergrax.runtime.observability.problem_signal import PlatformProblemSignal
 from intergrax.runtime.events.event_taxonomy import EventCategory
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.observability.causal_evidence import CausalRelationKind
@@ -61,6 +63,19 @@ class ProblemGroupingTextEvidenceSourceKind(StrEnum):
 
 class ProblemGroupingFeatureIntegrityError(Exception):
     """Raised when semantic feature projection violates contracts."""
+
+
+@dataclass(frozen=True, slots=True)
+class ProblemGroupingFeatureSourceFacts:
+    """
+    Typed per-execution facts already collected upstream for feature projection.
+
+    Data only — no persistence ports. Optional; extended feature tuples remain
+    empty when reconstruction and problem signals are absent.
+    """
+
+    reconstruction: ExecutionReconstruction | None = None
+    problem_signals: tuple[PlatformProblemSignal, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -223,6 +238,8 @@ class ProblemGroupingFeatureProjector(Protocol):
         self,
         assessment: DiagnosticAssessment,
         subject: ProblemGroupingSubject,
+        *,
+        source_facts: ProblemGroupingFeatureSourceFacts | None = None,
     ) -> ProblemGroupingFeatureSet: ...
 
 

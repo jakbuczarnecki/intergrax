@@ -30,6 +30,9 @@ from intergrax.runtime.diagnostics.lifecycle_analysis import (
     LifecycleViolationTransition,
     LIFECYCLE_TRANSITION_ANOMALY_KINDS,
 )
+from intergrax.runtime.diagnostics.diagnostic_problem_grouping_feature_projector import (
+    DiagnosticProblemGroupingFeatureProjector,
+)
 from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
     DeterministicProblemGroupingStrategy,
 )
@@ -44,6 +47,7 @@ from intergrax.runtime.diagnostics.problem_grouping_features import (
     ProblemGroupingFeatureIntegrityError,
     ProblemGroupingFeatureProjector,
     ProblemGroupingFeatureSet,
+    ProblemGroupingFeatureSourceFacts,
     ProblemGroupingIntegrationFeature,
     ProblemGroupingOperationFeature,
     ProblemGroupingRepresentationVersion,
@@ -63,6 +67,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     DuplicateProblemGroupingStrategyError,
     MissingProblemGroupingStrategyError,
     ProblemGroupingCandidate,
+    ProblemGroupingAssessmentInput,
     ProblemGroupingEngine,
     ProblemGroupingInput,
     ProblemGroupingIntegrityError,
@@ -81,6 +86,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingSubjectLimitation,
     ProblemGroupingSubjectRef,
     normalize_assessment,
+    validate_feature_source_facts_scope,
 )
 
 __all__ = [
@@ -107,6 +113,7 @@ __all__ = [
     "DeterministicLimitationSignature",
     "DeterministicProblemGroupingBasis",
     "DeterministicProblemGroupingStrategy",
+    "DiagnosticProblemGroupingFeatureProjector",
     "DeterministicProblemSignature",
     "DuplicateProblemGroupingStrategyError",
     "MissingProblemGroupingStrategyError",
@@ -118,8 +125,9 @@ __all__ = [
     "ProblemGroupingFailureFeature",
     "ProblemGroupingFeatureIntegrityError",
     "ProblemGroupingFeatureProjector",
+    "ProblemGroupingFeatureSourceFacts",
     "ProblemGroupingFeatureSet",
-    "ProblemGroupingInput",
+    "ProblemGroupingAssessmentInput",
     "ProblemGroupingIntegrationFeature",
     "ProblemGroupingOperationFeature",
     "ProblemGroupingRepresentationVersion",
@@ -150,5 +158,7 @@ __all__ = [
     "ProblemGroupingSubjectRef",
     "ReconstructedAttempt",
     "RuntimeHistoryCompleteness",
+    "ProblemGroupingInput",
     "normalize_assessment",
+    "validate_feature_source_facts_scope",
 ]

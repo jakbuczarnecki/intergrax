@@ -28,6 +28,7 @@ from intergrax.runtime.diagnostics.lifecycle_analysis import (
 )
 from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicProblemGroupingBasis,
+    ProblemGroupingAssessmentInput,
     ProblemGroupingBasisKind,
     ProblemGroupingEngine,
     ProblemGroupingInput,
@@ -57,6 +58,10 @@ from intergrax.runtime.observability.persistence_conformance import sample_runti
 pytestmark = pytest.mark.unit
 
 _TENANT_A = "tenant-a"
+
+
+def _assessment_input(assessment: DiagnosticAssessment) -> ProblemGroupingAssessmentInput:
+    return ProblemGroupingAssessmentInput(assessment=assessment)
 
 
 def _subject_ref(
@@ -134,7 +139,13 @@ class _AssessmentFeatureProjector:
     def representation_version(self) -> ProblemGroupingRepresentationVersion:
         return REPRESENTATION_VERSION_V1
 
-    def project(self, assessment, subject: ProblemGroupingSubject):
+    def project(
+        self,
+        assessment,
+        subject: ProblemGroupingSubject,
+        *,
+        source_facts=None,
+    ):
         return project_assessment_features(assessment, subject=subject)
 
 
@@ -224,7 +235,7 @@ def test_engine_integration_groups_same_structure() -> None:
     )
     engine = _engine_with_deterministic_strategy()
 
-    result = engine.group((assessment_a, assessment_b), strategy_id=STRATEGY_ID)
+    result = engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=STRATEGY_ID)
 
     assert len(result.candidates) == 1
     assert len(result.candidates[0].members) == 2
@@ -248,7 +259,7 @@ def test_primary_collision_not_grouped() -> None:
     )
     engine = _engine_with_deterministic_strategy()
 
-    result = engine.group((assessment_a, assessment_b), strategy_id=STRATEGY_ID)
+    result = engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=STRATEGY_ID)
 
     assert result.candidates == ()
     assert len(result.ungrouped_subjects) == 2
@@ -454,8 +465,8 @@ def test_determinism_same_input() -> None:
     )
     engine = _engine_with_deterministic_strategy()
 
-    first = engine.group((assessment_a, assessment_b), strategy_id=STRATEGY_ID)
-    second = engine.group((assessment_a, assessment_b), strategy_id=STRATEGY_ID)
+    first = engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=STRATEGY_ID)
+    second = engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=STRATEGY_ID)
 
     assert first == second
 
@@ -480,7 +491,7 @@ def test_truncation_only_assessments_not_grouped_via_engine() -> None:
     assessment_b = _assessment_with_truncation()
     engine = _engine_with_deterministic_strategy()
 
-    result = engine.group((assessment_a, assessment_b), strategy_id=STRATEGY_ID)
+    result = engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=STRATEGY_ID)
 
     assert result.candidates == ()
     assert len(result.ungrouped_subjects) == 2
@@ -503,7 +514,7 @@ def test_empty_assessments_not_grouped_via_engine() -> None:
     )
     engine = _engine_with_deterministic_strategy()
 
-    result = engine.group((assessment_a, assessment_b), strategy_id=STRATEGY_ID)
+    result = engine.group((_assessment_input(assessment_a), _assessment_input(assessment_b)), strategy_id=STRATEGY_ID)
 
     assert result.candidates == ()
     assert len(result.ungrouped_subjects) == 2
@@ -547,7 +558,13 @@ def test_deterministic_result_unchanged_with_feature_projector() -> None:
         feature_projector=_AssessmentFeatureProjector(),
     )
 
-    baseline = without_projector.group((assessment_a, assessment_b), strategy_id=STRATEGY_ID)
-    featured = with_projector.group((assessment_a, assessment_b), strategy_id=STRATEGY_ID)
+    baseline = without_projector.group(
+        (_assessment_input(assessment_a), _assessment_input(assessment_b)),
+        strategy_id=STRATEGY_ID,
+    )
+    featured = with_projector.group(
+        (_assessment_input(assessment_a), _assessment_input(assessment_b)),
+        strategy_id=STRATEGY_ID,
+    )
 
     assert featured == baseline

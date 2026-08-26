@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from intergrax.runtime.diagnostics.problem_grouping_features import (
         ProblemGroupingFeatureProjector,
         ProblemGroupingFeatureSet,
+        ProblemGroupingFeatureSourceFacts,
     )
 
 ProblemGroupingStrategyId = NewType("ProblemGroupingStrategyId", str)
@@ -216,6 +217,14 @@ class ProblemGroupingCandidate:
 
 
 @dataclass(frozen=True, slots=True)
+class ProblemGroupingAssessmentInput:
+    """One assessment plus optional upstream source facts for feature projection."""
+
+    assessment: DiagnosticAssessment
+    feature_source_facts: ProblemGroupingFeatureSourceFacts | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class ProblemGroupingInput:
     """
     Central strategy invocation input: normalized subject plus optional features.
@@ -352,7 +361,7 @@ class ProblemGroupingEngine:
 
     def group(
         self,
-        assessments: tuple[DiagnosticAssessment, ...],
+        assessment_inputs: tuple[ProblemGroupingAssessmentInput, ...],
         *,
         strategy_id: ProblemGroupingStrategyId,
         feature_projector: ProblemGroupingFeatureProjector | None = None,
@@ -363,7 +372,7 @@ class ProblemGroupingEngine:
             else self._feature_projector
         )
         inputs = _normalize_and_validate_inputs(
-            assessments,
+            assessment_inputs,
             feature_projector=projector,
         )
         registration = self._registry._resolve_registration(strategy_id)
@@ -438,19 +447,58 @@ def _normalize_limitation(
     )
 
 
+def validate_feature_source_facts_scope(
+    assessment: DiagnosticAssessment,
+    source_facts: ProblemGroupingFeatureSourceFacts,
+) -> None:
+    """Fail closed when supplied source facts do not belong to the assessment."""
+    from intergrax.runtime.diagnostics.problem_grouping_features import (
+        ProblemGroupingFeatureSourceFacts,
+    )
+
+    if type(source_facts) is not ProblemGroupingFeatureSourceFacts:
+        raise TypeError("source_facts must be ProblemGroupingFeatureSourceFacts")
+
+    reconstruction = source_facts.reconstruction
+    if reconstruction is not None:
+        if reconstruction.tenant_id != assessment.tenant_id:
+            raise ProblemGroupingIntegrityError(
+                "reconstruction tenant_id does not match assessment tenant_id"
+            )
+        if reconstruction.task_id != assessment.task_id:
+            raise ProblemGroupingIntegrityError(
+                "reconstruction task_id does not match assessment task_id"
+            )
+        if reconstruction.run_id != assessment.run_id:
+            raise ProblemGroupingIntegrityError(
+                "reconstruction run_id does not match assessment run_id"
+            )
+
+    for index, signal in enumerate(source_facts.problem_signals):
+        if signal.task_id and signal.task_id != str(assessment.task_id):
+            raise ProblemGroupingIntegrityError(
+                f"problem signal[{index}] task_id does not match assessment task_id"
+            )
+        if signal.run_id and signal.run_id != str(assessment.run_id):
+            raise ProblemGroupingIntegrityError(
+                f"problem signal[{index}] run_id does not match assessment run_id"
+            )
+
+
 def _normalize_and_validate_inputs(
-    assessments: tuple[DiagnosticAssessment, ...],
+    assessment_inputs: tuple[ProblemGroupingAssessmentInput, ...],
     *,
     feature_projector: ProblemGroupingFeatureProjector | None,
 ) -> tuple[ProblemGroupingInput, ...]:
-    if not assessments:
+    if not assessment_inputs:
         raise ProblemGroupingIntegrityError("grouping requires at least one assessment")
 
     inputs: list[ProblemGroupingInput] = []
     seen_refs: set[ProblemGroupingSubjectRef] = set()
     tenant_id: str | None = None
 
-    for assessment in assessments:
+    for assessment_input in assessment_inputs:
+        assessment = assessment_input.assessment
         subject = normalize_assessment(assessment)
         if tenant_id is None:
             tenant_id = subject.tenant_id
@@ -466,9 +514,17 @@ def _normalize_and_validate_inputs(
             )
         seen_refs.add(ref)
 
+        source_facts = assessment_input.feature_source_facts
+        if source_facts is not None:
+            validate_feature_source_facts_scope(assessment, source_facts)
+
         features = None
         if feature_projector is not None:
-            features = feature_projector.project(assessment, subject)
+            features = feature_projector.project(
+                assessment,
+                subject,
+                source_facts=source_facts,
+            )
         inputs.append(ProblemGroupingInput(subject=subject, features=features))
 
     return tuple(inputs)
