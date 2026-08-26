@@ -869,7 +869,7 @@ Stable IDs for implementation constraints. Map to domain invariants where they e
 | **UEA-INV-020** | Strategy resolver must not silently invent unaudited orchestration topology | ORCHESTRATION |
 | **UEA-INV-021** | No strategy may bypass Execution Boundary or mandatory guarantees; every child Execution re-enters the canonical boundary | GOVERNED_EXECUTION, UER, NEXUS |
 
-**Follow-up (later consistency slice):** reconcile UER/OBS identity tables that today list TaskId→RunId→AttemptId→EventId without ExecutionId; update `SYSTEM_INVARIANTS.md` cross-references — **not** in UE-DOC-0.2.
+**Follow-up:** UER/OBS identity tables aligned with five-ID target in UE-DOC-0.6. Remaining `SYSTEM_INVARIANTS.md` cross-reference sync is implementation hygiene, not an open architecture question.
 
 ---
 
@@ -905,6 +905,8 @@ Sections §3–§21 above.
 Do **not** claim target behavior is already implemented.
 
 **Detailed implementation mapping (UE-DOC-0.9):** canonical target→current→gap→transformation map — [`UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md`](UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md). Subordinate to this document; not an architecture authority.
+
+**Implementation readiness gate (UE-DOC-0.10):** final pre-runtime audit — [`UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md`](UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md). **IMPLEMENTATION GATE: PASS** (baseline `fc7c76c999e3d49d0532c4bdd07941c688e2553c`).
 
 ---
 

@@ -678,7 +678,7 @@ High-level roadmap preserved; subdivided where evidence requires safe staging.
 
 | Slice | Outcome | Scope | Prerequisites | Acceptance |
 |-------|---------|-------|---------------|------------|
-| **UE-5A** | Inference structured path | `output_type` validation | UE-2 inference | Schema conformance |
+| **UE-5A** | Inference structured path | `output_type` validation | UE-2A, UE-3A (inference path) | Schema conformance |
 | **UE-5B** | Neutral result envelope | Typed output carrier | UE-5A | No AgentExecutionResult leak |
 
 ### UE-6 — Tools + autonomous execution
@@ -808,4 +808,4 @@ Primary symbols verified at UE-DOC-0.9R1 baseline (`862c0dc57928c3af34329a836482
 
 ---
 
-**Subordinate links:** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · [`../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md)
+**Subordinate links:** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · [`../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md) · [`UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md`](UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md) (**UE-DOC-0.10 gate — PASS**)

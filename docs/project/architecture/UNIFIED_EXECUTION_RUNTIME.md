@@ -542,6 +542,7 @@ See [Target vs current](#target-vs-current-implementation) table. Primary: missi
 - Governance authority model alignment (GOV domain)
 - Nexus child Execution admission (NEXUS domain)
 - Detailed code mapping: [`UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md`](UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md) (**UE-DOC-0.9**)
+- Implementation readiness gate: [`UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md`](UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md) (**UE-DOC-0.10** — **IMPLEMENTATION GATE: PASS**)
 
 ### 5. MIGRATION ORDER (high level)
 
