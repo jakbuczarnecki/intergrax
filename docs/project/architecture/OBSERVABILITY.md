@@ -1337,6 +1337,8 @@ DiagnosticAssessment[]
 
 **Status (minimal):** `OPEN` (default), `RESOLVED` (explicit `ProblemLifecycleEngine.resolve` only). New accepted occurrence on a `RESOLVED` Problem returns status to `OPEN`. **No** auto-resolve when a pattern is absent from a later grouping invocation.
 
+**Occurrence timestamps:** `first_seen_at` and `last_seen_at` are derived from accepted `ProblemOccurrence.observed_at` values (min / max). They reflect observation time, not reconciliation or resolution processing time. Out-of-order delivery is handled correctly: a later reconciliation with an older `observed_at` on a new subject lowers `first_seen_at`; replaying an already-known `subject_ref` does not change timestamps or `occurrence_count`. `resolve()` changes status and `record_version` only — it does not advance `last_seen_at`.
+
 **Persistence:** `ProblemPersistence` protocol + `InMemoryProblemPersistence` (contract proof; not enterprise durable storage). Optimistic `record_version` CAS on update; idempotent create; subject-ref and reconciliation-key indexes for tenant isolation and concurrency safety.
 
 **Explicit non-goals (DIAG-5D):** Problem merge/split, auto-resolve-on-absence, root-cause fields, second production grouping strategy, LLM/embeddings/vector/confidence.

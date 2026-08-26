@@ -94,6 +94,10 @@ class Problem:
     Persisted derived operational diagnostic state — NOT canonical execution truth.
 
     Rebuildable in principle from canonical evidence and validated grouping output.
+
+    ``first_seen_at`` / ``last_seen_at`` are min/max of accepted
+    ``ProblemOccurrence.observed_at`` — not lifecycle mutation times.
+    Processing order and explicit resolution do not change them.
     """
 
     problem_id: ProblemId
@@ -307,7 +311,7 @@ class ProblemLifecycleEngine:
             tenant_id=existing.tenant_id,
             status=ProblemStatus.RESOLVED,
             first_seen_at=existing.first_seen_at,
-            last_seen_at=max(existing.last_seen_at, resolved_at),
+            last_seen_at=existing.last_seen_at,
             occurrence_count=existing.occurrence_count,
             current_subject_refs=existing.current_subject_refs,
             occurrences=existing.occurrences,
@@ -505,7 +509,7 @@ def _apply_candidate_to_problem(
         problem_id=existing.problem_id,
         tenant_id=existing.tenant_id,
         status=next_status,
-        first_seen_at=existing.first_seen_at,
+        first_seen_at=min(existing.first_seen_at, observed_at),
         last_seen_at=max(existing.last_seen_at, observed_at),
         occurrence_count=existing.occurrence_count + len(new_occurrences),
         current_subject_refs=merged_subject_refs,

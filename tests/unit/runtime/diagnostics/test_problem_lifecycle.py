@@ -30,6 +30,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingSubjectRef,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import (
+    Problem,
     ProblemLifecycleEngine,
     ProblemLifecycleIntegrityError,
     ProblemStatus,
@@ -49,6 +50,14 @@ _TENANT_A = "tenant-a"
 _TENANT_B = "tenant-b"
 _OBSERVED_AT = datetime(2026, 8, 26, 9, 0, tzinfo=UTC)
 _OBSERVED_AT_LATER = _OBSERVED_AT + timedelta(hours=1)
+_OBSERVED_AT_EARLIER = _OBSERVED_AT - timedelta(hours=1)
+_RESOLVED_AT = _OBSERVED_AT_LATER + timedelta(hours=2)
+
+
+def assert_occurrence_timestamps_match(problem: Problem) -> None:
+    observed_times = [occurrence.observed_at for occurrence in problem.occurrences]
+    assert problem.first_seen_at == min(observed_times)
+    assert problem.last_seen_at == max(observed_times)
 
 
 def _engine() -> ProblemGroupingEngine:
@@ -138,6 +147,7 @@ def test_first_candidate_creates_one_problem_id() -> None:
     validate_problem_id(problem.problem_id)
     assert problem.status is ProblemStatus.OPEN
     assert problem.occurrence_count == 2
+    assert_occurrence_timestamps_match(problem)
 
 
 def test_same_candidate_processed_twice_is_idempotent() -> None:
@@ -153,6 +163,7 @@ def test_same_candidate_processed_twice_is_idempotent() -> None:
     assert len(second.unchanged) == 1
     assert first.created[0].problem_id == second.unchanged[0].problem_id
     assert second.unchanged[0].occurrence_count == 2
+    assert_occurrence_timestamps_match(second.unchanged[0])
 
 
 def test_later_candidate_with_new_subject_increments_count() -> None:
@@ -181,6 +192,7 @@ def test_later_candidate_with_new_subject_increments_count() -> None:
     updated = second_result.updated[0]
     assert updated.problem_id == problem_id
     assert updated.occurrence_count == 3
+    assert_occurrence_timestamps_match(updated)
 
 
 def test_same_recurrence_key_in_another_tenant_is_isolated() -> None:
@@ -269,6 +281,77 @@ def test_first_seen_preserved_and_last_seen_advances() -> None:
 
     assert updated.first_seen_at == _OBSERVED_AT
     assert updated.last_seen_at == _OBSERVED_AT_LATER
+    assert_occurrence_timestamps_match(updated)
+
+
+def test_out_of_order_new_subject_lowers_first_seen_at() -> None:
+    """Create at 10:00, later new subject at 09:00 — first_seen retreats."""
+    first_input, second_input = _assess_retry_pair()
+    third_input, _ = _assess_retry_pair()
+    lifecycle = _lifecycle_engine()
+
+    pair_grouping = _engine().group(
+        (first_input, second_input),
+        strategy_id=STRATEGY_ID,
+    )
+    created = lifecycle.reconcile(pair_grouping, observed_at=_OBSERVED_AT_LATER)
+    assert created.created[0].first_seen_at == _OBSERVED_AT_LATER
+    assert created.created[0].last_seen_at == _OBSERVED_AT_LATER
+
+    extended = _engine().group(
+        (first_input, second_input, third_input),
+        strategy_id=STRATEGY_ID,
+    )
+    updated = lifecycle.reconcile(extended, observed_at=_OBSERVED_AT).updated[0]
+
+    assert updated.first_seen_at == _OBSERVED_AT
+    assert updated.last_seen_at == _OBSERVED_AT_LATER
+    assert_occurrence_timestamps_match(updated)
+
+
+def test_replay_same_subject_at_earlier_observed_at_is_idempotent() -> None:
+    grouping_result, _, _ = _group_pair()
+    lifecycle = _lifecycle_engine()
+
+    first = lifecycle.reconcile(grouping_result, observed_at=_OBSERVED_AT)
+    problem = first.created[0]
+    second = lifecycle.reconcile(grouping_result, observed_at=_OBSERVED_AT_EARLIER)
+
+    assert second.unchanged[0].first_seen_at == problem.first_seen_at
+    assert second.unchanged[0].last_seen_at == problem.last_seen_at
+    assert second.unchanged[0].occurrence_count == problem.occurrence_count
+    assert_occurrence_timestamps_match(second.unchanged[0])
+
+
+def test_replay_same_subject_at_later_observed_at_is_idempotent() -> None:
+    grouping_result, _, _ = _group_pair()
+    lifecycle = _lifecycle_engine()
+
+    first = lifecycle.reconcile(grouping_result, observed_at=_OBSERVED_AT)
+    problem = first.created[0]
+    second = lifecycle.reconcile(grouping_result, observed_at=_OBSERVED_AT_LATER)
+
+    assert second.unchanged[0].first_seen_at == problem.first_seen_at
+    assert second.unchanged[0].last_seen_at == problem.last_seen_at
+    assert second.unchanged[0].occurrence_count == problem.occurrence_count
+    assert_occurrence_timestamps_match(second.unchanged[0])
+
+
+def test_resolve_does_not_advance_last_seen_at() -> None:
+    grouping_result, _, _ = _group_pair()
+    lifecycle = _lifecycle_engine()
+
+    created = lifecycle.reconcile(grouping_result, observed_at=_OBSERVED_AT).created[0]
+    resolved = lifecycle.resolve(
+        tenant_id=_TENANT_A,
+        problem_id=created.problem_id,
+        resolved_at=_RESOLVED_AT,
+    )
+
+    assert resolved.status is ProblemStatus.RESOLVED
+    assert resolved.first_seen_at == _OBSERVED_AT
+    assert resolved.last_seen_at == _OBSERVED_AT
+    assert_occurrence_timestamps_match(resolved)
 
 
 def test_duplicate_subject_does_not_increment_count() -> None:
@@ -291,6 +374,7 @@ def test_duplicate_subject_does_not_increment_count() -> None:
     second = lifecycle.reconcile(duplicate_result, observed_at=_OBSERVED_AT_LATER)
 
     assert second.unchanged[0].occurrence_count == first.created[0].occurrence_count
+    assert_occurrence_timestamps_match(second.unchanged[0])
 
 
 def test_explicit_resolve_and_recurrence_reopens() -> None:
@@ -317,6 +401,10 @@ def test_explicit_resolve_and_recurrence_reopens() -> None:
     )
     reopened = lifecycle.reconcile(extended, observed_at=_OBSERVED_AT_LATER).updated[0]
     assert reopened.status is ProblemStatus.OPEN
+    assert reopened.first_seen_at == _OBSERVED_AT
+    assert reopened.last_seen_at == _OBSERVED_AT_LATER
+    assert reopened.occurrence_count == 3
+    assert_occurrence_timestamps_match(reopened)
 
 
 def test_one_occurrence_cannot_attach_to_two_existing_problems() -> None:
@@ -352,8 +440,6 @@ def test_one_occurrence_cannot_attach_to_two_existing_problems() -> None:
 
 
 def test_problem_contract_has_no_root_cause_fields() -> None:
-    from intergrax.runtime.diagnostics.problem_lifecycle import Problem
-
     forbidden = {"root_cause", "root_cause_confidence", "cause"}
     field_names = {field.name for field in fields(Problem)}
     assert forbidden.isdisjoint(field_names)
