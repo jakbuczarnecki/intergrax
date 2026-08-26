@@ -13,6 +13,7 @@ from uuid import uuid4
 TaskId = NewType("TaskId", str)
 RunId = NewType("RunId", str)
 AttemptId = NewType("AttemptId", str)
+ExecutionId = NewType("ExecutionId", str)
 EventId = NewType("EventId", str)
 
 _active_execution_identity: ContextVar[tuple[RunId, AttemptId] | None] = ContextVar(
@@ -50,6 +51,10 @@ def validate_attempt_id(value: object) -> AttemptId:
     return AttemptId(_validate_canonical_id(value, "attempt_", "AttemptId"))
 
 
+def validate_execution_id(value: object) -> ExecutionId:
+    return ExecutionId(_validate_canonical_id(value, "exec_", "ExecutionId"))
+
+
 def validate_event_id(value: object) -> EventId:
     return EventId(_validate_canonical_id(value, "evt_", "EventId"))
 
@@ -64,6 +69,10 @@ def mint_run_id() -> RunId:
 
 def mint_attempt_id() -> AttemptId:
     return AttemptId(f"attempt_{uuid4().hex}")
+
+
+def mint_execution_id() -> ExecutionId:
+    return ExecutionId(f"exec_{uuid4().hex}")
 
 
 def mint_event_id() -> EventId:

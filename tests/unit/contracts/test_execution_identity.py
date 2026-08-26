@@ -7,10 +7,12 @@ import pytest
 
 from intergrax.contracts.execution_identity import (
     AttemptId,
+    ExecutionId,
     RunId,
     TaskId,
     bind_active_execution_identity,
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
     peek_active_execution_identity,
@@ -18,6 +20,7 @@ from intergrax.contracts.execution_identity import (
     reset_active_execution_identity,
     transition_active_execution_identity,
     validate_attempt_id,
+    validate_execution_id,
     validate_run_id,
     validate_task_id,
 )
@@ -29,7 +32,7 @@ from intergrax.runtime.task.task_run_bridge import (
 )
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
-_CANONICAL_ID = re.compile(r"^(task|run|attempt|evt)_[0-9a-f]{32}$")
+_CANONICAL_ID = re.compile(r"^(task|run|attempt|exec|evt)_[0-9a-f]{32}$")
 
 
 @pytest.mark.unit
@@ -52,6 +55,113 @@ def test_validate_run_id_accepts_valid():
 def test_validate_attempt_id_accepts_valid():
     value = mint_attempt_id()
     assert validate_attempt_id(value) == value
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_mint_execution_id_returns_canonical_value():
+    value = mint_execution_id()
+    assert value.startswith("exec_")
+    assert _CANONICAL_ID.fullmatch(value)
+    suffix = value[len("exec_"):]
+    assert len(suffix) == 32
+    assert suffix == suffix.lower()
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_validate_execution_id_accepts_minted():
+    value = mint_execution_id()
+    assert validate_execution_id(value) == value
+    assert _CANONICAL_ID.fullmatch(validate_execution_id(value))
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_validate_execution_id_rejects_wrong_prefix():
+    execution_id = mint_execution_id()
+    with pytest.raises(ValueError, match="ExecutionId must start with"):
+        validate_execution_id(execution_id.replace("exec_", "task_", 1))
+    with pytest.raises(ValueError, match="ExecutionId must start with"):
+        validate_execution_id(execution_id.replace("exec_", "run_", 1))
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_validate_execution_id_rejects_uppercase_hex():
+    execution_id = mint_execution_id()
+    upper = "exec_" + execution_id.split("_", 1)[1].upper()
+    with pytest.raises(ValueError, match="suffix"):
+        validate_execution_id(upper)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_validate_execution_id_rejects_malformed_suffix():
+    with pytest.raises(ValueError, match="suffix"):
+        validate_execution_id("exec_tooshort")
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_validate_execution_id_rejects_non_string():
+    with pytest.raises(TypeError):
+        validate_execution_id(123)
+    with pytest.raises(TypeError):
+        validate_execution_id(object())
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_validate_execution_id_rejects_whitespace():
+    with pytest.raises(ValueError):
+        validate_execution_id("   ")
+    with pytest.raises(ValueError):
+        validate_execution_id(" exec_0123456789abcdef0123456789abcdef")
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_mint_execution_id_returns_distinct_values():
+    first = mint_execution_id()
+    second = mint_execution_id()
+    assert first != second
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_execution_id_distinguishable_from_other_identity_roles():
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    assert execution_id != task_id
+    assert execution_id != run_id
+    assert execution_id != attempt_id
+    assert execution_id.startswith("exec_")
+    assert task_id.startswith("task_")
+    assert run_id.startswith("run_")
+    assert attempt_id.startswith("attempt_")
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_execution_parent_reference_root_contract():
+    execution_id = mint_execution_id()
+    parent_execution_id: ExecutionId | None = None
+    assert validate_execution_id(execution_id) == execution_id
+    assert parent_execution_id is None
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_execution_parent_reference_child_contract():
+    root_execution_id = mint_execution_id()
+    parent_execution_id: ExecutionId = root_execution_id
+    child_execution_id = mint_execution_id()
+    assert child_execution_id != parent_execution_id
+    assert validate_execution_id(child_execution_id) == child_execution_id
+    assert validate_execution_id(parent_execution_id) == parent_execution_id
 
 
 @pytest.mark.unit
