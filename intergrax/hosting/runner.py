@@ -9,13 +9,14 @@ import asyncio
 import logging
 import os
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from intergrax.hosting.contracts.context import (
     HostedApplicationClock,
+    HostedApplicationEventPublisher,
     HostedApplicationLogger,
     HostedApplicationPaths,
     HostedApplicationProcessIdentity,
@@ -295,6 +296,8 @@ async def _run_resolved_hosted_application(
 
 def run_hosted_application(
     profile: HostedApplicationProfile,
+    *,
+    event_publisher_factory: Callable[[], HostedApplicationEventPublisher] | None = None,
 ) -> HostedApplicationSupervisorResult:
     """Run one hosted application in the foreground until terminal exit."""
     definition = resolve_hosted_application_definition(profile)
@@ -309,4 +312,6 @@ def run_hosted_application(
         )
 
     factories = _default_runner_factories()
+    if event_publisher_factory is not None:
+        factories = replace(factories, create_event_publisher=event_publisher_factory)
     return asyncio.run(_run_resolved_hosted_application(definition, factories))

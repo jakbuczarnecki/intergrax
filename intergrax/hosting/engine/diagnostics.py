@@ -341,3 +341,17 @@ class DiagnosticsRecorder:
             primary=primary,
             secondary_failure_count=secondary_count,
         )
+
+
+def hosted_failure_event_payload(
+    record: HostedApplicationFailureRecord,
+) -> dict[str, str]:
+    """Bounded public payload facts for APPLICATION_FAILED hosting events."""
+    return {
+        "failure_id": record.failure_id,
+        "reason_code": record.reason_code,
+        "phase": record.phase.value,
+        "source_kind": record.source_kind,
+        "source_id": record.source_id,
+        "exception_type": record.exception_type,
+    }

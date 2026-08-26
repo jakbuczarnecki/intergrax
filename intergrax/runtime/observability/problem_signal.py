@@ -36,6 +36,7 @@ PROBLEM_KIND_PLATFORM_ARTIFACT_FAILURE = "platform.artifact_failure"
 PROBLEM_KIND_PLATFORM_INTEGRATION_FAILURE = "platform.integration_failure"
 PROBLEM_KIND_PLATFORM_OBSERVABILITY_EXPORT_FAILURE = "platform.observability_export_failure"
 PROBLEM_KIND_PLATFORM_UNEXPECTED_STATE = "platform.unexpected_state"
+PROBLEM_KIND_PLATFORM_APPLICATION_FAILURE = "platform.application_failure"
 
 PROBLEM_SOURCE_LAYER_RUNTIME = "runtime"
 PROBLEM_SOURCE_LAYER_AGENT = "agent"

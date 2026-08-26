@@ -83,6 +83,19 @@ class ObservabilityHostedApplicationEventPublisher:
         )
 
 
+class CompositeHostedApplicationEventPublisher:
+    """Fan-out hosting events to multiple downstream publishers in order."""
+
+    def __init__(self, publishers: tuple[HostedApplicationEventPublisher, ...]) -> None:
+        if not publishers:
+            raise ValueError("publishers must not be empty")
+        self._publishers = publishers
+
+    async def publish(self, event: HostedApplicationEvent) -> None:
+        for publisher in self._publishers:
+            await publisher.publish(event)
+
+
 class HostingEventDispatcher:
     """Combine downstream publisher, profile subscriptions and observer tracking."""
 

@@ -9,6 +9,7 @@ import asyncio
 import math
 from dataclasses import dataclass, field
 
+from intergrax.contracts.event_severity import EventSeverity
 from intergrax.hosting.contracts.context import (
     HostedApplicationClock,
     HostedApplicationContext,
@@ -32,6 +33,7 @@ from intergrax.hosting.engine.diagnostics import (
     HostedApplicationEngineTerminalResult,
     HostedApplicationFailurePhase,
     HostedApplicationOperationPhase,
+    hosted_failure_event_payload,
 )
 from intergrax.hosting.engine.health import (
     HostedApplicationHealthCoordinator,
@@ -1106,11 +1108,25 @@ class HostedApplicationEngine:
 
     async def _publish_lifecycle_event(self, event_type: HostedApplicationEventType) -> None:
         assert self._context is not None
+        from pydantic import JsonValue
+
+        payload: dict[str, JsonValue] = {}
+        severity = EventSeverity.INFO
+        if event_type is HostedApplicationEventType.APPLICATION_FAILED:
+            severity = EventSeverity.ERROR
+            current_failure = self._diagnostics.current_failure
+            if current_failure is not None:
+                payload = {
+                    key: value
+                    for key, value in hosted_failure_event_payload(current_failure).items()
+                }
         await self._event_dispatcher.publish(
             HostedApplicationEvent(
                 event_type=event_type,
                 application_id=self._context.application_id,
                 instance_id=self._context.instance_id,
                 lifecycle_state=self._lifecycle.state,
+                severity=severity,
+                payload=payload,
             )
         )
