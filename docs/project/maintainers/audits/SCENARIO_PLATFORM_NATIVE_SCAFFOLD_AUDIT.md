@@ -628,4 +628,20 @@ See §4 for full table. Summary counts:
 
 ---
 
-*End of SCENARIO-PLATFORM-1 audit.*
+## 24. SCENARIO-PLATFORM-2 resolution (2026-08-27)
+
+**Authoritative contract:** [`docs/project/maintainers/plans/SCENARIO_RUNTIME_BASELINE.md`](../plans/SCENARIO_RUNTIME_BASELINE.md)
+
+| Question (§23) | Resolution |
+|----------------|------------|
+| Baseline location | `intergrax/applications/_shared/scenario_runtime_baseline.py` (planned 3A) — **not** `platform_proofs/_shared` for runtime |
+| Default execution spine | **C — shared facade → NexusLoop** (not GraphExecutor direct) |
+| Lifecycle gate | Recommend YAML frontmatter on `SCENARIO_SPEC.md` in 3B; string constant transitional |
+| Diagnostic read generalization | Per-domain DTO at composition seam; no universal `IncidentInvestigationInput` |
+| Conformance proofs | Separate harness model; may use GraphExecutor for low-level conformance only |
+
+**§5 correction:** manual `mint_run_id` / `bind_active_execution_identity` in generated `scenario.py` is **not** AUTO baseline — platform facade owns identity.
+
+---
+
+*End of SCENARIO-PLATFORM-1 audit (updated through SCENARIO-PLATFORM-2).*
