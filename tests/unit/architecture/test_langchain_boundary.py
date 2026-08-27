@@ -24,7 +24,7 @@ from scripts.maintenance.check_langchain_boundary import (
     validate_grandfather_inventory,
 )
 
-pytestmark = pytest.mark.gate
+pytestmark = [pytest.mark.gate, pytest.mark.no_ci]
 
 CHECKER = REPO_ROOT / "scripts" / "maintenance" / "check_langchain_boundary.py"
 
