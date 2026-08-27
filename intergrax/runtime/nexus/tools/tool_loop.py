@@ -8,10 +8,15 @@ import json
 import threading
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextvars import copy_context
 from dataclasses import dataclass, replace
 
 from pydantic import BaseModel
 
+from intergrax.contracts.execution_identity import (
+    require_active_execution_id,
+    require_active_execution_identity,
+)
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.runtime.nexus.budget.budget_ticks import enforce_tool_call_budget
@@ -76,6 +81,16 @@ def _tool_call_openai_dict(tool_call: LLMToolCall) -> dict[str, object]:
     }
 
 
+def _require_canonical_tool_execution_scope(state: RuntimeState) -> None:
+    active_run_id, active_attempt_id = require_active_execution_identity()
+    active_execution_id = require_active_execution_id()
+    del active_attempt_id, active_execution_id
+    if state.run_id != active_run_id:
+        raise RuntimeError(
+            "tool execution run_id does not match active execution"
+        )
+
+
 def _build_planned_request(
     *,
     state: RuntimeState,
@@ -116,6 +131,7 @@ def _invoke_planned_call(
         unique_candidate=unique_candidate,
         request_index=index,
     )
+    _require_canonical_tool_execution_scope(state)
     try:
         result = invoker.invoke(state=state, request=req, agent_id=state.request.agent_id)
     except DeclarativePolicyHitlRequiredError as exc:
@@ -293,16 +309,19 @@ def execute_planned_tool_calls(
         invoke_lock = threading.Lock()
         workers = min(max_parallel_read_only, len(read_only))
         with ThreadPoolExecutor(max_workers=workers) as pool:
-            futures = {
-                pool.submit(
-                    _invoke_planned_call,
-                    call=call,
-                    index=index,
-                    invoke_lock=invoke_lock,
-                    **invoke_kwargs,
-                ): index
-                for index, call in read_only
-            }
+            futures = {}
+            for index, call in read_only:
+                worker_context = copy_context()
+                futures[
+                    pool.submit(
+                        worker_context.run,
+                        _invoke_planned_call,
+                        call=call,
+                        index=index,
+                        invoke_lock=invoke_lock,
+                        **invoke_kwargs,
+                    )
+                ] = index
             for future in as_completed(futures):
                 results[futures[future]] = future.result()
 

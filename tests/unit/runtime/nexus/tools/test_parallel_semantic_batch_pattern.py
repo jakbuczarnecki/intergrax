@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
+from intergrax.contracts.execution_identity import TaskId
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.config_types import ToolInvocationMode
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -27,7 +28,7 @@ from intergrax.runtime.nexus.tools.tool_invocation_pattern import pattern_for_mo
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager, canonical_execution_identity_scope, canonical_run_id_for_tests
 
 pytestmark = pytest.mark.unit
 
@@ -85,6 +86,8 @@ def _registry() -> ToolRegistry:
 
 
 def _state(registry: ToolRegistry, embedder: BagOfWordsEmbeddingManager) -> RuntimeState:
+    run_id = canonical_run_id_for_tests("run-semantic-batch")
+    task_id = TaskId(f"task_{run_id[4:]}")
     config = RuntimeConfig(
         llm_adapter=FakeLLMAdapter(),
         production_mode=False,
@@ -106,8 +109,10 @@ def _state(registry: ToolRegistry, embedder: BagOfWordsEmbeddingManager) -> Runt
             session_id="session-1",
             tenant_id="tenant-1",
             message="retrieve documents about contracts",
+            task_id=task_id,
+            run_id=run_id,
         ),
-        run_id="run-semantic-batch",
+        run_id=run_id,
     )
 
 
@@ -122,15 +127,16 @@ def test_parallel_semantic_batch_invokes_semantic_top_k() -> None:
     state = _state(registry, embedder)
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
 
-    result = ParallelSemanticBatchPattern().execute(
-        state=state,
-        invoker=invoker,
-        planner=MagicMock(),
-        plan=None,
-        allowed_tool_ids=None,
-        max_iterations=1,
-        planner_input="retrieve documents about contracts",
-    )
+    with canonical_execution_identity_scope(state.run_id):
+        result = ParallelSemanticBatchPattern().execute(
+            state=state,
+            invoker=invoker,
+            planner=MagicMock(),
+            plan=None,
+            allowed_tool_ids=None,
+            max_iterations=1,
+            planner_input="retrieve documents about contracts",
+        )
 
     assert result.aggregate is not None
     assert len(result.tool_traces) >= 1

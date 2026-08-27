@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from unittest.mock import MagicMock
 
 from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
+from intergrax.contracts.execution_identity import TaskId
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -25,7 +26,7 @@ from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.core.tool_plan import PlannedToolCall
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager, canonical_execution_identity_scope, canonical_run_id_for_tests
 from tests.unit.runtime.nexus.tools.conftest import FakeRegistry
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -71,6 +72,8 @@ def _registry(handler_a: _CountingHandler, handler_b: _CountingHandler) -> ToolR
 
 
 def _state(run_id: str = "run-grant") -> RuntimeState:
+    canonical_run_id = canonical_run_id_for_tests(run_id)
+    canonical_task_id = TaskId(f"task_{canonical_run_id[4:]}")
     config = RuntimeConfig(
         llm_adapter=FakeLLMAdapter(),
         production_mode=False,
@@ -89,18 +92,21 @@ def _state(run_id: str = "run-grant") -> RuntimeState:
             session_id="session-1",
             tenant_id="tenant-1",
             message="grant probe",
-            task_id="task-grant",
+            task_id=canonical_task_id,
+            run_id=canonical_run_id,
         ),
-        run_id=run_id,
+        run_id=canonical_run_id,
     )
 
 
 def _grant(**overrides: object) -> DeclarativeHitlApprovalGrant:
+    canonical_run_id = canonical_run_id_for_tests("run-grant")
+    canonical_task_id = TaskId(f"task_{canonical_run_id[4:]}")
     base = {
         "grant_id": "grant-1",
         "invocation_scope_id": "dhr_scope",
-        "task_id": "task-grant",
-        "run_id": "run-grant",
+        "task_id": canonical_task_id,
+        "run_id": canonical_run_id,
         "step_id": "step-a",
         "tool_id": _TOOL_A,
         "idempotency_key": None,
@@ -172,13 +178,14 @@ def test_unique_candidate_assigns_scope_only_to_target_and_executes_once() -> No
         PlannedToolCall(step_id="step-a", tool_id=_TOOL_A, input=_In(value=1)),
         PlannedToolCall(step_id="step-b", tool_id=_TOOL_B, input=_In(value=2)),
     ]
-    outcomes = execute_planned_tool_calls(
-        state=state,
-        invoker=invoker,
-        calls=calls,
-        idempotency_prefix="unique",
-        max_parallel_read_only=3,
-    )
+    with canonical_execution_identity_scope(state.run_id):
+        outcomes = execute_planned_tool_calls(
+            state=state,
+            invoker=invoker,
+            calls=calls,
+            idempotency_prefix="unique",
+            max_parallel_read_only=3,
+        )
     assert handler_a.calls == 1
     assert handler_b.calls == 1
     assert len(outcomes) == 2

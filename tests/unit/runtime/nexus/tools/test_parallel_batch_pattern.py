@@ -15,6 +15,7 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.config_types import ToolInvocationMode
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.contracts.execution_identity import TaskId
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.patterns.parallel_batch import ParallelBatchPattern
@@ -26,7 +27,7 @@ from intergrax.tools.core.tool_plan_decision import ToolPlanDecision
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.registry import ToolRegistry
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager, tools_agent_make_contract
+from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager, canonical_execution_identity_scope, canonical_run_id_for_tests, tools_agent_make_contract
 
 pytestmark = pytest.mark.unit
 
@@ -85,6 +86,8 @@ def _registry() -> ToolRegistry:
 
 
 def _runtime_state(registry: ToolRegistry) -> RuntimeState:
+    run_id = canonical_run_id_for_tests("run-parallel")
+    task_id = TaskId(f"task_{run_id[4:]}")
     config = RuntimeConfig(
         llm_adapter=FakeLLMAdapter(),
         production_mode=False,
@@ -104,8 +107,10 @@ def _runtime_state(registry: ToolRegistry) -> RuntimeState:
             session_id="session-1",
             tenant_id="tenant-1",
             message="parallel probe",
+            task_id=task_id,
+            run_id=run_id,
         ),
-        run_id="run-parallel",
+        run_id=run_id,
     )
 
 
@@ -126,26 +131,28 @@ def test_parallel_read_only_faster_than_serial() -> None:
     _ConcurrencyTracker.active = 0
     _ConcurrencyTracker.max_active = 0
     serial_start = time.perf_counter()
-    execute_planned_tool_calls(
-        state=state,
-        invoker=invoker,
-        calls=calls,
-        idempotency_prefix="serial",
-        max_parallel_read_only=1,
-    )
+    with canonical_execution_identity_scope(state.run_id):
+        execute_planned_tool_calls(
+            state=state,
+            invoker=invoker,
+            calls=calls,
+            idempotency_prefix="serial",
+            max_parallel_read_only=1,
+        )
     serial_elapsed = time.perf_counter() - serial_start
     serial_peak = _ConcurrencyTracker.max_active
 
     _ConcurrencyTracker.active = 0
     _ConcurrencyTracker.max_active = 0
     parallel_start = time.perf_counter()
-    execute_planned_tool_calls(
-        state=state,
-        invoker=invoker,
-        calls=calls,
-        idempotency_prefix="parallel",
-        max_parallel_read_only=3,
-    )
+    with canonical_execution_identity_scope(state.run_id):
+        execute_planned_tool_calls(
+            state=state,
+            invoker=invoker,
+            calls=calls,
+            idempotency_prefix="parallel",
+            max_parallel_read_only=3,
+        )
     parallel_elapsed = time.perf_counter() - parallel_start
     parallel_peak = _ConcurrencyTracker.max_active
 
@@ -163,13 +170,14 @@ def test_mutating_calls_stay_serial_after_read_only_batch() -> None:
         PlannedToolCall(step_id="w1", tool_id="write.mutate", input=_In(value=2)),
         PlannedToolCall(step_id="r2", tool_id="read.b", input=_In(value=3)),
     ]
-    outcomes = execute_planned_tool_calls(
-        state=state,
-        invoker=invoker,
-        calls=calls,
-        idempotency_prefix="mixed",
-        max_parallel_read_only=3,
-    )
+    with canonical_execution_identity_scope(state.run_id):
+        outcomes = execute_planned_tool_calls(
+            state=state,
+            invoker=invoker,
+            calls=calls,
+            idempotency_prefix="mixed",
+            max_parallel_read_only=3,
+        )
     traces = [outcome.trace for outcome in outcomes]
     assert [trace.tool_name for trace in traces] == ["read.a", "write.mutate", "read.b"]
     assert traces[1].output_preview == '{"result":20}'
@@ -194,15 +202,16 @@ def test_parallel_batch_pattern_returns_aggregate() -> None:
     registry = _registry()
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     state = _runtime_state(registry)
-    result = ParallelBatchPattern().execute(
-        state=state,
-        invoker=invoker,
-        planner=_Planner(),
-        plan=None,
-        allowed_tool_ids=None,
-        max_iterations=1,
-        planner_input="go",
-    )
+    with canonical_execution_identity_scope(state.run_id):
+        result = ParallelBatchPattern().execute(
+            state=state,
+            invoker=invoker,
+            planner=_Planner(),
+            plan=None,
+            allowed_tool_ids=None,
+            max_iterations=1,
+            planner_input="go",
+        )
     assert result.aggregate is not None
     assert result.aggregate.success_count == 2
     assert "read.a" in result.aggregate.combined_context

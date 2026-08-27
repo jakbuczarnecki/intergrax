@@ -35,9 +35,24 @@ from intergrax.tools.core.tool_plan_decision import ToolPlanDecision
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.tool_executor import ToolHandler
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager, tools_agent_make_contract
+from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager, canonical_execution_identity_scope, tools_agent_make_contract
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
+
+_INTEGRATION_RUN_ID = RunId("run_00000000000000000000000000000001")
+
+
+def _invoke_bounded_tool_loop(**kwargs):
+    state = kwargs["state"]
+    with canonical_execution_identity_scope(state.run_id):
+        return run_bounded_tool_loop(**kwargs)
+
+
+def _invoke_planned_tool_calls(**kwargs):
+    state = kwargs["state"]
+    with canonical_execution_identity_scope(state.run_id):
+        return execute_planned_tool_calls(**kwargs)
+
 
 _BEYOND_PREVIEW_MARKER = "ENG1_TAIL_MARKER"
 _PREVIEW_BOUND = 400
@@ -137,10 +152,10 @@ def _runtime_state(llm: FakeLLMAdapter) -> RuntimeState:
             session_id="session-1",
             tenant_id="tenant-1",
             task_id=TaskId("task_00000000000000000000000000000001"),
-            run_id=RunId("run_00000000000000000000000000000001"),
+            run_id=_INTEGRATION_RUN_ID,
             message="use tool",
         ),
-        run_id="run_00000000000000000000000000000002",
+        run_id=_INTEGRATION_RUN_ID,
         messages_for_llm=[ChatMessage(role="user", content="use tool")],
     )
 
@@ -156,7 +171,7 @@ def test_bounded_tool_loop_two_iterations_native_messages() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = ToolPlanningService(llm=llm, tools=registry)
 
-    result = run_bounded_tool_loop(
+    result = _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -258,7 +273,7 @@ def test_bounded_tool_loop_empty_tool_calls_stop_reason() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = ToolPlanningService(llm=llm, tools=registry)
 
-    result = run_bounded_tool_loop(
+    result = _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -284,7 +299,7 @@ def test_bounded_tool_loop_max_iterations_stop_reason() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = ToolPlanningService(llm=llm, tools=registry)
 
-    result = run_bounded_tool_loop(
+    result = _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -311,7 +326,7 @@ def test_bounded_tool_loop_planner_failure_propagates() -> None:
     planner = ToolPlanningService(llm=llm, tools=registry)
 
     with pytest.raises(_PlannerExplodedError, match="planner exploded deterministically"):
-        run_bounded_tool_loop(
+        _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -337,7 +352,7 @@ def test_runbudget_max_tool_calls_aborts_after_second_invocation() -> None:
     planner = ToolPlanningService(llm=llm, tools=registry)
 
     with pytest.raises(BudgetExceededError, match="max_tool_calls"):
-        run_bounded_tool_loop(
+        _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -375,7 +390,7 @@ def test_runbudget_max_tool_calls_allows_full_loop_without_double_count() -> Non
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = ToolPlanningService(llm=llm, tools=registry)
 
-    result = run_bounded_tool_loop(
+    result = _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -413,7 +428,7 @@ def test_parallel_read_only_max_tool_calls_enforced_under_invoke_lock() -> None:
     ]
 
     with pytest.raises(BudgetExceededError, match="max_tool_calls"):
-        execute_planned_tool_calls(
+        _invoke_planned_tool_calls(
             state=state,
             invoker=invoker,
             calls=calls,
@@ -509,7 +524,7 @@ def test_model_facing_tool_result_preserves_output_beyond_trace_preview() -> Non
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = ToolPlanningService(llm=llm, tools=registry)
 
-    result = run_bounded_tool_loop(
+    result = _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -542,7 +557,7 @@ def test_failed_tool_keeps_bounded_trace_and_model_facing_error() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = ToolPlanningService(llm=llm, tools=registry)
 
-    result = run_bounded_tool_loop(
+    result = _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -666,7 +681,7 @@ def test_custom_iterative_planner_runs_bounded_loop_without_degrading() -> None:
     assert not isinstance(planner, ToolPlanningService)
     assert isinstance(planner, IterativeToolPlannerProtocol)
 
-    result = run_bounded_tool_loop(
+    result = _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -700,7 +715,7 @@ def test_base_only_planner_rejected_for_multi_iteration_bounded_loop() -> None:
         TypeError,
         match="Bounded iterative tool invocation \\(max_iterations > 1\\) requires",
     ):
-        run_bounded_tool_loop(
+        _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -721,7 +736,7 @@ def test_base_only_planner_single_iteration_still_uses_single_pass() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = _BaseOnlyPlanner()
 
-    result = run_bounded_tool_loop(
+    result = _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -824,7 +839,7 @@ def test_per_round_tool_call_limit_rejects_before_invocation() -> None:
     planner = _MultiCallRoundPlanner(rounds=3)
 
     with pytest.raises(ValueError, match="max_tool_calls_per_round"):
-        run_bounded_tool_loop(
+        _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -850,7 +865,7 @@ def test_runbudget_planner_iterations_emits_diag_and_aborts() -> None:
     planner = ToolPlanningService(llm=llm, tools=registry)
 
     with pytest.raises(BudgetExceededError, match="max_planner_iterations"):
-        run_bounded_tool_loop(
+        _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -889,7 +904,7 @@ def test_wall_time_budget_aborts_before_next_planner_round() -> None:
     planner = ToolPlanningService(llm=llm, tools=registry)
 
     with pytest.raises(BudgetExceededError, match="max_wall_time_seconds"):
-        run_bounded_tool_loop(
+        _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -978,7 +993,7 @@ def test_identical_call_repeat_limit_rejects_before_third_execution() -> None:
     planner = _RepeatCallPlanner(rounds=3, value=7)
 
     with pytest.raises(RuntimeError, match="max_identical_tool_call_repeats"):
-        run_bounded_tool_loop(
+        _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -1065,7 +1080,7 @@ def test_identical_call_guard_tracks_inputs_independently() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = _AlternatingInputPlanner()
 
-    result = run_bounded_tool_loop(
+    result = _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -1166,7 +1181,7 @@ def test_partial_tool_failure_continues_with_both_observations() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = _MixedOutcomeRoundPlanner()
 
-    result = run_bounded_tool_loop(
+    result = _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -1300,7 +1315,7 @@ def test_bounded_react_native_investigation_policy_once_per_provider_call() -> N
     planner = ToolPlanningService(llm=llm, tools=registry)
     loop_messages = [ChatMessage(role="user", content="investigate evidence")]
 
-    result = run_bounded_tool_loop(
+    result = _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -1468,7 +1483,7 @@ def test_bounded_react_multi_hop_investigation_proof() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = ToolPlanningService(llm=llm, tools=registry)
 
-    result = run_bounded_tool_loop(
+    result = _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -1572,7 +1587,7 @@ def test_investigation_proof_invalid_follow_up_rejected_before_tool_b(
     planner = ToolPlanningService(llm=llm, tools=registry)
 
     with pytest.raises(InvestigationProofValidationError, match=match):
-        run_bounded_tool_loop(
+        _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -1628,7 +1643,7 @@ def test_orphan_raw_evidence_basis_rejected_before_second_tool() -> None:
     planner = ToolPlanningService(llm=llm, tools=registry)
 
     with pytest.raises(InvestigationProofValidationError, match="unknown basis tool_call_id"):
-        run_bounded_tool_loop(
+        _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -1764,7 +1779,7 @@ def test_misaligned_custom_planner_rejected_before_tool_execution(
     planner = _MisalignedCustomPlanner(mismatch=mismatch)
 
     with pytest.raises(NativeToolPlanAlignmentError):
-        run_bounded_tool_loop(
+        _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -1784,7 +1799,7 @@ def test_malformed_native_arguments_rejected_before_tool_execution() -> None:
     planner = _MisalignedCustomPlanner(mismatch="malformed_arguments")
 
     with pytest.raises(NativeToolPlanAlignmentError, match="malformed"):
-        run_bounded_tool_loop(
+        _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,

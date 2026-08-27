@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 import pytest
 from pydantic import BaseModel, Field
 
+from intergrax.contracts.execution_identity import TaskId
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.config_types import ToolInvocationMode
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -25,7 +26,7 @@ from intergrax.runtime.nexus.tools.tool_invocation_pattern import pattern_for_mo
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager, canonical_execution_identity_scope, canonical_run_id_for_tests
 
 pytestmark = pytest.mark.unit
 
@@ -92,6 +93,8 @@ def _runtime_state(*, chain: ToolChainSpec, message: str) -> RuntimeState:
     from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
 
     registry = _chain_registry()
+    run_id = canonical_run_id_for_tests("run-chain-1")
+    task_id = TaskId(f"task_{run_id[4:]}")
     config = RuntimeConfig(
         llm_adapter=FakeLLMAdapter(),
         production_mode=False,
@@ -115,8 +118,10 @@ def _runtime_state(*, chain: ToolChainSpec, message: str) -> RuntimeState:
             session_id="session-1",
             tenant_id="tenant-1",
             message=message,
+            task_id=task_id,
+            run_id=run_id,
         ),
-        run_id="run-chain-1",
+        run_id=run_id,
     )
 
 
@@ -143,15 +148,16 @@ def test_deterministic_chain_maps_output_to_next_input() -> None:
     invoker = state.context.config.tool_invoker
     assert invoker is not None
     pattern = DeterministicChainPattern()
-    result = pattern.execute(
-        state=state,
-        invoker=invoker,
-        planner=MagicMock(),
-        plan=None,
-        allowed_tool_ids=None,
-        max_iterations=1,
-        planner_input="widgets",
-    )
+    with canonical_execution_identity_scope(state.run_id):
+        result = pattern.execute(
+            state=state,
+            invoker=invoker,
+            planner=MagicMock(),
+            plan=None,
+            allowed_tool_ids=None,
+            max_iterations=1,
+            planner_input="widgets",
+        )
     assert len(result.tool_traces) == 2
     assert all(trace.success for trace in result.tool_traces)
     assert result.tool_traces[1].output_preview is not None

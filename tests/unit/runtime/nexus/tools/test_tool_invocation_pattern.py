@@ -15,7 +15,7 @@ from intergrax.runtime.nexus.tools.tool_loop import resolve_tool_invocation_patt
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
 from intergrax.tools.core.tool_plan_decision import ToolPlanDecision
 from intergrax.tools.execution_models import ToolExecutionRequest
-from testing_support.builder import build_runtime_state_for_tests, tools_agent_make_contract
+from testing_support.builder import build_runtime_state_for_tests, canonical_execution_identity_scope, tools_agent_make_contract
 
 pytestmark = pytest.mark.unit
 
@@ -78,15 +78,16 @@ def test_single_pass_pattern_executes_planned_calls() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     state = build_runtime_state_for_tests(run_id="run-pattern")
 
-    result = SinglePassPattern().execute(
-        state=state,
-        invoker=invoker,
-        planner=_Planner(),
-        plan=None,
-        allowed_tool_ids=("demo.tool",),
-        max_iterations=1,
-        planner_input="run tool",
-    )
+    with canonical_execution_identity_scope(state.run_id):
+        result = SinglePassPattern().execute(
+            state=state,
+            invoker=invoker,
+            planner=_Planner(),
+            plan=None,
+            allowed_tool_ids=("demo.tool",),
+            max_iterations=1,
+            planner_input="run tool",
+        )
 
     assert result.stop_reason == "legacy_single_pass"
     assert len(result.tool_traces) == 1
