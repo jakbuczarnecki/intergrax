@@ -477,7 +477,7 @@ Generated implementation must include:
 
 | Gap | Impact | Target slice |
 |-----|--------|--------------|
-| No `scenario_runtime_baseline.py` shared builder | Every scenario would duplicate `harness_host_runtime` subset | **SCENARIO-PLATFORM-3A** |
+| ~~No `scenario_runtime_baseline.py` shared builder~~ | ~~Every scenario would duplicate `harness_host_runtime` subset~~ | **SCENARIO-PLATFORM-3A — implemented** |
 | `init_scenario_implementation` absent | No gated skeleton generation | **SCENARIO-PLATFORM-3B** |
 | Lifecycle frontmatter not defined in generator | Fragile promotion gate | **SCENARIO-PLATFORM-3B** |
 | Lab observability profile not codified for scenarios | Authors may omit runtime event store | **SCENARIO-PLATFORM-4** |
@@ -489,9 +489,9 @@ Generated implementation must include:
 
 ## 21. Implementation slices (derived)
 
-| Slice | Scope |
-|-------|-------|
-| **SCENARIO-PLATFORM-3A** | `intergrax/applications/_shared/scenario_runtime_baseline.py` — `build_scenario_runtime_from_environment`, `execute_scenario_task`, lab/production profile helpers |
+| Slice | Scope | Status |
+|-------|-------|--------|
+| **SCENARIO-PLATFORM-3A** | `intergrax/applications/_shared/scenario_runtime_baseline.py` — `build_scenario_runtime_from_environment`, `execute_scenario_task` | **Implemented** |
 | **SCENARIO-PLATFORM-3B** | `init_scenario_implementation.py` + lifecycle frontmatter spec + precondition gates |
 | **SCENARIO-PLATFORM-4** | Observability + diagnostic baseline profiles (lab temp DB vs production-attached); document store optional lab stub |
 | **SCENARIO-PLATFORM-5** | Migrate `ai_incident` to facade baseline (behavior parity proofs) |
@@ -534,4 +534,60 @@ Generated implementation must include:
 
 ---
 
-*End of SCENARIO-PLATFORM-2 contract.*
+---
+
+## 25. SCENARIO-PLATFORM-3A — implemented public API
+
+**Module:** `intergrax/applications/_shared/scenario_runtime_baseline.py`
+
+### Types
+
+| Type | Role |
+|------|------|
+| `ScenarioRuntimeComposition` | Immutable build result: `environment`, `env_wiring`, `observability`, `registry`, `nexus_loop`, `tenant_id`, `security_wiring`, `guardrail_wiring`; status via `has_runtime_event_store`, `has_terminal_diagnostic_trigger` |
+| `ScenarioExecutionRequest` | `tenant_id`, `message`, `user_id`, optional `capability`, optional `task_id` |
+| `ScenarioRuntimeExecutionResult` | `task_result`, `task_id`, `run_id`, `tenant_id` |
+| `ScenarioRuntimeBuildError` | Fail-closed build when RuntimeEvent persistence is required but unavailable |
+
+### Functions
+
+| Function | Role |
+|----------|------|
+| `validate_scenario_tenant_id(tenant_id)` | Non-empty `str`, no leading/trailing whitespace |
+| `build_scenario_runtime_from_environment(...)` | Compose environment → observability → reliability/security/guardrail/cost/evaluation/critic → `NexusLoop` → optional terminal diagnostic trigger |
+| `execute_scenario_task(composition, request)` | Validate tenant, build `Task`, `mint_run_id()`, `nexus_loop.handle_task`, return platform envelope |
+
+### LAB behavior
+
+- Caller supplies scoped temp SQLite via `runtime_events_db_path` (required when `require_runtime_event_persistence=True`, default).
+- `use_in_memory_trace=True` keeps in-memory trace while **still** wiring RuntimeEvent persistence when `runtime_events_db_path` is set.
+- Without `document_store`, diagnostic trigger is absent; observability persistence remains active.
+- Same wiring code path as production-attached; only configuration differs.
+
+### Production-attached behavior
+
+- Caller supplies durable `runtime_events_db_path`, `trace_db_path`, and `document_store` when diagnostics are required.
+- `try_build_terminal_execution_diagnostic_trigger` attaches when `document_store` + `runtime_event_store` resolve.
+- No separate production code path.
+
+### Diagnostics prerequisites
+
+| Prerequisite | Effect |
+|--------------|--------|
+| `observability.runtime_event_store` | Required when `require_runtime_event_persistence=True` |
+| `env_wiring.build_context.tool_wiring_context.document_store` | Required for terminal diagnostic trigger |
+| Both present | `nexus_loop.attach_terminal_diagnostic_trigger(...)` |
+
+### Deliberately excluded
+
+- `ApplicationHost`, `HarnessHostRuntime`, registry projection, control-plane governance, hosting lifecycle
+- Direct imports of `DiagnosticOrchestrator`, `ProblemGroupingEngine`, `ProblemLifecycleEngine`, `ExecutionReconstructor`
+- `platform_proofs`, domain scenario code, proof evaluators
+
+### Tests
+
+- `tests/unit/applications/test_scenario_runtime_baseline.py` — build, execution identity, tenant, RuntimeEvent persistence, diagnostics attachment, LAB without document store, architecture gate
+
+---
+
+*End of SCENARIO-PLATFORM-2 contract (3A implemented).*
