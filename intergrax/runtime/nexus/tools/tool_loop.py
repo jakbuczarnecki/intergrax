@@ -8,10 +8,16 @@ import json
 import threading
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextvars import copy_context
 from dataclasses import dataclass, replace
 
 from pydantic import BaseModel
 
+from intergrax.context.contracts import IterativeToolOutputBlock
+from intergrax.contracts.execution_identity import (
+    require_active_execution_id,
+    require_active_execution_identity,
+)
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.runtime.nexus.budget.budget_ticks import enforce_tool_call_budget
@@ -39,7 +45,10 @@ from intergrax.runtime.nexus.tools.tool_invocation_pattern import (
     ToolInvocationStopReason,
     resolve_invocation_pattern,
 )
-from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
+from intergrax.runtime.nexus.tools.tool_planner_protocol import (
+    IterativeToolPlannerProtocol,
+    ToolPlannerProtocol,
+)
 from intergrax.tools.core.tool_plan import PlannedToolCall
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult, ToolModelObservation
 
@@ -74,6 +83,16 @@ def _tool_call_openai_dict(tool_call: LLMToolCall) -> dict[str, object]:
             "arguments": tool_call.arguments_json,
         },
     }
+
+
+def _require_canonical_tool_execution_scope(state: RuntimeState) -> None:
+    active_run_id, active_attempt_id = require_active_execution_identity()
+    active_execution_id = require_active_execution_id()
+    del active_attempt_id, active_execution_id
+    if state.run_id != active_run_id:
+        raise RuntimeError(
+            "tool execution run_id does not match active execution"
+        )
 
 
 def _build_planned_request(
@@ -116,6 +135,7 @@ def _invoke_planned_call(
         unique_candidate=unique_candidate,
         request_index=index,
     )
+    _require_canonical_tool_execution_scope(state)
     try:
         result = invoker.invoke(state=state, request=req, agent_id=state.request.agent_id)
     except DeclarativePolicyHitlRequiredError as exc:
@@ -293,16 +313,19 @@ def execute_planned_tool_calls(
         invoke_lock = threading.Lock()
         workers = min(max_parallel_read_only, len(read_only))
         with ThreadPoolExecutor(max_workers=workers) as pool:
-            futures = {
-                pool.submit(
-                    _invoke_planned_call,
-                    call=call,
-                    index=index,
-                    invoke_lock=invoke_lock,
-                    **invoke_kwargs,
-                ): index
-                for index, call in read_only
-            }
+            futures = {}
+            for index, call in read_only:
+                worker_context = copy_context()
+                futures[
+                    pool.submit(
+                        worker_context.run,
+                        _invoke_planned_call,
+                        call=call,
+                        index=index,
+                        invoke_lock=invoke_lock,
+                        **invoke_kwargs,
+                    )
+                ] = index
             for future in as_completed(futures):
                 results[futures[future]] = future.result()
 
@@ -316,13 +339,13 @@ def execute_planned_tool_calls(
     return [results[index] for index in range(len(calls))]
 
 
-def append_native_tool_messages(
+def append_assistant_tool_call_message(
     messages: list[ChatMessage],
     *,
     assistant_content: str,
     tool_calls: Sequence[LLMToolCall],
-    outcomes: Sequence[PlannedToolCallOutcome],
 ) -> None:
+    """Append the assistant turn that requested native tool calls (not tool results)."""
     if not tool_calls:
         return
     messages.append(
@@ -331,6 +354,39 @@ def append_native_tool_messages(
             content=assistant_content,
             tool_calls=[_tool_call_openai_dict(tc) for tc in tool_calls],
         )
+    )
+
+
+def tool_output_blocks_from_native_round(
+    tool_calls: Sequence[LLMToolCall],
+    planned_calls: Sequence[PlannedToolCall],
+    outcomes: Sequence[PlannedToolCallOutcome],
+) -> list[IterativeToolOutputBlock]:
+    """Build typed tool-output blocks for ``TOOL_OUTPUT_BLOCKS_HANDLE`` collection."""
+    blocks: list[IterativeToolOutputBlock] = []
+    for tool_call, planned_call, outcome in zip(tool_calls, planned_calls, outcomes, strict=False):
+        blocks.append(
+            IterativeToolOutputBlock(
+                content=outcome.model_observation.content,
+                tool_call_id=tool_call.id,
+                tool_name=tool_call.name,
+                step_id=planned_call.step_id,
+            )
+        )
+    return blocks
+
+
+def append_native_tool_messages(
+    messages: list[ChatMessage],
+    *,
+    assistant_content: str,
+    tool_calls: Sequence[LLMToolCall],
+    outcomes: Sequence[PlannedToolCallOutcome],
+) -> None:
+    append_assistant_tool_call_message(
+        messages,
+        assistant_content=assistant_content,
+        tool_calls=tool_calls,
     )
     for tool_call, outcome in zip(tool_calls, outcomes, strict=False):
         messages.append(
@@ -373,6 +429,7 @@ def run_bounded_tool_loop(
     Plan → invoke → observe via injected ``ToolInvocationPattern``.
 
     ``max_iterations > 1`` without explicit mode preserves TOOL-ENG-6 bounded ReAct.
+    Iterative CE routing is handled by :func:`run_bounded_tool_loop_async`.
     """
     resolved = resolve_tool_invocation_pattern(
         invocation_mode=invocation_mode,
@@ -393,6 +450,52 @@ def run_bounded_tool_loop(
     if not result.pattern_id:
         return replace(result, pattern_id=pattern_id)
     return result
+
+
+async def run_bounded_tool_loop_async(
+    *,
+    state: RuntimeState,
+    invoker: RuntimeToolInvoker,
+    tool_planner: ToolPlannerProtocol,
+    planner_input: str | list[ChatMessage],
+    allowed_tool_ids: Sequence[str] | None,
+    max_iterations: int,
+    invocation_mode: ToolInvocationMode | None = None,
+    pattern: ToolInvocationPattern | None = None,
+) -> ToolInvocationResult:
+    """Async bounded tool loop — routes iterative feedback through CE when wired."""
+    max_iters = max(1, int(max_iterations))
+    engine = state.context.config.context_engine
+    if max_iters > 1 and engine is not None:
+        if not isinstance(tool_planner, IterativeToolPlannerProtocol):
+            raise TypeError(
+                "Bounded iterative tool invocation (max_iterations > 1) requires "
+                "a planner implementing IterativeToolPlannerProtocol"
+            )
+        from intergrax.runtime.nexus.context.iterative_tool_context_assembly import (
+            run_ce_bounded_tool_loop,
+        )
+
+        return await run_ce_bounded_tool_loop(
+            state=state,
+            invoker=invoker,
+            tool_planner=tool_planner,
+            planner_input=planner_input,
+            allowed_tool_ids=allowed_tool_ids,
+            max_iterations=max_iters,
+        )
+    # TRANSITIONAL (UE-9D): sync fallback via BoundedReactPattern → append_native_tool_messages
+    # when no context_engine is wired. Owner of removal: UE-9D.
+    return run_bounded_tool_loop(
+        state=state,
+        invoker=invoker,
+        tool_planner=tool_planner,
+        planner_input=planner_input,
+        allowed_tool_ids=allowed_tool_ids,
+        max_iterations=max_iterations,
+        invocation_mode=invocation_mode,
+        pattern=pattern,
+    )
 
 
 def inject_tool_traces_system_context(

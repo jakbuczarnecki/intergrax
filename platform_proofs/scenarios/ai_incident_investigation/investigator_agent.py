@@ -10,6 +10,7 @@ from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.runtime.diagnostics.investigation_contracts import IncidentInvestigationInput
 from intergrax.runtime.nexus.context.metadata_keys import PRIOR_AGENT_OUTPUTS_KEY
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -89,6 +90,7 @@ class IncidentInvestigatorAgent(Agent):
         runtime_composition: ScenarioRuntimeComposition,
         incident_scope: IncidentScope,
         evidence_store: object | None = None,
+        investigation_input: IncidentInvestigationInput | None = None,
     ) -> None:
         from intergrax.tools.registry import ToolRegistry
         from platform_proofs.scenarios.ai_incident_investigation.tools import ScenarioEvidenceStore
@@ -102,6 +104,7 @@ class IncidentInvestigatorAgent(Agent):
         self._evidence_store = (
             evidence_store if isinstance(evidence_store, ScenarioEvidenceStore) else None
         )
+        self._investigation_input = investigation_input
 
     def get_contract(self) -> AgentContract:
         return AgentContract(
@@ -169,6 +172,7 @@ class IncidentInvestigatorAgent(Agent):
             prior_state=prior_state,
             critic_feedback=critic_feedback,
             is_revision=is_revision,
+            investigation_input=self._investigation_input,
         )
         pending_conversion = convert_proposal_to_pending_claims(
             proposal,

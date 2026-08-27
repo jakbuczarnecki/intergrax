@@ -30,7 +30,7 @@ from intergrax.runtime.nexus.tools.catalog_context import (
 from intergrax.runtime.nexus.tools.catalog_dispatch import resolve_tool_registry
 from intergrax.runtime.nexus.tools.tool_loop import (
     inject_tool_traces_system_context,
-    run_bounded_tool_loop,
+    run_bounded_tool_loop_async,
 )
 from intergrax.runtime.nexus.tools.tool_planner_input import resolve_tool_planner_input
 from intergrax.runtime.nexus.tools.adaptive_tool_mode_resolver import recommend_tool_modes
@@ -411,7 +411,7 @@ async def run_tools_context(state: RuntimeState) -> None:
         else:
             allowed_tool_ids = state.tool_planner_allowed_tool_ids
 
-        loop_result = run_bounded_tool_loop(
+        loop_result = await run_bounded_tool_loop_async(
             state=state,
             invoker=invoker,
             tool_planner=tool_planner,
@@ -432,7 +432,9 @@ async def run_tools_context(state: RuntimeState) -> None:
             state.used_tools = True
             state.tool_traces = list(loop_result.tool_traces)
 
-        if loop_result.used_native_tool_messages and loop_result.appended_messages:
+        if loop_result.appended_messages and (
+            loop_result.used_ce_tool_feedback or loop_result.used_native_tool_messages
+        ):
             state.messages_for_llm.extend(loop_result.appended_messages)
         elif state.tool_traces:
             registry = resolve_yaml_prompt_registry(

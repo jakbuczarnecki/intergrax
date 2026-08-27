@@ -13,3 +13,4 @@ Living register of harness architecture debt (IDEAL-32.2). Review quarterly with
 | DEBT-ECP-01 | §30 Ops | Sync `architecture/ELASTIC_CAPACITY_AND_SCALING.md` §22 after ECP-DEPTH | platform | W1 (Band 2az) | AUDIT-IDEAL-30.1 | **Closed** (2026-06-12 honest maturity) |
 | DEBT-ECP-02 | §30 Ops | Production elasticity — live signal bridge, K8s/Celery adapters, E2E loop | platform | ECP-PROD | AUDIT-IDEAL-30.4 | **Closed** (2026-06-12) |
 | DEBT-MEM-01 | §15 Memory | Org memory 2.5 (organizational LTM scope) | platform | W1 (Band 2az) | AUDIT-IDEAL-15.1 | **Closed** (2026-06-09) |
+| DEBT-UE-9D-01 | §19 Execution | Sync bounded tool loop without CE (`run_bounded_tool_loop` → `BoundedReactPattern` → `append_native_tool_messages`) when `context_engine` is unwired | platform | UE-9D | — | **Open** — TRANSITIONAL |

@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 import os
@@ -490,6 +491,45 @@ def build_runtime_state_for_tests(*, run_id: str) -> RuntimeState:
     )
 
     return RuntimeState(context=ctx, run_id=canonical_run_id, request=request)
+
+
+def canonical_run_id_for_tests(run_id: str) -> str:
+    """Canonical RunId aligned with :func:`build_runtime_state_for_tests`."""
+    from hashlib import sha256
+
+    from intergrax.contracts.execution_identity import RunId, validate_run_id
+
+    if run_id.startswith("run_") and len(run_id) == 36:
+        return validate_run_id(run_id)
+    digest = sha256(run_id.encode()).hexdigest()[:32]
+    return validate_run_id(f"run_{digest}")
+
+
+@contextmanager
+def canonical_execution_identity_scope(run_id: str):
+    """
+    Bind canonical active execution identity for tool-loop unit tests.
+
+    ``run_id`` may be a seed string or canonical ``run_…`` value matching
+    ``RuntimeState.run_id`` from :func:`build_runtime_state_for_tests`.
+    """
+    from intergrax.contracts.execution_identity import (
+        bind_active_execution_identity,
+        mint_attempt_id,
+        mint_execution_id,
+        reset_active_execution_identity,
+    )
+
+    canonical_run_id = canonical_run_id_for_tests(run_id)
+    token = bind_active_execution_identity(
+        run_id=canonical_run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+    try:
+        yield canonical_run_id
+    finally:
+        reset_active_execution_identity(token)
 
 
 class DummyRunStore(RunStore):

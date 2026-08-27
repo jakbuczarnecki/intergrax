@@ -15,7 +15,10 @@ from intergrax.contracts.execution_identity import (
     mint_execution_id,
     mint_run_id,
     mint_task_id,
+    peek_active_execution_id,
     peek_active_execution_identity,
+    peek_active_parent_execution_id,
+    require_active_execution_id,
     require_active_execution_identity,
     reset_active_execution_identity,
     transition_active_execution_identity,
@@ -294,12 +297,7 @@ async def test_unified_task_runner_mints_attempt_at_run_boundary():
             attempt_id: AttemptId | None = None,
         ):
             nonlocal minted_attempt
-            resolved_attempt_id = attempt_id or mint_attempt_id()
-            bind_active_execution_identity(
-                run_id=run_id,
-                attempt_id=resolved_attempt_id,
-            )
-            minted_attempt = resolved_attempt_id
+            minted_attempt = attempt_id
             from intergrax.runtime.task.task import TaskResult, TaskState
 
             return TaskResult(
@@ -516,9 +514,135 @@ def test_bind_require_reset_execution_identity() -> None:
     attempt_id = mint_attempt_id()
     token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
     assert require_active_execution_identity() == (run_id, attempt_id)
+    assert peek_active_execution_id() is None
     reset_active_execution_identity(token)
     with pytest.raises(RuntimeError, match="active execution identity required"):
         require_active_execution_identity()
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_legacy_bind_returns_two_value_tuple() -> None:
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    try:
+        bound = require_active_execution_identity()
+        assert len(bound) == 2
+        assert bound == (run_id, attempt_id)
+    finally:
+        reset_active_execution_identity(token)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_canonical_bind_exposes_parent_execution_id() -> None:
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    parent_execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+        parent_execution_id=parent_execution_id,
+    )
+    try:
+        assert peek_active_parent_execution_id() == parent_execution_id
+        assert peek_active_execution_id() == execution_id
+    finally:
+        reset_active_execution_identity(token)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_root_bind_has_no_parent_execution_id() -> None:
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    try:
+        assert peek_active_parent_execution_id() is None
+    finally:
+        reset_active_execution_identity(token)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_transition_retry_clears_parent_execution_id() -> None:
+    run_id = mint_run_id()
+    attempt_a1 = mint_attempt_id()
+    execution_id = mint_execution_id()
+    parent_execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_a1,
+        execution_id=execution_id,
+        parent_execution_id=parent_execution_id,
+    )
+    attempt_a2 = transition_active_execution_identity()
+    assert attempt_a2 != attempt_a1
+    assert peek_active_parent_execution_id() is None
+    assert peek_active_execution_id() is None
+    reset_active_execution_identity(token)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_canonical_bind_exposes_execution_id() -> None:
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    try:
+        assert require_active_execution_identity() == (run_id, attempt_id)
+        assert peek_active_execution_id() == execution_id
+        assert require_active_execution_id() == execution_id
+    finally:
+        reset_active_execution_identity(token)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_require_execution_id_fails_without_bound_execution_id() -> None:
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    try:
+        with pytest.raises(RuntimeError, match="active ExecutionId required"):
+            require_active_execution_id()
+    finally:
+        reset_active_execution_identity(token)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_transition_retry_clears_execution_id() -> None:
+    run_id = mint_run_id()
+    attempt_a1 = mint_attempt_id()
+    execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_a1,
+        execution_id=execution_id,
+    )
+    attempt_a2 = transition_active_execution_identity()
+    assert attempt_a2 != attempt_a1
+    bound_run_id, bound_attempt_id = require_active_execution_identity()
+    assert bound_run_id == run_id
+    assert bound_attempt_id == attempt_a2
+    assert peek_active_execution_id() is None
+    with pytest.raises(RuntimeError, match="active ExecutionId required"):
+        require_active_execution_id()
+    reset_active_execution_identity(token)
 
 
 @pytest.mark.unit

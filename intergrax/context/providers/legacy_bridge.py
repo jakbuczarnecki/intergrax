@@ -31,6 +31,7 @@ from intergrax.context.contracts import (
     ContextAssemblyRequest,
     ContextFragment,
     ContextFragmentSource,
+    IterativeToolOutputBlock,
     content_hash_for_text,
 )
 from intergrax.context.session_history import (
@@ -369,6 +370,25 @@ def fragments_from_websearch_blocks(
     return fragments
 
 
+def fragment_from_iterative_tool_output_block(
+    block: IterativeToolOutputBlock,
+) -> ContextFragment:
+    """Canonical TOOL_OUTPUT fragment from a typed iterative tool-feedback block."""
+    metadata: dict[str, Any] = {
+        "tool_call_id": block.tool_call_id,
+        "tool_name": block.tool_name,
+    }
+    if block.step_id is not None:
+        metadata["step_id"] = block.step_id
+    return _fragment(
+        fragment_id=f"tool-output-{block.tool_call_id}",
+        source=ContextFragmentSource.TOOL_OUTPUT,
+        source_id=block.tool_call_id,
+        content=block.content,
+        metadata=metadata,
+    )
+
+
 def fragments_from_tool_output_blocks(
     blocks: list[Any],
     *,
@@ -379,6 +399,12 @@ def fragments_from_tool_output_blocks(
         return []
     fragments: list[ContextFragment] = []
     for index, block in enumerate(blocks[:max_blocks]):
+        if isinstance(block, IterativeToolOutputBlock):
+            text = block.content.strip()
+            if not text:
+                continue
+            fragments.append(fragment_from_iterative_tool_output_block(block))
+            continue
         text = _block_text(block)
         if not text:
             continue

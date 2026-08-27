@@ -133,6 +133,8 @@ class BoundedReactPattern:
             )
             all_traces.extend(outcome.trace for outcome in round_outcomes)
             before = len(messages)
+            # TRANSITIONAL (UE-9D): legacy sync path without context_engine wiring.
+            # Owner of removal: UE-9D.
             append_native_tool_messages(
                 messages,
                 assistant_content=llm_result.content,

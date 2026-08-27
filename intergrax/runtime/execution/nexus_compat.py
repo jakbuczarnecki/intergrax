@@ -25,7 +25,7 @@ class NexusTaskExecutionDelegate:
         nexus_loop: NexusLoop,
         *,
         run_id: RunId,
-        attempt_id: AttemptId | None,
+        attempt_id: AttemptId,
     ) -> None:
         self._nexus_loop = nexus_loop
         self._run_id = run_id

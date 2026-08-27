@@ -164,9 +164,26 @@ def test_build_design_readme_is_deterministic() -> None:
 
 
 def test_build_design_scenario_spec_is_deterministic() -> None:
-    first = build_design_scenario_spec("Same Title")
-    second = build_design_scenario_spec("Same Title")
+    first = build_design_scenario_spec("Same Title", slug="same_title")
+    second = build_design_scenario_spec("Same Title", slug="same_title")
     assert first == second
+
+
+def test_generated_scenario_spec_has_lifecycle_frontmatter(tmp_path: Path) -> None:
+    slug = "frontmatter_contract"
+    package = create_scenario_design_package(
+        ScenarioDesignRequest(
+            slug=validate_scenario_slug(slug),
+            title="Frontmatter Contract",
+            repo_root=tmp_path,
+        ),
+    )
+    spec = package.scenario_spec_path.read_text(encoding="utf-8")
+    assert spec.startswith("---\n")
+    assert "lifecycle: DESIGN" in spec
+    assert "implementation_status: NOT_INITIALIZED" in spec
+    assert f"scenario_slug: {slug}" in spec
+    assert "# Scenario Specification" in spec
 
 
 def test_scenario_one_slug_generated_by_scaffold(tmp_path: Path) -> None:
@@ -206,7 +223,7 @@ def test_generated_readme_has_visual_story_authoring_hint() -> None:
 
 
 def test_generated_scenario_spec_has_conditional_authoring_prompts() -> None:
-    spec = build_design_scenario_spec("Placeholder Title")
+    spec = build_design_scenario_spec("Placeholder Title", slug="placeholder_title")
     assert "Hidden truth / evaluator leakage" in spec
     assert "Evidence boundary" in spec
     assert "Alternative hypotheses" in spec
@@ -214,7 +231,7 @@ def test_generated_scenario_spec_has_conditional_authoring_prompts() -> None:
 
 
 def test_generated_scenario_spec_has_multi_domain_fit_prompt() -> None:
-    spec = build_design_scenario_spec("Placeholder Title")
+    spec = build_design_scenario_spec("Placeholder Title", slug="placeholder_title")
     assert "INTERGRAX FIT is not a single-domain assignment" in spec
     assert "participating domain(s)" in spec
 

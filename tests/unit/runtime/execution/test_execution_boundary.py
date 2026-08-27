@@ -3,14 +3,33 @@
 from __future__ import annotations
 
 import ast
+import asyncio
 from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 
-from intergrax.contracts.execution_identity import mint_task_id
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+    peek_active_execution_id,
+    peek_active_execution_identity,
+    peek_active_parent_execution_id,
+    require_active_execution_id,
+    require_active_execution_identity,
+    validate_execution_id,
+)
 from intergrax.runtime.execution import __all__ as execution_public_api
-from intergrax.runtime.execution.boundary import ExecutionAdmissionHook, ExecutionBoundary
+from intergrax.runtime.execution.boundary import (
+    ExecutionAdmissionHook,
+    ExecutionBoundary,
+    ExecutionIdentityBinding,
+)
 from intergrax.runtime.execution.task_compat import UnifiedTaskRunnerExecutionDelegate
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
@@ -332,6 +351,278 @@ def test_boundary_delegate_only_constructor_remains_compatible() -> None:
     boundary = ExecutionBoundary[Ping, Pong](delegate)
 
     assert boundary._admission_hooks == ()
+    assert boundary._identity is None
+
+
+class IdentityProbingAdmissionHook:
+    def __init__(self, captured: dict[str, RunId | AttemptId | ExecutionId]) -> None:
+        self._captured = captured
+
+    async def admit(self, request: Ping) -> None:
+        run_id, attempt_id = require_active_execution_identity()
+        execution_id = require_active_execution_id()
+        self._captured["hook_run_id"] = run_id
+        self._captured["hook_attempt_id"] = attempt_id
+        self._captured["hook_execution_id"] = execution_id
+
+
+class IdentityProbingDelegate:
+    def __init__(self, captured: dict[str, RunId | AttemptId | ExecutionId], result: Pong) -> None:
+        self._captured = captured
+        self._result = result
+
+    async def execute(self, request: Ping) -> Pong:
+        run_id, attempt_id = require_active_execution_identity()
+        execution_id = require_active_execution_id()
+        self._captured["delegate_run_id"] = run_id
+        self._captured["delegate_attempt_id"] = attempt_id
+        self._captured["delegate_execution_id"] = execution_id
+        return self._result
+
+
+def _identity_binding() -> ExecutionIdentityBinding:
+    return ExecutionIdentityBinding(
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+
+
+@pytest.mark.asyncio
+async def test_boundary_binds_parent_execution_id_for_child_identity() -> None:
+    parent_execution_id = mint_execution_id()
+    identity = ExecutionIdentityBinding(
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+        parent_execution_id=parent_execution_id,
+    )
+    captured: dict[str, ExecutionId | None] = {}
+
+    class ParentProbingHook:
+        async def admit(self, request: Ping) -> None:
+            captured["hook_parent"] = peek_active_parent_execution_id()
+
+    class ParentProbingDelegate:
+        async def execute(self, request: Ping) -> Pong:
+            captured["delegate_parent"] = peek_active_parent_execution_id()
+            return Pong(value="pong")
+
+    boundary = ExecutionBoundary[Ping, Pong](
+        ParentProbingDelegate(),
+        admission_hooks=(ParentProbingHook(),),
+        identity=identity,
+    )
+
+    await boundary.execute(Ping(value="ping"))
+
+    assert captured["hook_parent"] == parent_execution_id
+    assert captured["delegate_parent"] == parent_execution_id
+
+
+@pytest.mark.asyncio
+async def test_boundary_root_identity_has_no_parent_execution_id() -> None:
+    identity = _identity_binding()
+    captured: dict[str, ExecutionId | None] = {}
+
+    class RootProbeDelegate:
+        async def execute(self, request: Ping) -> Pong:
+            captured["parent"] = peek_active_parent_execution_id()
+            return Pong(value="pong")
+
+    await ExecutionBoundary[Ping, Pong](
+        RootProbeDelegate(),
+        identity=identity,
+    ).execute(Ping(value="ping"))
+
+    assert captured["parent"] is None
+
+
+@pytest.mark.asyncio
+async def test_boundary_binds_identity_before_first_admission_hook() -> None:
+    identity = _identity_binding()
+    captured: dict[str, RunId | AttemptId | ExecutionId] = {}
+    events: list[str] = []
+
+    class OrderingHook:
+        async def admit(self, request: Ping) -> None:
+            events.append("hook")
+            run_id, attempt_id = require_active_execution_identity()
+            execution_id = require_active_execution_id()
+            captured["hook_run_id"] = run_id
+            captured["hook_attempt_id"] = attempt_id
+            captured["hook_execution_id"] = execution_id
+
+    delegate = CountingPingDelegate(Pong(value="pong"))
+    boundary = ExecutionBoundary[Ping, Pong](
+        delegate,
+        admission_hooks=(OrderingHook(),),
+        identity=identity,
+    )
+
+    await boundary.execute(Ping(value="ping"))
+
+    assert events == ["hook"]
+    assert captured["hook_run_id"] == identity.run_id
+    assert captured["hook_attempt_id"] == identity.attempt_id
+    assert captured["hook_execution_id"] == identity.execution_id
+
+
+@pytest.mark.asyncio
+async def test_boundary_hook_and_delegate_see_exact_identity() -> None:
+    identity = _identity_binding()
+    captured: dict[str, RunId | AttemptId | ExecutionId] = {}
+    boundary = ExecutionBoundary[Ping, Pong](
+        IdentityProbingDelegate(captured, Pong(value="pong")),
+        admission_hooks=(IdentityProbingAdmissionHook(captured),),
+        identity=identity,
+    )
+
+    await boundary.execute(Ping(value="ping"))
+
+    assert captured["hook_run_id"] == identity.run_id
+    assert captured["hook_attempt_id"] == identity.attempt_id
+    assert captured["hook_execution_id"] == identity.execution_id
+    assert captured["delegate_run_id"] == identity.run_id
+    assert captured["delegate_attempt_id"] == identity.attempt_id
+    assert captured["delegate_execution_id"] == identity.execution_id
+    assert validate_execution_id(captured["hook_execution_id"])
+    assert captured["hook_execution_id"] == captured["delegate_execution_id"]
+
+
+@pytest.mark.asyncio
+async def test_boundary_resets_identity_after_success() -> None:
+    identity = _identity_binding()
+    boundary = ExecutionBoundary[Ping, Pong](
+        CountingPingDelegate(Pong(value="pong")),
+        identity=identity,
+    )
+
+    await boundary.execute(Ping(value="ping"))
+
+    assert peek_active_execution_identity() is None
+    assert peek_active_execution_id() is None
+
+
+@pytest.mark.asyncio
+async def test_boundary_resets_identity_after_admission_exception() -> None:
+    identity = _identity_binding()
+    boundary = ExecutionBoundary[Ping, Pong](
+        CountingPingDelegate(Pong(value="pong")),
+        admission_hooks=(FailingAdmissionHook(RuntimeError("admission-fail")),),
+        identity=identity,
+    )
+
+    with pytest.raises(RuntimeError, match="admission-fail"):
+        await boundary.execute(Ping(value="ping"))
+
+    assert peek_active_execution_identity() is None
+    assert peek_active_execution_id() is None
+
+
+@pytest.mark.asyncio
+async def test_boundary_resets_identity_after_delegate_exception() -> None:
+    identity = _identity_binding()
+    boundary = ExecutionBoundary[Ping, Pong](
+        FailingPingDelegate(),
+        admission_hooks=(RecordingAdmissionHook([], "ok"),),
+        identity=identity,
+    )
+
+    with pytest.raises(ValueError, match="boom:fail"):
+        await boundary.execute(Ping(value="fail"))
+
+    assert peek_active_execution_identity() is None
+    assert peek_active_execution_id() is None
+
+
+@pytest.mark.asyncio
+async def test_nested_boundary_restores_outer_execution_identity() -> None:
+    outer = _identity_binding()
+    inner = _identity_binding()
+    outer_captured: dict[str, ExecutionId] = {}
+    inner_captured: dict[str, ExecutionId] = {}
+
+    class CaptureDelegate:
+        def __init__(self, bucket: dict[str, ExecutionId], label: str) -> None:
+            self._bucket = bucket
+            self._label = label
+
+        async def execute(self, request: Ping) -> Pong:
+            self._bucket[self._label] = require_active_execution_id()
+            return Pong(value=self._label)
+
+    inner_boundary = ExecutionBoundary[Ping, Pong](
+        CaptureDelegate(inner_captured, "inner"),
+        identity=inner,
+    )
+
+    class OuterDelegate:
+        async def execute(self, request: Ping) -> Pong:
+            outer_captured["outer"] = require_active_execution_id()
+            return await inner_boundary.execute(request)
+
+    outer_boundary = ExecutionBoundary[Ping, Pong](
+        OuterDelegate(),
+        identity=outer,
+    )
+
+    await outer_boundary.execute(Ping(value="nested"))
+
+    assert outer_captured["outer"] == outer.execution_id
+    assert inner_captured["inner"] == inner.execution_id
+    assert outer_captured["outer"] != inner_captured["inner"]
+    assert peek_active_execution_identity() is None
+    assert peek_active_execution_id() is None
+
+
+@pytest.mark.asyncio
+async def test_boundary_without_identity_preserves_legacy_behavior() -> None:
+    delegate = CountingPingDelegate(Pong(value="pong"))
+    boundary = ExecutionBoundary[Ping, Pong](delegate)
+
+    await boundary.execute(Ping(value="ping"))
+
+    assert delegate.call_count == 1
+    assert peek_active_execution_identity() is None
+
+
+def test_execution_identity_binding_not_exported_from_package_root() -> None:
+    assert "ExecutionIdentityBinding" not in execution_public_api
+
+
+@pytest.mark.asyncio
+async def test_parallel_boundaries_isolate_execution_ids() -> None:
+    identity_a = _identity_binding()
+    identity_b = _identity_binding()
+    captured: dict[str, ExecutionId] = {}
+
+    class CaptureDelegate:
+        def __init__(self, label: str) -> None:
+            self._label = label
+
+        async def execute(self, request: Ping) -> Pong:
+            await asyncio.sleep(0.05)
+            captured[self._label] = require_active_execution_id()
+            return Pong(value=self._label)
+
+    async def run_boundary(identity: ExecutionIdentityBinding, label: str) -> None:
+        boundary = ExecutionBoundary[Ping, Pong](
+            CaptureDelegate(label),
+            identity=identity,
+        )
+        await boundary.execute(Ping(value=label))
+
+    await asyncio.gather(
+        run_boundary(identity_a, "a"),
+        run_boundary(identity_b, "b"),
+    )
+
+    assert captured["a"] == identity_a.execution_id
+    assert captured["b"] == identity_b.execution_id
+    assert captured["a"] != captured["b"]
+    assert peek_active_execution_identity() is None
+    assert peek_active_execution_id() is None
 
 
 def test_execution_admission_hook_is_generic_protocol() -> None:

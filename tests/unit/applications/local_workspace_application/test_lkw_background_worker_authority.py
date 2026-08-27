@@ -11,6 +11,9 @@ import pytest
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 
 from intergrax.applications._shared.harness_registry_authority import HarnessHostRegistryAuthorityError
+from intergrax.applications._shared.host_queue_execution_wiring import HostQueueExecutionDependencies
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.runtime.observability.causal_evidence_persistence import CausalEvidencePersistence
 from intergrax.applications._shared.production_host_composition import (
     bootstrap_production_registry_projection,
 )
@@ -76,8 +79,11 @@ def test_worker_wiring_receives_materialized_registry_projection(
     _, projection = _activated_projection(monkeypatch)
     with (
         patch(
-            "local_workspace_application.host.background_worker_factory.create_redis_kv_store",
-            return_value=MagicMock(),
+            "local_workspace_application.host.background_worker_factory.resolve_host_queue_execution_dependencies",
+            return_value=HostQueueExecutionDependencies(
+                kv_store=MagicMock(spec=DistributedKVStore),
+                causal_evidence_persistence=MagicMock(spec=CausalEvidencePersistence),
+            ),
         ),
         patch(
             "local_workspace_application.host.background_worker_factory.create_kafka_worker",
@@ -166,8 +172,11 @@ def test_authority_assembly_order_before_worker_start(
             ),
         ),
         patch(
-            "local_workspace_application.host.background_worker_factory.create_redis_kv_store",
-            return_value=MagicMock(),
+            "local_workspace_application.host.background_worker_factory.resolve_host_queue_execution_dependencies",
+            return_value=HostQueueExecutionDependencies(
+                kv_store=MagicMock(spec=DistributedKVStore),
+                causal_evidence_persistence=MagicMock(spec=CausalEvidencePersistence),
+            ),
         ),
         patch(
             "local_workspace_application.host.background_worker_factory.create_kafka_worker",
@@ -223,8 +232,11 @@ def test_worker_registers_background_ingest_handler(
     _, projection = _activated_projection(monkeypatch)
     with (
         patch(
-            "local_workspace_application.host.background_worker_factory.create_redis_kv_store",
-            return_value=MagicMock(),
+            "local_workspace_application.host.background_worker_factory.resolve_host_queue_execution_dependencies",
+            return_value=HostQueueExecutionDependencies(
+                kv_store=MagicMock(spec=DistributedKVStore),
+                causal_evidence_persistence=MagicMock(spec=CausalEvidencePersistence),
+            ),
         ),
         patch(
             "local_workspace_application.host.background_worker_factory.create_kafka_worker",

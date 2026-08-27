@@ -35,6 +35,7 @@ class ToolInvocationResult:
     pattern_id: str = ""
     appended_messages: list[ChatMessage] = field(default_factory=list)
     used_native_tool_messages: bool = False
+    used_ce_tool_feedback: bool = False
     aggregate: ToolInvocationAggregate | None = None
     investigation_proof: InvestigationProof | None = None
 

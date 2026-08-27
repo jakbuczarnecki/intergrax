@@ -228,7 +228,9 @@ Task/Run execution truth   → RuntimeEvent + Nexus terminal diagnostics (separa
 
 Hosting lifecycle is **not** Task/Run execution. It has no canonical `TaskId`/`RunId`/`AttemptId` and **must not** synthesize them for diagnostics. `DiagnosticsRecorder` owns bounded local failure snapshots only — not cross-run `ProblemId`, grouping, or root-cause lifecycle.
 
-`TerminalExecutionDiagnosticTrigger` / `DiagnosticOrchestrator` apply to terminal **execution** scopes (`tenant_id` + `TaskId` + `RunId`) wired through Nexus. Work executed inside a hosted application already uses that path. Hosting lifecycle failures (`APPLICATION_FAILED`, startup paths) are exported as typed hosting events and safe diagnostic snapshots; central Problem lifecycle for non-execution hosting subjects requires an explicit future DIAG subject seam — not a synthetic execution identity bridge.
+`TerminalExecutionDiagnosticTrigger` / `DiagnosticOrchestrator` apply to terminal **execution** scopes (`tenant_id` + `TaskId` + `RunId`) wired through Nexus. Work executed inside a hosted application already uses that path.
+
+**HOST-DIAG-3 (shipped):** `APPLICATION_FAILED` remains canonical hosting lifecycle truth and continues through `PLATFORM_SIGNAL` observability export. When product composition supplies an explicit tenant binding (`HostedDiagnosticTenantBinding` / environment `profile_id`), a composed `HostedApplicationDiagnosticEventPublisher` may additionally project bounded failure facts into central non-execution diagnostics with subject `tenant_id` + `application_id` + `instance_id`. Product composition owns tenant binding — hosting core remains tenant-neutral.
 
 ### ECP boundary
 

@@ -10,6 +10,11 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from scripts.proof.scenario_lifecycle import (
+    ScenarioLifecycleMetadata,
+    render_scenario_spec_frontmatter,
+)
+
 CANONICAL_SCENARIOS_ROOT = Path("platform_proofs") / "scenarios"
 SCENARIO_SLUG_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 FORBIDDEN_SLUG_SEGMENTS = frozenset({".", ".."})
@@ -149,8 +154,11 @@ def build_design_readme(title: str) -> str:
     )
 
 
-def build_design_scenario_spec(title: str) -> str:
-    return (
+def build_design_scenario_spec(title: str, *, slug: str) -> str:
+    frontmatter = render_scenario_spec_frontmatter(
+        ScenarioLifecycleMetadata.initial_design(slug=slug),
+    )
+    body = (
         "# Scenario Specification\n\n"
         f"**Scenario:** {title}  \n"
         f"**Status:** {LIFECYCLE_DESIGN_NOT_ACCEPTED} — awaiting human Scenario Quality Gate.\n\n"
@@ -277,6 +285,7 @@ def build_design_scenario_spec(title: str) -> str:
         "path has no prohibited fake/test shortcuts; controlled providers use normal "
         "application contracts; real model boundary configured if AI behavior is material.\n"
     )
+    return f"{frontmatter}\n\n{body}"
 
 
 DESIGN_STAGE_README_REQUIRED_SECTIONS: tuple[str, ...] = (
@@ -385,7 +394,7 @@ def create_scenario_design_package(request: ScenarioDesignRequest) -> ScenarioDe
     scenario_spec_path = package_root / "SCENARIO_SPEC.md"
     readme_path.write_text(build_design_readme(request.title), encoding="utf-8")
     scenario_spec_path.write_text(
-        build_design_scenario_spec(request.title),
+        build_design_scenario_spec(request.title, slug=request.slug.value),
         encoding="utf-8",
     )
     return ScenarioDesignPackage(

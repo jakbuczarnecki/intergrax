@@ -8,6 +8,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime, build_harness_host_runtime
+from intergrax.applications._shared.host_queue_execution_wiring import (
+    resolve_host_queue_execution_dependencies,
+)
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
@@ -19,7 +22,6 @@ from intergrax.background_tasks.registry import TaskRegistry
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations.providers.message_bus.kafka.bundle import create_kafka_worker
-from intergrax.integrations.providers.key_value_cache.redis.bundle import create_redis_kv_store
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from local_workspace_application.background_ingest.contracts import (
@@ -83,17 +85,18 @@ def build_local_workspace_background_worker_wiring(
     )
     task_registry.bind_execution_registry(registry)
 
-    kv_store = create_redis_kv_store()
+    queue_dependencies = resolve_host_queue_execution_dependencies(runtime)
     worker = create_kafka_worker(
-        kv_store=kv_store,
+        kv_store=queue_dependencies.kv_store,
         execution_registry=registry,
         idempotency_store=runtime.reliability.idempotency_store,
+        causal_evidence_persistence=queue_dependencies.causal_evidence_persistence,
     )
     return LocalWorkspaceBackgroundWorkerWiring(
         runtime=runtime,
         task_runner=task_runner,
         registry=registry,
-        kv_store=kv_store,
+        kv_store=queue_dependencies.kv_store,
         idempotency_store=runtime.reliability.idempotency_store,
         worker=worker,
     )

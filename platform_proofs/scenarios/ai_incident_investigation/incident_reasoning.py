@@ -20,6 +20,7 @@ from intergrax.contracts.evidence_claims import (
     validate_evidence_reference_id,
 )
 from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.diagnostics.investigation_contracts import IncidentInvestigationInput
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from platform_proofs.scenarios.ai_incident_investigation.fixtures import HypothesisId
@@ -29,6 +30,9 @@ from platform_proofs.scenarios.ai_incident_investigation.investigation_observabi
     IncidentCompletionIntentDiagV1,
     IncidentEvidenceGapDiagV1,
     IncidentReasoningUpdateDiagV1,
+)
+from platform_proofs.scenarios.ai_incident_investigation.platform_diagnostic_context import (
+    format_platform_diagnostic_context_lines,
 )
 from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
     COMPLETION_SUPPORTED_DIAGNOSIS,
@@ -379,6 +383,7 @@ def build_reasoning_messages(
     prior_state: PriorInvestigationState,
     critic_feedback: Sequence[str] | None,
     is_revision: bool,
+    investigation_input: IncidentInvestigationInput | None = None,
 ) -> list[ChatMessage]:
     lines = [
         "Investigate Line 4 target attainment degradation using gathered evidence only.",
@@ -390,6 +395,8 @@ def build_reasoning_messages(
         "Do not output claim_id, resolution, or supersedes_claim_id.",
         f"Investigation phase: {'revision' if is_revision else 'initial'}",
     ]
+    if investigation_input is not None:
+        lines.extend(format_platform_diagnostic_context_lines(investigation_input))
     if evidence_nodes:
         lines.append("Gathered evidence IDs:")
         for node in evidence_nodes:
@@ -425,6 +432,7 @@ def propose_incident_reasoning(
     prior_state: PriorInvestigationState,
     critic_feedback: Sequence[str] | None,
     is_revision: bool,
+    investigation_input: IncidentInvestigationInput | None = None,
 ) -> IncidentReasoningProposal:
     llm = runtime_state.context.config.llm_adapter
     if llm is None:
@@ -435,6 +443,7 @@ def propose_incident_reasoning(
         prior_state=prior_state,
         critic_feedback=critic_feedback,
         is_revision=is_revision,
+        investigation_input=investigation_input,
     )
     structured = llm.generate_structured(
         messages,

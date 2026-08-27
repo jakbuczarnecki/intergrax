@@ -89,6 +89,10 @@ These rules are **normative** for every Scenario Proof. They apply to **canonica
 | **YES** | Required to qualify as SCENARIO |
 | **NO** | **Not acceptable** as SCENARIO — may qualify as CONFORMANCE or requires redesign |
 
+### Scenario runtime LAB profile (generated proofs)
+
+Generated scenario application skeletons use `build_scenario_lab_runtime` from `intergrax.applications._shared.scenario_runtime_profiles`. Authors of ordinary proof runs **do not** manually configure `runtime_events_db_path`, `trace_db_path`, `use_in_memory_trace`, `require_runtime_event_persistence`, or diagnostic storage rules. LAB provides automatic scoped workspace storage, explicit synthetic tenant, the same Nexus baseline, RuntimeEvent persistence, and default diagnostics via shared `InMemoryDocumentStore`. Production-attached deployment requires explicit manifest, tenant, durable storage, and document store when diagnostics are required.
+
 ### Application Observability Test
 
 **Mandatory Scenario acceptance question** (alongside Application Survival Test):
@@ -1537,6 +1541,7 @@ Use precise lifecycle language — never bare `ACCEPTED` in a way that could be 
 | --- | --- |
 | `DESIGN / NOT YET ACCEPTED` | Scaffold or design in progress; Scenario Quality Gate not passed |
 | `ACCEPTED FOR IMPLEMENTATION` | Scenario concept accepted; no executable proof, evidence, or report yet |
+| `IMPLEMENTATION INITIALIZED` | Gated skeleton generated; domain implementation in progress |
 | Post-implementation | Show factual execution state in **Latest verified run** (verdict, SHA, timestamps, invariants) |
 
 At **DESIGN** stage do **not** show PASS badges, executable status, or sample runtime numbers.
@@ -1791,6 +1796,43 @@ platform_proofs/scenarios/<scenario_slug>/
 
 No fake `proof.json`, runtime entrypoint, evidence artifacts, or auto-generated SVGs.
 
+`SCENARIO_SPEC.md` includes YAML frontmatter — the **canonical machine-readable lifecycle source**. README keeps human-readable status wording.
+
+**Lifecycle workflow (SCENARIO-PLATFORM-3B):**
+
+```text
+1. create design          → create_scenario_proof.py
+2. fill design            → README + SCENARIO_SPEC sections A–E
+3. human acceptance       → Scenario Quality Gate
+4. mark lifecycle metadata → update SCENARIO_SPEC frontmatter (not README text alone)
+5. init implementation    → init_scenario_implementation.py
+6. implement              → application + proof layers
+7. run / falsify          → run_proof.py
+8. verify                 → evidence + report + library acceptance
+```
+
+After step 4, set frontmatter gates explicitly (do not infer completion from prose):
+
+```yaml
+---
+scenario_slug: <scenario_slug>
+lifecycle: ACCEPTED_FOR_IMPLEMENTATION
+implementation_status: NOT_INITIALIZED
+intergrax_fit: COMPLETED
+gap_decision: RESOLVED
+observability_contract: COMPLETED
+application_vs_proof_ownership: COMPLETED
+---
+```
+
+Initialize the implementation skeleton only after all gates above are set:
+
+```bash
+uv run python scripts/proof/init_scenario_implementation.py --slug <scenario_slug>
+```
+
+The generator is fail-closed: it does not create a design package, does not overwrite existing implementation files, and updates frontmatter to `lifecycle: IMPLEMENTATION_INITIALIZED` / `implementation_status: INITIALIZED` on success.
+
 Workflow:
 
 ```text
@@ -1798,10 +1840,12 @@ canonical scaffold (R3: README gateway + SCENARIO_SPEC deep canon)
 → design-stage package
 → fill Abstract, At a glance, Scenario semantics
 → human Scenario Quality Gate
+→ mark SCENARIO_SPEC frontmatter gates
 → add explanatory visual(s) under assets/
 → capability-fit across all required domains (§ C)
 → gap decision (§ D)
-→ implementation (§ E)
+→ init implementation skeleton (gated)
+→ implement application + proof layers (§ E)
 → real run
 → report + evidence
 → publication (Proof Library catalog entry)

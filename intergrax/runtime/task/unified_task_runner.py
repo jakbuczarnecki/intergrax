@@ -6,9 +6,15 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Optional
 
-from intergrax.contracts.execution_identity import AttemptId, RunId, mint_run_id
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    RunId,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+)
 from intergrax.llm_adapters.tracking.context import llm_tenant_scope
-from intergrax.runtime.execution.boundary import ExecutionBoundary
+from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
 from intergrax.runtime.execution.nexus_compat import NexusTaskExecutionDelegate
 from intergrax.runtime.execution.request import ExecutionCapability
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
@@ -73,7 +79,13 @@ class UnifiedTaskRunner:
             resolved_attempt_id = checkpoint_attempt_id
         else:
             resolved_run_id = run_id or mint_run_id()
-            resolved_attempt_id = attempt_id
+            resolved_attempt_id = attempt_id or mint_attempt_id()
+        execution_id = mint_execution_id()
+        identity = ExecutionIdentityBinding(
+            run_id=resolved_run_id,
+            attempt_id=resolved_attempt_id,
+            execution_id=execution_id,
+        )
         await ActiveTaskRegistry.register(task, resolved_run_id)
         try:
             with llm_tenant_scope(task.tenant_id):
@@ -91,7 +103,10 @@ class UnifiedTaskRunner:
                     run_id=resolved_run_id,
                     attempt_id=resolved_attempt_id,
                 )
-                boundary = ExecutionBoundary[Task, TaskResult](delegate)
+                boundary = ExecutionBoundary[Task, TaskResult](
+                    delegate,
+                    identity=identity,
+                )
                 return await boundary.execute(task)
         finally:
             await ActiveTaskRegistry.unregister(task.task_id, resolved_run_id)

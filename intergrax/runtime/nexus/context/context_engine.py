@@ -20,7 +20,11 @@ from intergrax.context.session_history import (
     SessionHistorySnapshot,
 )
 from intergrax.context.dedup import dedup_fragments_by_hash
-from intergrax.context.formatter import DefaultContextFormatter, merge_fragment_messages
+from intergrax.context.formatter import (
+    DefaultContextFormatter,
+    merge_fragment_messages,
+    merge_iterative_tool_feedback_messages,
+)
 from intergrax.context.ranker import DefaultContextRanker
 from intergrax.context.registry import ContextPluginRegistry
 from intergrax.context.tracking.context_spans import context_span
@@ -225,7 +229,13 @@ class DefaultNexusContextEngine:
 
         formatter = self._registry.formatter or self._formatter
         fragment_messages = formatter.format(ranked_fragments, request)
-        messages_for_compile = merge_fragment_messages(raw_messages, fragment_messages)
+        if request.assembly_scope == "acp_step" and request.step_kind == "tool_call":
+            messages_for_compile = merge_iterative_tool_feedback_messages(
+                raw_messages,
+                fragment_messages,
+            )
+        else:
+            messages_for_compile = merge_fragment_messages(raw_messages, fragment_messages)
 
         resolved_budget = self._compiler.resolve_global_input_budget(
             runtime_config,

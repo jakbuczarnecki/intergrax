@@ -10,9 +10,11 @@ import pytest
 
 from intergrax.contracts.execution_identity import (
     AttemptId,
+    ExecutionId,
     RunId,
     bind_active_execution_identity,
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     require_active_execution_identity,
     reset_active_execution_identity,
@@ -52,6 +54,52 @@ async def test_concurrent_execution_identity_isolation() -> None:
     await asyncio.gather(coroutine_a(), coroutine_b())
     assert results["a"] == (run_r1, attempt_a1)
     assert results["b"] == (run_r2, attempt_b1)
+
+
+@pytest.mark.asyncio
+async def test_concurrent_execution_id_isolation() -> None:
+    run_r1 = mint_run_id()
+    run_r2 = mint_run_id()
+    attempt_a1 = mint_attempt_id()
+    attempt_b1 = mint_attempt_id()
+    execution_a = mint_execution_id()
+    execution_b = mint_execution_id()
+    gate = asyncio.Event()
+    results: dict[str, ExecutionId] = {}
+
+    async def coroutine_a() -> None:
+        token = bind_active_execution_identity(
+            run_id=run_r1,
+            attempt_id=attempt_a1,
+            execution_id=execution_a,
+        )
+        try:
+            gate.set()
+            await asyncio.sleep(0.05)
+            from intergrax.contracts.execution_identity import require_active_execution_id
+
+            results["a"] = require_active_execution_id()
+        finally:
+            reset_active_execution_identity(token)
+
+    async def coroutine_b() -> None:
+        await gate.wait()
+        token = bind_active_execution_identity(
+            run_id=run_r2,
+            attempt_id=attempt_b1,
+            execution_id=execution_b,
+        )
+        try:
+            await asyncio.sleep(0.05)
+            from intergrax.contracts.execution_identity import require_active_execution_id
+
+            results["b"] = require_active_execution_id()
+        finally:
+            reset_active_execution_identity(token)
+
+    await asyncio.gather(coroutine_a(), coroutine_b())
+    assert results["a"] == execution_a
+    assert results["b"] == execution_b
 
 
 @pytest.mark.asyncio

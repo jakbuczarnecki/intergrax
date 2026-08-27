@@ -48,7 +48,7 @@ async def test_run_tools_context_emits_tools_summary_then_propagates_failure() -
             return_value=None,
         ),
         patch(
-            "intergrax.runtime.nexus.tools.plan_context_invocation.run_bounded_tool_loop",
+            "intergrax.runtime.nexus.tools.plan_context_invocation.run_bounded_tool_loop_async",
             side_effect=_ToolLoopExplodedError("tool loop exploded deterministically"),
         ),
         pytest.raises(_ToolLoopExplodedError, match="tool loop exploded deterministically"),
@@ -88,7 +88,7 @@ async def test_run_tools_context_failure_reraises_before_metadata_merge() -> Non
             return_value=None,
         ),
         patch(
-            "intergrax.runtime.nexus.tools.plan_context_invocation.run_bounded_tool_loop",
+            "intergrax.runtime.nexus.tools.plan_context_invocation.run_bounded_tool_loop_async",
             side_effect=_ToolLoopExplodedError("tool loop exploded deterministically"),
         ),
         patch(
@@ -149,7 +149,7 @@ async def test_run_tools_context_hitl_pause_propagates_without_tools_summary() -
             return_value=None,
         ),
         patch(
-            "intergrax.runtime.nexus.tools.plan_context_invocation.run_bounded_tool_loop",
+            "intergrax.runtime.nexus.tools.plan_context_invocation.run_bounded_tool_loop_async",
             side_effect=_raise_hitl_pause,
         ),
         pytest.raises(DeclarativePolicyHitlPauseRequired),

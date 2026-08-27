@@ -790,6 +790,8 @@ HostedApplicationEvent
 
 **Shipped (TRACE-1B-HOS-FIX Done):** `ObservabilityHostedApplicationEventPublisher` (`intergrax/hosting/eventing.py`) routes `HostedApplicationEvent` through the canonical platform observability path on the existing HOS spine/export infrastructure (`ExportRecordKind.PLATFORM_SIGNAL`). The legacy `RuntimeSpineHostedApplicationEventPublisher` adapter that synthesized `TaskId`, `RunId`, and per-event `AttemptId` is **removed** — no compatibility alias or dual path.
 
+**HOST-DIAG-3:** `PLATFORM_SIGNAL` export remains the normal path for all hosting lifecycle events. `APPLICATION_FAILED` may additionally project into central non-execution diagnostics when product composition supplies explicit `HostedDiagnosticTenantBinding` and a shared `DiagnosticOrchestrator` via `HostedApplicationDiagnosticEventPublisher` — observability export always runs first.
+
 ### D. Author decision supplement (see also §4.4.1)
 
 ```text
