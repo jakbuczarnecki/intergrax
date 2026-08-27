@@ -13,6 +13,7 @@ from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
     RunId,
+    bind_active_execution_identity,
     mint_attempt_id,
     mint_execution_id,
     mint_run_id,
@@ -20,6 +21,7 @@ from intergrax.contracts.execution_identity import (
     peek_active_execution_identity,
     require_active_execution_id,
     require_active_execution_identity,
+    reset_active_execution_identity,
 )
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
@@ -239,7 +241,7 @@ def _identity_binding() -> ExecutionIdentityBinding:
 
 
 def _inference_stack(
-  adapter: StructuredTestAdapter,
+  adapter: LLMAdapter,
   *,
   identity: ExecutionIdentityBinding | None = None,
   admission_hooks: tuple[ExecutionAdmissionHook, ...] = (),
@@ -302,10 +304,9 @@ async def test_adapter_exception_propagates_unchanged() -> None:
 async def test_unsupported_structured_output_adapter_fails_before_invoke() -> None:
   adapter = NoStructuredSupportAdapter()
   execution = _inference_stack(
-    StructuredTestAdapter(parsed_output=RiskAssessment(risk="low")),
+    adapter,
     identity=_identity_binding(),
   )
-  execution._boundary._delegate = InferenceExecutor(adapter)
 
   with pytest.raises(RuntimeError, match="inference adapter does not support structured output"):
     await execution.execute(_risk_request())
@@ -379,12 +380,26 @@ async def test_streaming_request_fails_explicitly() -> None:
 
 
 @pytest.mark.asyncio
-async def test_inference_executor_requires_active_execution_id() -> None:
+async def test_inference_executor_requires_active_execution_identity() -> None:
   adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
   executor = InferenceExecutor(adapter)
 
   with pytest.raises(RuntimeError, match="active execution identity required"):
     await executor.execute(_risk_request())
+
+
+@pytest.mark.asyncio
+async def test_inference_executor_requires_active_execution_id() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  run_id = mint_run_id()
+  attempt_id = mint_attempt_id()
+  token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+  try:
+    executor = InferenceExecutor(adapter)
+    with pytest.raises(RuntimeError, match="active ExecutionId required"):
+      await executor.execute(_risk_request())
+  finally:
+    reset_active_execution_identity(token)
 
 
 @pytest.mark.asyncio
