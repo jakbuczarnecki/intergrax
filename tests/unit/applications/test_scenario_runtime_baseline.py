@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from echo.echo_agent import EchoAgent
+from intergrax.applications._shared.security_assembly_resolver import SecurityAssemblyError
 from intergrax.applications._shared.scenario_runtime_baseline import (
     ScenarioExecutionRequest,
     ScenarioRuntimeBuildError,
@@ -16,7 +17,11 @@ from intergrax.applications._shared.scenario_runtime_baseline import (
     execute_scenario_task,
     validate_scenario_tenant_id,
 )
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+    ApplicationSecurityProfile,
+)
+from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.contracts.execution_identity import mint_task_id
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
@@ -103,6 +108,89 @@ def _stub_scenario_llm(monkeypatch: pytest.MonkeyPatch) -> None:
         "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
         _resolve,
     )
+
+
+def test_build_scenario_runtime_lab_without_explicit_manifest(tmp_path: Path) -> None:
+    environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="scenario.lab.no_manifest")
+    composition = build_scenario_runtime_from_environment(
+        environment=environment,
+        registry=_echo_registry(),
+        tenant_id=_TENANT,
+        runtime_events_db_path=tmp_path / "events.db",
+        trace_db_path=tmp_path / "trace.db",
+        use_in_memory_trace=True,
+    )
+    assert composition.nexus_loop is not None
+    assert composition.tenant_id == _TENANT
+
+
+def test_build_scenario_runtime_strict_without_manifest_fails_before_runtime_build(
+    tmp_path: Path,
+) -> None:
+    environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="scenario.strict.no_manifest")
+    environment.execution_mode = ExecutionMode.STRICT
+    with pytest.raises(ScenarioRuntimeBuildError, match="explicit ApplicationManifest"):
+        build_scenario_runtime_from_environment(
+            environment=environment,
+            registry=_echo_registry(),
+            tenant_id=_TENANT,
+            runtime_events_db_path=tmp_path / "events.db",
+            trace_db_path=tmp_path / "trace.db",
+            use_in_memory_trace=True,
+        )
+
+
+def test_build_scenario_runtime_production_attached_without_manifest_fails(
+    tmp_path: Path,
+) -> None:
+    environment = ApplicationEnvironmentProfile.harness_production_defaults(
+        profile_id="scenario.production.no_manifest",
+    )
+    with pytest.raises(ScenarioRuntimeBuildError, match="explicit ApplicationManifest"):
+        build_scenario_runtime_from_environment(
+            environment=environment,
+            registry=_echo_registry(),
+            tenant_id=_TENANT,
+            runtime_events_db_path=tmp_path / "events.db",
+            trace_db_path=tmp_path / "trace.db",
+            use_in_memory_trace=False,
+        )
+
+
+def test_build_scenario_runtime_strict_with_explicit_manifest(tmp_path: Path) -> None:
+    environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="scenario.strict.manifest")
+    environment.execution_mode = ExecutionMode.STRICT
+    composition = build_scenario_runtime_from_environment(
+        environment=environment,
+        registry=_echo_registry(),
+        tenant_id=_TENANT,
+        manifest=_scenario_manifest("scenario_strict_manifest"),
+        runtime_events_db_path=tmp_path / "events.db",
+        trace_db_path=tmp_path / "trace.db",
+        use_in_memory_trace=True,
+    )
+    assert composition.nexus_loop is not None
+
+
+def test_build_scenario_runtime_rejects_invalid_security_assembly(tmp_path: Path) -> None:
+    environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="scenario.invalid.security")
+    environment.security = environment.security.model_copy(
+        update={
+            "application_security": ApplicationSecurityProfile(
+                defense_bundle_ids=["scenario.nonexistent.defense.bundle"],
+            ),
+        },
+    )
+    with pytest.raises(SecurityAssemblyError, match="unknown security defense bundle"):
+        build_scenario_runtime_from_environment(
+            environment=environment,
+            registry=_echo_registry(),
+            tenant_id=_TENANT,
+            manifest=_scenario_manifest("scenario_invalid_security"),
+            runtime_events_db_path=tmp_path / "events.db",
+            trace_db_path=tmp_path / "trace.db",
+            use_in_memory_trace=True,
+        )
 
 
 def test_build_scenario_runtime_returns_nexus_backed_composition(tmp_path: Path) -> None:

@@ -8,7 +8,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from intergrax.applications._shared.cost_assembly_resolver import assert_cost_assembly_valid
 from intergrax.applications._shared.cost_wiring import wire_application_cost
+from intergrax.applications._shared.critic_assembly_resolver import assert_critic_assembly_valid
 from intergrax.applications._shared.critic_tool_wiring import build_critic_eval_tool_client
 from intergrax.applications._shared.critic_wiring import wire_application_critic
 from intergrax.applications._shared.declarative_tool_wiring import (
@@ -21,27 +23,44 @@ from intergrax.applications._shared.environment_wiring import (
     ApplicationEnvironmentWiring,
     wire_application_environment,
 )
+from intergrax.applications._shared.evaluation_assembly_resolver import (
+    assert_evaluation_assembly_valid,
+)
 from intergrax.applications._shared.evaluation_wiring import wire_application_evaluation
+from intergrax.applications._shared.guardrail_assembly_resolver import (
+    assert_guardrail_assembly_valid,
+)
 from intergrax.applications._shared.guardrail_wiring import (
     ApplicationGuardrailWiring,
     wire_application_guardrail,
 )
 from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
 from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
+from intergrax.applications._shared.observability_assembly_resolver import (
+    assert_observability_assembly_valid,
+)
 from intergrax.applications._shared.observability_wiring import (
     wire_application_observability,
     wire_observability_event_subscriptions,
+)
+from intergrax.applications._shared.reliability_assembly_resolver import (
+    assert_reliability_assembly_valid,
 )
 from intergrax.applications._shared.reliability_wiring import (
     apply_reliability_governance_wiring,
     wire_application_reliability,
 )
+from intergrax.applications._shared.security_assembly_resolver import (
+    assert_security_assembly_valid,
+)
 from intergrax.applications._shared.security_wiring import (
     ApplicationSecurityWiring,
     wire_application_security,
 )
+from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications._shared.task_memory_wiring import wire_task_memory_from_profile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.contracts.execution_identity import RunId, TaskId, mint_run_id
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -123,6 +142,34 @@ def validate_scenario_tenant_id(tenant_id: str) -> str:
     return tenant_id
 
 
+def _scenario_allows_lab_manifest_fallback(
+    environment: ApplicationEnvironmentProfile,
+) -> bool:
+    """LAB-only posture: balanced lab hosts may synthesize a manifest; strict/product may not."""
+    return (
+        environment.application_profile is ApplicationProfile.LAB
+        and environment.execution_mode is not ExecutionMode.STRICT
+    )
+
+
+def _resolve_scenario_manifest(
+    environment: ApplicationEnvironmentProfile,
+    manifest: ApplicationManifest | None,
+) -> ApplicationManifest:
+    if manifest is not None:
+        resolved = manifest
+    elif _scenario_allows_lab_manifest_fallback(environment):
+        resolved = _scenario_lab_manifest(environment)
+    else:
+        raise ScenarioRuntimeBuildError(
+            "explicit ApplicationManifest is required for strict or production-attached "
+            "scenario environments"
+        )
+    if resolved.environment is None:
+        resolved = resolved.model_copy(update={"environment": environment})
+    return resolved
+
+
 def _scenario_lab_manifest(environment: ApplicationEnvironmentProfile) -> ApplicationManifest:
     safe_id = environment.profile_id.replace(".", "_").replace("-", "_")[:48]
     return ApplicationManifest.lab(
@@ -156,6 +203,7 @@ def _resolve_observability_stores(
         runtime_events_db_path=runtime_events_db_path,
         integration_profile=environment.integration_profile,
     )
+    assert_observability_assembly_valid(wiring, environment)
     return wiring.stores
 
 
@@ -179,9 +227,7 @@ def build_scenario_runtime_from_environment(
     factory wiring without HarnessHostRuntime hosting/control-plane surfaces.
     """
     resolved_tenant_id = validate_scenario_tenant_id(tenant_id)
-    resolved_manifest = manifest or _scenario_lab_manifest(environment)
-    if resolved_manifest.environment is None:
-        resolved_manifest = resolved_manifest.model_copy(update={"environment": environment})
+    resolved_manifest = _resolve_scenario_manifest(environment, manifest)
 
     env_wiring = wire_application_environment(
         resolved_manifest,
@@ -203,10 +249,14 @@ def build_scenario_runtime_from_environment(
         )
 
     reliability_wiring = wire_application_reliability(environment)
+    assert_reliability_assembly_valid(reliability_wiring, environment)
     cost_wiring = wire_application_cost(environment)
+    assert_cost_assembly_valid(cost_wiring, environment)
     security_wiring = wire_application_security(environment)
+    assert_security_assembly_valid(security_wiring, environment)
     guardrail_wiring = wire_application_guardrail(environment)
     evaluation_wiring = wire_application_evaluation(environment)
+    assert_evaluation_assembly_valid(evaluation_wiring, environment)
     l1_client = build_critic_eval_tool_client(
         environment,
         env_wiring.tool_wiring,
@@ -214,6 +264,7 @@ def build_scenario_runtime_from_environment(
         trace_reader=observability.trace_store,
     )
     critic_wiring = wire_application_critic(environment, l1_client=l1_client)
+    assert_critic_assembly_valid(critic_wiring, environment, l1_client=l1_client)
     task_memory = wire_task_memory_from_profile(environment)
     declarative_tool_invoker = build_declarative_invoker_from_tool_wiring(env_wiring.tool_wiring)
 
@@ -235,6 +286,8 @@ def build_scenario_runtime_from_environment(
         critic_wiring=critic_wiring,
         run_budget=cost_wiring.run_budget,
     )
+    assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)
+    assert_guardrail_assembly_valid(guardrail_wiring, environment, nexus=nexus_loop)
 
     wire_observability_event_subscriptions(
         nexus_loop.event_bus,
