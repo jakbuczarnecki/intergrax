@@ -19,6 +19,7 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
     peek_active_execution_id,
     peek_active_execution_identity,
+    peek_active_parent_execution_id,
     require_active_execution_id,
     require_active_execution_identity,
     validate_execution_id,
@@ -385,6 +386,56 @@ def _identity_binding() -> ExecutionIdentityBinding:
         attempt_id=mint_attempt_id(),
         execution_id=mint_execution_id(),
     )
+
+
+@pytest.mark.asyncio
+async def test_boundary_binds_parent_execution_id_for_child_identity() -> None:
+    parent_execution_id = mint_execution_id()
+    identity = ExecutionIdentityBinding(
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+        parent_execution_id=parent_execution_id,
+    )
+    captured: dict[str, ExecutionId | None] = {}
+
+    class ParentProbingHook:
+        async def admit(self, request: Ping) -> None:
+            captured["hook_parent"] = peek_active_parent_execution_id()
+
+    class ParentProbingDelegate:
+        async def execute(self, request: Ping) -> Pong:
+            captured["delegate_parent"] = peek_active_parent_execution_id()
+            return Pong(value="pong")
+
+    boundary = ExecutionBoundary[Ping, Pong](
+        ParentProbingDelegate(),
+        admission_hooks=(ParentProbingHook(),),
+        identity=identity,
+    )
+
+    await boundary.execute(Ping(value="ping"))
+
+    assert captured["hook_parent"] == parent_execution_id
+    assert captured["delegate_parent"] == parent_execution_id
+
+
+@pytest.mark.asyncio
+async def test_boundary_root_identity_has_no_parent_execution_id() -> None:
+    identity = _identity_binding()
+    captured: dict[str, ExecutionId | None] = {}
+
+    class RootProbeDelegate:
+        async def execute(self, request: Ping) -> Pong:
+            captured["parent"] = peek_active_parent_execution_id()
+            return Pong(value="pong")
+
+    await ExecutionBoundary[Ping, Pong](
+        RootProbeDelegate(),
+        identity=identity,
+    ).execute(Ping(value="ping"))
+
+    assert captured["parent"] is None
 
 
 @pytest.mark.asyncio

@@ -25,6 +25,7 @@ class ActiveExecutionIdentityState:
     run_id: RunId
     attempt_id: AttemptId
     execution_id: ExecutionId | None = None
+    parent_execution_id: ExecutionId | None = None
 
 
 _active_execution_identity: ContextVar[ActiveExecutionIdentityState | None] = ContextVar(
@@ -93,16 +94,23 @@ def bind_active_execution_identity(
     run_id: RunId,
     attempt_id: AttemptId,
     execution_id: ExecutionId | None = None,
+    parent_execution_id: ExecutionId | None = None,
 ) -> Token:
     validated_run_id = validate_run_id(run_id)
     validated_attempt_id = validate_attempt_id(attempt_id)
     validated_execution_id = (
         validate_execution_id(execution_id) if execution_id is not None else None
     )
+    validated_parent_execution_id = (
+        validate_execution_id(parent_execution_id)
+        if parent_execution_id is not None
+        else None
+    )
     state = ActiveExecutionIdentityState(
         run_id=validated_run_id,
         attempt_id=validated_attempt_id,
         execution_id=validated_execution_id,
+        parent_execution_id=validated_parent_execution_id,
     )
     return _active_execution_identity.set(state)
 
@@ -123,6 +131,13 @@ def peek_active_execution_id() -> ExecutionId | None:
     if state is None:
         return None
     return state.execution_id
+
+
+def peek_active_parent_execution_id() -> ExecutionId | None:
+    state = _active_execution_identity.get()
+    if state is None:
+        return None
+    return state.parent_execution_id
 
 
 def require_active_execution_identity() -> tuple[RunId, AttemptId]:
@@ -149,6 +164,7 @@ def transition_active_execution_identity() -> AttemptId:
             run_id=state.run_id,
             attempt_id=new_attempt_id,
             execution_id=None,
+            parent_execution_id=None,
         ),
     )
     return new_attempt_id
@@ -165,11 +181,13 @@ class ActiveExecutionIdentity:
         run_id: RunId,
         attempt_id: AttemptId,
         execution_id: ExecutionId | None = None,
+        parent_execution_id: ExecutionId | None = None,
     ) -> Token:
         return bind_active_execution_identity(
             run_id=run_id,
             attempt_id=attempt_id,
             execution_id=execution_id,
+            parent_execution_id=parent_execution_id,
         )
 
     def reset(self, token: Token) -> None:
@@ -188,6 +206,10 @@ class ActiveExecutionIdentity:
     @property
     def execution_id(self) -> ExecutionId | None:
         return peek_active_execution_id()
+
+    @property
+    def parent_execution_id(self) -> ExecutionId | None:
+        return peek_active_parent_execution_id()
 
     def require(self) -> tuple[RunId, AttemptId]:
         return require_active_execution_identity()

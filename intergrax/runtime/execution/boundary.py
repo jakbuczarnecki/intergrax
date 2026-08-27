@@ -39,6 +39,7 @@ class ExecutionIdentityBinding:
     run_id: RunId
     attempt_id: AttemptId
     execution_id: ExecutionId
+    parent_execution_id: ExecutionId | None = None
 
 
 class ExecutionBoundary(Generic[RequestT, ResultT]):
@@ -72,6 +73,7 @@ class ExecutionBoundary(Generic[RequestT, ResultT]):
             run_id=self._identity.run_id,
             attempt_id=self._identity.attempt_id,
             execution_id=self._identity.execution_id,
+            parent_execution_id=self._identity.parent_execution_id,
         )
         try:
             return await self._run_admission_and_delegate(request)

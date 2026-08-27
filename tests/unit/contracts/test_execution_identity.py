@@ -17,6 +17,7 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
     peek_active_execution_id,
     peek_active_execution_identity,
+    peek_active_parent_execution_id,
     require_active_execution_id,
     require_active_execution_identity,
     reset_active_execution_identity,
@@ -531,6 +532,63 @@ def test_legacy_bind_returns_two_value_tuple() -> None:
         assert bound == (run_id, attempt_id)
     finally:
         reset_active_execution_identity(token)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_canonical_bind_exposes_parent_execution_id() -> None:
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    parent_execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+        parent_execution_id=parent_execution_id,
+    )
+    try:
+        assert peek_active_parent_execution_id() == parent_execution_id
+        assert peek_active_execution_id() == execution_id
+    finally:
+        reset_active_execution_identity(token)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_root_bind_has_no_parent_execution_id() -> None:
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    try:
+        assert peek_active_parent_execution_id() is None
+    finally:
+        reset_active_execution_identity(token)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_transition_retry_clears_parent_execution_id() -> None:
+    run_id = mint_run_id()
+    attempt_a1 = mint_attempt_id()
+    execution_id = mint_execution_id()
+    parent_execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_a1,
+        execution_id=execution_id,
+        parent_execution_id=parent_execution_id,
+    )
+    attempt_a2 = transition_active_execution_identity()
+    assert attempt_a2 != attempt_a1
+    assert peek_active_parent_execution_id() is None
+    assert peek_active_execution_id() is None
+    reset_active_execution_identity(token)
 
 
 @pytest.mark.unit
