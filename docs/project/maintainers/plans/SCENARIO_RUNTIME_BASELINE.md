@@ -410,7 +410,7 @@ ScenarioExecutionRequest (tenant_id, message, capability)
 |-------|---------|-----------|
 | `DESIGN / NOT YET ACCEPTED` | Design package only | `create_scenario_proof.py` (today) |
 | `ACCEPTED FOR IMPLEMENTATION` | Human quality gate passed | — |
-| `IMPLEMENTATION INITIALIZED` | Skeleton generated | `init_scenario_implementation` (future -3B) |
+| `IMPLEMENTATION INITIALIZED` | Skeleton generated | `init_scenario_implementation.py` (**SCENARIO-PLATFORM-3B — implemented**) |
 | `EXECUTABLE / NOT YET VERIFIED` | Runnable stub + proof descriptor | future |
 | `VERIFIED` | Public Library proof accepted | manual / CI |
 
@@ -448,7 +448,7 @@ gap_decision: RESOLVED
 ---
 ```
 
-**Do not introduce frontmatter in SCENARIO-PLATFORM-2** — document recommendation only. Until -3B, human gate + string constant remains transitional.
+**SCENARIO-PLATFORM-3B — implemented:** minimal YAML frontmatter on `SCENARIO_SPEC.md` (see `scripts/proof/scenario_lifecycle.py`). Legacy specs without frontmatter parse as `LEGACY`; `init_scenario_implementation` fails with `lifecycle metadata required`.
 
 ---
 
@@ -478,8 +478,8 @@ Generated implementation must include:
 | Gap | Impact | Target slice |
 |-----|--------|--------------|
 | ~~No `scenario_runtime_baseline.py` shared builder~~ | ~~Every scenario would duplicate `harness_host_runtime` subset~~ | **SCENARIO-PLATFORM-3A — implemented** |
-| `init_scenario_implementation` absent | No gated skeleton generation | **SCENARIO-PLATFORM-3B** |
-| Lifecycle frontmatter not defined in generator | Fragile promotion gate | **SCENARIO-PLATFORM-3B** |
+| `init_scenario_implementation` absent | No gated skeleton generation | **SCENARIO-PLATFORM-3B — implemented** |
+| Lifecycle frontmatter not defined in generator | Fragile promotion gate | **SCENARIO-PLATFORM-3B — implemented** |
 | Lab observability profile not codified for scenarios | Authors may omit runtime event store | **SCENARIO-PLATFORM-4** |
 | `ai_incident` still on GraphExecutor path | Reference diverges from contract | **SCENARIO-PLATFORM-5** (migration) |
 | Universal scenario architecture CI gates | Only ai_incident tested | **SCENARIO-PLATFORM-6** |
@@ -492,7 +492,7 @@ Generated implementation must include:
 | Slice | Scope | Status |
 |-------|-------|--------|
 | **SCENARIO-PLATFORM-3A** | `intergrax/applications/_shared/scenario_runtime_baseline.py` — `build_scenario_runtime_from_environment`, `execute_scenario_task` | **Implemented** |
-| **SCENARIO-PLATFORM-3B** | `init_scenario_implementation.py` + lifecycle frontmatter spec + precondition gates |
+| **SCENARIO-PLATFORM-3B** | `init_scenario_implementation.py` + lifecycle frontmatter spec + precondition gates | **Implemented** |
 | **SCENARIO-PLATFORM-4** | Observability + diagnostic baseline profiles (lab temp DB vs production-attached); document store optional lab stub |
 | **SCENARIO-PLATFORM-5** | Migrate `ai_incident` to facade baseline (behavior parity proofs) |
 | **SCENARIO-PLATFORM-6** | Universal `platform_proofs/scenarios/*` architecture gates in CI |
