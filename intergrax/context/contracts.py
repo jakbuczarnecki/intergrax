@@ -73,6 +73,16 @@ class ContextBudgetSnapshot:
 
 
 @dataclass(frozen=True, slots=True)
+class IterativeToolOutputBlock:
+    """Typed carrier for iterative native tool feedback into CE (UE-6C)."""
+
+    content: str
+    tool_call_id: str
+    tool_name: str
+    step_id: str | None
+
+
+@dataclass(frozen=True, slots=True)
 class ContextFragment:
     fragment_id: str
     source: ContextFragmentSource

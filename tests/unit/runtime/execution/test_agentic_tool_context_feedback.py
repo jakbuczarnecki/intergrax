@@ -16,6 +16,7 @@ from intergrax.context.contracts import (
     ContextDecisionSnapshot,
     ContextFragment,
     ContextFragmentSource,
+    IterativeToolOutputBlock,
 )
 from intergrax.context.bootstrap import materialize_context_plugin_registry
 from intergrax.context.providers.legacy_bridge import fragments_from_tool_output_blocks
@@ -147,8 +148,8 @@ def _trace_for(step_id: str, tool_name: str) -> ToolCallTrace:
     )
 
 
-def test_tool_output_blocks_convert_to_tool_output_fragments() -> None:
-    blocks = tool_output_blocks_from_native_round(
+def _native_round_blocks() -> list[IterativeToolOutputBlock]:
+    return tool_output_blocks_from_native_round(
         [
             LLMToolCall.from_openai_shape(
                 call_id="tc-1",
@@ -164,8 +165,24 @@ def test_tool_output_blocks_convert_to_tool_output_fragments() -> None:
             )
         ],
     )
+
+
+def test_tool_output_blocks_from_native_round_returns_typed_blocks() -> None:
+    blocks = _native_round_blocks()
+    assert len(blocks) == 1
+    block = blocks[0]
+    assert isinstance(block, IterativeToolOutputBlock)
+    assert block.content == _FULL_OBSERVATION
+    assert block.tool_call_id == "tc-1"
+    assert block.tool_name == "probe.read"
+    assert block.step_id == "step-1"
+
+
+def test_tool_output_blocks_convert_to_tool_output_fragments() -> None:
+    blocks = _native_round_blocks()
     fragments = fragments_from_tool_output_blocks(blocks)
     assert fragments and fragments[0].source is ContextFragmentSource.TOOL_OUTPUT
+    assert fragments[0].source_id == "tc-1"
     assert fragments[0].content == _FULL_OBSERVATION
     assert fragments[0].metadata["tool_call_id"] == "tc-1"
     assert fragments[0].metadata["tool_name"] == "probe.read"
@@ -182,8 +199,8 @@ def test_tool_output_block_preserves_full_observation_not_trace_preview() -> Non
         [PlannedToolCall(step_id="step-1", tool_id="probe.read", input=_In())],
         [outcome],
     )
-    assert blocks[0]["content"] == _FULL_OBSERVATION
-    assert blocks[0]["content"] != outcome.trace.output_preview
+    assert blocks[0].content == _FULL_OBSERVATION
+    assert blocks[0].content != outcome.trace.output_preview
 
 
 class _IterativeCePlanner:
@@ -297,12 +314,12 @@ async def test_failed_tool_observation_reaches_ce() -> None:
     state = build_runtime_state_for_tests(run_id=mint_run_id())
     engine = _wire_ce_state(state)
     state.iterative_tool_output_blocks = [
-        {
-            "content": _FAIL_OBSERVATION,
-            "tool_call_id": "tc-fail",
-            "tool_name": "probe.read",
-            "step_id": "step-fail",
-        }
+        IterativeToolOutputBlock(
+            content=_FAIL_OBSERVATION,
+            tool_call_id="tc-fail",
+            tool_name="probe.read",
+            step_id="step-fail",
+        )
     ]
     messages = await assemble_iterative_tool_planner_messages(
         state,
@@ -316,21 +333,22 @@ async def test_failed_tool_observation_reaches_ce() -> None:
 @pytest.mark.asyncio
 async def test_multiple_tool_outputs_keep_attribution() -> None:
     blocks = [
-        {
-            "content": "result-a",
-            "tool_call_id": "tc-a",
-            "tool_name": "probe.read",
-            "step_id": "step-a",
-        },
-        {
-            "content": "result-b",
-            "tool_call_id": "tc-b",
-            "tool_name": "probe.read",
-            "step_id": "step-b",
-        },
+        IterativeToolOutputBlock(
+            content="result-a",
+            tool_call_id="tc-a",
+            tool_name="probe.read",
+            step_id="step-a",
+        ),
+        IterativeToolOutputBlock(
+            content="result-b",
+            tool_call_id="tc-b",
+            tool_name="probe.read",
+            step_id="step-b",
+        ),
     ]
     fragments = fragments_from_tool_output_blocks(blocks)
     assert len(fragments) == 2
+    assert {fragment.source_id for fragment in fragments} == {"tc-a", "tc-b"}
     assert {fragment.metadata["tool_call_id"] for fragment in fragments} == {"tc-a", "tc-b"}
 
 

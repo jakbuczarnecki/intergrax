@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any, List, Optional
 from typing import TYPE_CHECKING
 
+from intergrax.context.contracts import IterativeToolOutputBlock
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
@@ -101,7 +102,7 @@ class RuntimeState(RuntimeStateContract):
     # Tools
     tool_planner_answer: Optional[str] = None
     tool_planner_allowed_tool_ids: Optional[tuple[str, ...]] = None
-    iterative_tool_output_blocks: list[dict[str, object]] = field(default_factory=list)
+    iterative_tool_output_blocks: list[IterativeToolOutputBlock] = field(default_factory=list)
 
     # Typed tool call traces (production runtime artifact).
     tool_traces: List[ToolCallTrace] = field(default_factory=list)

@@ -13,6 +13,7 @@ from dataclasses import dataclass, replace
 
 from pydantic import BaseModel
 
+from intergrax.context.contracts import IterativeToolOutputBlock
 from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
@@ -360,17 +361,18 @@ def tool_output_blocks_from_native_round(
     tool_calls: Sequence[LLMToolCall],
     planned_calls: Sequence[PlannedToolCall],
     outcomes: Sequence[PlannedToolCallOutcome],
-) -> list[dict[str, object]]:
+) -> list[IterativeToolOutputBlock]:
     """Build typed tool-output blocks for ``TOOL_OUTPUT_BLOCKS_HANDLE`` collection."""
-    blocks: list[dict[str, object]] = []
+    blocks: list[IterativeToolOutputBlock] = []
     for tool_call, planned_call, outcome in zip(tool_calls, planned_calls, outcomes, strict=False):
-        block: dict[str, object] = {
-            "content": outcome.model_observation.content,
-            "tool_call_id": tool_call.id,
-            "tool_name": tool_call.name,
-            "step_id": planned_call.step_id,
-        }
-        blocks.append(block)
+        blocks.append(
+            IterativeToolOutputBlock(
+                content=outcome.model_observation.content,
+                tool_call_id=tool_call.id,
+                tool_name=tool_call.name,
+                step_id=planned_call.step_id,
+            )
+        )
     return blocks
 
 
@@ -482,6 +484,8 @@ async def run_bounded_tool_loop_async(
             allowed_tool_ids=allowed_tool_ids,
             max_iterations=max_iters,
         )
+    # TRANSITIONAL (UE-9D): sync fallback via BoundedReactPattern → append_native_tool_messages
+    # when no context_engine is wired. Owner of removal: UE-9D.
     return run_bounded_tool_loop(
         state=state,
         invoker=invoker,
