@@ -89,6 +89,10 @@ These rules are **normative** for every Scenario Proof. They apply to **canonica
 | **YES** | Required to qualify as SCENARIO |
 | **NO** | **Not acceptable** as SCENARIO — may qualify as CONFORMANCE or requires redesign |
 
+### Scenario runtime LAB profile (generated proofs)
+
+Generated scenario application skeletons use `build_scenario_lab_runtime` from `intergrax.applications._shared.scenario_runtime_profiles`. Authors of ordinary proof runs **do not** manually configure `runtime_events_db_path`, `trace_db_path`, `use_in_memory_trace`, `require_runtime_event_persistence`, or diagnostic storage rules. LAB provides automatic scoped workspace storage, explicit synthetic tenant, the same Nexus baseline, RuntimeEvent persistence, and default diagnostics via shared `InMemoryDocumentStore`. Production-attached deployment requires explicit manifest, tenant, durable storage, and document store when diagnostics are required.
+
 ### Application Observability Test
 
 **Mandatory Scenario acceptance question** (alongside Application Survival Test):

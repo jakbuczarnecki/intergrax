@@ -60,7 +60,7 @@ _FORBIDDEN_SYMBOLS = frozenset(
         "bind_active_execution_identity",
     }
 )
-_REQUIRED_REFERENCE = "scenario_runtime_baseline"
+_REQUIRED_REFERENCE = "scenario_runtime_profiles"
 
 
 def _accepted_metadata(slug: str) -> ScenarioLifecycleMetadata:
@@ -244,9 +244,10 @@ def test_init_happy_path_generates_skeleton_and_updates_lifecycle(tmp_path: Path
     runtime_source = (package_root / "application" / "runtime_composition.py").read_text(
         encoding="utf-8",
     )
-    assert "build_scenario_runtime_from_environment" in runtime_source
-    assert "ApplicationEnvironmentProfile.lab_defaults" in runtime_source
+    assert "build_scenario_lab_runtime" in runtime_source
+    assert "scenario_runtime_profiles" in runtime_source
     assert "SYNTHETIC_SCENARIO_TENANT_ID" in runtime_source
+    assert "runtime_events_db_path" not in runtime_source
 
     scenario_source = (package_root / "application" / "scenario.py").read_text(encoding="utf-8")
     assert "ScenarioExecutionRequest" in scenario_source

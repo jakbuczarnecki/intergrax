@@ -559,16 +559,32 @@ Generated implementation must include:
 
 ### LAB behavior
 
-- Caller supplies scoped temp SQLite via `runtime_events_db_path` (required when `require_runtime_event_persistence=True`, default).
-- `use_in_memory_trace=True` keeps in-memory trace while **still** wiring RuntimeEvent persistence when `runtime_events_db_path` is set.
-- Without `document_store`, diagnostic trigger is absent; observability persistence remains active.
-- Same wiring code path as production-attached; only configuration differs.
+| Aspect | LAB profile |
+|--------|-------------|
+| Storage | Automatic scoped workspace (`runtime_events.db`, `trace.db`) via `build_scenario_lab_runtime` |
+| Tenant | Explicit synthetic tenant constant passed by caller (not hidden global) |
+| Nexus | Same `build_scenario_runtime_from_environment` baseline as production-attached |
+| RuntimeEvent | ON — persistence required |
+| Diagnostics | ON when shared `InMemoryDocumentStore` is wired (LAB default); unavailable without document store |
+| API | `build_scenario_lab_runtime(registry=..., tenant_id=...)` — no manual DB paths |
+
+Authors of ordinary generated proofs **do not** configure `runtime_events_db_path`, `trace_db_path`, `use_in_memory_trace`, `require_runtime_event_persistence`, or diagnostic storage rules manually.
+
+Optional `workspace_root` may reuse a proof artifact directory when proof runner owns lifecycle.
 
 ### Production-attached behavior
 
-- Caller supplies durable `runtime_events_db_path`, `trace_db_path`, and `document_store` when diagnostics are required.
-- `try_build_terminal_execution_diagnostic_trigger` attaches when `document_store` + `runtime_event_store` resolve.
-- No separate production code path.
+| Aspect | PRODUCTION_ATTACHED profile |
+|--------|----------------------------|
+| Storage | Caller-supplied durable `runtime_events_db_path` / `trace_db_path` |
+| Tenant | Real `tenant_id` required (validated, non-empty) |
+| Manifest | Explicit `ApplicationManifest` required |
+| Nexus | Same baseline |
+| RuntimeEvent | Required — fail closed when missing |
+| Diagnostics | Fail closed when `diagnostics_required=True` and `document_store` missing |
+| API | `build_scenario_production_runtime(...)` — explicit critical configuration |
+
+Forbidden without explicit caller decision: temp SQLite fallback, synthetic tenant, in-memory document store, `ApplicationManifest.lab` synthesis.
 
 ### Diagnostics prerequisites
 
@@ -587,7 +603,8 @@ Generated implementation must include:
 ### Tests
 
 - `tests/unit/applications/test_scenario_runtime_baseline.py` — build, execution identity, tenant, RuntimeEvent persistence, diagnostics attachment, LAB without document store, architecture gate
+- `tests/unit/applications/test_scenario_runtime_profiles.py` — LAB zero-config, execution, diagnostics default, storage isolation, production fail-closed, production success
 
 ---
 
-*End of SCENARIO-PLATFORM-2 contract (3A implemented).*
+*End of SCENARIO-PLATFORM contract (3A + 4 implemented).*

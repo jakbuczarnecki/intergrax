@@ -71,12 +71,19 @@ from intergrax.runtime.nexus.observability_wiring import (
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult
 
+from intergrax.applications._shared.scenario_runtime_profiles import (
+    ScenarioRuntimeMode,
+    ScenarioRuntimeWorkspace,
+)
+
 
 __all__ = [
     "ScenarioExecutionRequest",
     "ScenarioRuntimeBuildError",
     "ScenarioRuntimeComposition",
     "ScenarioRuntimeExecutionResult",
+    "ScenarioRuntimeMode",
+    "ScenarioRuntimeWorkspace",
     "build_scenario_runtime_from_environment",
     "execute_scenario_task",
     "validate_scenario_tenant_id",
@@ -100,6 +107,8 @@ class ScenarioRuntimeComposition:
     security_wiring: ApplicationSecurityWiring
     guardrail_wiring: ApplicationGuardrailWiring
     terminal_diagnostic_trigger_attached: bool
+    workspace: ScenarioRuntimeWorkspace | None = None
+    runtime_mode: ScenarioRuntimeMode | None = None
 
     @property
     def has_runtime_event_store(self) -> bool:
@@ -219,6 +228,9 @@ def build_scenario_runtime_from_environment(
     manifest: ApplicationManifest | None = None,
     use_in_memory_trace: bool = False,
     require_runtime_event_persistence: bool = True,
+    diagnostics_required: bool = False,
+    workspace: ScenarioRuntimeWorkspace | None = None,
+    runtime_mode: ScenarioRuntimeMode | None = None,
 ) -> ScenarioRuntimeComposition:
     """
     Compose a lighter Nexus-backed scenario runtime from platform primitives.
@@ -302,6 +314,11 @@ def build_scenario_runtime_from_environment(
     terminal_diagnostic_trigger_attached = terminal_diagnostic_trigger is not None
     if terminal_diagnostic_trigger is not None:
         nexus_loop.attach_terminal_diagnostic_trigger(terminal_diagnostic_trigger)
+    if diagnostics_required and not terminal_diagnostic_trigger_attached:
+        raise ScenarioRuntimeBuildError(
+            "diagnostics are required but terminal diagnostic trigger could not be attached. "
+            "Provide document_store and runtime event persistence."
+        )
 
     return ScenarioRuntimeComposition(
         environment=environment,
@@ -313,6 +330,8 @@ def build_scenario_runtime_from_environment(
         security_wiring=security_wiring,
         guardrail_wiring=guardrail_wiring,
         terminal_diagnostic_trigger_attached=terminal_diagnostic_trigger_attached,
+        workspace=workspace,
+        runtime_mode=runtime_mode,
     )
 
 
