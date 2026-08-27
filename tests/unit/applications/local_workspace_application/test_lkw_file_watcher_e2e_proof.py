@@ -569,7 +569,13 @@ def test_bat_runner_ordering_and_services() -> None:
 
 def test_bat_runner_materializes_runtime_context_before_compose() -> None:
     text = _read(_PROOF_BAT)
+    pushd_idx = text.index('pushd "%REPO_ROOT%"')
+    source_roots_idx = text.index("lkw_tier3_source_roots.py")
     materialize_idx = text.index("build_application_image.py")
+    assert pushd_idx < source_roots_idx < materialize_idx
+    assert "source_import_context=ready" in text
+    assert "failure_reason=source_import_context_failed" in text
+    assert '--format windows-path-list' in text
     compose_config_idx = text.lower().index("validating docker compose merge")
     compose_up_idx = text.lower().index("starting watcher e2e proof stack")
     ownership_idx = text.index('set "LKW_COMPOSE_OWNERSHIP_ENTERED=true"')

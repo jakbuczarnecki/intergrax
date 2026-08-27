@@ -795,6 +795,49 @@ Policy owns sanitization before export; forbidden fields are dropped or hashed.
 
 ---
 
+## Phase APP-DIAG — Application diagnostic baseline program (Planned)
+
+**Source:** LKW File Watcher qualification campaign + [`DIAGNOSTIC_GAP_LEDGER.md`](../qualification/DIAGNOSTIC_GAP_LEDGER.md)
+**Architecture:** [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) ONE spine · HOST-DIAG-2/3 · queue causal evidence · `HarnessHostRuntime`
+**Status:** **Registered roadmap only** — no implementation in bootstrap/ledger reconciliation slice
+
+**Proven gap:** APPLICATION DIAGNOSTIC BASELINE NOT GUARANTEED. Current development has typed non-execution diagnostic subjects (HOST-DIAG-2), hosted failure projection (HOST-DIAG-3), terminal execution diagnostic trigger (ONE-SPINE-3), and scaffold observability templates — but **no universal enforcement** that every Tier-3 / scaffold-generated application includes canonical execution identity, RuntimeEvent persistence, diagnostic reconstruction visibility, queue causal evidence, and transport → execution continuity before domain logic ships.
+
+**Required future baseline (conceptual):**
+
+```text
+new application / scaffold output
+  → canonical application composition (HarnessHostRuntime)
+  → execution identity
+  → RuntimeEvent production + canonical persistence
+  → Diagnostic Engine visibility / reconstruction
+  → PlatformProblemSignal integration (where applicable)
+queue-enabled additionally:
+  → HostQueueExecutionDependencies
+  → causal evidence persistence
+  → transport/execution linkage
+  → async diagnostic continuity
+```
+
+**Future slices (adapt names to repo conventions; do not implement here):**
+
+| Slice | Intent |
+|-------|--------|
+| **APP-DIAG-1** | Current application observability/diagnostics audit |
+| **APP-DIAG-2** | Define mandatory application diagnostic baseline |
+| **APP-DIAG-3** | Canonical host composition guarantees |
+| **APP-DIAG-4** | Queue/background diagnostic baseline |
+| **APP-DIAG-5** | Scaffold integration (diagnostics-ready before domain logic) |
+| **APP-DIAG-6** | Application diagnostic conformance gate (`APPLICATION_DIAGNOSTIC_CONFORMANCE`) |
+| **APP-DIAG-7** | Scaffold self-qualification proof (synthetic execution + central diagnostics inspect) |
+| **APP-DIAG-8** | Public/documented application diagnostics contract |
+
+**Conformance gate (future):** CI fails when a hosted Tier-3 app bypasses mandatory spine (host runtime, execution identity, RuntimeEvent visibility, persistence, reconstruction; plus queue causal evidence and transport continuity for queue-enabled apps).
+
+**Scaffold self-qualification (future):** newly scaffolded app runs minimal synthetic execution; baseline PASS requires TaskId, RunId, RuntimeEvents, reconstruction; queue-enabled adds transport evidence + causal continuity.
+
+---
+
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.9, §11 · baseline **32/32 L3**

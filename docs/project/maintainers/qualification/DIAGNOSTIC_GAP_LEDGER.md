@@ -26,31 +26,31 @@ Each entry MUST distinguish:
 - **QUALIFICATION CANDIDATE** — requires revalidation after a fix or fresh run
 - **IDEA** — deferred design exploration only
 
-Required fields per entry: ID, discovered by, failure scenario, terminal symptom, what engine could prove, last proven boundary, first failed/unknown boundary, root cause automatically proven (YES/NO), missing canonical evidence, missing diagnostic capability, manual work required, universal platform improvement, why not application-specific, priority (P0/P1/P2), status (OPEN / FIXED / REVALIDATED / DEFERRED / REQUIRES REVALIDATION / DESIGN REQUIRED), related implementation, qualification result after fix.
+Required fields per entry: ID, discovered by, failure scenario, terminal symptom, what engine could prove, last proven boundary, first failed/unknown boundary, root cause automatically proven (YES/NO), missing canonical evidence, missing diagnostic capability, manual work required, universal platform improvement, why not application-specific, priority (P0/P1/P2), status (OPEN / FIXED / REVALIDATED / DEFERRED / REQUIRES REVALIDATION / DESIGN REQUIRED / PARTIALLY ADDRESSED / DISPROVEN AS BLOCKER / QUALIFICATION CANDIDATE), related implementation, qualification result after fix.
 
 ---
 
-## DG-001 — PRE-EXECUTION WORKER STARTUP FAILURE VISIBILITY
+## DG-001 — PRE-EXECUTION / OPERATOR STARTUP FAILURE VISIBILITY
 
 | Field | Value |
 |-------|-------|
 | **ID** | DG-001 |
-| **Discovered by** | LKW File Watcher proof / background worker qualification |
-| **Failure scenario** | LKW background worker fails during composition before canonical Task/Run creation |
-| **Observed terminal symptom** | Worker container exits; no TaskId/RunId materialized |
-| **What Diagnostic Engine could prove** | Nothing — fresh execution scope unavailable |
+| **Discovered by** | LKW File Watcher proof / background worker qualification; LKW public Windows proof bootstrap qualification |
+| **Failure scenario** | Critical host/application/worker or public proof bootstrap fails before canonical Task/Run creation |
+| **Observed terminal symptom** | Worker container exits before TaskId/RunId; **or** official public `.bat` fails with `ModuleNotFoundError: local_workspace_application` before workload starts |
+| **What Diagnostic Engine could prove** | Nothing for execution scope — no TaskId/RunId. Non-execution subject path is structurally available but not emitted by these bootstrap surfaces |
 | **Last proven canonical boundary** | N/A (pre-execution) |
-| **First failed/unknown boundary** | Host/application worker composition root |
+| **First failed/unknown boundary** | Host/application worker composition root; public proof launcher Python bootstrap |
 | **Root cause automatically proven** | NO |
-| **Missing canonical evidence** | Startup failure signal on platform spine before Task/Run exists |
-| **Missing diagnostic capability** | Pre-execution host/worker startup failure representation |
-| **Manual work that was required** | Container startup log inspection |
-| **Universal platform improvement** | Represent critical host/application/worker startup failure before Task/Run/Attempt exists |
-| **Why this is not application-specific** | Any queue-enabled Tier-3 host can fail before execution identity is minted |
+| **Missing canonical evidence** | Startup/bootstrap failure signal on platform spine before Task/Run exists |
+| **Missing diagnostic capability** | Pre-execution host/worker/bootstrap failure representation with operator discovery |
+| **Manual work that was required** | Container startup log inspection; manual `PYTHONPATH` workaround before bootstrap fix |
+| **Universal platform improvement** | Represent critical host/application/worker/public-proof bootstrap failure before Task/Run/Attempt exists |
+| **Why this is not application-specific** | Any queue-enabled Tier-3 host or public proof launcher can fail before execution identity is minted |
 | **Priority** | P1 |
-| **Status** | OPEN / DESIGN REQUIRED |
-| **Related implementation** | — |
-| **Qualification result after fix** | Pending |
+| **Status** | PARTIALLY ADDRESSED / DESIGN REQUIRED |
+| **Related implementation** | HOST-DIAG-2 typed `DiagnosticSubjectRef` + `signal_subjects` on `DiagnosticOrchestrationRequest`; HOST-DIAG-3 `HostedApplicationDiagnosticEventPublisher` for bounded `APPLICATION_FAILED` projection when product composition supplies tenant binding |
+| **Qualification result after fix** | **Partial.** Subject model + orchestrator non-execution input exist. Missing: canonical producer at real worker/host bootstrap and at public proof launcher bootstrap; operator entrypoint does not discover bootstrap `ModuleNotFoundError`. Public Windows proof bootstrap failure is a concrete qualification fixture under this gap (not a separate DG). |
 
 ---
 
@@ -102,27 +102,28 @@ Required fields per entry: ID, discovered by, failure scenario, terminal symptom
 
 ---
 
-## DG-004 — ASYNC CAUSAL CONTINUITY QUALIFICATION
+## DG-004 — ASYNC TRANSPORT CAUSAL CONTINUITY IN EXECUTION DIAGNOSIS
 
 | Field | Value |
 |-------|-------|
 | **ID** | DG-004 |
-| **Discovered by** | LKW File Watcher proof (pre DG-A fix) |
-| **Failure scenario** | File Watcher → MessageBus → background execution relationship could not be proven while worker assembly was broken |
-| **Observed terminal symptom** | No fresh background execution; transport causal chain incomplete |
-| **What Diagnostic Engine could prove** | Not yet qualified — worker assembly blocked execution |
-| **Last proven canonical boundary** | File Watcher enqueue (when observed) |
-| **First failed/unknown boundary** | Background worker admission |
+| **Discovered by** | LKW File Watcher proof (pre- and post DG-A fix) |
+| **Failure scenario** | Queue-backed File Watcher → MessageBus → background execution path must be diagnosable as one async continuity story |
+| **Observed terminal symptom (pre DG-A)** | No fresh background execution; worker assembly blocked qualification |
+| **Observed terminal symptom (post DG-A)** | Fresh background execution exists; RuntimeEvents exist; `DiagnosticOrchestrator` reaches **DQ-2** but `has_transport_evidence=false` |
+| **What Diagnostic Engine could prove (post-fix)** | Execution timeline reconstructable; transport causal continuity **absent** from reconstruction/result |
+| **Last proven canonical boundary** | Background execution admission + runtime event history (post DG-A) |
+| **First failed/unknown boundary** | Transport → execution causal continuity in diagnostic reconstruction |
 | **Root cause automatically proven** | NO |
-| **Missing canonical evidence** | Fresh transport causal evidence across watcher → bus → worker |
-| **Missing diagnostic capability** | Async continuity proof across host boundaries |
-| **Manual work that was required** | Manual correlation across watcher logs and worker absence |
+| **Missing canonical evidence** | Transport causal evidence visible to `ExecutionReconstructor` / orchestrator result for fresh watcher execution |
+| **Missing diagnostic capability** | Async continuity proof across MessageBus and background execution in central diagnosis |
+| **Manual work that was required** | Manual correlation across watcher logs, bus, and worker execution |
 | **Universal platform improvement** | Prove async causal continuity across MessageBus and background execution |
 | **Why this is not application-specific** | Any queue-backed async host path shares this continuity requirement |
 | **Priority** | P1 |
-| **Status** | REQUIRES REVALIDATION |
-| **Related implementation** | `fix(lkw): use canonical queue execution dependencies` |
-| **Qualification result after fix** | Pending post-fix File Watcher run |
+| **Status** | OPEN / PROVEN GAP (partial qualification) |
+| **Related implementation** | DG-A fix `24506c3c14e30984d78b7b22c5cd4c42e711d125`; APP-DIAG baseline program (see OBSERVABILITY plan § Phase APP-DIAG) |
+| **Qualification result after fix** | Worker assembly defect cleared (DG-A **REVALIDATED**). Fresh run proves execution + runtime history but **not** transport causal continuity. Cause layer (producer vs persistence vs identity mapping vs lookup vs reconstructor consumption) **NOT YET PROVEN**. Current LKW state: **DQ-2**, not DQ-3. |
 
 ---
 
@@ -134,19 +135,19 @@ Required fields per entry: ID, discovered by, failure scenario, terminal symptom
 | **Discovered by** | LKW File Watcher proof observation |
 | **Failure scenario** | HTTP host and worker appeared to use different runtime event physical topology |
 | **Observed terminal symptom** | Diagnostic reconstruction may not see unified event history |
-| **What Diagnostic Engine could prove** | Unknown until fresh execution proves impact |
-| **Last proven canonical boundary** | Not proven as defect |
-| **First failed/unknown boundary** | Cross-topology event visibility |
+| **What Diagnostic Engine could prove (post DG-A fresh worker run)** | `runtime_history_completeness=complete`, `has_runtime_events=true` for fresh background execution |
+| **Last proven canonical boundary** | Fresh worker execution runtime history complete for diagnosed scope |
+| **First failed/unknown boundary** | Cross-topology event visibility for split HTTP-host/worker diagnostics |
 | **Root cause automatically proven** | NO |
-| **Missing canonical evidence** | Proof that split topology prevents diagnosis |
+| **Missing canonical evidence** | Proof that split topology prevents diagnosis across host boundaries |
 | **Missing diagnostic capability** | Cross-topology runtime history completeness qualification |
 | **Manual work that was required** | Manual store topology comparison |
-| **Universal platform improvement** | Ensure diagnostic reconstruction sees complete runtime history |
+| **Universal platform improvement** | Ensure diagnostic reconstruction sees complete runtime history across host/worker topologies |
 | **Why this is not application-specific** | Split host/worker topologies are common across Tier-3 applications |
 | **Priority** | P2 |
-| **Status** | REQUIRES REVALIDATION |
+| **Status** | QUALIFICATION CANDIDATE |
 | **Related implementation** | — |
-| **Qualification result after fix** | Pending post-fix File Watcher run |
+| **Qualification result after fix** | Suspected topology mismatch **disproven as blocker** for fresh worker execution diagnosis. Remains a qualification candidate for HTTP-host/worker cross-process cases only. |
 
 ---
 
@@ -154,7 +155,7 @@ Required fields per entry: ID, discovered by, failure scenario, terminal symptom
 
 | Field | Value |
 |-------|-------|
-| **ID** | DG-A (implementation gap, not diagnostic engine gap) |
+| **ID** | DG-A (application/platform composition defect, not Diagnostic Engine feature gap) |
 | **Discovered by** | LKW File Watcher proof |
 | **Failure scenario** | `background_worker_factory.py` bypassed `resolve_host_queue_execution_dependencies` |
 | **Observed terminal symptom** | `TypeError: create_kafka_worker() missing 1 required keyword-only argument: 'causal_evidence_persistence'` |
@@ -168,6 +169,24 @@ Required fields per entry: ID, discovered by, failure scenario, terminal symptom
 | **Universal platform improvement** | All queue-enabled hosts must consume `HostQueueExecutionDependencies` |
 | **Why this is not application-specific** | Canonical queue-worker contract applies to all Tier-3 queue hosts |
 | **Priority** | P0 |
-| **Status** | FIXED (pending revalidation) |
-| **Related implementation** | `applications/local_workspace_application/host/background_worker_factory.py` |
-| **Qualification result after fix** | Pending post-fix File Watcher run |
+| **Status** | REVALIDATED |
+| **Related implementation** | `24506c3c14e30984d78b7b22c5cd4c42e711d125` — `fix(lkw): use canonical queue execution dependencies` |
+| **Qualification result after fix** | Old TypeError gone. Worker starts and remains alive. Kafka task consumed. Fresh runtime Task/Run created. RuntimeEvents exist. DiagnosticOrchestrator reaches DQ-2 on fresh execution. |
+
+---
+
+## Platform program — APP-DIAG / SCAFFOLD-DIAG baseline (registered)
+
+**Canonical roadmap:** [`docs/project/maintainers/plans/OBSERVABILITY.md`](../plans/OBSERVABILITY.md) § Phase APP-DIAG
+
+**Proven architectural gap:** APPLICATION DIAGNOSTIC BASELINE NOT GUARANTEED — a Tier-3 application composition root (LKW worker factory before DG-A; public proof launcher before bootstrap fix) can bypass mandatory observability/diagnostics/queue spine wiring. Scaffold generates observability extension templates but does **not** enforce universal diagnostic baseline or conformance gate.
+
+**Target invariant (documentation only):** no Intergrax application is production-valid unless executions are canonically diagnosable; every scaffold-generated application is diagnostics-ready before domain logic is added.
+
+**Implementation:** not in scope of LKW bootstrap / ledger reconciliation task — roadmap slices only.
+
+---
+
+## DG-006
+
+**NOT CREATED.** Transport causal evidence absence in execution diagnosis is the post-fix proven state of **DG-004** — one canonical entry per capability gap.

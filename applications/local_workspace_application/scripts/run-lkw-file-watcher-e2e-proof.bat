@@ -79,6 +79,15 @@ if errorlevel 1 (
     exit /b 1
 )
 
+echo Establishing canonical Tier-3 source import roots...
+for /f "usebackq delims=" %%I in (`uv run python "%SCRIPT_DIR%lkw_tier3_source_roots.py" --repo-root "%CD%" --format windows-path-list`) do set "PYTHONPATH=%%I"
+if errorlevel 1 (
+    echo proof_result=FAIL
+    echo failure_reason=source_import_context_failed
+    goto proof_fail
+)
+echo source_import_context=ready
+
 echo LKW.7C2 watcher-triggered persistent search E2E proof with ProofReceipt
 echo Repository root: %CD%
 echo LKW base URL: %LKW_BASE_URL%
