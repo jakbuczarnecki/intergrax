@@ -15,6 +15,7 @@ from intergrax.contracts.execution_identity import (
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
+from intergrax.runtime.execution.result import ExecutionResult, ExecutionStatus
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 
 OutputT = TypeVar("OutputT")
@@ -31,7 +32,7 @@ class InferenceExecutor(Generic[OutputT]):
     async def execute(
         self,
         request: ExecutionRequest[tuple[ChatMessage, ...], OutputT],
-    ) -> OutputT:
+    ) -> ExecutionResult[OutputT]:
         run_id, attempt_id = require_active_execution_identity()
         execution_id = require_active_execution_id()
         del attempt_id, execution_id
@@ -58,4 +59,8 @@ class InferenceExecutor(Generic[OutputT]):
             )
             return structured.parsed
 
-        return await asyncio.to_thread(_invoke)
+        parsed = await asyncio.to_thread(_invoke)
+        return ExecutionResult(
+            status=ExecutionStatus.COMPLETED,
+            output=parsed,
+        )

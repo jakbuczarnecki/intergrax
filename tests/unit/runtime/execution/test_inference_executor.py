@@ -28,7 +28,12 @@ from intergrax.llm_adapters._shared.adapter_response_builders import build_adapt
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
-from intergrax.runtime.execution import ExecutionCapability, ExecutionRequest
+from intergrax.runtime.execution import (
+    ExecutionCapability,
+    ExecutionRequest,
+    ExecutionResult,
+    ExecutionStatus,
+)
 from intergrax.runtime.execution.boundary import (
     ExecutionAdmissionHook,
     ExecutionBoundary,
@@ -245,7 +250,10 @@ def _inference_stack(
   *,
   identity: ExecutionIdentityBinding | None = None,
   admission_hooks: tuple[ExecutionAdmissionHook, ...] = (),
-) -> Execution[ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment], RiskAssessment]:
+) -> Execution[
+    ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
+    ExecutionResult[RiskAssessment],
+]:
   executor = InferenceExecutor[RiskAssessment](adapter)
   boundary = ExecutionBoundary(
     executor,
@@ -279,8 +287,9 @@ async def test_direct_structured_request_executes_full_path() -> None:
 
   result = await execution.execute(request)
 
-  assert result == expected
-  assert result is expected
+  assert result.status is ExecutionStatus.COMPLETED
+  assert result.output == expected
+  assert result.output is expected
   assert adapter.generate_structured_calls == 1
   assert adapter.last_output_model is RiskAssessment
   assert adapter.last_messages == request.input
