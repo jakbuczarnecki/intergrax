@@ -44,7 +44,10 @@ from intergrax.runtime.nexus.tools.tool_invocation_pattern import (
     ToolInvocationStopReason,
     resolve_invocation_pattern,
 )
-from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
+from intergrax.runtime.nexus.tools.tool_planner_protocol import (
+    IterativeToolPlannerProtocol,
+    ToolPlannerProtocol,
+)
 from intergrax.tools.core.tool_plan import PlannedToolCall
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult, ToolModelObservation
 
@@ -335,13 +338,13 @@ def execute_planned_tool_calls(
     return [results[index] for index in range(len(calls))]
 
 
-def append_native_tool_messages(
+def append_assistant_tool_call_message(
     messages: list[ChatMessage],
     *,
     assistant_content: str,
     tool_calls: Sequence[LLMToolCall],
-    outcomes: Sequence[PlannedToolCallOutcome],
 ) -> None:
+    """Append the assistant turn that requested native tool calls (not tool results)."""
     if not tool_calls:
         return
     messages.append(
@@ -350,6 +353,38 @@ def append_native_tool_messages(
             content=assistant_content,
             tool_calls=[_tool_call_openai_dict(tc) for tc in tool_calls],
         )
+    )
+
+
+def tool_output_blocks_from_native_round(
+    tool_calls: Sequence[LLMToolCall],
+    planned_calls: Sequence[PlannedToolCall],
+    outcomes: Sequence[PlannedToolCallOutcome],
+) -> list[dict[str, object]]:
+    """Build typed tool-output blocks for ``TOOL_OUTPUT_BLOCKS_HANDLE`` collection."""
+    blocks: list[dict[str, object]] = []
+    for tool_call, planned_call, outcome in zip(tool_calls, planned_calls, outcomes, strict=False):
+        block: dict[str, object] = {
+            "content": outcome.model_observation.content,
+            "tool_call_id": tool_call.id,
+            "tool_name": tool_call.name,
+            "step_id": planned_call.step_id,
+        }
+        blocks.append(block)
+    return blocks
+
+
+def append_native_tool_messages(
+    messages: list[ChatMessage],
+    *,
+    assistant_content: str,
+    tool_calls: Sequence[LLMToolCall],
+    outcomes: Sequence[PlannedToolCallOutcome],
+) -> None:
+    append_assistant_tool_call_message(
+        messages,
+        assistant_content=assistant_content,
+        tool_calls=tool_calls,
     )
     for tool_call, outcome in zip(tool_calls, outcomes, strict=False):
         messages.append(
@@ -392,6 +427,7 @@ def run_bounded_tool_loop(
     Plan → invoke → observe via injected ``ToolInvocationPattern``.
 
     ``max_iterations > 1`` without explicit mode preserves TOOL-ENG-6 bounded ReAct.
+    Iterative CE routing is handled by :func:`run_bounded_tool_loop_async`.
     """
     resolved = resolve_tool_invocation_pattern(
         invocation_mode=invocation_mode,
@@ -412,6 +448,50 @@ def run_bounded_tool_loop(
     if not result.pattern_id:
         return replace(result, pattern_id=pattern_id)
     return result
+
+
+async def run_bounded_tool_loop_async(
+    *,
+    state: RuntimeState,
+    invoker: RuntimeToolInvoker,
+    tool_planner: ToolPlannerProtocol,
+    planner_input: str | list[ChatMessage],
+    allowed_tool_ids: Sequence[str] | None,
+    max_iterations: int,
+    invocation_mode: ToolInvocationMode | None = None,
+    pattern: ToolInvocationPattern | None = None,
+) -> ToolInvocationResult:
+    """Async bounded tool loop — routes iterative feedback through CE when wired."""
+    max_iters = max(1, int(max_iterations))
+    engine = state.context.config.context_engine
+    if max_iters > 1 and engine is not None:
+        if not isinstance(tool_planner, IterativeToolPlannerProtocol):
+            raise TypeError(
+                "Bounded iterative tool invocation (max_iterations > 1) requires "
+                "a planner implementing IterativeToolPlannerProtocol"
+            )
+        from intergrax.runtime.nexus.context.iterative_tool_context_assembly import (
+            run_ce_bounded_tool_loop,
+        )
+
+        return await run_ce_bounded_tool_loop(
+            state=state,
+            invoker=invoker,
+            tool_planner=tool_planner,
+            planner_input=planner_input,
+            allowed_tool_ids=allowed_tool_ids,
+            max_iterations=max_iters,
+        )
+    return run_bounded_tool_loop(
+        state=state,
+        invoker=invoker,
+        tool_planner=tool_planner,
+        planner_input=planner_input,
+        allowed_tool_ids=allowed_tool_ids,
+        max_iterations=max_iterations,
+        invocation_mode=invocation_mode,
+        pattern=pattern,
+    )
 
 
 def inject_tool_traces_system_context(

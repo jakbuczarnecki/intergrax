@@ -30,6 +30,19 @@ class DefaultContextFormatter:
             if fragment.source is ContextFragmentSource.SESSION_HISTORY:
                 formatted.append(session_history_chat_message_from_fragment(fragment))
                 continue
+            if fragment.source is ContextFragmentSource.TOOL_OUTPUT:
+                tool_call_id = fragment.metadata.get("tool_call_id")
+                tool_name = fragment.metadata.get("tool_name")
+                if isinstance(tool_call_id, str) and tool_call_id.strip():
+                    formatted.append(
+                        ChatMessage(
+                            role="tool",
+                            content=fragment.content,
+                            tool_call_id=tool_call_id.strip(),
+                            name=tool_name.strip() if isinstance(tool_name, str) and tool_name.strip() else None,
+                        )
+                    )
+                    continue
             formatted.append(
                 ChatMessage(
                     role="system",
@@ -37,6 +50,18 @@ class DefaultContextFormatter:
                 )
             )
         return formatted
+
+
+def merge_iterative_tool_feedback_messages(
+    base_messages: list[ChatMessage],
+    fragment_messages: list[ChatMessage],
+) -> list[ChatMessage]:
+    """Append tool-feedback fragment messages after the active planner window (UE-6C)."""
+    if not fragment_messages:
+        return list(base_messages)
+    if not base_messages:
+        return list(fragment_messages)
+    return list(base_messages) + list(fragment_messages)
 
 
 def merge_fragment_messages(

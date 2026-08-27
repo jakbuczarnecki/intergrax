@@ -15,6 +15,7 @@ from intergrax.runtime.nexus.config_types import (
 )
 
 if TYPE_CHECKING:
+    from intergrax.context.protocols import ContextEngine
     from intergrax.integrations.registry.profile import IntegrationProfile
     from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
     from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -339,6 +340,9 @@ class RuntimeConfig:
 
     # Optional sync bus for planner/context events (Phase Q+-N.5, R-Context.2).
     runtime_event_bus: Optional["RuntimeEventBus"] = None
+
+    # Wired by UAEP when session CE is available (UE-6C iterative tool feedback).
+    context_engine: Optional["ContextEngine"] = None
 
     # Tier-3 composed policy (Phase R-Policy); set via applications runtime_config_bridge.
     policy_bundle: Optional["RuntimePolicyBundle"] = None

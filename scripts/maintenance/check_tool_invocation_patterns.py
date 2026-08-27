@@ -52,8 +52,8 @@ def main() -> int:
     plan_source = Path("intergrax/runtime/nexus/tools/plan_context_invocation.py").read_text(
         encoding="utf-8"
     )
-    if "run_bounded_tool_loop" not in plan_source:
-        errors.append("plan_context_invocation.py must call run_bounded_tool_loop")
+    if "run_bounded_tool_loop_async" not in plan_source:
+        errors.append("plan_context_invocation.py must call run_bounded_tool_loop_async")
 
     resolved_default = resolve_tool_invocation_pattern(
         invocation_mode=None,
