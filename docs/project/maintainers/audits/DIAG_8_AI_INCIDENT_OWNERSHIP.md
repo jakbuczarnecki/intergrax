@@ -379,22 +379,36 @@ InvestigationConclusion { RESOLVED | UNRESOLVED | REJECTED }
 
 ## 21. Target boundary contract (§21)
 
+**DIAG-8B implemented** in `intergrax/runtime/diagnostics/investigation_contracts.py`.
+
 ```python
-# Conceptual — not implemented in DIAG-8A
+@dataclass(frozen=True)
+class IncidentInvestigationProblemContext:
+    problem: DiagnosticProblemSummary
+    occurrences: tuple[DiagnosticProblemOccurrenceView, ...]
 
 @dataclass(frozen=True)
 class IncidentInvestigationInput:
     tenant_id: str
-    problem_ids: tuple[str, ...]           # ProblemId strings
-    subject_refs: tuple[DiagnosticSubjectRef, ...]
-    findings: tuple[DiagnosticFinding, ...]  # bounded subset
-    limitations: tuple[DiagnosticLimitation, ...]
-    grouping_provenance: DiagnosticGroupingProvenance | None
-    canonical_evidence_refs: tuple[str, ...]  # stable refs, not event payloads
-    assessment_certainty: DiagnosticCertainty | None
+    problem_contexts: tuple[IncidentInvestigationProblemContext, ...]
+
+@dataclass(frozen=True)
+class InvestigationConclusion:
+    status: InvestigationConclusionStatus  # SUPPORTED | UNRESOLVED | NOT_ACCEPTED
+    investigated_problem_ids: tuple[ProblemId, ...]
+    claim_set: EvidenceClaimSet | None = None
+    summary: str | None = None
 ```
 
-**Forbidden in contract:** raw `RuntimeEvent` dumps, unbounded `dict[str, Any]` bags, scenario-side Problem minting.
+**Canonical reuse:** `ProblemId`, `DiagnosticProblemSummary`, `DiagnosticProblemOccurrenceView`, `DiagnosticFinding`, `DiagnosticLimitation`, `DiagnosticGroupingProvenance`, `EvidenceBackedClaim`, `EvidenceClaimSet`.
+
+**Occurrence choice:** reuse `DiagnosticProblemOccurrenceView` directly — already bounded, carries typed subject refs, read status, optional `DiagnosticAssessment`, and `NON_EXECUTION_SUBJECT` unavailable reason without coupling investigators to read-service pagination internals.
+
+**Evidence refs:** no standalone `tuple[str, ...]` handoff in v1; typed refs remain inside `DiagnosticFinding` / `DiagnosticLimitation` (`EventId`, etc.). Richer evidence navigation is future work.
+
+**Mapping helper (no runtime wiring yet):** `incident_investigation_input_from_problem_details(tenant_id, details)` projects `DiagnosticProblemDetail` → `IncidentInvestigationInput`. **DIAG-8C** wires `ai_incident_investigation` to `DiagnosticReadService` output.
+
+**Forbidden in contract:** raw `RuntimeEvent` dumps, unbounded `dict[str, Any]` bags, scenario-side Problem minting, top-level mandatory `TaskId`/`RunId`, platform `ProblemStatus.RESOLVED` / `DiagnosticCertainty.PROVEN` as investigation conclusion status.
 
 ---
 
@@ -415,10 +429,10 @@ Platform RootCauseAdjudicator (future):
 
 ## 23. Migration slices (§26)
 
-| Slice | Goal |
-|---|---|
-| **DIAG-8B** | Define `IncidentInvestigationInput` / `InvestigationConclusion` typed contracts; document mapping from `DiagnosticReadService` |
-| **DIAG-8C** | Scenario entry accepts optional `ProblemId`(s); seed investigation scope from `DiagnosticProblemSummary` + limitations (read-only) |
+| Slice | Goal | Status |
+|---|---|---|
+| **DIAG-8B** | Define `IncidentInvestigationInput` / `InvestigationConclusion` typed contracts; document mapping from `DiagnosticReadService` | **Complete** — `investigation_contracts.py`, unit + architecture gate tests |
+| **DIAG-8C** | Scenario entry accepts optional `ProblemId`(s); seed investigation scope from `DiagnosticProblemSummary` + limitations (read-only) | Pending |
 | **DIAG-8D** | Rename scenario symbols: `InvestigationConclusion`, `incident.domain_diagnosis` claim kind; decouple `RESOLVED` from “root cause” in docs/UI |
 | **DIAG-8E** | Platform `RootCauseAdjudication` contract; promotion gate from scenario `SUPPORTED` domain claim |
 | **DIAG-8F** | Consolidate `derive_hypothesis_dispositions` with critic resolution helpers or mark evaluator-only; migrate tests |
@@ -445,8 +459,10 @@ Platform RootCauseAdjudicator (future):
 | `test_single_execution_provenance.py` | **KEEP-AS-IS** | Provenance |
 | `test_incident_report_quality.py` | **KEEP-BUT-RENAME** | Report copy after terminology split |
 | `conftest.py`, `planner_doubles.py` | **KEEP-AS-IS** | Test infra |
-| — | **ADD-LATER** | `IncidentInvestigationInput` fixture tests (DIAG-8B/C) |
 | — | **ADD-LATER** | Root-cause promotion gate tests (DIAG-8E) |
+| `test_investigation_contracts.py` | **ADDED (DIAG-8B)** | Boundary validation, execution + application-instance occurrences, tenant integrity |
+| `test_investigation_contracts_no_proof_import_gate.py` | **ADDED (DIAG-8B)** | Platform contract must not import proof scenario |
+| — | **ADD-LATER** | Scenario wiring tests consuming `DiagnosticReadService` output (DIAG-8C) |
 | — | **MIGRATE-TO-CENTRAL-DIAGNOSTIC-CONTRACT** | Any future test asserting scenario owns ProblemId |
 | — | **DELETE-AS-DUPLICATE** | None today |
 
@@ -480,6 +496,7 @@ Platform RootCauseAdjudicator (future):
 ## 28. Audit metadata
 
 - **Start HEAD:** `24506c3c14e30984d78b7b22c5cd4c42e711d125`
+- **DIAG-8B HEAD:** see git final SHA in DIAG-8B report
 - **Files inspected:** all modules listed in DIAG-8A §3 plus 15 unit test files
-- **Central baseline:** `intergrax/runtime/diagnostics/__init__.py` exports (DiagnosticAssessment, Problem lifecycle, orchestrator, read service, reconstruction)
-- **Implementation:** none (DIAG-8A)
+- **Central baseline:** `intergrax/runtime/diagnostics/__init__.py` exports (DiagnosticAssessment, Problem lifecycle, orchestrator, read service, reconstruction, investigation contracts)
+- **Implementation:** DIAG-8A audit only; **DIAG-8B boundary contracts** in `intergrax/runtime/diagnostics/investigation_contracts.py` (no scenario or central-engine behavior changes)

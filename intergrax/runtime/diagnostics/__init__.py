@@ -89,6 +89,17 @@ from intergrax.runtime.diagnostics.deterministic_problem_reconciliation import (
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import (
     InMemoryProblemPersistence,
 )
+from intergrax.runtime.diagnostics.investigation_contracts import (
+    IncidentInvestigationInput,
+    IncidentInvestigationIntegrityError,
+    IncidentInvestigationProblemContext,
+    InvestigationConclusion,
+    InvestigationConclusionIntegrityError,
+    InvestigationConclusionStatus,
+    incident_investigation_input_from_problem_details,
+    validate_incident_investigation_input,
+    validate_investigation_conclusion,
+)
 from intergrax.runtime.diagnostics.document_store_problem_persistence import (
     DocumentStoreProblemPersistence,
     wire_problem_persistence,
@@ -244,6 +255,13 @@ __all__ = [
     "DeterministicProblemReconciliationKey",
     "DocumentStoreProblemPersistence",
     "DeterministicProblemReconciliationPolicy",
+    "IncidentInvestigationInput",
+    "IncidentInvestigationIntegrityError",
+    "IncidentInvestigationProblemContext",
+    "InvestigationConclusion",
+    "InvestigationConclusionIntegrityError",
+    "InvestigationConclusionStatus",
+    "incident_investigation_input_from_problem_details",
     "InMemoryProblemPersistence",
     "Problem",
     "ProblemId",
@@ -311,6 +329,8 @@ __all__ = [
     "ProblemGroupingInput",
     "normalize_assessment",
     "validate_feature_source_facts_scope",
+    "validate_incident_investigation_input",
+    "validate_investigation_conclusion",
     "assert_problem_persistence_conformance",
     "assert_problem_persistence_typed_round_trip",
     "sample_problem",
