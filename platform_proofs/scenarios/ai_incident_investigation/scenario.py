@@ -15,6 +15,13 @@ from intergrax.contracts.execution_identity import (
     reset_active_execution_identity,
 )
 from intergrax.contracts.evidence_claims import EvidenceChallenge, EvidenceClaimSet, ClaimResolution
+from intergrax.runtime.diagnostics.investigation_contracts import (
+    IncidentInvestigationInput,
+    InvestigationConclusion,
+    InvestigationConclusionStatus,
+    validate_investigation_conclusion,
+)
+from intergrax.runtime.diagnostics import ProblemId
 from intergrax.runtime.critic.contracts import CriticVerdict
 from intergrax.runtime.critic.critic_wiring import (
     CriticHookConfig,
@@ -82,6 +89,7 @@ from platform_proofs.scenarios.ai_incident_investigation.validation import (
 INVESTIGATOR_NODE_ID = "investigator-1"
 OUTCOME_RESOLVED = "RESOLVED"
 OUTCOME_UNRESOLVED = "UNRESOLVED"
+STANDALONE_SCENARIO_TENANT_ID = "scenario-tenant"
 TERMINAL_STATE_NOT_ACCEPTED = "incident_terminal_state_not_accepted"
 EVALUATOR_LOOP_MAX_ITERATIONS = 2
 
@@ -155,6 +163,9 @@ class ScenarioExecutionResult:
     planner_decisions: tuple[dict[str, Any], ...] = ()
     tool_execution_order: tuple[str, ...] = ()
     evidence_gathering_stop_reason: str = ""
+    investigation_conclusion: InvestigationConclusion | None = None
+    investigated_problem_ids: tuple[ProblemId, ...] = ()
+    execution_tenant_id: str = STANDALONE_SCENARIO_TENANT_ID
 
 
 @dataclass(frozen=True, slots=True)
@@ -164,6 +175,7 @@ class ScenarioRuntimeBundle:
     investigator: IncidentInvestigatorAgent
     runtime_composition: ScenarioRuntimeComposition
     evidence_store: ScenarioEvidenceStore
+    investigation_input: IncidentInvestigationInput | None = None
 
 
 def build_runtime_bundle(
@@ -195,6 +207,34 @@ def build_runtime_bundle(
         investigator=investigator,
         runtime_composition=composition,
         evidence_store=evidence_store,
+        investigation_input=None,
+    )
+
+
+def investigation_conclusion_status_from_outcome(outcome: str) -> InvestigationConclusionStatus:
+    if outcome == OUTCOME_RESOLVED:
+        return InvestigationConclusionStatus.SUPPORTED
+    if outcome == OUTCOME_UNRESOLVED:
+        return InvestigationConclusionStatus.UNRESOLVED
+    return InvestigationConclusionStatus.NOT_ACCEPTED
+
+
+def build_investigation_conclusion(
+    *,
+    outcome: str,
+    investigated_problem_ids: tuple[ProblemId, ...],
+    claim_set: EvidenceClaimSet | None = None,
+    summary: str | None = None,
+) -> InvestigationConclusion | None:
+    if not investigated_problem_ids:
+        return None
+    return validate_investigation_conclusion(
+        InvestigationConclusion(
+            status=investigation_conclusion_status_from_outcome(outcome),
+            investigated_problem_ids=investigated_problem_ids,
+            claim_set=claim_set,
+            summary=summary or None,
+        )
     )
 
 
@@ -243,8 +283,20 @@ async def execute_resolved_skeleton(
         ),
     )
 
+    execution_tenant_id = (
+        bundle.investigation_input.tenant_id
+        if bundle.investigation_input is not None
+        else STANDALONE_SCENARIO_TENANT_ID
+    )
+    investigated_problem_ids: tuple[ProblemId, ...] = ()
+    if bundle.investigation_input is not None:
+        investigated_problem_ids = tuple(
+            context.problem.problem_id
+            for context in bundle.investigation_input.problem_contexts
+        )
+
     task = Task(
-        tenant_id="scenario-tenant",
+        tenant_id=execution_tenant_id,
         user_id="scenario-user",
         message="Investigate Line 4 target attainment degradation",
         context=TaskContext(capability=INVESTIGATOR_CAPABILITY),
@@ -382,6 +434,12 @@ async def execute_resolved_skeleton(
         completion_mode=completion_mode,
     )
     leak_blob = _leak_scan_blob(claim_set, evidence_nodes)
+    investigation_conclusion = build_investigation_conclusion(
+        outcome=outcome,
+        investigated_problem_ids=investigated_problem_ids,
+        claim_set=claim_set_model,
+        summary=final_execution.summary or None,
+    )
 
     return ScenarioExecutionResult(
         outcome=outcome,
@@ -406,6 +464,9 @@ async def execute_resolved_skeleton(
         planner_decisions=planner_decisions,
         tool_execution_order=tool_execution_order,
         evidence_gathering_stop_reason=evidence_gathering_stop_reason,
+        investigation_conclusion=investigation_conclusion,
+        investigated_problem_ids=investigated_problem_ids,
+        execution_tenant_id=execution_tenant_id,
     )
 
 

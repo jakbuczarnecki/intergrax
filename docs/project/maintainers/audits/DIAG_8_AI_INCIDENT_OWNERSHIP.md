@@ -406,7 +406,7 @@ class InvestigationConclusion:
 
 **Evidence refs:** no standalone `tuple[str, ...]` handoff in v1; typed refs remain inside `DiagnosticFinding` / `DiagnosticLimitation` (`EventId`, etc.). Richer evidence navigation is future work.
 
-**Mapping helper (no runtime wiring yet):** `incident_investigation_input_from_problem_details(tenant_id, details)` projects `DiagnosticProblemDetail` → `IncidentInvestigationInput`. **DIAG-8C** wires `ai_incident_investigation` to `DiagnosticReadService` output.
+**Mapping helper:** `incident_investigation_input_from_problem_details(tenant_id, details)` projects `DiagnosticProblemDetail` → `IncidentInvestigationInput`. **DIAG-8C** wires `ai_incident_investigation` through `scenario_composition.py` → `DiagnosticReadService.get_problem(...)`.
 
 **Forbidden in contract:** raw `RuntimeEvent` dumps, unbounded `dict[str, Any]` bags, scenario-side Problem minting, top-level mandatory `TaskId`/`RunId`, platform `ProblemStatus.RESOLVED` / `DiagnosticCertainty.PROVEN` as investigation conclusion status.
 
@@ -432,7 +432,7 @@ Platform RootCauseAdjudicator (future):
 | Slice | Goal | Status |
 |---|---|---|
 | **DIAG-8B** | Define `IncidentInvestigationInput` / `InvestigationConclusion` typed contracts; document mapping from `DiagnosticReadService` | **Complete** — `investigation_contracts.py`, unit + architecture gate tests |
-| **DIAG-8C** | Scenario entry accepts optional `ProblemId`(s); seed investigation scope from `DiagnosticProblemSummary` + limitations (read-only) | Pending |
+| **DIAG-8C** | Scenario entry accepts optional `ProblemId`(s); seed investigation scope from `DiagnosticProblemSummary` + limitations (read-only) | **Complete** — `scenario_composition.py`, `platform_diagnostic_context.py`, integration + architecture gate tests |
 | **DIAG-8D** | Rename scenario symbols: `InvestigationConclusion`, `incident.domain_diagnosis` claim kind; decouple `RESOLVED` from “root cause” in docs/UI |
 | **DIAG-8E** | Platform `RootCauseAdjudication` contract; promotion gate from scenario `SUPPORTED` domain claim |
 | **DIAG-8F** | Consolidate `derive_hypothesis_dispositions` with critic resolution helpers or mark evaluator-only; migrate tests |
@@ -463,6 +463,8 @@ Platform RootCauseAdjudicator (future):
 | `test_investigation_contracts.py` | **ADDED (DIAG-8B)** | Boundary validation, execution + application-instance occurrences, tenant integrity |
 | `test_investigation_contracts_no_proof_import_gate.py` | **ADDED (DIAG-8B)** | Platform contract must not import proof scenario |
 | — | **ADD-LATER** | Scenario wiring tests consuming `DiagnosticReadService` output (DIAG-8C) |
+| `test_diagnostic_platform_integration.py` | **ADDED (DIAG-8C)** | Real central Problem → read service → scenario composition → execution |
+| `test_diagnostic_architecture_gate.py` | **ADDED (DIAG-8C)** | Composition-only read surface; no persistence ownership in scenario runtime |
 | — | **MIGRATE-TO-CENTRAL-DIAGNOSTIC-CONTRACT** | Any future test asserting scenario owns ProblemId |
 | — | **DELETE-AS-DUPLICATE** | None today |
 
@@ -490,6 +492,41 @@ Platform RootCauseAdjudicator (future):
 2. Which `DiagnosticFindingKind` subset is sufficient seed for manufacturing incident investigations.
 3. Whether proof scenarios should bind to a real `ProblemId` from a preceding diagnostic orchestration run or continue standalone with optional attachment.
 4. Plugin packaging: `platform_proofs` vs `applications/` host for production incident investigator.
+
+---
+
+## 29. DIAG-8C — platform-attached investigation (complete)
+
+**Modes:**
+
+| Mode | Entry | `investigation_input` | Task tenant |
+|---|---|---|---|
+| **Standalone synthetic proof** | `build_runtime_bundle()` | `None` | `scenario-tenant` |
+| **Platform-attached** | `build_runtime_bundle_from_diagnostic_problem(...)` | `IncidentInvestigationInput` | `input.tenant_id` |
+
+**Data path (attached mode only):**
+
+```text
+ProblemPersistence (central — not imported by scenario runtime)
+    ↓
+DiagnosticReadService.get_problem(tenant_id, problem_id)
+    ↓
+DiagnosticProblemDetail
+    ↓
+incident_investigation_input_from_problem_details(...)
+    ↓
+IncidentInvestigationInput
+    ↓
+IncidentInvestigatorAgent (constructor-owned immutable context)
+    ↓
+build_reasoning_messages / domain evidence tools
+    ↓
+InvestigationConclusion on ScenarioExecutionResult (attached mode)
+```
+
+**Ownership:** scenario composition (`scenario_composition.py`) is the only module importing `DiagnosticReadService`. Reasoning modules consume materialized `IncidentInvestigationInput`; no persistence, reconstruction, grouping, lifecycle, or orchestrator imports in scenario runtime.
+
+**Identity:** investigation run mints new `TaskId`/`RunId`; investigated occurrence subject retains its own execution or application-instance identity — never reused as investigation run identity.
 
 ---
 

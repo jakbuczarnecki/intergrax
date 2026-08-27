@@ -169,8 +169,7 @@ def incident_investigation_input_from_problem_details(
     """
     Map bounded ``DiagnosticReadService`` detail DTOs to investigation input.
 
-    DIAG-8C will wire scenario entry to this helper; DIAG-8B establishes the
-    contract only.
+    Wired by DIAG-8C scenario composition (`scenario_composition.py`).
     """
     normalized_tenant_id = _require_tenant_id(tenant_id)
     if not details:
