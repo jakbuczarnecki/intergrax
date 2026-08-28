@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import ScenarioVariant
-from platform_proofs.scenarios.ai_incident_investigation.scenario import (
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import ScenarioVariant
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     OUTCOME_RESOLVED,
     OUTCOME_UNRESOLVED,
     TERMINAL_STATE_NOT_ACCEPTED,
@@ -16,7 +16,7 @@ from platform_proofs.scenarios.ai_incident_investigation.scenario import (
     is_epistemic_unresolved_completion,
     is_resolved_completion,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPLETION_SUPPORTED_DIAGNOSIS,
     COMPLETION_UNRESOLVED,
 )

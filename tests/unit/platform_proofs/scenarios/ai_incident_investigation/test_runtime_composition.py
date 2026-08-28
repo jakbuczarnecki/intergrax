@@ -16,18 +16,19 @@ from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.registry import ToolRegistry
-from platform_proofs.scenarios.ai_incident_investigation import (
+from platform_proofs.scenarios.ai_incident_investigation.application import (
     investigator_agent,
     runtime_composition,
+    scenario,
     tools,
 )
-from platform_proofs.scenarios.ai_incident_investigation.runtime_composition import (
+from platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition import (
     build_agent_runtime_context,
     build_scenario_environment_profile,
     build_scenario_runtime_composition,
     resolve_scenario_llm_adapter,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario import build_runtime_bundle
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario import build_runtime_bundle
 from testing_support.builder import FakeLLMAdapter
 
 pytestmark = pytest.mark.unit
@@ -37,10 +38,7 @@ _CANONICAL_MODULES = (
     investigator_agent,
     runtime_composition,
     tools,
-    __import__(
-        "platform_proofs.scenarios.ai_incident_investigation.scenario",
-        fromlist=["scenario"],
-    ),
+    scenario,
 )
 
 _FORBIDDEN_TOKENS = (
@@ -103,7 +101,7 @@ def test_build_agent_runtime_context_uses_production_platform_paths(monkeypatch:
         return sentinel
 
     monkeypatch.setattr(
-        "platform_proofs.scenarios.ai_incident_investigation.runtime_composition.resolve_llm_adapter",
+        "platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition.resolve_llm_adapter",
         _track_resolve,
     )
 
@@ -130,20 +128,16 @@ def test_build_agent_runtime_context_reuses_scenario_adapter_without_second_prov
         return sentinel
 
     monkeypatch.setattr(
-        "platform_proofs.scenarios.ai_incident_investigation.runtime_composition.resolve_llm_adapter",
-        llm_resolver.resolve_llm_adapter,
+        "platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition.resolve_llm_adapter",
+        _track_provider_construction,
     )
     monkeypatch.setattr(
-        "intergrax.applications._shared.runtime_config_bridge.resolve_llm_adapter",
-        llm_resolver.resolve_llm_adapter,
-    )
-    monkeypatch.setattr(
-        llm_resolver,
-        "_create_base_llm_adapter",
+        "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
         _track_provider_construction,
     )
 
     bundle = build_runtime_bundle()
+    provider_constructions = 0
     ctx = build_agent_runtime_context(_runtime_request(), bundle.runtime_composition)
 
     assert provider_constructions == 1
@@ -165,7 +159,7 @@ def test_missing_llm_configuration_fails_closed(monkeypatch: pytest.MonkeyPatch)
         raise ValueError("provider credentials missing")
 
     monkeypatch.setattr(
-        "platform_proofs.scenarios.ai_incident_investigation.runtime_composition.resolve_llm_adapter",
+        "platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition.resolve_llm_adapter",
         _raise,
     )
 

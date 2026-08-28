@@ -26,11 +26,12 @@ class ScenarioRuntimeMode(str, Enum):
 
 @dataclass(frozen=True, slots=True)
 class ScenarioRuntimeWorkspace:
-    """Owned LAB runtime storage root and derived SQLite paths."""
+    """LAB runtime storage root, derived SQLite paths, and root ownership."""
 
     root: Path
     runtime_events_db_path: Path
     trace_db_path: Path
+    owns_root: bool
 
 
 def create_scenario_lab_workspace(
@@ -41,21 +42,25 @@ def create_scenario_lab_workspace(
     """
     Create an isolated LAB workspace with canonical SQLite filenames.
 
-    The returned root is owned by the caller (or ``ScenarioRuntimeComposition``)
-    until ``cleanup_scenario_runtime_workspace`` is invoked.
+    When ``workspace_root`` is omitted the platform creates a temp directory
+    (``owns_root=True``). When a caller supplies ``workspace_root`` the platform
+    does not own that directory (``owns_root=False``).
     """
+    owns_root = workspace_root is None
     root = workspace_root if workspace_root is not None else Path(mkdtemp(prefix=prefix))
     root.mkdir(parents=True, exist_ok=True)
     return ScenarioRuntimeWorkspace(
         root=root,
         runtime_events_db_path=root / "runtime_events.db",
         trace_db_path=root / "trace.db",
+        owns_root=owns_root,
     )
 
 
 def cleanup_scenario_runtime_workspace(workspace: ScenarioRuntimeWorkspace) -> None:
-    """Remove a LAB workspace directory when the runtime owner no longer needs it."""
-    shutil.rmtree(workspace.root, ignore_errors=True)
+    """Remove a platform-owned LAB workspace root when no longer needed."""
+    if workspace.owns_root:
+        shutil.rmtree(workspace.root, ignore_errors=True)
 
 
 def build_scenario_lab_runtime(

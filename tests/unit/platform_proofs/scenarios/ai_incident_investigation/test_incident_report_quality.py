@@ -6,24 +6,24 @@ import re
 
 import pytest
 
-from platform_proofs.scenarios.ai_incident_investigation.evaluator import evaluate_scenario_run
-from platform_proofs.scenarios.ai_incident_investigation.evaluator_evidence import (
+from platform_proofs.scenarios.ai_incident_investigation.proof.evaluator import evaluate_scenario_run
+from platform_proofs.scenarios.ai_incident_investigation.proof.evaluator_evidence import (
     evaluator_pass_summary,
     is_private_truth_check_id,
     project_scenario_evaluation_to_evidence,
 )
-from platform_proofs.scenarios.ai_incident_investigation.evidence_builder import (
+from platform_proofs.scenarios.ai_incident_investigation.proof.evidence_builder import (
     build_platform_proof_evidence,
 )
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import (
     FORBIDDEN_LEAK_MARKERS,
     ScenarioVariant,
 )
-from platform_proofs.scenarios.ai_incident_investigation.report_sections import (
+from platform_proofs.scenarios.ai_incident_investigation.proof.report_sections import (
     build_incident_report_sections,
     incident_report_extra_css,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     OUTCOME_RESOLVED,
     OUTCOME_UNRESOLVED,
     build_runtime_bundle,

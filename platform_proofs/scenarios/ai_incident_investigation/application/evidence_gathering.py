@@ -21,16 +21,16 @@ from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningServ
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.tools.execution_models import ToolExecutionResult
 from intergrax.tools.registry import ToolRegistry
-from platform_proofs.scenarios.ai_incident_investigation.incident_scope import (
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_scope import (
     IncidentScope,
     IncidentScopeViolationError,
 )
-from platform_proofs.scenarios.ai_incident_investigation.investigation_observability import (
+from platform_proofs.scenarios.ai_incident_investigation.application.observability import (
     IncidentPlannerDecisionDiagV1,
     IncidentPlannerStopDiagV1,
     IncidentScopeRejectionDiagV1,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPARISON_EVIDENCE_ID,
     STAFFING_ATTENDANCE_EVIDENCE_ID,
     STAFFING_PRELIMINARY_EVIDENCE_ID,
@@ -38,7 +38,7 @@ from platform_proofs.scenarios.ai_incident_investigation.scenario_contract impor
     THROUGHPUT_EVIDENCE_ID,
     WORKLOAD_EVIDENCE_ID,
 )
-from platform_proofs.scenarios.ai_incident_investigation.tools import (
+from platform_proofs.scenarios.ai_incident_investigation.application.tools import (
     ANALYSIS_TOOL_IDS,
     RAW_EVIDENCE_TOOL_IDS,
     SCENARIO_TOOL_IDS,

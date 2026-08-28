@@ -14,7 +14,7 @@ from intergrax.contracts.evidence_claims import (
     EvidenceClaimSet,
 )
 from intergrax.contracts.validation import ValidationResult
-from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import (
+from platform_proofs.scenarios.ai_incident_investigation.application.domain_reasoning import (
     IncidentObservations,
     attendance_meets_required,
     comparison_weakens_overload,
@@ -26,14 +26,14 @@ from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import
     telemetry_is_unavailable,
     telemetry_supports_degradation,
 )
-from platform_proofs.scenarios.ai_incident_investigation.execution_payload import (
+from platform_proofs.scenarios.ai_incident_investigation.application.execution_payload import (
     domain_payload_from_execution,
 )
-from platform_proofs.scenarios.ai_incident_investigation.incident_reasoning import (
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     ClaimHypothesisBinding,
     parse_claim_hypothesis_bindings,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPLETION_UNRESOLVED,
     INCIDENT_EVIDENCE_IDS,
     TELEMETRY_EVIDENCE_ID,

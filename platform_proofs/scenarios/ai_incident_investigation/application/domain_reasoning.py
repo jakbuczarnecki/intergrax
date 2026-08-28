@@ -12,7 +12,7 @@ from enum import StrEnum
 from pydantic import BaseModel
 
 from intergrax.contracts.evidence_claims import ClaimResolution
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import (
     HypothesisId,
     TelemetryAvailability,
 )

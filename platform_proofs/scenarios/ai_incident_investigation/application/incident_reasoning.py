@@ -23,18 +23,18 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.diagnostics.investigation_contracts import IncidentInvestigationInput
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import HypothesisId
-from platform_proofs.scenarios.ai_incident_investigation.investigation_observability import (
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import HypothesisId
+from platform_proofs.scenarios.ai_incident_investigation.application.observability import (
     IncidentClaimProposedDiagV1,
     IncidentClaimRevisedDiagV1,
     IncidentCompletionIntentDiagV1,
     IncidentEvidenceGapDiagV1,
     IncidentReasoningUpdateDiagV1,
 )
-from platform_proofs.scenarios.ai_incident_investigation.platform_diagnostic_context import (
+from platform_proofs.scenarios.ai_incident_investigation.application.platform_diagnostic_context import (
     format_platform_diagnostic_context_lines,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPLETION_SUPPORTED_DIAGNOSIS,
     COMPLETION_UNRESOLVED,
     DIAGNOSIS_KIND,

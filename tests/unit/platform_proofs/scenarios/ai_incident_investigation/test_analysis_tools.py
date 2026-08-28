@@ -10,8 +10,8 @@ import pytest
 
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import build_resolved_fixture
-from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import build_resolved_fixture
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPARISON_EVIDENCE_ID,
     STAFFING_ATTENDANCE_EVIDENCE_ID,
     STAFFING_PRELIMINARY_EVIDENCE_ID,
@@ -19,7 +19,7 @@ from platform_proofs.scenarios.ai_incident_investigation.scenario_contract impor
     THROUGHPUT_EVIDENCE_ID,
     WORKLOAD_EVIDENCE_ID,
 )
-from platform_proofs.scenarios.ai_incident_investigation.tools import (
+from platform_proofs.scenarios.ai_incident_investigation.application.tools import (
     TOOL_COMPARISON_EVALUATE,
     TOOL_STAFFING_EVALUATE,
     TOOL_TELEMETRY_EVALUATE,
@@ -185,7 +185,7 @@ def test_telemetry_analysis_detects_degradation() -> None:
 
 
 def test_analysis_tools_do_not_emit_diagnosis_fields() -> None:
-    from platform_proofs.scenarios.ai_incident_investigation.tools import (
+    from platform_proofs.scenarios.ai_incident_investigation.application.tools import (
         ComparisonEvaluateOutput,
         StaffingEvaluateOutput,
         TelemetryEvaluateOutput,
@@ -205,6 +205,6 @@ def test_analysis_tools_do_not_emit_diagnosis_fields() -> None:
 
 
 def test_analysis_tool_count_bounded() -> None:
-    from platform_proofs.scenarios.ai_incident_investigation.tools import ANALYSIS_TOOL_IDS
+    from platform_proofs.scenarios.ai_incident_investigation.application.tools import ANALYSIS_TOOL_IDS
 
     assert 3 <= len(ANALYSIS_TOOL_IDS) <= 5

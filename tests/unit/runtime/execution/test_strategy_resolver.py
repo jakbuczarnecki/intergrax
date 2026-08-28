@@ -88,6 +88,39 @@ def test_tools_only_resolves_to_agentic(resolver: StrategyResolver) -> None:
     assert resolver.resolve(request) is ExecutionStrategy.AGENTIC
 
 
+def test_agent_only_resolves_to_agentic(resolver: StrategyResolver) -> None:
+    request = _request(
+        input_payload=PromptInput(text="agent"),
+        capabilities=frozenset({ExecutionCapability.AGENT}),
+    )
+
+    assert resolver.resolve(request) is ExecutionStrategy.AGENTIC
+
+
+def test_agent_and_tools_resolve_to_agentic(resolver: StrategyResolver) -> None:
+    request = _request(
+        input_payload=PromptInput(text="agent+tools"),
+        capabilities=frozenset(
+            {ExecutionCapability.AGENT, ExecutionCapability.TOOLS},
+        ),
+    )
+
+    assert resolver.resolve(request) is ExecutionStrategy.AGENTIC
+
+
+def test_orchestration_and_agent_resolve_to_orchestration(
+    resolver: StrategyResolver,
+) -> None:
+    request = _request(
+        input_payload=OrchestrationWork(topology_id="root"),
+        capabilities=frozenset(
+            {ExecutionCapability.ORCHESTRATION, ExecutionCapability.AGENT},
+        ),
+    )
+
+    assert resolver.resolve(request) is ExecutionStrategy.ORCHESTRATION
+
+
 def test_tools_and_streaming_resolve_to_agentic(resolver: StrategyResolver) -> None:
     request = _request(
         input_payload=PromptInput(text="tools+stream"),

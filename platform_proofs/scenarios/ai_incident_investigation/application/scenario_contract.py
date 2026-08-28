@@ -9,7 +9,7 @@ from intergrax.contracts.evidence_claims import (
     validate_evidence_claim_id,
     validate_evidence_reference_id,
 )
-from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import IncidentEvidenceIds
+from platform_proofs.scenarios.ai_incident_investigation.application.domain_reasoning import IncidentEvidenceIds
 
 DIAGNOSIS_CLAIM_KIND = "incident.root_cause_diagnosis"
 

@@ -14,7 +14,7 @@ from intergrax.contracts.evidence_claims import (
     EvidenceBackedClaim,
     EvidenceClaimSet,
 )
-from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import (
+from platform_proofs.scenarios.ai_incident_investigation.application.domain_reasoning import (
     IncidentEvidenceIds,
     IncidentObservations,
     ObservedComparison,
@@ -28,16 +28,16 @@ from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import
     observations_from_evidence_nodes,
     telemetry_supports_degradation,
 )
-from platform_proofs.scenarios.ai_incident_investigation.evaluator import (
+from platform_proofs.scenarios.ai_incident_investigation.proof.evaluator import (
     build_forged_h3_claim_set,
     evaluate_mutated_evidence_fails,
     evaluate_scenario_run,
 )
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import (
     TelemetryAvailability,
     build_resolved_fixture,
 )
-from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
+from platform_proofs.scenarios.ai_incident_investigation.application.investigator_agent import (
     COMPARISON_EVIDENCE_ID,
     DIAGNOSIS_KIND,
     H2_CLAIM_ID,
@@ -49,12 +49,12 @@ from platform_proofs.scenarios.ai_incident_investigation.investigator_agent impo
     THROUGHPUT_EVIDENCE_ID,
     WORKLOAD_EVIDENCE_ID,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     OUTCOME_RESOLVED,
     build_runtime_bundle,
     execute_resolved_skeleton,
 )
-from platform_proofs.scenarios.ai_incident_investigation.validation import (
+from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
     COMPARISON_CONTENT_ERROR,
     H2_DISPOSITION_ERROR,
     H2_FALLBACK_ERROR,

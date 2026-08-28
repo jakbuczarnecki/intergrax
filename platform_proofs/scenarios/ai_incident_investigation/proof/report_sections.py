@@ -5,19 +5,19 @@
 from __future__ import annotations
 
 from intergrax.contracts.evidence_claims import ChallengeResolution, ClaimResolution
-from platform_proofs.scenarios.ai_incident_investigation.evaluator import ScenarioEvaluationResult
-from platform_proofs.scenarios.ai_incident_investigation.evaluator_evidence import (
+from platform_proofs.scenarios.ai_incident_investigation.proof.evaluator import ScenarioEvaluationResult
+from platform_proofs.scenarios.ai_incident_investigation.proof.evaluator_evidence import (
     EVALUATOR_DISPLAY_NAME,
     evaluator_pass_summary,
     representative_check_labels,
 )
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import ScenarioVariant
-from platform_proofs.scenarios.ai_incident_investigation.scenario import (
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import ScenarioVariant
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     OUTCOME_RESOLVED,
     OUTCOME_UNRESOLVED,
     ScenarioExecutionResult,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     H2_CLAIM_ID,
     H3_CLAIM_ID,
     INITIAL_CLAIM_ID,

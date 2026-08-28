@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 import pytest
 
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -63,6 +64,10 @@ def _root_identity() -> ExecutionIdentityBinding:
     )
 
 
+def _root_authority() -> ParentExecutionAuthority:
+    return ParentExecutionAuthority.unrestricted_root()
+
+
 @pytest.mark.asyncio
 async def test_child_preserves_run_attempt_mints_new_execution_id() -> None:
     root = _root_identity()
@@ -79,6 +84,7 @@ async def test_child_preserves_run_attempt_mints_new_execution_id() -> None:
     root_boundary = ExecutionBoundary[Ping, Pong](
         RootDelegate(),
         identity=root,
+        authority=_root_authority(),
     )
 
     await root_boundary.execute(Ping(value="child"))
@@ -107,7 +113,11 @@ async def test_child_restores_parent_execution_after_success() -> None:
             parent_seen.append(require_active_execution_id())
             return Pong(value="ok")
 
-    await ExecutionBoundary[Ping, Pong](RootDelegate(), identity=root).execute(
+    await ExecutionBoundary[Ping, Pong](
+        RootDelegate(),
+        identity=root,
+        authority=_root_authority(),
+    ).execute(
         Ping(value="child"),
     )
 
@@ -161,7 +171,11 @@ async def test_nested_child_execution_lineage() -> None:
             )
             return await child_runner.execute(request=request, delegate=MidDelegate())
 
-    await ExecutionBoundary[Ping, Pong](RootDelegate(), identity=root).execute(
+    await ExecutionBoundary[Ping, Pong](
+        RootDelegate(),
+        identity=root,
+        authority=_root_authority(),
+    ).execute(
         Ping(value="nested"),
     )
 
@@ -215,7 +229,11 @@ async def test_parallel_children_isolate_execution_ids() -> None:
             )
             return Pong(value="done")
 
-    await ExecutionBoundary[Ping, Pong](RootDelegate(), identity=root).execute(
+    await ExecutionBoundary[Ping, Pong](
+        RootDelegate(),
+        identity=root,
+        authority=_root_authority(),
+    ).execute(
         Ping(value="parallel"),
     )
 
@@ -249,7 +267,11 @@ async def test_child_exception_propagates_and_restores_parent() -> None:
             return Pong(value="never")
 
     with pytest.raises(ValueError, match="child-boom"):
-        await ExecutionBoundary[Ping, Pong](RootDelegate(), identity=root).execute(
+        await ExecutionBoundary[Ping, Pong](
+        RootDelegate(),
+        identity=root,
+        authority=_root_authority(),
+    ).execute(
             Ping(value="fail"),
         )
 
@@ -307,7 +329,11 @@ async def test_child_admission_hook_sees_child_identity() -> None:
                 admission_hooks=(AdmissionHook(),),
             )
 
-    await ExecutionBoundary[Ping, Pong](RootDelegate(), identity=root).execute(
+    await ExecutionBoundary[Ping, Pong](
+        RootDelegate(),
+        identity=root,
+        authority=_root_authority(),
+    ).execute(
         Ping(value="admit"),
     )
 

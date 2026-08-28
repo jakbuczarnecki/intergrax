@@ -21,6 +21,7 @@ class ExecutionCapability(str, Enum):
     selects inference, agentic, or orchestration executors.
     """
 
+    AGENT = "agent"
     TOOLS = "tools"
     ORCHESTRATION = "orchestration"
     STREAMING = "streaming"

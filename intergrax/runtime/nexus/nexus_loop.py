@@ -10,6 +10,7 @@ from intergrax.agents.agent_engine import AgentEngine
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.contracts.delegation_authority import resolve_root_parent_execution_authority
 from intergrax.contracts.execution_identity import (
     ActiveExecutionIdentity,
     AttemptId,
@@ -22,7 +23,11 @@ from intergrax.contracts.execution_identity import (
     validate_attempt_id,
     validate_run_id,
 )
-from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
+from intergrax.runtime.governance.active_execution_authority import (
+    bind_active_execution_authority,
+    peek_active_execution_authority,
+    reset_active_execution_authority,
+)
 from intergrax.contracts.agent_execution_result import (
     AgentExecutionResult,
     AgentExecutionStatus,
@@ -409,27 +414,40 @@ class NexusLoop:
                 raise RuntimeError(
                     "active execution identity attempt_id mismatch with Nexus handle_task",
                 )
+            root_authority = resolve_root_parent_execution_authority(
+                task.execution_authority,
+            )
+            authority_token = None
+            if peek_active_execution_authority() is None:
+                authority_token = bind_active_execution_authority(root_authority)
             self._current_task = task
             try:
                 return await self._handle_task_impl(task)
             finally:
                 self._current_task = None
+                if authority_token is not None:
+                    reset_active_execution_authority(authority_token)
 
-        # TRANSITIONAL — remove in UE-9D once all production execution enters Boundary.
+        # TRANSITIONAL — OWNER: UE-9D — Run/Attempt only; ExecutionId must enter via Boundary.
         resolved_attempt_id = (
             validate_attempt_id(attempt_id)
             if attempt_id is not None
             else mint_attempt_id()
         )
         self._current_task = task
+        root_authority = resolve_root_parent_execution_authority(
+            task.execution_authority,
+        )
         identity_token = bind_active_execution_identity(
             run_id=resolved_run_id,
             attempt_id=resolved_attempt_id,
         )
+        authority_token = bind_active_execution_authority(root_authority)
         try:
             return await self._handle_task_impl(task)
         finally:
             self._current_task = None
+            reset_active_execution_authority(authority_token)
             reset_active_execution_identity(identity_token)
 
     async def _handle_task_impl(self, task: Task) -> TaskResult:

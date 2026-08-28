@@ -8,19 +8,19 @@ import pytest
 
 from intergrax.contracts.agent_step import AgentStep
 from intergrax.contracts.evidence_claims import ClaimResolution
-from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id, mint_task_id
+import intergrax.contracts.execution_identity as execution_identity
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import (
+from platform_proofs.scenarios.ai_incident_investigation.application.domain_reasoning import (
     parse_telemetry_payload,
 )
-from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
+from platform_proofs.scenarios.ai_incident_investigation.application.investigator_agent import (
     INVESTIGATOR_AGENT_ID,
     REVISED_CLAIM_ID,
     TELEMETRY_EVIDENCE_ID,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario import build_runtime_bundle
-from platform_proofs.scenarios.ai_incident_investigation.tools import TOOL_TELEMETRY_READ
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario import build_runtime_bundle
+from platform_proofs.scenarios.ai_incident_investigation.application.tools import TOOL_TELEMETRY_READ
 
 pytestmark = pytest.mark.unit
 
@@ -31,11 +31,16 @@ def _build_runtime_state(bundle):
         user_id="u",
         session_id="s",
         tenant_id="t",
-        task_id=mint_task_id(),
-        run_id=mint_run_id(),
+        task_id=execution_identity.mint_task_id(),
+        run_id=execution_identity.mint_run_id(),
         message="investigate",
     )
     ctx = bundle.investigator.build_context(request)
+    execution_identity.bind_active_execution_identity(
+        run_id=request.run_id,
+        attempt_id=execution_identity.mint_attempt_id(),
+        execution_id=execution_identity.mint_execution_id(),
+    )
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 
     return RuntimeState(
@@ -66,15 +71,15 @@ async def test_run_step_executes_telemetry_once_via_tool_runtime() -> None:
         user_id="u",
         session_id="s",
         tenant_id="t",
-        task_id=mint_task_id(),
-        run_id=mint_run_id(),
+        task_id=execution_identity.mint_task_id(),
+        run_id=execution_identity.mint_run_id(),
         message="investigate",
         metadata={"critic_feedback": ["revise"]},
     )
     exec_ctx = RuntimeExecutionContext(
         task_id=request.task_id,
         run_id=request.run_id,
-        attempt_id=mint_attempt_id(),
+        attempt_id=execution_identity.mint_attempt_id(),
         agent_id=INVESTIGATOR_AGENT_ID,
         request=request,
         metadata={"runtime_state": runtime_state},
@@ -106,7 +111,7 @@ async def test_run_step_executes_telemetry_once_via_tool_runtime() -> None:
 
 
 def test_investigator_has_no_direct_registry_executor_execution() -> None:
-    from platform_proofs.scenarios.ai_incident_investigation import investigator_agent as mod
+    from platform_proofs.scenarios.ai_incident_investigation.application import investigator_agent as mod
 
     source = inspect.getsource(mod)
     assert "_registry_executor.execute(" not in source

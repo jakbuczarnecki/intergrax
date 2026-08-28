@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import re
 
-from platform_proofs.scenarios.ai_incident_investigation.evaluator import ScenarioEvaluationResult
+from platform_proofs.scenarios.ai_incident_investigation.proof.evaluator import ScenarioEvaluationResult
 from scripts.proof.intergrax_platform_proof_evidence import (
     EvaluatorCheckEvidence,
     EvaluatorSummaryEvidence,

@@ -28,7 +28,7 @@ from intergrax.runtime.critic.contracts import (
 )
 from intergrax.runtime.critic.trace import CriticTraceEmitter, CriticVerdictDiagV1
 from intergrax.runtime.critic.trace_steps import CRITIC_STEP_L0_FAILED
-from platform_proofs.scenarios.ai_incident_investigation.validation import (
+from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
     UNSUPPORTED_INFERENCE_ERROR,
 )
 
@@ -104,6 +104,73 @@ def first_failed_node_partial_verdict_from_trace(
             failure_reasons=reasons,
         )
     return None
+
+
+def first_failed_node_partial_verdict_from_persisted_trace(
+    events: list[dict[str, object]],
+    *,
+    node_id: str,
+) -> CriticVerdict | None:
+    """Return first failed NODE_PARTIAL critic verdict from persisted trace events."""
+    for raw_event in events:
+        if raw_event.get("step") != CRITIC_STEP_L0_FAILED:
+            continue
+        payload = raw_event.get("payload")
+        if not isinstance(payload, dict):
+            continue
+        try:
+            diag = CriticVerdictDiagV1(
+                scope=str(payload.get("scope", "")),
+                passed=bool(payload.get("passed", False)),
+                recommended_action=str(payload.get("recommended_action", "")),
+                layer=str(payload.get("layer", "")),
+                score=payload.get("score"),
+                failure_reasons=tuple(str(item) for item in payload.get("failure_reasons", [])),
+                agent_id=str(payload.get("agent_id", "")),
+                node_id=str(payload.get("node_id")) if payload.get("node_id") else None,
+            )
+        except (TypeError, ValueError):
+            continue
+        if diag.passed:
+            continue
+        if diag.node_id != node_id:
+            continue
+        if diag.scope != CriticScope.NODE_PARTIAL.value:
+            continue
+        reasons = list(diag.failure_reasons)
+        if not reasons:
+            continue
+        return CriticVerdict(
+            scope=CriticScope.NODE_PARTIAL,
+            passed=False,
+            layers=[
+                LayerVerdict(
+                    layer=CriticLayer.L0_DETERMINISTIC,
+                    passed=False,
+                    errors=reasons,
+                )
+            ],
+            recommended_action=CriticAction(diag.recommended_action),
+            failure_reasons=reasons,
+        )
+    return None
+
+
+def count_evaluator_loop_iterations_from_persisted_trace(
+    events: list[dict[str, object]],
+    *,
+    node_id: str,
+) -> int:
+    from intergrax.runtime.critic.trace_steps import CRITIC_STEP_EVALUATOR_LOOP
+
+    count = 0
+    for raw_event in events:
+        if raw_event.get("step") != CRITIC_STEP_EVALUATOR_LOOP:
+            continue
+        payload = raw_event.get("payload")
+        if isinstance(payload, dict) and payload.get("node_id") == node_id:
+            count += 1
+    return count
 
 
 def apply_challenge_lifecycle(

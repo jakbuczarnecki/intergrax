@@ -4,19 +4,19 @@ from __future__ import annotations
 
 import pytest
 
-from platform_proofs.scenarios.ai_incident_investigation.evaluator import evaluate_scenario_run
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
+from platform_proofs.scenarios.ai_incident_investigation.proof.evaluator import evaluate_scenario_run
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import (
     TimeWindowLabel,
     build_resolved_fixture,
     staffing_record_admissible_for_incident,
 )
-from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
+from platform_proofs.scenarios.ai_incident_investigation.application.investigator_agent import (
     COMPARISON_EVIDENCE_ID,
     STAFFING_ATTENDANCE_EVIDENCE_ID,
     STAFFING_PRELIMINARY_EVIDENCE_ID,
     TELEMETRY_EVIDENCE_ID,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     OUTCOME_RESOLVED,
     build_runtime_bundle,
     execute_resolved_skeleton,

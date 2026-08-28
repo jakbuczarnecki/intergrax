@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import gc
 from pathlib import Path
 
 import pytest
@@ -144,6 +145,46 @@ async def test_lab_document_store_supports_problem_persistence(
     workspace = composition.workspace
     assert workspace is not None
     cleanup_scenario_runtime_workspace(workspace)
+
+
+def test_lab_platform_owned_workspace_cleanup_removes_temp_root() -> None:
+    composition = build_scenario_lab_runtime(
+        registry=_echo_registry(),
+        tenant_id=_TENANT,
+    )
+    workspace = composition.workspace
+    assert workspace is not None
+    assert workspace.owns_root is True
+    root = workspace.root
+    assert root.is_dir()
+    del composition
+    gc.collect()
+    cleanup_scenario_runtime_workspace(workspace)
+    assert not root.exists()
+
+
+def test_lab_caller_owned_workspace_cleanup_preserves_artifact_root(tmp_path: Path) -> None:
+    artifact_root = tmp_path / "artifact_root"
+    artifact_root.mkdir()
+    existing_report = artifact_root / "existing_report.json"
+    existing_report.write_text('{"proof": true}', encoding="utf-8")
+
+    composition = build_scenario_lab_runtime(
+        registry=_echo_registry(),
+        tenant_id=_TENANT,
+        workspace_root=artifact_root,
+    )
+    workspace = composition.workspace
+    assert workspace is not None
+    assert workspace.owns_root is False
+    assert workspace.runtime_events_db_path == artifact_root / "runtime_events.db"
+    assert workspace.trace_db_path == artifact_root / "trace.db"
+
+    cleanup_scenario_runtime_workspace(workspace)
+
+    assert artifact_root.is_dir()
+    assert existing_report.is_file()
+    assert existing_report.read_text(encoding="utf-8") == '{"proof": true}'
 
 
 def test_lab_storage_isolation_between_runtimes() -> None:

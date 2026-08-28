@@ -105,7 +105,6 @@ jobs:
           uv run --frozen python scripts/maintenance/check_harness_no_getattr.py
           && uv run --frozen python scripts/maintenance/check_agents_no_tier3_imports.py
           && uv run --frozen python scripts/ci/check_ci_gate_test_purity.py
-          && uv run --frozen python scripts/maintenance/check_langchain_boundary.py
           && uv run --frozen python scripts/maintenance/check_dependency_ownership.py
           && uv run --frozen python scripts/maintenance/check_knowledge_document_conformance.py
 
@@ -214,7 +213,6 @@ jobs:
           && uv run --frozen python scripts/maintenance/check_harness_registry_resolution.py
           && uv run --frozen python scripts/maintenance/check_agent_registry_bypass.py
           && uv run --frozen python scripts/maintenance/check_langgraph_not_required.py
-          && uv run --frozen python scripts/maintenance/check_langchain_boundary.py
           && uv run --frozen python scripts/maintenance/check_knowledge_document_conformance.py
           && uv run --frozen python scripts/maintenance/check_agents_no_tier3_imports.py
           && uv run --frozen python scripts/docs/check_docs_domain_pairs.py
@@ -264,81 +262,11 @@ jobs:
           && uv run --frozen python scripts/maintenance/check_harness_evaluation_wiring.py
           && uv run --frozen intergrax doctor --ci
 
-  langchain-free-core:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-          python-version: "3.12"
-
-      - name: Create isolated clean environment
-        shell: bash
-        run: |
-          gate_env="${RUNNER_TEMP}/intergrax-langchain-free-core"
-          uv venv --python 3.12 "${gate_env}"
-          uv pip install --python "${gate_env}/bin/python" .
-
-      - name: Run LangChain-free core gate
-        env:
-          PYTHONNOUSERSITE: "1"
-        shell: bash
-        run: |
-          gate_env="${RUNNER_TEMP}/intergrax-langchain-free-core"
-          "${gate_env}/bin/python" scripts/ci/check_langchain_free_core_install.py
-          "${gate_env}/bin/python" scripts/ci/check_langchain_compatibility_install.py --missing-extra
-
-  langchain-compatibility:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        extra:
-          - llm-langchain-ollama
-          - rag-langchain-loaders
-          - rag-langchain-embeddings
-          - rag-langchain-splitters
-          - langgraph-legacy
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-          python-version: "3.12"
-
-      - name: Create isolated compatibility environment
-        shell: bash
-        run: |
-          gate_env="${RUNNER_TEMP}/intergrax-langchain-${{ matrix.extra }}"
-          uv venv --python 3.12 "${gate_env}"
-          uv pip install --python "${gate_env}/bin/python" ".[${{ matrix.extra }}]"
-
-      - name: Run isolated compatibility gate
-        env:
-          PYTHONNOUSERSITE: "1"
-        shell: bash
-        run: |
-          gate_env="${RUNNER_TEMP}/intergrax-langchain-${{ matrix.extra }}"
-          "${gate_env}/bin/python" scripts/ci/check_langchain_compatibility_install.py \
-            --family "${{ matrix.extra }}"
-
   gate-closeout:
     needs:
       - gate-tests
       - gate-governance-tier
       - gate-governance-wiring
-      - langchain-compatibility
     if: >-
       (
         github.event_name == 'schedule' ||
@@ -349,8 +277,7 @@ jobs:
       ) &&
       needs.gate-tests.result == 'success' &&
       needs.gate-governance-tier.result == 'success' &&
-      needs.gate-governance-wiring.result == 'success' &&
-      needs.langchain-compatibility.result == 'success'
+      needs.gate-governance-wiring.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 12
 

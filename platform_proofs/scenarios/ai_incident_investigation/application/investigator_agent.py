@@ -15,10 +15,10 @@ from intergrax.runtime.nexus.context.metadata_keys import PRIOR_AGENT_OUTPUTS_KE
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from platform_proofs.scenarios.ai_incident_investigation.evidence_gathering import (
+from platform_proofs.scenarios.ai_incident_investigation.application.evidence_gathering import (
     gather_incident_evidence,
 )
-from platform_proofs.scenarios.ai_incident_investigation.incident_reasoning import (
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     build_investigation_summary,
     completion_mode_from_proposal,
     convert_proposal_to_pending_claims,
@@ -26,12 +26,12 @@ from platform_proofs.scenarios.ai_incident_investigation.incident_reasoning impo
     propose_incident_reasoning,
     emit_reasoning_observability,
 )
-from platform_proofs.scenarios.ai_incident_investigation.incident_scope import IncidentScope
-from platform_proofs.scenarios.ai_incident_investigation.runtime_composition import (
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_scope import IncidentScope
+from platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition import (
     ScenarioRuntimeComposition,
     build_agent_runtime_context,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (  # noqa: F401
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (  # noqa: F401
     COMPARISON_EVIDENCE_ID,
     COMPLETION_SUPPORTED_DIAGNOSIS,
     COMPLETION_UNRESOLVED,
@@ -47,7 +47,7 @@ from platform_proofs.scenarios.ai_incident_investigation.scenario_contract impor
     THROUGHPUT_EVIDENCE_ID,
     WORKLOAD_EVIDENCE_ID,
 )
-from platform_proofs.scenarios.ai_incident_investigation.tools import SCENARIO_TOOL_IDS
+from platform_proofs.scenarios.ai_incident_investigation.application.tools import SCENARIO_TOOL_IDS
 
 INVESTIGATOR_AGENT_ID = "incident_investigator"
 INVESTIGATOR_CAPABILITY = "incident_investigation.investigate"
@@ -93,7 +93,7 @@ class IncidentInvestigatorAgent(Agent):
         investigation_input: IncidentInvestigationInput | None = None,
     ) -> None:
         from intergrax.tools.registry import ToolRegistry
-        from platform_proofs.scenarios.ai_incident_investigation.tools import ScenarioEvidenceStore
+        from platform_proofs.scenarios.ai_incident_investigation.application.tools import ScenarioEvidenceStore
 
         if not isinstance(registry, ToolRegistry):
             raise TypeError("registry must be ToolRegistry")

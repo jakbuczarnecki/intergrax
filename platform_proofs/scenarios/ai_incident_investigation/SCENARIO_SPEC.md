@@ -1,3 +1,13 @@
+---
+scenario_slug: ai_incident_investigation
+lifecycle: EXECUTABLE
+implementation_status: INITIALIZED
+intergrax_fit: COMPLETED
+gap_decision: RESOLVED
+observability_contract: COMPLETED
+application_vs_proof_ownership: COMPLETED
+---
+
 # Scenario Specification
 
 **Scenario:** AI Incident Investigation with Independent Verification  

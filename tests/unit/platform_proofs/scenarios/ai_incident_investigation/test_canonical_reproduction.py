@@ -7,20 +7,20 @@ from pathlib import Path
 
 import pytest
 
-from platform_proofs.scenarios.ai_incident_investigation.evidence_builder import (
+from platform_proofs.scenarios.ai_incident_investigation.proof.evidence_builder import (
     EVIDENCE_RESOLVED_FILENAME,
     EVIDENCE_UNRESOLVED_FILENAME,
     REPORT_RESOLVED_FILENAME,
     REPORT_UNRESOLVED_FILENAME,
     build_platform_proof_evidence,
 )
-from platform_proofs.scenarios.ai_incident_investigation.evaluator import evaluate_scenario_run
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import ScenarioVariant
-from platform_proofs.scenarios.ai_incident_investigation.reproduction import (
+from platform_proofs.scenarios.ai_incident_investigation.proof.evaluator import evaluate_scenario_run
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import ScenarioVariant
+from platform_proofs.scenarios.ai_incident_investigation.proof.reproduction import (
     PROOF_ID,
     canonical_reproduction_shell_command,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     build_runtime_bundle,
     execute_resolved_skeleton,
 )

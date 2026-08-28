@@ -11,29 +11,17 @@ from intergrax.runtime.diagnostics.investigation_contracts import (
     incident_investigation_input_from_problem_details,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import ProblemId
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import (
     IncidentFixture,
     ScenarioVariant,
     build_resolved_fixture,
     build_unresolved_fixture,
 )
-from platform_proofs.scenarios.ai_incident_investigation.runtime_composition import (
-    ScenarioRuntimeComposition,
-    build_scenario_runtime_composition,
-)
-from platform_proofs.scenarios.ai_incident_investigation.scenario import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     ScenarioRuntimeBundle,
     STANDALONE_SCENARIO_TENANT_ID,
+    build_runtime_bundle,
 )
-from platform_proofs.scenarios.ai_incident_investigation.tools import (
-    ScenarioEvidenceStore,
-    register_scenario_tools,
-)
-from platform_proofs.scenarios.ai_incident_investigation.incident_scope import IncidentScope
-from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
-    IncidentInvestigatorAgent,
-)
-from intergrax.tools.registry import ToolRegistry
 
 
 class IncidentInvestigationProblemNotFoundError(Exception):
@@ -92,43 +80,24 @@ def build_runtime_bundle_from_diagnostic_problem(
     problem_ids: ProblemId | tuple[ProblemId, ...],
     variant: ScenarioVariant = ScenarioVariant.RESOLVED,
     fixture: IncidentFixture | None = None,
-    runtime_composition: ScenarioRuntimeComposition | None = None,
+    runtime_composition: object | None = None,
 ) -> ScenarioRuntimeBundle:
     """
     Platform-attached investigation mode: seed scenario from canonical Problem read surface.
 
     Domain evidence fixtures remain scenario-owned; platform context is read-only derived
-  from central diagnostics.
+    from central diagnostics.
     """
     investigation_input = resolve_incident_investigation_input(
         diagnostic_read_service,
         tenant_id=tenant_id,
         problem_ids=problem_ids,
     )
-    resolved_fixture = fixture or (
-        build_unresolved_fixture()
-        if variant is ScenarioVariant.UNRESOLVED
-        else build_resolved_fixture()
-    )
-    registry = ToolRegistry()
-    evidence_store = register_scenario_tools(registry, resolved_fixture)
-    composition = runtime_composition or build_scenario_runtime_composition(registry=registry)
-    investigator = IncidentInvestigatorAgent(
-        registry=registry,
-        station_id=resolved_fixture.telemetry.station_id,
-        runtime_composition=composition,
-        incident_scope=IncidentScope.from_fixture_defaults(
-            station_id=resolved_fixture.telemetry.station_id,
-        ),
-        evidence_store=evidence_store,
-        investigation_input=investigation_input,
-    )
-    return ScenarioRuntimeBundle(
-        fixture=resolved_fixture,
-        registry=registry,
-        investigator=investigator,
-        runtime_composition=composition,
-        evidence_store=evidence_store,
+    return build_runtime_bundle(
+        variant=variant,
+        fixture=fixture,
+        runtime_composition=runtime_composition,
+        tenant_id=tenant_id,
         investigation_input=investigation_input,
     )
 

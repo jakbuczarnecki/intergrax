@@ -7,20 +7,20 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from intergrax.contracts.evidence_claims import EvidenceClaimSet
-from platform_proofs.scenarios.ai_incident_investigation.evaluator import ScenarioEvaluationResult
-from platform_proofs.scenarios.ai_incident_investigation.reproduction import (
+from platform_proofs.scenarios.ai_incident_investigation.proof.evaluator import ScenarioEvaluationResult
+from platform_proofs.scenarios.ai_incident_investigation.proof.reproduction import (
     CANONICAL_REPRODUCTION_PREREQUISITES,
     PROOF_ID,
     canonical_reproduction_shell_command,
 )
-from platform_proofs.scenarios.ai_incident_investigation.evaluator_evidence import (
+from platform_proofs.scenarios.ai_incident_investigation.proof.evaluator_evidence import (
     project_scenario_evaluation_to_evidence,
 )
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import ScenarioVariant
-from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import ScenarioVariant
+from platform_proofs.scenarios.ai_incident_investigation.application.investigator_agent import (
     TELEMETRY_EVIDENCE_ID,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     OUTCOME_RESOLVED,
     ScenarioExecutionResult,
 )
