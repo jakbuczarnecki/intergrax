@@ -13,6 +13,10 @@ from intergrax.applications.contracts.graph_spec import (
 )
 from intergrax.runtime.critic.evaluator_loop_metadata import evaluator_loop_spec_from_node
 from intergrax.runtime.critic.evaluator_loop_spec import EvaluatorLoopSpec
+from intergrax.runtime.nexus.execution.execution_graph import (
+    EvaluatorLoopMetadataError,
+    EvaluatorLoopProducerNotFoundError,
+)
 from intergrax.runtime.nexus.execution.graph_builder import plan_to_execution_graph
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, PlanStep
 
@@ -61,12 +65,19 @@ def test_plan_to_execution_graph_tags_producer_when_binding_valid() -> None:
     assert spec.max_iterations == 3
 
 
-def test_plan_to_execution_graph_ignores_malformed_evaluator_metadata() -> None:
-    graph = plan_to_execution_graph(_plan_with_evaluator_metadata(metadata_value="{not-json"))
-    assert evaluator_loop_spec_from_node(graph.nodes[0]) is None
+def test_plan_to_execution_graph_raises_on_malformed_evaluator_metadata_json() -> None:
+    with pytest.raises(EvaluatorLoopMetadataError, match="malformed evaluator_loop\\.v1 JSON"):
+        plan_to_execution_graph(_plan_with_evaluator_metadata(metadata_value="{not-json"))
 
 
-def test_plan_to_execution_graph_ignores_missing_producer_node() -> None:
+def test_plan_to_execution_graph_raises_on_schema_invalid_evaluator_metadata() -> None:
+    with pytest.raises(EvaluatorLoopMetadataError, match="invalid evaluator_loop\\.v1 schema"):
+        plan_to_execution_graph(
+            _plan_with_evaluator_metadata(metadata_value='{"producer_agent_id":"x"}')
+        )
+
+
+def test_plan_to_execution_graph_raises_when_producer_node_missing() -> None:
     binding = EvaluatorLoopGraphBinding(
         producer_agent_id="missing_agent",
         evaluator_agent_id=_PRODUCER_AGENT_ID,
@@ -76,10 +87,10 @@ def test_plan_to_execution_graph_ignores_missing_producer_node() -> None:
             revise_node_id=f"node_{_PRODUCER_AGENT_ID}",
         ),
     )
-    graph = plan_to_execution_graph(
-        _plan_with_evaluator_metadata(metadata_value=binding.model_dump_json())
-    )
-    assert evaluator_loop_spec_from_node(graph.nodes[0]) is None
+    with pytest.raises(EvaluatorLoopProducerNotFoundError, match="missing_agent"):
+        plan_to_execution_graph(
+            _plan_with_evaluator_metadata(metadata_value=binding.model_dump_json())
+        )
 
 
 def test_plan_to_execution_graph_without_evaluator_metadata_preserves_legacy_graph() -> None:
