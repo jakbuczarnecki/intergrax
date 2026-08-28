@@ -353,7 +353,7 @@ async def execute_resolved_skeleton(
 
     critic_challenged = failed_critic_verdict is not None and not failed_critic_verdict.passed
 
-    critic_hooks = platform.nexus_loop._graph_executor._critic_graph_hooks
+    critic_hooks = platform.nexus_loop.critic_graph_hooks
     if critic_hooks is None:
         raise RuntimeError("critic hooks required for skeleton")
 

@@ -46,6 +46,7 @@ from intergrax.agents.persistence.compensation_queue_store import CompensationQu
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -78,6 +79,7 @@ def build_nexus_loop_from_environment(
     critic_wiring: ApplicationCriticWiring | None = None,
     adaptive_wiring: ApplicationAdaptiveWiring | None = None,
     run_budget: RunBudget | None = None,
+    validation_engine: NexusValidationEngine | None = None,
 ) -> NexusLoop:
     """Apply orchestration and reliability profiles to ``NexusLoop`` construction."""
     orch = env.orchestration_profile
@@ -137,6 +139,7 @@ def build_nexus_loop_from_environment(
         allow_dynamic_replan=runtime_settings.allow_dynamic_replan,
         denied_planner_model_ids=tuple(env.reasoning_profile.denied_planner_model_ids),
         planner_model_id=resolve_planner_model_id(env),
+        validation_engine=validation_engine,
     )
     resolved_security = security_wiring or wire_application_security(env)
     apply_application_security_wiring(loop, resolved_security, env=env)

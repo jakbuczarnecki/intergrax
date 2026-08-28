@@ -15,11 +15,14 @@ from intergrax.applications._shared.scenario_runtime_baseline import (
     ScenarioRuntimeBuildError,
     build_scenario_runtime_from_environment,
     execute_scenario_task,
+    rewire_scenario_critic_wiring,
     validate_scenario_tenant_id,
 )
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     ApplicationSecurityProfile,
+    CriticProfile,
+    CriticVerificationScopes,
 )
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
@@ -27,7 +30,9 @@ from intergrax.contracts.execution_identity import mint_task_id
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.task.task import TaskState
+from intergrax.contracts.validation import ValidationResult
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
@@ -203,6 +208,60 @@ def test_build_scenario_runtime_returns_nexus_backed_composition(tmp_path: Path)
     assert composition.guardrail_wiring is not None
     assert composition.nexus_loop.policy_engine is not None
     assert composition.has_runtime_event_store is True
+
+
+class _RecordingValidationEngine(NexusValidationEngine):
+    calls: int = 0
+
+    def validate(self, *args: object, **kwargs: object) -> ValidationResult:
+        type(self).calls += 1
+        return ValidationResult(valid=True)
+
+
+def test_build_scenario_runtime_accepts_custom_validation_engine(tmp_path: Path) -> None:
+    engine = _RecordingValidationEngine()
+    environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="scenario.validation.engine")
+    composition = build_scenario_runtime_from_environment(
+        environment=environment,
+        registry=_echo_registry(),
+        tenant_id=_TENANT,
+        manifest=_scenario_manifest("scenario_validation_engine"),
+        runtime_events_db_path=tmp_path / "events.db",
+        trace_db_path=tmp_path / "trace.db",
+        use_in_memory_trace=True,
+        validation_engine=engine,
+    )
+    assert composition.nexus_loop.critic_graph_hooks is not None
+    assert _RecordingValidationEngine.calls == 0
+
+
+def test_rewire_scenario_critic_wiring_reapplies_validation_engine(tmp_path: Path) -> None:
+    composition = _build_composition(tmp_path)
+    replacement = _RecordingValidationEngine()
+    rewire_scenario_critic_wiring(composition, validation_engine=replacement)
+    assert composition.nexus_loop.critic_graph_hooks is not None
+
+
+def test_build_scenario_runtime_wires_critic_from_environment_profile(tmp_path: Path) -> None:
+    environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="scenario.critic.profile")
+    environment.critic_profile = CriticProfile(
+        scopes=CriticVerificationScopes(node_partial=True, graph_final=True),
+        require_critic_on_completion=True,
+    )
+    composition = build_scenario_runtime_from_environment(
+        environment=environment,
+        registry=_echo_registry(),
+        tenant_id=_TENANT,
+        manifest=_scenario_manifest("scenario_critic_profile"),
+        runtime_events_db_path=tmp_path / "events.db",
+        trace_db_path=tmp_path / "trace.db",
+        use_in_memory_trace=True,
+    )
+    hooks = composition.nexus_loop.critic_graph_hooks
+    assert hooks is not None
+    assert hooks.verify_node_partial is True
+    assert hooks.verify_graph_final is True
+    assert hooks.config.require_critic_on_completion is True
 
 
 def test_validate_scenario_tenant_id_rejects_whitespace_and_empty() -> None:

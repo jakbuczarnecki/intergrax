@@ -12,7 +12,10 @@ from intergrax.applications._shared.cost_assembly_resolver import assert_cost_as
 from intergrax.applications._shared.cost_wiring import wire_application_cost
 from intergrax.applications._shared.critic_assembly_resolver import assert_critic_assembly_valid
 from intergrax.applications._shared.critic_tool_wiring import build_critic_eval_tool_client
-from intergrax.applications._shared.critic_wiring import wire_application_critic
+from intergrax.applications._shared.critic_wiring import (
+    apply_application_critic_wiring,
+    wire_application_critic,
+)
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_from_tool_wiring,
 )
@@ -68,6 +71,7 @@ from intergrax.runtime.nexus.observability_wiring import (
     NexusObservabilityStores,
     wire_nexus_observability,
 )
+from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult
 
@@ -86,6 +90,8 @@ __all__ = [
     "ScenarioRuntimeWorkspace",
     "build_scenario_runtime_from_environment",
     "execute_scenario_task",
+    "rebuild_scenario_runtime_from_composition",
+    "rewire_scenario_critic_wiring",
     "validate_scenario_tenant_id",
 ]
 
@@ -216,6 +222,62 @@ def _resolve_observability_stores(
     return wiring.stores
 
 
+def rewire_scenario_critic_wiring(
+    composition: ScenarioRuntimeComposition,
+    *,
+    validation_engine: NexusValidationEngine | None = None,
+) -> None:
+    """Reapply critic hooks and validation engine from the current environment profile."""
+    environment = composition.environment
+    evaluation_wiring = wire_application_evaluation(environment)
+    l1_client = build_critic_eval_tool_client(
+        environment,
+        composition.env_wiring.tool_wiring,
+        evaluation_registry=evaluation_wiring.registry,
+        trace_reader=composition.observability.trace_store,
+    )
+    critic_wiring = wire_application_critic(
+        environment,
+        l1_client=l1_client,
+        validation_engine=validation_engine,
+    )
+    if validation_engine is not None:
+        composition.nexus_loop.apply_validation_engine(validation_engine)
+    apply_application_critic_wiring(composition.nexus_loop, critic_wiring)
+
+
+def rebuild_scenario_runtime_from_composition(
+    composition: ScenarioRuntimeComposition,
+    *,
+    environment: ApplicationEnvironmentProfile,
+    validation_engine: NexusValidationEngine | None = None,
+    manifest: ApplicationManifest | None = None,
+    conformance_check: bool = True,
+    diagnostics_required: bool | None = None,
+) -> ScenarioRuntimeComposition:
+    """Rebuild Nexus-backed scenario runtime while preserving registry and storage paths."""
+    resolved_diagnostics_required = (
+        diagnostics_required
+        if diagnostics_required is not None
+        else composition.terminal_diagnostic_trigger_attached
+    )
+    return build_scenario_runtime_from_environment(
+        environment=environment,
+        registry=composition.registry,
+        tenant_id=composition.tenant_id,
+        runtime_events_db_path=composition.observability.runtime_events_db_path,
+        trace_db_path=composition.observability.trace_db_path,
+        manifest=manifest,
+        use_in_memory_trace=False,
+        require_runtime_event_persistence=True,
+        diagnostics_required=resolved_diagnostics_required,
+        workspace=composition.workspace,
+        runtime_mode=composition.runtime_mode,
+        conformance_check=conformance_check,
+        validation_engine=validation_engine,
+    )
+
+
 def build_scenario_runtime_from_environment(
     *,
     environment: ApplicationEnvironmentProfile,
@@ -232,6 +294,7 @@ def build_scenario_runtime_from_environment(
     workspace: ScenarioRuntimeWorkspace | None = None,
     runtime_mode: ScenarioRuntimeMode | None = None,
     conformance_check: bool = True,
+    validation_engine: NexusValidationEngine | None = None,
 ) -> ScenarioRuntimeComposition:
     """
     Compose a lighter Nexus-backed scenario runtime from platform primitives.
@@ -277,7 +340,11 @@ def build_scenario_runtime_from_environment(
         evaluation_registry=evaluation_wiring.registry,
         trace_reader=observability.trace_store,
     )
-    critic_wiring = wire_application_critic(environment, l1_client=l1_client)
+    critic_wiring = wire_application_critic(
+        environment,
+        l1_client=l1_client,
+        validation_engine=validation_engine,
+    )
     assert_critic_assembly_valid(critic_wiring, environment, l1_client=l1_client)
     task_memory = wire_task_memory_from_profile(environment)
     declarative_tool_invoker = build_declarative_invoker_from_tool_wiring(env_wiring.tool_wiring)
@@ -299,6 +366,7 @@ def build_scenario_runtime_from_environment(
         guardrail_wiring=guardrail_wiring,
         critic_wiring=critic_wiring,
         run_budget=cost_wiring.run_budget,
+        validation_engine=validation_engine,
     )
     assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)
     assert_guardrail_assembly_valid(guardrail_wiring, environment, nexus=nexus_loop)

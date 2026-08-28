@@ -64,6 +64,16 @@ _FORBIDDEN_APPLICATION_MODULES = frozenset(
     }
 )
 
+_FORBIDDEN_NEXUS_PRIVATE_ATTRIBUTES = frozenset(
+    {
+        "_validation_engine",
+        "_graph_executor",
+        "_graph_runner",
+        "_planner",
+        "_graph_spec",
+    }
+)
+
 
 def _collect_ast_violations(path: Path, forbidden: frozenset[str]) -> list[str]:
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -72,6 +82,8 @@ def _collect_ast_violations(path: Path, forbidden: frozenset[str]) -> list[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Name) and node.id in forbidden:
             violations.append(f"{rel}:{node.lineno} references {node.id}")
+        if isinstance(node, ast.Attribute) and node.attr in forbidden:
+            violations.append(f"{rel}:{node.lineno} references .{node.attr}")
         if isinstance(node, ast.ImportFrom) and node.module:
             for mod in _FORBIDDEN_APPLICATION_MODULES:
                 if node.module == mod or node.module.startswith(f"{mod}."):
@@ -84,6 +96,14 @@ def test_application_must_not_import_proof_or_forbidden_execution_symbols() -> N
     app_dir = _scenario_root() / "application"
     for path in sorted(app_dir.glob("*.py")):
         violations.extend(_collect_ast_violations(path, _FORBIDDEN_APPLICATION_SYMBOLS))
+    assert violations == []
+
+
+def test_application_must_not_touch_private_nexus_planner_attributes() -> None:
+    violations: list[str] = []
+    app_dir = _scenario_root() / "application"
+    for path in sorted(app_dir.glob("*.py")):
+        violations.extend(_collect_ast_violations(path, _FORBIDDEN_NEXUS_PRIVATE_ATTRIBUTES))
     assert violations == []
 
 

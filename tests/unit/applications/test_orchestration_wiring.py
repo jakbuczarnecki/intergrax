@@ -88,6 +88,35 @@ def test_graph_spec_wraps_planner() -> None:
     assert isinstance(planner, GraphSpecSeedingPlanner)
 
 
+def test_graph_spec_planner_reads_live_environment_graph_spec() -> None:
+    env = ApplicationEnvironmentProfile.lab_defaults().model_copy(
+        update={
+            "graph_spec": ApplicationGraphSpec(
+                nodes=[GraphNode(agent_id="EchoAgent")],
+                trigger_capabilities=["echo.basic"],
+                evaluator_loop=None,
+            ),
+        }
+    )
+    planner = resolve_nexus_task_planner(env)
+    assert isinstance(planner, GraphSpecSeedingPlanner)
+    from intergrax.applications.contracts.graph_spec import EvaluatorLoopGraphBinding
+    from intergrax.runtime.critic.evaluator_loop_spec import EvaluatorLoopSpec
+
+    env.graph_spec = ApplicationGraphSpec(
+        nodes=[GraphNode(agent_id="EchoAgent")],
+        trigger_capabilities=["echo.basic"],
+        evaluator_loop=EvaluatorLoopGraphBinding(
+            producer_agent_id="EchoAgent",
+            evaluator_agent_id="EchoAgent",
+            revise_agent_id="EchoAgent",
+            spec=EvaluatorLoopSpec(max_iterations=4, revise_node_id="node_EchoAgent"),
+        ),
+    )
+    assert env.graph_spec.evaluator_loop is not None
+    assert env.graph_spec.evaluator_loop.spec.max_iterations == 4
+
+
 def test_max_parallel_nodes_from_profile() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults().model_copy(
         update={

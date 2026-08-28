@@ -17,6 +17,7 @@ from intergrax.contracts.execution_identity import (
     RunId,
     bind_active_execution_identity,
     mint_attempt_id,
+    mint_execution_id,
     peek_active_execution_id,
     require_active_execution_identity,
     reset_active_execution_identity,
@@ -329,6 +330,17 @@ class NexusLoop:
     def registry(self) -> AgentRegistry:
         return self._registry
 
+    def apply_validation_engine(self, validation_engine: NexusValidationEngine) -> None:
+        """Replace the active validation engine across Nexus execution surfaces."""
+        self._validation_engine = validation_engine
+        self._graph_executor._validation_engine = validation_engine
+        self._graph_runner.validation_engine = validation_engine
+
+    @property
+    def critic_graph_hooks(self) -> Optional["CriticGraphHooks"]:
+        """Return wired critic graph hooks when application critic wiring is active."""
+        return self._graph_executor._critic_graph_hooks
+
     def apply_critic_graph_hooks(self, hooks: Optional["CriticGraphHooks"]) -> None:
         """Attach or clear critic graph hooks on executor and runner (CRIT-V-6.1)."""
         self._graph_executor._critic_graph_hooks = hooks
@@ -441,6 +453,7 @@ class NexusLoop:
         identity_token = bind_active_execution_identity(
             run_id=resolved_run_id,
             attempt_id=resolved_attempt_id,
+            execution_id=mint_execution_id(),
         )
         authority_token = bind_active_execution_authority(root_authority)
         try:

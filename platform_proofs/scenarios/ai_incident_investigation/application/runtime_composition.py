@@ -8,12 +8,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from intergrax.applications._shared.critic_tool_wiring import build_critic_eval_tool_client
-from intergrax.applications._shared.critic_wiring import (
-    apply_application_critic_wiring,
-    wire_application_critic,
-)
-from intergrax.applications._shared.orchestration_wiring import GraphSpecSeedingPlanner
 from intergrax.applications._shared.prompt_wiring import resolve_prompt_registry
 from intergrax.applications._shared.runtime_config_bridge import (
     build_runtime_context_from_environment,
@@ -21,6 +15,7 @@ from intergrax.applications._shared.runtime_config_bridge import (
 from intergrax.applications._shared.scenario_runtime_baseline import (
     ScenarioRuntimeComposition as PlatformScenarioRuntimeComposition,
     build_scenario_runtime_from_environment,
+    rewire_scenario_critic_wiring,
 )
 from intergrax.applications._shared.scenario_runtime_profiles import (
     ScenarioRuntimeMode,
@@ -144,69 +139,23 @@ def _incident_graph_spec(
     )
 
 
-def _wire_incident_validation(
-    platform: PlatformScenarioRuntimeComposition,
+def _apply_execution_environment_overrides(
+    environment: ApplicationEnvironmentProfile,
     *,
-    validation_engine: IncidentInvestigationValidationEngine | None = None,
-    require_critic_on_completion: bool = True,
-    semantic_judge_enabled: bool = False,
-) -> IncidentInvestigationValidationEngine:
-    resolved_engine = validation_engine or IncidentInvestigationValidationEngine()
-    platform.nexus_loop._validation_engine = resolved_engine
-    platform.nexus_loop._graph_executor._validation_engine = resolved_engine
-    platform.nexus_loop._graph_runner.validation_engine = resolved_engine
-
-    l1_client = build_critic_eval_tool_client(
-        platform.environment,
-        platform.env_wiring.tool_wiring,
-        evaluation_registry=None,
-        trace_reader=platform.observability.trace_store,
-    )
-    critic_wiring = wire_application_critic(
-        platform.environment,
-        l1_client=l1_client,
-        validation_engine=resolved_engine,
-    )
-    critic_profile = platform.environment.critic_profile
-    if critic_profile.require_critic_on_completion != require_critic_on_completion:
-        critic_profile = critic_profile.model_copy(
-            update={"require_critic_on_completion": require_critic_on_completion}
-        )
-    if critic_profile.semantic_judge_enabled != semantic_judge_enabled:
-        critic_profile = critic_profile.model_copy(
-            update={"semantic_judge_enabled": semantic_judge_enabled}
-        )
-    if critic_profile != platform.environment.critic_profile:
-        platform.environment.critic_profile = critic_profile
-        critic_wiring = wire_application_critic(
-            platform.environment,
-            l1_client=l1_client,
-            validation_engine=resolved_engine,
-        )
-    apply_application_critic_wiring(platform.nexus_loop, critic_wiring)
-    return resolved_engine
-
-
-def _patch_evaluator_loop_iterations(
-    platform: PlatformScenarioRuntimeComposition,
+    require_critic_on_completion: bool,
+    semantic_judge_enabled: bool,
     evaluator_loop_max_iterations: int,
 ) -> None:
-    planner = platform.nexus_loop._planner
-    if not isinstance(planner, GraphSpecSeedingPlanner):
-        return
-    graph_spec = planner._graph_spec
-    if graph_spec.evaluator_loop is None:
-        return
-    if graph_spec.evaluator_loop.spec.max_iterations == evaluator_loop_max_iterations:
-        return
-    updated_binding = graph_spec.evaluator_loop.model_copy(
+    environment.graph_spec = _incident_graph_spec(
+        evaluator_loop_max_iterations=evaluator_loop_max_iterations,
+    )
+    environment.critic_profile = environment.critic_profile.model_copy(
         update={
-            "spec": graph_spec.evaluator_loop.spec.model_copy(
-                update={"max_iterations": evaluator_loop_max_iterations}
-            )
+            "require_critic_on_completion": require_critic_on_completion,
+            "semantic_judge_enabled": semantic_judge_enabled,
+            "evaluator_loop_max_iterations": evaluator_loop_max_iterations,
         }
     )
-    planner._graph_spec = graph_spec.model_copy(update={"evaluator_loop": updated_binding})
 
 
 def build_scenario_runtime_composition(
@@ -218,6 +167,7 @@ def build_scenario_runtime_composition(
     document_store: Any | None = None,
     agent_registry: AgentRegistry | None = None,
     composition: ScenarioRuntimeComposition | None = None,
+    validation_engine: IncidentInvestigationValidationEngine | None = None,
 ) -> ScenarioRuntimeComposition:
     """
     Build or attach platform scenario runtime for incident investigation.
@@ -226,6 +176,7 @@ def build_scenario_runtime_composition(
     incident-facing wrapper (investigator should already be on ``agent_registry``).
     """
     resolved_environment = environment or build_scenario_environment_profile()
+    resolved_engine = validation_engine or IncidentInvestigationValidationEngine()
     incident_composition = composition or ScenarioRuntimeComposition(
         environment=resolved_environment,
         tool_registry=registry,
@@ -247,9 +198,10 @@ def build_scenario_runtime_composition(
         workspace=workspace,
         runtime_mode=ScenarioRuntimeMode.LAB,
         conformance_check=False,
+        validation_engine=resolved_engine,
     )
+    incident_composition.environment = resolved_environment
     incident_composition.attach_platform(platform)
-    _wire_incident_validation(platform)
     return incident_composition
 
 
@@ -322,14 +274,18 @@ def prepare_incident_execution_runtime(
     evaluator_loop_max_iterations: int = DEFAULT_EVALUATOR_LOOP_MAX_ITERATIONS,
 ) -> IncidentInvestigationValidationEngine:
     """Apply per-execution critic/loop overrides before ``execute_scenario_task``."""
-    platform = composition.platform
-    _patch_evaluator_loop_iterations(platform, evaluator_loop_max_iterations)
-    return _wire_incident_validation(
-        platform,
-        validation_engine=validation_engine,
+    resolved_engine = validation_engine or IncidentInvestigationValidationEngine()
+    _apply_execution_environment_overrides(
+        composition.environment,
         require_critic_on_completion=require_critic_on_completion,
         semantic_judge_enabled=semantic_judge_enabled,
+        evaluator_loop_max_iterations=evaluator_loop_max_iterations,
     )
+    rewire_scenario_critic_wiring(
+        composition.platform,
+        validation_engine=resolved_engine,
+    )
+    return resolved_engine
 
 
 def trace_reader_from_composition(

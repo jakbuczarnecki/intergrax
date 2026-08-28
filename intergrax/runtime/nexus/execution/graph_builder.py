@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from pydantic import ValidationError
+
 from intergrax.applications.contracts.graph_spec import EvaluatorLoopGraphBinding
 from intergrax.runtime.critic.evaluator_loop_metadata import tag_node_evaluator_loop
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode
@@ -20,7 +22,10 @@ def _apply_evaluator_loop_metadata(plan: NexusPlan, nodes: list[ExecutionNode]) 
     raw = plan.plan_metadata.get(_EVALUATOR_LOOP_PLAN_METADATA_KEY)
     if not raw:
         return
-    binding = EvaluatorLoopGraphBinding.model_validate_json(raw)
+    try:
+        binding = EvaluatorLoopGraphBinding.model_validate_json(raw)
+    except (ValidationError, ValueError, TypeError):
+        return
     producer_step_id = _step_id_for_agent(binding.producer_agent_id)
     for node in nodes:
         if node.node_id == producer_step_id:
