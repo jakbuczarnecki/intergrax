@@ -32,6 +32,7 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.runtime.governance.active_execution_authority import (
     bind_active_execution_authority,
+    peek_active_effective_delegation,
     peek_active_execution_authority,
     reset_active_execution_authority,
 )
@@ -130,7 +131,6 @@ class _GraphNodeChildRequest:
     evaluator_loop_active: bool
     agent: Agent
     node_task: Task
-    effective_delegation_holder: list[EffectiveDelegationAuthority]
 
 
 @dataclass(frozen=True, slots=True)
@@ -634,7 +634,6 @@ class GraphExecutor:
             selection_ctx.model_copy(update={"agent_id": contract.id}),
         )
 
-        effective_delegation_holder: list[EffectiveDelegationAuthority] = []
         child_request = _GraphNodeChildRequest(
             graph=graph,
             task=task,
@@ -649,7 +648,6 @@ class GraphExecutor:
             evaluator_loop_active=evaluator_loop_active,
             agent=agent,
             node_task=node_task,
-            effective_delegation_holder=effective_delegation_holder,
         )
         requested_permission_scopes: tuple[str, ...] | None = None
         if node.delegation is not None:
@@ -659,7 +657,6 @@ class GraphExecutor:
                 request=child_request,
                 delegate=self._graph_node_child_delegate,
                 requested_permission_scopes=requested_permission_scopes,
-                effective_delegation_holder=effective_delegation_holder,
             )
         except DelegationAuthorityError as exc:
             failed = AgentExecutionResult(
@@ -699,10 +696,13 @@ class GraphExecutor:
         evaluator_loop_active = child_request.evaluator_loop_active
         agent = child_request.agent
         node_task = child_request.node_task
-        effective_delegation_holder = child_request.effective_delegation_holder
 
-        if node.delegation is not None and effective_delegation_holder:
-            effective_authority = effective_delegation_holder[0]
+        if node.delegation is not None:
+            effective_authority = peek_active_effective_delegation()
+            if effective_authority is None:
+                raise RuntimeError(
+                    "effective delegation evidence required for delegated node execution"
+                )
             node.metadata[EFFECTIVE_DELEGATION_AUTHORITY_NODE_KEY] = effective_authority
             parent_agent_id = task.agent_id or node.agent_id or agent.get_contract().id
             await self._emit_delegation_granted(
