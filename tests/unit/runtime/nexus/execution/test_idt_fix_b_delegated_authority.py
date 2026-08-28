@@ -592,7 +592,8 @@ def test_b2_metadata_cannot_modify_effective_authority() -> None:
 
 
 @pytest.mark.asyncio
-async def test_b3_nested_typed_authority_denies_overreach() -> None:
+async def test_b3_graph_depends_on_does_not_create_execution_parent() -> None:
+    """Graph depends_on is scheduling only; authority parent remains orchestration Execution."""
     UaepPipelineStubAgent.run_log.clear()
     parent = UaepPipelineStubAgent(
         agent_id="parent",
@@ -603,11 +604,13 @@ async def test_b3_nested_typed_authority_denies_overreach() -> None:
         agent_id="child",
         capability="cap.child",
         prefix="C",
+        track_request_metadata=True,
     )
     grandchild = UaepPipelineStubAgent(
         agent_id="grandchild",
         capability="cap.grandchild",
         prefix="G",
+        track_request_metadata=True,
     )
     registry = AgentRegistry()
     registry.register(parent)
@@ -654,14 +657,16 @@ async def test_b3_nested_typed_authority_denies_overreach() -> None:
     executor = GraphExecutor(registry)
     with _bound_execution_identity():
         executions, _, completed_graph, _ = await executor.execute(graph, task)
-    assert grandchild._agent_id not in UaepPipelineStubAgent.run_log
+    assert grandchild._agent_id in UaepPipelineStubAgent.run_log
     grandchild_node = completed_graph.node_by_id("grandchild")
     assert grandchild_node.execution_result is not None
-    assert grandchild_node.execution_result.status is AgentExecutionStatus.FAILED
-    child_node = completed_graph.node_by_id("child")
-    assert child_node.execution_result is not None
-    assert child_node.execution_result.status is AgentExecutionStatus.COMPLETED
-    assert len(executions) == 2
+    assert grandchild_node.execution_result.status is AgentExecutionStatus.COMPLETED
+    assert grandchild.last_request is not None
+    assert grandchild.last_request.effective_delegation_authority is not None
+    assert grandchild.last_request.effective_delegation_authority.effective_permission_scopes == (
+        "admin",
+    )
+    assert len(executions) == 3
 
 
 def test_r2_1_public_task_envelope_cannot_accept_root_authority() -> None:

@@ -26,12 +26,9 @@ from intergrax.contracts.execution_identity import (
     ActiveExecutionIdentity,
     AttemptId,
     RunId,
-    bind_active_execution_identity,
-    mint_execution_id,
-    peek_active_execution_id,
     peek_active_execution_identity,
+    require_active_execution_id,
     require_active_execution_identity,
-    reset_active_execution_identity,
 )
 from intergrax.runtime.governance.active_execution_authority import (
     bind_active_execution_authority,
@@ -48,8 +45,6 @@ from intergrax.contracts.delegation_authority import (
     DelegationAuthorityError,
     EffectiveDelegationAuthority,
     ParentExecutionAuthority,
-    mint_effective_delegation_authority,
-    resolve_parent_execution_authority_for_node,
     resolve_root_parent_execution_authority,
     validate_effective_delegation_metadata_assertions,
     validate_execution_authority_metadata_assertions,
@@ -135,6 +130,7 @@ class _GraphNodeChildRequest:
     evaluator_loop_active: bool
     agent: Agent
     node_task: Task
+    effective_delegation_holder: list[EffectiveDelegationAuthority]
 
 
 @dataclass(frozen=True, slots=True)
@@ -294,18 +290,12 @@ class GraphExecutor:
             )
             return [failed], [], graph, False
 
+        require_active_execution_identity()
+        require_active_execution_id()
+
         authority_token = None
         if peek_active_execution_authority() is None:
             authority_token = bind_active_execution_authority(root_execution_authority)
-        orchestration_identity_token = None
-        if peek_active_execution_id() is None:
-            bound_identity = peek_active_execution_identity()
-            if bound_identity is not None:
-                orchestration_identity_token = bind_active_execution_identity(
-                    run_id=bound_identity[0],
-                    attempt_id=bound_identity[1],
-                    execution_id=mint_execution_id(),
-                )
         try:
             return await self._execute_graph_batches(
                 graph,
@@ -322,8 +312,6 @@ class GraphExecutor:
                 root_execution_authority=root_execution_authority,
             )
         finally:
-            if orchestration_identity_token is not None:
-                reset_active_execution_identity(orchestration_identity_token)
             if authority_token is not None:
                 reset_active_execution_authority(authority_token)
 
@@ -646,15 +634,7 @@ class GraphExecutor:
             selection_ctx.model_copy(update={"agent_id": contract.id}),
         )
 
-        if node.delegation is not None:
-            parent_agent_id = task.agent_id or node.agent_id or contract.id
-            await self._emit_delegation_granted(
-                task,
-                node,
-                parent_agent_id=parent_agent_id or "",
-                child_agent_id=contract.id,
-            )
-
+        effective_delegation_holder: list[EffectiveDelegationAuthority] = []
         child_request = _GraphNodeChildRequest(
             graph=graph,
             task=task,
@@ -669,15 +649,31 @@ class GraphExecutor:
             evaluator_loop_active=evaluator_loop_active,
             agent=agent,
             node_task=node_task,
+            effective_delegation_holder=effective_delegation_holder,
         )
         requested_permission_scopes: tuple[str, ...] | None = None
         if node.delegation is not None:
             requested_permission_scopes = node.delegation.permission_scopes
-        child_result = await self._child_runner.execute(
-            request=child_request,
-            delegate=self._graph_node_child_delegate,
-            requested_permission_scopes=requested_permission_scopes,
-        )
+        try:
+            child_result = await self._child_runner.execute(
+                request=child_request,
+                delegate=self._graph_node_child_delegate,
+                requested_permission_scopes=requested_permission_scopes,
+                effective_delegation_holder=effective_delegation_holder,
+            )
+        except DelegationAuthorityError as exc:
+            failed = AgentExecutionResult(
+                agent_id=node.agent_id or "",
+                run_id=self._require_run_id(),
+                status=AgentExecutionStatus.FAILED,
+                summary="",
+                errors=[str(exc)],
+            )
+            node.execution_result = failed
+            node.status = ExecutionNodeStatus.FAILED
+            if on_node_complete is not None:
+                on_node_complete(node)
+            return failed, [], True, False, []
         return (
             child_result.execution,
             child_result.retries,
@@ -703,6 +699,18 @@ class GraphExecutor:
         evaluator_loop_active = child_request.evaluator_loop_active
         agent = child_request.agent
         node_task = child_request.node_task
+        effective_delegation_holder = child_request.effective_delegation_holder
+
+        if node.delegation is not None and effective_delegation_holder:
+            effective_authority = effective_delegation_holder[0]
+            node.metadata[EFFECTIVE_DELEGATION_AUTHORITY_NODE_KEY] = effective_authority
+            parent_agent_id = task.agent_id or node.agent_id or agent.get_contract().id
+            await self._emit_delegation_granted(
+                task,
+                node,
+                parent_agent_id=parent_agent_id or "",
+                child_agent_id=agent.get_contract().id,
+            )
 
         last_critic_verdict: Optional["CriticVerdict"] = None
 
@@ -1315,17 +1323,4 @@ class GraphExecutor:
             return "delegation_budget_llm_calls_exhausted"
         if delegation.max_tool_calls is not None and delegation.max_tool_calls < 1:
             return "delegation_budget_tool_calls_exhausted"
-        parent_authority = resolve_parent_execution_authority_for_node(
-            graph,
-            node,
-            root_authority=root_execution_authority or ParentExecutionAuthority.unknown(),
-        )
-        try:
-            effective_authority = mint_effective_delegation_authority(
-                parent=parent_authority,
-                requested_permission_scopes=delegation.permission_scopes,
-            )
-        except DelegationAuthorityError as exc:
-            return str(exc)
-        node.metadata[EFFECTIVE_DELEGATION_AUTHORITY_NODE_KEY] = effective_authority
         return None

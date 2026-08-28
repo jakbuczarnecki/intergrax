@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 from contextvars import ContextVar, Token
-from dataclasses import dataclass
 
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 
@@ -13,11 +12,6 @@ _active_execution_authority: ContextVar[ParentExecutionAuthority | None] = Conte
     "active_execution_authority",
     default=None,
 )
-
-
-@dataclass(frozen=True, slots=True)
-class ActiveExecutionAuthorityState:
-    authority: ParentExecutionAuthority
 
 
 def bind_active_execution_authority(authority: ParentExecutionAuthority) -> Token:

@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Generic, TypeVar
 
 from intergrax.contracts.delegation_authority import (
+    EffectiveDelegationAuthority,
     effective_delegation_to_parent_authority,
     mint_effective_delegation_authority,
 )
@@ -45,6 +46,7 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
         delegate: ExecutionDelegate[RequestT, ResultT],
         admission_hooks: tuple[ExecutionAdmissionHook[RequestT], ...] = (),
         requested_permission_scopes: tuple[str, ...] | None = None,
+        effective_delegation_holder: list[EffectiveDelegationAuthority] | None = None,
     ) -> ResultT:
         parent_run_id, parent_attempt_id = require_active_execution_identity()
         parent_execution_id = require_active_execution_id()
@@ -57,6 +59,8 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
                 parent=parent_authority,
                 requested_permission_scopes=requested_permission_scopes,
             )
+            if effective_delegation_holder is not None:
+                effective_delegation_holder.append(effective)
             child_authority = effective_delegation_to_parent_authority(effective)
 
         child_execution_id = mint_execution_id()

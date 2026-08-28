@@ -17,7 +17,6 @@ from intergrax.contracts.execution_identity import (
     RunId,
     bind_active_execution_identity,
     mint_attempt_id,
-    mint_execution_id,
     peek_active_execution_id,
     require_active_execution_identity,
     reset_active_execution_identity,
@@ -429,7 +428,7 @@ class NexusLoop:
                 if authority_token is not None:
                     reset_active_execution_authority(authority_token)
 
-        # TRANSITIONAL — remove in UE-9D once all production execution enters Boundary.
+        # TRANSITIONAL — OWNER: UE-9D — Run/Attempt only; ExecutionId must enter via Boundary.
         resolved_attempt_id = (
             validate_attempt_id(attempt_id)
             if attempt_id is not None
@@ -442,7 +441,6 @@ class NexusLoop:
         identity_token = bind_active_execution_identity(
             run_id=resolved_run_id,
             attempt_id=resolved_attempt_id,
-            execution_id=mint_execution_id(),
         )
         authority_token = bind_active_execution_authority(root_authority)
         try:
