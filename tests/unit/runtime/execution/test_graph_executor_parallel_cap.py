@@ -8,6 +8,8 @@ import asyncio
 
 import pytest
 
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id, mint_run_id
+from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
 from intergrax.runtime.nexus.execution.execution_graph import (
     ExecutionGraph,
     ExecutionNode,
@@ -58,7 +60,17 @@ async def test_max_parallel_nodes_limits_concurrent_batch_execution() -> None:
             message="parallel cap",
             context=TaskContext(capability="echo.basic"),
         )
-        await executor.execute(graph, task)
+        root = ExecutionIdentityBinding(
+            run_id=mint_run_id(),
+            attempt_id=mint_attempt_id(),
+            execution_id=mint_execution_id(),
+        )
+
+        class _GraphDelegate:
+            async def execute(self, _request: object) -> object:
+                return await executor.execute(graph, task)
+
+        await ExecutionBoundary(_GraphDelegate(), identity=root).execute(None)
         assert peak == 1
         assert all(node.status == ExecutionNodeStatus.COMPLETED for node in graph.nodes)
     finally:

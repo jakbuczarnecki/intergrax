@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Awaitable, Callable, Dict, List, Optional, Union
 
 from intergrax.agents.agent_contract import Agent
@@ -80,6 +81,9 @@ from intergrax.runtime.nexus.execution.execution_graph import (
 )
 from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy, RetryRecord
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
+from intergrax.runtime.execution.agentic import AgentExecutor
+from intergrax.runtime.execution.child import ChildExecutionRunner
+from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task_memory.delegation_memory import TaskMemoryMetadataKey
@@ -105,6 +109,42 @@ async def _notify_retry(
     if inspect.isawaitable(result):
         await result
 HandoffExtra = tuple[str, AgentExecutionResult]
+
+
+@dataclass(frozen=True, slots=True)
+class _GraphNodeChildRequest:
+    graph: ExecutionGraph
+    task: Task
+    node: ExecutionNode
+    prior_outputs: Dict[str, AgentExecutionResult]
+    runtime_ckpt: Optional[RuntimeCheckpoint]
+    plan_criteria: Optional[List[str]]
+    on_retry: Optional[RetryCallback]
+    on_node_complete: Optional[Callable[[ExecutionNode], None]]
+    critic_trace_emitter: Optional["CriticTraceEmitter"]
+    root_execution_authority: ParentExecutionAuthority
+    evaluator_loop_active: bool
+    agent: Agent
+    node_task: Task
+
+
+@dataclass(frozen=True, slots=True)
+class _GraphNodeChildResult:
+    execution: AgentExecutionResult
+    retries: List[RetryRecord]
+    failed: bool
+    cancelled: bool
+    handoff_extras: List[HandoffExtra]
+
+
+class _GraphNodeChildDelegate:
+    __slots__ = ("_executor",)
+
+    def __init__(self, executor: GraphExecutor) -> None:
+        self._executor = executor
+
+    async def execute(self, request: _GraphNodeChildRequest) -> _GraphNodeChildResult:
+        return await self._executor._execute_node_in_child(request)
 
 
 class GraphExecutor:
@@ -159,6 +199,12 @@ class GraphExecutor:
         self._event_bus = event_bus
         self._middleware = middleware or MiddlewarePipeline()
         self._critic_graph_hooks = critic_graph_hooks
+        self._child_runner = ChildExecutionRunner[
+            _GraphNodeChildRequest,
+            _GraphNodeChildResult,
+        ]()
+        self._graph_node_child_delegate = _GraphNodeChildDelegate(self)
+        self._agent_executor = AgentExecutor(self._engine)
 
     @property
     def execution_identity(self) -> ActiveExecutionIdentity:
@@ -551,6 +597,51 @@ class GraphExecutor:
                 child_agent_id=contract.id,
             )
 
+        child_request = _GraphNodeChildRequest(
+            graph=graph,
+            task=task,
+            node=node,
+            prior_outputs=prior_outputs,
+            runtime_ckpt=runtime_ckpt,
+            plan_criteria=plan_criteria,
+            on_retry=on_retry,
+            on_node_complete=on_node_complete,
+            critic_trace_emitter=critic_trace_emitter,
+            root_execution_authority=root_execution_authority,
+            evaluator_loop_active=evaluator_loop_active,
+            agent=agent,
+            node_task=node_task,
+        )
+        child_result = await self._child_runner.execute(
+            request=child_request,
+            delegate=self._graph_node_child_delegate,
+        )
+        return (
+            child_result.execution,
+            child_result.retries,
+            child_result.failed,
+            child_result.cancelled,
+            child_result.handoff_extras,
+        )
+
+    async def _execute_node_in_child(
+        self,
+        child_request: _GraphNodeChildRequest,
+    ) -> _GraphNodeChildResult:
+        graph = child_request.graph
+        task = child_request.task
+        node = child_request.node
+        prior_outputs = child_request.prior_outputs
+        runtime_ckpt = child_request.runtime_ckpt
+        plan_criteria = child_request.plan_criteria
+        on_retry = child_request.on_retry
+        on_node_complete = child_request.on_node_complete
+        critic_trace_emitter = child_request.critic_trace_emitter
+        root_execution_authority = child_request.root_execution_authority
+        evaluator_loop_active = child_request.evaluator_loop_active
+        agent = child_request.agent
+        node_task = child_request.node_task
+
         last_critic_verdict: Optional["CriticVerdict"] = None
 
         def validate_fn(
@@ -590,7 +681,10 @@ class GraphExecutor:
 
         async def execute_fn(current_agent: Agent) -> AgentExecutionResult:
             active_run_id = self._require_run_id()
-            request = node_task.to_runtime_request(run_id=active_run_id)
+            selected_agent_id = current_agent.get_contract().id
+            request = node_task.model_copy(
+                update={"agent_id": selected_agent_id},
+            ).to_runtime_request(run_id=active_run_id)
             from intergrax.runtime.human.declarative_hitl_grant import (
                 DeclarativeHitlGrantCoordinator,
             )
@@ -609,7 +703,7 @@ class GraphExecutor:
                 self._declarative_tool_invoker,
                 task_id=task.task_id,
                 run_id=active_run_id,
-                agent_id=current_agent.get_contract().id,
+                agent_id=selected_agent_id,
                 tenant_id=task.tenant_id,
             )
             inject_acp_compensation_queue_metadata(
@@ -627,10 +721,9 @@ class GraphExecutor:
 
             request.metadata[RUNTIME_SHADOW_MANAGER_METADATA_KEY] = self._engine.shadow_manager
             request.metadata[RUNTIME_SANDBOX_MANAGER_METADATA_KEY] = self._engine.sandbox_manager
-            author_id = current_agent.get_contract().id
             resolved_contract = (
-                self._registry.get_contract(author_id)
-                if self._registry.has(author_id)
+                self._registry.get_contract(selected_agent_id)
+                if self._registry.has(selected_agent_id)
                 else current_agent.get_contract()
             )
             request.metadata["allowed_tools"] = list(resolved_contract.allowed_tools)
@@ -668,7 +761,7 @@ class GraphExecutor:
                     )
                     if metadata_conflict is not None:
                         return AgentExecutionResult(
-                            agent_id=current_agent.get_contract().id,
+                            agent_id=selected_agent_id,
                             run_id=active_run_id,
                             status=AgentExecutionStatus.FAILED,
                             summary="",
@@ -697,17 +790,18 @@ class GraphExecutor:
             engine_prompt_id = task.metadata.get("engine_planner_prompt_id")
             if isinstance(engine_prompt_id, str) and engine_prompt_id.strip():
                 request.metadata["engine_planner_prompt_id"] = engine_prompt_id.strip()
+            execution_request = ExecutionRequest(
+                input=request,
+                output_type=AgentExecutionResult,
+                capabilities=frozenset({ExecutionCapability.AGENT}),
+            )
             governed_task_binding = ActiveGovernedExecutionTask()
             token = governed_task_binding.bind(task)
             try:
-                return await AgentEngine.run_agent_with_result(
-                    current_agent,
-                    request,
-                    uaep_executor=self._engine.uaep_executor,
-                    registry=self._registry,
-                )
+                execution_result = await self._agent_executor.execute(execution_request)
             finally:
                 governed_task_binding.reset(token)
+            return execution_result.output
 
         execution, retries, validation = await self._retry_engine.execute_with_retry(
             node_task,
@@ -732,7 +826,7 @@ class GraphExecutor:
                 runtime_ckpt=runtime_ckpt,
                 plan_criteria=plan_criteria,
                 on_retry=on_retry,
-                on_node_start=on_node_start,
+                on_node_start=None,
                 on_node_complete=on_node_complete,
                 critic_trace_emitter=critic_trace_emitter,
                 agent=agent,
@@ -748,7 +842,13 @@ class GraphExecutor:
             node.metadata["cancelled"] = True
             if on_node_complete is not None:
                 on_node_complete(node)
-            return execution, retries, False, True, []
+            return _GraphNodeChildResult(
+                execution=execution,
+                retries=retries,
+                failed=False,
+                cancelled=True,
+                handoff_extras=[],
+            )
 
         for record in retries:
             await _notify_retry(on_retry, record)
@@ -759,7 +859,13 @@ class GraphExecutor:
             node.metadata["governance_pause"] = True
             if on_node_complete is not None:
                 on_node_complete(node)
-            return execution, retries, False, False, []
+            return _GraphNodeChildResult(
+                execution=execution,
+                retries=retries,
+                failed=False,
+                cancelled=False,
+                handoff_extras=[],
+            )
 
         if validation.valid:
             node.status = ExecutionNodeStatus.COMPLETED
@@ -773,19 +879,27 @@ class GraphExecutor:
                 runtime_ckpt=runtime_ckpt,
                 plan_criteria=plan_criteria,
                 on_retry=on_retry,
-                on_node_start=on_node_start,
+                on_node_start=None,
                 on_node_complete=on_node_complete,
                 critic_trace_emitter=critic_trace_emitter,
                 root_execution_authority=root_execution_authority,
             )
+            failed = False
         else:
             node.status = ExecutionNodeStatus.FAILED
             handoff_extras = []
+            failed = True
 
         if on_node_complete is not None:
             on_node_complete(node)
 
-        return execution, retries, not validation.valid, False, handoff_extras
+        return _GraphNodeChildResult(
+            execution=execution,
+            retries=retries,
+            failed=failed,
+            cancelled=False,
+            handoff_extras=handoff_extras,
+        )
 
     async def _maybe_run_evaluator_loop(
         self,

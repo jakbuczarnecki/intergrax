@@ -36,7 +36,10 @@ class StrategyResolver:
         if ExecutionCapability.ORCHESTRATION in capabilities:
             return ExecutionStrategy.ORCHESTRATION
 
-        if ExecutionCapability.TOOLS in capabilities:
+        if (
+            ExecutionCapability.AGENT in capabilities
+            or ExecutionCapability.TOOLS in capabilities
+        ):
             return ExecutionStrategy.AGENTIC
 
         return ExecutionStrategy.INFERENCE
