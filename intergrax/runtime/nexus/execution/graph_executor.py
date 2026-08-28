@@ -26,8 +26,17 @@ from intergrax.contracts.execution_identity import (
     ActiveExecutionIdentity,
     AttemptId,
     RunId,
+    bind_active_execution_identity,
+    mint_execution_id,
+    peek_active_execution_id,
     peek_active_execution_identity,
     require_active_execution_identity,
+    reset_active_execution_identity,
+)
+from intergrax.runtime.governance.active_execution_authority import (
+    bind_active_execution_authority,
+    peek_active_execution_authority,
+    reset_active_execution_authority,
 )
 from intergrax.runtime.governance.active_governed_execution_task import (
     ActiveGovernedExecutionTask,
@@ -285,7 +294,56 @@ class GraphExecutor:
             )
             return [failed], [], graph, False
 
-        for batch in batches:
+        authority_token = None
+        if peek_active_execution_authority() is None:
+            authority_token = bind_active_execution_authority(root_execution_authority)
+        orchestration_identity_token = None
+        if peek_active_execution_id() is None:
+            bound_identity = peek_active_execution_identity()
+            if bound_identity is not None:
+                orchestration_identity_token = bind_active_execution_identity(
+                    run_id=bound_identity[0],
+                    attempt_id=bound_identity[1],
+                    execution_id=mint_execution_id(),
+                )
+        try:
+            return await self._execute_graph_batches(
+                graph,
+                task,
+                prior_outputs=prior_outputs,
+                all_executions=all_executions,
+                all_retries=all_retries,
+                runtime_ckpt=runtime_ckpt,
+                plan_criteria=plan_criteria,
+                on_retry=on_retry,
+                on_node_start=on_node_start,
+                on_node_complete=on_node_complete,
+                critic_trace_emitter=critic_trace_emitter,
+                root_execution_authority=root_execution_authority,
+            )
+        finally:
+            if orchestration_identity_token is not None:
+                reset_active_execution_identity(orchestration_identity_token)
+            if authority_token is not None:
+                reset_active_execution_authority(authority_token)
+
+    async def _execute_graph_batches(
+        self,
+        graph: ExecutionGraph,
+        task: Task,
+        *,
+        prior_outputs: Dict[str, AgentExecutionResult],
+        all_executions: List[AgentExecutionResult],
+        all_retries: List[RetryRecord],
+        runtime_ckpt: Optional[RuntimeCheckpoint],
+        plan_criteria: Optional[List[str]],
+        on_retry: Optional[RetryCallback],
+        on_node_start: Optional[Callable[[ExecutionNode], None]],
+        on_node_complete: Optional[Callable[[ExecutionNode], None]],
+        critic_trace_emitter: Optional["CriticTraceEmitter"],
+        root_execution_authority: ParentExecutionAuthority,
+    ) -> tuple[List[AgentExecutionResult], List[RetryRecord], ExecutionGraph, bool]:
+        for batch in graph.batches():
             if CancellationCoordinator.is_requested(task.metadata):
                 CancellationCoordinator.mark_pending_graph_nodes_cancelled(graph)
                 return all_executions, all_retries, graph, True
@@ -612,9 +670,13 @@ class GraphExecutor:
             agent=agent,
             node_task=node_task,
         )
+        requested_permission_scopes: tuple[str, ...] | None = None
+        if node.delegation is not None:
+            requested_permission_scopes = node.delegation.permission_scopes
         child_result = await self._child_runner.execute(
             request=child_request,
             delegate=self._graph_node_child_delegate,
+            requested_permission_scopes=requested_permission_scopes,
         )
         return (
             child_result.execution,

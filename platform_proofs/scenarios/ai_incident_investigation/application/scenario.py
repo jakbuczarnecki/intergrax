@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Platform-native skeleton orchestration — GraphExecutor + Critic + EvaluatorLoop + ToolRuntime."""
+"""Incident investigation application entry — Nexus-backed execution via scenario runtime."""
 
 from __future__ import annotations
 
@@ -8,13 +8,12 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
-from intergrax.contracts.execution_identity import (
-    bind_active_execution_identity,
-    mint_attempt_id,
-    mint_run_id,
-    reset_active_execution_identity,
+from intergrax.applications._shared.scenario_runtime_baseline import (
+    ScenarioExecutionRequest,
+    execute_scenario_task,
 )
 from intergrax.contracts.evidence_claims import EvidenceChallenge, EvidenceClaimSet, ClaimResolution
+from intergrax.contracts.evidence_claims import validate_evidence_claim_id
 from intergrax.runtime.diagnostics.investigation_contracts import (
     IncidentInvestigationInput,
     InvestigationConclusion,
@@ -24,33 +23,23 @@ from intergrax.runtime.diagnostics.investigation_contracts import (
 from intergrax.runtime.diagnostics import ProblemId
 from intergrax.runtime.critic.contracts import CriticVerdict
 from intergrax.runtime.critic.critic_wiring import (
-    CriticHookConfig,
-    build_critic_graph_hooks,
     validate_final_with_critic_detail,
     validate_node_with_critic_detail,
 )
-from intergrax.runtime.critic.evaluator_loop_metadata import (
-    current_evaluator_loop_iteration,
-    tag_node_evaluator_loop,
-)
-from intergrax.runtime.critic.evaluator_loop_spec import EvaluatorLoopSpec
-from intergrax.runtime.critic.trace import CriticTraceEmitter
-from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode
-from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.tools.registry import ToolRegistry
-from platform_proofs.scenarios.ai_incident_investigation.critic_adapter import (
+from platform_proofs.scenarios.ai_incident_investigation.application.critic_adapter import (
     apply_challenge_lifecycle,
-    first_failed_node_partial_verdict_from_trace,
+    count_evaluator_loop_iterations_from_persisted_trace,
+    first_failed_node_partial_verdict_from_persisted_trace,
 )
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import (
     IncidentFixture,
     ScenarioVariant,
     build_resolved_fixture,
     build_unresolved_fixture,
 )
-from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
+from platform_proofs.scenarios.ai_incident_investigation.application.investigator_agent import (
     COMPARISON_EVIDENCE_ID,
     INITIAL_CLAIM_ID,
     IncidentInvestigatorAgent,
@@ -61,35 +50,39 @@ from platform_proofs.scenarios.ai_incident_investigation.investigator_agent impo
     WORKLOAD_EVIDENCE_ID,
     THROUGHPUT_EVIDENCE_ID,
 )
-from platform_proofs.scenarios.ai_incident_investigation.incident_reasoning import (
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     claim_id_for_hypothesis,
     parse_claim_hypothesis_bindings,
 )
-from platform_proofs.scenarios.ai_incident_investigation.tools import (
+from platform_proofs.scenarios.ai_incident_investigation.application.tools import (
     ScenarioEvidenceStore,
     register_scenario_tools,
 )
-from platform_proofs.scenarios.ai_incident_investigation.runtime_composition import (
+from platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition import (
+    INVESTIGATOR_NODE_ID,
     ScenarioRuntimeComposition,
+    build_scenario_environment_profile,
     build_scenario_runtime_composition,
+    prepare_incident_execution_runtime,
+    trace_reader_from_composition,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPLETION_SUPPORTED_DIAGNOSIS,
     COMPLETION_UNRESOLVED,
 )
-from platform_proofs.scenarios.ai_incident_investigation.execution_payload import (
+from platform_proofs.scenarios.ai_incident_investigation.application.execution_payload import (
     domain_payload_from_execution,
 )
-from platform_proofs.scenarios.ai_incident_investigation.incident_scope import IncidentScope
-from platform_proofs.scenarios.ai_incident_investigation.validation import (
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_scope import IncidentScope
+from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
     IncidentInvestigationValidationEngine,
     apply_critic_claim_resolutions,
 )
 
-INVESTIGATOR_NODE_ID = "investigator-1"
 OUTCOME_RESOLVED = "RESOLVED"
 OUTCOME_UNRESOLVED = "UNRESOLVED"
 STANDALONE_SCENARIO_TENANT_ID = "scenario-tenant"
+SYNTHETIC_SCENARIO_TENANT_ID = STANDALONE_SCENARIO_TENANT_ID
 TERMINAL_STATE_NOT_ACCEPTED = "incident_terminal_state_not_accepted"
 EVALUATOR_LOOP_MAX_ITERATIONS = 2
 
@@ -183,31 +176,49 @@ def build_runtime_bundle(
     variant: ScenarioVariant = ScenarioVariant.RESOLVED,
     fixture: IncidentFixture | None = None,
     runtime_composition: ScenarioRuntimeComposition | None = None,
+    tenant_id: str = STANDALONE_SCENARIO_TENANT_ID,
+    investigation_input: IncidentInvestigationInput | None = None,
 ) -> ScenarioRuntimeBundle:
     resolved_fixture = fixture or (
         build_unresolved_fixture()
         if variant is ScenarioVariant.UNRESOLVED
         else build_resolved_fixture()
     )
-    registry = ToolRegistry()
-    evidence_store = register_scenario_tools(registry, resolved_fixture)
-    composition = runtime_composition or build_scenario_runtime_composition(registry=registry)
+    composition = runtime_composition or ScenarioRuntimeComposition(
+        environment=build_scenario_environment_profile(),
+        tool_registry=ToolRegistry(),
+    )
+    if composition._platform is None:
+        agent_registry = AgentRegistry()
+        build_scenario_runtime_composition(
+            registry=composition.tool_registry,
+            tenant_id=tenant_id,
+            environment=composition.environment,
+            agent_registry=agent_registry,
+            composition=composition,
+        )
+    tool_registry = composition.platform.env_wiring.tool_wiring.registry
+    evidence_store = register_scenario_tools(tool_registry, resolved_fixture)
+    composition.tool_registry = tool_registry
     investigator = IncidentInvestigatorAgent(
-        registry=registry,
+        registry=tool_registry,
         station_id=resolved_fixture.telemetry.station_id,
         runtime_composition=composition,
         incident_scope=IncidentScope.from_fixture_defaults(
             station_id=resolved_fixture.telemetry.station_id,
         ),
         evidence_store=evidence_store,
+        investigation_input=investigation_input,
     )
+    if investigator.get_contract().id not in composition.platform.registry.list_agent_ids():
+        composition.platform.registry.register(investigator)
     return ScenarioRuntimeBundle(
         fixture=resolved_fixture,
-        registry=registry,
+        registry=tool_registry,
         investigator=investigator,
         runtime_composition=composition,
         evidence_store=evidence_store,
-        investigation_input=None,
+        investigation_input=investigation_input,
     )
 
 
@@ -245,6 +256,18 @@ def _leak_scan_blob(
     return json.dumps({"claim_set": claim_set, "evidence_nodes": evidence_nodes})
 
 
+def _persisted_trace_events(
+    composition: ScenarioRuntimeComposition,
+    run_id: str,
+    tenant_id: str,
+) -> list[dict[str, object]]:
+    reader = trace_reader_from_composition(composition)
+    if reader is None:
+        return []
+    persisted = reader.read_run(run_id, tenant_id)
+    return [dict(item) for item in persisted.events if isinstance(item, dict)]
+
+
 async def execute_resolved_skeleton(
     bundle: ScenarioRuntimeBundle,
     *,
@@ -253,35 +276,15 @@ async def execute_resolved_skeleton(
     validation_engine: IncidentInvestigationValidationEngine | None = None,
     evaluator_loop_max_iterations: int = EVALUATOR_LOOP_MAX_ITERATIONS,
 ) -> ScenarioExecutionResult:
-    agent_registry = AgentRegistry()
-    agent_registry.register(bundle.investigator)
-
-    resolved_validation_engine = validation_engine or IncidentInvestigationValidationEngine()
-    critic_hooks = build_critic_graph_hooks(
-        config=CriticHookConfig(
-            verify_node_partial=True,
-            verify_graph_final=True,
-            require_critic_on_completion=require_critic_on_completion,
-            semantic_judge_enabled=semantic_judge_enabled,
-        ),
-        validation_engine=resolved_validation_engine,
+    composition = bundle.runtime_composition
+    prepare_incident_execution_runtime(
+        composition,
+        validation_engine=validation_engine,
+        require_critic_on_completion=require_critic_on_completion,
+        semantic_judge_enabled=semantic_judge_enabled,
+        evaluator_loop_max_iterations=evaluator_loop_max_iterations,
     )
-    if critic_hooks is None:
-        raise RuntimeError("critic hooks required for skeleton")
-
-    worker = ExecutionNode(
-        node_id=INVESTIGATOR_NODE_ID,
-        agent_id=INVESTIGATOR_AGENT_ID,
-        capability=INVESTIGATOR_CAPABILITY,
-    )
-    tag_node_evaluator_loop(
-        worker,
-        EvaluatorLoopSpec(
-            max_iterations=evaluator_loop_max_iterations,
-            revise_node_id=INVESTIGATOR_NODE_ID,
-            escalate_on_exhaustion=False,
-        ),
-    )
+    platform = composition.platform
 
     execution_tenant_id = (
         bundle.investigation_input.tenant_id
@@ -295,54 +298,36 @@ async def execute_resolved_skeleton(
             for context in bundle.investigation_input.problem_contexts
         )
 
-    task = Task(
-        tenant_id=execution_tenant_id,
-        user_id="scenario-user",
-        message="Investigate Line 4 target attainment degradation",
-        context=TaskContext(capability=INVESTIGATOR_CAPABILITY),
+    platform_result = await execute_scenario_task(
+        platform,
+        ScenarioExecutionRequest(
+            tenant_id=execution_tenant_id,
+            message="Investigate Line 4 target attainment degradation",
+            capability=INVESTIGATOR_CAPABILITY,
+        ),
     )
-    graph = ExecutionGraph(
-        graph_id="incident_investigation_skeleton",
-        task_id=task.task_id,
-        nodes=[worker],
+    task_result = platform_result.task_result
+    run_id = str(platform_result.run_id)
+    final_execution = task_result.execution_result
+    if final_execution is None:
+        if task_result.state.value == "failed":
+            raise RuntimeError(TERMINAL_STATE_NOT_ACCEPTED)
+        raise RuntimeError("no agent executions produced")
+
+    trace_events = _persisted_trace_events(composition, run_id, execution_tenant_id)
+    failed_critic_verdict = first_failed_node_partial_verdict_from_persisted_trace(
+        trace_events,
+        node_id=INVESTIGATOR_NODE_ID,
     )
-    executor = GraphExecutor(
-        agent_registry,
-        validation_engine=resolved_validation_engine,
-        critic_graph_hooks=critic_hooks,
+    evaluator_loop_iterations = count_evaluator_loop_iterations_from_persisted_trace(
+        trace_events,
+        node_id=INVESTIGATOR_NODE_ID,
     )
 
-    run_id = mint_run_id()
-    attempt_id = mint_attempt_id()
-    critic_trace = CriticTraceEmitter(run_id=run_id)
-    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
-    try:
-        executions, _retries, graph_out, _ = await executor.execute(
-            graph,
-            task,
-            critic_trace_emitter=critic_trace,
-        )
-    finally:
-        reset_active_execution_identity(token)
-
-    if not executions:
-        node = graph_out.node_by_id(INVESTIGATOR_NODE_ID)
-        if node.execution_result is None:
-            raise RuntimeError("no agent executions produced")
-        final_execution = node.execution_result
-        first_execution = final_execution
-    else:
-        final_execution = executions[-1]
-        first_execution = executions[0]
     domain_payload = domain_payload_from_execution(final_execution)
-    first_domain_payload = domain_payload_from_execution(first_execution)
-    claim_set = dict(domain_payload.get("claim_set", {}))
     bindings = parse_claim_hypothesis_bindings(domain_payload.get("claim_hypothesis_bindings"))
-    first_bindings = parse_claim_hypothesis_bindings(
-        first_domain_payload.get("claim_hypothesis_bindings")
-    )
     resolved_claim_set = apply_critic_claim_resolutions(
-        EvidenceClaimSet.model_validate(claim_set),
+        EvidenceClaimSet.model_validate(dict(domain_payload.get("claim_set", {}))),
         domain_payload,
         bindings=bindings,
     )
@@ -365,21 +350,20 @@ async def execute_resolved_skeleton(
     tool_order_raw = domain_payload.get("tool_execution_order", [])
     tool_execution_order = tuple(str(item) for item in tool_order_raw if item)
     evidence_gathering_stop_reason = str(domain_payload.get("evidence_gathering_stop_reason", ""))
-    evaluator_loop_iterations = current_evaluator_loop_iteration(worker)
 
-    failed_critic_verdict = first_failed_node_partial_verdict_from_trace(
-        critic_trace,
-        node_id=INVESTIGATOR_NODE_ID,
-    )
     critic_challenged = failed_critic_verdict is not None and not failed_critic_verdict.passed
+
+    critic_hooks = platform.nexus_loop._graph_executor._critic_graph_hooks
+    if critic_hooks is None:
+        raise RuntimeError("critic hooks required for skeleton")
 
     final_validation, final_verdict = validate_node_with_critic_detail(
         final_execution,
         contract=bundle.investigator.get_contract(),
         hooks=critic_hooks,
-        task_id=task.task_id,
-        run_id=run_id,
-        tenant_id=task.tenant_id,
+        task_id=task_result.task_id,
+        run_id=platform_result.run_id,
+        tenant_id=execution_tenant_id,
         capability=INVESTIGATOR_CAPABILITY,
         node_id=INVESTIGATOR_NODE_ID,
     )
@@ -388,9 +372,9 @@ async def execute_resolved_skeleton(
             final_execution,
             contract=bundle.investigator.get_contract(),
             hooks=critic_hooks,
-            task_id=task.task_id,
-            run_id=run_id,
-            tenant_id=task.tenant_id,
+            task_id=task_result.task_id,
+            run_id=platform_result.run_id,
+            tenant_id=execution_tenant_id,
             capability=INVESTIGATOR_CAPABILITY,
         )
     critic_verdict_passed = final_verdict.passed and final_validation.valid
@@ -402,12 +386,9 @@ async def execute_resolved_skeleton(
     )
     completion_mode = str(domain_payload.get("completion_mode", COMPLETION_SUPPORTED_DIAGNOSIS))
 
+    first_bindings = bindings
     if critic_challenged and failed_critic_verdict is not None:
-        from intergrax.contracts.evidence_claims import validate_evidence_claim_id
-
         challenged_claim_id = claim_id_for_hypothesis(first_bindings, "H1")
-        if challenged_claim_id is None:
-            challenged_claim_id = claim_id_for_hypothesis(bindings, "H1")
         claim_set, evidence_challenge = apply_challenge_lifecycle(
             claim_set,
             failed_critic_verdict,
@@ -424,9 +405,8 @@ async def execute_resolved_skeleton(
             ),
         )
 
-    node_status = graph_out.node_by_id(INVESTIGATOR_NODE_ID).status
-    if node_status.value != "completed" and critic_verdict_passed:
-        raise RuntimeError(f"investigator node not completed: {node_status}")
+    if task_result.state.value != "completed" and critic_verdict_passed:
+        raise RuntimeError(f"investigator task not completed: {task_result.state}")
 
     outcome = derive_terminal_outcome(
         critic_verdict_passed=critic_verdict_passed,
@@ -471,7 +451,7 @@ async def execute_resolved_skeleton(
 
 
 async def execute_with_completion_gate_blocked(bundle: ScenarioRuntimeBundle) -> ScenarioExecutionResult:
-    """Real graph path where critic failure cannot recover within platform loop budget."""
+    """Real Nexus path where critic failure cannot recover within platform loop budget."""
     return await execute_resolved_skeleton(
         bundle,
         require_critic_on_completion=True,

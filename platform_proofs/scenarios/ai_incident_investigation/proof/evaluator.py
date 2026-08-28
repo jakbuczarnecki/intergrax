@@ -15,10 +15,10 @@ from intergrax.contracts.evidence_claims import (
     EvidenceClaimSet,
     mint_evidence_claim_id,
 )
-from platform_proofs.scenarios.ai_incident_investigation.critic_adapter import (
+from platform_proofs.scenarios.ai_incident_investigation.application.critic_adapter import (
     UNSUPPORTED_INFERENCE_DEFECT,
 )
-from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import (
+from platform_proofs.scenarios.ai_incident_investigation.application.domain_reasoning import (
     comparison_weakens_overload,
     derive_hypothesis_dispositions,
     h1_initially_plausible,
@@ -27,13 +27,13 @@ from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import
     telemetry_is_unavailable,
     telemetry_supports_degradation,
 )
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import (
     FORBIDDEN_LEAK_MARKERS,
     HypothesisId,
     IncidentFixture,
     ScenarioVariant,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPLETION_UNRESOLVED,
     COMPARISON_EVIDENCE_ID,
     DIAGNOSIS_KIND,
@@ -48,17 +48,17 @@ from platform_proofs.scenarios.ai_incident_investigation.scenario_contract impor
     THROUGHPUT_EVIDENCE_ID,
     WORKLOAD_EVIDENCE_ID,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     EVALUATOR_LOOP_MAX_ITERATIONS,
     OUTCOME_RESOLVED,
     OUTCOME_UNRESOLVED,
     ScenarioExecutionResult,
 )
-from platform_proofs.scenarios.ai_incident_investigation.incident_reasoning import (
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     claim_id_for_hypothesis,
     parse_claim_hypothesis_bindings,
 )
-from platform_proofs.scenarios.ai_incident_investigation.validation import (
+from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
     UNSUPPORTED_INFERENCE_ERROR,
     apply_critic_claim_resolutions,
     validate_claim_set_against_observations,

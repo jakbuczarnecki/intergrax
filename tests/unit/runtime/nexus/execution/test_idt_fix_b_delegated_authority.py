@@ -29,6 +29,7 @@ from intergrax.contracts.delegation_authority import (
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
     reset_active_execution_identity,
@@ -54,7 +55,11 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 @contextmanager
 def _bound_execution_identity() -> Iterator[None]:
-    token = bind_active_execution_identity(run_id=mint_run_id(), attempt_id=mint_attempt_id())
+    token = bind_active_execution_identity(
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
     try:
         yield
     finally:

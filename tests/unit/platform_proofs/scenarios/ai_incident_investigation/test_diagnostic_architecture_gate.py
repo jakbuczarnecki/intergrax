@@ -85,8 +85,13 @@ def _collect_diagnostic_read_service_imports(path: Path) -> list[str]:
 
 def test_scenario_runtime_modules_do_not_import_central_diagnostic_ownership() -> None:
     violations: list[str] = []
+    app_root = _scenario_root() / "application"
+    for path in sorted(app_root.glob("*.py")):
+        if path.name == "scenario_composition.py":
+            continue
+        violations.extend(_collect_violations(path))
     for path in sorted(_scenario_root().glob("*.py")):
-        if path.name == _COMPOSITION_ALLOWED_READ_SERVICE:
+        if path.name == "run_proof.py":
             continue
         violations.extend(_collect_violations(path))
     assert violations == []
@@ -94,13 +99,14 @@ def test_scenario_runtime_modules_do_not_import_central_diagnostic_ownership() -
 
 def test_reasoning_modules_do_not_import_diagnostic_read_service() -> None:
     violations: list[str] = []
+    app_root = _scenario_root() / "application"
     for name in _REASONING_MODULES:
-        path = _scenario_root() / name
+        path = app_root / name
         violations.extend(_collect_diagnostic_read_service_imports(path))
     assert violations == []
 
 
 def test_composition_boundary_may_import_diagnostic_read_service() -> None:
-    path = _scenario_root() / _COMPOSITION_ALLOWED_READ_SERVICE
+    path = _scenario_root() / "application" / _COMPOSITION_ALLOWED_READ_SERVICE
     source = path.read_text(encoding="utf-8")
     assert "DiagnosticReadService" in source

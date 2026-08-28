@@ -11,7 +11,7 @@ import pytest
 from intergrax.contracts.agent_step import AgentStep
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
-from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id, mint_task_id
+import intergrax.contracts.execution_identity as execution_identity
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
@@ -20,28 +20,28 @@ from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
 from pydantic import BaseModel
-from platform_proofs.scenarios.ai_incident_investigation.evidence_gathering import (
+from platform_proofs.scenarios.ai_incident_investigation.application.evidence_gathering import (
     gather_incident_evidence,
 )
-from platform_proofs.scenarios.ai_incident_investigation.incident_scope import (
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_scope import (
     IncidentScope,
     IncidentScopeViolationError,
 )
-from platform_proofs.scenarios.ai_incident_investigation.investigation_observability import (
+from platform_proofs.scenarios.ai_incident_investigation.application.observability import (
     IncidentPlannerDecisionDiagV1,
 )
-from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
+from platform_proofs.scenarios.ai_incident_investigation.application.investigator_agent import (
     INVESTIGATOR_AGENT_ID,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPLETION_UNRESOLVED,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     OUTCOME_RESOLVED,
     build_runtime_bundle,
     execute_resolved_skeleton,
 )
-from platform_proofs.scenarios.ai_incident_investigation.tools import (
+from platform_proofs.scenarios.ai_incident_investigation.application.tools import (
     TOOL_COMPARISON_READ,
     TOOL_STAFFING_ATTENDANCE_READ,
     TOOL_STAFFING_SCHEDULE_READ,
@@ -109,11 +109,16 @@ def _build_runtime_state(bundle) -> RuntimeState:
         user_id="u",
         session_id="s",
         tenant_id="t",
-        task_id=mint_task_id(),
-        run_id=mint_run_id(),
+        task_id=execution_identity.mint_task_id(),
+        run_id=execution_identity.mint_run_id(),
         message="investigate",
     )
     ctx = bundle.investigator.build_context(request)
+    execution_identity.bind_active_execution_identity(
+        run_id=request.run_id,
+        attempt_id=execution_identity.mint_attempt_id(),
+        execution_id=execution_identity.mint_execution_id(),
+    )
     return RuntimeState(context=ctx, request=request, run_id=request.run_id)
 
 
@@ -155,12 +160,19 @@ async def test_alternative_tool_order_executes_planner_selected_sequence(
         TOOL_STAFFING_ATTENDANCE_READ,
         TOOL_STAFFING_SCHEDULE_READ,
     )
-    monkeypatch.setattr(
-        "platform_proofs.scenarios.ai_incident_investigation.runtime_composition.resolve_llm_adapter",
-        lambda *_args, **_kwargs: ScriptedIncidentInvestigationLLM(
+    def _alt_order_llm():
+        return ScriptedIncidentInvestigationLLM(
             initial_sequence=alt_order[:3],
             revision_sequence=alt_order,
-        ),
+        )
+
+    monkeypatch.setattr(
+        "platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition.resolve_llm_adapter",
+        lambda *_args, **_kwargs: _alt_order_llm(),
+    )
+    monkeypatch.setattr(
+        "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
+        lambda *_args, **_kwargs: _alt_order_llm(),
     )
     bundle = build_runtime_bundle()
     result = await execute_resolved_skeleton(bundle)
@@ -172,12 +184,17 @@ async def test_alternative_tool_order_executes_planner_selected_sequence(
         user_id="u",
         session_id="s",
         tenant_id="t",
-        task_id=mint_task_id(),
-        run_id=mint_run_id(),
+        task_id=execution_identity.mint_task_id(),
+        run_id=execution_identity.mint_run_id(),
         message="investigate",
         metadata={"critic_feedback": ["revise"]},
     )
     runtime_state = bundle.investigator.build_context(request)
+    execution_identity.bind_active_execution_identity(
+        run_id=request.run_id,
+        attempt_id=execution_identity.mint_attempt_id(),
+        execution_id=execution_identity.mint_execution_id(),
+    )
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 
     state = RuntimeState(context=runtime_state, request=request, run_id=request.run_id)
@@ -199,11 +216,16 @@ async def test_observability_correlates_decision_trace_tool_trace_and_evidence()
         user_id="u",
         session_id="s",
         tenant_id="t",
-        task_id=mint_task_id(),
-        run_id=mint_run_id(),
+        task_id=execution_identity.mint_task_id(),
+        run_id=execution_identity.mint_run_id(),
         message="investigate",
     )
     runtime_state = bundle.investigator.build_context(request)
+    execution_identity.bind_active_execution_identity(
+        run_id=request.run_id,
+        attempt_id=execution_identity.mint_attempt_id(),
+        execution_id=execution_identity.mint_execution_id(),
+    )
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 
     state = RuntimeState(context=runtime_state, request=request, run_id=request.run_id)
@@ -234,7 +256,7 @@ async def test_observability_correlates_decision_trace_tool_trace_and_evidence()
 
 
 def test_canonical_investigator_has_no_hardcoded_three_plus_three_sequence() -> None:
-    from platform_proofs.scenarios.ai_incident_investigation import investigator_agent as mod
+    from platform_proofs.scenarios.ai_incident_investigation.application import investigator_agent as mod
 
     source = inspect.getsource(mod.IncidentInvestigatorAgent.run_step)
     assert "TOOL_WORKLOAD_READ" not in source
@@ -264,9 +286,16 @@ async def test_scope_violation_emits_diagnostic_without_unresolved_conversion(
                 ),
             )
 
+    def _out_of_scope_llm():
+        return _OutOfScopeLLM(initial_sequence=(TOOL_WORKLOAD_READ,))
+
     monkeypatch.setattr(
-        "platform_proofs.scenarios.ai_incident_investigation.runtime_composition.resolve_llm_adapter",
-        lambda *_args, **_kwargs: _OutOfScopeLLM(initial_sequence=(TOOL_WORKLOAD_READ,)),
+        "platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition.resolve_llm_adapter",
+        lambda *_args, **_kwargs: _out_of_scope_llm(),
+    )
+    monkeypatch.setattr(
+        "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
+        lambda *_args, **_kwargs: _out_of_scope_llm(),
     )
     bundle = build_runtime_bundle()
     request = RuntimeRequest(
@@ -274,11 +303,16 @@ async def test_scope_violation_emits_diagnostic_without_unresolved_conversion(
         user_id="u",
         session_id="s",
         tenant_id="t",
-        task_id=mint_task_id(),
-        run_id=mint_run_id(),
+        task_id=execution_identity.mint_task_id(),
+        run_id=execution_identity.mint_run_id(),
         message="investigate",
     )
     runtime_state = bundle.investigator.build_context(request)
+    execution_identity.bind_active_execution_identity(
+        run_id=request.run_id,
+        attempt_id=execution_identity.mint_attempt_id(),
+        execution_id=execution_identity.mint_execution_id(),
+    )
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 
     state = RuntimeState(context=runtime_state, request=request, run_id=request.run_id)
@@ -292,7 +326,7 @@ async def test_scope_violation_emits_diagnostic_without_unresolved_conversion(
     exec_ctx = RuntimeExecutionContext(
         task_id=request.task_id,
         run_id=request.run_id,
-        attempt_id=mint_attempt_id(),
+        attempt_id=execution_identity.mint_attempt_id(),
         agent_id=INVESTIGATOR_AGENT_ID,
         request=request,
         metadata={"runtime_state": state},
@@ -374,9 +408,16 @@ def test_scope_rejection_does_not_invoke_canonical_tool_invoker(
                 ),
             )
 
+    def _out_of_scope_llm():
+        return _OutOfScopeLLM(initial_sequence=(TOOL_WORKLOAD_READ,))
+
     monkeypatch.setattr(
-        "platform_proofs.scenarios.ai_incident_investigation.runtime_composition.resolve_llm_adapter",
-        lambda *_args, **_kwargs: _OutOfScopeLLM(initial_sequence=(TOOL_WORKLOAD_READ,)),
+        "platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition.resolve_llm_adapter",
+        lambda *_args, **_kwargs: _out_of_scope_llm(),
+    )
+    monkeypatch.setattr(
+        "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
+        lambda *_args, **_kwargs: _out_of_scope_llm(),
     )
     bundle = build_runtime_bundle()
     state = _build_runtime_state(bundle)
@@ -398,7 +439,7 @@ def test_scope_rejection_does_not_invoke_canonical_tool_invoker(
 
 
 def test_evidence_gathering_has_no_local_runtime_tool_invoker_construction() -> None:
-    from platform_proofs.scenarios.ai_incident_investigation import evidence_gathering as mod
+    from platform_proofs.scenarios.ai_incident_investigation.application import evidence_gathering as mod
 
     source = inspect.getsource(mod)
     assert "RegistryToolExecutor(" not in source

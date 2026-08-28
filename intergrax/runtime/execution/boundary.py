@@ -8,12 +8,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Generic, Protocol, TypeVar
 
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
     RunId,
     bind_active_execution_identity,
     reset_active_execution_identity,
+)
+from intergrax.runtime.governance.active_execution_authority import (
+    bind_active_execution_authority,
+    reset_active_execution_authority,
 )
 
 RequestT = TypeVar("RequestT")
@@ -52,7 +57,7 @@ class ExecutionBoundary(Generic[RequestT, ResultT]):
     Strategy-neutral. Production routing is unchanged at UE-1B.
     """
 
-    __slots__ = ("_delegate", "_admission_hooks", "_identity")
+    __slots__ = ("_delegate", "_admission_hooks", "_identity", "_authority")
 
     def __init__(
         self,
@@ -60,27 +65,37 @@ class ExecutionBoundary(Generic[RequestT, ResultT]):
         *,
         admission_hooks: tuple[ExecutionAdmissionHook[RequestT], ...] = (),
         identity: ExecutionIdentityBinding | None = None,
+        authority: ParentExecutionAuthority | None = None,
     ) -> None:
         self._delegate = delegate
         self._admission_hooks = admission_hooks
         self._identity = identity
+        self._authority = authority
 
     async def execute(self, request: RequestT) -> ResultT:
-        if self._identity is None:
-            return await self._execute_without_identity(request)
+        if self._identity is None and self._authority is None:
+            return await self._execute_without_context(request)
 
-        identity_token = bind_active_execution_identity(
-            run_id=self._identity.run_id,
-            attempt_id=self._identity.attempt_id,
-            execution_id=self._identity.execution_id,
-            parent_execution_id=self._identity.parent_execution_id,
-        )
+        identity_token = None
+        authority_token = None
+        if self._identity is not None:
+            identity_token = bind_active_execution_identity(
+                run_id=self._identity.run_id,
+                attempt_id=self._identity.attempt_id,
+                execution_id=self._identity.execution_id,
+                parent_execution_id=self._identity.parent_execution_id,
+            )
+        if self._authority is not None:
+            authority_token = bind_active_execution_authority(self._authority)
         try:
             return await self._run_admission_and_delegate(request)
         finally:
-            reset_active_execution_identity(identity_token)
+            if authority_token is not None:
+                reset_active_execution_authority(authority_token)
+            if identity_token is not None:
+                reset_active_execution_identity(identity_token)
 
-    async def _execute_without_identity(self, request: RequestT) -> ResultT:
+    async def _execute_without_context(self, request: RequestT) -> ResultT:
         return await self._run_admission_and_delegate(request)
 
     async def _run_admission_and_delegate(self, request: RequestT) -> ResultT:

@@ -55,19 +55,19 @@ from intergrax.runtime.observability.problem_signal import (
     PROBLEM_SOURCE_LAYER_APPLICATION,
     PlatformProblemSignal,
 )
-from platform_proofs.scenarios.ai_incident_investigation.incident_reasoning import (
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     PriorInvestigationState,
     build_reasoning_messages,
 )
-from platform_proofs.scenarios.ai_incident_investigation.platform_diagnostic_context import (
+from platform_proofs.scenarios.ai_incident_investigation.application.platform_diagnostic_context import (
     format_platform_diagnostic_context_lines,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     execute_resolved_skeleton,
     investigation_conclusion_status_from_outcome,
     OUTCOME_RESOLVED,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario_composition import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_composition import (
     IncidentInvestigationProblemNotFoundError,
     build_runtime_bundle_from_diagnostic_problem,
     resolve_incident_investigation_input,

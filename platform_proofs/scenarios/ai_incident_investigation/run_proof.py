@@ -12,20 +12,20 @@ from pathlib import Path
 
 from scripts.proof.intergrax_platform_proof_evidence_io import write_evidence_json
 from scripts.proof.intergrax_platform_proof_html_renderer import render_platform_proof_report
-from platform_proofs.scenarios.ai_incident_investigation.report_sections import (
+from platform_proofs.scenarios.ai_incident_investigation.proof.report_sections import (
     build_incident_report_sections,
     incident_report_extra_css,
 )
-from platform_proofs.scenarios.ai_incident_investigation.evidence_builder import (
+from platform_proofs.scenarios.ai_incident_investigation.proof.evidence_builder import (
     EVIDENCE_RESOLVED_FILENAME,
     EVIDENCE_UNRESOLVED_FILENAME,
     REPORT_RESOLVED_FILENAME,
     REPORT_UNRESOLVED_FILENAME,
     build_platform_proof_evidence,
 )
-from platform_proofs.scenarios.ai_incident_investigation.evaluator import evaluate_scenario_run
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import ScenarioVariant
-from platform_proofs.scenarios.ai_incident_investigation.scenario import (
+from platform_proofs.scenarios.ai_incident_investigation.proof.evaluator import evaluate_scenario_run
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import ScenarioVariant
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     build_runtime_bundle,
     execute_resolved_skeleton,
 )
@@ -140,6 +140,7 @@ async def _run_skeleton() -> int:
 def main() -> int:
     import asyncio
 
+    os.environ.setdefault("SCENARIO_AI_INCIDENT_LAB_PLANNER", "1")
     return asyncio.run(_run_skeleton())
 
 

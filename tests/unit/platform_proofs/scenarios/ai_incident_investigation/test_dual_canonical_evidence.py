@@ -20,23 +20,23 @@ from scripts.proof.intergrax_proof_contracts import (
     ProofStatus,
 )
 from scripts.proof.intergrax_proof_runner import execute_proof, read_git_metadata
-from platform_proofs.scenarios.ai_incident_investigation.evidence_builder import (
+from platform_proofs.scenarios.ai_incident_investigation.proof.evidence_builder import (
     EVIDENCE_RESOLVED_FILENAME,
     EVIDENCE_UNRESOLVED_FILENAME,
     PROOF_ID,
     build_platform_proof_evidence,
 )
-from platform_proofs.scenarios.ai_incident_investigation.evaluator import evaluate_scenario_run
-from platform_proofs.scenarios.ai_incident_investigation.incident_reasoning import (
+from platform_proofs.scenarios.ai_incident_investigation.proof.evaluator import evaluate_scenario_run
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     claim_id_for_hypothesis,
     parse_claim_hypothesis_bindings,
 )
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import ScenarioVariant
-from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import ScenarioVariant
+from platform_proofs.scenarios.ai_incident_investigation.application.investigator_agent import (
     H3_CLAIM_ID,
     TELEMETRY_EVIDENCE_ID,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     OUTCOME_UNRESOLVED,
     build_runtime_bundle,
     execute_resolved_skeleton,

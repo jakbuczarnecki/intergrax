@@ -8,12 +8,12 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import (
     COMPARISON_LINE_ID,
     LINE_ID,
     TimeWindowLabel,
 )
-from platform_proofs.scenarios.ai_incident_investigation.tools import (
+from platform_proofs.scenarios.ai_incident_investigation.application.tools import (
     TOOL_COMPARISON_READ,
     TOOL_STAFFING_ATTENDANCE_READ,
     TOOL_STAFFING_SCHEDULE_READ,

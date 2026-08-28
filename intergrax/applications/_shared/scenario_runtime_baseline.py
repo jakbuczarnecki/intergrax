@@ -231,6 +231,7 @@ def build_scenario_runtime_from_environment(
     diagnostics_required: bool = False,
     workspace: ScenarioRuntimeWorkspace | None = None,
     runtime_mode: ScenarioRuntimeMode | None = None,
+    conformance_check: bool = True,
 ) -> ScenarioRuntimeComposition:
     """
     Compose a lighter Nexus-backed scenario runtime from platform primitives.
@@ -247,6 +248,7 @@ def build_scenario_runtime_from_environment(
         settings=settings,
         tenant_id=resolved_tenant_id,
         document_store=document_store,
+        conformance_check=conformance_check,
     )
     observability = _resolve_observability_stores(
         environment,

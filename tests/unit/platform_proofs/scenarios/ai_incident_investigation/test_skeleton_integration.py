@@ -47,25 +47,25 @@ from scripts.proof.intergrax_proof_contracts import (
     ProofStatus,
 )
 from scripts.proof.intergrax_proof_runner import execute_proof, read_git_metadata
-from platform_proofs.scenarios.ai_incident_investigation.critic_adapter import (
+from platform_proofs.scenarios.ai_incident_investigation.application.critic_adapter import (
     apply_challenge_lifecycle,
     build_satisfied_challenge,
     map_critic_verdict_to_challenge,
 )
-from platform_proofs.scenarios.ai_incident_investigation.evidence_builder import (
+from platform_proofs.scenarios.ai_incident_investigation.proof.evidence_builder import (
     EVIDENCE_RESOLVED_FILENAME,
     PROOF_ID,
     build_platform_proof_evidence,
 )
-from platform_proofs.scenarios.ai_incident_investigation.evaluator import evaluate_scenario_run
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
+from platform_proofs.scenarios.ai_incident_investigation.proof.evaluator import evaluate_scenario_run
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import (
     FORBIDDEN_LEAK_MARKERS,
     ScenarioVariant,
     TimeWindowLabel,
     build_resolved_fixture,
     staffing_record_admissible_for_incident,
 )
-from platform_proofs.scenarios.ai_incident_investigation.investigator_agent import (
+from platform_proofs.scenarios.ai_incident_investigation.application.investigator_agent import (
     COMPARISON_EVIDENCE_ID,
     INITIAL_CLAIM_ID,
     INVESTIGATOR_CAPABILITY,
@@ -76,7 +76,7 @@ from platform_proofs.scenarios.ai_incident_investigation.investigator_agent impo
     THROUGHPUT_EVIDENCE_ID,
     WORKLOAD_EVIDENCE_ID,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     EVALUATOR_LOOP_MAX_ITERATIONS,
     OUTCOME_RESOLVED,
     OUTCOME_UNRESOLVED,
@@ -84,12 +84,12 @@ from platform_proofs.scenarios.ai_incident_investigation.scenario import (
     execute_resolved_skeleton,
     execute_with_completion_gate_blocked,
 )
-from platform_proofs.scenarios.ai_incident_investigation.tools import (
+from platform_proofs.scenarios.ai_incident_investigation.application.tools import (
     register_scenario_tools,
     TOOL_THROUGHPUT_READ,
     TOOL_WORKLOAD_READ,
 )
-from platform_proofs.scenarios.ai_incident_investigation.validation import (
+from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
     IncidentInvestigationValidationEngine,
     UNSUPPORTED_INFERENCE_ERROR,
 )
@@ -598,7 +598,7 @@ def test_static_bypass_audit_no_substitute_runtimes() -> None:
         "ReportRenderer",
         "AgentLoop",
     )
-    sources = [p.read_text(encoding="utf-8") for p in package.glob("*.py")]
+    sources = [p.read_text(encoding="utf-8") for p in package.glob("**/*.py")]
     combined = "\n".join(sources)
     for name in forbidden_names:
         assert f"class {name}" not in combined

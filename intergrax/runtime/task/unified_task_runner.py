@@ -6,6 +6,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Optional
 
+from intergrax.contracts.delegation_authority import resolve_root_parent_execution_authority
 from intergrax.contracts.execution_identity import (
     AttemptId,
     RunId,
@@ -103,9 +104,13 @@ class UnifiedTaskRunner:
                     run_id=resolved_run_id,
                     attempt_id=resolved_attempt_id,
                 )
+                root_authority = resolve_root_parent_execution_authority(
+                    task.execution_authority,
+                )
                 boundary = ExecutionBoundary[Task, TaskResult](
                     delegate,
                     identity=identity,
+                    authority=root_authority,
                 )
                 return await boundary.execute(task)
         finally:

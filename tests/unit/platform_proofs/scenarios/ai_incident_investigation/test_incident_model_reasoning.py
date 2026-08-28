@@ -9,7 +9,7 @@ import inspect
 import pytest
 
 from intergrax.contracts.evidence_claims import ClaimResolution, EvidenceClaimSet
-from platform_proofs.scenarios.ai_incident_investigation.incident_reasoning import (
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     ClaimHypothesisBinding,
     ClaimProposal,
     CompletionIntent,
@@ -20,14 +20,14 @@ from platform_proofs.scenarios.ai_incident_investigation.incident_reasoning impo
     convert_proposal_to_pending_claims,
     validate_reasoning_proposal,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     DIAGNOSIS_KIND,
     H2_CLAIM_ID,
     H3_CLAIM_ID,
     INITIAL_CLAIM_ID,
     WORKLOAD_EVIDENCE_ID,
 )
-from platform_proofs.scenarios.ai_incident_investigation.validation import (
+from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
     apply_critic_claim_resolutions,
     validate_claim_set_against_observations,
 )
@@ -188,7 +188,7 @@ def test_validation_does_not_call_derive_hypothesis_dispositions() -> None:
 
 
 def test_investigator_does_not_call_apply_critic_claim_resolutions() -> None:
-    from platform_proofs.scenarios.ai_incident_investigation import investigator_agent as mod
+    from platform_proofs.scenarios.ai_incident_investigation.application import investigator_agent as mod
 
     source = inspect.getsource(mod.IncidentInvestigatorAgent.run_step)
     assert "apply_critic_claim_resolutions" not in source
@@ -247,7 +247,7 @@ def test_legacy_claim_ids_not_used_for_semantic_conversion() -> None:
 
 @pytest.mark.asyncio
 async def test_application_survives_without_proof_evaluator() -> None:
-    from platform_proofs.scenarios.ai_incident_investigation.scenario import (
+    from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
         OUTCOME_RESOLVED,
         build_runtime_bundle,
         execute_resolved_skeleton,

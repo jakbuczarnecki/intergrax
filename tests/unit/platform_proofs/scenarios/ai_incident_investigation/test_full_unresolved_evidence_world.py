@@ -12,23 +12,23 @@ from intergrax.contracts.evidence_claims import (
     EvidenceBackedClaim,
     EvidenceClaimSet,
 )
-from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import (
+from platform_proofs.scenarios.ai_incident_investigation.application.domain_reasoning import (
     ObservedTelemetry,
     derive_hypothesis_dispositions,
     parse_telemetry_payload,
     telemetry_is_unavailable,
 )
-from platform_proofs.scenarios.ai_incident_investigation.evaluator import (
+from platform_proofs.scenarios.ai_incident_investigation.proof.evaluator import (
     build_forged_h3_claim_set,
     evaluate_scenario_run,
 )
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import (
     ScenarioVariant,
     TelemetryAvailability,
     TelemetryUnavailabilityReason,
     build_unresolved_fixture,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario_contract import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPLETION_UNRESOLVED,
     DIAGNOSIS_KIND,
     H2_CLAIM_ID,
@@ -38,17 +38,17 @@ from platform_proofs.scenarios.ai_incident_investigation.scenario_contract impor
     REVISED_CLAIM_ID,
     TELEMETRY_EVIDENCE_ID,
 )
-from platform_proofs.scenarios.ai_incident_investigation.scenario import (
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     OUTCOME_RESOLVED,
     OUTCOME_UNRESOLVED,
     build_runtime_bundle,
     execute_resolved_skeleton,
 )
-from platform_proofs.scenarios.ai_incident_investigation.incident_reasoning import (
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     claim_id_for_hypothesis,
     parse_claim_hypothesis_bindings,
 )
-from platform_proofs.scenarios.ai_incident_investigation.validation import (
+from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
     H1_FALLBACK_ERROR,
     H2_FALLBACK_ERROR,
     TELEMETRY_CONTENT_ERROR,

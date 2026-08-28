@@ -12,7 +12,7 @@ from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.tool_executor import ToolHandler
-from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import (
+from platform_proofs.scenarios.ai_incident_investigation.application.domain_reasoning import (
     attendance_meets_required,
     comparison_weakens_overload,
     h1_initially_plausible,
@@ -31,7 +31,7 @@ from platform_proofs.scenarios.ai_incident_investigation.domain_reasoning import
     telemetry_is_unavailable,
     telemetry_supports_degradation,
 )
-from platform_proofs.scenarios.ai_incident_investigation.fixtures import (
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import (
     IncidentFixture,
     LINE_ID,
     STATION_ID,

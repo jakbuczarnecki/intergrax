@@ -6,7 +6,7 @@
   "domains_exercised": ["EXECUTION", "TOOLS", "CRITIC", "EVIDENCE"],
   "proof_kind": "scenario_skeleton",
   "mechanisms_exercised": [
-    "runtime.graph_executor",
+    "runtime.nexus_loop",
     "runtime.tool_runtime",
     "runtime.critic",
     "evidence.gap_1a"
