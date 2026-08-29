@@ -179,3 +179,27 @@ def test_unknown_reservation_cannot_mutate_ledger() -> None:
         ledger.release_child_budget(unknown)
     with pytest.raises(ExecutionBudgetReservationError, match="unknown"):
         ledger.consume_budget(unknown, BudgetUsageTotals(tool_calls=1))
+
+
+def test_shared_under_reserved_immediate_backing_debit() -> None:
+    ledger = create_execution_budget_ledger(RunBudget(max_tool_calls=100))
+    parent = _parent_id()
+    reserved = _child_id()
+    ledger.grant_child_budget(
+        execution_id=reserved,
+        parent_execution_id=parent,
+        decision=ChildBudgetAllocationDecision(
+            mode=ExecutionBudgetAllocationMode.RESERVED,
+            reservation_request=RunBudget(max_tool_calls=10),
+        ),
+    )
+    shared = _child_id()
+    ledger.grant_child_budget(
+        execution_id=shared,
+        parent_execution_id=reserved,
+        decision=ChildBudgetAllocationDecision(mode=ExecutionBudgetAllocationMode.SHARED),
+    )
+    ledger.consume_budget(shared, BudgetUsageTotals(tool_calls=8))
+    assert ledger.snapshot_reservation_remaining(reserved).max_tool_calls == 2
+    with pytest.raises(ExecutionBudgetError, match="exceeds effective grant"):
+        ledger.consume_budget(shared, BudgetUsageTotals(tool_calls=3))

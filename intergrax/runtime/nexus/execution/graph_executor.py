@@ -99,7 +99,6 @@ if TYPE_CHECKING:
     from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
     from intergrax.runtime.critic.trace import CriticTraceEmitter
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
-    from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedger
     from intergrax.runtime.execution.budget.policy import ExecutionBudgetAllocationPolicy
     from intergrax.runtime.nexus.config import RuntimeConfig
 
@@ -185,7 +184,6 @@ class GraphExecutor:
         execution_identity: ActiveExecutionIdentity | None = None,
         authority_policy: ExecutionAuthorityPolicy | None = None,
         budget_allocation_policy: ExecutionBudgetAllocationPolicy | None = None,
-        execution_budget_ledger: ExecutionBudgetLedger | None = None,
     ) -> None:
         del execution_identity
         self._registry = registry
@@ -217,7 +215,6 @@ class GraphExecutor:
         ](
             authority_policy=authority_policy,
             budget_policy=budget_allocation_policy,
-            ledger=execution_budget_ledger,
         )
         self._graph_node_child_delegate = _GraphNodeChildDelegate(self)
         self._agent_executor = AgentExecutor(self._engine)

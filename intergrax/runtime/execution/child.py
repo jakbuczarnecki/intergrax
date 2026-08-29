@@ -117,10 +117,9 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
         )
 
         child_execution_id = mint_execution_id()
-        if self._ledger is None:
-            raise RuntimeError("execution budget ledger required for child execution")
+        ledger = self._resolve_ledger(parent_budget_state)
 
-        grant = self._ledger.grant_child_budget(
+        grant = ledger.grant_child_budget(
             execution_id=child_execution_id,
             parent_execution_id=parent_execution_id,
             decision=budget_decision,
@@ -128,7 +127,7 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
         active_budget = ActiveExecutionBudgetState(
             execution_id=child_execution_id,
             mode=grant.mode,
-            ledger=self._ledger,
+            ledger=ledger,
             reservation_allowance=grant.reservation_allowance,
         )
 
@@ -150,4 +149,14 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             return await boundary.execute(request)
         finally:
             reset_active_execution_budget(budget_token)
-            self._ledger.release_child_budget(child_execution_id)
+            ledger.release_child_budget(child_execution_id)
+
+    def _resolve_ledger(
+        self,
+        parent_budget_state: ActiveExecutionBudgetState | None,
+    ) -> ExecutionBudgetLedger:
+        if self._ledger is not None:
+            return self._ledger
+        if parent_budget_state is None:
+            raise RuntimeError("execution budget ledger required for child execution")
+        return parent_budget_state.ledger

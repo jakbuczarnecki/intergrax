@@ -99,6 +99,11 @@ from intergrax.runtime.adaptive.signal_collector import SignalCollector
 from intergrax.runtime.adaptive.signal_emission import record_task_outcome_signal
 from intergrax.runtime.architecture.online_evaluation_registry import OnlineEvaluationRegistry
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.runtime.execution.active_execution_budget import (
+    bind_root_execution_budget,
+    reset_active_execution_budget,
+)
+from intergrax.runtime.execution.budget import create_execution_budget_ledger_factory
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTriggerProtocol,
 )
@@ -109,7 +114,7 @@ if TYPE_CHECKING:
     from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
     from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
-    from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedger
+    from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
     from intergrax.runtime.execution.budget.policy import ExecutionBudgetAllocationPolicy
 
 class NexusLoop:
@@ -169,7 +174,7 @@ class NexusLoop:
         terminal_diagnostic_trigger: TerminalExecutionDiagnosticTriggerProtocol | None = None,
         authority_policy: "ExecutionAuthorityPolicy | None" = None,
         budget_allocation_policy: "ExecutionBudgetAllocationPolicy | None" = None,
-        execution_budget_ledger: "ExecutionBudgetLedger | None" = None,
+        execution_budget_ledger_factory: "ExecutionBudgetLedgerFactory | None" = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -271,7 +276,6 @@ class NexusLoop:
             execution_identity=self._execution_identity,
             authority_policy=authority_policy,
             budget_allocation_policy=budget_allocation_policy,
-            execution_budget_ledger=execution_budget_ledger,
         )
         self._composer = FinalResponseComposer(merge_strategy=merge_strategy)
         self._lifecycle = lifecycle
@@ -281,6 +285,10 @@ class NexusLoop:
         self._signal_collector = signal_collector
         self._evaluation_registry = evaluation_registry
         self._run_budget = run_budget
+        self._execution_budget_ledger_factory = (
+            execution_budget_ledger_factory
+            or create_execution_budget_ledger_factory(run_budget)
+        )
         trace_reader = trace_store if isinstance(trace_store, RunTraceReader) else None
         self._events = NexusRuntimeEventPublisher(
             self._event_bus,
@@ -442,11 +450,16 @@ class NexusLoop:
             authority_token = None
             if peek_active_execution_authority() is None:
                 authority_token = bind_active_execution_authority(root_authority)
+            budget_token = bind_root_execution_budget(
+                execution_id=active_execution_id,
+                ledger=self._execution_budget_ledger_factory.create_ledger(self._run_budget),
+            )
             self._current_task = task
             try:
                 return await self._handle_task_impl(task)
             finally:
                 self._current_task = None
+                reset_active_execution_budget(budget_token)
                 if authority_token is not None:
                     reset_active_execution_authority(authority_token)
 
@@ -483,10 +496,15 @@ class NexusLoop:
             execution_id=root_execution_id,
         )
         authority_token = bind_active_execution_authority(root_authority)
+        budget_token = bind_root_execution_budget(
+            execution_id=root_execution_id,
+            ledger=self._execution_budget_ledger_factory.create_ledger(self._run_budget),
+        )
         try:
             return await self._handle_task_impl(task)
         finally:
             self._current_task = None
+            reset_active_execution_budget(budget_token)
             reset_active_execution_authority(authority_token)
             reset_active_execution_identity(identity_token)
 

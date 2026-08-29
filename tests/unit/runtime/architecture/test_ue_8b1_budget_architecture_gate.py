@@ -138,3 +138,14 @@ def test_graph_executor_does_not_construct_run_budget_for_allocation_logic() -> 
         frozenset({"snapshot_root_available", "snapshot_reservation_remaining"}),
     )
     assert violations == []
+
+
+def test_nexus_loop_does_not_store_mutable_ledger_on_graph_executor() -> None:
+    source = _NEXUS_LOOP_PATH.read_text(encoding="utf-8")
+    assert "execution_budget_ledger=" not in source
+    assert "execution_budget_ledger_factory" in source
+
+
+def test_child_runner_does_not_require_composition_time_ledger() -> None:
+    source = _CHILD_RUNNER_PATH.read_text(encoding="utf-8")
+    assert "ledger=execution_budget_ledger" not in source

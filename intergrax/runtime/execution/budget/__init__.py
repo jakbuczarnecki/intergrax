@@ -2,8 +2,13 @@
 
 from intergrax.runtime.execution.budget.ledger import (
     ExecutionBudgetLedger,
+    ExecutionBudgetLedgerFactory,
+    FixedExecutionBudgetLedgerFactory,
     InMemoryExecutionBudgetLedger,
+    RunBudgetExecutionBudgetLedgerFactory,
     create_execution_budget_ledger,
+    create_execution_budget_ledger_factory,
+    fixed_execution_budget_ledger_factory,
 )
 from intergrax.runtime.execution.budget.models import (
     BudgetUsageTotals,
@@ -36,10 +41,15 @@ __all__ = [
     "ExecutionBudgetAllocationPolicyConfigurationError",
     "ExecutionBudgetError",
     "ExecutionBudgetLedger",
+    "ExecutionBudgetLedgerFactory",
     "ExecutionBudgetReservationError",
     "ExecutionBudgetReservationGrant",
+    "FixedExecutionBudgetLedgerFactory",
     "InMemoryExecutionBudgetLedger",
+    "RunBudgetExecutionBudgetLedgerFactory",
     "create_execution_budget_ledger",
+    "create_execution_budget_ledger_factory",
+    "fixed_execution_budget_ledger_factory",
     "list_execution_budget_allocation_policy_ids",
     "load_execution_budget_allocation_policy",
     "resolve_execution_budget_allocation_policy",

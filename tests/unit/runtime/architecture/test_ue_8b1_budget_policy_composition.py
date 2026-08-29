@@ -112,7 +112,7 @@ def test_default_runtime_config_uses_default_shared_pool_policy() -> None:
     assert isinstance(_child_runner(loop)._budget_policy, DefaultSharedPoolBudgetPolicy)
 
 
-def test_composition_creates_one_canonical_ledger_per_run() -> None:
+def test_composition_stores_ledger_factory_not_mutable_ledger() -> None:
     loop_a = build_nexus_loop_from_environment(
         AgentRegistry(),
         env=_minimal_env(),
@@ -124,9 +124,9 @@ def test_composition_creates_one_canonical_ledger_per_run() -> None:
         run_budget=RunBudget(max_tool_calls=10),
     )
 
-    ledger_a = _child_runner(loop_a)._ledger
-    ledger_b = _child_runner(loop_b)._ledger
-    assert ledger_a is not ledger_b
+    assert loop_a._execution_budget_ledger_factory is not loop_b._execution_budget_ledger_factory
+    assert _child_runner(loop_a)._ledger is None
+    assert _child_runner(loop_b)._ledger is None
 
 
 def test_policy_resolved_once_at_composition(

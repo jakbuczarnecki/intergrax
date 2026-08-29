@@ -46,3 +46,18 @@ def require_active_execution_budget() -> ActiveExecutionBudgetState:
     if state is None:
         raise RuntimeError("active execution budget required")
     return state
+
+
+def bind_root_execution_budget(
+    *,
+    execution_id: ExecutionId,
+    ledger: ExecutionBudgetLedger,
+) -> Token:
+    """Bind the canonical per-Run ledger at root execution entry."""
+    return bind_active_execution_budget(
+        ActiveExecutionBudgetState(
+            execution_id=execution_id,
+            mode=ExecutionBudgetAllocationMode.SHARED,
+            ledger=ledger,
+        )
+    )

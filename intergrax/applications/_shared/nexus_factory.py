@@ -49,7 +49,8 @@ from intergrax.runtime.execution.authority import (
     resolve_execution_authority_policy_from_runtime_config,
 )
 from intergrax.runtime.execution.budget import (
-    create_execution_budget_ledger,
+    create_execution_budget_ledger_factory,
+    fixed_execution_budget_ledger_factory,
     resolve_execution_budget_allocation_policy_from_runtime_config,
 )
 from intergrax.runtime.nexus.config import RuntimeConfig
@@ -64,7 +65,10 @@ from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 
 if TYPE_CHECKING:
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
-    from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedger
+    from intergrax.runtime.execution.budget.ledger import (
+        ExecutionBudgetLedger,
+        ExecutionBudgetLedgerFactory,
+    )
     from intergrax.runtime.execution.budget.policy import ExecutionBudgetAllocationPolicy
 
 
@@ -97,6 +101,7 @@ def build_nexus_loop_from_environment(
     runtime_config: RuntimeConfig | None = None,
     authority_policy: ExecutionAuthorityPolicy | None = None,
     budget_allocation_policy: ExecutionBudgetAllocationPolicy | None = None,
+    execution_budget_ledger_factory: ExecutionBudgetLedgerFactory | None = None,
     execution_budget_ledger: ExecutionBudgetLedger | None = None,
 ) -> NexusLoop:
     """Apply orchestration and reliability profiles to ``NexusLoop`` construction."""
@@ -128,9 +133,14 @@ def build_nexus_loop_from_environment(
                 runtime_config,
             )
         )
-    resolved_budget_ledger = execution_budget_ledger
-    if resolved_budget_ledger is None:
-        resolved_budget_ledger = create_execution_budget_ledger(run_budget)
+    resolved_budget_ledger_factory = execution_budget_ledger_factory
+    if resolved_budget_ledger_factory is None:
+        if execution_budget_ledger is not None:
+            resolved_budget_ledger_factory = fixed_execution_budget_ledger_factory(
+                execution_budget_ledger,
+            )
+        else:
+            resolved_budget_ledger_factory = create_execution_budget_ledger_factory(run_budget)
     resolved_context_manager = context_manager or resolve_context_manager_from_environment(
         env,
         event_bus=runtime_event_bus,
@@ -175,7 +185,7 @@ def build_nexus_loop_from_environment(
         validation_engine=validation_engine,
         authority_policy=resolved_authority_policy,
         budget_allocation_policy=resolved_budget_policy,
-        execution_budget_ledger=resolved_budget_ledger,
+        execution_budget_ledger_factory=resolved_budget_ledger_factory,
     )
     resolved_security = security_wiring or wire_application_security(env)
     apply_application_security_wiring(loop, resolved_security, env=env)

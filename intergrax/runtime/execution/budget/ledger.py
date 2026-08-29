@@ -65,6 +65,49 @@ def create_execution_budget_ledger(run_budget: RunBudget | None) -> InMemoryExec
     return InMemoryExecutionBudgetLedger(root_limits=limits)
 
 
+class ExecutionBudgetLedgerFactory(Protocol):
+    """Create one mutable ledger instance per Run lifecycle."""
+
+    def create_ledger(self, run_budget: RunBudget | None = None) -> ExecutionBudgetLedger:
+        """Return a fresh ledger for the active Run."""
+
+
+@dataclass(frozen=True, slots=True)
+class RunBudgetExecutionBudgetLedgerFactory:
+    """Default factory that instantiates in-memory ledgers from ``RunBudget``."""
+
+    default_run_budget: RunBudget | None = None
+
+    def create_ledger(self, run_budget: RunBudget | None = None) -> ExecutionBudgetLedger:
+        resolved = run_budget if run_budget is not None else self.default_run_budget
+        return create_execution_budget_ledger(resolved)
+
+
+def create_execution_budget_ledger_factory(
+    run_budget: RunBudget | None = None,
+) -> RunBudgetExecutionBudgetLedgerFactory:
+    """Build the default per-Run ledger factory for composition."""
+    return RunBudgetExecutionBudgetLedgerFactory(default_run_budget=run_budget)
+
+
+@dataclass(frozen=True, slots=True)
+class FixedExecutionBudgetLedgerFactory:
+    """Explicit test/provider factory that always returns the same ledger instance."""
+
+    ledger: ExecutionBudgetLedger
+
+    def create_ledger(self, run_budget: RunBudget | None = None) -> ExecutionBudgetLedger:
+        del run_budget
+        return self.ledger
+
+
+def fixed_execution_budget_ledger_factory(
+    ledger: ExecutionBudgetLedger,
+) -> FixedExecutionBudgetLedgerFactory:
+    """Wrap a pre-built ledger for narrowly scoped test injection."""
+    return FixedExecutionBudgetLedgerFactory(ledger=ledger)
+
+
 class InMemoryExecutionBudgetLedger:
     """Thread-safe in-process canonical execution budget ledger."""
 
@@ -170,6 +213,10 @@ class InMemoryExecutionBudgetLedger:
                 )
                 if backing_id is None:
                     self._root_shared_consumed = self._root_shared_consumed.add(amounts)
+                else:
+                    backing_record = self._records.get(backing_id)
+                    if backing_record is not None:
+                        backing_record.consumed = backing_record.consumed.add(amounts)
 
     def snapshot_root_available(self) -> RunBudget:
         with self._lock:
