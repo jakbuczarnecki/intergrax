@@ -21,7 +21,14 @@ from intergrax.fastapi_core.config import ApiConfig
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
-from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
+from intergrax.applications._shared.plugin_bootstrap import (
+    attach_plugin_shutdown,
+    bootstrap_application_plugins,
+)
+from intergrax.runtime.observability.operator_wiring import (
+    ObservabilityExportOperatorConfig,
+    build_observability_export_runtime_plugin,
+)
 from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
@@ -47,6 +54,7 @@ def create_governed_contractor_backend_app(
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
     document_store: object | None = None,
+    observability_export: ObservabilityExportOperatorConfig | None = None,
 ) -> FastAPI:
     settings = settings or GovernedContractorBackendSettings.from_env()
     api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
@@ -69,6 +77,14 @@ def create_governed_contractor_backend_app(
         nexus_loop,
         trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
     )
+    if observability_export is not None and observability_export.enabled:
+        export_plugin = build_observability_export_runtime_plugin(observability_export)
+        if export_plugin is not None:
+            export_bootstrap = bootstrap_application_plugins(
+                [export_plugin],
+                nexus_loop=nexus_loop,
+            )
+            platform.shutdown_callbacks.extend(export_bootstrap.shutdown_callbacks)
     checkpoint_store = open_default_task_checkpoint_persistence(db_path=checkpoints_db_path)
     task_enricher = build_reliability_task_enricher(env)
     task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
@@ -170,4 +186,5 @@ def create_governed_contractor_backend_app(
         apply_factory_lifespans(app, runtime, schedulers=[scheduler] if scheduler else None)
 
     attach_plugin_shutdown(app, platform.shutdown_callbacks)
+    app.state.harness_runtime = runtime
     return app

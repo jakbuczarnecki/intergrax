@@ -368,6 +368,12 @@ Load **only** the satellite matching your task or cited gap ID.
 - LKW.2 pipeline unchanged; no vendor SDK in LKW; raw content/local paths not exported by default
 - **OBS-EXPORT-5** remains **deferred** until Langfuse/Arize/Phoenix vendor adapters are implemented
 
+**DIAG-FINAL-E2E status (external OTLP collector proof — slice):**
+
+- **Done (slice)** — `tests/integration/runtime/test_diag_final_external_otel_e2e.py` with Dockerized OpenTelemetry Collector (`tests/integration/runtime/fixtures/diag_final_otel/`), PRODUCT governed-contractor HTTP host, SQLite RuntimeEvent store, DocumentStore Problem persistence, central diagnostics read path, and explicit OTLP export wiring.
+- **CI** — dedicated `diag-final-external-proof` job (nightly / workflow_dispatch full); skipped locally without Docker.
+- **Not claimed** — full OBS-VENDOR matrix, Langfuse/Arize/Phoenix transports, or non-governed-contractor host topologies.
+
 **OBS-EXPORT-5 status (2026-06-28 — post INTEGRATIONS-2C):**
 
 | Sub-deliverable | Status | Notes |

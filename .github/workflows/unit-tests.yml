@@ -314,3 +314,33 @@ jobs:
 
       - name: Export capability catalog feed
         run: uv run --frozen python scripts/release/export_capability_catalog_feed.py
+
+  diag-final-external-proof:
+    if: >-
+      github.event_name == 'schedule' ||
+      (
+        github.event_name == 'workflow_dispatch' &&
+        github.event.inputs.profile == 'full'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install dependencies (CI minimal)
+        run: uv sync --extra dev-ci --frozen
+
+      - name: DIAG-FINAL external OpenTelemetry proof
+        run: >-
+          uv run --frozen pytest
+          tests/integration/runtime/test_diag_final_external_otel_e2e.py
+          -m external_proof
+          -q --tb=short
