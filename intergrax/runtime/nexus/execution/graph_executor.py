@@ -97,6 +97,7 @@ if TYPE_CHECKING:
     from intergrax.runtime.critic.contracts import CriticVerdict
     from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
     from intergrax.runtime.critic.trace import CriticTraceEmitter
+    from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
     from intergrax.runtime.nexus.config import RuntimeConfig
 
 ExecuteFn = Callable[[Agent, Task, ExecutionNode], Awaitable[AgentExecutionResult]]
@@ -179,6 +180,7 @@ class GraphExecutor:
         declarative_tool_invoker: DeclarativeToolInvoker | None = None,
         runtime_config: Optional["RuntimeConfig"] = None,
         execution_identity: ActiveExecutionIdentity | None = None,
+        authority_policy: ExecutionAuthorityPolicy | None = None,
     ) -> None:
         del execution_identity
         self._registry = registry
@@ -207,7 +209,7 @@ class GraphExecutor:
         self._child_runner = ChildExecutionRunner[
             _GraphNodeChildRequest,
             _GraphNodeChildResult,
-        ]()
+        ](authority_policy=authority_policy)
         self._graph_node_child_delegate = _GraphNodeChildDelegate(self)
         self._agent_executor = AgentExecutor(self._engine)
 

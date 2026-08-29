@@ -7,15 +7,15 @@ from __future__ import annotations
 
 from typing import Generic, TypeVar
 
-from intergrax.contracts.delegation_authority import (
-    EffectiveDelegationAuthority,
-    effective_delegation_to_parent_authority,
-    mint_effective_delegation_authority,
-)
 from intergrax.contracts.execution_identity import (
     mint_execution_id,
     require_active_execution_id,
     require_active_execution_identity,
+)
+from intergrax.runtime.execution.authority.policy import (
+    ChildAuthorityContext,
+    DefaultStrictAuthorityPolicy,
+    ExecutionAuthorityPolicy,
 )
 from intergrax.runtime.execution.boundary import (
     ExecutionAdmissionHook,
@@ -37,7 +37,17 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
     through :class:`ExecutionBoundary`.
     """
 
-    __slots__ = ()
+    __slots__ = ("_authority_policy",)
+
+    def __init__(
+        self,
+        authority_policy: ExecutionAuthorityPolicy | None = None,
+    ) -> None:
+        self._authority_policy = (
+            authority_policy
+            if authority_policy is not None
+            else DefaultStrictAuthorityPolicy()
+        )
 
     async def execute(
         self,
@@ -51,15 +61,14 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
         parent_execution_id = require_active_execution_id()
         parent_authority = require_active_execution_authority()
 
-        effective: EffectiveDelegationAuthority | None = None
-        if requested_permission_scopes is None:
-            child_authority = parent_authority
-        else:
-            effective = mint_effective_delegation_authority(
-                parent=parent_authority,
+        resolution = self._authority_policy.resolve_child_authority(
+            ChildAuthorityContext(
+                parent_authority=parent_authority,
                 requested_permission_scopes=requested_permission_scopes,
             )
-            child_authority = effective_delegation_to_parent_authority(effective)
+        )
+        child_authority = resolution.authority
+        effective = resolution.effective_delegation
 
         child_execution_id = mint_execution_id()
         identity = ExecutionIdentityBinding(
