@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import pytest
 
 from intergrax.llm.messages import ChatMessage
@@ -88,6 +90,35 @@ def test_openai_dicts_duplicate_explicit_ids_fail() -> None:
                 },
             ]
         )
+
+
+def test_mixed_valid_blank_provider_ids_preserved_and_unique() -> None:
+    calls = tool_calls_from_openai_dicts(
+        [
+            {"id": "provider-a", "function": {"name": "a", "arguments": "{}"}},
+            {"id": "", "function": {"name": "b", "arguments": "{}"}},
+            {"id": "provider-c", "function": {"name": "c", "arguments": "{}"}},
+        ]
+    )
+    ids = [call.id for call in calls]
+    assert ids[0] == "provider-a"
+    assert ids[2] == "provider-c"
+    assert ids[1].startswith("toolcall-")
+    assert len(set(ids)) == 3
+
+
+def test_mint_collision_with_seen_provider_id_retries() -> None:
+    calls = (
+        LLMToolCall.from_openai_shape(call_id="toolcall-collision", name="a", arguments={}),
+        LLMToolCall.from_openai_shape(call_id="", name="b", arguments={}),
+    )
+    with patch(
+        "intergrax.llm_adapters.contracts.tool_call.mint_tool_call_id",
+        side_effect=["toolcall-collision", "toolcall-unique"],
+    ):
+        normalized = finalize_accepted_tool_call_identities(calls)
+    assert normalized[0].id == "toolcall-collision"
+    assert normalized[1].id == "toolcall-unique"
 
 
 def test_two_blank_calls_receive_distinct_ids() -> None:

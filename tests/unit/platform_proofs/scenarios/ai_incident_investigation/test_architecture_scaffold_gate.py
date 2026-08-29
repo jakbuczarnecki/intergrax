@@ -64,6 +64,12 @@ _FORBIDDEN_APPLICATION_MODULES = frozenset(
     }
 )
 
+_FORBIDDEN_TOOL_CALL_ID_REPAIR_SYMBOLS = frozenset(
+    {
+        "_IncidentToolCallIdAdapter",
+    }
+)
+
 _FORBIDDEN_NEXUS_PRIVATE_ATTRIBUTES = frozenset(
     {
         "_validation_engine",
@@ -96,6 +102,16 @@ def test_application_must_not_import_proof_or_forbidden_execution_symbols() -> N
     app_dir = _scenario_root() / "application"
     for path in sorted(app_dir.glob("*.py")):
         violations.extend(_collect_ast_violations(path, _FORBIDDEN_APPLICATION_SYMBOLS))
+    assert violations == []
+
+
+def test_application_must_not_define_tool_call_id_repair_wrapper() -> None:
+    violations: list[str] = []
+    app_dir = _scenario_root() / "application"
+    for path in sorted(app_dir.glob("*.py")):
+        violations.extend(
+            _collect_ast_violations(path, _FORBIDDEN_TOOL_CALL_ID_REPAIR_SYMBOLS)
+        )
     assert violations == []
 
 
