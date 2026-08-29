@@ -178,6 +178,9 @@ def test_host_composition_dashboard_diagnostics_ready_with_tenant_scope(
     assert diagnostics["ready"] is True
     assert diagnostics["problem_count"] == 2
     assert diagnostics["open_problem_count"] == 1
+    auditability = payload["dashboard"]["health"]["auditability"]
+    assert auditability["auditability_ready"] is True
+    assert auditability["diagnostics_attached"] is True
 
 
 def test_governed_contractor_factory_mounts_product_observability_dashboard(
@@ -226,6 +229,8 @@ def test_shared_problem_persistence_visible_after_lifecycle_reconcile(
     assert wiring.dashboard.diagnostics.ready is True
     assert wiring.dashboard.diagnostics.problem_count == 1
     assert wiring.dashboard.diagnostics.open_problem_count == 1
+    assert wiring.dashboard.health.auditability.auditability_ready is True
+    assert wiring.dashboard.health.auditability.diagnostics_attached is True
 
 
 def test_durable_problem_persistence_survives_adapter_restart(
