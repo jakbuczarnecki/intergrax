@@ -18,7 +18,13 @@ from intergrax.runtime.background_execution.identity_admission import (
     assert_payload_run_id_consistent,
 )
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
+from intergrax.runtime.execution.budget.persistence import (
+    RunBudgetPersistence,
+    create_durable_run_budget_ledger_factory,
+)
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task_run_bridge import (
     task_from_execution_request,
@@ -77,8 +83,22 @@ class NexusWorkerRuntime:
         *,
         checkpoint_store: Optional[TaskCheckpointPersistence] = None,
         lifecycle: Optional[WorkerRunLifecycle] = None,
+        run_budget: RunBudget | None = None,
+        run_budget_persistence: RunBudgetPersistence | None = None,
+        execution_budget_ledger_factory: ExecutionBudgetLedgerFactory | None = None,
     ) -> NexusWorkerRuntime:
-        loop = NexusLoop(registry, checkpoint_store=checkpoint_store)
+        resolved_factory = execution_budget_ledger_factory
+        if resolved_factory is None and run_budget_persistence is not None:
+            resolved_factory = create_durable_run_budget_ledger_factory(
+                run_budget_persistence,
+                run_budget,
+            )
+        loop = NexusLoop(
+            registry,
+            checkpoint_store=checkpoint_store,
+            run_budget=run_budget,
+            execution_budget_ledger_factory=resolved_factory,
+        )
         return cls(UnifiedTaskRunner(loop), lifecycle=lifecycle)
 
     @property

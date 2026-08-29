@@ -8,7 +8,16 @@ import threading
 from dataclasses import dataclass
 from typing import Protocol
 
-from intergrax.contracts.execution_identity import ExecutionId, validate_execution_id
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    validate_execution_id,
+)
+from intergrax.runtime.execution.budget.snapshot import (
+    PersistedBudgetRecord,
+    RunBudgetLedgerSnapshot,
+)
 from intergrax.runtime.execution.budget.models import (
     BudgetReservationScope,
     BudgetUsageTotals,
@@ -83,7 +92,14 @@ def create_execution_budget_ledger(run_budget: RunBudget | None) -> InMemoryExec
 class ExecutionBudgetLedgerFactory(Protocol):
     """Create one mutable ledger instance per Run lifecycle."""
 
-    def create_ledger(self, run_budget: RunBudget | None = None) -> ExecutionBudgetLedger:
+    def create_ledger(
+        self,
+        run_budget: RunBudget | None = None,
+        *,
+        tenant_id: str | None = None,
+        run_id: RunId | None = None,
+        attempt_id: AttemptId | None = None,
+    ) -> ExecutionBudgetLedger:
         """Return a fresh ledger for the active Run."""
 
 
@@ -93,7 +109,15 @@ class RunBudgetExecutionBudgetLedgerFactory:
 
     default_run_budget: RunBudget | None = None
 
-    def create_ledger(self, run_budget: RunBudget | None = None) -> ExecutionBudgetLedger:
+    def create_ledger(
+        self,
+        run_budget: RunBudget | None = None,
+        *,
+        tenant_id: str | None = None,
+        run_id: RunId | None = None,
+        attempt_id: AttemptId | None = None,
+    ) -> ExecutionBudgetLedger:
+        del tenant_id, run_id, attempt_id
         resolved = run_budget if run_budget is not None else self.default_run_budget
         return create_execution_budget_ledger(resolved)
 
@@ -111,8 +135,15 @@ class FixedExecutionBudgetLedgerFactory:
 
     ledger: ExecutionBudgetLedger
 
-    def create_ledger(self, run_budget: RunBudget | None = None) -> ExecutionBudgetLedger:
-        del run_budget
+    def create_ledger(
+        self,
+        run_budget: RunBudget | None = None,
+        *,
+        tenant_id: str | None = None,
+        run_id: RunId | None = None,
+        attempt_id: AttemptId | None = None,
+    ) -> ExecutionBudgetLedger:
+        del run_budget, tenant_id, run_id, attempt_id
         return self.ledger
 
 
@@ -289,6 +320,74 @@ class InMemoryExecutionBudgetLedger:
                 self._effective_remaining_for_record_unlocked(record),
                 record.reserved_scope,
             )
+
+    def export_snapshot(self, attempt_id: AttemptId) -> RunBudgetLedgerSnapshot:
+        with self._lock:
+            records = tuple(
+                PersistedBudgetRecord(
+                    execution_id=record.execution_id,
+                    parent_execution_id=record.parent_execution_id,
+                    mode=record.mode,
+                    allowance=record.allowance,
+                    reserved_scope=record.reserved_scope,
+                    consumed=record.consumed,
+                    child_reserved=record.child_reserved,
+                    released=record.released,
+                )
+                for record in self._records.values()
+            )
+            return RunBudgetLedgerSnapshot(
+                schema_version=1,
+                attempt_id=attempt_id,
+                root_limits=self._root_limits,
+                root_shared_consumed=self._root_shared_consumed,
+                root_permanent_consumed=self._root_permanent_consumed,
+                records=records,
+            )
+
+    def restore_snapshot(self, snapshot: RunBudgetLedgerSnapshot) -> None:
+        with self._lock:
+            self._root_limits = snapshot.root_limits
+            self._root_shared_consumed = snapshot.root_shared_consumed
+            self._root_permanent_consumed = snapshot.root_permanent_consumed
+            self._records = {
+                record.execution_id: _ReservationRecord(
+                    execution_id=record.execution_id,
+                    parent_execution_id=record.parent_execution_id,
+                    mode=record.mode,
+                    allowance=record.allowance,
+                    reserved_scope=record.reserved_scope,
+                    consumed=record.consumed,
+                    child_reserved=record.child_reserved,
+                    released=record.released,
+                )
+                for record in snapshot.records
+            }
+
+    def settle_unreleased_reservations(self) -> None:
+        """Commit consumed amounts and release unreleased reservation holds."""
+        with self._lock:
+            self._settle_unreleased_reservations_unlocked()
+
+    def prepare_for_attempt_redelivery(self) -> None:
+        """Finalize prior-attempt reservation state before a new Attempt starts."""
+        with self._lock:
+            self._settle_unreleased_reservations_unlocked()
+
+    def _settle_unreleased_reservations_unlocked(self) -> None:
+        for execution_id in list(self._records.keys()):
+            record = self._records[execution_id]
+            if record.released:
+                continue
+            if record.mode is ExecutionBudgetAllocationMode.RESERVED:
+                self._release_child_reservation_from_parent(
+                    record.parent_execution_id,
+                    record.allowance,
+                    record.reserved_scope,
+                )
+                self._commit_consumed_to_backing_unlocked(record)
+            record.released = True
+        self._records.clear()
 
     def _require_active_record_unlocked(self, execution_id: ExecutionId) -> _ReservationRecord:
         record = self._records.get(execution_id)

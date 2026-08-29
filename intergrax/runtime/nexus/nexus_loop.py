@@ -106,6 +106,7 @@ from intergrax.runtime.execution.active_execution_budget import (
     reset_active_execution_budget,
 )
 from intergrax.runtime.execution.budget import create_execution_budget_ledger_factory
+from intergrax.runtime.execution.budget.persistence import RunBudgetPersistenceError
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTriggerProtocol,
 )
@@ -116,7 +117,10 @@ if TYPE_CHECKING:
     from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
     from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
-    from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
+    from intergrax.runtime.execution.budget.ledger import (
+        ExecutionBudgetLedger,
+        ExecutionBudgetLedgerFactory,
+    )
     from intergrax.runtime.execution.budget.policy import ExecutionBudgetAllocationPolicy
 
 class NexusLoop:
@@ -422,6 +426,23 @@ class NexusLoop:
     def policy_engine(self) -> PolicyEngine:
         return self._policy_engine
 
+    def _create_run_ledger(
+        self,
+        task: Task,
+        *,
+        run_id: RunId,
+        attempt_id: AttemptId,
+    ) -> "ExecutionBudgetLedger":
+        try:
+            return self._execution_budget_ledger_factory.create_ledger(
+                self._run_budget,
+                tenant_id=task.tenant_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+            )
+        except RunBudgetPersistenceError as exc:
+            raise RuntimeError(f"run budget persistence failed: {exc}") from exc
+
     async def handle_task(
         self,
         task: Task,
@@ -466,8 +487,10 @@ class NexusLoop:
             else:
                 budget_token = bind_root_execution_budget(
                     execution_id=active_execution_id,
-                    ledger=self._execution_budget_ledger_factory.create_ledger(
-                        self._run_budget,
+                    ledger=self._create_run_ledger(
+                        task,
+                        run_id=resolved_run_id,
+                        attempt_id=resolved_attempt_id,
                     ),
                 )
             self._current_task = task
@@ -515,7 +538,11 @@ class NexusLoop:
         authority_token = bind_active_execution_authority(root_authority)
         budget_token = bind_root_execution_budget(
             execution_id=root_execution_id,
-            ledger=self._execution_budget_ledger_factory.create_ledger(self._run_budget),
+            ledger=self._create_run_ledger(
+                task,
+                run_id=resolved_run_id,
+                attempt_id=resolved_attempt_id,
+            ),
         )
         try:
             return await self._handle_task_impl(task)
