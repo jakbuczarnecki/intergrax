@@ -166,7 +166,7 @@ async def test_nexus_does_not_rebind_when_boundary_execution_id_active(
 
 
 @pytest.mark.asyncio
-async def test_direct_legacy_nexus_call_binds_run_attempt_without_execution_id(
+async def test_direct_legacy_nexus_call_binds_root_execution_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     registry = AgentRegistry()
@@ -178,7 +178,7 @@ async def test_direct_legacy_nexus_call_binds_run_attempt_without_execution_id(
         active_run_id, active_attempt_id = require_active_execution_identity()
         captured["run_id"] = active_run_id
         captured["attempt_id"] = active_attempt_id
-        captured["execution_id"] = peek_active_execution_id()
+        captured["execution_id"] = require_active_execution_id()
         return TaskResult(task_id=task.task_id, run_id=active_run_id, state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
@@ -187,8 +187,9 @@ async def test_direct_legacy_nexus_call_binds_run_attempt_without_execution_id(
 
     assert captured["run_id"] == run_id
     assert captured["attempt_id"] is not None
-    assert captured["execution_id"] is None
+    assert validate_execution_id(captured["execution_id"])
     assert peek_active_execution_identity() is None
+    assert peek_active_execution_id() is None
 
 
 @pytest.mark.asyncio

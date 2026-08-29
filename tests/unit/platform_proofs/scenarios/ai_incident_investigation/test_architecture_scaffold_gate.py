@@ -53,6 +53,7 @@ _FORBIDDEN_APPLICATION_SYMBOLS = frozenset(
         "NexusLoop",
         "mint_run_id",
         "mint_attempt_id",
+        "mint_execution_id",
         "bind_active_execution_identity",
         "reset_active_execution_identity",
     }

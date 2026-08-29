@@ -17,7 +17,9 @@ from intergrax.contracts.execution_identity import (
     RunId,
     bind_active_execution_identity,
     mint_attempt_id,
+    mint_execution_id,
     peek_active_execution_id,
+    peek_active_execution_identity,
     require_active_execution_identity,
     reset_active_execution_identity,
     validate_attempt_id,
@@ -439,12 +441,29 @@ class NexusLoop:
                 if authority_token is not None:
                     reset_active_execution_authority(authority_token)
 
-        # TRANSITIONAL — OWNER: UE-9D — Run/Attempt only; ExecutionId must enter via Boundary.
-        resolved_attempt_id = (
-            validate_attempt_id(attempt_id)
-            if attempt_id is not None
-            else mint_attempt_id()
-        )
+        existing_identity = peek_active_execution_identity()
+        if existing_identity is not None:
+            active_run_id, active_attempt_id = existing_identity
+            resolved_attempt_id = (
+                validate_attempt_id(attempt_id)
+                if attempt_id is not None
+                else active_attempt_id
+            )
+            if resolved_run_id != active_run_id:
+                raise RuntimeError(
+                    "active execution identity run_id mismatch with Nexus handle_task",
+                )
+            if resolved_attempt_id != active_attempt_id:
+                raise RuntimeError(
+                    "active execution identity attempt_id mismatch with Nexus handle_task",
+                )
+        else:
+            resolved_attempt_id = (
+                validate_attempt_id(attempt_id)
+                if attempt_id is not None
+                else mint_attempt_id()
+            )
+        root_execution_id = mint_execution_id()
         self._current_task = task
         root_authority = resolve_root_parent_execution_authority(
             task.execution_authority,
@@ -452,6 +471,7 @@ class NexusLoop:
         identity_token = bind_active_execution_identity(
             run_id=resolved_run_id,
             attempt_id=resolved_attempt_id,
+            execution_id=root_execution_id,
         )
         authority_token = bind_active_execution_authority(root_authority)
         try:
