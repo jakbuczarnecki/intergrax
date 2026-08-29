@@ -10,15 +10,16 @@ from typing import Protocol
 
 from intergrax.contracts.execution_identity import ExecutionId, validate_execution_id
 from intergrax.runtime.execution.budget.models import (
+    BudgetReservationScope,
     BudgetUsageTotals,
     ChildBudgetAllocationDecision,
     ExecutionBudgetAllocationMode,
     ExecutionBudgetError,
     ExecutionBudgetReservationError,
     ExecutionBudgetReservationGrant,
-    reservation_request_to_usage_totals,
+    parse_reservation_request,
+    reservation_remaining_to_run_budget,
     run_budget_to_usage_totals,
-    usage_totals_to_run_budget,
 )
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
@@ -33,6 +34,7 @@ class _ReservationRecord:
     parent_execution_id: ExecutionId
     mode: ExecutionBudgetAllocationMode
     allowance: BudgetUsageTotals
+    reserved_scope: BudgetReservationScope
     consumed: BudgetUsageTotals
     child_reserved: BudgetUsageTotals
     released: bool = False
@@ -151,6 +153,7 @@ class InMemoryExecutionBudgetLedger:
                     parent_execution_id=parent_execution_id,
                     mode=ExecutionBudgetAllocationMode.SHARED,
                     allowance=BudgetUsageTotals(),
+                    reserved_scope=BudgetReservationScope(),
                     consumed=BudgetUsageTotals(),
                     child_reserved=BudgetUsageTotals(),
                 )
@@ -166,16 +169,30 @@ class InMemoryExecutionBudgetLedger:
                 raise ExecutionBudgetReservationError(
                     "reserved allocation requires reservation_request"
                 )
-            requested = reservation_request_to_usage_totals(decision.reservation_request)
+            parsed = parse_reservation_request(decision.reservation_request)
+            if parsed.scope.is_empty:
+                raise ExecutionBudgetReservationError(
+                    "reserved allocation requires at least one explicit dimension"
+                )
+            requested = parsed.allowance
+            reserved_scope = parsed.scope
             self._validate_positive_request(requested)
-            backing_id = self._resolve_backing_execution_id_unlocked(parent_execution_id)
-            self._validate_reservation_fits_backing_unlocked(requested, backing_id)
-            self._apply_child_reservation_to_parent(parent_execution_id, requested)
+            self._validate_reservation_fits_backing_unlocked(
+                requested,
+                reserved_scope,
+                parent_execution_id,
+            )
+            self._apply_child_reservation_to_parent(
+                parent_execution_id,
+                requested,
+                reserved_scope,
+            )
             record = _ReservationRecord(
                 execution_id=execution_id,
                 parent_execution_id=parent_execution_id,
                 mode=ExecutionBudgetAllocationMode.RESERVED,
                 allowance=requested,
+                reserved_scope=reserved_scope,
                 consumed=BudgetUsageTotals(),
                 child_reserved=BudgetUsageTotals(),
             )
@@ -184,7 +201,10 @@ class InMemoryExecutionBudgetLedger:
                 execution_id=execution_id,
                 parent_execution_id=parent_execution_id,
                 mode=ExecutionBudgetAllocationMode.RESERVED,
-                reservation_allowance=usage_totals_to_run_budget(requested),
+                reservation_allowance=reservation_remaining_to_run_budget(
+                    requested,
+                    reserved_scope,
+                ),
             )
 
     def ensure_shared_participant(
@@ -201,6 +221,7 @@ class InMemoryExecutionBudgetLedger:
                 parent_execution_id=parent_execution_id,
                 mode=ExecutionBudgetAllocationMode.SHARED,
                 allowance=BudgetUsageTotals(),
+                reserved_scope=BudgetReservationScope(),
                 consumed=BudgetUsageTotals(),
                 child_reserved=BudgetUsageTotals(),
             )
@@ -221,6 +242,7 @@ class InMemoryExecutionBudgetLedger:
                 self._release_child_reservation_from_parent(
                     record.parent_execution_id,
                     record.allowance,
+                    record.reserved_scope,
                 )
                 self._commit_consumed_to_backing_unlocked(record)
             record.released = True
@@ -233,27 +255,28 @@ class InMemoryExecutionBudgetLedger:
         with self._lock:
             record = self._require_active_record_unlocked(execution_id)
             self._validate_positive_request(amounts)
-            remaining = self._effective_remaining_for_record_unlocked(record)
-            granted = self._granted_allowance_for_consumption_unlocked(record)
-            if granted is not None:
-                fits = self._reserved_consumption_fits(amounts, remaining, granted)
-            else:
-                fits = self._usage_fits(amounts, remaining)
-            if not fits:
+            own_reserved, ancestor_debits, root_shared = self._partition_consumption_unlocked(
+                record,
+                amounts,
+            )
+            if not self._partitioned_consumption_fits_unlocked(
+                record,
+                own_reserved,
+                ancestor_debits,
+                root_shared,
+            ):
                 raise ExecutionBudgetError(
                     f"consumption exceeds effective grant for execution {execution_id!r}"
                 )
-            record.consumed = record.consumed.add(amounts)
-            if record.mode is ExecutionBudgetAllocationMode.SHARED:
-                backing_id = self._resolve_backing_execution_id_unlocked(
-                    record.parent_execution_id
-                )
-                if backing_id is None:
-                    self._root_shared_consumed = self._root_shared_consumed.add(amounts)
-                else:
-                    backing_record = self._records.get(backing_id)
-                    if backing_record is not None:
-                        backing_record.consumed = backing_record.consumed.add(amounts)
+            if record.mode is ExecutionBudgetAllocationMode.RESERVED:
+                record.consumed = record.consumed.add(own_reserved)
+            else:
+                record.consumed = record.consumed.add(amounts)
+            for ancestor_id, ancestor_amounts in ancestor_debits.items():
+                ancestor_record = self._require_active_record_unlocked(ancestor_id)
+                ancestor_record.consumed = ancestor_record.consumed.add(ancestor_amounts)
+            if not self._is_zero_usage(root_shared):
+                self._root_shared_consumed = self._root_shared_consumed.add(root_shared)
 
     def snapshot_root_available(self) -> RunBudget:
         with self._lock:
@@ -262,8 +285,9 @@ class InMemoryExecutionBudgetLedger:
     def snapshot_reservation_remaining(self, execution_id: ExecutionId) -> RunBudget:
         with self._lock:
             record = self._require_active_record_unlocked(execution_id)
-            return usage_totals_to_run_budget(
-                self._effective_remaining_for_record_unlocked(record)
+            return reservation_remaining_to_run_budget(
+                self._effective_remaining_for_record_unlocked(record),
+                record.reserved_scope,
             )
 
     def _require_active_record_unlocked(self, execution_id: ExecutionId) -> _ReservationRecord:
@@ -353,19 +377,11 @@ class InMemoryExecutionBudgetLedger:
                 continue
             if self._resolve_backing_execution_id_unlocked(record.parent_execution_id) is not None:
                 continue
-            totals = totals.add(
-                record.allowance.subtract(record.consumed).subtract(record.child_reserved)
+            remaining = record.allowance.subtract(record.consumed).subtract(
+                record.child_reserved
             )
+            totals = totals.add(record.reserved_scope.select(remaining))
         return totals
-
-    def _available_at_backing_unlocked(
-        self,
-        backing_id: ExecutionId | None,
-    ) -> BudgetUsageTotals:
-        if backing_id is None:
-            return run_budget_to_usage_totals(self._available_at_root_pool_unlocked())
-        record = self._require_active_record_unlocked(backing_id)
-        return self._effective_remaining_for_record_unlocked(record)
 
     def _effective_remaining_for_record_unlocked(
         self,
@@ -373,16 +389,63 @@ class InMemoryExecutionBudgetLedger:
     ) -> BudgetUsageTotals:
         if record.mode is ExecutionBudgetAllocationMode.RESERVED:
             return record.allowance.subtract(record.consumed).subtract(record.child_reserved)
-        backing_id = self._resolve_backing_execution_id_unlocked(record.parent_execution_id)
-        return self._available_at_backing_unlocked(backing_id)
+        return self._shared_pool_available_unlocked(record)
+
+    def _shared_pool_available_unlocked(
+        self,
+        record: _ReservationRecord,
+    ) -> BudgetUsageTotals:
+        available = run_budget_to_usage_totals(self._available_at_root_pool_unlocked())
+        current_parent = record.parent_execution_id
+        while True:
+            parent_record = self._records.get(current_parent)
+            if parent_record is None or parent_record.released:
+                break
+            if parent_record.mode is ExecutionBudgetAllocationMode.RESERVED:
+                parent_remaining = parent_record.allowance.subtract(
+                    parent_record.consumed
+                ).subtract(parent_record.child_reserved)
+                available = self._overlay_scoped_dimensions(
+                    available,
+                    parent_remaining,
+                    parent_record.reserved_scope,
+                )
+            current_parent = parent_record.parent_execution_id
+        return available
+
+    def _available_for_new_reservation_unlocked(
+        self,
+        parent_execution_id: ExecutionId,
+        scope: BudgetReservationScope,
+    ) -> BudgetUsageTotals:
+        root_available = run_budget_to_usage_totals(self._available_at_root_pool_unlocked())
+        available = root_available
+        current_parent = parent_execution_id
+        while True:
+            parent_record = self._records.get(current_parent)
+            if parent_record is None or parent_record.released:
+                break
+            if parent_record.mode is ExecutionBudgetAllocationMode.RESERVED:
+                parent_remaining = parent_record.allowance.subtract(
+                    parent_record.consumed
+                ).subtract(parent_record.child_reserved)
+                available = self._overlay_scoped_dimensions(
+                    available,
+                    parent_remaining,
+                    parent_record.reserved_scope,
+                )
+            current_parent = parent_record.parent_execution_id
+        return scope.select(available)
 
     def _validate_reservation_fits_backing_unlocked(
         self,
         requested: BudgetUsageTotals,
-        backing_id: ExecutionId | None,
+        scope: BudgetReservationScope,
+        parent_execution_id: ExecutionId,
     ) -> None:
-        available = self._available_at_backing_unlocked(backing_id)
-        if not self._usage_fits(requested, available):
+        available = self._available_for_new_reservation_unlocked(parent_execution_id, scope)
+        scoped_requested = scope.select(requested)
+        if not self._usage_fits(scoped_requested, available):
             raise ExecutionBudgetReservationError(
                 "reservation exceeds available budget at backing level"
             )
@@ -391,11 +454,14 @@ class InMemoryExecutionBudgetLedger:
         self,
         parent_execution_id: ExecutionId,
         requested: BudgetUsageTotals,
+        scope: BudgetReservationScope,
     ) -> None:
         parent_record = self._records.get(parent_execution_id)
         if parent_record is None:
             return
-        parent_record.child_reserved = parent_record.child_reserved.add(requested)
+        parent_record.child_reserved = parent_record.child_reserved.add(
+            scope.select(requested)
+        )
 
     def _commit_consumed_to_backing_unlocked(self, record: _ReservationRecord) -> None:
         backing_id = self._resolve_backing_execution_id_unlocked(record.parent_execution_id)
@@ -412,11 +478,123 @@ class InMemoryExecutionBudgetLedger:
         self,
         parent_execution_id: ExecutionId,
         released_allowance: BudgetUsageTotals,
+        scope: BudgetReservationScope,
     ) -> None:
         parent_record = self._records.get(parent_execution_id)
         if parent_record is None:
             return
-        parent_record.child_reserved = parent_record.child_reserved.subtract(released_allowance)
+        parent_record.child_reserved = parent_record.child_reserved.subtract(
+            scope.select(released_allowance)
+        )
+
+    def _partition_consumption_unlocked(
+        self,
+        record: _ReservationRecord,
+        amounts: BudgetUsageTotals,
+    ) -> tuple[BudgetUsageTotals, dict[ExecutionId, BudgetUsageTotals], BudgetUsageTotals]:
+        own_reserved = BudgetUsageTotals()
+        if record.mode is ExecutionBudgetAllocationMode.RESERVED:
+            own_reserved = record.reserved_scope.select(amounts)
+            pending = record.reserved_scope.complement_select(amounts)
+        else:
+            pending = amounts
+
+        ancestor_debits: dict[ExecutionId, BudgetUsageTotals] = {}
+        root_shared = BudgetUsageTotals()
+        current_parent = record.parent_execution_id
+
+        while not self._is_zero_usage(pending):
+            ancestor_id = self._find_reserved_ancestor_unlocked(current_parent)
+            if ancestor_id is None:
+                root_shared = root_shared.add(pending)
+                break
+            ancestor_record = self._records[ancestor_id]
+            scoped = ancestor_record.reserved_scope.select(pending)
+            pending = ancestor_record.reserved_scope.complement_select(pending)
+            if not self._is_zero_usage(scoped):
+                existing = ancestor_debits.get(ancestor_id)
+                ancestor_debits[ancestor_id] = (
+                    scoped if existing is None else existing.add(scoped)
+                )
+            current_parent = ancestor_record.parent_execution_id
+
+        return own_reserved, ancestor_debits, root_shared
+
+    def _partitioned_consumption_fits_unlocked(
+        self,
+        record: _ReservationRecord,
+        own_reserved: BudgetUsageTotals,
+        ancestor_debits: dict[ExecutionId, BudgetUsageTotals],
+        root_shared: BudgetUsageTotals,
+    ) -> bool:
+        if record.mode is ExecutionBudgetAllocationMode.RESERVED:
+            remaining = self._effective_remaining_for_record_unlocked(record)
+            if not self._usage_fits(own_reserved, remaining):
+                return False
+        for ancestor_id, ancestor_amounts in ancestor_debits.items():
+            ancestor_record = self._require_active_record_unlocked(ancestor_id)
+            remaining = self._effective_remaining_for_record_unlocked(ancestor_record)
+            scoped_amounts = ancestor_record.reserved_scope.select(ancestor_amounts)
+            if not self._usage_fits(scoped_amounts, remaining):
+                return False
+        if not self._is_zero_usage(root_shared):
+            root_available = run_budget_to_usage_totals(self._available_at_root_pool_unlocked())
+            if not self._usage_fits(root_shared, root_available):
+                return False
+        return True
+
+    def _find_reserved_ancestor_unlocked(
+        self,
+        parent_execution_id: ExecutionId,
+    ) -> ExecutionId | None:
+        current_parent = parent_execution_id
+        while True:
+            parent_record = self._records.get(current_parent)
+            if parent_record is None or parent_record.released:
+                return None
+            if parent_record.mode is ExecutionBudgetAllocationMode.RESERVED:
+                return current_parent
+            current_parent = parent_record.parent_execution_id
+
+    @staticmethod
+    def _overlay_scoped_dimensions(
+        base: BudgetUsageTotals,
+        overlay: BudgetUsageTotals,
+        scope: BudgetReservationScope,
+    ) -> BudgetUsageTotals:
+        return BudgetUsageTotals(
+            input_tokens=overlay.input_tokens if scope.input_tokens else base.input_tokens,
+            output_tokens=overlay.output_tokens if scope.output_tokens else base.output_tokens,
+            total_tokens=overlay.total_tokens if scope.total_tokens else base.total_tokens,
+            llm_calls=overlay.llm_calls if scope.llm_calls else base.llm_calls,
+            tool_calls=overlay.tool_calls if scope.tool_calls else base.tool_calls,
+            rag_invocations=overlay.rag_invocations if scope.rag_invocations else base.rag_invocations,
+            websearch_invocations=overlay.websearch_invocations
+            if scope.websearch_invocations
+            else base.websearch_invocations,
+            wall_time_seconds=overlay.wall_time_seconds
+            if scope.wall_time_seconds
+            else base.wall_time_seconds,
+            planner_iterations=overlay.planner_iterations
+            if scope.planner_iterations
+            else base.planner_iterations,
+            replans=overlay.replans if scope.replans else base.replans,
+        )
+
+    @staticmethod
+    def _is_zero_usage(amounts: BudgetUsageTotals) -> bool:
+        return (
+            amounts.input_tokens == 0
+            and amounts.output_tokens == 0
+            and amounts.total_tokens == 0
+            and amounts.llm_calls == 0
+            and amounts.tool_calls == 0
+            and amounts.rag_invocations == 0
+            and amounts.websearch_invocations == 0
+            and amounts.wall_time_seconds == 0.0
+            and amounts.planner_iterations == 0
+            and amounts.replans == 0
+        )
 
     @staticmethod
     def _validate_positive_request(amounts: BudgetUsageTotals) -> None:
@@ -433,135 +611,6 @@ class InMemoryExecutionBudgetLedger:
             or amounts.replans < 0
         ):
             raise ExecutionBudgetError("budget amounts must be non-negative")
-
-    def _granted_allowance_for_consumption_unlocked(
-        self,
-        record: _ReservationRecord,
-    ) -> BudgetUsageTotals | None:
-        if record.mode is ExecutionBudgetAllocationMode.RESERVED:
-            return record.allowance
-        backing_id = self._resolve_backing_execution_id_unlocked(record.parent_execution_id)
-        if backing_id is None:
-            return None
-        backing_record = self._records.get(backing_id)
-        if backing_record is None:
-            return None
-        if backing_record.mode is not ExecutionBudgetAllocationMode.RESERVED:
-            return None
-        return backing_record.allowance
-
-    @staticmethod
-    def _reserved_consumption_fits(
-        consumed: BudgetUsageTotals,
-        remaining: BudgetUsageTotals,
-        granted: BudgetUsageTotals,
-    ) -> bool:
-        if not InMemoryExecutionBudgetLedger._scalar_consumption_fits(
-            consumed.llm_calls,
-            remaining.llm_calls,
-            granted.llm_calls,
-        ):
-            return False
-        if not InMemoryExecutionBudgetLedger._scalar_consumption_fits(
-            consumed.tool_calls,
-            remaining.tool_calls,
-            granted.tool_calls,
-        ):
-            return False
-        if not InMemoryExecutionBudgetLedger._scalar_consumption_fits(
-            consumed.rag_invocations,
-            remaining.rag_invocations,
-            granted.rag_invocations,
-        ):
-            return False
-        if not InMemoryExecutionBudgetLedger._scalar_consumption_fits(
-            consumed.websearch_invocations,
-            remaining.websearch_invocations,
-            granted.websearch_invocations,
-        ):
-            return False
-        if not InMemoryExecutionBudgetLedger._scalar_consumption_fits(
-            consumed.planner_iterations,
-            remaining.planner_iterations,
-            granted.planner_iterations,
-        ):
-            return False
-        if not InMemoryExecutionBudgetLedger._scalar_consumption_fits(
-            consumed.replans,
-            remaining.replans,
-            granted.replans,
-        ):
-            return False
-        if not InMemoryExecutionBudgetLedger._float_consumption_fits(
-            consumed.wall_time_seconds,
-            remaining.wall_time_seconds,
-            granted.wall_time_seconds,
-        ):
-            return False
-        return InMemoryExecutionBudgetLedger._token_consumption_fits(
-            consumed,
-            remaining,
-            granted,
-        )
-
-    @staticmethod
-    def _scalar_consumption_fits(
-        consumed: int,
-        remaining: int,
-        granted: int,
-    ) -> bool:
-        if granted == 0:
-            return consumed == 0
-        return consumed <= remaining
-
-    @staticmethod
-    def _float_consumption_fits(
-        consumed: float,
-        remaining: float,
-        granted: float,
-    ) -> bool:
-        if granted == 0.0:
-            return consumed == 0.0
-        return consumed <= remaining
-
-    @staticmethod
-    def _token_consumption_fits(
-        consumed: BudgetUsageTotals,
-        remaining: BudgetUsageTotals,
-        granted: BudgetUsageTotals,
-    ) -> bool:
-        if granted.total_tokens > 0:
-            if consumed.total_tokens > remaining.total_tokens:
-                return False
-            if granted.input_tokens > 0 and consumed.input_tokens > remaining.input_tokens:
-                return False
-            if granted.output_tokens > 0 and consumed.output_tokens > remaining.output_tokens:
-                return False
-            return True
-        if (
-            consumed.total_tokens > 0
-            or consumed.input_tokens > 0
-            or consumed.output_tokens > 0
-        ):
-            if granted.input_tokens == 0 and granted.output_tokens == 0:
-                return False
-        if not InMemoryExecutionBudgetLedger._scalar_consumption_fits(
-            consumed.input_tokens,
-            remaining.input_tokens,
-            granted.input_tokens,
-        ):
-            return False
-        if not InMemoryExecutionBudgetLedger._scalar_consumption_fits(
-            consumed.output_tokens,
-            remaining.output_tokens,
-            granted.output_tokens,
-        ):
-            return False
-        return InMemoryExecutionBudgetLedger._scalar_consumption_fits(
-            consumed.total_tokens,
-            remaining.total_tokens,
-            granted.total_tokens,
-        )
 
     @staticmethod
     def _usage_fits(requested: BudgetUsageTotals, available: BudgetUsageTotals) -> bool:
