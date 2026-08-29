@@ -109,6 +109,8 @@ if TYPE_CHECKING:
     from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
     from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
+    from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedger
+    from intergrax.runtime.execution.budget.policy import ExecutionBudgetAllocationPolicy
 
 class NexusLoop:
     """
@@ -166,6 +168,8 @@ class NexusLoop:
         governance_service: Any = None,
         terminal_diagnostic_trigger: TerminalExecutionDiagnosticTriggerProtocol | None = None,
         authority_policy: "ExecutionAuthorityPolicy | None" = None,
+        budget_allocation_policy: "ExecutionBudgetAllocationPolicy | None" = None,
+        execution_budget_ledger: "ExecutionBudgetLedger | None" = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -266,6 +270,8 @@ class NexusLoop:
             declarative_tool_invoker=declarative_tool_invoker,
             execution_identity=self._execution_identity,
             authority_policy=authority_policy,
+            budget_allocation_policy=budget_allocation_policy,
+            execution_budget_ledger=execution_budget_ledger,
         )
         self._composer = FinalResponseComposer(merge_strategy=merge_strategy)
         self._lifecycle = lifecycle

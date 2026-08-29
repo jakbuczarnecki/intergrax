@@ -31,7 +31,11 @@ from intergrax.contracts.execution_identity import (
     validate_execution_id,
 )
 from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
+from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.execution.child import ChildExecutionRunner
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
+
+_UNLIMITED_LEDGER = create_execution_budget_ledger(RunBudget())
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
@@ -192,7 +196,7 @@ async def test_child_execution_parent_execution_id_points_to_root(
 
     root_execution_id = mint_execution_id()
     child_captured: dict[str, ExecutionId | None] = {}
-    child_runner = ChildExecutionRunner[Ping, Pong]()
+    child_runner = ChildExecutionRunner[Ping, Pong](ledger=_UNLIMITED_LEDGER)
 
     class ChildDelegate:
         async def execute(self, request: Ping) -> Pong:

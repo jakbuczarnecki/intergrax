@@ -27,7 +27,11 @@ from intergrax.runtime.execution.boundary import (
     ExecutionBoundary,
     ExecutionIdentityBinding,
 )
+from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.execution.child import ChildExecutionRunner
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
+
+_UNLIMITED_LEDGER = create_execution_budget_ledger(RunBudget())
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -72,7 +76,7 @@ def _root_authority() -> ParentExecutionAuthority:
 async def test_child_preserves_run_attempt_mints_new_execution_id() -> None:
     root = _root_identity()
     child_captured: dict[str, RunId | AttemptId | ExecutionId | None] = {}
-    child_runner = ChildExecutionRunner[Ping, Pong]()
+    child_runner = ChildExecutionRunner[Ping, Pong](ledger=_UNLIMITED_LEDGER)
 
     class RootDelegate:
         async def execute(self, request: Ping) -> Pong:
@@ -100,7 +104,7 @@ async def test_child_preserves_run_attempt_mints_new_execution_id() -> None:
 @pytest.mark.asyncio
 async def test_child_restores_parent_execution_after_success() -> None:
     root = _root_identity()
-    child_runner = ChildExecutionRunner[Ping, Pong]()
+    child_runner = ChildExecutionRunner[Ping, Pong](ledger=_UNLIMITED_LEDGER)
     parent_seen: list[ExecutionId] = []
 
     class RootDelegate:
@@ -127,7 +131,7 @@ async def test_child_restores_parent_execution_after_success() -> None:
 @pytest.mark.asyncio
 async def test_nested_child_execution_lineage() -> None:
     root = _root_identity()
-    child_runner = ChildExecutionRunner[Ping, Pong]()
+    child_runner = ChildExecutionRunner[Ping, Pong](ledger=_UNLIMITED_LEDGER)
     identities: list[
         tuple[ExecutionId, ExecutionId | None, RunId, AttemptId]
     ] = []
@@ -196,7 +200,7 @@ async def test_nested_child_execution_lineage() -> None:
 @pytest.mark.asyncio
 async def test_parallel_children_isolate_execution_ids() -> None:
     root = _root_identity()
-    child_runner = ChildExecutionRunner[Ping, Pong]()
+    child_runner = ChildExecutionRunner[Ping, Pong](ledger=_UNLIMITED_LEDGER)
     child_records: list[tuple[ExecutionId, ExecutionId | None, RunId, AttemptId]] = []
     lock = asyncio.Lock()
 
@@ -252,7 +256,7 @@ async def test_parallel_children_isolate_execution_ids() -> None:
 @pytest.mark.asyncio
 async def test_child_exception_propagates_and_restores_parent() -> None:
     root = _root_identity()
-    child_runner = ChildExecutionRunner[Ping, Pong]()
+    child_runner = ChildExecutionRunner[Ping, Pong](ledger=_UNLIMITED_LEDGER)
 
     class FailingChildDelegate:
         async def execute(self, request: Ping) -> Pong:
@@ -281,7 +285,7 @@ async def test_child_exception_propagates_and_restores_parent() -> None:
 
 @pytest.mark.asyncio
 async def test_child_runner_fails_without_active_execution() -> None:
-    child_runner = ChildExecutionRunner[Ping, Pong]()
+    child_runner = ChildExecutionRunner[Ping, Pong](ledger=_UNLIMITED_LEDGER)
 
     with pytest.raises(RuntimeError, match="active execution identity required"):
         await child_runner.execute(
@@ -295,7 +299,7 @@ async def test_child_runner_fails_without_active_execution_id() -> None:
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
-    child_runner = ChildExecutionRunner[Ping, Pong]()
+    child_runner = ChildExecutionRunner[Ping, Pong](ledger=_UNLIMITED_LEDGER)
 
     try:
         with pytest.raises(RuntimeError, match="active ExecutionId required"):
@@ -310,7 +314,7 @@ async def test_child_runner_fails_without_active_execution_id() -> None:
 @pytest.mark.asyncio
 async def test_child_admission_hook_sees_child_identity() -> None:
     root = _root_identity()
-    child_runner = ChildExecutionRunner[Ping, Pong]()
+    child_runner = ChildExecutionRunner[Ping, Pong](ledger=_UNLIMITED_LEDGER)
     admission_captured: dict[str, RunId | AttemptId | ExecutionId | None] = {}
 
     class AdmissionHook:

@@ -27,7 +27,11 @@ from intergrax.runtime.execution.boundary import (
     ExecutionBoundary,
     ExecutionIdentityBinding,
 )
+from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.execution.child import ChildExecutionRunner
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
+
+_UNLIMITED_LEDGER = create_execution_budget_ledger(RunBudget())
 from intergrax.runtime.governance.active_execution_authority import (
     peek_active_effective_delegation,
     require_active_execution_authority,
@@ -75,6 +79,7 @@ async def test_child_runner_uses_injected_custom_policy() -> None:
     root = _root_identity()
     child_runner = ChildExecutionRunner[Ping, Pong](
         authority_policy=_CustomAuthorityPolicy(),
+        ledger=_UNLIMITED_LEDGER,
     )
     captured: list[ParentExecutionAuthority] = []
 
@@ -102,7 +107,7 @@ async def test_child_runner_uses_injected_custom_policy() -> None:
 @pytest.mark.asyncio
 async def test_default_policy_narrows_parent_authority() -> None:
     root = _root_identity()
-    child_runner = ChildExecutionRunner[Ping, Pong]()
+    child_runner = ChildExecutionRunner[Ping, Pong](ledger=_UNLIMITED_LEDGER)
     captured: list[ParentExecutionAuthority] = []
 
     class ChildDelegate:
@@ -130,7 +135,7 @@ async def test_default_policy_narrows_parent_authority() -> None:
 @pytest.mark.asyncio
 async def test_default_policy_normal_child_inherits_parent_unchanged() -> None:
     root = _root_identity()
-    child_runner = ChildExecutionRunner[Ping, Pong]()
+    child_runner = ChildExecutionRunner[Ping, Pong](ledger=_UNLIMITED_LEDGER)
     captured: list[ParentExecutionAuthority] = []
     evidence: list[EffectiveDelegationAuthority | None] = []
 
@@ -160,7 +165,7 @@ async def test_default_policy_normal_child_inherits_parent_unchanged() -> None:
 @pytest.mark.asyncio
 async def test_default_policy_nested_child_overreach_denied() -> None:
     root = _root_identity()
-    child_runner = ChildExecutionRunner[Ping, Pong]()
+    child_runner = ChildExecutionRunner[Ping, Pong](ledger=_UNLIMITED_LEDGER)
 
     class GrandchildDelegate:
         async def execute(self, request: Ping) -> Pong:

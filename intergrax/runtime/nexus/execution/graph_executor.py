@@ -89,6 +89,7 @@ from intergrax.runtime.nexus.validation.validation_engine import NexusValidation
 from intergrax.runtime.execution.agentic import AgentExecutor
 from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task_memory.delegation_memory import TaskMemoryMetadataKey
@@ -98,6 +99,8 @@ if TYPE_CHECKING:
     from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
     from intergrax.runtime.critic.trace import CriticTraceEmitter
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
+    from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedger
+    from intergrax.runtime.execution.budget.policy import ExecutionBudgetAllocationPolicy
     from intergrax.runtime.nexus.config import RuntimeConfig
 
 ExecuteFn = Callable[[Agent, Task, ExecutionNode], Awaitable[AgentExecutionResult]]
@@ -181,6 +184,8 @@ class GraphExecutor:
         runtime_config: Optional["RuntimeConfig"] = None,
         execution_identity: ActiveExecutionIdentity | None = None,
         authority_policy: ExecutionAuthorityPolicy | None = None,
+        budget_allocation_policy: ExecutionBudgetAllocationPolicy | None = None,
+        execution_budget_ledger: ExecutionBudgetLedger | None = None,
     ) -> None:
         del execution_identity
         self._registry = registry
@@ -209,7 +214,11 @@ class GraphExecutor:
         self._child_runner = ChildExecutionRunner[
             _GraphNodeChildRequest,
             _GraphNodeChildResult,
-        ](authority_policy=authority_policy)
+        ](
+            authority_policy=authority_policy,
+            budget_policy=budget_allocation_policy,
+            ledger=execution_budget_ledger,
+        )
         self._graph_node_child_delegate = _GraphNodeChildDelegate(self)
         self._agent_executor = AgentExecutor(self._engine)
 
@@ -652,13 +661,23 @@ class GraphExecutor:
             node_task=node_task,
         )
         requested_permission_scopes: tuple[str, ...] | None = None
+        requested_budget: RunBudget | None = None
         if node.delegation is not None:
             requested_permission_scopes = node.delegation.permission_scopes
+            if (
+                node.delegation.max_llm_calls is not None
+                or node.delegation.max_tool_calls is not None
+            ):
+                requested_budget = RunBudget(
+                    max_llm_calls=node.delegation.max_llm_calls,
+                    max_tool_calls=node.delegation.max_tool_calls,
+                )
         try:
             child_result = await self._child_runner.execute(
                 request=child_request,
                 delegate=self._graph_node_child_delegate,
                 requested_permission_scopes=requested_permission_scopes,
+                requested_budget=requested_budget,
             )
         except DelegationAuthorityError as exc:
             failed = AgentExecutionResult(
