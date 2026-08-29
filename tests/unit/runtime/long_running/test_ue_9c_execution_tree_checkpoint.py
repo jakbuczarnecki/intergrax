@@ -12,10 +12,12 @@ from pydantic import ValidationError
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
     mint_attempt_id,
     mint_execution_id,
     mint_run_id,
     mint_task_id,
+    reset_active_execution_identity,
 )
 from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_graph,
@@ -31,6 +33,8 @@ from intergrax.runtime.long_running.execution_tree_checkpoint import (
     ExecutionTreeRecorder,
     ExecutionTreeSnapshot,
     build_execution_tree_resume_plan,
+    minimal_execution_tree_snapshot,
+    minimal_runtime_checkpoint,
 )
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
@@ -428,3 +432,124 @@ def test_recorder_sync_updates_task_runtime_checkpoint() -> None:
     sync_execution_tree_to_task(task, recorder)
     assert task.runtime.orchestration.runtime_checkpoint is not None
     assert task.runtime.orchestration.runtime_checkpoint.execution_tree.entry_by_graph_node_id("n1") is not None
+
+
+def test_build_runtime_checkpoint_uses_active_execution_id() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    root = mint_execution_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=root,
+    )
+    try:
+        task = Task(tenant_id="t1", user_id="u1", agent_id="a1", task_id=task_id)
+        runtime = build_runtime_checkpoint(
+            task,
+            run_id=run_id,
+            attempt_id=attempt_id,
+        )
+    finally:
+        reset_active_execution_identity(token)
+    assert runtime.execution_tree.entries[0].execution_id == root
+
+
+def test_build_runtime_checkpoint_fail_closed_without_active_execution() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    task = Task(tenant_id="t1", user_id="u1", agent_id="a1", task_id=task_id)
+    with pytest.raises(RuntimeError, match="active ExecutionId required"):
+        build_runtime_checkpoint(
+            task,
+            run_id=run_id,
+            attempt_id=attempt_id,
+        )
+
+
+def test_build_runtime_checkpoint_existing_tree_without_active_execution() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    root = mint_execution_id()
+    existing_tree = _tree(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        entries=[_entry(root, status=ExecutionCheckpointStatus.RUNNING)],
+    )
+    task = Task(tenant_id="t1", user_id="u1", agent_id="a1", task_id=task_id)
+    runtime = build_runtime_checkpoint(
+        task,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_tree=existing_tree,
+    )
+    assert runtime.execution_tree.entries[0].execution_id == root
+
+
+def test_minimal_execution_tree_snapshot_requires_root_execution_id() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    root = mint_execution_id()
+    tree = minimal_execution_tree_snapshot(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        root_execution_id=root,
+    )
+    assert tree.entries[0].execution_id == root
+
+
+def test_minimal_runtime_checkpoint_requires_root_execution_id() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    root = mint_execution_id()
+    runtime = minimal_runtime_checkpoint(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        root_execution_id=root,
+    )
+    assert runtime.execution_tree.entries[0].execution_id == root
+
+
+def test_execution_tree_recorder_start_root_does_not_mint() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    root = mint_execution_id()
+    recorder = ExecutionTreeRecorder.start_root(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        root_execution_id=root,
+    )
+    assert recorder.snapshot.entries[0].execution_id == root
+
+
+def test_resume_child_links_resumed_from_when_lifecycle_supplies_ids() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_a2 = mint_attempt_id()
+    root_e6 = mint_execution_id()
+    interrupted_e4 = mint_execution_id()
+    recorder = ExecutionTreeRecorder.start_root(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_a2,
+        root_execution_id=root_e6,
+    )
+    recorder.record_child_started(
+        execution_id=mint_execution_id(),
+        parent_execution_id=root_e6,
+        graph_node_id="n3",
+        resumed_from_execution_id=interrupted_e4,
+    )
+    entry = recorder.snapshot.entry_by_graph_node_id("n3")
+    assert entry is not None
+    assert entry.resumed_from_execution_id == interrupted_e4

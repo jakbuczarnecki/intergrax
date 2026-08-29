@@ -252,6 +252,7 @@ async def test_debug_service_submits_exact_pause_request_identity() -> None:
             task_id=mint_task_id(),
             run_id=RUN_ID,
             attempt_id=mint_attempt_id(),
+            root_execution_id=mint_execution_id(),
         ),
     )
     store = MagicMock()

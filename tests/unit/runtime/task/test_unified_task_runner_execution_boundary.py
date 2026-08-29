@@ -13,6 +13,7 @@ from intergrax.contracts.execution_identity import (
     ExecutionId,
     RunId,
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
     validate_attempt_id,
@@ -120,6 +121,7 @@ async def test_run_task_resume_checkpoint_identity_reaches_nexus() -> None:
             task_id=task.task_id,
             run_id=run_id,
             attempt_id=attempt_id,
+            root_execution_id=mint_execution_id(),
         ),
     )
 
@@ -148,6 +150,7 @@ async def test_run_task_checkpoint_run_id_conflict_unchanged() -> None:
             task_id=task.task_id,
             run_id=run_id,
             attempt_id=attempt_id,
+            root_execution_id=mint_execution_id(),
         ),
     )
 
@@ -173,6 +176,7 @@ async def test_run_task_checkpoint_redelivery_allows_new_attempt() -> None:
             task_id=task.task_id,
             run_id=run_id,
             attempt_id=attempt_id,
+            root_execution_id=mint_execution_id(),
         ),
     )
 

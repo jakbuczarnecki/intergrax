@@ -14,8 +14,6 @@ from intergrax.contracts.execution_identity import (
     ExecutionId,
     RunId,
     TaskId,
-    mint_attempt_id,
-    mint_execution_id,
     validate_attempt_id,
     validate_execution_id,
     validate_run_id,
@@ -292,16 +290,15 @@ def minimal_execution_tree_snapshot(
     task_id: TaskId,
     run_id: RunId,
     attempt_id: AttemptId,
-    root_execution_id: ExecutionId | None = None,
+    root_execution_id: ExecutionId,
 ) -> ExecutionTreeSnapshot:
-    root = root_execution_id or mint_execution_id()
     return ExecutionTreeSnapshot(
         task_id=task_id,
         run_id=run_id,
         attempt_id=attempt_id,
         entries=[
             ExecutionCheckpointEntry(
-                execution_id=root,
+                execution_id=root_execution_id,
                 parent_execution_id=None,
                 status=ExecutionCheckpointStatus.RUNNING,
             )
@@ -314,7 +311,7 @@ def minimal_runtime_checkpoint(
     task_id: TaskId,
     run_id: RunId,
     attempt_id: AttemptId,
-    root_execution_id: ExecutionId | None = None,
+    root_execution_id: ExecutionId,
 ) -> "RuntimeCheckpoint":
     from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 

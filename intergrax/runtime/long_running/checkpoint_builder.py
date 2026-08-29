@@ -14,8 +14,7 @@ from intergrax.contracts.execution_identity import (
     ExecutionId,
     RunId,
     TaskId,
-    mint_execution_id,
-    peek_active_execution_id,
+    require_active_execution_id,
     validate_task_id,
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
@@ -115,7 +114,7 @@ def build_runtime_checkpoint(
     if resolved_tree is None and from_task is not None:
         resolved_tree = from_task.execution_tree
     if resolved_tree is None:
-        root_execution_id = peek_active_execution_id() or mint_execution_id()
+        root_execution_id = require_active_execution_id()
         resolved_tree = ExecutionTreeRecorder.start_root(
             task_id=task_id,
             run_id=run_id,

@@ -18,7 +18,13 @@ from intergrax.applications.contracts.environment_profile import (
     OrchestrationProfile,
     ReliabilityProfile,
 )
-from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    reset_active_execution_identity,
+)
 from intergrax.integrations.providers.relational_store.sqlite import (
     create_sqlite_task_checkpoint_store,
 )
@@ -103,6 +109,31 @@ def _long_running_task(*, resume_token: str | None = None) -> Task:
     )
 
 
+def _persist_checkpoint_with_active_identity(
+    task: Task,
+    store: TaskCheckpointPersistence,
+    *,
+    progress_message: str = "",
+) -> TaskCheckpoint:
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=mint_execution_id(),
+    )
+    try:
+        return LongRunningCoordinator.persist_checkpoint(
+            task,
+            store,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            progress_message=progress_message,
+        )
+    finally:
+        reset_active_execution_identity(token)
+
+
 def test_a1_nexus_accepts_fake_checkpoint_port() -> None:
     fake = _FakeCheckpointStore()
     loop = NexusLoop(AgentRegistry(), checkpoint_store=fake)
@@ -112,11 +143,9 @@ def test_a1_nexus_accepts_fake_checkpoint_port() -> None:
 def test_a2_coordinator_persist_uses_fake_port(tmp_path: Path) -> None:
     fake = _FakeCheckpointStore()
     task = _long_running_task()
-    checkpoint = LongRunningCoordinator.persist_checkpoint(
+    checkpoint = _persist_checkpoint_with_active_identity(
         task,
         fake,
-        run_id=mint_run_id(),
-        attempt_id=mint_attempt_id(),
         progress_message="step complete",
     )
     assert len(fake.saved) == 1
@@ -128,11 +157,9 @@ def test_a2_coordinator_persist_uses_fake_port(tmp_path: Path) -> None:
 def test_a3_coordinator_restore_with_fake_reader() -> None:
     fake = _FakeCheckpointStore()
     original = _long_running_task()
-    checkpoint = LongRunningCoordinator.persist_checkpoint(
+    checkpoint = _persist_checkpoint_with_active_identity(
         original,
         fake,
-        run_id=mint_run_id(),
-        attempt_id=mint_attempt_id(),
         progress_message="awaiting human",
     )
     resume_task = Task(
@@ -237,11 +264,9 @@ def test_r1_1_long_running_bridge_has_no_sqlite_checkpoint_import() -> None:
 async def test_r1_2_bridge_restore_with_fake_reader() -> None:
     fake = _FakeCheckpointStore()
     original = _long_running_task()
-    checkpoint = LongRunningCoordinator.persist_checkpoint(
+    checkpoint = _persist_checkpoint_with_active_identity(
         original,
         fake,
-        run_id=mint_run_id(),
-        attempt_id=mint_attempt_id(),
         progress_message="awaiting human",
     )
     resume_task = Task(
@@ -294,19 +319,27 @@ async def test_r1_3_bridge_checkpoint_with_fake_persistence() -> None:
     attempt_id = mint_attempt_id()
     stub_event = MagicMock()
     stub_event.model_copy.return_value = stub_event
-    with patch(
-        "intergrax.runtime.nexus.orchestration.long_running_bridge.runtime_event_from_task_state",
-        return_value=stub_event,
-    ):
-        await maybe_checkpoint_long_running(
-            task,
-            checkpoint_store=fake,
-            publish=_publish,
-            notification_adapter=None,
-            progress_message="step complete",
-            run_id=run_id,
-            attempt_id=attempt_id,
-        )
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=mint_execution_id(),
+    )
+    try:
+        with patch(
+            "intergrax.runtime.nexus.orchestration.long_running_bridge.runtime_event_from_task_state",
+            return_value=stub_event,
+        ):
+            await maybe_checkpoint_long_running(
+                task,
+                checkpoint_store=fake,
+                publish=_publish,
+                notification_adapter=None,
+                progress_message="step complete",
+                run_id=run_id,
+                attempt_id=attempt_id,
+            )
+    finally:
+        reset_active_execution_identity(token)
     assert len(fake.saved) == 1
     assert fake.saved[0].progress_message == "step complete"
     assert len(published) == 2

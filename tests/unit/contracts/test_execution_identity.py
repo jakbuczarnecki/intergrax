@@ -502,6 +502,7 @@ async def test_unified_task_runner_resume_uses_checkpoint_identity(monkeypatch):
             task_id=task.task_id,
             run_id=run_id,
             attempt_id=attempt_id,
+            root_execution_id=mint_execution_id(),
         ),
     )
 

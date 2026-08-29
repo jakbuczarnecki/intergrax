@@ -4,7 +4,13 @@ import pytest
 
 pytestmark = pytest.mark.no_ci
 
-from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    reset_active_execution_identity,
+)
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.task.task import Task
@@ -23,13 +29,23 @@ def test_checkpoint_store_roundtrip(tmp_path):
             long_running=TaskLongRunningOptions(enabled=True, notify_channel="log"),
         ),
     )
-    checkpoint = LongRunningCoordinator.persist_checkpoint(
-        task,
-        store,
-        run_id=mint_run_id(),
-        attempt_id=mint_attempt_id(),
-        progress_message="step 1 complete",
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=mint_execution_id(),
     )
+    try:
+        checkpoint = LongRunningCoordinator.persist_checkpoint(
+            task,
+            store,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            progress_message="step 1 complete",
+        )
+    finally:
+        reset_active_execution_identity(token)
     assert checkpoint.resume_token
     loaded = store.get_by_token(task.task_id, "t1", checkpoint.resume_token)
     assert loaded is not None
@@ -48,13 +64,23 @@ def test_restore_if_resuming_merges_snapshot(tmp_path):
             long_running=TaskLongRunningOptions(enabled=True),
         ),
     )
-    checkpoint = LongRunningCoordinator.persist_checkpoint(
-        original,
-        store,
-        run_id=mint_run_id(),
-        attempt_id=mint_attempt_id(),
-        progress_message="awaiting human input",
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=mint_execution_id(),
     )
+    try:
+        checkpoint = LongRunningCoordinator.persist_checkpoint(
+            original,
+            store,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            progress_message="awaiting human input",
+        )
+    finally:
+        reset_active_execution_identity(token)
 
     resume_task = Task(
         tenant_id="t1",

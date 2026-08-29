@@ -41,6 +41,35 @@ def _collect_forbidden_symbols(path: Path) -> list[str]:
     return [f"{rel} contains {symbol}" for symbol in _FORBIDDEN_SYMBOLS if symbol in text]
 
 
+def _call_name(func: ast.AST) -> str | None:
+    if isinstance(func, ast.Name):
+        return func.id
+    if isinstance(func, ast.Attribute):
+        return func.attr
+    return None
+
+
+def _collect_forbidden_calls(path: Path, forbidden: frozenset[str]) -> list[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    rel = path.relative_to(_REPO_ROOT).as_posix()
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        name = _call_name(node.func)
+        if name in forbidden:
+            violations.append(f"{rel}:{node.lineno} calls {name}")
+    return violations
+
+
+def _iter_checkpoint_production_paths() -> list[Path]:
+    paths: list[Path] = []
+    long_running = _REPO_ROOT / "intergrax" / "runtime" / "long_running"
+    for path in long_running.rglob("*.py"):
+        paths.append(path)
+    return paths
+
+
 def test_runtime_checkpoint_has_execution_tree_field() -> None:
     assert "execution_tree" in RuntimeCheckpoint.model_fields
 
@@ -68,3 +97,21 @@ def test_production_code_has_no_second_checkpoint_persistence_framework() -> Non
     tree = ast.parse(text, filename=str(long_running))
     class_names = [node.name for node in tree.body if isinstance(node, ast.ClassDef)]
     assert "ExecutionTreeCheckpointPersistence" not in class_names
+
+
+def test_production_checkpoint_modules_do_not_mint_execution_id() -> None:
+    violations: list[str] = []
+    for path in _iter_checkpoint_production_paths():
+        violations.extend(
+            _collect_forbidden_calls(path, frozenset({"mint_execution_id"}))
+        )
+    assert violations == []
+
+
+def test_production_checkpoint_modules_do_not_mint_attempt_id() -> None:
+    violations: list[str] = []
+    for path in _iter_checkpoint_production_paths():
+        violations.extend(
+            _collect_forbidden_calls(path, frozenset({"mint_attempt_id"}))
+        )
+    assert violations == []

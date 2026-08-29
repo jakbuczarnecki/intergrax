@@ -313,6 +313,7 @@ async def test_resume_checkpoint_preserves_attempt_mints_fresh_execution_id(
             task_id=task.task_id,
             run_id=run_id,
             attempt_id=attempt_id,
+            root_execution_id=mint_execution_id(),
         ),
     )
 

@@ -44,6 +44,7 @@ from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.control_plane_mutation import ControlPlaneMutationRequest
 from intergrax.contracts.execution_identity import (
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
 )
@@ -77,6 +78,7 @@ _MUTATION_ID = "mut-resume-1"
 _TASK_ID = mint_task_id()
 _RUN_ID = mint_run_id()
 _ATTEMPT_ID = mint_attempt_id()
+_ROOT_EXECUTION_ID = mint_execution_id()
 _PAUSE_ID = "pause-1"
 _HUMAN_REQUEST_ID = "hr-1"
 _RESUME_TOKEN = "resume-token-1"
@@ -161,6 +163,7 @@ def _checkpoint(
             task_id=_TASK_ID,
             run_id=_RUN_ID,
             attempt_id=_ATTEMPT_ID,
+            root_execution_id=_ROOT_EXECUTION_ID,
         ),
     )
 
@@ -621,6 +624,7 @@ async def test_taskcpm_r15_checkpoint_run_id_conflict_zero_runner() -> None:
         task_id=_TASK_ID,
         run_id=mint_run_id(),
         attempt_id=_ATTEMPT_ID,
+        root_execution_id=mint_execution_id(),
     )
     boundary, _ = _allow_boundary()
     runner = AsyncMock(spec=UnifiedTaskRunner)

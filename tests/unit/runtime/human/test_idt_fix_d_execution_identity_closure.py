@@ -305,6 +305,7 @@ async def test_d6_checkpoint_resume_preserves_execution_identity(monkeypatch: py
             task_id=TASK_ID,
             run_id=RUN_ID,
             attempt_id=ATTEMPT_ID,
+            root_execution_id=mint_execution_id(),
         ),
     )
 
