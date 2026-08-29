@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""HARDEN-2C — real cross-process ProblemLifecycleEngine.reconcile() OCC proof."""
+"""HARDEN-2C — real cross-process ProblemLifecycleEngine OCC proof."""
 
 from __future__ import annotations
 
@@ -101,6 +101,95 @@ def _subject_execution_ids(subject_ref: dict[str, object]) -> tuple[str, str]:
     subject = subject_ref["subject"]
     assert isinstance(subject, dict)
     return str(subject["task_id"]), str(subject["run_id"])
+
+
+def _spawn_lifecycle_resolve_worker(
+    *,
+    env: dict[str, str],
+    sync_dir: Path,
+    worker_label: str,
+    problem_id: str,
+) -> subprocess.Popen[str]:
+    start_path = sync_dir / "start.signal"
+    update_path = sync_dir / "update.signal"
+    read_snapshot_path = sync_dir / f"read_snapshot.{worker_label}.json"
+    done_path = sync_dir / f"worker_{worker_label}.done"
+    return subprocess.Popen(
+        [
+            sys.executable,
+            str(_WORKER),
+            "concurrent-lifecycle-resolve",
+            "--tenant-id",
+            _TENANT,
+            "--problem-id",
+            problem_id,
+            "--worker-label",
+            worker_label,
+            "--start-path",
+            str(start_path),
+            "--update-path",
+            str(update_path),
+            "--read-snapshot-path",
+            str(read_snapshot_path),
+            "--done-path",
+            str(done_path),
+        ],
+        cwd=_REPO_ROOT,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+
+
+def _run_lifecycle_resolve_round(
+    *,
+    env: dict[str, str],
+    sync_dir: Path,
+    problem_id: str,
+    baseline_record_version: int,
+) -> tuple[dict[str, object], dict[str, object], subprocess.Popen[str], subprocess.Popen[str]]:
+    start_path = sync_dir / "start.signal"
+    update_path = sync_dir / "update.signal"
+    read_a = sync_dir / "read_snapshot.a.json"
+    read_b = sync_dir / "read_snapshot.b.json"
+    done_a = sync_dir / "worker_a.done"
+    done_b = sync_dir / "worker_b.done"
+
+    for path in (start_path, update_path, read_a, read_b, done_a, done_b):
+        if path.exists():
+            path.unlink()
+
+    process_a = _spawn_lifecycle_resolve_worker(
+        env=env,
+        sync_dir=sync_dir,
+        worker_label="a",
+        problem_id=problem_id,
+    )
+    process_b = _spawn_lifecycle_resolve_worker(
+        env=env,
+        sync_dir=sync_dir,
+        worker_label="b",
+        problem_id=problem_id,
+    )
+
+    time.sleep(0.2)
+    start_path.write_text("go\n", encoding="utf-8")
+
+    snapshot_a = _wait_for_snapshot(read_a)
+    snapshot_b = _wait_for_snapshot(read_b)
+    assert snapshot_a["record_version"] == baseline_record_version
+    assert snapshot_b["record_version"] == baseline_record_version
+    update_path.write_text("go\n", encoding="utf-8")
+
+    stdout_a, stderr_a = process_a.communicate(timeout=_DONE_TIMEOUT_SECONDS)
+    stdout_b, stderr_b = process_b.communicate(timeout=_DONE_TIMEOUT_SECONDS)
+    assert process_a.returncode == 0, stderr_a or stdout_a
+    assert process_b.returncode == 0, stderr_b or stdout_b
+
+    payload_a = _wait_for_done(done_a)
+    payload_b = _wait_for_done(done_b)
+    return payload_a, payload_b, process_a, process_b
 
 
 def _spawn_lifecycle_worker(
@@ -340,6 +429,72 @@ def test_harden_2c_cross_process_lifecycle_reconcile_on_mongodb(tmp_path: Path) 
     assert cleanup.returncode == 0, cleanup.stderr
 
 
+def test_harden_2c_cross_process_lifecycle_resolve_on_mongodb(tmp_path: Path) -> None:
+    """HARDEN-2C resolve proof: two processes resolve the same OPEN Problem once."""
+    collection_name = f"{_COLLECTION_PREFIX}{uuid.uuid4().hex}"
+    env = _proof_env(collection_name=collection_name)
+    sync_dir = tmp_path / "sync"
+    sync_dir.mkdir(parents=True, exist_ok=True)
+
+    probe = _run_worker("probe", env=env, args=[])
+    if probe.returncode == _EXIT_SKIP:
+        pytest.skip(probe.stderr.strip())
+    assert probe.returncode == 0, probe.stderr
+
+    seed = _run_worker(
+        "seed-baseline",
+        env=env,
+        args=["--tenant-id", _TENANT, "--other-tenant-id", _OTHER_TENANT],
+    )
+    assert seed.returncode == 0, seed.stderr
+    seed_payload = json.loads(seed.stdout)
+    problem_id = seed_payload["problem_id"]
+    baseline_version = seed_payload["baseline_record_version"]
+    assert baseline_version == 1
+
+    payload_a: dict[str, object] | None = None
+    payload_b: dict[str, object] | None = None
+    process_a: subprocess.Popen[str] | None = None
+    process_b: subprocess.Popen[str] | None = None
+
+    payload_a, payload_b, process_a, process_b = _run_lifecycle_resolve_round(
+        env=env,
+        sync_dir=sync_dir,
+        problem_id=problem_id,
+        baseline_record_version=baseline_version,
+    )
+
+    assert payload_a is not None and payload_b is not None
+    assert process_a is not None and process_b is not None
+    assert process_a.pid != process_b.pid
+    assert payload_a["status"] == "resolved"
+    assert payload_b["status"] == "resolved"
+
+    read_final = _run_worker(
+        "read-final",
+        env=env,
+        args=[
+            "--tenant-id",
+            _TENANT,
+            "--problem-id",
+            problem_id,
+            "--other-tenant-id",
+            _OTHER_TENANT,
+        ],
+    )
+    assert read_final.returncode == 0, read_final.stderr
+    final_payload = json.loads(read_final.stdout)
+    assert final_payload["listed_problem_ids"] == [problem_id]
+    assert final_payload["record_version"] == 2
+
+    cleanup = _run_worker(
+        "cleanup",
+        env=env,
+        args=["--tenant-id", _TENANT, "--tenant-id", _OTHER_TENANT],
+    )
+    assert cleanup.returncode == 0, cleanup.stderr
+
+
 def test_harden_2c_cross_process_lifecycle_create_race_on_mongodb(tmp_path: Path) -> None:
     """
     HARDEN-2C create-race proof:
@@ -407,36 +562,42 @@ def test_harden_2c_cross_process_lifecycle_create_race_on_mongodb(tmp_path: Path
 
         stdout_a, stderr_a = process_a.communicate(timeout=_DONE_TIMEOUT_SECONDS)
         stdout_b, stderr_b = process_b.communicate(timeout=_DONE_TIMEOUT_SECONDS)
-        if process_a.returncode != 0 or process_b.returncode != 0:
-            subject_a_task_id = _mint_task_id_str()
-            subject_a_run_id = _mint_run_id_str()
-            subject_b_task_id = _mint_task_id_str()
-            subject_b_run_id = _mint_run_id_str()
-            continue
+        assert process_a.returncode == 0, stderr_a or stdout_a
+        assert process_b.returncode == 0, stderr_b or stdout_b
         assert process_a.pid != process_b.pid
 
         payload_a = _wait_for_done(done_a)
         payload_b = _wait_for_done(done_b)
-        if payload_a["status"] not in {"created", "updated"}:
-            continue
-        if payload_b["status"] not in {"created", "updated"}:
-            continue
+        assert payload_a["status"] in {"created", "updated"}, payload_a
+        assert payload_b["status"] in {"created", "updated"}, payload_b
 
         problem_ids = {str(payload_a["problem_id"]), str(payload_b["problem_id"])}
-        if len(problem_ids) != 1:
-            subject_a_task_id = _mint_task_id_str()
-            subject_a_run_id = _mint_run_id_str()
-            subject_b_task_id = _mint_task_id_str()
-            subject_b_run_id = _mint_run_id_str()
-            continue
+        assert len(problem_ids) == 1, (
+            f"create race must converge to one Problem: "
+            f"writer_a={payload_a['problem_id']} writer_b={payload_b['problem_id']}"
+        )
         problem_id = next(iter(problem_ids))
-        break
+
+        total_conflicts = int(payload_a["conflicts_observed"]) + int(
+            payload_b["conflicts_observed"]
+        )
+        if total_conflicts >= 1:
+            break
+
+        subject_a_task_id = _mint_task_id_str()
+        subject_a_run_id = _mint_run_id_str()
+        subject_b_task_id = _mint_task_id_str()
+        subject_b_run_id = _mint_run_id_str()
 
     assert payload_a is not None and payload_b is not None
     assert process_a is not None and process_b is not None
     assert problem_id is not None
-    assert process_a.returncode == 0
-    assert process_b.returncode == 0
+
+    total_conflicts = int(payload_a["conflicts_observed"]) + int(payload_b["conflicts_observed"])
+    assert total_conflicts >= 1, (
+        "HARDEN-2C create race requires observed CAS conflict evidence; "
+        f"writer_a={payload_a['conflicts_observed']} writer_b={payload_b['conflicts_observed']}"
+    )
 
     read_final = _run_worker(
         "read-final",

@@ -10,8 +10,6 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.integrations.contracts.document_store import DocumentRecord
 from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
     STRATEGY_ID,
     STRATEGY_VERSION,
@@ -39,17 +37,23 @@ from intergrax.runtime.diagnostics.problem_lifecycle import (
     ProblemLifecycleEngine,
     ProblemLifecycleIntegrityError,
     ProblemLifecycleResult,
+    ProblemStatus,
 )
 from intergrax.runtime.diagnostics.problem_persistence import (
     ProblemPersistence,
     ProblemPersistenceConflictError,
+    ProblemPersistenceIntegrityError,
+    RECONCILIATION_WINNER_CANONICAL_PENDING,
 )
+from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations.contracts.document_store import DocumentRecord
 
 pytestmark = pytest.mark.unit
 
 _OBSERVED_AT = datetime(2026, 8, 29, 12, 0, tzinfo=UTC)
 _OBSERVED_AT_A = _OBSERVED_AT + timedelta(minutes=1)
 _OBSERVED_AT_B = _OBSERVED_AT + timedelta(minutes=2)
+_RESOLVED_AT = _OBSERVED_AT + timedelta(hours=1)
 
 
 def _singleton_grouping_result(
@@ -94,6 +98,27 @@ class _SynchronizedUpdatePersistence(DocumentStoreProblemPersistence):
     def update(self, record: Problem, *, expected_version: int) -> Problem:
         if expected_version == self._synchronized_expected_version:
             self._update_barrier.wait(timeout=5)
+        return super().update(record, expected_version=expected_version)
+
+
+class _SynchronizedResolvePersistence(DocumentStoreProblemPersistence):
+    def __init__(
+        self,
+        document_store: InMemoryDocumentStore,
+        *,
+        resolve_barrier: threading.Barrier,
+        synchronized_expected_version: int,
+    ) -> None:
+        super().__init__(document_store)
+        self._resolve_barrier = resolve_barrier
+        self._synchronized_expected_version = synchronized_expected_version
+
+    def update(self, record: Problem, *, expected_version: int) -> Problem:
+        if (
+            record.status is ProblemStatus.RESOLVED
+            and expected_version == self._synchronized_expected_version
+        ):
+            self._resolve_barrier.wait(timeout=5)
         return super().update(record, expected_version=expected_version)
 
 
@@ -347,3 +372,299 @@ def test_harden_2b_idempotent_converged_outcome_after_winner_applied_candidate()
         assert second.unchanged[0].occurrence_count == 2
     finally:
         persistence.close()
+
+
+def test_harden_2d_concurrent_identical_resolve_converges_once() -> None:
+    tenant_id = "harden-2d-resolve-tenant"
+    signature = _sample_signature()
+    reconciliation_key = _sample_reconciliation_key(
+        tenant_id=tenant_id,
+        signature=signature,
+    )
+    baseline_subject = _sample_subject_ref(tenant_id=tenant_id)
+    baseline = sample_problem(
+        tenant_id=tenant_id,
+        subject_refs=(baseline_subject,),
+        reconciliation_key=reconciliation_key,
+    )
+    store = InMemoryDocumentStore()
+    resolve_barrier = threading.Barrier(2)
+    assert baseline.record_version == 1
+
+    seed = DocumentStoreProblemPersistence(store)
+    seed.create(baseline)
+    seed.close()
+
+    resolved_results: list[Problem] = []
+    errors: list[BaseException] = []
+
+    def _resolve() -> None:
+        persistence = _SynchronizedResolvePersistence(
+            store,
+            resolve_barrier=resolve_barrier,
+            synchronized_expected_version=baseline.record_version,
+        )
+        lifecycle = ProblemLifecycleEngine(persistence)
+        try:
+            resolved_results.append(
+                lifecycle.resolve(
+                    tenant_id=tenant_id,
+                    problem_id=baseline.problem_id,
+                    resolved_at=_RESOLVED_AT,
+                ),
+            )
+        except BaseException as exc:  # noqa: BLE001
+            errors.append(exc)
+        finally:
+            persistence.close()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [executor.submit(_resolve), executor.submit(_resolve)]
+        for future in futures:
+            future.result(timeout=10)
+
+    assert errors == []
+    assert len(resolved_results) == 2
+    assert all(result.status is ProblemStatus.RESOLVED for result in resolved_results)
+    assert all(result.record_version == 2 for result in resolved_results)
+
+    verifier = DocumentStoreProblemPersistence(store)
+    try:
+        final = verifier.get(tenant_id=tenant_id, problem_id=baseline.problem_id)
+        assert final is not None
+        assert final.status is ProblemStatus.RESOLVED
+        assert final.record_version == 2
+        assert final.occurrence_count == baseline.occurrence_count
+    finally:
+        verifier.close()
+
+
+def test_harden_2d_resolve_retry_exhaustion_raises_lifecycle_integrity_error() -> None:
+    store = _AlwaysConflictReplaceStore()
+    tenant_id = "harden-2d-resolve-retry-exhaustion"
+    signature = _sample_signature()
+    reconciliation_key = _sample_reconciliation_key(
+        tenant_id=tenant_id,
+        signature=signature,
+    )
+    baseline_subject = _sample_subject_ref(tenant_id=tenant_id)
+    baseline = sample_problem(
+        tenant_id=tenant_id,
+        subject_refs=(baseline_subject,),
+        reconciliation_key=reconciliation_key,
+    )
+
+    persistence = DocumentStoreProblemPersistence(store)
+    lifecycle = ProblemLifecycleEngine(persistence)
+    try:
+        persistence.create(baseline)
+        with pytest.raises(ProblemLifecycleIntegrityError) as exc_info:
+            lifecycle.resolve(
+                tenant_id=tenant_id,
+                problem_id=baseline.problem_id,
+                resolved_at=_RESOLVED_AT,
+            )
+        assert isinstance(exc_info.value.__cause__, ProblemPersistenceConflictError)
+        final = persistence.get(tenant_id=tenant_id, problem_id=baseline.problem_id)
+        assert final == baseline
+    finally:
+        persistence.close()
+
+
+def test_harden_2d_resolve_race_with_concurrent_occurrence_update_preserves_latest() -> None:
+    tenant_id = "harden-2d-resolve-vs-update"
+    signature = _sample_signature()
+    reconciliation_key = _sample_reconciliation_key(
+        tenant_id=tenant_id,
+        signature=signature,
+    )
+    baseline_subject = _sample_subject_ref(tenant_id=tenant_id)
+    subject_a = _sample_subject_ref(tenant_id=tenant_id)
+    baseline = sample_problem(
+        tenant_id=tenant_id,
+        subject_refs=(baseline_subject,),
+        reconciliation_key=reconciliation_key,
+    )
+    store = InMemoryDocumentStore()
+    update_barrier = threading.Barrier(2)
+    assert baseline.record_version == 1
+
+    seed = DocumentStoreProblemPersistence(store)
+    seed.create(baseline)
+    seed.close()
+
+    grouping = _singleton_grouping_result(
+        tenant_id=tenant_id,
+        member=subject_a,
+        signature=signature,
+        observed_at=_OBSERVED_AT_A,
+    )
+
+    race_errors: list[BaseException] = []
+    reconcile_result: list[ProblemLifecycleResult] = []
+
+    def _resolve() -> None:
+        persistence = _SynchronizedResolvePersistence(
+            store,
+            resolve_barrier=update_barrier,
+            synchronized_expected_version=baseline.record_version,
+        )
+        lifecycle = ProblemLifecycleEngine(persistence)
+        try:
+            lifecycle.resolve(
+                tenant_id=tenant_id,
+                problem_id=baseline.problem_id,
+                resolved_at=_RESOLVED_AT,
+            )
+        except BaseException as exc:  # noqa: BLE001
+            race_errors.append(exc)
+        finally:
+            persistence.close()
+
+    def _reconcile() -> None:
+        persistence = _SynchronizedUpdatePersistence(
+            store,
+            update_barrier=update_barrier,
+            synchronized_expected_version=baseline.record_version,
+        )
+        lifecycle = ProblemLifecycleEngine(persistence)
+        try:
+            reconcile_result.append(
+                lifecycle.reconcile(grouping, observed_at=_OBSERVED_AT_A),
+            )
+        except BaseException as exc:  # noqa: BLE001
+            race_errors.append(exc)
+        finally:
+            persistence.close()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [
+            executor.submit(_resolve),
+            executor.submit(_reconcile),
+        ]
+        for future in futures:
+            future.result(timeout=10)
+
+    assert race_errors == []
+    assert len(reconcile_result) == 1
+
+    verifier = DocumentStoreProblemPersistence(store)
+    try:
+        final = verifier.get(tenant_id=tenant_id, problem_id=baseline.problem_id)
+        assert final is not None
+        assert final.status is ProblemStatus.RESOLVED
+        assert final.record_version == 3
+        assert final.occurrence_count == 2
+        assert subject_a in {occurrence.subject_ref for occurrence in final.occurrences}
+    finally:
+        verifier.close()
+
+
+def test_harden_2d_create_race_converges_while_winner_canonical_pending() -> None:
+    tenant_id = "harden-2d-create-race-lifecycle"
+    signature = _sample_signature()
+    reconciliation_key = _sample_reconciliation_key(
+        tenant_id=tenant_id,
+        signature=signature,
+    )
+    subject_a = _sample_subject_ref(tenant_id=tenant_id)
+    subject_b = _sample_subject_ref(tenant_id=tenant_id)
+
+    class _CreateRaceInterleavingStore(InMemoryDocumentStore):
+        def __init__(self) -> None:
+            super().__init__()
+            self._entry_barrier = threading.Barrier(2)
+            self._release_canonical = threading.Event()
+            self._canonical_written = threading.Event()
+            self._put_if_absent_calls = 0
+            self._state_lock = threading.Lock()
+
+        def release_canonical(self) -> None:
+            self._release_canonical.set()
+
+        def wait_canonical_written(self, *, timeout: float) -> bool:
+            return self._canonical_written.wait(timeout=timeout)
+
+        def put_if_absent(self, document: DocumentRecord) -> bool:
+            with self._state_lock:
+                self._put_if_absent_calls += 1
+                call_number = self._put_if_absent_calls
+            if call_number <= 2:
+                self._entry_barrier.wait(timeout=5)
+            if document.row_key.startswith("record:"):
+                self._release_canonical.wait(timeout=5)
+            inserted = super().put_if_absent(document)
+            if document.row_key.startswith("record:") and inserted:
+                self._canonical_written.set()
+            return inserted
+
+    store = _CreateRaceInterleavingStore()
+
+    class _ReleaseOnPendingWinnerLookupPersistence(DocumentStoreProblemPersistence):
+        def find_by_reconciliation_key(self, *, tenant_id: str, reconciliation_key):
+            try:
+                return super().find_by_reconciliation_key(
+                    tenant_id=tenant_id,
+                    reconciliation_key=reconciliation_key,
+                )
+            except ProblemPersistenceIntegrityError as exc:
+                if str(exc) == RECONCILIATION_WINNER_CANONICAL_PENDING:
+                    store.release_canonical()
+                    if not store.wait_canonical_written(timeout=5):
+                        raise
+                raise
+
+    grouping_a = _singleton_grouping_result(
+        tenant_id=tenant_id,
+        member=subject_a,
+        signature=signature,
+        observed_at=_OBSERVED_AT_A,
+    )
+    grouping_b = _singleton_grouping_result(
+        tenant_id=tenant_id,
+        member=subject_b,
+        signature=signature,
+        observed_at=_OBSERVED_AT_B,
+    )
+
+    results: list[ProblemLifecycleResult] = []
+    errors: list[BaseException] = []
+
+    def _reconcile(grouping_result: ProblemGroupingResult, observed_at: datetime) -> None:
+        persistence = _ReleaseOnPendingWinnerLookupPersistence(store)
+        lifecycle = ProblemLifecycleEngine(persistence)
+        try:
+            results.append(
+                lifecycle.reconcile(grouping_result, observed_at=observed_at),
+            )
+        except BaseException as exc:  # noqa: BLE001
+            errors.append(exc)
+        finally:
+            persistence.close()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [
+            executor.submit(_reconcile, grouping_a, _OBSERVED_AT_A),
+            executor.submit(_reconcile, grouping_b, _OBSERVED_AT_B),
+        ]
+        for future in futures:
+            future.result(timeout=10)
+
+    assert errors == []
+    assert len(results) == 2
+
+    verifier = DocumentStoreProblemPersistence(store)
+    try:
+        listed = verifier.list_for_tenant(tenant_id)
+        assert len(listed) == 1
+        final = listed[0]
+        assert final.occurrence_count == 2
+        assert final.record_version == 2
+        assert verifier.find_by_reconciliation_key(
+            tenant_id=tenant_id,
+            reconciliation_key=reconciliation_key,
+        ) == final
+        final_subjects = {occurrence.subject_ref for occurrence in final.occurrences}
+        assert final_subjects == {subject_a, subject_b}
+    finally:
+        verifier.close()

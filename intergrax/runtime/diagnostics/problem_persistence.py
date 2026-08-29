@@ -26,6 +26,11 @@ class ProblemPersistenceIntegrityError(Exception):
     """Raised when indexed storage is inconsistent with the canonical Problem record."""
 
 
+RECONCILIATION_WINNER_CANONICAL_PENDING = (
+    "canonical Problem record missing for reconciliation index"
+)
+
+
 class ProblemPersistence(ABC):
     """
     Durable store for derived diagnostic Problem records.

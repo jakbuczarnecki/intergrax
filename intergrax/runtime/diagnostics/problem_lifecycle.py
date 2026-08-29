@@ -39,8 +39,10 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingSubjectRef,
 )
 from intergrax.runtime.diagnostics.problem_persistence import (
+    RECONCILIATION_WINNER_CANONICAL_PENDING,
     ProblemPersistence,
     ProblemPersistenceConflictError,
+    ProblemPersistenceIntegrityError,
 )
 
 ProblemId = NewType("ProblemId", str)
@@ -253,20 +255,12 @@ class ProblemLifecycleEngine:
                 try:
                     persisted = self._persistence.create(record)
                 except ProblemPersistenceConflictError as exc:
-                    winner = self._persistence.find_by_reconciliation_key(
+                    persisted, changed = self._converge_after_create_conflict(
                         tenant_id=tenant_id,
-                        reconciliation_key=reconciliation_key,
-                    )
-                    if winner is None:
-                        raise ProblemLifecycleIntegrityError(
-                            "failed to create stable Problem due to persistence conflict",
-                        ) from exc
-                    persisted, changed = self._persist_candidate_with_occ_retry(
-                        tenant_id=tenant_id,
-                        problem_id=winner.problem_id,
                         candidate=candidate,
                         reconciliation_key=reconciliation_key,
                         observed_at=observed_at,
+                        original_exc=exc,
                     )
                     if changed:
                         updated.append(persisted)
@@ -309,33 +303,95 @@ class ProblemLifecycleEngine:
         )
         if existing is None:
             raise ProblemLifecycleIntegrityError("Problem does not exist for tenant scope")
-        if existing.tenant_id != tenant_id:
-            raise ProblemLifecycleIntegrityError("tenant_id does not match Problem record")
 
-        if existing.status is ProblemStatus.RESOLVED:
-            return existing
+        reconciliation_key = existing.provenance.reconciliation_key
 
-        resolved = Problem(
-            problem_id=existing.problem_id,
-            tenant_id=existing.tenant_id,
-            status=ProblemStatus.RESOLVED,
-            first_seen_at=existing.first_seen_at,
-            last_seen_at=existing.last_seen_at,
-            occurrence_count=existing.occurrence_count,
-            current_subject_refs=existing.current_subject_refs,
-            occurrences=existing.occurrences,
-            provenance=existing.provenance,
-            record_version=existing.record_version + 1,
-        )
-        try:
-            return self._persistence.update(
-                resolved,
-                expected_version=existing.record_version,
+        for attempt in range(_MAX_PERSISTENCE_CONFLICT_RETRIES + 1):
+            _validate_persisted_problem_identity(
+                existing,
+                tenant_id=tenant_id,
+                problem_id=validated_problem_id,
+                reconciliation_key=reconciliation_key,
             )
-        except ProblemPersistenceConflictError as exc:
-            raise ProblemLifecycleIntegrityError(
-                "failed to resolve Problem due to persistence conflict",
-            ) from exc
+
+            if existing.status is ProblemStatus.RESOLVED:
+                return existing
+
+            resolved = _build_resolved_problem(existing)
+            try:
+                return self._persistence.update(
+                    resolved,
+                    expected_version=existing.record_version,
+                )
+            except ProblemPersistenceConflictError as exc:
+                if attempt >= _MAX_PERSISTENCE_CONFLICT_RETRIES:
+                    raise ProblemLifecycleIntegrityError(
+                        "failed to resolve Problem: persistence conflict "
+                        "persisted after bounded optimistic concurrency retries",
+                    ) from exc
+
+                latest = self._persistence.get(
+                    tenant_id=tenant_id,
+                    problem_id=validated_problem_id,
+                )
+                if latest is None:
+                    raise ProblemLifecycleIntegrityError(
+                        "Problem disappeared after resolve persistence conflict",
+                    ) from exc
+                existing = latest
+
+        raise AssertionError("unreachable resolve persistence conflict retry loop")
+
+    def _converge_after_create_conflict(
+        self,
+        *,
+        tenant_id: str,
+        candidate: ProblemGroupingCandidate,
+        reconciliation_key: ProblemReconciliationKey,
+        observed_at: datetime,
+        original_exc: ProblemPersistenceConflictError,
+    ) -> tuple[Problem, bool]:
+        lookup_exc: BaseException = original_exc
+        attempt = 0
+        pending_spins = 0
+        while attempt <= _MAX_PERSISTENCE_CONFLICT_RETRIES:
+            try:
+                winner = self._persistence.find_by_reconciliation_key(
+                    tenant_id=tenant_id,
+                    reconciliation_key=reconciliation_key,
+                )
+            except ProblemPersistenceIntegrityError as exc:
+                if str(exc) != RECONCILIATION_WINNER_CANONICAL_PENDING:
+                    raise ProblemLifecycleIntegrityError(
+                        "failed to create stable Problem due to persistence lookup failure",
+                    ) from exc
+                pending_spins += 1
+                if pending_spins > _MAX_PERSISTENCE_CONFLICT_RETRIES:
+                    raise ProblemLifecycleIntegrityError(
+                        "failed to create stable Problem: winner not yet durable "
+                        "after persistence conflict",
+                    ) from exc
+                lookup_exc = exc
+                continue
+
+            pending_spins = 0
+            if winner is None:
+                if attempt >= _MAX_PERSISTENCE_CONFLICT_RETRIES:
+                    raise ProblemLifecycleIntegrityError(
+                        "failed to create stable Problem due to persistence conflict",
+                    ) from lookup_exc
+                attempt += 1
+                continue
+
+            return self._persist_candidate_with_occ_retry(
+                tenant_id=tenant_id,
+                problem_id=winner.problem_id,
+                candidate=candidate,
+                reconciliation_key=reconciliation_key,
+                observed_at=observed_at,
+            )
+
+        raise AssertionError("unreachable create conflict convergence loop")
 
     def _persist_candidate_with_occ_retry(
         self,
@@ -468,6 +524,21 @@ class ProblemLifecycleEngine:
             return problem_id
 
         return mint_problem_id()
+
+
+def _build_resolved_problem(existing: Problem) -> Problem:
+    return Problem(
+        problem_id=existing.problem_id,
+        tenant_id=existing.tenant_id,
+        status=ProblemStatus.RESOLVED,
+        first_seen_at=existing.first_seen_at,
+        last_seen_at=existing.last_seen_at,
+        occurrence_count=existing.occurrence_count,
+        current_subject_refs=existing.current_subject_refs,
+        occurrences=existing.occurrences,
+        provenance=existing.provenance,
+        record_version=existing.record_version + 1,
+    )
 
 
 def _validate_observed_at(observed_at: datetime) -> None:

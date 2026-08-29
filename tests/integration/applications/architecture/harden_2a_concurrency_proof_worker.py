@@ -487,6 +487,92 @@ def _run_concurrent_lifecycle_reconcile(
     )
 
 
+def _run_concurrent_lifecycle_resolve(
+    *,
+    tenant_id: str,
+    problem_id: str,
+    worker_label: str,
+    start_path: Path,
+    update_path: Path,
+    read_snapshot_path: Path,
+    done_path: Path,
+) -> None:
+    _wait_for_start(start_path)
+    store = _resolve_platform_document_store()
+    delegate = DocumentStoreProblemPersistence(store)
+    persistence = ObservingProblemPersistence(delegate)
+    lifecycle = ProblemLifecycleEngine(persistence)
+
+    validated_id = ProblemId(problem_id)
+    baseline = persistence.get(tenant_id=tenant_id, problem_id=validated_id)
+    if baseline is None:
+        _fail(f"baseline problem missing for lifecycle resolve worker {worker_label!r}")
+
+    read_snapshot_path.write_text(
+        json.dumps(
+            {
+                "worker": worker_label,
+                "record_version": baseline.record_version,
+                "occurrence_count": baseline.occurrence_count,
+            },
+            default=_json_default,
+        ),
+        encoding="utf-8",
+    )
+
+    _wait_for_start(update_path)
+
+    resolved_at = datetime(2026, 8, 29, 13, worker_label.count("a") + 1, tzinfo=UTC)
+    outcome: dict[str, Any]
+    try:
+        resolved = lifecycle.resolve(
+            tenant_id=tenant_id,
+            problem_id=validated_id,
+            resolved_at=resolved_at,
+        )
+        outcome = {
+            "status": "resolved",
+            "record_version": resolved.record_version,
+            "problem_id": str(resolved.problem_id),
+            "problem_status": resolved.status.value,
+        }
+    except Exception as exc:  # noqa: BLE001
+        outcome = {
+            "status": "error",
+            "error": f"{type(exc).__name__}: {exc}",
+        }
+
+    conflicts_observed = persistence.conflicts_observed
+    persistence.close()
+    store.close()
+    done_path.write_text(
+        json.dumps(
+            {
+                "ok": outcome.get("status") != "error",
+                "pid": os.getpid(),
+                "phase": "lifecycle-resolve",
+                "worker": worker_label,
+                "tenant_id": tenant_id,
+                "conflicts_observed": conflicts_observed,
+                **outcome,
+            },
+            default=_json_default,
+        ),
+        encoding="utf-8",
+    )
+    if outcome.get("status") == "error":
+        _fail(str(outcome["error"]))
+    _emit(
+        {
+            "ok": True,
+            "pid": os.getpid(),
+            "phase": "lifecycle-resolve",
+            "worker": worker_label,
+            "conflicts_observed": conflicts_observed,
+        },
+    )
+
+
 def _run_read_final(*, tenant_id: str, problem_id: str, other_tenant_id: str) -> None:
     store = _resolve_platform_document_store()
     persistence = DocumentStoreProblemPersistence(store)
@@ -571,6 +657,18 @@ def _build_parser() -> argparse.ArgumentParser:
     lifecycle.add_argument("--read-snapshot-path", type=Path, default=None)
     lifecycle.add_argument("--done-path", type=Path, required=True)
 
+    lifecycle_resolve = subparsers.add_parser(
+        "concurrent-lifecycle-resolve",
+        help="wait for start signal and resolve one Problem via lifecycle engine",
+    )
+    lifecycle_resolve.add_argument("--tenant-id", required=True)
+    lifecycle_resolve.add_argument("--problem-id", required=True)
+    lifecycle_resolve.add_argument("--worker-label", required=True)
+    lifecycle_resolve.add_argument("--start-path", type=Path, required=True)
+    lifecycle_resolve.add_argument("--update-path", type=Path, required=True)
+    lifecycle_resolve.add_argument("--read-snapshot-path", type=Path, required=True)
+    lifecycle_resolve.add_argument("--done-path", type=Path, required=True)
+
     cleanup = subparsers.add_parser("cleanup", help="purge proof tenant documents via store API")
     cleanup.add_argument("--tenant-id", action="append", required=True)
 
@@ -606,6 +704,17 @@ def main(argv: list[str] | None = None) -> None:
             worker_label=args.worker_label,
             subject_task_id=args.subject_task_id,
             subject_run_id=args.subject_run_id,
+            start_path=args.start_path,
+            update_path=args.update_path,
+            read_snapshot_path=args.read_snapshot_path,
+            done_path=args.done_path,
+        )
+        return
+    if args.command == "concurrent-lifecycle-resolve":
+        _run_concurrent_lifecycle_resolve(
+            tenant_id=args.tenant_id,
+            problem_id=args.problem_id,
+            worker_label=args.worker_label,
             start_path=args.start_path,
             update_path=args.update_path,
             read_snapshot_path=args.read_snapshot_path,
