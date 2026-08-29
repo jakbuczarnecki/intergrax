@@ -20,31 +20,7 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_taxonomy import EventCategory, RetentionClass
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 
-# Legacy flat spine values → consolidated ``platform.*`` kinds (read-path shim).
-LEGACY_SPINE_TO_PLATFORM_KIND: Final[dict[str, str]] = {
-    "adaptive_signal_recorded": "platform.adaptive.adaptive_signal_recorded",
-    "adaptive_proposal_submitted": "platform.adaptive.adaptive_proposal_submitted",
-    "adaptive_profile_applied": "platform.adaptive.adaptive_profile_applied",
-    "adaptive_profile_rollback": "platform.adaptive.adaptive_profile_rollback",
-    "adaptive_verification_failed": "platform.adaptive.adaptive_verification_failed",
-    "adaptive_loop_blocked": "platform.adaptive.adaptive_loop_blocked",
-    "capacity_signal_collected": "platform.capacity.capacity_signal_collected",
-    "scale_evaluated": "platform.capacity.scale_evaluated",
-    "scale_requested": "platform.capacity.scale_requested",
-    "scale_approved": "platform.capacity.scale_approved",
-    "scale_denied": "platform.capacity.scale_denied",
-    "scale_applied": "platform.capacity.scale_applied",
-    "scale_failed": "platform.capacity.scale_failed",
-    "autonomy_level_set": "platform.capacity.autonomy_level_set",
-    "autonomy_level_changed": "platform.capacity.autonomy_level_changed",
-    "recovery_reboot": "platform.recovery.reboot",
-    "hook_blocked": "platform.hook.hook_blocked",
-    "hook_error": "platform.hook.hook_error",
-    "hook_timeout": "platform.hook.hook_timeout",
-    "defense_blocked": "platform.security.defense_blocked",
-    "encryption_denied": "platform.security.encryption_denied",
-    "diagnostic_subsystem_failure": "platform.diagnostic.subsystem_failure",
-}
+_PUBLICATION_SPINE_TARGET_MAX = 56
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,7 +28,6 @@ class PlatformKindEntry:
     kind: str
     phase: ExecutionPhase
     ops_hint: str
-    legacy_spine_value: str
     sample_rate: float = 1.0
     retention_class: RetentionClass = RetentionClass.OPERATIONAL
 
@@ -62,142 +37,118 @@ PLATFORM_KIND_CATALOG: Final[dict[str, PlatformKindEntry]] = {
         kind="platform.adaptive.adaptive_signal_recorded",
         phase=ExecutionPhase.TRACE_PERSISTENCE,
         ops_hint="ops:adaptive",
-        legacy_spine_value="adaptive_signal_recorded",
     ),
     "platform.adaptive.adaptive_proposal_submitted": PlatformKindEntry(
         kind="platform.adaptive.adaptive_proposal_submitted",
         phase=ExecutionPhase.FINALIZATION,
         ops_hint="ops:adaptive",
-        legacy_spine_value="adaptive_proposal_submitted",
     ),
     "platform.adaptive.adaptive_profile_applied": PlatformKindEntry(
         kind="platform.adaptive.adaptive_profile_applied",
         phase=ExecutionPhase.FINALIZATION,
         ops_hint="ops:adaptive",
-        legacy_spine_value="adaptive_profile_applied",
     ),
     "platform.adaptive.adaptive_profile_rollback": PlatformKindEntry(
         kind="platform.adaptive.adaptive_profile_rollback",
         phase=ExecutionPhase.FINALIZATION,
         ops_hint="ops:alert",
-        legacy_spine_value="adaptive_profile_rollback",
         retention_class=RetentionClass.AUDIT,
     ),
     "platform.adaptive.adaptive_verification_failed": PlatformKindEntry(
         kind="platform.adaptive.adaptive_verification_failed",
         phase=ExecutionPhase.FINALIZATION,
         ops_hint="ops:alert",
-        legacy_spine_value="adaptive_verification_failed",
     ),
     "platform.adaptive.adaptive_loop_blocked": PlatformKindEntry(
         kind="platform.adaptive.adaptive_loop_blocked",
         phase=ExecutionPhase.FINALIZATION,
         ops_hint="ops:alert",
-        legacy_spine_value="adaptive_loop_blocked",
     ),
     "platform.capacity.capacity_signal_collected": PlatformKindEntry(
         kind="platform.capacity.capacity_signal_collected",
         phase=ExecutionPhase.STEP_EXECUTION,
         ops_hint="ops:capacity",
-        legacy_spine_value="capacity_signal_collected",
         sample_rate=0.5,
     ),
     "platform.capacity.scale_evaluated": PlatformKindEntry(
         kind="platform.capacity.scale_evaluated",
         phase=ExecutionPhase.STEP_EXECUTION,
         ops_hint="ops:capacity",
-        legacy_spine_value="scale_evaluated",
     ),
     "platform.capacity.scale_requested": PlatformKindEntry(
         kind="platform.capacity.scale_requested",
         phase=ExecutionPhase.HUMAN_APPROVAL,
         ops_hint="ops:capacity",
-        legacy_spine_value="scale_requested",
     ),
     "platform.capacity.scale_approved": PlatformKindEntry(
         kind="platform.capacity.scale_approved",
         phase=ExecutionPhase.HUMAN_APPROVAL,
         ops_hint="ops:hitl",
-        legacy_spine_value="scale_approved",
     ),
     "platform.capacity.scale_denied": PlatformKindEntry(
         kind="platform.capacity.scale_denied",
         phase=ExecutionPhase.HUMAN_APPROVAL,
         ops_hint="ops:hitl",
-        legacy_spine_value="scale_denied",
     ),
     "platform.capacity.scale_applied": PlatformKindEntry(
         kind="platform.capacity.scale_applied",
         phase=ExecutionPhase.STEP_EXECUTION,
         ops_hint="ops:capacity",
-        legacy_spine_value="scale_applied",
     ),
     "platform.capacity.scale_failed": PlatformKindEntry(
         kind="platform.capacity.scale_failed",
         phase=ExecutionPhase.STEP_EXECUTION,
         ops_hint="ops:alert",
-        legacy_spine_value="scale_failed",
     ),
     "platform.capacity.autonomy_level_set": PlatformKindEntry(
         kind="platform.capacity.autonomy_level_set",
         phase=ExecutionPhase.INTAKE,
         ops_hint="ops:governance",
-        legacy_spine_value="autonomy_level_set",
     ),
     "platform.capacity.autonomy_level_changed": PlatformKindEntry(
         kind="platform.capacity.autonomy_level_changed",
         phase=ExecutionPhase.STEP_EXECUTION,
         ops_hint="ops:governance",
-        legacy_spine_value="autonomy_level_changed",
     ),
     "platform.recovery.reboot": PlatformKindEntry(
         kind="platform.recovery.reboot",
         phase=ExecutionPhase.RETRY_HANDLING,
         ops_hint="ops:retry",
-        legacy_spine_value="recovery_reboot",
     ),
     "platform.hook.hook_blocked": PlatformKindEntry(
         kind="platform.hook.hook_blocked",
         phase=ExecutionPhase.STEP_EXECUTION,
         ops_hint="ops:alert",
-        legacy_spine_value="hook_blocked",
     ),
     "platform.hook.hook_error": PlatformKindEntry(
         kind="platform.hook.hook_error",
         phase=ExecutionPhase.STEP_EXECUTION,
         ops_hint="ops:alert",
-        legacy_spine_value="hook_error",
     ),
     "platform.hook.hook_timeout": PlatformKindEntry(
         kind="platform.hook.hook_timeout",
         phase=ExecutionPhase.STEP_EXECUTION,
         ops_hint="ops:alert",
-        legacy_spine_value="hook_timeout",
     ),
     "platform.security.defense_blocked": PlatformKindEntry(
         kind="platform.security.defense_blocked",
         phase=ExecutionPhase.STEP_EXECUTION,
         ops_hint="ops:alert",
-        legacy_spine_value="defense_blocked",
         retention_class=RetentionClass.AUDIT,
     ),
     "platform.security.encryption_denied": PlatformKindEntry(
         kind="platform.security.encryption_denied",
         phase=ExecutionPhase.STEP_EXECUTION,
         ops_hint="ops:alert",
-        legacy_spine_value="encryption_denied",
         retention_class=RetentionClass.AUDIT,
     ),
     "platform.diagnostic.subsystem_failure": PlatformKindEntry(
         kind="platform.diagnostic.subsystem_failure",
         phase=ExecutionPhase.STEP_EXECUTION,
         ops_hint="ops:alert",
-        legacy_spine_value="diagnostic_subsystem_failure",
         retention_class=RetentionClass.AUDIT,
     ),
 }
-
-_PUBLICATION_SPINE_TARGET_MAX = 56
 
 
 def get_platform_kind_entry(kind: str) -> PlatformKindEntry | None:
@@ -232,7 +183,6 @@ def build_platform_signal_event(
     if entry is None:
         raise ValueError(f"unknown platform event_kind: {kind!r}")
     body = dict(payload or {})
-    body.setdefault("legacy_spine_type", entry.legacy_spine_value)
     active_run_id, attempt_id = require_active_execution_identity()
     execution_id = require_active_execution_id()
     resolved_run_id = validate_run_id(run_id)
@@ -257,31 +207,6 @@ def build_platform_signal_event(
         parent_event_id=parent_event_id,
         payload=body,
     )
-
-
-def migrate_legacy_spine_payload(data: object) -> object:
-    """Coerce persisted legacy spine ``event_type`` values on read (OBS-EVOL-9.7 shim)."""
-    if not isinstance(data, dict):
-        return data
-    raw_type = data.get("event_type")
-    legacy_value = raw_type.value if isinstance(raw_type, RuntimeEventType) else raw_type
-    if not isinstance(legacy_value, str):
-        return data
-    platform_kind = LEGACY_SPINE_TO_PLATFORM_KIND.get(legacy_value)
-    if platform_kind is None:
-        return data
-    migrated = dict(data)
-    migrated["event_type"] = RuntimeEventType.DOMAIN_SIGNAL
-    migrated.setdefault("event_kind", platform_kind)
-    entry = get_platform_kind_entry(platform_kind)
-    if entry is not None:
-        migrated.setdefault("ops_hint", entry.ops_hint)
-        migrated.setdefault("event_category", EventCategory.PLATFORM)
-        migrated.setdefault("phase", entry.phase)
-    payload = dict(migrated.get("payload") or {})
-    payload.setdefault("legacy_spine_type", legacy_value)
-    migrated["payload"] = payload
-    return migrated
 
 
 def publication_spine_type_count() -> int:

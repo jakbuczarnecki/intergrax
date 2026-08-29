@@ -19,10 +19,7 @@ from intergrax.runtime.events.event_catalog import (
 from intergrax.runtime.events.payload_registry import EVENT_TYPE_PREFERRED_SCHEMA
 from intergrax.runtime.events.phase_coverage import phase_for_event
 from intergrax.runtime.events.runtime_event import RuntimeEventType
-from intergrax.runtime.events.spine_consolidation import (
-    LEGACY_SPINE_TO_PLATFORM_KIND,
-    PLATFORM_KIND_CATALOG,
-)
+from intergrax.runtime.events.spine_consolidation import PLATFORM_KIND_CATALOG
 
 pytestmark = pytest.mark.gate
 
@@ -57,9 +54,10 @@ def test_sample_rate_reduced_for_high_volume_types() -> None:
 
 def test_consolidated_platform_kinds_removed_from_spine() -> None:
     spine_values = {member.value for member in RuntimeEventType}
-    for legacy_value in LEGACY_SPINE_TO_PLATFORM_KIND:
-        assert legacy_value not in spine_values
-    assert len(PLATFORM_KIND_CATALOG) == len(LEGACY_SPINE_TO_PLATFORM_KIND)
+    for entry in PLATFORM_KIND_CATALOG.values():
+        _, _, flat_name = entry.kind.rpartition(".")
+        assert flat_name not in spine_values
+    assert len(PLATFORM_KIND_CATALOG) == 22
 
 
 def test_retention_class_audit_for_tool_events() -> None:

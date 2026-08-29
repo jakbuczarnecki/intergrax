@@ -200,8 +200,5 @@ class RuntimeEvent(BaseModel):
 
 
 def parse_runtime_event_payload(data: object) -> RuntimeEvent:
-    """Deserialize persisted runtime events (spine shim + schema versions)."""
-    from intergrax.runtime.events.spine_consolidation import migrate_legacy_spine_payload
-
-    migrated = migrate_legacy_spine_payload(data)
-    return RuntimeEvent.model_validate(migrated)
+    """Deserialize persisted runtime events (canonical schema only)."""
+    return RuntimeEvent.model_validate(data)
