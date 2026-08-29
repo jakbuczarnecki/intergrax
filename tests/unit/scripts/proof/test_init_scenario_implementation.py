@@ -18,6 +18,7 @@ from scripts.proof.create_scenario_proof import (
 )
 from scripts.proof.init_scenario_implementation import (
     ScenarioImplementationExistsError,
+    ScenarioImplementationInitError,
     ScenarioImplementationRequest,
     init_scenario_implementation,
 )
@@ -332,3 +333,104 @@ def test_replace_scenario_spec_frontmatter_preserves_body() -> None:
     updated = replace_scenario_spec_frontmatter(body, metadata)
     assert updated.startswith("---\n")
     assert body.strip() in updated
+
+
+def test_init_validates_architecture_before_lifecycle_update(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    slug = "validate_before_lifecycle"
+    package_root = _write_accepted_design_package(tmp_path, slug=slug)
+    spec_path = package_root / "SCENARIO_SPEC.md"
+    call_order: list[str] = []
+
+    original_assert = assert_scenario_application_architecture
+
+    def _tracking_assert(**kwargs: object) -> object:
+        call_order.append("architecture")
+        return original_assert(**kwargs)
+
+    original_write = write_scenario_spec_frontmatter
+
+    def _tracking_write(path: Path, metadata: ScenarioLifecycleMetadata) -> None:
+        call_order.append("lifecycle")
+        original_write(path, metadata)
+
+    monkeypatch.setattr(
+        "scripts.proof.init_scenario_implementation.assert_scenario_application_architecture",
+        _tracking_assert,
+    )
+    monkeypatch.setattr(
+        "scripts.proof.init_scenario_implementation.write_scenario_spec_frontmatter",
+        _tracking_write,
+    )
+
+    init_scenario_implementation(
+        ScenarioImplementationRequest(
+            slug=validate_scenario_slug(slug),
+            repo_root=tmp_path,
+        ),
+    )
+    assert call_order == ["architecture", "lifecycle"]
+    metadata = load_scenario_lifecycle_metadata(spec_path)
+    assert metadata.lifecycle is ScenarioLifecycle.IMPLEMENTATION_INITIALIZED
+
+
+def test_init_fails_when_generated_architecture_violates_rules(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    slug = "architecture_violation"
+    package_root = _write_accepted_design_package(tmp_path, slug=slug)
+    spec_path = package_root / "SCENARIO_SPEC.md"
+
+    def _bad_runtime_composition(slug: str, agent_class: str) -> str:
+        return (
+            "from intergrax.runtime.nexus.engine.graph_executor import GraphExecutor\n"
+            "GraphExecutor\n"
+        )
+
+    monkeypatch.setattr(
+        "scripts.proof.init_scenario_implementation._build_runtime_composition_py",
+        _bad_runtime_composition,
+    )
+
+    with pytest.raises(ScenarioImplementationInitError, match="architecture conformance"):
+        init_scenario_implementation(
+            ScenarioImplementationRequest(
+                slug=validate_scenario_slug(slug),
+                repo_root=tmp_path,
+            ),
+        )
+
+    metadata = load_scenario_lifecycle_metadata(spec_path)
+    assert metadata.lifecycle is ScenarioLifecycle.ACCEPTED_FOR_IMPLEMENTATION
+    assert metadata.implementation_status is ScenarioImplementationStatus.NOT_INITIALIZED
+    assert not (package_root / "application").exists()
+    assert not (package_root / "run_proof.py").exists()
+
+
+def test_init_failure_does_not_delete_preexisting_user_content(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    slug = "preserve_user_content"
+    package_root = _write_accepted_design_package(tmp_path, slug=slug)
+    user_notes = package_root / "notes.md"
+    user_notes.write_text("operator notes", encoding="utf-8")
+
+    monkeypatch.setattr(
+        "scripts.proof.init_scenario_implementation._build_runtime_composition_py",
+        lambda slug, agent_class: "GraphExecutor\n",
+    )
+
+    with pytest.raises(ScenarioImplementationInitError):
+        init_scenario_implementation(
+            ScenarioImplementationRequest(
+                slug=validate_scenario_slug(slug),
+                repo_root=tmp_path,
+            ),
+        )
+
+    assert user_notes.read_text(encoding="utf-8") == "operator notes"
+

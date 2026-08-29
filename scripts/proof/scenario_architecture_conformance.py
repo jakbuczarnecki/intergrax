@@ -14,6 +14,7 @@ from scripts.proof.create_scenario_proof import ScenarioSlug, validate_scenario_
 from scripts.proof.scenario_lifecycle import (
     ScenarioImplementationStatus,
     ScenarioLifecycle,
+    ScenarioLifecycleError,
     ScenarioLifecycleMetadata,
     ScenarioLifecycleParseStatus,
     load_scenario_lifecycle_metadata,
@@ -501,7 +502,7 @@ def assert_scenario_application_architecture(
 
 
 def discover_initialized_scenario_slugs(repo_root: Path) -> tuple[str, ...]:
-    """Return slugs under platform_proofs/scenarios with an application layer."""
+    """Return slugs whose lifecycle metadata requires application architecture validation."""
     scenarios_root = repo_root / CANONICAL_SCENARIOS_ROOT
     if not scenarios_root.is_dir():
         return ()
@@ -509,6 +510,62 @@ def discover_initialized_scenario_slugs(repo_root: Path) -> tuple[str, ...]:
     for package_root in sorted(scenarios_root.iterdir()):
         if not package_root.is_dir():
             continue
-        if (package_root / "application").is_dir():
-            slugs.append(package_root.name)
+        slug = package_root.name
+        application_dir = package_root / "application"
+        has_application = application_dir.is_dir()
+        spec_path = package_root / SCENARIO_SPEC_FILENAME
+        if not spec_path.is_file():
+            if has_application:
+                raise ScenarioLifecycleError(
+                    f"scenario {slug} has application layer but missing {SCENARIO_SPEC_FILENAME}"
+                )
+            continue
+
+        metadata = load_scenario_lifecycle_metadata(spec_path, expected_slug=slug)
+        if has_application and metadata.parse_status is not ScenarioLifecycleParseStatus.PARSED:
+            raise ScenarioLifecycleError(
+                f"scenario {slug} has application layer but lifecycle metadata is "
+                f"{metadata.parse_status.value}"
+            )
+        if has_application and not scenario_requires_application_architecture_validation(
+            metadata,
+            package_root=package_root,
+        ):
+            raise ScenarioLifecycleError(
+                f"scenario {slug} has application layer but lifecycle "
+                f"({metadata.lifecycle.value}, "
+                f"implementation_status={metadata.implementation_status.value}) "
+                "does not mark implementation initialized"
+            )
+        if scenario_requires_application_architecture_validation(
+            metadata,
+            package_root=package_root,
+        ):
+            slugs.append(slug)
     return tuple(slugs)
+
+
+def validate_all_initialized_scenario_architectures(
+    repo_root: Path,
+) -> tuple[ScenarioArchitectureConformanceReport, ...]:
+    """Validate architecture for every lifecycle-discovered initialized scenario."""
+    return tuple(
+        validate_scenario_application_architecture(
+            repo_root=repo_root,
+            scenario_slug=slug,
+        )
+        for slug in discover_initialized_scenario_slugs(repo_root)
+    )
+
+
+def assert_all_initialized_scenario_architectures(repo_root: Path) -> None:
+    """Assert architecture conformance for every lifecycle-discovered initialized scenario."""
+    all_violations: list[ScenarioArchitectureViolation] = []
+    for slug in discover_initialized_scenario_slugs(repo_root):
+        report = validate_scenario_application_architecture(
+            repo_root=repo_root,
+            scenario_slug=slug,
+        )
+        all_violations.extend(report.violations)
+    if all_violations:
+        raise ScenarioArchitectureConformanceError(tuple(all_violations))
