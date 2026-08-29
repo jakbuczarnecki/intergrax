@@ -43,7 +43,7 @@ from intergrax.runtime.diagnostics.problem_persistence import (
     ProblemPersistence,
     ProblemPersistenceConflictError,
     ProblemPersistenceIntegrityError,
-    RECONCILIATION_WINNER_CANONICAL_PENDING,
+    ProblemPersistenceIntegrityReason,
 )
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import DocumentRecord
@@ -176,6 +176,77 @@ class _ConflictThenVanishPersistence:
         close = getattr(self._delegate, "close", None)
         if callable(close):
             close()
+
+
+class _CreateConflictLookupIntegrityPersistence:
+    """Persistence double: create conflicts; lookup raises integrity failure on convergence."""
+
+    def __init__(
+        self,
+        *,
+        lookup_exc: ProblemPersistenceIntegrityError,
+    ) -> None:
+        self._lookup_exc = lookup_exc
+        self._lookup_calls = 0
+
+    def get(self, *, tenant_id: str, problem_id: ProblemId) -> Problem | None:
+        return None
+
+    def list_for_tenant(self, tenant_id: str) -> tuple[Problem, ...]:
+        return ()
+
+    def find_by_reconciliation_key(self, *, tenant_id: str, reconciliation_key):
+        self._lookup_calls += 1
+        if self._lookup_calls == 1:
+            return None
+        raise self._lookup_exc
+
+    def find_by_subject_ref(self, *, tenant_id: str, subject_ref):
+        return None
+
+    def create(self, record: Problem) -> Problem:
+        raise ProblemPersistenceConflictError("forced create conflict for lookup proof")
+
+    def update(self, record: Problem, *, expected_version: int) -> Problem:
+        raise ProblemPersistenceConflictError("unexpected update in lookup proof")
+
+    def close(self) -> None:
+        return None
+
+
+def test_harden_2d_create_lookup_integrity_error_without_pending_reason_fails_closed() -> None:
+    tenant_id = "harden-2d-create-lookup-integrity"
+    signature = _sample_signature()
+    reconciliation_key = _sample_reconciliation_key(
+        tenant_id=tenant_id,
+        signature=signature,
+    )
+    subject = _sample_subject_ref(tenant_id=tenant_id)
+    grouping = _singleton_grouping_result(
+        tenant_id=tenant_id,
+        member=subject,
+        signature=signature,
+        observed_at=_OBSERVED_AT_A,
+    )
+
+    lookup_cases = [
+        ProblemPersistenceIntegrityError("orphan reconciliation index"),
+        ProblemPersistenceIntegrityError("integrity failure without typed reason"),
+    ]
+    other_reason_exc = ProblemPersistenceIntegrityError("integrity failure with other reason")
+    other_reason_exc.reason = object()
+    lookup_cases.append(other_reason_exc)
+
+    for lookup_exc in lookup_cases:
+        persistence = _CreateConflictLookupIntegrityPersistence(lookup_exc=lookup_exc)
+        lifecycle = ProblemLifecycleEngine(persistence)
+        with pytest.raises(
+            ProblemLifecycleIntegrityError,
+            match="persistence lookup failure",
+        ) as exc_info:
+            lifecycle.reconcile(grouping, observed_at=_OBSERVED_AT_A)
+        assert isinstance(exc_info.value.__cause__, ProblemPersistenceIntegrityError)
+        persistence.close()
 
 
 def test_harden_2b_lifecycle_update_race_preserves_distinct_occurrences() -> None:
@@ -608,7 +679,10 @@ def test_harden_2d_create_race_converges_while_winner_canonical_pending() -> Non
                     reconciliation_key=reconciliation_key,
                 )
             except ProblemPersistenceIntegrityError as exc:
-                if str(exc) == RECONCILIATION_WINNER_CANONICAL_PENDING:
+                if (
+                    exc.reason
+                    is ProblemPersistenceIntegrityReason.RECONCILIATION_WINNER_CANONICAL_PENDING
+                ):
                     store.release_canonical()
                     if not store.wait_canonical_written(timeout=5):
                         raise

@@ -32,8 +32,13 @@ from intergrax.runtime.diagnostics.problem_lifecycle import (
     ProblemStatus,
     mint_problem_id,
 )
-from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistenceConflictError
+from intergrax.runtime.diagnostics.problem_persistence import (
+    ProblemPersistenceConflictError,
+    ProblemPersistenceIntegrityError,
+    ProblemPersistenceIntegrityReason,
+)
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations.contracts.document_store import DocumentRecord
 from testing_support.barrier_conditional_document_store import BarrierConditionalDocumentStore
 
 pytestmark = pytest.mark.unit
@@ -281,3 +286,34 @@ def test_harden_2a_create_race_different_reconciliation_identities_remain_distin
         )
     finally:
         verifier.close()
+
+
+def test_harden_2a_orphan_reconciliation_index_raises_typed_canonical_pending_reason() -> None:
+    store = InMemoryDocumentStore()
+    record = sample_problem(tenant_id="harden-2a-orphan-reconcile")
+    partition_key = f"intergrax.diagnostic_problem.v1:{record.tenant_id}"
+    store.put(
+        DocumentRecord(
+            partition_key=partition_key,
+            row_key=f"reconcile:{record.provenance.reconciliation_key.index_token()}",
+            data={
+                "schema_version": "intergrax.diagnostic_problem.index.v1",
+                "problem_id": str(record.problem_id),
+            },
+        )
+    )
+    persistence = DocumentStoreProblemPersistence(store)
+    try:
+        with pytest.raises(ProblemPersistenceIntegrityError) as exc_info:
+            persistence.find_by_reconciliation_key(
+                tenant_id=record.tenant_id,
+                reconciliation_key=record.provenance.reconciliation_key,
+            )
+        exc = exc_info.value
+        assert (
+            exc.reason
+            is ProblemPersistenceIntegrityReason.RECONCILIATION_WINNER_CANONICAL_PENDING
+        )
+        assert "canonical Problem record missing" in str(exc)
+    finally:
+        persistence.close()

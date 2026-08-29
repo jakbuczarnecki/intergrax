@@ -39,10 +39,10 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingSubjectRef,
 )
 from intergrax.runtime.diagnostics.problem_persistence import (
-    RECONCILIATION_WINNER_CANONICAL_PENDING,
     ProblemPersistence,
     ProblemPersistenceConflictError,
     ProblemPersistenceIntegrityError,
+    ProblemPersistenceIntegrityReason,
 )
 
 ProblemId = NewType("ProblemId", str)
@@ -361,7 +361,10 @@ class ProblemLifecycleEngine:
                     reconciliation_key=reconciliation_key,
                 )
             except ProblemPersistenceIntegrityError as exc:
-                if str(exc) != RECONCILIATION_WINNER_CANONICAL_PENDING:
+                if (
+                    exc.reason
+                    is not ProblemPersistenceIntegrityReason.RECONCILIATION_WINNER_CANONICAL_PENDING
+                ):
                     raise ProblemLifecycleIntegrityError(
                         "failed to create stable Problem due to persistence lookup failure",
                     ) from exc
