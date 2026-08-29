@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from intergrax.applications._shared.critic_wiring import (
     ApplicationCriticWiring,
@@ -45,6 +45,10 @@ from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
+from intergrax.runtime.execution.authority import (
+    resolve_execution_authority_policy_from_runtime_config,
+)
+from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
@@ -52,6 +56,10 @@ from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
+
+
+if TYPE_CHECKING:
+    from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
 
 
 def build_nexus_loop_from_environment(
@@ -80,6 +88,8 @@ def build_nexus_loop_from_environment(
     adaptive_wiring: ApplicationAdaptiveWiring | None = None,
     run_budget: RunBudget | None = None,
     validation_engine: NexusValidationEngine | None = None,
+    runtime_config: RuntimeConfig | None = None,
+    authority_policy: ExecutionAuthorityPolicy | None = None,
 ) -> NexusLoop:
     """Apply orchestration and reliability profiles to ``NexusLoop`` construction."""
     orch = env.orchestration_profile
@@ -98,6 +108,11 @@ def build_nexus_loop_from_environment(
     planner = resolve_nexus_task_planner(env, wiring_context=wiring_context)
     classifier = resolve_nexus_task_classifier(registry, env, wiring_context=wiring_context)
     runtime_settings = resolve_orchestration_runtime_settings(env)
+    resolved_authority_policy = authority_policy
+    if resolved_authority_policy is None and runtime_config is not None:
+        resolved_authority_policy = resolve_execution_authority_policy_from_runtime_config(
+            runtime_config,
+        )
     resolved_context_manager = context_manager or resolve_context_manager_from_environment(
         env,
         event_bus=runtime_event_bus,
@@ -140,6 +155,7 @@ def build_nexus_loop_from_environment(
         denied_planner_model_ids=tuple(env.reasoning_profile.denied_planner_model_ids),
         planner_model_id=resolve_planner_model_id(env),
         validation_engine=validation_engine,
+        authority_policy=resolved_authority_policy,
     )
     resolved_security = security_wiring or wire_application_security(env)
     apply_application_security_wiring(loop, resolved_security, env=env)

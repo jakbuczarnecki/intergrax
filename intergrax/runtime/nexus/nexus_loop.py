@@ -108,6 +108,7 @@ from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddlewar
 if TYPE_CHECKING:
     from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
     from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
+    from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
 
 class NexusLoop:
     """
@@ -164,6 +165,7 @@ class NexusLoop:
         planner_model_id: str | None = None,
         governance_service: Any = None,
         terminal_diagnostic_trigger: TerminalExecutionDiagnosticTriggerProtocol | None = None,
+        authority_policy: "ExecutionAuthorityPolicy | None" = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -263,6 +265,7 @@ class NexusLoop:
             idempotency_store=idempotency_store,
             declarative_tool_invoker=declarative_tool_invoker,
             execution_identity=self._execution_identity,
+            authority_policy=authority_policy,
         )
         self._composer = FinalResponseComposer(merge_strategy=merge_strategy)
         self._lifecycle = lifecycle
