@@ -17,11 +17,10 @@ pytestmark = pytest.mark.gate
 def _sample_event(**updates) -> RuntimeEvent:
     base = RuntimeEvent(
         tenant_id="t1",
-        task_id="task_1",
-        run_id="run_1",
         event_type=RuntimeEventType.TASK_COMPLETED,
         phase=ExecutionPhase.COMPLETION,
         payload={},
+        **runtime_event_test_identity(),
     )
     return base.model_copy(update=updates)
 

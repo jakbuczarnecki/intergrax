@@ -15,10 +15,9 @@ pytestmark = pytest.mark.gate
 
 def test_runtime_event_auto_fills_kind_category_and_ops_hint() -> None:
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
         event_type=RuntimeEventType.TOOL_COMPLETED,
         phase=ExecutionPhase.STEP_EXECUTION,
+        **runtime_event_test_identity(),
     )
     assert event.event_kind == "tool_completed"
     assert event.event_category == EventCategory.TOOL
@@ -27,13 +26,12 @@ def test_runtime_event_auto_fills_kind_category_and_ops_hint() -> None:
 
 def test_runtime_event_preserves_explicit_event_kind() -> None:
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
         event_type=RuntimeEventType.DOMAIN_SIGNAL,
         event_kind="agents.legal.clause_flagged",
         event_category=EventCategory.AGENT,
         ops_hint="ops:domain_signal",
         phase=ExecutionPhase.STEP_EXECUTION,
+        **runtime_event_test_identity(),
     )
     assert event.event_kind == "agents.legal.clause_flagged"
     assert event.event_category == EventCategory.AGENT
@@ -41,12 +39,11 @@ def test_runtime_event_preserves_explicit_event_kind() -> None:
 
 def test_domain_signal_catalog_entry_exists() -> None:
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
         event_type=RuntimeEventType.DOMAIN_SIGNAL,
         event_kind="platform.adaptive.custom",
         phase=ExecutionPhase.STEP_EXECUTION,
         severity=EventSeverity.INFO,
+        **runtime_event_test_identity(),
     )
     assert event.ops_hint == "ops:domain_signal"
     assert event.event_category == EventCategory.PLATFORM

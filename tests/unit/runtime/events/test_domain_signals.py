@@ -5,8 +5,9 @@ from __future__ import annotations
 import pytest
 from pydantic import Field
 
-from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id, mint_run_id, mint_task_id
 from intergrax.runtime.events.emit_context import EmitContext
+from testing_support.runtime_events import emit_context_test_identity
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.event_catalog import EventCategory
 from intergrax.runtime.events.payloads.base import RuntimeEventPayload
@@ -41,19 +42,16 @@ def _register_legal_domain_kind() -> None:
 
 @pytest.fixture
 def emit_ctx() -> EmitContext:
-    return EmitContext(
-        task_id=mint_task_id(),
-        run_id=mint_run_id(),
-        attempt_id=mint_attempt_id(),
-    )
+    return emit_context_test_identity()
 
 
 def test_emit_domain_signal_records_on_bus(emit_ctx: EmitContext) -> None:
     bus = RuntimeEventBus(record_history=True)
-    ctx = EmitContext(
+    ctx = emit_context_test_identity(
         task_id=emit_ctx.task_id,
         run_id=emit_ctx.run_id,
         attempt_id=emit_ctx.attempt_id,
+        execution_id=emit_ctx.execution_id,
         tenant_id="tenant-a",
         bus=bus,
     )
@@ -81,10 +79,11 @@ def test_emit_domain_signal_redacts_in_production_mode(emit_ctx: EmitContext) ->
         _SecretPayload,
         event_kind="agents.legal.secret_flagged",
     )
-    ctx = EmitContext(
+    ctx = emit_context_test_identity(
         task_id=emit_ctx.task_id,
         run_id=emit_ctx.run_id,
         attempt_id=emit_ctx.attempt_id,
+        execution_id=emit_ctx.execution_id,
         production_mode=True,
     )
     event = emit_domain_signal(
@@ -97,10 +96,11 @@ def test_emit_domain_signal_redacts_in_production_mode(emit_ctx: EmitContext) ->
 
 def test_emit_platform_event_uses_catalog_defaults(emit_ctx: EmitContext) -> None:
     bus = RuntimeEventBus(record_history=True)
-    ctx = EmitContext(
+    ctx = emit_context_test_identity(
         task_id=emit_ctx.task_id,
         run_id=emit_ctx.run_id,
         attempt_id=emit_ctx.attempt_id,
+        execution_id=emit_ctx.execution_id,
         bus=bus,
     )
     event = emit_platform_event(

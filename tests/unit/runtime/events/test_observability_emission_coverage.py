@@ -13,6 +13,7 @@ from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
     reset_active_execution_identity,
@@ -79,7 +80,12 @@ def test_agent_router_emits_agent_selected() -> None:
     )
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
-    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
     try:
         router.route(task, run_id=run_id)
     finally:
@@ -115,11 +121,13 @@ def test_trace_bridge_maps_runtime_step_failed() -> None:
         tags={"tenant_id": "t1", "task_id": task_id, "agent_id": "a1"},
     )
     task = Task(task_id=task_id, tenant_id="t1", user_id="u1", message="x")
+    execution_id = mint_execution_id()
     runtime = trace_event_to_runtime_event(
         trace,
         task,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
     )
     assert runtime.event_type == RuntimeEventType.STEP_FAILED
     assert runtime.payload["payload_schema_id"] == "validation.v1"
@@ -148,11 +156,13 @@ def test_trace_bridge_maps_graph_node_typed_payload() -> None:
         tags={"tenant_id": "t1", "task_id": task_id, "node_id": "n1"},
     )
     task = Task(task_id=task_id, tenant_id="t1", user_id="u1", message="x")
+    execution_id = mint_execution_id()
     runtime = trace_event_to_runtime_event(
         trace,
         task,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
     )
     assert runtime.event_type == RuntimeEventType.STEP_STARTED
     assert runtime.payload["payload_schema_id"] == "graph_node.v1"
@@ -188,11 +198,13 @@ def test_trace_bridge_maps_llm_catalog_miss_schema() -> None:
             run_id=run_id,
         ),
     )
+    execution_id = mint_execution_id()
     runtime = trace_event_to_runtime_event(
         trace,
         task,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
     )
     assert runtime.event_type == RuntimeEventType.LLM_CALL
     assert runtime.payload["model"] == "vendor/obs-cov"

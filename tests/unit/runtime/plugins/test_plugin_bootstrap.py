@@ -9,6 +9,7 @@ from intergrax.runtime.plugins.contract import RuntimePlugin
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.contracts.execution_phase import ExecutionPhase
+from testing_support.runtime_events import runtime_event_test_identity
 from intergrax.runtime.schema.registry import RuntimeVersionInfo, current_runtime_version
 
 pytestmark = pytest.mark.gate
@@ -49,10 +50,9 @@ def test_default_lab_plugins_subscribe_without_error():
     bus = RuntimeEventBus(record_history=False)
     _bootstrap(default_lab_plugins(), event_bus=bus)
     event = RuntimeEvent(
-        task_id="t1",
-        run_id="t1",
         event_type=RuntimeEventType.TASK_CREATED,
         phase=ExecutionPhase.INTAKE,
+        **runtime_event_test_identity(),
     )
     bus.record(event)
 
@@ -84,7 +84,7 @@ def test_compatible_schema_subset_registers():
         version="1.0.0",
         compatible_runtime=RuntimeVersionInfo(
             contract_bundle=runtime.contract_bundle,
-            supported_schemas=frozenset({"runtime_event.v1"}),
+            supported_schemas=frozenset({"runtime_event.v2"}),
         ),
         register=_register,
     )
@@ -180,7 +180,7 @@ def test_runtime_semver_difference_alone_does_not_reject():
         compatible_runtime=RuntimeVersionInfo(
             runtime_semver="99.88.77",
             contract_bundle=runtime.contract_bundle,
-            supported_schemas=frozenset({"runtime_event.v1"}),
+            supported_schemas=frozenset({"runtime_event.v2"}),
         ),
         register=_register,
     )

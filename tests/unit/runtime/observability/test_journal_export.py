@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from intergrax.contracts.execution_identity import mint_attempt_id, mint_event_id, mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_event_id, mint_execution_id, mint_run_id, mint_task_id
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
@@ -59,6 +59,7 @@ def _runtime_event(
         task_id=task_id,
         run_id=run_id,
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
         event_type=event_type,
         phase=ExecutionPhase.STEP_EXECUTION,
         severity=EventSeverity.INFO,

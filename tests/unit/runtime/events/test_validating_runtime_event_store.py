@@ -20,12 +20,10 @@ def test_validating_store_rejects_invalid_schema():
     store = ValidatingRuntimeEventPersistence(inner)
     run_id = mint_run_id()
     event = RuntimeEvent(
-        task_id=mint_task_id(),
-        run_id=run_id,
-        attempt_id=mint_attempt_id(),
         event_type=RuntimeEventType.TASK_CREATED,
         phase=ExecutionPhase.INTAKE,
         schema_version="runtime_event.v99",
+        **runtime_event_test_identity(),
     )
     with pytest.raises(RuntimeEventSchemaError):
         store.append(event, tenant_id="lab")

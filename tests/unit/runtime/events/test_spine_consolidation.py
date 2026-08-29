@@ -67,8 +67,10 @@ def test_migrate_legacy_spine_payload_on_read() -> None:
         "task_id": mint_task_id(),
         "run_id": mint_run_id(),
         "attempt_id": mint_attempt_id(),
-        "schema_version": "runtime_event.v1",
+        "execution_id": mint_execution_id(),
+        "schema_version": "runtime_event.v2",
         "event_type": "scale_failed",
+        "phase": ExecutionPhase.STEP_EXECUTION,
         "payload": {"reason": "denied"},
     }
     migrated = migrate_legacy_spine_payload(raw)

@@ -9,6 +9,7 @@ import pytest
 from intergrax.contracts.agent_run_trace import GatewayCallStatus, RagCallRecord, ToolCallRecord
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from testing_support.runtime_events import runtime_event_test_identity
 from intergrax.runtime.observability.export_boundary import (
     FORBIDDEN_EXPORT_CONTENT_FIELDS,
     InMemoryObservabilityExporter,
@@ -72,8 +73,6 @@ def test_export_boundary_has_no_vendor_sdk_coupling() -> None:
 
 def test_envelope_from_runtime_event_excludes_raw_payload_content() -> None:
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
         tenant_id="tenant-a",
         agent_id="agent-1",
         event_type=RuntimeEventType.TOOL_COMPLETED,
@@ -85,6 +84,7 @@ def test_envelope_from_runtime_event_excludes_raw_payload_content() -> None:
             "content": "raw file body",
             "source_path": "C:\\Users\\secret\\project\\file.txt",
         },
+        **runtime_event_test_identity(),
     )
 
     envelope = envelope_from_runtime_event(event)
@@ -129,11 +129,10 @@ def test_envelope_from_tool_and_rag_calls_are_safe() -> None:
 
 def test_runtime_event_export_source_strips_unsafe_payload_keys() -> None:
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
         event_type=RuntimeEventType.TOOL_REQUESTED,
         phase=ExecutionPhase.STEP_EXECUTION,
         payload={"tool_id": "rag.retrieve", "query": "user question", "input": {"path": "/tmp/x"}},
+        **runtime_event_test_identity(),
     )
     source = runtime_event_export_source_from_event(event)
     assert source.safe_payload == {"tool_id": "rag.retrieve"}

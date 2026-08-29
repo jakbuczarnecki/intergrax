@@ -5,13 +5,13 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
+from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.contracts.execution_phase import ExecutionPhase
-from intergrax.runtime.events.emit_context import EmitContext
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.event_kind_registry import clear_event_kind_registry
 from intergrax.runtime.events.payloads.base import RuntimeEventPayload
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-from testing_support.runtime_events import runtime_event_test_identity
+from testing_support.runtime_events import emit_context_test_identity, runtime_event_test_identity
 from intergrax.runtime.events.signals import emit_domain_signal
 from intergrax.runtime.events.w3c_trace_context import (
     child_traceparent,
@@ -66,19 +66,16 @@ def test_child_traceparent_preserves_trace_id() -> None:
 def test_runtime_event_rejects_invalid_traceparent() -> None:
     with pytest.raises(ValidationError):
         RuntimeEvent(
-            task_id="t1",
-            run_id="r1",
             event_type=RuntimeEventType.TASK_CREATED,
             phase=ExecutionPhase.INTAKE,
             traceparent="not-a-traceparent",
+            **runtime_event_test_identity(),
         )
 
 
 def test_emit_domain_signal_propagates_trace_context() -> None:
     root = format_traceparent(trace_id=generate_trace_id(), parent_id=generate_span_id())
-    ctx = EmitContext(
-        task_id="task-1",
-        run_id="run-1",
+    ctx = emit_context_test_identity(
         traceparent=root,
         tracestate="vendor1=opaque",
     )
@@ -93,19 +90,21 @@ def test_emit_domain_signal_propagates_trace_context() -> None:
 
 def test_inject_w3c_trace_on_event_uses_inbound_metadata() -> None:
     inbound = format_traceparent(trace_id=generate_trace_id(), parent_id=generate_span_id())
+    task_id = mint_task_id()
+    run_id = mint_run_id()
     task = Task(
-        task_id="task-trace",
+        task_id=task_id,
         tenant_id="tenant-a",
         user_id="user-1",
         message="hello",
         context=TaskContext(),
         metadata={"traceparent": inbound, "tracestate": "vendor1=opaque"},
     )
+    identity = runtime_event_test_identity(task_id=task_id, run_id=run_id)
     event = RuntimeEvent(
-        task_id=task.task_id,
-        run_id=task.task_id,
         event_type=RuntimeEventType.TASK_CREATED,
         phase=ExecutionPhase.INTAKE,
+        **identity,
     )
     wired = inject_w3c_trace_on_event(event, task)
     assert wired.traceparent is not None
@@ -140,19 +139,18 @@ def test_otlp_export_uses_w3c_trace_ids_when_present() -> None:
 
 def test_with_parent_creates_child_traceparent() -> None:
     root = format_traceparent(trace_id=generate_trace_id(), parent_id=generate_span_id())
+    identity = runtime_event_test_identity()
     parent = RuntimeEvent(
-        task_id="t1",
-        run_id="r1",
         event_type=RuntimeEventType.TASK_CREATED,
         phase=ExecutionPhase.INTAKE,
         traceparent=root,
         tracestate="vendor1=opaque",
+        **identity,
     )
     child = RuntimeEvent(
-        task_id="t1",
-        run_id="r1",
         event_type=RuntimeEventType.STEP_STARTED,
         phase=ExecutionPhase.STEP_EXECUTION,
+        **identity,
     ).with_parent(parent)
     assert child.parent_event_id == parent.event_id
     assert parse_traceparent(child.traceparent or "").trace_id == parse_traceparent(root).trace_id

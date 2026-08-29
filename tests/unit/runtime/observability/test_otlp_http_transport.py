@@ -12,6 +12,7 @@ import pytest
 
 from intergrax.contracts.execution_identity import (
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
 )
@@ -271,6 +272,7 @@ async def test_end_to_end_through_try_export_strips_raw_runtime_payload_content(
         task_id=mint_task_id(),
         run_id=mint_run_id(),
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
         tenant_id="tenant-a",
         agent_id="agent-1",
         event_type=RuntimeEventType.TOOL_COMPLETED,

@@ -12,6 +12,7 @@ import pytest
 
 from intergrax.contracts.execution_identity import (
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
 )
@@ -359,6 +360,7 @@ async def test_created_runtime_plugin_blocks_export_content_even_when_operator_c
         task_id=mint_task_id(),
         run_id=mint_run_id(),
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
         event_type=RuntimeEventType.TOOL_COMPLETED,
         phase=ExecutionPhase.STEP_EXECUTION,
         payload={
@@ -435,6 +437,7 @@ async def test_runtime_event_through_plugin_reaches_injected_transport() -> None
         task_id=mint_task_id(),
         run_id=run_id,
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
         event_type=RuntimeEventType.TASK_COMPLETED,
         phase=ExecutionPhase.COMPLETION,
         payload={"journal_ref": {"event_count": 1}},
@@ -455,6 +458,7 @@ async def test_raw_application_attributes_are_not_exported_only_sanitized_are_us
         task_id=mint_task_id(),
         run_id=mint_run_id(),
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
         tenant_id="tenant-a",
         agent_id="agent-1",
         event_type=RuntimeEventType.TOOL_COMPLETED,

@@ -7,9 +7,9 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, Optional, Self
+from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_identity import (
@@ -94,7 +94,7 @@ class RuntimeEvent(BaseModel):
     task_id: TaskId
     run_id: RunId
     attempt_id: AttemptId
-    execution_id: ExecutionId | None = None
+    execution_id: ExecutionId
     node_id: Optional[str] = None
     agent_id: Optional[str] = None
     step_id: Optional[str] = None
@@ -134,16 +134,8 @@ class RuntimeEvent(BaseModel):
 
     @field_validator("execution_id", mode="before")
     @classmethod
-    def _validate_execution_id_field(cls, value: object | None) -> ExecutionId | None:
-        if value is None:
-            return None
+    def _validate_execution_id_field(cls, value: object) -> ExecutionId:
         return validate_execution_id(value)
-
-    @model_validator(mode="after")
-    def _require_execution_id_for_v2(self) -> Self:
-        if self.schema_version == "runtime_event.v2" and self.execution_id is None:
-            raise ValueError("execution_id is required for runtime_event.v2")
-        return self
 
     @field_validator("parent_event_id", mode="before")
     @classmethod

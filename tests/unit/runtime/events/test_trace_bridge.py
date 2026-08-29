@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id, mint_run_id, mint_task_id
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.phase_coverage import phase_for_event
 from intergrax.runtime.events.runtime_event import RuntimeEventType
@@ -26,12 +26,12 @@ from intergrax.runtime.task.task import Task, TaskState
 pytestmark = pytest.mark.gate
 
 
-def _trace_identity() -> tuple[str, str, str]:
-    return mint_task_id(), mint_run_id(), mint_attempt_id()
+def _trace_identity() -> tuple[str, str, str, str]:
+    return mint_task_id(), mint_run_id(), mint_attempt_id(), mint_execution_id()
 
 
 def test_phase_for_event_matches_trace_bridge_retry() -> None:
-    task_id, run_id, attempt_id = _trace_identity()
+    task_id, run_id, attempt_id, execution_id = _trace_identity()
     task = Task(
         task_id=task_id,
         tenant_id="tenant",
@@ -55,14 +55,15 @@ def test_phase_for_event_matches_trace_bridge_retry() -> None:
         task,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
     )
     assert event.event_type == RuntimeEventType.RETRY_STARTED
     assert event.phase == phase_for_event(RuntimeEventType.RETRY_STARTED)
     assert event.phase == ExecutionPhase.RETRY_HANDLING
 
 
-def _task_with_identity() -> tuple[Task, str, str, str]:
-    task_id, run_id, attempt_id = _trace_identity()
+def _task_with_identity() -> tuple[Task, str, str, str, str]:
+    task_id, run_id, attempt_id, execution_id = _trace_identity()
     task = Task(
         task_id=task_id,
         tenant_id="tenant",
@@ -70,11 +71,11 @@ def _task_with_identity() -> tuple[Task, str, str, str]:
         agent_id="agent",
         message="q",
     )
-    return task, task_id, run_id, attempt_id
+    return task, task_id, run_id, attempt_id, execution_id
 
 
 def test_trace_bridge_maps_tool_invocation_start() -> None:
-    task, task_id, run_id, attempt_id = _task_with_identity()
+    task, task_id, run_id, attempt_id, execution_id = _task_with_identity()
     trace = TraceEvent(
         event_id="tool-1",
         run_id=run_id,
@@ -91,6 +92,7 @@ def test_trace_bridge_maps_tool_invocation_start() -> None:
         task,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
         payload_dict={"tool_name": "rag.retrieve"},
     )
     assert event.event_type == RuntimeEventType.TOOL_REQUESTED
@@ -99,7 +101,7 @@ def test_trace_bridge_maps_tool_invocation_start() -> None:
 
 
 def test_trace_bridge_maps_llm_call_recorded_schema() -> None:
-    task, task_id, run_id, attempt_id = _task_with_identity()
+    task, task_id, run_id, attempt_id, execution_id = _task_with_identity()
     trace = TraceEvent(
         event_id="llm-1",
         run_id=run_id,
@@ -127,6 +129,7 @@ def test_trace_bridge_maps_llm_call_recorded_schema() -> None:
         task,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
         payload_schema_id=CoreLLMCallRecordedDiagV1.schema_id(),
         payload_dict=payload,
     )
@@ -136,7 +139,7 @@ def test_trace_bridge_maps_llm_call_recorded_schema() -> None:
 
 
 def test_trace_bridge_maps_llm_routing_attempt_schema() -> None:
-    task, task_id, run_id, attempt_id = _task_with_identity()
+    task, task_id, run_id, attempt_id, execution_id = _task_with_identity()
     trace = TraceEvent(
         event_id="llm-route-1",
         run_id=run_id,
@@ -160,6 +163,7 @@ def test_trace_bridge_maps_llm_routing_attempt_schema() -> None:
         task,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
         payload_schema_id=LLMRoutingAttemptDiagV1.schema_id(),
         payload_dict=payload,
     )
@@ -168,7 +172,7 @@ def test_trace_bridge_maps_llm_routing_attempt_schema() -> None:
 
 
 def test_trace_bridge_maps_llm_routing_rule_schema() -> None:
-    task, task_id, run_id, attempt_id = _task_with_identity()
+    task, task_id, run_id, attempt_id, execution_id = _task_with_identity()
     trace = TraceEvent(
         event_id="llm-rule-1",
         run_id=run_id,
@@ -193,6 +197,7 @@ def test_trace_bridge_maps_llm_routing_rule_schema() -> None:
         task,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
         payload_schema_id=LLMRoutingRuleDiagV1.schema_id(),
         payload_dict=payload,
     )
@@ -201,7 +206,7 @@ def test_trace_bridge_maps_llm_routing_rule_schema() -> None:
 
 
 def test_trace_bridge_maps_llm_catalog_miss_schema() -> None:
-    task, task_id, run_id, attempt_id = _task_with_identity()
+    task, task_id, run_id, attempt_id, execution_id = _task_with_identity()
     trace = TraceEvent(
         event_id="llm-miss-1",
         run_id=run_id,
@@ -225,6 +230,7 @@ def test_trace_bridge_maps_llm_catalog_miss_schema() -> None:
         task,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
         payload_schema_id=ModelCatalogMissTraceDiagV1.schema_id(),
         payload_dict=payload,
     )
@@ -234,7 +240,7 @@ def test_trace_bridge_maps_llm_catalog_miss_schema() -> None:
 
 
 def test_trace_bridge_ignores_noncanonical_task_id_tag() -> None:
-    task, task_id, run_id, attempt_id = _task_with_identity()
+    task, task_id, run_id, attempt_id, execution_id = _task_with_identity()
     trace = TraceEvent(
         event_id="diag-1",
         run_id=run_id,
@@ -251,12 +257,13 @@ def test_trace_bridge_ignores_noncanonical_task_id_tag() -> None:
         task,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
     )
     assert event.task_id == task_id
 
 
 def test_trace_bridge_rejects_malformed_supplied_run_id() -> None:
-    task, task_id, _, attempt_id = _task_with_identity()
+    task, task_id, _, attempt_id, execution_id = _task_with_identity()
     trace = TraceEvent(
         event_id="malformed-run",
         run_id="run-bad",
@@ -274,11 +281,12 @@ def test_trace_bridge_rejects_malformed_supplied_run_id() -> None:
             task,
             run_id="run-bad",
             attempt_id=attempt_id,
+            execution_id=execution_id,
         )
 
 
 def test_trace_bridge_does_not_mint_task_id_from_malformed_tag() -> None:
-    task_id, run_id, attempt_id = _trace_identity()
+    task_id, run_id, attempt_id, execution_id = _trace_identity()
     task = Task(
         task_id=task_id,
         tenant_id="tenant",
@@ -306,13 +314,14 @@ def test_trace_bridge_does_not_mint_task_id_from_malformed_tag() -> None:
             ),
             run_id=run_id,
             attempt_id=attempt_id,
+            execution_id=execution_id,
         )
 
 
 def test_trace_bridge_does_not_use_run_id_as_task_id() -> None:
     from intergrax.runtime.events.trace_bridge import TraceBridgeSubjectView
 
-    task_id, run_id, attempt_id = _trace_identity()
+    task_id, run_id, attempt_id, execution_id = _trace_identity()
     trace = TraceEvent(
         event_id="missing-task",
         run_id=run_id,
@@ -330,11 +339,12 @@ def test_trace_bridge_does_not_use_run_id_as_task_id() -> None:
             TraceBridgeSubjectView(tenant_id="tenant", task_id=run_id),
             run_id=run_id,
             attempt_id=attempt_id,
+            execution_id=execution_id,
         )
 
 
 def test_trace_bridge_requires_attempt_id_without_active_identity() -> None:
-    task, task_id, run_id, _attempt_id = _task_with_identity()
+    task, task_id, run_id, _attempt_id, execution_id = _task_with_identity()
     trace = TraceEvent(
         event_id="missing-attempt",
         run_id=run_id,
@@ -348,6 +358,23 @@ def test_trace_bridge_requires_attempt_id_without_active_identity() -> None:
     )
     with pytest.raises(RuntimeError, match="explicit attempt_id required"):
         trace_event_to_runtime_event(trace, task, run_id=run_id)
+
+
+def test_trace_bridge_requires_execution_id_without_active_identity() -> None:
+    task, task_id, run_id, attempt_id, _execution_id = _task_with_identity()
+    trace = TraceEvent(
+        event_id="missing-execution",
+        run_id=run_id,
+        seq=13,
+        ts_utc="2026-06-19T10:00:00Z",
+        level=TraceLevel.INFO,
+        component=TraceComponent.ENGINE,
+        step="diag",
+        message="no execution",
+        tags={"task_id": task_id},
+    )
+    with pytest.raises(RuntimeError, match="explicit execution_id required"):
+        trace_event_to_runtime_event(trace, task, run_id=run_id, attempt_id=attempt_id)
 
 
 def test_trace_bridge_subject_requires_tenant_id() -> None:

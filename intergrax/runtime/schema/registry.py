@@ -42,15 +42,12 @@ RUNTIME_SCHEMA_REGISTRY: dict[str, str] = {
 }
 
 # Post-publication preview schema ids accepted by conformance gates (OBS-EVOL-9.9).
-PREVIEW_RUNTIME_SCHEMA_VERSIONS: dict[str, frozenset[str]] = {
-    "runtime_event": frozenset({"runtime_event.v1"}),
-}
+PREVIEW_RUNTIME_SCHEMA_VERSIONS: dict[str, frozenset[str]] = {}
 
 
 def current_runtime_version() -> RuntimeVersionInfo:
-    preview = {v for versions in PREVIEW_RUNTIME_SCHEMA_VERSIONS.values() for v in versions}
     return RuntimeVersionInfo(
-        supported_schemas=frozenset(RUNTIME_SCHEMA_REGISTRY.values()) | preview,
+        supported_schemas=frozenset(RUNTIME_SCHEMA_REGISTRY.values()),
     )
 
 

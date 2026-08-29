@@ -19,7 +19,7 @@ from intergrax.contracts.execution_identity import (
     reset_active_execution_identity,
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
-from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType, parse_runtime_event_payload
 from testing_support.runtime_events import runtime_event_test_identity
 from intergrax.runtime.events.runtime_event_identity import require_bound_runtime_event_identity
 from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
@@ -235,15 +235,28 @@ def test_canonical_runtime_event_without_active_execution_fails_closed() -> None
         require_bound_runtime_event_identity(task_id=mint_task_id())
 
 
-def test_runtime_event_v2_requires_execution_id() -> None:
-    with pytest.raises(ValueError, match="execution_id is required"):
+def test_runtime_event_without_execution_id_fails() -> None:
+    with pytest.raises(Exception):
         RuntimeEvent(
             task_id=mint_task_id(),
             run_id=mint_run_id(),
             attempt_id=mint_attempt_id(),
             event_type=RuntimeEventType.STEP_STARTED,
             phase=ExecutionPhase.STEP_EXECUTION,
-            schema_version="runtime_event.v2",
+        )
+
+
+def test_parse_runtime_event_payload_rejects_missing_execution_id() -> None:
+    with pytest.raises(Exception):
+        parse_runtime_event_payload(
+            {
+                "task_id": mint_task_id(),
+                "run_id": mint_run_id(),
+                "attempt_id": mint_attempt_id(),
+                "event_type": "step_started",
+                "phase": "step_execution",
+                "schema_version": "runtime_event.v2",
+            }
         )
 
 
@@ -276,17 +289,3 @@ def test_with_parent_preserves_child_execution_id() -> None:
         assert child.execution_id != parent.execution_id
     finally:
         reset_active_execution_identity(child_token)
-
-
-def test_runtime_event_v1_read_without_execution_id_still_loads() -> None:
-    event = RuntimeEvent(
-        task_id=mint_task_id(),
-        run_id=mint_run_id(),
-        attempt_id=mint_attempt_id(),
-        event_type=RuntimeEventType.STEP_STARTED,
-        phase=ExecutionPhase.STEP_EXECUTION,
-        schema_version="runtime_event.v1",
-        execution_id=None,
-    )
-    assert event.execution_id is None
-    assert event.schema_version == "runtime_event.v1"

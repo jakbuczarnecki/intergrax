@@ -17,23 +17,23 @@ pytestmark = pytest.mark.gate
 
 
 def test_runtime_schema_registry_contains_core_contracts():
-    assert RUNTIME_SCHEMA_REGISTRY["runtime_event"] == "runtime_event.v1"
+    assert RUNTIME_SCHEMA_REGISTRY["runtime_event"] == "runtime_event.v2"
     assert RUNTIME_SCHEMA_REGISTRY["agent_decision"] == "agent_decision.v1"
 
 
 def test_validate_schema_version_accepts_known_versions():
-    assert validate_schema_version("runtime_event", "runtime_event.v1") is True
     assert validate_schema_version("runtime_event", "runtime_event.v2") is True
+    assert validate_schema_version("runtime_event", "runtime_event.v1") is False
 
 
-def test_runtime_event_v2_listed_as_preview_schema():
+def test_runtime_event_v1_not_listed_as_supported_schema():
     info = current_runtime_version()
-    assert "runtime_event.v2" in info.supported_schemas
+    assert "runtime_event.v1" not in info.supported_schemas
 
 
 def test_current_runtime_version_lists_registered_schemas():
     info = current_runtime_version()
-    assert "runtime_event.v1" in info.supported_schemas
+    assert "runtime_event.v2" in info.supported_schemas
     assert info.contract_bundle == "uaep-1.0"
 
 

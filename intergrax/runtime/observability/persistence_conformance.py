@@ -77,24 +77,28 @@ def assert_runtime_event_persistence_conformance(
     run_id = mint_run_id()
     task_id = mint_task_id()
     attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
 
     first = sample_runtime_event(
         tenant_id=tenant_a,
         task_id=task_id,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
     )
     second = sample_runtime_event(
         tenant_id=tenant_a,
         task_id=task_id,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
     )
     foreign = sample_runtime_event(
         tenant_id=tenant_b,
         task_id=mint_task_id(),
         run_id=mint_run_id(),
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
 
     store.append(first, tenant_id=tenant_a)

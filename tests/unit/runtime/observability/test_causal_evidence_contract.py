@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from intergrax.contracts.execution_identity import (
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
 )
@@ -189,6 +190,7 @@ def test_runtime_event_still_requires_canonical_execution_identity() -> None:
         task_id=mint_task_id(),
         run_id=mint_run_id(),
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
         event_type=RuntimeEventType.TASK_CREATED,
         phase=ExecutionPhase.INTAKE,
     )

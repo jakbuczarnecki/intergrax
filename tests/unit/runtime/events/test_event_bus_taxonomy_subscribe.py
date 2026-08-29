@@ -5,13 +5,12 @@ from __future__ import annotations
 import pytest
 
 from intergrax.contracts.execution_phase import ExecutionPhase
-from intergrax.runtime.events.emit_context import EmitContext
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.event_catalog import EventCategory
 from intergrax.runtime.events.journal_query import query_journal
 from intergrax.runtime.events.payloads.base import RuntimeEventPayload
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-from testing_support.runtime_events import runtime_event_test_identity
+from testing_support.runtime_events import emit_context_test_identity, runtime_event_test_identity
 from intergrax.runtime.events.signals import emit_domain_signal
 from intergrax.runtime.observability.extension_sdk import register_extension_runtime_payload
 
@@ -49,7 +48,7 @@ def test_subscribe_by_kind_prefix_on_record() -> None:
     bus = RuntimeEventBus(record_history=True)
     seen: list[str] = []
     bus.subscribe(lambda e: seen.append(e.event_kind), kind_prefix="agents.legal.")
-    ctx = EmitContext(task_id="t1", run_id="r1", bus=bus)
+    ctx = emit_context_test_identity(bus=bus)
     emit_domain_signal(ctx, kind="agents.legal.clause_flagged", payload=_AgentFlagV1())
     emit_domain_signal(ctx, kind="agents.research.note_added", payload=_ResearchNoteV1())
     assert seen == ["agents.legal.clause_flagged"]
@@ -59,7 +58,7 @@ def test_subscribe_by_category() -> None:
     bus = RuntimeEventBus(record_history=True)
     seen: list[EventCategory] = []
     bus.subscribe(lambda e: seen.append(e.event_category), categories={EventCategory.TOOL})
-    ctx = EmitContext(task_id="t1", run_id="r1", bus=bus)
+    ctx = emit_context_test_identity(bus=bus)
     from intergrax.runtime.events.payloads.canonical import ToolPayloadV1
     from intergrax.runtime.events.signals import emit_platform_event
 
@@ -74,7 +73,7 @@ def test_subscribe_by_category() -> None:
 
 def test_query_journal_filters_kind_prefix() -> None:
     bus = RuntimeEventBus(record_history=True)
-    ctx = EmitContext(task_id="t1", run_id="r1", bus=bus)
+    ctx = emit_context_test_identity(bus=bus)
     emit_domain_signal(ctx, kind="agents.legal.clause_flagged", payload=_AgentFlagV1())
     emit_domain_signal(ctx, kind="agents.research.note_added", payload=_ResearchNoteV1())
     legal = query_journal(bus.history, kind_prefix="agents.legal.")
@@ -89,20 +88,19 @@ def test_legacy_event_types_subscribe_unchanged() -> None:
         lambda e: seen.append(e.event_type),
         event_types={RuntimeEventType.TASK_CREATED},
     )
+    identity = runtime_event_test_identity()
     bus.record(
         RuntimeEvent(
-            task_id="t1",
-            run_id="r1",
             event_type=RuntimeEventType.TASK_CREATED,
             phase=ExecutionPhase.INTAKE,
+            **identity,
         )
     )
     bus.record(
         RuntimeEvent(
-            task_id="t1",
-            run_id="r1",
             event_type=RuntimeEventType.TASK_FAILED,
             phase=ExecutionPhase.COMPLETION,
+            **identity,
         )
     )
     assert seen == [RuntimeEventType.TASK_CREATED]

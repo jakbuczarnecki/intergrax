@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from intergrax.contracts.execution_phase import ExecutionPhase
-from intergrax.runtime.events.emit_context import EmitContext
+from testing_support.runtime_events import emit_context_test_identity
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.payload_registry import register_payload_schema
 from intergrax.runtime.events.event_kind_registry import register_event_kind
@@ -32,14 +32,14 @@ def _register_phase_payload() -> None:
 
 def test_emit_domain_signal_without_phase_uses_step_execution() -> None:
     bus = RuntimeEventBus()
-    ctx = EmitContext(task_id="task-1", run_id="run-1", bus=bus)
+    ctx = emit_context_test_identity(bus=bus)
     event = emit_domain_signal(ctx, kind="applications.test.emit_phase", payload=_PhasePayload())
     assert event.phase is ExecutionPhase.STEP_EXECUTION
 
 
 def test_emit_domain_signal_with_application_hosting_phase() -> None:
     bus = RuntimeEventBus()
-    ctx = EmitContext(task_id="task-1", run_id="run-1", bus=bus)
+    ctx = emit_context_test_identity(bus=bus)
     event = emit_domain_signal(
         ctx,
         kind="applications.test.emit_phase",
