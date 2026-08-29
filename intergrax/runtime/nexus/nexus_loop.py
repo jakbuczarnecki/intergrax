@@ -20,6 +20,7 @@ from intergrax.contracts.execution_identity import (
     mint_execution_id,
     peek_active_execution_id,
     peek_active_execution_identity,
+    peek_active_parent_execution_id,
     require_active_execution_identity,
     reset_active_execution_identity,
     validate_attempt_id,
@@ -101,6 +102,7 @@ from intergrax.runtime.architecture.online_evaluation_registry import OnlineEval
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.execution.active_execution_budget import (
     bind_root_execution_budget,
+    peek_active_execution_budget,
     reset_active_execution_budget,
 )
 from intergrax.runtime.execution.budget import create_execution_budget_ledger_factory
@@ -450,16 +452,31 @@ class NexusLoop:
             authority_token = None
             if peek_active_execution_authority() is None:
                 authority_token = bind_active_execution_authority(root_authority)
-            budget_token = bind_root_execution_budget(
-                execution_id=active_execution_id,
-                ledger=self._execution_budget_ledger_factory.create_ledger(self._run_budget),
-            )
+            active_budget = peek_active_execution_budget()
+            budget_token = None
+            if active_budget is not None:
+                if active_budget.execution_id != active_execution_id:
+                    raise RuntimeError(
+                        "active execution budget execution_id mismatch with Nexus handle_task",
+                    )
+            elif peek_active_parent_execution_id() is not None:
+                raise RuntimeError(
+                    "active execution budget required for canonical upstream Execution",
+                )
+            else:
+                budget_token = bind_root_execution_budget(
+                    execution_id=active_execution_id,
+                    ledger=self._execution_budget_ledger_factory.create_ledger(
+                        self._run_budget,
+                    ),
+                )
             self._current_task = task
             try:
                 return await self._handle_task_impl(task)
             finally:
                 self._current_task = None
-                reset_active_execution_budget(budget_token)
+                if budget_token is not None:
+                    reset_active_execution_budget(budget_token)
                 if authority_token is not None:
                     reset_active_execution_authority(authority_token)
 

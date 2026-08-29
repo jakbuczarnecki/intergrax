@@ -33,6 +33,10 @@ from intergrax.contracts.execution_identity import (
 from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.execution.child import ChildExecutionRunner
+from intergrax.runtime.execution.active_execution_budget import (
+    bind_root_execution_budget,
+    reset_active_execution_budget,
+)
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
 _UNLIMITED_LEDGER = create_execution_budget_ledger(RunBudget())
@@ -105,15 +109,21 @@ async def test_handle_task_preserves_prebound_root_execution_id(
     captured: dict[str, RunId | AttemptId | ExecutionId | None] = {}
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl_factory(captured))
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="boundary")
-    token = bind_active_execution_identity(
+    ledger = create_execution_budget_ledger(RunBudget())
+    identity_token = bind_active_execution_identity(
         run_id=run_id,
         attempt_id=attempt_id,
         execution_id=execution_id,
     )
+    budget_token = bind_root_execution_budget(
+        execution_id=execution_id,
+        ledger=ledger,
+    )
     try:
         await loop.handle_task(task, run_id=run_id, attempt_id=attempt_id)
     finally:
-        reset_active_execution_identity(token)
+        reset_active_execution_budget(budget_token)
+        reset_active_execution_identity(identity_token)
 
     assert captured["execution_id"] == execution_id
 
