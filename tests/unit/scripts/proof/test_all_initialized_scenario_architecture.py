@@ -93,12 +93,14 @@ def _valid_runtime_source() -> str:
     )
 
 
+@pytest.mark.ci_smoke
 def test_repo_gate_passes_for_all_discovered_initialized_scenarios() -> None:
     slugs = discover_initialized_scenario_slugs(REPO_ROOT)
     assert "ai_incident_investigation" in slugs
     assert_all_initialized_scenario_architectures(REPO_ROOT)
 
 
+@pytest.mark.no_ci
 def test_initialized_valid_scenario_passes_in_temp_repo(tmp_path: Path) -> None:
     slug = "valid_initialized"
     _write_package(
@@ -116,6 +118,7 @@ def test_initialized_valid_scenario_passes_in_temp_repo(tmp_path: Path) -> None:
     assert report.ok
 
 
+@pytest.mark.no_ci
 def test_initialized_scenario_with_fixtures_import_fails(tmp_path: Path) -> None:
     slug = "invalid_initialized"
     package_root = _write_package(
@@ -139,6 +142,7 @@ def test_initialized_scenario_with_fixtures_import_fails(tmp_path: Path) -> None
     )
 
 
+@pytest.mark.no_ci
 def test_design_package_is_not_discovered(tmp_path: Path) -> None:
     slug = "design_only"
     _write_package(
@@ -149,6 +153,7 @@ def test_design_package_is_not_discovered(tmp_path: Path) -> None:
     assert discover_initialized_scenario_slugs(tmp_path) == ()
 
 
+@pytest.mark.no_ci
 def test_accepted_without_initialization_is_not_discovered(tmp_path: Path) -> None:
     slug = "accepted_only"
     _write_package(
@@ -159,6 +164,7 @@ def test_accepted_without_initialization_is_not_discovered(tmp_path: Path) -> No
     assert discover_initialized_scenario_slugs(tmp_path) == ()
 
 
+@pytest.mark.no_ci
 def test_application_without_initialized_lifecycle_raises(tmp_path: Path) -> None:
     slug = "contradictory_package"
     _write_package(
@@ -171,6 +177,7 @@ def test_application_without_initialized_lifecycle_raises(tmp_path: Path) -> Non
         discover_initialized_scenario_slugs(tmp_path)
 
 
+@pytest.mark.no_ci
 def test_multiple_initialized_scenarios_are_all_scanned(tmp_path: Path) -> None:
     for slug in ("first_initialized", "second_initialized"):
         _write_package(
