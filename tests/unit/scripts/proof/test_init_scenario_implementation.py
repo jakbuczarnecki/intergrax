@@ -22,6 +22,9 @@ from scripts.proof.init_scenario_implementation import (
     init_scenario_implementation,
 )
 from scripts.proof.intergrax_platform_proof_descriptor_loader import load_descriptor
+from scripts.proof.scenario_architecture_conformance import (
+    assert_scenario_application_architecture,
+)
 from scripts.proof.scenario_lifecycle import (
     ScenarioGapDecisionStatus,
     ScenarioGateStatus,
@@ -47,20 +50,6 @@ _FORBIDDEN_IMPORT_MODULES = frozenset(
         "scripts.proof",
     }
 )
-_FORBIDDEN_SYMBOLS = frozenset(
-    {
-        "DiagnosticOrchestrator",
-        "ProblemLifecycleEngine",
-        "ExecutionReconstructor",
-        "GraphExecutor",
-        "HarnessHostRuntime",
-        "NexusLoop",
-        "mint_run_id",
-        "mint_attempt_id",
-        "bind_active_execution_identity",
-    }
-)
-_REQUIRED_REFERENCE = "scenario_runtime_profiles"
 
 
 def _accepted_metadata(slug: str) -> ScenarioLifecycleMetadata:
@@ -95,7 +84,13 @@ def _write_accepted_design_package(
     return package.package_root
 
 
-def _assert_application_architecture_gate(package_root: Path) -> None:
+def _assert_application_architecture_gate(package_root: Path, *, repo_root: Path) -> None:
+    assert_scenario_application_architecture(
+        repo_root=repo_root,
+        scenario_slug=package_root.name,
+        package_root=package_root,
+        skip_lifecycle_check=True,
+    )
     application_dir = package_root / "application"
     for path in application_dir.rglob("*.py"):
         source = path.read_text(encoding="utf-8")
@@ -103,28 +98,13 @@ def _assert_application_architecture_gate(package_root: Path) -> None:
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    if ".proof." in alias.name or alias.name.endswith(".proof"):
-                        pytest.fail(f"proof import in application layer {path}: {alias.name}")
                     module = alias.name.split(".", maxsplit=1)[0]
                     if module in _FORBIDDEN_IMPORT_MODULES:
                         pytest.fail(f"forbidden import in {path}: {alias.name}")
-            if isinstance(node, ast.ImportFrom):
-                if node.module:
-                    root_module = node.module.split(".", maxsplit=1)[0]
-                    if root_module in _FORBIDDEN_IMPORT_MODULES or node.module in _FORBIDDEN_IMPORT_MODULES:
-                        pytest.fail(f"forbidden import in {path}: {node.module}")
-                    if ".proof." in node.module or node.module.endswith(".proof"):
-                        pytest.fail(f"proof import in application layer {path}: {node.module}")
-            if isinstance(node, ast.Name) and node.id in _FORBIDDEN_SYMBOLS:
-                pytest.fail(f"forbidden symbol in {path}: {node.id}")
-            if isinstance(node, ast.Attribute) and node.attr in _FORBIDDEN_SYMBOLS:
-                pytest.fail(f"forbidden symbol in {path}: {node.attr}")
-
-    combined = "\n".join(
-        path.read_text(encoding="utf-8")
-        for path in application_dir.rglob("*.py")
-    )
-    assert _REQUIRED_REFERENCE in combined
+            if isinstance(node, ast.ImportFrom) and node.module:
+                root_module = node.module.split(".", maxsplit=1)[0]
+                if root_module in _FORBIDDEN_IMPORT_MODULES or node.module in _FORBIDDEN_IMPORT_MODULES:
+                    pytest.fail(f"forbidden import in {path}: {node.module}")
 
 
 def test_init_fails_when_lifecycle_is_design(tmp_path: Path) -> None:
@@ -253,7 +233,7 @@ def test_init_happy_path_generates_skeleton_and_updates_lifecycle(tmp_path: Path
     assert "ScenarioExecutionRequest" in scenario_source
     assert "execute_scenario_task" in scenario_source
 
-    _assert_application_architecture_gate(package_root)
+    _assert_application_architecture_gate(package_root, repo_root=tmp_path)
 
 
 def test_second_run_fails_without_overwrite(tmp_path: Path) -> None:

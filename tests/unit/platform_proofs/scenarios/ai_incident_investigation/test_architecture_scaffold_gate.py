@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""SCENARIO-PLATFORM-5 architecture gates for canonical scaffold."""
+"""SCENARIO-PLATFORM-5/6A architecture gates for canonical scaffold."""
 
 from __future__ import annotations
 
@@ -27,6 +27,9 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario im
 from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import (
     build_runtime_bundle,
 )
+from scripts.proof.scenario_architecture_conformance import (
+    assert_scenario_application_architecture,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -39,48 +42,9 @@ def _scenario_root() -> Path:
     return _repo_root() / "platform_proofs" / "scenarios" / "ai_incident_investigation"
 
 
-def _application_sources() -> list[str]:
-    app_dir = _scenario_root() / "application"
-    return [path.read_text(encoding="utf-8") for path in app_dir.glob("*.py")]
-
-
-_FORBIDDEN_APPLICATION_SYMBOLS = frozenset(
-    {
-        "GraphExecutor",
-        "DiagnosticOrchestrator",
-        "ProblemLifecycleEngine",
-        "ProblemGroupingEngine",
-        "ExecutionReconstructor",
-        "HarnessHostRuntime",
-        "NexusLoop",
-        "mint_run_id",
-        "mint_attempt_id",
-        "mint_execution_id",
-        "bind_active_execution_identity",
-        "reset_active_execution_identity",
-    }
-)
-
-_FORBIDDEN_APPLICATION_MODULE_PREFIXES = frozenset(
-    {
-        "platform_proofs.scenarios.ai_incident_investigation.proof",
-        "platform_proofs.scenarios.ai_incident_investigation.fixtures",
-    }
-)
-
 _FORBIDDEN_TOOL_CALL_ID_REPAIR_SYMBOLS = frozenset(
     {
         "_IncidentToolCallIdAdapter",
-    }
-)
-
-_FORBIDDEN_NEXUS_PRIVATE_ATTRIBUTES = frozenset(
-    {
-        "_validation_engine",
-        "_graph_executor",
-        "_graph_runner",
-        "_planner",
-        "_graph_spec",
     }
 )
 
@@ -97,25 +61,11 @@ def _collect_ast_violations(path: Path, forbidden: frozenset[str]) -> list[str]:
     return violations
 
 
-def _collect_forbidden_application_imports(path: Path) -> list[str]:
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    violations: list[str] = []
-    rel = path.relative_to(_repo_root()).as_posix()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module:
-            for prefix in _FORBIDDEN_APPLICATION_MODULE_PREFIXES:
-                if node.module == prefix or node.module.startswith(f"{prefix}."):
-                    violations.append(f"{rel}:{node.lineno} imports {node.module}")
-    return violations
-
-
-def test_application_must_not_import_proof_or_forbidden_execution_symbols() -> None:
-    violations: list[str] = []
-    app_dir = _scenario_root() / "application"
-    for path in sorted(app_dir.rglob("*.py")):
-        violations.extend(_collect_ast_violations(path, _FORBIDDEN_APPLICATION_SYMBOLS))
-        violations.extend(_collect_forbidden_application_imports(path))
-    assert violations == []
+def test_application_must_satisfy_universal_architecture_rules() -> None:
+    assert_scenario_application_architecture(
+        repo_root=_repo_root(),
+        scenario_slug="ai_incident_investigation",
+    )
 
 
 def test_application_must_not_define_tool_call_id_repair_wrapper() -> None:
@@ -126,22 +76,6 @@ def test_application_must_not_define_tool_call_id_repair_wrapper() -> None:
             _collect_ast_violations(path, _FORBIDDEN_TOOL_CALL_ID_REPAIR_SYMBOLS)
         )
     assert violations == []
-
-
-def test_application_must_not_touch_private_nexus_planner_attributes() -> None:
-    violations: list[str] = []
-    app_dir = _scenario_root() / "application"
-    for path in sorted(app_dir.rglob("*.py")):
-        violations.extend(_collect_ast_violations(path, _FORBIDDEN_NEXUS_PRIVATE_ATTRIBUTES))
-    assert violations == []
-
-
-def test_application_sources_use_scenario_runtime_baseline() -> None:
-    runtime_source = (
-        _scenario_root() / "application" / "runtime_composition.py"
-    ).read_text(encoding="utf-8")
-    assert "build_scenario_runtime_from_environment" in runtime_source
-    assert "ScenarioRuntimeComposition as PlatformScenarioRuntimeComposition" in runtime_source
 
 
 @pytest.mark.asyncio

@@ -22,8 +22,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 _REPO_ROOT = Path(__file__).resolve().parents[5]
 _SCENARIO_APP_DIR = _REPO_ROOT / "platform_proofs" / "scenarios" / "ai_incident_investigation" / "application"
 
-_BYPASS_PATTERNS = (
-    re.compile(r"conformance_check\s*=\s*False"),
+_INCIDENT_BYPASS_PATTERNS = (
     re.compile(r"conformance_check\s*=\s*is_lab"),
     re.compile(r"allow_custom_tools\s*=\s*True"),
     re.compile(r"skip_catalog_validation\s*=\s*True"),
@@ -38,11 +37,11 @@ def _application_sources() -> list[tuple[Path, str]]:
     ]
 
 
-def test_ai_incident_application_must_not_disable_conformance() -> None:
+def test_ai_incident_application_must_not_disable_incident_specific_conformance_bypasses() -> None:
     violations: list[str] = []
     for path, source in _application_sources():
         rel = path.relative_to(_REPO_ROOT).as_posix()
-        for pattern in _BYPASS_PATTERNS:
+        for pattern in _INCIDENT_BYPASS_PATTERNS:
             if pattern.search(source):
                 violations.append(f"{rel} contains forbidden bypass pattern: {pattern.pattern}")
     assert violations == []
