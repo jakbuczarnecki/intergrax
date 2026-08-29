@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
+from contextvars import Token
 from dataclasses import dataclass
-from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -31,6 +31,7 @@ from intergrax.runtime.execution.active_execution_budget import (
     reset_active_execution_budget,
 )
 from intergrax.runtime.execution.budget.ledger import (
+    ExecutionBudgetLedger,
     ExecutionBudgetLedgerFactory,
     create_execution_budget_ledger,
     create_execution_budget_ledger_factory,
@@ -74,10 +75,10 @@ def _bind_upstream_context(
     run_id: RunId,
     attempt_id: AttemptId,
     execution_id: ExecutionId,
-    ledger: object,
+    ledger: ExecutionBudgetLedger,
     mode: ExecutionBudgetAllocationMode = ExecutionBudgetAllocationMode.SHARED,
     reservation_allowance: RunBudget | None = None,
-) -> tuple[Any, Any, Any]:
+) -> tuple[Token, Token, Token]:
     identity_token = bind_active_execution_identity(
         run_id=run_id,
         attempt_id=attempt_id,
@@ -99,9 +100,9 @@ def _bind_upstream_context(
 
 def _reset_upstream_context(
     *,
-    identity_token: Any,
-    authority_token: Any,
-    budget_token: Any,
+    identity_token: Token,
+    authority_token: Token,
+    budget_token: Token,
 ) -> None:
     reset_active_execution_budget(budget_token)
     reset_active_execution_authority(authority_token)
@@ -113,7 +114,7 @@ def _child_runner(loop: NexusLoop) -> ChildExecutionRunner[Ping, Pong]:
 
 
 def _consume_root_pool(
-    ledger: object,
+    ledger: ExecutionBudgetLedger,
     *,
     root_execution_id: ExecutionId,
     amount: int,
@@ -172,7 +173,7 @@ async def test_same_ledger_visible_upstream_nexus_and_nested_children(
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
     child_runner = _child_runner(loop)
-    seen: list[object] = [ledger]
+    seen: list[ExecutionBudgetLedger] = [ledger]
 
     async def _nested_impl(task: Task) -> TaskResult:
         seen.append(require_active_execution_budget().ledger)
@@ -273,7 +274,7 @@ async def test_upstream_reserved_context_backed_by_same_ledger_in_nexus_children
     )
     loop = NexusLoop(AgentRegistry(), run_budget=RunBudget(max_tool_calls=100))
     child_runner = _child_runner(loop)
-    child_ledgers: list[object] = []
+    child_ledgers: list[ExecutionBudgetLedger] = []
 
     async def _reserved_impl(task: Task) -> TaskResult:
         state = require_active_execution_budget()
