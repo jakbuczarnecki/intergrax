@@ -27,6 +27,8 @@ from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.execution import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.agentic import AgentExecutor
 from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
+from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
+from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.long_running.checkpoint_builder import apply_runtime_checkpoint_to_task
 from intergrax.runtime.long_running.execution_tree_checkpoint import (
     ExecutionCheckpointEntry,
@@ -91,6 +93,29 @@ class CapabilityObservingAgentExecutor:
         return await self._inner.execute(request)
 
 
+class RouterInvocationRecorder:
+    __slots__ = ("_router", "invocations")
+
+    def __init__(self, router: StrategyExecutionRouter) -> None:
+        self._router = router
+        self.invocations: list[ExecutionRequest] = []
+
+    async def execute(self, request: ExecutionRequest) -> object:
+        self.invocations.append(request)
+        return await self._router.execute(request)
+
+
+def _install_capability_observer(
+    executor: GraphExecutor,
+    engine: ObservingAgentEngine,
+) -> CapabilityObservingAgentExecutor:
+    capability_executor = CapabilityObservingAgentExecutor(AgentExecutor(engine))
+    executor._strategy_router = StrategyExecutionRouter(  # noqa: SLF001
+        agent_executor=capability_executor,
+    )
+    return capability_executor
+
+
 class _FailOnceValidation(NexusValidationEngine):
     def __init__(self, *, fail_agent: str) -> None:
         super().__init__()
@@ -124,6 +149,7 @@ class _GraphRunContext:
     executor: GraphExecutor
     root: ExecutionIdentityBinding
     task: Task
+    capability_executor: CapabilityObservingAgentExecutor
 
 
 def _root_identity() -> ExecutionIdentityBinding:
@@ -158,8 +184,7 @@ def _build_graph_run(
         validation_engine=validation_engine or NexusValidationEngine(),
         retry_engine=retry_engine,
     )
-    capability_executor = CapabilityObservingAgentExecutor(AgentExecutor(engine))
-    executor._agent_executor = capability_executor  # noqa: SLF001
+    capability_executor = _install_capability_observer(executor, engine)
     task = Task(
         tenant_id="t1",
         user_id="u1",
@@ -172,6 +197,7 @@ def _build_graph_run(
         executor=executor,
         root=_root_identity(),
         task=task,
+        capability_executor=capability_executor,
     )
 
 
@@ -251,8 +277,30 @@ async def test_agent_executor_receives_agent_capability() -> None:
 
     await _run_graph(ctx, graph)
 
-    capability_executor = ctx.executor._agent_executor  # noqa: SLF001
+    capability_executor = ctx.capability_executor
     assert capability_executor.last_capabilities == frozenset({ExecutionCapability.AGENT})
+
+
+async def test_child_agentic_execution_routes_through_strategy_router() -> None:
+    ctx = _build_graph_run(
+        nodes=[ExecutionNode(node_id="n1", agent_id="agent_a", capability="cap.shared")],
+    )
+    graph = ExecutionGraph(
+        graph_id="strategy-router-child",
+        task_id=ctx.task.task_id,
+        nodes=[ExecutionNode(node_id="n1", agent_id="agent_a", capability="cap.shared")],
+    )
+    inner_router = StrategyExecutionRouter(agent_executor=AgentExecutor(ctx.engine))
+    recorder = RouterInvocationRecorder(inner_router)
+    ctx.executor._strategy_router = recorder  # noqa: SLF001
+
+    await _run_graph(ctx, graph)
+
+    assert len(recorder.invocations) == 1
+    request = recorder.invocations[0]
+    assert request.capabilities == frozenset({ExecutionCapability.AGENT})
+    assert StrategyResolver().resolve(request) is ExecutionStrategy.AGENTIC
+    assert len(ctx.engine.observations) == 1
 
 
 async def test_agent_engine_resolves_selected_request_agent_id() -> None:
@@ -297,7 +345,7 @@ async def test_local_retry_preserves_child_execution_id() -> None:
         validation_engine=validation,
         retry_engine=RetryEngine(registry, policy=RetryPolicy(max_retries=1)),
     )
-    executor._agent_executor = CapabilityObservingAgentExecutor(AgentExecutor(engine))
+    capability_executor = _install_capability_observer(executor, engine)
     ctx = _GraphRunContext(
         registry=registry,
         engine=engine,
@@ -309,6 +357,7 @@ async def test_local_retry_preserves_child_execution_id() -> None:
             message="child execution proof",
             context=TaskContext(capability="cap.shared"),
         ),
+        capability_executor=capability_executor,
     )
     graph = ExecutionGraph(
         graph_id="retry-child",
@@ -467,7 +516,7 @@ async def test_no_execution_identity_metadata_added() -> None:
     registry.register(tracking_agent)
     engine = ObservingAgentEngine(registry)
     executor = GraphExecutor(registry, engine=engine)
-    executor._agent_executor = CapabilityObservingAgentExecutor(AgentExecutor(engine))
+    capability_executor = _install_capability_observer(executor, engine)
     ctx = _GraphRunContext(
         registry=registry,
         engine=engine,
@@ -479,6 +528,7 @@ async def test_no_execution_identity_metadata_added() -> None:
             message="child execution proof",
             context=TaskContext(capability="cap.shared"),
         ),
+        capability_executor=capability_executor,
     )
     graph = ExecutionGraph(
         graph_id="metadata-clean",

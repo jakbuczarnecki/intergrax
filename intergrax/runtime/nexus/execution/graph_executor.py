@@ -96,6 +96,7 @@ from intergrax.runtime.nexus.validation.validation_engine import NexusValidation
 from intergrax.runtime.execution.agentic import AgentExecutor
 from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
+from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
@@ -225,7 +226,9 @@ class GraphExecutor:
         )
         self._execution_tree_recorder: ExecutionTreeRecorder | None = None
         self._graph_node_child_delegate = _GraphNodeChildDelegate(self)
-        self._agent_executor = AgentExecutor(self._engine)
+        self._strategy_router = StrategyExecutionRouter(
+            agent_executor=AgentExecutor(self._engine),
+        )
 
     @property
     def execution_identity(self) -> ActiveExecutionIdentity:
@@ -939,7 +942,7 @@ class GraphExecutor:
             governed_task_binding = ActiveGovernedExecutionTask()
             token = governed_task_binding.bind(task)
             try:
-                execution_result = await self._agent_executor.execute(execution_request)
+                execution_result = await self._strategy_router.execute(execution_request)
             finally:
                 governed_task_binding.reset(token)
             if request.runtime_checkpoint is not None:

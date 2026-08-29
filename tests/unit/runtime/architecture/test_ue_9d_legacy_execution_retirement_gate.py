@@ -44,6 +44,9 @@ _FORBIDDEN_IMPORTS_IN_UNIFIED_TASK_RUNNER = frozenset(
 )
 
 _STRATEGY_RESOLVER_OWNER = _EXECUTION_ROOT / "strategy_router.py"
+_STRATEGIC_BACKEND_OWNER = _STRATEGY_RESOLVER_OWNER
+_STRATEGIC_BACKEND_CLASSES = frozenset({"AgentExecutor", "InferenceExecutor"})
+_STRATEGIC_BACKEND_EXECUTE_ATTRS = frozenset({"_agent_executor", "_inference_executor"})
 
 _HANDLE_TASK_ALLOWLIST = frozenset(
     {
@@ -197,3 +200,63 @@ def test_strategy_router_is_canonical_strategy_owner() -> None:
     for backend in ("inference.py", "agentic.py", "orchestration.py"):
         backend_source = (_EXECUTION_ROOT / backend).read_text(encoding="utf-8")
         assert "StrategyResolver" not in backend_source, backend
+
+
+def _is_strategic_backend_instantiation(node: ast.AST) -> bool:
+    return isinstance(node, ast.Call) and _call_name(node.func) in _STRATEGIC_BACKEND_CLASSES
+
+
+def _collect_strategic_backend_executor_names(tree: ast.AST) -> set[str]:
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign):
+            continue
+        if not _is_strategic_backend_instantiation(node.value):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Name):
+                names.add(target.id)
+    return names
+
+
+def _is_forbidden_strategic_backend_execute_call(
+    node: ast.Call,
+    executor_names: set[str],
+) -> bool:
+    if not isinstance(node.func, ast.Attribute) or node.func.attr != "execute":
+        return False
+    receiver = node.func.value
+    if isinstance(receiver, ast.Name) and receiver.id in executor_names:
+        return True
+    return (
+        isinstance(receiver, ast.Attribute)
+        and receiver.attr in _STRATEGIC_BACKEND_EXECUTE_ATTRS
+    )
+
+
+def _collect_strategic_backend_execute_bypasses() -> list[str]:
+    violations: list[str] = []
+    for path in _iter_production_python_files():
+        if path == _STRATEGIC_BACKEND_OWNER:
+            continue
+        if path.name in ("agentic.py", "inference.py"):
+            continue
+        tree = ast.parse(_read_python_source(path), filename=str(path))
+        rel = path.relative_to(_REPO_ROOT).as_posix()
+        executor_names = _collect_strategic_backend_executor_names(tree)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            if not _is_forbidden_strategic_backend_execute_call(node, executor_names):
+                continue
+            violations.append(f"{rel}:{node.lineno}")
+    return violations
+
+
+def test_strategic_backends_execute_only_through_canonical_router() -> None:
+    violations = _collect_strategic_backend_execute_bypasses()
+    assert violations == [], (
+        "AgentExecutor.execute / InferenceExecutor.execute must be invoked only by "
+        "strategy_router.py: "
+        + ", ".join(violations)
+    )
