@@ -70,6 +70,7 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.contracts.execution_identity import RunId, TaskId, mint_run_id
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import (
     NexusObservabilityStores,
@@ -428,7 +429,7 @@ async def execute_scenario_task(
 
     task = Task(**task_kwargs)
     run_id = mint_run_id()
-    task_result = await composition.nexus_loop.handle_task(task, run_id=run_id)
+    task_result = await UnifiedTaskRunner(composition.nexus_loop).run_task(task, run_id=run_id)
     return ScenarioRuntimeExecutionResult(
         task_result=task_result,
         task_id=task.task_id,

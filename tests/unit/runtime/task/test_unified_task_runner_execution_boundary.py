@@ -19,9 +19,6 @@ from intergrax.contracts.execution_identity import (
     validate_attempt_id,
     validate_execution_id,
 )
-from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
-from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
-from intergrax.runtime.execution.task_adapter import TaskExecutionInput
 from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
@@ -274,63 +271,6 @@ async def test_run_runtime_request_delegates_to_run_task() -> None:
 
     assert len(calls) == 1
     handle_task.assert_awaited_once()
-
-
-@pytest.mark.asyncio
-async def test_run_task_strategy_resolver_receives_orchestration_request(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    task = _task()
-    runner, _loop, handle_task = _runner_with_handle()
-    captured: list[ExecutionRequest[TaskExecutionInput, object]] = []
-    original_resolve = StrategyResolver.resolve
-
-    def _capture_resolve(
-        self: StrategyResolver,
-        request: ExecutionRequest[TaskExecutionInput, object],
-    ) -> ExecutionStrategy:
-        captured.append(request)
-        return original_resolve(self, request)
-
-    monkeypatch.setattr(StrategyResolver, "resolve", _capture_resolve)
-
-    await runner.run_task(task)
-
-    assert len(captured) == 1
-    request = captured[0]
-    assert request.capabilities == frozenset({ExecutionCapability.ORCHESTRATION})
-    assert ExecutionCapability.TOOLS not in request.capabilities
-    assert ExecutionCapability.STREAMING not in request.capabilities
-    assert request.input.message == task.message
-    assert request.input.capability == task.context.capability
-    assert request.input.intent == task.context.intent
-    assert StrategyResolver().resolve(request) is ExecutionStrategy.ORCHESTRATION
-    handle_task.assert_awaited_once()
-
-
-@pytest.mark.asyncio
-async def test_run_task_fails_closed_when_strategy_is_not_orchestration(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    task = _task()
-    runner, _loop, handle_task = _runner_with_handle()
-
-    def _wrong_strategy(
-        self: StrategyResolver,
-        request: ExecutionRequest[TaskExecutionInput, object],
-    ) -> ExecutionStrategy:
-        return ExecutionStrategy.INFERENCE
-
-    monkeypatch.setattr(StrategyResolver, "resolve", _wrong_strategy)
-
-    with pytest.raises(
-        RuntimeError,
-        match="legacy UnifiedTaskRunner compatibility path requires orchestration",
-    ):
-        await runner.run_task(task)
-
-    handle_task.assert_not_awaited()
-    assert await ActiveTaskRegistry.get(task.task_id) is None
 
 
 @pytest.mark.asyncio

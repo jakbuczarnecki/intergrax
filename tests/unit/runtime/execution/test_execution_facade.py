@@ -9,7 +9,6 @@ import pytest
 from intergrax.contracts.execution_identity import mint_task_id
 from intergrax.runtime.execution import Execution
 from intergrax.runtime.execution.boundary import ExecutionBoundary
-from intergrax.runtime.execution.task_compat import UnifiedTaskRunnerExecutionDelegate
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -52,6 +51,14 @@ class FakeTaskRunner:
         self.call_count += 1
         self.last_task = task
         return self._result
+
+
+class TaskExecutionDelegate:
+    def __init__(self, runner: FakeTaskRunner) -> None:
+        self._runner = runner
+
+    async def execute(self, task: Task) -> TaskResult:
+        return await self._runner.run_task(task)
 
 
 def _minimal_task() -> Task:
@@ -136,11 +143,11 @@ async def test_facade_works_with_non_task_typed_dtos() -> None:
 
 
 @pytest.mark.asyncio
-async def test_compatibility_composition_through_existing_task_adapter() -> None:
+async def test_task_typed_boundary_composition() -> None:
     task = _minimal_task()
     expected = _minimal_task_result()
     runner = FakeTaskRunner(expected)
-    delegate = UnifiedTaskRunnerExecutionDelegate(runner)
+    delegate = TaskExecutionDelegate(runner)
     boundary = ExecutionBoundary[Task, TaskResult](delegate)
     execution = Execution[Task, TaskResult](boundary)
 

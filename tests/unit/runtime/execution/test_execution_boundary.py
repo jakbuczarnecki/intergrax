@@ -30,7 +30,6 @@ from intergrax.runtime.execution.boundary import (
     ExecutionBoundary,
     ExecutionIdentityBinding,
 )
-from intergrax.runtime.execution.task_compat import UnifiedTaskRunnerExecutionDelegate
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -109,6 +108,14 @@ class FakeTaskRunner:
         self.call_count += 1
         self.last_task = task
         return self._result
+
+
+class TaskExecutionDelegate:
+    def __init__(self, runner: FakeTaskRunner) -> None:
+        self._runner = runner
+
+    async def execute(self, task: Task) -> TaskResult:
+        return await self._runner.run_task(task)
 
 
 def _minimal_task() -> Task:
@@ -200,11 +207,11 @@ async def test_explicit_class_can_satisfy_execution_delegate_contract() -> None:
 
 
 @pytest.mark.asyncio
-async def test_unified_task_runner_compat_delegate_invokes_runner_once() -> None:
+async def test_task_delegate_invokes_runner_once() -> None:
     task = _minimal_task()
     expected = _minimal_task_result()
     runner = FakeTaskRunner(expected)
-    delegate = UnifiedTaskRunnerExecutionDelegate(runner)
+    delegate = TaskExecutionDelegate(runner)
     boundary = ExecutionBoundary[Task, TaskResult](delegate)
 
     result = await boundary.execute(task)

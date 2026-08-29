@@ -6,35 +6,23 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Optional
 
-from intergrax.contracts.delegation_authority import resolve_root_parent_execution_authority
-from intergrax.contracts.execution_identity import (
-    AttemptId,
-    RunId,
-    mint_attempt_id,
-    mint_execution_id,
-    mint_run_id,
-)
+from intergrax.contracts.execution_identity import AttemptId, RunId
 from intergrax.llm_adapters.tracking.context import llm_tenant_scope
-from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
-from intergrax.runtime.execution.nexus_compat import NexusTaskExecutionDelegate
-from intergrax.runtime.execution.request import ExecutionCapability
-from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
-from intergrax.runtime.execution.task_adapter import execution_request_from_task
-from intergrax.runtime.long_running.checkpoint_builder import prepare_task_for_checkpoint_resume
+from intergrax.runtime.execution.orchestration import (
+    execute_root_task,
+    resolve_root_task_identity,
+)
 from intergrax.runtime.long_running.models import TaskCheckpoint
-from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.runtime.task.task import Task, TaskResult
 from intergrax.runtime.task.task_run_bridge import task_from_runtime_request
 
-_LEGACY_ORCHESTRATION_CAPABILITIES = frozenset({ExecutionCapability.ORCHESTRATION})
-
 
 class UnifiedTaskRunner:
     """
-    Single entry point for Task execution via NexusLoop (§41).
+    Thin Task adapter into canonical root execution (§41).
 
     Used by HTTP serving and eval paths.
     """
@@ -47,7 +35,6 @@ class UnifiedTaskRunner:
     ) -> None:
         self._nexus_loop = nexus_loop
         self._task_enricher = task_enricher
-        self._strategy_resolver = StrategyResolver()
 
     @property
     def nexus_loop(self) -> NexusLoop:
@@ -63,68 +50,22 @@ class UnifiedTaskRunner:
     ) -> TaskResult:
         if self._task_enricher is not None:
             task = self._task_enricher(task)
-        if resume_checkpoint is not None:
-            checkpoint_run_id, checkpoint_attempt_id = execution_identity_from_checkpoint(
-                resume_checkpoint
-            )
-            if run_id is not None and run_id != checkpoint_run_id:
-                raise ValueError(
-                    "explicit run_id conflicts with resume checkpoint identity: "
-                    f"{run_id!r} != {checkpoint_run_id!r}"
-                )
-            resolved_run_id = checkpoint_run_id
-            resolved_attempt_id = attempt_id or checkpoint_attempt_id
-        else:
-            resolved_run_id = run_id or mint_run_id()
-            resolved_attempt_id = attempt_id or mint_attempt_id()
-        execution_id = mint_execution_id()
-        if resume_checkpoint is not None and resume_checkpoint.runtime is not None:
-            if resolved_attempt_id != checkpoint_attempt_id:
-                prepare_task_for_checkpoint_resume(
-                    task,
-                    resume_checkpoint,
-                    active_attempt_id=resolved_attempt_id,
-                    active_root_execution_id=execution_id,
-                )
-            elif task.runtime.orchestration.runtime_checkpoint is None:
-                from intergrax.runtime.long_running.checkpoint_builder import (
-                    apply_runtime_checkpoint_to_task,
-                )
-
-                apply_runtime_checkpoint_to_task(task, resume_checkpoint.runtime)
-        identity = ExecutionIdentityBinding(
-            run_id=resolved_run_id,
-            attempt_id=resolved_attempt_id,
-            execution_id=execution_id,
+        identity = resolve_root_task_identity(
+            run_id=run_id,
+            attempt_id=attempt_id,
+            resume_checkpoint=resume_checkpoint,
         )
-        await ActiveTaskRegistry.register(task, resolved_run_id)
+        await ActiveTaskRegistry.register(task, identity.run_id)
         try:
             with llm_tenant_scope(task.tenant_id):
-                request = execution_request_from_task(
+                return await execute_root_task(
                     task,
-                    capabilities=_LEGACY_ORCHESTRATION_CAPABILITIES,
-                )
-                strategy = self._strategy_resolver.resolve(request)
-                if strategy is not ExecutionStrategy.ORCHESTRATION:
-                    raise RuntimeError(
-                        "legacy UnifiedTaskRunner compatibility path requires orchestration"
-                    )
-                delegate = NexusTaskExecutionDelegate(
-                    self._nexus_loop,
-                    run_id=resolved_run_id,
-                    attempt_id=resolved_attempt_id,
-                )
-                root_authority = resolve_root_parent_execution_authority(
-                    task.execution_authority,
-                )
-                boundary = ExecutionBoundary[Task, TaskResult](
-                    delegate,
+                    nexus_loop=self._nexus_loop,
                     identity=identity,
-                    authority=root_authority,
+                    resume_checkpoint=resume_checkpoint,
                 )
-                return await boundary.execute(task)
         finally:
-            await ActiveTaskRegistry.unregister(task.task_id, resolved_run_id)
+            await ActiveTaskRegistry.unregister(task.task_id, identity.run_id)
 
     async def run_runtime_request(
         self,

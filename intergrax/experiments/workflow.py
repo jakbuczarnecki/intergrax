@@ -16,6 +16,7 @@ from typing import Dict, Optional
 from pydantic import BaseModel, Field
 
 from intergrax.contracts.execution_identity import mint_run_id
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_trace_store
 from intergrax.experiments.composition import resolve_experiment_persistence
 from intergrax.experiments.models import (
@@ -149,7 +150,7 @@ class ExperimentSession:
         if record.agent_id:
             task.agent_id = record.agent_id
 
-        result = await loop.handle_task(task, run_id=mint_run_id())
+        result = await UnifiedTaskRunner(loop).run_task(task, run_id=mint_run_id())
         run_id = result.run_id or result.task_id
 
         updated = record

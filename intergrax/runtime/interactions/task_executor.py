@@ -7,9 +7,9 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskResult
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 
 @runtime_checkable
@@ -21,10 +21,10 @@ class TaskExecutor(Protocol):
 
 
 class NexusLoopTaskExecutor:
-    """Backward-compatible executor that delegates directly to NexusLoop."""
+    """Execute tasks through canonical root execution."""
 
     def __init__(self, nexus_loop: NexusLoop) -> None:
-        self._nexus_loop = nexus_loop
+        self._task_runner = UnifiedTaskRunner(nexus_loop)
 
     async def execute(self, task: Task) -> TaskResult:
-        return await self._nexus_loop.handle_task(task, run_id=mint_run_id())
+        return await self._task_runner.run_task(task)

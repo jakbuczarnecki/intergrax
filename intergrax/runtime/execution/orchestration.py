@@ -1,0 +1,143 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+"""Orchestration execution backend routed through Nexus (UE-9D)."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Protocol
+
+from intergrax.contracts.delegation_authority import resolve_root_parent_execution_authority
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    require_active_execution_id,
+    require_active_execution_identity,
+)
+from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
+from intergrax.runtime.execution.request import ExecutionCapability
+from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
+from intergrax.runtime.execution.task_adapter import execution_request_from_task
+from intergrax.runtime.long_running.checkpoint_builder import prepare_task_for_checkpoint_resume
+from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.task.task import Task, TaskResult
+
+_ORCHESTRATION_CAPABILITIES = frozenset({ExecutionCapability.ORCHESTRATION})
+
+
+class NexusOrchestrationPort(Protocol):
+    async def handle_task(
+        self,
+        task: Task,
+        *,
+        run_id: RunId,
+        attempt_id: AttemptId | None = None,
+    ) -> TaskResult:
+        ...
+
+
+@dataclass(frozen=True, slots=True)
+class RootTaskIdentity:
+    run_id: RunId
+    attempt_id: AttemptId
+    execution_id: ExecutionId
+
+
+def resolve_root_task_identity(
+    *,
+    run_id: RunId | None = None,
+    attempt_id: AttemptId | None = None,
+    resume_checkpoint: TaskCheckpoint | None = None,
+) -> RootTaskIdentity:
+    if resume_checkpoint is not None:
+        checkpoint_run_id, checkpoint_attempt_id = execution_identity_from_checkpoint(
+            resume_checkpoint
+        )
+        if run_id is not None and run_id != checkpoint_run_id:
+            raise ValueError(
+                "explicit run_id conflicts with resume checkpoint identity: "
+                f"{run_id!r} != {checkpoint_run_id!r}"
+            )
+        resolved_run_id = checkpoint_run_id
+        resolved_attempt_id = attempt_id or checkpoint_attempt_id
+    else:
+        resolved_run_id = run_id or mint_run_id()
+        resolved_attempt_id = attempt_id or mint_attempt_id()
+    return RootTaskIdentity(
+        run_id=resolved_run_id,
+        attempt_id=resolved_attempt_id,
+        execution_id=mint_execution_id(),
+    )
+
+
+class OrchestrationExecutor:
+    """Orchestration execution backend behind :class:`ExecutionBoundary`."""
+
+    __slots__ = ("_nexus_loop",)
+
+    def __init__(self, nexus_loop: NexusOrchestrationPort) -> None:
+        self._nexus_loop = nexus_loop
+
+    async def execute(self, task: Task) -> TaskResult:
+        run_id, attempt_id = require_active_execution_identity()
+        require_active_execution_id()
+
+        request = execution_request_from_task(
+            task,
+            capabilities=_ORCHESTRATION_CAPABILITIES,
+        )
+        strategy = StrategyResolver().resolve(request)
+        if strategy is not ExecutionStrategy.ORCHESTRATION:
+            raise RuntimeError("OrchestrationExecutor requires ORCHESTRATION strategy")
+
+        return await self._nexus_loop.handle_task(
+            task,
+            run_id=run_id,
+            attempt_id=attempt_id,
+        )
+
+
+async def execute_root_task(
+    task: Task,
+    *,
+    nexus_loop: NexusLoop,
+    identity: RootTaskIdentity,
+    resume_checkpoint: TaskCheckpoint | None = None,
+) -> TaskResult:
+    if resume_checkpoint is not None and resume_checkpoint.runtime is not None:
+        _checkpoint_run_id, checkpoint_attempt_id = execution_identity_from_checkpoint(
+            resume_checkpoint
+        )
+        if identity.attempt_id != checkpoint_attempt_id:
+            prepare_task_for_checkpoint_resume(
+                task,
+                resume_checkpoint,
+                active_attempt_id=identity.attempt_id,
+                active_root_execution_id=identity.execution_id,
+            )
+        elif task.runtime.orchestration.runtime_checkpoint is None:
+            from intergrax.runtime.long_running.checkpoint_builder import (
+                apply_runtime_checkpoint_to_task,
+            )
+
+            apply_runtime_checkpoint_to_task(task, resume_checkpoint.runtime)
+
+    binding = ExecutionIdentityBinding(
+        run_id=identity.run_id,
+        attempt_id=identity.attempt_id,
+        execution_id=identity.execution_id,
+    )
+    root_authority = resolve_root_parent_execution_authority(task.execution_authority)
+    boundary = ExecutionBoundary[Task, TaskResult](
+        OrchestrationExecutor(nexus_loop),
+        identity=binding,
+        authority=root_authority,
+    )
+    return await boundary.execute(task)
