@@ -1,0 +1,349 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""HARDEN-2B — bounded lifecycle OCC retry proofs."""
+
+from __future__ import annotations
+
+import threading
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime, timedelta
+
+import pytest
+
+from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations.contracts.document_store import DocumentRecord
+from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
+    STRATEGY_ID,
+    STRATEGY_VERSION,
+)
+from intergrax.runtime.diagnostics.document_store_problem_persistence import (
+    DocumentStoreProblemPersistence,
+)
+from intergrax.runtime.diagnostics.persistence_conformance import (
+    _sample_reconciliation_key,
+    _sample_signature,
+    _sample_subject_ref,
+    sample_problem,
+)
+from intergrax.runtime.diagnostics.problem_grouping import (
+    DeterministicProblemGroupingBasis,
+    DeterministicProblemSignature,
+    ProblemGroupingCandidate,
+    ProblemGroupingMethod,
+    ProblemGroupingProvenance,
+    ProblemGroupingResult,
+)
+from intergrax.runtime.diagnostics.problem_lifecycle import (
+    Problem,
+    ProblemId,
+    ProblemLifecycleEngine,
+    ProblemLifecycleIntegrityError,
+    ProblemLifecycleResult,
+)
+from intergrax.runtime.diagnostics.problem_persistence import (
+    ProblemPersistence,
+    ProblemPersistenceConflictError,
+)
+
+pytestmark = pytest.mark.unit
+
+_OBSERVED_AT = datetime(2026, 8, 29, 12, 0, tzinfo=UTC)
+_OBSERVED_AT_A = _OBSERVED_AT + timedelta(minutes=1)
+_OBSERVED_AT_B = _OBSERVED_AT + timedelta(minutes=2)
+
+
+def _singleton_grouping_result(
+    *,
+    tenant_id: str,
+    member,
+    signature: DeterministicProblemSignature,
+    observed_at: datetime,
+) -> ProblemGroupingResult:
+    del observed_at  # reconcile() owns observed_at; candidate members carry invocation time.
+    basis = DeterministicProblemGroupingBasis(signature=signature)
+    provenance = ProblemGroupingProvenance(
+        strategy_id=STRATEGY_ID,
+        strategy_version=STRATEGY_VERSION,
+        method=ProblemGroupingMethod.DETERMINISTIC,
+        supporting_subject_refs=(member,),
+        basis=basis,
+    )
+    candidate = ProblemGroupingCandidate(members=(member,), provenance=provenance)
+    return ProblemGroupingResult(
+        tenant_id=tenant_id,
+        strategy_id=STRATEGY_ID,
+        strategy_version=STRATEGY_VERSION,
+        method=ProblemGroupingMethod.DETERMINISTIC,
+        candidates=(candidate,),
+        ungrouped_subjects=(),
+    )
+
+
+class _SynchronizedUpdatePersistence(DocumentStoreProblemPersistence):
+    def __init__(
+        self,
+        document_store: InMemoryDocumentStore,
+        *,
+        update_barrier: threading.Barrier,
+        synchronized_expected_version: int,
+    ) -> None:
+        super().__init__(document_store)
+        self._update_barrier = update_barrier
+        self._synchronized_expected_version = synchronized_expected_version
+
+    def update(self, record: Problem, *, expected_version: int) -> Problem:
+        if expected_version == self._synchronized_expected_version:
+            self._update_barrier.wait(timeout=5)
+        return super().update(record, expected_version=expected_version)
+
+
+class _AlwaysConflictReplaceStore(InMemoryDocumentStore):
+    def replace_if_match(
+        self,
+        *,
+        expected: DocumentRecord,
+        replacement: DocumentRecord,
+    ) -> bool:
+        del expected, replacement
+        return False
+
+
+class _ConflictThenVanishPersistence:
+    """Persistence double: first update conflicts, reload get returns None."""
+
+    def __init__(self, delegate: ProblemPersistence) -> None:
+        self._delegate = delegate
+        self._force_conflict_once = True
+        self._vanish_on_next_get = False
+
+    def get(self, *, tenant_id: str, problem_id: ProblemId) -> Problem | None:
+        if self._vanish_on_next_get:
+            self._vanish_on_next_get = False
+            return None
+        return self._delegate.get(tenant_id=tenant_id, problem_id=problem_id)
+
+    def list_for_tenant(self, tenant_id: str) -> tuple[Problem, ...]:
+        return self._delegate.list_for_tenant(tenant_id)
+
+    def find_by_reconciliation_key(self, *, tenant_id: str, reconciliation_key):
+        return self._delegate.find_by_reconciliation_key(
+            tenant_id=tenant_id,
+            reconciliation_key=reconciliation_key,
+        )
+
+    def find_by_subject_ref(self, *, tenant_id: str, subject_ref):
+        return self._delegate.find_by_subject_ref(
+            tenant_id=tenant_id,
+            subject_ref=subject_ref,
+        )
+
+    def create(self, record: Problem) -> Problem:
+        return self._delegate.create(record)
+
+    def update(self, record: Problem, *, expected_version: int) -> Problem:
+        if self._force_conflict_once:
+            self._force_conflict_once = False
+            self._vanish_on_next_get = True
+            raise ProblemPersistenceConflictError("forced conflict for reload-vanish proof")
+        return self._delegate.update(record, expected_version=expected_version)
+
+    def close(self) -> None:
+        close = getattr(self._delegate, "close", None)
+        if callable(close):
+            close()
+
+
+def test_harden_2b_lifecycle_update_race_preserves_distinct_occurrences() -> None:
+    """
+    HARDEN-2B lifecycle proof:
+
+    baseline occurrence_count=1; two lifecycle engines add different occurrences.
+    """
+    tenant_id = "harden-2b-lifecycle-update-tenant"
+    signature = _sample_signature()
+    reconciliation_key = _sample_reconciliation_key(
+        tenant_id=tenant_id,
+        signature=signature,
+    )
+    baseline_subject = _sample_subject_ref(tenant_id=tenant_id)
+    subject_a = _sample_subject_ref(tenant_id=tenant_id)
+    subject_b = _sample_subject_ref(tenant_id=tenant_id)
+    baseline = sample_problem(
+        tenant_id=tenant_id,
+        subject_refs=(baseline_subject,),
+        reconciliation_key=reconciliation_key,
+    )
+    store = InMemoryDocumentStore()
+    update_barrier = threading.Barrier(2)
+    assert baseline.occurrence_count == 1
+    assert baseline.record_version == 1
+
+    seed = DocumentStoreProblemPersistence(store)
+    seed.create(baseline)
+    seed.close()
+
+    grouping_a = _singleton_grouping_result(
+        tenant_id=tenant_id,
+        member=subject_a,
+        signature=signature,
+        observed_at=_OBSERVED_AT_A,
+    )
+    grouping_b = _singleton_grouping_result(
+        tenant_id=tenant_id,
+        member=subject_b,
+        signature=signature,
+        observed_at=_OBSERVED_AT_B,
+    )
+
+    results: list[ProblemLifecycleResult] = []
+    errors: list[BaseException] = []
+
+    def _reconcile(grouping_result: ProblemGroupingResult, observed_at: datetime) -> None:
+        persistence = _SynchronizedUpdatePersistence(
+            store,
+            update_barrier=update_barrier,
+            synchronized_expected_version=baseline.record_version,
+        )
+        lifecycle = ProblemLifecycleEngine(persistence)
+        try:
+            results.append(
+                lifecycle.reconcile(grouping_result, observed_at=observed_at),
+            )
+        except BaseException as exc:  # noqa: BLE001
+            errors.append(exc)
+        finally:
+            persistence.close()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [
+            executor.submit(_reconcile, grouping_a, _OBSERVED_AT_A),
+            executor.submit(_reconcile, grouping_b, _OBSERVED_AT_B),
+        ]
+        for future in futures:
+            future.result(timeout=10)
+
+    assert errors == []
+    assert len(results) == 2
+    assert all(len(result.updated) == 1 for result in results)
+    assert all(result.created == () for result in results)
+    assert all(result.unchanged == () for result in results)
+
+    verifier = DocumentStoreProblemPersistence(store)
+    try:
+        final = verifier.get(tenant_id=tenant_id, problem_id=baseline.problem_id)
+        assert final is not None
+        assert final.record_version == 3
+        assert final.occurrence_count == 3
+        assert len(final.occurrences) == 3
+        final_subjects = {occurrence.subject_ref for occurrence in final.occurrences}
+        assert final_subjects == {baseline_subject, subject_a, subject_b}
+        assert verifier.find_by_reconciliation_key(
+            tenant_id=tenant_id,
+            reconciliation_key=reconciliation_key,
+        ) == final
+    finally:
+        verifier.close()
+
+
+def test_harden_2b_retry_exhaustion_raises_lifecycle_integrity_error() -> None:
+    store = _AlwaysConflictReplaceStore()
+    tenant_id = "harden-2b-retry-exhaustion"
+    signature = _sample_signature()
+    reconciliation_key = _sample_reconciliation_key(
+        tenant_id=tenant_id,
+        signature=signature,
+    )
+    baseline_subject = _sample_subject_ref(tenant_id=tenant_id)
+    new_subject = _sample_subject_ref(tenant_id=tenant_id)
+    baseline = sample_problem(
+        tenant_id=tenant_id,
+        subject_refs=(baseline_subject,),
+        reconciliation_key=reconciliation_key,
+    )
+
+    persistence = DocumentStoreProblemPersistence(store)
+    lifecycle = ProblemLifecycleEngine(persistence)
+    try:
+        persistence.create(baseline)
+        grouping = _singleton_grouping_result(
+            tenant_id=tenant_id,
+            member=new_subject,
+            signature=signature,
+            observed_at=_OBSERVED_AT_A,
+        )
+        with pytest.raises(ProblemLifecycleIntegrityError) as exc_info:
+            lifecycle.reconcile(grouping, observed_at=_OBSERVED_AT_A)
+        assert isinstance(exc_info.value.__cause__, ProblemPersistenceConflictError)
+        final = persistence.get(tenant_id=tenant_id, problem_id=baseline.problem_id)
+        assert final == baseline
+    finally:
+        persistence.close()
+
+
+def test_harden_2b_reload_disappears_after_conflict_fails_closed() -> None:
+    from intergrax.runtime.diagnostics.in_memory_problem_persistence import (
+        InMemoryProblemPersistence,
+    )
+
+    tenant_id = "harden-2b-reload-vanish"
+    signature = _sample_signature()
+    reconciliation_key = _sample_reconciliation_key(
+        tenant_id=tenant_id,
+        signature=signature,
+    )
+    baseline_subject = _sample_subject_ref(tenant_id=tenant_id)
+    new_subject = _sample_subject_ref(tenant_id=tenant_id)
+    baseline = sample_problem(
+        tenant_id=tenant_id,
+        subject_refs=(baseline_subject,),
+        reconciliation_key=reconciliation_key,
+    )
+
+    delegate = InMemoryProblemPersistence()
+    persistence = _ConflictThenVanishPersistence(delegate)
+    lifecycle = ProblemLifecycleEngine(persistence)
+    persistence.create(baseline)
+    grouping = _singleton_grouping_result(
+        tenant_id=tenant_id,
+        member=new_subject,
+        signature=signature,
+        observed_at=_OBSERVED_AT_A,
+    )
+    with pytest.raises(ProblemLifecycleIntegrityError, match="disappeared"):
+        lifecycle.reconcile(grouping, observed_at=_OBSERVED_AT_A)
+
+
+def test_harden_2b_idempotent_converged_outcome_after_winner_applied_candidate() -> None:
+    """Reload + reapply original candidate yields unchanged when winner already merged."""
+    tenant_id = "harden-2b-idempotent-converge"
+    signature = _sample_signature()
+    reconciliation_key = _sample_reconciliation_key(
+        tenant_id=tenant_id,
+        signature=signature,
+    )
+    baseline_subject = _sample_subject_ref(tenant_id=tenant_id)
+    subject_a = _sample_subject_ref(tenant_id=tenant_id)
+    baseline = sample_problem(
+        tenant_id=tenant_id,
+        subject_refs=(baseline_subject,),
+        reconciliation_key=reconciliation_key,
+    )
+
+    persistence = DocumentStoreProblemPersistence(InMemoryDocumentStore())
+    lifecycle = ProblemLifecycleEngine(persistence)
+    try:
+        persistence.create(baseline)
+        grouping = _singleton_grouping_result(
+            tenant_id=tenant_id,
+            member=subject_a,
+            signature=signature,
+            observed_at=_OBSERVED_AT_A,
+        )
+        first = lifecycle.reconcile(grouping, observed_at=_OBSERVED_AT_A)
+        assert len(first.updated) == 1
+        second = lifecycle.reconcile(grouping, observed_at=_OBSERVED_AT_A)
+        assert second.updated == ()
+        assert len(second.unchanged) == 1
+        assert second.unchanged[0].occurrence_count == 2
+    finally:
+        persistence.close()
