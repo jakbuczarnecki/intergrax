@@ -447,8 +447,8 @@
   "evidence_claims": {
     "challenges": [
       {
-        "challenge_id": "echlg_4e0380d87127482886f4f544225144b1",
-        "claim_id": "eclaim_a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "challenge_id": "echlg_c467b8f0cb5d4c8cab10ab70ed1f24af",
+        "claim_id": "eclaim_5a9ea671596a48f0b86f49f63e863380",
         "defect_code": "incident.unsupported_inference",
         "defect_family": "unsupported_inference",
         "description": {
@@ -469,11 +469,9 @@
     ],
     "claims": [
       {
-        "claim_id": "eclaim_a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "claim_id": "eclaim_5a9ea671596a48f0b86f49f63e863380",
         "claim_kind": "incident.root_cause_diagnosis",
-        "contradicting_evidence_ids": [
-          "evidence.comparison.line3.high_load_window"
-        ],
+        "contradicting_evidence_ids": [],
         "resolution": "superseded",
         "statement": {
           "redaction_applied": false,
@@ -488,7 +486,7 @@
         ]
       },
       {
-        "claim_id": "eclaim_c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+        "claim_id": "eclaim_b0bb93881d354fcea095d9a2dc2bb045",
         "claim_kind": "incident.root_cause_diagnosis",
         "contradicting_evidence_ids": [
           "evidence.staffing.attendance.line4.incident_window"
@@ -506,7 +504,7 @@
         ]
       },
       {
-        "claim_id": "eclaim_b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+        "claim_id": "eclaim_674d05c1b9a84e7f8c2de5a609004966",
         "claim_kind": "incident.root_cause_diagnosis",
         "contradicting_evidence_ids": [],
         "resolution": "supported",
@@ -516,7 +514,7 @@
           "text": "Intermittent station signal degradation on the complex-assembly step is the best-supported initiating cause; comparison evidence shows similar elevated workload elsewhere without comparable degradation; workload growth plausibly amplified impact — bounded H3 diagnosis.",
           "visibility": "REPORT_SAFE"
         },
-        "supersedes_claim_id": "eclaim_a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "supersedes_claim_id": null,
         "supporting_evidence_ids": [
           "evidence.comparison.line3.high_load_window",
           "evidence.telemetry.complex_assembly_station.incident_window",
@@ -607,11 +605,11 @@
     "command_argv": [],
     "command_executable": null,
     "duration_ms": null,
-    "finished_at": "2026-08-24T08:49:33.497260Z",
+    "finished_at": "2026-08-29T06:51:33.077524Z",
     "platform": "intergrax",
     "runtime_version": null,
     "source_dirty": null,
-    "started_at": "2026-08-24T08:49:33.497260Z",
+    "started_at": "2026-08-29T06:51:33.077524Z",
     "status": "PASS"
   },
   "failure": null,
@@ -619,7 +617,7 @@
     "content": {
       "redaction_applied": false,
       "source_kind": "RUNTIME_EXPLICIT",
-      "text": "revised: bounded equipment-process degradation diagnosis supported by telemetry and comparison evidence",
+      "text": "revised: Intermittent equipment degradation supported by telemetry and comparison.",
       "visibility": "REPORT_SAFE"
     },
     "evidence_basis_ids": [],
@@ -660,17 +658,17 @@
     "execution_profile": "quick",
     "proof_id": "SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON",
     "proof_version": "full-1-resolved-full-2-unresolved-0.3.0",
-    "source_revision": "27041cb4a3578c85a5c0709dbe1d0b6dfdd5ff8c",
+    "source_revision": "74ad699f6aa029f0f5c491bcbb3204f1605fff2d",
     "title": "AI Incident Investigation — RESOLVED evidence path"
   },
   "provenance": {
-    "artifact_identity": "intergrax.platform_proof_evidence.v3:SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON:incident-resolved-1787561373",
-    "evidence_checksum": "5add991bdb4795194aef710f51958ffbe5a7870cbddd8f608a5b271d9ac00546",
+    "artifact_identity": "intergrax.platform_proof_evidence.v3:SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON:incident-resolved-1787986293",
+    "evidence_checksum": "25d2b8efceaa59d7d1f91bb8ee1d43dcccd192fe323f8a6f1e0dc0dc16eee1eb",
     "evidence_schema_version": "intergrax.platform_proof_evidence.v3",
-    "execution_id": "incident-resolved-1787561373",
-    "generated_at": "2026-08-24T08:49:33.497260Z",
+    "execution_id": "incident-resolved-1787986293",
+    "generated_at": "2026-08-29T06:51:33.077524Z",
     "proof_id": "SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON",
-    "source_revision": "27041cb4a3578c85a5c0709dbe1d0b6dfdd5ff8c"
+    "source_revision": "74ad699f6aa029f0f5c491bcbb3204f1605fff2d"
   },
   "reproduction": {
     "command": "uv run python scripts/proof/run-intergrax-proof-suite.py --profile quick --proof-id SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON",
@@ -681,7 +679,7 @@
       "uv sync (from repository root)"
     ],
     "required_env_variable_names": [],
-    "source_revision": "27041cb4a3578c85a5c0709dbe1d0b6dfdd5ff8c"
+    "source_revision": "74ad699f6aa029f0f5c491bcbb3204f1605fff2d"
   },
   "scenarios": [
     {
@@ -1083,7 +1081,7 @@
         "content": {
           "redaction_applied": false,
           "source_kind": "RUNTIME_EXPLICIT",
-          "text": "revised: bounded equipment-process degradation diagnosis supported by telemetry and comparison evidence",
+          "text": "revised: Intermittent equipment degradation supported by telemetry and comparison.",
           "visibility": "REPORT_SAFE"
         },
         "evidence_basis_ids": [],
@@ -1117,8 +1115,186 @@
         {
           "action": {
             "redaction_applied": false,
-            "source_kind": "PROOF_AUTHORED",
-            "text": "Investigator agent with ToolRuntime follow-up",
+            "source_kind": "RUNTIME_EXPLICIT",
+            "text": "Planner selected production.workload.read",
+            "visibility": "REPORT_SAFE"
+          },
+          "duration_ms": null,
+          "error": null,
+          "evidence_basis_ids": [],
+          "evidence_created_ids": [
+            "evidence.workload.line4.incident_window"
+          ],
+          "input": null,
+          "observation": null,
+          "participant_id": null,
+          "purpose": {
+            "redaction_applied": false,
+            "source_kind": "RUNTIME_EXPLICIT",
+            "text": "gather read evidence for incident investigation",
+            "visibility": "REPORT_SAFE"
+          },
+          "started_at": null,
+          "status": "ok",
+          "step_id": "step-planner-1",
+          "step_index": 0,
+          "tool_invocation": null
+        },
+        {
+          "action": {
+            "redaction_applied": false,
+            "source_kind": "RUNTIME_EXPLICIT",
+            "text": "Planner selected production.throughput.read",
+            "visibility": "REPORT_SAFE"
+          },
+          "duration_ms": null,
+          "error": null,
+          "evidence_basis_ids": [
+            "evidence.workload.line4.incident_window"
+          ],
+          "evidence_created_ids": [
+            "evidence.throughput.line4.incident_window"
+          ],
+          "input": null,
+          "observation": null,
+          "participant_id": null,
+          "purpose": {
+            "redaction_applied": false,
+            "source_kind": "RUNTIME_EXPLICIT",
+            "text": "gather read evidence for incident investigation",
+            "visibility": "REPORT_SAFE"
+          },
+          "started_at": null,
+          "status": "ok",
+          "step_id": "step-planner-2",
+          "step_index": 1,
+          "tool_invocation": null
+        },
+        {
+          "action": {
+            "redaction_applied": false,
+            "source_kind": "RUNTIME_EXPLICIT",
+            "text": "Planner selected production.staffing.schedule.read",
+            "visibility": "REPORT_SAFE"
+          },
+          "duration_ms": null,
+          "error": null,
+          "evidence_basis_ids": [
+            "evidence.throughput.line4.incident_window"
+          ],
+          "evidence_created_ids": [
+            "evidence.staffing.schedule.line4.incident_window"
+          ],
+          "input": null,
+          "observation": null,
+          "participant_id": null,
+          "purpose": {
+            "redaction_applied": false,
+            "source_kind": "RUNTIME_EXPLICIT",
+            "text": "gather read evidence for incident investigation",
+            "visibility": "REPORT_SAFE"
+          },
+          "started_at": null,
+          "status": "ok",
+          "step_id": "step-planner-3",
+          "step_index": 2,
+          "tool_invocation": null
+        },
+        {
+          "action": {
+            "redaction_applied": false,
+            "source_kind": "RUNTIME_EXPLICIT",
+            "text": "Planner selected production.comparison.read",
+            "visibility": "REPORT_SAFE"
+          },
+          "duration_ms": null,
+          "error": null,
+          "evidence_basis_ids": [
+            "evidence.staffing.schedule.line4.incident_window"
+          ],
+          "evidence_created_ids": [
+            "evidence.comparison.line3.high_load_window"
+          ],
+          "input": null,
+          "observation": null,
+          "participant_id": null,
+          "purpose": {
+            "redaction_applied": false,
+            "source_kind": "RUNTIME_EXPLICIT",
+            "text": "gather read evidence for incident investigation",
+            "visibility": "REPORT_SAFE"
+          },
+          "started_at": null,
+          "status": "ok",
+          "step_id": "step-planner-4",
+          "step_index": 3,
+          "tool_invocation": null
+        },
+        {
+          "action": {
+            "redaction_applied": false,
+            "source_kind": "RUNTIME_EXPLICIT",
+            "text": "Planner selected production.staffing.attendance.read",
+            "visibility": "REPORT_SAFE"
+          },
+          "duration_ms": null,
+          "error": null,
+          "evidence_basis_ids": [
+            "evidence.comparison.line3.high_load_window"
+          ],
+          "evidence_created_ids": [
+            "evidence.staffing.attendance.line4.incident_window"
+          ],
+          "input": null,
+          "observation": null,
+          "participant_id": null,
+          "purpose": {
+            "redaction_applied": false,
+            "source_kind": "RUNTIME_EXPLICIT",
+            "text": "gather read evidence for incident investigation",
+            "visibility": "REPORT_SAFE"
+          },
+          "started_at": null,
+          "status": "ok",
+          "step_id": "step-planner-5",
+          "step_index": 4,
+          "tool_invocation": null
+        },
+        {
+          "action": {
+            "redaction_applied": false,
+            "source_kind": "RUNTIME_EXPLICIT",
+            "text": "Planner selected production.telemetry.read",
+            "visibility": "REPORT_SAFE"
+          },
+          "duration_ms": null,
+          "error": null,
+          "evidence_basis_ids": [
+            "evidence.staffing.attendance.line4.incident_window"
+          ],
+          "evidence_created_ids": [
+            "evidence.telemetry.complex_assembly_station.incident_window"
+          ],
+          "input": null,
+          "observation": null,
+          "participant_id": null,
+          "purpose": {
+            "redaction_applied": false,
+            "source_kind": "RUNTIME_EXPLICIT",
+            "text": "gather read evidence for incident investigation",
+            "visibility": "REPORT_SAFE"
+          },
+          "started_at": null,
+          "status": "ok",
+          "step_id": "step-planner-6",
+          "step_index": 5,
+          "tool_invocation": null
+        },
+        {
+          "action": {
+            "redaction_applied": false,
+            "source_kind": "RUNTIME_EXPLICIT",
+            "text": "Investigator agent autonomous evidence gathering and deterministic diagnosis",
             "visibility": "REPORT_SAFE"
           },
           "duration_ms": null,
@@ -1138,7 +1314,7 @@
             "summary": {
               "redaction_applied": false,
               "source_kind": "RUNTIME_EXPLICIT",
-              "text": "revised: bounded equipment-process degradation diagnosis supported by telemetry and comparison evidence",
+              "text": "revised: Intermittent equipment degradation supported by telemetry and comparison.",
               "visibility": "REPORT_SAFE"
             },
             "visibility": "REPORT_SAFE"
@@ -1146,14 +1322,14 @@
           "participant_id": null,
           "purpose": {
             "redaction_applied": false,
-            "source_kind": "PROOF_AUTHORED",
-            "text": "Investigate incident via platform graph path",
+            "source_kind": "RUNTIME_EXPLICIT",
+            "text": "planner_final_answer",
             "visibility": "REPORT_SAFE"
           },
           "started_at": null,
           "status": "ok",
           "step_id": "step-investigate",
-          "step_index": 0,
+          "step_index": 6,
           "tool_invocation": null
         }
       ],
