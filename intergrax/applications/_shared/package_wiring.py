@@ -7,6 +7,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from intergrax.applications._shared.capability_graph_catalog import (
+    resolve_binding_agent_contract_id,
+)
 from intergrax.applications._shared.capability_graph_wiring import EnvironmentCapabilityGraphView
 from intergrax.applications._shared.environment_snapshot_wiring import stable_digest_hex
 from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot
@@ -52,12 +55,18 @@ def collect_application_dependencies(
     dependencies: list[ApplicationDependency] = []
 
     for binding in manifest.enabled_agents():
-        contract = binding.resolved_agent_type()().get_contract()
+        if binding.contract_id and binding.agent_type is None and binding.import_path is None:
+            contract_ref = binding.contract_id
+            version_constraint = "*"
+        else:
+            contract = binding.resolved_agent_type()().get_contract()
+            contract_ref = contract.id
+            version_constraint = f"={contract.version}"
         dependencies.append(
             ApplicationDependency(
                 kind=ApplicationDependencyKind.AGENT,
-                ref=contract.id,
-                version_constraint=f"={contract.version}",
+                ref=contract_ref,
+                version_constraint=version_constraint,
             ),
         )
 
@@ -190,8 +199,7 @@ def validate_application_package_closure(
         violations.append("package.dependencies drift from manifest/environment materialization")
 
     roster_contract_ids = {
-        binding.resolved_agent_type()().get_contract().id
-        for binding in manifest.enabled_agents()
+        resolve_binding_agent_contract_id(binding) for binding in manifest.enabled_agents()
     }
     for dep in package.dependencies:
         if dep.kind is ApplicationDependencyKind.AGENT and dep.ref not in roster_contract_ids:

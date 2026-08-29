@@ -33,7 +33,10 @@ from intergrax.applications.contracts.graph_spec import (
     EvaluatorLoopGraphBinding,
     GraphNode,
 )
-from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.applications._shared.application_owned_tool_conformance import (
+    application_owned_tool_declarations,
+)
+from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 from intergrax.integrations.registry.catalog_manifests import LOG
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -65,7 +68,13 @@ def _incident_lab_manifest(environment: ApplicationEnvironmentProfile) -> Applic
         name="AI Incident Investigation Scenario",
         route_prefix="/v1/scenario/ai_incident_investigation",
         env_prefix="SCENARIO_AI_INCIDENT_",
-        agents=[],
+        agents=[
+            AgentBinding.reference(
+                contract_id=INVESTIGATOR_AGENT_ID,
+                capabilities=[INVESTIGATOR_CAPABILITY],
+            ),
+        ],
+        application_owned_tools=application_owned_tool_declarations(SCENARIO_TOOL_IDS),
         environment=environment,
     )
 
@@ -197,7 +206,7 @@ def build_scenario_runtime_composition(
         diagnostics_required=False,
         workspace=workspace,
         runtime_mode=ScenarioRuntimeMode.LAB,
-        conformance_check=False,
+        application_tool_registry=registry,
         validation_engine=resolved_engine,
     )
     incident_composition.environment = resolved_environment

@@ -27,6 +27,12 @@ def extensions_readme(names: ScaffoldApplicationNames) -> str:
 
         Reference: `examples/platform_plugins/local_embedded_tool_extension/` and
         [`EXTENSION_AUTHOR_GUIDE.md`](../../docs/project/technical/guides/EXTENSION_AUTHOR_GUIDE.md).
+
+        **Application-owned tools (non-catalog):** declare canonical tool ids on
+        `ApplicationManifest.application_owned_tools`, register implementations on
+        `ToolRegistry`, and pass the registry to `wire_application_environment(...,
+        application_tool_registry=...)` so conformance closure includes them without
+        adding domain tools to the global platform catalog.
         """
     )
 

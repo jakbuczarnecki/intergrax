@@ -91,7 +91,8 @@ class ApplicationGraphSpec(BaseModel):
             contract_id = binding.contract_id
             if contract_id:
                 known.add(contract_id.strip())
-            known.add(binding.resolved_agent_type().__name__)
+            if binding.agent_type is not None or binding.import_path is not None:
+                known.add(binding.resolved_agent_type().__name__)
             if binding.import_path:
                 known.add(binding.import_path.rsplit(".", 1)[-1])
 

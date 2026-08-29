@@ -72,6 +72,7 @@ from intergrax.runtime.nexus.observability_wiring import (
     wire_nexus_observability,
 )
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
+from intergrax.tools.registry import ToolRegistry
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult
 
@@ -275,6 +276,7 @@ def rebuild_scenario_runtime_from_composition(
         runtime_mode=composition.runtime_mode,
         conformance_check=conformance_check,
         validation_engine=validation_engine,
+        application_tool_registry=composition.env_wiring.tool_wiring.registry,
     )
 
 
@@ -295,6 +297,7 @@ def build_scenario_runtime_from_environment(
     runtime_mode: ScenarioRuntimeMode | None = None,
     conformance_check: bool = True,
     validation_engine: NexusValidationEngine | None = None,
+    application_tool_registry: ToolRegistry | None = None,
 ) -> ScenarioRuntimeComposition:
     """
     Compose a lighter Nexus-backed scenario runtime from platform primitives.
@@ -312,6 +315,7 @@ def build_scenario_runtime_from_environment(
         tenant_id=resolved_tenant_id,
         document_store=document_store,
         conformance_check=conformance_check,
+        application_tool_registry=application_tool_registry,
     )
     observability = _resolve_observability_stores(
         environment,

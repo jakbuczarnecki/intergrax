@@ -184,22 +184,31 @@ def build_runtime_bundle(
         if variant is ScenarioVariant.UNRESOLVED
         else build_resolved_fixture()
     )
+    environment = (
+        runtime_composition.environment
+        if runtime_composition is not None
+        else build_scenario_environment_profile()
+    )
+    tool_registry = (
+        runtime_composition.tool_registry
+        if runtime_composition is not None
+        else ToolRegistry()
+    )
+    evidence_store = register_scenario_tools(tool_registry, resolved_fixture)
     composition = runtime_composition or ScenarioRuntimeComposition(
-        environment=build_scenario_environment_profile(),
-        tool_registry=ToolRegistry(),
+        environment=environment,
+        tool_registry=tool_registry,
     )
     if composition._platform is None:
         agent_registry = AgentRegistry()
         build_scenario_runtime_composition(
-            registry=composition.tool_registry,
+            registry=tool_registry,
             tenant_id=tenant_id,
             environment=composition.environment,
             agent_registry=agent_registry,
             composition=composition,
         )
-    tool_registry = composition.platform.env_wiring.tool_wiring.registry
-    evidence_store = register_scenario_tools(tool_registry, resolved_fixture)
-    composition.tool_registry = tool_registry
+    composition.tool_registry = composition.platform.env_wiring.tool_wiring.registry
     investigator = IncidentInvestigatorAgent(
         registry=tool_registry,
         station_id=resolved_fixture.telemetry.station_id,

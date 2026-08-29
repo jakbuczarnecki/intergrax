@@ -81,10 +81,18 @@ from intergrax.applications._shared.skill_wiring import (
     ApplicationSkillWiring,
     build_application_skill_wiring,
 )
+from intergrax.applications._shared.application_owned_tool_conformance import (
+    assert_application_owned_tool_conformance,
+    platform_reserved_tool_ids,
+)
+from intergrax.applications._shared.application_owned_tool_wiring import (
+    apply_application_owned_tool_registry,
+)
 from intergrax.applications._shared.tool_wiring import (
     ApplicationToolWiring,
     build_application_tool_wiring,
 )
+from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications._shared.security_assembly_resolver import SecurityAssemblyError
 from intergrax.applications.contracts.execution_mode import ExecutionMode
@@ -192,6 +200,7 @@ def wire_application_environment(
     sandbox_session: Any | None = None,
     websearch_executor: Any | None = None,
     conformance_check: bool = True,
+    application_tool_registry: ToolRegistry | None = None,
     document_store: Any | None = None,
     key_value_cache: Any | None = None,
     boundary_event_buffer: Any | None = None,
@@ -362,6 +371,11 @@ def wire_application_environment(
         websearch_executor=websearch_executor,
         security_profile=env.security_profile,
     )
+    tool_wiring = apply_application_owned_tool_registry(
+        manifest,
+        tool_wiring,
+        application_tool_registry,
+    )
     skill_wiring = build_application_skill_wiring(env.skill_profile)
     policy_bundle = wire_policy_bundle(
         env.model_copy(
@@ -422,6 +436,12 @@ def wire_application_environment(
             env,
             registry_snapshot,
             capability_graph=capability_graph,
+        )
+        assert_application_owned_tool_conformance(
+            manifest,
+            env,
+            registry_snapshot,
+            platform_tool_ids=platform_reserved_tool_ids(),
         )
 
     platform_plugin_evidence = build_application_platform_plugin_evidence(

@@ -24,6 +24,10 @@ class EnvironmentSkillToolConsistencyCheck:
     ) -> list[str]:
         if binding.factory is not None or binding.factory_path:
             return []
+        if binding.agent_type is None and binding.import_path is None:
+            if binding.contract_id:
+                return []
+            return []
         agent_type = binding.resolved_agent_type()
         contract = _contract_for_agent(agent_type, binding)
         violations: list[str] = []
