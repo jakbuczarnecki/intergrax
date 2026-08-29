@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from pathlib import Path
 from typing import Any, Literal
 
@@ -269,6 +270,21 @@ class ObservabilityProfile(BaseModel):
                     "(kind_prefix, categories, ops_hints, or event_types)"
                 )
         return specs
+
+
+class DiagnosticPosture(str, Enum):
+    """Central diagnostic engine composition posture (DIAG-FOUNDATION-1)."""
+
+    NOT_REQUIRED = "not_required"
+    REQUIRED = "required"
+
+
+class DiagnosticProfile(BaseModel):
+    """Terminal diagnostic engine readiness posture for a Tier-3 host."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    posture: DiagnosticPosture = DiagnosticPosture.NOT_REQUIRED
 
 
 class CostProfile(BaseModel):

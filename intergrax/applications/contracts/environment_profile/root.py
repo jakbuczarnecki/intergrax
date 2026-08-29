@@ -48,6 +48,7 @@ from intergrax.applications.contracts.environment_profile.sub_profiles import (
     CostProfile,
     CriticProfile,
     CriticVerificationScopes,
+    DiagnosticProfile,
     EvaluationProfile,
     ExecutionBoundaryExportProfile,
     GovernanceProfile,
@@ -476,6 +477,18 @@ class ApplicationEnvironmentProfile(BaseModel):
             self,
             "governance",
             self.governance.model_copy(update={"reliability": value}),
+        )
+
+    @property
+    def diagnostic_profile(self) -> DiagnosticProfile:
+        return self.governance.diagnostics
+
+    @diagnostic_profile.setter
+    def diagnostic_profile(self, value: DiagnosticProfile) -> None:
+        object.__setattr__(
+            self,
+            "governance",
+            self.governance.model_copy(update={"diagnostics": value}),
         )
 
     @property
