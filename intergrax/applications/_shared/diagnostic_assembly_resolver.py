@@ -52,16 +52,15 @@ def resolve_central_diagnostics_required(
     env: ApplicationEnvironmentProfile,
     *,
     scenario_runtime_mode: ScenarioRuntimeMode | None = None,
-    explicit_posture: DiagnosticPosture | None = None,
 ) -> bool:
     """
     Canonical decision: does this runtime require central diagnostics?
 
     Single authoritative path for harness hosts and scenario runtimes.
-    """
-    if explicit_posture is not None:
-        return explicit_posture is DiagnosticPosture.REQUIRED
 
+    Hard platform requirements are monotonic: profile posture may strengthen an
+    optional runtime but never weaken PRODUCT or PRODUCTION_ATTACHED.
+    """
     from intergrax.applications._shared.scenario_runtime_profiles import ScenarioRuntimeMode
 
     if scenario_runtime_mode is ScenarioRuntimeMode.PRODUCTION_ATTACHED:

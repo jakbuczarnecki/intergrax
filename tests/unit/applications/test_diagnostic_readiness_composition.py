@@ -120,6 +120,33 @@ def test_resolve_central_diagnostics_required_product_and_production_attached() 
     )
 
 
+def test_resolve_central_diagnostics_required_monotonic_posture() -> None:
+    """Profile posture may strengthen LAB but never downgrade hard requirements."""
+    not_required = DiagnosticProfile(posture=DiagnosticPosture.NOT_REQUIRED)
+    required = DiagnosticProfile(posture=DiagnosticPosture.REQUIRED)
+
+    lab_env = ApplicationEnvironmentProfile.lab_defaults(profile_id="diag.lab.mono")
+    lab_env.diagnostic_profile = not_required
+    assert resolve_central_diagnostics_required(lab_env) is False
+
+    lab_env.diagnostic_profile = required
+    assert resolve_central_diagnostics_required(lab_env) is True
+
+    product_env = ApplicationEnvironmentProfile.product_defaults(profile_id="diag.product.mono")
+    product_env.diagnostic_profile = not_required
+    assert resolve_central_diagnostics_required(product_env) is True
+
+    production_lab_env = ApplicationEnvironmentProfile.lab_defaults(profile_id="diag.prod_att.mono")
+    production_lab_env.diagnostic_profile = not_required
+    assert (
+        resolve_central_diagnostics_required(
+            production_lab_env,
+            scenario_runtime_mode=ScenarioRuntimeMode.PRODUCTION_ATTACHED,
+        )
+        is True
+    )
+
+
 def test_product_host_fails_without_document_store(
     tmp_path: Path,
     _stub_llm: None,

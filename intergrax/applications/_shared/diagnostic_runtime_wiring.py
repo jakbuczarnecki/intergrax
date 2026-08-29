@@ -34,7 +34,6 @@ from intergrax.runtime.diagnostics.problem_grouping import (
 from intergrax.runtime.diagnostics.problem_lifecycle import ProblemLifecycleEngine
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
-    DiagnosticPosture,
 )
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTrigger,
@@ -138,7 +137,6 @@ def wire_terminal_execution_diagnostics(
     observability: NexusObservabilityStores,
     nexus_loop: NexusLoop,
     scenario_runtime_mode: object | None = None,
-    explicit_posture: DiagnosticPosture | None = None,
 ) -> DiagnosticWiring:
     """
     Policy-aware terminal diagnostic composition over the canonical orchestrator spine.
@@ -148,7 +146,6 @@ def wire_terminal_execution_diagnostics(
     required = resolve_central_diagnostics_required(
         env,
         scenario_runtime_mode=scenario_runtime_mode,  # type: ignore[arg-type]
-        explicit_posture=explicit_posture,
     )
     missing_document_store, missing_runtime_events = _diagnostic_prerequisite_gaps(
         env_wiring=env_wiring,
