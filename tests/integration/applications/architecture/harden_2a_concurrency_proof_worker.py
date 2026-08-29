@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""HARDEN-2A subprocess worker — real cross-process Problem persistence concurrency proof."""
+"""HARDEN-2A/2C subprocess worker — cross-process Problem persistence and lifecycle proofs."""
 
 from __future__ import annotations
 
@@ -28,18 +28,32 @@ from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
 from intergrax.runtime.diagnostics.document_store_problem_persistence import (
     DocumentStoreProblemPersistence,
 )
+from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.runtime.diagnostics.persistence_conformance import (
+    _sample_signature,
     _sample_subject_ref,
     sample_problem,
 )
-from intergrax.runtime.diagnostics.problem_grouping import ProblemGroupingMethod
+from intergrax.runtime.diagnostics.problem_grouping import (
+    DeterministicProblemGroupingBasis,
+    ProblemGroupingCandidate,
+    ProblemGroupingMethod,
+    ProblemGroupingProvenance,
+    ProblemGroupingResult,
+    ProblemGroupingSubjectRef,
+    problem_grouping_subject_ref_for_execution,
+)
 from intergrax.runtime.diagnostics.problem_lifecycle import (
     Problem,
     ProblemId,
+    ProblemLifecycleEngine,
     ProblemOccurrence,
     ProblemStatus,
 )
-from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistenceConflictError
+from intergrax.runtime.diagnostics.problem_persistence import (
+    ProblemPersistence,
+    ProblemPersistenceConflictError,
+)
 
 _EXIT_OK = 0
 _EXIT_ERROR = 1
@@ -114,6 +128,96 @@ def _wait_for_start(start_path: Path) -> None:
         if time.monotonic() >= deadline:
             _fail(f"start signal not observed: {start_path}")
         time.sleep(_START_POLL_SECONDS)
+
+
+class ObservingProblemPersistence:
+    """Test-only delegate that counts CAS conflicts without changing semantics."""
+
+    def __init__(self, delegate: ProblemPersistence) -> None:
+        self._delegate = delegate
+        self.conflicts_observed = 0
+
+    def get(self, *, tenant_id: str, problem_id: ProblemId) -> Problem | None:
+        return self._delegate.get(tenant_id=tenant_id, problem_id=problem_id)
+
+    def list_for_tenant(self, tenant_id: str) -> tuple[Problem, ...]:
+        return self._delegate.list_for_tenant(tenant_id)
+
+    def find_by_reconciliation_key(self, *, tenant_id: str, reconciliation_key):
+        return self._delegate.find_by_reconciliation_key(
+            tenant_id=tenant_id,
+            reconciliation_key=reconciliation_key,
+        )
+
+    def find_by_subject_ref(
+        self,
+        *,
+        tenant_id: str,
+        subject_ref: ProblemGroupingSubjectRef,
+    ) -> Problem | None:
+        return self._delegate.find_by_subject_ref(
+            tenant_id=tenant_id,
+            subject_ref=subject_ref,
+        )
+
+    def create(self, record: Problem) -> Problem:
+        try:
+            return self._delegate.create(record)
+        except ProblemPersistenceConflictError:
+            self.conflicts_observed += 1
+            raise
+
+    def update(self, record: Problem, *, expected_version: int) -> Problem:
+        try:
+            return self._delegate.update(record, expected_version=expected_version)
+        except ProblemPersistenceConflictError:
+            self.conflicts_observed += 1
+            raise
+
+    def close(self) -> None:
+        self._delegate.close()
+
+
+def _subject_ref_from_ids(
+    *,
+    tenant_id: str,
+    task_id: str,
+    run_id: str,
+) -> ProblemGroupingSubjectRef:
+    return problem_grouping_subject_ref_for_execution(
+        tenant_id=tenant_id,
+        task_id=TaskId(task_id),
+        run_id=RunId(run_id),
+    )
+
+
+def _singleton_grouping_result(
+    *,
+    tenant_id: str,
+    member: ProblemGroupingSubjectRef,
+) -> ProblemGroupingResult:
+    basis = DeterministicProblemGroupingBasis(signature=_sample_signature())
+    provenance = ProblemGroupingProvenance(
+        strategy_id=STRATEGY_ID,
+        strategy_version=STRATEGY_VERSION,
+        method=ProblemGroupingMethod.DETERMINISTIC,
+        supporting_subject_refs=(member,),
+        basis=basis,
+    )
+    candidate = ProblemGroupingCandidate(members=(member,), provenance=provenance)
+    return ProblemGroupingResult(
+        tenant_id=tenant_id,
+        strategy_id=STRATEGY_ID,
+        strategy_version=STRATEGY_VERSION,
+        method=ProblemGroupingMethod.DETERMINISTIC,
+        candidates=(candidate,),
+        ungrouped_subjects=(),
+    )
+
+
+def _worker_observed_at(worker_label: str) -> datetime:
+    minute = 1 if worker_label == "a" else 2
+    return datetime(2026, 8, 29, 12, minute, tzinfo=UTC)
 
 
 def _append_occurrence(
@@ -264,6 +368,125 @@ def _run_concurrent_update(
     _emit({"ok": True, "pid": os.getpid(), "phase": "update", "worker": worker_label})
 
 
+def _run_concurrent_lifecycle_reconcile(
+    *,
+    tenant_id: str,
+    problem_id: str | None,
+    worker_label: str,
+    subject_task_id: str,
+    subject_run_id: str,
+    start_path: Path,
+    update_path: Path,
+    read_snapshot_path: Path | None,
+    done_path: Path,
+) -> None:
+    _wait_for_start(start_path)
+    store = _resolve_platform_document_store()
+    delegate = DocumentStoreProblemPersistence(store)
+    persistence = ObservingProblemPersistence(delegate)
+    lifecycle = ProblemLifecycleEngine(persistence)
+
+    snapshot_record_version: int | None = None
+    snapshot_occurrence_count: int | None = None
+    if problem_id is not None and read_snapshot_path is not None:
+        validated_id = ProblemId(problem_id)
+        baseline = persistence.get(tenant_id=tenant_id, problem_id=validated_id)
+        if baseline is None:
+            _fail(f"baseline problem missing for lifecycle worker {worker_label!r}")
+        snapshot_record_version = baseline.record_version
+        snapshot_occurrence_count = baseline.occurrence_count
+        read_snapshot_path.write_text(
+            json.dumps(
+                {
+                    "worker": worker_label,
+                    "record_version": snapshot_record_version,
+                    "occurrence_count": snapshot_occurrence_count,
+                },
+                default=_json_default,
+            ),
+            encoding="utf-8",
+        )
+
+    _wait_for_start(update_path)
+
+    member = _subject_ref_from_ids(
+        tenant_id=tenant_id,
+        task_id=subject_task_id,
+        run_id=subject_run_id,
+    )
+    grouping_result = _singleton_grouping_result(tenant_id=tenant_id, member=member)
+    observed_at = _worker_observed_at(worker_label)
+
+    outcome: dict[str, Any]
+    try:
+        result = lifecycle.reconcile(grouping_result, observed_at=observed_at)
+        updated = result.updated
+        created = result.created
+        if len(updated) == 1:
+            persisted = updated[0]
+            outcome = {
+                "status": "updated",
+                "occurrence_count": persisted.occurrence_count,
+                "record_version": persisted.record_version,
+                "problem_id": str(persisted.problem_id),
+                "subject_task_id": subject_task_id,
+                "subject_run_id": subject_run_id,
+            }
+        elif len(created) == 1:
+            persisted = created[0]
+            outcome = {
+                "status": "created",
+                "occurrence_count": persisted.occurrence_count,
+                "record_version": persisted.record_version,
+                "problem_id": str(persisted.problem_id),
+                "subject_task_id": subject_task_id,
+                "subject_run_id": subject_run_id,
+            }
+        else:
+            _fail(
+                f"lifecycle reconcile for worker {worker_label!r} did not create or update "
+                f"exactly one Problem: created={len(created)} updated={len(updated)}",
+            )
+    except Exception as exc:  # noqa: BLE001
+        outcome = {
+            "status": "error",
+            "error": f"{type(exc).__name__}: {exc}",
+            "subject_task_id": subject_task_id,
+            "subject_run_id": subject_run_id,
+        }
+
+    conflicts_observed = persistence.conflicts_observed
+    persistence.close()
+    store.close()
+    done_path.write_text(
+        json.dumps(
+            {
+                "ok": outcome.get("status") != "error",
+                "pid": os.getpid(),
+                "phase": "lifecycle-reconcile",
+                "worker": worker_label,
+                "tenant_id": tenant_id,
+                "conflicts_observed": conflicts_observed,
+                "snapshot_record_version": snapshot_record_version,
+                **outcome,
+            },
+            default=_json_default,
+        ),
+        encoding="utf-8",
+    )
+    if outcome.get("status") == "error":
+        _fail(str(outcome["error"]))
+    _emit(
+        {
+            "ok": True,
+            "pid": os.getpid(),
+            "phase": "lifecycle-reconcile",
+            "worker": worker_label,
+            "conflicts_observed": conflicts_observed,
+        },
+    )
+
+
 def _run_read_final(*, tenant_id: str, problem_id: str, other_tenant_id: str) -> None:
     store = _resolve_platform_document_store()
     persistence = DocumentStoreProblemPersistence(store)
@@ -334,6 +557,20 @@ def _build_parser() -> argparse.ArgumentParser:
     read_final.add_argument("--problem-id", required=True)
     read_final.add_argument("--other-tenant-id", required=True)
 
+    lifecycle = subparsers.add_parser(
+        "concurrent-lifecycle-reconcile",
+        help="wait for start signal and append one occurrence via lifecycle reconcile",
+    )
+    lifecycle.add_argument("--tenant-id", required=True)
+    lifecycle.add_argument("--problem-id", default=None)
+    lifecycle.add_argument("--worker-label", required=True)
+    lifecycle.add_argument("--subject-task-id", required=True)
+    lifecycle.add_argument("--subject-run-id", required=True)
+    lifecycle.add_argument("--start-path", type=Path, required=True)
+    lifecycle.add_argument("--update-path", type=Path, required=True)
+    lifecycle.add_argument("--read-snapshot-path", type=Path, default=None)
+    lifecycle.add_argument("--done-path", type=Path, required=True)
+
     cleanup = subparsers.add_parser("cleanup", help="purge proof tenant documents via store API")
     cleanup.add_argument("--tenant-id", action="append", required=True)
 
@@ -356,6 +593,19 @@ def main(argv: list[str] | None = None) -> None:
             tenant_id=args.tenant_id,
             problem_id=args.problem_id,
             worker_label=args.worker_label,
+            start_path=args.start_path,
+            update_path=args.update_path,
+            read_snapshot_path=args.read_snapshot_path,
+            done_path=args.done_path,
+        )
+        return
+    if args.command == "concurrent-lifecycle-reconcile":
+        _run_concurrent_lifecycle_reconcile(
+            tenant_id=args.tenant_id,
+            problem_id=args.problem_id,
+            worker_label=args.worker_label,
+            subject_task_id=args.subject_task_id,
+            subject_run_id=args.subject_run_id,
             start_path=args.start_path,
             update_path=args.update_path,
             read_snapshot_path=args.read_snapshot_path,
