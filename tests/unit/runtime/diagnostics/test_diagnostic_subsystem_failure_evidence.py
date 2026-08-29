@@ -121,6 +121,46 @@ def test_bridge_without_event_bus_does_not_record_failure() -> None:
     assert result is None
 
 
+def test_bridge_swallows_evidence_recording_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runtime_store = InMemoryRuntimeEventStore()
+    event_bus = RuntimeEventBus(persistence=runtime_store)
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    failing = MagicMock()
+    failing.trigger_for_terminal_execution.side_effect = RuntimeError("persist failed")
+
+    def _raise_evidence(*_args: object, **_kwargs: object) -> None:
+        raise OSError("evidence journal unavailable")
+
+    monkeypatch.setattr(
+        "intergrax.runtime.diagnostics.terminal_execution_diagnostic_bridge.record_diagnostic_subsystem_failure",
+        _raise_evidence,
+    )
+
+    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    try:
+        result = invoke_terminal_execution_diagnostics(
+            failing,
+            tenant_id="tenant-a",
+            task_id=task_id,
+            run_id=run_id,
+            observed_at=_OBSERVED_AT,
+            event_bus=event_bus,
+        )
+    finally:
+        reset_active_execution_identity(token)
+
+    assert result is None
+    assert not diagnostic_subsystem_failure_observed_for_run(
+        runtime_store,
+        tenant_id="tenant-a",
+        run_id=run_id,
+    )
+
+
 def test_successful_diagnostics_do_not_emit_failure_event() -> None:
     runtime_store = InMemoryRuntimeEventStore()
     event_bus = RuntimeEventBus(persistence=runtime_store)

@@ -58,14 +58,24 @@ def invoke_terminal_execution_diagnostics(
             },
         )
         if event_bus is not None:
-            record_diagnostic_subsystem_failure(
-                event_bus,
-                tenant_id=tenant_id,
-                task_id=task_id,
-                run_id=run_id,
-                error_type=type(exc).__name__,
-                observed_at=observed_at,
-            )
+            try:
+                record_diagnostic_subsystem_failure(
+                    event_bus,
+                    tenant_id=tenant_id,
+                    task_id=task_id,
+                    run_id=run_id,
+                    error_type=type(exc).__name__,
+                    observed_at=observed_at,
+                )
+            except Exception:
+                logger.exception(
+                    "Failed to persist diagnostic subsystem failure evidence",
+                    extra={
+                        "tenant_id": tenant_id,
+                        "task_id": str(task_id),
+                        "run_id": str(run_id),
+                    },
+                )
         return None
 
     logger.info(

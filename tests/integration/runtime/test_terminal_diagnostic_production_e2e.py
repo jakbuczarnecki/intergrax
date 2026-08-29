@@ -223,6 +223,52 @@ async def test_clean_execution_does_not_create_problem() -> None:
 
 
 @pytest.mark.asyncio
+async def test_evidence_recording_failure_does_not_change_business_outcome(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loop, runtime_store, _ = _build_diagnostic_nexus_loop(inject_violation=False)
+    trigger = loop._terminal_diagnostic_trigger  # noqa: SLF001
+    assert trigger is not None
+
+    def _raise(*_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("diagnostic persistence failed")
+
+    def _raise_evidence(*_args: object, **_kwargs: object) -> None:
+        raise OSError("evidence journal unavailable")
+
+    monkeypatch.setattr(trigger, "trigger_for_terminal_execution", _raise)
+    monkeypatch.setattr(
+        "intergrax.runtime.diagnostics.terminal_execution_diagnostic_bridge.record_diagnostic_subsystem_failure",
+        _raise_evidence,
+    )
+    runner = UnifiedTaskRunner(loop)
+    run_id = mint_run_id()
+
+    result = await runner.run_task(
+        Task(
+            tenant_id=_TENANT_A,
+            user_id="user-1",
+            message="evidence failure isolation",
+            context=TaskContext(capability="echo.basic"),
+        ),
+        run_id=run_id,
+    )
+
+    assert result.state is TaskState.COMPLETED
+    events = runtime_store.list_for_task(result.task_id, tenant_id=_TENANT_A)
+    assert any(event.event_type is RuntimeEventType.TASK_COMPLETED for event in events)
+    from intergrax.runtime.diagnostics.diagnostic_subsystem_failure_evidence import (
+        diagnostic_subsystem_failure_observed_for_run,
+    )
+
+    assert not diagnostic_subsystem_failure_observed_for_run(
+        runtime_store,
+        tenant_id=_TENANT_A,
+        run_id=run_id,
+    )
+
+
+@pytest.mark.asyncio
 async def test_diagnostic_failure_does_not_change_business_outcome(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
