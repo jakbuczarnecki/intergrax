@@ -21,6 +21,14 @@ def _finite_or_unlimited_float(value: float | None) -> float:
     return value if value is not None else float(_UNLIMITED_DIMENSION)
 
 
+def _finite_or_zero_int(value: int | None) -> int:
+    return value if value is not None else 0
+
+
+def _finite_or_zero_float(value: float | None) -> float:
+    return value if value is not None else 0.0
+
+
 def _usage_int_to_optional(value: int) -> int | None:
     return None if value >= _UNLIMITED_DIMENSION else value
 
@@ -85,7 +93,7 @@ class BudgetUsageTotals:
 
 
 def run_budget_to_usage_totals(budget: RunBudget) -> BudgetUsageTotals:
-    """Map RunBudget limits to usage totals (``None`` dimensions are unlimited)."""
+    """Map root RunBudget limits to usage totals (``None`` dimensions are unlimited)."""
     return BudgetUsageTotals(
         input_tokens=_finite_or_unlimited_int(budget.max_input_tokens),
         output_tokens=_finite_or_unlimited_int(budget.max_output_tokens),
@@ -97,6 +105,22 @@ def run_budget_to_usage_totals(budget: RunBudget) -> BudgetUsageTotals:
         wall_time_seconds=_finite_or_unlimited_float(budget.max_wall_time_seconds),
         planner_iterations=_finite_or_unlimited_int(budget.max_planner_iterations),
         replans=_finite_or_unlimited_int(budget.max_replans),
+    )
+
+
+def reservation_request_to_usage_totals(budget: RunBudget) -> BudgetUsageTotals:
+    """Map child reservation request (``None`` dimensions are not requested)."""
+    return BudgetUsageTotals(
+        input_tokens=_finite_or_zero_int(budget.max_input_tokens),
+        output_tokens=_finite_or_zero_int(budget.max_output_tokens),
+        total_tokens=_finite_or_zero_int(budget.max_total_tokens),
+        llm_calls=_finite_or_zero_int(budget.max_llm_calls),
+        tool_calls=_finite_or_zero_int(budget.max_tool_calls),
+        rag_invocations=_finite_or_zero_int(budget.max_rag_invocations),
+        websearch_invocations=_finite_or_zero_int(budget.max_websearch_invocations),
+        wall_time_seconds=_finite_or_zero_float(budget.max_wall_time_seconds),
+        planner_iterations=_finite_or_zero_int(budget.max_planner_iterations),
+        replans=_finite_or_zero_int(budget.max_replans),
     )
 
 

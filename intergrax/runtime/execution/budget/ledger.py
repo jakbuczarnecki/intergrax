@@ -16,6 +16,7 @@ from intergrax.runtime.execution.budget.models import (
     ExecutionBudgetError,
     ExecutionBudgetReservationError,
     ExecutionBudgetReservationGrant,
+    reservation_request_to_usage_totals,
     run_budget_to_usage_totals,
     usage_totals_to_run_budget,
 )
@@ -165,7 +166,7 @@ class InMemoryExecutionBudgetLedger:
                 raise ExecutionBudgetReservationError(
                     "reserved allocation requires reservation_request"
                 )
-            requested = run_budget_to_usage_totals(decision.reservation_request)
+            requested = reservation_request_to_usage_totals(decision.reservation_request)
             self._validate_positive_request(requested)
             backing_id = self._resolve_backing_execution_id_unlocked(parent_execution_id)
             self._validate_reservation_fits_backing_unlocked(requested, backing_id)
@@ -233,7 +234,12 @@ class InMemoryExecutionBudgetLedger:
             record = self._require_active_record_unlocked(execution_id)
             self._validate_positive_request(amounts)
             remaining = self._effective_remaining_for_record_unlocked(record)
-            if not self._usage_fits(amounts, remaining):
+            granted = self._granted_allowance_for_consumption_unlocked(record)
+            if granted is not None:
+                fits = self._reserved_consumption_fits(amounts, remaining, granted)
+            else:
+                fits = self._usage_fits(amounts, remaining)
+            if not fits:
                 raise ExecutionBudgetError(
                     f"consumption exceeds effective grant for execution {execution_id!r}"
                 )
@@ -427,6 +433,135 @@ class InMemoryExecutionBudgetLedger:
             or amounts.replans < 0
         ):
             raise ExecutionBudgetError("budget amounts must be non-negative")
+
+    def _granted_allowance_for_consumption_unlocked(
+        self,
+        record: _ReservationRecord,
+    ) -> BudgetUsageTotals | None:
+        if record.mode is ExecutionBudgetAllocationMode.RESERVED:
+            return record.allowance
+        backing_id = self._resolve_backing_execution_id_unlocked(record.parent_execution_id)
+        if backing_id is None:
+            return None
+        backing_record = self._records.get(backing_id)
+        if backing_record is None:
+            return None
+        if backing_record.mode is not ExecutionBudgetAllocationMode.RESERVED:
+            return None
+        return backing_record.allowance
+
+    @staticmethod
+    def _reserved_consumption_fits(
+        consumed: BudgetUsageTotals,
+        remaining: BudgetUsageTotals,
+        granted: BudgetUsageTotals,
+    ) -> bool:
+        if not InMemoryExecutionBudgetLedger._scalar_consumption_fits(
+            consumed.llm_calls,
+            remaining.llm_calls,
+            granted.llm_calls,
+        ):
+            return False
+        if not InMemoryExecutionBudgetLedger._scalar_consumption_fits(
+            consumed.tool_calls,
+            remaining.tool_calls,
+            granted.tool_calls,
+        ):
+            return False
+        if not InMemoryExecutionBudgetLedger._scalar_consumption_fits(
+            consumed.rag_invocations,
+            remaining.rag_invocations,
+            granted.rag_invocations,
+        ):
+            return False
+        if not InMemoryExecutionBudgetLedger._scalar_consumption_fits(
+            consumed.websearch_invocations,
+            remaining.websearch_invocations,
+            granted.websearch_invocations,
+        ):
+            return False
+        if not InMemoryExecutionBudgetLedger._scalar_consumption_fits(
+            consumed.planner_iterations,
+            remaining.planner_iterations,
+            granted.planner_iterations,
+        ):
+            return False
+        if not InMemoryExecutionBudgetLedger._scalar_consumption_fits(
+            consumed.replans,
+            remaining.replans,
+            granted.replans,
+        ):
+            return False
+        if not InMemoryExecutionBudgetLedger._float_consumption_fits(
+            consumed.wall_time_seconds,
+            remaining.wall_time_seconds,
+            granted.wall_time_seconds,
+        ):
+            return False
+        return InMemoryExecutionBudgetLedger._token_consumption_fits(
+            consumed,
+            remaining,
+            granted,
+        )
+
+    @staticmethod
+    def _scalar_consumption_fits(
+        consumed: int,
+        remaining: int,
+        granted: int,
+    ) -> bool:
+        if granted == 0:
+            return consumed == 0
+        return consumed <= remaining
+
+    @staticmethod
+    def _float_consumption_fits(
+        consumed: float,
+        remaining: float,
+        granted: float,
+    ) -> bool:
+        if granted == 0.0:
+            return consumed == 0.0
+        return consumed <= remaining
+
+    @staticmethod
+    def _token_consumption_fits(
+        consumed: BudgetUsageTotals,
+        remaining: BudgetUsageTotals,
+        granted: BudgetUsageTotals,
+    ) -> bool:
+        if granted.total_tokens > 0:
+            if consumed.total_tokens > remaining.total_tokens:
+                return False
+            if granted.input_tokens > 0 and consumed.input_tokens > remaining.input_tokens:
+                return False
+            if granted.output_tokens > 0 and consumed.output_tokens > remaining.output_tokens:
+                return False
+            return True
+        if (
+            consumed.total_tokens > 0
+            or consumed.input_tokens > 0
+            or consumed.output_tokens > 0
+        ):
+            if granted.input_tokens == 0 and granted.output_tokens == 0:
+                return False
+        if not InMemoryExecutionBudgetLedger._scalar_consumption_fits(
+            consumed.input_tokens,
+            remaining.input_tokens,
+            granted.input_tokens,
+        ):
+            return False
+        if not InMemoryExecutionBudgetLedger._scalar_consumption_fits(
+            consumed.output_tokens,
+            remaining.output_tokens,
+            granted.output_tokens,
+        ):
+            return False
+        return InMemoryExecutionBudgetLedger._scalar_consumption_fits(
+            consumed.total_tokens,
+            remaining.total_tokens,
+            granted.total_tokens,
+        )
 
     @staticmethod
     def _usage_fits(requested: BudgetUsageTotals, available: BudgetUsageTotals) -> bool:
