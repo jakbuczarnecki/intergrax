@@ -48,11 +48,11 @@ from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.registry.profile import ToolProfile
+from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from platform_proofs.scenarios.ai_incident_investigation.application.tools import SCENARIO_TOOL_IDS
 from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
     IncidentInvestigationValidationEngine,
 )
-from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import IncidentFixture
 
 INVESTIGATOR_AGENT_ID = "incident_investigator"
 INVESTIGATOR_CAPABILITY = "incident_investigation.investigate"
@@ -84,6 +84,7 @@ class ScenarioRuntimeComposition:
     environment: ApplicationEnvironmentProfile
     tool_registry: ToolRegistry
     _platform: PlatformScenarioRuntimeComposition | None = None
+    llm_adapter_override: LLMAdapter | None = None
 
     @property
     def platform(self) -> PlatformScenarioRuntimeComposition:
@@ -92,7 +93,11 @@ class ScenarioRuntimeComposition:
         return self._platform
 
     @property
-    def build_context(self) -> object:
+    def is_platform_attached(self) -> bool:
+        return self._platform is not None
+
+    @property
+    def build_context(self) -> ApplicationBuildContext:
         return self.platform.env_wiring.build_context
 
     def attach_platform(self, platform: PlatformScenarioRuntimeComposition) -> None:
@@ -214,15 +219,12 @@ def build_scenario_runtime_composition(
 
 def resolve_scenario_llm_adapter(
     environment: ApplicationEnvironmentProfile,
+    *,
+    llm_adapter_override: LLMAdapter | None = None,
 ) -> LLMAdapter:
     """Resolve platform LLM adapter for autonomous evidence gathering (APP-2A)."""
-    from platform_proofs.scenarios.ai_incident_investigation.fixtures.lab_planner_llm import (
-        FixtureDrivenIncidentInvestigationLLM,
-        lab_planner_enabled,
-    )
-
-    if lab_planner_enabled():
-        return FixtureDrivenIncidentInvestigationLLM()
+    if llm_adapter_override is not None:
+        return llm_adapter_override
     try:
         return resolve_llm_adapter(environment)
     except Exception as exc:
@@ -237,7 +239,10 @@ def build_agent_runtime_context(
     request: RuntimeRequest,
     composition: ScenarioRuntimeComposition,
 ) -> RuntimeContext:
-    resolved_llm = resolve_scenario_llm_adapter(composition.environment)
+    resolved_llm = resolve_scenario_llm_adapter(
+        composition.environment,
+        llm_adapter_override=composition.llm_adapter_override,
+    )
     return build_runtime_context_from_environment(
         request,
         composition.build_context,

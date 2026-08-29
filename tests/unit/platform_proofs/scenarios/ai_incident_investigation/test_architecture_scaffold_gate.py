@@ -21,9 +21,11 @@ from platform_proofs.scenarios.ai_incident_investigation.application.runtime_com
     prepare_incident_execution_runtime,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
-    build_runtime_bundle,
     execute_resolved_skeleton,
     STANDALONE_SCENARIO_TENANT_ID,
+)
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import (
+    build_runtime_bundle,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -59,9 +61,10 @@ _FORBIDDEN_APPLICATION_SYMBOLS = frozenset(
     }
 )
 
-_FORBIDDEN_APPLICATION_MODULES = frozenset(
+_FORBIDDEN_APPLICATION_MODULE_PREFIXES = frozenset(
     {
         "platform_proofs.scenarios.ai_incident_investigation.proof",
+        "platform_proofs.scenarios.ai_incident_investigation.fixtures",
     }
 )
 
@@ -91,9 +94,17 @@ def _collect_ast_violations(path: Path, forbidden: frozenset[str]) -> list[str]:
             violations.append(f"{rel}:{node.lineno} references {node.id}")
         if isinstance(node, ast.Attribute) and node.attr in forbidden:
             violations.append(f"{rel}:{node.lineno} references .{node.attr}")
+    return violations
+
+
+def _collect_forbidden_application_imports(path: Path) -> list[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    violations: list[str] = []
+    rel = path.relative_to(_repo_root()).as_posix()
+    for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module:
-            for mod in _FORBIDDEN_APPLICATION_MODULES:
-                if node.module == mod or node.module.startswith(f"{mod}."):
+            for prefix in _FORBIDDEN_APPLICATION_MODULE_PREFIXES:
+                if node.module == prefix or node.module.startswith(f"{prefix}."):
                     violations.append(f"{rel}:{node.lineno} imports {node.module}")
     return violations
 
@@ -101,15 +112,16 @@ def _collect_ast_violations(path: Path, forbidden: frozenset[str]) -> list[str]:
 def test_application_must_not_import_proof_or_forbidden_execution_symbols() -> None:
     violations: list[str] = []
     app_dir = _scenario_root() / "application"
-    for path in sorted(app_dir.glob("*.py")):
+    for path in sorted(app_dir.rglob("*.py")):
         violations.extend(_collect_ast_violations(path, _FORBIDDEN_APPLICATION_SYMBOLS))
+        violations.extend(_collect_forbidden_application_imports(path))
     assert violations == []
 
 
 def test_application_must_not_define_tool_call_id_repair_wrapper() -> None:
     violations: list[str] = []
     app_dir = _scenario_root() / "application"
-    for path in sorted(app_dir.glob("*.py")):
+    for path in sorted(app_dir.rglob("*.py")):
         violations.extend(
             _collect_ast_violations(path, _FORBIDDEN_TOOL_CALL_ID_REPAIR_SYMBOLS)
         )
@@ -119,7 +131,7 @@ def test_application_must_not_define_tool_call_id_repair_wrapper() -> None:
 def test_application_must_not_touch_private_nexus_planner_attributes() -> None:
     violations: list[str] = []
     app_dir = _scenario_root() / "application"
-    for path in sorted(app_dir.glob("*.py")):
+    for path in sorted(app_dir.rglob("*.py")):
         violations.extend(_collect_ast_violations(path, _FORBIDDEN_NEXUS_PRIVATE_ATTRIBUTES))
     assert violations == []
 

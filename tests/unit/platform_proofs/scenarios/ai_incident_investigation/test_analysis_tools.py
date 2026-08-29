@@ -55,7 +55,7 @@ def _request(tool_id: str, input_model):
 def _store_with_resolved_fixture():
     fixture = build_resolved_fixture()
     registry = ToolRegistry()
-    store = register_scenario_tools(registry, fixture)
+    store = register_scenario_tools(registry, fixture.to_operational_data())
     line_input = LineWindowInput.model_validate(default_line_window_input())
     staffing_input = StaffingScheduleInput.model_validate(default_staffing_input())
     attendance_input = StaffingAttendanceInput.model_validate(default_staffing_input())

@@ -23,7 +23,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.diagnostics.investigation_contracts import IncidentInvestigationInput
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
-from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import HypothesisId
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_data_contracts import HypothesisId
 from platform_proofs.scenarios.ai_incident_investigation.application.observability import (
     IncidentClaimProposedDiagV1,
     IncidentClaimRevisedDiagV1,

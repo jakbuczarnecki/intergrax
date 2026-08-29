@@ -25,8 +25,13 @@ from platform_proofs.scenarios.ai_incident_investigation.proof.evidence_builder 
 )
 from platform_proofs.scenarios.ai_incident_investigation.proof.evaluator import evaluate_scenario_run
 from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import ScenarioVariant
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.lab_planner_llm import (
+    FixtureDrivenIncidentInvestigationLLM,
+)
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import (
+    build_fixture_runtime_bundle,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
-    build_runtime_bundle,
     execute_resolved_skeleton,
 )
 
@@ -46,16 +51,31 @@ def _source_revision(repo_root: Path) -> str:
 
 
 async def _run_skeleton() -> int:
-    resolved_bundle = build_runtime_bundle(variant=ScenarioVariant.RESOLVED)
+    lab_llm = FixtureDrivenIncidentInvestigationLLM()
+    resolved_fixture_bundle = build_fixture_runtime_bundle(
+        variant=ScenarioVariant.RESOLVED,
+        llm_adapter_override=lab_llm,
+    )
+    resolved_bundle = resolved_fixture_bundle.bundle
     resolved_result = await execute_resolved_skeleton(resolved_bundle)
-    resolved_evaluation = evaluate_scenario_run(resolved_result, resolved_bundle.fixture)
+    resolved_evaluation = evaluate_scenario_run(
+        resolved_result,
+        resolved_fixture_bundle.fixture,
+    )
     if not resolved_evaluation.passed:
         print("SCENARIO FULL-1 EVALUATION FAILED:", resolved_evaluation.failures, file=sys.stderr)
         return 1
 
-    unresolved_bundle = build_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    unresolved_fixture_bundle = build_fixture_runtime_bundle(
+        variant=ScenarioVariant.UNRESOLVED,
+        llm_adapter_override=lab_llm,
+    )
+    unresolved_bundle = unresolved_fixture_bundle.bundle
     unresolved_result = await execute_resolved_skeleton(unresolved_bundle)
-    unresolved_evaluation = evaluate_scenario_run(unresolved_result, unresolved_bundle.fixture)
+    unresolved_evaluation = evaluate_scenario_run(
+        unresolved_result,
+        unresolved_fixture_bundle.fixture,
+    )
     if not unresolved_evaluation.passed:
         print("SCENARIO FULL-2 EVALUATION FAILED:", unresolved_evaluation.failures, file=sys.stderr)
         return 1
@@ -140,7 +160,6 @@ async def _run_skeleton() -> int:
 def main() -> int:
     import asyncio
 
-    os.environ.setdefault("SCENARIO_AI_INCIDENT_LAB_PLANNER", "1")
     return asyncio.run(_run_skeleton())
 
 

@@ -3,6 +3,7 @@
 """APP-2BC-R1 model-owned reasoning, critic authority, and claim semantics tests."""
 
 from __future__ import annotations
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import build_runtime_bundle
 
 import inspect
 
@@ -249,8 +250,7 @@ def test_legacy_claim_ids_not_used_for_semantic_conversion() -> None:
 async def test_application_survives_without_proof_evaluator() -> None:
     from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
         OUTCOME_RESOLVED,
-        build_runtime_bundle,
-        execute_resolved_skeleton,
+            execute_resolved_skeleton,
     )
 
     bundle = build_runtime_bundle()

@@ -1,6 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import build_fixture_runtime_bundle, build_runtime_bundle
 
 import inspect
 from dataclasses import replace
@@ -51,7 +52,6 @@ from platform_proofs.scenarios.ai_incident_investigation.application.investigato
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     OUTCOME_RESOLVED,
-    build_runtime_bundle,
     execute_resolved_skeleton,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
@@ -290,7 +290,8 @@ def test_correlation_only_h1_supported_rejected_by_critic() -> None:
 
 @pytest.mark.asyncio
 async def test_critic_rejects_forged_h3_with_healthy_telemetry_async() -> None:
-    bundle = build_runtime_bundle()
+    fixture_bundle = build_fixture_runtime_bundle()
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
     assert result.outcome == OUTCOME_RESOLVED
 
@@ -325,7 +326,8 @@ async def test_critic_rejects_forged_h3_with_healthy_telemetry_async() -> None:
 
 @pytest.mark.asyncio
 async def test_bad_comparison_prevents_resolved_outcome() -> None:
-    bundle = build_runtime_bundle()
+    fixture_bundle = build_fixture_runtime_bundle()
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
     assert result.outcome == OUTCOME_RESOLVED
 
@@ -365,7 +367,8 @@ async def test_real_understaffing_prevents_resolved_h2_rejection() -> None:
     assessment = derive_hypothesis_dispositions(observations, INCIDENT_EVIDENCE_IDS)
     assert assessment.h2.disposition is not ClaimResolution.REJECTED
 
-    bundle = build_runtime_bundle()
+    fixture_bundle = build_fixture_runtime_bundle()
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
     mutated_nodes = copy.deepcopy(list(result.evidence_nodes))
     for node in mutated_nodes:
@@ -392,7 +395,8 @@ async def test_real_understaffing_prevents_resolved_h2_rejection() -> None:
 
 @pytest.mark.asyncio
 async def test_evaluator_mutation_healthy_telemetry_fails() -> None:
-    bundle = build_runtime_bundle()
+    fixture_bundle = build_fixture_runtime_bundle()
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
 
     def mutate_telemetry(payload: dict[str, object]) -> None:
@@ -409,9 +413,10 @@ async def test_evaluator_mutation_healthy_telemetry_fails() -> None:
 
 @pytest.mark.asyncio
 async def test_full_happy_path_still_passes_evaluator() -> None:
-    bundle = build_runtime_bundle()
+    fixture_bundle = build_fixture_runtime_bundle()
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
-    evaluation = evaluate_scenario_run(result, bundle.fixture)
+    evaluation = evaluate_scenario_run(result, fixture_bundle.fixture)
     assert evaluation.passed, evaluation.failures
 
 

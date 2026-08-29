@@ -3,6 +3,7 @@
 """PLATFORM-5B architecture gates and conformance for ai_incident scenario."""
 
 from __future__ import annotations
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import build_runtime_bundle
 
 import re
 from pathlib import Path
@@ -14,7 +15,6 @@ from platform_proofs.scenarios.ai_incident_investigation.application.runtime_com
     build_scenario_environment_profile,
     build_scenario_runtime_composition,
 )
-from platform_proofs.scenarios.ai_incident_investigation.application.scenario import build_runtime_bundle
 from platform_proofs.scenarios.ai_incident_investigation.application.tools import SCENARIO_TOOL_IDS
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]

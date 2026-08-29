@@ -7,6 +7,11 @@ from pathlib import Path
 
 import pytest
 
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import (
+    build_fixture_runtime_bundle,
+    build_runtime_bundle,
+)
+
 from platform_proofs.scenarios.ai_incident_investigation.proof.evidence_builder import (
     EVIDENCE_RESOLVED_FILENAME,
     EVIDENCE_UNRESOLVED_FILENAME,
@@ -21,7 +26,6 @@ from platform_proofs.scenarios.ai_incident_investigation.proof.reproduction impo
     canonical_reproduction_shell_command,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
-    build_runtime_bundle,
     execute_resolved_skeleton,
 )
 from scripts.proof.intergrax_platform_proof_evidence import PlatformProofEvidence
@@ -45,9 +49,10 @@ def test_readme_canonical_command_matches_reproduction_module() -> None:
 
 def test_evidence_reproduction_command_matches_canonical_module() -> None:
     async def _build() -> None:
-        bundle = build_runtime_bundle(variant=ScenarioVariant.RESOLVED)
+        fixture_bundle = build_fixture_runtime_bundle(variant=ScenarioVariant.RESOLVED)
+        bundle = fixture_bundle.bundle
         result = await execute_resolved_skeleton(bundle)
-        evaluation = evaluate_scenario_run(result, bundle.fixture)
+        evaluation = evaluate_scenario_run(result, fixture_bundle.fixture)
         evidence = build_platform_proof_evidence(
             result,
             variant=ScenarioVariant.RESOLVED,
