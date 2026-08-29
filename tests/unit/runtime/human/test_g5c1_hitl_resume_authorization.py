@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id, mint_run_id, mint_task_id
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.runtime.human.declarative_hitl_grant import (
     DeclarativeHitlGrantCoordinator,
@@ -22,7 +22,14 @@ from intergrax.runtime.long_running.checkpoint_builder import (
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.runtime_checkpoint import (
     RuntimeCheckpoint,
-    RuntimeCheckpointExecutionState,
+    UaepStepCursor,
+    UaepStepOutput,
+)
+from intergrax.runtime.long_running.execution_tree_checkpoint import (
+    ExecutionCheckpointEntry,
+    ExecutionCheckpointStatus,
+    ExecutionTreeSnapshot,
+    minimal_runtime_checkpoint,
 )
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskState
@@ -72,13 +79,31 @@ def _resolution(
     )
 
 
-def _uaep_checkpoint() -> RuntimeCheckpointExecutionState:
-    return RuntimeCheckpointExecutionState(
+def _uaep_checkpoint() -> RuntimeCheckpoint:
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    task_id = mint_task_id()
+    root = mint_execution_id()
+    return RuntimeCheckpoint(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_tree=ExecutionTreeSnapshot(
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            entries=[
+                ExecutionCheckpointEntry(
+                    execution_id=root,
+                    parent_execution_id=None,
+                    status=ExecutionCheckpointStatus.RUNNING,
+                )
+            ],
+        ),
         uaep_step_index=0,
         uaep_step_id="review",
         uaep_step_completed=False,
-        uaep_step_cursor={"phase1_done": True},
-        last_step_output={"step_id": "review", "summary": "pending"},
+        uaep_step_cursor=UaepStepCursor(values={"phase1_done": True}),
+        last_step_output=UaepStepOutput(step_id="review", summary="pending"),
     )
 
 
@@ -178,10 +203,12 @@ def test_canonical_approve_authorizes_uaep_skip_and_resume() -> None:
     assert approval is not None
     assert approval.verdict is HumanResponseVerdict.APPROVE
 
-    skip_ckpt = RuntimeCheckpointExecutionState(
-        uaep_step_index=0,
-        uaep_step_id="review",
-        last_step_output={"step_id": "review", "summary": "done"},
+    skip_ckpt = _uaep_checkpoint().model_copy(
+        update={
+            "uaep_step_completed": True,
+            "uaep_step_cursor": None,
+            "last_step_output": UaepStepOutput(step_id="review", summary="done"),
+        }
     )
     assert should_skip_uaep_step(
         step_index=0,
@@ -221,7 +248,11 @@ async def test_debug_service_submits_exact_pause_request_identity() -> None:
         resume_token="rt-1",
         task_state=TaskState.WAITING_FOR_HUMAN,
         task_snapshot=task.model_dump(mode="json"),
-        runtime=RuntimeCheckpoint(run_id=RUN_ID, attempt_id=mint_attempt_id()),
+        runtime=minimal_runtime_checkpoint(
+            task_id=mint_task_id(),
+            run_id=RUN_ID,
+            attempt_id=mint_attempt_id(),
+        ),
     )
     store = MagicMock()
     store.get_latest.return_value = checkpoint

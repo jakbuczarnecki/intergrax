@@ -65,6 +65,7 @@ from intergrax.runtime.governance.control_plane_mutation_policy import (
     BundleBackedControlPlaneMutationEvaluator,
 )
 from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.policy.runtime_policy_bundle_evaluator import RuntimePolicyBundleEvaluator
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
@@ -181,9 +182,10 @@ def _checkpoint(*, tenant_id: str = _TENANT) -> TaskCheckpoint:
         task_state=TaskState.WAITING_FOR_HUMAN,
         progress_message="paused",
         notify_channel="debug",
-        runtime=RuntimeCheckpoint(
-            run_id=str(_RUN_ID),
-            attempt_id=str(_ATTEMPT_ID),
+        runtime=minimal_runtime_checkpoint(
+            task_id=_TASK_ID,
+            run_id=_RUN_ID,
+            attempt_id=_ATTEMPT_ID,
         ),
     )
 

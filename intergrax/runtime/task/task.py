@@ -173,6 +173,7 @@ class Task(BaseModel):
             execution_authority=self.execution_authority,
             hitl_resolution=governance.hitl_resolution,
             hitl_pause_record=governance.pause_record,
+            runtime_checkpoint=self.runtime.orchestration.runtime_checkpoint,
         )
 
 

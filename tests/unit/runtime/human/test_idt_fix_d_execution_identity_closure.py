@@ -15,6 +15,7 @@ from intergrax.contracts.execution_identity import (
     ActiveExecutionIdentity,
     bind_active_execution_identity,
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
     reset_active_execution_identity,
@@ -27,8 +28,8 @@ from intergrax.runtime.human.hitl_hooks import HumanApprovalHookCoordinator, hum
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.human.persistence_contract import InMemoryHumanDecisionPersistence
+from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
 from intergrax.runtime.long_running.models import TaskCheckpoint
-from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
 from intergrax.runtime.nexus.orchestration.human_response import persist_human_decision
@@ -185,7 +186,11 @@ async def test_d3_reject_resolution_and_event_run_id() -> None:
     _set_human_response(task, verdict=HumanResponseVerdict.REJECT, response_text="reject")
     store = InMemoryHumanDecisionPersistence()
     runner, published, _ = _build_intake_runner(human_store=store)
-    token = bind_active_execution_identity(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
+    token = bind_active_execution_identity(
+        run_id=RUN_ID,
+        attempt_id=ATTEMPT_ID,
+        execution_id=mint_execution_id(),
+    )
     try:
         await runner.run(
             task,
@@ -219,7 +224,11 @@ async def test_d4_escalate_resolution_and_event_run_id() -> None:
     _set_human_response(task, verdict=HumanResponseVerdict.ESCALATE, response_text="escalate")
     store = InMemoryHumanDecisionPersistence()
     runner, published, _ = _build_intake_runner(human_store=store)
-    token = bind_active_execution_identity(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
+    token = bind_active_execution_identity(
+        run_id=RUN_ID,
+        attempt_id=ATTEMPT_ID,
+        execution_id=mint_execution_id(),
+    )
     try:
         await runner.run(
             task,
@@ -252,7 +261,11 @@ async def test_d5_human_approval_received_three_way_identity() -> None:
     _set_human_response(task, verdict=HumanResponseVerdict.APPROVE, response_text="approve")
 
     runner, published, _ = _build_intake_runner()
-    token = bind_active_execution_identity(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
+    token = bind_active_execution_identity(
+        run_id=RUN_ID,
+        attempt_id=ATTEMPT_ID,
+        execution_id=mint_execution_id(),
+    )
     try:
         await runner.run(
             task,
@@ -288,7 +301,11 @@ async def test_d6_checkpoint_resume_preserves_execution_identity(monkeypatch: py
         task_state=TaskState.WAITING_FOR_HUMAN,
         progress_message="paused",
         notify_channel="debug",
-        runtime=RuntimeCheckpoint(run_id=RUN_ID, attempt_id=ATTEMPT_ID),
+        runtime=minimal_runtime_checkpoint(
+            task_id=TASK_ID,
+            run_id=RUN_ID,
+            attempt_id=ATTEMPT_ID,
+        ),
     )
 
     captured: dict[str, object] = {}
@@ -357,7 +374,11 @@ def test_d8_missing_run_id_persists_null_not_task_id() -> None:
 
 def test_d8b_human_approval_hook_context_uses_active_run_id() -> None:
     task = _paused_task()
-    token = bind_active_execution_identity(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
+    token = bind_active_execution_identity(
+        run_id=RUN_ID,
+        attempt_id=ATTEMPT_ID,
+        execution_id=mint_execution_id(),
+    )
     try:
         ctx = human_approval_hook_context(task, verdict=HumanResponseVerdict.APPROVE.value)
     finally:

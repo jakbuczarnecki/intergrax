@@ -62,6 +62,7 @@ from intergrax.runtime.governance.control_plane_mutation_policy import (
 )
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.policy.runtime_policy_bundle_evaluator import RuntimePolicyBundleEvaluator
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
@@ -156,9 +157,10 @@ def _checkpoint(
         task_state=task_state,
         progress_message="paused",
         notify_channel="debug",
-        runtime=RuntimeCheckpoint(
-            run_id=str(_RUN_ID),
-            attempt_id=str(_ATTEMPT_ID),
+        runtime=minimal_runtime_checkpoint(
+            task_id=_TASK_ID,
+            run_id=_RUN_ID,
+            attempt_id=_ATTEMPT_ID,
         ),
     )
 
@@ -615,9 +617,10 @@ async def test_taskcpm_r14_checkpoint_identity_changes_after_allow_zero_runner()
 async def test_taskcpm_r15_checkpoint_run_id_conflict_zero_runner() -> None:
     checkpoint = _checkpoint()
     conflicting = _checkpoint()
-    conflicting.runtime = RuntimeCheckpoint(
-        run_id=str(mint_run_id()),
-        attempt_id=str(_ATTEMPT_ID),
+    conflicting.runtime = minimal_runtime_checkpoint(
+        task_id=_TASK_ID,
+        run_id=mint_run_id(),
+        attempt_id=_ATTEMPT_ID,
     )
     boundary, _ = _allow_boundary()
     runner = AsyncMock(spec=UnifiedTaskRunner)

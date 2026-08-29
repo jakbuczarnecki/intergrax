@@ -20,6 +20,7 @@ from intergrax.runtime.execution.nexus_compat import NexusTaskExecutionDelegate
 from intergrax.runtime.execution.request import ExecutionCapability
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 from intergrax.runtime.execution.task_adapter import execution_request_from_task
+from intergrax.runtime.long_running.checkpoint_builder import prepare_task_for_checkpoint_resume
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -71,17 +72,26 @@ class UnifiedTaskRunner:
                     "explicit run_id conflicts with resume checkpoint identity: "
                     f"{run_id!r} != {checkpoint_run_id!r}"
                 )
-            if attempt_id is not None and attempt_id != checkpoint_attempt_id:
-                raise ValueError(
-                    "explicit attempt_id conflicts with resume checkpoint identity: "
-                    f"{attempt_id!r} != {checkpoint_attempt_id!r}"
-                )
             resolved_run_id = checkpoint_run_id
-            resolved_attempt_id = checkpoint_attempt_id
+            resolved_attempt_id = attempt_id or checkpoint_attempt_id
         else:
             resolved_run_id = run_id or mint_run_id()
             resolved_attempt_id = attempt_id or mint_attempt_id()
         execution_id = mint_execution_id()
+        if resume_checkpoint is not None and resume_checkpoint.runtime is not None:
+            if resolved_attempt_id != checkpoint_attempt_id:
+                prepare_task_for_checkpoint_resume(
+                    task,
+                    resume_checkpoint,
+                    active_attempt_id=resolved_attempt_id,
+                    active_root_execution_id=execution_id,
+                )
+            elif task.runtime.orchestration.runtime_checkpoint is None:
+                from intergrax.runtime.long_running.checkpoint_builder import (
+                    apply_runtime_checkpoint_to_task,
+                )
+
+                apply_runtime_checkpoint_to_task(task, resume_checkpoint.runtime)
         identity = ExecutionIdentityBinding(
             run_id=resolved_run_id,
             attempt_id=resolved_attempt_id,

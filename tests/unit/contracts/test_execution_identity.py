@@ -464,8 +464,8 @@ def test_multi_agent_evaluation_requires_active_run_id():
 @pytest.mark.gate
 @pytest.mark.asyncio
 async def test_unified_task_runner_resume_uses_checkpoint_identity(monkeypatch):
+    from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
     from intergrax.runtime.long_running.models import TaskCheckpoint
-    from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
     from intergrax.runtime.nexus.nexus_loop import NexusLoop
     from intergrax.runtime.registry.agent_registry import AgentRegistry
     from intergrax.runtime.task.task import TaskResult, TaskState
@@ -498,7 +498,11 @@ async def test_unified_task_runner_resume_uses_checkpoint_identity(monkeypatch):
         tenant_id="t1",
         resume_token="rt_test",
         task_state=TaskState.WAITING_FOR_HUMAN,
-        runtime=RuntimeCheckpoint(run_id=run_id, attempt_id=attempt_id),
+        runtime=minimal_runtime_checkpoint(
+            task_id=task.task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+        ),
     )
 
     await runner.run_task(task, resume_checkpoint=checkpoint)
@@ -706,7 +710,11 @@ def test_trace_bridge_preserves_active_attempt_id() -> None:
     task_id = mint_task_id()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
-    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=mint_execution_id(),
+    )
     try:
         task = Task(task_id=task_id, tenant_id="t1", user_id="u1", message="q")
         trace = TraceEvent(
@@ -737,7 +745,11 @@ def test_emitter_tags_cannot_override_canonical_task_id() -> None:
     task_id = mint_task_id()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
-    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=mint_execution_id(),
+    )
     try:
         emitter = ObservabilityEmitter(
             run_id=run_id,

@@ -21,8 +21,8 @@ from intergrax.contracts.execution_identity import (
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput
+from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
 from intergrax.runtime.long_running.models import TaskCheckpoint
-from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
@@ -116,7 +116,11 @@ async def test_run_task_resume_checkpoint_identity_reaches_nexus() -> None:
         tenant_id=task.tenant_id,
         resume_token="rt_test",
         task_state=TaskState.WAITING_FOR_HUMAN,
-        runtime=RuntimeCheckpoint(run_id=run_id, attempt_id=attempt_id),
+        runtime=minimal_runtime_checkpoint(
+            task_id=task.task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+        ),
     )
 
     await runner.run_task(task, resume_checkpoint=checkpoint)
@@ -140,7 +144,11 @@ async def test_run_task_checkpoint_run_id_conflict_unchanged() -> None:
         tenant_id=task.tenant_id,
         resume_token="rt_test",
         task_state=TaskState.WAITING_FOR_HUMAN,
-        runtime=RuntimeCheckpoint(run_id=run_id, attempt_id=attempt_id),
+        runtime=minimal_runtime_checkpoint(
+            task_id=task.task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+        ),
     )
 
     with pytest.raises(ValueError, match="explicit run_id conflicts"):
@@ -150,7 +158,7 @@ async def test_run_task_checkpoint_run_id_conflict_unchanged() -> None:
 
 
 @pytest.mark.asyncio
-async def test_run_task_checkpoint_attempt_id_conflict_unchanged() -> None:
+async def test_run_task_checkpoint_redelivery_allows_new_attempt() -> None:
     task = _task()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
@@ -161,17 +169,21 @@ async def test_run_task_checkpoint_attempt_id_conflict_unchanged() -> None:
         tenant_id=task.tenant_id,
         resume_token="rt_test",
         task_state=TaskState.WAITING_FOR_HUMAN,
-        runtime=RuntimeCheckpoint(run_id=run_id, attempt_id=attempt_id),
+        runtime=minimal_runtime_checkpoint(
+            task_id=task.task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+        ),
     )
 
-    with pytest.raises(ValueError, match="explicit attempt_id conflicts"):
-        await runner.run_task(
-            task,
-            attempt_id=other_attempt_id,
-            resume_checkpoint=checkpoint,
-        )
+    await runner.run_task(
+        task,
+        attempt_id=other_attempt_id,
+        resume_checkpoint=checkpoint,
+    )
 
-    handle_task.assert_not_awaited()
+    handle_task.assert_awaited_once()
+    assert handle_task.await_args.kwargs["attempt_id"] == other_attempt_id
 
 
 @pytest.mark.asyncio

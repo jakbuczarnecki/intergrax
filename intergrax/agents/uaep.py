@@ -58,17 +58,23 @@ from intergrax.runtime.cancellation.coordinator import (
     CANCELLATION_REQUESTED_KEY,
     CancellationCoordinator,
 )
+from intergrax.contracts.execution_identity import (
+    require_active_execution_id,
+    require_active_execution_identity,
+    validate_task_id,
+)
 from intergrax.runtime.long_running.checkpoint_builder import (
     should_resume_uaep_step,
     should_skip_uaep_step,
 )
+from intergrax.runtime.long_running.execution_tree_checkpoint import ExecutionTreeRecorder
 from intergrax.runtime.long_running.runtime_checkpoint import (
-    RUNTIME_CHECKPOINT_KEY,
-    UAEP_STEP_CURSOR_KEY,
     PLAN_SNAPSHOT_KEY,
-    RuntimeCheckpointExecutionState,
-    attach_runtime_checkpoint_to_metadata,
-    runtime_checkpoint_from_metadata,
+    PendingDecision,
+    RuntimeCheckpoint,
+    UAEP_STEP_CURSOR_KEY,
+    UaepStepCursor,
+    UaepStepOutput,
 )
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.runtime.workspace.shadow_workspace import SHADOW_WORKSPACE_ID_KEY
@@ -332,7 +338,7 @@ class UAEPExecutor:
         steps = self._resolve_steps(agent, runtime_context, contract.max_steps)
         last_output: Optional[StepOutput] = None
         governance: Optional[GovernanceResolution] = None
-        runtime_ckpt = runtime_checkpoint_from_metadata(request.metadata)
+        runtime_ckpt = request.runtime_checkpoint
         uaep_resume_approval = None
         pause_record = request.hitl_pause_record
         if pause_record is not None and request.task_id:
@@ -378,7 +384,7 @@ class UAEPExecutor:
                     checkpoint=runtime_ckpt,
                     approval=uaep_resume_approval,
                 ):
-                    last_output = StepOutput.model_validate(runtime_ckpt.last_step_output)
+                    last_output = StepOutput.model_validate(runtime_ckpt.last_step_output.model_dump())
                     step_result = StepExecutionResult(output=last_output)
                 elif should_resume_uaep_step(
                     step_index=index,
@@ -387,12 +393,12 @@ class UAEPExecutor:
                     approval=uaep_resume_approval,
                 ):
                     assert runtime_ckpt is not None
-                    exec_ctx.metadata[UAEP_STEP_CURSOR_KEY] = dict(runtime_ckpt.uaep_step_cursor or {})
+                    exec_ctx.metadata[UAEP_STEP_CURSOR_KEY] = dict(runtime_ckpt.uaep_step_cursor.values)
                     step_result = await self._execute_step_with_resume(
                         agent,
                         step,
                         exec_ctx,
-                        runtime_ckpt.uaep_step_cursor or {},
+                        runtime_ckpt.uaep_step_cursor.values if runtime_ckpt.uaep_step_cursor else {},
                     )
                 else:
                     step_result = await self.execute_step(agent, step, exec_ctx)
@@ -418,7 +424,7 @@ class UAEPExecutor:
                     if isinstance(exec_ctx.metadata.get(UAEP_STEP_CURSOR_KEY), dict)
                     else None,
                 )
-                exec_ctx.metadata[RUNTIME_CHECKPOINT_KEY] = runtime_snapshot
+                request.runtime_checkpoint = runtime_snapshot
                 answer = self._build_answer(exec_ctx, last_output, run_id)
                 validation = ValidationResult(valid=False, errors=["awaiting human input"])
                 return answer, validation, runtime_context, governance
@@ -461,7 +467,7 @@ class UAEPExecutor:
                     resolution=critic_resolution,
                     step_cursor=step_cursor if isinstance(step_cursor, dict) else None,
                 )
-                exec_ctx.metadata[RUNTIME_CHECKPOINT_KEY] = runtime_snapshot
+                request.runtime_checkpoint = runtime_snapshot
                 break
 
             decision = step_result.decision or self._decide_after_step(
@@ -566,7 +572,7 @@ class UAEPExecutor:
                     resolution=resolution,
                     step_cursor=step_cursor if isinstance(step_cursor, dict) else None,
                 )
-                exec_ctx.metadata[RUNTIME_CHECKPOINT_KEY] = runtime_snapshot
+                request.runtime_checkpoint = runtime_snapshot
                 break
             if resolution.should_block_execution:
                 governance = resolution
@@ -597,11 +603,6 @@ class UAEPExecutor:
             answer.route.extra[AcpStructuredDataKey.TRACE_SUMMARY] = trace_summary_from_kernel(
                 bridged_kernel
             )
-        runtime_snapshot = exec_ctx.metadata.get(RUNTIME_CHECKPOINT_KEY)
-        if isinstance(runtime_snapshot, RuntimeCheckpointExecutionState):
-            if answer.route is None:
-                answer.route = RouteInfo(extra={})
-            attach_runtime_checkpoint_to_metadata(answer.route.extra, runtime_snapshot)
         self._annotate_answer_with_shadow(answer, exec_ctx)
         self._annotate_answer_with_sandbox(answer, exec_ctx)
 
@@ -716,19 +717,34 @@ class UAEPExecutor:
         step: AgentStep,
         last_output: Optional[StepOutput],
         resolution: GovernanceResolution,
-        step_cursor: Optional[dict[str, Any]] = None,
-    ) -> RuntimeCheckpointExecutionState:
+        step_cursor: Optional[dict[str, bool]] = None,
+    ) -> RuntimeCheckpoint:
+        run_id, attempt_id = require_active_execution_identity()
+        root_execution_id = require_active_execution_id()
         step_completed = last_output is not None and step_cursor is None
-        pending_decisions: list[dict[str, Any]] = []
+        pending_decisions: list[PendingDecision] = []
         if resolution.human_request is not None:
             pending_decisions.append(
-                {
-                    "type": "human_request",
-                    "agent_id": contract_id,
-                    "payload": resolution.human_request.model_dump(mode="json"),
-                }
+                PendingDecision(
+                    type="human_request",
+                    agent_id=contract_id,
+                    payload=resolution.human_request.model_dump(mode="json"),
+                )
             )
-        return RuntimeCheckpointExecutionState(
+        existing = request.runtime_checkpoint
+        if existing is not None:
+            execution_tree = existing.execution_tree
+        else:
+            execution_tree = ExecutionTreeRecorder.start_root(
+                task_id=validate_task_id(request.task_id),
+                run_id=run_id,
+                attempt_id=attempt_id,
+                root_execution_id=root_execution_id,
+            ).snapshot
+        return RuntimeCheckpoint(
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_tree=execution_tree,
             plan_id=str(request.metadata.get("plan_id") or "") or None,
             graph_id=str(request.metadata.get("graph_id") or "") or None,
             graph_node_id=str(request.metadata.get("graph_node_id") or "") or None,
@@ -736,7 +752,9 @@ class UAEPExecutor:
             uaep_step_index=step_index,
             uaep_step_id=step.step_id,
             uaep_step_completed=step_completed,
-            uaep_step_cursor=step_cursor,
+            uaep_step_cursor=(
+                UaepStepCursor(values=dict(step_cursor)) if step_cursor is not None else None
+            ),
             paused_phase=ExecutionPhase.HUMAN_APPROVAL.value,
             plan_snapshot=(
                 request.metadata.get(PLAN_SNAPSHOT_KEY)
@@ -749,7 +767,14 @@ class UAEPExecutor:
                 if resolution.human_request is not None
                 else None
             ),
-            last_step_output=last_output.model_dump(mode="json") if last_output else None,
+            last_step_output=(
+                UaepStepOutput(
+                    step_id=last_output.step_id,
+                    summary=last_output.summary,
+                )
+                if last_output is not None
+                else None
+            ),
         )
 
     async def _execute_step_with_resume(

@@ -27,6 +27,14 @@ from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.execution import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.agentic import AgentExecutor
 from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
+from intergrax.runtime.long_running.checkpoint_builder import apply_runtime_checkpoint_to_task
+from intergrax.runtime.long_running.execution_tree_checkpoint import (
+    ExecutionCheckpointEntry,
+    ExecutionCheckpointStatus,
+    ExecutionPriorOutput,
+    ExecutionTreeSnapshot,
+)
+from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.nexus.execution.execution_graph import (
     ExecutionGraph,
     ExecutionNode,
@@ -181,7 +189,24 @@ class _GraphOrchestrationDelegate:
         self._task = task
 
     async def execute(self, _request: object) -> tuple[object, ...]:
-        return await self._executor.execute(self._graph, self._task)
+        from intergrax.runtime.execution.active_execution_budget import (
+            bind_root_execution_budget,
+            peek_active_execution_budget,
+            reset_active_execution_budget,
+        )
+        from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+
+        budget_token = None
+        if peek_active_execution_budget() is None:
+            budget_token = bind_root_execution_budget(
+                execution_id=require_active_execution_id(),
+                ledger=create_execution_budget_ledger(None),
+            )
+        try:
+            return await self._executor.execute(self._graph, self._task)
+        finally:
+            if budget_token is not None:
+                reset_active_execution_budget(budget_token)
 
 
 async def _run_graph(ctx: _GraphRunContext, graph: ExecutionGraph) -> tuple[object, ...]:
@@ -385,14 +410,35 @@ async def test_checkpoint_skip_does_not_mint_child_execution() -> None:
             ),
         ],
     )
-    from intergrax.runtime.long_running.runtime_checkpoint import (
-        RuntimeCheckpointExecutionState,
-        attach_runtime_checkpoint_to_metadata,
-    )
-
-    attach_runtime_checkpoint_to_metadata(
-        ctx.task.metadata,
-        RuntimeCheckpointExecutionState(
+    apply_runtime_checkpoint_to_task(
+        ctx.task,
+        RuntimeCheckpoint(
+            run_id=ctx.root.run_id,
+            attempt_id=ctx.root.attempt_id,
+            execution_tree=ExecutionTreeSnapshot(
+                task_id=ctx.task.task_id,
+                run_id=ctx.root.run_id,
+                attempt_id=ctx.root.attempt_id,
+                entries=[
+                    ExecutionCheckpointEntry(
+                        execution_id=ctx.root.execution_id,
+                        parent_execution_id=None,
+                        status=ExecutionCheckpointStatus.RUNNING,
+                    ),
+                    ExecutionCheckpointEntry(
+                        execution_id=mint_execution_id(),
+                        parent_execution_id=ctx.root.execution_id,
+                        status=ExecutionCheckpointStatus.COMPLETED,
+                        graph_node_id="n1",
+                        prior_output=ExecutionPriorOutput(
+                            agent_id="agent_a",
+                            summary="cached",
+                            status=AgentExecutionStatus.COMPLETED.value,
+                            graph_node_id="n1",
+                        ),
+                    ),
+                ],
+            ),
             node_states={"n1": ExecutionNodeStatus.COMPLETED.value},
             prior_node_outputs={
                 "n1": {

@@ -284,8 +284,8 @@ async def test_unified_task_runner_passes_same_concrete_attempt_to_nexus(
 async def test_resume_checkpoint_preserves_attempt_mints_fresh_execution_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
     from intergrax.runtime.long_running.models import TaskCheckpoint
-    from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
@@ -309,7 +309,11 @@ async def test_resume_checkpoint_preserves_attempt_mints_fresh_execution_id(
         tenant_id="t1",
         resume_token="rt_test",
         task_state=TaskState.WAITING_FOR_HUMAN,
-        runtime=RuntimeCheckpoint(run_id=run_id, attempt_id=attempt_id),
+        runtime=minimal_runtime_checkpoint(
+            task_id=task.task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+        ),
     )
 
     await runner.run_task(task, resume_checkpoint=checkpoint)

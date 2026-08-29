@@ -7,7 +7,10 @@ from __future__ import annotations
 
 from typing import Awaitable, Callable, Optional, Protocol
 
-from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.contracts.execution_identity import (
+    peek_active_execution_identity,
+    validate_attempt_id,
+)
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
@@ -41,10 +44,18 @@ async def maybe_restore_long_running(
     restored = LongRunningCoordinator.restore_if_resuming(task, checkpoint_store)
     if restored is None:
         return
+    if restored.runtime is not None:
+        resolved_attempt_id = restored.runtime.attempt_id
+    else:
+        active_identity = peek_active_execution_identity()
+        if active_identity is None:
+            raise RuntimeError("attempt_id required for long-running restore event")
+        resolved_attempt_id = active_identity[1]
     await publish(
         runtime_event_from_task_state(
             task,
             run_id=run_id,
+            attempt_id=resolved_attempt_id,
             message="long-running task restored from checkpoint",
         ).model_copy(
             update={
@@ -99,6 +110,7 @@ async def maybe_checkpoint_long_running(
         runtime_event_from_task_state(
             task,
             run_id=run_id,
+            attempt_id=attempt_id,
             message="long-running checkpoint saved",
         ).model_copy(
             update={
@@ -117,6 +129,7 @@ async def maybe_checkpoint_long_running(
         runtime_event_from_task_state(
             task,
             run_id=run_id,
+            attempt_id=attempt_id,
             message=progress_message or "task progress",
         ).model_copy(
             update={

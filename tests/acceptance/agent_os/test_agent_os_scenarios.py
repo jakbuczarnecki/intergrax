@@ -21,11 +21,8 @@ from intergrax.contracts.runtime_execution_context import RuntimeExecutionContex
 from intergrax.contracts.tool_request import ToolRequest
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
-from intergrax.runtime.long_running.runtime_checkpoint import (
-    RUNTIME_CHECKPOINT_KEY,
-    UAEP_STEP_CURSOR_KEY,
-    runtime_checkpoint_from_metadata,
-)
+from intergrax.runtime.long_running.runtime_checkpoint import UAEP_STEP_CURSOR_KEY
+from intergrax.runtime.long_running.checkpoint_builder import resolve_task_runtime_checkpoint
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -663,8 +660,8 @@ async def test_acceptance_05b_mid_step_uaep_resume(tmp_path):
     assert "mid-step complete" in resumed.answer
     assert _MidStepAcceptanceAgent.phase1_runs == 1
 
-    restored_ckpt = runtime_checkpoint_from_metadata(resumed.metadata)
-    assert restored_ckpt is None or restored_ckpt.uaep_step_completed or not restored_ckpt.uaep_step_cursor
+    restored_ckpt = resolve_task_runtime_checkpoint(resumed)
+    assert restored_ckpt is None or restored_ckpt.uaep_step_completed or restored_ckpt.uaep_step_cursor is None
 
 
 @pytest.mark.asyncio
