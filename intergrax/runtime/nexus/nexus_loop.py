@@ -792,6 +792,7 @@ class NexusLoop:
             task_id=task.task_id,
             run_id=run_id,
             observed_at=terminal_event.timestamp,
+            event_bus=self._event_bus,
         )
 
     def _resolve_lifecycle(self, task: Task) -> tuple[TaskLifecycle, TaskTraceEmitter]:

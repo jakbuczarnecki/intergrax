@@ -235,6 +235,7 @@ async def test_diagnostic_failure_does_not_change_business_outcome(
 
     monkeypatch.setattr(trigger, "trigger_for_terminal_execution", _raise)
     runner = UnifiedTaskRunner(loop)
+    run_id = mint_run_id()
 
     result = await runner.run_task(
         Task(
@@ -243,12 +244,29 @@ async def test_diagnostic_failure_does_not_change_business_outcome(
             message="diagnostic failure isolation",
             context=TaskContext(capability="echo.basic"),
         ),
-        run_id=mint_run_id(),
+        run_id=run_id,
     )
 
     assert result.state is TaskState.COMPLETED
     events = runtime_store.list_for_task(result.task_id, tenant_id=_TENANT_A)
     assert any(event.event_type is RuntimeEventType.TASK_COMPLETED for event in events)
+    from intergrax.runtime.diagnostics.diagnostic_subsystem_failure_evidence import (
+        diagnostic_subsystem_failure_observed_for_run,
+        is_diagnostic_subsystem_failure_event,
+    )
+
+    failure_events = [event for event in events if is_diagnostic_subsystem_failure_event(event)]
+    assert len(failure_events) == 1
+    failure = failure_events[0]
+    assert failure.tenant_id == _TENANT_A
+    assert failure.task_id == result.task_id
+    assert failure.run_id == run_id
+    assert failure.payload["error_type"] == "RuntimeError"
+    assert diagnostic_subsystem_failure_observed_for_run(
+        runtime_store,
+        tenant_id=_TENANT_A,
+        run_id=run_id,
+    )
 
 
 def test_background_execution_inherits_terminal_diagnostic_trigger(
@@ -325,6 +343,85 @@ def test_background_execution_inherits_terminal_diagnostic_trigger(
 
     assert len(captured) == 1
     assert captured[0].execution_results[0].assessment.has_findings  # type: ignore[attr-defined]
+
+
+def test_background_execution_records_diagnostic_failure_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loop, runtime_store, _ = _build_diagnostic_nexus_loop(inject_violation=False)
+    trigger = loop._terminal_diagnostic_trigger  # noqa: SLF001
+    assert trigger is not None
+
+    def _raise(*_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("background diagnostic failed")
+
+    monkeypatch.setattr(trigger, "trigger_for_terminal_execution", _raise)
+    runner = UnifiedTaskRunner(loop)
+    registry = TaskExecutionRegistry()
+    causal_store = InMemoryCausalEvidencePersistence()
+    execution_identity = BackgroundExecutionIdentity(
+        tenant_id=_TENANT_A,
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+    )
+
+    def handler(
+        *,
+        tenant_id: str,
+        run_id: str,
+        payload: bytes,
+        idempotency_key: str | None,
+        execution_identity: BackgroundExecutionIdentity,
+    ) -> ToolExecutionResult[object]:
+        _ = payload, idempotency_key, run_id
+        task = Task(
+            tenant_id=tenant_id,
+            user_id="worker-user",
+            message="background echo",
+            context=TaskContext(capability="echo.basic"),
+        )
+        result = _run_coro_sync(
+            runner.run_task(
+                task,
+                run_id=execution_identity.run_id,
+                attempt_id=execution_identity.attempt_id,
+            ),
+        )
+        assert result.state is TaskState.COMPLETED
+        return ToolExecutionResult.ok({"answer": result.answer})
+
+    registry.register(_TASK_NAME, handler)
+    transport_ref = BackgroundTransportExecutionRef(
+        tenant_id=_TENANT_A,
+        provider="document_store",
+        transport_task_id="transport-task-2",
+    )
+    admit_background_execution_handler(
+        transport_ref=transport_ref,
+        execution_identity=execution_identity,
+        causal_evidence_persistence=causal_store,
+        handler=lambda: execute_logical_task(
+            registry=registry,
+            logical_task_name=_TASK_NAME,
+            tenant_id=_TENANT_A,
+            run_id=str(execution_identity.run_id),
+            payload=b"{}",
+            idempotency_key=None,
+            idempotency_store=None,
+            execution_identity=execution_identity,
+        ),
+    )
+
+    from intergrax.runtime.diagnostics.diagnostic_subsystem_failure_evidence import (
+        diagnostic_subsystem_failure_observed_for_run,
+    )
+
+    assert diagnostic_subsystem_failure_observed_for_run(
+        runtime_store,
+        tenant_id=_TENANT_A,
+        run_id=execution_identity.run_id,
+    )
 
 
 @pytest.mark.asyncio
@@ -412,6 +509,46 @@ async def test_different_terminal_signatures_create_distinct_problems() -> None:
     problems = shared_persistence.list_for_tenant(_TENANT_A)
     assert len(problems) == 2
     assert problems[0].problem_id != problems[1].problem_id
+
+
+@pytest.mark.asyncio
+async def test_replay_terminal_trigger_does_not_duplicate_failure_evidence() -> None:
+    loop, runtime_store, _ = _build_diagnostic_nexus_loop(inject_violation=False)
+    trigger = loop._terminal_diagnostic_trigger  # noqa: SLF001
+    assert trigger is not None
+    runner = UnifiedTaskRunner(loop)
+    task = Task(
+        tenant_id=_TENANT_A,
+        user_id="user-1",
+        message="replay failure evidence",
+        context=TaskContext(capability="echo.basic"),
+    )
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+
+    def _raise(*_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("diagnostic replay failed")
+
+    trigger.trigger_for_terminal_execution = _raise  # type: ignore[method-assign]
+
+    await runner.run_task(task, run_id=run_id, attempt_id=attempt_id)
+    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    try:
+        await loop._publish_terminal_runtime_event(task)  # noqa: SLF001
+        await loop._publish_terminal_runtime_event(task)  # noqa: SLF001
+    finally:
+        reset_active_execution_identity(token)
+
+    from intergrax.runtime.diagnostics.diagnostic_subsystem_failure_evidence import (
+        is_diagnostic_subsystem_failure_event,
+    )
+
+    failure_events = [
+        event
+        for event in runtime_store.list_for_run(run_id, tenant_id=_TENANT_A)
+        if is_diagnostic_subsystem_failure_event(event)
+    ]
+    assert len(failure_events) == 1
 
 
 @pytest.mark.asyncio

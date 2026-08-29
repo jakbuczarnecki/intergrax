@@ -42,6 +42,7 @@ LEGACY_SPINE_TO_PLATFORM_KIND: Final[dict[str, str]] = {
     "hook_timeout": "platform.hook.hook_timeout",
     "defense_blocked": "platform.security.defense_blocked",
     "encryption_denied": "platform.security.encryption_denied",
+    "diagnostic_subsystem_failure": "platform.diagnostic.subsystem_failure",
 }
 
 
@@ -184,6 +185,13 @@ PLATFORM_KIND_CATALOG: Final[dict[str, PlatformKindEntry]] = {
         phase=ExecutionPhase.STEP_EXECUTION,
         ops_hint="ops:alert",
         legacy_spine_value="encryption_denied",
+        retention_class=RetentionClass.AUDIT,
+    ),
+    "platform.diagnostic.subsystem_failure": PlatformKindEntry(
+        kind="platform.diagnostic.subsystem_failure",
+        phase=ExecutionPhase.STEP_EXECUTION,
+        ops_hint="ops:alert",
+        legacy_spine_value="diagnostic_subsystem_failure",
         retention_class=RetentionClass.AUDIT,
     ),
 }

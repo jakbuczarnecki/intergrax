@@ -12,10 +12,14 @@ from intergrax.logging import IntergraxLogging
 from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
     DiagnosticOrchestrationResult,
 )
+from intergrax.runtime.diagnostics.diagnostic_subsystem_failure_evidence import (
+    record_diagnostic_subsystem_failure,
+)
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTrigger,
     TerminalExecutionDiagnosticTriggerProtocol,
 )
+from intergrax.runtime.events.event_bus import RuntimeEventBus
 
 
 def invoke_terminal_execution_diagnostics(
@@ -25,6 +29,7 @@ def invoke_terminal_execution_diagnostics(
     task_id: TaskId,
     run_id: RunId,
     observed_at: datetime,
+    event_bus: RuntimeEventBus | None = None,
 ) -> DiagnosticOrchestrationResult | None:
     """
     Invoke derived diagnostic post-processing after terminal execution truth is persisted.
@@ -43,7 +48,7 @@ def invoke_terminal_execution_diagnostics(
             run_id=run_id,
             observed_at=observed_at,
         )
-    except Exception:
+    except Exception as exc:
         logger.exception(
             "Terminal execution diagnostic post-processing failed",
             extra={
@@ -52,6 +57,15 @@ def invoke_terminal_execution_diagnostics(
                 "run_id": str(run_id),
             },
         )
+        if event_bus is not None:
+            record_diagnostic_subsystem_failure(
+                event_bus,
+                tenant_id=tenant_id,
+                task_id=task_id,
+                run_id=run_id,
+                error_type=type(exc).__name__,
+                observed_at=observed_at,
+            )
         return None
 
     logger.info(
