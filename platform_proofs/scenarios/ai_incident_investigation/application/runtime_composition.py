@@ -206,7 +206,6 @@ def build_scenario_runtime_composition(
         document_store=document_store,
         use_in_memory_trace=False,
         require_runtime_event_persistence=True,
-        diagnostics_required=False,
         workspace=workspace,
         runtime_mode=ScenarioRuntimeMode.LAB,
         application_tool_registry=registry,

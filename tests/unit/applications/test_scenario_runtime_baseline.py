@@ -354,6 +354,7 @@ def test_build_scenario_runtime_lab_without_document_store_has_no_diagnostic_tri
 ) -> None:
     composition = _build_composition(tmp_path, document_store=None)
     assert composition.has_terminal_diagnostic_trigger is False
+    assert composition.diagnostic_wiring.readiness.name == "NOT_REQUIRED_UNAVAILABLE"
     assert composition.has_runtime_event_store is True
 
 

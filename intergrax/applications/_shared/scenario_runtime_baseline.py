@@ -19,8 +19,12 @@ from intergrax.applications._shared.critic_wiring import (
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_from_tool_wiring,
 )
+from intergrax.applications._shared.diagnostic_assembly_resolver import (
+    DiagnosticAssemblyError,
+    DiagnosticWiring,
+)
 from intergrax.applications._shared.diagnostic_runtime_wiring import (
-    try_build_terminal_execution_diagnostic_trigger,
+    wire_terminal_execution_diagnostics,
 )
 from intergrax.applications._shared.environment_wiring import (
     ApplicationEnvironmentWiring,
@@ -113,9 +117,13 @@ class ScenarioRuntimeComposition:
     tenant_id: str
     security_wiring: ApplicationSecurityWiring
     guardrail_wiring: ApplicationGuardrailWiring
-    terminal_diagnostic_trigger_attached: bool
+    diagnostic_wiring: DiagnosticWiring
     workspace: ScenarioRuntimeWorkspace | None = None
     runtime_mode: ScenarioRuntimeMode | None = None
+
+    @property
+    def terminal_diagnostic_trigger_attached(self) -> bool:
+        return self.diagnostic_wiring.attached
 
     @property
     def has_runtime_event_store(self) -> bool:
@@ -123,7 +131,7 @@ class ScenarioRuntimeComposition:
 
     @property
     def has_terminal_diagnostic_trigger(self) -> bool:
-        return self.terminal_diagnostic_trigger_attached
+        return self.diagnostic_wiring.attached
 
 
 @dataclass(frozen=True, slots=True)
@@ -254,14 +262,8 @@ def rebuild_scenario_runtime_from_composition(
     validation_engine: NexusValidationEngine | None = None,
     manifest: ApplicationManifest | None = None,
     conformance_check: bool = True,
-    diagnostics_required: bool | None = None,
 ) -> ScenarioRuntimeComposition:
     """Rebuild Nexus-backed scenario runtime while preserving registry and storage paths."""
-    resolved_diagnostics_required = (
-        diagnostics_required
-        if diagnostics_required is not None
-        else composition.terminal_diagnostic_trigger_attached
-    )
     return build_scenario_runtime_from_environment(
         environment=environment,
         registry=composition.registry,
@@ -271,7 +273,6 @@ def rebuild_scenario_runtime_from_composition(
         manifest=manifest,
         use_in_memory_trace=False,
         require_runtime_event_persistence=True,
-        diagnostics_required=resolved_diagnostics_required,
         workspace=composition.workspace,
         runtime_mode=composition.runtime_mode,
         conformance_check=conformance_check,
@@ -292,7 +293,6 @@ def build_scenario_runtime_from_environment(
     manifest: ApplicationManifest | None = None,
     use_in_memory_trace: bool = False,
     require_runtime_event_persistence: bool = True,
-    diagnostics_required: bool = False,
     workspace: ScenarioRuntimeWorkspace | None = None,
     runtime_mode: ScenarioRuntimeMode | None = None,
     conformance_check: bool = True,
@@ -381,18 +381,16 @@ def build_scenario_runtime_from_environment(
     )
     apply_reliability_governance_wiring(nexus_loop, environment)
 
-    terminal_diagnostic_trigger = try_build_terminal_execution_diagnostic_trigger(
-        env_wiring=env_wiring,
-        observability=observability,
-    )
-    terminal_diagnostic_trigger_attached = terminal_diagnostic_trigger is not None
-    if terminal_diagnostic_trigger is not None:
-        nexus_loop.attach_terminal_diagnostic_trigger(terminal_diagnostic_trigger)
-    if diagnostics_required and not terminal_diagnostic_trigger_attached:
-        raise ScenarioRuntimeBuildError(
-            "diagnostics are required but terminal diagnostic trigger could not be attached. "
-            "Provide document_store and runtime event persistence."
+    try:
+        diagnostic_wiring = wire_terminal_execution_diagnostics(
+            env=environment,
+            env_wiring=env_wiring,
+            observability=observability,
+            nexus_loop=nexus_loop,
+            scenario_runtime_mode=runtime_mode,
         )
+    except DiagnosticAssemblyError as exc:
+        raise ScenarioRuntimeBuildError(str(exc)) from exc
 
     return ScenarioRuntimeComposition(
         environment=environment,
@@ -403,7 +401,7 @@ def build_scenario_runtime_from_environment(
         tenant_id=resolved_tenant_id,
         security_wiring=security_wiring,
         guardrail_wiring=guardrail_wiring,
-        terminal_diagnostic_trigger_attached=terminal_diagnostic_trigger_attached,
+        diagnostic_wiring=diagnostic_wiring,
         workspace=workspace,
         runtime_mode=runtime_mode,
     )
