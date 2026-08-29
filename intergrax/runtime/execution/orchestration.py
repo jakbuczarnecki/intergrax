@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, TypeVar
 
 from intergrax.contracts.delegation_authority import resolve_root_parent_execution_authority
 from intergrax.contracts.execution_identity import (
@@ -20,9 +20,9 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_identity,
 )
 from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
-from intergrax.runtime.execution.request import ExecutionCapability
-from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
-from intergrax.runtime.execution.task_adapter import execution_request_from_task
+from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
+from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
+from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
 from intergrax.runtime.long_running.checkpoint_builder import prepare_task_for_checkpoint_resume
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
@@ -30,6 +30,8 @@ from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskResult
 
 _ORCHESTRATION_CAPABILITIES = frozenset({ExecutionCapability.ORCHESTRATION})
+
+OutputT = TypeVar("OutputT")
 
 
 class NexusOrchestrationPort(Protocol):
@@ -89,19 +91,28 @@ class OrchestrationExecutor:
         run_id, attempt_id = require_active_execution_identity()
         require_active_execution_id()
 
-        request = execution_request_from_task(
-            task,
-            capabilities=_ORCHESTRATION_CAPABILITIES,
-        )
-        strategy = StrategyResolver().resolve(request)
-        if strategy is not ExecutionStrategy.ORCHESTRATION:
-            raise RuntimeError("OrchestrationExecutor requires ORCHESTRATION strategy")
-
         return await self._nexus_loop.handle_task(
             task,
             run_id=run_id,
             attempt_id=attempt_id,
         )
+
+
+class TaskBoundOrchestrationDelegate:
+    """Routes canonical orchestration requests to Nexus using the bound root Task."""
+
+    __slots__ = ("_task", "_executor")
+
+    def __init__(self, task: Task, executor: OrchestrationExecutor) -> None:
+        self._task = task
+        self._executor = executor
+
+    async def execute(
+        self,
+        request: ExecutionRequest[TaskExecutionInput, TaskResult],
+    ) -> TaskResult:
+        del request
+        return await self._executor.execute(self._task)
 
 
 async def execute_root_task(
@@ -129,15 +140,33 @@ async def execute_root_task(
 
             apply_runtime_checkpoint_to_task(task, resume_checkpoint.runtime)
 
+    request = execution_request_from_task(
+        task,
+        capabilities=_ORCHESTRATION_CAPABILITIES,
+        output_type=TaskResult,
+    )
     binding = ExecutionIdentityBinding(
         run_id=identity.run_id,
         attempt_id=identity.attempt_id,
         execution_id=identity.execution_id,
     )
     root_authority = resolve_root_parent_execution_authority(task.execution_authority)
-    boundary = ExecutionBoundary[Task, TaskResult](
-        OrchestrationExecutor(nexus_loop),
+    router = StrategyExecutionRouter[
+        TaskExecutionInput,
+        TaskResult,
+        TaskResult,
+    ](
+        orchestration_executor=TaskBoundOrchestrationDelegate(
+            task,
+            OrchestrationExecutor(nexus_loop),
+        ),
+    )
+    boundary = ExecutionBoundary[
+        ExecutionRequest[TaskExecutionInput, TaskResult],
+        TaskResult,
+    ](
+        router,
         identity=binding,
         authority=root_authority,
     )
-    return await boundary.execute(task)
+    return await boundary.execute(request)

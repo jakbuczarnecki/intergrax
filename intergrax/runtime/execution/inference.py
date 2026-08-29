@@ -16,7 +16,6 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.result import ExecutionResult, ExecutionStatus
-from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 
 OutputT = TypeVar("OutputT")
 
@@ -36,10 +35,6 @@ class InferenceExecutor(Generic[OutputT]):
         run_id, attempt_id = require_active_execution_identity()
         execution_id = require_active_execution_id()
         del attempt_id, execution_id
-
-        strategy = StrategyResolver().resolve(request)
-        if strategy is not ExecutionStrategy.INFERENCE:
-            raise RuntimeError("InferenceExecutor requires INFERENCE strategy")
 
         if ExecutionCapability.STREAMING in request.capabilities:
             raise RuntimeError("structured inference streaming is not implemented")

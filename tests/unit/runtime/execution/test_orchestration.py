@@ -24,12 +24,14 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.runtime.execution.orchestration import (
     OrchestrationExecutor,
+    TaskBoundOrchestrationDelegate,
     execute_root_task,
     resolve_root_task_identity,
 )
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
-from intergrax.runtime.execution.task_adapter import TaskExecutionInput
+from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
+from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
@@ -73,9 +75,7 @@ async def test_orchestration_executor_invokes_handle_task_once_with_active_ident
 
 
 @pytest.mark.asyncio
-async def test_orchestration_executor_strategy_resolver_receives_orchestration_request(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+async def test_orchestration_router_resolves_orchestration_request_with_real_resolver() -> None:
     task = Task(
         task_id=mint_task_id(),
         tenant_id="tenant-1",
@@ -86,21 +86,16 @@ async def test_orchestration_executor_strategy_resolver_receives_orchestration_r
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
-    captured: list[ExecutionRequest[TaskExecutionInput, object]] = []
-    original_resolve = StrategyResolver.resolve
-
-    def _capture_resolve(
-        self: StrategyResolver,
-        request: ExecutionRequest[TaskExecutionInput, object],
-    ) -> ExecutionStrategy:
-        captured.append(request)
-        return original_resolve(self, request)
-
-    monkeypatch.setattr(StrategyResolver, "resolve", _capture_resolve)
+    expected = TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
     nexus_loop = MagicMock()
-    nexus_loop.handle_task = AsyncMock(
-        return_value=TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+    nexus_loop.handle_task = AsyncMock(return_value=expected)
+    request = execution_request_from_task(
+        task,
+        capabilities=frozenset({ExecutionCapability.ORCHESTRATION}),
+        output_type=TaskResult,
     )
+
+    assert StrategyResolver().resolve(request) is ExecutionStrategy.ORCHESTRATION
 
     token = bind_active_execution_identity(
         run_id=run_id,
@@ -108,22 +103,30 @@ async def test_orchestration_executor_strategy_resolver_receives_orchestration_r
         execution_id=execution_id,
     )
     try:
-        await OrchestrationExecutor(nexus_loop).execute(task)  # type: ignore[arg-type]
+        router = StrategyExecutionRouter[
+            TaskExecutionInput,
+            TaskResult,
+            TaskResult,
+        ](
+            orchestration_executor=TaskBoundOrchestrationDelegate(
+                task,
+                OrchestrationExecutor(nexus_loop),
+            ),
+        )
+        result = await router.execute(request)
     finally:
         reset_active_execution_identity(token)
 
-    assert len(captured) == 1
-    request = captured[0]
-    assert request.capabilities == frozenset({ExecutionCapability.ORCHESTRATION})
-    assert request.input.message == task.message
-    assert request.input.capability == task.context.capability
-    assert request.input.intent == task.context.intent
+    nexus_loop.handle_task.assert_awaited_once_with(
+        task,
+        run_id=run_id,
+        attempt_id=attempt_id,
+    )
+    assert result is expected
 
 
 @pytest.mark.asyncio
-async def test_orchestration_executor_fails_closed_when_strategy_is_not_orchestration(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+async def test_orchestration_router_fails_closed_when_strategy_is_not_orchestration() -> None:
     task = Task(
         task_id=mint_task_id(),
         tenant_id="tenant-1",
@@ -136,22 +139,29 @@ async def test_orchestration_executor_fails_closed_when_strategy_is_not_orchestr
     execution_id = mint_execution_id()
     nexus_loop = MagicMock()
     nexus_loop.handle_task = AsyncMock()
-
-    def _wrong_strategy(
-        self: StrategyResolver,
-        request: ExecutionRequest[TaskExecutionInput, object],
-    ) -> ExecutionStrategy:
-        return ExecutionStrategy.INFERENCE
-
-    monkeypatch.setattr(StrategyResolver, "resolve", _wrong_strategy)
+    request = ExecutionRequest(
+        input=TaskExecutionInput(message=task.message),
+        capabilities=frozenset({ExecutionCapability.TOOLS}),
+        output_type=TaskResult,
+    )
     token = bind_active_execution_identity(
         run_id=run_id,
         attempt_id=attempt_id,
         execution_id=execution_id,
     )
     try:
-        with pytest.raises(RuntimeError, match="OrchestrationExecutor requires ORCHESTRATION"):
-            await OrchestrationExecutor(nexus_loop).execute(task)  # type: ignore[arg-type]
+        router = StrategyExecutionRouter[
+            TaskExecutionInput,
+            TaskResult,
+            TaskResult,
+        ](
+            orchestration_executor=TaskBoundOrchestrationDelegate(
+                task,
+                OrchestrationExecutor(nexus_loop),
+            ),
+        )
+        with pytest.raises(RuntimeError, match="AGENTIC strategy is not configured"):
+            await router.execute(request)
     finally:
         reset_active_execution_identity(token)
 

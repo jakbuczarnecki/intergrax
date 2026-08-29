@@ -41,6 +41,7 @@ from intergrax.runtime.execution.boundary import (
 from intergrax.runtime.execution.facade import Execution
 from intergrax.runtime.execution.agentic import AgentExecutor
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
+from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -193,8 +194,13 @@ def _agentic_stack(
     ExecutionResult[AgentExecutionResult],
 ]:
     executor = AgentExecutor(engine)
+    router = StrategyExecutionRouter[
+        RuntimeRequest,
+        AgentExecutionResult,
+        ExecutionResult[AgentExecutionResult],
+    ](agent_executor=executor)
     boundary = ExecutionBoundary(
-        executor,
+        router,
         admission_hooks=admission_hooks,
         identity=identity,
     )
@@ -315,7 +321,7 @@ async def test_empty_capabilities_rejected_before_engine() -> None:
     engine = RecordingAgentEngine()
     execution = _agentic_stack(engine, identity=identity)
 
-    with pytest.raises(RuntimeError, match="AgentExecutor requires AGENTIC strategy"):
+    with pytest.raises(RuntimeError, match="INFERENCE strategy is not configured"):
         await execution.execute(_agentic_request(runtime_request, capabilities=frozenset()))
 
     assert engine.calls == []
@@ -328,7 +334,7 @@ async def test_orchestration_rejected_before_engine() -> None:
     engine = RecordingAgentEngine()
     execution = _agentic_stack(engine, identity=identity)
 
-    with pytest.raises(RuntimeError, match="AgentExecutor requires AGENTIC strategy"):
+    with pytest.raises(RuntimeError, match="ORCHESTRATION strategy is not configured"):
         await execution.execute(
             _agentic_request(
                 runtime_request,
@@ -346,7 +352,7 @@ async def test_tools_and_orchestration_rejected_before_engine() -> None:
     engine = RecordingAgentEngine()
     execution = _agentic_stack(engine, identity=identity)
 
-    with pytest.raises(RuntimeError, match="AgentExecutor requires AGENTIC strategy"):
+    with pytest.raises(RuntimeError, match="ORCHESTRATION strategy is not configured"):
         await execution.execute(
             _agentic_request(
                 runtime_request,

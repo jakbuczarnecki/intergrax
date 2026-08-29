@@ -42,6 +42,7 @@ from intergrax.runtime.execution.boundary import (
 from intergrax.runtime.execution.facade import Execution
 from intergrax.runtime.execution.inference import InferenceExecutor
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
+from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -255,8 +256,13 @@ def _inference_stack(
     ExecutionResult[RiskAssessment],
 ]:
   executor = InferenceExecutor[RiskAssessment](adapter)
+  router = StrategyExecutionRouter[
+    tuple[ChatMessage, ...],
+    RiskAssessment,
+    ExecutionResult[RiskAssessment],
+  ](inference_executor=executor)
   boundary = ExecutionBoundary(
-    executor,
+    router,
     admission_hooks=admission_hooks,
     identity=identity,
   )
@@ -337,7 +343,7 @@ async def test_tools_request_fails_before_adapter_invocation() -> None:
   adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
   execution = _inference_stack(adapter, identity=_identity_binding())
 
-  with pytest.raises(RuntimeError, match="InferenceExecutor requires INFERENCE strategy"):
+  with pytest.raises(RuntimeError, match="AGENTIC strategy is not configured"):
     await execution.execute(
       _risk_request(capabilities=frozenset({ExecutionCapability.TOOLS}))
     )
@@ -350,7 +356,7 @@ async def test_orchestration_request_fails_before_adapter_invocation() -> None:
   adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
   execution = _inference_stack(adapter, identity=_identity_binding())
 
-  with pytest.raises(RuntimeError, match="InferenceExecutor requires INFERENCE strategy"):
+  with pytest.raises(RuntimeError, match="ORCHESTRATION strategy is not configured"):
     await execution.execute(
       _risk_request(capabilities=frozenset({ExecutionCapability.ORCHESTRATION}))
     )
@@ -363,7 +369,7 @@ async def test_tools_and_orchestration_fail_before_adapter_invocation() -> None:
   adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
   execution = _inference_stack(adapter, identity=_identity_binding())
 
-  with pytest.raises(RuntimeError, match="InferenceExecutor requires INFERENCE strategy"):
+  with pytest.raises(RuntimeError, match="ORCHESTRATION strategy is not configured"):
     await execution.execute(
       _risk_request(
         capabilities=frozenset(

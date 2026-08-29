@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""UE-9D — global legacy execution retirement gate."""
+"""UE-9D / UE-9DR1 — legacy execution retirement and canonical routing gates."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[4]
 _EXECUTION_ROOT = _REPO_ROOT / "intergrax" / "runtime" / "execution"
 _TASK_ROOT = _REPO_ROOT / "intergrax" / "runtime" / "task"
 _INTERACTIONS_ROOT = _REPO_ROOT / "intergrax" / "runtime" / "interactions"
+_PRODUCTION_ROOT = _REPO_ROOT / "intergrax"
 
 _LEGACY_FILES = (
     _EXECUTION_ROOT / "task_compat.py",
@@ -39,6 +40,14 @@ _FORBIDDEN_IMPORTS_IN_UNIFIED_TASK_RUNNER = frozenset(
         "mint_run_id",
         "mint_attempt_id",
         "mint_execution_id",
+    }
+)
+
+_STRATEGY_RESOLVER_OWNER = _EXECUTION_ROOT / "strategy_router.py"
+
+_HANDLE_TASK_ALLOWLIST = frozenset(
+    {
+        _EXECUTION_ROOT / "orchestration.py",
     }
 )
 
@@ -82,6 +91,42 @@ def _call_name(func: ast.AST) -> str | None:
     return None
 
 
+def _read_python_source(path: Path) -> str:
+    return path.read_text(encoding="utf-8-sig")
+
+
+def _iter_production_python_files() -> list[Path]:
+    paths: list[Path] = []
+    for path in _PRODUCTION_ROOT.rglob("*.py"):
+        if "__pycache__" in path.parts:
+            continue
+        if path.parts[-1].startswith("test_"):
+            continue
+        paths.append(path)
+    return paths
+
+
+def _collect_handle_task_call_sites() -> list[str]:
+    violations: list[str] = []
+    for path in _iter_production_python_files():
+        if path in _HANDLE_TASK_ALLOWLIST:
+            continue
+        tree = ast.parse(_read_python_source(path), filename=str(path))
+        rel = path.relative_to(_REPO_ROOT).as_posix()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and _call_name(node.func) == "handle_task":
+                violations.append(f"{rel}:{node.lineno}")
+    return violations
+
+
+def test_production_has_no_direct_nexus_handle_task_bypasses() -> None:
+    violations = _collect_handle_task_call_sites()
+    assert violations == [], (
+        "direct handle_task() bypasses outside canonical orchestration backend: "
+        + ", ".join(violations)
+    )
+
+
 def test_orchestration_executor_is_canonical_backend() -> None:
     path = _EXECUTION_ROOT / "orchestration.py"
     assert path.exists()
@@ -100,3 +145,55 @@ def test_orchestration_executor_is_canonical_backend() -> None:
         if isinstance(node, ast.Call) and _call_name(node.func) == "handle_task"
     ]
     assert len(handle_task_calls) == 1
+
+
+def _collect_strategy_resolver_usages() -> list[str]:
+    violations: list[str] = []
+    for path in _iter_production_python_files():
+        if path == _EXECUTION_ROOT / "strategy.py":
+            continue
+        if path == _STRATEGY_RESOLVER_OWNER:
+            continue
+        tree = ast.parse(_read_python_source(path), filename=str(path))
+        rel = path.relative_to(_REPO_ROOT).as_posix()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and _call_name(node.func) == "StrategyResolver":
+                violations.append(f"{rel}:{node.lineno}: StrategyResolver()")
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "resolve"
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == "StrategyResolver"
+            ):
+                violations.append(f"{rel}:{node.lineno}: StrategyResolver.resolve()")
+    return violations
+
+
+def test_strategy_resolver_is_owned_by_canonical_router() -> None:
+    violations = _collect_strategy_resolver_usages()
+    assert violations == [], (
+        "StrategyResolver must be used only by strategy_router.py: "
+        + ", ".join(violations)
+    )
+
+
+def test_strategy_router_is_canonical_strategy_owner() -> None:
+    path = _STRATEGY_RESOLVER_OWNER
+    assert path.exists()
+    source = path.read_text(encoding="utf-8")
+    assert "class StrategyExecutionRouter" in source
+    assert "StrategyResolver" in source
+    tree = ast.parse(source, filename=str(path))
+    resolve_calls = [
+        node.lineno
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "resolve"
+    ]
+    assert len(resolve_calls) == 1
+
+    for backend in ("inference.py", "agentic.py", "orchestration.py"):
+        backend_source = (_EXECUTION_ROOT / backend).read_text(encoding="utf-8")
+        assert "StrategyResolver" not in backend_source, backend

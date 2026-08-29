@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from intergrax.runtime.execution.orchestration import execute_root_task, resolve_root_task_identity
 from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.contracts.human_approver import HumanApproverEvidence
@@ -92,10 +93,16 @@ class DebugHitlResumeService:
             runtime_event_store=self._runtime_event_store,
             human_decision_store=self._human_decision_store,
         )
-        return await loop.handle_task(
-            task,
+        identity = resolve_root_task_identity(
             run_id=run_id,
             attempt_id=attempt_id,
+            resume_checkpoint=checkpoint,
+        )
+        return await execute_root_task(
+            task,
+            nexus_loop=loop,
+            identity=identity,
+            resume_checkpoint=checkpoint,
         )
 
     def _resolve_checkpoint(
