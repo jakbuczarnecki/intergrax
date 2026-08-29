@@ -8,6 +8,11 @@ from typing import Any
 
 import pytest
 
+from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
+    mint_run_id,
+    mint_task_id,
+)
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.observability.export_attributes import (
@@ -309,8 +314,9 @@ async def test_works_through_try_export_with_enabled_policy_and_export_content_f
     exporter, _ = _exporter(transport)
     attrs = ExampleApplicationObservabilityAttributes(result_count=5, strategy="safe")
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
         tenant_id="tenant-a",
         agent_id="agent-1",
         event_type=RuntimeEventType.TOOL_COMPLETED,

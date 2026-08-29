@@ -10,6 +10,11 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx
 import pytest
 
+from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
+    mint_run_id,
+    mint_task_id,
+)
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.observability.export_attributes import (
@@ -263,8 +268,9 @@ async def test_end_to_end_through_try_export_strips_raw_runtime_payload_content(
     exporter = OtlpObservabilityExporter(_default_config(), transport)
     attrs = ExampleApplicationObservabilityAttributes(result_count=5, strategy="safe")
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
         tenant_id="tenant-a",
         agent_id="agent-1",
         event_type=RuntimeEventType.TOOL_COMPLETED,

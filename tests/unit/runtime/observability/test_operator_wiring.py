@@ -10,6 +10,11 @@ import inspect
 
 import pytest
 
+from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
+    mint_run_id,
+    mint_task_id,
+)
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
@@ -351,8 +356,9 @@ async def test_created_runtime_plugin_blocks_export_content_even_when_operator_c
     bus = RuntimeEventBus(record_history=False)
     plugin.register(bus, HookRegistry(), MagicMock())
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
         event_type=RuntimeEventType.TOOL_COMPLETED,
         phase=ExecutionPhase.STEP_EXECUTION,
         payload={
@@ -424,9 +430,11 @@ async def test_runtime_event_through_plugin_reaches_injected_transport() -> None
 
     bus = RuntimeEventBus(record_history=False)
     plugin.register(bus, HookRegistry(), MagicMock())
+    run_id = mint_run_id()
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
+        task_id=mint_task_id(),
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
         event_type=RuntimeEventType.TASK_COMPLETED,
         phase=ExecutionPhase.COMPLETION,
         payload={"journal_ref": {"event_count": 1}},
@@ -435,7 +443,7 @@ async def test_runtime_event_through_plugin_reaches_injected_transport() -> None
     await bus.publish(event)
 
     assert transport.send_count == 1
-    assert _attribute_map(transport.payloads[0])["intergrax.run_id"] == "run-1"
+    assert _attribute_map(transport.payloads[0])["intergrax.run_id"] == str(run_id)
 
 
 @pytest.mark.asyncio
@@ -444,8 +452,9 @@ async def test_raw_application_attributes_are_not_exported_only_sanitized_are_us
     exporter = build_otlp_observability_exporter(_enabled_config(), transport=transport)
     attrs = ExampleApplicationObservabilityAttributes(result_count=5, strategy="safe")
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
         tenant_id="tenant-a",
         agent_id="agent-1",
         event_type=RuntimeEventType.TOOL_COMPLETED,
