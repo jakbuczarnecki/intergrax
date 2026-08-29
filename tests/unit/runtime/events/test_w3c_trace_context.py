@@ -11,6 +11,7 @@ from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.event_kind_registry import clear_event_kind_registry
 from intergrax.runtime.events.payloads.base import RuntimeEventPayload
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from testing_support.runtime_events import runtime_event_test_identity
 from intergrax.runtime.events.signals import emit_domain_signal
 from intergrax.runtime.events.w3c_trace_context import (
     child_traceparent,

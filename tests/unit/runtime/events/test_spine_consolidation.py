@@ -4,8 +4,16 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+    reset_active_execution_identity,
+)
 from intergrax.contracts.execution_phase import ExecutionPhase
-from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType, parse_runtime_event_payload
 from intergrax.runtime.events.spine_consolidation import (
     LEGACY_SPINE_TO_PLATFORM_KIND,
     PLATFORM_KIND_CATALOG,
@@ -30,13 +38,23 @@ def test_legacy_mapping_covers_platform_catalog() -> None:
 
 
 def test_build_platform_signal_event_emits_domain_signal() -> None:
-    event = build_platform_signal_event(
-        kind="platform.hook.hook_timeout",
-        task_id="task-1",
-        run_id="run-1",
-        phase=ExecutionPhase.INTAKE,
-        payload={"hook_name": "demo"},
+    run_id = mint_run_id()
+    task_id = mint_task_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
+    try:
+        event = build_platform_signal_event(
+            kind="platform.hook.hook_timeout",
+            task_id=task_id,
+            run_id=run_id,
+            phase=ExecutionPhase.INTAKE,
+            payload={"hook_name": "demo"},
+        )
+    finally:
+        reset_active_execution_identity(token)
     assert event.event_type == RuntimeEventType.DOMAIN_SIGNAL
     assert event.event_kind == "platform.hook.hook_timeout"
     assert event.ops_hint == "ops:alert"
@@ -46,8 +64,10 @@ def test_build_platform_signal_event_emits_domain_signal() -> None:
 
 def test_migrate_legacy_spine_payload_on_read() -> None:
     raw = {
-        "task_id": "task-1",
-        "run_id": "run-1",
+        "task_id": mint_task_id(),
+        "run_id": mint_run_id(),
+        "attempt_id": mint_attempt_id(),
+        "schema_version": "runtime_event.v1",
         "event_type": "scale_failed",
         "payload": {"reason": "denied"},
     }
@@ -55,7 +75,7 @@ def test_migrate_legacy_spine_payload_on_read() -> None:
     assert migrated["event_type"] == RuntimeEventType.DOMAIN_SIGNAL
     assert migrated["event_kind"] == "platform.capacity.scale_failed"
     assert migrated["payload"]["legacy_spine_type"] == "scale_failed"
-    event = RuntimeEvent.model_validate(migrated)
+    event = parse_runtime_event_payload(migrated)
     assert event.event_type == RuntimeEventType.DOMAIN_SIGNAL
     assert event.event_kind == "platform.capacity.scale_failed"
 

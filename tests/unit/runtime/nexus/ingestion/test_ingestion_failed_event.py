@@ -7,6 +7,14 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+    reset_active_execution_identity,
+)
 from intergrax.llm.messages import AttachmentRef
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
@@ -32,14 +40,23 @@ async def test_ingestion_failure_emits_runtime_event() -> None:
         event_bus=bus,
     )
     attachment = AttachmentRef(id="att-1", type="file", uri="file:///missing.pdf")
-
-    results = await service.ingest_attachments_for_session(
-        [attachment],
-        session_id="sess-1",
-        user_id="user-1",
-        tenant_id="t1",
-        run_id="run-1",
+    run_id = mint_run_id()
+    session_id = mint_task_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
+    try:
+        results = await service.ingest_attachments_for_session(
+            [attachment],
+            session_id=session_id,
+            user_id="user-1",
+            tenant_id="t1",
+            run_id=run_id,
+        )
+    finally:
+        reset_active_execution_identity(token)
 
     assert len(results) == 1
     assert results[0].num_chunks == 0
@@ -47,3 +64,5 @@ async def test_ingestion_failure_emits_runtime_event() -> None:
     failed = [e for e in bus.history if e.event_type == RuntimeEventType.INGESTION_FAILED]
     assert len(failed) == 1
     assert failed[0].payload["attachment_id"] == "att-1"
+    assert failed[0].run_id == run_id
+    assert failed[0].task_id == session_id

@@ -11,10 +11,12 @@ from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_identity import (
     AttemptId,
     EventId,
+    ExecutionId,
     RunId,
     TaskId,
     mint_attempt_id,
     mint_event_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
 )
@@ -41,6 +43,7 @@ def sample_runtime_event(
     task_id: TaskId | None = None,
     run_id: RunId | None = None,
     attempt_id: AttemptId | None = None,
+    execution_id: ExecutionId | None = None,
 ) -> RuntimeEvent:
     resolved_task_id = task_id or mint_task_id()
     resolved_run_id = run_id or mint_run_id()
@@ -50,6 +53,7 @@ def sample_runtime_event(
         task_id=resolved_task_id,
         run_id=resolved_run_id,
         attempt_id=attempt_id or mint_attempt_id(),
+        execution_id=execution_id or mint_execution_id(),
         event_type=RuntimeEventType.STEP_STARTED,
         phase=ExecutionPhase.STEP_EXECUTION,
         severity=EventSeverity.INFO,

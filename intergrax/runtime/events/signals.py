@@ -8,6 +8,7 @@ from __future__ import annotations
 import re
 
 from intergrax.contracts.event_severity import EventSeverity
+from intergrax.contracts.execution_identity import require_active_execution_id
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.emit_context import EmitContext
 from intergrax.runtime.events.event_catalog import category_for_event_kind, get_catalog_entry
@@ -56,11 +57,13 @@ def emit_platform_event(
     entry = get_catalog_entry(event_type)
     if entry is None:
         raise DomainSignalError(f"unknown spine event_type: {event_type.value}")
+    execution_id = ctx.execution_id or require_active_execution_id()
     event = RuntimeEvent(
         tenant_id=ctx.tenant_id,
         task_id=ctx.task_id,
         run_id=ctx.run_id,
         attempt_id=ctx.attempt_id,
+        execution_id=execution_id,
         node_id=node_id,
         agent_id=agent_id,
         step_id=step_id,
@@ -99,11 +102,13 @@ def emit_domain_signal(
             f"schema for {kind!r}: {registry_entry.payload_schema_id!r}"
         )
     safe_payload = payload.redact() if ctx.production_mode else payload
+    execution_id = ctx.execution_id or require_active_execution_id()
     event = RuntimeEvent(
         tenant_id=ctx.tenant_id,
         task_id=ctx.task_id,
         run_id=ctx.run_id,
         attempt_id=ctx.attempt_id,
+        execution_id=execution_id,
         node_id=node_id,
         agent_id=agent_id,
         step_id=step_id,

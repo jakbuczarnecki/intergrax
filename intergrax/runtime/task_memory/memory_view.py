@@ -271,6 +271,8 @@ class PolicyScopedMemoryView:
                 tenant_id=self._tenant_id,
                 task_id=self._exec_ctx.task_id,
                 run_id=self._exec_ctx.run_id,
+                attempt_id=self._exec_ctx.attempt_id,
+                execution_id=self._exec_ctx.execution_id,
                 node_id=self._exec_ctx.node_id,
                 agent_id=self._exec_ctx.agent_id,
                 event_type=event_type,

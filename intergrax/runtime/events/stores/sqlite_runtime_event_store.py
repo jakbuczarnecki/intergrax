@@ -18,7 +18,7 @@ from intergrax.runtime.events.persistence_contract import (
     RuntimeEventPersistence,
     _validate_through_limit,
 )
-from intergrax.runtime.events.runtime_event import RuntimeEvent
+from intergrax.runtime.events.runtime_event import RuntimeEvent, parse_runtime_event_payload
 
 
 class SQLiteRuntimeEventStore(RuntimeEventPersistence):
@@ -125,7 +125,7 @@ class SQLiteRuntimeEventStore(RuntimeEventPersistence):
         if raw_position is None:
             raise RuntimeError("runtime_events row missing execution_position")
         return PositionedRuntimeEvent(
-            event=RuntimeEvent.model_validate(json.loads(row["event_json"])),
+            event=parse_runtime_event_payload(json.loads(row["event_json"])),
             position=ExecutionEventPosition(int(raw_position)),
         )
 

@@ -82,10 +82,19 @@ def attach_acp_catalog_exec_ctx(
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
     from intergrax.runtime.nexus.tools.uaep_tool_gateway import BoundToolGateway
 
-    from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
+    from intergrax.contracts.execution_identity import (
+        require_active_execution_id,
+        require_active_execution_identity,
+        validate_run_id,
+        validate_task_id,
+    )
 
     resolved_run_id = validate_run_id(step_ctx.run_id)
     resolved_task_id = validate_task_id(step_ctx.task_id)
+    run_id, attempt_id = require_active_execution_identity()
+    if run_id != resolved_run_id:
+        raise RuntimeError("step run_id conflicts with active execution identity")
+    execution_id = require_active_execution_id()
     runtime_request = RuntimeRequest(
         agent_id=contract.id,
         tenant_id=str(request.identity.tenant_id or step_ctx.tenant_id or "default"),
@@ -102,6 +111,8 @@ def attach_acp_catalog_exec_ctx(
     exec_ctx = RuntimeExecutionContext(
         task_id=resolved_task_id,
         run_id=resolved_run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
         agent_id=contract.id,
         contract=contract,
         request=runtime_request,

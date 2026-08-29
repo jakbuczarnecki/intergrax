@@ -11,6 +11,7 @@ from intergrax.runtime.events.event_catalog import EventCategory
 from intergrax.runtime.events.journal_query import query_journal
 from intergrax.runtime.events.payloads.base import RuntimeEventPayload
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from testing_support.runtime_events import runtime_event_test_identity
 from intergrax.runtime.events.signals import emit_domain_signal
 from intergrax.runtime.observability.extension_sdk import register_extension_runtime_payload
 

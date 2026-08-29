@@ -11,6 +11,7 @@ from intergrax.runtime.architecture.multi_agent_coordination import (
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from intergrax.runtime.events.runtime_event_identity import runtime_event_identity_kwargs
 
 
 def build_coordination_advisory_event(
@@ -29,12 +30,11 @@ def build_coordination_advisory_event(
     return RuntimeEvent(
         event_type=RuntimeEventType.TASK_PROGRESS,
         tenant_id=tenant_id,
-        task_id=task_id,
-        run_id=task_id,
         phase=ExecutionPhase.PLANNING,
         payload={
             "event_kind": "COORDINATION_PATTERN_ADVISORY",
             "selected_pattern": report.decision.selected_pattern.value,
             "reasons": list(report.decision.reasons),
         },
+        **runtime_event_identity_kwargs(task_id=task_id, run_id=task_id),
     )

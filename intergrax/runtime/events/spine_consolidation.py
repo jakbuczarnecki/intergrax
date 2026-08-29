@@ -11,6 +11,7 @@ from typing import Final
 
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_identity import (
+    require_active_execution_id,
     require_active_execution_identity,
     validate_run_id,
     validate_task_id,
@@ -233,6 +234,7 @@ def build_platform_signal_event(
     body = dict(payload or {})
     body.setdefault("legacy_spine_type", entry.legacy_spine_value)
     active_run_id, attempt_id = require_active_execution_identity()
+    execution_id = require_active_execution_id()
     resolved_run_id = validate_run_id(run_id)
     if resolved_run_id != active_run_id:
         raise RuntimeError("run_id conflicts with active execution identity")
@@ -241,6 +243,7 @@ def build_platform_signal_event(
         task_id=validate_task_id(task_id),
         run_id=resolved_run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
         node_id=node_id,
         agent_id=agent_id,
         step_id=step_id,

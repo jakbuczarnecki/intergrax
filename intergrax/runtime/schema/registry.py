@@ -22,7 +22,7 @@ class RuntimeVersionInfo:
 RUNTIME_SCHEMA_REGISTRY: dict[str, str] = {
     "agent_decision": "agent_decision.v1",
     "human_request": "human_request.v2",
-    "runtime_event": "runtime_event.v1",
+    "runtime_event": "runtime_event.v2",
     "runtime_checkpoint": "runtime_checkpoint.v1",
     "task_checkpoint": "task_checkpoint.v1",
     "governance_resolution": "governance_resolution.v1",
@@ -43,7 +43,7 @@ RUNTIME_SCHEMA_REGISTRY: dict[str, str] = {
 
 # Post-publication preview schema ids accepted by conformance gates (OBS-EVOL-9.9).
 PREVIEW_RUNTIME_SCHEMA_VERSIONS: dict[str, frozenset[str]] = {
-    "runtime_event": frozenset({"runtime_event.v2"}),
+    "runtime_event": frozenset({"runtime_event.v1"}),
 }
 
 

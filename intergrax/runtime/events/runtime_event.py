@@ -7,19 +7,21 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Self
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_identity import (
     AttemptId,
     EventId,
+    ExecutionId,
     RunId,
     TaskId,
     mint_event_id,
     validate_attempt_id,
     validate_event_id,
+    validate_execution_id,
     validate_run_id,
     validate_task_id,
 )
@@ -92,6 +94,7 @@ class RuntimeEvent(BaseModel):
     task_id: TaskId
     run_id: RunId
     attempt_id: AttemptId
+    execution_id: ExecutionId | None = None
     node_id: Optional[str] = None
     agent_id: Optional[str] = None
     step_id: Optional[str] = None
@@ -107,7 +110,7 @@ class RuntimeEvent(BaseModel):
     parent_event_id: EventId | None = None
     traceparent: Optional[str] = None
     tracestate: Optional[str] = None
-    schema_version: str = "runtime_event.v1"
+    schema_version: str = "runtime_event.v2"
 
     @field_validator("event_id", mode="before")
     @classmethod
@@ -128,6 +131,19 @@ class RuntimeEvent(BaseModel):
     @classmethod
     def _validate_attempt_id_field(cls, value: object) -> AttemptId:
         return validate_attempt_id(value)
+
+    @field_validator("execution_id", mode="before")
+    @classmethod
+    def _validate_execution_id_field(cls, value: object | None) -> ExecutionId | None:
+        if value is None:
+            return None
+        return validate_execution_id(value)
+
+    @model_validator(mode="after")
+    def _require_execution_id_for_v2(self) -> Self:
+        if self.schema_version == "runtime_event.v2" and self.execution_id is None:
+            raise ValueError("execution_id is required for runtime_event.v2")
+        return self
 
     @field_validator("parent_event_id", mode="before")
     @classmethod
@@ -189,3 +205,11 @@ class RuntimeEvent(BaseModel):
             if parent.tracestate:
                 updates["tracestate"] = parent.tracestate
         return self.model_copy(update=updates)
+
+
+def parse_runtime_event_payload(data: object) -> RuntimeEvent:
+    """Deserialize persisted runtime events (spine shim + schema versions)."""
+    from intergrax.runtime.events.spine_consolidation import migrate_legacy_spine_payload
+
+    migrated = migrate_legacy_spine_payload(data)
+    return RuntimeEvent.model_validate(migrated)

@@ -9,6 +9,7 @@ import pytest
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from testing_support.runtime_events import runtime_event_test_identity
 
 pytestmark = pytest.mark.gate
 

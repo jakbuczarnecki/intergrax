@@ -4,6 +4,7 @@ import pytest
 
 from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id, mint_task_id
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from testing_support.runtime_events import runtime_event_test_identity
 from intergrax.runtime.events.schema_guard import RuntimeEventSchemaError
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.events.stores.validating_runtime_event_store import (

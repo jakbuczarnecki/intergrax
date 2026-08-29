@@ -17,9 +17,11 @@ from typing import Any, Dict, Optional, Union
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_identity import (
     AttemptId,
+    ExecutionId,
     RunId,
     TaskId,
     peek_active_execution_identity,
+    require_active_execution_id,
     validate_attempt_id,
     validate_run_id,
     validate_task_id,
@@ -175,6 +177,7 @@ def runtime_event_from_task_state(
 
     validated_run_id = validate_run_id(run_id)
     validated_attempt_id = validate_attempt_id(attempt_id)
+    execution_id = require_active_execution_id()
     event_type = _TASK_STATE_TO_EVENT.get(task.state, RuntimeEventType.STEP_STARTED)
     phase = _TASK_STATE_TO_PHASE.get(task.state, ExecutionPhase.STEP_EXECUTION)
     base = RuntimeEvent(
@@ -182,6 +185,7 @@ def runtime_event_from_task_state(
         task_id=task.task_id,
         run_id=validated_run_id,
         attempt_id=validated_attempt_id,
+        execution_id=execution_id,
         agent_id=task.agent_id,
         event_type=event_type,
         phase=phase,
@@ -417,7 +421,7 @@ def _resolve_bridge_execution_identity(
     run_id: RunId | str | None,
     attempt_id: AttemptId | str | None,
     trace: TraceEvent,
-) -> tuple[RunId, AttemptId]:
+) -> tuple[RunId, AttemptId, ExecutionId | None]:
     active = peek_active_execution_identity()
     if active is not None:
         active_run_id, active_attempt_id = active
@@ -429,7 +433,7 @@ def _resolve_bridge_execution_identity(
             resolved_attempt_id = validate_attempt_id(attempt_id)
             if resolved_attempt_id != active_attempt_id:
                 raise RuntimeError("attempt_id conflicts with active execution identity")
-        return active_run_id, active_attempt_id
+        return active_run_id, active_attempt_id, require_active_execution_id()
 
     resolved_run_id: RunId | None = None
     for candidate in (run_id, trace.run_id):
@@ -444,7 +448,7 @@ def _resolve_bridge_execution_identity(
         raise RuntimeError("active execution identity or explicit run_id required for trace bridge")
     if attempt_id is None:
         raise RuntimeError("active execution identity or explicit attempt_id required for trace bridge")
-    return resolved_run_id, validate_attempt_id(attempt_id)
+    return resolved_run_id, validate_attempt_id(attempt_id), None
 
 
 def trace_event_to_runtime_event(
@@ -458,7 +462,7 @@ def trace_event_to_runtime_event(
     payload_dict: Optional[Dict[str, Any]] = None,
 ) -> RuntimeEvent:
     """Map a persisted ``TraceEvent`` to canonical ``RuntimeEvent``."""
-    resolved_run_id, resolved_attempt_id = _resolve_bridge_execution_identity(
+    resolved_run_id, resolved_attempt_id, execution_id = _resolve_bridge_execution_identity(
         run_id=run_id,
         attempt_id=attempt_id,
         trace=trace,
@@ -512,6 +516,7 @@ def trace_event_to_runtime_event(
         task_id=_resolve_bridge_task_id(subject),
         run_id=resolved_run_id,
         attempt_id=resolved_attempt_id,
+        execution_id=execution_id,
         agent_id=trace.tags.get("agent_id") or subject.agent_id or None,
         node_id=str(node_id) if node_id else None,
         step_id=str(step_id) if step_id else None,
@@ -521,5 +526,5 @@ def trace_event_to_runtime_event(
         payload=payload,
         timestamp=_parse_timestamp(trace.ts_utc),
         correlation_id=correlation_id or subject.task_id,
-        schema_version="runtime_event.v1",
+        schema_version="runtime_event.v2" if execution_id is not None else "runtime_event.v1",
     )

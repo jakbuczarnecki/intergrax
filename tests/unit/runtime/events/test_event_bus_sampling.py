@@ -8,6 +8,7 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.event_catalog import get_catalog_entry, should_persist_event
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from testing_support.runtime_events import runtime_event_test_identity
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 
 pytestmark = pytest.mark.gate
@@ -16,10 +17,9 @@ pytestmark = pytest.mark.gate
 def _progress_event(event_id: str) -> RuntimeEvent:
     return RuntimeEvent(
         event_id=event_id,
-        task_id="task-1",
-        run_id="run-1",
         event_type=RuntimeEventType.TASK_PROGRESS,
         phase=ExecutionPhase.STEP_EXECUTION,
+        **runtime_event_test_identity(),
     )
 
 

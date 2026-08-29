@@ -233,13 +233,14 @@ class GraphExecutor:
         return run_id
 
     def _runtime_event_for_task(self, task: Task, **kwargs: object) -> RuntimeEvent:
-        run_id, attempt_id = require_active_execution_identity()
+        from intergrax.runtime.events.runtime_event_identity import (
+            runtime_event_identity_kwargs,
+        )
+
         return RuntimeEvent(
             tenant_id=task.tenant_id,
-            task_id=task.task_id,
-            run_id=run_id,
-            attempt_id=attempt_id,
             correlation_id=task.task_id,
+            **runtime_event_identity_kwargs(task_id=task.task_id),
             **kwargs,
         )
 

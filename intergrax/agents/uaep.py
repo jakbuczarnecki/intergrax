@@ -27,7 +27,7 @@ from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.uaep_bridge_keys import UaepBridgeMetadataKey
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.agent_step import AgentStep, StepExecutionResult, StepOutput
-from intergrax.contracts.execution_identity import require_active_execution_identity
+from intergrax.contracts.execution_identity import require_active_execution_identity, require_active_execution_id
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.runtime_policy_context import AgentDecisionPolicyContext
@@ -204,6 +204,7 @@ class UAEPExecutor:
         contract = contract or agent.get_contract()
         task_options = execution_options_for_request(request)
         run_id, attempt_id = require_active_execution_identity()
+        execution_id = require_active_execution_id()
         task_id = request.task_id
         node_id = request.metadata.get("graph_node_id")
 
@@ -211,6 +212,7 @@ class UAEPExecutor:
             task_id=task_id,
             run_id=run_id,
             attempt_id=attempt_id,
+            execution_id=execution_id,
             node_id=str(node_id) if node_id else None,
             agent_id=contract.id,
             correlation_id=task_id,
@@ -1002,6 +1004,7 @@ class UAEPExecutor:
                 task_id=ctx.task_id,
                 run_id=ctx.run_id,
                 attempt_id=ctx.attempt_id,
+                execution_id=ctx.execution_id,
                 node_id=ctx.node_id,
                 agent_id=agent_id,
                 tenant_id=_tenant_id_from_ctx(ctx),
@@ -1032,6 +1035,7 @@ class UAEPExecutor:
             task_id=ctx.task_id,
             run_id=ctx.run_id,
             attempt_id=ctx.attempt_id,
+            execution_id=ctx.execution_id,
             node_id=ctx.node_id,
             agent_id=ctx.agent_id,
             tenant_id=_tenant_id_from_ctx(ctx),
