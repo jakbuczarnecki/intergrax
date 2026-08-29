@@ -17,7 +17,6 @@ from intergrax.contracts.execution_identity import (
     RunId,
     bind_active_execution_identity,
     mint_attempt_id,
-    mint_execution_id,
     peek_active_execution_id,
     require_active_execution_identity,
     reset_active_execution_identity,
@@ -453,7 +452,6 @@ class NexusLoop:
         identity_token = bind_active_execution_identity(
             run_id=resolved_run_id,
             attempt_id=resolved_attempt_id,
-            execution_id=mint_execution_id(),
         )
         authority_token = bind_active_execution_authority(root_authority)
         try:
