@@ -10,6 +10,24 @@ from enum import Enum
 from intergrax.contracts.execution_identity import ExecutionId
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
+_UNLIMITED_DIMENSION = 2**62
+
+
+def _finite_or_unlimited_int(value: int | None) -> int:
+    return value if value is not None else _UNLIMITED_DIMENSION
+
+
+def _finite_or_unlimited_float(value: float | None) -> float:
+    return value if value is not None else float(_UNLIMITED_DIMENSION)
+
+
+def _usage_int_to_optional(value: int) -> int | None:
+    return None if value >= _UNLIMITED_DIMENSION else value
+
+
+def _usage_float_to_optional(value: float) -> float | None:
+    return None if value >= float(_UNLIMITED_DIMENSION) else value
+
 # UE-8B2: BudgetEnforcer, budget_ticks, and LLM/tool/RAG/websearch usage counters
 # must feed this canonical ledger so runtime consumption is globally accounted.
 # Do not maintain duplicate permanent counters outside ExecutionBudgetLedger.
@@ -67,34 +85,34 @@ class BudgetUsageTotals:
 
 
 def run_budget_to_usage_totals(budget: RunBudget) -> BudgetUsageTotals:
-    """Map explicit finite RunBudget limits to usage totals (None dimensions become zero)."""
+    """Map RunBudget limits to usage totals (``None`` dimensions are unlimited)."""
     return BudgetUsageTotals(
-        input_tokens=budget.max_input_tokens or 0,
-        output_tokens=budget.max_output_tokens or 0,
-        total_tokens=budget.max_total_tokens or 0,
-        llm_calls=budget.max_llm_calls or 0,
-        tool_calls=budget.max_tool_calls or 0,
-        rag_invocations=budget.max_rag_invocations or 0,
-        websearch_invocations=budget.max_websearch_invocations or 0,
-        wall_time_seconds=budget.max_wall_time_seconds or 0.0,
-        planner_iterations=budget.max_planner_iterations or 0,
-        replans=budget.max_replans or 0,
+        input_tokens=_finite_or_unlimited_int(budget.max_input_tokens),
+        output_tokens=_finite_or_unlimited_int(budget.max_output_tokens),
+        total_tokens=_finite_or_unlimited_int(budget.max_total_tokens),
+        llm_calls=_finite_or_unlimited_int(budget.max_llm_calls),
+        tool_calls=_finite_or_unlimited_int(budget.max_tool_calls),
+        rag_invocations=_finite_or_unlimited_int(budget.max_rag_invocations),
+        websearch_invocations=_finite_or_unlimited_int(budget.max_websearch_invocations),
+        wall_time_seconds=_finite_or_unlimited_float(budget.max_wall_time_seconds),
+        planner_iterations=_finite_or_unlimited_int(budget.max_planner_iterations),
+        replans=_finite_or_unlimited_int(budget.max_replans),
     )
 
 
 def usage_totals_to_run_budget(totals: BudgetUsageTotals) -> RunBudget:
     """Map usage totals back to RunBudget with explicit finite fields."""
     return RunBudget(
-        max_input_tokens=totals.input_tokens,
-        max_output_tokens=totals.output_tokens,
-        max_total_tokens=totals.total_tokens,
-        max_llm_calls=totals.llm_calls,
-        max_tool_calls=totals.tool_calls,
-        max_rag_invocations=totals.rag_invocations,
-        max_websearch_invocations=totals.websearch_invocations,
-        max_wall_time_seconds=totals.wall_time_seconds,
-        max_planner_iterations=totals.planner_iterations,
-        max_replans=totals.replans,
+        max_input_tokens=_usage_int_to_optional(totals.input_tokens),
+        max_output_tokens=_usage_int_to_optional(totals.output_tokens),
+        max_total_tokens=_usage_int_to_optional(totals.total_tokens),
+        max_llm_calls=_usage_int_to_optional(totals.llm_calls),
+        max_tool_calls=_usage_int_to_optional(totals.tool_calls),
+        max_rag_invocations=_usage_int_to_optional(totals.rag_invocations),
+        max_websearch_invocations=_usage_int_to_optional(totals.websearch_invocations),
+        max_wall_time_seconds=_usage_float_to_optional(totals.wall_time_seconds),
+        max_planner_iterations=_usage_int_to_optional(totals.planner_iterations),
+        max_replans=_usage_int_to_optional(totals.replans),
     )
 
 

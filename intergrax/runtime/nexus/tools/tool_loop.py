@@ -20,7 +20,10 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
-from intergrax.runtime.nexus.budget.budget_ticks import enforce_tool_call_budget
+from intergrax.runtime.nexus.budget.budget_ticks import (
+    enforce_tool_call_budget,
+    record_tool_call_and_enforce,
+)
 from intergrax.runtime.nexus.config_types import ToolInvocationMode
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState, ToolCallTrace
 from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
@@ -136,6 +139,7 @@ def _invoke_planned_call(
         request_index=index,
     )
     _require_canonical_tool_execution_scope(state)
+    record_tool_call_and_enforce(state)
     try:
         result = invoker.invoke(state=state, request=req, agent_id=state.request.agent_id)
     except DeclarativePolicyHitlRequiredError as exc:

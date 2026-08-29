@@ -384,6 +384,9 @@ class LLMAdapterUsageLog:
 
         When ``adapter`` is passed, provider/model are attached for observability metrics.
         """
+        from intergrax.runtime.execution.budget.consumption import consume_llm_call
+
+        consume_llm_call()
         rid = run_id or "general"
         if rid not in self._run_stats:
             self._run_stats[rid] = LLMRunStats()
@@ -410,6 +413,8 @@ class LLMAdapterUsageLog:
         """
         Finish one LLM call and aggregate into per-run stats.
         """
+        from intergrax.runtime.execution.budget.consumption import consume_llm_token_usage
+
         dt_ms = int((time.perf_counter() - call.t0) * 1000)
 
         call.input_tokens = int(input_tokens or 0)
@@ -419,6 +424,12 @@ class LLMAdapterUsageLog:
 
         call.success = bool(success)
         call.error_type = error_type
+
+        consume_llm_token_usage(
+            input_tokens=call.input_tokens,
+            output_tokens=call.output_tokens,
+            total_tokens=call.total_tokens,
+        )
 
         st = self._run_stats.get(call.run_id)
         if st is None:

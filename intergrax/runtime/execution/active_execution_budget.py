@@ -8,7 +8,11 @@ from contextvars import ContextVar, Token
 from dataclasses import dataclass
 
 from intergrax.contracts.execution_identity import ExecutionId
-from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedger
+from intergrax.runtime.execution.budget.wall_time_checkpoint import reset_wall_time_accounting
+from intergrax.runtime.execution.budget.ledger import (
+    ExecutionBudgetLedger,
+    ROOT_BUDGET_POOL_PARENT,
+)
 from intergrax.runtime.execution.budget.models import ExecutionBudgetAllocationMode
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
@@ -30,6 +34,11 @@ _active_execution_budget: ContextVar[ActiveExecutionBudgetState | None] = Contex
 
 
 def bind_active_execution_budget(state: ActiveExecutionBudgetState) -> Token:
+    state.ledger.ensure_shared_participant(
+        state.execution_id,
+        parent_execution_id=ROOT_BUDGET_POOL_PARENT,
+    )
+    reset_wall_time_accounting()
     return _active_execution_budget.set(state)
 
 

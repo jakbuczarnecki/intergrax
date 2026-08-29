@@ -542,6 +542,17 @@ class UAEPExecutor:
             )
             await self._emit_governance(exec_ctx, resolution)
 
+            if (
+                decision.type is AgentDecisionType.MODIFY_PLAN
+                and not resolution.should_fail
+                and not resolution.should_block_execution
+            ):
+                from intergrax.contracts.agent_handoff import handoff_from_decision
+                from intergrax.runtime.execution.budget.consumption import consume_replan
+
+                if handoff_from_decision(decision) is None:
+                    consume_replan()
+
             if resolution.should_pause or resolution.should_fail:
                 step_cursor = exec_ctx.metadata.get(UAEP_STEP_CURSOR_KEY)
                 runtime_snapshot = self._build_runtime_checkpoint(

@@ -1,5 +1,16 @@
 # © Artur Czarnecki. All rights reserved.
 
+from intergrax.runtime.execution.budget.consumption import (
+    consume_llm_call,
+    consume_llm_token_usage,
+    consume_planner_iteration,
+    consume_rag_invocation,
+    consume_replan,
+    consume_tool_call,
+    consume_wall_time_delta,
+    consume_websearch_invocation,
+)
+from intergrax.runtime.execution.budget.wall_time_checkpoint import reset_wall_time_accounting
 from intergrax.runtime.execution.budget.ledger import (
     ExecutionBudgetLedger,
     ExecutionBudgetLedgerFactory,
@@ -47,11 +58,20 @@ __all__ = [
     "FixedExecutionBudgetLedgerFactory",
     "InMemoryExecutionBudgetLedger",
     "RunBudgetExecutionBudgetLedgerFactory",
+    "consume_llm_call",
+    "consume_llm_token_usage",
+    "consume_planner_iteration",
+    "consume_rag_invocation",
+    "consume_replan",
+    "consume_tool_call",
+    "consume_wall_time_delta",
+    "consume_websearch_invocation",
     "create_execution_budget_ledger",
     "create_execution_budget_ledger_factory",
     "fixed_execution_budget_ledger_factory",
     "list_execution_budget_allocation_policy_ids",
     "load_execution_budget_allocation_policy",
+    "reset_wall_time_accounting",
     "resolve_execution_budget_allocation_policy",
     "resolve_execution_budget_allocation_policy_from_runtime_config",
 ]

@@ -112,6 +112,7 @@ class RuntimeState(RuntimeStateContract):
     rag_step_invocation_count: int = 0
     websearch_step_invocation_count: int = 0
     planner_iteration_count: int = 0
+    replan_count: int = 0
 
     # --- Execution Artifacts (runtime infra output) ---
     artifacts: List["ArtifactRef"] = field(default_factory=list)

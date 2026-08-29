@@ -14,6 +14,14 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from intergrax.runtime.execution.budget.consumption import (
+    consume_planner_iteration,
+    consume_rag_invocation,
+    consume_replan,
+    consume_tool_call,
+    consume_wall_time_delta,
+    consume_websearch_invocation,
+)
 from intergrax.runtime.nexus.budget.budget_enforcer import BudgetEnforcer
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.utils.time_provider import SystemTimeProvider
@@ -28,6 +36,7 @@ def _enforcer(state: RuntimeState) -> BudgetEnforcer | None:
 
 def record_rag_invocation_and_enforce(state: RuntimeState) -> None:
     """After confirming RAG is enabled and configured; before retrieval work."""
+    consume_rag_invocation()
     state.rag_step_invocation_count += 1
     enc = _enforcer(state)
     if enc is not None:
@@ -40,6 +49,7 @@ def record_rag_invocation_and_enforce(state: RuntimeState) -> None:
 
 def record_websearch_invocation_and_enforce(state: RuntimeState) -> None:
     """After confirming websearch is enabled and configured; before network/search work."""
+    consume_websearch_invocation()
     state.websearch_step_invocation_count += 1
     enc = _enforcer(state)
     if enc is not None:
@@ -50,8 +60,21 @@ def record_websearch_invocation_and_enforce(state: RuntimeState) -> None:
         )
 
 
+def record_tool_call_and_enforce(state: RuntimeState) -> None:
+    """Before each real tool invocation is committed."""
+    consume_tool_call()
+    enc = _enforcer(state)
+    if enc is not None:
+        projected = len(state.tool_traces) + 1
+        enc.check_tool_calls(
+            run_id=state.run_id,
+            tool_calls=projected,
+            state=state,
+        )
+
+
 def enforce_tool_call_budget(state: RuntimeState) -> None:
-    """After each tool trace is appended (same metric as end-of-run ``check_tool_calls``)."""
+    """After each tool trace is appended (legacy cumulative ``BudgetEnforcer`` check)."""
     enc = _enforcer(state)
     if enc is not None:
         enc.check_tool_calls(
@@ -71,6 +94,7 @@ def run_elapsed_seconds(state: RuntimeState) -> float:
 
 def record_planner_iteration_and_enforce(state: RuntimeState) -> None:
     """Before each bounded ReAct planner round; increments run-level planner iteration count."""
+    consume_planner_iteration()
     state.planner_iteration_count += 1
     enc = _enforcer(state)
     if enc is not None:
@@ -81,12 +105,27 @@ def record_planner_iteration_and_enforce(state: RuntimeState) -> None:
         )
 
 
+def record_replan_and_enforce(state: RuntimeState) -> None:
+    """When a real replan is committed for the active orchestration run."""
+    consume_replan()
+    state.replan_count += 1
+    enc = _enforcer(state)
+    if enc is not None:
+        enc.check_replans(
+            run_id=state.run_id,
+            replans=state.replan_count,
+            state=state,
+        )
+
+
 def enforce_wall_time_budget(state: RuntimeState) -> None:
     """Mid-run wall-time check using canonical ``RuntimeState.started_at_utc``."""
+    elapsed = run_elapsed_seconds(state)
+    consume_wall_time_delta(elapsed)
     enc = _enforcer(state)
     if enc is not None:
         enc.check_wall_time(
             run_id=state.run_id,
-            elapsed_seconds=run_elapsed_seconds(state),
+            elapsed_seconds=elapsed,
             state=state,
         )

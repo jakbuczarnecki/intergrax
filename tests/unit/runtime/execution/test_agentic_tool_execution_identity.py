@@ -153,6 +153,33 @@ def _identity_binding(*, run_id: RunId | None = None) -> ExecutionIdentityBindin
     )
 
 
+def _bind_canonical_execution_context(identity: ExecutionIdentityBinding) -> tuple[object, object]:
+    from intergrax.contracts.execution_identity import (
+        bind_active_execution_identity,
+    )
+    from intergrax.runtime.execution.active_execution_budget import bind_root_execution_budget
+    from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+
+    identity_token = bind_active_execution_identity(
+        run_id=identity.run_id,
+        attempt_id=identity.attempt_id,
+        execution_id=identity.execution_id,
+    )
+    budget_token = bind_root_execution_budget(
+        execution_id=identity.execution_id,
+        ledger=create_execution_budget_ledger(None),
+    )
+    return identity_token, budget_token
+
+
+def _reset_canonical_execution_context(identity_token: object, budget_token: object) -> None:
+    from intergrax.contracts.execution_identity import reset_active_execution_identity
+    from intergrax.runtime.execution.active_execution_budget import reset_active_execution_budget
+
+    reset_active_execution_budget(budget_token)
+    reset_active_execution_identity(identity_token)
+
+
 def _runtime_state(*, run_id: RunId) -> RuntimeState:
     config = RuntimeConfig(
         llm_adapter=None,
@@ -321,6 +348,20 @@ class ToolLoopExecutionDelegate:
         self._max_parallel_read_only = max_parallel_read_only
 
     async def execute(self, request: RuntimeRequest) -> AgentExecutionResult:
+        from intergrax.runtime.execution.active_execution_budget import (
+            bind_root_execution_budget,
+            peek_active_execution_budget,
+            reset_active_execution_budget,
+        )
+        from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+        from intergrax.contracts.execution_identity import require_active_execution_id
+
+        budget_token = None
+        if peek_active_execution_budget() is None:
+            budget_token = bind_root_execution_budget(
+                execution_id=require_active_execution_id(),
+                ledger=create_execution_budget_ledger(None),
+            )
         state = _runtime_state(run_id=request.run_id)
         state.context.config.max_parallel_tool_calls = self._max_parallel_read_only
         run_bounded_tool_loop(
@@ -331,6 +372,8 @@ class ToolLoopExecutionDelegate:
             allowed_tool_ids=("probe.read",),
             max_iterations=self._max_iterations,
         )
+        if budget_token is not None:
+            reset_active_execution_budget(budget_token)
         return AgentExecutionResult(
             agent_id=request.agent_id,
             run_id=request.run_id,
@@ -348,16 +391,7 @@ def test_sequential_tool_calls_observe_active_identity() -> None:
         PlannedToolCall(step_id="s2", tool_id="probe.read", input=_In(value=2)),
     ]
 
-    from intergrax.contracts.execution_identity import (
-        bind_active_execution_identity,
-        reset_active_execution_identity,
-    )
-
-    token = bind_active_execution_identity(
-        run_id=identity.run_id,
-        attempt_id=identity.attempt_id,
-        execution_id=identity.execution_id,
-    )
+    token, budget_token = _bind_canonical_execution_context(identity)
     try:
         execute_planned_tool_calls(
             state=state,
@@ -367,7 +401,7 @@ def test_sequential_tool_calls_observe_active_identity() -> None:
             max_parallel_read_only=1,
         )
     finally:
-        reset_active_execution_identity(token)
+        _reset_canonical_execution_context(token, budget_token)
 
     assert len(invoker.observations) == 2
     for observation in invoker.observations:
@@ -382,16 +416,7 @@ def test_bounded_react_iterations_preserve_execution_id() -> None:
     invoker = _recording_invoker()
     planner = _TwoRoundPlanner()
 
-    from intergrax.contracts.execution_identity import (
-        bind_active_execution_identity,
-        reset_active_execution_identity,
-    )
-
-    token = bind_active_execution_identity(
-        run_id=identity.run_id,
-        attempt_id=identity.attempt_id,
-        execution_id=identity.execution_id,
-    )
+    token, budget_token = _bind_canonical_execution_context(identity)
     try:
         result = run_bounded_tool_loop(
             state=state,
@@ -402,7 +427,7 @@ def test_bounded_react_iterations_preserve_execution_id() -> None:
             max_iterations=2,
         )
     finally:
-        reset_active_execution_identity(token)
+        _reset_canonical_execution_context(token, budget_token)
 
     assert result.loop_iterations == 2
     assert len(invoker.observations) == 2
@@ -442,16 +467,7 @@ def test_run_id_mismatch_fails_before_invoke() -> None:
     invoker = _recording_invoker()
     calls = [PlannedToolCall(step_id="s1", tool_id="probe.read", input=_In(value=1))]
 
-    from intergrax.contracts.execution_identity import (
-        bind_active_execution_identity,
-        reset_active_execution_identity,
-    )
-
-    token = bind_active_execution_identity(
-        run_id=identity.run_id,
-        attempt_id=identity.attempt_id,
-        execution_id=identity.execution_id,
-    )
+    token, budget_token = _bind_canonical_execution_context(identity)
     try:
         with pytest.raises(
             RuntimeError,
@@ -464,7 +480,7 @@ def test_run_id_mismatch_fails_before_invoke() -> None:
                 idempotency_prefix="mismatch",
             )
     finally:
-        reset_active_execution_identity(token)
+        _reset_canonical_execution_context(token, budget_token)
 
     assert invoker.observations == []
 
@@ -478,16 +494,7 @@ def test_parallel_read_only_workers_share_execution_id() -> None:
         for index in range(3)
     ]
 
-    from intergrax.contracts.execution_identity import (
-        bind_active_execution_identity,
-        reset_active_execution_identity,
-    )
-
-    token = bind_active_execution_identity(
-        run_id=identity.run_id,
-        attempt_id=identity.attempt_id,
-        execution_id=identity.execution_id,
-    )
+    token, budget_token = _bind_canonical_execution_context(identity)
     try:
         execute_planned_tool_calls(
             state=state,
@@ -497,7 +504,7 @@ def test_parallel_read_only_workers_share_execution_id() -> None:
             max_parallel_read_only=3,
         )
     finally:
-        reset_active_execution_identity(token)
+        _reset_canonical_execution_context(token, budget_token)
 
     assert len(invoker.observations) == 3
     execution_ids = {obs.execution_id for obs in invoker.observations}
@@ -600,16 +607,7 @@ def test_worker_thread_pool_reuse_does_not_retain_copied_context() -> None:
         for index in range(3)
     ]
 
-    from intergrax.contracts.execution_identity import (
-        bind_active_execution_identity,
-        reset_active_execution_identity,
-    )
-
-    token = bind_active_execution_identity(
-        run_id=identity.run_id,
-        attempt_id=identity.attempt_id,
-        execution_id=identity.execution_id,
-    )
+    token, budget_token = _bind_canonical_execution_context(identity)
     try:
         execute_planned_tool_calls(
             state=state,
@@ -626,7 +624,7 @@ def test_worker_thread_pool_reuse_does_not_retain_copied_context() -> None:
             max_parallel_read_only=3,
         )
     finally:
-        reset_active_execution_identity(token)
+        _reset_canonical_execution_context(token, budget_token)
 
     assert all(obs.execution_id == identity.execution_id for obs in invoker.observations)
 

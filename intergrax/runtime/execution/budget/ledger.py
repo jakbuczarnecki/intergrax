@@ -8,7 +8,7 @@ import threading
 from dataclasses import dataclass
 from typing import Protocol
 
-from intergrax.contracts.execution_identity import ExecutionId
+from intergrax.contracts.execution_identity import ExecutionId, validate_execution_id
 from intergrax.runtime.execution.budget.models import (
     BudgetUsageTotals,
     ChildBudgetAllocationDecision,
@@ -20,6 +20,10 @@ from intergrax.runtime.execution.budget.models import (
     usage_totals_to_run_budget,
 )
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
+
+ROOT_BUDGET_POOL_PARENT: ExecutionId = validate_execution_id(
+    "exec_00000000000000000000000000000001"
+)
 
 
 @dataclass
@@ -47,6 +51,14 @@ class ExecutionBudgetLedger(Protocol):
 
     def release_child_budget(self, execution_id: ExecutionId) -> None:
         """Release unused exclusive reservation for ``execution_id``."""
+
+    def ensure_shared_participant(
+        self,
+        execution_id: ExecutionId,
+        *,
+        parent_execution_id: ExecutionId,
+    ) -> None:
+        """Register a shared participant when absent (idempotent)."""
 
     def consume_budget(
         self,
@@ -173,6 +185,25 @@ class InMemoryExecutionBudgetLedger:
                 mode=ExecutionBudgetAllocationMode.RESERVED,
                 reservation_allowance=usage_totals_to_run_budget(requested),
             )
+
+    def ensure_shared_participant(
+        self,
+        execution_id: ExecutionId,
+        *,
+        parent_execution_id: ExecutionId,
+    ) -> None:
+        with self._lock:
+            if execution_id in self._records:
+                return
+            record = _ReservationRecord(
+                execution_id=execution_id,
+                parent_execution_id=parent_execution_id,
+                mode=ExecutionBudgetAllocationMode.SHARED,
+                allowance=BudgetUsageTotals(),
+                consumed=BudgetUsageTotals(),
+                child_reserved=BudgetUsageTotals(),
+            )
+            self._records[execution_id] = record
 
     def release_child_budget(self, execution_id: ExecutionId) -> None:
         with self._lock:

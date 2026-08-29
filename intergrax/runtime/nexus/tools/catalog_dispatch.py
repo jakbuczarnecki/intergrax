@@ -96,7 +96,10 @@ def invoke_catalog_tool_ids(
 
     Returns the number of successfully attempted invocations (including failures).
     """
-    from intergrax.runtime.nexus.budget.budget_ticks import enforce_tool_call_budget
+    from intergrax.runtime.nexus.budget.budget_ticks import (
+        enforce_tool_call_budget,
+        record_tool_call_and_enforce,
+    )
     from intergrax.runtime.nexus.engine.runtime_state import ToolCallTrace
 
     invoker = state.context.config.tool_invoker
@@ -190,6 +193,7 @@ def invoke_catalog_tool_ids(
             request_index=0,
         )
 
+        record_tool_call_and_enforce(state)
         try:
             result = invoker.invoke(state=state, agent_id=agent_id, request=exec_request)
         except DeclarativePolicyHitlRequiredError as exc:
@@ -231,7 +235,10 @@ def invoke_catalog_tool_request(
     trace_step: str = "CatalogGateway",
 ) -> ToolResponse:
     """§42.12 direct catalog ``ToolRequest`` → configured ``ToolInvokerProtocol``."""
-    from intergrax.runtime.nexus.budget.budget_ticks import enforce_tool_call_budget
+    from intergrax.runtime.nexus.budget.budget_ticks import (
+        enforce_tool_call_budget,
+        record_tool_call_and_enforce,
+    )
     from intergrax.runtime.nexus.engine.runtime_state import ToolCallTrace
 
     started = time.perf_counter()
@@ -301,6 +308,7 @@ def invoke_catalog_tool_request(
         request_index=0,
     )
 
+    record_tool_call_and_enforce(state)
     try:
         result = invoker.invoke(
             state=state,
