@@ -39,6 +39,7 @@ CI_SMOKE_FILES: frozenset[str] = frozenset(
         "tests/unit/core/plugins/test_catalog_bootstrap.py",
         "tests/unit/knowledge/contracts/test_document_conformance.py",
         "tests/unit/scripts/proof/test_all_initialized_scenario_architecture.py",
+        "tests/unit/runtime/architecture/test_diag_foundation_5_destructive_proof.py",
     }
 )
 
