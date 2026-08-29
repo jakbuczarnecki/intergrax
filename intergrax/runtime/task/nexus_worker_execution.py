@@ -13,6 +13,10 @@ from pydantic import BaseModel, Field
 
 from intergrax.contracts.execution_identity import AttemptId
 from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
+from intergrax.runtime.background_execution.identity_admission import (
+    assert_handler_run_id_matches_identity,
+    assert_payload_run_id_consistent,
+)
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -100,6 +104,14 @@ class NexusWorkerRuntime:
                 "tenant mismatch between worker scope and background execution identity: "
                 f"worker={tenant_id!r} identity={execution_identity.tenant_id!r}"
             )
+        assert_handler_run_id_matches_identity(
+            handler_run_id=run_id,
+            execution_identity=execution_identity,
+        )
+        assert_payload_run_id_consistent(
+            payload_run_id=request.run_id,
+            execution_identity=execution_identity,
+        )
         resolved_run_id = execution_identity.run_id
         resolved_attempt_id: AttemptId = execution_identity.attempt_id
 

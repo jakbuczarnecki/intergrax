@@ -6,6 +6,12 @@ from intergrax.runtime.background_execution.bootstrap import (
     bootstrap_background_execution,
     resolve_background_execution,
 )
+from intergrax.runtime.background_execution.identity_admission import (
+    BackgroundExecutionIdentityMismatchError,
+    assert_handler_run_id_matches_identity,
+    assert_payload_run_id_consistent,
+    assert_payload_task_id_consistent,
+)
 from intergrax.runtime.background_execution.identity_persistence import (
     BackgroundExecutionIdentityPersistence,
     DocumentStoreBackgroundExecutionIdentityPersistence,
@@ -26,8 +32,12 @@ from intergrax.runtime.background_execution.transport_ref import (
 
 __all__ = [
     "BackgroundExecutionIdentity",
+    "BackgroundExecutionIdentityMismatchError",
     "BackgroundExecutionIdentityPersistence",
     "BackgroundExecutionTenantMismatchError",
+    "assert_handler_run_id_matches_identity",
+    "assert_payload_run_id_consistent",
+    "assert_payload_task_id_consistent",
     "BackgroundTransportExecutionRef",
     "DocumentStoreBackgroundExecutionIdentityPersistence",
     "KvBackgroundExecutionIdentityPersistence",
