@@ -27,6 +27,7 @@ from intergrax.applications._shared.product_observability_dashboard_wiring impor
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
     reset_active_execution_identity,
@@ -578,7 +579,11 @@ async def test_replay_terminal_trigger_does_not_duplicate_failure_evidence() -> 
     trigger.trigger_for_terminal_execution = _raise  # type: ignore[method-assign]
 
     await runner.run_task(task, run_id=run_id, attempt_id=attempt_id)
-    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=mint_execution_id(),
+    )
     try:
         await loop._publish_terminal_runtime_event(task)  # noqa: SLF001
         await loop._publish_terminal_runtime_event(task)  # noqa: SLF001
@@ -614,7 +619,11 @@ async def test_replay_terminal_trigger_does_not_duplicate_occurrence() -> None:
     problems_before_replay = persistence.list_for_tenant(_TENANT_A)
     assert len(problems_before_replay) == 1
     assert problems_before_replay[0].occurrence_count == 1
-    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=mint_execution_id(),
+    )
     try:
         await loop._publish_terminal_runtime_event(task)  # noqa: SLF001
         await loop._publish_terminal_runtime_event(task)  # noqa: SLF001

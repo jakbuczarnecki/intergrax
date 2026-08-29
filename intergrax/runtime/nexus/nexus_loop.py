@@ -812,14 +812,20 @@ class NexusLoop:
             invoke_terminal_execution_diagnostics,
         )
 
-        run_id, _ = self._execution_identity.require()
+        from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
+
         invoke_terminal_execution_diagnostics(
             self._terminal_diagnostic_trigger,
             tenant_id=task.tenant_id,
             task_id=task.task_id,
-            run_id=run_id,
+            run_id=terminal_event.run_id,
             observed_at=terminal_event.timestamp,
             event_bus=self._event_bus,
+            execution_identity=ExecutionIdentityBinding(
+                run_id=terminal_event.run_id,
+                attempt_id=terminal_event.attempt_id,
+                execution_id=terminal_event.execution_id,
+            ),
         )
 
     def _resolve_lifecycle(self, task: Task) -> tuple[TaskLifecycle, TaskTraceEmitter]:

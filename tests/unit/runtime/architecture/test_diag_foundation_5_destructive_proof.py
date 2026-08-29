@@ -41,6 +41,7 @@ from intergrax.applications.contracts.manifest import AgentBinding, ApplicationM
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
     reset_active_execution_identity,
@@ -53,6 +54,7 @@ from intergrax.runtime.diagnostics.diagnostic_subsystem_failure_evidence import 
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_bridge import (
     invoke_terminal_execution_diagnostics,
 )
+from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -319,10 +321,20 @@ def test_df5_case_h_diagnostic_runtime_failure_emits_durable_evidence() -> None:
     task_id = mint_task_id()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
     failing = MagicMock()
     failing.trigger_for_terminal_execution.side_effect = RuntimeError("persist failed")
 
-    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    identity = ExecutionIdentityBinding(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
     try:
         result = invoke_terminal_execution_diagnostics(
             failing,
@@ -331,6 +343,7 @@ def test_df5_case_h_diagnostic_runtime_failure_emits_durable_evidence() -> None:
             run_id=run_id,
             observed_at=_OBSERVED_AT,
             event_bus=event_bus,
+            execution_identity=identity,
         )
     finally:
         reset_active_execution_identity(token)
@@ -351,18 +364,29 @@ def test_df5_case_i_evidence_persistence_failure_preserves_business_outcome(
     task_id = mint_task_id()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
     failing = MagicMock()
     failing.trigger_for_terminal_execution.side_effect = RuntimeError("persist failed")
+
+    identity = ExecutionIdentityBinding(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
 
     def _raise_evidence(*_args: object, **_kwargs: object) -> None:
         raise OSError("evidence journal unavailable")
 
     monkeypatch.setattr(
-        "intergrax.runtime.diagnostics.terminal_execution_diagnostic_bridge.record_diagnostic_subsystem_failure",
+        "intergrax.runtime.diagnostics.terminal_execution_diagnostic_bridge._persist_diagnostic_subsystem_failure",
         _raise_evidence,
     )
 
-    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
     try:
         result = invoke_terminal_execution_diagnostics(
             failing,
@@ -371,6 +395,7 @@ def test_df5_case_i_evidence_persistence_failure_preserves_business_outcome(
             run_id=run_id,
             observed_at=_OBSERVED_AT,
             event_bus=event_bus,
+            execution_identity=identity,
         )
     finally:
         reset_active_execution_identity(token)
