@@ -26,7 +26,10 @@ from intergrax.runtime.execution.runtime import (
 )
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
-from intergrax.runtime.long_running.checkpoint_builder import prepare_task_for_checkpoint_resume
+from intergrax.runtime.long_running.checkpoint_builder import (
+    apply_runtime_checkpoint_to_task,
+    prepare_task_for_checkpoint_resume,
+)
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
@@ -132,10 +135,6 @@ async def execute_root_task(
                 active_root_execution_id=identity.execution_id,
             )
         elif task.runtime.orchestration.runtime_checkpoint is None:
-            from intergrax.runtime.long_running.checkpoint_builder import (
-                apply_runtime_checkpoint_to_task,
-            )
-
             apply_runtime_checkpoint_to_task(task, resume_checkpoint.runtime)
 
     request = execution_request_from_task(
