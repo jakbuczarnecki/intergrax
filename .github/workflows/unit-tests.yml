@@ -492,3 +492,17 @@ jobs:
           root = ET.parse('build/harden-2c-external-proof.xml').getroot();
           skipped = sum(int(ts.get('skipped', 0)) for ts in root.findall('testsuite'));
           sys.exit(f'HARDEN-2C skipped ({skipped}) — infrastructure/proof failure' if skipped else 0)"
+
+      - name: HARDEN-4F Mongo Problem Store failure external proof
+        run: >-
+          uv run --frozen pytest
+          tests/integration/applications/architecture/test_harden_4f_mongo_problem_store_failure_e2e.py
+          --junitxml=build/harden-4f-external-proof.xml
+          -q --tb=short
+
+      - name: Assert HARDEN-4F proof executed (no skip)
+        run: >-
+          uv run --frozen python -c "import sys, xml.etree.ElementTree as ET;
+          root = ET.parse('build/harden-4f-external-proof.xml').getroot();
+          skipped = sum(int(ts.get('skipped', 0)) for ts in root.findall('testsuite'));
+          sys.exit(f'HARDEN-4F skipped ({skipped}) — infrastructure/proof failure' if skipped else 0)"

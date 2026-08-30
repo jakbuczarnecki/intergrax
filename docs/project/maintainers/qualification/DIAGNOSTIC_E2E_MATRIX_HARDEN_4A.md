@@ -57,6 +57,7 @@
 | same | `test_tenant_isolation_for_terminal_diagnostics` | P3 | orchestrator capture only | tenant passed to orchestrator (not persistence isolation) |
 | `tests/integration/applications/architecture/test_harden_1c_durable_problem_restart_proof.py` | `test_harden_1c_durable_problem_survives_real_process_restart` | P4 | Mongo via IntegrationProfile → DocumentStore → ProblemPersistence; subprocess phases | cross-process durability + DiagnosticReadService after restart |
 | `tests/integration/applications/architecture/test_harden_1d_durable_problem_store_failure_semantics.py` | `test_harden_1d_terminal_create_failure_preserves_business_result` (+ update/recovery) | P3 | FI-B DelegatingFailingConditionalDocumentStore | M7/M8 business survives; degradation visible |
+| `tests/integration/applications/architecture/test_harden_4f_mongo_problem_store_failure_e2e.py` | `test_harden_4f_mongo_problem_store_failure_and_recovery_e2e` | P4 | Governed-contractor HTTP host, SQLite RuntimeEvents, Mongo DocumentStore via IntegrationProfile, FI-A Docker Mongo stop/start | M8 real Mongo outage + same-process recovery |
 | `tests/integration/applications/architecture/test_harden_2a_durable_problem_concurrency_proof.py` | `test_harden_2a_cross_process_concurrent_update_on_mongodb` | P4 | Mongo + 2 subprocess workers | M10 concurrent occurrences preserved |
 | `tests/integration/applications/architecture/test_harden_2c_durable_problem_lifecycle_concurrency_proof.py` | `test_harden_2c_cross_process_lifecycle_reconcile_on_mongodb` | P4 | Mongo + subprocess | M10/M11 lifecycle reconcile race |
 | same | `test_harden_2c_cross_process_lifecycle_resolve_on_mongodb` | P4 | Mongo + subprocess + read-final worker | M5/M11 resolve OCC cross-process |
@@ -87,7 +88,7 @@
 | M5 | Resolve lifecycle | OPEN → resolved persisted; read model shows resolved; identity preserved | `test_harden_4d_problem_lifecycle_host_e2e.py::test_harden_4d_resolve_then_same_violation_reopens_same_problem`; `test_harden_2c_durable_problem_lifecycle_concurrency_proof.py::test_harden_2c_cross_process_lifecycle_resolve_on_mongodb`; `test_problem_lifecycle.py::test_explicit_resolve_and_recurrence_reopens` (resolve only); `test_diagnostic_read_service.py::test_list_status_filter` | P3 / P4 / P1 / P2 | yes | Mongo | **PROVEN** | — |
 | M6 | Recurrence after resolve | Canonical contract: **reopen existing Problem** (status OPEN, occurrences continue, first_seen preserved) | `test_harden_4d_problem_lifecycle_host_e2e.py::test_harden_4d_resolve_then_same_violation_reopens_same_problem`; `test_problem_lifecycle.py::test_explicit_resolve_and_recurrence_reopens` | P3 / P1 | yes | no | **PROVEN** | — |
 | M7 | Diagnostic subsystem failure | Business survives; durable failure evidence; ExecutionId preserved | `test_terminal_diagnostic_production_e2e.py::test_diagnostic_failure_does_not_change_business_outcome`; `test_harden_1d_durable_problem_store_failure_semantics.py::test_harden_1d_terminal_create_failure_preserves_business_result`; `test_diagnostic_subsystem_failure_evidence.py::test_failure_event_preserves_execution_identity` | P3 + P2 | yes | no | **PROVEN** | — |
-| M8 | Problem Store outage | Persistence fails → business unaffected → diagnostic degradation visible | `test_harden_1d_durable_problem_store_failure_semantics.py` (create/update/recovery trio); `test_harden_1d_problem_persistence_write_failure.py` | P3 / P2 | yes | FI-B | **PARTIALLY_PROVEN** | Abstraction-level FI-B only; no durable Mongo write-failure E2E |
+| M8 | Problem Store outage | Persistence fails → business unaffected → diagnostic degradation visible | `test_harden_4f_mongo_problem_store_failure_e2e.py::test_harden_4f_mongo_problem_store_failure_and_recovery_e2e`; `test_harden_1d_durable_problem_store_failure_semantics.py` (create/update/recovery trio); `test_harden_1d_problem_persistence_write_failure.py` | P4 + P3 / P2 | yes | FI-A + FI-B | **PROVEN** | — |
 | M9 | Cross-process durability | Process A writes Problem; Process B reads same Problem | `test_harden_1c_durable_problem_restart_proof.py::test_harden_1c_durable_problem_survives_real_process_restart` | P4 | yes | Mongo | **PROVEN** | — |
 | M10 | Concurrent occurrence race | One logical Problem; both occurrences preserved; no lost update | `test_harden_2a_durable_problem_concurrency_proof.py::test_harden_2a_cross_process_concurrent_update_on_mongodb`; `test_harden_2c_*_create_race_on_mongodb` | P4 | yes | Mongo | **PROVEN** | — |
 | M11 | Concurrent resolve/update OCC | CAS conflict → bounded convergence → deterministic final state | `test_harden_2b_problem_lifecycle_occ_retry.py` (in-process); `test_harden_2c_durable_problem_lifecycle_concurrency_proof.py` (cross-process) | P2 + P4 | yes | Mongo | **PROVEN** | — |
@@ -120,8 +121,8 @@
 | Metric | Count |
 |--------|------:|
 | Total required (M1–M24) | 24 |
-| **PROVEN** | 21 |
-| **PARTIALLY_PROVEN** | 1 |
+| **PROVEN** | 22 |
+| **PARTIALLY_PROVEN** | 0 |
 | **MISSING** | 0 |
 | **NOT_APPLICABLE** | 2 |
 | **DEFERRED** | 0 |
@@ -132,7 +133,7 @@
 |----------|-----|-----------|
 | **P0** | — | M17/M18 closed by HARDEN-4B product-host E2E |
 | **P1** | — | M5/M6 closed by HARDEN-4D product-host lifecycle E2E |
-| **P2** | M8 | Quality/durability depth; abstraction proofs exist but skeptical gap remains |
+| **P2** | — | M8 closed by HARDEN-4F real Mongo FI-A E2E |
 
 ---
 
@@ -182,13 +183,14 @@ Matrix is substantially built (HARDEN-1/2/3 slices cover durability, OCC, vendor
 | **Scope** | `test_harden_4e_diagnostic_read_truth_e2e.py` on shared `build_diag_final_product_host` harness; M20 uses shared Problem persistence with isolated RuntimeEvent SQLite |
 | **CI class** | PR deterministic gate (`Durable diagnostics deterministic gate`), no Docker |
 
-### HARDEN-4F — Durable store write failure E2E (optional, lower priority)
+### HARDEN-4F — Durable store write failure E2E ✅
 
 | Field | Value |
 |-------|-------|
-| **Goal** | M8 at Mongo/DocumentStore with FI-B in subprocess (mirror 1D pattern on durable path) |
+| **Goal** | M8 at Mongo/DocumentStore with FI-A real Docker Mongo stop/start on governed-contractor HTTP host |
 | **Minimum level** | P4 |
-| **CI class** | `external_proof` / nightly / manual Mongo |
+| **Scope** | `test_harden_4f_mongo_problem_store_failure_e2e.py` — baseline / outage / recovery phases |
+| **CI class** | `external_proof` / nightly / manual Mongo (`durable-diagnostics-external-proof`) |
 
 ---
 
@@ -200,7 +202,9 @@ HARDEN-4B — product-host multi-tenant diagnostic isolation E2E ✅
 HARDEN-4C — product-host clean / no-false-positive E2E ✅
 HARDEN-4D — resolve + recurrence reopen host E2E ✅
 HARDEN-4E — reconstruction / unavailable read / fail-closed host E2E ✅
-HARDEN-4F — durable Mongo store failure E2E (optional)
+HARDEN-4E-R1 ✅
+HARDEN-4F — durable Mongo store failure + recovery E2E ✅
+HARDEN-4 COMPLETE
 HARDEN-5 — documentation review and closeout
 ```
 
