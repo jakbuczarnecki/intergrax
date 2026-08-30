@@ -164,6 +164,7 @@ async def execute_root_task(
     root_context = RootExecutionContext(
         run_id=identity.run_id,
         attempt_id=identity.attempt_id,
+        execution_id=identity.execution_id,
         authority=resolve_root_parent_execution_authority(task.execution_authority),
         tenant_id=task.tenant_id,
     )

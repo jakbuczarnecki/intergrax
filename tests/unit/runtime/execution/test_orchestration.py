@@ -191,8 +191,7 @@ async def test_nexus_preserves_boundary_execution_id(monkeypatch: pytest.MonkeyP
 
     assert captured["run_id"] == run_id
     assert captured["attempt_id"] == attempt_id
-    assert captured["execution_id"] != identity.execution_id
-    assert validate_execution_id(captured["execution_id"])
+    assert captured["execution_id"] == identity.execution_id
 
 
 @pytest.mark.asyncio

@@ -25,7 +25,6 @@ from intergrax.contracts.execution_identity import (
     peek_active_parent_execution_id,
     require_active_execution_id,
     require_active_execution_identity,
-    validate_execution_id,
 )
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.execution.active_execution_budget import peek_active_execution_budget
@@ -44,6 +43,7 @@ from intergrax.runtime.execution.runtime import (
     ExecutionRuntime,
     RootExecutionContext,
     RootExecutionOptions,
+    RootTaskIdentity,
     resolve_root_execution_context,
 )
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
@@ -158,11 +158,11 @@ async def test_inference_root_runtime_binds_identity_authority_budget() -> None:
     assert str(context.run_id) == adapter.probe["adapter_run_id"]
     assert adapter.probe["run_id_ctx"] == context.run_id
     assert adapter.probe["attempt_id_ctx"] == context.attempt_id
-    assert validate_execution_id(adapter.probe["execution_id"])
+    assert adapter.probe["execution_id"] == context.execution_id
     assert adapter.probe["authority"] is context.authority
     budget = adapter.probe["budget"]
     assert budget is not None
-    assert budget.execution_id == adapter.probe["execution_id"]
+    assert budget.execution_id == context.execution_id
     assert peek_active_execution_identity() is None
     assert peek_active_execution_id() is None
 
@@ -199,10 +199,10 @@ async def test_agentic_root_runtime_binds_identity_authority_budget() -> None:
     probe = engine.last_probe
     assert probe["run_id_ctx"][0] == context.run_id
     assert probe["run_id_ctx"][1] == context.attempt_id
-    assert validate_execution_id(probe["execution_id"])
+    assert probe["execution_id"] == context.execution_id
     assert probe["authority"] == context.authority
     assert probe["budget"] is not None
-    assert probe["budget"].execution_id == probe["execution_id"]
+    assert probe["budget"].execution_id == context.execution_id
     assert probe["request_run_id"] == context.run_id
 
 
@@ -237,17 +237,18 @@ async def test_orchestration_root_runtime_nexus_receives_active_context(
     assert result.state is TaskState.COMPLETED
     assert captured["run_id"] == identity.run_id
     assert captured["attempt_id"] == identity.attempt_id
-    assert validate_execution_id(captured["execution_id"])
+    assert captured["execution_id"] == identity.execution_id
     assert captured["authority"] is not None
     budget = captured["budget"]
     assert budget is not None
-    assert budget.execution_id == captured["execution_id"]
+    assert budget.execution_id == identity.execution_id
     assert peek_active_execution_identity() is None
 
 
 @pytest.mark.asyncio
 async def test_root_lifecycle_shape_identical_across_strategies() -> None:
     shapes: list[tuple[RunId, AttemptId, ExecutionId, ExecutionId | None]] = []
+    contexts: list[RootExecutionContext | RootTaskIdentity] = []
 
     async def _capture_shape() -> None:
         run_id, attempt_id = require_active_execution_identity()
@@ -271,6 +272,8 @@ async def test_root_lifecycle_shape_identical_across_strategies() -> None:
             await _capture_shape()
             return ExecutionResult(status=ExecutionStatus.COMPLETED, output=parsed)
 
+    inference_context = _root_context()
+    contexts.append(inference_context)
     inference_runtime = ExecutionRuntime(
         StrategyExecutionRouter[
             tuple[ChatMessage, ...],
@@ -283,10 +286,11 @@ async def test_root_lifecycle_shape_identical_across_strategies() -> None:
             input=(ChatMessage(role="user", content="x"),),
             output_type=RiskAssessment,
         ),
-        _root_context(),
+        inference_context,
     )
 
     agent_context = _root_context()
+    contexts.append(agent_context)
 
     class AgentProbeExecutor:
         async def execute(
@@ -336,6 +340,8 @@ async def test_root_lifecycle_shape_identical_across_strategies() -> None:
         message="x",
         context=TaskContext(),
     )
+    orch_identity = resolve_root_task_identity()
+    contexts.append(orch_identity)
 
     async def _orch_capture(task: Task) -> TaskResult:
         await _capture_shape()
@@ -346,14 +352,15 @@ async def test_root_lifecycle_shape_identical_across_strategies() -> None:
     await execute_root_task(
         task,
         nexus_loop=loop,
-        identity=resolve_root_task_identity(),
+        identity=orch_identity,
     )
 
     assert len(shapes) == 3
-    for run_id, attempt_id, execution_id, parent_id in shapes:
+    for index, (run_id, attempt_id, execution_id, parent_id) in enumerate(shapes):
+        expected_execution_id = contexts[index].execution_id
         assert run_id is not None
         assert attempt_id is not None
-        assert validate_execution_id(execution_id)
+        assert execution_id == expected_execution_id
         assert parent_id is None
 
 
@@ -434,3 +441,71 @@ async def test_nexus_without_active_budget_fails(
     finally:
         reset_active_execution_authority(authority_token)
         reset_active_execution_identity(identity_token)
+
+
+@pytest.mark.asyncio
+async def test_resume_root_execution_id_matches_identity_through_lifecycle(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from intergrax.runtime.long_running.execution_tree_checkpoint import (
+        minimal_runtime_checkpoint,
+    )
+    from intergrax.runtime.long_running.models import TaskCheckpoint
+
+    run_id = mint_run_id()
+    attempt_a1 = mint_attempt_id()
+    historical_root_id = mint_execution_id()
+    attempt_a2 = mint_attempt_id()
+    registry = AgentRegistry()
+    loop = NexusLoop(registry)
+    captured: dict[str, ExecutionId] = {}
+
+    async def _fake_impl(task: Task) -> TaskResult:
+        captured["active_execution_id"] = require_active_execution_id()
+        active_run_id, _ = require_active_execution_identity()
+        return TaskResult(task_id=task.task_id, run_id=active_run_id, state=TaskState.COMPLETED)
+
+    monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
+    task = Task(
+        task_id=mint_task_id(),
+        tenant_id="t1",
+        user_id="u1",
+        message="resume",
+        context=TaskContext(),
+    )
+    checkpoint = TaskCheckpoint(
+        task_id=task.task_id,
+        tenant_id="t1",
+        resume_token="rt_resume",
+        task_state=TaskState.WAITING_FOR_HUMAN,
+        runtime=minimal_runtime_checkpoint(
+            task_id=task.task_id,
+            run_id=run_id,
+            attempt_id=attempt_a1,
+            root_execution_id=historical_root_id,
+        ),
+    )
+    identity = resolve_root_task_identity(
+        run_id=run_id,
+        attempt_id=attempt_a2,
+        resume_checkpoint=checkpoint,
+    )
+
+    await execute_root_task(
+        task,
+        nexus_loop=loop,
+        identity=identity,
+        resume_checkpoint=checkpoint,
+    )
+
+    assert historical_root_id != identity.execution_id
+    assert task.runtime.orchestration.runtime_checkpoint is not None
+    execution_tree = task.runtime.orchestration.runtime_checkpoint.execution_tree
+    root_entries = [
+        entry
+        for entry in execution_tree.entries
+        if entry.parent_execution_id is None
+    ]
+    assert len(root_entries) == 1
+    assert root_entries[0].execution_id == identity.execution_id
+    assert captured["active_execution_id"] == identity.execution_id

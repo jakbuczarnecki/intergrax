@@ -312,7 +312,7 @@ async def test_direct_structured_request_executes_full_path() -> None:
   assert adapter.last_messages == request.input
   assert adapter.last_run_id == context.run_id
   assert admission_hook.admit_count == 1
-  assert validate_execution_id(captured["hook_execution_id"])
+  assert captured["hook_execution_id"] == context.execution_id
   assert peek_active_execution_identity() is None
   assert peek_active_execution_id() is None
 

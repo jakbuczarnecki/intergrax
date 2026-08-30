@@ -239,9 +239,9 @@ async def test_tools_capabilities_resolve_to_agentic_and_execute_full_path() -> 
     assert len(engine.calls) == 1
     assert engine.calls[0] is runtime_request
     assert engine.observed_run_id == context.run_id
-    assert validate_execution_id(engine.observed_execution_id)
+    assert engine.observed_execution_id == context.execution_id
     assert admission_hook.admit_count == 1
-    assert validate_execution_id(captured["hook_execution_id"])
+    assert captured["hook_execution_id"] == context.execution_id
     assert captured["hook_runtime_run_id"] == context.run_id
     assert peek_active_execution_identity() is None
     assert peek_active_execution_id() is None
