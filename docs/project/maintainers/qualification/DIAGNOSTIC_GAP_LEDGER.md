@@ -1,8 +1,12 @@
 # Diagnostic Gap Ledger
 
-**Scope:** platform-wide Diagnostic Engine qualification backlog  
-**Owner:** Observability / DIAG maintainers  
-**Architecture:** [`docs/project/architecture/OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md)  
+> **HARDEN qualification status (2026-08-30):** Diagnostic hardening **closed**. Matrix M1–M24: **22 PROVEN**, **2 NOT_APPLICABLE** (M21, M22), **0** open P0/P1/P2 qualification gaps. See [`DIAGNOSTIC_HARDENING_CLOSEOUT.md`](DIAGNOSTIC_HARDENING_CLOSEOUT.md) and [`DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md`](DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md).
+>
+> **This ledger** remains the **operational** evidence-driven backlog (DG-xxx entries below) for future platform improvements — distinct from the closed HARDEN qualification program.
+
+**Scope:** platform-wide Diagnostic Engine operational gap backlog
+**Owner:** Observability / DIAG maintainers
+**Architecture:** [`docs/project/architecture/DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md) (canonical) · [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md)
 **Plan:** [`docs/project/maintainers/plans/OBSERVABILITY.md`](../plans/OBSERVABILITY.md)
 
 This ledger records **proven** diagnostic gaps and **qualification candidates** discovered during real application and proof executions. It is evidence-driven backlog for the central Diagnostic Engine — not an application-specific wish list.

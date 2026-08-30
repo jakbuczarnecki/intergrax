@@ -1,6 +1,6 @@
 # Intergrax Observability
 
-**Intergrax Observability** is the canonical execution evidence layer that **records** runtime identity and lifecycle facts on durable evidence, reconstructs runs deterministically from persisted envelopes, and exports policy-safe projections to operators and external telemetry systems. Execution Runtime establishes canonical identity; Observability persists it; DIAG (documented here, implemented under `intergrax/runtime/diagnostics/`) interprets it — no layer below may recreate runtime truth.
+**Intergrax Observability** is the canonical execution evidence layer that **records** runtime identity and lifecycle facts on durable evidence, reconstructs runs deterministically from persisted envelopes, and exports policy-safe projections to operators and external telemetry systems. Execution Runtime establishes canonical identity; Observability persists it; central diagnostics ([`DIAGNOSTICS.md`](DIAGNOSTICS.md)) interprets persisted evidence — no layer below may recreate runtime truth.
 
 ## Why it matters
 
@@ -20,7 +20,9 @@ Observability addresses this through canonical identity **recording** on `Runtim
 > [!NOTE]
 > **Maturity boundary:** Core execution evidence (TRACE-1A–1C, ASOF-1/2, BITEMP-1/3) is **implemented and closed** on the harness path for the **CURRENT** Task/Run/Attempt/Event spine. Canonical `ExecutionId` and Execution Tree are **TARGET** — not implemented unless HEAD proves otherwise. Canonical revision ordering provider (**TRACE-BITEMP-2**) is an **implemented slice — acceptance in review**. Full **E + K + Valid Time + System Time** query semantics, public as-of query API, OECP code phases, and **OBS-VENDOR** production hardening remain **planned**. External sinks visualize Intergrax evidence — they do **not** define Intergrax execution semantics.
 
-**Meta-architecture (frozen):** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) — semantic authority for execution identity and lifecycle. [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) · [`ORCHESTRATION.md`](ORCHESTRATION.md) are synchronized domain authorities. This document does **not** create a separate IDENTITY or DIAGNOSTICS architecture domain — DIAG semantics remain an analytical subsystem under OBS.
+**Meta-architecture (frozen):** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) — semantic authority for execution identity and lifecycle. [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) · [`ORCHESTRATION.md`](ORCHESTRATION.md) are synchronized domain authorities. **Central diagnostics** canonical entry point: [`DIAGNOSTICS.md`](DIAGNOSTICS.md). This document owns HOS, persistence, journal, and export; DIAG slice detail below links to that entry point.
+
+**Persisted platform facts are truth. AI is not truth.**
 
 ## Domain topology and identity ownership
 
@@ -43,6 +45,23 @@ DIAG interprets that evidence
 **Local identities are not canonical runtime IDs:** `node_id`, `agent_id`, `step_id`, `tool_call_id`, `correlation_id`, `message_id`, broker transport task id, worker id, and provider request id are topology/transport/component identities. They **must not** substitute `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, or `EventId`. `NodeId` ≠ `ExecutionId`. Transport task id ≠ `TaskId` merely because strings match. Forbidden competing run identities: `NodeRunId`, `AgentRunId`, `StepRunId`, `OrchestrationRunId`, `WorkerRunId`.
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring observability profiles, export policies, or domain signals — after the platform overview in the root README.
+
+## Diagnostics ≠ Observability
+
+| System | Question |
+| ------ | -------- |
+| **Diagnostics** ([`DIAGNOSTICS.md`](DIAGNOSTICS.md)) | What did the platform deterministically detect and persist as a `Problem`? |
+| **Observability** (this document) | How do we record, project, and export platform behavior? |
+
+```text
+RuntimeEvent (canonical) → HOS → export boundary → provider adapter → OTLP / vendor
+                              ↘
+                               central diagnostics (derived Problem state)
+```
+
+**Not:** `runtime → OTel → diagnostics`. Vendor telemetry is **derived** — never execution truth.
+
+**Observability failure invariant:** observability outage may cause missing telemetry but **cannot** alter platform truth or a correct business result. Export failure marks exporter health **DEGRADED**; canonical `RuntimeEvent` remains truth.
 
 ## At a glance
 
@@ -947,6 +966,8 @@ await reporter.report(
 
 ### DIAG subsystem (analytical over canonical evidence)
 
+> **Canonical entry point:** [`DIAGNOSTICS.md`](DIAGNOSTICS.md) — authority model, lifecycle, failure isolation, qualification summary. This section retains slice-level implementation detail.
+
 DIAG is **one** canonical diagnostic engine/subsystem (`intergrax/runtime/diagnostics/`). It consumes canonical evidence and typed derived projections. It does **not** own execution lifecycle, mint Task/Run/Attempt/Execution identity, maintain a competing canonical Execution Tree, infer canonical identity from free-text logs, independently query arbitrary vendor observability stores as runtime truth, or silently repair missing causal lineage.
 
 **Canonical reconstruction path (TARGET):**
@@ -1589,7 +1610,37 @@ Problem/error/issue information flows through the shared `ObservabilityVendorInt
 - No `RuntimeEventBus` subscriber for problems.
 - No LKW endpoint wiring or operator bootstrap config.
 
-**Code references:** `export_routing.py` · `export_boundary.py` · `export_policy.py`. **Plan:** OBS-ROUTING-0 in [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md).
+### G. Exporter health (HARDEN-3 qualified)
+
+Process-local `ObservabilityExporterHealthRegistry` tracks per-exporter / per-route health. This is **operator visibility state** — not canonical durable platform truth.
+
+| Status | Meaning |
+| ------ | ------- |
+| `HEALTHY` | Recent export succeeded for the exporter id |
+| `DEGRADED` | Export failure recorded; canonical events already persisted remain truth |
+
+**Qualified recovery semantics (M15):** collector/provider DOWN → export failure → health DEGRADED; provider UP → subsequent export succeeds → health HEALTHY → `recovery_count` increases. **Failed telemetry during outage is not automatically replayed.**
+
+```text
+canonical RuntimeEvent persisted
+  → export attempt
+  → exporter failure
+  → exporter health DEGRADED
+canonical event remains platform truth
+```
+
+Immutable health snapshots; per-route fanout isolation; recovery tracking via `export_health.py`.
+
+### H. Specialized OTel tracing exception
+
+The **only** approved direct OpenTelemetry instrumentation bypasses HOS for fine-grained spans in:
+
+- `intergrax/runtime/rag/tracking/rag_spans.py`
+- `intergrax/runtime/context/tracking/context_spans.py`
+
+These spans are **derived observability** — not platform truth. No additional direct OTel paths are qualified without explicit architecture approval.
+
+**Code references:** `export_routing.py` · `export_boundary.py` · `export_policy.py` · `export_health.py`. **Plan:** OBS-ROUTING-0 in [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md).
 
 ---
 

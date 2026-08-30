@@ -18,6 +18,8 @@ Public readers looking for product value, proof paths, evaluation, partnership o
 | **Public documentation map** (reader routes, proof paths) | [PUBLIC_DOCUMENTATION_MAP.md](../community/PUBLIC_DOCUMENTATION_MAP.md) |
 | **Public documentation architecture** (maintainer contract) | [public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md](../maintainers/public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md) |
 | **Governed Execution** (policy enforcement capability) | [GOVERNED_EXECUTION.md](../architecture/GOVERNED_EXECUTION.md) |
+| **Central Diagnostics** (canonical Problem spine, authority, qualification) | [DIAGNOSTICS.md](../architecture/DIAGNOSTICS.md) · qualification [DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md](../maintainers/qualification/DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md) |
+| **Observability** (HOS, RuntimeEvent, export) | [OBSERVABILITY.md](../architecture/OBSERVABILITY.md) |
 | **Decision System** (target canon — lifecycle, verification, deliberation) | [DECISION_SYSTEM.md](../architecture/DECISION_SYSTEM.md) · **CURRENT:** [CRITIC_VERIFICATION.md](../architecture/CRITIC_VERIFICATION.md) |
 | **Token Optimization main guide** | [capabilities/token_optimization/README.md](../capabilities/token_optimization/README.md) |
 | **This map** (roles and workflows) | `docs/project/technical/DOCUMENTATION_MAP.md` |

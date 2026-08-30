@@ -2,11 +2,13 @@
 
 **Scope:** central diagnostic spine qualification inventory and gap classification  
 **Owner:** Observability / DIAG maintainers  
-**Architecture:** [`docs/project/architecture/OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md)  
-**Related ledger:** [`DIAGNOSTIC_GAP_LEDGER.md`](DIAGNOSTIC_GAP_LEDGER.md)  
-**Status:** HARDEN-4A complete (inventory only — no production changes)
+**Architecture:** [`docs/project/architecture/DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md) · [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md)
 
-**Git baseline (4A audit):** `403dea4523a872866062d01e3469a602804720af` (`development` == `origin/development`)
+**Related ledger:** [`DIAGNOSTIC_GAP_LEDGER.md`](DIAGNOSTIC_GAP_LEDGER.md)
+**Status:** HARDEN-4 complete · HARDEN-5 documentation closeout complete
+
+**Git baseline (4A audit):** `403dea4523a872866062d01e3469a602804720af`
+**Documentation closeout:** [`DIAGNOSTIC_HARDENING_CLOSEOUT.md`](DIAGNOSTIC_HARDENING_CLOSEOUT.md) · canonical architecture [`DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md)
 
 ---
 
@@ -205,7 +207,8 @@ HARDEN-4E — reconstruction / unavailable read / fail-closed host E2E ✅
 HARDEN-4E-R1 ✅
 HARDEN-4F — durable Mongo store failure + recovery E2E ✅
 HARDEN-4 COMPLETE
-HARDEN-5 — documentation review and closeout
+HARDEN-5 — documentation review and closeout ✅
+DIAGNOSTIC HARDENING COMPLETE
 ```
 
 ---
