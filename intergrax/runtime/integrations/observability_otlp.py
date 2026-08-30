@@ -36,6 +36,8 @@ def vendor_payload_to_export_envelope(payload: ObservabilityVendorPayload) -> Ob
         recorded_at=payload.recorded_at,
         run_id=payload.run_id,
         task_id=payload.task_id,
+        attempt_id=payload.attempt_id,
+        execution_id=payload.execution_id,
         agent_id=payload.agent_id,
         capability=payload.capability,
         tool_id=payload.tool_id,

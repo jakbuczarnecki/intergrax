@@ -12,6 +12,7 @@ from intergrax.runtime.observability.export_boundary import (
     ObservabilityExporter,
     envelope_from_runtime_event,
 )
+from intergrax.runtime.observability.export_health import ObservabilityExporterHealthRegistry
 from intergrax.runtime.observability.export_policy import (
     ObservabilityExportPolicy,
     try_export_observability_envelope,
@@ -23,6 +24,8 @@ def make_observability_export_runtime_plugin(
     *,
     exporter: ObservabilityExporter | None = None,
     policy: ObservabilityExportPolicy | None = None,
+    health_registry: ObservabilityExporterHealthRegistry | None = None,
+    exporter_id: str | None = None,
 ) -> RuntimePlugin:
     """Runtime plugin — optional normalized export after canonical bus recording."""
 
@@ -43,6 +46,8 @@ def make_observability_export_runtime_plugin(
                 envelope,
                 exporter=active_exporter,
                 policy=active_policy,
+                health_registry=health_registry,
+                exporter_id=exporter_id,
             )
 
         event_bus.subscribe(

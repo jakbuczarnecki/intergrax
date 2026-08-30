@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from intergrax.contracts.execution_identity import peek_active_execution_id, require_active_execution_id
+from intergrax.runtime.execution.active_execution_budget import require_active_execution_budget
 from intergrax.runtime.execution.budget.ledger import ROOT_BUDGET_POOL_PARENT
 from intergrax.runtime.execution.budget.models import BudgetUsageTotals
 from intergrax.runtime.execution.budget.wall_time_checkpoint import wall_time_delta_since_checkpoint
@@ -13,8 +14,6 @@ from intergrax.runtime.execution.budget.wall_time_checkpoint import wall_time_de
 def _consume_governed(amounts: BudgetUsageTotals) -> None:
     if peek_active_execution_id() is None:
         return
-    from intergrax.runtime.execution.active_execution_budget import require_active_execution_budget
-
     budget_state = require_active_execution_budget()
     execution_id = require_active_execution_id()
     ledger = budget_state.ledger

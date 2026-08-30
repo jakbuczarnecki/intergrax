@@ -10,6 +10,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Mapping
 
+from intergrax.runtime.observability.export_health import ObservabilityExporterHealthRegistry
 from intergrax.runtime.observability.export_policy import ObservabilityExportPolicy
 from intergrax.runtime.observability.export_wiring import make_observability_export_runtime_plugin
 from intergrax.runtime.observability.otlp_exporter import (
@@ -214,6 +215,7 @@ def build_observability_export_runtime_plugin(
     config: ObservabilityExportOperatorConfig,
     *,
     registry: ObservabilityExportBackendRegistry | None = None,
+    health_registry: ObservabilityExporterHealthRegistry | None = None,
 ) -> RuntimePlugin | None:
     """Construct a runtime export plugin from explicit operator configuration."""
     if not config.enabled:
@@ -224,13 +226,19 @@ def build_observability_export_runtime_plugin(
         registry=registry,
     )
     policy = ObservabilityExportPolicy(enabled=True, export_content=False)
-    return make_observability_export_runtime_plugin(exporter=integration, policy=policy)
+    return make_observability_export_runtime_plugin(
+        exporter=integration,
+        policy=policy,
+        health_registry=health_registry,
+        exporter_id=config.backend_id,
+    )
 
 
 def build_otlp_observability_export_runtime_plugin(
     config: ObservabilityExportOperatorConfig,
     *,
     transport: OtlpTransport | None = None,
+    health_registry: ObservabilityExporterHealthRegistry | None = None,
 ) -> RuntimePlugin | None:
     """Construct an OTLP runtime export plugin from explicit operator configuration."""
     if not config.enabled:
@@ -238,4 +246,9 @@ def build_otlp_observability_export_runtime_plugin(
 
     integration = build_otlp_observability_integration(config, transport=transport)
     policy = ObservabilityExportPolicy(enabled=True, export_content=False)
-    return make_observability_export_runtime_plugin(exporter=integration, policy=policy)
+    return make_observability_export_runtime_plugin(
+        exporter=integration,
+        policy=policy,
+        health_registry=health_registry,
+        exporter_id=config.backend_id,
+    )

@@ -91,6 +91,7 @@ jobs:
           tests/unit/applications/architecture/test_harden_1b_durable_problem_store_composition.py
           tests/unit/runtime/diagnostics/test_harden_1d_problem_persistence_write_failure.py
           tests/integration/applications/architecture/test_harden_1d_durable_problem_store_failure_semantics.py
+          tests/integration/runtime/test_harden_4b_tenant_diagnostic_isolation_e2e.py
           -q --tb=line
 
       - name: Diagnostic concurrency deterministic gate
@@ -98,6 +99,18 @@ jobs:
           uv run --frozen pytest
           tests/unit/runtime/diagnostics/test_harden_2a_problem_persistence_concurrency.py
           tests/unit/runtime/diagnostics/test_harden_2b_problem_lifecycle_occ_retry.py
+          -q --tb=line
+
+      - name: Diagnostics observability hardening gate (HARDEN-3C-3E)
+        run: >-
+          uv run --frozen pytest
+          tests/unit/runtime/observability/test_harden_3c_export_failure_semantics.py
+          tests/unit/runtime/observability/test_harden_3d_exporter_health.py
+          tests/unit/contracts/test_instrumentation_span_attributes.py
+          tests/unit/rag/tracking/test_rag_otel_spans.py
+          tests/unit/context/tracking/test_context_otel_spans.py
+          tests/unit/runtime/architecture/test_harden_3e_otel_import_gate.py
+          tests/unit/runtime/architecture/test_harden_3f_qualification_matrix.py
           -q --tb=line
 
       - name: Platform Plugin program gate (Linux regression)
@@ -186,6 +199,7 @@ jobs:
           tests/unit/applications/architecture/test_harden_1b_durable_problem_store_composition.py
           tests/unit/runtime/diagnostics/test_harden_1d_problem_persistence_write_failure.py
           tests/integration/applications/architecture/test_harden_1d_durable_problem_store_failure_semantics.py
+          tests/integration/runtime/test_harden_4b_tenant_diagnostic_isolation_e2e.py
           -q --tb=line
 
       - name: Diagnostic concurrency deterministic gate
@@ -193,6 +207,18 @@ jobs:
           uv run --frozen pytest
           tests/unit/runtime/diagnostics/test_harden_2a_problem_persistence_concurrency.py
           tests/unit/runtime/diagnostics/test_harden_2b_problem_lifecycle_occ_retry.py
+          -q --tb=line
+
+      - name: Diagnostics observability hardening gate (HARDEN-3C-3E)
+        run: >-
+          uv run --frozen pytest
+          tests/unit/runtime/observability/test_harden_3c_export_failure_semantics.py
+          tests/unit/runtime/observability/test_harden_3d_exporter_health.py
+          tests/unit/contracts/test_instrumentation_span_attributes.py
+          tests/unit/rag/tracking/test_rag_otel_spans.py
+          tests/unit/context/tracking/test_context_otel_spans.py
+          tests/unit/runtime/architecture/test_harden_3e_otel_import_gate.py
+          tests/unit/runtime/architecture/test_harden_3f_qualification_matrix.py
           -q --tb=line
 
   gate-governance-tier:
@@ -355,6 +381,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    env:
+      INTERGRAX_EXTERNAL_OTLP_PROOF_REQUIRED: "1"
+
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -368,12 +397,21 @@ jobs:
       - name: Install dependencies (CI minimal)
         run: uv sync --extra dev-ci --frozen
 
-      - name: DIAG-FINAL external OpenTelemetry proof
+      - name: HARDEN-3F external canonical OTLP proof
         run: >-
-          uv run --frozen pytest
+          mkdir -p build
+          && uv run --frozen pytest
           tests/integration/runtime/test_diag_final_external_otel_e2e.py
           -m external_proof
+          --junitxml=build/harden-3f-external-otlp-proof.xml
           -q --tb=short
+
+      - name: Assert HARDEN-3F external OTLP proof executed (no skip)
+        run: >-
+          uv run --frozen python -c "import sys, xml.etree.ElementTree as ET;
+          root = ET.parse('build/harden-3f-external-otlp-proof.xml').getroot();
+          skipped = sum(int(ts.get('skipped', 0)) for ts in root.findall('testsuite'));
+          sys.exit(f'HARDEN-3F external OTLP proof skipped ({skipped}) — infrastructure/proof failure' if skipped else 0)"
 
   durable-diagnostics-external-proof:
     if: >-

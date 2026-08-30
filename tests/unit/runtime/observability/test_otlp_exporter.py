@@ -356,6 +356,36 @@ async def test_works_through_try_export_with_enabled_policy_and_export_content_f
 
 
 @pytest.mark.asyncio
+async def test_runtime_event_identity_is_exported_in_otlp_attributes() -> None:
+    transport = FakeOtlpTransport()
+    exporter, _ = _exporter(transport)
+    run_id = mint_run_id()
+    task_id = mint_task_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    event = RuntimeEvent(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+        tenant_id="tenant-a",
+        agent_id="agent-1",
+        event_type=RuntimeEventType.TASK_COMPLETED,
+        phase=ExecutionPhase.COMPLETION,
+    )
+    envelope = envelope_from_runtime_event(event)
+
+    await exporter.export(envelope)
+
+    attrs_map = _attribute_map(transport.payloads[0])
+    assert attrs_map["intergrax.run_id"] == str(run_id)
+    assert attrs_map["intergrax.task_id"] == str(task_id)
+    assert attrs_map["intergrax.attempt_id"] == str(attempt_id)
+    assert attrs_map["intergrax.execution_id"] == str(execution_id)
+    assert attrs_map["intergrax.event_id"] == str(event.event_id)
+
+
+@pytest.mark.asyncio
 async def test_disabled_policy_does_not_send_payloads_through_try_export() -> None:
     transport = FakeOtlpTransport()
     exporter, _ = _exporter(transport)

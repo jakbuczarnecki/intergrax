@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from intergrax.agents.agent_engine import AgentEngine
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
@@ -22,6 +22,7 @@ from intergrax.contracts.execution_identity import (
 from intergrax.runtime.governance.active_execution_authority import (
     require_active_execution_authority,
 )
+from intergrax.runtime.governance.service import GovernanceService
 from intergrax.contracts.agent_execution_result import (
     AgentExecutionResult,
     AgentExecutionStatus,
@@ -164,7 +165,7 @@ class NexusLoop:
         allow_dynamic_replan: bool = False,
         denied_planner_model_ids: tuple[str, ...] = (),
         planner_model_id: str | None = None,
-        governance_service: Any = None,
+        governance_service: GovernanceService | None = None,
         terminal_diagnostic_trigger: TerminalExecutionDiagnosticTriggerProtocol | None = None,
         authority_policy: "ExecutionAuthorityPolicy | None" = None,
         budget_allocation_policy: "ExecutionBudgetAllocationPolicy | None" = None,
@@ -345,17 +346,17 @@ class NexusLoop:
     def apply_validation_engine(self, validation_engine: NexusValidationEngine) -> None:
         """Replace the active validation engine across Nexus execution surfaces."""
         self._validation_engine = validation_engine
-        self._graph_executor._validation_engine = validation_engine
+        self._graph_executor.apply_validation_engine(validation_engine)
         self._graph_runner.validation_engine = validation_engine
 
     @property
     def critic_graph_hooks(self) -> Optional["CriticGraphHooks"]:
         """Return wired critic graph hooks when application critic wiring is active."""
-        return self._graph_executor._critic_graph_hooks
+        return self._graph_executor.peek_critic_graph_hooks()
 
     def apply_critic_graph_hooks(self, hooks: Optional["CriticGraphHooks"]) -> None:
         """Attach or clear critic graph hooks on executor and runner (CRIT-V-6.1)."""
-        self._graph_executor._critic_graph_hooks = hooks
+        self._graph_executor.apply_critic_graph_hooks(hooks)
         self._graph_runner.critic_graph_hooks = hooks
 
     def apply_critic_uaep_hooks(
@@ -369,7 +370,7 @@ class NexusLoop:
 
     def critic_eval_tool_client(self) -> Optional["CriticEvalToolClient"]:
         """Return the L1 eval tool client when critic graph hooks are wired."""
-        hooks = self._graph_executor._critic_graph_hooks
+        hooks = self._graph_executor.peek_critic_graph_hooks()
         if hooks is None:
             return None
         return hooks.orchestrator.l1_tool_client

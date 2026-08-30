@@ -152,7 +152,7 @@ Display separately where applicable:
 | Field | Example | Must not conflate with |
 |-------|---------|------------------------|
 | **Report execution status** | PASS | Public BOUNDED PROOF badge |
-| **Coverage lifecycle** (`PLATFORM_PROOF_MAP`) | EXECUTABLE | PASS/FAIL |
+| **Proof package lifecycle** (descriptor / package) | EXECUTABLE | PASS/FAIL |
 | **Public evidence status** | not yet accepted | PASS |
 | **Qualification** | not qualified | PASS |
 

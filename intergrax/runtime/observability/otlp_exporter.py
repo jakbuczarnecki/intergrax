@@ -98,6 +98,8 @@ def _envelope_to_otlp_payload(
         ("intergrax.record_kind", envelope.record_kind.value),
         ("intergrax.run_id", envelope.run_id),
         ("intergrax.task_id", envelope.task_id),
+        ("intergrax.attempt_id", envelope.attempt_id),
+        ("intergrax.execution_id", envelope.execution_id),
         ("intergrax.agent_id", envelope.agent_id),
         ("intergrax.capability", envelope.capability),
         ("intergrax.tool_id", envelope.tool_id),

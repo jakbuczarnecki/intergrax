@@ -8,6 +8,7 @@ import asyncio
 
 import pytest
 
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id, mint_run_id
 from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
 from intergrax.runtime.nexus.execution.execution_graph import (
@@ -68,9 +69,31 @@ async def test_max_parallel_nodes_limits_concurrent_batch_execution() -> None:
 
         class _GraphDelegate:
             async def execute(self, _request: object) -> object:
-                return await executor.execute(graph, task)
+                from intergrax.runtime.execution.active_execution_budget import (
+                    bind_root_execution_budget,
+                    peek_active_execution_budget,
+                    reset_active_execution_budget,
+                )
+                from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+                from intergrax.contracts.execution_identity import require_active_execution_id
 
-        await ExecutionBoundary(_GraphDelegate(), identity=root).execute(None)
+                budget_token = None
+                if peek_active_execution_budget() is None:
+                    budget_token = bind_root_execution_budget(
+                        execution_id=require_active_execution_id(),
+                        ledger=create_execution_budget_ledger(None),
+                    )
+                try:
+                    return await executor.execute(graph, task)
+                finally:
+                    if budget_token is not None:
+                        reset_active_execution_budget(budget_token)
+
+        await ExecutionBoundary(
+            _GraphDelegate(),
+            identity=root,
+            authority=ParentExecutionAuthority.unknown(),
+        ).execute(None)
         assert peak == 1
         assert all(node.status == ExecutionNodeStatus.COMPLETED for node in graph.nodes)
     finally:

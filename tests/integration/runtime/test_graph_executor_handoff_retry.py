@@ -15,6 +15,7 @@ from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext
+from testing_support.graph_execution_context import bound_graph_execution_context
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
 
@@ -75,7 +76,8 @@ async def test_graph_executor_handoff_spawns_followup_node() -> None:
     )
     bus = RuntimeEventBus()
     executor = GraphExecutor(registry, event_bus=bus)
-    executions, _, graph_out, _ = await executor.execute(graph, task)
+    with bound_graph_execution_context():
+        executions, _, graph_out, _ = await executor.execute(graph, task)
 
     assert len(executions) >= 2
     assert executions[0].agent_id == "agent_a"
@@ -125,7 +127,8 @@ async def test_graph_executor_retries_with_alternate_agent() -> None:
         validation_engine=validation,
         retry_engine=RetryEngine(registry, policy=RetryPolicy(max_retries=1)),
     )
-    executions, retries, graph_out, _ = await executor.execute(graph, task)
+    with bound_graph_execution_context():
+        executions, retries, graph_out, _ = await executor.execute(graph, task)
 
     assert len(retries) == 1
     assert retries[0].alternate_agent_id == "agent_b"

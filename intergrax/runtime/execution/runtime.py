@@ -52,6 +52,7 @@ class RootExecutionContext:
 
     run_id: RunId
     attempt_id: AttemptId
+    execution_id: ExecutionId
     authority: ParentExecutionAuthority
     tenant_id: str | None = None
 
@@ -88,6 +89,7 @@ def resolve_root_execution_context(options: RootExecutionOptions) -> RootExecuti
     return RootExecutionContext(
         run_id=identity.run_id,
         attempt_id=identity.attempt_id,
+        execution_id=identity.execution_id,
         authority=options.authority,
         tenant_id=options.tenant_id,
     )
@@ -130,7 +132,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         request: RequestT,
         root_context: RootExecutionContext,
     ) -> ResultT:
-        execution_id = mint_execution_id()
+        execution_id = root_context.execution_id
         ledger = self._ledger_factory.create_ledger(
             self._run_budget,
             tenant_id=root_context.tenant_id,

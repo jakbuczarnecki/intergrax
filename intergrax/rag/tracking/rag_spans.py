@@ -6,8 +6,15 @@
 from __future__ import annotations
 
 import os
-from contextlib import contextmanager
-from typing import Any, Iterator, Mapping, Optional
+from contextlib import AbstractContextManager, contextmanager, nullcontext
+from typing import Iterator, Mapping, Optional
+
+from intergrax.contracts.instrumentation_span_attributes import (
+    InstrumentationSpan,
+    SpanAttributeValue,
+    merge_safe_span_attributes,
+    normalize_span_attribute_value,
+)
 
 RAG_OTEL_TRACER_NAME = "intergrax.rag"
 
@@ -44,19 +51,11 @@ def is_rag_otel_spans_enabled() -> bool:
     return _env_rag_otel_spans_enabled()
 
 
-def _normalize_attribute_value(value: Any) -> Any:
-    if value is None:
-        return None
-    if isinstance(value, (bool, int, float, str)):
-        return value
-    return str(value)
-
-
 @contextmanager
 def rag_span(
     name: str,
     *,
-    attributes: Optional[Mapping[str, Any]] = None,
+    attributes: Optional[Mapping[str, SpanAttributeValue | None]] = None,
 ) -> Iterator[None]:
     """
     Emit an OpenTelemetry span when RAG OTel spans are enabled.
@@ -68,23 +67,37 @@ def rag_span(
         yield
         return
 
+    span_cm: AbstractContextManager[InstrumentationSpan | None] = nullcontext()
+    span_attributes: dict[str, SpanAttributeValue] = {}
     try:
         from opentelemetry import trace
         from opentelemetry.trace import Status, StatusCode
+
+        tracer = trace.get_tracer(RAG_OTEL_TRACER_NAME)
+        span_attributes = merge_safe_span_attributes(caller_attributes=attributes)
+        span_cm = tracer.start_as_current_span(name)
     except ImportError:
         yield
         return
+    except Exception:
+        span_cm = nullcontext()
 
-    tracer = trace.get_tracer(RAG_OTEL_TRACER_NAME)
-    with tracer.start_as_current_span(name) as span:
-        if attributes:
-            for key, value in attributes.items():
-                normalized = _normalize_attribute_value(value)
-                if normalized is not None:
-                    span.set_attribute(key, normalized)
+    with span_cm as span:
+        if span is not None and span_attributes:
+            try:
+                for key, value in span_attributes.items():
+                    normalized = normalize_span_attribute_value(value)
+                    if normalized is not None:
+                        span.set_attribute(key, normalized)
+            except Exception:
+                pass
         try:
             yield
         except Exception as exc:
-            span.set_status(Status(StatusCode.ERROR, str(exc)))
-            span.record_exception(exc)
+            if span is not None:
+                try:
+                    span.set_status(Status(StatusCode.ERROR, str(exc)))
+                    span.record_exception(exc)
+                except Exception:
+                    pass
             raise

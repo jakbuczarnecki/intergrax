@@ -373,6 +373,227 @@ Conformance proof work follows the same shared-development rules but is outside 
 
 ---
 
+## Canonical Scenario Lifecycle
+
+Scenario Proof authoring is a **two-stage lifecycle** with **two canonical commands**. Do not collapse them.
+
+```text
+IDEA
+↓
+create_scenario_proof.py
+↓
+DESIGN / NOT YET ACCEPTED
+↓
+README.md + SCENARIO_SPEC.md
+↓
+A/B/C/D/E DESIGN
+↓
+Scenario Quality Gate
+↓
+ACCEPTED FOR IMPLEMENTATION
+↓
+init_scenario_implementation.py
+↓
+platform-native implementation skeleton
+↓
+IMPLEMENTATION
+↓
+TEST
+↓
+REAL PROOF EXECUTION
+↓
+EVIDENCE / REPORT
+↓
+LIBRARY ACCEPTANCE
+```
+
+### Do not skip stages
+
+```text
+create_scenario_proof.py ≠ init_scenario_implementation.py
+```
+
+```text
+DESIGN ≠ ACCEPTED FOR IMPLEMENTATION ≠ EXECUTABLE ≠ PROOF ACCEPTED
+```
+
+A future session **MUST NOT** infer:
+
+- “folder exists, so implementation may start”; or
+- “README + SCENARIO_SPEC exist, so the scaffold is complete.”
+
+Existence of `platform_proofs/scenarios/<slug>/` means only that a design package may exist — not that implementation is authorized or that runtime artifacts are present.
+
+### Phase 1 — Create design package
+
+**Canonical command:**
+
+```bash
+uv run python scripts/proof/create_scenario_proof.py \
+  --slug <slug> \
+  --title "<title>"
+```
+
+**Result:**
+
+```text
+platform_proofs/scenarios/<slug>/
+├── README.md
+└── SCENARIO_SPEC.md
+```
+
+**Lifecycle after this command:**
+
+```text
+DESIGN / NOT YET ACCEPTED
+```
+
+> **This command creates a design package only.**
+
+It does **not** mean the scenario is:
+
+- implementation-ready;
+- executable;
+- accepted; or
+- qualified.
+
+It **MUST NOT** generate runtime or proof implementation artifacts (`proof.json`, `run_proof.py`, `application/`, `proof/`, `fixtures/`, `.env.example`, evaluator/evidence modules, or other design-stage forbidden artifacts).
+
+`SCENARIO_SPEC.md` includes YAML frontmatter — the **canonical machine-readable lifecycle source**. README keeps human-readable status wording.
+
+### Phase 2 — Design the scenario
+
+After the design package exists, complete the deep contract in `README.md` and `SCENARIO_SPEC.md`:
+
+```text
+A. SCENARIO
+B. SOLUTION
+C. INTERGRAX FIT
+D. GAP DECISION
+E. PROOF BUILD
+```
+
+Before the implementation initializer, the session **MUST** resolve at minimum:
+
+- real problem; user / operator; stakes; failure consequences;
+- naive failure; WOW factor; Skeptic Challenge; adversarial conditions;
+- Application Survival Test; Application Observability Test;
+- observability / explainability / diagnostics contract;
+- APPLICATION vs PROOF HARNESS separation;
+- bounded claim; PASS; FAIL; excluded claims; limitations;
+- Intergrax Fit; missing-capability / gap decisions;
+- proof build plan (§ E — workflow only at this stage; no implementation yet).
+
+This phase is documentation and design only — see § Mandatory session conversation format and § Five-stage Scenario Proof session model (Stages 1–4).
+
+### Phase 3 — Scenario Quality Gate
+
+After honest design work, the session records an explicit gate decision:
+
+| Outcome | Meaning |
+|---------|---------|
+| **REJECT / REDESIGN** | Scenario too weak, dishonest, or incomplete — return to Phase 2 |
+| **ACCEPTED FOR IMPLEMENTATION** | Scenario concept accepted — **implementation stage may begin** |
+
+**Hard rule:**
+
+> `init_scenario_implementation.py` **MUST NOT** be used while the Scenario lifecycle is `DESIGN / NOT YET ACCEPTED`.
+
+**Acceptance for implementation does not mean:**
+
+- proof PASS;
+- executable qualification; or
+- public Proof Library acceptance.
+
+It means only: **permission to initialize the implementation skeleton and begin Phase 4+**.
+
+Record acceptance in `SCENARIO_SPEC.md` frontmatter (not README prose alone). Example after gate pass:
+
+```yaml
+---
+scenario_slug: <scenario_slug>
+lifecycle: ACCEPTED_FOR_IMPLEMENTATION
+implementation_status: NOT_INITIALIZED
+intergrax_fit: COMPLETED
+gap_decision: RESOLVED
+observability_contract: COMPLETED
+application_vs_proof_ownership: COMPLETED
+---
+```
+
+### Phase 4 — Initialize implementation scaffold
+
+**Only after** `ACCEPTED FOR IMPLEMENTATION` and completed frontmatter gates.
+
+**Canonical command:**
+
+```bash
+uv run python scripts/proof/init_scenario_implementation.py \
+  --slug <slug>
+```
+
+This command creates the **platform-native implementation skeleton**. Authors **MUST NOT** manually recreate the structure owned by `init_scenario_implementation.py`.
+
+The generator is fail-closed: it does not create a design package, does not overwrite existing implementation files, and updates frontmatter to `lifecycle: IMPLEMENTATION_INITIALIZED` / `implementation_status: INITIALIZED` on success.
+
+> **The initializer is the source of truth for the exact current generated file set; documentation describes architectural responsibilities and lifecycle.**
+
+**Architectural shape** (representative — see initializer for the authoritative file list):
+
+```text
+platform_proofs/scenarios/<slug>/
+├── README.md
+├── SCENARIO_SPEC.md
+│
+├── application/
+│   ├── __init__.py
+│   ├── runtime_composition.py   # build_scenario_lab_runtime + agent registration
+│   ├── scenario.py              # application execution entry
+│   ├── agent.py                 # domain agent / workflow skeleton
+│   ├── observability.py         # domain DiagnosticPayload / observability seams
+│   └── tools.py                 # platform tool bindings
+│
+├── proof/
+│   ├── __init__.py
+│   ├── evaluator.py             # falsification assertions
+│   └── evidence_builder.py      # evidence projection
+│
+├── fixtures/
+│   └── __init__.py              # controlled external data when required
+│
+├── proof.json
+├── run_proof.py
+└── .env.example
+```
+
+#### Directory roles
+
+| Path | Role |
+|------|------|
+| **`application/`** | Production-capable application core — runtime composition, execution entry, domain agent/workflow, platform tool bindings, observability seams. **MUST NOT** import proof evaluator/report code. |
+| **`proof/`** | Proof-owned layer — evaluator, evidence projection, falsification assertions, proof-only packaging. **MUST NOT** own application decision logic. |
+| **`fixtures/`** | Controlled external data / synthetic providers / scenario-owned fixtures when required. **MUST NOT** replace application business logic with fake decision engines. |
+| **`proof.json`** | Machine-readable proof package descriptor (`intergrax.platform_proof_descriptor.v3`). |
+| **`run_proof.py`** | Thin proof-owned execution entrypoint — configure, invoke application, evaluate, write artifacts. |
+| **`.env.example`** | Documented configuration surface (no secrets committed). |
+
+#### Runtime baseline
+
+The generated `application/runtime_composition.py` uses the shared scenario runtime baseline (`build_scenario_lab_runtime` from `intergrax.applications._shared.scenario_runtime_profiles`) so authors do not rediscover standard execution identity, Nexus/runtime composition, storage, and baseline observability wiring. See § Scenario runtime LAB profile (generated proofs).
+
+### Phases 5–10 — Implement through library acceptance
+
+After initialization:
+
+```text
+IMPLEMENTATION → TARGETED TESTING → REAL PROOF EXECUTION
+→ EVIDENCE / REPORT VERIFICATION → LIBRARY ACCEPTANCE
+```
+
+Technical contracts for descriptor, execution, evidence, and report remain in the sections below (§ Technical Proof Library lifecycle onward). Do not treat initialization as proof qualification.
+
+---
+
 ## Two-layer working model
 
 Every Scenario Proof session operates in two conceptual layers. **Do not collapse them.**
@@ -893,7 +1114,7 @@ After Stages 1–4 are complete, every Scenario Proof session **MUST** follow th
 | **7. Real proof execution** | Actual run with real boundaries (not dry-run substitute) |
 | **8. Evidence / report verification** | Typed evidence validates; report manually audited |
 | **9. Publication / library acceptance** | All acceptance gates pass (see § Public Library acceptance gate) |
-| **10. Close** | Update coverage map; move to next scenario |
+| **10. Close** | Finalize scenario package documentation; move to next scenario |
 
 ---
 
@@ -926,44 +1147,55 @@ The **cloned Intergrax repository** is the supported execution boundary. Do **no
 
 ## Package structure
 
-### Scenario proofs (canonical shape)
+### Scenario proofs — two-stage canonical shape
 
-**Design stage** (before implementation):
+Scenario packages follow the **two-stage lifecycle** (§ Canonical Scenario Lifecycle). Do not use a flat root-level `evaluator.py` / `scenario.py` layout for new Scenario proofs.
+
+#### Design stage
+
+Created **only** by `create_scenario_proof.py`:
 
 ```text
 platform_proofs/scenarios/<scenario_slug>/
 
 ├── README.md              # public gateway (~3–5 min read)
-├── SCENARIO_SPEC.md       # deep canonical contract (A/B/C/D/E)
+├── SCENARIO_SPEC.md       # deep canonical contract (A/B/C/D/E) + lifecycle frontmatter
 └── assets/                # optional — after Scenario Quality Gate
 ```
 
-**After implementation** (executable package adds runtime artifacts):
+Design stage **MUST NOT** include implementation artifacts (`proof.json`, `run_proof.py`, `application/`, `proof/`, `fixtures/`, `.env.example`, root-level evaluator/evidence modules, or other forbidden design-stage files).
+
+#### Accepted implementation stage
+
+After `ACCEPTED FOR IMPLEMENTATION`, initialize **only** via `init_scenario_implementation.py` (§ Phase 4 — Initialize implementation scaffold). The initializer emits the platform-native layout (`application/`, `proof/`, `fixtures/`, `proof.json`, `run_proof.py`, `.env.example`).
+
+Post-initialization, authors may add scenario-specific components when genuinely required:
 
 ```text
 platform_proofs/scenarios/<scenario_slug>/
 
 ├── README.md
 ├── SCENARIO_SPEC.md
+├── application/                 # production-capable application core
+├── proof/                       # evaluator, evidence projection
+├── fixtures/                    # controlled data when required
 ├── proof.json
-├── .env.example               # when configuration is required
 ├── run_proof.py
-├── evaluator.py               # when needed
-├── evidence_builder.py        # when needed
-├── scenario.py / scenarios.py # when needed
-├── docker-compose.yml         # only if proof owns containerized infra
-├── fixtures/                  # only if needed
-├── sql/                       # only if needed
-└── output/                    # canonical published artifacts
+├── .env.example
+├── docker-compose.yml           # only if proof owns containerized infra
+├── sql/                         # only if needed
+└── output/                      # canonical published artifacts
 ```
+
+> Authors **MUST NOT** manually recreate the implementation skeleton — use the initializer.
 
 ### Conformance proofs
 
-Existing domain-oriented paths may remain (e.g. `platform_proofs/<domain>/<proof_slug>/`). Scenario proofs use `platform_proofs/scenarios/<scenario_slug>/`. The same component rules apply.
+Existing domain-oriented paths may remain (e.g. `platform_proofs/<domain>/<proof_slug>/`). Scenario proofs use `platform_proofs/scenarios/<scenario_slug>/`. Conformance packages may keep a flatter proof-owned layout; Scenario proofs use the platform-native two-layer structure above.
 
 ### Rules
 
-- Do **not** create empty placeholder files or directories.
+- Do **not** create empty placeholder files or directories beyond what the canonical commands generate.
 - Create only components the proof actually needs.
 - `run_proof.py` is the **canonical proof-owned entrypoint**.
 - `proof.json` is the **machine-readable package contract**.
@@ -1690,7 +1922,7 @@ NOT ACCEPTED INTO PROOF LIBRARY
 
 even if code exists.
 
-Update [PLATFORM_PROOF_MAP.md](PLATFORM_PROOF_MAP.md) coverage (`NO_PROOF` → `DESIGNED` → `EXECUTABLE` → `QUALIFIED`). Update [PROOFS.md](../docs/project/proofs/PROOFS.md) **only** when accepted public evidence / claim boundaries change.
+Update the scenario package (`README.md`, `SCENARIO_SPEC.md`, and descriptor when implemented) as the canonical source of truth. Update [PROOFS.md](../docs/project/proofs/PROOFS.md) **only** when accepted public evidence / claim boundaries change.
 
 ---
 
@@ -1778,82 +2010,18 @@ A proof-author session **MUST STOP** and report instead of improvising when:
 
 ---
 
-### Design-stage Scenario scaffold
+### Design-stage and implementation commands (quick reference)
 
-Before implementation, create the canonical design-stage package with:
+Full lifecycle: § Canonical Scenario Lifecycle.
 
-```bash
-uv run python scripts/proof/create_scenario_proof.py --slug <scenario_slug> --title "<title>"
-```
+| Step | Command | Lifecycle |
+|------|---------|-----------|
+| 1. Create design package | `uv run python scripts/proof/create_scenario_proof.py --slug <slug> --title "<title>"` | `DESIGN / NOT YET ACCEPTED` |
+| 2. Design + quality gate | Fill README + SCENARIO_SPEC (A–E); pass Scenario Quality Gate | → `ACCEPTED FOR IMPLEMENTATION` |
+| 3. Init implementation | `uv run python scripts/proof/init_scenario_implementation.py --slug <slug>` | → `IMPLEMENTATION INITIALIZED` |
+| 4. Build + prove | Implement `application/` + `proof/`; run `run_proof.py` | → executable → evidence → library acceptance |
 
-This produces:
-
-```text
-platform_proofs/scenarios/<scenario_slug>/
-├── README.md           # public gateway
-└── SCENARIO_SPEC.md    # deep canonical contract (A/B/C/D/E)
-```
-
-No fake `proof.json`, runtime entrypoint, evidence artifacts, or auto-generated SVGs.
-
-`SCENARIO_SPEC.md` includes YAML frontmatter — the **canonical machine-readable lifecycle source**. README keeps human-readable status wording.
-
-**Lifecycle workflow (SCENARIO-PLATFORM-3B):**
-
-```text
-1. create design          → create_scenario_proof.py
-2. fill design            → README + SCENARIO_SPEC sections A–E
-3. human acceptance       → Scenario Quality Gate
-4. mark lifecycle metadata → update SCENARIO_SPEC frontmatter (not README text alone)
-5. init implementation    → init_scenario_implementation.py
-6. implement              → application + proof layers
-7. run / falsify          → run_proof.py
-8. verify                 → evidence + report + library acceptance
-```
-
-After step 4, set frontmatter gates explicitly (do not infer completion from prose):
-
-```yaml
----
-scenario_slug: <scenario_slug>
-lifecycle: ACCEPTED_FOR_IMPLEMENTATION
-implementation_status: NOT_INITIALIZED
-intergrax_fit: COMPLETED
-gap_decision: RESOLVED
-observability_contract: COMPLETED
-application_vs_proof_ownership: COMPLETED
----
-```
-
-Initialize the implementation skeleton only after all gates above are set:
-
-```bash
-uv run python scripts/proof/init_scenario_implementation.py --slug <scenario_slug>
-```
-
-The generator is fail-closed: it does not create a design package, does not overwrite existing implementation files, and updates frontmatter to `lifecycle: IMPLEMENTATION_INITIALIZED` / `implementation_status: INITIALIZED` on success.
-
-Workflow:
-
-```text
-canonical scaffold (R3: README gateway + SCENARIO_SPEC deep canon)
-→ design-stage package
-→ fill Abstract, At a glance, Scenario semantics
-→ human Scenario Quality Gate
-→ mark SCENARIO_SPEC frontmatter gates
-→ add explanatory visual(s) under assets/
-→ capability-fit across all required domains (§ C)
-→ gap decision (§ D)
-→ init implementation skeleton (gated)
-→ implement application + proof layers (§ E)
-→ real run
-→ report + evidence
-→ publication (Proof Library catalog entry)
-```
-
-Complete the visual standard **before** implementation so the proof story is coherent. Post-run README sections populate only after execution.
-
-Do not manually invent scenario directory shapes or skip the quality gate.
+Do not manually invent scenario directory shapes, skip the quality gate, or run the initializer before acceptance frontmatter is set. Complete explanatory visuals under `assets/` **before** implementation when the scenario is mature enough. Post-run README sections populate only after execution.
 
 ---
 
@@ -1863,7 +2031,7 @@ No executable Scenario or Conformance platform proof is designated as the canoni
 
 **Observability contract migration (DOC-PROOF-OBS-1):** the global non-black-box observability standard applies prospectively. Existing in-progress Scenario packages that predate full observability implementation (including `ai_incident_investigation`) are **not** retroactively rejected at design stage, but **MUST** satisfy the new standard before executable acceptance (APP-2A and later). No immediate rewrite of design-stage documentation is required solely because migration is pending; public claims must remain truthful.
 
-See [PLATFORM_PROOF_MAP.md](PLATFORM_PROOF_MAP.md).
+Scenario package source of truth: [`scenarios/ai_incident_investigation/`](scenarios/ai_incident_investigation/).
 
 ---
 
@@ -1906,7 +2074,6 @@ See [PLATFORM_PROOF_MAP.md](PLATFORM_PROOF_MAP.md).
 | Document | Role |
 |----------|------|
 | [PLATFORM_PROOF_PROTOCOL.md](PLATFORM_PROOF_PROTOCOL.md) | Governance — classification, falsification, evidence |
-| [PLATFORM_PROOF_MAP.md](PLATFORM_PROOF_MAP.md) | Coverage map |
 | [README.md](README.md) | Proof Library gateway |
 | [PLATFORM_CONFIGURATION.md](../docs/project/technical/guides/PLATFORM_CONFIGURATION.md) | Canonical env / provider names |
 | [PROOFS.md](../docs/project/proofs/PROOFS.md) | Public proof dashboard |
