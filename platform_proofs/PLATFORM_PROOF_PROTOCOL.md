@@ -148,6 +148,14 @@ platform_proofs/scenarios/<scenario_slug>/
 
 After implementation, Scenario packages add `proof.json`, `run_proof.py`, and other runtime artifacts per [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md). Scenario proofs are **problem-first** and may exercise **multiple domains**; Conformance proofs remain **mechanism-first** and declare every domain they actually exercise in `domains_exercised`.
 
+**Scenario lifecycle governance (normative):**
+
+- Scenario implementation artifacts **MUST NOT** be initialized before lifecycle acceptance (`ACCEPTED FOR IMPLEMENTATION` in `SCENARIO_SPEC.md` frontmatter).
+- The canonical implementation skeleton **MUST** be created through `scripts/proof/init_scenario_implementation.py` — not by manual directory layout.
+- `scripts/proof/create_scenario_proof.py` creates the design package only (`README.md` + `SCENARIO_SPEC.md`); it does **not** authorize implementation or generate runtime artifacts.
+
+Operational procedure: [PLATFORM_PROOF_AUTHORING_GUIDE.md § Canonical Scenario Lifecycle](PLATFORM_PROOF_AUTHORING_GUIDE.md#canonical-scenario-lifecycle).
+
 **Why static JSON (`proof.json`):** language-neutral, human-readable, machine-validated, deterministic, inspectable by CI, and free of Python import side effects during discovery. Discovery must **not** import proof modules or execute `run_proof.py` to read metadata.
 
 **Descriptor schema:** `intergrax.platform_proof_descriptor.v3` — implemented in `scripts/proof/intergrax_platform_proof_descriptor.py` and loaded by `scripts/proof/intergrax_platform_proof_descriptor_loader.py`. Only the current schema version is accepted; v2 and v1 are rejected with no fallback.

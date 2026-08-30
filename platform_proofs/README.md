@@ -98,13 +98,16 @@ There is **no** manual scenario registry in `platform_proofs/`. Scenario existen
 
 ## Create a new Scenario package
 
-Design-stage Scenario packages are created **only** via the canonical scaffold:
+Scenario authoring is **two canonical steps** — do not skip or merge them:
 
-```bash
-uv run python scripts/proof/create_scenario_proof.py --slug <slug> --title "<title>"
-```
+| Step | When | Command |
+|------|------|---------|
+| **1. Create design package** | New scenario idea | `uv run python scripts/proof/create_scenario_proof.py --slug <slug> --title "<title>"` |
+| **2. Initialize implementation** | After Scenario Quality Gate → **ACCEPTED FOR IMPLEMENTATION** | `uv run python scripts/proof/init_scenario_implementation.py --slug <slug>` |
 
-This creates `platform_proofs/scenarios/<slug>/` with `README.md` and `SCENARIO_SPEC.md`. See [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md) for the Scenario Quality Gate before implementation.
+Step 1 creates `README.md` + `SCENARIO_SPEC.md` only (`DESIGN / NOT YET ACCEPTED`). Step 2 creates the platform-native implementation skeleton (`application/`, `proof/`, `fixtures/`, `proof.json`, `run_proof.py`, `.env.example`). **Do not** run step 2 before acceptance.
+
+Workflow detail: [PLATFORM_PROOF_AUTHORING_GUIDE.md § Canonical Scenario Lifecycle](PLATFORM_PROOF_AUTHORING_GUIDE.md#canonical-scenario-lifecycle).
 
 The first in-development scenario: [`scenarios/ai_incident_investigation/README.md`](scenarios/ai_incident_investigation/README.md).
 
