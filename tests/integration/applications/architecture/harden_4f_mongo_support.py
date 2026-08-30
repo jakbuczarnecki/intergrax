@@ -9,11 +9,14 @@ import shutil
 import subprocess
 import time
 import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Protocol
 
 import pytest
+from pymongo.errors import PyMongoError
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -36,10 +39,8 @@ from intergrax.runtime.diagnostics.document_store_problem_persistence import (
     DocumentStoreProblemPersistence,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import Problem, ProblemId
-from tests.integration.runtime.diag_final_otel_support import (
-    attach_retry_violation_injector,
-    execute_host_run,
-)
+from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from tests.integration.runtime.diag_final_otel_support import attach_retry_violation_injector
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _COMPOSE_FILE = _REPO_ROOT / "infra" / "docker" / "mongodb" / "docker-compose.yml"
@@ -53,8 +54,16 @@ _PROBE_ROW_KEY = "reachability"
 _REACHABILITY_TIMEOUT_SECONDS = 30.0
 _REACHABILITY_POLL_SECONDS = 0.5
 _MONGO_SELECTION_TIMEOUT_MS = 2000
+_ROUTE_PREFIX = "/v1/governed_contractor"
 
 _stopped_container_id: str | None = None
+
+
+class ProductHostExecutionComposition(Protocol):
+    """Minimal PRODUCT host surface for HTTP execution + runtime event truth checks."""
+
+    client: TestClient
+    runtime: HarnessHostRuntime
 
 
 @dataclass(frozen=True, slots=True)
@@ -169,7 +178,12 @@ def _resolve_mongo_container_id() -> str | None:
 
 
 def ensure_mongo_running() -> None:
+    global _stopped_container_id
     if probe_mongo_document_store():
+        _stopped_container_id = None
+        return
+    if _stopped_container_id is not None:
+        start_mongo_container()
         return
     up = _run_compose("up", "-d", timeout=180)
     if up.returncode != 0:
@@ -235,7 +249,7 @@ def probe_mongo_document_store() -> bool:
     try:
         store.get(_PROBE_PARTITION, _PROBE_ROW_KEY)
         return True
-    except Exception:
+    except (ConnectionError, TimeoutError, OSError, PyMongoError):
         return False
     finally:
         store.close()
@@ -300,16 +314,57 @@ def build_read_service(composition: Harden4FMongoHostComposition):
 
 
 def execute_mongo_host_run(
-    composition: Harden4FMongoHostComposition,
+    composition: ProductHostExecutionComposition,
     *,
     tenant_id: str,
     message: str,
 ) -> dict[str, object]:
-    return execute_host_run(
-        composition,  # type: ignore[arg-type]
-        tenant_id=tenant_id,
-        message=message,
+    response = composition.client.post(
+        f"{_ROUTE_PREFIX}/run",
+        json={
+            "tenant_id": tenant_id,
+            "user_id": "harden-4f-proof",
+            "message": message,
+            "capability": "external_contractor.adapt",
+        },
     )
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload.get("state") == "completed", payload
+    assert payload.get("run_id")
+    return payload
+
+
+def assert_mongo_host_runtime_event_truth(
+    composition: ProductHostExecutionComposition,
+    *,
+    tenant_id: str,
+    run_id: str,
+    task_id: str,
+) -> RuntimeEvent:
+    store = composition.runtime.observability.runtime_event_store
+    assert store is not None
+    events = store.list_for_run(run_id, tenant_id=tenant_id)
+    terminal = [
+        event
+        for event in events
+        if event.event_type is RuntimeEventType.TASK_COMPLETED
+    ]
+    assert terminal, "expected terminal TASK_COMPLETED RuntimeEvent"
+    assert terminal[0].tenant_id == tenant_id
+    assert terminal[0].task_id == task_id
+    assert terminal[0].run_id == run_id
+    return terminal[0]
+
+
+@contextmanager
+def mongo_outage_phase() -> Iterator[None]:
+    """Stop Mongo for outage assertions; always restart Mongo before exiting."""
+    stop_mongo_container()
+    try:
+        yield
+    finally:
+        start_mongo_container()
 
 
 def read_problem_via_fresh_store_persistence(

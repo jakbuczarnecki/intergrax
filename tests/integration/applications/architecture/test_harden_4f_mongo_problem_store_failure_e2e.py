@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -18,22 +19,23 @@ from intergrax.runtime.events.runtime_event import RuntimeEventType
 from tests.integration.applications.architecture.harden_4f_mongo_support import (
     Harden4FMongoHostComposition,
     assert_host_uses_document_store_problem_persistence,
+    assert_mongo_host_runtime_event_truth,
     build_harden_4f_mongo_product_host,
     build_read_service,
     cleanup_proof_tenant,
     create_proof_document_store,
     ensure_mongo_running,
     execute_mongo_host_run,
+    mongo_outage_phase,
     occurrence_run_ids,
     proof_env,
     read_problem_via_fresh_store_persistence,
     require_docker_for_harden_4f_proof,
-    start_mongo_container,
-    stop_mongo_container,
     wait_until_mongo_reachable,
     wait_until_mongo_unreachable,
 )
-from tests.integration.runtime.diag_final_otel_support import assert_runtime_event_truth
+
+_TENANT = "harden-4f-mongo-tenant"
 
 pytestmark = [
     pytest.mark.integration,
@@ -41,9 +43,6 @@ pytestmark = [
     pytest.mark.network,
     pytest.mark.no_ci,
 ]
-
-_TENANT = "harden-4f-mongo-tenant"
-_HOST_PROCESS_ID: int | None = None
 
 
 @pytest.fixture
@@ -64,6 +63,32 @@ def _stub_host_llm(monkeypatch: pytest.MonkeyPatch) -> None:
         "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
         _resolve,
     )
+
+
+@pytest.fixture
+def mongo_proof_lifecycle() -> Iterator[None]:
+    """Guarantee Mongo is UP before and after the proof, including after test failure."""
+    require_docker_for_harden_4f_proof()
+    ensure_mongo_running()
+    teardown_errors: list[BaseException] = []
+    try:
+        yield
+    finally:
+        try:
+            ensure_mongo_running()
+        except BaseException as exc:
+            teardown_errors.append(exc)
+        try:
+            cleanup_proof_tenant(tenant_id=_TENANT)
+        except BaseException as exc:
+            teardown_errors.append(exc)
+        if teardown_errors:
+            if len(teardown_errors) == 1:
+                raise teardown_errors[0]
+            raise ExceptionGroup(
+                "HARDEN-4F mongo proof lifecycle teardown failed",
+                teardown_errors,
+            )
 
 
 @pytest.fixture
@@ -145,6 +170,7 @@ def _assert_diagnostic_subsystem_failure_evidence(
 def test_harden_4f_mongo_problem_store_failure_and_recovery_e2e(
     tmp_path: Path,
     mongo_proof_environment: dict[str, str],
+    mongo_proof_lifecycle: None,
     _stub_host_llm: None,
 ) -> None:
     """
@@ -155,147 +181,144 @@ def test_harden_4f_mongo_problem_store_failure_and_recovery_e2e(
     PHASE 3 — Mongo UP: same host recovers, new write succeeds, no outage replay
     """
     del mongo_proof_environment
-    require_docker_for_harden_4f_proof()
-    ensure_mongo_running()
+    del mongo_proof_lifecycle
+    host_pid = os.getpid()
 
-    global _HOST_PROCESS_ID
     document_store = create_proof_document_store()
-    storage_root = tmp_path / "storage"
-    storage_root.mkdir(parents=True, exist_ok=True)
-    composition = build_harden_4f_mongo_product_host(
-        tmp_path=storage_root,
-        document_store=document_store,
-        tenant_id=_TENANT,
-        inject_violation=True,
-    )
-    _HOST_PROCESS_ID = os.getpid()
-    assert_host_uses_document_store_problem_persistence(composition)
-    read_service = build_read_service(composition)
+    try:
+        storage_root = tmp_path / "storage"
+        storage_root.mkdir(parents=True, exist_ok=True)
+        composition = build_harden_4f_mongo_product_host(
+            tmp_path=storage_root,
+            document_store=document_store,
+            tenant_id=_TENANT,
+            inject_violation=True,
+        )
+        assert_host_uses_document_store_problem_persistence(composition)
+        read_service = build_read_service(composition)
 
-    # PHASE 1 — baseline Mongo UP
-    baseline_run = execute_mongo_host_run(
-        composition,
-        tenant_id=_TENANT,
-        message="harden-4f baseline mongo up",
-    )
-    run_id_baseline = str(baseline_run["run_id"])
-    task_id_baseline = str(baseline_run["task_id"])
-    terminal_baseline = assert_runtime_event_truth(
-        composition,  # type: ignore[arg-type]
-        tenant_id=_TENANT,
-        run_id=run_id_baseline,
-        task_id=task_id_baseline,
-    )
-    execution_id_baseline = str(terminal_baseline.execution_id)
-    _assert_violation_runtime_event(
-        composition,
-        tenant_id=_TENANT,
-        run_id=run_id_baseline,
-    )
+        # PHASE 1 — baseline Mongo UP
+        baseline_run = execute_mongo_host_run(
+            composition,
+            tenant_id=_TENANT,
+            message="harden-4f baseline mongo up",
+        )
+        run_id_baseline = str(baseline_run["run_id"])
+        task_id_baseline = str(baseline_run["task_id"])
+        terminal_baseline = assert_mongo_host_runtime_event_truth(
+            composition,
+            tenant_id=_TENANT,
+            run_id=run_id_baseline,
+            task_id=task_id_baseline,
+        )
+        execution_id_baseline = str(terminal_baseline.execution_id)
+        _assert_violation_runtime_event(
+            composition,
+            tenant_id=_TENANT,
+            run_id=run_id_baseline,
+        )
 
-    problem_id_baseline = _assert_problem_occurrence_for_run(
-        read_service,
-        tenant_id=_TENANT,
-        run_id=run_id_baseline,
-    )
-    baseline_detail = read_service.get_problem(tenant_id=_TENANT, problem_id=problem_id_baseline)
-    assert baseline_detail is not None
-    deterministic_signature = baseline_detail.grouping_provenance.deterministic_signature
-    assert deterministic_signature is not None
-    provider_baseline = read_problem_via_fresh_store_persistence(
-        tenant_id=_TENANT,
-        problem_id=problem_id_baseline,
-    )
-    assert provider_baseline is not None
-    assert provider_baseline.status is ProblemStatus.OPEN
-    assert provider_baseline.occurrence_count >= 1
-    assert run_id_baseline in occurrence_run_ids(provider_baseline)
-    baseline_occurrence_count = provider_baseline.occurrence_count
+        problem_id_baseline = _assert_problem_occurrence_for_run(
+            read_service,
+            tenant_id=_TENANT,
+            run_id=run_id_baseline,
+        )
+        baseline_detail = read_service.get_problem(tenant_id=_TENANT, problem_id=problem_id_baseline)
+        assert baseline_detail is not None
+        deterministic_signature = baseline_detail.grouping_provenance.deterministic_signature
+        assert deterministic_signature is not None
+        provider_baseline = read_problem_via_fresh_store_persistence(
+            tenant_id=_TENANT,
+            problem_id=problem_id_baseline,
+        )
+        assert provider_baseline is not None
+        assert provider_baseline.status is ProblemStatus.OPEN
+        assert provider_baseline.occurrence_count >= 1
+        assert run_id_baseline in occurrence_run_ids(provider_baseline)
+        baseline_occurrence_count = provider_baseline.occurrence_count
 
-    # PHASE 2 — Mongo DOWN
-    stop_mongo_container()
-    wait_until_mongo_unreachable()
+        # PHASE 2 — Mongo DOWN (guaranteed restart in mongo_outage_phase finally)
+        with mongo_outage_phase():
+            wait_until_mongo_unreachable()
 
-    outage_run = execute_mongo_host_run(
-        composition,
-        tenant_id=_TENANT,
-        message="harden-4f mongo outage",
-    )
-    run_id_outage = str(outage_run["run_id"])
-    task_id_outage = str(outage_run["task_id"])
-    terminal_outage = assert_runtime_event_truth(
-        composition,  # type: ignore[arg-type]
-        tenant_id=_TENANT,
-        run_id=run_id_outage,
-        task_id=task_id_outage,
-    )
-    execution_id_outage = str(terminal_outage.execution_id)
-    _assert_violation_runtime_event(
-        composition,
-        tenant_id=_TENANT,
-        run_id=run_id_outage,
-    )
-    _assert_diagnostic_subsystem_failure_evidence(
-        composition,
-        tenant_id=_TENANT,
-        run_id=run_id_outage,
-        task_id=task_id_outage,
-        execution_id=execution_id_outage,
-    )
+            outage_run = execute_mongo_host_run(
+                composition,
+                tenant_id=_TENANT,
+                message="harden-4f mongo outage",
+            )
+            run_id_outage = str(outage_run["run_id"])
+            task_id_outage = str(outage_run["task_id"])
+            terminal_outage = assert_mongo_host_runtime_event_truth(
+                composition,
+                tenant_id=_TENANT,
+                run_id=run_id_outage,
+                task_id=task_id_outage,
+            )
+            execution_id_outage = str(terminal_outage.execution_id)
+            _assert_violation_runtime_event(
+                composition,
+                tenant_id=_TENANT,
+                run_id=run_id_outage,
+            )
+            _assert_diagnostic_subsystem_failure_evidence(
+                composition,
+                tenant_id=_TENANT,
+                run_id=run_id_outage,
+                task_id=task_id_outage,
+                execution_id=execution_id_outage,
+            )
 
-    # PHASE 3 — Mongo UP recovery on same host/process
-    start_mongo_container()
-    wait_until_mongo_reachable()
-    assert os.getpid() == _HOST_PROCESS_ID
+        # PHASE 3 — Mongo UP recovery on same host/process
+        wait_until_mongo_reachable()
+        assert os.getpid() == host_pid
 
-    recovery_run = execute_mongo_host_run(
-        composition,
-        tenant_id=_TENANT,
-        message="harden-4f mongo recovery",
-    )
-    run_id_recovery = str(recovery_run["run_id"])
-    task_id_recovery = str(recovery_run["task_id"])
-    terminal_recovery = assert_runtime_event_truth(
-        composition,  # type: ignore[arg-type]
-        tenant_id=_TENANT,
-        run_id=run_id_recovery,
-        task_id=task_id_recovery,
-    )
-    execution_id_recovery = str(terminal_recovery.execution_id)
-    _assert_violation_runtime_event(
-        composition,
-        tenant_id=_TENANT,
-        run_id=run_id_recovery,
-    )
+        recovery_run = execute_mongo_host_run(
+            composition,
+            tenant_id=_TENANT,
+            message="harden-4f mongo recovery",
+        )
+        run_id_recovery = str(recovery_run["run_id"])
+        task_id_recovery = str(recovery_run["task_id"])
+        terminal_recovery = assert_mongo_host_runtime_event_truth(
+            composition,
+            tenant_id=_TENANT,
+            run_id=run_id_recovery,
+            task_id=task_id_recovery,
+        )
+        execution_id_recovery = str(terminal_recovery.execution_id)
+        _assert_violation_runtime_event(
+            composition,
+            tenant_id=_TENANT,
+            run_id=run_id_recovery,
+        )
 
-    problem_id_recovery = _assert_problem_occurrence_for_run(
-        read_service,
-        tenant_id=_TENANT,
-        run_id=run_id_recovery,
-    )
-    assert problem_id_recovery == problem_id_baseline
+        problem_id_recovery = _assert_problem_occurrence_for_run(
+            read_service,
+            tenant_id=_TENANT,
+            run_id=run_id_recovery,
+        )
+        assert problem_id_recovery == problem_id_baseline
 
-    provider_after_recovery = read_problem_via_fresh_store_persistence(
-        tenant_id=_TENANT,
-        problem_id=problem_id_baseline,
-    )
-    assert provider_after_recovery is not None
-    assert provider_after_recovery.status is ProblemStatus.OPEN
-    assert provider_after_recovery.occurrence_count == baseline_occurrence_count + 1
-    recovered_runs = occurrence_run_ids(provider_after_recovery)
-    assert run_id_baseline in recovered_runs
-    assert run_id_recovery in recovered_runs
-    assert run_id_outage not in recovered_runs
+        provider_after_recovery = read_problem_via_fresh_store_persistence(
+            tenant_id=_TENANT,
+            problem_id=problem_id_baseline,
+        )
+        assert provider_after_recovery is not None
+        assert provider_after_recovery.status is ProblemStatus.OPEN
+        assert provider_after_recovery.occurrence_count == baseline_occurrence_count + 1
+        recovered_runs = occurrence_run_ids(provider_after_recovery)
+        assert run_id_baseline in recovered_runs
+        assert run_id_recovery in recovered_runs
+        assert run_id_outage not in recovered_runs
 
-    detail = read_service.get_problem(tenant_id=_TENANT, problem_id=problem_id_baseline)
-    assert detail is not None
-    assert str(detail.problem_id) == problem_id_baseline
-    assert detail.grouping_provenance.deterministic_signature == deterministic_signature
+        detail = read_service.get_problem(tenant_id=_TENANT, problem_id=problem_id_baseline)
+        assert detail is not None
+        assert str(detail.problem_id) == problem_id_baseline
+        assert detail.grouping_provenance.deterministic_signature == deterministic_signature
 
-    document_store.close()
-    cleanup_proof_tenant(tenant_id=_TENANT)
-
-    # Replay semantics: outage occurrence NOT_REPLAYED (no automatic replay contract).
-    assert execution_id_baseline
-    assert execution_id_outage
-    assert execution_id_recovery
+        # Replay semantics: outage occurrence NOT_REPLAYED (no automatic replay contract).
+        assert execution_id_baseline
+        assert execution_id_outage
+        assert execution_id_recovery
+    finally:
+        document_store.close()
