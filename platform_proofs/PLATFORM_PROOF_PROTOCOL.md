@@ -3,17 +3,17 @@
 **Status:** Canonical  
 **Version:** 1.0 (PP-2)  
 **Audience:** Maintainers, architects, proof authors  
-**Scope:** Reusable Intergrax platform mechanism proofs under `platform_proofs/`
+**Scope:** Executable falsification proofs under `platform_proofs/` — **SCENARIO** and **CONFORMANCE** classes
 
 ---
 
 ## Core mindset
 
-> **A Platform Proof is an executable falsification attempt against a specific claim about a reusable Intergrax platform mechanism.**
+> **The Intergrax Proof Library holds executable falsification attempts for bounded real-world Scenario claims and reusable platform Conformance claims.**
 
 It is **not** a happy-path demo. The author must try to prove the claim false under named conditions. A PASS backed by explicit invariants and at least one meaningful negative path is valid. A FAIL with clear evidence is also valid.
 
-This protocol governs **DOMAIN_PROOF** and **FEATURE_PROOF** only. **PRODUCT_PROOF** remains with owning products under `applications/`.
+This protocol governs **SCENARIO** and **CONFORMANCE** proofs under `platform_proofs/`. **Product proofs** remain with owning products under `applications/`.
 
 **Normative ownership rule (non-negotiable):**
 
@@ -39,36 +39,28 @@ Reuse the public proof/claims philosophy in [`PUBLIC_PROOF_AND_CLAIMS_MODEL.md`]
 |----------|----------------|
 | **Unit test** | Bounded local contract |
 | **Integration test** | Cooperating components under test scope |
-| **Platform proof** | Whether a **reusable platform capability** exhibits the claimed behavior across realistic boundaries |
+| **Scenario proof** | Whether a **bounded real-world system claim** holds under adversarial conditions via a production-capable application component |
+| **Conformance proof** | Whether a **reusable platform mechanism** exhibits the claimed behavior across realistic boundaries |
 | **Product proof** | A product workflow end-to-end |
 | **Real-user validation** | User outcomes in realistic use |
 | **Commercial validation** | Market or business value |
 
-Platform proofs sit between integration tests and product proofs. They prove the **platform mechanism**, not a single product's business logic.
+Scenario proofs are **problem-first** and may exercise multiple domains and mechanisms. Conformance proofs are **mechanism-first** and serve CI, regression, and contract verification. Neither substitutes for product proofs.
 
 **Examples:**
 
-- TOOLS iterative investigation — platform proof (`platform_proofs/`)
+- AI incident investigation — Scenario proof (`platform_proofs/scenarios/`)
+- TOOLS iterative investigation — Conformance proof (`platform_proofs/`)
 - LKW Product Quick Start — product proof (`applications/local_workspace_application/`)
-- LKW exercising tool runtime during a product workflow — product consumption, **not** independent TOOLS domain proof
+- LKW exercising tool runtime during a product workflow — product consumption, **not** independent platform proof
 
-**LKW is a product.** LKW must not appear as a platform domain, in `PLATFORM_PROOF_MAP` as a layer, or inside `platform_proofs/`.
+**LKW is a product.** LKW must not appear as a platform domain or inside `platform_proofs/`.
 
----
-
-## B. Proof classification
-
-| Class | Owner | Governed by this protocol |
-|-------|-------|---------------------------|
-| **DOMAIN_PROOF** | Platform domain (`docs/project/architecture/<DOMAIN>.md`) | Yes |
-| **FEATURE_PROOF** | Cross-layer feature (`docs/project/capabilities/`) | Yes |
-| **PRODUCT_PROOF** | Product (`applications/<product>/`) | **No** — product-owned |
-
-`platform_proofs/` owns DOMAIN_PROOF and FEATURE_PROOF artifacts only.
+**Scenario application ≠ Product.** A Scenario may possess real business workflow and production-capable application core. That does **not** make it a product-owned proof. Scenario proofs belong under `platform_proofs/scenarios/`; product proofs under `applications/`. Do not reclassify a Scenario as Product Proof because it has business workflow.
 
 ---
 
-## B2. Proof Library classes
+## B. Proof Library classes
 
 The Intergrax Proof Library distinguishes two public proof classes via `library_class` in `proof.json` (`intergrax.platform_proof_descriptor.v3`):
 
@@ -115,9 +107,11 @@ Architecture defines intended claim boundaries but is **not** runtime evidence.
 
 Every executable platform proof must have a stable **`proof_id`**.
 
-**Recommended naming:** `<DOMAIN>-<CAPABILITY>` — uppercase, hyphenated, consistent with existing manifest style.
+**SCENARIO proofs:** `SCENARIO-<SCENARIO-ID>` — uppercase, hyphenated (e.g. `SCENARIO-AI-INCIDENT-INVESTIGATION`).
 
-**Reference example:** `SCENARIO-AI-INCIDENT-INVESTIGATION` (design-stage scenario under `platform_proofs/scenarios/`)
+**CONFORMANCE proofs:** `<DOMAIN>-<CAPABILITY>` or mechanism-appropriate identifier — uppercase, hyphenated, consistent with existing manifest style.
+
+Do **not** use domain-capability naming as the universal pattern for Scenario proofs. Scenario identity is class-appropriate and problem-owned.
 
 Canonical executable identity is declared in two layers during migration:
 
@@ -178,16 +172,38 @@ After implementation, Scenario packages add `proof.json`, `run_proof.py`, and ot
 
 Every proof must state **one bounded falsifiable claim**.
 
-| Bad | Good |
-|-----|------|
-| "Tools works." | "The bounded iterative tool runtime can use real SQL observations to drive subsequent evidence-dependent tool calls and reach a bounded conclusion while preserving explicit proof of the investigation chain." |
+| Bad | Good (SCENARIO) | Good (CONFORMANCE) |
+|-----|-----------------|---------------------|
+| "Tools works." | "Under adversarial incident evidence, the bounded investigation application reaches a defensible root-cause or explicit UNRESOLVED without unsafe autonomous action." | "The bounded iterative tool runtime can use real SQL observations to drive subsequent evidence-dependent tool calls and reach a bounded conclusion while preserving explicit proof of the investigation chain." |
 
-Each proof documentation artifact must include:
+### SCENARIO claim semantics
+
+SCENARIO documentation and descriptors **MUST** include:
+
+- bounded real-world system claim
+- real problem and failure consequences
+- application responsibility (production-capable component)
+- PASS / FAIL / adversarial conditions
+- excluded claims and limitations
+- `domains_exercised` and `mechanisms_exercised` (metadata — may be multiple)
+
+SCENARIO **MUST NOT** require a single `mechanism under proof` field — a Scenario may legitimately exercise multiple mechanisms.
+
+### CONFORMANCE claim semantics
+
+CONFORMANCE documentation and descriptors **MAY** require:
+
+- architecture owner
+- mechanism under proof
+- bounded mechanism claim
+- invariant
+- PASS / FAIL
+- excluded claims
+
+Each proof documentation artifact must include at minimum:
 
 - exact claim
 - user relevance (why the claim matters)
-- architecture owner (domain or feature)
-- mechanism under proof
 - excluded claims (what is out of scope)
 
 ---

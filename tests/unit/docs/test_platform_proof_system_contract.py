@@ -14,13 +14,14 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PLATFORM_PROOFS = REPO_ROOT / "platform_proofs"
-MAP_PATH = PLATFORM_PROOFS / "PLATFORM_PROOF_MAP.md"
 PROTOCOL_PATH = PLATFORM_PROOFS / "PLATFORM_PROOF_PROTOCOL.md"
 README_PATH = PLATFORM_PROOFS / "README.md"
 AUTHORING_PATH = PLATFORM_PROOFS / "PLATFORM_PROOF_AUTHORING_GUIDE.md"
 MANIFEST_PATH = REPO_ROOT / "scripts" / "proof" / "intergrax_proof_manifest.py"
 RUNNER_PATH = REPO_ROOT / "scripts" / "proof" / "intergrax_proof_runner.py"
 PUBLIC_PROOFS = REPO_ROOT / "docs" / "project" / "proofs" / "PROOFS.md"
+PUBLIC_LIBRARY = REPO_ROOT / "docs" / "project" / "proofs" / "PROOF_LIBRARY.md"
+SCENARIOS_ROOT = PLATFORM_PROOFS / "scenarios"
 
 _DOCS_SCRIPTS = REPO_ROOT / "scripts" / "docs"
 if str(_DOCS_SCRIPTS) not in sys.path:
@@ -34,15 +35,6 @@ _ADDITIONAL_DOMAINS = (
     "PROOF_RECEIPTS",
 )
 ALL_CANONICAL_DOMAINS: tuple[str, ...] = canonical_domain_ids() + _ADDITIONAL_DOMAINS
-
-_MAP_DOMAIN_ROW = re.compile(
-    r"^\| `(?P<domain>[A-Z][A-Z0-9_]*)` \|",
-    re.MULTILINE,
-)
-
-@pytest.fixture
-def map_text() -> str:
-    return MAP_PATH.read_text(encoding="utf-8")
 
 
 @pytest.fixture
@@ -64,34 +56,44 @@ def test_platform_proofs_canonical_docs_exist() -> None:
     required = (
         README_PATH,
         PROTOCOL_PATH,
-        MAP_PATH,
         AUTHORING_PATH,
     )
     missing = [path for path in required if not path.is_file()]
     assert not missing, f"missing platform_proofs canonical docs: {missing}"
 
 
-def test_platform_proof_map_contains_all_28_domains_exactly_once(
-    map_text: str,
-) -> None:
-    found = _MAP_DOMAIN_ROW.findall(map_text)
-    domain_section = map_text.split("## Feature proof coverage", 1)[0]
-    found_in_domain_table = _MAP_DOMAIN_ROW.findall(domain_section)
-    assert len(found_in_domain_table) == 28
-    assert len(set(found_in_domain_table)) == 28
-    assert tuple(found_in_domain_table) == ALL_CANONICAL_DOMAINS
+def test_platform_proof_map_removed() -> None:
+    assert not (PLATFORM_PROOFS / "PLATFORM_PROOF_MAP.md").is_file()
 
 
-def test_scenario_design_root_documented(map_text: str, readme_text: str) -> None:
-    assert "platform_proofs/scenarios/" in map_text or "scenarios/" in readme_text
+def test_scenario_conformance_are_only_top_level_taxonomy(protocol_text: str) -> None:
+    assert "## B. Proof Library classes" in protocol_text
+    assert "**SCENARIO**" in protocol_text
+    assert "**CONFORMANCE**" in protocol_text
+    assert "DOMAIN_PROOF" not in protocol_text
+    assert "FEATURE_PROOF" not in protocol_text
+
+
+def test_scenario_design_root_documented(readme_text: str) -> None:
+    assert "platform_proofs/scenarios/" in readme_text
     assert "ai_incident_investigation" in readme_text
+    assert SCENARIOS_ROOT.is_dir()
 
 
-def test_lkw_not_listed_as_platform_domain(map_text: str) -> None:
-    domain_section = map_text.split("## Feature proof coverage", 1)[0]
-    assert "`LKW`" not in domain_section
-    assert "local_workspace_application" not in domain_section.lower() or "not" in domain_section.lower()
-    lkw_domain_row = re.search(r"^\| `LKW` \|", map_text, re.MULTILINE)
+def test_public_scenario_catalog_linked_from_gateway(readme_text: str) -> None:
+    assert PUBLIC_LIBRARY.is_file()
+    assert "docs/project/proofs/PROOF_LIBRARY.md" in readme_text
+
+
+def test_no_manual_scenario_registry_in_gateway(readme_text: str) -> None:
+    assert "no" in readme_text.lower() and "manual scenario registry" in readme_text.lower()
+
+
+def test_lkw_not_platform_proof(protocol_text: str, readme_text: str) -> None:
+    assert "LKW is a product" in protocol_text
+    assert "LKW" in readme_text
+    assert "`LKW`" not in protocol_text.split("## B. Proof Library classes", 1)[0]
+    lkw_domain_row = re.search(r"^\| `LKW` \|", protocol_text, re.MULTILINE)
     assert lkw_domain_row is None
 
 
@@ -108,6 +110,11 @@ def test_applications_product_only_ownership_in_protocol_and_readme(
     assert "product proofs" in protocol_text.lower()
     assert "LKW" in protocol_text
     assert "applications/" in readme_text
+
+
+def test_scenario_application_not_product_boundary(protocol_text: str) -> None:
+    assert "Scenario application ≠ Product" in protocol_text
+    assert "platform_proofs/scenarios/" in protocol_text
 
 
 def test_scripts_proof_remains_canonical_execution_infrastructure(
@@ -203,6 +210,7 @@ def test_report_standard_scenario_source_of_truth_rule() -> None:
     assert "### 7.2 SCENARIO report presentation profile (normative)" in report_text
     assert "MUST NOT** invent tool calls" in report_text
     assert "intergrax.platform_proof_evidence.v3" in report_text
+    assert "PLATFORM_PROOF_MAP" not in report_text
 
 
 def test_authoring_guide_prohibits_fake_llm_in_canonical_scenario_path(
@@ -225,7 +233,13 @@ def test_protocol_distinguishes_scenario_vs_conformance_mock_policy(
 def test_gateway_defines_scenario_as_production_capable_component(
     readme_text: str,
 ) -> None:
-    assert "Production-capable autonomous mini application" in readme_text
-    assert "falsification, evidence" in readme_text.lower() or "falsifies" in readme_text.lower()
+    assert "Production-capable autonomous application component" in readme_text
+    assert "falsification" in readme_text.lower() or "falsifies" in readme_text.lower()
     assert "PLATFORM_PROOF_AUTHORING_GUIDE.md" in readme_text
     assert "does **not** substitute for the application" in readme_text
+    assert "create_scenario_proof.py" in readme_text
+
+
+def test_protocol_scenario_proof_identity_convention(protocol_text: str) -> None:
+    assert "SCENARIO-<SCENARIO-ID>" in protocol_text
+    assert "SCENARIO-AI-INCIDENT-INVESTIGATION" in protocol_text

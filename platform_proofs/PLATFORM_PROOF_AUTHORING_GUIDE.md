@@ -893,7 +893,7 @@ After Stages 1–4 are complete, every Scenario Proof session **MUST** follow th
 | **7. Real proof execution** | Actual run with real boundaries (not dry-run substitute) |
 | **8. Evidence / report verification** | Typed evidence validates; report manually audited |
 | **9. Publication / library acceptance** | All acceptance gates pass (see § Public Library acceptance gate) |
-| **10. Close** | Update coverage map; move to next scenario |
+| **10. Close** | Finalize scenario package documentation; move to next scenario |
 
 ---
 
@@ -1690,7 +1690,7 @@ NOT ACCEPTED INTO PROOF LIBRARY
 
 even if code exists.
 
-Update [PLATFORM_PROOF_MAP.md](PLATFORM_PROOF_MAP.md) coverage (`NO_PROOF` → `DESIGNED` → `EXECUTABLE` → `QUALIFIED`). Update [PROOFS.md](../docs/project/proofs/PROOFS.md) **only** when accepted public evidence / claim boundaries change.
+Update the scenario package (`README.md`, `SCENARIO_SPEC.md`, and descriptor when implemented) as the canonical source of truth. Update [PROOFS.md](../docs/project/proofs/PROOFS.md) **only** when accepted public evidence / claim boundaries change.
 
 ---
 
@@ -1863,7 +1863,7 @@ No executable Scenario or Conformance platform proof is designated as the canoni
 
 **Observability contract migration (DOC-PROOF-OBS-1):** the global non-black-box observability standard applies prospectively. Existing in-progress Scenario packages that predate full observability implementation (including `ai_incident_investigation`) are **not** retroactively rejected at design stage, but **MUST** satisfy the new standard before executable acceptance (APP-2A and later). No immediate rewrite of design-stage documentation is required solely because migration is pending; public claims must remain truthful.
 
-See [PLATFORM_PROOF_MAP.md](PLATFORM_PROOF_MAP.md).
+Scenario package source of truth: [`scenarios/ai_incident_investigation/`](scenarios/ai_incident_investigation/).
 
 ---
 
@@ -1906,7 +1906,6 @@ See [PLATFORM_PROOF_MAP.md](PLATFORM_PROOF_MAP.md).
 | Document | Role |
 |----------|------|
 | [PLATFORM_PROOF_PROTOCOL.md](PLATFORM_PROOF_PROTOCOL.md) | Governance — classification, falsification, evidence |
-| [PLATFORM_PROOF_MAP.md](PLATFORM_PROOF_MAP.md) | Coverage map |
 | [README.md](README.md) | Proof Library gateway |
 | [PLATFORM_CONFIGURATION.md](../docs/project/technical/guides/PLATFORM_CONFIGURATION.md) | Canonical env / provider names |
 | [PROOFS.md](../docs/project/proofs/PROOFS.md) | Public proof dashboard |
