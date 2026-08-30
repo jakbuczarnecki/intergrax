@@ -5,65 +5,37 @@
 
 from __future__ import annotations
 
-import os
-from dataclasses import dataclass
-from enum import Enum
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
+from intergrax.runtime.notifications.backend_contract import (
+    ENV_NOTIFICATION_BACKEND,
+    ENV_SLACK_WEBHOOK_URL,
+    ENV_TEAMS_WEBHOOK_URL,
+    ENV_WEBHOOK_URL,
+    NotificationBackend,
+    NotificationSettings,
+    resolve_notification_settings,
+)
 from intergrax.runtime.notifications.delivery_contract import NotificationDelivery
-from intergrax.runtime.notifications.formatters import NotificationPayloadFormatter
 
-ENV_NOTIFICATION_BACKEND = "INTERGRAX_NOTIFICATION_BACKEND"
-ENV_WEBHOOK_URL = "INTERGRAX_WEBHOOK_URL"
-ENV_SLACK_WEBHOOK_URL = "INTERGRAX_SLACK_WEBHOOK_URL"
-ENV_TEAMS_WEBHOOK_URL = "INTERGRAX_TEAMS_WEBHOOK_URL"
+if TYPE_CHECKING:
+    from intergrax.runtime.notifications.formatters import NotificationPayloadFormatter
 
 NotificationAdapterFactory = Callable[[], NotificationAdapter]
 
-
-class NotificationBackend(str, Enum):
-    LOG = "log"
-    WEBHOOK = "webhook"
-    SLACK = "slack"
-    TEAMS = "teams"
-    PAGERDUTY = "pagerduty"
-    OPSGENIE = "opsgenie"
-
-
-@dataclass(frozen=True)
-class NotificationSettings:
-    backend: NotificationBackend = NotificationBackend.LOG
-    webhook_url: str = ""
-    slack_webhook_url: str = ""
-    teams_webhook_url: str = ""
-
-
-def resolve_notification_settings(
-    *,
-    backend: Optional[str] = None,
-    webhook_url: Optional[str] = None,
-    slack_webhook_url: Optional[str] = None,
-    teams_webhook_url: Optional[str] = None,
-) -> NotificationSettings:
-    raw_backend = (
-        backend
-        or os.environ.get(ENV_NOTIFICATION_BACKEND, NotificationBackend.LOG.value)
-    ).strip().lower()
-    try:
-        resolved_backend = NotificationBackend(raw_backend)
-    except ValueError:
-        resolved_backend = NotificationBackend.LOG
-    return NotificationSettings(
-        backend=resolved_backend,
-        webhook_url=(webhook_url or os.environ.get(ENV_WEBHOOK_URL, "")).strip(),
-        slack_webhook_url=(
-            slack_webhook_url or os.environ.get(ENV_SLACK_WEBHOOK_URL, "")
-        ).strip(),
-        teams_webhook_url=(
-            teams_webhook_url or os.environ.get(ENV_TEAMS_WEBHOOK_URL, "")
-        ).strip(),
-    )
+__all__ = [
+    "ENV_NOTIFICATION_BACKEND",
+    "ENV_SLACK_WEBHOOK_URL",
+    "ENV_TEAMS_WEBHOOK_URL",
+    "ENV_WEBHOOK_URL",
+    "NotificationAdapterFactory",
+    "NotificationBackend",
+    "NotificationSettings",
+    "create_notification_adapter",
+    "resolve_notification_adapter",
+    "resolve_notification_settings",
+]
 
 
 def create_notification_adapter(
@@ -72,7 +44,7 @@ def create_notification_adapter(
     implementation: Optional[NotificationAdapter] = None,
     factory: Optional[NotificationAdapterFactory] = None,
     delivery: Optional[NotificationDelivery] = None,
-    formatter: Optional[NotificationPayloadFormatter] = None,
+    formatter: "NotificationPayloadFormatter | None" = None,
 ) -> NotificationAdapter:
     """
     Build a notification adapter.

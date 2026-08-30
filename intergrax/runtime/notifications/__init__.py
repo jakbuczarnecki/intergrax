@@ -7,12 +7,14 @@ from intergrax.runtime.notifications.delivery_contract import (
     NotificationDelivery,
     NullNotificationDelivery,
 )
-from intergrax.runtime.notifications.factory import (
+from intergrax.runtime.notifications.backend_contract import (
     NotificationBackend,
     NotificationSettings,
+    resolve_notification_settings,
+)
+from intergrax.runtime.notifications.factory import (
     create_notification_adapter,
     resolve_notification_adapter,
-    resolve_notification_settings,
 )
 from intergrax.runtime.notifications.models import NotificationMessage
 

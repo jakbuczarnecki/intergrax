@@ -13,7 +13,7 @@ import pytest
 from intergrax.runtime.config.forbidden_generation_model_env import (
     BOOTSTRAP_FORBIDDEN_GENERATION_MODEL_ENV_NAMES,
 )
-from intergrax.runtime.notifications.factory import NotificationBackend
+from intergrax.runtime.notifications.backend_contract import NotificationBackend
 
 pytestmark = pytest.mark.unit
 
