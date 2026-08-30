@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img">
+  <title>Bounded deliberation rounds</title>
+  <desc>Council rounds bounded by shared Nexus execution budget.</desc>
+  <rect width="1200" height="760" fill="#0d1117"/>
+  <rect x="32" y="28" width="1136" height="704" rx="22" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+  <text x="600" y="72" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="28" font-weight="700" fill="#e6edf3">Bounded Rounds & Nexus Budget</text>
+  <text x="600" y="104" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" fill="#8b949e">Deliberation continuation owned by Decision Strategy</text>
+  <rect x="140" y="170" width="920" height="56" rx="12" fill="#1f2a44" stroke="#58a6ff" stroke-width="2"/>
+  <text x="600" y="198" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Nexus execution budget</text>
+  <text x="600" y="218" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">shared ceiling for strategy + verification + revision</text>
+  <rect x="200" y="280" width="280" height="56" rx="12" fill="#3d2e00" stroke="#d29922" stroke-width="2"/>
+  <text x="340" y="314" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Round 1 deliberation</text>
+  <line x1="480" y1="308" x2="540" y2="308" stroke="#58a6ff" stroke-width="2"/>
+  <path d="M540 308 L534 294 L546 294 Z" fill="#58a6ff"/>
+  <rect x="540" y="280" width="280" height="56" rx="12" fill="#3d2e00" stroke="#d29922" stroke-width="2"/>
+  <text x="680" y="314" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Round 2 (if budget allows)</text>
+  <line x1="820" y1="308" x2="880" y2="308" stroke="#58a6ff" stroke-width="2"/>
+  <path d="M880 308 L874 294 L886 294 Z" fill="#58a6ff"/>
+  <rect x="880" y="280" width="200" height="56" rx="12" fill="#3d1f24" stroke="#f85149" stroke-width="2"/>
+  <text x="980" y="314" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Budget stop</text>
+  <text x="600" y="420" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">Distinct from technical retry (Nexus) and revision loop (Lifecycle)</text>
+</svg>

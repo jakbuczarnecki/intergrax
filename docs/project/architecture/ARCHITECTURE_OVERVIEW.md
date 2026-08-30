@@ -40,7 +40,7 @@ For the category problem, strategic fit, and alternatives, see [Why Intergrax](.
 The current architecture can support — and provides foundations for — product classes such as:
 
 - governed knowledge applications;
-- evidence-backed decision support;
+- evidence-backed decision support ([`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) — target canon; **CURRENT:** [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md));
 - controlled agent workflows with approvals;
 - applications that call external tools and systems under configured authority; and
 - reviewable, auditable AI-assisted workflows.

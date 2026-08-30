@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 780" role="img">
+  <title>Participant independence</title>
+  <desc>Producer verifier separation and configurable context visibility for deliberation participants.</desc>
+  <rect width="1200" height="780" fill="#0d1117"/>
+  <rect x="32" y="28" width="1136" height="724" rx="22" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+  <text x="600" y="72" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="28" font-weight="700" fill="#e6edf3">Participant Independence & Context Visibility</text>
+  <text x="600" y="104" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" fill="#8b949e">Configured roles — not hard-coded personas</text>
+  <rect x="120" y="160" width="240" height="72" rx="12" fill="#3d2e00" stroke="#d29922" stroke-width="2"/>
+  <text x="240" y="188" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Producer profile</text>
+  <text x="240" y="208" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">generates proposal</text>
+  <rect x="420" y="160" width="240" height="72" rx="12" fill="#2d1f47" stroke="#a371f7" stroke-width="2"/>
+  <text x="540" y="188" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Verifier profile</text>
+  <text x="540" y="208" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">independent model/provider</text>
+  <rect x="720" y="160" width="360" height="72" rx="12" fill="#1b3a1f" stroke="#3fb950" stroke-width="2"/>
+  <text x="900" y="188" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Context visibility policy</text>
+  <text x="900" y="208" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">what each role may see</text>
+  <text x="600" y="320" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">Meaningful independence — self-judge modes must be explicit</text>
+  <text x="600" y="350" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">Role configuration via strategy contract — not giant if-strategy branches</text>
+</svg>

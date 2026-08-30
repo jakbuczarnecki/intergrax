@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" role="img">
+  <title>Disagreement synthesis</title>
+  <desc>Structured disagreement preserved through synthesis to verification.</desc>
+  <rect width="1200" height="820" fill="#f6f8fb"/>
+  <rect x="32" y="28" width="1136" height="764" rx="22" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
+  <text x="600" y="72" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="28" font-weight="700" fill="#1a1a2e">Disagreement → Synthesis</text>
+  <text x="600" y="104" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" fill="#3d4f66">Preserve dissent — synthesis is not erasure</text>
+  <rect x="160" y="170" width="880" height="56" rx="12" fill="#f3e8ff" stroke="#7c3aed" stroke-width="2"/>
+  <text x="600" y="204" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">Structured disagreement artifact</text>
+  <rect x="120" y="270" width="240" height="48" rx="12" fill="#eef4ff" stroke="#1a5fb4" stroke-width="2"/>
+  <text x="240" y="300" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">positions</text>
+  <rect x="400" y="270" width="240" height="48" rx="12" fill="#eef4ff" stroke="#1a5fb4" stroke-width="2"/>
+  <text x="520" y="300" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">alternatives</text>
+  <rect x="680" y="270" width="240" height="48" rx="12" fill="#eef4ff" stroke="#1a5fb4" stroke-width="2"/>
+  <text x="800" y="300" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">unresolved questions</text>
+  <line x1="600" y1="318" x2="600" y2="360" stroke="#1a5fb4" stroke-width="2"/>
+  <path d="M600 360 L594 346 L606 346 Z" fill="#1a5fb4"/>
+  <rect x="280" y="360" width="640" height="56" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+  <text x="600" y="388" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">Synthesis candidate</text>
+  <text x="600" y="408" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#3d4f66">feeds Verification — not final authority alone</text>
+  <text x="600" y="480" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#3d4f66">UNRESOLVED remains valid when synthesis cannot reconcile conflict</text>
+</svg>

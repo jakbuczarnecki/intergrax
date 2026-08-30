@@ -1,5 +1,12 @@
 # Critic Verification — Implementation Plan
 
+> [!CAUTION]
+> **CURRENT IMPLEMENTATION SNAPSHOT — NOT TARGET CANON**
+>
+> **Target architecture:** [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md) · [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](../../architecture/DECISION_DELIBERATION.md)
+>
+> This plan hub remains for **CURRENT CVL implementation** and open Protocol v2 findings **migrated** to DS-* IDs in [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md). **Physical DELETE** planned with runtime clean cut (§DS-MIG).
+
 **Architecture (1:1):** [`architecture/CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 980" role="img">
+  <title>Decision Lifecycle</title>
+  <desc>Stages from Proposal through Finalization executed within Nexus.</desc>
+  <rect width="1200" height="980" fill="#f6f8fb"/>
+  <rect x="32" y="28" width="1136" height="924" rx="22" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
+  <text x="600" y="72" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="28" font-weight="700" fill="#1a1a2e">Decision Lifecycle</text>
+  <text x="600" y="104" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" fill="#3d4f66">Executed by Nexus — no separate Decision Runtime</text>
+  <rect x="350" y="140" width="500" height="56" rx="12" fill="#eef4ff" stroke="#1a5fb4" stroke-width="2"/>
+  <text x="600" y="168" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">Proposal</text>
+  <text x="600" y="188" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#3d4f66">candidate artifact</text>
+  <line x1="600" y1="196" x2="600" y2="220" stroke="#1a5fb4" stroke-width="2"/>
+  <path d="M600 220 L594 206 L606 206 Z" fill="#1a5fb4"/>
+  <rect x="350" y="220" width="500" height="56" rx="12" fill="#fff8e1" stroke="#c9a227" stroke-width="2" stroke-dasharray="8 4"/>
+  <text x="600" y="248" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">Deliberation</text>
+  <text x="600" y="268" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#3d4f66">optional strategy</text>
+  <line x1="600" y1="276" x2="600" y2="300" stroke="#1a5fb4" stroke-width="2"/>
+  <path d="M600 300 L594 286 L606 286 Z" fill="#1a5fb4"/>
+  <rect x="350" y="300" width="500" height="56" rx="12" fill="#f3e8ff" stroke="#7c3aed" stroke-width="2"/>
+  <text x="600" y="328" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">Verification</text>
+  <text x="600" y="348" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#3d4f66">pipeline stages</text>
+  <line x1="600" y1="356" x2="600" y2="380" stroke="#1a5fb4" stroke-width="2"/>
+  <path d="M600 380 L594 366 L606 366 Z" fill="#1a5fb4"/>
+  <rect x="350" y="380" width="500" height="56" rx="12" fill="#fff3e0" stroke="#ef6c00" stroke-width="2"/>
+  <text x="600" y="408" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">Revision</text>
+  <text x="600" y="428" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#3d4f66">new version only</text>
+  <line x1="600" y1="436" x2="600" y2="460" stroke="#1a5fb4" stroke-width="2"/>
+  <path d="M600 460 L594 446 L606 446 Z" fill="#1a5fb4"/>
+  <rect x="350" y="460" width="500" height="56" rx="12" fill="#fff8e1" stroke="#c9a227" stroke-width="2" stroke-dasharray="8 4"/>
+  <text x="600" y="488" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">Adjudication</text>
+  <text x="600" y="508" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#3d4f66">optional</text>
+  <line x1="600" y1="516" x2="600" y2="540" stroke="#1a5fb4" stroke-width="2"/>
+  <path d="M600 540 L594 526 L606 526 Z" fill="#1a5fb4"/>
+  <rect x="350" y="540" width="500" height="56" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+  <text x="600" y="568" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">Resolution</text>
+  <text x="600" y="588" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#3d4f66">ACCEPT / FAIL / UNRESOLVED</text>
+  <line x1="600" y1="596" x2="600" y2="620" stroke="#1a5fb4" stroke-width="2"/>
+  <path d="M600 620 L594 606 L606 606 Z" fill="#1a5fb4"/>
+  <rect x="350" y="620" width="500" height="56" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+  <text x="600" y="648" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">Finalization</text>
+  <text x="600" y="668" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#3d4f66">authoritative record</text>
+  <text x="600" y="716" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#3d4f66">UNRESOLVED is a first-class auditable outcome</text>
+  <text x="600" y="744" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#3d4f66">Revision always mints a new Decision Version — history is never mutated</text>
+</svg>

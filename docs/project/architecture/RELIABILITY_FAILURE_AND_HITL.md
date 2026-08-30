@@ -51,7 +51,7 @@ Reliability keeps recovery **bounded**, **layered**, and **evidence-backed**.
 | **Autonomy** | `AutonomyLevel` steers recovery independence within policy — **not** permission |
 | **Governance boundary** | Reliability recommends recovery; Governance authorizes consequential action |
 | **Observability boundary** | Reliability emits transitions; Observability owns journal and as-of history |
-| **Critic boundary** | Critic emits verdict; Reliability chooses response — Critic does not own retry loop |
+| **Critic boundary** | Critic emits verdict; Reliability chooses response — Critic does not own retry loop — **TARGET:** Decision System verification → Lifecycle; see [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) |
 | **Production state** | Core retry/HITL/compensation wired on Nexus harness path; durable operator queue and production chaos **not** claimed |
 | **Maturity** | **A5 / I4 / P2 / E3** — see [Current maturity](#current-maturity) |
 
@@ -516,7 +516,7 @@ Four-axis statement ([`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXON
 | Observability | [`OBSERVABILITY.md`](OBSERVABILITY.md) |
 | Governance | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) |
 | UER / Nexus | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) |
-| Tools / LLM / Critic | [`TOOLS.md`](TOOLS.md) · [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) · [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
+| Tools / LLM / Critic | [`TOOLS.md`](TOOLS.md) · [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) · **CURRENT:** [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) · **TARGET:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) |
 | Maturity / proofs | [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md) · [`PROOFS.md`](../proofs/PROOFS.md) |
 
 ---
