@@ -32,6 +32,7 @@ from intergrax.runtime.observability.export_policy import (
 from intergrax.runtime.observability.export_routing import (
     FanoutObservabilityExporter,
     ObservabilityExportRoute,
+    ObservabilityRouteDeliveryResult,
 )
 from intergrax.runtime.observability.export_wiring import make_observability_export_runtime_plugin
 from testing_support.runtime_events import runtime_event_test_identity
@@ -158,6 +159,14 @@ class _RecoveringObservabilityExporter:
         self.call_count += 1
         if self.call_count <= self._fail_count:
             raise RuntimeError("temporary outage")
+
+
+class _BrokenHealthRegistry(ObservabilityExporterHealthRegistry):
+    def record_success(self, exporter_id: str, observed_at: datetime) -> None:
+        raise RuntimeError("health success recording broken")
+
+    def record_failure(self, exporter_id: str, reason: str, observed_at: datetime) -> None:
+        raise RuntimeError("health failure recording broken")
 
 
 def _runtime_event(*, identity: dict[str, object] | None = None) -> RuntimeEvent:
@@ -344,3 +353,98 @@ async def test_fanout_skipped_routes_do_not_create_health_snapshots() -> None:
     await fanout.export(envelope)
 
     assert registry.get("problem-only") is None
+
+
+@pytest.mark.asyncio
+async def test_r1_a_broken_health_registry_on_success_preserves_route_success() -> None:
+    route_a = InMemoryObservabilityExporter()
+    fanout = FanoutObservabilityExporter(
+        [ObservabilityExportRoute(route_id="route-a", exporter=route_a)],
+        health_registry=_BrokenHealthRegistry(),
+    )
+    envelope = ObservabilityExportEnvelope(record_kind=ExportRecordKind.RUNTIME_EVENT, run_id="run-1")
+
+    result = await fanout.export_with_result(envelope)
+
+    assert len(route_a.envelopes) == 1
+    assert result.selected_count == 1
+    assert result.exported_count == 1
+    assert result.failed_count == 0
+    assert result.deliveries == (
+        ObservabilityRouteDeliveryResult(
+            route_id="route-a",
+            selected=True,
+            exported=True,
+            reason="exported",
+        ),
+    )
+
+
+@pytest.mark.asyncio
+async def test_r1_b_broken_health_registry_on_exporter_failure_preserves_route_failure() -> None:
+    route_b = _FailingObservabilityExporter()
+    fanout = FanoutObservabilityExporter(
+        [ObservabilityExportRoute(route_id="route-b", exporter=route_b)],
+        health_registry=_BrokenHealthRegistry(),
+    )
+    envelope = ObservabilityExportEnvelope(record_kind=ExportRecordKind.RUNTIME_EVENT, run_id="run-1")
+
+    result = await fanout.export_with_result(envelope)
+
+    assert route_b.call_count == 1
+    assert result.selected_count == 1
+    assert result.exported_count == 0
+    assert result.failed_count == 1
+    assert result.deliveries == (
+        ObservabilityRouteDeliveryResult(
+            route_id="route-b",
+            selected=True,
+            exported=False,
+            reason="exporter_failed",
+        ),
+    )
+
+
+@pytest.mark.asyncio
+async def test_r1_c_fanout_continues_when_health_registry_always_throws() -> None:
+    route_a = InMemoryObservabilityExporter()
+    route_b = _FailingObservabilityExporter()
+    route_c = InMemoryObservabilityExporter()
+    fanout = FanoutObservabilityExporter(
+        [
+            ObservabilityExportRoute(route_id="route-a", exporter=route_a),
+            ObservabilityExportRoute(route_id="route-b", exporter=route_b),
+            ObservabilityExportRoute(route_id="route-c", exporter=route_c),
+        ],
+        health_registry=_BrokenHealthRegistry(),
+    )
+    envelope = ObservabilityExportEnvelope(record_kind=ExportRecordKind.RUNTIME_EVENT, run_id="run-1")
+
+    result = await fanout.export_with_result(envelope)
+
+    assert len(route_a.envelopes) == 1
+    assert route_b.call_count == 1
+    assert len(route_c.envelopes) == 1
+    assert result.selected_count == 3
+    assert result.exported_count == 2
+    assert result.failed_count == 1
+    assert result.deliveries == (
+        ObservabilityRouteDeliveryResult(
+            route_id="route-a",
+            selected=True,
+            exported=True,
+            reason="exported",
+        ),
+        ObservabilityRouteDeliveryResult(
+            route_id="route-b",
+            selected=True,
+            exported=False,
+            reason="exporter_failed",
+        ),
+        ObservabilityRouteDeliveryResult(
+            route_id="route-c",
+            selected=True,
+            exported=True,
+            reason="exported",
+        ),
+    )
