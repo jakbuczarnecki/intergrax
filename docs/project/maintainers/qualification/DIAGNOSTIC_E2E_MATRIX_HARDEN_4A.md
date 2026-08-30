@@ -44,6 +44,7 @@
 
 | File | Test | Level | Infrastructure | Invariant |
 |------|------|-------|----------------|-----------|
+| `tests/integration/runtime/test_harden_4b_tenant_diagnostic_isolation_e2e.py` | `test_harden_4b_same_violation_isolated_between_tenants`; `test_harden_4b_cross_tenant_problem_id_read_returns_none` | P3 | Governed-contractor HTTP host (shared), SQLite RuntimeEvents, InMemory DocumentStore, observability disabled | M17/M18 same violation class → separate Problems; tenant-scoped lists; direct-ID read isolation |
 | `tests/integration/runtime/test_diag_final_external_otel_e2e.py` | `test_diag_final_external_otel_spine_proof` | P4 | Governed-contractor HTTP host, SQLite RuntimeEvents, InMemory DocumentStore, Docker OTLP Collector | execution → RuntimeEvent → terminal diagnostics → Problem → DiagnosticReadService; vendor DOWN/UP; restart persistence |
 | `tests/integration/runtime/test_terminal_diagnostic_production_e2e.py` | `test_clean_execution_does_not_create_problem` | P3 | NexusLoop + UnifiedTaskRunner, in-memory stores | clean success → no Problem |
 | same | `test_real_nexus_execution_triggers_diagnostics_without_manual_orchestrator` | P3 | NexusLoop path | violation → orchestrator findings |
@@ -92,8 +93,8 @@
 | M14 | Observability vendor outage | Collector DOWN → business + canonical + diagnostic truth survive | `test_diag_final_external_otel_e2e.py::test_diag_final_external_otel_spine_proof` (outage section) | P4 | yes | FI-A Docker | **PROVEN** | Maps HARDEN-3F |
 | M15 | Observability recovery | DOWN → UP → new telemetry; health recovers; no replay of missed outage events | same test (recovery section) | P4 | yes | FI-A Docker | **PROVEN** | Maps HARDEN-3F-R1 |
 | M16 | Identity correlation | Problem/occurrence/diagnostic output correlates to tenant/task/run/attempt/execution | `test_diag_final_external_otel_e2e.py` (collector identity attrs); `test_diagnostic_subsystem_failure_evidence.py::test_failure_event_preserves_execution_identity` | P4 + P2 | yes | Docker | **PROVEN** | — |
-| M17 | Multi-tenant isolation | Same-looking issue across tenants → separate Problems; no cross-tenant occurrence merge | `test_problem_lifecycle.py::test_same_recurrence_key_in_another_tenant_is_isolated`; `test_harden_2a_problem_persistence_concurrency.py::test_harden_2a_concurrent_create_tenant_isolation`; `harden_1c_restart_proof_worker.py` phase-b list empty for other tenant | P1/P2/P4 | yes | Mongo (1c list only) | **PARTIALLY_PROVEN** | No P3 product-host execution path proving separate Problems per tenant for same violation class |
-| M18 | Diagnostic read isolation | Tenant A cannot read tenant B `problem_id` | `test_diagnostic_read_service.py::test_get_problem_other_tenant_returns_none`; `harden_1c` phase-b other-tenant list empty | P2 / P4 | yes | partial | **PARTIALLY_PROVEN** | No P3 HTTP host `get_problem` cross-tenant negative test |
+| M17 | Multi-tenant isolation | Same-looking issue across tenants → separate Problems; no cross-tenant occurrence merge | `test_harden_4b_tenant_diagnostic_isolation_e2e.py::test_harden_4b_same_violation_isolated_between_tenants`; `test_problem_lifecycle.py::test_same_recurrence_key_in_another_tenant_is_isolated`; `test_harden_2a_problem_persistence_concurrency.py::test_harden_2a_concurrent_create_tenant_isolation` | P3 + P1/P2 | yes | no | **PROVEN** | — |
+| M18 | Diagnostic read isolation | Tenant A cannot read tenant B `problem_id` | `test_harden_4b_tenant_diagnostic_isolation_e2e.py::test_harden_4b_cross_tenant_problem_id_read_returns_none`; `test_diagnostic_read_service.py::test_get_problem_other_tenant_returns_none` | P3 + P2 | yes | no | **PROVEN** | — |
 | M19 | Evidence reconstruction | Canonical RuntimeEvents → reconstruction → same diagnostic meaning | `test_diagnostic_read_service.py::test_get_problem_reconstructs_through_diag_pipeline` | P2 | yes | no | **PARTIALLY_PROVEN** | Unit/integration read path only; not host E2E |
 | M20 | Missing/incomplete evidence | No fabricated diagnosis; typed unavailable/degraded | `test_diagnostic_read_service.py::test_get_problem_unavailable_when_execution_evidence_missing` | P2 | yes | no | **PARTIALLY_PROVEN** | Contract proven at read service; not host E2E |
 | M21 | AI not authority | AI output cannot create/override canonical diagnostic facts | — | — | — | — | **NOT_APPLICABLE** | Central engine is deterministic; `InvestigationConclusion` is separate non-canonical layer (`test_investigation_contracts.py`) |
@@ -116,8 +117,8 @@
 | Metric | Count |
 |--------|------:|
 | Total required (M1–M24) | 24 |
-| **PROVEN** | 14 |
-| **PARTIALLY_PROVEN** | 9 |
+| **PROVEN** | 16 |
+| **PARTIALLY_PROVEN** | 7 |
 | **MISSING** | 0 |
 | **NOT_APPLICABLE** | 1 |
 | **DEFERRED** | 0 |
@@ -126,7 +127,7 @@
 
 | Severity | IDs | Rationale |
 |----------|-----|-----------|
-| **P0** | M17, M18 | Enterprise tenant isolation / read leakage risk without product-host negative proof |
+| **P0** | — | M17/M18 closed by HARDEN-4B product-host E2E |
 | **P1** | M1 (host), M5, M6 | Core lifecycle truth and false-positive guarantee at operator-facing host boundary |
 | **P2** | M8 (Mongo FI), M19, M20, M22 | Quality/durability depth; abstraction proofs exist but skeptical gap remains |
 
@@ -142,7 +143,16 @@ Matrix is substantially built (HARDEN-1/2/3 slices cover durability, OCC, vendor
 
 ## Proposed HARDEN-4 slices (implementation — not started in 4A)
 
-### HARDEN-4B — Product-host clean path + violation Problem E2E
+### HARDEN-4B — Product-host multi-tenant diagnostic isolation E2E ✅
+
+| Field | Value |
+|-------|-------|
+| **Goal** | M17 + M18: tenant A and B same violation class → two Problems; cross-tenant `get_problem` → none |
+| **Minimum level** | P3 |
+| **Scope** | `build_diag_final_product_host` dual-tenant runs on shared host persistence |
+| **CI class** | PR deterministic gate (`Durable diagnostics deterministic gate`), no Docker |
+
+### HARDEN-4C — Product-host clean path + violation Problem E2E
 
 | Field | Value |
 |-------|-------|
@@ -151,22 +161,13 @@ Matrix is substantially built (HARDEN-1/2/3 slices cover durability, OCC, vendor
 | **Scope** | Extend `diag_final_otel_support.py` + small test module (or add cases to existing diag_final suite) |
 | **CI class** | PR deterministic gate (`pytest.mark.gate`), no Docker required |
 
-### HARDEN-4C — Lifecycle resolve + recurrence reopen host E2E
+### HARDEN-4D — Lifecycle resolve + recurrence reopen host E2E
 
 | Field | Value |
 |-------|-------|
 | **Goal** | M5 + M6: host execution → Problem → explicit resolve API/path → read shows RESOLVED → second violation reopens same `problem_id` with incremented occurrences |
 | **Minimum level** | P3 |
 | **Scope** | Product host + DiagnosticReadService; reuse deterministic violation injector; call `ProblemLifecycleEngine.resolve` via supported host/operator seam |
-| **CI class** | PR deterministic gate |
-
-### HARDEN-4D — Tenant isolation + read isolation host E2E
-
-| Field | Value |
-|-------|-------|
-| **Goal** | M17 + M18: tenant A and B same violation class → two Problems; tenant B `get_problem(tenant_b, problem_id_a)` → none |
-| **Minimum level** | P3 |
-| **Scope** | `build_diag_final_product_host` dual-tenant runs |
 | **CI class** | PR deterministic gate |
 
 ### HARDEN-4E — Evidence reconstruction / unavailable read host E2E (optional)
@@ -192,9 +193,9 @@ Matrix is substantially built (HARDEN-1/2/3 slices cover durability, OCC, vendor
 
 ```text
 HARDEN-4A — matrix inventory ✅
-HARDEN-4B — product-host clean / no-false-positive E2E
-HARDEN-4C — resolve + recurrence reopen host E2E
-HARDEN-4D — tenant + read isolation host E2E
+HARDEN-4B — product-host multi-tenant diagnostic isolation E2E ✅
+HARDEN-4C — product-host clean / no-false-positive E2E
+HARDEN-4D — resolve + recurrence reopen host E2E
 HARDEN-4E — reconstruction / unavailable read host E2E (optional)
 HARDEN-4F — durable Mongo store failure E2E (optional)
 HARDEN-5 — documentation review and closeout

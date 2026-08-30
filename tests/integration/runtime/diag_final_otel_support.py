@@ -448,16 +448,17 @@ def build_observability_export_config(endpoint: str) -> ObservabilityExportOpera
 def attach_retry_violation_injector(
     runtime: HarnessHostRuntime,
     *,
-    tenant_id: str,
+    tenant_id: str | tuple[str, ...],
 ) -> None:
     runtime_store = runtime.observability.runtime_event_store
     if runtime_store is None:
         raise ValueError("diag-final proof requires RuntimeEvent persistence")
+    tenant_ids = (tenant_id,) if isinstance(tenant_id, str) else tenant_id
 
     def _handler(event: RuntimeEvent) -> None:
         if event.event_type is not RuntimeEventType.TASK_COMPLETED:
             return
-        if event.tenant_id != tenant_id:
+        if event.tenant_id not in tenant_ids:
             return
         runtime_store.append(
             sample_runtime_event(
@@ -487,7 +488,7 @@ def build_diag_final_product_host(
     tmp_path: Path,
     document_store: InMemoryDocumentStore,
     observability_export: ObservabilityExportOperatorConfig,
-    tenant_id: str,
+    tenant_id: str | tuple[str, ...],
     inject_violation: bool = True,
 ) -> DiagFinalHostComposition:
     health_registry = ObservabilityExporterHealthRegistry()
