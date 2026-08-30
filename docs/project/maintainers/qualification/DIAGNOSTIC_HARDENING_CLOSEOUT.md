@@ -111,6 +111,17 @@ Full inventory: matrix § Existing proof inventory.
 DIAGNOSTICS.md (canonical diagnostics entry)
   → OBSERVABILITY.md (HOS, export, journal)
   → APPLICATION_HOSTING.md (host wiring)
-  → DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md (proof index)
-  → DIAGNOSTIC_HARDENING_CLOSEOUT.md (this document)
+  → DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md (engine proof index)
+  → DIAGNOSTIC_HARDENING_CLOSEOUT.md (engine closeout)
+  → DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md (adoption inventory)
+  → DIAGNOSTIC_MULTI_SCENARIO_E2E_MATRIX.md (multi-scenario E2E)
+  → DIAGNOSTIC_PLATFORM_QUALIFICATION_CLOSEOUT.md (platform closeout)
 ```
+
+**Qualification layers:**
+
+```text
+Engine qualification = HARDEN complete
+Platform adoption qualification = DIAG-PLATFORM complete
+```
+

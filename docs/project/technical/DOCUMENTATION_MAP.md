@@ -18,7 +18,7 @@ Public readers looking for product value, proof paths, evaluation, partnership o
 | **Public documentation map** (reader routes, proof paths) | [PUBLIC_DOCUMENTATION_MAP.md](../community/PUBLIC_DOCUMENTATION_MAP.md) |
 | **Public documentation architecture** (maintainer contract) | [public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md](../maintainers/public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md) |
 | **Governed Execution** (policy enforcement capability) | [GOVERNED_EXECUTION.md](../architecture/GOVERNED_EXECUTION.md) |
-| **Central Diagnostics** (canonical Problem spine, authority, qualification) | [DIAGNOSTICS.md](../architecture/DIAGNOSTICS.md) · qualification [DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md](../maintainers/qualification/DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md) |
+| **Central Diagnostics** (canonical Problem spine, authority, qualification) | [DIAGNOSTICS.md](../architecture/DIAGNOSTICS.md) · engine [DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md](../maintainers/qualification/DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md) · platform [DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md](../maintainers/qualification/DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md) · [DIAGNOSTIC_MULTI_SCENARIO_E2E_MATRIX.md](../maintainers/qualification/DIAGNOSTIC_MULTI_SCENARIO_E2E_MATRIX.md) |
 | **Observability** (HOS, RuntimeEvent, export) | [OBSERVABILITY.md](../architecture/OBSERVABILITY.md) |
 | **Decision System** (target canon — lifecycle, verification, deliberation) | [DECISION_SYSTEM.md](../architecture/DECISION_SYSTEM.md) · [DECISION_VERIFICATION.md](../architecture/DECISION_VERIFICATION.md) · [DECISION_DELIBERATION.md](../architecture/DECISION_DELIBERATION.md) · **CURRENT:** [CRITIC_VERIFICATION.md](../architecture/CRITIC_VERIFICATION.md) |
 

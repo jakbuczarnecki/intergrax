@@ -6,11 +6,41 @@
 
 | Canonical architecture | Maintainer plan | Qualification |
 | ---------------------- | --------------- | ------------- |
-| This document | [`docs/project/maintainers/plans/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) (DIAG slices) | [`DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md`](../maintainers/qualification/DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md) · [`DIAGNOSTIC_HARDENING_CLOSEOUT.md`](../maintainers/qualification/DIAGNOSTIC_HARDENING_CLOSEOUT.md) |
+| This document | [`docs/project/maintainers/plans/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) (DIAG slices) | Engine: [`DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md`](../maintainers/qualification/DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md) · [`DIAGNOSTIC_HARDENING_CLOSEOUT.md`](../maintainers/qualification/DIAGNOSTIC_HARDENING_CLOSEOUT.md) · Platform: [`DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md`](../maintainers/qualification/DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md) · [`DIAGNOSTIC_MULTI_SCENARIO_E2E_MATRIX.md`](../maintainers/qualification/DIAGNOSTIC_MULTI_SCENARIO_E2E_MATRIX.md) |
 
 **Observability companion:** execution evidence recording, HOS, and export are documented in [`OBSERVABILITY.md`](OBSERVABILITY.md). Diagnostics **consumes** canonical evidence; observability **records** and **projects** it.
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and operators wiring diagnostic persistence, terminal triggers, or read APIs.
+
+---
+
+## Flagship architecture visual
+
+<a href="assets/fullsize/diagnostics-flagship.md">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/diagnostics-flagship-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/diagnostics-flagship-light.svg">
+  <img
+    alt="Applications, scenarios, and workers through Nexus execution, RuntimeEvent spine, central diagnostics, Problem Store, and derived observability."
+    src="assets/diagnostics-flagship-light.svg"
+  >
+</picture>
+</a>
+
+**Primary mental model:**
+
+```text
+Applications · Scenarios · Workers
+        ↓ shared runtime (HarnessHostRuntime / ScenarioRuntimeBaseline)
+RuntimeEvent = canonical execution evidence
+        ↓ terminal trigger
+Central Diagnostics (intergrax.runtime.diagnostics)
+        ↓
+Problem Store + DiagnosticReadService
+Observability export = derived (parallel consumer — not authority)
+```
+
+Deep backbone map: [`diagnostics-platform-backbone.md`](assets/fullsize/diagnostics-platform-backbone.md) · adoption paths: [`diagnostics-platform-adoption.md`](assets/fullsize/diagnostics-platform-adoption.md).
 
 ---
 
@@ -310,6 +340,14 @@ failed write = no automatic replay
 
 Problem Store failure **cannot** change execution truth.
 
+<a href="assets/fullsize/diagnostics-failure-isolation.md">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/diagnostics-failure-isolation-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/diagnostics-failure-isolation-light.svg">
+  <img alt="Failure isolation: business success survives Problem Store outage." src="assets/diagnostics-failure-isolation-light.svg">
+</picture>
+</a>
+
 ---
 
 ## Cross-process durability and OCC
@@ -364,16 +402,25 @@ Full hosting composition: [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md).
 
 ## Qualification summary
 
-Diagnostic hardening program **closed** (HARDEN-1 through HARDEN-5).
+**Engine qualification** — HARDEN-1 through HARDEN-5 **complete**.
 
 ```text
-M1–M24:  PROVEN=22  PARTIALLY_PROVEN=0  MISSING=0  NOT_APPLICABLE=2  DEFERRED=0
-P0=P1=P2=0
+Engine HARDEN: M1–M24 PROVEN=22 NOT_APPLICABLE=2
 ```
 
-N/A: **M21** (AI not authority), **M22** (no unsupported-scope contract).
+**Platform adoption qualification** — DIAG-PLATFORM **complete** (see [`DIAGNOSTIC_PLATFORM_QUALIFICATION_CLOSEOUT.md`](../maintainers/qualification/DIAGNOSTIC_PLATFORM_QUALIFICATION_CLOSEOUT.md)).
 
-Evidence index: [`DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md`](../maintainers/qualification/DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md).
+```text
+Platform adoption: NATIVE production surfaces = 4 PRODUCT hosts + 1 initialized scenario
+BYPASS = 0 · P3 flows ≥ 5 · P4 external proofs = 3
+```
+
+Evidence indexes:
+
+- Engine matrix: [`DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md`](../maintainers/qualification/DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md)
+- Adoption inventory: [`DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md`](../maintainers/qualification/DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md)
+- Multi-scenario E2E: [`DIAGNOSTIC_MULTI_SCENARIO_E2E_MATRIX.md`](../maintainers/qualification/DIAGNOSTIC_MULTI_SCENARIO_E2E_MATRIX.md)
+- Proof map visual: [`diagnostics-proof-map.md`](assets/fullsize/diagnostics-proof-map.md)
 
 ---
 

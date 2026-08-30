@@ -242,7 +242,7 @@ terminal RuntimeEvent persisted
   → DiagnosticReadService (dashboard / operator read)
 ```
 
-**Failure isolation:** diagnostic persistence or post-processing failure **must not** change an already-established correct business execution result. Problem Store outage surfaces subsystem failure evidence; RuntimeEvents remain canonical. Failed Problem writes are **not** automatically replayed. See [`DIAGNOSTICS.md`](DIAGNOSTICS.md) § Failure isolation.
+**Failure isolation:** diagnostic persistence or post-processing failure **must not** change an already-established correct business execution result. Problem Store outage surfaces subsystem failure evidence; RuntimeEvents remain canonical. Failed Problem writes are **not** automatically replayed. See [`DIAGNOSTICS.md`](DIAGNOSTICS.md) § Failure isolation. Platform adoption inventory: [`DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md`](../maintainers/qualification/DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md).
 
 **Observability wiring:** hosting events export through HOS (`ObservabilityHostedApplicationEventPublisher`) before any optional diagnostic projection. Exporter health is process-local operator state — not execution truth. See [`OBSERVABILITY.md`](OBSERVABILITY.md).
 
