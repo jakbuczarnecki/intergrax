@@ -10,12 +10,6 @@ from uuid import uuid4
 from pydantic import BaseModel
 
 from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import RuntimeStateContract
-from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
-    DeclarativePolicyHitlRequiredError,
-    DeclarativePolicyViolationError,
-)
-from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
-from intergrax.runtime.nexus.errors.tool_scope_violation_error import ToolScopeViolationError
 from intergrax.runtime.nexus.tracing.trace_models import (
     TraceComponent,
     TraceLevel,
@@ -96,6 +90,14 @@ class IdempotentToolInvoker:
                 request=request,
             )
 
+        admission_outcome = self._base_invoker.admit(
+            state=state,
+            agent_id=agent_id,
+            request=request,
+        )
+        if isinstance(admission_outcome, ToolExecutionResult):
+            return admission_outcome
+
         tenant_id = state.tenant_id
         key = request.idempotency_key
         owner_id = f"invoker-{uuid4().hex}"
@@ -147,24 +149,12 @@ class IdempotentToolInvoker:
         if claim is None:
             raise RuntimeError("Ledger inconsistency: ACQUIRED without claim.")
 
-        try:
-            result = self._base_invoker.invoke(
-                state=state,
-                agent_id=agent_id,
-                request=request,
-            )
-        except (
-            ToolScopeViolationError,
-            DeclarativePolicyViolationError,
-            DeclarativePolicyHitlRequiredError,
-        ) as exc:
-            result = ToolExecutionResult.fail(
-                RuntimeErrorCode.POLICY_ERROR,
-                str(exc),
-                effect_certainty=ToolEffectCertainty.NOT_STARTED,
-            )
-            self._store.complete_with_claim(tenant_id, key, claim, result)
-            raise
+        result = self._base_invoker.execute_after_admission(
+            state=state,
+            agent_id=agent_id,
+            request=request,
+            admission=admission_outcome,
+        )
 
         outcome_kind = classify_idempotency_outcome(contract, result)
         if outcome_kind == "safe_terminal":
