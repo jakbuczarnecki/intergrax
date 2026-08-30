@@ -98,9 +98,11 @@ async def test_per_run_isolation_on_long_lived_nexus_loop(
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="budget")
+    from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
-    await loop.handle_task(task, run_id=mint_run_id())
-    await loop.handle_task(task, run_id=mint_run_id())
+    runner = UnifiedTaskRunner(loop, run_budget=RunBudget(max_total_tokens=100))
+    await runner.run_task(task)
+    await runner.run_task(task)
 
     assert run_a_available == [30]
     assert run_b_available == [100]
@@ -193,7 +195,10 @@ def test_composition_does_not_store_mutable_ledger_on_child_runner() -> None:
 
 @pytest.mark.asyncio
 async def test_handle_task_binds_root_execution_budget() -> None:
-    loop = NexusLoop(AgentRegistry(), run_budget=RunBudget(max_total_tokens=42))
+    from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
+    run_budget = RunBudget(max_total_tokens=42)
+    loop = NexusLoop(AgentRegistry(), run_budget=run_budget)
     observed: list[int | None] = []
 
     async def _fake_impl(task: Task) -> TaskResult:
@@ -207,7 +212,8 @@ async def test_handle_task_binds_root_execution_budget() -> None:
 
     loop._handle_task_impl = _fake_impl  # type: ignore[method-assign]
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="bind")
-    await loop.handle_task(task, run_id=mint_run_id())
+    runner = UnifiedTaskRunner(loop, run_budget=run_budget)
+    await runner.run_task(task)
 
     assert observed == [42]
     assert peek_active_execution_budget() is None

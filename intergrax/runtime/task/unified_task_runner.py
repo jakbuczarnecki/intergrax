@@ -12,6 +12,8 @@ from intergrax.runtime.execution.orchestration import (
     execute_root_task,
     resolve_root_task_identity,
 )
+from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
@@ -32,9 +34,16 @@ class UnifiedTaskRunner:
         nexus_loop: NexusLoop,
         *,
         task_enricher: Callable[[Task], Task] | None = None,
+        execution_budget_ledger_factory: ExecutionBudgetLedgerFactory | None = None,
+        run_budget: RunBudget | None = None,
     ) -> None:
         self._nexus_loop = nexus_loop
         self._task_enricher = task_enricher
+        self._ledger_factory = (
+            execution_budget_ledger_factory
+            or nexus_loop.execution_budget_ledger_factory
+        )
+        self._run_budget = run_budget if run_budget is not None else nexus_loop.run_budget
 
     @property
     def nexus_loop(self) -> NexusLoop:
@@ -63,6 +72,8 @@ class UnifiedTaskRunner:
                     nexus_loop=self._nexus_loop,
                     identity=identity,
                     resume_checkpoint=resume_checkpoint,
+                    ledger_factory=self._ledger_factory,
+                    run_budget=self._run_budget,
                 )
         finally:
             await ActiveTaskRegistry.unregister(task.task_id, identity.run_id)

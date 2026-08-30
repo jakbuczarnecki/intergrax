@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""PLATFORM-5D — canonical root ExecutionId binding in NexusLoop.handle_task."""
+"""PLATFORM-5D — canonical root ExecutionId binding via upstream ExecutionRuntime."""
 
 from __future__ import annotations
 
@@ -37,6 +37,10 @@ from intergrax.runtime.execution.active_execution_budget import (
     bind_root_execution_budget,
     reset_active_execution_budget,
 )
+from intergrax.runtime.governance.active_execution_authority import (
+    bind_active_execution_authority,
+    reset_active_execution_authority,
+)
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
 _UNLIMITED_LEDGER = create_execution_budget_ledger(RunBudget())
@@ -46,6 +50,39 @@ from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from echo.echo_agent import EchoAgent
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+
+def _bind_upstream_root_context(
+    *,
+    run_id: RunId,
+    attempt_id: AttemptId,
+    execution_id: ExecutionId,
+    ledger: object = _UNLIMITED_LEDGER,
+) -> tuple[object, object, object]:
+    identity_token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    authority_token = bind_active_execution_authority(
+        ParentExecutionAuthority.unrestricted_root(),
+    )
+    budget_token = bind_root_execution_budget(
+        execution_id=execution_id,
+        ledger=ledger,
+    )
+    return identity_token, authority_token, budget_token
+
+
+def _reset_upstream_root_context(
+    *,
+    identity_token: object,
+    authority_token: object,
+    budget_token: object,
+) -> None:
+    reset_active_execution_budget(budget_token)
+    reset_active_execution_authority(authority_token)
+    reset_active_execution_identity(identity_token)
 
 
 def _fake_impl_factory(
@@ -62,22 +99,16 @@ def _fake_impl_factory(
 
 
 @pytest.mark.asyncio
-async def test_handle_task_mints_root_execution_id_without_prior_identity(
+async def test_handle_task_fails_without_upstream_identity(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     loop = NexusLoop(AgentRegistry())
     run_id = mint_run_id()
-    captured: dict[str, RunId | AttemptId | ExecutionId | None] = {}
-    monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl_factory(captured))
+    monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl_factory({}))
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="root")
 
-    await loop.handle_task(task, run_id=run_id)
-
-    assert captured["run_id"] == run_id
-    assert captured["attempt_id"] is not None
-    assert validate_execution_id(captured["execution_id"])
-    assert peek_active_execution_identity() is None
-    assert peek_active_execution_id() is None
+    with pytest.raises(RuntimeError, match="active ExecutionId required"):
+        await loop.handle_task(task, run_id=run_id)
 
 
 @pytest.mark.asyncio
@@ -87,15 +118,27 @@ async def test_handle_task_supplied_run_id_path_has_root_execution_id(
     loop = NexusLoop(AgentRegistry())
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
     captured: dict[str, RunId | AttemptId | ExecutionId | None] = {}
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl_factory(captured))
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="resume")
-
-    await loop.handle_task(task, run_id=run_id, attempt_id=attempt_id)
+    identity_token, authority_token, budget_token = _bind_upstream_root_context(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    try:
+        await loop.handle_task(task, run_id=run_id, attempt_id=attempt_id)
+    finally:
+        _reset_upstream_root_context(
+            identity_token=identity_token,
+            authority_token=authority_token,
+            budget_token=budget_token,
+        )
 
     assert captured["run_id"] == run_id
     assert captured["attempt_id"] == attempt_id
-    assert validate_execution_id(captured["execution_id"])
+    assert captured["execution_id"] == execution_id
 
 
 @pytest.mark.asyncio
@@ -110,49 +153,61 @@ async def test_handle_task_preserves_prebound_root_execution_id(
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl_factory(captured))
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="boundary")
     ledger = create_execution_budget_ledger(RunBudget())
-    identity_token = bind_active_execution_identity(
+    identity_token, authority_token, budget_token = _bind_upstream_root_context(
         run_id=run_id,
         attempt_id=attempt_id,
-        execution_id=execution_id,
-    )
-    budget_token = bind_root_execution_budget(
         execution_id=execution_id,
         ledger=ledger,
     )
     try:
         await loop.handle_task(task, run_id=run_id, attempt_id=attempt_id)
     finally:
-        reset_active_execution_budget(budget_token)
-        reset_active_execution_identity(identity_token)
+        _reset_upstream_root_context(
+            identity_token=identity_token,
+            authority_token=authority_token,
+            budget_token=budget_token,
+        )
 
     assert captured["execution_id"] == execution_id
 
 
 @pytest.mark.asyncio
-async def test_handle_task_resets_identity_after_success(
+async def test_handle_task_does_not_reset_upstream_identity(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     loop = NexusLoop(AgentRegistry())
     run_id = mint_run_id()
-    monkeypatch.setattr(
-        loop,
-        "_handle_task_impl",
-        _fake_impl_factory({}),
-    )
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl_factory({}))
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="ok")
-
-    await loop.handle_task(task, run_id=run_id)
+    identity_token, authority_token, budget_token = _bind_upstream_root_context(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    try:
+        await loop.handle_task(task, run_id=run_id, attempt_id=attempt_id)
+        assert require_active_execution_id() == execution_id
+    finally:
+        _reset_upstream_root_context(
+            identity_token=identity_token,
+            authority_token=authority_token,
+            budget_token=budget_token,
+        )
 
     assert peek_active_execution_identity() is None
     assert peek_active_execution_id() is None
 
 
 @pytest.mark.asyncio
-async def test_handle_task_resets_identity_after_exception(
+async def test_handle_task_propagates_exception_without_resetting_upstream(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     loop = NexusLoop(AgentRegistry())
     run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
 
     async def _boom(task: Task) -> TaskResult:
         require_active_execution_id()
@@ -160,16 +215,28 @@ async def test_handle_task_resets_identity_after_exception(
 
     monkeypatch.setattr(loop, "_handle_task_impl", _boom)
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="fail")
-
-    with pytest.raises(RuntimeError, match="boom"):
-        await loop.handle_task(task, run_id=run_id)
+    identity_token, authority_token, budget_token = _bind_upstream_root_context(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    try:
+        with pytest.raises(RuntimeError, match="boom"):
+            await loop.handle_task(task, run_id=run_id, attempt_id=attempt_id)
+        assert require_active_execution_id() == execution_id
+    finally:
+        _reset_upstream_root_context(
+            identity_token=identity_token,
+            authority_token=authority_token,
+            budget_token=budget_token,
+        )
 
     assert peek_active_execution_identity() is None
     assert peek_active_execution_id() is None
 
 
 @pytest.mark.asyncio
-async def test_sequential_handle_task_invocations_do_not_share_execution_id(
+async def test_sequential_handle_task_invocations_require_separate_upstream_context(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     loop = NexusLoop(AgentRegistry())
@@ -183,17 +250,30 @@ async def test_sequential_handle_task_invocations_do_not_share_execution_id(
     monkeypatch.setattr(loop, "_handle_task_impl", _capture)
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="seq")
 
-    await loop.handle_task(task, run_id=mint_run_id())
-    await loop.handle_task(task, run_id=mint_run_id())
+    for _ in range(2):
+        run_id = mint_run_id()
+        attempt_id = mint_attempt_id()
+        execution_id = mint_execution_id()
+        identity_token, authority_token, budget_token = _bind_upstream_root_context(
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+        )
+        try:
+            await loop.handle_task(task, run_id=run_id, attempt_id=attempt_id)
+        finally:
+            _reset_upstream_root_context(
+                identity_token=identity_token,
+                authority_token=authority_token,
+                budget_token=budget_token,
+            )
 
     assert len(seen) == 2
     assert seen[0] != seen[1]
 
 
 @pytest.mark.asyncio
-async def test_child_execution_parent_execution_id_points_to_root(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+async def test_child_execution_parent_execution_id_points_to_root() -> None:
     from dataclasses import dataclass
 
     @dataclass(frozen=True)

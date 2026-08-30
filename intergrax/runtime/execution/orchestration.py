@@ -5,27 +5,31 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Protocol, TypeVar
 
 from intergrax.contracts.delegation_authority import resolve_root_parent_execution_authority
 from intergrax.contracts.execution_identity import (
     AttemptId,
-    ExecutionId,
     RunId,
     mint_attempt_id,
-    mint_execution_id,
     mint_run_id,
     require_active_execution_id,
     require_active_execution_identity,
 )
-from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
+from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
+from intergrax.runtime.execution.runtime import (
+    ExecutionRuntime,
+    RootExecutionContext,
+    RootTaskIdentity,
+    mint_root_execution_identity,
+)
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
 from intergrax.runtime.long_running.checkpoint_builder import prepare_task_for_checkpoint_resume
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskResult
 
@@ -43,13 +47,6 @@ class NexusOrchestrationPort(Protocol):
         attempt_id: AttemptId | None = None,
     ) -> TaskResult:
         ...
-
-
-@dataclass(frozen=True, slots=True)
-class RootTaskIdentity:
-    run_id: RunId
-    attempt_id: AttemptId
-    execution_id: ExecutionId
 
 
 def resolve_root_task_identity(
@@ -72,10 +69,9 @@ def resolve_root_task_identity(
     else:
         resolved_run_id = run_id or mint_run_id()
         resolved_attempt_id = attempt_id or mint_attempt_id()
-    return RootTaskIdentity(
+    return mint_root_execution_identity(
         run_id=resolved_run_id,
         attempt_id=resolved_attempt_id,
-        execution_id=mint_execution_id(),
     )
 
 
@@ -121,6 +117,8 @@ async def execute_root_task(
     nexus_loop: NexusLoop,
     identity: RootTaskIdentity,
     resume_checkpoint: TaskCheckpoint | None = None,
+    ledger_factory: ExecutionBudgetLedgerFactory | None = None,
+    run_budget: RunBudget | None = None,
 ) -> TaskResult:
     if resume_checkpoint is not None and resume_checkpoint.runtime is not None:
         _checkpoint_run_id, checkpoint_attempt_id = execution_identity_from_checkpoint(
@@ -145,12 +143,6 @@ async def execute_root_task(
         capabilities=_ORCHESTRATION_CAPABILITIES,
         output_type=TaskResult,
     )
-    binding = ExecutionIdentityBinding(
-        run_id=identity.run_id,
-        attempt_id=identity.attempt_id,
-        execution_id=identity.execution_id,
-    )
-    root_authority = resolve_root_parent_execution_authority(task.execution_authority)
     router = StrategyExecutionRouter[
         TaskExecutionInput,
         TaskResult,
@@ -161,12 +153,18 @@ async def execute_root_task(
             OrchestrationExecutor(nexus_loop),
         ),
     )
-    boundary = ExecutionBoundary[
+    runtime = ExecutionRuntime[
         ExecutionRequest[TaskExecutionInput, TaskResult],
         TaskResult,
     ](
         router,
-        identity=binding,
-        authority=root_authority,
+        ledger_factory=ledger_factory,
+        run_budget=run_budget,
     )
-    return await boundary.execute(request)
+    root_context = RootExecutionContext(
+        run_id=identity.run_id,
+        attempt_id=identity.attempt_id,
+        authority=resolve_root_parent_execution_authority(task.execution_authority),
+        tenant_id=task.tenant_id,
+    )
+    return await runtime.execute(request, root_context)

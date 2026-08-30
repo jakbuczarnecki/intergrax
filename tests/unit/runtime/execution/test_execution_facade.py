@@ -7,8 +7,10 @@ from dataclasses import dataclass
 import pytest
 
 from intergrax.contracts.execution_identity import mint_task_id
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.runtime.execution import Execution
 from intergrax.runtime.execution.boundary import ExecutionBoundary
+from intergrax.runtime.execution.runtime import ExecutionRuntime, RootExecutionOptions, resolve_root_execution_context
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -75,20 +77,27 @@ def _minimal_task_result() -> TaskResult:
     return TaskResult(task_id=mint_task_id(), state=TaskState.COMPLETED, answer="ok")
 
 
+def _root_context() -> object:
+    return resolve_root_execution_context(
+        RootExecutionOptions(authority=ParentExecutionAuthority.unrestricted_root())
+    )
+
+
 def _ping_execution(result: Pong | None = None) -> Execution[Ping, Pong]:
     expected = result or Pong(value="pong")
-    boundary = ExecutionBoundary[Ping, Pong](CountingPingDelegate(expected))
-    return Execution[Ping, Pong](boundary)
+    runtime = ExecutionRuntime[Ping, Pong](CountingPingDelegate(expected))
+    return Execution[Ping, Pong](runtime)
 
 
 @pytest.mark.asyncio
 async def test_facade_delegates_typed_request_to_boundary_exactly_once() -> None:
     delegate = CountingPingDelegate(Pong(value="pong"))
-    boundary = ExecutionBoundary[Ping, Pong](delegate)
-    execution = Execution[Ping, Pong](boundary)
+    runtime = ExecutionRuntime[Ping, Pong](delegate)
+    execution = Execution[Ping, Pong](runtime)
     request = Ping(value="ping")
+    context = _root_context()
 
-    await execution.execute(request)
+    await execution.execute(request, root_context=context)
 
     assert delegate.call_count == 1
     assert delegate.last_request == request
@@ -99,7 +108,7 @@ async def test_facade_returns_exact_boundary_result() -> None:
     expected = Pong(value="exact")
     execution = _ping_execution(expected)
 
-    result = await execution.execute(Ping(value="ping"))
+    result = await execution.execute(Ping(value="ping"), root_context=_root_context())
 
     assert result is expected
 
@@ -107,10 +116,11 @@ async def test_facade_returns_exact_boundary_result() -> None:
 @pytest.mark.asyncio
 async def test_facade_propagates_boundary_exception_unchanged() -> None:
     boundary = ExecutionBoundary[Ping, Pong](FailingPingDelegate())
-    execution = Execution[Ping, Pong](boundary)
+    runtime = ExecutionRuntime[Ping, Pong](boundary)
+    execution = Execution[Ping, Pong](runtime)
 
     with pytest.raises(ValueError, match="boom:fail"):
-        await execution.execute(Ping(value="fail"))
+        await execution.execute(Ping(value="fail"), root_context=_root_context())
 
 
 @pytest.mark.asyncio
@@ -124,11 +134,11 @@ async def test_facade_does_not_retry_on_boundary_failure() -> None:
             raise RuntimeError("no-retry")
 
     delegate = RetryObservingDelegate()
-    boundary = ExecutionBoundary[Ping, Pong](delegate)
-    execution = Execution[Ping, Pong](boundary)
+    runtime = ExecutionRuntime[Ping, Pong](delegate)
+    execution = Execution[Ping, Pong](runtime)
 
     with pytest.raises(RuntimeError, match="no-retry"):
-        await execution.execute(Ping(value="once"))
+        await execution.execute(Ping(value="once"), root_context=_root_context())
 
     assert delegate.call_count == 1
 
@@ -137,7 +147,7 @@ async def test_facade_does_not_retry_on_boundary_failure() -> None:
 async def test_facade_works_with_non_task_typed_dtos() -> None:
     execution = _ping_execution(Pong(value="typed-pong"))
 
-    result = await execution.execute(Ping(value="typed-ping"))
+    result = await execution.execute(Ping(value="typed-ping"), root_context=_root_context())
 
     assert result == Pong(value="typed-pong")
 
@@ -148,10 +158,10 @@ async def test_task_typed_boundary_composition() -> None:
     expected = _minimal_task_result()
     runner = FakeTaskRunner(expected)
     delegate = TaskExecutionDelegate(runner)
-    boundary = ExecutionBoundary[Task, TaskResult](delegate)
-    execution = Execution[Task, TaskResult](boundary)
+    runtime = ExecutionRuntime[Task, TaskResult](delegate)
+    execution = Execution[Task, TaskResult](runtime)
 
-    result = await execution.execute(task)
+    result = await execution.execute(task, root_context=_root_context())
 
     assert runner.call_count == 1
     assert runner.last_task is task
@@ -162,11 +172,12 @@ async def test_task_typed_boundary_composition() -> None:
 async def test_facade_instances_do_not_share_mutable_state() -> None:
     delegate_a = CountingPingDelegate(Pong(value="a"))
     delegate_b = CountingPingDelegate(Pong(value="b"))
-    execution_a = Execution[Ping, Pong](ExecutionBoundary[Ping, Pong](delegate_a))
-    execution_b = Execution[Ping, Pong](ExecutionBoundary[Ping, Pong](delegate_b))
+    execution_a = Execution[Ping, Pong](ExecutionRuntime[Ping, Pong](delegate_a))
+    execution_b = Execution[Ping, Pong](ExecutionRuntime[Ping, Pong](delegate_b))
+    context = _root_context()
 
-    await execution_a.execute(Ping(value="a"))
-    await execution_b.execute(Ping(value="b"))
+    await execution_a.execute(Ping(value="a"), root_context=context)
+    await execution_b.execute(Ping(value="b"), root_context=context)
 
     assert delegate_a.call_count == 1
     assert delegate_b.call_count == 1

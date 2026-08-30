@@ -323,9 +323,16 @@ async def test_upstream_reserved_context_backed_by_same_ledger_in_nexus_children
 async def test_factory_call_count_root_nexus_one_upstream_zero(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
     inner_factory = create_execution_budget_ledger_factory(RunBudget(max_total_tokens=100))
     factory = MagicMock(spec=ExecutionBudgetLedgerFactory, wraps=inner_factory)
-    loop = NexusLoop(AgentRegistry(), execution_budget_ledger_factory=factory)
+    run_budget = RunBudget(max_total_tokens=100)
+    loop = NexusLoop(
+        AgentRegistry(),
+        execution_budget_ledger_factory=factory,
+        run_budget=run_budget,
+    )
 
     async def _noop(task: Task) -> TaskResult:
         from intergrax.contracts.execution_identity import require_active_execution_identity
@@ -334,8 +341,13 @@ async def test_factory_call_count_root_nexus_one_upstream_zero(
         return TaskResult(task_id=task.task_id, run_id=active_run_id, state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "_handle_task_impl", _noop)
+    runner = UnifiedTaskRunner(
+        loop,
+        execution_budget_ledger_factory=factory,
+        run_budget=run_budget,
+    )
 
-    await loop.handle_task(_task(), run_id=mint_run_id())
+    await runner.run_task(_task())
     assert factory.create_ledger.call_count == 1
 
     factory.create_ledger.reset_mock()
@@ -387,7 +399,7 @@ async def test_active_execution_without_budget_context_fails_closed(
     try:
         with pytest.raises(
             RuntimeError,
-            match="active execution budget required for canonical upstream Execution",
+            match="active execution budget required",
         ):
             await loop.handle_task(_task(), run_id=run_id, attempt_id=attempt_id)
     finally:
@@ -474,7 +486,10 @@ async def test_nexus_return_restores_upstream_budget_state_unchanged(
 async def test_fresh_root_nexus_run_still_creates_one_ledger(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    loop = NexusLoop(AgentRegistry(), run_budget=RunBudget(max_total_tokens=42))
+    from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
+    run_budget = RunBudget(max_total_tokens=42)
+    loop = NexusLoop(AgentRegistry(), run_budget=run_budget)
     observed: list[int | None] = []
 
     async def _observe(task: Task) -> TaskResult:
@@ -486,7 +501,8 @@ async def test_fresh_root_nexus_run_still_creates_one_ledger(
         return TaskResult(task_id=task.task_id, run_id=active_run_id, state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "_handle_task_impl", _observe)
-    await loop.handle_task(_task(), run_id=mint_run_id())
+    runner = UnifiedTaskRunner(loop, run_budget=run_budget)
+    await runner.run_task(_task())
 
     assert observed == [42]
     assert peek_active_execution_budget() is None

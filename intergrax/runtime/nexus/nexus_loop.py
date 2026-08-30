@@ -10,26 +10,17 @@ from intergrax.agents.agent_engine import AgentEngine
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.contracts.idempotency_store import IdempotencyStore
-from intergrax.contracts.delegation_authority import resolve_root_parent_execution_authority
 from intergrax.contracts.execution_identity import (
     ActiveExecutionIdentity,
     AttemptId,
     RunId,
-    bind_active_execution_identity,
-    mint_attempt_id,
-    mint_execution_id,
-    peek_active_execution_id,
-    peek_active_execution_identity,
-    peek_active_parent_execution_id,
+    require_active_execution_id,
     require_active_execution_identity,
-    reset_active_execution_identity,
     validate_attempt_id,
     validate_run_id,
 )
 from intergrax.runtime.governance.active_execution_authority import (
-    bind_active_execution_authority,
-    peek_active_execution_authority,
-    reset_active_execution_authority,
+    require_active_execution_authority,
 )
 from intergrax.contracts.agent_execution_result import (
     AgentExecutionResult,
@@ -101,12 +92,9 @@ from intergrax.runtime.adaptive.signal_emission import record_task_outcome_signa
 from intergrax.runtime.architecture.online_evaluation_registry import OnlineEvaluationRegistry
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.execution.active_execution_budget import (
-    bind_root_execution_budget,
-    peek_active_execution_budget,
-    reset_active_execution_budget,
+    require_active_execution_budget,
 )
 from intergrax.runtime.execution.budget import create_execution_budget_ledger_factory
-from intergrax.runtime.execution.budget.persistence import RunBudgetPersistenceError
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTriggerProtocol,
 )
@@ -426,22 +414,13 @@ class NexusLoop:
     def policy_engine(self) -> PolicyEngine:
         return self._policy_engine
 
-    def _create_run_ledger(
-        self,
-        task: Task,
-        *,
-        run_id: RunId,
-        attempt_id: AttemptId,
-    ) -> "ExecutionBudgetLedger":
-        try:
-            return self._execution_budget_ledger_factory.create_ledger(
-                self._run_budget,
-                tenant_id=task.tenant_id,
-                run_id=run_id,
-                attempt_id=attempt_id,
-            )
-        except RunBudgetPersistenceError as exc:
-            raise RuntimeError(f"run budget persistence failed: {exc}") from exc
+    @property
+    def run_budget(self) -> RunBudget | None:
+        return self._run_budget
+
+    @property
+    def execution_budget_ledger_factory(self) -> "ExecutionBudgetLedgerFactory":
+        return self._execution_budget_ledger_factory
 
     async def handle_task(
         self,
@@ -451,106 +430,32 @@ class NexusLoop:
         attempt_id: Optional[AttemptId] = None,
     ) -> TaskResult:
         resolved_run_id = validate_run_id(run_id)
-        active_execution_id = peek_active_execution_id()
-        if active_execution_id is not None:
-            active_run_id, active_attempt_id = require_active_execution_identity()
-            resolved_attempt_id = (
-                validate_attempt_id(attempt_id)
-                if attempt_id is not None
-                else active_attempt_id
+        active_execution_id = require_active_execution_id()
+        active_run_id, active_attempt_id = require_active_execution_identity()
+        resolved_attempt_id = (
+            validate_attempt_id(attempt_id)
+            if attempt_id is not None
+            else active_attempt_id
+        )
+        if resolved_run_id != active_run_id:
+            raise RuntimeError(
+                "active execution identity run_id mismatch with Nexus handle_task",
             )
-            if resolved_run_id != active_run_id:
-                raise RuntimeError(
-                    "active execution identity run_id mismatch with Nexus handle_task",
-                )
-            if resolved_attempt_id != active_attempt_id:
-                raise RuntimeError(
-                    "active execution identity attempt_id mismatch with Nexus handle_task",
-                )
-            root_authority = resolve_root_parent_execution_authority(
-                task.execution_authority,
+        if resolved_attempt_id != active_attempt_id:
+            raise RuntimeError(
+                "active execution identity attempt_id mismatch with Nexus handle_task",
             )
-            authority_token = None
-            if peek_active_execution_authority() is None:
-                authority_token = bind_active_execution_authority(root_authority)
-            active_budget = peek_active_execution_budget()
-            budget_token = None
-            if active_budget is not None:
-                if active_budget.execution_id != active_execution_id:
-                    raise RuntimeError(
-                        "active execution budget execution_id mismatch with Nexus handle_task",
-                    )
-            elif peek_active_parent_execution_id() is not None:
-                raise RuntimeError(
-                    "active execution budget required for canonical upstream Execution",
-                )
-            else:
-                budget_token = bind_root_execution_budget(
-                    execution_id=active_execution_id,
-                    ledger=self._create_run_ledger(
-                        task,
-                        run_id=resolved_run_id,
-                        attempt_id=resolved_attempt_id,
-                    ),
-                )
-            self._current_task = task
-            try:
-                return await self._handle_task_impl(task)
-            finally:
-                self._current_task = None
-                if budget_token is not None:
-                    reset_active_execution_budget(budget_token)
-                if authority_token is not None:
-                    reset_active_execution_authority(authority_token)
-
-        existing_identity = peek_active_execution_identity()
-        if existing_identity is not None:
-            active_run_id, active_attempt_id = existing_identity
-            resolved_attempt_id = (
-                validate_attempt_id(attempt_id)
-                if attempt_id is not None
-                else active_attempt_id
+        require_active_execution_authority()
+        active_budget = require_active_execution_budget()
+        if active_budget.execution_id != active_execution_id:
+            raise RuntimeError(
+                "active execution budget execution_id mismatch with Nexus handle_task",
             )
-            if resolved_run_id != active_run_id:
-                raise RuntimeError(
-                    "active execution identity run_id mismatch with Nexus handle_task",
-                )
-            if resolved_attempt_id != active_attempt_id:
-                raise RuntimeError(
-                    "active execution identity attempt_id mismatch with Nexus handle_task",
-                )
-        else:
-            resolved_attempt_id = (
-                validate_attempt_id(attempt_id)
-                if attempt_id is not None
-                else mint_attempt_id()
-            )
-        root_execution_id = mint_execution_id()
         self._current_task = task
-        root_authority = resolve_root_parent_execution_authority(
-            task.execution_authority,
-        )
-        identity_token = bind_active_execution_identity(
-            run_id=resolved_run_id,
-            attempt_id=resolved_attempt_id,
-            execution_id=root_execution_id,
-        )
-        authority_token = bind_active_execution_authority(root_authority)
-        budget_token = bind_root_execution_budget(
-            execution_id=root_execution_id,
-            ledger=self._create_run_ledger(
-                task,
-                run_id=resolved_run_id,
-                attempt_id=resolved_attempt_id,
-            ),
-        )
         try:
             return await self._handle_task_impl(task)
         finally:
             self._current_task = None
-            reset_active_execution_budget(budget_token)
-            reset_active_execution_authority(authority_token)
-            reset_active_execution_identity(identity_token)
 
     async def _handle_task_impl(self, task: Task) -> TaskResult:
         lifecycle, trace_emitter = self._resolve_lifecycle(task)

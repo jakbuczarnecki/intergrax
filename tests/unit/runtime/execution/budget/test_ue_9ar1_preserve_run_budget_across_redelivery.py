@@ -270,8 +270,15 @@ def test_corrupt_persisted_budget_state_fails_closed() -> None:
 async def test_normal_non_background_run_still_gets_fresh_budget(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
     factory = create_execution_budget_ledger_factory(RunBudget(max_total_tokens=42))
-    loop = NexusLoop(AgentRegistry(), execution_budget_ledger_factory=factory)
+    run_budget = RunBudget(max_total_tokens=42)
+    loop = NexusLoop(
+        AgentRegistry(),
+        execution_budget_ledger_factory=factory,
+        run_budget=run_budget,
+    )
     observed: list[int | None] = []
 
     async def _observe(task: Task) -> TaskResult:
@@ -283,32 +290,42 @@ async def test_normal_non_background_run_still_gets_fresh_budget(
         return TaskResult(task_id=task.task_id, run_id=mint_run_id(), state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "_handle_task_impl", _observe)
-    await loop.handle_task(
+    runner = UnifiedTaskRunner(
+        loop,
+        execution_budget_ledger_factory=factory,
+        run_budget=run_budget,
+    )
+    await runner.run_task(
         Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="fresh"),
-        run_id=mint_run_id(),
     )
     assert observed == [42]
 
 
 @pytest.mark.asyncio
 async def test_local_retry_does_not_create_new_ledger(monkeypatch: pytest.MonkeyPatch) -> None:
+    from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
     inner_factory = create_execution_budget_ledger_factory(RunBudget(max_total_tokens=100))
     factory = MagicMock(spec=ExecutionBudgetLedgerFactory, wraps=inner_factory)
-    loop = NexusLoop(AgentRegistry(), execution_budget_ledger_factory=factory)
+    run_budget = RunBudget(max_total_tokens=100)
+    loop = NexusLoop(
+        AgentRegistry(),
+        execution_budget_ledger_factory=factory,
+        run_budget=run_budget,
+    )
 
     async def _noop(task: Task) -> TaskResult:
         return TaskResult(task_id=task.task_id, run_id=mint_run_id(), state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "_handle_task_impl", _noop)
-    run_id = mint_run_id()
-    await loop.handle_task(
-        Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="once"),
-        run_id=run_id,
+    runner = UnifiedTaskRunner(
+        loop,
+        execution_budget_ledger_factory=factory,
+        run_budget=run_budget,
     )
-    await loop.handle_task(
-        Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="twice"),
-        run_id=run_id,
-    )
+    task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="once")
+    await runner.run_task(task)
+    await runner.run_task(task)
     assert factory.create_ledger.call_count == 2
 
 

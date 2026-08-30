@@ -22,6 +22,7 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
     reset_active_execution_identity,
+    validate_execution_id,
 )
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
@@ -34,12 +35,15 @@ from intergrax.runtime.execution import (
     ExecutionResult,
     ExecutionStatus,
 )
-from intergrax.runtime.execution.boundary import (
-    ExecutionAdmissionHook,
-    ExecutionBoundary,
-    ExecutionIdentityBinding,
-)
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
+from intergrax.runtime.execution.boundary import ExecutionAdmissionHook
 from intergrax.runtime.execution.facade import Execution
+from intergrax.runtime.execution.runtime import (
+    ExecutionRuntime,
+    RootExecutionContext,
+    RootExecutionOptions,
+    resolve_root_execution_context,
+)
 from intergrax.runtime.execution.inference import InferenceExecutor
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
@@ -238,22 +242,31 @@ def _risk_request(
   )
 
 
-def _identity_binding() -> ExecutionIdentityBinding:
-  return ExecutionIdentityBinding(
-    run_id=mint_run_id(),
-    attempt_id=mint_attempt_id(),
-    execution_id=mint_execution_id(),
-  )
+def _root_context(
+    *,
+    run_id: RunId | None = None,
+    attempt_id: AttemptId | None = None,
+) -> RootExecutionContext:
+    return resolve_root_execution_context(
+        RootExecutionOptions(
+            authority=ParentExecutionAuthority.unrestricted_root(),
+            run_id=run_id,
+            attempt_id=attempt_id,
+        )
+    )
 
 
 def _inference_stack(
   adapter: LLMAdapter,
   *,
-  identity: ExecutionIdentityBinding | None = None,
+  root_context: RootExecutionContext | None = None,
   admission_hooks: tuple[ExecutionAdmissionHook, ...] = (),
-) -> Execution[
-    ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
-    ExecutionResult[RiskAssessment],
+) -> tuple[
+    Execution[
+        ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
+        ExecutionResult[RiskAssessment],
+    ],
+    RootExecutionContext,
 ]:
   executor = InferenceExecutor[RiskAssessment](adapter)
   router = StrategyExecutionRouter[
@@ -261,12 +274,12 @@ def _inference_stack(
     RiskAssessment,
     ExecutionResult[RiskAssessment],
   ](inference_executor=executor)
-  boundary = ExecutionBoundary(
-    router,
-    admission_hooks=admission_hooks,
-    identity=identity,
-  )
-  return Execution(boundary)
+  runtime = ExecutionRuntime[
+    ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
+    ExecutionResult[RiskAssessment],
+  ](router, admission_hooks=admission_hooks)
+  context = root_context or _root_context()
+  return Execution(runtime), context
 
 
 def test_empty_capabilities_resolve_to_inference() -> None:
@@ -279,19 +292,17 @@ def test_empty_capabilities_resolve_to_inference() -> None:
 async def test_direct_structured_request_executes_full_path() -> None:
   expected = RiskAssessment(risk="low")
   adapter = StructuredTestAdapter(parsed_output=expected)
-  identity = _identity_binding()
   captured: dict[str, RunId | AttemptId | ExecutionId] = {}
   admission_hook = IdentityProbingAdmissionHook(captured)
-  execution = _inference_stack(
+  execution, context = _inference_stack(
     adapter,
-    identity=identity,
     admission_hooks=(admission_hook,),
   )
   request = _risk_request()
 
   assert StrategyResolver().resolve(request) is ExecutionStrategy.INFERENCE
 
-  result = await execution.execute(request)
+  result = await execution.execute(request, root_context=context)
 
   assert result.status is ExecutionStatus.COMPLETED
   assert result.output == expected
@@ -299,9 +310,9 @@ async def test_direct_structured_request_executes_full_path() -> None:
   assert adapter.generate_structured_calls == 1
   assert adapter.last_output_model is RiskAssessment
   assert adapter.last_messages == request.input
-  assert adapter.last_run_id == identity.run_id
+  assert adapter.last_run_id == context.run_id
   assert admission_hook.admit_count == 1
-  assert captured["hook_execution_id"] == identity.execution_id
+  assert validate_execution_id(captured["hook_execution_id"])
   assert peek_active_execution_identity() is None
   assert peek_active_execution_id() is None
 
@@ -309,31 +320,28 @@ async def test_direct_structured_request_executes_full_path() -> None:
 @pytest.mark.asyncio
 async def test_adapter_exception_propagates_unchanged() -> None:
   adapter = FailingStructuredAdapter(parsed_output=RiskAssessment(risk="low"))
-  execution = _inference_stack(adapter, identity=_identity_binding())
+  execution, context = _inference_stack(adapter)
   with pytest.raises(RuntimeError, match="adapter-failure"):
-    await execution.execute(_risk_request())
+    await execution.execute(_risk_request(), root_context=context)
   assert peek_active_execution_identity() is None
 
 
 @pytest.mark.asyncio
 async def test_unsupported_structured_output_adapter_fails_before_invoke() -> None:
   adapter = NoStructuredSupportAdapter()
-  execution = _inference_stack(
-    adapter,
-    identity=_identity_binding(),
-  )
+  execution, context = _inference_stack(adapter)
 
   with pytest.raises(RuntimeError, match="inference adapter does not support structured output"):
-    await execution.execute(_risk_request())
+    await execution.execute(_risk_request(), root_context=context)
 
 
 @pytest.mark.asyncio
 async def test_output_type_none_fails_before_adapter_invocation() -> None:
   adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
-  execution = _inference_stack(adapter, identity=_identity_binding())
+  execution, context = _inference_stack(adapter)
 
   with pytest.raises(RuntimeError, match="structured inference requires output_type"):
-    await execution.execute(_risk_request(output_type=None))
+    await execution.execute(_risk_request(output_type=None), root_context=context)
 
   assert adapter.generate_structured_calls == 0
 
@@ -341,11 +349,12 @@ async def test_output_type_none_fails_before_adapter_invocation() -> None:
 @pytest.mark.asyncio
 async def test_tools_request_fails_before_adapter_invocation() -> None:
   adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
-  execution = _inference_stack(adapter, identity=_identity_binding())
+  execution, context = _inference_stack(adapter)
 
   with pytest.raises(RuntimeError, match="AGENTIC strategy is not configured"):
     await execution.execute(
-      _risk_request(capabilities=frozenset({ExecutionCapability.TOOLS}))
+      _risk_request(capabilities=frozenset({ExecutionCapability.TOOLS})),
+      root_context=context,
     )
 
   assert adapter.generate_structured_calls == 0
@@ -354,11 +363,12 @@ async def test_tools_request_fails_before_adapter_invocation() -> None:
 @pytest.mark.asyncio
 async def test_orchestration_request_fails_before_adapter_invocation() -> None:
   adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
-  execution = _inference_stack(adapter, identity=_identity_binding())
+  execution, context = _inference_stack(adapter)
 
   with pytest.raises(RuntimeError, match="ORCHESTRATION strategy is not configured"):
     await execution.execute(
-      _risk_request(capabilities=frozenset({ExecutionCapability.ORCHESTRATION}))
+      _risk_request(capabilities=frozenset({ExecutionCapability.ORCHESTRATION})),
+      root_context=context,
     )
 
   assert adapter.generate_structured_calls == 0
@@ -367,7 +377,7 @@ async def test_orchestration_request_fails_before_adapter_invocation() -> None:
 @pytest.mark.asyncio
 async def test_tools_and_orchestration_fail_before_adapter_invocation() -> None:
   adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
-  execution = _inference_stack(adapter, identity=_identity_binding())
+  execution, context = _inference_stack(adapter)
 
   with pytest.raises(RuntimeError, match="ORCHESTRATION strategy is not configured"):
     await execution.execute(
@@ -375,7 +385,8 @@ async def test_tools_and_orchestration_fail_before_adapter_invocation() -> None:
         capabilities=frozenset(
           {ExecutionCapability.TOOLS, ExecutionCapability.ORCHESTRATION}
         )
-      )
+      ),
+      root_context=context,
     )
 
   assert adapter.generate_structured_calls == 0
@@ -384,11 +395,12 @@ async def test_tools_and_orchestration_fail_before_adapter_invocation() -> None:
 @pytest.mark.asyncio
 async def test_streaming_request_fails_explicitly() -> None:
   adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
-  execution = _inference_stack(adapter, identity=_identity_binding())
+  execution, context = _inference_stack(adapter)
 
   with pytest.raises(RuntimeError, match="structured inference streaming is not implemented"):
     await execution.execute(
-      _risk_request(capabilities=frozenset({ExecutionCapability.STREAMING}))
+      _risk_request(capabilities=frozenset({ExecutionCapability.STREAMING})),
+      root_context=context,
     )
 
   assert adapter.generate_structured_calls == 0
@@ -420,9 +432,9 @@ async def test_inference_executor_requires_active_execution_id() -> None:
 @pytest.mark.asyncio
 async def test_generate_messages_and_generate_with_tools_never_used() -> None:
   adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="high"))
-  execution = _inference_stack(adapter, identity=_identity_binding())
+  execution, context = _inference_stack(adapter)
 
-  await execution.execute(_risk_request())
+  await execution.execute(_risk_request(), root_context=context)
 
   assert adapter.generate_messages_calls == 0
   assert adapter.generate_with_tools_calls == 0

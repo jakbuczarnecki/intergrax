@@ -99,7 +99,14 @@ class NexusWorkerRuntime:
             run_budget=run_budget,
             execution_budget_ledger_factory=resolved_factory,
         )
-        return cls(UnifiedTaskRunner(loop), lifecycle=lifecycle)
+        return cls(
+            UnifiedTaskRunner(
+                loop,
+                execution_budget_ledger_factory=resolved_factory,
+                run_budget=run_budget,
+            ),
+            lifecycle=lifecycle,
+        )
 
     @property
     def task_runner(self) -> UnifiedTaskRunner:
