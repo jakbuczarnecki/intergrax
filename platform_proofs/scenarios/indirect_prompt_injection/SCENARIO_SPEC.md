@@ -1,6 +1,6 @@
 ---
 scenario_slug: indirect_prompt_injection
-lifecycle: DESIGN
+lifecycle: ACCEPTED_FOR_IMPLEMENTATION
 implementation_status: NOT_INITIALIZED
 intergrax_fit: NOT_COMPLETED
 gap_decision: NOT_COMPLETED
@@ -13,7 +13,7 @@ application_vs_proof_ownership: COMPLETED
 **Scenario:** Indirect Prompt Injection with Governed Action Prevention  
 **Slug:** `indirect_prompt_injection`  
 **Proof class:** SCENARIO  
-**Status:** DESIGN / NOT YET ACCEPTED — awaiting human Scenario Quality Gate.
+**Status:** ACCEPTED FOR IMPLEMENTATION — scenario design accepted; implementation not yet initialized; no executable proof, evidence, or report yet.
 
 [← Back to public Scenario page](README.md)
 
@@ -215,9 +215,11 @@ Task is minted with authority including `order.shipping_address.write`. Same wri
 
 ### Scenario Quality Gate
 
-**Recommendation: RECOMMEND ACCEPT** (pending independent human audit).
+**Gate result: PASS**
 
-This scenario passes the quality gate because:
+This scenario is **ACCEPTED FOR IMPLEMENTATION**.
+
+This scenario passed the quality gate because:
 
 - it addresses a **real operational security problem** with concrete business impact;
 - failure has meaningful cost (mis-shipment / fraud), not a toy string match;
@@ -228,8 +230,6 @@ This scenario passes the quality gate because:
 - Application Survival and Observability tests are **YES** by design.
 
 **Not required for design acceptance:** verified Intergrax capability audit, platform-gap resolution, or mapping to current platform interfaces. Implementation fit is verified during implementation preparation.
-
-Human/independent audit retains final acceptance authority. Lifecycle remains `DESIGN / NOT YET ACCEPTED`.
 
 ### Application Survival Test
 
@@ -659,7 +659,7 @@ Provider exposes `sensitive_write_count` and request log.
 
 ### Implementation prerequisites (post-acceptance)
 
-1. Human Scenario Quality Gate acceptance.
+1. Human Scenario Quality Gate acceptance — **DONE** (ACCEPTED FOR IMPLEMENTATION).
 2. Implementation preparation — verify Intergrax fit; resolve platform gaps if discovered.
 3. `init_scenario_implementation.py`.
 4. Implement application + proof layers per accepted architecture.
