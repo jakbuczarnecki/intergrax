@@ -391,7 +391,7 @@ Observability owns observability signal/event semantics, canonical persisted evi
 | [**Integrations**](INTEGRATIONS.md) | Vendor backends are export sinks; Integrations do not own event semantics |
 | [**Reliability / HITL**](RELIABILITY_FAILURE_AND_HITL.md) | Reliability owns behavior; Observability owns evidence of retries, attempts, handoff, terminal reason |
 | [**Governed Execution**](GOVERNED_EXECUTION.md) | Governance authorizes; Observability records decision and provenance |
-| [**Critic**](CRITIC_VERIFICATION.md) | Critic owns verification verdict; Observability records inputs/metadata/verdict refs — distinct from OECP — **TARGET:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) decision audit trail |
+| [**Critic / Decision**](CRITIC_VERIFICATION.md) | **CURRENT:** Critic owns verification verdict; **TARGET:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) lifecycle audit — Decision ID, Decision Version, lifecycle/verification events, resolution, authorization correlation; Observability records, does not own decision semantics |
 
 ## Observability & Evaluation Control Plane (OECP)
 

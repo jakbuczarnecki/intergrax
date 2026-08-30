@@ -5,27 +5,20 @@
 **Parent:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> **DS-DOC-HARDEN (2026-08-30):** Target Verification Pipeline architecture **FROZEN**. Runtime still uses `CriticOrchestrator` until migration.
+> **DS-DOC-CLEAN (2026-08-30):** Target Verification Pipeline architecture **FROZEN**. Runtime still uses `CriticOrchestrator` until migration.
 
-**Last updated:** 2026-08-30
+**Last updated:** 2026-08-30 — DS-DOC-CLEAN plan consolidation.
 
 ---
 
 ## Cursor read scope (token budget)
 
 - **Default:** hub status + open P0/P1 summary only.
-- **Detail rows:** [`satellites/DECISION_VERIFICATION_implementation_pipeline.md`](satellites/DECISION_VERIFICATION_implementation_pipeline.md) — one satellite per session max.
+- **Detail rows:** phase sections below — one phase per session max.
 - **Architecture:** [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md) read-scope block.
+- **Extended depth:** [`architecture/satellites/DECISION_VERIFICATION_extended_depth.md`](../../architecture/satellites/DECISION_VERIFICATION_extended_depth.md) on demand.
 - **Lifecycle context:** [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md) — version binding on demand.
 - **CURRENT code:** `intergrax/runtime/critic/**` — migration audit only; one module per session.
-
----
-
-## Implementation satellite
-
-| Satellite | Contents |
-| --------- | -------- |
-| [`satellites/DECISION_VERIFICATION_implementation_pipeline.md`](satellites/DECISION_VERIFICATION_implementation_pipeline.md) | DS-VER-PIPE · DS-VER-STAGES · migrated open requirements |
 
 ---
 
@@ -41,10 +34,48 @@
 
 ## Phase index
 
-| Phase | Status | Satellite |
-| ----- | ------ | --------- |
-| DS-VER-PIPE | PLANNED | [`implementation_pipeline`](satellites/DECISION_VERIFICATION_implementation_pipeline.md) |
-| DS-VER-STAGES | PLANNED | same satellite |
+| Phase | Status | Section |
+| ----- | ------ | ------- |
+| DS-VER-PIPE | PLANNED | [below](#phase-ds-ver-pipe--pipeline-foundation) |
+| DS-VER-STAGES | PLANNED | [below](#phase-ds-ver-stages--stage-migration-from-cvl) |
+
+---
+
+## Phase DS-VER-PIPE — Pipeline foundation (PLANNED)
+
+| ID | Priority | Item | Status |
+|----|----------|------|--------|
+| DS-VER-PIPE-01 | P0 | Verification Pipeline orchestrator contract | **Planned** |
+| DS-VER-PIPE-02 | P0 | Stage plugin interface + registration | **Planned** |
+| DS-VER-PIPE-03 | P0 | Verification Result + Challenge typed contracts | **Planned** |
+| DS-VER-PIPE-04 | P0 | Deterministic-before-probabilistic ordering | **Planned** |
+| DS-VER-PIPE-05 | P1 | Challenge → Lifecycle handoff (no in-place mutation) | **Planned** |
+| DS-VER-PIPE-06 | P1 | Fail-closed unavailable required stage | **Planned** |
+| DS-VER-PIPE-07 | P2 | Stage telemetry → Observability | **Planned** |
+
+---
+
+## Phase DS-VER-STAGES — Stage migration from CVL (PLANNED)
+
+| ID | Priority | Item | Status |
+|----|----------|------|--------|
+| DS-VER-STAGE-L0 | P0 | Structural/deterministic stage from `L0Gateway` | **Planned** |
+| DS-VER-STAGE-SEM | P1 | Semantic stage from `L1Gateway` / `eval.judge` | **Planned** |
+| DS-VER-STAGE-TRAJ | P1 | Trajectory stage from `eval.trajectory` | **Planned** |
+| DS-VER-STAGE-EVID | P1 | Evidence verification stage | **Planned** |
+| DS-VER-STAGE-GR | P2 | Guardrail merge from `guardrail_l0` | **Planned** |
+| DS-VER-STAGE-DOM | P2 | Independent/domain verifier stage | **Planned** |
+
+---
+
+## Open requirements (migrated from Critic audit)
+
+| ID | Priority | Status |
+|----|----------|--------|
+| DS-VER-RUBRIC-PROVENANCE-INTEGRITY | P0/P1 | ACCEPTED / PLANNED |
+| DS-VER-PRODUCER-INDEPENDENCE | P0/P1 | ACCEPTED / PLANNED |
+| DS-VER-ADVERSARIAL-SEMANTIC | P1 | ACCEPTED / PLANNED |
+| DS-VER-RESULT-COHERENCE | P1/P2 | ACCEPTED / PLANNED |
 
 ---
 
@@ -58,4 +89,4 @@
 
 ## Delivery rule
 
-One **DS-VER-\*** ID per PR → update pipeline satellite → parent [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) disposition when Critic capability retired.
+One **DS-VER-\*** ID per PR → update phase row in this hub → parent [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) disposition when Critic capability retired.

@@ -334,7 +334,7 @@ outcome** — separate from **execution authorization** and Nexus side effects.
 </picture>
 </a>
 
-[View full-size diagram](docs/project/assets/public/readme/fullsize/intergrax-decision-system.md) · [Decision System architecture](docs/project/architecture/DECISION_SYSTEM.md)
+[View full-size diagram](docs/project/assets/public/readme/fullsize/intergrax-decision-system.md) · [Decision System](docs/project/architecture/DECISION_SYSTEM.md) · [Verification](docs/project/architecture/DECISION_VERIFICATION.md) · [Deliberation](docs/project/architecture/DECISION_DELIBERATION.md)
 
 ---
 

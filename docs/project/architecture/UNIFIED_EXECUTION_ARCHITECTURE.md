@@ -319,6 +319,28 @@ Do **not** create a second general-purpose arbitrary DAG runtime for internal ag
 
 ---
 
+## 9a. Optional Decision Lifecycle inside Execution
+
+**TARGET ARCHITECTURE**
+
+Not every Execution requires a Decision Lifecycle. When profiled, semantic decision progression runs **inside** the Nexus execution model — not as a parallel Decision Runtime:
+
+```text
+Execution (Nexus)
+└ optional Decision Lifecycle
+   ├── Strategy / Proposal (optional Deliberation)
+   ├── Verification
+   ├── Revision (optional)
+   ├── Adjudication (optional)
+   └── Resolution / Finalization
+```
+
+Nexus owns scheduling, checkpoint, budget, and technical retry. Decision Lifecycle owns semantic progression (`ACCEPTED` / `REJECTED` / `UNRESOLVED`). Governed Execution answers whether an **exact Decision Version** may execute — separate from decision correctness.
+
+**Canonical:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) · [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md). **CURRENT production:** [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md).
+
+---
+
 ## 10. Retry, pause, and resume
 
 **TARGET ARCHITECTURE**

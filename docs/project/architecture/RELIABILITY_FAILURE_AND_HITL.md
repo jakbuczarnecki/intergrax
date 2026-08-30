@@ -51,6 +51,7 @@ Reliability keeps recovery **bounded**, **layered**, and **evidence-backed**.
 | **Autonomy** | `AutonomyLevel` steers recovery independence within policy — **not** permission |
 | **Governance boundary** | Reliability recommends recovery; Governance authorizes consequential action |
 | **Observability boundary** | Reliability emits transitions; Observability owns journal and as-of history |
+| **HITL / Decision boundary** | HITL is **not** L2 Critic — invoked by Decision Lifecycle for approver/adjudicator; approval binds exact Decision Version; technical retry = Nexus Reliability; semantic revision = Decision Lifecycle — see [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) |
 | **Critic boundary** | Critic emits verdict; Reliability chooses response — Critic does not own retry loop — **TARGET:** Decision System verification → Lifecycle; see [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) |
 | **Production state** | Core retry/HITL/compensation wired on Nexus harness path; durable operator queue and production chaos **not** claimed |
 | **Maturity** | **A5 / I4 / P2 / E3** — see [Current maturity](#current-maturity) |

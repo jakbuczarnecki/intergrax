@@ -51,8 +51,8 @@ Canonical domain pair index: [architecture hub § Domain pair index (primary 24)
 Decision System
 ├ architecture hub ............... DECISION_SYSTEM.md
 ├ Verification / Deliberation .... paired sub-hubs (subordinate to Decision System)
-├ architecture satellites ........ satellites/DECISION_* (on demand — hub Go deeper)
-└ implementation plan ............ maintainers/plans/DECISION_*.md + plans/satellites/
+├ extended depth ................. satellites/DECISION_*_extended_depth.md (one per hub, on demand)
+└ implementation plan ............ maintainers/plans/DECISION_*.md
 ```
 
 Critic = **CURRENT implementation snapshot only** — not target canonical domain owner.

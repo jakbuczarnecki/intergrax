@@ -5,26 +5,19 @@
 **Parent:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> **DS-DOC-HARDEN (2026-08-30):** Deliberation / Council strategy architecture **FROZEN**. **Council runtime NOT STARTED.**
+> **DS-DOC-CLEAN (2026-08-30):** Deliberation / Council strategy architecture **FROZEN**. **Council runtime NOT STARTED.**
 
-**Last updated:** 2026-08-30
+**Last updated:** 2026-08-30 — DS-DOC-CLEAN plan consolidation.
 
 ---
 
 ## Cursor read scope (token budget)
 
 - **Default:** hub status + phase index only.
-- **Detail rows:** [`satellites/DECISION_DELIBERATION_implementation_strategies.md`](satellites/DECISION_DELIBERATION_implementation_strategies.md) — one satellite per session max.
+- **Detail rows:** phase sections below — one phase per session max.
 - **Architecture:** [`DECISION_DELIBERATION.md`](../../architecture/DECISION_DELIBERATION.md) read-scope block.
+- **Extended depth:** [`architecture/satellites/DECISION_DELIBERATION_extended_depth.md`](../../architecture/satellites/DECISION_DELIBERATION_extended_depth.md) on demand.
 - **Skip** Council implementation detail until DS-DELIB-01 lands.
-
----
-
-## Implementation satellite
-
-| Satellite | Contents |
-| --------- | -------- |
-| [`satellites/DECISION_DELIBERATION_implementation_strategies.md`](satellites/DECISION_DELIBERATION_implementation_strategies.md) | DS-DELIB · DS-COUNCIL strategy rows |
 
 ---
 
@@ -41,10 +34,36 @@
 
 ## Phase index
 
-| Phase | Status | Satellite |
-| ----- | ------ | --------- |
-| DS-DELIB | PLANNED | [`implementation_strategies`](satellites/DECISION_DELIBERATION_implementation_strategies.md) |
-| DS-COUNCIL | PLANNED | same satellite |
+| Phase | Status | Section |
+| ----- | ------ | ------- |
+| DS-DELIB | PLANNED | [below](#phase-ds-delib--strategy-foundation) |
+| DS-COUNCIL | PLANNED | [below](#phase-ds-council--council-strategy) |
+
+---
+
+## Phase DS-DELIB — Strategy foundation (PLANNED)
+
+| ID | Priority | Item | Status |
+|----|----------|------|--------|
+| DS-DELIB-01 | P0 | `DecisionStrategy` protocol + registry | **Planned** |
+| DS-DELIB-02 | P0 | Single Model strategy (baseline) | **Planned** |
+| DS-DELIB-03 | P1 | Disagreement artifact typed contract | **Planned** |
+| DS-DELIB-04 | P1 | Participant role configuration model | **Planned** |
+| DS-DELIB-05 | P1 | Context visibility policy per role | **Planned** |
+| DS-DELIB-06 | P2 | Rule-Based strategy | **Planned** |
+| DS-DELIB-07 | P2 | Hybrid strategy composition | **Planned** |
+
+---
+
+## Phase DS-COUNCIL — Council strategy (PLANNED)
+
+| ID | Priority | Item | Status |
+|----|----------|------|--------|
+| DS-COUNCIL-01 | P1 | Council strategy — parallel proposals | **Planned** |
+| DS-COUNCIL-02 | P1 | Structured disagreement capture | **Planned** |
+| DS-COUNCIL-03 | P1 | Synthesis candidate emission | **Planned** |
+| DS-COUNCIL-04 | P1 | Bounded rounds under Nexus budget | **Planned** |
+| DS-COUNCIL-05 | P2 | Deadlock → Adjudication / UNRESOLVED routing | **Planned** |
 
 ---
 

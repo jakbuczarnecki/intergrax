@@ -429,3 +429,5 @@ Evidence indexes:
 ## Related deep reference
 
 Detailed DIAG-1..7 slice semantics, causal evidence, grouping, and orchestration contracts remain in [`OBSERVABILITY.md`](OBSERVABILITY.md) § DIAG subsystem. This document is the **primary entry point** for diagnostics architecture; OBSERVABILITY owns observability-specific export, HOS, and journal semantics.
+
+**Decision System boundary:** Diagnostics may observe Decision System failures and feed investigation flows — it does **not** resolve Decision Resolution, execute Revision, or own verification rubrics. See [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md).

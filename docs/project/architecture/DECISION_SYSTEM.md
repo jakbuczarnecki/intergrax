@@ -609,12 +609,7 @@ The Decision System is **not** production-qualified after:
 
 | Depth | Route |
 | ----- | ----- |
-| **Extended engineering model** | [`satellites/DECISION_SYSTEM_extended_depth.md`](satellites/DECISION_SYSTEM_extended_depth.md) |
-| Identity / versioning / lineage | [`satellites/DECISION_SYSTEM_identity_version_lineage.md`](satellites/DECISION_SYSTEM_identity_version_lineage.md) |
-| Lifecycle / state / resolution | [`satellites/DECISION_SYSTEM_lifecycle_state_resolution.md`](satellites/DECISION_SYSTEM_lifecycle_state_resolution.md) |
-| Authority / finalization | [`satellites/DECISION_SYSTEM_authority_finalization.md`](satellites/DECISION_SYSTEM_authority_finalization.md) |
-| Concurrency / recovery | [`satellites/DECISION_SYSTEM_concurrency_recovery.md`](satellites/DECISION_SYSTEM_concurrency_recovery.md) |
-| Platform boundaries | [`satellites/DECISION_SYSTEM_platform_boundaries.md`](satellites/DECISION_SYSTEM_platform_boundaries.md) |
+| **Extended engineering model** | [`satellites/DECISION_SYSTEM_extended_depth.md`](satellites/DECISION_SYSTEM_extended_depth.md) — identity, versioning, lifecycle, authority, concurrency, recovery, platform boundaries |
 | Verification pipeline | [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) |
 | Deliberation / Council | [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
 | Implementation plan | [`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) |
@@ -632,8 +627,7 @@ The Decision System is **not** production-qualified after:
 **Default:** this hub read-scope block + at-a-glance + one cited diagram section.
 
 - **Implement Decision System:** read this file + [`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) hub only.
-- **Architecture satellite:** at most **one** [`satellites/`](satellites/) file per session unless RESUME cites more.
-- **Plan satellite:** at most **one** [`maintainers/plans/satellites/`](../maintainers/plans/satellites/) file per session.
-- **Verification slice:** add [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) + matching plan — one architecture/plan satellite max.
-- **Deliberation slice:** add [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) + matching plan — one architecture/plan satellite max.
+- **Architecture satellite:** [`satellites/DECISION_SYSTEM_extended_depth.md`](satellites/DECISION_SYSTEM_extended_depth.md) on demand — one per session unless RESUME cites more.
+- **Verification slice:** add [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) + [`maintainers/plans/DECISION_VERIFICATION.md`](../maintainers/plans/DECISION_VERIFICATION.md).
+- **Deliberation slice:** add [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) + [`maintainers/plans/DECISION_DELIBERATION.md`](../maintainers/plans/DECISION_DELIBERATION.md).
 - **Skip** full [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) unless auditing CURRENT implementation or migration disposition.
