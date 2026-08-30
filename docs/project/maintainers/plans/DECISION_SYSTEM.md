@@ -55,7 +55,7 @@
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-CORE-01 | P0 | Decision ID / Version / scope typed contracts | **Planned** |
+| DS-CORE-01 | P0 | Decision ID / Version / scope typed contracts | **Done** — `intergrax/contracts/decision_identity.py`; `tests/unit/contracts/test_decision_identity.py` |
 | DS-CORE-02 | P0 | Candidate vs Authoritative Decision records + immutable lineage | **Planned** |
 | DS-CORE-03 | P0 | Lifecycle state machine executed by Nexus (no second runtime) | **Planned** |
 | DS-CORE-04 | P0 | Resolution semantics (`ACCEPTED` / `REJECTED` / `UNRESOLVED`) | **Planned** |
