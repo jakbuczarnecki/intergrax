@@ -47,7 +47,7 @@
 | `tests/integration/runtime/test_harden_4b_tenant_diagnostic_isolation_e2e.py` | `test_harden_4b_same_violation_isolated_between_tenants`; `test_harden_4b_cross_tenant_problem_id_read_returns_none` | P3 | Governed-contractor HTTP host (shared), SQLite RuntimeEvents, InMemory DocumentStore, observability disabled | M17/M18 same violation class → separate Problems; tenant-scoped lists; direct-ID read isolation |
 | `tests/integration/runtime/test_harden_4c_clean_diagnostic_host_e2e.py` | `test_harden_4c_clean_product_host_execution_creates_no_problem` | P3 | Governed-contractor HTTP host (shared), SQLite RuntimeEvents, InMemory DocumentStore, observability disabled, `inject_violation=False` | M1 clean HTTP execution → TASK_COMPLETED → diagnostics active → zero Problems |
 | `tests/integration/runtime/test_harden_4d_problem_lifecycle_host_e2e.py` | `test_harden_4d_resolve_then_same_violation_reopens_same_problem` | P3 | Governed-contractor HTTP host (shared), SQLite RuntimeEvents, InMemory DocumentStore, observability disabled, deterministic violation injector | M5/M6 HTTP run → Problem OPEN → explicit resolve → RESOLVED read → second run reopens same `problem_id` |
-| `tests/integration/runtime/test_harden_4e_diagnostic_read_truth_e2e.py` | `test_harden_4e_reconstructs_problem_from_canonical_runtime_evidence`; `test_harden_4e_missing_execution_evidence_returns_unavailable_not_fabricated_diagnosis`; `test_harden_4e_unsupported_diagnostic_subject_fails_closed_without_problem` | P3 | Governed-contractor HTTP host (shared), SQLite RuntimeEvents, InMemory DocumentStore, observability disabled; M20 uses shared Problem persistence with isolated RuntimeEvent store | M19/M20/M22 host read truth: reconstruction from canonical events; unavailable read without fabrication; clean execution fail-closed without Problem |
+| `tests/integration/runtime/test_harden_4e_diagnostic_read_truth_e2e.py` | `test_harden_4e_reconstructs_problem_from_canonical_runtime_evidence`; `test_harden_4e_missing_execution_evidence_returns_unavailable_not_fabricated_diagnosis` | P3 | Governed-contractor HTTP host (shared), SQLite RuntimeEvents, InMemory DocumentStore, observability disabled; M20 uses shared Problem persistence with isolated RuntimeEvent store | M19/M20 host read truth: reconstruction from canonical events; unavailable read without fabrication |
 | `tests/integration/runtime/test_diag_final_external_otel_e2e.py` | `test_diag_final_external_otel_spine_proof` | P4 | Governed-contractor HTTP host, SQLite RuntimeEvents, InMemory DocumentStore, Docker OTLP Collector | execution → RuntimeEvent → terminal diagnostics → Problem → DiagnosticReadService; vendor DOWN/UP; restart persistence |
 | `tests/integration/runtime/test_terminal_diagnostic_production_e2e.py` | `test_clean_execution_does_not_create_problem` | P3 | NexusLoop + UnifiedTaskRunner, in-memory stores | clean success → no Problem |
 | same | `test_real_nexus_execution_triggers_diagnostics_without_manual_orchestrator` | P3 | NexusLoop path | violation → orchestrator findings |
@@ -101,7 +101,7 @@
 | M19 | Evidence reconstruction | Canonical RuntimeEvents → reconstruction → same diagnostic meaning | `test_harden_4e_diagnostic_read_truth_e2e.py::test_harden_4e_reconstructs_problem_from_canonical_runtime_evidence`; `test_diagnostic_read_service.py::test_get_problem_reconstructs_through_diag_pipeline` | P3 / P2 | yes | no | **PROVEN** | — |
 | M20 | Missing/incomplete evidence | No fabricated diagnosis; typed unavailable/degraded | `test_harden_4e_diagnostic_read_truth_e2e.py::test_harden_4e_missing_execution_evidence_returns_unavailable_not_fabricated_diagnosis`; `test_diagnostic_read_service.py::test_get_problem_unavailable_when_execution_evidence_missing` | P3 / P2 | yes | no | **PROVEN** | — |
 | M21 | AI not authority | AI output cannot create/override canonical diagnostic facts | — | — | — | — | **NOT_APPLICABLE** | Central engine is deterministic; `InvestigationConclusion` is separate non-canonical layer (`test_investigation_contracts.py`) |
-| M22 | Unsupported scenario behavior | Valid-but-unsupported case must not create fake Problem or silent scenario fallback | `test_harden_4e_diagnostic_read_truth_e2e.py::test_harden_4e_unsupported_diagnostic_subject_fails_closed_without_problem`; `test_diagnostic_orchestrator.py::test_empty_subject_inputs_rejected` (reject only) | P3 / P1 | yes | no | **PROVEN** | Clean execution with canonical evidence but no diagnostic findings; host orchestrator fail-closed |
+| M22 | Unsupported scenario behavior | Valid-but-unsupported case must not create fake Problem or silent scenario fallback | `test_diagnostic_orchestrator.py::test_empty_subject_inputs_rejected` (invalid empty request only); M1 clean-path proofs (`test_harden_4c_*`, `test_terminal_execution_diagnostic_trigger.py::test_clean_execution_sequence_produces_no_problem`) cover supported-no-findings, not unsupported scope | P1 / P3 | yes | no | **NOT_APPLICABLE** | HARDEN-4E-R1 audit: central `DiagnosticOrchestrator` has no typed unsupported-subject/scope outcome; valid execution with `has_findings=False` is supported clean semantics (M1), not unsupported rejection |
 | M23 | Side-effect safety | Diagnostic detection/read must not repeat business side effects | `test_terminal_diagnostic_production_e2e.py::test_replay_terminal_trigger_does_not_duplicate_occurrence`; `test_terminal_execution_diagnostic_trigger.py::test_trigger_replay_is_idempotent_for_same_execution` | P3 / P1 | yes | no | **PROVEN** | Terminal replay idempotency covers primary production path |
 | M24 | Restart + vendor outage combined | Composition of durability + vendor failure without new mega-test | M13 + M14 proofs in `test_diag_final_external_otel_e2e.py` (restart block after outage/recovery) | P4 | yes | Docker | **PROVEN** | Justified composition |
 
@@ -120,10 +120,10 @@
 | Metric | Count |
 |--------|------:|
 | Total required (M1–M24) | 24 |
-| **PROVEN** | 22 |
+| **PROVEN** | 21 |
 | **PARTIALLY_PROVEN** | 1 |
 | **MISSING** | 0 |
-| **NOT_APPLICABLE** | 1 |
+| **NOT_APPLICABLE** | 2 |
 | **DEFERRED** | 0 |
 
 ### Critical vs non-critical gaps
@@ -177,7 +177,7 @@ Matrix is substantially built (HARDEN-1/2/3 slices cover durability, OCC, vendor
 
 | Field | Value |
 |-------|-------|
-| **Goal** | M19 + M20 + M22 at host boundary |
+| **Goal** | M19 + M20 at host boundary (M22 requalified NOT_APPLICABLE in HARDEN-4E-R1 — no central unsupported-scope contract) |
 | **Minimum level** | P3 |
 | **Scope** | `test_harden_4e_diagnostic_read_truth_e2e.py` on shared `build_diag_final_product_host` harness; M20 uses shared Problem persistence with isolated RuntimeEvent SQLite |
 | **CI class** | PR deterministic gate (`Durable diagnostics deterministic gate`), no Docker |

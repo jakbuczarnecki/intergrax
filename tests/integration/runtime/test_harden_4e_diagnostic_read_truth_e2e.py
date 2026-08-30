@@ -4,16 +4,12 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
 from intergrax.applications._shared.diagnostic_read_wiring import (
     resolve_host_diagnostic_read_dependencies,
-)
-from intergrax.applications._shared.diagnostic_runtime_wiring import (
-    resolve_host_terminal_execution_diagnostic_trigger,
 )
 from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
@@ -37,7 +33,6 @@ pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
 _TENANT = "harden-4e-read-truth"
 _FOREIGN_TENANT = "harden-4e-foreign"
-_OBSERVED_AT = datetime(2026, 8, 30, 12, 0, tzinfo=UTC)
 
 
 @pytest.fixture
@@ -242,57 +237,3 @@ def test_harden_4e_missing_execution_evidence_returns_unavailable_not_fabricated
             DiagnosticReadUnavailableReason.EXECUTION_EVIDENCE_UNAVAILABLE
         )
         assert occurrence.assessment is None
-
-
-def test_harden_4e_unsupported_diagnostic_subject_fails_closed_without_problem(
-    tmp_path: Path,
-    _stub_host_llm: None,
-) -> None:
-    document_store = InMemoryDocumentStore()
-    storage_root = tmp_path / "storage"
-    storage_root.mkdir(parents=True, exist_ok=True)
-    export_config = ObservabilityExportOperatorConfig(enabled=False)
-
-    composition = build_diag_final_product_host(
-        tmp_path=storage_root,
-        document_store=document_store,
-        observability_export=export_config,
-        tenant_id=_TENANT,
-        inject_violation=False,
-    )
-    assert composition.runtime.diagnostic_wiring.attached is True
-
-    run = execute_host_run(
-        composition,
-        tenant_id=_TENANT,
-        message="harden-4e unsupported diagnostic scope proof",
-    )
-    run_id = str(run["run_id"])
-    task_id = str(run["task_id"])
-    assert_runtime_event_truth(
-        composition,
-        tenant_id=_TENANT,
-        run_id=run_id,
-        task_id=task_id,
-    )
-
-    trigger = resolve_host_terminal_execution_diagnostic_trigger(composition.runtime)
-    result = trigger.trigger_for_terminal_execution(
-        tenant_id=_TENANT,
-        task_id=validate_task_id(task_id),
-        run_id=validate_run_id(run_id),
-        observed_at=_OBSERVED_AT,
-    )
-
-    assert len(result.execution_results) == 1
-    execution_result = result.execution_results[0]
-    assert execution_result.has_runtime_events
-    assert not execution_result.assessment.has_findings
-    assert result.grouping_result.candidates == ()
-    assert result.lifecycle_result.created == ()
-    assert result.lifecycle_result.updated == ()
-
-    read_service = build_read_service(composition)
-    listed = read_service.list_problems(tenant_id=_TENANT)
-    assert listed.total_count == 0
-    assert listed.problems == ()
