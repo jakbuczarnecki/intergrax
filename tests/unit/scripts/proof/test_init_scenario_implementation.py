@@ -217,6 +217,8 @@ def test_init_happy_path_generates_skeleton_and_updates_lifecycle(tmp_path: Path
     assert (package_root / "proof" / "evaluator.py").is_file()
     assert (package_root / "run_proof.py").is_file()
     assert (package_root / "proof.json").is_file()
+    assert (package_root / "assets").is_dir()
+    assert (package_root / "assets" / ".gitkeep").is_file()
 
     metadata = load_scenario_lifecycle_metadata(package_root / "SCENARIO_SPEC.md")
     assert metadata.lifecycle is ScenarioLifecycle.IMPLEMENTATION_INITIALIZED
@@ -408,6 +410,7 @@ def test_init_fails_when_generated_architecture_violates_rules(
     assert metadata.implementation_status is ScenarioImplementationStatus.NOT_INITIALIZED
     assert not (package_root / "application").exists()
     assert not (package_root / "run_proof.py").exists()
+    assert not (package_root / "assets").exists()
 
 
 def test_init_failure_does_not_delete_preexisting_user_content(
