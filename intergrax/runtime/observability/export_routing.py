@@ -12,12 +12,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 from intergrax.runtime.observability.export_boundary import (
     ExportRecordKind,
     ObservabilityExportEnvelope,
     ObservabilityExporter,
 )
+from intergrax.runtime.observability.export_health import ObservabilityExporterHealthRegistry
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,9 +77,19 @@ class FanoutObservabilityExporter:
     Per-route exporter failures are isolated and never propagate to callers.
     """
 
-    def __init__(self, routes: tuple[ObservabilityExportRoute, ...] | list[ObservabilityExportRoute]) -> None:
+    def __init__(
+        self,
+        routes: tuple[ObservabilityExportRoute, ...] | list[ObservabilityExportRoute],
+        *,
+        health_registry: ObservabilityExporterHealthRegistry | None = None,
+    ) -> None:
         self._routes: tuple[ObservabilityExportRoute, ...] = tuple(routes)
+        self._health_registry = health_registry
         self.last_result: ObservabilityFanoutResult | None = None
+
+    @staticmethod
+    def _utc_now() -> datetime:
+        return datetime.now(timezone.utc)
 
     async def export(self, envelope: ObservabilityExportEnvelope) -> None:
         await self.export_with_result(envelope)
@@ -107,10 +119,17 @@ class FanoutObservabilityExporter:
                 continue
 
             selected_count += 1
+            attempt_at = self._utc_now()
             try:
                 await route.exporter.export(envelope)
             except Exception:
                 failed_count += 1
+                if self._health_registry is not None:
+                    self._health_registry.record_failure(
+                        route.route_id,
+                        "exporter_failed",
+                        attempt_at,
+                    )
                 deliveries.append(
                     ObservabilityRouteDeliveryResult(
                         route_id=route.route_id,
@@ -120,6 +139,9 @@ class FanoutObservabilityExporter:
                     )
                 )
                 continue
+
+            if self._health_registry is not None:
+                self._health_registry.record_success(route.route_id, attempt_at)
 
             exported_count += 1
             deliveries.append(

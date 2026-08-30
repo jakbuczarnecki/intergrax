@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import logging
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import StrEnum
 
 from intergrax.runtime.observability.export_attributes import (
@@ -20,8 +21,57 @@ from intergrax.runtime.observability.export_boundary import (
     ObservabilityExporter,
     envelope_is_content_safe,
 )
+from intergrax.runtime.observability.export_health import (
+    ObservabilityExporterHealthRegistry,
+    normalize_export_failure_reason,
+)
 
 logger = logging.getLogger(__name__)
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _record_export_health_success(
+    *,
+    health_registry: ObservabilityExporterHealthRegistry | None,
+    exporter_id: str | None,
+    observed_at: datetime,
+) -> None:
+    if health_registry is None or exporter_id is None:
+        return
+    try:
+        health_registry.record_success(exporter_id, observed_at)
+    except Exception:
+        logger.warning(
+            "observability exporter health success recording failed exporter_id=%s",
+            exporter_id,
+            exc_info=True,
+        )
+
+
+def _record_export_health_failure(
+    *,
+    health_registry: ObservabilityExporterHealthRegistry | None,
+    exporter_id: str | None,
+    reason: str,
+    observed_at: datetime,
+) -> None:
+    if health_registry is None or exporter_id is None:
+        return
+    try:
+        health_registry.record_failure(
+            exporter_id,
+            normalize_export_failure_reason(reason),
+            observed_at,
+        )
+    except Exception:
+        logger.warning(
+            "observability exporter health failure recording failed exporter_id=%s",
+            exporter_id,
+            exc_info=True,
+        )
 
 
 class ObservabilityExportMode(StrEnum):
@@ -171,6 +221,8 @@ async def try_export_observability_envelope(
     *,
     exporter: ObservabilityExporter | None = None,
     policy: ObservabilityExportPolicy | None = None,
+    health_registry: ObservabilityExporterHealthRegistry | None = None,
+    exporter_id: str | None = None,
 ) -> ExportPolicyResult:
     """Apply policy then export; exporter failures never propagate to callers."""
     active_exporter = exporter or NoOpObservabilityExporter()
@@ -178,6 +230,7 @@ async def try_export_observability_envelope(
     if not policy_result.exported or policy_result.envelope is None:
         return policy_result
 
+    attempt_at = _utc_now()
     try:
         await active_exporter.export(policy_result.envelope)
     except Exception:
@@ -188,6 +241,12 @@ async def try_export_observability_envelope(
             policy_result.envelope.record_kind.value,
             exc_info=True,
         )
+        _record_export_health_failure(
+            health_registry=health_registry,
+            exporter_id=exporter_id,
+            reason="exporter_failed",
+            observed_at=attempt_at,
+        )
         return ExportPolicyResult(
             exported=False,
             envelope=policy_result.envelope,
@@ -195,4 +254,9 @@ async def try_export_observability_envelope(
             reason="exporter_failed",
         )
 
+    _record_export_health_success(
+        health_registry=health_registry,
+        exporter_id=exporter_id,
+        observed_at=attempt_at,
+    )
     return policy_result
