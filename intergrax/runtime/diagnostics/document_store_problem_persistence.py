@@ -7,8 +7,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from typing import Protocol, runtime_checkable
+
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
+    DocumentQueryCursorCodec,
     DocumentRecord,
     DocumentStore,
 )
@@ -50,7 +53,15 @@ _SUBJECT_ROW_PREFIX = "subject:"
 _QUERY_PAGE_LIMIT = 5000
 _INDEX_SCHEMA = "intergrax.diagnostic_problem.index.v1"
 _PROBLEM_ID_FIELD = "problem_id"
-_DEFAULT_LIST_CURSOR_SECRET = b"intergrax.diagnostic_problem.list_cursor.v1"
+_LIST_QUERY_OVERFETCH_FACTOR = 4
+_LIST_QUERY_MAX_INDEX_EXAMINED_FACTOR = 16
+
+
+@runtime_checkable
+class DocumentStoreQueryCursorProvider(Protocol):
+    @property
+    def query_cursor_codec(self) -> DocumentQueryCursorCodec:
+        """Authenticated codec for document-store query continuation cursors."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -196,16 +207,23 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
         self,
         document_store: ConditionalDocumentStore,
         *,
-        list_cursor_secret: bytes | None = None,
+        list_cursor_secret: bytes,
+        document_query_cursor_codec: DocumentQueryCursorCodec | None = None,
     ) -> None:
         if not isinstance(document_store, ConditionalDocumentStore):
             raise TypeError(
                 "problem persistence requires ConditionalDocumentStore",
             )
         self._document_store = document_store
-        self._list_cursor_codec = ProblemListQueryCursorCodec(
-            secret=list_cursor_secret or _DEFAULT_LIST_CURSOR_SECRET,
-        )
+        self._list_cursor_codec = ProblemListQueryCursorCodec(secret=list_cursor_secret)
+        if document_query_cursor_codec is not None:
+            self._document_query_cursor_codec = document_query_cursor_codec
+        elif isinstance(document_store, DocumentStoreQueryCursorProvider):
+            self._document_query_cursor_codec = document_store.query_cursor_codec
+        else:
+            raise TypeError(
+                "problem persistence requires document store query cursor codec",
+            )
 
     def get(self, *, tenant_id: str, problem_id: ProblemId) -> Problem | None:
         partition_key = _document_partition(tenant_id)
@@ -219,22 +237,6 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
                 "canonical Problem id does not match lookup key",
             )
         return problem
-
-    def list_for_tenant(self, tenant_id: str) -> tuple[Problem, ...]:
-        problems: list[Problem] = []
-        cursor: str | None = None
-        while True:
-            page = self.query_problems(
-                tenant_id=tenant_id,
-                limit=_QUERY_PAGE_LIMIT,
-                cursor=cursor,
-            )
-            problems.extend(page.problems)
-            if not page.has_more:
-                break
-            cursor = page.next_cursor
-        problems.sort(key=lambda item: str(item.problem_id))
-        return tuple(problems)
 
     def query_problems(
         self,
@@ -257,35 +259,130 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
                 status_filter=scope,
             )
 
-        page = self._document_store.query(
-            partition_key,
-            limit=limit,
+        problems, last_index_row_key, has_more = self._collect_bounded_query_page(
+            tenant_id=tenant_id,
+            partition_key=partition_key,
             row_key_prefix=row_key_prefix,
-            cursor=store_cursor,
+            expected_status=status,
+            limit=limit,
+            store_cursor=store_cursor,
         )
 
-        problems: list[Problem] = []
-        for index_document in page.documents:
-            problem = self._resolve_list_index_document(
-                index_document,
-                tenant_id=tenant_id,
-                partition_key=partition_key,
-                expected_status=status,
-            )
-            problems.append(problem)
-
         next_cursor: str | None = None
-        if page.next_cursor is not None:
+        if has_more and last_index_row_key is not None:
+            next_store_cursor = self._document_query_cursor_codec.encode(
+                partition_key=partition_key,
+                row_key_prefix=row_key_prefix,
+                last_row_key=last_index_row_key,
+            )
             next_cursor = self._list_cursor_codec.encode(
                 tenant_id=tenant_id,
                 status_filter=scope,
-                store_cursor=page.next_cursor,
+                store_cursor=next_store_cursor,
             )
         return ProblemListPage(
-            problems=tuple(problems),
+            problems=problems,
             next_cursor=next_cursor,
-            has_more=page.next_cursor is not None,
+            has_more=has_more,
         )
+
+    def _collect_bounded_query_page(
+        self,
+        *,
+        tenant_id: str,
+        partition_key: str,
+        row_key_prefix: str,
+        expected_status: ProblemStatus | None,
+        limit: int,
+        store_cursor: str | None,
+    ) -> tuple[tuple[Problem, ...], str | None, bool]:
+        max_examined = limit * _LIST_QUERY_MAX_INDEX_EXAMINED_FACTOR
+        examined = 0
+        collected: list[Problem] = []
+        last_consumed_row_key: str | None = None
+        continuation = store_cursor
+
+        while len(collected) < limit and examined < max_examined:
+            remaining = max_examined - examined
+            fetch_limit = min(
+                max(limit, (limit - len(collected)) * _LIST_QUERY_OVERFETCH_FACTOR),
+                _QUERY_PAGE_LIMIT,
+                remaining,
+            )
+            page = self._document_store.query(
+                partition_key,
+                limit=fetch_limit,
+                row_key_prefix=row_key_prefix,
+                cursor=continuation,
+            )
+            if not page.documents:
+                return tuple(collected), last_consumed_row_key, False
+
+            for index_document in page.documents:
+                examined += 1
+                last_consumed_row_key = index_document.row_key
+                problem = self._resolve_list_index_document(
+                    index_document,
+                    tenant_id=tenant_id,
+                    partition_key=partition_key,
+                    expected_status=expected_status,
+                )
+                if problem is None:
+                    if len(collected) >= limit:
+                        break
+                    if examined >= max_examined:
+                        break
+                    continue
+                collected.append(problem)
+                if len(collected) >= limit:
+                    break
+                if examined >= max_examined:
+                    break
+
+            if len(collected) >= limit:
+                has_more = self._index_has_more_after(
+                    partition_key=partition_key,
+                    row_key_prefix=row_key_prefix,
+                    after_row_key=last_consumed_row_key,
+                )
+                return tuple(collected), last_consumed_row_key, has_more
+
+            if page.next_cursor is None:
+                return tuple(collected), None, False
+
+            continuation = page.next_cursor
+
+        has_more = (
+            last_consumed_row_key is not None
+            and self._index_has_more_after(
+                partition_key=partition_key,
+                row_key_prefix=row_key_prefix,
+                after_row_key=last_consumed_row_key,
+            )
+        )
+        return tuple(collected), last_consumed_row_key, has_more
+
+    def _index_has_more_after(
+        self,
+        *,
+        partition_key: str,
+        row_key_prefix: str,
+        after_row_key: str | None,
+    ) -> bool:
+        if after_row_key is None:
+            return False
+        store_cursor = self._document_query_cursor_codec.encode(
+            partition_key=partition_key,
+            row_key_prefix=row_key_prefix,
+            last_row_key=after_row_key,
+        )
+        probe = self._document_store.query(
+            partition_key,
+            limit=1,
+            row_key_prefix=row_key_prefix,
+            cursor=store_cursor,
+        )
+        return bool(probe.documents)
 
     def find_by_reconciliation_key(
         self,
@@ -771,6 +868,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
                 problem_id=record.problem_id,
                 last_seen_at=record.last_seen_at,
                 status=record.status,
+                record_version=record.record_version,
             ),
         )
 
@@ -780,16 +878,20 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
             raise ProblemPersistenceIntegrityError(
                 "diagnostic problem list index verification failed",
             )
-        indexed_id, indexed_last_seen, indexed_status = decode_list_index_data(
+        indexed_id, indexed_last_seen, indexed_status, indexed_version = decode_list_index_data(
             dict(existing.data),
         )
         if indexed_id != record.problem_id:
             raise ProblemPersistenceConflictError(
                 "list index already bound to another Problem",
             )
-        if indexed_last_seen != record.last_seen_at or indexed_status is not record.status:
-            raise ProblemPersistenceIntegrityError(
-                "diagnostic problem list index metadata stale",
+        if (
+            indexed_last_seen != record.last_seen_at
+            or indexed_status is not record.status
+            or indexed_version != record.record_version
+        ):
+            raise ProblemPersistenceConflictError(
+                "list index already bound to incompatible Problem metadata",
             )
 
     def _resolve_list_index_document(
@@ -799,33 +901,35 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
         tenant_id: str,
         partition_key: str,
         expected_status: ProblemStatus | None,
-    ) -> Problem:
-        indexed_id, indexed_last_seen, indexed_status = decode_list_index_data(
-            dict(index_document.data),
-        )
+    ) -> Problem | None:
+        try:
+            indexed_id, indexed_last_seen, indexed_status, indexed_version = (
+                decode_list_index_data(dict(index_document.data))
+            )
+        except ValueError as exc:
+            raise ProblemPersistenceIntegrityError(
+                "invalid diagnostic problem list index",
+            ) from exc
         record = self._document_store.get(partition_key, _record_row_key(indexed_id))
         if record is None:
-            raise ProblemPersistenceIntegrityError(
-                "canonical Problem record missing for list index",
-            )
+            return None
         problem = decode_problem_record(dict(record.data))
         self._verify_canonical_tenant(problem, tenant_id=tenant_id)
         if problem.problem_id != indexed_id:
             raise ProblemPersistenceIntegrityError(
                 "canonical Problem id does not match list index reference",
             )
-        if problem.last_seen_at != indexed_last_seen:
+        if problem.record_version > indexed_version:
+            return None
+        if problem.record_version < indexed_version:
+            return None
+        if problem.last_seen_at != indexed_last_seen or problem.status != indexed_status:
             raise ProblemPersistenceIntegrityError(
-                "diagnostic problem list index last_seen_at stale",
-            )
-        if problem.status != indexed_status:
-            raise ProblemPersistenceIntegrityError(
-                "diagnostic problem list index status stale",
+                "diagnostic problem list index metadata inconsistent with canonical Problem",
+                reason=ProblemPersistenceIntegrityReason.LIST_INDEX_CANONICAL_METADATA_MISMATCH,
             )
         if expected_status is not None and problem.status is not expected_status:
-            raise ProblemPersistenceIntegrityError(
-                "diagnostic problem list index status does not match query filter",
-            )
+            return None
         return problem
 
     def _prepare_list_index_update(
@@ -932,10 +1036,16 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
 def wire_problem_persistence(
     *,
     document_store: DocumentStore | None = None,
+    list_cursor_secret: bytes,
 ) -> ProblemPersistence:
     """Platform composition boundary: storage capability → Problem persistence."""
     if document_store is None:
         raise ValueError("wire_problem_persistence requires document_store")
     if not isinstance(document_store, ConditionalDocumentStore):
         raise TypeError("problem persistence requires ConditionalDocumentStore")
-    return DocumentStoreProblemPersistence(document_store)
+    if not isinstance(list_cursor_secret, bytes) or not list_cursor_secret:
+        raise ValueError("problem_list_cursor_secret_invalid")
+    return DocumentStoreProblemPersistence(
+        document_store,
+        list_cursor_secret=list_cursor_secret,
+    )

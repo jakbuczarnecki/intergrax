@@ -40,6 +40,7 @@ class ProblemPersistenceIntegrityReason(StrEnum):
     RECONCILIATION_WINNER_CANONICAL_PENDING = (
         "reconciliation_winner_canonical_pending"
     )
+    LIST_INDEX_CANONICAL_METADATA_MISMATCH = "list_index_canonical_metadata_mismatch"
 
 
 class ProblemPersistenceIntegrityError(Exception):
@@ -67,14 +68,6 @@ class ProblemPersistence(ABC):
     @abstractmethod
     def get(self, *, tenant_id: str, problem_id: ProblemId) -> Problem | None:
         """Return one tenant-scoped Problem or ``None`` when absent."""
-
-    @abstractmethod
-    def list_for_tenant(self, tenant_id: str) -> tuple[Problem, ...]:
-        """
-        Return all Problems for a tenant in stable ``problem_id`` order.
-
-        Legacy/testing helper — operator reads must use ``query_problems`` instead.
-        """
 
     @abstractmethod
     def query_problems(

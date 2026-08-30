@@ -41,6 +41,33 @@ from intergrax.runtime.diagnostics.problem_persistence import (
     ProblemPersistenceConflictError,
     ProblemPersistenceIntegrityError,
 )
+
+
+def query_all_problems_for_tenant(
+    persistence: ProblemPersistence,
+    tenant_id: str,
+    *,
+    page_limit: int = 500,
+) -> tuple[Problem, ...]:
+    """
+    Conformance helper — paginated tenant materialization.
+
+    Full-tenant Problem listing is not part of the production persistence contract.
+    """
+    problems: list[Problem] = []
+    cursor: str | None = None
+    while True:
+        page = persistence.query_problems(
+            tenant_id=tenant_id,
+            limit=page_limit,
+            cursor=cursor,
+        )
+        problems.extend(page.problems)
+        if not page.has_more:
+            break
+        cursor = page.next_cursor
+    problems.sort(key=lambda item: str(item.problem_id))
+    return tuple(problems)
 from intergrax.runtime.events.asof_projection import (
     RunExecutionLifecycleStatus,
     RunLifecycleViolationKind,
@@ -179,8 +206,8 @@ def assert_problem_persistence_conformance(
     assert store.get(tenant_id=tenant_b, problem_id=foreign.problem_id) == foreign
     assert store.get(tenant_id=tenant_b, problem_id=first.problem_id) is None
 
-    listed_a = store.list_for_tenant(tenant_a)
-    listed_b = store.list_for_tenant(tenant_b)
+    listed_a = query_all_problems_for_tenant(store, tenant_a)
+    listed_b = query_all_problems_for_tenant(store, tenant_b)
     assert [item.problem_id for item in listed_a] == sorted(
         [first.problem_id],
         key=str,
@@ -283,7 +310,7 @@ def assert_problem_persistence_conformance(
     )
     with pytest_raises_conflict():
         store.create(loser)
-    assert store.list_for_tenant(f"{label}-collision-tenant") == (winner,)
+    assert query_all_problems_for_tenant(store, f"{label}-collision-tenant") == (winner,)
 
     assert_failed_create_leaves_no_orphan_indexes(store, label=label)
 
@@ -315,7 +342,7 @@ def assert_failed_create_leaves_no_orphan_indexes(
     with pytest_raises_conflict():
         store.create(loser)
 
-    assert store.list_for_tenant(tenant_id) == (winner,)
+    assert query_all_problems_for_tenant(store, tenant_id) == (winner,)
     assert store.get(tenant_id=tenant_id, problem_id=loser.problem_id) is None
     assert (
         store.find_by_reconciliation_key(

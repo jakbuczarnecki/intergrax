@@ -6,6 +6,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.applications._shared.diagnostic_cursor_secret import (
+    resolve_problem_list_cursor_secret,
+)
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.integrations._shared.conformance import assert_conditional_document_store
 from intergrax.runtime.diagnostics.diagnostic_read_service import DiagnosticReadService
@@ -56,7 +59,10 @@ def resolve_host_diagnostic_read_dependencies(
         )
 
     return HostDiagnosticReadDependencies(
-        problem_persistence=wire_problem_persistence(document_store=document_store),
+        problem_persistence=wire_problem_persistence(
+            document_store=document_store,
+            list_cursor_secret=resolve_problem_list_cursor_secret(),
+        ),
         runtime_event_persistence=runtime_events,
         causal_evidence_persistence=wire_causal_evidence_persistence(
             document_store=document_store,

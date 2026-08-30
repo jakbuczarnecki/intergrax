@@ -18,6 +18,7 @@ from intergrax.runtime.diagnostics.document_store_problem_persistence import (
     DocumentStoreProblemPersistence,
 )
 from intergrax.runtime.diagnostics.persistence_conformance import (
+    query_all_problems_for_tenant,
     _sample_reconciliation_key,
     _sample_signature,
     _sample_subject_ref,
@@ -47,6 +48,10 @@ from intergrax.runtime.diagnostics.problem_persistence import (
 )
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import DocumentRecord
+from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+    TEST_PROBLEM_LIST_CURSOR_SECRET,
+    document_store_problem_persistence_for_tests,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -91,7 +96,11 @@ class _SynchronizedUpdatePersistence(DocumentStoreProblemPersistence):
         update_barrier: threading.Barrier,
         synchronized_expected_version: int,
     ) -> None:
-        super().__init__(document_store)
+        super().__init__(
+            document_store,
+            list_cursor_secret=TEST_PROBLEM_LIST_CURSOR_SECRET,
+            document_query_cursor_codec=document_store.query_cursor_codec,
+        )
         self._update_barrier = update_barrier
         self._synchronized_expected_version = synchronized_expected_version
 
@@ -109,7 +118,11 @@ class _SynchronizedResolvePersistence(DocumentStoreProblemPersistence):
         resolve_barrier: threading.Barrier,
         synchronized_expected_version: int,
     ) -> None:
-        super().__init__(document_store)
+        super().__init__(
+            document_store,
+            list_cursor_secret=TEST_PROBLEM_LIST_CURSOR_SECRET,
+            document_query_cursor_codec=document_store.query_cursor_codec,
+        )
         self._resolve_barrier = resolve_barrier
         self._synchronized_expected_version = synchronized_expected_version
 
@@ -146,9 +159,6 @@ class _ConflictThenVanishPersistence:
             self._vanish_on_next_get = False
             return None
         return self._delegate.get(tenant_id=tenant_id, problem_id=problem_id)
-
-    def list_for_tenant(self, tenant_id: str) -> tuple[Problem, ...]:
-        return self._delegate.list_for_tenant(tenant_id)
 
     def query_problems(self, *, tenant_id: str, status=None, limit: int, cursor=None):
         return self._delegate.query_problems(
@@ -199,9 +209,6 @@ class _CreateConflictLookupIntegrityPersistence:
 
     def get(self, *, tenant_id: str, problem_id: ProblemId) -> Problem | None:
         return None
-
-    def list_for_tenant(self, tenant_id: str) -> tuple[Problem, ...]:
-        return ()
 
     def query_problems(self, *, tenant_id: str, status=None, limit: int, cursor=None):
         from intergrax.runtime.diagnostics.problem_list_query import ProblemListPage
@@ -287,7 +294,7 @@ def test_harden_2b_lifecycle_update_race_preserves_distinct_occurrences() -> Non
     assert baseline.occurrence_count == 1
     assert baseline.record_version == 1
 
-    seed = DocumentStoreProblemPersistence(store)
+    seed = document_store_problem_persistence_for_tests(store)
     seed.create(baseline)
     seed.close()
 
@@ -337,7 +344,7 @@ def test_harden_2b_lifecycle_update_race_preserves_distinct_occurrences() -> Non
     assert all(result.created == () for result in results)
     assert all(result.unchanged == () for result in results)
 
-    verifier = DocumentStoreProblemPersistence(store)
+    verifier = document_store_problem_persistence_for_tests(store)
     try:
         final = verifier.get(tenant_id=tenant_id, problem_id=baseline.problem_id)
         assert final is not None
@@ -370,7 +377,7 @@ def test_harden_2b_retry_exhaustion_raises_lifecycle_integrity_error() -> None:
         reconciliation_key=reconciliation_key,
     )
 
-    persistence = DocumentStoreProblemPersistence(store)
+    persistence = document_store_problem_persistence_for_tests(store)
     lifecycle = ProblemLifecycleEngine(persistence)
     try:
         persistence.create(baseline)
@@ -438,7 +445,7 @@ def test_harden_2b_idempotent_converged_outcome_after_winner_applied_candidate()
         reconciliation_key=reconciliation_key,
     )
 
-    persistence = DocumentStoreProblemPersistence(InMemoryDocumentStore())
+    persistence = document_store_problem_persistence_for_tests(InMemoryDocumentStore())
     lifecycle = ProblemLifecycleEngine(persistence)
     try:
         persistence.create(baseline)
@@ -475,7 +482,7 @@ def test_harden_2d_concurrent_identical_resolve_converges_once() -> None:
     resolve_barrier = threading.Barrier(2)
     assert baseline.record_version == 1
 
-    seed = DocumentStoreProblemPersistence(store)
+    seed = document_store_problem_persistence_for_tests(store)
     seed.create(baseline)
     seed.close()
 
@@ -512,7 +519,7 @@ def test_harden_2d_concurrent_identical_resolve_converges_once() -> None:
     assert all(result.status is ProblemStatus.RESOLVED for result in resolved_results)
     assert all(result.record_version == 2 for result in resolved_results)
 
-    verifier = DocumentStoreProblemPersistence(store)
+    verifier = document_store_problem_persistence_for_tests(store)
     try:
         final = verifier.get(tenant_id=tenant_id, problem_id=baseline.problem_id)
         assert final is not None
@@ -538,7 +545,7 @@ def test_harden_2d_resolve_retry_exhaustion_raises_lifecycle_integrity_error() -
         reconciliation_key=reconciliation_key,
     )
 
-    persistence = DocumentStoreProblemPersistence(store)
+    persistence = document_store_problem_persistence_for_tests(store)
     lifecycle = ProblemLifecycleEngine(persistence)
     try:
         persistence.create(baseline)
@@ -573,7 +580,7 @@ def test_harden_2d_resolve_race_with_concurrent_occurrence_update_preserves_late
     update_barrier = threading.Barrier(2)
     assert baseline.record_version == 1
 
-    seed = DocumentStoreProblemPersistence(store)
+    seed = document_store_problem_persistence_for_tests(store)
     seed.create(baseline)
     seed.close()
 
@@ -632,7 +639,7 @@ def test_harden_2d_resolve_race_with_concurrent_occurrence_update_preserves_late
     assert race_errors == []
     assert len(reconcile_result) == 1
 
-    verifier = DocumentStoreProblemPersistence(store)
+    verifier = document_store_problem_persistence_for_tests(store)
     try:
         final = verifier.get(tenant_id=tenant_id, problem_id=baseline.problem_id)
         assert final is not None
@@ -718,7 +725,11 @@ def test_harden_2d_create_race_converges_while_winner_canonical_pending() -> Non
     errors: list[BaseException] = []
 
     def _reconcile(grouping_result: ProblemGroupingResult, observed_at: datetime) -> None:
-        persistence = _ReleaseOnPendingWinnerLookupPersistence(store)
+        persistence = _ReleaseOnPendingWinnerLookupPersistence(
+            store,
+            list_cursor_secret=TEST_PROBLEM_LIST_CURSOR_SECRET,
+            document_query_cursor_codec=store.query_cursor_codec,
+        )
         lifecycle = ProblemLifecycleEngine(persistence)
         try:
             results.append(
@@ -740,9 +751,9 @@ def test_harden_2d_create_race_converges_while_winner_canonical_pending() -> Non
     assert errors == []
     assert len(results) == 2
 
-    verifier = DocumentStoreProblemPersistence(store)
+    verifier = document_store_problem_persistence_for_tests(store)
     try:
-        listed = verifier.list_for_tenant(tenant_id)
+        listed = query_all_problems_for_tenant(verifier, tenant_id)
         assert len(listed) == 1
         final = listed[0]
         assert final.occurrence_count == 2

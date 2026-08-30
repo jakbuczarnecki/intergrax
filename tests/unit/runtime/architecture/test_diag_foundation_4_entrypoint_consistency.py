@@ -416,7 +416,7 @@ async def test_df4_hosted_application_uses_injected_orchestrator_subject_scope()
     assert scope.tenant_id == _TENANT
     assert scope.application_id == "df4_app"
     assert scope.instance_id == "df4-instance"
-    problems = persistence.list_for_tenant(_TENANT)
+    problems = query_all_problems_for_tenant(persistence, _TENANT)
     assert problems
 
 

@@ -29,7 +29,7 @@ from intergrax.runtime.diagnostics.document_store_problem_persistence import (
     DocumentStoreProblemPersistence,
 )
 from intergrax.contracts.execution_identity import RunId, TaskId
-from intergrax.runtime.diagnostics.persistence_conformance import (
+from intergrax.runtime.diagnostics.persistence_conformance import query_all_problems_for_tenant, (
     _sample_signature,
     _sample_subject_ref,
     sample_problem,
@@ -51,6 +51,7 @@ from intergrax.runtime.diagnostics.problem_lifecycle import (
     ProblemStatus,
 )
 from intergrax.runtime.diagnostics.problem_persistence import (
+from tests.unit.runtime.diagnostics.problem_persistence_test_support import document_store_problem_persistence_for_tests
     ProblemPersistence,
     ProblemPersistenceConflictError,
 )
@@ -139,9 +140,6 @@ class ObservingProblemPersistence:
 
     def get(self, *, tenant_id: str, problem_id: ProblemId) -> Problem | None:
         return self._delegate.get(tenant_id=tenant_id, problem_id=problem_id)
-
-    def list_for_tenant(self, tenant_id: str) -> tuple[Problem, ...]:
-        return self._delegate.list_for_tenant(tenant_id)
 
     def query_problems(self, *, tenant_id: str, status=None, limit: int, cursor=None):
         return self._delegate.query_problems(
@@ -275,7 +273,7 @@ def _run_probe() -> None:
 
 def _run_seed_baseline(*, tenant_id: str, other_tenant_id: str) -> None:
     store = _resolve_platform_document_store()
-    persistence = DocumentStoreProblemPersistence(store)
+    persistence = document_store_problem_persistence_for_tests(store)
     _purge_tenant_documents(store, tenant_id)
     _purge_tenant_documents(store, other_tenant_id)
     baseline = sample_problem(tenant_id=tenant_id)
@@ -309,7 +307,7 @@ def _run_concurrent_update(
 ) -> None:
     _wait_for_start(start_path)
     store = _resolve_platform_document_store()
-    persistence = DocumentStoreProblemPersistence(store)
+    persistence = document_store_problem_persistence_for_tests(store)
     validated_id = ProblemId(problem_id)
     baseline = persistence.get(tenant_id=tenant_id, problem_id=validated_id)
     if baseline is None:
@@ -390,7 +388,7 @@ def _run_concurrent_lifecycle_reconcile(
 ) -> None:
     _wait_for_start(start_path)
     store = _resolve_platform_document_store()
-    delegate = DocumentStoreProblemPersistence(store)
+    delegate = document_store_problem_persistence_for_tests(store)
     persistence = ObservingProblemPersistence(delegate)
     lifecycle = ProblemLifecycleEngine(persistence)
 
@@ -507,7 +505,7 @@ def _run_concurrent_lifecycle_resolve(
 ) -> None:
     _wait_for_start(start_path)
     store = _resolve_platform_document_store()
-    delegate = DocumentStoreProblemPersistence(store)
+    delegate = document_store_problem_persistence_for_tests(store)
     persistence = ObservingProblemPersistence(delegate)
     lifecycle = ProblemLifecycleEngine(persistence)
 
@@ -583,7 +581,7 @@ def _run_concurrent_lifecycle_resolve(
 
 def _run_read_final(*, tenant_id: str, problem_id: str, other_tenant_id: str) -> None:
     store = _resolve_platform_document_store()
-    persistence = DocumentStoreProblemPersistence(store)
+    persistence = document_store_problem_persistence_for_tests(store)
     validated_id = ProblemId(problem_id)
     final = persistence.get(tenant_id=tenant_id, problem_id=validated_id)
     if final is None:
@@ -593,8 +591,8 @@ def _run_read_final(*, tenant_id: str, problem_id: str, other_tenant_id: str) ->
         tenant_id=tenant_id,
         reconciliation_key=final.provenance.reconciliation_key,
     )
-    listed = persistence.list_for_tenant(tenant_id)
-    other_listed = persistence.list_for_tenant(other_tenant_id)
+    listed = query_all_problems_for_tenant(persistence, tenant_id)
+    other_listed = query_all_problems_for_tenant(persistence, other_tenant_id)
 
     payload = {
         "ok": True,

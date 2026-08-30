@@ -11,12 +11,18 @@ import pytest
 from intergrax.runtime.diagnostics.document_store_problem_persistence import (
     DocumentStoreProblemPersistence,
 )
-from intergrax.runtime.diagnostics.persistence_conformance import sample_problem
+from intergrax.runtime.diagnostics.persistence_conformance import (
+    query_all_problems_for_tenant,
+    sample_problem,
+)
 from intergrax.runtime.diagnostics.problem_lifecycle import Problem
 from testing_support.delegating_failing_conditional_document_store import (
     ControlledDocumentStoreWriteFailure,
     DelegatingFailingConditionalDocumentStore,
     DocumentStoreWriteFailureMode,
+)
+from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+    document_store_problem_persistence_for_tests,
 )
 
 pytestmark = pytest.mark.unit
@@ -27,24 +33,24 @@ _OBSERVED_AT_LATER = datetime(2026, 8, 29, 10, 0, tzinfo=UTC)
 def test_harden_1d_create_write_failure_is_not_reported_as_success() -> None:
     store = DelegatingFailingConditionalDocumentStore()
     store.set_write_failure_mode(DocumentStoreWriteFailureMode.FAIL_WRITES)
-    persistence = DocumentStoreProblemPersistence(store)
+    persistence = document_store_problem_persistence_for_tests(store)
     record = sample_problem(tenant_id="tenant-harden-1d-create")
 
     with pytest.raises(ControlledDocumentStoreWriteFailure):
         persistence.create(record)
 
     assert persistence.get(tenant_id=record.tenant_id, problem_id=record.problem_id) is None
-    assert persistence.list_for_tenant(record.tenant_id) == ()
+    assert query_all_problems_for_tenant(persistence, record.tenant_id) == ()
 
 
 def test_harden_1d_update_cas_write_failure_is_not_reported_as_success() -> None:
     store = DelegatingFailingConditionalDocumentStore()
-    persistence = DocumentStoreProblemPersistence(store)
+    persistence = document_store_problem_persistence_for_tests(store)
     created = sample_problem(tenant_id="tenant-harden-1d-update")
     assert persistence.create(created) == created
 
     subject_a = created.current_subject_refs[0]
-    from intergrax.runtime.diagnostics.persistence_conformance import _sample_subject_ref
+    from intergrax.runtime.diagnostics.persistence_conformance import query_all_problems_for_tenant, _sample_subject_ref
 
     subject_b = _sample_subject_ref(tenant_id=created.tenant_id)
     updated = Problem(
@@ -77,7 +83,7 @@ def test_harden_1d_update_cas_write_failure_is_not_reported_as_success() -> None
 
 def test_harden_1d_store_recovery_allows_subsequent_create_and_update() -> None:
     store = DelegatingFailingConditionalDocumentStore()
-    persistence = DocumentStoreProblemPersistence(store)
+    persistence = document_store_problem_persistence_for_tests(store)
     record = sample_problem(tenant_id="tenant-harden-1d-recovery")
 
     store.set_write_failure_mode(DocumentStoreWriteFailureMode.FAIL_WRITES)
@@ -88,7 +94,7 @@ def test_harden_1d_store_recovery_allows_subsequent_create_and_update() -> None:
     assert persistence.create(record) == record
 
     subject_a = record.current_subject_refs[0]
-    from intergrax.runtime.diagnostics.persistence_conformance import _sample_subject_ref
+    from intergrax.runtime.diagnostics.persistence_conformance import query_all_problems_for_tenant, _sample_subject_ref
 
     subject_b = _sample_subject_ref(tenant_id=record.tenant_id)
     updated = Problem(

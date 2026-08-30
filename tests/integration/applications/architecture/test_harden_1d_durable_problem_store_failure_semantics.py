@@ -139,7 +139,7 @@ async def test_harden_1d_terminal_create_failure_preserves_business_result() -> 
     result = await _run_echo(runner, message="harden-1d create failure", run_id=run_id)
 
     assert result.state is TaskState.COMPLETED
-    assert persistence.list_for_tenant(_TENANT) == ()
+    assert query_all_problems_for_tenant(persistence, _TENANT) == ()
     assert diagnostic_subsystem_failure_observed_for_run(
         runtime_store,
         tenant_id=_TENANT,
@@ -166,7 +166,7 @@ async def test_harden_1d_terminal_update_failure_preserves_business_result() -> 
     store.set_write_failure_mode(DocumentStoreWriteFailureMode.HEALTHY)
     baseline = await _run_echo(runner, message="harden-1d baseline")
     assert baseline.state is TaskState.COMPLETED
-    problems_after_baseline = persistence.list_for_tenant(_TENANT)
+    problems_after_baseline = query_all_problems_for_tenant(persistence, _TENANT)
     assert len(problems_after_baseline) == 1
     baseline_problem = problems_after_baseline[0]
     assert baseline_problem.occurrence_count == 1
@@ -208,7 +208,7 @@ async def test_harden_1d_store_recovery_restores_diagnostic_persistence() -> Non
         run_id=failed_create_run_id,
     )
     assert failed_create.state is TaskState.COMPLETED
-    assert persistence.list_for_tenant(_TENANT) == ()
+    assert query_all_problems_for_tenant(persistence, _TENANT) == ()
     assert diagnostic_subsystem_failure_observed_for_run(
         runtime_store,
         tenant_id=_TENANT,
@@ -218,7 +218,7 @@ async def test_harden_1d_store_recovery_restores_diagnostic_persistence() -> Non
     store.set_write_failure_mode(DocumentStoreWriteFailureMode.HEALTHY)
     recovered_create = await _run_echo(runner, message="harden-1d recovered create")
     assert recovered_create.state is TaskState.COMPLETED
-    problems_after_create = persistence.list_for_tenant(_TENANT)
+    problems_after_create = query_all_problems_for_tenant(persistence, _TENANT)
     assert len(problems_after_create) == 1
     assert problems_after_create[0].occurrence_count == 1
 
@@ -243,7 +243,7 @@ async def test_harden_1d_store_recovery_restores_diagnostic_persistence() -> Non
     store.set_write_failure_mode(DocumentStoreWriteFailureMode.HEALTHY)
     recovered_update = await _run_echo(runner, message="harden-1d recovered update")
     assert recovered_update.state is TaskState.COMPLETED
-    problems_after_update = persistence.list_for_tenant(_TENANT)
+    problems_after_update = query_all_problems_for_tenant(persistence, _TENANT)
     assert len(problems_after_update) == 1
     assert problems_after_update[0].problem_id == problems_after_create[0].problem_id
     assert problems_after_update[0].occurrence_count == 2

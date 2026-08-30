@@ -18,6 +18,7 @@ from intergrax.runtime.diagnostics.document_store_problem_persistence import (
     DocumentStoreProblemPersistence,
 )
 from intergrax.runtime.diagnostics.persistence_conformance import (
+    query_all_problems_for_tenant,
     _sample_reconciliation_key,
     _sample_subject_ref,
     sample_problem,
@@ -40,6 +41,10 @@ from intergrax.runtime.diagnostics.problem_persistence import (
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import DocumentRecord
 from testing_support.barrier_conditional_document_store import BarrierConditionalDocumentStore
+from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+    TEST_PROBLEM_LIST_CURSOR_SECRET,
+    document_store_problem_persistence_for_tests,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -101,7 +106,7 @@ def test_harden_2a_create_race_same_reconciliation_identity_one_logical_problem(
     errors: list[BaseException] = []
 
     def _create(candidate: Problem) -> None:
-        persistence = DocumentStoreProblemPersistence(store)
+        persistence = document_store_problem_persistence_for_tests(store)
         try:
             entry_barrier.wait(timeout=5)
             results.append(persistence.create(candidate))
@@ -121,9 +126,9 @@ def test_harden_2a_create_race_same_reconciliation_identity_one_logical_problem(
     winner = results[0]
     assert winner in (first, second)
 
-    verifier = DocumentStoreProblemPersistence(store)
+    verifier = document_store_problem_persistence_for_tests(store)
     try:
-        listed = verifier.list_for_tenant(tenant_id)
+        listed = query_all_problems_for_tenant(verifier, tenant_id)
         assert listed == (winner,)
         by_key = verifier.find_by_reconciliation_key(
             tenant_id=tenant_id,
@@ -153,7 +158,7 @@ def test_harden_2a_update_race_distinct_occurrences_cas_conflict_not_silent_succ
     assert baseline.occurrence_count == 1
     assert baseline.record_version == 1
 
-    seed = DocumentStoreProblemPersistence(store)
+    seed = document_store_problem_persistence_for_tests(store)
     seed.create(baseline)
     seed.close()
 
@@ -173,7 +178,7 @@ def test_harden_2a_update_race_distinct_occurrences_cas_conflict_not_silent_succ
     errors: list[BaseException] = []
 
     def _update(candidate: Problem) -> None:
-        persistence = DocumentStoreProblemPersistence(store)
+        persistence = document_store_problem_persistence_for_tests(store)
         try:
             entry_barrier.wait(timeout=5)
             results.append(persistence.update(candidate, expected_version=1))
@@ -191,7 +196,7 @@ def test_harden_2a_update_race_distinct_occurrences_cas_conflict_not_silent_succ
     assert len(errors) == 1
     assert isinstance(errors[0], ProblemPersistenceConflictError)
 
-    verifier = DocumentStoreProblemPersistence(store)
+    verifier = document_store_problem_persistence_for_tests(store)
     try:
         final = verifier.get(tenant_id=tenant_id, problem_id=baseline.problem_id)
         assert final is not None
@@ -223,7 +228,7 @@ def test_harden_2a_concurrent_create_tenant_isolation() -> None:
     results: list[Problem] = []
 
     def _create(candidate: Problem) -> None:
-        persistence = DocumentStoreProblemPersistence(store)
+        persistence = document_store_problem_persistence_for_tests(store)
         try:
             barrier.wait(timeout=5)
             results.append(persistence.create(candidate))
@@ -236,10 +241,10 @@ def test_harden_2a_concurrent_create_tenant_isolation() -> None:
             future.result(timeout=10)
 
     assert {item.tenant_id for item in results} == {tenant_a, tenant_b}
-    verifier = DocumentStoreProblemPersistence(store)
+    verifier = document_store_problem_persistence_for_tests(store)
     try:
-        assert verifier.list_for_tenant(tenant_a) == (record_a,)
-        assert verifier.list_for_tenant(tenant_b) == (record_b,)
+        assert query_all_problems_for_tenant(verifier, tenant_a) == (record_a,)
+        assert query_all_problems_for_tenant(verifier, tenant_b) == (record_b,)
         assert (
             verifier.find_by_reconciliation_key(
                 tenant_id=tenant_b,
@@ -266,7 +271,7 @@ def test_harden_2a_create_race_different_reconciliation_identities_remain_distin
     results: list[Problem] = []
 
     def _create(candidate: Problem) -> None:
-        persistence = DocumentStoreProblemPersistence(store)
+        persistence = document_store_problem_persistence_for_tests(store)
         try:
             barrier.wait(timeout=5)
             results.append(persistence.create(candidate))
@@ -279,9 +284,9 @@ def test_harden_2a_create_race_different_reconciliation_identities_remain_distin
             future.result(timeout=10)
 
     assert len(results) == 2
-    verifier = DocumentStoreProblemPersistence(store)
+    verifier = document_store_problem_persistence_for_tests(store)
     try:
-        assert verifier.list_for_tenant(tenant_id) == tuple(
+        assert query_all_problems_for_tenant(verifier, tenant_id) == tuple(
             sorted(results, key=lambda item: str(item.problem_id)),
         )
     finally:
@@ -302,7 +307,7 @@ def test_harden_2a_orphan_reconciliation_index_raises_typed_canonical_pending_re
             },
         )
     )
-    persistence = DocumentStoreProblemPersistence(store)
+    persistence = document_store_problem_persistence_for_tests(store)
     try:
         with pytest.raises(ProblemPersistenceIntegrityError) as exc_info:
             persistence.find_by_reconciliation_key(

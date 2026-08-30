@@ -19,6 +19,7 @@ from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import 
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
+from intergrax.runtime.diagnostics.persistence_conformance import query_all_problems_for_tenant
 from tests.unit.runtime.diagnostics.test_diagnostic_orchestrator import (
     _build_orchestrator,
     _seed_retry_violation_sequence,
@@ -71,7 +72,7 @@ def test_trigger_replay_is_idempotent_for_same_execution() -> None:
     assert second.lifecycle_result.updated == ()
     assert len(second.lifecycle_result.unchanged) == 1
     assert second.lifecycle_result.unchanged[0].occurrence_count == 1
-    assert len(persistence.list_for_tenant("tenant-a")) == 1
+    assert len(query_all_problems_for_tenant(persistence, "tenant-a")) == 1
 
 
 def test_bridge_returns_none_when_trigger_not_configured() -> None:
@@ -142,4 +143,4 @@ def test_clean_execution_sequence_produces_no_problem() -> None:
     )
 
     assert result.lifecycle_result.created == ()
-    assert persistence.list_for_tenant("tenant-a") == ()
+    assert query_all_problems_for_tenant(persistence, "tenant-a") == ()

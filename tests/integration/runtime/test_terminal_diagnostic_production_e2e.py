@@ -220,7 +220,7 @@ async def test_clean_execution_does_not_create_problem() -> None:
     )
 
     assert result.state is TaskState.COMPLETED
-    assert persistence.list_for_tenant(_TENANT_A) == ()
+    assert query_all_problems_for_tenant(persistence, _TENANT_A) == ()
 
 
 @pytest.mark.asyncio
@@ -491,7 +491,7 @@ async def test_separate_terminal_executions_reconcile_same_problem() -> None:
         ),
         run_id=mint_run_id(),
     )
-    problems_after_a = persistence.list_for_tenant(_TENANT_A)
+    problems_after_a = query_all_problems_for_tenant(persistence, _TENANT_A)
     assert len(problems_after_a) == 1
     problem_id = problems_after_a[0].problem_id
     assert problems_after_a[0].occurrence_count == 1
@@ -505,7 +505,7 @@ async def test_separate_terminal_executions_reconcile_same_problem() -> None:
         ),
         run_id=mint_run_id(),
     )
-    problems_after_b = persistence.list_for_tenant(_TENANT_A)
+    problems_after_b = query_all_problems_for_tenant(persistence, _TENANT_A)
     assert len(problems_after_b) == 1
     assert problems_after_b[0].problem_id == problem_id
     assert problems_after_b[0].occurrence_count == 2
@@ -553,7 +553,7 @@ async def test_different_terminal_signatures_create_distinct_problems() -> None:
         run_id=mint_run_id(),
     )
 
-    problems = shared_persistence.list_for_tenant(_TENANT_A)
+    problems = query_all_problems_for_tenant(shared_persistence, _TENANT_A)
     assert len(problems) == 2
     assert problems[0].problem_id != problems[1].problem_id
 
@@ -616,7 +616,7 @@ async def test_replay_terminal_trigger_does_not_duplicate_occurrence() -> None:
     attempt_id = mint_attempt_id()
 
     await runner.run_task(task, run_id=run_id, attempt_id=attempt_id)
-    problems_before_replay = persistence.list_for_tenant(_TENANT_A)
+    problems_before_replay = query_all_problems_for_tenant(persistence, _TENANT_A)
     assert len(problems_before_replay) == 1
     assert problems_before_replay[0].occurrence_count == 1
     token = bind_active_execution_identity(
@@ -630,7 +630,7 @@ async def test_replay_terminal_trigger_does_not_duplicate_occurrence() -> None:
     finally:
         reset_active_execution_identity(token)
 
-    problems_after_replay = persistence.list_for_tenant(_TENANT_A)
+    problems_after_replay = query_all_problems_for_tenant(persistence, _TENANT_A)
     assert len(problems_after_replay) == 1
     assert problems_after_replay[0].occurrence_count == 1
 

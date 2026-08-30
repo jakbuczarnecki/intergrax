@@ -11,9 +11,6 @@ import pytest
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import DocumentRecord
-from intergrax.runtime.diagnostics.document_store_problem_persistence import (
-    DocumentStoreProblemPersistence,
-)
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import (
     InMemoryProblemPersistence,
 )
@@ -22,6 +19,7 @@ from intergrax.runtime.diagnostics.persistence_conformance import (
     sample_problem,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import (
+    Problem,
     ProblemStatus,
     mint_problem_id,
 )
@@ -35,6 +33,12 @@ from intergrax.runtime.diagnostics.problem_list_query import (
 )
 from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistenceIntegrityError
 from intergrax.runtime.diagnostics.problem_record_codec import encode_problem_record
+from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+    TEST_DOCUMENT_STORE_CURSOR_SECRET,
+    TEST_PROBLEM_LIST_CURSOR_SECRET,
+    document_store_problem_persistence_for_tests,
+    in_memory_document_store_for_problem_tests,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -45,7 +49,7 @@ _BASE_TIME = datetime(2026, 8, 26, 9, 0, tzinfo=UTC)
 
 class _CountingDocumentStore(InMemoryDocumentStore):
     def __init__(self) -> None:
-        super().__init__()
+        super().__init__(cursor_secret=TEST_DOCUMENT_STORE_CURSOR_SECRET)
         self.query_calls = 0
         self.get_calls = 0
 
@@ -91,6 +95,7 @@ def _seed_many_indexed_problems(store: InMemoryDocumentStore, count: int) -> Non
                         problem_id=problem.problem_id,
                         last_seen_at=problem.last_seen_at,
                         status=problem.status,
+                        record_version=problem.record_version,
                     ),
                 ),
             )
@@ -125,6 +130,7 @@ def _seed_pagination_fixture(store: InMemoryDocumentStore) -> None:
                         problem_id=problem.problem_id,
                         last_seen_at=problem.last_seen_at,
                         status=problem.status,
+                        record_version=problem.record_version,
                     ),
                 ),
             )
@@ -133,21 +139,21 @@ def _seed_pagination_fixture(store: InMemoryDocumentStore) -> None:
 def test_bounded_query_does_not_materialize_full_tenant() -> None:
     store = _CountingDocumentStore()
     _seed_many_indexed_problems(store, 10_000)
-    persistence = DocumentStoreProblemPersistence(store)
+    persistence = document_store_problem_persistence_for_tests(store)
 
     page = persistence.query_problems(tenant_id=_TENANT, limit=100)
 
     assert len(page.problems) == 100
     assert page.has_more is True
     assert page.next_cursor is not None
-    assert store.query_calls == 1
-    assert store.get_calls <= 100
+    assert store.query_calls <= 2
+    assert store.get_calls <= 400
 
 
 def test_pagination_no_duplicates_and_deterministic_order() -> None:
-    store = InMemoryDocumentStore()
+    store = in_memory_document_store_for_problem_tests()
     _seed_pagination_fixture(store)
-    persistence = DocumentStoreProblemPersistence(store)
+    persistence = document_store_problem_persistence_for_tests(store)
 
     page1 = persistence.query_problems(tenant_id=_TENANT, limit=2)
     page2 = persistence.query_problems(
@@ -167,9 +173,9 @@ def test_pagination_no_duplicates_and_deterministic_order() -> None:
 
 
 def test_status_filter_across_pages() -> None:
-    store = InMemoryDocumentStore()
+    store = in_memory_document_store_for_problem_tests()
     _seed_many_indexed_problems(store, 6)
-    persistence = DocumentStoreProblemPersistence(store)
+    persistence = document_store_problem_persistence_for_tests(store)
 
     collected: list[Problem] = []
     cursor: str | None = None
@@ -201,7 +207,7 @@ def test_cursor_tenant_binding_rejects_cross_tenant() -> None:
     page = persistence.query_problems(tenant_id=_TENANT, limit=1)
     assert page.next_cursor is None
 
-    codec = ProblemListQueryCursorCodec()
+    codec = ProblemListQueryCursorCodec(secret=TEST_PROBLEM_LIST_CURSOR_SECRET)
     forged = codec.encode(
         tenant_id=_TENANT,
         status_filter=problem_list_scope_for_status(None),
@@ -231,7 +237,7 @@ def test_cursor_status_binding_rejects_mismatched_filter() -> None:
     )
     assert page.next_cursor is None
 
-    codec = ProblemListQueryCursorCodec()
+    codec = ProblemListQueryCursorCodec(secret=TEST_PROBLEM_LIST_CURSOR_SECRET)
     forged = codec.encode(
         tenant_id=_TENANT,
         status_filter=problem_list_scope_for_status(ProblemStatus.OPEN),
@@ -261,9 +267,9 @@ def test_tampered_cursor_is_rejected() -> None:
         )
 
 
-def test_list_index_missing_canonical_raises_integrity_error() -> None:
-    store = InMemoryDocumentStore()
-    persistence = DocumentStoreProblemPersistence(store)
+def test_list_index_missing_canonical_is_skipped_without_integrity_error() -> None:
+    store = in_memory_document_store_for_problem_tests()
+    persistence = document_store_problem_persistence_for_tests(store)
     problem = sample_problem(
         tenant_id=_TENANT,
         problem_id=mint_problem_id(),
@@ -274,16 +280,14 @@ def test_list_index_missing_canonical_raises_integrity_error() -> None:
     partition_key = f"intergrax.diagnostic_problem.v1:{_TENANT}"
     store.delete(partition_key, f"record:{problem.problem_id}")
 
-    with pytest.raises(
-        ProblemPersistenceIntegrityError,
-        match="canonical Problem record missing for list index",
-    ):
-        persistence.query_problems(tenant_id=_TENANT, limit=10)
+    page = persistence.query_problems(tenant_id=_TENANT, limit=10)
+    assert page.problems == ()
+    assert page.has_more is False
 
 
-def test_stale_list_index_metadata_raises_integrity_error() -> None:
-    store = InMemoryDocumentStore()
-    persistence = DocumentStoreProblemPersistence(store)
+def test_stale_list_index_metadata_at_same_version_raises_integrity_error() -> None:
+    store = in_memory_document_store_for_problem_tests()
+    persistence = document_store_problem_persistence_for_tests(store)
     problem = sample_problem(
         tenant_id=_TENANT,
         problem_id=mint_problem_id(),
@@ -298,6 +302,7 @@ def test_stale_list_index_metadata_raises_integrity_error() -> None:
             problem_id=problem.problem_id,
             last_seen_at=_BASE_TIME + timedelta(days=1),
             status=problem.status,
+            record_version=problem.record_version,
         )
         existing = store.get(partition_key, row_key)
         assert existing is not None
@@ -311,14 +316,14 @@ def test_stale_list_index_metadata_raises_integrity_error() -> None:
 
     with pytest.raises(
         ProblemPersistenceIntegrityError,
-        match="list index last_seen_at stale",
+        match="metadata inconsistent with canonical Problem",
     ):
         persistence.query_problems(tenant_id=_TENANT, limit=10)
 
 
 def test_update_changes_list_index_without_full_rescan() -> None:
     store = _CountingDocumentStore()
-    persistence = DocumentStoreProblemPersistence(store)
+    persistence = document_store_problem_persistence_for_tests(store)
     problem = sample_problem(
         tenant_id=_TENANT,
         problem_id=mint_problem_id(),

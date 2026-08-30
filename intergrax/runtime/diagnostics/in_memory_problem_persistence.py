@@ -27,34 +27,20 @@ from intergrax.runtime.diagnostics.problem_list_query import (
     sort_problems_for_public_list,
 )
 
+_TEST_LIST_CURSOR_SECRET = b"deterministic-in-memory-problem-list-cursor-v1"
+
 
 class InMemoryProblemPersistence(ProblemPersistence):
-    def __init__(self) -> None:
+    def __init__(self, *, list_cursor_secret: bytes = _TEST_LIST_CURSOR_SECRET) -> None:
         self._records: dict[tuple[str, ProblemId], Problem] = {}
         self._by_reconciliation_key: dict[tuple[str, str], ProblemId] = {}
         self._by_subject_ref: dict[tuple[str, str, str, str], ProblemId] = {}
         self._lock = Lock()
-        self._list_cursor_codec = ProblemListQueryCursorCodec()
+        self._list_cursor_codec = ProblemListQueryCursorCodec(secret=list_cursor_secret)
 
     def get(self, *, tenant_id: str, problem_id: ProblemId) -> Problem | None:
         with self._lock:
             return self._records.get((tenant_id, problem_id))
-
-    def list_for_tenant(self, tenant_id: str) -> tuple[Problem, ...]:
-        problems: list[Problem] = []
-        cursor: str | None = None
-        while True:
-            page = self.query_problems(
-                tenant_id=tenant_id,
-                limit=5000,
-                cursor=cursor,
-            )
-            problems.extend(page.problems)
-            if not page.has_more:
-                break
-            cursor = page.next_cursor
-        problems.sort(key=lambda item: str(item.problem_id))
-        return tuple(problems)
 
     def query_problems(
         self,

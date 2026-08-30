@@ -311,7 +311,7 @@ async def test_application_failure_creates_problem(tmp_path: Path) -> None:
     assert problems.total_count == 1
     problem = problems.problems[0]
     assert problem.occurrence_count == 1
-    stored = persistence.list_for_tenant(_TENANT_A)[0]
+    stored = query_all_problems_for_tenant(persistence, _TENANT_A)[0]
     app_ref = stored.current_subject_refs[0].application_instance()
     assert app_ref is not None
     assert app_ref.application_id == _APP_ID

@@ -23,8 +23,10 @@ class DiagnosticOperationsPane(BaseModel):
 
     schema_version: str = "1.0.0"
     ready: bool
-    problem_count: int = Field(ge=0)
-    open_problem_count: int = Field(ge=0)
+    problem_count: int | None = Field(default=None, ge=0)
+    open_problem_count: int | None = Field(default=None, ge=0)
+    problem_count_is_exact: bool = False
+    open_problem_count_is_exact: bool = False
 
 
 class GovernanceDashboardPane(BaseModel):
