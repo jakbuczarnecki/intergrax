@@ -11,6 +11,7 @@ import subprocess
 import time
 from collections.abc import Iterator
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -31,6 +32,12 @@ from intergrax.applications._shared.harness_host_runtime import HarnessHostRunti
 from intergrax.applications._shared.plugin_bootstrap import bootstrap_application_plugins
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.runtime.diagnostics.problem_lifecycle import (
+    Problem,
+    ProblemId,
+    ProblemLifecycleEngine,
+    validate_problem_id,
+)
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.observability.export_boundary import FORBIDDEN_EXPORT_CONTENT_FIELDS
 from intergrax.runtime.observability.export_health import (
@@ -585,6 +592,30 @@ def execute_host_run(
 def build_read_service(composition: DiagFinalHostComposition):
     deps = resolve_host_diagnostic_read_dependencies(composition.runtime)
     return build_diagnostic_read_service(deps)
+
+
+def build_host_problem_lifecycle_engine(
+    composition: DiagFinalHostComposition,
+) -> ProblemLifecycleEngine:
+    """Construct lifecycle engine over the host's shared platform ProblemPersistence."""
+    deps = resolve_host_diagnostic_read_dependencies(composition.runtime)
+    return ProblemLifecycleEngine(deps.problem_persistence)
+
+
+def resolve_problem_via_host_lifecycle(
+    composition: DiagFinalHostComposition,
+    *,
+    tenant_id: str,
+    problem_id: str | ProblemId,
+    resolved_at: datetime | None = None,
+) -> Problem:
+    """Explicit resolve through the same public lifecycle contract as host diagnostics."""
+    lifecycle = build_host_problem_lifecycle_engine(composition)
+    return lifecycle.resolve(
+        tenant_id=tenant_id,
+        problem_id=validate_problem_id(problem_id),
+        resolved_at=resolved_at or datetime.now(UTC),
+    )
 
 
 def assert_runtime_event_truth(

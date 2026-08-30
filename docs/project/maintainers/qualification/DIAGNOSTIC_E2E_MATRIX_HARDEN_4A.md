@@ -46,6 +46,7 @@
 |------|------|-------|----------------|-----------|
 | `tests/integration/runtime/test_harden_4b_tenant_diagnostic_isolation_e2e.py` | `test_harden_4b_same_violation_isolated_between_tenants`; `test_harden_4b_cross_tenant_problem_id_read_returns_none` | P3 | Governed-contractor HTTP host (shared), SQLite RuntimeEvents, InMemory DocumentStore, observability disabled | M17/M18 same violation class → separate Problems; tenant-scoped lists; direct-ID read isolation |
 | `tests/integration/runtime/test_harden_4c_clean_diagnostic_host_e2e.py` | `test_harden_4c_clean_product_host_execution_creates_no_problem` | P3 | Governed-contractor HTTP host (shared), SQLite RuntimeEvents, InMemory DocumentStore, observability disabled, `inject_violation=False` | M1 clean HTTP execution → TASK_COMPLETED → diagnostics active → zero Problems |
+| `tests/integration/runtime/test_harden_4d_problem_lifecycle_host_e2e.py` | `test_harden_4d_resolve_then_same_violation_reopens_same_problem` | P3 | Governed-contractor HTTP host (shared), SQLite RuntimeEvents, InMemory DocumentStore, observability disabled, deterministic violation injector | M5/M6 HTTP run → Problem OPEN → explicit resolve → RESOLVED read → second run reopens same `problem_id` |
 | `tests/integration/runtime/test_diag_final_external_otel_e2e.py` | `test_diag_final_external_otel_spine_proof` | P4 | Governed-contractor HTTP host, SQLite RuntimeEvents, InMemory DocumentStore, Docker OTLP Collector | execution → RuntimeEvent → terminal diagnostics → Problem → DiagnosticReadService; vendor DOWN/UP; restart persistence |
 | `tests/integration/runtime/test_terminal_diagnostic_production_e2e.py` | `test_clean_execution_does_not_create_problem` | P3 | NexusLoop + UnifiedTaskRunner, in-memory stores | clean success → no Problem |
 | same | `test_real_nexus_execution_triggers_diagnostics_without_manual_orchestrator` | P3 | NexusLoop path | violation → orchestrator findings |
@@ -82,8 +83,8 @@
 | M2 | Deterministic violation → Problem | execution → evidence → detection → central Problem → read API | `test_diag_final_external_otel_e2e.py::test_diag_final_external_otel_spine_proof` (`assert_problem_truth`); `test_terminal_diagnostic_production_e2e.py::test_separate_terminal_executions_reconcile_same_problem` (read path) | P4 + P3 | yes | Docker (OTel slice) | **PROVEN** | — |
 | M3 | Occurrence aggregation | Same logical problem → one Problem, occurrences increment | `test_terminal_diagnostic_production_e2e.py::test_separate_terminal_executions_reconcile_same_problem`; `test_harden_2a_durable_problem_concurrency_proof.py::test_harden_2a_cross_process_concurrent_update_on_mongodb` | P3 + P4 | yes | Mongo (concurrency) | **PROVEN** | — |
 | M4 | Different problem separation | Distinct signatures → distinct Problems | `test_terminal_diagnostic_production_e2e.py::test_different_terminal_signatures_create_distinct_problems` | P3 | yes | no | **PROVEN** | — |
-| M5 | Resolve lifecycle | OPEN → resolved persisted; read model shows resolved; identity preserved | `test_harden_2c_durable_problem_lifecycle_concurrency_proof.py::test_harden_2c_cross_process_lifecycle_resolve_on_mongodb`; `test_problem_lifecycle.py::test_explicit_resolve_and_recurrence_reopens` (resolve only); `test_diagnostic_read_service.py::test_list_status_filter` | P4 / P1 / P2 | yes | Mongo | **PARTIALLY_PROVEN** | No P3 host execution → resolve → DiagnosticReadService path |
-| M6 | Recurrence after resolve | Canonical contract: **reopen existing Problem** (status OPEN, occurrences continue, first_seen preserved) | `test_problem_lifecycle.py::test_explicit_resolve_and_recurrence_reopens` | P1 | yes | no | **PARTIALLY_PROVEN** | No integration/host E2E for reopen semantics |
+| M5 | Resolve lifecycle | OPEN → resolved persisted; read model shows resolved; identity preserved | `test_harden_4d_problem_lifecycle_host_e2e.py::test_harden_4d_resolve_then_same_violation_reopens_same_problem`; `test_harden_2c_durable_problem_lifecycle_concurrency_proof.py::test_harden_2c_cross_process_lifecycle_resolve_on_mongodb`; `test_problem_lifecycle.py::test_explicit_resolve_and_recurrence_reopens` (resolve only); `test_diagnostic_read_service.py::test_list_status_filter` | P3 / P4 / P1 / P2 | yes | Mongo | **PROVEN** | — |
+| M6 | Recurrence after resolve | Canonical contract: **reopen existing Problem** (status OPEN, occurrences continue, first_seen preserved) | `test_harden_4d_problem_lifecycle_host_e2e.py::test_harden_4d_resolve_then_same_violation_reopens_same_problem`; `test_problem_lifecycle.py::test_explicit_resolve_and_recurrence_reopens` | P3 / P1 | yes | no | **PROVEN** | — |
 | M7 | Diagnostic subsystem failure | Business survives; durable failure evidence; ExecutionId preserved | `test_terminal_diagnostic_production_e2e.py::test_diagnostic_failure_does_not_change_business_outcome`; `test_harden_1d_durable_problem_store_failure_semantics.py::test_harden_1d_terminal_create_failure_preserves_business_result`; `test_diagnostic_subsystem_failure_evidence.py::test_failure_event_preserves_execution_identity` | P3 + P2 | yes | no | **PROVEN** | — |
 | M8 | Problem Store outage | Persistence fails → business unaffected → diagnostic degradation visible | `test_harden_1d_durable_problem_store_failure_semantics.py` (create/update/recovery trio); `test_harden_1d_problem_persistence_write_failure.py` | P3 / P2 | yes | FI-B | **PARTIALLY_PROVEN** | Abstraction-level FI-B only; no durable Mongo write-failure E2E |
 | M9 | Cross-process durability | Process A writes Problem; Process B reads same Problem | `test_harden_1c_durable_problem_restart_proof.py::test_harden_1c_durable_problem_survives_real_process_restart` | P4 | yes | Mongo | **PROVEN** | — |
@@ -118,8 +119,8 @@
 | Metric | Count |
 |--------|------:|
 | Total required (M1–M24) | 24 |
-| **PROVEN** | 17 |
-| **PARTIALLY_PROVEN** | 6 |
+| **PROVEN** | 19 |
+| **PARTIALLY_PROVEN** | 4 |
 | **MISSING** | 0 |
 | **NOT_APPLICABLE** | 1 |
 | **DEFERRED** | 0 |
@@ -129,8 +130,8 @@
 | Severity | IDs | Rationale |
 |----------|-----|-----------|
 | **P0** | — | M17/M18 closed by HARDEN-4B product-host E2E |
-| **P1** | M5, M6 | Core lifecycle truth at operator-facing host boundary |
-| **P2** | M8 (Mongo FI), M19, M20, M22 | Quality/durability depth; abstraction proofs exist but skeptical gap remains |
+| **P1** | — | M5/M6 closed by HARDEN-4D product-host lifecycle E2E |
+| **P2** | M8, M19, M20, M22 | Quality/durability depth; abstraction proofs exist but skeptical gap remains |
 
 ---
 
@@ -162,14 +163,14 @@ Matrix is substantially built (HARDEN-1/2/3 slices cover durability, OCC, vendor
 | **Scope** | `test_harden_4c_clean_diagnostic_host_e2e.py` on shared `build_diag_final_product_host` harness |
 | **CI class** | PR deterministic gate (`Durable diagnostics deterministic gate`), no Docker required |
 
-### HARDEN-4D — Lifecycle resolve + recurrence reopen host E2E
+### HARDEN-4D — Lifecycle resolve + recurrence reopen host E2E ✅
 
 | Field | Value |
 |-------|-------|
 | **Goal** | M5 + M6: host execution → Problem → explicit resolve API/path → read shows RESOLVED → second violation reopens same `problem_id` with incremented occurrences |
 | **Minimum level** | P3 |
-| **Scope** | Product host + DiagnosticReadService; reuse deterministic violation injector; call `ProblemLifecycleEngine.resolve` via supported host/operator seam |
-| **CI class** | PR deterministic gate |
+| **Scope** | `test_harden_4d_problem_lifecycle_host_e2e.py` on shared `build_diag_final_product_host` harness; `ProblemLifecycleEngine.resolve` via shared host persistence |
+| **CI class** | PR deterministic gate (`Durable diagnostics deterministic gate`), no Docker |
 
 ### HARDEN-4E — Evidence reconstruction / unavailable read host E2E (optional)
 
@@ -196,7 +197,7 @@ Matrix is substantially built (HARDEN-1/2/3 slices cover durability, OCC, vendor
 HARDEN-4A — matrix inventory ✅
 HARDEN-4B — product-host multi-tenant diagnostic isolation E2E ✅
 HARDEN-4C — product-host clean / no-false-positive E2E ✅
-HARDEN-4D — resolve + recurrence reopen host E2E
+HARDEN-4D — resolve + recurrence reopen host E2E ✅
 HARDEN-4E — reconstruction / unavailable read host E2E (optional)
 HARDEN-4F — durable Mongo store failure E2E (optional)
 HARDEN-5 — documentation review and closeout
