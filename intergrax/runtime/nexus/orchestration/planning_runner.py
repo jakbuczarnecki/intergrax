@@ -9,7 +9,7 @@ import time
 from dataclasses import dataclass
 from typing import Awaitable, Callable, Optional
 
-from intergrax.contracts.decision_record import DecisionRecord
+from intergrax.contracts.uaep_decision_record import DecisionRecord
 from intergrax.contracts.execution_identity import ActiveExecutionIdentity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.reasoning_failure import ReasoningFailureKind
