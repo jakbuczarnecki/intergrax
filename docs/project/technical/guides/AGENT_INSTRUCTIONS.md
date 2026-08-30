@@ -21,7 +21,7 @@ Tier-3  applications/        Deployable product environments
 **Strategic goal:** production-grade Harness AI aligned with modern Agent Engineering practice.
 **Source:** [docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-**Documentation boundary:** `docs/project/architecture/intergrax_runtime_architecture.md` is the architecture hub indexing **24 domain-layer pairs**: `docs/project/architecture/<DOMAIN>.md` ↔ `docs/project/maintainers/plans/<DOMAIN>.md` (1:1 filenames). **Multi-layer feature pairs** live under `docs/project/capabilities/architecture/<FEATURE>.md` ↔ `docs/project/capabilities/plan/<FEATURE>.md` — see [`capabilities/README.md`](../../capabilities/README.md). Feature docs coordinate cross-layer capabilities; domain docs remain authoritative for domain-owned architecture and plan rows. Strategy, ideal model, and audit live in `docs/project/technical/guides/`. Each **business environment** (`applications/<product>/`) and **business agent** (`agents/<name>/`) has its own architecture and implementation plan — do not treat platform canon as the product deployment plan.
+**Documentation boundary:** `docs/project/architecture/intergrax_runtime_architecture.md` is the architecture hub indexing the **primary domain-pair baseline plus additional canonical domain pairs**: `docs/project/architecture/<DOMAIN>.md` ↔ `docs/project/maintainers/plans/<DOMAIN>.md` (1:1 filenames). **Multi-layer feature pairs** live under `docs/project/capabilities/architecture/<FEATURE>.md` ↔ `docs/project/capabilities/plan/<FEATURE>.md` — see [`capabilities/README.md`](../../capabilities/README.md). Feature docs coordinate cross-layer capabilities; domain docs remain authoritative for domain-owned architecture and plan rows. Strategy, ideal model, and audit live in `docs/project/technical/guides/`. Each **business environment** (`applications/<product>/`) and **business agent** (`agents/<name>/`) has its own architecture and implementation plan — do not treat platform canon as the product deployment plan.
 
 **Per-iteration reading rule:** when implementing a harness layer, read **only** the matching architecture + plan pair (e.g. `MEMORY.md` in both folders) plus `docs/project/technical/guides/` as needed — do not load unrelated domain docs.
 
@@ -236,9 +236,9 @@ Full local suite: `scripts\ci\test.bat unit` (Windows) or equivalent `uv run pyt
 
 | Path | Contents |
 |------|----------|
-| `docs/project/architecture/intergrax_runtime_architecture.md` | Architecture hub indexing 24 domain pairs + feature doc index |
-| `docs/project/architecture/` | Domain architecture canon (24 files) |
-| `docs/project/maintainers/plans/` | Domain implementation plans (24 files, 1:1 with architecture) |
+| `docs/project/architecture/intergrax_runtime_architecture.md` | Architecture hub indexing primary domain-pair baseline plus additional canonical domain pairs + feature doc index |
+| `docs/project/architecture/` | Domain architecture canon (one file per canonical DOMAIN) |
+| `docs/project/maintainers/plans/` | Domain implementation plans (1:1 with architecture DOMAIN pairs) |
 | `docs/project/capabilities/` | Multi-layer feature architecture + plan pairs (1:1 under `architecture/` and `plan/`) |
 | `docs/project/technical/guides/` | Strategy, ideal model, audit map, authoring guides |
 | `../../intergrax/runtime/nexus/` | Nexus Agent OS core |
