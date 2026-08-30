@@ -6,11 +6,8 @@ from pathlib import Path
 from typing import Generator, List, Sequence
 
 import pytest
-from opentelemetry import trace
+
 from intergrax.knowledge.contracts import KnowledgeDocument
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from intergrax.rag.ingest.ingest_pipeline import IngestPipeline, IngestRequest
 from intergrax.rag.profiles.rag_profile import RagProfile
@@ -22,34 +19,34 @@ from intergrax.rag.retrievers.contracts.base_retriever import (
     RetrieverQuery,
 )
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    reset_active_execution_identity,
+)
+from intergrax.contracts.instrumentation_span_attributes import (
+    INTERGRAX_ATTEMPT_ID_ATTR,
+    INTERGRAX_EXECUTION_ID_ATTR,
+    INTERGRAX_RUN_ID_ATTR,
+)
 from intergrax.rag.tracking.rag_spans import (
     RAG_OTEL_SPAN_NAMES,
     RAG_OTEL_TRACER_NAME,
     is_rag_otel_spans_enabled,
+    rag_span,
     set_rag_otel_spans_enabled,
 )
 
 pytestmark = pytest.mark.gate
 
 
-@pytest.fixture(scope="module")
-def span_exporter() -> Generator[InMemorySpanExporter, None, None]:
-    exporter = InMemorySpanExporter()
-    provider = TracerProvider()
-    provider.add_span_processor(SimpleSpanProcessor(exporter))
-    trace.set_tracer_provider(provider)
-    yield exporter
-
-
 @pytest.fixture(autouse=True)
-def _enable_rag_spans(
-    span_exporter: InMemorySpanExporter,
-) -> Generator[None, None, None]:
-    span_exporter.clear()
+def _enable_rag_spans() -> Generator[None, None, None]:
     set_rag_otel_spans_enabled(True)
     yield
     set_rag_otel_spans_enabled(False)
-    span_exporter.clear()
 
 
 class _StubRetriever(BaseRetriever):
@@ -162,7 +159,7 @@ def test_rag_otel_spans_enabled_by_default(monkeypatch: pytest.MonkeyPatch) -> N
     assert is_rag_otel_spans_enabled() is False
 
 
-def test_retrieval_service_emits_otel_spans(span_exporter: InMemorySpanExporter) -> None:
+def test_retrieval_service_emits_otel_spans(span_exporter: object) -> None:
     service = RetrievalService(
         retriever_manager=_StubRetrieverManager(),
         profile=RagProfile(enable_rerank=False),
@@ -176,7 +173,7 @@ def test_retrieval_service_emits_otel_spans(span_exporter: InMemorySpanExporter)
 
 
 def test_ingest_pipeline_emits_stage_otel_spans(
-    span_exporter: InMemorySpanExporter,
+    span_exporter: object,
     tmp_path: Path,
 ) -> None:
     source = tmp_path / "doc.txt"
@@ -203,3 +200,56 @@ def test_ingest_pipeline_emits_stage_otel_spans(
         "rag.ingest.index",
         "rag.ingest",
     ]
+
+
+def test_rag_span_correlates_active_execution_identity(span_exporter: object) -> None:
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    try:
+        with rag_span(
+            "rag.retrieve",
+            attributes={
+                "rag.query": "must not export",
+                "rag.query.length": 4,
+            },
+        ):
+            pass
+    finally:
+        reset_active_execution_identity(token)
+
+    span = next(span for span in span_exporter.get_finished_spans() if span.name == "rag.retrieve")
+    attributes = dict(span.attributes)
+    assert attributes[INTERGRAX_RUN_ID_ATTR] == str(run_id)
+    assert attributes[INTERGRAX_ATTEMPT_ID_ATTR] == str(attempt_id)
+    assert attributes[INTERGRAX_EXECUTION_ID_ATTR] == str(execution_id)
+    assert attributes["rag.query.length"] == 4
+    assert "rag.query" not in attributes
+
+
+def test_rag_span_instrumentation_failure_does_not_break_business(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _broken_get_tracer(*_args: object, **_kwargs: object) -> object:
+        raise RuntimeError("otel provider unavailable")
+
+    monkeypatch.setattr("opentelemetry.trace.get_tracer", _broken_get_tracer)
+
+    outcome = "ok"
+    with rag_span("rag.retrieve"):
+        outcome = "still-ok"
+    assert outcome == "still-ok"
+
+
+def test_rag_span_business_exception_propagates(span_exporter: object) -> None:
+    with pytest.raises(ValueError, match="business failure"):
+        with rag_span("rag.retrieve"):
+            raise ValueError("business failure")
+
+    span = next(span for span in span_exporter.get_finished_spans() if span.name == "rag.retrieve")
+    assert span.status.status_code.name == "ERROR"

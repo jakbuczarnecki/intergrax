@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from typing import Generator
+
 import pytest
 
 # Whole directories: typed contracts only (pure pydantic / schema).
@@ -61,3 +63,25 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
             continue
         if _in_ci_smoke_scope(item.nodeid):
             item.add_marker(pytest.mark.ci_smoke)
+
+
+@pytest.fixture(scope="session")
+def _otel_in_memory_span_exporter() -> object:
+    otel_trace = pytest.importorskip("opentelemetry.trace")
+    exporter_module = pytest.importorskip("opentelemetry.sdk.trace.export.in_memory_span_exporter")
+    provider_module = pytest.importorskip("opentelemetry.sdk.trace")
+    processor_module = pytest.importorskip("opentelemetry.sdk.trace.export")
+
+    exporter = exporter_module.InMemorySpanExporter()
+    provider = provider_module.TracerProvider()
+    provider.add_span_processor(processor_module.SimpleSpanProcessor(exporter))
+    otel_trace.set_tracer_provider(provider)
+    return exporter
+
+
+@pytest.fixture
+def span_exporter(_otel_in_memory_span_exporter: object) -> Generator[object, None, None]:
+    exporter = _otel_in_memory_span_exporter
+    exporter.clear()
+    yield exporter
+    exporter.clear()
