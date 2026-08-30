@@ -77,6 +77,10 @@ def _unit(path: str, test_name: str) -> ValidationProof:
     return _proof(ValidationProofKind.UNIT, path, test_name)
 
 
+def _integration(path: str, test_name: str) -> ValidationProof:
+    return _proof(ValidationProofKind.INTEGRATION, path, test_name)
+
+
 def _gate(path: str, test_name: str) -> ValidationProof:
     return _proof(ValidationProofKind.ARCHITECTURE_GATE, path, test_name)
 
@@ -125,11 +129,10 @@ def _gap(
 
 
 UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
-    # ROOT_STRATEGY — stack proven with probe backends; canonical root E2E deferred to UE-11B.
-    _partial(
+    # ROOT_STRATEGY — real production-path root E2E proofs (UE-11B).
+    _covered(
         "root.inference.end_to_end",
         ValidationDomain.ROOT_STRATEGY,
-        GapTarget.UE_11B,
         _unit(
             "tests/unit/runtime/execution/test_execution_runtime.py",
             "test_inference_root_runtime_binds_identity_authority_budget",
@@ -138,11 +141,14 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
             "tests/unit/runtime/execution/test_strategy_execution_router.py",
             "test_inference_router_delegates_only_to_inference_executor",
         ),
+        _integration(
+            "tests/integration/runtime/execution/test_ue_11b_real_root_inference.py",
+            "test_ue_11b_real_root_inference_end_to_end",
+        ),
     ),
-    _partial(
+    _covered(
         "root.agentic.end_to_end",
         ValidationDomain.ROOT_STRATEGY,
-        GapTarget.UE_11B,
         _unit(
             "tests/unit/runtime/execution/test_execution_runtime.py",
             "test_agentic_root_runtime_binds_identity_authority_budget",
@@ -151,11 +157,14 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
             "tests/unit/runtime/execution/test_strategy_execution_router.py",
             "test_agentic_router_delegates_only_to_agent_executor",
         ),
+        _integration(
+            "tests/integration/runtime/execution/test_ue_11b_real_root_agentic.py",
+            "test_ue_11b_real_root_agentic_end_to_end",
+        ),
     ),
-    _partial(
+    _covered(
         "root.orchestration.end_to_end",
         ValidationDomain.ROOT_STRATEGY,
-        GapTarget.UE_11B,
         _unit(
             "tests/unit/runtime/execution/test_execution_runtime.py",
             "test_orchestration_root_runtime_nexus_receives_active_context",
@@ -163,6 +172,10 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
         _unit(
             "tests/unit/runtime/execution/test_strategy_execution_router.py",
             "test_orchestration_router_delegates_only_to_orchestration_executor",
+        ),
+        _integration(
+            "tests/integration/runtime/execution/test_ue_11b_real_root_orchestration.py",
+            "test_ue_11b_real_root_orchestration_end_to_end",
         ),
     ),
     # LIFECYCLE
@@ -876,4 +889,85 @@ def validate_unified_execution_matrix(
         if domain not in present_domains:
             violations.append(f"missing required domain: {domain.value}")
 
+    return violations
+
+
+_ROOT_E2E_CAPABILITY_IDS: frozenset[str] = frozenset(
+    {
+        "root.inference.end_to_end",
+        "root.agentic.end_to_end",
+        "root.orchestration.end_to_end",
+    }
+)
+
+_UE_11B_PROOF_FILES: tuple[str, ...] = (
+    "tests/integration/runtime/execution/test_ue_11b_real_root_inference.py",
+    "tests/integration/runtime/execution/test_ue_11b_real_root_agentic.py",
+    "tests/integration/runtime/execution/test_ue_11b_real_root_orchestration.py",
+)
+
+_UE_11B_FORBIDDEN_SUBSTRINGS: tuple[str, ...] = (
+    "unittest.mock",
+    "MagicMock",
+    "AsyncMock",
+    "monkeypatch",
+    "Mock(",
+    "FakeAdapter",
+    "AgentEngineProbe",
+    "RecordingAgentEngine",
+    "StructuredProbeAdapter",
+    "._handle_task_impl",
+    "._graph_executor",
+    "._validation_engine",
+    "._critic_graph_hooks",
+)
+
+_UE_11B_REQUIRED_SUBSTRINGS: tuple[str, ...] = (
+    ".execute(request, options=",
+)
+
+
+def validate_ue_11b_proof_surface(*, repo_root_path: Path | None = None) -> list[str]:
+    """Block synthetic shortcuts in UE-11B real root E2E proof files."""
+    root = repo_root_path or _REPO_ROOT
+    violations: list[str] = []
+    for relative in _UE_11B_PROOF_FILES:
+        path = root / relative
+        if not path.is_file():
+            violations.append(f"UE-11B proof file missing: {relative}")
+            continue
+        source = path.read_text(encoding="utf-8-sig")
+        for token in _UE_11B_FORBIDDEN_SUBSTRINGS:
+            if token in source:
+                violations.append(f"{relative}: forbidden token {token!r}")
+        for token in _UE_11B_REQUIRED_SUBSTRINGS:
+            if token not in source:
+                violations.append(f"{relative}: missing required token {token!r}")
+    return violations
+
+
+def validate_covered_root_e2e_proof_kind() -> list[str]:
+    """COVERED root.*.end_to_end capabilities require INTEGRATION UE-11B proofs."""
+    violations: list[str] = []
+    for entry in UNIFIED_EXECUTION_VALIDATION_MATRIX:
+        if entry.capability_id not in _ROOT_E2E_CAPABILITY_IDS:
+            continue
+        if entry.status is not ValidationStatus.COVERED:
+            continue
+        integration_proofs = [
+            proof
+            for proof in entry.proofs
+            if proof.kind is ValidationProofKind.INTEGRATION
+            and proof.path in _UE_11B_PROOF_FILES
+        ]
+        if not integration_proofs:
+            violations.append(
+                f"{entry.capability_id}: COVERED requires UE-11B INTEGRATION proof"
+            )
+        if not any(
+            proof.kind is ValidationProofKind.INTEGRATION for proof in entry.proofs
+        ):
+            violations.append(
+                f"{entry.capability_id}: COVERED root E2E cannot be UNIT/ARCHITECTURE_GATE only"
+            )
     return violations
