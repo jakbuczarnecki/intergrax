@@ -31,6 +31,7 @@ from intergrax.runtime.diagnostics.diagnostic_subsystem_failure_evidence import 
     record_diagnostic_subsystem_failure,
 )
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_bridge import (
+    TerminalDiagnosticIdentityMismatchError,
     invoke_terminal_execution_diagnostics,
 )
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -312,7 +313,7 @@ def test_bridge_rejects_run_id_mismatch_with_execution_identity() -> None:
     failing.trigger_for_terminal_execution.side_effect = RuntimeError("persist failed")
 
     with _terminal_execution_identity_scope() as identity:
-        with pytest.raises(RuntimeError, match="run_id conflicts with terminal execution identity"):
+        with pytest.raises(TerminalDiagnosticIdentityMismatchError, match="run_id conflicts with terminal execution identity"):
             invoke_terminal_execution_diagnostics(
                 failing,
                 tenant_id="tenant-a",
@@ -322,6 +323,42 @@ def test_bridge_rejects_run_id_mismatch_with_execution_identity() -> None:
                 event_bus=event_bus,
                 execution_identity=identity,
             )
+
+
+def test_bridge_unrelated_runtime_error_from_persistence_is_not_identity_mismatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runtime_store = InMemoryRuntimeEventStore()
+    event_bus = RuntimeEventBus(persistence=runtime_store)
+    task_id = mint_task_id()
+    failing = MagicMock()
+    failing.trigger_for_terminal_execution.side_effect = RuntimeError("persist failed")
+
+    def _raise_unrelated_runtime_error(*_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("conflicts with something unrelated")
+
+    monkeypatch.setattr(
+        "intergrax.runtime.diagnostics.terminal_execution_diagnostic_bridge._persist_diagnostic_subsystem_failure",
+        _raise_unrelated_runtime_error,
+    )
+
+    with _terminal_execution_identity_scope() as identity:
+        result = invoke_terminal_execution_diagnostics(
+            failing,
+            tenant_id="tenant-a",
+            task_id=task_id,
+            run_id=identity.run_id,
+            observed_at=_OBSERVED_AT,
+            event_bus=event_bus,
+            execution_identity=identity,
+        )
+
+    assert result is None
+    assert not diagnostic_subsystem_failure_observed_for_run(
+        runtime_store,
+        tenant_id="tenant-a",
+        run_id=identity.run_id,
+    )
 
 
 def test_record_rejects_run_id_mismatch_with_active_context() -> None:

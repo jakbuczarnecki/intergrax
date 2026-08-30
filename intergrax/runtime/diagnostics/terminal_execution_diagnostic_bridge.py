@@ -28,6 +28,10 @@ from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
 
 
+class TerminalDiagnosticIdentityMismatchError(RuntimeError):
+    """Raised when terminal diagnostic evidence write identity does not match execution binding."""
+
+
 def _persist_diagnostic_subsystem_failure(
     event_bus: RuntimeEventBus,
     *,
@@ -40,7 +44,9 @@ def _persist_diagnostic_subsystem_failure(
 ) -> None:
     if execution_identity is not None:
         if execution_identity.run_id != run_id:
-            raise RuntimeError("run_id conflicts with terminal execution identity")
+            raise TerminalDiagnosticIdentityMismatchError(
+                "run_id conflicts with terminal execution identity"
+            )
         identity_token = bind_active_execution_identity(
             run_id=execution_identity.run_id,
             attempt_id=execution_identity.attempt_id,
@@ -116,17 +122,8 @@ def invoke_terminal_execution_diagnostics(
                     error_type=type(exc).__name__,
                     observed_at=observed_at,
                 )
-            except RuntimeError as evidence_exc:
-                if "conflicts with" in str(evidence_exc):
-                    raise evidence_exc
-                logger.exception(
-                    "Failed to persist diagnostic subsystem failure evidence",
-                    extra={
-                        "tenant_id": tenant_id,
-                        "task_id": str(task_id),
-                        "run_id": str(run_id),
-                    },
-                )
+            except TerminalDiagnosticIdentityMismatchError:
+                raise
             except Exception:
                 logger.exception(
                     "Failed to persist diagnostic subsystem failure evidence",
@@ -152,4 +149,7 @@ def invoke_terminal_execution_diagnostics(
     return result
 
 
-__all__ = ["invoke_terminal_execution_diagnostics"]
+__all__ = [
+    "TerminalDiagnosticIdentityMismatchError",
+    "invoke_terminal_execution_diagnostics",
+]
