@@ -77,11 +77,12 @@ Maintainer authoring workflow and technical infrastructure live in the internal 
 
 The library operating model is ready. Accepted Scenario Proofs appear here only after passing canonical acceptance gates — with evidence, verdict, report, and reproduction routes.
 
-**Current status:** no accepted Scenario Proofs are published yet. The first flagship scenario is in development.
+**Current status:** no accepted Scenario Proofs are published yet. Flagship scenarios are in development.
 
 | Scenario | Status | Public routes |
 | --- | --- | --- |
 | **AI Incident Investigation with Independent Verification** | **In development** — FULL-1 RESOLVED and FULL-2 UNRESOLVED implemented and executable; public Scenario Proof not yet accepted | [Scenario design](../../../platform_proofs/scenarios/ai_incident_investigation/README.md) |
+| **Indirect Prompt Injection with Governed Action Prevention** | **Implementation initialized** — scenario architecture accepted; executable business proof not yet implemented | [Scenario design](../../../platform_proofs/scenarios/indirect_prompt_injection/README.md) |
 
 When a scenario is accepted, each entry will expose:
 
@@ -106,7 +107,7 @@ Links appear only when artifacts exist — not for placeholder or in-design work
 
 ---
 
-## D. Featured scenario in development
+## D. Featured scenarios in development
 
 ### AI Incident Investigation with Independent Verification
 
@@ -136,6 +137,37 @@ Initial operational signals make workload overload plausible. Evidence is confli
 [View full-size diagram](../assets/public/readme/fullsize/scenario-ai-incident-investigation.md)
 
 **[Scenario design document](../../../platform_proofs/scenarios/ai_incident_investigation/README.md)**
+
+---
+
+### Indirect Prompt Injection with Governed Action Prevention
+
+> **Can an AI agent be fooled — and still be prevented from causing real harm?**
+
+An autonomous order assistant legitimately reads external order notes.
+A hostile instruction hidden in those notes may fool the real model into proposing a shipping-address change.
+
+The scenario does not rely on the model detecting the attack.
+
+The write tool stays available.
+The model may genuinely request it.
+Intergrax governance evaluates the tool invocation before execution and blocks the unauthorized write.
+
+The model may lose the battle.
+The execution boundary must still win.
+
+**Status:** implementation initialized — scenario architecture accepted; business implementation not yet completed; no verified proof run yet.
+
+<a href="../../../platform_proofs/scenarios/indirect_prompt_injection/assets/scenario-overview.png">
+  <img
+    src="../../../platform_proofs/scenarios/indirect_prompt_injection/assets/scenario-overview.png"
+    alt="Indirect Prompt Injection Defense scenario — hostile external data influences the model while trusted governance prevents unauthorized write execution"
+  >
+</a>
+
+[View full-size scenario overview](../../../platform_proofs/scenarios/indirect_prompt_injection/assets/scenario-overview.png)
+
+**[Scenario design document](../../../platform_proofs/scenarios/indirect_prompt_injection/README.md)**
 
 ---
 

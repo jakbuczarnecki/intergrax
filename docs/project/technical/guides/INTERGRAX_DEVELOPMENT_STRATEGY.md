@@ -106,10 +106,8 @@ ANALYSIS
   → DOCUMENTATION UPDATE (strategy → canon/feature → plan)
   → IMPLEMENTATION
   → VERIFICATION (gate + getattr audit where harness touched)
-  → CONCLUSIONS (+ implementation journal entry when a deliverable closed)
+  → CONCLUSIONS
 ```
-
-**CONCLUSIONS:** For completed implementations, record an English episode in [`../../maintainers/implementation-journal`](../../maintainers/implementation-journal/README.md) (prepend to `INDEX.md`; operator intent, `plan_ref`, impact) — narrative layer only; plan rows remain the status source of truth.
 
 Think as a **Harness AI architect** first, then as an engineer.
 

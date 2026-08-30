@@ -75,10 +75,20 @@ def _build_diagnostic_operations_pane(
         tenant_id=tenant_id,
         status=ProblemStatus.OPEN,
     )
+    problem_count = (
+        all_problems.total_count
+        if all_problems.total_count is not None
+        else all_problems.returned_count
+    )
+    open_problem_count = (
+        open_problems.total_count
+        if open_problems.total_count is not None
+        else open_problems.returned_count
+    )
     return DiagnosticOperationsPane(
         ready=True,
-        problem_count=all_problems.total_count,
-        open_problem_count=open_problems.total_count,
+        problem_count=problem_count,
+        open_problem_count=open_problem_count,
     )
 
 

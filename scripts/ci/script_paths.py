@@ -151,7 +151,6 @@ SCRIPT_PATHS: dict[str, str] = {
     "check_health_dashboard_contracts.py": "maintenance/check_health_dashboard_contracts.py",
     "check_human_review_sample_queue.py": "maintenance/check_human_review_sample_queue.py",
     "check_immutable_security_audit_trail.py": "maintenance/check_immutable_security_audit_trail.py",
-    "check_implementation_journal.py": "maintenance/check_implementation_journal.py",
     "check_integration_marketplace_catalog.py": "maintenance/check_integration_marketplace_catalog.py",
     "check_integration_maturity_labels.py": "maintenance/check_integration_maturity_labels.py",
     "check_integration_p4_shell_probes.py": "maintenance/check_integration_p4_shell_probes.py",

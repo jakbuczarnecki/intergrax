@@ -26,10 +26,10 @@ Products under `applications/` may **consume** platform mechanisms, but product 
 
 ```mermaid
 flowchart LR
-    A[Real problem / mechanism claim] --> B[Implementation]
-    B --> C[Tests / integration evidence]
-    C --> D[Proof Library<br/>platform_proofs/]
-    D --> E[Product consumption<br/>applications/]
+    A[Real problem] --> B[Solution architecture]
+    B --> C[Scenario design acceptance]
+    C --> D[Build on Intergrax]
+    D --> E[Proof Library<br/>platform_proofs/]
     E --> F[Public evidence dashboard<br/>docs/project/proofs/]
 
     subgraph execution [Canonical execution]
@@ -37,6 +37,7 @@ flowchart LR
     end
 
     D --> S
+    E --> S
 ```
 
 **Normative rule (non-negotiable):**
@@ -59,6 +60,32 @@ flowchart LR
 A proof does **not** belong to one platform domain. It may exercise one or more domains and mechanisms — declared in descriptor metadata (`domains_exercised`, `mechanisms_exercised`), not by top-level taxonomy.
 
 **Scenario application ≠ Product.** A Scenario may have real business workflow and production-capable application core; it still belongs under `platform_proofs/scenarios/`, not `applications/`. Product proofs remain product-owned.
+
+---
+
+## Scenario Proof lifecycle (gateway)
+
+Scenario proofs are **problem-first**. Design the right solution before checking what Intergrax supports today.
+
+```text
+create design package (create_scenario_proof.py)
+↓
+design the problem and solution (README + SCENARIO_SPEC)
+↓
+accept design (Scenario Quality Gate)
+↓
+implementation preparation (verify Intergrax fit; resolve platform gaps if needed)
+↓
+initialize implementation (init_scenario_implementation.py)
+↓
+build on Intergrax
+↓
+fill reusable platform gaps if discovered during implementation
+↓
+prove it (execute → evidence → report)
+```
+
+Full workflow: [PLATFORM_PROOF_AUTHORING_GUIDE.md § Canonical Scenario Lifecycle](PLATFORM_PROOF_AUTHORING_GUIDE.md#canonical-scenario-lifecycle).
 
 ---
 
@@ -103,9 +130,9 @@ Scenario authoring is **two canonical steps** — do not skip or merge them:
 | Step | When | Command |
 |------|------|---------|
 | **1. Create design package** | New scenario idea | `uv run python scripts/proof/create_scenario_proof.py --slug <slug> --title "<title>"` |
-| **2. Initialize implementation** | After Scenario Quality Gate → **ACCEPTED FOR IMPLEMENTATION** | `uv run python scripts/proof/init_scenario_implementation.py --slug <slug>` |
+| **2. Initialize implementation** | After Scenario Quality Gate → **ACCEPTED FOR IMPLEMENTATION** → implementation preparation (Intergrax fit verified) | `uv run python scripts/proof/init_scenario_implementation.py --slug <slug>` |
 
-Step 1 creates `README.md` + `SCENARIO_SPEC.md` only (`DESIGN / NOT YET ACCEPTED`). Step 2 creates the platform-native implementation skeleton (`application/`, `proof/`, `fixtures/`, `proof.json`, `run_proof.py`, `.env.example`). **Do not** run step 2 before acceptance.
+Step 1 creates `README.md` + `SCENARIO_SPEC.md` only (`DESIGN / NOT YET ACCEPTED`). Step 2 creates the platform-native implementation skeleton (`application/`, `proof/`, `fixtures/`, `proof.json`, `run_proof.py`, `.env.example`). **Do not** run step 2 before acceptance and implementation-preparation gates.
 
 Workflow detail: [PLATFORM_PROOF_AUTHORING_GUIDE.md § Canonical Scenario Lifecycle](PLATFORM_PROOF_AUTHORING_GUIDE.md#canonical-scenario-lifecycle).
 

@@ -18,10 +18,13 @@ Public readers looking for product value, proof paths, evaluation, partnership o
 | **Public documentation map** (reader routes, proof paths) | [PUBLIC_DOCUMENTATION_MAP.md](../community/PUBLIC_DOCUMENTATION_MAP.md) |
 | **Public documentation architecture** (maintainer contract) | [public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md](../maintainers/public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md) |
 | **Governed Execution** (policy enforcement capability) | [GOVERNED_EXECUTION.md](../architecture/GOVERNED_EXECUTION.md) |
+| **Central Diagnostics** (canonical Problem spine, authority, qualification) | [DIAGNOSTICS.md](../architecture/DIAGNOSTICS.md) · engine [DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md](../maintainers/qualification/DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md) · platform [DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md](../maintainers/qualification/DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md) · [DIAGNOSTIC_MULTI_SCENARIO_E2E_MATRIX.md](../maintainers/qualification/DIAGNOSTIC_MULTI_SCENARIO_E2E_MATRIX.md) |
+| **Observability** (HOS, RuntimeEvent, export) | [OBSERVABILITY.md](../architecture/OBSERVABILITY.md) |
+| **Decision System** (target canon — lifecycle, verification, deliberation) | [DECISION_SYSTEM.md](../architecture/DECISION_SYSTEM.md) · [DECISION_VERIFICATION.md](../architecture/DECISION_VERIFICATION.md) · [DECISION_DELIBERATION.md](../architecture/DECISION_DELIBERATION.md) · **CURRENT:** [CRITIC_VERIFICATION.md](../architecture/CRITIC_VERIFICATION.md) |
 | **Token Optimization main guide** | [capabilities/token_optimization/README.md](../capabilities/token_optimization/README.md) |
 | **This map** (roles and workflows) | `docs/project/technical/DOCUMENTATION_MAP.md` |
 | **Extend Intergrax / build plugins** | [EXTENSION_AUTHOR_GUIDE.md](guides/EXTENSION_AUTHOR_GUIDE.md) → surface matrix → domain guide · design: [PLATFORM_PLUGINS.md](../architecture/PLATFORM_PLUGINS.md) |
-| Architecture hub + 24 domain pairs | [intergrax_runtime_architecture.md](../architecture/intergrax_runtime_architecture.md) |
+| Architecture hub (primary 24 baseline + additional canonical domain pairs) | [intergrax_runtime_architecture.md](../architecture/intergrax_runtime_architecture.md) |
 | Multi-layer capability docs | [capabilities/README.md](../capabilities/README.md) — includes `TOKEN_OPTIMIZATION`, `LANGCHAIN_INDEPENDENCE` |
 | Domain architecture canon | `docs/project/architecture/<DOMAIN>.md` |
 | Implementation status / backlog | `docs/project/maintainers/plans/<DOMAIN>.md` |
@@ -35,13 +38,24 @@ Public readers looking for product value, proof paths, evaluation, partnership o
 | Remediate accepted audit findings | [audit_results/AUDIT_REMEDIATION_PROTOCOL.md](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md) |
 | Audit campaigns and historical results | [audit_results/](../../audit_results/) |
 | Layer closeout (LCM 1–6) | [LAYER_COMPLETION_MODE.md](guides/LAYER_COMPLETION_MODE.md) |
-| Milestone narrative log | [implementation-journal/README.md](../maintainers/implementation-journal/README.md) |
 | Architectural decisions | [adr/README.md](adr/README.md) |
 | **Governed external execution** (ownership, lifecycle, invariants) | [platform/governed_external_execution.md](platform/governed_external_execution.md) |
 | **Partner validation readiness** (GEC / ImpeachmentRight five-point matrix) | [integrations/impeachmentright_validation_readiness.md](../integrations/impeachmentright_validation_readiness.md) |
 | Contributing / PR process | [CONTRIBUTING.md](../../../CONTRIBUTING.md) |
 
-Domain pair index (24 names): [architecture hub § Domain pair index](../architecture/intergrax_runtime_architecture.md#domain-pair-index-24).
+Canonical domain pair index: [architecture hub § Domain pair index (primary 24)](../architecture/intergrax_runtime_architecture.md#domain-pair-index-primary-24) plus [additional canonical DOMAIN pairs](../architecture/intergrax_runtime_architecture.md#architecture-artifact-classification-register).
+
+### Decision System — progressive technical routing
+
+```text
+Decision System
+├ architecture hub ............... DECISION_SYSTEM.md
+├ Verification / Deliberation .... paired sub-hubs (subordinate to Decision System)
+├ extended depth ................. satellites/DECISION_*_extended_depth.md (one per hub, on demand)
+└ implementation plan ............ maintainers/plans/DECISION_*.md
+```
+
+Critic = **CURRENT implementation snapshot only** — not target canonical domain owner.
 
 ---
 
@@ -53,7 +67,7 @@ Domain pair index (24 names): [architecture hub § Domain pair index](../archite
 | [PUBLIC_DOCUMENTATION_MAP.md](../community/PUBLIC_DOCUMENTATION_MAP.md) | Public reader navigation — intent routes, proof paths, maturity boundary | Technical domain pairs, Cursor workflow |
 | [public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md](../maintainers/public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md) | Maintainer-owned public information architecture | Implementation plans, detailed claims |
 | [DOCUMENTATION_MAP.md](DOCUMENTATION_MAP.md) | Navigation only — Szukasz → Czytaj | Canon, plan rows, audit prompts |
-| [intergrax_runtime_architecture.md](../architecture/intergrax_runtime_architecture.md) | Architecture hub indexing 24 architecture ↔ plan pairs | Per-domain deep spec (use pair files) |
+| [intergrax_runtime_architecture.md](../architecture/intergrax_runtime_architecture.md) | Architecture hub indexing primary domain-pair baseline plus additional canonical domain pairs | Per-domain deep spec (use pair files) |
 | `docs/project/architecture/<DOMAIN>.md` | **What** the harness should do (contracts, design) | Implementation tracker |
 | `docs/project/maintainers/plans/<DOMAIN>.md` | **What is done / next** (phases, rows, gates) | Architecture spec |
 | `docs/project/capabilities/architecture/<FEATURE>.md` | **Cross-layer feature architecture** — coordinates domain pairs | Domain canon replacement |
@@ -72,7 +86,6 @@ Domain pair index (24 names): [architecture hub § Domain pair index](../archite
 | [audit_results/AUDIT_PROTOCOL.md](../../audit_results/AUDIT_PROTOCOL.md) | Model-executable adversarial audit instruction | Per-domain generated prompts |
 | [audit_results/AUDIT_REMEDIATION_PROTOCOL.md](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md) | Remediation workflow from accepted findings | Duplicate audit narrative in plans |
 | [LAYER_COMPLETION_MODE.md](guides/LAYER_COMPLETION_MODE.md) | **When/how** deep domain closeout (LCM steps) | Bootstrap paste file |
-| [implementation-journal/](../maintainers/implementation-journal/README.md) | Milestone narrative (optional) | Plan source of truth or ADR store |
 
 **One source of truth per topic.** Canonical platform and cross-cutting documentation lives under `docs/project/`. Application-owned technical canon lives under `applications/*/docs/` (architecture, implementation plan, build/deploy, ADRs, application evidence). Agent-owned technical canon lives under `agents/*/docs/` (architecture, implementation plan, ADRs). Code-local README files and workflow-adjacent artifacts may remain at the application or agent root when required by tooling; those are not competing documentation roots.
 
@@ -142,7 +155,7 @@ AGENTS.md (stub)  →  AGENT_INSTRUCTIONS.md  →  .cursor/rules/intergrax-itera
     CONTRIBUTING       AUDIT_PROTOCOL        AGENT_INSTRUCTIONS
          │                  │                  │
          └──────────►  architecture ↔ plan  ◄─┘
-                    (24 domain pairs via hub)
+                    (canonical domain pairs via hub)
                     capabilities/architecture ↔ capabilities/plan
                     (multi-layer feature pairs)
 ```

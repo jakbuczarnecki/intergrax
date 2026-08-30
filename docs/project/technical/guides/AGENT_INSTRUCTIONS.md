@@ -21,7 +21,7 @@ Tier-3  applications/        Deployable product environments
 **Strategic goal:** production-grade Harness AI aligned with modern Agent Engineering practice.
 **Source:** [docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-**Documentation boundary:** `docs/project/architecture/intergrax_runtime_architecture.md` is the architecture hub indexing **24 domain-layer pairs**: `docs/project/architecture/<DOMAIN>.md` ↔ `docs/project/maintainers/plans/<DOMAIN>.md` (1:1 filenames). **Multi-layer feature pairs** live under `docs/project/capabilities/architecture/<FEATURE>.md` ↔ `docs/project/capabilities/plan/<FEATURE>.md` — see [`capabilities/README.md`](../../capabilities/README.md). Feature docs coordinate cross-layer capabilities; domain docs remain authoritative for domain-owned architecture and plan rows. Strategy, ideal model, and audit live in `docs/project/technical/guides/`. Each **business environment** (`applications/<product>/`) and **business agent** (`agents/<name>/`) has its own architecture and implementation plan — do not treat platform canon as the product deployment plan.
+**Documentation boundary:** `docs/project/architecture/intergrax_runtime_architecture.md` is the architecture hub indexing the **primary domain-pair baseline plus additional canonical domain pairs**: `docs/project/architecture/<DOMAIN>.md` ↔ `docs/project/maintainers/plans/<DOMAIN>.md` (1:1 filenames). **Multi-layer feature pairs** live under `docs/project/capabilities/architecture/<FEATURE>.md` ↔ `docs/project/capabilities/plan/<FEATURE>.md` — see [`capabilities/README.md`](../../capabilities/README.md). Feature docs coordinate cross-layer capabilities; domain docs remain authoritative for domain-owned architecture and plan rows. Strategy, ideal model, and audit live in `docs/project/technical/guides/`. Each **business environment** (`applications/<product>/`) and **business agent** (`agents/<name>/`) has its own architecture and implementation plan — do not treat platform canon as the product deployment plan.
 
 **Per-iteration reading rule:** when implementing a harness layer, read **only** the matching architecture + plan pair (e.g. `MEMORY.md` in both folders) plus `docs/project/technical/guides/` as needed — do not load unrelated domain docs.
 
@@ -68,7 +68,6 @@ Include **only**:
 9. Out-of-scope findings
 10. Suggested next step (one line)
 11. One-line commit message (English) — no commit unless operator asks
-12. Journal — entry path **only if written**; else **"no journal needed"** + one-line rationale
 
 ---
 
@@ -121,7 +120,6 @@ applications/    MAY import from agents/ and intergrax/
 - Agent workflow → `docs/project/technical/guides/AGENT_CREATION_GUIDE.md`
 - Harness AI terms → `docs/project/architecture/PLATFORM_FOUNDATION.md` §5.3 only
 - Nexus execution flow → `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` + `docs/project/maintainers/plans/NEXUS_EXECUTION_FLOW.md` · ADR → `docs/project/technical/adr/entries/2026-06-07/ADR-FLOW-001.md`
-- Completed implementation **milestones** → `docs/project/maintainers/implementation-journal/` (optional for routine iterations; see journal README)
 
 ### Harness platform
 
@@ -166,7 +164,6 @@ applications/    MAY import from agents/ and intergrax/
 | Platform audit | [docs/audit_results/AUDIT_PROTOCOL.md](../../../audit_results/AUDIT_PROTOCOL.md) · [docs/audit_results/README.md](../../../audit_results/README.md) |
 | System invariants (never violate) | [docs/project/technical/guides/SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) |
 | Layer completion (full domain closeout) | [docs/project/technical/guides/LAYER_COMPLETION_MODE.md](LAYER_COMPLETION_MODE.md) |
-| Implementation journal | [docs/project/maintainers/implementation-journal/README.md](../../maintainers/implementation-journal/README.md) |
 
 ---
 
@@ -193,7 +190,6 @@ python scripts/maintenance/check_harness_no_getattr.py
 uv run python scripts/maintenance/check_observability_gates.py
 python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_reasoning_gates.py
-python scripts/maintenance/check_implementation_journal.py
 python scripts/maintenance/check_harness_adr.py
 python scripts/maintenance/check_plan_hub_size.py
 python scripts/ci/check_cursor_token_setup.py
@@ -240,9 +236,9 @@ Full local suite: `scripts\ci\test.bat unit` (Windows) or equivalent `uv run pyt
 
 | Path | Contents |
 |------|----------|
-| `docs/project/architecture/intergrax_runtime_architecture.md` | Architecture hub indexing 24 domain pairs + feature doc index |
-| `docs/project/architecture/` | Domain architecture canon (24 files) |
-| `docs/project/maintainers/plans/` | Domain implementation plans (24 files, 1:1 with architecture) |
+| `docs/project/architecture/intergrax_runtime_architecture.md` | Architecture hub indexing primary domain-pair baseline plus additional canonical domain pairs + feature doc index |
+| `docs/project/architecture/` | Domain architecture canon (one file per canonical DOMAIN) |
+| `docs/project/maintainers/plans/` | Domain implementation plans (1:1 with architecture DOMAIN pairs) |
 | `docs/project/capabilities/` | Multi-layer feature architecture + plan pairs (1:1 under `architecture/` and `plan/`) |
 | `docs/project/technical/guides/` | Strategy, ideal model, audit map, authoring guides |
 | `../../intergrax/runtime/nexus/` | Nexus Agent OS core |

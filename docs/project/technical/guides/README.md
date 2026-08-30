@@ -21,4 +21,3 @@ Authoring guides, strategic context, and audit methodology.
 | [PLATFORM_CONFIGURATION.md](PLATFORM_CONFIGURATION.md) | Canonical platform configuration reference (env, LLM, embeddings) |
 | [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) | Lab stack, OTLP, presets |
 | [bootstrap/](../../maintainers/bootstrap) | **Cursor session paste files** — copy into new agent chat |
-| [implementation-journal/README.md](../../maintainers/implementation-journal/README.md) | **Implementation journal** — chronological episode log (Tier-0–3) |

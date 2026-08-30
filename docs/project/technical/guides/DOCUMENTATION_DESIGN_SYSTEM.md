@@ -49,6 +49,18 @@ One topic → one authoritative role. Do not duplicate whole sections across rol
 | **ADR** | A specific decision and its trade-offs | Living system description |
 | **Proof** | Bounded executable evidence | Product marketing claims |
 
+### Satellite anti-fragmentation
+
+> A satellite exists to remove **substantial technical depth** from a hub, not to create one file per concept.
+
+| Prefer | Avoid |
+| ------ | ----- |
+| One `*_extended_depth.md` consolidating related engineering topics (identity, lifecycle, concurrency, …) | Micro-satellites (~1–2 KB) that restate a few hub bullets |
+| A satellite when opening it alone saves meaningful context cost | Placeholder or symmetry-only satellites with no standalone depth |
+| Sections inside hub or extended depth for coherent subtopics | Arbitrary one-topic-per-file splits |
+
+**No arbitrary byte threshold** — judge by information density and navigation value. When several satellites cover one domain layer, **consolidate** into a single extended-depth document unless a topic is a genuinely independent technical layer.
+
 **Hard rule:** Human-facing explanation describes stable architecture. Engineering canon holds exact technical semantics. Copy **links**, not paragraphs, across roles.
 
 ---

@@ -256,7 +256,7 @@ not as a first-contact route.
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/project/assets/public/readme/intergrax-platform-map-dark.png">
   <source media="(prefers-color-scheme: light)" srcset="docs/project/assets/public/readme/intergrax-platform-map-light.png">
-  <img src="docs/project/assets/public/readme/intergrax-platform-map-light.png" alt="Intergrax platform architecture map showing execution core, intelligence/context, knowledge/action, governance, evidence/observability, platform foundation, specialized product surface and connected resources.">
+  <img src="docs/project/assets/public/readme/intergrax-platform-map-light.png" alt="Intergrax platform architecture map showing execution core, decision and verification, intelligence and context, knowledge and action, governance, evidence and observability, platform foundation, and connected resources.">
 </picture>
 </a>
 
@@ -265,7 +265,8 @@ not as a first-contact route.
 | Platform area | What it provides | Explore |
 | --- | --- | --- |
 | **Runtime & Orchestration** | Unified execution, workflow orchestration, and Nexus execution paths | [Unified Execution Runtime](docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [Orchestration](docs/project/architecture/ORCHESTRATION.md) · [Nexus Execution Flow](docs/project/architecture/NEXUS_EXECUTION_FLOW.md) |
-| **Agents & Reasoning** | Agent contracts, reasoning and cognition, critic verification, adaptive harness intelligence | [Agent Contracts & Assembly](docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [Reasoning & Cognition](docs/project/architecture/REASONING_AND_COGNITION.md) · [Critic Verification](docs/project/architecture/CRITIC_VERIFICATION.md) · [Adaptive Harness Intelligence](docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
+| **Agents & Reasoning** | Agent contracts, reasoning and cognition, adaptive harness intelligence | [Agent Contracts & Assembly](docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [Reasoning & Cognition](docs/project/architecture/REASONING_AND_COGNITION.md) · [Adaptive Harness Intelligence](docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
+| **Decision & Verification** | Decision lifecycle, compositional verification, and deliberation strategies inside Nexus — **target canon**; production remains Critic until migration | [Decision System](docs/project/architecture/DECISION_SYSTEM.md) · [Decision Verification](docs/project/architecture/DECISION_VERIFICATION.md) · [Decision Deliberation](docs/project/architecture/DECISION_DELIBERATION.md) · **CURRENT:** [Critic Verification](docs/project/architecture/CRITIC_VERIFICATION.md) |
 | **Knowledge & Retrieval** | Retrieval, grounding, and knowledge-source integration boundaries | [RAG](docs/project/architecture/RAG.md) · [Knowledge Source Integrations](docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) |
 | **Memory & Context** | Durable memory, context engineering, and unified context lifecycle | [Memory](docs/project/architecture/MEMORY.md) · [Context Engineering](docs/project/architecture/CONTEXT_ENGINEERING.md) · [Unified Context Lifecycle](docs/project/architecture/UNIFIED_CONTEXT_LIFECYCLE.md) |
 | **Tools, Skills & Integrations** | Tools, skills, integrations, LLM adapters, and code-craft surfaces | [Tools](docs/project/architecture/TOOLS.md) · [Skills](docs/project/architecture/SKILLS.md) · [Integrations](docs/project/architecture/INTEGRATIONS.md) · [LLM Adapters](docs/project/architecture/LLM_ADAPTERS.md) · [Code Craft](docs/project/architecture/CODE_CRAFT.md) |
@@ -311,6 +312,29 @@ diagnostics, and recovery stay correlated across the execution tree.
 The unified model is the frozen target architecture; implementation is migrating
 toward it, and linked domain documents distinguish target semantics from current
 runtime state.
+
+---
+
+## Decision quality before execution
+
+Intergrax does not have to treat the first model output as the final decision.
+A governed run can treat model output as a **candidate**, run **verification**,
+surface **disagreement**, apply bounded **revision**, and reach an **authoritative
+outcome** — separate from **execution authorization** and Nexus side effects.
+
+> **Maturity:** Decision System architecture is **frozen target canon** (A4).
+> Runtime migration is **planned**; production correctness remains the **Critic /
+> CVL path** until clean-cut migration. Council is **not shipped**.
+
+<a href="docs/project/assets/public/readme/fullsize/intergrax-decision-system.md">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/project/assets/public/readme/intergrax-decision-system-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/project/assets/public/readme/intergrax-decision-system-light.png">
+  <img src="docs/project/assets/public/readme/intergrax-decision-system-light.png" alt="Decision quality before execution: candidate proposal through verification and resolution to separate authorization and Nexus execution; target architecture frozen with Critic as current production path.">
+</picture>
+</a>
+
+[View full-size diagram](docs/project/assets/public/readme/fullsize/intergrax-decision-system.md) · [Decision System](docs/project/architecture/DECISION_SYSTEM.md) · [Verification](docs/project/architecture/DECISION_VERIFICATION.md) · [Deliberation](docs/project/architecture/DECISION_DELIBERATION.md)
 
 ---
 

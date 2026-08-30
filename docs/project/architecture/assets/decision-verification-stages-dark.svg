@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img">
+  <title>Verification stage composition</title>
+  <desc>Plugin stages composed by pipeline orchestrator with typed contracts.</desc>
+  <rect width="1200" height="800" fill="#0d1117"/>
+  <rect x="32" y="28" width="1136" height="744" rx="22" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+  <text x="600" y="72" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="28" font-weight="700" fill="#e6edf3">Stage / Plugin Composition</text>
+  <text x="600" y="104" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" fill="#8b949e">Typed contracts — no universal payload dict</text>
+  <rect x="100" y="160" width="200" height="64" rx="12" fill="#1b3a1f" stroke="#3fb950" stroke-width="2"/>
+  <text x="200" y="188" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Stage plugin</text>
+  <text x="200" y="208" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">schema</text>
+  <rect x="340" y="160" width="200" height="64" rx="12" fill="#1b3a1f" stroke="#3fb950" stroke-width="2"/>
+  <text x="440" y="188" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Stage plugin</text>
+  <text x="440" y="208" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">rules</text>
+  <rect x="580" y="160" width="200" height="64" rx="12" fill="#3d2e00" stroke="#d29922" stroke-width="2"/>
+  <text x="680" y="188" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Stage plugin</text>
+  <text x="680" y="208" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">evidence</text>
+  <rect x="820" y="160" width="200" height="64" rx="12" fill="#3d2e00" stroke="#d29922" stroke-width="2"/>
+  <text x="920" y="188" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Stage plugin</text>
+  <text x="920" y="208" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">semantic</text>
+  <rect x="220" y="300" width="760" height="64" rx="12" fill="#2d1f47" stroke="#a371f7" stroke-width="2"/>
+  <text x="600" y="328" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Verification Pipeline orchestrator</text>
+  <text x="600" y="348" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">ordered composition · short-circuit rules</text>
+  <text x="600" y="430" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">Future registered plugins extend pipeline — lifecycle unaware of internals</text>
+  <text x="600" y="460" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">Online / shadow / offline evaluation consume results — stay outside pipeline ownership</text>
+</svg>

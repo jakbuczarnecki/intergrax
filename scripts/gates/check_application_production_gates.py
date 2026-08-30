@@ -47,13 +47,18 @@ def _nexus_loop_call_lines(source: str) -> list[int]:
     return hits
 
 
-def check_no_ad_hoc_nexus_in_factories() -> list[str]:
+def check_no_ad_hoc_nexus_in_factories(
+    *,
+    repo_root: Path | None = None,
+) -> list[str]:
     violations: list[str] = []
-    if not APPLICATIONS_ROOT.is_dir():
-        return [f"missing {APPLICATIONS_ROOT}"]
+    root = repo_root or REPO_ROOT
+    applications_root = root / "applications"
+    if not applications_root.is_dir():
+        return [f"missing {applications_root}"]
 
-    for path in APPLICATIONS_ROOT.glob("*_application/host/factory.py"):
-        rel = path.relative_to(REPO_ROOT).as_posix()
+    for path in applications_root.glob("*_application/host/factory.py"):
+        rel = path.relative_to(root).as_posix()
         text = path.read_text(encoding="utf-8")
         if not any(marker in text for marker in REQUIRED_FACTORY_MARKERS):
             violations.append(f"{rel}: must call build_harness_host_runtime")

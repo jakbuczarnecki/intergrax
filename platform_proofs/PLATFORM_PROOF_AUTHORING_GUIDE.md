@@ -28,9 +28,12 @@ Starts from:
 
 ```text
 REAL PROBLEM
-→ PRODUCTION-CAPABLE APPLICATION
-→ INTERGRAX PLATFORM MECHANISMS
-→ REAL CONFIGURED AI / SYSTEM BOUNDARIES
+→ WHY IT MATTERS / WOW
+→ IDEAL SOLUTION ARCHITECTURE
+→ PROOF DESIGN
+→ SCENARIO QUALITY GATE
+→ ACCEPTED FOR IMPLEMENTATION
+→ BUILD ON INTERGRAX (map architecture; resolve platform gaps if discovered)
 → ADVERSARIAL EXECUTION
 → FALSIFICATION
 → EVIDENCE
@@ -38,7 +41,7 @@ REAL PROBLEM
 → REPRODUCTION
 ```
 
-A Scenario Proof may exercise **multiple** Intergrax mechanisms and domains. The problem owns the Scenario; platform domains participate according to the guarantees required by that problem. Participating domains are discovered during Intergrax Fit — not chosen before the scenario exists. The scenario must **never** be selected merely to demonstrate a feature.
+A Scenario Proof may exercise **multiple** Intergrax mechanisms and domains. The problem owns the Scenario; platform domains participate according to the guarantees required by that problem. Participating domains are anticipated during solution design and verified during implementation preparation — not chosen before the scenario exists. The scenario must **never** be selected merely to demonstrate a feature. **Do not** weaken accepted solution architecture because the current platform lacks a required capability — develop reusable Intergrax capability instead.
 
 #### production-capable vs production-validated
 
@@ -339,6 +342,8 @@ A Scenario application **SHOULD** be usable as a component immediately after nor
 
 > **A missing platform capability does not automatically invalidate a strong scenario. If the capability is reusable and architecturally justified, implement it in Intergrax first and then resume the Scenario Proof.**
 
+> **Scenario architecture MUST NOT be weakened merely because the current platform does not yet provide one of the capabilities required by the accepted solution.** If a good solution requires something Intergrax does not yet have, develop Intergrax — do not degrade the scenario to match today's platform.
+
 > **One independent author session owns one Scenario Proof from qualification through accepted evidence.**
 
 Every Scenario Proof session is a **falsification attempt** against a real problem — not a feature demo, marketing slide, or architecture tour.
@@ -375,7 +380,47 @@ Conformance proof work follows the same shared-development rules but is outside 
 
 ## Canonical Scenario Lifecycle
 
-Scenario Proof authoring is a **two-stage lifecycle** with **two canonical commands**. Do not collapse them.
+Scenario Proof authoring is a **two-part lifecycle** — **design the right solution first**, then **build it on Intergrax** — with **two canonical commands**. Do not collapse them.
+
+### PART A — Design the right solution
+
+```text
+STAGE 1 — REAL PROBLEM
+↓
+STAGE 2 — BUSINESS / WOW QUALIFICATION
+↓
+STAGE 3 — SOLUTION ARCHITECTURE
+↓
+STAGE 4 — PROOF DESIGN
+↓
+STAGE 5 — SCENARIO QUALITY GATE
+↓
+STAGE 6 — ACCEPTED FOR IMPLEMENTATION
+```
+
+At this stage the question is:
+
+> How should a good system solving this problem behave?
+
+**Not:**
+
+> What does current Intergrax already support?
+
+### PART B — Build it on Intergrax
+
+```text
+STAGE 7 — IMPLEMENTATION PREPARATION (verify Intergrax fit; resolve platform gaps; update frontmatter gates)
+↓
+init_scenario_implementation.py
+↓
+STAGE 8 — IMPLEMENT / MAP ACCEPTED ARCHITECTURE TO INTERGRAX
+↓
+STAGE 9 — RESOLVE PLATFORM GAPS IF DISCOVERED (pause scenario → platform capability → verify → resume)
+↓
+STAGE 10 — TEST / EXECUTE / EVIDENCE / PUBLICATION
+```
+
+### Combined command flow
 
 ```text
 IDEA
@@ -386,23 +431,15 @@ DESIGN / NOT YET ACCEPTED
 ↓
 README.md + SCENARIO_SPEC.md
 ↓
-A/B/C/D/E DESIGN
-↓
-Scenario Quality Gate
+PART A (Stages 1–6)
 ↓
 ACCEPTED FOR IMPLEMENTATION
 ↓
+implementation preparation (Intergrax fit + gap gates — required before init)
+↓
 init_scenario_implementation.py
 ↓
-platform-native implementation skeleton
-↓
-IMPLEMENTATION
-↓
-TEST
-↓
-REAL PROOF EXECUTION
-↓
-EVIDENCE / REPORT
+PART B (Stages 8–10)
 ↓
 LIBRARY ACCEPTANCE
 ```
@@ -473,7 +510,7 @@ D. GAP DECISION
 E. PROOF BUILD
 ```
 
-Before the implementation initializer, the session **MUST** resolve at minimum:
+Before the Scenario Quality Gate, the session **MUST** resolve at minimum:
 
 - real problem; user / operator; stakes; failure consequences;
 - naive failure; WOW factor; Skeptic Challenge; adversarial conditions;
@@ -481,8 +518,10 @@ Before the implementation initializer, the session **MUST** resolve at minimum:
 - observability / explainability / diagnostics contract;
 - APPLICATION vs PROOF HARNESS separation;
 - bounded claim; PASS; FAIL; excluded claims; limitations;
-- Intergrax Fit; missing-capability / gap decisions;
-- proof build plan (§ E — workflow only at this stage; no implementation yet).
+- anticipated platform capabilities required by the solution (§ C — design intent, not verified audit);
+- proof design plan (§ E — how we will prove the solution; not implementation yet).
+
+**Do not** require a full Intergrax capability audit, `CURRENT OWNER` / `AVAILABLE` / `MISSING` verdicts, or platform-gap resolution before design acceptance. Those belong to **implementation preparation** (between acceptance and `init_scenario_implementation.py`) and ongoing implementation.
 
 This phase is documentation and design only — see § Mandatory session conversation format and § Five-stage Scenario Proof session model (Stages 1–4).
 
@@ -495,6 +534,20 @@ After honest design work, the session records an explicit gate decision:
 | **REJECT / REDESIGN** | Scenario too weak, dishonest, or incomplete — return to Phase 2 |
 | **ACCEPTED FOR IMPLEMENTATION** | Scenario concept accepted — **implementation stage may begin** |
 
+The gate answers primarily:
+
+- Is the problem real?
+- Does it have real business value?
+- Are failure consequences meaningful?
+- Does the solution have a strong WOW effect?
+- Does the solution architecture make sense?
+- Would the application be useful without the proof layer?
+- Is the claim concrete?
+- Can PASS / FAIL be measured?
+- Can the proof falsify the claim?
+
+**The gate MUST NOT reject a scenario because current Intergrax does not yet implement a required capability.** That is not a scenario defect — it may be a future platform development signal.
+
 **Hard rule:**
 
 > `init_scenario_implementation.py` **MUST NOT** be used while the Scenario lifecycle is `DESIGN / NOT YET ACCEPTED`.
@@ -502,10 +555,11 @@ After honest design work, the session records an explicit gate decision:
 **Acceptance for implementation does not mean:**
 
 - proof PASS;
-- executable qualification; or
-- public Proof Library acceptance.
+- executable qualification;
+- public Proof Library acceptance; or
+- Intergrax fit verified or platform gaps resolved.
 
-It means only: **permission to initialize the implementation skeleton and begin Phase 4+**.
+It means only: **permission to begin implementation preparation and, after fit/gap gates are satisfied, initialize the implementation skeleton.**
 
 Record acceptance in `SCENARIO_SPEC.md` frontmatter (not README prose alone). Example after gate pass:
 
@@ -514,16 +568,23 @@ Record acceptance in `SCENARIO_SPEC.md` frontmatter (not README prose alone). Ex
 scenario_slug: <scenario_slug>
 lifecycle: ACCEPTED_FOR_IMPLEMENTATION
 implementation_status: NOT_INITIALIZED
-intergrax_fit: COMPLETED
-gap_decision: RESOLVED
+intergrax_fit: NOT_COMPLETED
+gap_decision: NOT_COMPLETED
 observability_contract: COMPLETED
 application_vs_proof_ownership: COMPLETED
 ---
 ```
 
+`intergrax_fit: NOT_COMPLETED` and `gap_decision: NOT_COMPLETED` are **valid** at acceptance — they mean implementation fit has not yet been verified. Complete them during **implementation preparation** (before `init_scenario_implementation.py`). Example immediately before init:
+
+```yaml
+intergrax_fit: COMPLETED
+gap_decision: RESOLVED
+```
+
 ### Phase 4 — Initialize implementation scaffold
 
-**Only after** `ACCEPTED FOR IMPLEMENTATION` and completed frontmatter gates.
+**Only after** `ACCEPTED FOR IMPLEMENTATION`, completed design gates (`observability_contract`, `application_vs_proof_ownership`), and **implementation preparation** that verifies Intergrax fit and resolves (or documents) platform gaps (`intergrax_fit: COMPLETED`, `gap_decision: RESOLVED` in frontmatter).
 
 **Canonical command:**
 
@@ -618,28 +679,38 @@ Focus on:
 
 Only after scenario quality is accepted:
 
-1. design how the system should solve the problem;
-2. define desired behavior and guarantees;
-3. map required Intergrax mechanisms;
-4. perform capability-fit / gap analysis;
-5. implement reusable missing capability if justified;
+1. verify how the accepted architecture maps to Intergrax (implementation preparation);
+2. reuse existing platform capabilities;
+3. if a reusable capability is missing — **STOP** scenario implementation, implement platform capability, verify, resume;
+4. initialize implementation skeleton (`init_scenario_implementation.py`);
+5. implement the production-capable application component;
 6. package / run / evaluate / report under the canonical Proof Library contract (see § Technical Proof Library lifecycle).
 
 ---
 
 ## Five-stage Scenario Proof session model
 
-Every Scenario Proof session **MUST** explicitly work through these stages **in order**. Do not skip stages. Do not implement before earlier stages are honest.
+Every Scenario Proof session **MUST** explicitly work through these stages **in order**. Do not skip stages. Do not implement before design stages are honest.
+
+### PART A — Design (Stages 1–4)
 
 ```text
 STAGE 1 — Qualify and strengthen the scenario
 STAGE 2 — Design the scenario solution and proof semantics
-STAGE 3 — Map required Intergrax mechanisms
-STAGE 4 — Missing capability decision
-STAGE 5 — Apply canonical Proof Library engine
+STAGE 3 — Anticipate required platform capabilities (design intent)
+STAGE 4 — Design proof build (how we will prove the solution)
 ```
 
-Conformance proofs follow the same engineering discipline in Stages 3–5 but may omit problem-first public framing where mechanism verification is the sole purpose.
+### PART B — Build on Intergrax (Stage 5+)
+
+```text
+STAGE 5 — Scenario Quality Gate → ACCEPTED FOR IMPLEMENTATION
+STAGE 6 — Implementation preparation (verify Intergrax fit; resolve platform gaps)
+STAGE 7 — Initialize implementation + implement on Intergrax
+STAGE 8 — Apply canonical Proof Library engine (test → execute → evidence → report)
+```
+
+Conformance proofs follow the same engineering discipline in implementation stages but may omit problem-first public framing where mechanism verification is the sole purpose.
 
 ### Stage 1 — Qualify and strengthen the scenario
 
@@ -850,41 +921,20 @@ Before mechanism selection, define:
 | **Excluded claims** | What the scenario does not prove |
 | **Limitations** | Known boundaries |
 
-### Stage 3 — Map required Intergrax mechanisms
+### Stage 3 — Anticipate required platform capabilities (design intent)
 
-Only after the problem and solution story are clear, determine technical realization.
+After the problem and solution story are clear, document **what kinds of platform capabilities** the accepted solution will need — without requiring a verified audit at current HEAD.
 
 Create a mapping:
 
 ```text
 APPLICATION NEED
-→ PLATFORM MECHANISM
-→ CURRENT PLATFORM OWNER
-→ STATUS
+→ REQUIRED PLATFORM CAPABILITY
 ```
 
-Also required for each need:
+At **design stage**, `IMPLEMENTATION FIT NOT YET VERIFIED` is the correct posture. Do **not** require `CURRENT OWNER`, `AVAILABLE`, `MISSING`, or `AVAILABLE BUT NEEDS WIRING` as conditions for design acceptance.
 
-| Audit dimension | Values |
-|-----------------|--------|
-| **TEST-ONLY SUBSTITUTE PRESENT?** | YES / NO — if **YES** in canonical Scenario path: **BLOCKER** |
-
-Legacy equivalent (still valid for guarantee-centric discussion):
-
-```text
-REQUIRED GUARANTEE
-→ REQUIRED CAPABILITY
-→ EXISTING INTERGRAX COMPONENT
-→ STATUS
-```
-
-Statuses:
-
-- **AVAILABLE**
-- **AVAILABLE BUT NEEDS WIRING**
-- **MISSING**
-
-Examples of mechanisms — **only when naturally required**:
+Examples of capabilities — **only when naturally required by the solution**:
 
 - bounded execution
 - tool runtime
@@ -906,89 +956,76 @@ Examples of mechanisms — **only when naturally required**:
 - multi-agent coordination
 - budget enforcement
 - security / adversarial input handling
+- task-scoped authority / permission enforcement
 
 ```text
-Problem chooses mechanisms.
-Mechanisms do not choose the problem.
+Problem chooses required capabilities.
+Capabilities do not choose the problem.
 ```
 
 **Do not** start from platform mechanisms and invent a scenario around them. Never add components solely to make the proof appear sophisticated.
 
-Verify reuse at current repository HEAD before claiming **AVAILABLE**.
+Detailed mapping to current Intergrax owners and availability is verified during **implementation preparation** and implementation — not before Scenario Quality Gate acceptance.
 
-### Stage 4 — Missing capability decision
+### Stage 4 — Design proof build
 
-A **MISSING** capability does **not** automatically invalidate a strong scenario.
+§ E at design stage describes **how we will prove the solution**:
 
-When a required capability is **MISSING**, determine:
+- which cases will run;
+- what will be measured;
+- what behavior means PASS;
+- what behavior means FAIL;
+- what data will be needed;
+- what evidence artifacts should result.
 
-1. Is the requirement genuinely necessary for the real scenario?
-2. Is the missing capability reusable beyond this one proof?
-3. Does it belong naturally in Intergrax architecture?
-4. Can it be implemented cleanly as a typed reusable platform mechanism?
-5. Would implementing it materially strengthen Intergrax?
+This is **not** implementation yet.
 
-**If YES to the above:**
-
-- **STOP** Scenario implementation temporarily;
-- define the architecture gap;
-- prepare / approve a bounded platform implementation task;
-- implement and independently verify the reusable capability;
-- return to the Scenario Proof.
-
-**If NO:**
-
-- do **not** create proof-local fake infrastructure;
-- redesign the scenario realization, narrow the claim, or reject the scenario if the guarantee cannot honestly be demonstrated.
+**GAP DECISION (§ D) at design stage** may state:
 
 ```text
-The Proof Library is also a discovery mechanism for meaningful platform gaps.
+NO IMPLEMENTATION-TIME GAP ASSESSMENT PERFORMED YET
 ```
 
-**Proof-local clones of missing platform capabilities are forbidden.**
-
-#### STOP ≠ abandon scenario
-
-**STOP** means:
-
-> do not improvise or create proof-local platform substitutes.
-
-It does **not** necessarily mean:
-
-> abandon the Scenario Proof.
-
-For strong scenarios, STOP may trigger:
-
-```text
-scenario
-→ architecture gap
-→ reusable platform enhancement
-→ verification
-→ resume scenario
-```
-
-This distinction is mandatory. Report the gap; do not silently weaken the scenario or fork a proof-local substitute.
+Platform gaps are evaluated against the accepted solution architecture during implementation preparation and implementation. A **MISSING** capability at design stage is **not** a scenario defect.
 
 ### Stage 5 — Apply canonical Proof Library engine
 
 Only after:
 
-- scenario accepted;
+- scenario accepted for implementation;
+- implementation preparation completed (`intergrax_fit: COMPLETED`, `gap_decision: RESOLVED`);
 - solution designed;
 - APPLICATION vs PROOF HARNESS separation documented;
 - claim defined;
-- mechanisms mapped;
-- gaps resolved;
+- implementation skeleton initialized;
 - author confirms:
-  - production-capable application exists;
-  - canonical application path contains no prohibited fake/test shortcuts;
-  - controlled providers use normal application contracts;
-  - real model boundary is configured if material to claim;
+  - production-capable application path planned;
+  - canonical application path will contain no prohibited fake/test shortcuts;
+  - controlled providers will use normal application contracts;
+  - real model boundary will be configured if material to claim;
   - application can execute independently of evaluator/report layer;
   - **Application Observability Test** passes;
   - observability / explainability / diagnostics contract documented in SCENARIO_SPEC;
 
 proceed to the **technical pipeline** defined in § Technical Proof Library lifecycle and the sections that follow (package structure, descriptor, execution, evidence, report, acceptance).
+
+During implementation, if a **reusable missing capability** is discovered:
+
+```text
+accepted solution architecture
+↓
+implementation attempts to realize it
+↓
+missing reusable capability discovered
+↓
+Scenario implementation pauses
+↓
+platform capability implemented separately
+↓
+verified
+↓
+Scenario resumes
+```
 
 ```text
 proof package
@@ -1041,7 +1078,16 @@ Discuss:
 
 ### C. INTERGRAX FIT
 
-Present a clear matrix:
+At **design stage**, present anticipated capability needs:
+
+```text
+APPLICATION NEED
+→ REQUIRED PLATFORM CAPABILITY
+```
+
+`IMPLEMENTATION FIT NOT YET VERIFIED` is valid. Do **not** require `CURRENT OWNER`, `AVAILABLE`, `MISSING`, or `AVAILABLE BUT NEEDS WIRING` before design acceptance.
+
+During **implementation preparation**, expand to a verified matrix:
 
 ```text
 APPLICATION NEED
@@ -1050,29 +1096,40 @@ APPLICATION NEED
 → STATUS
 ```
 
-Also audit **TEST-ONLY SUBSTITUTE PRESENT?** — **YES** in canonical Scenario path is a **BLOCKER**.
+Also audit **TEST-ONLY SUBSTITUTE PRESENT?** — **YES** in canonical Scenario path is a **BLOCKER** (during implementation preparation and implementation, not design acceptance).
 
 ### D. GAP DECISION
 
-For every **MISSING** item:
+At **design stage**, acceptable posture:
+
+```text
+NO IMPLEMENTATION-TIME GAP ASSESSMENT PERFORMED YET
+```
+
+Platform gaps are evaluated against the accepted solution architecture during implementation preparation and implementation.
+
+During **implementation preparation / implementation**, for every **MISSING** reusable item:
 
 - is it necessary?
 - is it reusable?
 - should Intergrax implement it?
 - what architectural owner should own it?
 
-**Stop for approval** before implementation when a new reusable platform capability is required.
+**Stop for approval** before implementing a new reusable platform capability. **Proof-local clones of missing platform capabilities are forbidden.**
+
+Later states: `NO GAP` or `PLATFORM GAP IDENTIFIED` (with pause → platform implementation → verify → resume).
 
 ### E. PROOF BUILD
 
-Only then proceed:
+At **design stage**, describe how we will prove the solution:
 
-- implementation;
-- tests;
-- real run;
-- evidence;
-- report;
-- publication.
+- cases to run;
+- measurements;
+- PASS / FAIL behavior;
+- required data;
+- expected evidence artifacts.
+
+**Implementation**, tests, real run, evidence, report, and publication follow acceptance and initialization.
 
 ---
 
@@ -1739,7 +1796,14 @@ D. GAP DECISION
 E. PROOF BUILD
 ```
 
-§ C is **not** a single-domain assignment. Expected future analysis:
+§ C is **not** a single-domain assignment. At **design stage**, expected content:
+
+```text
+application need
+→ required platform capability
+```
+
+During **implementation preparation**, expand to verified fit:
 
 ```text
 required guarantee
@@ -1877,8 +1941,8 @@ A Scenario Proof is **not accepted** as a Proof Library entry until **all** gene
 - [ ] real problem clearly defined
 - [ ] meaningful failure risk
 - [ ] falsifiable claim
-- [ ] Intergrax mechanisms mapped
-- [ ] capability gaps resolved honestly
+- [ ] Intergrax mechanisms mapped (verified during implementation preparation)
+- [ ] capability gaps resolved honestly (during implementation — not required at design acceptance)
 - [ ] package independently runnable within cloned repo
 - [ ] configuration documented
 - [ ] infrastructure isolated
@@ -1943,12 +2007,13 @@ The session **MUST** then:
 1. resolve current HEAD (`git fetch origin development`)
 2. read this guide
 3. confirm **one session = one Scenario Proof** ownership
-4. work through Stages 1–4 using the mandatory conversation format (§ Mandatory session conversation format)
-5. inspect only architecture / components relevant to the scenario
-6. pass Scenario Quality Gate and Skeptic Challenge before implementation
-7. **STOP** for architecture decision if a reusable mechanism is **MISSING** (STOP ≠ abandon scenario)
-8. only after approval — Stage 5 / technical lifecycle (implement → test → execute → evidence → report)
-9. publish only after acceptance gates
+4. work through design Stages 1–4 using the mandatory conversation format (§ Mandatory session conversation format)
+5. pass Scenario Quality Gate (Stage 5) — **without** requiring current Intergrax capability audit
+6. inspect only architecture / components relevant to the scenario during implementation preparation and implementation
+7. verify Intergrax fit and resolve platform gaps during implementation preparation (before init) and ongoing implementation
+8. **STOP** for architecture decision if a reusable mechanism is **MISSING** during implementation (STOP ≠ abandon scenario)
+9. only after fit/gap gates and approval — initialize and apply Stage 5+ technical lifecycle (implement → test → execute → evidence → report)
+10. publish only after acceptance gates
 
 Do not assume decisions from another scenario unless encoded in canonical repo documentation. **Current repo wins.**
 
@@ -2018,8 +2083,9 @@ Full lifecycle: § Canonical Scenario Lifecycle.
 |------|---------|-----------|
 | 1. Create design package | `uv run python scripts/proof/create_scenario_proof.py --slug <slug> --title "<title>"` | `DESIGN / NOT YET ACCEPTED` |
 | 2. Design + quality gate | Fill README + SCENARIO_SPEC (A–E); pass Scenario Quality Gate | → `ACCEPTED FOR IMPLEMENTATION` |
-| 3. Init implementation | `uv run python scripts/proof/init_scenario_implementation.py --slug <slug>` | → `IMPLEMENTATION INITIALIZED` |
-| 4. Build + prove | Implement `application/` + `proof/`; run `run_proof.py` | → executable → evidence → library acceptance |
+| 3. Implementation preparation | Verify Intergrax fit; resolve platform gaps; update frontmatter gates | `intergrax_fit: COMPLETED`, `gap_decision: RESOLVED` |
+| 4. Init implementation | `uv run python scripts/proof/init_scenario_implementation.py --slug <slug>` | → `IMPLEMENTATION INITIALIZED` |
+| 5. Build + prove | Implement `application/` + `proof/`; run `run_proof.py` | → executable → evidence → library acceptance |
 
 Do not manually invent scenario directory shapes, skip the quality gate, or run the initializer before acceptance frontmatter is set. Complete explanatory visuals under `assets/` **before** implementation when the scenario is mature enough. Post-run README sections populate only after execution.
 

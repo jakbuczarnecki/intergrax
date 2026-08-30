@@ -14,7 +14,7 @@ Use this map when you know what you want to do but not which document to open.
 | **This map** | Intent-based fallback router — find the right next document by goal |
 | [Proof Library](../proofs/PROOF_LIBRARY.md) | Problem-first Scenario Proof catalog — difficult real-world problems and executable falsification |
 | [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) | Project-level architectural mental model |
-| [Runtime architecture hub](../architecture/intergrax_runtime_architecture.md) | Complete technical index — 24 domain pairs + cross-layer feature pairs |
+| [Runtime architecture hub](../architecture/intergrax_runtime_architecture.md) | Complete technical index — primary domain-pair baseline + additional canonical pairs + cross-layer feature pairs |
 
 **First contact** stays in the [README](../../../README.md) — including the three public entry points (**Scenarios**, **Products**, **Platform**), grouped Platform Map, and documentation-layer guide. This file routes by **reader intent**; it does not duplicate the full platform index or persona table.
 
@@ -76,6 +76,7 @@ with Try LKW as the repository’s primary product action.
 | Audit evidence and public claims | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | Explore a partner, integrator or design-partner path | [Partners](PARTNERS.md) |
 | Explore Governed Execution | [Governed Execution](../architecture/GOVERNED_EXECUTION.md) |
+| Explore Decision System | [Decision System](../architecture/DECISION_SYSTEM.md) — candidate proposals, verification, deliberation, authoritative outcomes separate from authorization (**target canon**; **CURRENT:** [Critic Verification](../architecture/CRITIC_VERIFICATION.md)) |
 | Explore Token Optimization | [Token Optimization](../capabilities/token_optimization/README.md) |
 | Explore strategic future directions | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) · [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) · [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) — see [Strategic directions](#strategic-directions) below |
 | Check current proof status | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img">
+  <title>Central diagnostics flagship</title>
+  <desc>Applications, scenarios, and workers through execution spine to central diagnostics and derived observability.</desc>
+  <rect width="1200" height="800" fill="#f6f8fb"/>
+  <rect x="24" y="24" width="1152" height="752" rx="20" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
+  <text x="600" y="58" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="24" font-weight="700" fill="#1a1a2e">Central Diagnostics  platform flagship</text>
+  <rect x="80" y="100" width="200" height="56" rx="10" fill="#eef4ff" stroke="#1a5fb4" stroke-width="2"/>
+  <text x="180" y="132" text-anchor="middle" font-size="15" font-weight="700" fill="#1a1a2e">Applications</text>
+  <rect x="320" y="100" width="200" height="56" rx="10" fill="#eef4ff" stroke="#1a5fb4" stroke-width="2"/>
+  <text x="420" y="132" text-anchor="middle" font-size="15" font-weight="700" fill="#1a1a2e">Scenarios</text>
+  <rect x="560" y="100" width="200" height="56" rx="10" fill="#eef4ff" stroke="#1a5fb4" stroke-width="2"/>
+  <text x="660" y="132" text-anchor="middle" font-size="15" font-weight="700" fill="#1a1a2e">Workers</text>
+  <line x1="180" y1="156" x2="600" y2="210" stroke="#1a5fb4" stroke-width="2"/>
+  <line x1="420" y1="156" x2="600" y2="210" stroke="#1a5fb4" stroke-width="2"/>
+  <line x1="660" y1="156" x2="600" y2="210" stroke="#1a5fb4" stroke-width="2"/>
+  <rect x="300" y="210" width="600" height="64" rx="12" fill="#f3e8ff" stroke="#7c3aed" stroke-width="2"/>
+  <text x="600" y="242" text-anchor="middle" font-size="17" font-weight="700" fill="#1a1a2e">Nexus / Unified Execution</text>
+  <text x="600" y="258" text-anchor="middle" font-size="13" fill="#3d4f66">HarnessHostRuntime · ScenarioRuntimeBaseline</text>
+  <line x1="600" y1="254" x2="600" y2="310" stroke="#7c3aed" stroke-width="2"/>
+  <rect x="300" y="310" width="600" height="64" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+  <text x="600" y="342" text-anchor="middle" font-size="17" font-weight="700" fill="#1a1a2e">RuntimeEvent  canonical spine</text>
+  <line x1="600" y1="354" x2="600" y2="400" stroke="#2e7d32" stroke-width="2"/>
+  <rect x="250" y="400" width="700" height="72" rx="12" fill="#fff3e0" stroke="#ef6c00" stroke-width="2"/>
+  <text x="600" y="432" text-anchor="middle" font-size="18" font-weight="700" fill="#1a1a2e">Central Diagnostics</text>
+  <text x="600" y="456" text-anchor="middle" font-size="13" fill="#3d4f66">intergrax.runtime.diagnostics · terminal trigger</text>
+  <line x1="450" y1="472" x2="350" y2="530" stroke="#ef6c00" stroke-width="2"/>
+  <line x1="750" y1="472" x2="850" y2="530" stroke="#ef6c00" stroke-width="2"/>
+  <rect x="200" y="530" width="300" height="64" rx="12" fill="#ffebee" stroke="#c62828" stroke-width="2"/>
+  <text x="350" y="558" text-anchor="middle" font-size="16" font-weight="700" fill="#1a1a2e">Problem Store</text>
+  <text x="350" y="578" text-anchor="middle" font-size="12" fill="#3d4f66">durable derived state</text>
+  <rect x="700" y="530" width="300" height="64" rx="12" fill="#eef4ff" stroke="#1a5fb4" stroke-width="2"/>
+  <text x="850" y="558" text-anchor="middle" font-size="16" font-weight="700" fill="#1a1a2e">Read / API</text>
+  <text x="850" y="578" text-anchor="middle" font-size="12" fill="#3d4f66">DiagnosticReadService</text>
+  <rect x="880" y="310" width="260" height="120" rx="12" fill="#f6f8fb" stroke="#6c757d" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="1000" y="345" text-anchor="middle" font-size="15" font-weight="700" fill="#3d4f66">Observability</text>
+  <text x="1000" y="375" text-anchor="middle" font-size="12" fill="#3d4f66">derived projection</text>
+  <text x="1000" y="395" text-anchor="middle" font-size="12" fill="#3d4f66">OTel ’ vendor</text>
+  <line x1="700" y1="342" x2="880" y2="360" stroke="#6c757d" stroke-width="2" stroke-dasharray="4 3"/>
+  <text x="600" y="720" text-anchor="middle" font-size="14" fill="#3d4f66">Vendor telemetry is not authority  canonical facts survive export failure</text>
+</svg>

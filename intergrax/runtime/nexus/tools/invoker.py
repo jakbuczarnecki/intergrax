@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+from dataclasses import dataclass, field
 from typing import Optional, Protocol, Type, runtime_checkable
 
 from pydantic import BaseModel
@@ -30,6 +31,7 @@ from intergrax.runtime.policy.policy_trace_diagnostics import DeclarativePolicyE
 from intergrax.runtime.policy.declarative_enforcer import resolve_declarative_policy_enforcer
 from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
 from intergrax.runtime.policy.rules.schema import PolicyRuleAction
+from intergrax.runtime.tools.operation_identity import compute_invocation_operation_identity
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.contracts import SideEffectRetrySafety, ToolContract
 from intergrax.tools.execution_models import (
@@ -53,6 +55,19 @@ class TraceEmitter(Protocol):
         payload: Optional[object] = None,
         artifact_refs: Optional[list] = None,
     ) -> None: ...
+
+
+_ADMISSION_SEAL = object()
+
+
+@dataclass(frozen=True, slots=True)
+class ToolInvocationAdmission:
+    """Typed proof that pre-effect admission passed for one tool invocation."""
+
+    agent_id: str
+    tool_id: str
+    operation_identity: str
+    _seal: object = field(default=_ADMISSION_SEAL, repr=False, compare=False)
 
 
 class RuntimeToolInvoker:
@@ -90,6 +105,27 @@ class RuntimeToolInvoker:
         agent_id: str,
         request: ToolExecutionRequest[BaseModel],
     ) -> ToolExecutionResult[BaseModel]:
+        admission_outcome = self.admit(
+            state=state,
+            agent_id=agent_id,
+            request=request,
+        )
+        if isinstance(admission_outcome, ToolExecutionResult):
+            return admission_outcome
+        return self.execute_after_admission(
+            state=state,
+            agent_id=agent_id,
+            request=request,
+            admission=admission_outcome,
+        )
+
+    def admit(
+        self,
+        *,
+        state: "RuntimeState",
+        agent_id: str,
+        request: ToolExecutionRequest[BaseModel],
+    ) -> ToolInvocationAdmission | ToolExecutionResult[BaseModel]:
         # 0) scope authorization check (capability boundary)
         if self._scope_policy is not None:
 
@@ -229,6 +265,39 @@ class RuntimeToolInvoker:
                 result=result,
             )
             return result
+
+        return ToolInvocationAdmission(
+            agent_id=agent_id,
+            tool_id=request.tool_id,
+            operation_identity=compute_invocation_operation_identity(
+                request.tool_id,
+                request.input,
+            ),
+        )
+
+    def execute_after_admission(
+        self,
+        *,
+        state: "RuntimeState",
+        agent_id: str,
+        request: ToolExecutionRequest[BaseModel],
+        admission: ToolInvocationAdmission,
+    ) -> ToolExecutionResult[BaseModel]:
+        if admission._seal is not _ADMISSION_SEAL:
+            raise RuntimeError("Invalid tool invocation admission token.")
+        if admission.agent_id != agent_id:
+            raise RuntimeError("Tool invocation admission agent mismatch.")
+        if admission.tool_id != request.tool_id:
+            raise RuntimeError("Tool invocation admission tool mismatch.")
+        expected_identity = compute_invocation_operation_identity(
+            request.tool_id,
+            request.input,
+        )
+        if admission.operation_identity != expected_identity:
+            raise RuntimeError("Tool invocation admission operation identity mismatch.")
+
+        reg = self._registry.get(request.tool_id)
+        contract = reg.contract
 
         # 3) trace start
         state.trace_event(

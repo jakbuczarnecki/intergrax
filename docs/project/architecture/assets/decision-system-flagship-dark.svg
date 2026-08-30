@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1100" role="img">
+  <title>Decision System flagship architecture</title>
+  <desc>Application through Nexus Decision Lifecycle to Authoritative Decision with Policy, HITL, Execution, Observability, and Diagnostics boundaries.</desc>
+  <rect width="1200" height="1100" fill="#0d1117"/>
+  <rect x="32" y="28" width="1136" height="1044" rx="22" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+  <text x="600" y="72" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="28" font-weight="700" fill="#e6edf3">Intergrax Decision System</text>
+  <text x="600" y="104" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="17" fill="#8b949e">Nexus executes Decision Lifecycle — not a second runtime</text>
+  <rect x="480" y="130" width="240" height="44" rx="12" fill="#1f2a44" stroke="#58a6ff" stroke-width="2"/>
+  <text x="600" y="158" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Application</text>
+  <line x1="600" y1="174" x2="600" y2="198" stroke="#58a6ff" stroke-width="2"/>
+  <path d="M600 198 L594 184 L606 184 Z" fill="#58a6ff"/>
+  <rect x="420" y="198" width="360" height="48" rx="12" fill="#1b3a1f" stroke="#3fb950" stroke-width="2"/>
+  <text x="600" y="226" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Nexus</text>
+  <text x="600" y="246" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">execution owner</text>
+  <line x1="600" y1="246" x2="600" y2="270" stroke="#58a6ff" stroke-width="2"/>
+  <path d="M600 270 L594 256 L606 256 Z" fill="#58a6ff"/>
+  <rect x="300" y="270" width="600" height="56" rx="12" fill="#1f2a44" stroke="#58a6ff" stroke-width="2.5"/>
+  <text x="600" y="298" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Decision Lifecycle</text>
+  <text x="600" y="318" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">proposal → verify → resolve</text>
+  <line x1="600" y1="326" x2="600" y2="350" stroke="#58a6ff" stroke-width="2"/>
+  <path d="M600 350 L594 336 L606 336 Z" fill="#58a6ff"/>
+  <rect x="180" y="350" width="220" height="52" rx="12" fill="#3d2e00" stroke="#d29922" stroke-width="2" stroke-dasharray="8 4"/>
+  <text x="290" y="378" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Strategy</text>
+  <text x="290" y="398" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">Council / Single / Rule</text>
+  <rect x="420" y="350" width="220" height="52" rx="12" fill="#2d1f47" stroke="#a371f7" stroke-width="2"/>
+  <text x="530" y="378" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Verification</text>
+  <text x="530" y="398" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">compositional pipeline</text>
+  <rect x="660" y="350" width="220" height="52" rx="12" fill="#3d2a14" stroke="#db6d28" stroke-width="2"/>
+  <text x="770" y="378" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Revision / Adjudication</text>
+  <text x="770" y="398" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">bounded</text>
+  <line x1="600" y1="402" x2="600" y2="430" stroke="#58a6ff" stroke-width="2"/>
+  <path d="M600 430 L594 416 L606 416 Z" fill="#58a6ff"/>
+  <rect x="360" y="430" width="480" height="52" rx="12" fill="#1b3a1f" stroke="#3fb950" stroke-width="2.5"/>
+  <text x="600" y="458" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Authoritative Decision</text>
+  <text x="600" y="478" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">versioned · immutable lineage</text>
+  <rect x="80" y="530" width="200" height="80" rx="12" fill="#21262d" stroke="#6e7681" stroke-width="2"/>
+  <text x="180" y="558" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Policy</text>
+  <text x="180" y="578" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">authorization</text>
+  <rect x="300" y="530" width="200" height="80" rx="12" fill="#21262d" stroke="#6e7681" stroke-width="2"/>
+  <text x="400" y="558" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">HITL</text>
+  <text x="400" y="578" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">human authority</text>
+  <rect x="520" y="530" width="200" height="80" rx="12" fill="#21262d" stroke="#6e7681" stroke-width="2"/>
+  <text x="620" y="558" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Execution</text>
+  <text x="620" y="578" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">Nexus side effects</text>
+  <rect x="740" y="530" width="200" height="80" rx="12" fill="#21262d" stroke="#6e7681" stroke-width="2"/>
+  <text x="840" y="558" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Observability</text>
+  <text x="840" y="578" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">audit trail</text>
+  <rect x="960" y="530" width="160" height="80" rx="12" fill="#21262d" stroke="#6e7681" stroke-width="2"/>
+  <text x="1040" y="558" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="18" font-weight="700" fill="#e6edf3">Diagnostics</text>
+  <text x="1040" y="578" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="14" fill="#8b949e">detect / classify</text>
+  <text x="600" y="660" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">Decision correctness ≠ permission to execute ≠ execution itself</text>
+  <text x="600" y="690" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">Diagnostics may feed investigation — does not own Decision System</text>
+  <text x="600" y="1020" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="15" fill="#8b949e">TARGET ARCHITECTURE — implementation pending; Critic path is CURRENT production snapshot</text>
+</svg>

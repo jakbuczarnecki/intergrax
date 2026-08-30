@@ -37,7 +37,7 @@ The Reasoning and Cognition Layer (RCL) addresses this through **typed contracts
 | **Failure handling** | `ReasoningFailureKind` enum on trace/metadata; profile-driven parse retries; deterministic planner fallback on LLM parse paths |
 | **Orchestration relation** | Orchestration defines collaboration **structure/config**; RCL decides **what/why** inside configured strategies |
 | **Nexus relation** | RCL produces plans/decisions; Nexus **runs** the task through the plan |
-| **Critic relation** | RCL proposes action/plan; Critic **verifies** outputs and trajectory |
+| **Critic relation** | RCL proposes action/plan; **TARGET:** Decision Verification verifies decision versions; **CURRENT:** Critic verifies outputs and trajectory |
 | **Production boundary** | Harness gates and acceptance paths **Done**; product host parity and operational SLOs **not** automatic |
 | **Maturity** | Four-axis statement in [Current maturity](#current-maturity) |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [extended satellite](satellites/REASONING_AND_COGNITION_extended_depth.md) · [plan](../maintainers/plans/REASONING_AND_COGNITION.md) |
@@ -251,9 +251,11 @@ Aligned with [`TOOLS.md`](TOOLS.md) — cognition Plane 3 vs `AgentDecision` / t
 | Planes 1 and 3 before / beside UAEP | UAEP mandatory sequence inside nodes |
 | Emits `DecisionRecord` | Enforces hooks, events, retry/HITL interpretation |
 
-## Reasoning vs Critic
+## Reasoning vs Critic / Decision Verification
 
-| Reasoning & Cognition | Critic / Verification |
+> **Disambiguation:** `DecisionRecord` (this domain) is a **step-level typed rationale artifact** for UAEP/graph cognition — not the platform **Decision System** authoritative lifecycle outcome ([`DECISION_SYSTEM.md`](DECISION_SYSTEM.md)).
+
+| Reasoning & Cognition | Critic / Decision Verification |
 | --------------------- | --------------------- |
 | Proposes plan / action | Verifies outputs and trajectory |
 | Pre-side-effect decisions | Post-execution correctness checks |

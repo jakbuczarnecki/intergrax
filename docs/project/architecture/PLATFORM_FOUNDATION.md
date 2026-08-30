@@ -278,7 +278,7 @@ An application is not an agent. It is the **product shell** — the “Cursor AI
 |-------|----------------|
 | **Applications / domains** | Claim meaning, ``claim_kind`` vocabulary, optional ``defect_code`` values, acceptance criteria |
 | **Platform contracts** | Typed ``EvidenceBackedClaim``, ``EvidenceChallenge``, identity carriers, structural invariants |
-| **Critic** | May produce or evaluate challenges — does **not** own the contract |
+| **Decision System / Verification** *(TARGET)* | May produce or evaluate challenges — does **not** own the contract — **CURRENT:** Critic |
 | **Observability** | Records execution evidence — does **not** define semantic claim truth |
 | **Attestation** | May seal exported claim artifacts — does **not** define claim semantics |
 | **Platform Proof Evidence** | Future projection consumer (GAP-1B) — adapts to this contract, not vice versa |

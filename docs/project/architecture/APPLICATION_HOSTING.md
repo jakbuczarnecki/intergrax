@@ -230,7 +230,23 @@ Hosting lifecycle is **not** Task/Run execution. It has no canonical `TaskId`/`R
 
 `TerminalExecutionDiagnosticTrigger` / `DiagnosticOrchestrator` apply to terminal **execution** scopes (`tenant_id` + `TaskId` + `RunId`) wired through Nexus. Work executed inside a hosted application already uses that path.
 
-**HOST-DIAG-3 (shipped):** `APPLICATION_FAILED` remains canonical hosting lifecycle truth and continues through `PLATFORM_SIGNAL` observability export. When product composition supplies an explicit tenant binding (`HostedDiagnosticTenantBinding` / environment `profile_id`), a composed `HostedApplicationDiagnosticEventPublisher` may additionally project bounded failure facts into central non-execution diagnostics with subject `tenant_id` + `application_id` + `instance_id`. Product composition owns tenant binding — hosting core remains tenant-neutral.
+**Canonical architecture:** [`DIAGNOSTICS.md`](DIAGNOSTICS.md)
+
+**Host wiring (shipped):**
+
+```text
+terminal RuntimeEvent persisted
+  → TerminalExecutionDiagnosticTrigger
+  → DiagnosticOrchestrator
+  → ProblemPersistence (DocumentStore via IntegrationProfile)
+  → DiagnosticReadService (dashboard / operator read)
+```
+
+**Failure isolation:** diagnostic persistence or post-processing failure **must not** change an already-established correct business execution result. Problem Store outage surfaces subsystem failure evidence; RuntimeEvents remain canonical. Failed Problem writes are **not** automatically replayed. See [`DIAGNOSTICS.md`](DIAGNOSTICS.md) § Failure isolation. Platform adoption inventory: [`DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md`](../maintainers/qualification/DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md).
+
+**Observability wiring:** hosting events export through HOS (`ObservabilityHostedApplicationEventPublisher`) before any optional diagnostic projection. Exporter health is process-local operator state — not execution truth. See [`OBSERVABILITY.md`](OBSERVABILITY.md).
+
+**HOST-DIAG-3 (shipped):** `APPLICATION_FAILED` remains canonical hosting lifecycle truth and continues through `PLATFORM_SIGNAL` observability export. When product composition supplies an explicit tenant binding (`HostedDiagnosticTenantBinding` / environment `profile_id`), a composed `HostedApplicationDiagnosticEventPublisher` may additionally project bounded failure facts into central non-execution diagnostics with subject `tenant_id` + `application_id` + `instance_id`. Product composition owns tenant binding — hosting core remains tenant-neutral. Application-instance subjects do **not** receive full execution-style reconstruction unless canonical evidence contract provides it.
 
 ### ECP boundary
 

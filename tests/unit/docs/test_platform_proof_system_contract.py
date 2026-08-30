@@ -29,6 +29,7 @@ if str(_DOCS_SCRIPTS) not in sys.path:
 from docs_domain_common import canonical_domain_ids  # noqa: E402
 
 _ADDITIONAL_DOMAINS = (
+    "DECISION_SYSTEM",
     "GOVERNED_EXECUTION",
     "AGENT_DISTRIBUTION",
     "PLATFORM_PLUGINS",

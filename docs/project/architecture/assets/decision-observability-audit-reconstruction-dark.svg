@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img">
+  <title>Decision audit reconstruction</title>
+  <desc>Observability reconstructs decision lifecycle without private CoT.</desc>
+  <rect width="1200" height="700" fill="#0d1117"/>
+  <rect x="24" y="24" width="1152" height="652" rx="20" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+    <text x="600" y="58" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="24" font-weight="700" fill="#e6edf3">Observability audit reconstruction (no private CoT)</text>
+  <rect x="60" y="110" width="120" height="48" rx="10" fill="#eef4ff" stroke="#1a5fb4" stroke-width="1.5"/>
+  <text x="120" y="138" text-anchor="middle" font-size="12" font-weight="600" fill="#e6edf3">Request</text>
+  <line x1="180" y1="134" x2="195" y2="134" stroke="#1a5fb4" stroke-width="2"/>
+  <path d="M195 134 L188 129 L188 139 Z" fill="#1a5fb4"/>
+  <rect x="195" y="110" width="120" height="48" rx="10" fill="#eef4ff" stroke="#1a5fb4" stroke-width="1.5"/>
+  <text x="255" y="138" text-anchor="middle" font-size="12" font-weight="600" fill="#e6edf3">Proposal</text>
+  <line x1="315" y1="134" x2="330" y2="134" stroke="#1a5fb4" stroke-width="2"/>
+  <path d="M330 134 L323 129 L323 139 Z" fill="#1a5fb4"/>
+  <rect x="330" y="110" width="120" height="48" rx="10" fill="#eef4ff" stroke="#1a5fb4" stroke-width="1.5"/>
+  <text x="390" y="138" text-anchor="middle" font-size="12" font-weight="600" fill="#e6edf3">Verification</text>
+  <line x1="450" y1="134" x2="465" y2="134" stroke="#1a5fb4" stroke-width="2"/>
+  <path d="M465 134 L458 129 L458 139 Z" fill="#1a5fb4"/>
+  <rect x="465" y="110" width="120" height="48" rx="10" fill="#eef4ff" stroke="#1a5fb4" stroke-width="1.5"/>
+  <text x="525" y="138" text-anchor="middle" font-size="12" font-weight="600" fill="#e6edf3">Challenge</text>
+  <line x1="585" y1="134" x2="600" y2="134" stroke="#1a5fb4" stroke-width="2"/>
+  <path d="M600 134 L593 129 L593 139 Z" fill="#1a5fb4"/>
+  <rect x="600" y="110" width="120" height="48" rx="10" fill="#eef4ff" stroke="#1a5fb4" stroke-width="1.5"/>
+  <text x="660" y="138" text-anchor="middle" font-size="12" font-weight="600" fill="#e6edf3">Revision</text>
+  <line x1="720" y1="134" x2="735" y2="134" stroke="#1a5fb4" stroke-width="2"/>
+  <path d="M735 134 L728 129 L728 139 Z" fill="#1a5fb4"/>
+  <rect x="735" y="110" width="120" height="48" rx="10" fill="#eef4ff" stroke="#1a5fb4" stroke-width="1.5"/>
+  <text x="795" y="138" text-anchor="middle" font-size="12" font-weight="600" fill="#e6edf3">Resolution</text>
+  <line x1="855" y1="134" x2="870" y2="134" stroke="#1a5fb4" stroke-width="2"/>
+  <path d="M870 134 L863 129 L863 139 Z" fill="#1a5fb4"/>
+  <rect x="870" y="110" width="120" height="48" rx="10" fill="#eef4ff" stroke="#1a5fb4" stroke-width="1.5"/>
+  <text x="930" y="138" text-anchor="middle" font-size="12" font-weight="600" fill="#e6edf3">Human/Policy records</text>
+  <line x1="990" y1="134" x2="1005" y2="134" stroke="#1a5fb4" stroke-width="2"/>
+  <path d="M1005 134 L998 129 L998 139 Z" fill="#1a5fb4"/>
+  <rect x="1005" y="110" width="120" height="48" rx="10" fill="#eef4ff" stroke="#1a5fb4" stroke-width="1.5"/>
+  <text x="1065" y="138" text-anchor="middle" font-size="12" font-weight="600" fill="#e6edf3">Execution</text>
+  <rect x="120" y="220" width="960" height="360" rx="14" fill="#fff8e1" stroke="#c9a227" stroke-width="2"/>
+  <text x="600" y="255" text-anchor="middle" font-size="16" font-weight="700" fill="#e6edf3">Reconstructable evidence plane</text>
+  <text x="160" y="290" font-size="14" fill="#8b949e">• strategy + participant profiles</text>
+  <text x="160" y="322" font-size="14" fill="#8b949e">• candidate + version lineage</text>
+  <text x="160" y="354" font-size="14" fill="#8b949e">• verification stages + challenges</text>
+  <text x="160" y="386" font-size="14" fill="#8b949e">• disagreement artifacts</text>
+  <text x="160" y="418" font-size="14" fill="#8b949e">• adjudication + resolution outcome</text>
+  <text x="160" y="450" font-size="14" fill="#8b949e">• authorization bound to version</text>
+  <text x="600" y="520" text-anchor="middle" font-size="14" fill="#c62828" font-weight="600">Excluded: private chain-of-thought persistence</text>
+</svg>

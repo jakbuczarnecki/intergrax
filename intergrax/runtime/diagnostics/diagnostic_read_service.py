@@ -72,30 +72,32 @@ class DiagnosticReadService:
         tenant_id: str,
         status: ProblemStatus | None = None,
         limit: int = DEFAULT_PROBLEM_LIST_LIMIT,
+        cursor: str | None = None,
     ) -> DiagnosticProblemListResult:
         tenant_id = _require_tenant_id(tenant_id)
         limit = _validate_bounded_limit(limit, max_limit=MAX_PROBLEM_LIST_LIMIT)
         if status is not None:
             _require_problem_status(status)
 
-        records = self._persistence.list_for_tenant(tenant_id)
-        _validate_problem_list_tenant_scope(records, tenant_id)
-        if status is not None:
-            records = tuple(record for record in records if record.status is status)
-
-        ordered = sorted(
-            records,
-            key=lambda problem: (-problem.last_seen_at.timestamp(), str(problem.problem_id)),
+        page = self._persistence.query_problems(
+            tenant_id=tenant_id,
+            status=status,
+            limit=limit,
+            cursor=cursor,
         )
-        total_count = len(ordered)
-        selected = ordered[:limit]
-        summaries = tuple(_summary_from_problem(problem) for problem in selected)
+        _validate_problem_list_tenant_scope(page.problems, tenant_id)
+        summaries = tuple(_summary_from_problem(problem) for problem in page.problems)
+        exact_total = None
+        if cursor is None and not page.has_more:
+            exact_total = len(summaries)
 
         return DiagnosticProblemListResult(
             problems=summaries,
-            total_count=total_count,
+            total_count=exact_total,
             returned_count=len(summaries),
-            is_truncated=total_count > len(summaries),
+            is_truncated=page.has_more,
+            has_more=page.has_more,
+            next_cursor=page.next_cursor,
         )
 
     def get_problem(

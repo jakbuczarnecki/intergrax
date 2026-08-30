@@ -77,6 +77,10 @@ def _unit(path: str, test_name: str) -> ValidationProof:
     return _proof(ValidationProofKind.UNIT, path, test_name)
 
 
+def _integration(path: str, test_name: str) -> ValidationProof:
+    return _proof(ValidationProofKind.INTEGRATION, path, test_name)
+
+
 def _gate(path: str, test_name: str) -> ValidationProof:
     return _proof(ValidationProofKind.ARCHITECTURE_GATE, path, test_name)
 
@@ -125,11 +129,10 @@ def _gap(
 
 
 UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
-    # ROOT_STRATEGY — stack proven with probe backends; canonical root E2E deferred to UE-11B.
-    _partial(
+    # ROOT_STRATEGY — real production-path root E2E proofs (UE-11B).
+    _covered(
         "root.inference.end_to_end",
         ValidationDomain.ROOT_STRATEGY,
-        GapTarget.UE_11B,
         _unit(
             "tests/unit/runtime/execution/test_execution_runtime.py",
             "test_inference_root_runtime_binds_identity_authority_budget",
@@ -137,6 +140,10 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
         _unit(
             "tests/unit/runtime/execution/test_strategy_execution_router.py",
             "test_inference_router_delegates_only_to_inference_executor",
+        ),
+        _integration(
+            "tests/integration/runtime/execution/test_ue_11b_real_root_inference.py",
+            "test_ue_11b_real_root_inference_end_to_end",
         ),
     ),
     _partial(
@@ -151,6 +158,10 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
             "tests/unit/runtime/execution/test_strategy_execution_router.py",
             "test_agentic_router_delegates_only_to_agent_executor",
         ),
+        _integration(
+            "tests/integration/runtime/execution/test_ue_11b_real_root_agentic.py",
+            "test_ue_11b_canonical_agentic_spine_with_real_llm",
+        ),
     ),
     _partial(
         "root.orchestration.end_to_end",
@@ -163,6 +174,10 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
         _unit(
             "tests/unit/runtime/execution/test_strategy_execution_router.py",
             "test_orchestration_router_delegates_only_to_orchestration_executor",
+        ),
+        _integration(
+            "tests/integration/runtime/execution/test_ue_11b_real_root_orchestration.py",
+            "test_ue_11b_canonical_orchestration_spine_with_real_llm",
         ),
     ),
     # LIFECYCLE
@@ -287,10 +302,21 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
             "test_nexus_fails_closed_on_active_identity_mismatch",
         ),
     ),
-    _gap(
+    _covered(
         "fail_closed.budget_execution_id_mismatch",
         ValidationDomain.FAIL_CLOSED,
-        GapTarget.UE_11C,
+        _unit(
+            "tests/unit/runtime/execution/budget/test_ue_11c_budget_execution_identity_mismatch.py",
+            "test_budget_execution_id_mismatch_fails_closed_before_llm_consumption",
+        ),
+        _unit(
+            "tests/unit/runtime/execution/budget/test_ue_11c_budget_execution_identity_mismatch.py",
+            "test_budget_execution_id_mismatch_fails_closed_before_tool_consumption",
+        ),
+        _unit(
+            "tests/unit/runtime/execution/budget/test_ue_11c_budget_execution_identity_mismatch.py",
+            "test_matching_budget_execution_id_allows_governed_consumption",
+        ),
     ),
     _covered(
         "fail_closed.authority_metadata_mismatch",
@@ -366,27 +392,28 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
         ),
     ),
     # CONCURRENCY
-    _partial(
+    _covered(
         "concurrency.parallel_root_identity_isolation",
         ValidationDomain.CONCURRENCY,
-        GapTarget.UE_11D,
         _unit(
-            "tests/unit/runtime/execution/test_execution_boundary.py",
-            "test_parallel_boundaries_isolate_execution_ids",
+            "tests/unit/runtime/execution/test_ue_11d_parallel_root_isolation.py",
+            "test_ue_11d_shared_runtime_parallel_root_identity_isolation",
         ),
     ),
-    _gap(
+    _covered(
         "concurrency.parallel_root_authority_isolation",
         ValidationDomain.CONCURRENCY,
-        GapTarget.UE_11D,
+        _unit(
+            "tests/unit/runtime/execution/test_ue_11d_parallel_root_isolation.py",
+            "test_ue_11d_shared_runtime_parallel_root_authority_isolation",
+        ),
     ),
-    _partial(
+    _covered(
         "concurrency.parallel_root_budget_isolation",
         ValidationDomain.CONCURRENCY,
-        GapTarget.UE_11D,
         _unit(
-            "tests/unit/runtime/execution/budget/test_ue_8b2_runtime_consumption.py",
-            "test_different_runs_isolated",
+            "tests/unit/runtime/execution/test_ue_11d_parallel_root_isolation.py",
+            "test_ue_11d_shared_runtime_parallel_root_budget_isolation",
         ),
     ),
     _covered(
@@ -405,13 +432,12 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
             "test_parallel_shared_under_reserved_cannot_oversubscribe",
         ),
     ),
-    _partial(
+    _covered(
         "concurrency.no_context_cross_talk",
         ValidationDomain.CONCURRENCY,
-        GapTarget.UE_11D,
         _unit(
-            "tests/unit/runtime/background_execution/test_ue_9a_background_identity_redelivery.py",
-            "test_contextvar_identity_does_not_leak_between_attempts",
+            "tests/unit/runtime/execution/test_ue_11d_parallel_root_isolation.py",
+            "test_ue_11d_shared_runtime_no_context_cross_talk",
         ),
     ),
     # RECOVERY
@@ -419,8 +445,8 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
         "recovery.retry_execution_semantics",
         ValidationDomain.RECOVERY,
         _unit(
-            "tests/unit/runtime/events/test_ue_9b_runtime_event_execution_id.py",
-            "test_local_retry_preserves_execution_id",
+            "tests/unit/runtime/execution/test_ue_11e_retry_recovery.py",
+            "test_ue_11e_local_retry_preserves_identity_and_budget",
         ),
     ),
     _covered(
@@ -447,45 +473,44 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
             "test_resume_checkpoint_preserves_attempt_mints_fresh_execution_id",
         ),
     ),
-    _partial(
+    _covered(
         "recovery.resume_execution_tree_continuity",
         ValidationDomain.RECOVERY,
-        GapTarget.UE_11E,
         _unit(
-            "tests/unit/runtime/long_running/test_ue_9c_execution_tree_checkpoint.py",
-            "test_completed_child_skipped_on_resume",
+            "tests/unit/runtime/execution/test_ue_11e_resume_recovery.py",
+            "test_ue_11e_resume_execution_tree_continuity",
         ),
     ),
     _covered(
         "recovery.redelivery_run_continuity",
         ValidationDomain.RECOVERY,
         _unit(
-            "tests/unit/runtime/background_execution/test_ue_9a_background_identity_redelivery.py",
-            "test_redelivery_preserves_run_and_task_but_mints_new_attempt_and_execution",
+            "tests/unit/runtime/background_execution/test_ue_11e_redelivery_recovery.py",
+            "test_ue_11e_redelivery_identity_and_budget_continuity",
         ),
     ),
     _covered(
         "recovery.redelivery_attempt_semantics",
         ValidationDomain.RECOVERY,
         _unit(
-            "tests/unit/runtime/background_execution/test_ue_9a_background_identity_redelivery.py",
-            "test_three_consecutive_redeliveries_keep_run_with_distinct_attempts",
+            "tests/unit/runtime/background_execution/test_ue_11e_redelivery_recovery.py",
+            "test_ue_11e_redelivery_identity_and_budget_continuity",
         ),
     ),
     _covered(
         "recovery.redelivery_budget_continuity",
         ValidationDomain.RECOVERY,
         _unit(
-            "tests/unit/runtime/execution/budget/test_ue_9ar1_preserve_run_budget_across_redelivery.py",
-            "test_attempt_two_has_new_attempt_id_but_same_run_budget_state",
+            "tests/unit/runtime/background_execution/test_ue_11e_redelivery_recovery.py",
+            "test_ue_11e_redelivery_identity_and_budget_continuity",
         ),
     ),
     _covered(
         "recovery.redelivery_no_execution_id_reuse",
         ValidationDomain.RECOVERY,
         _unit(
-            "tests/unit/runtime/events/test_ue_9b_runtime_event_execution_id.py",
-            "test_redelivery_uses_new_execution_id",
+            "tests/unit/runtime/background_execution/test_ue_11e_redelivery_recovery.py",
+            "test_ue_11e_redelivery_identity_and_budget_continuity",
         ),
     ),
     # OBSERVABILITY
@@ -875,5 +900,266 @@ def validate_unified_execution_matrix(
     for domain in REQUIRED_DOMAINS:
         if domain not in present_domains:
             violations.append(f"missing required domain: {domain.value}")
+
+    return violations
+
+
+_ROOT_E2E_CAPABILITY_IDS: frozenset[str] = frozenset(
+    {
+        "root.inference.end_to_end",
+        "root.agentic.end_to_end",
+        "root.orchestration.end_to_end",
+    }
+)
+
+_UE_11B_PROOF_FILES: tuple[str, ...] = (
+    "tests/integration/runtime/execution/test_ue_11b_real_root_inference.py",
+    "tests/integration/runtime/execution/test_ue_11b_real_root_agentic.py",
+    "tests/integration/runtime/execution/test_ue_11b_real_root_orchestration.py",
+)
+
+_UE_11B_SYNTHETIC_SPINE_INTEGRATION_PATHS: frozenset[str] = frozenset(
+    {
+        "tests/integration/runtime/execution/test_ue_11b_real_root_agentic.py",
+        "tests/integration/runtime/execution/test_ue_11b_real_root_orchestration.py",
+    }
+)
+
+_UE_11B_SUPPORT_RELATIVE_PATH = "testing_support/ue_11b_real_root_execution.py"
+
+_UE_11B_SYNTHETIC_WORKLOAD_CLASS_NAMES: frozenset[str] = frozenset(
+    {
+        "Ue11bToolReActAgent",
+        "_Ue11bOrchestrationReflexAgent",
+        "_EmptyTraceReader",
+    }
+)
+
+_INTERGRAX_MODULE_PREFIX = "intergrax."
+
+
+@dataclass(frozen=True, slots=True)
+class RealWorkloadProof:
+    """Typed metadata for COVERED root E2E proofs with real production workloads."""
+
+    agent_module: str | None = None
+    application_module: str | None = None
+    integration_module: str | None = None
+
+
+_COVERED_REAL_WORKLOAD_EVIDENCE: dict[str, RealWorkloadProof] = {
+    "root.inference.end_to_end": RealWorkloadProof(
+        integration_module="intergrax.llm_adapters.providers.native_ollama_adapter",
+    ),
+}
+
+_UE_11B_FORBIDDEN_SUBSTRINGS: tuple[str, ...] = (
+    "unittest.mock",
+    "MagicMock",
+    "AsyncMock",
+    "monkeypatch",
+    "Mock(",
+    "FakeAdapter",
+    "AgentEngineProbe",
+    "RecordingAgentEngine",
+    "StructuredProbeAdapter",
+    "._handle_task_impl",
+    "._graph_executor",
+    "._validation_engine",
+    "._critic_graph_hooks",
+)
+
+_UE_11B_REQUIRED_SUBSTRINGS: tuple[str, ...] = (
+    ".execute(request, options=",
+)
+
+
+def validate_ue_11b_proof_surface(*, repo_root_path: Path | None = None) -> list[str]:
+    """Block synthetic shortcuts in UE-11B real root E2E proof files."""
+    root = repo_root_path or _REPO_ROOT
+    violations: list[str] = []
+    for relative in _UE_11B_PROOF_FILES:
+        path = root / relative
+        if not path.is_file():
+            violations.append(f"UE-11B proof file missing: {relative}")
+            continue
+        source = path.read_text(encoding="utf-8-sig")
+        for token in _UE_11B_FORBIDDEN_SUBSTRINGS:
+            if token in source:
+                violations.append(f"{relative}: forbidden token {token!r}")
+        for token in _UE_11B_REQUIRED_SUBSTRINGS:
+            if token not in source:
+                violations.append(f"{relative}: missing required token {token!r}")
+    return violations
+
+
+def _collect_class_names(path: Path) -> frozenset[str]:
+    source = path.read_text(encoding="utf-8-sig")
+    tree = ast.parse(source, filename=str(path))
+    return frozenset(
+        node.name
+        for node in tree.body
+        if isinstance(node, ast.ClassDef)
+    )
+
+
+def _collect_imported_names(path: Path) -> frozenset[str]:
+    source = path.read_text(encoding="utf-8-sig")
+    tree = ast.parse(source, filename=str(path))
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                names.add(alias.asname or alias.name)
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                names.add(alias.asname or alias.name)
+    return frozenset(names)
+
+
+def _module_path_under_intergrax(module_path: str) -> bool:
+    normalized = module_path.replace("\\", "/")
+    return normalized.startswith("intergrax/")
+
+
+def _synthetic_workload_classes(repo_root: Path) -> frozenset[str]:
+    support_path = repo_root / _UE_11B_SUPPORT_RELATIVE_PATH
+    if not support_path.is_file():
+        return frozenset()
+    defined = _collect_class_names(support_path)
+    return defined & _UE_11B_SYNTHETIC_WORKLOAD_CLASS_NAMES
+
+
+def validate_covered_root_e2e_proof_kind() -> list[str]:
+    """COVERED root.*.end_to_end capabilities require INTEGRATION UE-11B proofs."""
+    violations: list[str] = []
+    for entry in UNIFIED_EXECUTION_VALIDATION_MATRIX:
+        if entry.capability_id not in _ROOT_E2E_CAPABILITY_IDS:
+            continue
+        if entry.status is not ValidationStatus.COVERED:
+            continue
+        integration_proofs = [
+            proof
+            for proof in entry.proofs
+            if proof.kind is ValidationProofKind.INTEGRATION
+            and proof.path in _UE_11B_PROOF_FILES
+        ]
+        if not integration_proofs:
+            violations.append(
+                f"{entry.capability_id}: COVERED requires UE-11B INTEGRATION proof"
+            )
+        synthetic_spine_proofs = [
+            proof
+            for proof in entry.proofs
+            if proof.kind is ValidationProofKind.INTEGRATION
+            and proof.path in _UE_11B_SYNTHETIC_SPINE_INTEGRATION_PATHS
+        ]
+        if synthetic_spine_proofs:
+            violations.append(
+                f"{entry.capability_id}: COVERED cannot use synthetic UE-11B spine proof "
+                f"{synthetic_spine_proofs[0].path}"
+            )
+        if not any(
+            proof.kind is ValidationProofKind.INTEGRATION for proof in entry.proofs
+        ):
+            violations.append(
+                f"{entry.capability_id}: COVERED root E2E cannot be UNIT/ARCHITECTURE_GATE only"
+            )
+    return violations
+
+
+def validate_real_workload_root_e2e_gate(
+    *,
+    repo_root_path: Path | None = None,
+) -> list[str]:
+    """COVERED root agentic/orchestration E2E must use intergrax production workloads."""
+    root = repo_root_path or _REPO_ROOT
+    violations: list[str] = []
+    synthetic_classes = _synthetic_workload_classes(root)
+
+    for entry in UNIFIED_EXECUTION_VALIDATION_MATRIX:
+        if entry.capability_id not in _ROOT_E2E_CAPABILITY_IDS:
+            continue
+        if entry.status is not ValidationStatus.COVERED:
+            continue
+
+        evidence = _COVERED_REAL_WORKLOAD_EVIDENCE.get(entry.capability_id)
+        if evidence is None:
+            violations.append(
+                f"{entry.capability_id}: COVERED without real workload evidence contract"
+            )
+            continue
+
+        integration_proofs = [
+            proof
+            for proof in entry.proofs
+            if proof.kind is ValidationProofKind.INTEGRATION
+        ]
+        if not integration_proofs:
+            violations.append(
+                f"{entry.capability_id}: COVERED root E2E requires INTEGRATION proof"
+            )
+            continue
+
+        for proof in integration_proofs:
+            normalized_path = proof.path.replace("\\", "/")
+            if not normalized_path.startswith("tests/integration/"):
+                violations.append(
+                    f"{entry.capability_id}: real workload proof must live under tests/integration/: "
+                    f"{proof.path}"
+                )
+            proof_path = root / proof.path
+            if not proof_path.is_file():
+                continue
+            imported_names = _collect_imported_names(proof_path)
+            for class_name in synthetic_classes:
+                if class_name in imported_names:
+                    violations.append(
+                        f"{proof.path}: imports synthetic workload class {class_name}"
+                    )
+
+        if entry.capability_id == "root.agentic.end_to_end":
+            if evidence.agent_module is None:
+                violations.append(
+                    f"{entry.capability_id}: COVERED agentic requires agent_module"
+                )
+            elif not evidence.agent_module.startswith(_INTERGRAX_MODULE_PREFIX):
+                violations.append(
+                    f"{entry.capability_id}: agent_module must be under intergrax/"
+                )
+
+        if entry.capability_id == "root.orchestration.end_to_end":
+            if evidence.application_module is None:
+                violations.append(
+                    f"{entry.capability_id}: COVERED orchestration requires application_module"
+                )
+            elif not _module_path_under_intergrax(
+                evidence.application_module.replace(".", "/") + ".py"
+            ):
+                violations.append(
+                    f"{entry.capability_id}: application_module must be under intergrax/"
+                )
+
+        if evidence.integration_module is not None:
+            if not evidence.integration_module.startswith(_INTERGRAX_MODULE_PREFIX):
+                violations.append(
+                    f"{entry.capability_id}: integration_module must be under intergrax."
+                )
+            integration_path = evidence.integration_module.replace(".", "/") + ".py"
+            if not (root / integration_path).is_file():
+                violations.append(
+                    f"{entry.capability_id}: missing integration module {evidence.integration_module}"
+                )
+
+        if evidence.agent_module is not None:
+            agent_path = evidence.agent_module.replace(".", "/") + ".py"
+            if not (root / agent_path).is_file():
+                violations.append(
+                    f"{entry.capability_id}: missing agent module {evidence.agent_module}"
+                )
+            if not evidence.agent_module.startswith(_INTERGRAX_MODULE_PREFIX):
+                violations.append(
+                    f"{entry.capability_id}: agent_module must be under intergrax."
+                )
 
     return violations

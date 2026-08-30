@@ -25,6 +25,7 @@ from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReco
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import (
     InMemoryProblemPersistence,
 )
+from intergrax.runtime.diagnostics.problem_persistence import ProblemListPage
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
 from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingAssessmentInput,
@@ -248,9 +249,10 @@ def test_list_limit_truncation_explicit() -> None:
 
     result = service.list_problems(tenant_id=_TENANT_A, limit=1)
 
-    assert result.total_count == 2
+    assert result.total_count is None
     assert result.returned_count == 1
     assert result.is_truncated is True
+    assert result.has_more is True
 
 
 def test_list_does_not_call_execution_reconstructor() -> None:
@@ -441,7 +443,11 @@ def test_read_dtos_exclude_forbidden_fields() -> None:
 
 def test_read_service_is_read_only() -> None:
     persistence = MagicMock(spec=InMemoryProblemPersistence)
-    persistence.list_for_tenant.return_value = ()
+    persistence.query_problems.return_value = ProblemListPage(
+        problems=(),
+        next_cursor=None,
+        has_more=False,
+    )
     service = DiagnosticReadService(
         problem_persistence=persistence,
         execution_reconstructor=MagicMock(spec=ExecutionReconstructor),
@@ -469,7 +475,11 @@ def _read_service_with_list_records(
     records: tuple[Problem, ...],
 ) -> DiagnosticReadService:
     persistence = MagicMock(spec=InMemoryProblemPersistence)
-    persistence.list_for_tenant.return_value = records
+    persistence.query_problems.return_value = ProblemListPage(
+        problems=records,
+        next_cursor=None,
+        has_more=False,
+    )
     return DiagnosticReadService(
         problem_persistence=persistence,
         execution_reconstructor=MagicMock(spec=ExecutionReconstructor),

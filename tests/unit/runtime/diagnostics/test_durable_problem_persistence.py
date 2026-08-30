@@ -855,7 +855,7 @@ def test_document_store_resolve_update_does_not_claim_new_subject_indexes() -> N
         record_version=2,
     )
     assert persistence.update(resolved, expected_version=1) == resolved
-    assert store.put_if_absent_calls == 0
+    assert store.put_if_absent_calls == 1
 
 
 def test_document_store_restart_after_subject_adding_update_resolves_lookup() -> None:

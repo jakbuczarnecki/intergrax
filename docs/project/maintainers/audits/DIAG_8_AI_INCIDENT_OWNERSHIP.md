@@ -1,5 +1,7 @@
 # DIAG-8A — AI Incident Investigation Ownership Audit
 
+> **Historical audit (2026-08-26).** Superseded for current architecture by [`docs/project/architecture/DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md) and [`DIAGNOSTIC_HARDENING_CLOSEOUT.md`](../qualification/DIAGNOSTIC_HARDENING_CLOSEOUT.md). Retained as decision record — not canonical current architecture.
+
 **Audit ID:** DIAG-8A  
 **Date:** 2026-08-26  
 **Branch:** `development`  

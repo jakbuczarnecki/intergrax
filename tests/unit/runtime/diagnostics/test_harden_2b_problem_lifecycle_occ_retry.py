@@ -150,6 +150,14 @@ class _ConflictThenVanishPersistence:
     def list_for_tenant(self, tenant_id: str) -> tuple[Problem, ...]:
         return self._delegate.list_for_tenant(tenant_id)
 
+    def query_problems(self, *, tenant_id: str, status=None, limit: int, cursor=None):
+        return self._delegate.query_problems(
+            tenant_id=tenant_id,
+            status=status,
+            limit=limit,
+            cursor=cursor,
+        )
+
     def find_by_reconciliation_key(self, *, tenant_id: str, reconciliation_key):
         return self._delegate.find_by_reconciliation_key(
             tenant_id=tenant_id,
@@ -194,6 +202,11 @@ class _CreateConflictLookupIntegrityPersistence:
 
     def list_for_tenant(self, tenant_id: str) -> tuple[Problem, ...]:
         return ()
+
+    def query_problems(self, *, tenant_id: str, status=None, limit: int, cursor=None):
+        from intergrax.runtime.diagnostics.problem_list_query import ProblemListPage
+
+        return ProblemListPage(problems=(), next_cursor=None, has_more=False)
 
     def find_by_reconciliation_key(self, *, tenant_id: str, reconciliation_key):
         self._lookup_calls += 1

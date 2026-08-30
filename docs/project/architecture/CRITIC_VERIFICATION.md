@@ -1,5 +1,16 @@
 # Critic & Verification
 
+> [!CAUTION]
+> **CURRENT IMPLEMENTATION SNAPSHOT — NOT TARGET CANON**
+>
+> This document describes the **shipped Critic / CVL production path** (`CriticOrchestrator`, L0/L1/L2). It is **superseded for architecture** by the frozen **Decision System** target:
+>
+> - [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) — lifecycle, authoritative semantics, platform boundaries
+> - [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) — compositional Verification Pipeline
+> - [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) — Decision Strategies / Council
+>
+> **Physical DELETE** of this document and `intergrax/runtime/critic/**` is planned in the **Critic clean-cut migration slice** ([`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) §DS-MIG). Do not treat CVL and Decision System as parallel equals.
+
 **Intergrax Critic & Verification** is the governed correctness layer that composes deterministic, semantic, and authoritative checks into a typed verdict before the runtime accepts or recovers from an agent result.
 
 The Critic answers **„czy wynik jest poprawny?”** — structurally, procedurally, and (when configured) semantically. It is **not** a synonym for „drugi LLM”: a critic may be a schema validator, rule engine, semantic judge, trajectory scorer, or human authority.

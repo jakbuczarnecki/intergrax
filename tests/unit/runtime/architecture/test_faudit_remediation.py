@@ -13,7 +13,7 @@ from intergrax.applications.reference.harness_manifest_catalog import build_harn
 from intergrax.contracts.actor_identity import ActorIdentity, ActorKind
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState, audit_map_lifecycle_label
 from intergrax.contracts.data_classification import DataClassification
-from intergrax.contracts.decision_record import DecisionRecord
+from intergrax.contracts.uaep_decision_record import DecisionRecord
 from intergrax.contracts.subtask_contract import SubtaskContract
 from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.llm_adapters.registry.model_router import ModelRouter

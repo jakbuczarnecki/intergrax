@@ -40,7 +40,7 @@ For the category problem, strategic fit, and alternatives, see [Why Intergrax](.
 The current architecture can support — and provides foundations for — product classes such as:
 
 - governed knowledge applications;
-- evidence-backed decision support;
+- evidence-backed decision support ([`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) — target canon; **CURRENT:** [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md));
 - controlled agent workflows with approvals;
 - applications that call external tools and systems under configured authority; and
 - reviewable, auditable AI-assisted workflows.
@@ -73,7 +73,7 @@ Products can reuse existing governed mechanisms, surface missing shared capabili
   >
   <img
     src="../assets/public/readme/intergrax-platform-map-light.png"
-    alt="Intergrax platform architecture map showing execution core, intelligence/context, knowledge/action, governance, evidence/observability, platform foundation, specialized product surface and connected resources."
+    alt="Intergrax platform architecture map showing execution core, decision and verification, intelligence and context, knowledge and action, governance, evidence and observability, platform foundation, and connected resources."
   >
 </picture>
 </a>
@@ -162,6 +162,18 @@ The lifecycle is conceptual: the operating layer selects the resources needed fo
 The application defines what the business rule means. Intergrax provides reusable enforcement mechanisms — policy evaluation, boundary enforcement, canonical HITL, and governance evidence on wired paths. Complete platform-wide coverage and production qualification are **not** claimed.
 
 Details belong in the owning [Governed Execution architecture](GOVERNED_EXECUTION.md).
+
+## Decision System inside Nexus execution
+
+The **Decision System** is the platform capability that leads a decision from candidate proposal through optional deliberation, verification, revision, and resolution to an **authoritative lifecycle outcome** — executed as a **Decision Lifecycle model inside Nexus**, not as a second runtime.
+
+| Concern | Owner |
+| ------- | ----- |
+| Decision correctness (ACCEPTED / REJECTED / UNRESOLVED) | Decision System |
+| Execution authorization | Governed Execution / Policy |
+| Side effects | Nexus |
+
+**Target canon:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) · [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md). **CURRENT production path:** [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) until clean-cut migration. **Not production-qualified** (E0).
 
 ## LKW as the active reference product
 

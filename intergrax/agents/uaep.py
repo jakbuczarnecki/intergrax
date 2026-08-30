@@ -523,7 +523,7 @@ class UAEPExecutor:
             governance = resolution
             exec_ctx.metadata["governance_resolution"] = resolution
 
-            from intergrax.contracts.decision_record import DecisionRecord
+            from intergrax.contracts.uaep_decision_record import DecisionRecord
 
             tenant_id = str(request.tenant_id or request.metadata.get("tenant_id") or "default")
             decision_record = DecisionRecord(

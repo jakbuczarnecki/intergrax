@@ -380,6 +380,7 @@ def _planned_files(
         package_root / "proof" / "evaluator.py": _build_evaluator_py(),
         package_root / "proof" / "evidence_builder.py": _build_evidence_builder_py(),
         package_root / "fixtures" / "__init__.py": "",
+        package_root / "assets" / ".gitkeep": "",
         package_root / RUN_PROOF_FILENAME: _build_run_proof_py(slug),
         package_root / PROOF_DESCRIPTOR_FILENAME: _build_proof_json(slug, title),
         package_root / ENV_EXAMPLE_FILENAME: _build_env_example(),

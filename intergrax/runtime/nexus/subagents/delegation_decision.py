@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.contracts.decision_record import DecisionRecord
+from intergrax.contracts.uaep_decision_record import DecisionRecord
 from intergrax.contracts.delegation import DelegationSpec
 
 
