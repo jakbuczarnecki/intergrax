@@ -1,8 +1,8 @@
 # Diagnostic Platform Qualification — Closeout
 
-**Program:** DIAG-PLATFORM-QUALIFICATION (A–F)  
-**Result:** **PASS**  
-**Start HEAD:** `1657d0010b4f6e51e765843c1f5c3101146e5585`  
+**Program:** DIAG-PLATFORM-QUALIFICATION (A–F) + R1 execution-authority re-audit
+**Result:** **PASS**
+**Start HEAD:** `74410b039ab11740abf22003c62e3c0ea9bda829`
 **Branch:** `development`
 
 ---
@@ -18,6 +18,8 @@ GLOBAL DOCS GATE = GREEN (pending test run in this slice)
 ```text
 CENTRAL DIAGNOSTICS IS QUALIFIED AS THE DEFAULT PLATFORM DIAGNOSTIC BACKBONE
 ```
+
+**Execution authority (R1):** Execution System (`execute_root_task` / `ExecutionRuntime`) owns root execution authority. Nexus participates in orchestration/planning/execution coordination — not as canonical root execution authority.
 
 ---
 
@@ -43,11 +45,12 @@ NOT_APPLICABLE = 3 (lab scaffolds)
 
 ---
 
-## E2E metrics
+## E2E metrics (R1 corrected)
 
 ```text
-P3 flows = 5 (distinct entry classes)
-P4 flows = 3 (Mongo FI-A, OTLP, cross-process Mongo restart)
+true P3 flows = 4 (distinct canonical execution entry classes)
+true P4 platform E2E = 2 (Mongo FI-A, OTLP via HTTP → Execution System)
+P4 persistence proofs = 1 (cross-process Mongo restart — no execution entry)
 Distinct runtime/integration classes = 6
 ```
 
@@ -76,6 +79,8 @@ Distinct runtime/integration classes = 6
 | HTTP DiagnosticReadService | Factory-wired dashboard read only on `governed_contractor_application` |
 | Kafka → worker → Nexus → diagnostics | Transport qualified separately; no single P4 external proof composing full queue diagnostic spine |
 | APP-PROD factory scan | `*_application` suffix only — lab demos outside production gate scope by design |
+| Application production gate scope | `check_no_ad_hoc_nexus_in_factories` detects factory `NexusLoop()` bypass; does not statically prove every request path uses `UnifiedTaskRunner` — execution-path adoption is evidenced by P3 E2E proofs |
+| HARDEN-1c | Persistence P4 only — does not exercise canonical task execution entry |
 
 ---
 
@@ -84,6 +89,7 @@ Distinct runtime/integration classes = 6
 | Pattern | Remaining | Classification |
 | ------- | --------- | -------------- |
 | `GraphExecutor default scenario` | 1 in `SCENARIO_PLATFORM_NATIVE_SCAFFOLD_AUDIT.md` | **historical audit** (pre-baseline scaffold audit) |
+| `Nexus direct execution` in qualification matrix | **0** after R1 | — |
 | Other forbidden patterns in `docs/` | 0 stale in canonical architecture docs | — |
 
 ---

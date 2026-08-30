@@ -15,6 +15,7 @@ from intergrax.applications._shared.diagnostic_assembly_resolver import (
 )
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.harness_registry_authority import RegistryAssemblyMode
+from intergrax.applications._shared.scenario_runtime_baseline import ScenarioRuntimeBuildError
 from intergrax.applications._shared.scenario_runtime_profiles import build_scenario_production_runtime
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
@@ -150,7 +151,7 @@ def test_destructive_case_a_production_scenario_without_problem_persistence_fail
     tmp_path: Path,
 ) -> None:
     environment = _production_attached_environment("diag.platform.case.a")
-    with pytest.raises(Exception, match="central diagnostics are required|document store"):
+    with pytest.raises(ScenarioRuntimeBuildError, match="central diagnostics are required"):
         build_scenario_production_runtime(
             environment=environment,
             manifest=_scenario_manifest("diag_platform_no_store"),
@@ -207,19 +208,11 @@ def test_destructive_case_c_manual_nexus_bypass_detected_by_production_gate(
         "    return NexusLoop()\n",
         encoding="utf-8",
     )
-    rel = "applications/bypass_demo_application/host/factory.py"
-    text = (factory_dir / "factory.py").read_text(encoding="utf-8")
-    violations: list[str] = []
-    if "build_harness_host_runtime" not in text:
-        violations.append(f"{rel}: must call build_harness_host_runtime")
-    from scripts.gates.check_application_production_gates import _nexus_loop_call_lines
-
-    call_lines = _nexus_loop_call_lines(text)
-    if call_lines:
-        violations.append(
-            f"{rel}: direct NexusLoop() at line(s) {call_lines} — use build_harness_host_runtime",
-        )
+    violations = check_no_ad_hoc_nexus_in_factories(repo_root=tmp_path)
     assert len(violations) == 2
+    assert any("bypass_demo_application" in item for item in violations)
+    assert any("build_harness_host_runtime" in item for item in violations)
+    assert any("NexusLoop" in item for item in violations)
 
 
 def test_destructive_product_without_runtime_events_fails_closed(

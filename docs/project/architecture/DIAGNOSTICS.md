@@ -412,8 +412,10 @@ Engine HARDEN: M1–M24 PROVEN=22 NOT_APPLICABLE=2
 
 ```text
 Platform adoption: NATIVE production surfaces = 4 PRODUCT hosts + 1 initialized scenario
-BYPASS = 0 · P3 flows ≥ 5 · P4 external proofs = 3
+BYPASS = 0 · true P3 flows = 4 · true P4 platform E2E = 2 · P4 persistence = 1
 ```
+
+Execution System owns root execution authority. Nexus = orchestration participant, not execution authority.
 
 Evidence indexes:
 

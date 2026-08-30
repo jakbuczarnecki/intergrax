@@ -1,9 +1,11 @@
 # Diagnostic Platform Adoption Matrix — DIAG-PLATFORM-A
 
 **Program:** DIAG-PLATFORM-QUALIFICATION  
-**Branch baseline:** `development` @ `1657d0010b4f6e51e765843c1f5c3101146e5585`  
+**Branch baseline:** `development` @ `74410b039ab11740abf22003c62e3c0ea9bda829`
 **Engine qualification:** [`DIAGNOSTIC_HARDENING_CLOSEOUT.md`](DIAGNOSTIC_HARDENING_CLOSEOUT.md) (HARDEN complete)  
 **Architecture:** [`docs/project/architecture/DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md)
+
+**Execution authority (R1):** Execution System (`execute_root_task` / `ExecutionRuntime`) owns root execution authority. Nexus participates in orchestration/planning/execution coordination. Central diagnostics consumes canonical `RuntimeEvent` evidence emitted by governed execution.
 
 ---
 
@@ -21,15 +23,26 @@
 **Target invariant (production-capable):**
 
 ```text
-production application → HarnessHostRuntime → RuntimeEvent persistence
+production application → HarnessHostRuntime → UnifiedTaskRunner / canonical task entry
+  → execute_root_task (Execution System root authority)
+  → Nexus orchestration participant
+  → RuntimeEvent persistence
   → wire_terminal_execution_diagnostics → central ProblemPersistence
 ```
 
 **Target invariant (initialized scenario):**
 
 ```text
-ScenarioRuntimeBaseline (or canonical facade) → shared Nexus → terminal diagnostics
+ScenarioRuntimeBaseline (or canonical facade) → execute_scenario_task
+  → UnifiedTaskRunner → execute_root_task → Nexus orchestration → terminal diagnostics
 ```
+
+**Adoption dimensions (R1):**
+
+| Dimension | What it proves |
+| --------- | -------------- |
+| **Composition adoption** | Shared runtime wiring (`build_harness_host_runtime`, diagnostic trigger, ProblemPersistence) |
+| **Execution-path adoption** | Requests/tasks execute through `UnifiedTaskRunner` → `execute_root_task`, not ad-hoc `NexusLoop()` factory bypass |
 
 ---
 
@@ -54,7 +67,7 @@ Initialized scenario surfaces: NATIVE = 1, LEGACY = 0
 
 | Surface | Type | Runtime entry | RuntimeEvent persistence | Terminal diagnostic trigger | ProblemPersistence | Central read path | Default? | Status |
 | ------- | ---- | ------------- | ------------------------ | --------------------------- | ------------------ | ----------------- | -------- | ------ |
-| `governed_contractor_application` | PRODUCT host | `build_harness_host_runtime` | Yes (`runtime_events_db_path`) | Yes (`DiagnosticWiring` via harness) | Yes (`wire_problem_persistence`) | Yes (`wire_harness_product_observability_dashboard` → `DiagnosticReadService`) | **REQUIRED** | **NATIVE** |
+| `governed_contractor_application` | PRODUCT host | `build_harness_host_runtime` → HTTP `UnifiedTaskRunner` | Yes (`runtime_events_db_path`) | Yes (`DiagnosticWiring` via harness) | Yes (`wire_problem_persistence`) | Yes (`wire_harness_product_observability_dashboard` → `DiagnosticReadService`) | **REQUIRED** | **NATIVE** |
 | `legal_application` | PRODUCT host | `build_harness_host_runtime` | Yes | Yes | Yes | Write only at factory (no HTTP read routes) | **REQUIRED** | **NATIVE** |
 | `dispute_sim_application` | PRODUCT host | `build_harness_host_runtime` | Yes | Yes | Yes | Write only at factory | **REQUIRED** | **NATIVE** |
 | `local_workspace_application` | PRODUCT host (reference) | `build_harness_host_runtime` | Yes | Yes | Yes | Write at factory; product observability optional | **REQUIRED** | **NATIVE** |
@@ -82,7 +95,7 @@ Initialized scenario surfaces: NATIVE = 1, LEGACY = 0
 
 | Scenario | Runtime entry | Baseline? | RuntimeEvent | Terminal trigger | ProblemPersistence | Read path | Mode | Status |
 | -------- | ------------- | --------- | ------------ | ---------------- | ------------------ | --------- | ---- | ------ |
-| `ai_incident_investigation` | `build_scenario_runtime_from_environment` via `build_scenario_runtime_composition` | **Yes** (`ScenarioRuntimeBaseline`) | Yes | Yes (`composition.diagnostic_wiring`) | Yes (shared `DocumentStore`) | `scenario_composition` → `DiagnosticReadService` (composition layer) | `ScenarioRuntimeMode.LAB` | **NATIVE** |
+| `ai_incident_investigation` | `build_scenario_runtime_from_environment` via `build_scenario_runtime_composition`; task entry `execute_scenario_task` → `UnifiedTaskRunner` | **Yes** (`ScenarioRuntimeBaseline`) | Yes | Yes (`composition.diagnostic_wiring`) | Yes (shared `DocumentStore`) | `scenario_composition` → `DiagnosticReadService` (composition layer) | `ScenarioRuntimeMode.LAB` | **NATIVE** |
 
 **Design-only scenarios (12):** no `application/` package — adoption **NOT_APPLICABLE** until `IMPLEMENTATION_INITIALIZED`.
 
@@ -96,9 +109,11 @@ Initialized scenario surfaces: NATIVE = 1, LEGACY = 0
 | ----------- | ------ | --------------- |
 | `build_harness_host_runtime` | `harness_host_runtime.py` | Canonical Tier-3 host composition |
 | `build_scenario_runtime_from_environment` | `scenario_runtime_baseline.py` | Canonical scenario Nexus runtime |
+| `execute_scenario_task` | `scenario_runtime_baseline.py` | Canonical scenario task entry → `UnifiedTaskRunner` |
 | `wire_terminal_execution_diagnostics` | `diagnostic_runtime_wiring.py` | Policy-aware terminal trigger attach |
-| `build_nexus_loop_from_environment` | `nexus_factory.py` | Shared Nexus assembly |
-| `UnifiedTaskRunner` | Nexus execution path | Terminal diagnostics via shared bridge |
+| `build_nexus_loop_from_environment` | `nexus_factory.py` | Shared Nexus assembly (orchestration participant) |
+| `UnifiedTaskRunner` | `unified_task_runner.py` | Canonical task adapter → `execute_root_task` (Execution System) |
+| `execute_root_task` | `runtime/execution/orchestration.py` | Root execution authority boundary |
 
 ---
 
@@ -121,7 +136,7 @@ Initialized scenario surfaces: NATIVE = 1, LEGACY = 0
 | ---- | -------- | -- |
 | Initialized scenario architecture | `assert_all_initialized_scenario_architectures` | `test_all_initialized_scenario_architecture.py` (`ci_smoke`) |
 | Scenario scaffold destructive | `test_scenario_scaffold_conformance_proof.py` | unit gate |
-| Application factory harness spine | `check_no_ad_hoc_nexus_in_factories` | `check_application_production_gates.py` |
+| Application factory harness spine | `check_no_ad_hoc_nexus_in_factories(repo_root=...)` | `check_application_production_gates.py` |
 | Platform adoption gate | `test_diag_platform_adoption_gate.py` | `ci_smoke` |
 | Hosting diagnostics bridge | `test_one_spine_hosting_diagnostics_gate.py` | unit gate |
 | DF-5 destructive proofs | `test_diag_foundation_5_destructive_proof.py` | unit gate |
@@ -135,6 +150,7 @@ Initialized scenario surfaces: NATIVE = 1, LEGACY = 0
 | --- | ------ |
 | HTTP `DiagnosticReadService` only on `governed_contractor_application` factory | Other PRODUCT hosts: write path NATIVE; operator read via shared wiring elsewhere or future dashboard adoption |
 | `check_application_production_gates` scans `*_application` only | `attestation_demo`, `poc_template`, `intergrax_assistant` outside APP-PROD factory scan (lab scaffolds) |
+| Factory gate vs execution-path gate | `check_no_ad_hoc_nexus_in_factories` validates composition (no direct `NexusLoop()` in factories); execution-path adoption is evidenced by P3 E2E proofs, not static per-request analysis |
 | Only **1** initialized scenario | Second scenario proof blocked until next `IMPLEMENTATION_INITIALIZED` scenario ships |
 | Kafka queue → worker → Nexus → diagnostics | Queue transport qualified separately; full P4 async diagnostic spine not yet composed in one external proof |
 
