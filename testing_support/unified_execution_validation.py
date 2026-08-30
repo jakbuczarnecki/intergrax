@@ -392,27 +392,28 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
         ),
     ),
     # CONCURRENCY
-    _partial(
+    _covered(
         "concurrency.parallel_root_identity_isolation",
         ValidationDomain.CONCURRENCY,
-        GapTarget.UE_11D,
         _unit(
-            "tests/unit/runtime/execution/test_execution_boundary.py",
-            "test_parallel_boundaries_isolate_execution_ids",
+            "tests/unit/runtime/execution/test_ue_11d_parallel_root_isolation.py",
+            "test_ue_11d_parallel_root_identity_isolation",
         ),
     ),
-    _gap(
+    _covered(
         "concurrency.parallel_root_authority_isolation",
         ValidationDomain.CONCURRENCY,
-        GapTarget.UE_11D,
+        _unit(
+            "tests/unit/runtime/execution/test_ue_11d_parallel_root_isolation.py",
+            "test_ue_11d_parallel_root_authority_isolation",
+        ),
     ),
-    _partial(
+    _covered(
         "concurrency.parallel_root_budget_isolation",
         ValidationDomain.CONCURRENCY,
-        GapTarget.UE_11D,
         _unit(
-            "tests/unit/runtime/execution/budget/test_ue_8b2_runtime_consumption.py",
-            "test_different_runs_isolated",
+            "tests/unit/runtime/execution/test_ue_11d_parallel_root_isolation.py",
+            "test_ue_11d_parallel_root_budget_isolation",
         ),
     ),
     _covered(
@@ -431,13 +432,12 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
             "test_parallel_shared_under_reserved_cannot_oversubscribe",
         ),
     ),
-    _partial(
+    _covered(
         "concurrency.no_context_cross_talk",
         ValidationDomain.CONCURRENCY,
-        GapTarget.UE_11D,
         _unit(
-            "tests/unit/runtime/background_execution/test_ue_9a_background_identity_redelivery.py",
-            "test_contextvar_identity_does_not_leak_between_attempts",
+            "tests/unit/runtime/execution/test_ue_11d_parallel_root_isolation.py",
+            "test_ue_11d_no_context_cross_talk",
         ),
     ),
     # RECOVERY
