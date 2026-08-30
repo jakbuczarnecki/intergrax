@@ -143,6 +143,14 @@ class ObservingProblemPersistence:
     def list_for_tenant(self, tenant_id: str) -> tuple[Problem, ...]:
         return self._delegate.list_for_tenant(tenant_id)
 
+    def query_problems(self, *, tenant_id: str, status=None, limit: int, cursor=None):
+        return self._delegate.query_problems(
+            tenant_id=tenant_id,
+            status=status,
+            limit=limit,
+            cursor=cursor,
+        )
+
     def find_by_reconciliation_key(self, *, tenant_id: str, reconciliation_key):
         return self._delegate.find_by_reconciliation_key(
             tenant_id=tenant_id,

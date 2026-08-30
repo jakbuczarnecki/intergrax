@@ -13,11 +13,18 @@ from intergrax.runtime.diagnostics.problem_lifecycle import (
     Problem,
     ProblemId,
     ProblemReconciliationKey,
+    ProblemStatus,
 )
 from intergrax.runtime.diagnostics.problem_persistence import (
+    ProblemListPage,
     ProblemPersistence,
     ProblemPersistenceConflictError,
     ProblemPersistenceIntegrityError,
+)
+from intergrax.runtime.diagnostics.problem_list_query import (
+    ProblemListQueryCursorCodec,
+    problem_list_scope_for_status,
+    sort_problems_for_public_list,
 )
 
 
@@ -27,20 +34,72 @@ class InMemoryProblemPersistence(ProblemPersistence):
         self._by_reconciliation_key: dict[tuple[str, str], ProblemId] = {}
         self._by_subject_ref: dict[tuple[str, str, str, str], ProblemId] = {}
         self._lock = Lock()
+        self._list_cursor_codec = ProblemListQueryCursorCodec()
 
     def get(self, *, tenant_id: str, problem_id: ProblemId) -> Problem | None:
         with self._lock:
             return self._records.get((tenant_id, problem_id))
 
     def list_for_tenant(self, tenant_id: str) -> tuple[Problem, ...]:
+        problems: list[Problem] = []
+        cursor: str | None = None
+        while True:
+            page = self.query_problems(
+                tenant_id=tenant_id,
+                limit=5000,
+                cursor=cursor,
+            )
+            problems.extend(page.problems)
+            if not page.has_more:
+                break
+            cursor = page.next_cursor
+        problems.sort(key=lambda item: str(item.problem_id))
+        return tuple(problems)
+
+    def query_problems(
+        self,
+        *,
+        tenant_id: str,
+        status: ProblemStatus | None = None,
+        limit: int,
+        cursor: str | None = None,
+    ) -> ProblemListPage:
+        if type(limit) is not int or isinstance(limit, bool) or limit < 1:
+            raise ValueError("limit must be a positive int")
         with self._lock:
             records = [
                 record
                 for (record_tenant_id, _), record in self._records.items()
                 if record_tenant_id == tenant_id
             ]
-        records.sort(key=lambda item: str(item.problem_id))
-        return tuple(records)
+        if status is not None:
+            records = [record for record in records if record.status is status]
+        ordered = list(sort_problems_for_public_list(records))
+
+        start_offset = 0
+        if cursor is not None:
+            store_cursor = self._list_cursor_codec.decode(
+                cursor,
+                tenant_id=tenant_id,
+                status_filter=problem_list_scope_for_status(status),
+            )
+            start_offset = int(store_cursor)
+
+        selected = tuple(ordered[start_offset : start_offset + limit])
+        next_offset = start_offset + len(selected)
+        has_more = next_offset < len(ordered)
+        next_cursor: str | None = None
+        if has_more:
+            next_cursor = self._list_cursor_codec.encode(
+                tenant_id=tenant_id,
+                status_filter=problem_list_scope_for_status(status),
+                store_cursor=str(next_offset),
+            )
+        return ProblemListPage(
+            problems=selected,
+            next_cursor=next_cursor,
+            has_more=has_more,
+        )
 
     def find_by_reconciliation_key(
         self,

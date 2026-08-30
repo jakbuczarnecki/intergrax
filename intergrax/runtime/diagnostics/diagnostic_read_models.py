@@ -73,9 +73,11 @@ class DiagnosticProblemSummary:
 @dataclass(frozen=True, slots=True)
 class DiagnosticProblemListResult:
     problems: tuple[DiagnosticProblemSummary, ...]
-    total_count: int
+    total_count: int | None
     returned_count: int
     is_truncated: bool
+    has_more: bool
+    next_cursor: str | None
 
 
 @dataclass(frozen=True, slots=True)

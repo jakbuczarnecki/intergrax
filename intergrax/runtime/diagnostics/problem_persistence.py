@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
@@ -16,7 +17,17 @@ if TYPE_CHECKING:
         Problem,
         ProblemId,
         ProblemReconciliationKey,
+        ProblemStatus,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class ProblemListPage:
+    """Bounded page of canonical Problems in public list order."""
+
+    problems: tuple[Problem, ...]
+    next_cursor: str | None
+    has_more: bool
 
 
 class ProblemPersistenceConflictError(Exception):
@@ -59,7 +70,27 @@ class ProblemPersistence(ABC):
 
     @abstractmethod
     def list_for_tenant(self, tenant_id: str) -> tuple[Problem, ...]:
-        """Return all Problems for a tenant in stable ``problem_id`` order."""
+        """
+        Return all Problems for a tenant in stable ``problem_id`` order.
+
+        Legacy/testing helper — operator reads must use ``query_problems`` instead.
+        """
+
+    @abstractmethod
+    def query_problems(
+        self,
+        *,
+        tenant_id: str,
+        status: ProblemStatus | None = None,
+        limit: int,
+        cursor: str | None = None,
+    ) -> ProblemListPage:
+        """
+        Return one bounded page of Problems ordered by ``last_seen_at`` descending
+        with ``problem_id`` ascending tie-break.
+
+        ``cursor`` continues a prior page for the same tenant and status filter.
+        """
 
     @abstractmethod
     def find_by_reconciliation_key(

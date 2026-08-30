@@ -396,6 +396,23 @@ Product harness hosts wire through shared `document_store` capabilities:
 - `try_build_terminal_execution_diagnostic_trigger` after terminal `RuntimeEvent` persist
 - `DiagnosticReadService` for operator/dashboard read path
 
+### Scalable Problem list reads (DIAG-ENTERPRISE-1)
+
+Operator list reads are **bounded** at persistence:
+
+```text
+DiagnosticReadService.list_problems(limit, cursor?)
+  → ProblemPersistence.query_problems(...)
+  → derived list index query (DocumentStore row_key prefix)
+  → bounded canonical Problem fetch per index row
+```
+
+Ordering invariant: `last_seen_at DESC`, `problem_id ASC` tie-break. Optional `ProblemStatus` filter uses status-scoped derived indexes (`list:open:` / `list:resolved:` / `list:all:`) so filtering does not scan unrelated Problems.
+
+`total_count` is populated only when the full tenant result fits in one page (`cursor is None` and `has_more is False`). Larger tenants return `total_count=None` rather than forcing a full scan.
+
+Qualification: [`DIAGNOSTIC_ENTERPRISE_SCALE_MATRIX.md`](../maintainers/qualification/DIAGNOSTIC_ENTERPRISE_SCALE_MATRIX.md) § E1.
+
 Full hosting composition: [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md).
 
 ---
