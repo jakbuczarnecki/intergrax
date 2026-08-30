@@ -104,6 +104,8 @@ class ObservabilityExportEnvelope(BaseModel):
 
     run_id: str = ""
     task_id: str = ""
+    attempt_id: str = ""
+    execution_id: str = ""
     agent_id: str = ""
     capability: str = ""
     tool_id: str = ""
@@ -143,6 +145,8 @@ class RuntimeEventExportSource(BaseModel):
     event_id: str
     run_id: str
     task_id: str
+    attempt_id: str = ""
+    execution_id: str = ""
     event_type: str
     agent_id: str = ""
     tenant_id: str = ""
@@ -275,6 +279,8 @@ def runtime_event_export_source_from_event(event: RuntimeEvent) -> RuntimeEventE
         event_id=event.event_id,
         run_id=event.run_id,
         task_id=event.task_id,
+        attempt_id=str(event.attempt_id),
+        execution_id=str(event.execution_id),
         event_type=event.event_type.value,
         agent_id=event.agent_id or "",
         tenant_id=event.tenant_id or "",
@@ -367,6 +373,8 @@ def envelope_from_runtime_event_source(source: RuntimeEventExportSource) -> Obse
         recorded_at=_utc_now(),
         run_id=source.run_id,
         task_id=source.task_id,
+        attempt_id=source.attempt_id,
+        execution_id=source.execution_id,
         agent_id=source.agent_id,
         capability=str(safe_payload.get("capability") or ""),
         tool_id=str(safe_payload.get("tool_id") or ""),

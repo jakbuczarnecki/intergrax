@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""DIAG-FINAL-E2E — real external OpenTelemetry collector proof for the diagnostic spine."""
+"""HARDEN-3F — canonical HOS external OTLP proof through operator wiring."""
 
 from __future__ import annotations
 
@@ -12,15 +12,18 @@ from intergrax.integrations._shared.in_memory_document_store import InMemoryDocu
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from tests.integration.runtime.diag_final_otel_support import (
     DiagFinalCollectorStack,
+    assert_collector_hos_privacy,
+    assert_collector_identity_matches_runtime_event,
     assert_problem_truth,
     assert_runtime_event_truth,
     build_diag_final_product_host,
     build_observability_export_config,
     build_read_service,
-    docker_daemon_available,
     execute_host_run,
     refresh_collector_output,
+    require_docker_for_external_otlp_proof,
     stop_collector_process_only,
+    wait_for_collector_event_id,
     wait_for_collector_run_id,
     write_proof_artifact,
 )
@@ -60,8 +63,7 @@ def test_diag_final_external_otel_spine_proof(
     diag_final_collector_stack: DiagFinalCollectorStack,
     _stub_host_llm: None,
 ) -> None:
-    if not docker_daemon_available():
-        pytest.skip("docker daemon unavailable for DIAG-FINAL external OTLP proof")
+    require_docker_for_external_otlp_proof()
 
     document_store = InMemoryDocumentStore()
     storage_root = tmp_path / "storage"
@@ -96,9 +98,16 @@ def test_diag_final_external_otel_spine_proof(
         run_id=run_id,
     )
 
-    collector_text = wait_for_collector_run_id(diag_final_collector_stack, run_id)
-    assert "intergrax.run_id" in collector_text or run_id in collector_text
-    assert _TENANT in collector_text
+    collector_text = wait_for_collector_event_id(
+        diag_final_collector_stack,
+        str(terminal_event.event_id),
+    )
+    identity_attrs = assert_collector_identity_matches_runtime_event(
+        collector_text,
+        terminal_event=terminal_event,
+    )
+    assert_collector_hos_privacy(collector_text)
+    assert identity_attrs["intergrax.tenant_id"] == _TENANT
     collector_snapshot_before_outage = collector_text
 
     stop_collector_process_only()
@@ -159,12 +168,17 @@ def test_diag_final_external_otel_spine_proof(
         _ARTIFACT_DIR,
         run_id=run_id,
         task_id=task_id,
+        attempt_id=str(terminal_event.attempt_id),
+        execution_id=str(terminal_event.execution_id),
+        event_id=str(terminal_event.event_id),
         problem_id=problem_id,
         terminal_event_type=terminal_event.event_type.value,
         collector_received=True,
         collector_excerpt=collector_text,
         collector_available=False,
         restart_verified=True,
+        identity_verified=True,
+        privacy_verified=True,
     )
     assert artifact_path.is_file()
     restarted.client.close()

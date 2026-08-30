@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import time
@@ -30,6 +31,7 @@ from intergrax.applications._shared.harness_host_runtime import HarnessHostRunti
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from intergrax.runtime.observability.export_boundary import FORBIDDEN_EXPORT_CONTENT_FIELDS
 from intergrax.runtime.observability.operator_wiring import (
     ObservabilityExportOperatorConfig,
     OtlpExportOperatorConfig,
@@ -42,6 +44,26 @@ _COLLECTOR_OUTPUT_DIR = _FIXTURES_DIR / "collector-output"
 _COLLECTOR_OUTPUT_FILE = _COLLECTOR_OUTPUT_DIR / "diag-final-received.jsonl"
 _DEFAULT_OTLP_ENDPOINT = "http://127.0.0.1:14318/v1/logs"
 _ROUTE_PREFIX = "/v1/governed_contractor"
+_FORBIDDEN_PRIVACY_SUBSTRINGS = (
+    "secret prompt",
+    "raw body",
+    "diag-final collector available",
+    "diag-final collector unavailable",
+    "diag-final restart persistence",
+)
+
+
+def external_otlp_proof_required() -> bool:
+    raw = os.environ.get("INTERGRAX_EXTERNAL_OTLP_PROOF_REQUIRED", "").strip().lower()
+    return raw in {"1", "true", "yes"}
+
+
+def require_docker_for_external_otlp_proof() -> None:
+    if docker_daemon_available():
+        return
+    if external_otlp_proof_required():
+        pytest.fail("docker daemon unavailable for required external OTLP proof")
+    pytest.skip("docker daemon unavailable for DIAG-FINAL external OTLP proof")
 
 
 @dataclass(frozen=True, slots=True)
@@ -165,6 +187,169 @@ def refresh_collector_output(stack: DiagFinalCollectorStack) -> str:
     return stack.output_host_path.read_text(encoding="utf-8")
 
 
+def parse_collector_otlp_records(collector_text: str) -> list[dict[str, object]]:
+    records: list[dict[str, object]] = []
+    for line in collector_text.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        parsed = json.loads(stripped)
+        if isinstance(parsed, dict):
+            records.append(parsed)
+    return records
+
+
+def _otlp_log_record_attribute_maps(record: dict[str, object]) -> list[dict[str, object]]:
+    maps: list[dict[str, object]] = []
+    resource_logs = record.get("resourceLogs")
+    if not isinstance(resource_logs, list):
+        return maps
+    for resource_log in resource_logs:
+        if not isinstance(resource_log, dict):
+            continue
+        scope_logs = resource_log.get("scopeLogs")
+        if not isinstance(scope_logs, list):
+            continue
+        for scope_log in scope_logs:
+            if not isinstance(scope_log, dict):
+                continue
+            log_records = scope_log.get("logRecords")
+            if not isinstance(log_records, list):
+                continue
+            for log_record in log_records:
+                if not isinstance(log_record, dict):
+                    continue
+                attributes = log_record.get("attributes")
+                if not isinstance(attributes, list):
+                    continue
+                mapped: dict[str, object] = {}
+                for attribute in attributes:
+                    if not isinstance(attribute, dict):
+                        continue
+                    key = attribute.get("key")
+                    value = attribute.get("value")
+                    if not isinstance(key, str) or not isinstance(value, dict):
+                        continue
+                    if "stringValue" in value:
+                        mapped[key] = value["stringValue"]
+                    elif "intValue" in value:
+                        mapped[key] = value["intValue"]
+                    elif "boolValue" in value:
+                        mapped[key] = value["boolValue"]
+                maps.append(mapped)
+    return maps
+
+
+def _otlp_attribute_map(record: dict[str, object]) -> dict[str, object]:
+    maps = _otlp_log_record_attribute_maps(record)
+    if not maps:
+        return {}
+    return maps[-1]
+
+
+def collector_records_for_run(
+    collector_text: str,
+    *,
+    run_id: str,
+) -> list[dict[str, object]]:
+    matched: list[dict[str, object]] = []
+    for record in parse_collector_otlp_records(collector_text):
+        attrs = _otlp_attribute_map(record)
+        if attrs.get("intergrax.run_id") == run_id or run_id in json.dumps(record, ensure_ascii=False):
+            matched.append(record)
+    return matched
+
+
+def assert_collector_identity_matches_runtime_event(
+    collector_text: str,
+    *,
+    terminal_event: RuntimeEvent,
+) -> dict[str, object]:
+    records = collector_records_for_run(collector_text, run_id=str(terminal_event.run_id))
+    assert records, f"collector did not receive export for run_id={terminal_event.run_id!r}"
+
+    event_id = str(terminal_event.event_id)
+    attribute_maps = [
+        attrs
+        for record in records
+        for attrs in _otlp_log_record_attribute_maps(record)
+        if attrs.get("intergrax.run_id") == str(terminal_event.run_id)
+    ]
+    assert attribute_maps, "collector export missing intergrax.run_id attribute"
+
+    matching = [attrs for attrs in attribute_maps if attrs.get("intergrax.event_id") == event_id]
+    assert matching, f"collector export missing event_id={event_id!r}"
+
+    terminal_matches = [
+        attrs
+        for attrs in matching
+        if attrs.get("intergrax.event_type") == terminal_event.event_type.value
+    ]
+    assert len(terminal_matches) == 1, "expected exactly one canonical HOS export per RuntimeEvent"
+    chosen = terminal_matches[0]
+
+    assert chosen.get("intergrax.run_id") == str(terminal_event.run_id)
+    assert chosen.get("intergrax.attempt_id") == str(terminal_event.attempt_id)
+    assert chosen.get("intergrax.execution_id") == str(terminal_event.execution_id)
+    assert chosen.get("intergrax.task_id") == str(terminal_event.task_id)
+    assert chosen.get("intergrax.record_kind") == "runtime_event"
+    assert chosen.get("intergrax.event_type")
+    return chosen
+
+
+def assert_collector_hos_privacy(
+    collector_text: str,
+    *,
+    extra_forbidden_substrings: tuple[str, ...] = (),
+) -> None:
+    serialized_values: list[str] = []
+    for record in parse_collector_otlp_records(collector_text):
+        resource_logs = record.get("resourceLogs")
+        if not isinstance(resource_logs, list):
+            continue
+        for resource_log in resource_logs:
+            if not isinstance(resource_log, dict):
+                continue
+            scope_logs = resource_log.get("scopeLogs")
+            if not isinstance(scope_logs, list):
+                continue
+            for scope_log in scope_logs:
+                if not isinstance(scope_log, dict):
+                    continue
+                log_records = scope_log.get("logRecords")
+                if not isinstance(log_records, list):
+                    continue
+                for log_record in log_records:
+                    if not isinstance(log_record, dict):
+                        continue
+                    body = log_record.get("body")
+                    if isinstance(body, dict):
+                        body_value = body.get("stringValue")
+                        if isinstance(body_value, str):
+                            serialized_values.append(body_value)
+                    attributes = log_record.get("attributes")
+                    if isinstance(attributes, list):
+                        for attribute in attributes:
+                            if not isinstance(attribute, dict):
+                                continue
+                            value = attribute.get("value")
+                            if isinstance(value, dict) and "stringValue" in value:
+                                string_value = value["stringValue"]
+                                if isinstance(string_value, str):
+                                    serialized_values.append(string_value)
+
+    combined = "\n".join(serialized_values)
+    forbidden_attribute_keys = {
+        f"intergrax.{field_name}" for field_name in FORBIDDEN_EXPORT_CONTENT_FIELDS
+    }
+    for record in parse_collector_otlp_records(collector_text):
+        for attrs in _otlp_log_record_attribute_maps(record):
+            for key in attrs:
+                assert key not in forbidden_attribute_keys, f"forbidden export attribute key: {key}"
+    for substring in (*_FORBIDDEN_PRIVACY_SUBSTRINGS, *extra_forbidden_substrings):
+        assert substring not in combined, f"raw content leaked to collector: {substring!r}"
+
+
 def stop_collector_process_only() -> None:
     completed = _run_compose("stop", "otel-collector", timeout=60)
     if completed.returncode != 0:
@@ -172,6 +357,27 @@ def stop_collector_process_only() -> None:
             "failed to stop diag-final otel collector:\n"
             f"stdout={completed.stdout}\nstderr={completed.stderr}",
         )
+
+
+def wait_for_collector_event_id(
+    stack: DiagFinalCollectorStack,
+    event_id: str,
+    *,
+    timeout_seconds: float = 60.0,
+) -> str:
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        text = refresh_collector_output(stack)
+        for record in parse_collector_otlp_records(text):
+            for attrs in _otlp_log_record_attribute_maps(record):
+                if attrs.get("intergrax.event_id") == event_id:
+                    return text
+        if event_id in text:
+            return text
+        time.sleep(0.5)
+    raise AssertionError(
+        f"collector did not receive export for event_id={event_id!r} within {timeout_seconds}s",
+    )
 
 
 def wait_for_collector_run_id(
@@ -351,26 +557,36 @@ def write_proof_artifact(
     *,
     run_id: str,
     task_id: str,
+    attempt_id: str,
+    execution_id: str,
+    event_id: str,
     problem_id: str,
     terminal_event_type: str,
     collector_received: bool,
     collector_excerpt: str,
     collector_available: bool,
     restart_verified: bool,
+    identity_verified: bool,
+    privacy_verified: bool,
 ) -> Path:
     artifact_dir.mkdir(parents=True, exist_ok=True)
     artifact_path = artifact_dir / "diag-final-e2e-proof.json"
     artifact_path.write_text(
         json.dumps(
             {
-                "proof_id": "DIAG-FINAL-E2E",
+                "proof_id": "HARDEN-3F-EXTERNAL-OTLP",
                 "run_id": run_id,
                 "task_id": task_id,
+                "attempt_id": attempt_id,
+                "execution_id": execution_id,
+                "event_id": event_id,
                 "problem_id": problem_id,
                 "terminal_runtime_event_type": terminal_event_type,
                 "collector_received_export": collector_received,
                 "collector_available_after_vendor_failure": collector_available,
                 "restart_persistence_verified": restart_verified,
+                "identity_correlation_verified": identity_verified,
+                "hos_privacy_verified": privacy_verified,
                 "collector_excerpt": collector_excerpt[:2000],
             },
             indent=2,
@@ -382,8 +598,7 @@ def write_proof_artifact(
 
 @pytest.fixture(scope="module")
 def diag_final_collector_stack(tmp_path_factory: pytest.TempPathFactory) -> Iterator[DiagFinalCollectorStack]:
-    if not docker_daemon_available():
-        pytest.skip("docker daemon unavailable for DIAG-FINAL external OTLP proof")
+    require_docker_for_external_otlp_proof()
     tmp_path = tmp_path_factory.mktemp("diag-final-collector")
     stack = start_collector_stack(tmp_path)
     try:

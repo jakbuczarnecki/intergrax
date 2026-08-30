@@ -86,6 +86,8 @@ class ObservabilityVendorPayload(BaseModel):
 
     run_id: str = ""
     task_id: str = ""
+    attempt_id: str = ""
+    execution_id: str = ""
     agent_id: str = ""
     capability: str = ""
     event_type: str = ""
@@ -159,6 +161,8 @@ def map_envelope_to_vendor_payload(
         recorded_at=safe_envelope.recorded_at,
         run_id=safe_envelope.run_id,
         task_id=safe_envelope.task_id,
+        attempt_id=safe_envelope.attempt_id,
+        execution_id=safe_envelope.execution_id,
         agent_id=safe_envelope.agent_id,
         capability=safe_envelope.capability,
         event_type=safe_envelope.event_type,
