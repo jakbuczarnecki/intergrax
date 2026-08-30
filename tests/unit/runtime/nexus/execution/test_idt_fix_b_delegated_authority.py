@@ -41,6 +41,15 @@ from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.interactions.actor_resolution import narrow_delegation_scopes
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
+from intergrax.runtime.governance.active_execution_authority import (
+    bind_active_execution_authority,
+    reset_active_execution_authority,
+)
+from intergrax.runtime.execution.active_execution_budget import (
+    bind_root_execution_budget,
+    reset_active_execution_budget,
+)
+from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.subagents.delegation_contract_enforcer import (
     DelegationToolPolicyError,
@@ -54,16 +63,29 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 @contextmanager
-def _bound_execution_identity() -> Iterator[None]:
-    token = bind_active_execution_identity(
+def _bound_execution_identity(
+    *,
+    authority: ParentExecutionAuthority | None = None,
+) -> Iterator[None]:
+    execution_id = mint_execution_id()
+    identity_token = bind_active_execution_identity(
         run_id=mint_run_id(),
         attempt_id=mint_attempt_id(),
-        execution_id=mint_execution_id(),
+        execution_id=execution_id,
+    )
+    authority_token = bind_active_execution_authority(
+        authority or ParentExecutionAuthority.unknown(),
+    )
+    budget_token = bind_root_execution_budget(
+        execution_id=execution_id,
+        ledger=create_execution_budget_ledger(None),
     )
     try:
         yield
     finally:
-        reset_active_execution_identity(token)
+        reset_active_execution_budget(budget_token)
+        reset_active_execution_authority(authority_token)
+        reset_active_execution_identity(identity_token)
 
 
 def test_child_cannot_expand_parent_authority() -> None:
@@ -178,7 +200,7 @@ async def test_effective_authority_propagated_to_child_request() -> None:
         ],
     )
     executor = GraphExecutor(registry)
-    with _bound_execution_identity():
+    with _bound_execution_identity(authority=task.execution_authority):
         await executor.execute(graph, task)
     assert child.last_metadata[EFFECTIVE_PERMISSION_SCOPES_METADATA_KEY] == ["read"]
     assert child.last_request is not None
@@ -220,7 +242,7 @@ async def test_delegation_granted_reports_effective_authority() -> None:
     )
     bus = RuntimeEventBus(record_history=True)
     executor = GraphExecutor(registry, event_bus=bus)
-    with _bound_execution_identity():
+    with _bound_execution_identity(authority=task.execution_authority):
         await executor.execute(graph, task)
     granted = [
         event
@@ -268,7 +290,7 @@ async def test_rejected_delegation_does_not_execute_child() -> None:
         ],
     )
     executor = GraphExecutor(registry)
-    with _bound_execution_identity():
+    with _bound_execution_identity(authority=task.execution_authority):
         executions, _, completed_graph, _ = await executor.execute(graph, task)
     assert UaepPipelineStubAgent.run_log == []
     node = completed_graph.node_by_id("n1")
@@ -310,7 +332,7 @@ async def test_rejected_delegation_does_not_emit_granted() -> None:
     )
     bus = RuntimeEventBus(record_history=True)
     executor = GraphExecutor(registry, event_bus=bus)
-    with _bound_execution_identity():
+    with _bound_execution_identity(authority=task.execution_authority):
         await executor.execute(graph, task)
     assert not any(
         event.event_type is RuntimeEventType.DELEGATION_GRANTED for event in bus.history
@@ -403,7 +425,7 @@ async def test_a2_metadata_cannot_self_grant_unrestricted() -> None:
     )
     bus = RuntimeEventBus(record_history=True)
     executor = GraphExecutor(registry, event_bus=bus)
-    with _bound_execution_identity():
+    with _bound_execution_identity(authority=task.execution_authority):
         await executor.execute(graph, task)
     assert UaepPipelineStubAgent.run_log == []
     assert not any(
@@ -443,7 +465,7 @@ async def test_a3_trusted_typed_scoped_root() -> None:
         ],
     )
     executor = GraphExecutor(registry)
-    with _bound_execution_identity():
+    with _bound_execution_identity(authority=task.execution_authority):
         await executor.execute(graph, task)
     assert child.last_request is not None
     assert child.last_request.effective_delegation_authority is not None
@@ -482,7 +504,7 @@ async def test_a4_trusted_typed_unrestricted_root() -> None:
         ],
     )
     executor = GraphExecutor(registry)
-    with _bound_execution_identity():
+    with _bound_execution_identity(authority=task.execution_authority):
         await executor.execute(graph, task)
     assert child.last_request is not None
     assert child.last_request.effective_delegation_authority is not None
@@ -521,7 +543,7 @@ async def test_a5_conflicting_metadata_assertion_rejected() -> None:
         ],
     )
     executor = GraphExecutor(registry)
-    with _bound_execution_identity():
+    with _bound_execution_identity(authority=task.execution_authority):
         executions, _, _, _ = await executor.execute(graph, task)
     assert executions
     assert executions[0].status is AgentExecutionStatus.FAILED
@@ -569,7 +591,7 @@ async def test_b1_child_receives_typed_authority() -> None:
         ],
     )
     executor = GraphExecutor(registry)
-    with _bound_execution_identity():
+    with _bound_execution_identity(authority=task.execution_authority):
         await executor.execute(graph, task)
     assert child.last_request is not None
     authority = child.last_request.effective_delegation_authority
@@ -655,7 +677,7 @@ async def test_b3_graph_depends_on_does_not_create_execution_parent() -> None:
         ],
     )
     executor = GraphExecutor(registry)
-    with _bound_execution_identity():
+    with _bound_execution_identity(authority=task.execution_authority):
         executions, _, completed_graph, _ = await executor.execute(graph, task)
     assert grandchild._agent_id in UaepPipelineStubAgent.run_log
     grandchild_node = completed_graph.node_by_id("grandchild")
@@ -765,7 +787,7 @@ async def test_r2_4_trusted_host_enrichment_works() -> None:
         ],
     )
     executor = GraphExecutor(registry)
-    with _bound_execution_identity():
+    with _bound_execution_identity(authority=task.execution_authority):
         await executor.execute(graph, task)
     assert child.last_request is not None
     assert child.last_request.effective_delegation_authority is not None
@@ -801,7 +823,7 @@ async def test_r2_5_trusted_unrestricted_host_authority() -> None:
         ],
     )
     executor = GraphExecutor(registry)
-    with _bound_execution_identity():
+    with _bound_execution_identity(authority=task.execution_authority):
         await executor.execute(graph, task)
     assert child.last_request is not None
     assert child.last_request.effective_delegation_authority is not None

@@ -23,6 +23,11 @@ from intergrax.contracts.execution_identity import (
     mint_run_id,
     reset_active_execution_identity,
 )
+from intergrax.runtime.execution.active_execution_budget import (
+    bind_root_execution_budget,
+    reset_active_execution_budget,
+)
+from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.governance.active_execution_authority import (
     bind_active_execution_authority,
@@ -43,17 +48,23 @@ def _bound_orchestration(
     *,
     scopes: tuple[str, ...] = ("read", "write"),
 ) -> Iterator[None]:
+    execution_id = mint_execution_id()
     identity_token = bind_active_execution_identity(
         run_id=mint_run_id(),
         attempt_id=mint_attempt_id(),
-        execution_id=mint_execution_id(),
+        execution_id=execution_id,
     )
     authority_token = bind_active_execution_authority(
         ParentExecutionAuthority.scoped(scopes),
     )
+    budget_token = bind_root_execution_budget(
+        execution_id=execution_id,
+        ledger=create_execution_budget_ledger(None),
+    )
     try:
         yield
     finally:
+        reset_active_execution_budget(budget_token)
         reset_active_execution_authority(authority_token)
         reset_active_execution_identity(identity_token)
 

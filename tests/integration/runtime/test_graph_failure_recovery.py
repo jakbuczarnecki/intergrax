@@ -10,7 +10,17 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     reset_active_execution_identity,
 )
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.validation import ValidationResult
+from intergrax.runtime.execution.active_execution_budget import (
+    bind_root_execution_budget,
+    reset_active_execution_budget,
+)
+from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+from intergrax.runtime.governance.active_execution_authority import (
+    bind_active_execution_authority,
+    reset_active_execution_authority,
+)
 from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_task,
     build_runtime_checkpoint,
@@ -29,6 +39,38 @@ from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
+
+
+def _bind_nexus_upstream_context(
+    *,
+    run_id,
+    attempt_id,
+    execution_id,
+):
+    identity_token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    authority_token = bind_active_execution_authority(
+        ParentExecutionAuthority.unknown(),
+    )
+    budget_token = bind_root_execution_budget(
+        execution_id=execution_id,
+        ledger=create_execution_budget_ledger(None),
+    )
+    return identity_token, authority_token, budget_token
+
+
+def _reset_nexus_upstream_context(
+    *,
+    identity_token,
+    authority_token,
+    budget_token,
+) -> None:
+    reset_active_execution_budget(budget_token)
+    reset_active_execution_authority(authority_token)
+    reset_active_execution_identity(identity_token)
 
 
 class _FlakyValidationEngine(NexusValidationEngine):
@@ -103,29 +145,24 @@ def _build_graph(task_id: str) -> ExecutionGraph:
 
 
 async def _execute_graph(executor, graph, task, *, run_id, attempt_id):
-    from intergrax.runtime.execution.active_execution_budget import (
-        bind_root_execution_budget,
-        peek_active_execution_budget,
-        reset_active_execution_budget,
-    )
-    from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
-
+    execution_id = mint_execution_id()
     identity_token = bind_active_execution_identity(
         run_id=run_id,
         attempt_id=attempt_id,
-        execution_id=mint_execution_id(),
+        execution_id=execution_id,
     )
-    budget_token = None
-    if peek_active_execution_budget() is None:
-        budget_token = bind_root_execution_budget(
-            execution_id=require_active_execution_id(),
-            ledger=create_execution_budget_ledger(None),
-        )
+    authority_token = bind_active_execution_authority(
+        ParentExecutionAuthority.unknown(),
+    )
+    budget_token = bind_root_execution_budget(
+        execution_id=execution_id,
+        ledger=create_execution_budget_ledger(None),
+    )
     try:
         return await executor.execute(graph, task)
     finally:
-        if budget_token is not None:
-            reset_active_execution_budget(budget_token)
+        reset_active_execution_budget(budget_token)
+        reset_active_execution_authority(authority_token)
         reset_active_execution_identity(identity_token)
 
 
@@ -229,39 +266,67 @@ async def test_nexus_loop_graph_failure_resume(tmp_path):
         retry_policy=RetryPolicy(max_retries=0),
     )
     run_id = mint_run_id()
-    failed = await loop.handle_task(
-        Task(
-            tenant_id="t1",
-            user_id="u1",
-            message="multi-step recovery",
-            context=TaskContext(capability="graph.recovery"),
-            options=TaskExecutionOptions(
-                long_running=TaskLongRunningOptions(enabled=True),
-            ),
-        ),
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    identity_token, authority_token, budget_token = _bind_nexus_upstream_context(
         run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
     )
+    try:
+        failed = await loop.handle_task(
+            Task(
+                tenant_id="t1",
+                user_id="u1",
+                message="multi-step recovery",
+                context=TaskContext(capability="graph.recovery"),
+                options=TaskExecutionOptions(
+                    long_running=TaskLongRunningOptions(enabled=True),
+                ),
+            ),
+            run_id=run_id,
+            attempt_id=attempt_id,
+        )
+    finally:
+        _reset_nexus_upstream_context(
+            identity_token=identity_token,
+            authority_token=authority_token,
+            budget_token=budget_token,
+        )
     assert failed.state == TaskState.FAILED
     token = failed.summary.resume_token
     assert token
     assert checkpoint_store.get_latest(failed.task_id, "t1") is not None
 
-    completed = await loop.handle_task(
-        Task(
-            tenant_id="t1",
-            user_id="u1",
-            message="multi-step recovery",
-            context=TaskContext(capability="graph.recovery"),
-            task_id=failed.task_id,
-            options=TaskExecutionOptions(
-                long_running=TaskLongRunningOptions(
-                    enabled=True,
-                    resume_token=token,
+    identity_token, authority_token, budget_token = _bind_nexus_upstream_context(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=mint_execution_id(),
+    )
+    try:
+        completed = await loop.handle_task(
+            Task(
+                tenant_id="t1",
+                user_id="u1",
+                message="multi-step recovery",
+                context=TaskContext(capability="graph.recovery"),
+                task_id=failed.task_id,
+                options=TaskExecutionOptions(
+                    long_running=TaskLongRunningOptions(
+                        enabled=True,
+                        resume_token=token,
+                    ),
                 ),
             ),
-        ),
-        run_id=run_id,
-    )
+            run_id=run_id,
+            attempt_id=attempt_id,
+        )
+    finally:
+        _reset_nexus_upstream_context(
+            identity_token=identity_token,
+            authority_token=authority_token,
+            budget_token=budget_token,
+        )
 
     assert completed.state == TaskState.COMPLETED
     assert UaepPipelineStubAgent.run_count == 3

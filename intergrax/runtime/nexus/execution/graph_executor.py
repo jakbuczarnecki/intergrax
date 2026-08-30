@@ -4,9 +4,8 @@
 from __future__ import annotations
 
 import asyncio
-import inspect
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Awaitable, Callable, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Awaitable, Callable, Dict, List, Optional
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.agent_engine import AgentEngine
@@ -35,10 +34,8 @@ from intergrax.contracts.execution_identity import (
     validate_task_id,
 )
 from intergrax.runtime.governance.active_execution_authority import (
-    bind_active_execution_authority,
     peek_active_effective_delegation,
-    peek_active_execution_authority,
-    reset_active_execution_authority,
+    require_active_execution_authority,
 )
 from intergrax.runtime.governance.active_governed_execution_task import (
     ActiveGovernedExecutionTask,
@@ -50,7 +47,6 @@ from intergrax.contracts.delegation_authority import (
     DelegationAuthorityError,
     EffectiveDelegationAuthority,
     ParentExecutionAuthority,
-    resolve_root_parent_execution_authority,
     validate_effective_delegation_metadata_assertions,
     validate_execution_authority_metadata_assertions,
 )
@@ -112,18 +108,15 @@ if TYPE_CHECKING:
 
 ExecuteFn = Callable[[Agent, Task, ExecutionNode], Awaitable[AgentExecutionResult]]
 ValidateFn = Callable[[AgentExecutionResult, Agent, ExecutionNode], ValidationResult]
-RetryCallback = Callable[[RetryRecord], Union[None, Awaitable[None]]]
+RetryCallback = Callable[[RetryRecord], Awaitable[None]]
 
 
 async def _notify_retry(
     on_retry: Optional[RetryCallback],
     record: RetryRecord,
 ) -> None:
-    if on_retry is None:
-        return
-    result = on_retry(record)
-    if inspect.isawaitable(result):
-        await result
+    if on_retry is not None:
+        await on_retry(record)
 HandoffExtra = tuple[str, AgentExecutionResult]
 
 
@@ -262,6 +255,21 @@ class GraphExecutor:
             middleware=self._middleware,
         )
 
+    def apply_validation_engine(self, validation_engine: NexusValidationEngine) -> None:
+        """Replace the active graph validation engine."""
+        self._validation_engine = validation_engine
+
+    def apply_critic_graph_hooks(
+        self,
+        hooks: Optional["CriticGraphHooks"],
+    ) -> None:
+        """Attach or clear critic graph hooks for graph execution."""
+        self._critic_graph_hooks = hooks
+
+    def peek_critic_graph_hooks(self) -> Optional["CriticGraphHooks"]:
+        """Return wired critic graph hooks when application critic wiring is active."""
+        return self._critic_graph_hooks
+
     async def execute(
         self,
         graph: ExecutionGraph,
@@ -310,9 +318,9 @@ class GraphExecutor:
             )
             return [failed], [], graph, False
 
-        root_execution_authority = resolve_root_parent_execution_authority(
-            task.execution_authority
-        )
+        require_active_execution_identity()
+        require_active_execution_id()
+        root_execution_authority = require_active_execution_authority()
         authority_assertion_error = validate_execution_authority_metadata_assertions(
             task.metadata,
             root_execution_authority,
@@ -327,30 +335,20 @@ class GraphExecutor:
             )
             return [failed], [], graph, False
 
-        require_active_execution_identity()
-        require_active_execution_id()
-
-        authority_token = None
-        if peek_active_execution_authority() is None:
-            authority_token = bind_active_execution_authority(root_execution_authority)
-        try:
-            return await self._execute_graph_batches(
-                graph,
-                task,
-                prior_outputs=prior_outputs,
-                all_executions=all_executions,
-                all_retries=all_retries,
-                runtime_ckpt=runtime_ckpt,
-                plan_criteria=plan_criteria,
-                on_retry=on_retry,
-                on_node_start=on_node_start,
-                on_node_complete=on_node_complete,
-                critic_trace_emitter=critic_trace_emitter,
-                root_execution_authority=root_execution_authority,
-            )
-        finally:
-            if authority_token is not None:
-                reset_active_execution_authority(authority_token)
+        return await self._execute_graph_batches(
+            graph,
+            task,
+            prior_outputs=prior_outputs,
+            all_executions=all_executions,
+            all_retries=all_retries,
+            runtime_ckpt=runtime_ckpt,
+            plan_criteria=plan_criteria,
+            on_retry=on_retry,
+            on_node_start=on_node_start,
+            on_node_complete=on_node_complete,
+            critic_trace_emitter=critic_trace_emitter,
+            root_execution_authority=root_execution_authority,
+        )
 
     async def _execute_graph_batches(
         self,

@@ -26,6 +26,7 @@ from intergrax.contracts.execution_identity import (
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.execution import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.agentic import AgentExecutor
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
@@ -239,6 +240,7 @@ async def _run_graph(ctx: _GraphRunContext, graph: ExecutionGraph) -> tuple[obje
     boundary = ExecutionBoundary(
         _GraphOrchestrationDelegate(ctx.executor, graph, ctx.task),
         identity=ctx.root,
+        authority=ParentExecutionAuthority.unknown(),
     )
     return await boundary.execute(None)
 

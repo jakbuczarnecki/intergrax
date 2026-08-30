@@ -7,6 +7,7 @@ from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, Ex
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext
+from testing_support.graph_execution_context import bound_graph_execution_context
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.integration, pytest.mark.gate]
@@ -38,7 +39,8 @@ async def test_graph_executor_runs_two_agents_sequentially():
     )
 
     executor = GraphExecutor(registry)
-    executions, retries, graph, _ = await executor.execute(graph, task)
+    with bound_graph_execution_context():
+        executions, retries, graph, _ = await executor.execute(graph, task)
 
     assert retries == []
     assert len(executions) == 2

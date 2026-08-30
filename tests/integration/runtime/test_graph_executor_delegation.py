@@ -11,6 +11,7 @@ from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task_memory.delegation_memory import TaskMemoryMetadataKey
+from testing_support.graph_execution_context import bound_graph_execution_context
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.integration, pytest.mark.gate]
@@ -62,7 +63,8 @@ async def test_graph_executor_delegation_sets_memory_and_parent_metadata() -> No
 
     bus = RuntimeEventBus(record_history=True)
     executor = GraphExecutor(registry, event_bus=bus)
-    executions, retries, completed_graph, _ = await executor.execute(graph, task)
+    with bound_graph_execution_context():
+        executions, retries, completed_graph, _ = await executor.execute(graph, task)
 
     assert retries == []
     assert len(executions) == 2
