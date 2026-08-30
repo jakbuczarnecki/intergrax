@@ -125,11 +125,11 @@ def _gap(
 
 
 UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
-    # ROOT_STRATEGY — stack proven with probe backends; production backends deferred to UE-11G.
+    # ROOT_STRATEGY — stack proven with probe backends; canonical root E2E deferred to UE-11B.
     _partial(
         "root.inference.end_to_end",
         ValidationDomain.ROOT_STRATEGY,
-        GapTarget.UE_11G,
+        GapTarget.UE_11B,
         _unit(
             "tests/unit/runtime/execution/test_execution_runtime.py",
             "test_inference_root_runtime_binds_identity_authority_budget",
@@ -142,7 +142,7 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
     _partial(
         "root.agentic.end_to_end",
         ValidationDomain.ROOT_STRATEGY,
-        GapTarget.UE_11G,
+        GapTarget.UE_11B,
         _unit(
             "tests/unit/runtime/execution/test_execution_runtime.py",
             "test_agentic_root_runtime_binds_identity_authority_budget",
@@ -155,7 +155,7 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
     _partial(
         "root.orchestration.end_to_end",
         ValidationDomain.ROOT_STRATEGY,
-        GapTarget.UE_11G,
+        GapTarget.UE_11B,
         _unit(
             "tests/unit/runtime/execution/test_execution_runtime.py",
             "test_orchestration_root_runtime_nexus_receives_active_context",
@@ -290,7 +290,7 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
     _gap(
         "fail_closed.budget_execution_id_mismatch",
         ValidationDomain.FAIL_CLOSED,
-        GapTarget.UE_11B,
+        GapTarget.UE_11C,
     ),
     _covered(
         "fail_closed.authority_metadata_mismatch",
@@ -366,9 +366,10 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
         ),
     ),
     # CONCURRENCY
-    _covered(
+    _partial(
         "concurrency.parallel_root_identity_isolation",
         ValidationDomain.CONCURRENCY,
+        GapTarget.UE_11D,
         _unit(
             "tests/unit/runtime/execution/test_execution_boundary.py",
             "test_parallel_boundaries_isolate_execution_ids",
@@ -379,9 +380,10 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
         ValidationDomain.CONCURRENCY,
         GapTarget.UE_11D,
     ),
-    _covered(
+    _partial(
         "concurrency.parallel_root_budget_isolation",
         ValidationDomain.CONCURRENCY,
+        GapTarget.UE_11D,
         _unit(
             "tests/unit/runtime/execution/budget/test_ue_8b2_runtime_consumption.py",
             "test_different_runs_isolated",
@@ -403,9 +405,10 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
             "test_parallel_shared_under_reserved_cannot_oversubscribe",
         ),
     ),
-    _covered(
+    _partial(
         "concurrency.no_context_cross_talk",
         ValidationDomain.CONCURRENCY,
+        GapTarget.UE_11D,
         _unit(
             "tests/unit/runtime/background_execution/test_ue_9a_background_identity_redelivery.py",
             "test_contextvar_identity_does_not_leak_between_attempts",
@@ -444,9 +447,10 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
             "test_resume_checkpoint_preserves_attempt_mints_fresh_execution_id",
         ),
     ),
-    _covered(
+    _partial(
         "recovery.resume_execution_tree_continuity",
         ValidationDomain.RECOVERY,
+        GapTarget.UE_11E,
         _unit(
             "tests/unit/runtime/long_running/test_ue_9c_execution_tree_checkpoint.py",
             "test_completed_child_skipped_on_resume",
@@ -555,17 +559,19 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
             "test_failure_event_preserves_execution_identity",
         ),
     ),
-    _covered(
+    _partial(
         "diag.consumes_observability_evidence",
         ValidationDomain.DIAGNOSTICS,
+        GapTarget.UE_11F,
         _unit(
             "tests/unit/runtime/diagnostics/test_diagnostic_assessment.py",
             "test_causal_without_runtime_emits_proven_finding",
         ),
     ),
-    _covered(
+    _partial(
         "diag.no_execution_lifecycle_ownership",
         ValidationDomain.DIAGNOSTICS,
+        GapTarget.UE_11F,
         _unit(
             "tests/unit/runtime/architecture/test_diag_foundation_4_entrypoint_consistency.py",
             "test_df4_nexus_loop_is_single_terminal_diagnostic_emitter",

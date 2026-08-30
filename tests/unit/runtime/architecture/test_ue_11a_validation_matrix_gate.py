@@ -28,6 +28,17 @@ from testing_support.unified_execution_validation import (
 pytestmark = pytest.mark.unit
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
+EXPECTED_GAP_TARGET_BY_DOMAIN: dict[ValidationDomain, GapTarget] = {
+    ValidationDomain.ROOT_STRATEGY: GapTarget.UE_11B,
+    ValidationDomain.FAIL_CLOSED: GapTarget.UE_11C,
+    ValidationDomain.CHILD_EXECUTION: GapTarget.UE_11D,
+    ValidationDomain.CONCURRENCY: GapTarget.UE_11D,
+    ValidationDomain.RECOVERY: GapTarget.UE_11E,
+    ValidationDomain.OBSERVABILITY: GapTarget.UE_11F,
+    ValidationDomain.DIAGNOSTICS: GapTarget.UE_11F,
+    ValidationDomain.PRODUCTION_SCENARIO: GapTarget.UE_11G,
+}
+
 _FORBIDDEN_QUALITY_PATTERNS = (
     re.compile(r"\btyping\.Any\b"),
     re.compile(r"\bfrom typing import\b.*\bAny\b"),
@@ -151,8 +162,28 @@ def test_ue_11a_matrix_documents_real_gaps() -> None:
   backlog = gap_backlog()
   assert backlog[GapTarget.UE_11G]
   assert backlog[GapTarget.UE_11B]
+  assert backlog[GapTarget.UE_11C]
   assert backlog[GapTarget.UE_11D]
+  assert backlog[GapTarget.UE_11E]
   assert backlog[GapTarget.UE_11F]
+
+
+def test_ue_11a_partial_and_gap_targets_match_canonical_roadmap() -> None:
+  mismatches: list[str] = []
+  for entry in UNIFIED_EXECUTION_VALIDATION_MATRIX:
+    if entry.status not in {ValidationStatus.PARTIAL, ValidationStatus.GAP}:
+      continue
+    expected = EXPECTED_GAP_TARGET_BY_DOMAIN.get(entry.domain)
+    if expected is None:
+      mismatches.append(
+        f"{entry.capability_id}: no canonical gap target for domain {entry.domain.value}"
+      )
+      continue
+    if entry.gap_target != expected:
+      mismatches.append(
+        f"{entry.capability_id}: expected {expected.value}, got {entry.gap_target}"
+      )
+  assert mismatches == []
 
 
 def test_ue_11a_validation_module_has_no_forbidden_constructions() -> None:
