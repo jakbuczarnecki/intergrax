@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""UE-11B — real root agentic end-to-end proof."""
+"""UE-11B — canonical agentic spine integration with real LLM (synthetic workload)."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ _REPEAT_RUNS = 3
 
 
 @pytest.mark.parametrize("run_index", range(_REPEAT_RUNS))
-async def test_ue_11b_real_root_agentic_end_to_end(run_index: int) -> None:
+async def test_ue_11b_canonical_agentic_spine_with_real_llm(run_index: int) -> None:
     del run_index
     stack = build_agentic_stack()
     run_id, options, runtime_request = correlated_agentic_inputs()

@@ -146,9 +146,10 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
             "test_ue_11b_real_root_inference_end_to_end",
         ),
     ),
-    _covered(
+    _partial(
         "root.agentic.end_to_end",
         ValidationDomain.ROOT_STRATEGY,
+        GapTarget.UE_11B,
         _unit(
             "tests/unit/runtime/execution/test_execution_runtime.py",
             "test_agentic_root_runtime_binds_identity_authority_budget",
@@ -159,12 +160,13 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
         ),
         _integration(
             "tests/integration/runtime/execution/test_ue_11b_real_root_agentic.py",
-            "test_ue_11b_real_root_agentic_end_to_end",
+            "test_ue_11b_canonical_agentic_spine_with_real_llm",
         ),
     ),
-    _covered(
+    _partial(
         "root.orchestration.end_to_end",
         ValidationDomain.ROOT_STRATEGY,
+        GapTarget.UE_11B,
         _unit(
             "tests/unit/runtime/execution/test_execution_runtime.py",
             "test_orchestration_root_runtime_nexus_receives_active_context",
@@ -175,7 +177,7 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
         ),
         _integration(
             "tests/integration/runtime/execution/test_ue_11b_real_root_orchestration.py",
-            "test_ue_11b_real_root_orchestration_end_to_end",
+            "test_ue_11b_canonical_orchestration_spine_with_real_llm",
         ),
     ),
     # LIFECYCLE
@@ -906,6 +908,41 @@ _UE_11B_PROOF_FILES: tuple[str, ...] = (
     "tests/integration/runtime/execution/test_ue_11b_real_root_orchestration.py",
 )
 
+_UE_11B_SYNTHETIC_SPINE_INTEGRATION_PATHS: frozenset[str] = frozenset(
+    {
+        "tests/integration/runtime/execution/test_ue_11b_real_root_agentic.py",
+        "tests/integration/runtime/execution/test_ue_11b_real_root_orchestration.py",
+    }
+)
+
+_UE_11B_SUPPORT_RELATIVE_PATH = "testing_support/ue_11b_real_root_execution.py"
+
+_UE_11B_SYNTHETIC_WORKLOAD_CLASS_NAMES: frozenset[str] = frozenset(
+    {
+        "Ue11bToolReActAgent",
+        "_Ue11bOrchestrationReflexAgent",
+        "_EmptyTraceReader",
+    }
+)
+
+_INTERGRAX_MODULE_PREFIX = "intergrax."
+
+
+@dataclass(frozen=True, slots=True)
+class RealWorkloadProof:
+    """Typed metadata for COVERED root E2E proofs with real production workloads."""
+
+    agent_module: str | None = None
+    application_module: str | None = None
+    integration_module: str | None = None
+
+
+_COVERED_REAL_WORKLOAD_EVIDENCE: dict[str, RealWorkloadProof] = {
+    "root.inference.end_to_end": RealWorkloadProof(
+        integration_module="intergrax.llm_adapters.providers.native_ollama_adapter",
+    ),
+}
+
 _UE_11B_FORBIDDEN_SUBSTRINGS: tuple[str, ...] = (
     "unittest.mock",
     "MagicMock",
@@ -946,6 +983,43 @@ def validate_ue_11b_proof_surface(*, repo_root_path: Path | None = None) -> list
     return violations
 
 
+def _collect_class_names(path: Path) -> frozenset[str]:
+    source = path.read_text(encoding="utf-8-sig")
+    tree = ast.parse(source, filename=str(path))
+    return frozenset(
+        node.name
+        for node in tree.body
+        if isinstance(node, ast.ClassDef)
+    )
+
+
+def _collect_imported_names(path: Path) -> frozenset[str]:
+    source = path.read_text(encoding="utf-8-sig")
+    tree = ast.parse(source, filename=str(path))
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                names.add(alias.asname or alias.name)
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                names.add(alias.asname or alias.name)
+    return frozenset(names)
+
+
+def _module_path_under_intergrax(module_path: str) -> bool:
+    normalized = module_path.replace("\\", "/")
+    return normalized.startswith("intergrax/")
+
+
+def _synthetic_workload_classes(repo_root: Path) -> frozenset[str]:
+    support_path = repo_root / _UE_11B_SUPPORT_RELATIVE_PATH
+    if not support_path.is_file():
+        return frozenset()
+    defined = _collect_class_names(support_path)
+    return defined & _UE_11B_SYNTHETIC_WORKLOAD_CLASS_NAMES
+
+
 def validate_covered_root_e2e_proof_kind() -> list[str]:
     """COVERED root.*.end_to_end capabilities require INTEGRATION UE-11B proofs."""
     violations: list[str] = []
@@ -964,10 +1038,118 @@ def validate_covered_root_e2e_proof_kind() -> list[str]:
             violations.append(
                 f"{entry.capability_id}: COVERED requires UE-11B INTEGRATION proof"
             )
+        synthetic_spine_proofs = [
+            proof
+            for proof in entry.proofs
+            if proof.kind is ValidationProofKind.INTEGRATION
+            and proof.path in _UE_11B_SYNTHETIC_SPINE_INTEGRATION_PATHS
+        ]
+        if synthetic_spine_proofs:
+            violations.append(
+                f"{entry.capability_id}: COVERED cannot use synthetic UE-11B spine proof "
+                f"{synthetic_spine_proofs[0].path}"
+            )
         if not any(
             proof.kind is ValidationProofKind.INTEGRATION for proof in entry.proofs
         ):
             violations.append(
                 f"{entry.capability_id}: COVERED root E2E cannot be UNIT/ARCHITECTURE_GATE only"
             )
+    return violations
+
+
+def validate_real_workload_root_e2e_gate(
+    *,
+    repo_root_path: Path | None = None,
+) -> list[str]:
+    """COVERED root agentic/orchestration E2E must use intergrax production workloads."""
+    root = repo_root_path or _REPO_ROOT
+    violations: list[str] = []
+    synthetic_classes = _synthetic_workload_classes(root)
+
+    for entry in UNIFIED_EXECUTION_VALIDATION_MATRIX:
+        if entry.capability_id not in _ROOT_E2E_CAPABILITY_IDS:
+            continue
+        if entry.status is not ValidationStatus.COVERED:
+            continue
+
+        evidence = _COVERED_REAL_WORKLOAD_EVIDENCE.get(entry.capability_id)
+        if evidence is None:
+            violations.append(
+                f"{entry.capability_id}: COVERED without real workload evidence contract"
+            )
+            continue
+
+        integration_proofs = [
+            proof
+            for proof in entry.proofs
+            if proof.kind is ValidationProofKind.INTEGRATION
+        ]
+        if not integration_proofs:
+            violations.append(
+                f"{entry.capability_id}: COVERED root E2E requires INTEGRATION proof"
+            )
+            continue
+
+        for proof in integration_proofs:
+            normalized_path = proof.path.replace("\\", "/")
+            if not normalized_path.startswith("tests/integration/"):
+                violations.append(
+                    f"{entry.capability_id}: real workload proof must live under tests/integration/: "
+                    f"{proof.path}"
+                )
+            proof_path = root / proof.path
+            if not proof_path.is_file():
+                continue
+            imported_names = _collect_imported_names(proof_path)
+            for class_name in synthetic_classes:
+                if class_name in imported_names:
+                    violations.append(
+                        f"{proof.path}: imports synthetic workload class {class_name}"
+                    )
+
+        if entry.capability_id == "root.agentic.end_to_end":
+            if evidence.agent_module is None:
+                violations.append(
+                    f"{entry.capability_id}: COVERED agentic requires agent_module"
+                )
+            elif not evidence.agent_module.startswith(_INTERGRAX_MODULE_PREFIX):
+                violations.append(
+                    f"{entry.capability_id}: agent_module must be under intergrax/"
+                )
+
+        if entry.capability_id == "root.orchestration.end_to_end":
+            if evidence.application_module is None:
+                violations.append(
+                    f"{entry.capability_id}: COVERED orchestration requires application_module"
+                )
+            elif not _module_path_under_intergrax(
+                evidence.application_module.replace(".", "/") + ".py"
+            ):
+                violations.append(
+                    f"{entry.capability_id}: application_module must be under intergrax/"
+                )
+
+        if evidence.integration_module is not None:
+            if not evidence.integration_module.startswith(_INTERGRAX_MODULE_PREFIX):
+                violations.append(
+                    f"{entry.capability_id}: integration_module must be under intergrax."
+                )
+            integration_path = evidence.integration_module.replace(".", "/") + ".py"
+            if not (root / integration_path).is_file():
+                violations.append(
+                    f"{entry.capability_id}: missing integration module {evidence.integration_module}"
+                )
+
+        if evidence.agent_module is not None:
+            agent_path = evidence.agent_module.replace(".", "/") + ".py"
+            if not (root / agent_path).is_file():
+                violations.append(
+                    f"{entry.capability_id}: missing agent module {evidence.agent_module}"
+                )
+            if not evidence.agent_module.startswith(_INTERGRAX_MODULE_PREFIX):
+                violations.append(
+                    f"{entry.capability_id}: agent_module must be under intergrax."
+                )
+
     return violations

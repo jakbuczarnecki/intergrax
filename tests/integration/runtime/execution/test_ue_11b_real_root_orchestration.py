@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""UE-11B — real root orchestration end-to-end proof."""
+"""UE-11B — canonical orchestration spine integration with real LLM (synthetic workload)."""
 
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ _REPEAT_RUNS = 2
 
 
 @pytest.mark.parametrize("run_index", range(_REPEAT_RUNS))
-async def test_ue_11b_real_root_orchestration_end_to_end(run_index: int) -> None:
+async def test_ue_11b_canonical_orchestration_spine_with_real_llm(run_index: int) -> None:
     del run_index
     stack = build_orchestration_stack()
     request = orchestration_request(stack.task)
