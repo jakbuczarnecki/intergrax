@@ -18,6 +18,7 @@ from intergrax.contracts.instrumentation_span_attributes import (
     active_execution_span_attributes,
     is_safe_instrumentation_span_attribute_key,
     merge_safe_span_attributes,
+    normalize_span_attribute_value,
 )
 
 pytestmark = pytest.mark.unit
@@ -46,6 +47,32 @@ def test_active_execution_span_attributes_reads_bound_identity() -> None:
 
 def test_active_execution_span_attributes_never_mints_synthetic_ids() -> None:
     assert active_execution_span_attributes() == {}
+
+
+def test_merge_safe_span_attributes_accepts_scalar_attributes() -> None:
+    merged = merge_safe_span_attributes(
+        caller_attributes={
+            "rag.query.length": 12,
+            "rag.ingest.dual_index": True,
+            "rag.ingest.num_chunks": 3,
+            "rag.tenant_id": "tenant-a",
+        },
+        include_active_identity=False,
+    )
+
+    assert merged == {
+        "rag.query.length": 12,
+        "rag.ingest.dual_index": True,
+        "rag.ingest.num_chunks": 3,
+        "rag.tenant_id": "tenant-a",
+    }
+
+
+def test_normalize_span_attribute_value_preserves_scalars() -> None:
+    assert normalize_span_attribute_value("tenant-a") == "tenant-a"
+    assert normalize_span_attribute_value(12) == 12
+    assert normalize_span_attribute_value(True) is True
+    assert normalize_span_attribute_value(None) is None
 
 
 def test_merge_safe_span_attributes_drops_raw_content_keys() -> None:

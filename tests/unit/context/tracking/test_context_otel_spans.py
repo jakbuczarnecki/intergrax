@@ -70,6 +70,15 @@ def test_context_span_instrumentation_failure_does_not_break_business(
     assert outcome == "still-ok"
 
 
+def test_context_span_business_exception_propagates(span_exporter: object) -> None:
+    with pytest.raises(ValueError, match="business failure"):
+        with context_span("context.engine.assemble"):
+            raise ValueError("business failure")
+
+    span = span_exporter.get_finished_spans()[0]
+    assert span.status.status_code.name == "ERROR"
+
+
 def test_context_span_noop_when_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("INTERGRAX_CE_OTEL_SPANS_ENABLED", "false")
     from intergrax.context.tracking import context_spans

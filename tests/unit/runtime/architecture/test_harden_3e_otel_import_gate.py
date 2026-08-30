@@ -11,10 +11,11 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-_ALLOWED_RELATIVE_PREFIXES = (
-    "intergrax/rag/tracking/",
-    "intergrax/context/tracking/",
-    "intergrax/integrations/providers/observability_backend/",
+_DIRECT_OTEL_ALLOWED_FILES = frozenset(
+    {
+        "intergrax/rag/tracking/rag_spans.py",
+        "intergrax/context/tracking/context_spans.py",
+    }
 )
 
 _SCAN_ROOTS = (
@@ -26,29 +27,14 @@ _SCAN_ROOTS = (
 _EXCLUDED_PARTS = frozenset(
     {
         "__pycache__",
+        "runtime-context",
         "tests",
-    }
-)
-
-_OTEL_IMPORT_MODULES = frozenset(
-    {
-        "opentelemetry",
-        "opentelemetry.trace",
-        "opentelemetry.sdk",
-        "opentelemetry.sdk.trace",
-        "opentelemetry.sdk.trace.export",
-        "opentelemetry.sdk.trace.export.in_memory_span_exporter",
     }
 )
 
 
 def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[3]
-
-
-def _is_allowed_path(path: Path) -> bool:
-    rel = path.relative_to(_repo_root()).as_posix()
-    return any(rel.startswith(prefix) for prefix in _ALLOWED_RELATIVE_PREFIXES)
+    return Path(__file__).resolve().parents[4]
 
 
 def _production_python_files() -> list[Path]:
@@ -61,14 +47,12 @@ def _production_python_files() -> list[Path]:
         for path in base.rglob("*.py"):
             if any(part in _EXCLUDED_PARTS for part in path.parts):
                 continue
-            if _is_allowed_path(path):
-                continue
             files.append(path)
     return files
 
 
 def _collect_direct_otel_imports(path: Path) -> list[str]:
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
     violations: list[str] = []
     rel = path.relative_to(_repo_root()).as_posix()
     for node in ast.walk(tree):
@@ -86,6 +70,25 @@ def _collect_direct_otel_imports(path: Path) -> list[str]:
 
 def test_direct_opentelemetry_imports_are_allowlisted() -> None:
     violations: list[str] = []
+    root = _repo_root()
     for path in _production_python_files():
-        violations.extend(_collect_direct_otel_imports(path))
+        rel = path.relative_to(root).as_posix()
+        direct_imports = _collect_direct_otel_imports(path)
+        if not direct_imports:
+            continue
+        if rel not in _DIRECT_OTEL_ALLOWED_FILES:
+            violations.extend(direct_imports)
     assert violations == []
+
+
+def test_allowlisted_otel_files_exist() -> None:
+    root = _repo_root()
+    missing = sorted(
+        rel for rel in _DIRECT_OTEL_ALLOWED_FILES if not (root / rel).is_file()
+    )
+    assert missing == []
+
+
+def test_new_tracking_module_not_auto_allowlisted() -> None:
+    assert "intergrax/rag/tracking/new_otel_module.py" not in _DIRECT_OTEL_ALLOWED_FILES
+    assert "intergrax/context/tracking/new_otel_module.py" not in _DIRECT_OTEL_ALLOWED_FILES

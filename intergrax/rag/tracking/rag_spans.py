@@ -6,11 +6,15 @@
 from __future__ import annotations
 
 import os
-from contextlib import contextmanager
-from contextlib import nullcontext
-from typing import Any, Iterator, Mapping, Optional
+from contextlib import AbstractContextManager, contextmanager, nullcontext
+from typing import Iterator, Mapping, Optional
 
-from intergrax.contracts.instrumentation_span_attributes import merge_safe_span_attributes
+from intergrax.contracts.instrumentation_span_attributes import (
+    InstrumentationSpan,
+    SpanAttributeValue,
+    merge_safe_span_attributes,
+    normalize_span_attribute_value,
+)
 
 RAG_OTEL_TRACER_NAME = "intergrax.rag"
 
@@ -47,19 +51,11 @@ def is_rag_otel_spans_enabled() -> bool:
     return _env_rag_otel_spans_enabled()
 
 
-def _normalize_attribute_value(value: Any) -> Any:
-    if value is None:
-        return None
-    if isinstance(value, (bool, int, float, str)):
-        return value
-    return str(value)
-
-
 @contextmanager
 def rag_span(
     name: str,
     *,
-    attributes: Optional[Mapping[str, Any]] = None,
+    attributes: Optional[Mapping[str, SpanAttributeValue | None]] = None,
 ) -> Iterator[None]:
     """
     Emit an OpenTelemetry span when RAG OTel spans are enabled.
@@ -71,8 +67,8 @@ def rag_span(
         yield
         return
 
-    span_cm: Any = nullcontext()
-    span_attributes: dict[str, Any] = {}
+    span_cm: AbstractContextManager[InstrumentationSpan | None] = nullcontext()
+    span_attributes: dict[str, SpanAttributeValue] = {}
     try:
         from opentelemetry import trace
         from opentelemetry.trace import Status, StatusCode
@@ -90,7 +86,7 @@ def rag_span(
         if span is not None and span_attributes:
             try:
                 for key, value in span_attributes.items():
-                    normalized = _normalize_attribute_value(value)
+                    normalized = normalize_span_attribute_value(value)
                     if normalized is not None:
                         span.set_attribute(key, normalized)
             except Exception:
