@@ -69,8 +69,10 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario im
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_composition import (
     IncidentInvestigationProblemNotFoundError,
-    build_runtime_bundle_from_diagnostic_problem,
     resolve_incident_investigation_input,
+)
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import (
+    build_runtime_bundle_from_diagnostic_problem,
 )
 
 pytestmark = pytest.mark.unit
@@ -225,11 +227,12 @@ async def test_platform_attached_execution_problem_e2e() -> None:
     read_service = _read_service(persistence, runtime_store)
     before_record = persistence.get(tenant_id=_TENANT_A, problem_id=problem.problem_id)
 
-    bundle = build_runtime_bundle_from_diagnostic_problem(
+    fixture_bundle = build_runtime_bundle_from_diagnostic_problem(
         read_service,
         tenant_id=_TENANT_A,
         problem_ids=problem.problem_id,
     )
+    bundle = fixture_bundle.bundle
     assert bundle.investigation_input is not None
     assert bundle.investigation_input.tenant_id == _TENANT_A
 
@@ -304,11 +307,12 @@ async def test_application_instance_non_execution_subject_starts_investigation()
     problem, persistence = _persist_application_problem()
     read_service = _read_service(persistence)
 
-    bundle = build_runtime_bundle_from_diagnostic_problem(
+    fixture_bundle = build_runtime_bundle_from_diagnostic_problem(
         read_service,
         tenant_id=_TENANT_A,
         problem_ids=problem.problem_id,
     )
+    bundle = fixture_bundle.bundle
     occurrence = bundle.investigation_input.problem_contexts[0].occurrences[0]
     assert occurrence.unavailable_reason is not None
     assert occurrence.read_status is DiagnosticOccurrenceReadStatus.UNAVAILABLE
@@ -422,11 +426,12 @@ def test_investigation_execution_identity_distinct_from_investigated_occurrence(
     assert investigated_subject.task_id is not None
     assert investigated_subject.run_id is not None
 
-    bundle = build_runtime_bundle_from_diagnostic_problem(
+    fixture_bundle = build_runtime_bundle_from_diagnostic_problem(
         read_service,
         tenant_id=_TENANT_A,
         problem_ids=problem.problem_id,
     )
+    bundle = fixture_bundle.bundle
     assert bundle.investigation_input is not None
 
 

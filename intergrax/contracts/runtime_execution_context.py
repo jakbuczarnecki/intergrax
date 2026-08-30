@@ -16,9 +16,13 @@ from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_run_trace import GatewayCallStatus, RagCallRecord, ToolCallRecord
 from intergrax.contracts.execution_identity import (
     AttemptId,
+    ExecutionId,
     RunId,
     TaskId,
+    require_active_execution_id,
+    require_active_execution_identity,
     validate_attempt_id,
+    validate_execution_id,
     validate_run_id,
     validate_task_id,
 )
@@ -82,6 +86,7 @@ class RuntimeExecutionContext(BaseModel):
     task_id: TaskId
     run_id: RunId
     attempt_id: AttemptId
+    execution_id: ExecutionId
     node_id: Optional[str] = None
     agent_id: str
     correlation_id: str = ""
@@ -105,6 +110,11 @@ class RuntimeExecutionContext(BaseModel):
     @classmethod
     def _validate_attempt_id_field(cls, value: object) -> AttemptId:
         return validate_attempt_id(value)
+
+    @field_validator("execution_id", mode="before")
+    @classmethod
+    def _validate_execution_id_field(cls, value: object) -> ExecutionId:
+        return validate_execution_id(value)
 
     tool_gateway: Optional[Any] = Field(default=None, exclude=True)
     event_emitter: Optional[Any] = Field(default=None, exclude=True)
@@ -184,6 +194,7 @@ class RuntimeExecutionContext(BaseModel):
             task_id=self.task_id,
             run_id=self.run_id,
             attempt_id=self.attempt_id,
+            execution_id=self.execution_id,
             node_id=self.node_id,
             correlation_id=self.correlation_id,
             step_id=request.step_id or None,

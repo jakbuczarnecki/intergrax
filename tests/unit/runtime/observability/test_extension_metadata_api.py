@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from testing_support.runtime_events import runtime_event_test_identity
 from intergrax.runtime.observability.export_attributes import (
     OBSERVABILITY_ARTIFACT_REFERENCE_SCHEMA,
     ApplicationObservabilityAttributes,
@@ -179,8 +180,6 @@ def test_policy_drops_forbidden_application_fields() -> None:
 
 def test_runtime_event_payload_arbitrary_fields_are_not_auto_exported() -> None:
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
         event_type=RuntimeEventType.TOOL_COMPLETED,
         phase=ExecutionPhase.STEP_EXECUTION,
         payload={
@@ -191,6 +190,7 @@ def test_runtime_event_payload_arbitrary_fields_are_not_auto_exported() -> None:
             "content": "secret content",
             "chunks": ["chunk-1"],
         },
+        **runtime_event_test_identity(),
     )
 
     envelope = envelope_from_runtime_event(event)

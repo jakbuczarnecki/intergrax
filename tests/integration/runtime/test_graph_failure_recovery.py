@@ -2,10 +2,19 @@
 
 import pytest
 
-from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    require_active_execution_id,
+    reset_active_execution_identity,
+)
 from intergrax.contracts.validation import ValidationResult
-from intergrax.runtime.long_running.checkpoint_builder import build_runtime_checkpoint
-from intergrax.runtime.long_running.runtime_checkpoint import attach_runtime_checkpoint_to_metadata
+from intergrax.runtime.long_running.checkpoint_builder import (
+    apply_runtime_checkpoint_to_task,
+    build_runtime_checkpoint,
+)
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -93,6 +102,33 @@ def _build_graph(task_id: str) -> ExecutionGraph:
     )
 
 
+async def _execute_graph(executor, graph, task, *, run_id, attempt_id):
+    from intergrax.runtime.execution.active_execution_budget import (
+        bind_root_execution_budget,
+        peek_active_execution_budget,
+        reset_active_execution_budget,
+    )
+    from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+
+    identity_token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=mint_execution_id(),
+    )
+    budget_token = None
+    if peek_active_execution_budget() is None:
+        budget_token = bind_root_execution_budget(
+            execution_id=require_active_execution_id(),
+            ledger=create_execution_budget_ledger(None),
+        )
+    try:
+        return await executor.execute(graph, task)
+    finally:
+        if budget_token is not None:
+            reset_active_execution_budget(budget_token)
+        reset_active_execution_identity(identity_token)
+
+
 @pytest.mark.asyncio
 @pytest.mark.integration
 @pytest.mark.gate
@@ -120,24 +156,46 @@ async def test_graph_executor_skips_completed_nodes_on_resume():
         retry_engine=RetryEngine(registry, policy=RetryPolicy(max_retries=0)),
     )
 
-    executions, _, graph, _ = await executor.execute(graph, task)
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+
+    executions, _, graph, _ = await _execute_graph(
+        executor,
+        graph,
+        task,
+        run_id=run_id,
+        attempt_id=attempt_id,
+    )
     assert len(executions) == 1
     assert graph.node_by_id("n1").status == ExecutionNodeStatus.COMPLETED
     assert graph.node_by_id("n2").status == ExecutionNodeStatus.FAILED
     assert UaepPipelineStubAgent.run_count == 2
 
-    runtime = build_runtime_checkpoint(
-        task,
-        run_id=mint_run_id(),
-        attempt_id=mint_attempt_id(),
-        graph=graph,
-        last_execution=executions[-1],
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=mint_execution_id(),
     )
-    attach_runtime_checkpoint_to_metadata(task.metadata, runtime)
-    task.sync_metadata()
+    try:
+        runtime = build_runtime_checkpoint(
+            task,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            graph=graph,
+            last_execution=executions[-1],
+        )
+    finally:
+        reset_active_execution_identity(token)
+    apply_runtime_checkpoint_to_task(task, runtime)
 
     resumed_graph = _build_graph(task.task_id)
-    executions, _, graph, _ = await executor.execute(resumed_graph, task)
+    executions, _, graph, _ = await _execute_graph(
+        executor,
+        resumed_graph,
+        task,
+        run_id=run_id,
+        attempt_id=attempt_id,
+    )
 
     assert len(executions) == 2
     assert executions[0].summary == "A: recover graph"
@@ -170,6 +228,7 @@ async def test_nexus_loop_graph_failure_resume(tmp_path):
         validation_engine=validation,
         retry_policy=RetryPolicy(max_retries=0),
     )
+    run_id = mint_run_id()
     failed = await loop.handle_task(
         Task(
             tenant_id="t1",
@@ -179,7 +238,8 @@ async def test_nexus_loop_graph_failure_resume(tmp_path):
             options=TaskExecutionOptions(
                 long_running=TaskLongRunningOptions(enabled=True),
             ),
-        )
+        ),
+        run_id=run_id,
     )
     assert failed.state == TaskState.FAILED
     token = failed.summary.resume_token
@@ -199,7 +259,8 @@ async def test_nexus_loop_graph_failure_resume(tmp_path):
                     resume_token=token,
                 ),
             ),
-        )
+        ),
+        run_id=run_id,
     )
 
     assert completed.state == TaskState.COMPLETED

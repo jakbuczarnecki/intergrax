@@ -20,6 +20,7 @@ from intergrax.contracts.agent_run_enums import (
     TerminalReason,
 )
 from intergrax.contracts.execution_identity import (
+    require_active_execution_id,
     require_active_execution_identity,
     validate_run_id,
     validate_task_id,
@@ -756,6 +757,7 @@ class HarnessKernel:
         payload: dict[str, Any],
     ) -> int:
         active_run_id, attempt_id = require_active_execution_identity()
+        execution_id = require_active_execution_id()
         try:
             resolved_task_id = validate_task_id(kernel_ctx.task_id)
         except (TypeError, ValueError) as exc:
@@ -772,6 +774,7 @@ class HarnessKernel:
             task_id=resolved_task_id,
             run_id=resolved_run_id,
             attempt_id=attempt_id,
+            execution_id=execution_id,
         )
         kernel_ctx.events.append(event)
         if kernel_ctx.emit_event is not None:

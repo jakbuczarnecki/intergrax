@@ -16,6 +16,8 @@ from intergrax.runtime.nexus.config_types import (
 
 if TYPE_CHECKING:
     from intergrax.context.protocols import ContextEngine
+    from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
+    from intergrax.runtime.execution.budget.policy import ExecutionBudgetAllocationPolicy
     from intergrax.integrations.registry.profile import IntegrationProfile
     from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
     from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -194,6 +196,16 @@ class RuntimeConfig:
     tool_selection_strategy: Optional[ToolSelectionStrategy] = None
     # Entry-point plugin id from intergrax.tool_selection_strategies (TOOL-ENG-26).
     tool_selection_strategy_id: Optional[str] = None
+
+    # Instance override — takes precedence over execution_authority_policy_id (UE-8P2).
+    execution_authority_policy: Optional["ExecutionAuthorityPolicy"] = None
+    # Entry-point plugin id from intergrax.execution_authority_policies (UE-8P2).
+    execution_authority_policy_id: Optional[str] = None
+
+    # Instance override — takes precedence over execution_budget_allocation_policy_id (UE-8B1).
+    execution_budget_allocation_policy: Optional["ExecutionBudgetAllocationPolicy"] = None
+    # Entry-point plugin id from intergrax.execution_budget_allocation_policies (UE-8B1).
+    execution_budget_allocation_policy_id: Optional[str] = None
 
     # Determines how much contextual information the tool planner receives:
     #

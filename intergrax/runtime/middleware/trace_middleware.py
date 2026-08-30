@@ -5,7 +5,12 @@
 
 from __future__ import annotations
 
-from intergrax.contracts.execution_identity import require_active_execution_identity, validate_run_id, validate_task_id
+from intergrax.contracts.execution_identity import (
+    require_active_execution_id,
+    require_active_execution_identity,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.hooks.hook_context import HookContext, HookResult
@@ -36,6 +41,7 @@ class TraceEmittingMiddleware(RuntimeMiddleware):
     async def before(self, point: HookPoint, ctx: HookContext) -> HookResult:
         if point == HookPoint.BEFORE_STEP and ctx.step_id:
             active_run_id, attempt_id = require_active_execution_identity()
+            execution_id = require_active_execution_id()
             resolved_run_id = validate_run_id(ctx.run_id)
             if resolved_run_id != active_run_id:
                 raise RuntimeError("hook run_id conflicts with active execution identity")
@@ -43,6 +49,7 @@ class TraceEmittingMiddleware(RuntimeMiddleware):
                 task_id=validate_task_id(ctx.task_id),
                 run_id=resolved_run_id,
                 attempt_id=attempt_id,
+                execution_id=execution_id,
                 node_id=ctx.node_id,
                 agent_id=ctx.agent_id,
                 step_id=ctx.step_id,

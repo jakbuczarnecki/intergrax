@@ -22,6 +22,7 @@ from intergrax.runtime.diagnostics.problem_persistence import (
     ProblemPersistence,
     ProblemPersistenceConflictError,
     ProblemPersistenceIntegrityError,
+    ProblemPersistenceIntegrityReason,
 )
 from intergrax.runtime.diagnostics.problem_record_codec import (
     decode_problem_record,
@@ -232,6 +233,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
         if record is None:
             raise ProblemPersistenceIntegrityError(
                 "canonical Problem record missing for reconciliation index",
+                reason=ProblemPersistenceIntegrityReason.RECONCILIATION_WINNER_CANONICAL_PENDING,
             )
         problem = decode_problem_record(dict(record.data))
         self._verify_canonical_tenant(problem, tenant_id=tenant_id)

@@ -186,7 +186,18 @@ def test_diagnostic_pane_empty_ready_when_service_wired() -> None:
             causal_evidence=InMemoryCausalEvidencePersistence(),
         ),
     )
-    pane = _build_diagnostic_operations_pane(env, service)
+    from intergrax.applications._shared.auditability_health_wiring import (
+        project_host_auditability_health_facts,
+    )
+    from intergrax.applications._shared.diagnostic_assembly_resolver import DiagnosticWiring
+
+    facts = project_host_auditability_health_facts(
+        env=env,
+        diagnostic_wiring=DiagnosticWiring(required=True, attached=True),
+        runtime_event_persistence_available=True,
+        diagnostic_read_side_ready=True,
+    )
+    pane = _build_diagnostic_operations_pane(env, service, auditability_facts=facts)
     assert pane.ready is True
     assert pane.problem_count == 0
     assert pane.open_problem_count == 0
@@ -195,7 +206,18 @@ def test_diagnostic_pane_empty_ready_when_service_wired() -> None:
 def test_diagnostic_pane_counts_from_central_read_service() -> None:
     env = _product_env()
     service = _read_service_with_problems(tenant_id=_TENANT, open_count=2, resolved_count=1)
-    pane = _build_diagnostic_operations_pane(env, service)
+    from intergrax.applications._shared.auditability_health_wiring import (
+        project_host_auditability_health_facts,
+    )
+    from intergrax.applications._shared.diagnostic_assembly_resolver import DiagnosticWiring
+
+    facts = project_host_auditability_health_facts(
+        env=env,
+        diagnostic_wiring=DiagnosticWiring(required=True, attached=True),
+        runtime_event_persistence_available=True,
+        diagnostic_read_side_ready=True,
+    )
+    pane = _build_diagnostic_operations_pane(env, service, auditability_facts=facts)
     assert pane.ready is True
     assert pane.problem_count == 3
     assert pane.open_problem_count == 2
@@ -208,7 +230,22 @@ def test_diagnostic_pane_uses_host_tenant_scope() -> None:
         open_count=3,
         resolved_count=0,
     )
-    pane = _build_diagnostic_operations_pane(env, other_tenant_service)
+    from intergrax.applications._shared.auditability_health_wiring import (
+        project_host_auditability_health_facts,
+    )
+    from intergrax.applications._shared.diagnostic_assembly_resolver import DiagnosticWiring
+
+    facts = project_host_auditability_health_facts(
+        env=env,
+        diagnostic_wiring=DiagnosticWiring(required=True, attached=True),
+        runtime_event_persistence_available=True,
+        diagnostic_read_side_ready=True,
+    )
+    pane = _build_diagnostic_operations_pane(
+        env,
+        other_tenant_service,
+        auditability_facts=facts,
+    )
     assert pane.ready is True
     assert pane.problem_count == 0
     assert pane.open_problem_count == 0
@@ -217,10 +254,22 @@ def test_diagnostic_pane_uses_host_tenant_scope() -> None:
 def test_dashboard_wiring_exposes_diagnostics_pane_not_legacy_causal() -> None:
     env = _product_env()
     service = _read_service_with_problems(tenant_id=_TENANT, open_count=1, resolved_count=0)
+    from intergrax.applications._shared.auditability_health_wiring import (
+        project_host_auditability_health_facts,
+    )
+    from intergrax.applications._shared.diagnostic_assembly_resolver import DiagnosticWiring
+
+    facts = project_host_auditability_health_facts(
+        env=env,
+        diagnostic_wiring=DiagnosticWiring(required=True, attached=True),
+        runtime_event_persistence_available=True,
+        diagnostic_read_side_ready=True,
+    )
     wiring = resolve_product_observability_dashboard_wiring(
         env,
         repo_root=_REPO_ROOT,
         diagnostic_read_service=service,
+        auditability_facts=facts,
     )
     assert wiring.enabled is True
     assert wiring.dashboard is not None

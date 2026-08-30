@@ -8,6 +8,7 @@ from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_catalog import phase_for_event
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from testing_support.runtime_events import runtime_event_test_identity
 from intergrax.runtime.events.schema_guard import RuntimeEventSchemaError, assert_runtime_event_schema
 from intergrax.runtime.nexus.orchestration import planning_runner
 
@@ -15,13 +16,14 @@ pytestmark = pytest.mark.gate
 
 
 def _event(**overrides) -> RuntimeEvent:
-    base = dict(
-        task_id="task_1",
-        run_id="run_1",
-        tenant_id="tenant_1",
-        event_type=RuntimeEventType.TASK_CREATED,
-        phase=ExecutionPhase.INTAKE,
-        severity=EventSeverity.INFO,
+    base = runtime_event_test_identity()
+    base.update(
+        {
+            "tenant_id": "tenant_1",
+            "event_type": RuntimeEventType.TASK_CREATED,
+            "phase": ExecutionPhase.INTAKE,
+            "severity": EventSeverity.INFO,
+        }
     )
     base.update(overrides)
     return RuntimeEvent(**base)

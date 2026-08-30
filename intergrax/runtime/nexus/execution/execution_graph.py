@@ -16,6 +16,18 @@ class ExecutionGraphCycleError(ValueError):
     """Raised when the execution graph contains a dependency cycle."""
 
 
+class ExecutionGraphConstructionError(ValueError):
+    """Raised when plan→execution graph conversion cannot satisfy declared metadata."""
+
+
+class EvaluatorLoopMetadataError(ExecutionGraphConstructionError):
+    """evaluator_loop.v1 plan metadata is present but not parseable or schema-valid."""
+
+
+class EvaluatorLoopProducerNotFoundError(ExecutionGraphConstructionError):
+    """evaluator_loop.v1 references a producer agent absent from the generated graph."""
+
+
 class ExecutionNodeStatus(str, Enum):
     PENDING = "pending"
     RUNNING = "running"

@@ -24,6 +24,10 @@ from scripts.proof.intergrax_platform_proof_descriptor import (
     PLATFORM_PROOF_DESCRIPTOR_SCHEMA_VERSION,
     PROOF_DESCRIPTOR_FILENAME,
 )
+from scripts.proof.scenario_architecture_conformance import (
+    ScenarioArchitectureConformanceError,
+    assert_scenario_application_architecture,
+)
 from scripts.proof.scenario_lifecycle import (
     ScenarioLifecycleGateError,
     ScenarioLifecycleMetadata,
@@ -341,6 +345,20 @@ def _build_env_example() -> str:
     )
 
 
+def _remove_created_paths(created: tuple[Path, ...]) -> None:
+    for path in reversed(created):
+        if path.exists():
+            path.unlink()
+    created_dirs = sorted(
+        {path.parent for path in created},
+        key=lambda directory: len(directory.parts),
+        reverse=True,
+    )
+    for directory in created_dirs:
+        if directory.exists() and not any(directory.iterdir()):
+            directory.rmdir()
+
+
 def _planned_files(
     package_root: Path,
     *,
@@ -404,12 +422,22 @@ def init_scenario_implementation(
             path.write_text(content, encoding="utf-8")
             created.append(path)
 
+        assert_scenario_application_architecture(
+            repo_root=request.repo_root,
+            scenario_slug=request.slug.value,
+            package_root=package_root,
+            skip_lifecycle_check=True,
+        )
+
         updated_metadata = metadata.with_implementation_initialized()
         write_scenario_spec_frontmatter(scenario_spec_path, updated_metadata)
+    except ScenarioArchitectureConformanceError as exc:
+        _remove_created_paths(tuple(created))
+        raise ScenarioImplementationInitError(
+            f"generated implementation failed architecture conformance: {exc}"
+        ) from exc
     except OSError as exc:
-        for path in reversed(created):
-            if path.exists():
-                path.unlink()
+        _remove_created_paths(tuple(created))
         raise ScenarioImplementationInitError(
             f"failed to write implementation skeleton: {exc}"
         ) from exc

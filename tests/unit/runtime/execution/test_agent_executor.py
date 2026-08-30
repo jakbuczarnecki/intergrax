@@ -26,6 +26,7 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
     reset_active_execution_identity,
+    validate_execution_id,
 )
 from intergrax.runtime.execution import (
     ExecutionCapability,
@@ -33,14 +34,18 @@ from intergrax.runtime.execution import (
     ExecutionResult,
     ExecutionStatus,
 )
-from intergrax.runtime.execution.boundary import (
-    ExecutionAdmissionHook,
-    ExecutionBoundary,
-    ExecutionIdentityBinding,
-)
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
+from intergrax.runtime.execution.boundary import ExecutionAdmissionHook
 from intergrax.runtime.execution.facade import Execution
+from intergrax.runtime.execution.runtime import (
+    ExecutionRuntime,
+    RootExecutionContext,
+    RootExecutionOptions,
+    resolve_root_execution_context,
+)
 from intergrax.runtime.execution.agentic import AgentExecutor
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
+from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -175,76 +180,85 @@ def _agentic_request(
     )
 
 
-def _identity_binding(*, run_id: RunId | None = None) -> ExecutionIdentityBinding:
-    return ExecutionIdentityBinding(
-        run_id=run_id or mint_run_id(),
-        attempt_id=mint_attempt_id(),
-        execution_id=mint_execution_id(),
+def _root_context(*, run_id: RunId | None = None) -> RootExecutionContext:
+    return resolve_root_execution_context(
+        RootExecutionOptions(
+            authority=ParentExecutionAuthority.unrestricted_root(),
+            run_id=run_id,
+        )
     )
 
 
 def _agentic_stack(
     engine: RecordingAgentEngine,
     *,
-    identity: ExecutionIdentityBinding | None = None,
+    root_context: RootExecutionContext | None = None,
     admission_hooks: tuple[ExecutionAdmissionHook, ...] = (),
-) -> Execution[
-    ExecutionRequest[RuntimeRequest, AgentExecutionResult],
-    ExecutionResult[AgentExecutionResult],
+) -> tuple[
+    Execution[
+        ExecutionRequest[RuntimeRequest, AgentExecutionResult],
+        ExecutionResult[AgentExecutionResult],
+    ],
+    RootExecutionContext,
 ]:
     executor = AgentExecutor(engine)
-    boundary = ExecutionBoundary(
-        executor,
-        admission_hooks=admission_hooks,
-        identity=identity,
-    )
-    return Execution(boundary)
+    router = StrategyExecutionRouter[
+        RuntimeRequest,
+        AgentExecutionResult,
+        ExecutionResult[AgentExecutionResult],
+    ](agent_executor=executor)
+    runtime = ExecutionRuntime[
+        ExecutionRequest[RuntimeRequest, AgentExecutionResult],
+        ExecutionResult[AgentExecutionResult],
+    ](router, admission_hooks=admission_hooks)
+    context = root_context or _root_context()
+    return Execution(runtime), context
 
 
 @pytest.mark.asyncio
 async def test_tools_capabilities_resolve_to_agentic_and_execute_full_path() -> None:
-    identity = _identity_binding()
-    runtime_request = _runtime_request(run_id=identity.run_id)
+    context = _root_context()
+    runtime_request = _runtime_request(run_id=context.run_id)
     request = _agentic_request(runtime_request)
     engine = RecordingAgentEngine()
     captured: dict[str, RunId | AttemptId | ExecutionId] = {}
     admission_hook = IdentityProbingAdmissionHook(captured)
-    execution = _agentic_stack(
+    execution, context = _agentic_stack(
         engine,
-        identity=identity,
+        root_context=context,
         admission_hooks=(admission_hook,),
     )
 
     assert StrategyResolver().resolve(request) is ExecutionStrategy.AGENTIC
 
-    result = await execution.execute(request)
+    result = await execution.execute(request, root_context=context)
 
     assert result.status is ExecutionStatus.COMPLETED
     assert result.output.status is AgentExecutionStatus.COMPLETED
-    assert result.output.run_id == identity.run_id
+    assert result.output.run_id == context.run_id
     assert len(engine.calls) == 1
     assert engine.calls[0] is runtime_request
-    assert engine.observed_run_id == identity.run_id
-    assert engine.observed_execution_id == identity.execution_id
+    assert engine.observed_run_id == context.run_id
+    assert validate_execution_id(engine.observed_execution_id)
     assert admission_hook.admit_count == 1
-    assert captured["hook_execution_id"] == identity.execution_id
-    assert captured["hook_runtime_run_id"] == identity.run_id
+    assert validate_execution_id(captured["hook_execution_id"])
+    assert captured["hook_runtime_run_id"] == context.run_id
     assert peek_active_execution_identity() is None
     assert peek_active_execution_id() is None
 
 
 @pytest.mark.asyncio
 async def test_runtime_request_run_id_mismatch_fails_before_engine() -> None:
-    identity = _identity_binding()
+    context = _root_context()
     runtime_request = _runtime_request(run_id=mint_run_id())
     engine = RecordingAgentEngine()
-    execution = _agentic_stack(engine, identity=identity)
+    execution, context = _agentic_stack(engine, root_context=context)
 
     with pytest.raises(
         RuntimeError,
         match="agentic RuntimeRequest run_id does not match active execution",
     ):
-        await execution.execute(_agentic_request(runtime_request))
+        await execution.execute(_agentic_request(runtime_request), root_context=context)
 
     assert engine.calls == []
 
@@ -280,11 +294,11 @@ async def test_agent_executor_requires_active_execution_id() -> None:
 
 @pytest.mark.asyncio
 async def test_identity_resets_after_success() -> None:
-    identity = _identity_binding()
-    runtime_request = _runtime_request(run_id=identity.run_id)
-    execution = _agentic_stack(RecordingAgentEngine(), identity=identity)
+    context = _root_context()
+    runtime_request = _runtime_request(run_id=context.run_id)
+    execution, context = _agentic_stack(RecordingAgentEngine(), root_context=context)
 
-    await execution.execute(_agentic_request(runtime_request))
+    await execution.execute(_agentic_request(runtime_request), root_context=context)
 
     assert peek_active_execution_identity() is None
     assert peek_active_execution_id() is None
@@ -292,16 +306,16 @@ async def test_identity_resets_after_success() -> None:
 
 @pytest.mark.asyncio
 async def test_identity_resets_after_engine_exception() -> None:
-    identity = _identity_binding()
-    runtime_request = _runtime_request(run_id=identity.run_id)
+    context = _root_context()
+    runtime_request = _runtime_request(run_id=context.run_id)
     engine_error = ValueError("engine-failure")
-    execution = _agentic_stack(
+    execution, context = _agentic_stack(
         RecordingAgentEngine(error=engine_error),
-        identity=identity,
+        root_context=context,
     )
 
     with pytest.raises(ValueError) as exc_info:
-        await execution.execute(_agentic_request(runtime_request))
+        await execution.execute(_agentic_request(runtime_request), root_context=context)
 
     assert exc_info.value is engine_error
     assert peek_active_execution_identity() is None
@@ -310,30 +324,31 @@ async def test_identity_resets_after_engine_exception() -> None:
 
 @pytest.mark.asyncio
 async def test_empty_capabilities_rejected_before_engine() -> None:
-    identity = _identity_binding()
-    runtime_request = _runtime_request(run_id=identity.run_id)
+    context = _root_context()
+    runtime_request = _runtime_request(run_id=context.run_id)
     engine = RecordingAgentEngine()
-    execution = _agentic_stack(engine, identity=identity)
+    execution, context = _agentic_stack(engine, root_context=context)
 
-    with pytest.raises(RuntimeError, match="AgentExecutor requires AGENTIC strategy"):
-        await execution.execute(_agentic_request(runtime_request, capabilities=frozenset()))
+    with pytest.raises(RuntimeError, match="INFERENCE strategy is not configured"):
+        await execution.execute(_agentic_request(runtime_request, capabilities=frozenset()), root_context=context)
 
     assert engine.calls == []
 
 
 @pytest.mark.asyncio
 async def test_orchestration_rejected_before_engine() -> None:
-    identity = _identity_binding()
-    runtime_request = _runtime_request(run_id=identity.run_id)
+    context = _root_context()
+    runtime_request = _runtime_request(run_id=context.run_id)
     engine = RecordingAgentEngine()
-    execution = _agentic_stack(engine, identity=identity)
+    execution, context = _agentic_stack(engine, root_context=context)
 
-    with pytest.raises(RuntimeError, match="AgentExecutor requires AGENTIC strategy"):
+    with pytest.raises(RuntimeError, match="ORCHESTRATION strategy is not configured"):
         await execution.execute(
             _agentic_request(
                 runtime_request,
                 capabilities=frozenset({ExecutionCapability.ORCHESTRATION}),
-            )
+            ),
+            root_context=context,
         )
 
     assert engine.calls == []
@@ -341,12 +356,12 @@ async def test_orchestration_rejected_before_engine() -> None:
 
 @pytest.mark.asyncio
 async def test_tools_and_orchestration_rejected_before_engine() -> None:
-    identity = _identity_binding()
-    runtime_request = _runtime_request(run_id=identity.run_id)
+    context = _root_context()
+    runtime_request = _runtime_request(run_id=context.run_id)
     engine = RecordingAgentEngine()
-    execution = _agentic_stack(engine, identity=identity)
+    execution, context = _agentic_stack(engine, root_context=context)
 
-    with pytest.raises(RuntimeError, match="AgentExecutor requires AGENTIC strategy"):
+    with pytest.raises(RuntimeError, match="ORCHESTRATION strategy is not configured"):
         await execution.execute(
             _agentic_request(
                 runtime_request,
@@ -356,7 +371,8 @@ async def test_tools_and_orchestration_rejected_before_engine() -> None:
                         ExecutionCapability.ORCHESTRATION,
                     }
                 ),
-            )
+            ),
+            root_context=context,
         )
 
     assert engine.calls == []
@@ -364,10 +380,10 @@ async def test_tools_and_orchestration_rejected_before_engine() -> None:
 
 @pytest.mark.asyncio
 async def test_tools_and_streaming_rejected_before_engine() -> None:
-    identity = _identity_binding()
-    runtime_request = _runtime_request(run_id=identity.run_id)
+    context = _root_context()
+    runtime_request = _runtime_request(run_id=context.run_id)
     engine = RecordingAgentEngine()
-    execution = _agentic_stack(engine, identity=identity)
+    execution, context = _agentic_stack(engine, root_context=context)
 
     with pytest.raises(RuntimeError, match="agentic streaming is not implemented"):
         await execution.execute(
@@ -379,7 +395,8 @@ async def test_tools_and_streaming_rejected_before_engine() -> None:
                         ExecutionCapability.STREAMING,
                     }
                 ),
-            )
+            ),
+            root_context=context,
         )
 
     assert engine.calls == []
@@ -387,37 +404,37 @@ async def test_tools_and_streaming_rejected_before_engine() -> None:
 
 @pytest.mark.asyncio
 async def test_output_type_agent_execution_result_accepted() -> None:
-    identity = _identity_binding()
-    runtime_request = _runtime_request(run_id=identity.run_id)
-    execution = _agentic_stack(RecordingAgentEngine(), identity=identity)
+    context = _root_context()
+    runtime_request = _runtime_request(run_id=context.run_id)
+    execution, context = _agentic_stack(RecordingAgentEngine(), root_context=context)
 
-    result = await execution.execute(_agentic_request(runtime_request))
+    result = await execution.execute(_agentic_request(runtime_request), root_context=context)
 
     assert result.output is not None
 
 
 @pytest.mark.asyncio
 async def test_output_type_none_rejected_before_engine() -> None:
-    identity = _identity_binding()
-    runtime_request = _runtime_request(run_id=identity.run_id)
+    context = _root_context()
+    runtime_request = _runtime_request(run_id=context.run_id)
     engine = RecordingAgentEngine()
-    execution = _agentic_stack(engine, identity=identity)
+    execution, context = _agentic_stack(engine, root_context=context)
 
     with pytest.raises(
         RuntimeError,
         match="AgentExecutor requires AgentExecutionResult output_type",
     ):
-        await execution.execute(_agentic_request(runtime_request, output_type=None))
+        await execution.execute(_agentic_request(runtime_request, output_type=None), root_context=context)
 
     assert engine.calls == []
 
 
 @pytest.mark.asyncio
 async def test_other_output_type_rejected_before_engine() -> None:
-    identity = _identity_binding()
-    runtime_request = _runtime_request(run_id=identity.run_id)
+    context = _root_context()
+    runtime_request = _runtime_request(run_id=context.run_id)
     engine = RecordingAgentEngine()
-    execution = _agentic_stack(engine, identity=identity)
+    execution, context = _agentic_stack(engine, root_context=context)
     request = ExecutionRequest(
         input=runtime_request,
         output_type=OtherOutputType,
@@ -428,7 +445,7 @@ async def test_other_output_type_rejected_before_engine() -> None:
         RuntimeError,
         match="AgentExecutor requires AgentExecutionResult output_type",
     ):
-        await execution.execute(request)
+        await execution.execute(request, root_context=context)
 
     assert engine.calls == []
 
@@ -441,8 +458,8 @@ async def test_inner_failed_agent_result_wraps_as_completed_execution_result() -
     AgentExecutor returns ExecutionStatus.COMPLETED when AgentEngine returns
     normally, even when inner AgentExecutionResult.status is FAILED.
     """
-    identity = _identity_binding()
-    runtime_request = _runtime_request(run_id=identity.run_id)
+    context = _root_context()
+    runtime_request = _runtime_request(run_id=context.run_id)
     failed_result = AgentExecutionResult(
         agent_id=runtime_request.agent_id,
         run_id=runtime_request.run_id,
@@ -450,12 +467,12 @@ async def test_inner_failed_agent_result_wraps_as_completed_execution_result() -
         summary="",
         errors=["blocked"],
     )
-    execution = _agentic_stack(
+    execution, context = _agentic_stack(
         RecordingAgentEngine(result=failed_result),
-        identity=identity,
+        root_context=context,
     )
 
-    result = await execution.execute(_agentic_request(runtime_request))
+    result = await execution.execute(_agentic_request(runtime_request), root_context=context)
 
     assert result.status is ExecutionStatus.COMPLETED
     assert result.output is failed_result
@@ -464,14 +481,14 @@ async def test_inner_failed_agent_result_wraps_as_completed_execution_result() -
 
 @pytest.mark.asyncio
 async def test_engine_exception_propagates_unchanged() -> None:
-    identity = _identity_binding()
-    runtime_request = _runtime_request(run_id=identity.run_id)
+    context = _root_context()
+    runtime_request = _runtime_request(run_id=context.run_id)
     engine_error = RuntimeError("uaep-bypass")
     engine = RecordingAgentEngine(error=engine_error)
-    execution = _agentic_stack(engine, identity=identity)
+    execution, context = _agentic_stack(engine, root_context=context)
 
     with pytest.raises(RuntimeError) as exc_info:
-        await execution.execute(_agentic_request(runtime_request))
+        await execution.execute(_agentic_request(runtime_request), root_context=context)
 
     assert exc_info.value is engine_error
 

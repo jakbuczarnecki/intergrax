@@ -217,3 +217,27 @@ class BudgetEnforcer:
             raise BudgetExceededError(
                 f"Budget exceeded: max_wall_time_seconds ({elapsed_seconds:.3f} > {limit})"
             )
+
+    def check_replans(self, *, run_id: str, replans: int, state: RuntimeState) -> None:
+        limit = self._budget.max_replans
+        if limit is None:
+            return
+        if replans <= limit:
+            return
+
+        state.trace_event(
+            component=TraceComponent.POLICY,
+            step="budget_exceeded",
+            level=TraceLevel.ERROR,
+            message="Budget exceeded: max_replans",
+            payload=BudgetExceededDiagV1(
+                run_id=run_id,
+                budget_name="max_replans",
+                limit=limit,
+                actual=replans,
+                enforcement_mode=self._policy.enforcement_mode.value,
+            ),
+        )
+
+        if self._policy.enforcement_mode is BudgetEnforcementMode.ABORT:
+            raise BudgetExceededError(f"Budget exceeded: max_replans ({replans} > {limit})")

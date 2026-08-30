@@ -44,6 +44,7 @@ from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.control_plane_mutation import ControlPlaneMutationRequest
 from intergrax.contracts.execution_identity import (
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
 )
@@ -62,6 +63,7 @@ from intergrax.runtime.governance.control_plane_mutation_policy import (
 )
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.policy.runtime_policy_bundle_evaluator import RuntimePolicyBundleEvaluator
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
@@ -76,6 +78,7 @@ _MUTATION_ID = "mut-resume-1"
 _TASK_ID = mint_task_id()
 _RUN_ID = mint_run_id()
 _ATTEMPT_ID = mint_attempt_id()
+_ROOT_EXECUTION_ID = mint_execution_id()
 _PAUSE_ID = "pause-1"
 _HUMAN_REQUEST_ID = "hr-1"
 _RESUME_TOKEN = "resume-token-1"
@@ -156,9 +159,11 @@ def _checkpoint(
         task_state=task_state,
         progress_message="paused",
         notify_channel="debug",
-        runtime=RuntimeCheckpoint(
-            run_id=str(_RUN_ID),
-            attempt_id=str(_ATTEMPT_ID),
+        runtime=minimal_runtime_checkpoint(
+            task_id=_TASK_ID,
+            run_id=_RUN_ID,
+            attempt_id=_ATTEMPT_ID,
+            root_execution_id=_ROOT_EXECUTION_ID,
         ),
     )
 
@@ -615,9 +620,11 @@ async def test_taskcpm_r14_checkpoint_identity_changes_after_allow_zero_runner()
 async def test_taskcpm_r15_checkpoint_run_id_conflict_zero_runner() -> None:
     checkpoint = _checkpoint()
     conflicting = _checkpoint()
-    conflicting.runtime = RuntimeCheckpoint(
-        run_id=str(mint_run_id()),
-        attempt_id=str(_ATTEMPT_ID),
+    conflicting.runtime = minimal_runtime_checkpoint(
+        task_id=_TASK_ID,
+        run_id=mint_run_id(),
+        attempt_id=_ATTEMPT_ID,
+        root_execution_id=mint_execution_id(),
     )
     boundary, _ = _allow_boundary()
     runner = AsyncMock(spec=UnifiedTaskRunner)

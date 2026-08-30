@@ -1,6 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import build_fixture_runtime_bundle, build_runtime_bundle
 
 import json
 import subprocess
@@ -80,7 +81,6 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario im
     EVALUATOR_LOOP_MAX_ITERATIONS,
     OUTCOME_RESOLVED,
     OUTCOME_UNRESOLVED,
-    build_runtime_bundle,
     execute_resolved_skeleton,
     execute_with_completion_gate_blocked,
 )
@@ -154,7 +154,8 @@ def repo_root() -> Path:
 
 @pytest.mark.asyncio
 async def test_resolved_skeleton_executes_platform_path() -> None:
-    bundle = build_runtime_bundle()
+    fixture_bundle = build_fixture_runtime_bundle()
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
 
     assert result.outcome == OUTCOME_RESOLVED
@@ -176,13 +177,14 @@ async def test_resolved_skeleton_executes_platform_path() -> None:
     assert WORKLOAD_EVIDENCE_ID in result.evidence_challenge.evidence_ids
     assert COMPARISON_EVIDENCE_ID in result.evidence_challenge.evidence_ids
 
-    evaluation = evaluate_scenario_run(result, bundle.fixture)
+    evaluation = evaluate_scenario_run(result, fixture_bundle.fixture)
     assert evaluation.passed
 
 
 @pytest.mark.asyncio
 async def test_real_critic_provenance_maps_to_challenge_with_stable_id() -> None:
-    bundle = build_runtime_bundle()
+    fixture_bundle = build_fixture_runtime_bundle()
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
 
     assert result.failed_critic_verdict is not None
@@ -260,7 +262,8 @@ def test_build_satisfied_challenge_preserves_open_challenge_id() -> None:
 
 @pytest.mark.asyncio
 async def test_completion_gate_required_on_resolved_path() -> None:
-    bundle = build_runtime_bundle()
+    fixture_bundle = build_fixture_runtime_bundle()
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
     assert result.outcome == OUTCOME_RESOLVED
     assert result.critic_verdict_passed
@@ -268,7 +271,8 @@ async def test_completion_gate_required_on_resolved_path() -> None:
 
 @pytest.mark.asyncio
 async def test_completion_gate_blocks_resolved_on_real_scenario_path() -> None:
-    bundle = build_runtime_bundle()
+    fixture_bundle = build_fixture_runtime_bundle()
+    bundle = fixture_bundle.bundle
     with pytest.raises(RuntimeError, match="incident_terminal_state_not_accepted"):
         await execute_with_completion_gate_blocked(bundle)
 
@@ -351,9 +355,10 @@ async def test_summary_revised_with_missing_telemetry_evidence_fails() -> None:
 
 @pytest.mark.asyncio
 async def test_tool_runtime_invoked_not_mocked_away() -> None:
-    bundle = build_runtime_bundle()
+    fixture_bundle = build_fixture_runtime_bundle()
+    bundle = fixture_bundle.bundle
     registry = ToolRegistry()
-    register_scenario_tools(registry, bundle.fixture)
+    register_scenario_tools(registry, bundle.operational_data)
     invoker = RuntimeToolInvoker(
         registry=registry,
         executor=RegistryToolExecutor(registry),
@@ -400,7 +405,8 @@ async def test_tool_runtime_invoked_not_mocked_away() -> None:
 
 @pytest.mark.asyncio
 async def test_follow_up_uses_platform_tools_not_direct_fixture() -> None:
-    bundle = build_runtime_bundle()
+    fixture_bundle = build_fixture_runtime_bundle()
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
     assert result.revision_used_tools
     assert result.tool_invocations == 6
@@ -408,7 +414,8 @@ async def test_follow_up_uses_platform_tools_not_direct_fixture() -> None:
 
 @pytest.mark.asyncio
 async def test_ground_truth_not_in_model_visible_blob() -> None:
-    bundle = build_runtime_bundle()
+    fixture_bundle = build_fixture_runtime_bundle()
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
     blob = result.leak_scan_blob.lower()
     for marker in FORBIDDEN_LEAK_MARKERS:
@@ -417,7 +424,8 @@ async def test_ground_truth_not_in_model_visible_blob() -> None:
 
 @pytest.mark.asyncio
 async def test_critic_completion_gate_blocks_when_l1_required_synthetic() -> None:
-    bundle = build_runtime_bundle()
+    fixture_bundle = build_fixture_runtime_bundle()
+    bundle = fixture_bundle.bundle
     hooks = build_critic_graph_hooks(
         config=CriticHookConfig(
             verify_node_partial=True,
@@ -461,9 +469,10 @@ async def test_critic_completion_gate_blocks_when_l1_required_synthetic() -> Non
 
 @pytest.mark.asyncio
 async def test_platform_proof_evidence_verifier_and_renderer() -> None:
-    bundle = build_runtime_bundle()
+    fixture_bundle = build_fixture_runtime_bundle()
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
-    evaluation = evaluate_scenario_run(result, bundle.fixture)
+    evaluation = evaluate_scenario_run(result, fixture_bundle.fixture)
     evidence = build_platform_proof_evidence(
         result,
         evaluation=evaluation,

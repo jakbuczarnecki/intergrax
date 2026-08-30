@@ -5,6 +5,7 @@ import pytest
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
     reset_active_execution_identity,
@@ -28,7 +29,12 @@ from intergrax.skills.resolver import SkillResolver
 def execution_identity():
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
-    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
     try:
         yield run_id, mint_task_id(), attempt_id
     finally:

@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from intergrax.runtime.observability.auditability_health import AuditabilityHealthSnapshot
+
 
 class QualityHealthSnapshot(BaseModel):
     """Critic and evaluation quality signals for dashboard consumers."""
@@ -42,11 +44,13 @@ class HarnessHealthDashboardContract(BaseModel):
     quality: QualityHealthSnapshot
     governance: GovernanceHealthSnapshot
     cost: CostHealthSnapshot
+    auditability: AuditabilityHealthSnapshot
 
 
 def build_harness_health_dashboard_contract(
     *,
     host_id: str,
+    auditability: AuditabilityHealthSnapshot,
     critic_pass_rate: float = 1.0,
     shadow_eval_coverage_ratio: float = 0.0,
     open_human_review_count: int = 0,
@@ -75,4 +79,5 @@ def build_harness_health_dashboard_contract(
             forecast_anomaly_count=forecast_anomaly_count,
             optimization_recommendation_count=optimization_recommendation_count,
         ),
+        auditability=auditability,
     )

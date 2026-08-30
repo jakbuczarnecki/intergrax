@@ -8,7 +8,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Generic, Protocol, TypeVar
 
-from intergrax.contracts.delegation_authority import ParentExecutionAuthority
+from intergrax.contracts.delegation_authority import (
+    EffectiveDelegationAuthority,
+    ParentExecutionAuthority,
+)
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -57,7 +60,13 @@ class ExecutionBoundary(Generic[RequestT, ResultT]):
     Strategy-neutral. Production routing is unchanged at UE-1B.
     """
 
-    __slots__ = ("_delegate", "_admission_hooks", "_identity", "_authority")
+    __slots__ = (
+        "_delegate",
+        "_admission_hooks",
+        "_identity",
+        "_authority",
+        "_effective_delegation",
+    )
 
     def __init__(
         self,
@@ -66,11 +75,13 @@ class ExecutionBoundary(Generic[RequestT, ResultT]):
         admission_hooks: tuple[ExecutionAdmissionHook[RequestT], ...] = (),
         identity: ExecutionIdentityBinding | None = None,
         authority: ParentExecutionAuthority | None = None,
+        effective_delegation: EffectiveDelegationAuthority | None = None,
     ) -> None:
         self._delegate = delegate
         self._admission_hooks = admission_hooks
         self._identity = identity
         self._authority = authority
+        self._effective_delegation = effective_delegation
 
     async def execute(self, request: RequestT) -> ResultT:
         if self._identity is None and self._authority is None:
@@ -86,7 +97,10 @@ class ExecutionBoundary(Generic[RequestT, ResultT]):
                 parent_execution_id=self._identity.parent_execution_id,
             )
         if self._authority is not None:
-            authority_token = bind_active_execution_authority(self._authority)
+            authority_token = bind_active_execution_authority(
+                self._authority,
+                effective_delegation=self._effective_delegation,
+            )
         try:
             return await self._run_admission_and_delegate(request)
         finally:

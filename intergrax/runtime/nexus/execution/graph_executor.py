@@ -25,13 +25,18 @@ from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.contracts.execution_identity import (
     ActiveExecutionIdentity,
     AttemptId,
+    ExecutionId,
     RunId,
+    peek_active_execution_id,
+    peek_active_parent_execution_id,
     peek_active_execution_identity,
     require_active_execution_id,
     require_active_execution_identity,
+    validate_task_id,
 )
 from intergrax.runtime.governance.active_execution_authority import (
     bind_active_execution_authority,
+    peek_active_effective_delegation,
     peek_active_execution_authority,
     reset_active_execution_authority,
 )
@@ -61,13 +66,16 @@ from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_graph,
+    record_graph_node_completion,
+    resolve_task_runtime_checkpoint,
     should_skip_graph_node,
+    sync_execution_tree_to_task,
 )
-from intergrax.runtime.long_running.runtime_checkpoint import (
-    RuntimeCheckpoint,
-    attach_runtime_checkpoint_to_metadata,
-    runtime_checkpoint_from_metadata,
+from intergrax.runtime.long_running.execution_tree_checkpoint import (
+    ExecutionCheckpointStatus,
+    ExecutionTreeRecorder,
 )
+from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.architecture.multi_agent_coordination import CoordinationPattern
 from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.orchestration.swarm_policy import (
@@ -88,6 +96,8 @@ from intergrax.runtime.nexus.validation.validation_engine import NexusValidation
 from intergrax.runtime.execution.agentic import AgentExecutor
 from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
+from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task_memory.delegation_memory import TaskMemoryMetadataKey
@@ -96,6 +106,8 @@ if TYPE_CHECKING:
     from intergrax.runtime.critic.contracts import CriticVerdict
     from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
     from intergrax.runtime.critic.trace import CriticTraceEmitter
+    from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
+    from intergrax.runtime.execution.budget.policy import ExecutionBudgetAllocationPolicy
     from intergrax.runtime.nexus.config import RuntimeConfig
 
 ExecuteFn = Callable[[Agent, Task, ExecutionNode], Awaitable[AgentExecutionResult]]
@@ -130,7 +142,6 @@ class _GraphNodeChildRequest:
     evaluator_loop_active: bool
     agent: Agent
     node_task: Task
-    effective_delegation_holder: list[EffectiveDelegationAuthority]
 
 
 @dataclass(frozen=True, slots=True)
@@ -179,6 +190,8 @@ class GraphExecutor:
         declarative_tool_invoker: DeclarativeToolInvoker | None = None,
         runtime_config: Optional["RuntimeConfig"] = None,
         execution_identity: ActiveExecutionIdentity | None = None,
+        authority_policy: ExecutionAuthorityPolicy | None = None,
+        budget_allocation_policy: ExecutionBudgetAllocationPolicy | None = None,
     ) -> None:
         del execution_identity
         self._registry = registry
@@ -207,9 +220,15 @@ class GraphExecutor:
         self._child_runner = ChildExecutionRunner[
             _GraphNodeChildRequest,
             _GraphNodeChildResult,
-        ]()
+        ](
+            authority_policy=authority_policy,
+            budget_policy=budget_allocation_policy,
+        )
+        self._execution_tree_recorder: ExecutionTreeRecorder | None = None
         self._graph_node_child_delegate = _GraphNodeChildDelegate(self)
-        self._agent_executor = AgentExecutor(self._engine)
+        self._strategy_router = StrategyExecutionRouter(
+            agent_executor=AgentExecutor(self._engine),
+        )
 
     @property
     def execution_identity(self) -> ActiveExecutionIdentity:
@@ -225,13 +244,14 @@ class GraphExecutor:
         return run_id
 
     def _runtime_event_for_task(self, task: Task, **kwargs: object) -> RuntimeEvent:
-        run_id, attempt_id = require_active_execution_identity()
+        from intergrax.runtime.events.runtime_event_identity import (
+            runtime_event_identity_kwargs,
+        )
+
         return RuntimeEvent(
             tenant_id=task.tenant_id,
-            task_id=task.task_id,
-            run_id=run_id,
-            attempt_id=attempt_id,
             correlation_id=task.task_id,
+            **runtime_event_identity_kwargs(task_id=task.task_id),
             **kwargs,
         )
 
@@ -257,9 +277,26 @@ class GraphExecutor:
         all_executions: List[AgentExecutionResult] = []
         all_retries: List[RetryRecord] = []
 
-        runtime_ckpt = runtime_checkpoint_from_metadata(task.metadata)
+        active_run_id, active_attempt_id = require_active_execution_identity()
+        runtime_ckpt = resolve_task_runtime_checkpoint(task)
         if runtime_ckpt is not None:
-            apply_runtime_checkpoint_to_graph(graph, runtime_ckpt, prior_outputs)
+            runtime_ckpt.validate_canonical()
+            apply_runtime_checkpoint_to_graph(
+                graph,
+                runtime_ckpt,
+                prior_outputs,
+                run_id=active_run_id,
+            )
+            self._execution_tree_recorder = ExecutionTreeRecorder.from_snapshot(
+                runtime_ckpt.execution_tree
+            )
+        else:
+            self._execution_tree_recorder = ExecutionTreeRecorder.start_root(
+                task_id=validate_task_id(task.task_id),
+                run_id=active_run_id,
+                attempt_id=active_attempt_id,
+                root_execution_id=require_active_execution_id(),
+            )
 
         try:
             batches = graph.batches()
@@ -634,7 +671,6 @@ class GraphExecutor:
             selection_ctx.model_copy(update={"agent_id": contract.id}),
         )
 
-        effective_delegation_holder: list[EffectiveDelegationAuthority] = []
         child_request = _GraphNodeChildRequest(
             graph=graph,
             task=task,
@@ -649,17 +685,25 @@ class GraphExecutor:
             evaluator_loop_active=evaluator_loop_active,
             agent=agent,
             node_task=node_task,
-            effective_delegation_holder=effective_delegation_holder,
         )
         requested_permission_scopes: tuple[str, ...] | None = None
+        requested_budget: RunBudget | None = None
         if node.delegation is not None:
             requested_permission_scopes = node.delegation.permission_scopes
+            if (
+                node.delegation.max_llm_calls is not None
+                or node.delegation.max_tool_calls is not None
+            ):
+                requested_budget = RunBudget(
+                    max_llm_calls=node.delegation.max_llm_calls,
+                    max_tool_calls=node.delegation.max_tool_calls,
+                )
         try:
             child_result = await self._child_runner.execute(
                 request=child_request,
                 delegate=self._graph_node_child_delegate,
                 requested_permission_scopes=requested_permission_scopes,
-                effective_delegation_holder=effective_delegation_holder,
+                requested_budget=requested_budget,
             )
         except DelegationAuthorityError as exc:
             failed = AgentExecutionResult(
@@ -699,10 +743,42 @@ class GraphExecutor:
         evaluator_loop_active = child_request.evaluator_loop_active
         agent = child_request.agent
         node_task = child_request.node_task
-        effective_delegation_holder = child_request.effective_delegation_holder
 
-        if node.delegation is not None and effective_delegation_holder:
-            effective_authority = effective_delegation_holder[0]
+        child_execution_id = require_active_execution_id()
+        parent_execution_id = peek_active_parent_execution_id()
+        historical_entry = None
+        if runtime_ckpt is not None:
+            historical_entry = runtime_ckpt.execution_tree.entry_by_graph_node_id(node.node_id)
+        if (
+            parent_execution_id is not None
+            and self._execution_tree_recorder is not None
+            and historical_entry is None
+        ):
+            self._execution_tree_recorder.record_child_started(
+                execution_id=child_execution_id,
+                parent_execution_id=parent_execution_id,
+                graph_node_id=node.node_id,
+            )
+        elif (
+            parent_execution_id is not None
+            and self._execution_tree_recorder is not None
+            and historical_entry is not None
+            and historical_entry.status
+            is not ExecutionCheckpointStatus.COMPLETED
+        ):
+            self._execution_tree_recorder.record_child_started(
+                execution_id=child_execution_id,
+                parent_execution_id=parent_execution_id,
+                graph_node_id=node.node_id,
+                resumed_from_execution_id=historical_entry.execution_id,
+            )
+
+        if node.delegation is not None:
+            effective_authority = peek_active_effective_delegation()
+            if effective_authority is None:
+                raise RuntimeError(
+                    "effective delegation evidence required for delegated node execution"
+                )
             node.metadata[EFFECTIVE_DELEGATION_AUTHORITY_NODE_KEY] = effective_authority
             parent_agent_id = task.agent_id or node.agent_id or agent.get_contract().id
             await self._emit_delegation_granted(
@@ -802,9 +878,7 @@ class GraphExecutor:
             plan_id = task.runtime.orchestration.plan_id
             if plan_id:
                 request.metadata["plan_id"] = plan_id
-            runtime_snapshot = runtime_checkpoint_from_metadata(task.metadata)
-            if runtime_snapshot is not None:
-                attach_runtime_checkpoint_to_metadata(request.metadata, runtime_snapshot)
+            request.runtime_checkpoint = runtime_ckpt
             critic_feedback = node.metadata.get("critic_feedback")
             if isinstance(critic_feedback, list) and critic_feedback:
                 request.metadata["critic_feedback"] = list(critic_feedback)
@@ -868,9 +942,11 @@ class GraphExecutor:
             governed_task_binding = ActiveGovernedExecutionTask()
             token = governed_task_binding.bind(task)
             try:
-                execution_result = await self._agent_executor.execute(execution_request)
+                execution_result = await self._strategy_router.execute(execution_request)
             finally:
                 governed_task_binding.reset(token)
+            if request.runtime_checkpoint is not None:
+                task.runtime.orchestration.runtime_checkpoint = request.runtime_checkpoint
             return execution_result.output
 
         execution, retries, validation = await self._retry_engine.execute_with_retry(
@@ -962,6 +1038,15 @@ class GraphExecutor:
 
         if on_node_complete is not None:
             on_node_complete(node)
+
+        if self._execution_tree_recorder is not None:
+            record_graph_node_completion(
+                self._execution_tree_recorder,
+                execution_id=child_execution_id,
+                node=node,
+                execution=execution,
+            )
+            sync_execution_tree_to_task(task, self._execution_tree_recorder)
 
         return _GraphNodeChildResult(
             execution=execution,

@@ -9,6 +9,7 @@ from typing import Optional
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from intergrax.runtime.events.runtime_event_identity import runtime_event_identity_kwargs
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 
@@ -34,8 +35,6 @@ def record_plan_failed(
     resolved.record(
         RuntimeEvent(
             tenant_id=state.request.tenant_id,
-            task_id=task_id or run_id or "planner",
-            run_id=run_id or task_id or "planner",
             event_type=RuntimeEventType.PLAN_FAILED,
             phase=ExecutionPhase.PLANNING,
             correlation_id=run_id or task_id or "planner",
@@ -45,5 +44,6 @@ def record_plan_failed(
                 "error_message": str(error),
                 "raw_hash": raw_hash,
             },
+            **runtime_event_identity_kwargs(task_id=task_id or run_id or "planner", run_id=run_id or None),
         )
     )

@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Unified product observability dashboard wiring (AUDIT-IDEAL-5.3 / 21.3)."""
+"""Unified product observability dashboard wiring (AUDIT-IDEAL-5.3 / 21.3 / DIAG-FOUNDATION-2)."""
 
 from __future__ import annotations
 
@@ -10,10 +10,19 @@ from pathlib import Path
 from fastapi import APIRouter, FastAPI
 
 from intergrax.applications._shared.architecture_health_wiring import resolve_architecture_health_wiring
+from intergrax.applications._shared.auditability_health_wiring import (
+    HostAuditabilityHealthFacts,
+    project_auditability_health_snapshot,
+    project_host_auditability_health_facts,
+    project_host_auditability_health_facts_from_runtime,
+)
 from intergrax.applications._shared.diagnostic_read_wiring import resolve_host_diagnostic_read_service
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications._shared.compliance_profile_wiring import resolve_compliance_profile_wiring
-from intergrax.applications._shared.health_dashboard_wiring import resolve_health_dashboard_wiring
+from intergrax.applications._shared.health_dashboard_wiring import (
+    resolve_health_dashboard_wiring,
+    resolve_health_dashboard_wiring_from_runtime,
+)
 from intergrax.applications._shared.product_observability_dashboard_routes import (
     create_product_observability_dashboard_router,
 )
@@ -42,11 +51,22 @@ class ProductObservabilityDashboardWiring:
 def _build_diagnostic_operations_pane(
     env: ApplicationEnvironmentProfile,
     diagnostic_read_service: DiagnosticReadService | None,
+    *,
+    auditability_facts: HostAuditabilityHealthFacts | None = None,
 ) -> DiagnosticOperationsPane:
     """Project central diagnostic read capability for the host tenant scope."""
     if not env.observability_profile.diagnostics_pane_enabled:
         return DiagnosticOperationsPane(ready=False, problem_count=0, open_problem_count=0)
-    if diagnostic_read_service is None:
+
+    auditability = (
+        project_auditability_health_snapshot(auditability_facts)
+        if auditability_facts is not None
+        else None
+    )
+    read_side_ready = diagnostic_read_service is not None
+    if auditability is not None and not auditability.auditability_ready:
+        return DiagnosticOperationsPane(ready=False, problem_count=0, open_problem_count=0)
+    if not read_side_ready:
         return DiagnosticOperationsPane(ready=False, problem_count=0, open_problem_count=0)
 
     tenant_id = env.profile_id
@@ -67,8 +87,12 @@ def _build_dashboard(
     *,
     repo_root: Path | None = None,
     diagnostic_read_service: DiagnosticReadService | None = None,
+    auditability_facts: HostAuditabilityHealthFacts | None = None,
 ) -> ProductObservabilityDashboard | None:
-    health_wiring = resolve_health_dashboard_wiring(env)
+    health_wiring = resolve_health_dashboard_wiring(
+        env,
+        auditability_facts=auditability_facts,
+    )
     if not health_wiring.enabled or health_wiring.contract is None:
         return None
 
@@ -90,7 +114,11 @@ def _build_dashboard(
             debt_index = summary.architecture_debt_index
             capability_count = summary.nodes_total
 
-    diagnostics = _build_diagnostic_operations_pane(env, diagnostic_read_service)
+    diagnostics = _build_diagnostic_operations_pane(
+        env,
+        diagnostic_read_service,
+        auditability_facts=auditability_facts,
+    )
 
     governance = GovernanceDashboardPane(
         compliance_profile_enabled=compliance_wiring.enabled,
@@ -118,6 +146,7 @@ def resolve_product_observability_dashboard_wiring(
     *,
     repo_root: Path | None = None,
     diagnostic_read_service: DiagnosticReadService | None = None,
+    auditability_facts: HostAuditabilityHealthFacts | None = None,
 ) -> ProductObservabilityDashboardWiring:
     """Mount GOV-PROD.1 dashboard routes when product observability flags are enabled."""
     if env.application_profile is not ApplicationProfile.PRODUCT:
@@ -132,6 +161,7 @@ def resolve_product_observability_dashboard_wiring(
         env,
         repo_root=repo_root,
         diagnostic_read_service=diagnostic_read_service,
+        auditability_facts=auditability_facts,
     )
     if dashboard is None:
         return ProductObservabilityDashboardWiring(enabled=False, router=None, dashboard=None)
@@ -145,6 +175,15 @@ def resolve_product_observability_dashboard_wiring(
 
 def _diagnostics_pane_requires_read_service(env: ApplicationEnvironmentProfile) -> bool:
     return env.observability_profile.diagnostics_pane_enabled
+
+
+def _resolve_diagnostic_read_side_ready(
+    runtime: HarnessHostRuntime,
+    diagnostic_read_service: DiagnosticReadService | None,
+) -> bool:
+    if not _diagnostics_pane_requires_read_service(runtime.environment):
+        return True
+    return diagnostic_read_service is not None
 
 
 def wire_harness_product_observability_dashboard(
@@ -162,13 +201,41 @@ def wire_harness_product_observability_dashboard(
     env = runtime.environment
     diagnostic_read_service: DiagnosticReadService | None = None
     if _diagnostics_pane_requires_read_service(env):
-        diagnostic_read_service = resolve_host_diagnostic_read_service(runtime)
+        try:
+            diagnostic_read_service = resolve_host_diagnostic_read_service(runtime)
+        except ValueError:
+            diagnostic_read_service = None
 
-    wiring = resolve_product_observability_dashboard_wiring(
-        env,
-        repo_root=repo_root,
-        diagnostic_read_service=diagnostic_read_service,
+    read_side_ready = _resolve_diagnostic_read_side_ready(runtime, diagnostic_read_service)
+    auditability_facts = project_host_auditability_health_facts_from_runtime(
+        runtime,
+        diagnostic_read_side_ready=read_side_ready,
     )
+    health_wiring = resolve_health_dashboard_wiring_from_runtime(
+        runtime,
+        diagnostic_read_side_ready=read_side_ready,
+    )
+    if not health_wiring.enabled or health_wiring.contract is None:
+        wiring = ProductObservabilityDashboardWiring(enabled=False, router=None, dashboard=None)
+    else:
+        dashboard = _build_dashboard(
+            env,
+            repo_root=repo_root,
+            diagnostic_read_service=diagnostic_read_service,
+            auditability_facts=auditability_facts,
+        )
+        if dashboard is None:
+            wiring = ProductObservabilityDashboardWiring(enabled=False, router=None, dashboard=None)
+        else:
+            wiring = ProductObservabilityDashboardWiring(
+                enabled=True,
+                router=create_product_observability_dashboard_router(
+                    dashboard=dashboard,
+                    enabled=True,
+                ),
+                dashboard=dashboard,
+            )
+
     if wiring.enabled and wiring.router is not None:
         app.include_router(wiring.router)
     return wiring

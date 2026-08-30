@@ -11,10 +11,13 @@ from typing import TYPE_CHECKING
 from intergrax.contracts.execution_identity import (
     AttemptId,
     EventId,
+    ExecutionId,
     RunId,
     TaskId,
+    require_active_execution_id,
     validate_attempt_id,
     validate_event_id,
+    validate_execution_id,
     validate_run_id,
     validate_task_id,
 )
@@ -30,6 +33,7 @@ class EmitContext:
     task_id: TaskId
     run_id: RunId
     attempt_id: AttemptId
+    execution_id: ExecutionId
     tenant_id: str | None = None
     correlation_id: str = ""
     parent_event_id: EventId | None = None
@@ -42,6 +46,11 @@ class EmitContext:
         object.__setattr__(self, "task_id", validate_task_id(self.task_id))
         object.__setattr__(self, "run_id", validate_run_id(self.run_id))
         object.__setattr__(self, "attempt_id", validate_attempt_id(self.attempt_id))
+        object.__setattr__(
+            self,
+            "execution_id",
+            validate_execution_id(self.execution_id),
+        )
         if self.parent_event_id is not None:
             object.__setattr__(
                 self,

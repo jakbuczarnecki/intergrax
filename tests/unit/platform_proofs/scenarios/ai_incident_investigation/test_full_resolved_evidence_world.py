@@ -1,6 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import build_fixture_runtime_bundle, build_runtime_bundle
 
 import pytest
 
@@ -18,7 +19,6 @@ from platform_proofs.scenarios.ai_incident_investigation.application.investigato
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     OUTCOME_RESOLVED,
-    build_runtime_bundle,
     execute_resolved_skeleton,
 )
 
@@ -65,7 +65,8 @@ def test_h3_not_obvious_from_initial_observable_set() -> None:
 
 @pytest.mark.asyncio
 async def test_no_telemetry_in_initial_evidence_nodes() -> None:
-    bundle = build_runtime_bundle()
+    fixture_bundle = build_fixture_runtime_bundle()
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
     initial_ids = {str(node["evidence_id"]) for node in result.initial_evidence_nodes}
     assert str(TELEMETRY_EVIDENCE_ID) not in initial_ids
@@ -76,16 +77,18 @@ async def test_no_telemetry_in_initial_evidence_nodes() -> None:
 
 @pytest.mark.asyncio
 async def test_full_resolved_evidence_world_passes_evaluator() -> None:
-    bundle = build_runtime_bundle()
+    fixture_bundle = build_fixture_runtime_bundle()
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
     assert result.outcome == OUTCOME_RESOLVED
-    evaluation = evaluate_scenario_run(result, bundle.fixture)
+    evaluation = evaluate_scenario_run(result, fixture_bundle.fixture)
     assert evaluation.passed, evaluation.failures
 
 
 @pytest.mark.asyncio
 async def test_comparison_and_staffing_follow_up_gathered() -> None:
-    bundle = build_runtime_bundle()
+    fixture_bundle = build_fixture_runtime_bundle()
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
     observable = {str(node["evidence_id"]) for node in result.evidence_nodes}
     assert str(COMPARISON_EVIDENCE_ID) in observable

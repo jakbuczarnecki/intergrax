@@ -85,6 +85,21 @@ jobs:
       - name: CI smoke unit tests
         run: uv run --frozen python scripts/ci/run_ci_smoke_pytest.py
 
+      - name: Durable diagnostics deterministic gate
+        run: >-
+          uv run --frozen pytest
+          tests/unit/applications/architecture/test_harden_1b_durable_problem_store_composition.py
+          tests/unit/runtime/diagnostics/test_harden_1d_problem_persistence_write_failure.py
+          tests/integration/applications/architecture/test_harden_1d_durable_problem_store_failure_semantics.py
+          -q --tb=line
+
+      - name: Diagnostic concurrency deterministic gate
+        run: >-
+          uv run --frozen pytest
+          tests/unit/runtime/diagnostics/test_harden_2a_problem_persistence_concurrency.py
+          tests/unit/runtime/diagnostics/test_harden_2b_problem_lifecycle_occ_retry.py
+          -q --tb=line
+
       - name: Platform Plugin program gate (Linux regression)
         run: >-
           uv run --frozen pytest
@@ -164,6 +179,21 @@ jobs:
 
       - name: Full unit regression gate
         run: uv run --frozen pytest tests/unit -m "gate and not no_ci" -n auto -q --tb=line
+
+      - name: Durable diagnostics deterministic gate
+        run: >-
+          uv run --frozen pytest
+          tests/unit/applications/architecture/test_harden_1b_durable_problem_store_composition.py
+          tests/unit/runtime/diagnostics/test_harden_1d_problem_persistence_write_failure.py
+          tests/integration/applications/architecture/test_harden_1d_durable_problem_store_failure_semantics.py
+          -q --tb=line
+
+      - name: Diagnostic concurrency deterministic gate
+        run: >-
+          uv run --frozen pytest
+          tests/unit/runtime/diagnostics/test_harden_2a_problem_persistence_concurrency.py
+          tests/unit/runtime/diagnostics/test_harden_2b_problem_lifecycle_occ_retry.py
+          -q --tb=line
 
   gate-governance-tier:
     if: >-
@@ -314,3 +344,107 @@ jobs:
 
       - name: Export capability catalog feed
         run: uv run --frozen python scripts/release/export_capability_catalog_feed.py
+
+  diag-final-external-proof:
+    if: >-
+      github.event_name == 'schedule' ||
+      (
+        github.event_name == 'workflow_dispatch' &&
+        github.event.inputs.profile == 'full'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install dependencies (CI minimal)
+        run: uv sync --extra dev-ci --frozen
+
+      - name: DIAG-FINAL external OpenTelemetry proof
+        run: >-
+          uv run --frozen pytest
+          tests/integration/runtime/test_diag_final_external_otel_e2e.py
+          -m external_proof
+          -q --tb=short
+
+  durable-diagnostics-external-proof:
+    if: >-
+      github.event_name == 'schedule' ||
+      (
+        github.event_name == 'workflow_dispatch' &&
+        github.event.inputs.profile == 'full'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 })'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 10s
+
+    env:
+      INTERGRAX_MONGODB_URI: mongodb://localhost:27017
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/agents:${{ github.workspace }}/applications
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install dependencies (CI minimal + MongoDB provider)
+        run: uv sync --extra dev-ci --extra integrations-mongodb --frozen
+
+      - name: Durable diagnostics backend readiness
+        run: >-
+          uv run --frozen python
+          tests/integration/applications/architecture/harden_1c_restart_proof_worker.py
+          probe
+
+      - name: Durable diagnostics external restart proof
+        run: >-
+          mkdir -p build
+          && uv run --frozen pytest
+          tests/integration/applications/architecture/test_harden_1c_durable_problem_restart_proof.py
+          --junitxml=build/harden-1c-external-proof.xml
+          -q --tb=short
+
+      - name: Assert HARDEN-1C proof executed (no skip)
+        run: >-
+          uv run --frozen python -c "import sys, xml.etree.ElementTree as ET;
+          root = ET.parse('build/harden-1c-external-proof.xml').getroot();
+          skipped = sum(int(ts.get('skipped', 0)) for ts in root.findall('testsuite'));
+          sys.exit(f'HARDEN-1C skipped ({skipped}) — infrastructure/proof failure' if skipped else 0)"
+
+      - name: Diagnostic concurrency external proof
+        run: >-
+          uv run --frozen pytest
+          tests/integration/applications/architecture/test_harden_2c_durable_problem_lifecycle_concurrency_proof.py
+          --junitxml=build/harden-2c-external-proof.xml
+          -q --tb=short
+
+      - name: Assert HARDEN-2C proof executed (no skip)
+        run: >-
+          uv run --frozen python -c "import sys, xml.etree.ElementTree as ET;
+          root = ET.parse('build/harden-2c-external-proof.xml').getroot();
+          skipped = sum(int(ts.get('skipped', 0)) for ts in root.findall('testsuite'));
+          sys.exit(f'HARDEN-2C skipped ({skipped}) — infrastructure/proof failure' if skipped else 0)"

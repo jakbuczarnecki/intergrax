@@ -42,6 +42,7 @@ from intergrax.applications._shared.critic_wiring import (
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_from_tool_wiring,
 )
+from intergrax.applications._shared.diagnostic_assembly_resolver import DiagnosticWiring
 from intergrax.applications._shared.environment_wiring import (
     ApplicationEnvironmentWiring,
     wire_application_environment,
@@ -139,6 +140,7 @@ class HarnessHostRuntime:
     cost: ApplicationCostWiring
     evaluation: ApplicationEvaluationWiring
     critic: ApplicationCriticWiring
+    diagnostic_wiring: DiagnosticWiring
     nexus_loop: NexusLoop
     application_host: ApplicationHost | None
     agent_checkpoint_store: AgentCheckpointStore
@@ -319,15 +321,15 @@ def build_harness_host_runtime(
 
     apply_reliability_governance_wiring(nexus_loop, environment)
     from intergrax.applications._shared.diagnostic_runtime_wiring import (
-        try_build_terminal_execution_diagnostic_trigger,
+        wire_terminal_execution_diagnostics,
     )
 
-    terminal_diagnostic_trigger = try_build_terminal_execution_diagnostic_trigger(
+    diagnostic_wiring = wire_terminal_execution_diagnostics(
+        env=environment,
         env_wiring=env_wiring,
         observability=observability,
+        nexus_loop=nexus_loop,
     )
-    if terminal_diagnostic_trigger is not None:
-        nexus_loop.attach_terminal_diagnostic_trigger(terminal_diagnostic_trigger)
     control_plane_governance = build_harness_control_plane_governance(
         environment,
         mutation_authorization_boundary=mutation_authorization_boundary,
@@ -345,6 +347,7 @@ def build_harness_host_runtime(
         cost=cost_wiring,
         evaluation=evaluation_wiring,
         critic=critic_wiring,
+        diagnostic_wiring=diagnostic_wiring,
         nexus_loop=nexus_loop,
         application_host=application_host,
         agent_checkpoint_store=resolved_agent_checkpoint_store,

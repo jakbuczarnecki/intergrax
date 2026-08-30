@@ -7,9 +7,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from intergrax.contracts.execution_identity import mint_event_id
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from testing_support.runtime_events import runtime_event_test_identity
 from intergrax.runtime.hooks.hook_registry import HookRegistry
 from intergrax.runtime.observability.export_boundary import (
     FORBIDDEN_EXPORT_CONTENT_FIELDS,
@@ -62,11 +64,10 @@ def test_default_policy_is_disabled_and_metadata_only() -> None:
 
 def test_default_policy_drops_export_for_runtime_event_envelope() -> None:
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
         event_type=RuntimeEventType.TOOL_COMPLETED,
         phase=ExecutionPhase.STEP_EXECUTION,
         payload={"tool_id": "workspace.read_file", "prompt": "secret"},
+        **runtime_event_test_identity(),
     )
     envelope = envelope_from_runtime_event(event)
     result = apply_observability_export_policy(envelope)
@@ -176,8 +177,6 @@ async def test_observability_export_runtime_plugin_exports_sanitized_envelope() 
     plugin.register(bus, HookRegistry(), MagicMock())
 
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
         tenant_id="tenant-a",
         agent_id="agent-1",
         event_type=RuntimeEventType.TOOL_COMPLETED,
@@ -188,6 +187,7 @@ async def test_observability_export_runtime_plugin_exports_sanitized_envelope() 
             "prompt": "secret prompt",
             "source_path": "C:\\secret\\file.txt",
         },
+        **runtime_event_test_identity(),
     )
 
     await bus.publish(event)
@@ -208,11 +208,10 @@ async def test_observability_export_runtime_plugin_survives_exporter_failure() -
     plugin.register(bus, HookRegistry(), MagicMock())
 
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
         event_type=RuntimeEventType.TASK_COMPLETED,
         phase=ExecutionPhase.COMPLETION,
         payload={"journal_ref": {"event_count": 1}},
+        **runtime_event_test_identity(),
     )
 
     await bus.publish(event)
@@ -226,19 +225,19 @@ async def test_observability_export_runtime_plugin_exports_once_on_publish() -> 
     plugin = make_observability_export_runtime_plugin(exporter=exporter, policy=policy)
     plugin.register(bus, HookRegistry(), MagicMock())
 
+    event_id = mint_event_id()
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
-        event_id="evt-dedupe-tool",
+        event_id=event_id,
         tenant_id="tenant-a",
         agent_id="local_search",
         event_type=RuntimeEventType.TOOL_REQUESTED,
         phase=ExecutionPhase.STEP_EXECUTION,
         payload={"tool_id": "rag.retrieve", "status": "requested"},
+        **runtime_event_test_identity(),
     )
 
     await bus.publish(event)
 
     assert len(exporter.envelopes) == 1
-    assert exporter.envelopes[0].event_id == "evt-dedupe-tool"
+    assert exporter.envelopes[0].event_id == event_id
     assert exporter.envelopes[0].tool_id == "rag.retrieve"

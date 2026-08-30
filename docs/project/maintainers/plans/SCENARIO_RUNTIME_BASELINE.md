@@ -433,6 +433,10 @@ Constant `LIFECYCLE_ACCEPTED_FOR_IMPLEMENTATION` exists in `create_scenario_proo
 
 **Output:** implementation skeleton only (rails, stubs, gates) — **no domain logic**.
 
+Initialized scenario implementations are automatically subject to universal architecture
+conformance via `scripts/proof/scenario_architecture_conformance.py` before lifecycle
+promotion to `IMPLEMENTATION_INITIALIZED`.
+
 ### 18.3 Machine-readable lifecycle metadata (recommended)
 
 String search for `ACCEPTED FOR IMPLEMENTATION` in markdown is **fragile** (false positives, manual edits).

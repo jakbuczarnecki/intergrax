@@ -5,17 +5,37 @@
 from __future__ import annotations
 
 from contextvars import ContextVar, Token
+from dataclasses import dataclass
 
-from intergrax.contracts.delegation_authority import ParentExecutionAuthority
+from intergrax.contracts.delegation_authority import (
+    EffectiveDelegationAuthority,
+    ParentExecutionAuthority,
+)
 
-_active_execution_authority: ContextVar[ParentExecutionAuthority | None] = ContextVar(
+
+@dataclass(frozen=True, slots=True)
+class ActiveExecutionAuthorityState:
+    authority: ParentExecutionAuthority
+    effective_delegation: EffectiveDelegationAuthority | None = None
+
+
+_active_execution_authority: ContextVar[ActiveExecutionAuthorityState | None] = ContextVar(
     "active_execution_authority",
     default=None,
 )
 
 
-def bind_active_execution_authority(authority: ParentExecutionAuthority) -> Token:
-    return _active_execution_authority.set(authority)
+def bind_active_execution_authority(
+    authority: ParentExecutionAuthority,
+    *,
+    effective_delegation: EffectiveDelegationAuthority | None = None,
+) -> Token:
+    return _active_execution_authority.set(
+        ActiveExecutionAuthorityState(
+            authority=authority,
+            effective_delegation=effective_delegation,
+        )
+    )
 
 
 def reset_active_execution_authority(token: Token) -> None:
@@ -23,7 +43,17 @@ def reset_active_execution_authority(token: Token) -> None:
 
 
 def peek_active_execution_authority() -> ParentExecutionAuthority | None:
-    return _active_execution_authority.get()
+    state = _active_execution_authority.get()
+    if state is None:
+        return None
+    return state.authority
+
+
+def peek_active_effective_delegation() -> EffectiveDelegationAuthority | None:
+    state = _active_execution_authority.get()
+    if state is None:
+        return None
+    return state.effective_delegation
 
 
 def require_active_execution_authority() -> ParentExecutionAuthority:
@@ -38,8 +68,16 @@ class ActiveExecutionAuthority:
 
     __slots__ = ()
 
-    def bind(self, authority: ParentExecutionAuthority) -> Token:
-        return bind_active_execution_authority(authority)
+    def bind(
+        self,
+        authority: ParentExecutionAuthority,
+        *,
+        effective_delegation: EffectiveDelegationAuthority | None = None,
+    ) -> Token:
+        return bind_active_execution_authority(
+            authority,
+            effective_delegation=effective_delegation,
+        )
 
     def reset(self, token: Token) -> None:
         reset_active_execution_authority(token)

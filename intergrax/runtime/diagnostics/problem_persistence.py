@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from intergrax.runtime.diagnostics.problem_grouping import ProblemGroupingSubjectRef
@@ -22,8 +23,25 @@ class ProblemPersistenceConflictError(Exception):
     """Raised when a write conflicts with an existing record or CAS version."""
 
 
+class ProblemPersistenceIntegrityReason(StrEnum):
+    """Typed integrity failure reasons for transient or diagnostic classification."""
+
+    RECONCILIATION_WINNER_CANONICAL_PENDING = (
+        "reconciliation_winner_canonical_pending"
+    )
+
+
 class ProblemPersistenceIntegrityError(Exception):
     """Raised when indexed storage is inconsistent with the canonical Problem record."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        reason: ProblemPersistenceIntegrityReason | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.reason = reason
 
 
 class ProblemPersistence(ABC):

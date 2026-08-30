@@ -19,6 +19,9 @@ from intergrax.queueing.worker.registry import (
     TaskExecutionRegistry,
 )
 from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
+from intergrax.runtime.background_execution.identity_admission import (
+    assert_handler_run_id_matches_identity,
+)
 from intergrax.tools.execution_models import ToolExecutionResult
 
 _DEFAULT_LEASE_SECONDS = 300
@@ -85,6 +88,10 @@ def execute_logical_task(
     """
 
     handler = registry.get_handler(logical_task_name)
+    assert_handler_run_id_matches_identity(
+        handler_run_id=run_id,
+        execution_identity=execution_identity,
+    )
     resolved_tenant_id = execution_identity.tenant_id
     resolved_run_id = str(execution_identity.run_id)
 

@@ -1,6 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import build_fixture_runtime_bundle, build_runtime_bundle
 
 from dataclasses import replace
 
@@ -41,7 +42,6 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario_co
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     OUTCOME_RESOLVED,
     OUTCOME_UNRESOLVED,
-    build_runtime_bundle,
     execute_resolved_skeleton,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
@@ -151,26 +151,29 @@ def test_same_id_available_vs_unresolved_outcomes() -> None:
 
 @pytest.mark.asyncio
 async def test_full_unresolved_evidence_world_passes_evaluator() -> None:
-    bundle = build_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    fixture_bundle = build_fixture_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
     assert result.outcome == OUTCOME_UNRESOLVED
     assert result.critic_verdict_passed
-    evaluation = evaluate_scenario_run(result, bundle.fixture)
+    evaluation = evaluate_scenario_run(result, fixture_bundle.fixture)
     assert evaluation.passed, evaluation.failures
 
 
 @pytest.mark.asyncio
 async def test_resolved_regression_still_passes() -> None:
-    bundle = build_runtime_bundle(variant=ScenarioVariant.RESOLVED)
+    fixture_bundle = build_fixture_runtime_bundle(variant=ScenarioVariant.RESOLVED)
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
     assert result.outcome == OUTCOME_RESOLVED
-    evaluation = evaluate_scenario_run(result, bundle.fixture)
+    evaluation = evaluate_scenario_run(result, fixture_bundle.fixture)
     assert evaluation.passed, evaluation.failures
 
 
 @pytest.mark.asyncio
 async def test_unresolved_challenge_remains_open() -> None:
-    bundle = build_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    fixture_bundle = build_fixture_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
     assert result.evidence_challenge is not None
     assert result.evidence_challenge.resolution is ChallengeResolution.OPEN
@@ -179,7 +182,8 @@ async def test_unresolved_challenge_remains_open() -> None:
 
 @pytest.mark.asyncio
 async def test_unresolved_forged_h3_supported_fails_critic() -> None:
-    bundle = build_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    fixture_bundle = build_fixture_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
     forged = build_forged_h3_claim_set(result)
     forged_h3 = next(
@@ -200,7 +204,8 @@ async def test_unresolved_forged_h3_supported_fails_critic() -> None:
 
 @pytest.mark.asyncio
 async def test_unresolved_forged_h1_fallback_fails() -> None:
-    bundle = build_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    fixture_bundle = build_fixture_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
     claim_set = EvidenceClaimSet.model_validate(result.claim_set)
     forged_h1 = EvidenceBackedClaim(
@@ -230,7 +235,8 @@ async def test_unresolved_forged_h1_fallback_fails() -> None:
 
 @pytest.mark.asyncio
 async def test_unresolved_forged_h2_fallback_fails() -> None:
-    bundle = build_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    fixture_bundle = build_fixture_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
     claim_set = EvidenceClaimSet.model_validate(result.claim_set)
     forged_h2 = EvidenceBackedClaim(
@@ -258,7 +264,8 @@ async def test_unresolved_forged_h2_fallback_fails() -> None:
 
 @pytest.mark.asyncio
 async def test_unresolved_positive_claim_set_passes_validation() -> None:
-    bundle = build_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    fixture_bundle = build_fixture_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
     claim_set = EvidenceClaimSet.model_validate(result.claim_set)
     validation = validate_claim_set_against_observations(
@@ -270,7 +277,8 @@ async def test_unresolved_positive_claim_set_passes_validation() -> None:
 
 @pytest.mark.asyncio
 async def test_unresolved_telemetry_provider_invoked_once() -> None:
-    bundle = build_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    fixture_bundle = build_fixture_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
     assert result.tool_invocations == 6
     telemetry_nodes = [
@@ -284,8 +292,10 @@ async def test_unresolved_telemetry_provider_invoked_once() -> None:
 
 @pytest.mark.asyncio
 async def test_mutation_available_resolved_unavailable_unresolved() -> None:
-    resolved_bundle = build_runtime_bundle(variant=ScenarioVariant.RESOLVED)
-    unresolved_bundle = build_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    resolved_fixture_bundle = build_fixture_runtime_bundle(variant=ScenarioVariant.RESOLVED)
+    resolved_bundle = resolved_fixture_bundle.bundle
+    unresolved_fixture_bundle = build_fixture_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    unresolved_bundle = unresolved_fixture_bundle.bundle
     resolved = await execute_resolved_skeleton(resolved_bundle)
     unresolved = await execute_resolved_skeleton(unresolved_bundle)
     assert resolved.outcome == OUTCOME_RESOLVED

@@ -339,6 +339,7 @@ markers = [
   "gate: Minimal pre-P4.2 regression gate (deterministic, no network).",
   "ci_smoke: Lightweight representative subset for PR/merge CI (<~30s).",
   "no_ci: Excluded from GitHub CI — infra-heavy (FastAPI, SQLite, MCP, sleeps, threading).",
+  "external_proof: Real external integration proof (Docker-backed); required in dedicated CI job only.",
   "agent_os: Agent OS acceptance scenarios (Phase L.5); included in gate.",
   "tier3_scenario: Tier-3 UC-A* scenario matrix coverage (APP-CON-7).",
   "vectorstore_soak: RAG vector-store prod SLO soak against real backends (M-RAG.30); skipped when service unreachable.",

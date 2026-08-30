@@ -11,6 +11,27 @@ from intergrax.applications.contracts.manifest import AgentBinding
 from intergrax.contracts.agent_contract_meta import AgentContract
 
 
+def _is_contract_reference_binding(binding: AgentBinding) -> bool:
+    """Contract-id-only roster entry — harness/scenario catalogs without agent imports."""
+    contract_id = (binding.contract_id or "").strip()
+    if not contract_id:
+        return False
+    return (
+        binding.agent_type is None
+        and binding.import_path is None
+        and binding.factory is None
+        and not binding.factory_path
+    )
+
+
+def _binding_identity_resolvable(binding: AgentBinding) -> bool:
+    if binding.factory is not None or binding.factory_path:
+        return True
+    if _is_contract_reference_binding(binding):
+        return True
+    return binding.agent_type is not None or binding.import_path is not None
+
+
 class EnvironmentSkillToolConsistencyCheck:
     """Warn/fail when agent contracts exceed environment profiles."""
 
@@ -22,8 +43,24 @@ class EnvironmentSkillToolConsistencyCheck:
         binding: AgentBinding,
         env: ApplicationEnvironmentProfile,
     ) -> list[str]:
+        if not _binding_identity_resolvable(binding):
+            label = (binding.contract_id or "").strip() or binding.display_name()
+            violations = [
+                f"{label}: AgentBinding has no resolvable agent identity "
+                "(requires agent_type, import_path, contract_id reference, or factory)",
+            ]
+            if self._fail:
+                raise ApplicationManifestConformanceError(violations[0])
+            return violations
+
         if binding.factory is not None or binding.factory_path:
             return []
+
+        if _is_contract_reference_binding(binding):
+            # Skill/tool consistency is resolved at runtime from harness catalogs;
+            # contract-reference bindings intentionally omit importable agent types here.
+            return []
+
         agent_type = binding.resolved_agent_type()
         contract = _contract_for_agent(agent_type, binding)
         violations: list[str] = []

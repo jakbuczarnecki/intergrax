@@ -18,6 +18,7 @@ from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_event import RetryEvent
 from intergrax.queueing.worker.retry_policy import RetryPolicy
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.nexus_worker_execution import (
     NexusWorkerRuntime,
@@ -27,6 +28,7 @@ from intergrax.runtime.task.worker_payload import NEXUS_TASK_V2_LOGICAL_NAME
 from intergrax.runtime.background_execution.identity_persistence import (
     wire_background_execution_identity_persistence,
 )
+from intergrax.runtime.execution.budget.persistence import wire_run_budget_persistence
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
 )
@@ -37,13 +39,20 @@ def build_nexus_task_execution_registry(
     *,
     checkpoint_store: Optional[TaskCheckpointPersistence] = None,
     lifecycle=None,
+    kv_store: Optional[DistributedKVStore] = None,
+    run_budget: RunBudget | None = None,
 ) -> TaskExecutionRegistry:
     """Register ``nexus.task.v2`` on a worker TaskExecutionRegistry."""
+    run_budget_persistence = None
+    if kv_store is not None:
+        run_budget_persistence = wire_run_budget_persistence(kv_store=kv_store)
     worker_registry = TaskExecutionRegistry()
     runtime = NexusWorkerRuntime.from_registry(
         registry,
         checkpoint_store=checkpoint_store,
         lifecycle=lifecycle,
+        run_budget=run_budget,
+        run_budget_persistence=run_budget_persistence,
     )
     register_nexus_task_worker(worker_registry, runtime)
     return worker_registry
@@ -83,6 +92,7 @@ def create_nexus_celery_worker_app(
         agent_registry,
         checkpoint_store=checkpoint_store,
         lifecycle=lifecycle,
+        kv_store=kv_store,
     )
 
     app = Celery(app_name, broker=broker_url, backend=backend_url)

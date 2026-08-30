@@ -10,23 +10,17 @@ from intergrax.agents.agent_engine import AgentEngine
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.contracts.idempotency_store import IdempotencyStore
-from intergrax.contracts.delegation_authority import resolve_root_parent_execution_authority
 from intergrax.contracts.execution_identity import (
     ActiveExecutionIdentity,
     AttemptId,
     RunId,
-    bind_active_execution_identity,
-    mint_attempt_id,
-    peek_active_execution_id,
+    require_active_execution_id,
     require_active_execution_identity,
-    reset_active_execution_identity,
     validate_attempt_id,
     validate_run_id,
 )
 from intergrax.runtime.governance.active_execution_authority import (
-    bind_active_execution_authority,
-    peek_active_execution_authority,
-    reset_active_execution_authority,
+    require_active_execution_authority,
 )
 from intergrax.contracts.agent_execution_result import (
     AgentExecutionResult,
@@ -97,6 +91,10 @@ from intergrax.runtime.adaptive.signal_collector import SignalCollector
 from intergrax.runtime.adaptive.signal_emission import record_task_outcome_signal
 from intergrax.runtime.architecture.online_evaluation_registry import OnlineEvaluationRegistry
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.runtime.execution.active_execution_budget import (
+    require_active_execution_budget,
+)
+from intergrax.runtime.execution.budget import create_execution_budget_ledger_factory
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTriggerProtocol,
 )
@@ -106,6 +104,12 @@ from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddlewar
 if TYPE_CHECKING:
     from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
     from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
+    from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
+    from intergrax.runtime.execution.budget.ledger import (
+        ExecutionBudgetLedger,
+        ExecutionBudgetLedgerFactory,
+    )
+    from intergrax.runtime.execution.budget.policy import ExecutionBudgetAllocationPolicy
 
 class NexusLoop:
     """
@@ -162,6 +166,9 @@ class NexusLoop:
         planner_model_id: str | None = None,
         governance_service: Any = None,
         terminal_diagnostic_trigger: TerminalExecutionDiagnosticTriggerProtocol | None = None,
+        authority_policy: "ExecutionAuthorityPolicy | None" = None,
+        budget_allocation_policy: "ExecutionBudgetAllocationPolicy | None" = None,
+        execution_budget_ledger_factory: "ExecutionBudgetLedgerFactory | None" = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -261,6 +268,8 @@ class NexusLoop:
             idempotency_store=idempotency_store,
             declarative_tool_invoker=declarative_tool_invoker,
             execution_identity=self._execution_identity,
+            authority_policy=authority_policy,
+            budget_allocation_policy=budget_allocation_policy,
         )
         self._composer = FinalResponseComposer(merge_strategy=merge_strategy)
         self._lifecycle = lifecycle
@@ -270,6 +279,10 @@ class NexusLoop:
         self._signal_collector = signal_collector
         self._evaluation_registry = evaluation_registry
         self._run_budget = run_budget
+        self._execution_budget_ledger_factory = (
+            execution_budget_ledger_factory
+            or create_execution_budget_ledger_factory(run_budget)
+        )
         trace_reader = trace_store if isinstance(trace_store, RunTraceReader) else None
         self._events = NexusRuntimeEventPublisher(
             self._event_bus,
@@ -328,6 +341,17 @@ class NexusLoop:
     @property
     def registry(self) -> AgentRegistry:
         return self._registry
+
+    def apply_validation_engine(self, validation_engine: NexusValidationEngine) -> None:
+        """Replace the active validation engine across Nexus execution surfaces."""
+        self._validation_engine = validation_engine
+        self._graph_executor._validation_engine = validation_engine
+        self._graph_runner.validation_engine = validation_engine
+
+    @property
+    def critic_graph_hooks(self) -> Optional["CriticGraphHooks"]:
+        """Return wired critic graph hooks when application critic wiring is active."""
+        return self._graph_executor._critic_graph_hooks
 
     def apply_critic_graph_hooks(self, hooks: Optional["CriticGraphHooks"]) -> None:
         """Attach or clear critic graph hooks on executor and runner (CRIT-V-6.1)."""
@@ -390,6 +414,14 @@ class NexusLoop:
     def policy_engine(self) -> PolicyEngine:
         return self._policy_engine
 
+    @property
+    def run_budget(self) -> RunBudget | None:
+        return self._run_budget
+
+    @property
+    def execution_budget_ledger_factory(self) -> "ExecutionBudgetLedgerFactory":
+        return self._execution_budget_ledger_factory
+
     async def handle_task(
         self,
         task: Task,
@@ -398,57 +430,32 @@ class NexusLoop:
         attempt_id: Optional[AttemptId] = None,
     ) -> TaskResult:
         resolved_run_id = validate_run_id(run_id)
-        active_execution_id = peek_active_execution_id()
-        if active_execution_id is not None:
-            active_run_id, active_attempt_id = require_active_execution_identity()
-            resolved_attempt_id = (
-                validate_attempt_id(attempt_id)
-                if attempt_id is not None
-                else active_attempt_id
-            )
-            if resolved_run_id != active_run_id:
-                raise RuntimeError(
-                    "active execution identity run_id mismatch with Nexus handle_task",
-                )
-            if resolved_attempt_id != active_attempt_id:
-                raise RuntimeError(
-                    "active execution identity attempt_id mismatch with Nexus handle_task",
-                )
-            root_authority = resolve_root_parent_execution_authority(
-                task.execution_authority,
-            )
-            authority_token = None
-            if peek_active_execution_authority() is None:
-                authority_token = bind_active_execution_authority(root_authority)
-            self._current_task = task
-            try:
-                return await self._handle_task_impl(task)
-            finally:
-                self._current_task = None
-                if authority_token is not None:
-                    reset_active_execution_authority(authority_token)
-
-        # TRANSITIONAL — OWNER: UE-9D — Run/Attempt only; ExecutionId must enter via Boundary.
+        active_execution_id = require_active_execution_id()
+        active_run_id, active_attempt_id = require_active_execution_identity()
         resolved_attempt_id = (
             validate_attempt_id(attempt_id)
             if attempt_id is not None
-            else mint_attempt_id()
+            else active_attempt_id
         )
+        if resolved_run_id != active_run_id:
+            raise RuntimeError(
+                "active execution identity run_id mismatch with Nexus handle_task",
+            )
+        if resolved_attempt_id != active_attempt_id:
+            raise RuntimeError(
+                "active execution identity attempt_id mismatch with Nexus handle_task",
+            )
+        require_active_execution_authority()
+        active_budget = require_active_execution_budget()
+        if active_budget.execution_id != active_execution_id:
+            raise RuntimeError(
+                "active execution budget execution_id mismatch with Nexus handle_task",
+            )
         self._current_task = task
-        root_authority = resolve_root_parent_execution_authority(
-            task.execution_authority,
-        )
-        identity_token = bind_active_execution_identity(
-            run_id=resolved_run_id,
-            attempt_id=resolved_attempt_id,
-        )
-        authority_token = bind_active_execution_authority(root_authority)
         try:
             return await self._handle_task_impl(task)
         finally:
             self._current_task = None
-            reset_active_execution_authority(authority_token)
-            reset_active_execution_identity(identity_token)
 
     async def _handle_task_impl(self, task: Task) -> TaskResult:
         lifecycle, trace_emitter = self._resolve_lifecycle(task)
@@ -710,13 +717,20 @@ class NexusLoop:
             invoke_terminal_execution_diagnostics,
         )
 
-        run_id, _ = self._execution_identity.require()
+        from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
+
         invoke_terminal_execution_diagnostics(
             self._terminal_diagnostic_trigger,
             tenant_id=task.tenant_id,
             task_id=task.task_id,
-            run_id=run_id,
+            run_id=terminal_event.run_id,
             observed_at=terminal_event.timestamp,
+            event_bus=self._event_bus,
+            execution_identity=ExecutionIdentityBinding(
+                run_id=terminal_event.run_id,
+                attempt_id=terminal_event.attempt_id,
+                execution_id=terminal_event.execution_id,
+            ),
         )
 
     def _resolve_lifecycle(self, task: Task) -> tuple[TaskLifecycle, TaskTraceEmitter]:

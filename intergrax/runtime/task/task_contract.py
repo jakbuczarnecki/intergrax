@@ -5,7 +5,10 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -145,6 +148,7 @@ class TaskOrchestrationState(BaseModel):
     checkpoint_id: Optional[str] = None
     resume_token: Optional[str] = None
     progress_message: str = ""
+    runtime_checkpoint: Optional["RuntimeCheckpoint"] = None
 
 
 class TaskRuntimeState(BaseModel):

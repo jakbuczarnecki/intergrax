@@ -8,6 +8,11 @@ from intergrax.applications._shared.diagnostic_read_wiring import (
     HostDiagnosticReadDependencies,
     resolve_host_diagnostic_read_dependencies,
 )
+from intergrax.applications._shared.diagnostic_assembly_resolver import (
+    DiagnosticWiring,
+    assert_diagnostic_assembly_valid,
+    resolve_central_diagnostics_required,
+)
 from intergrax.applications._shared.environment_wiring import ApplicationEnvironmentWiring
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.integrations._shared.conformance import assert_conditional_document_store
@@ -27,10 +32,14 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingStrategyRegistry,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import ProblemLifecycleEngine
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTrigger,
 )
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores
 from intergrax.runtime.observability.causal_evidence_persistence import CausalEvidencePersistence
 from intergrax.runtime.observability.document_store_causal_evidence_persistence import (
@@ -110,6 +119,54 @@ def try_build_terminal_execution_diagnostic_trigger(
     return build_terminal_execution_diagnostic_trigger(dependencies)
 
 
+def _diagnostic_prerequisite_gaps(
+    *,
+    env_wiring: ApplicationEnvironmentWiring,
+    observability: NexusObservabilityStores,
+) -> tuple[bool, bool]:
+    wiring_context = env_wiring.build_context.tool_wiring_context
+    missing_document_store = wiring_context is None or wiring_context.document_store is None
+    missing_runtime_events = observability.runtime_event_store is None
+    return missing_document_store, missing_runtime_events
+
+
+def wire_terminal_execution_diagnostics(
+    *,
+    env: ApplicationEnvironmentProfile,
+    env_wiring: ApplicationEnvironmentWiring,
+    observability: NexusObservabilityStores,
+    nexus_loop: NexusLoop,
+    scenario_runtime_mode: object | None = None,
+) -> DiagnosticWiring:
+    """
+    Policy-aware terminal diagnostic composition over the canonical orchestrator spine.
+
+    When diagnostics are required, missing prerequisites fail closed.
+    """
+    required = resolve_central_diagnostics_required(
+        env,
+        scenario_runtime_mode=scenario_runtime_mode,  # type: ignore[arg-type]
+    )
+    missing_document_store, missing_runtime_events = _diagnostic_prerequisite_gaps(
+        env_wiring=env_wiring,
+        observability=observability,
+    )
+    terminal_diagnostic_trigger = try_build_terminal_execution_diagnostic_trigger(
+        env_wiring=env_wiring,
+        observability=observability,
+    )
+    attached = terminal_diagnostic_trigger is not None
+    assert_diagnostic_assembly_valid(
+        required=required,
+        attached=attached,
+        missing_document_store=missing_document_store,
+        missing_runtime_events=missing_runtime_events,
+    )
+    if attached:
+        nexus_loop.attach_terminal_diagnostic_trigger(terminal_diagnostic_trigger)
+    return DiagnosticWiring(required=required, attached=attached)
+
+
 def resolve_host_terminal_execution_diagnostic_trigger(
     runtime: HarnessHostRuntime,
 ) -> TerminalExecutionDiagnosticTrigger:
@@ -125,4 +182,5 @@ __all__ = [
     "resolve_host_diagnostic_runtime_dependencies",
     "resolve_host_terminal_execution_diagnostic_trigger",
     "try_build_terminal_execution_diagnostic_trigger",
+    "wire_terminal_execution_diagnostics",
 ]

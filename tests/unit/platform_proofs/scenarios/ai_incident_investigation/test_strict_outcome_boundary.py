@@ -1,6 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import build_runtime_bundle
 
 import pytest
 
@@ -9,7 +10,6 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario im
     OUTCOME_RESOLVED,
     OUTCOME_UNRESOLVED,
     TERMINAL_STATE_NOT_ACCEPTED,
-    build_runtime_bundle,
     derive_terminal_outcome,
     execute_resolved_skeleton,
     execute_with_completion_gate_blocked,

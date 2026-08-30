@@ -22,7 +22,16 @@ from intergrax.contracts.execution_identity import (
     reset_active_execution_identity,
     validate_execution_id,
 )
-from intergrax.runtime.execution.nexus_compat import NexusTaskExecutionDelegate
+from intergrax.runtime.execution.orchestration import (
+    OrchestrationExecutor,
+    TaskBoundOrchestrationDelegate,
+    execute_root_task,
+    resolve_root_task_identity,
+)
+from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
+from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
+from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
+from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
@@ -32,7 +41,7 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.mark.asyncio
-async def test_nexus_delegate_invokes_handle_task_once_with_resolved_identity() -> None:
+async def test_orchestration_executor_invokes_handle_task_once_with_active_identity() -> None:
     task = Task(
         task_id=mint_task_id(),
         tenant_id="tenant-1",
@@ -42,16 +51,20 @@ async def test_nexus_delegate_invokes_handle_task_once_with_resolved_identity() 
     )
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
     expected = TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
     nexus_loop = MagicMock()
     nexus_loop.handle_task = AsyncMock(return_value=expected)
 
-    delegate = NexusTaskExecutionDelegate(
-        nexus_loop,  # type: ignore[arg-type]
+    token = bind_active_execution_identity(
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
     )
-    result = await delegate.execute(task)
+    try:
+        result = await OrchestrationExecutor(nexus_loop).execute(task)  # type: ignore[arg-type]
+    finally:
+        reset_active_execution_identity(token)
 
     nexus_loop.handle_task.assert_awaited_once_with(
         task,
@@ -62,33 +75,97 @@ async def test_nexus_delegate_invokes_handle_task_once_with_resolved_identity() 
 
 
 @pytest.mark.asyncio
-async def test_nexus_delegate_passes_explicit_attempt_id() -> None:
+async def test_orchestration_router_resolves_orchestration_request_with_real_resolver() -> None:
     task = Task(
         task_id=mint_task_id(),
         tenant_id="tenant-1",
         user_id="user-1",
-        message="resume",
-        context=TaskContext(),
+        message="hello",
+        context=TaskContext(capability="echo.basic", intent="run"),
     )
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    expected = TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
     nexus_loop = MagicMock()
-    nexus_loop.handle_task = AsyncMock(
-        return_value=TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+    nexus_loop.handle_task = AsyncMock(return_value=expected)
+    request = execution_request_from_task(
+        task,
+        capabilities=frozenset({ExecutionCapability.ORCHESTRATION}),
+        output_type=TaskResult,
     )
 
-    delegate = NexusTaskExecutionDelegate(
-        nexus_loop,  # type: ignore[arg-type]
+    assert StrategyResolver().resolve(request) is ExecutionStrategy.ORCHESTRATION
+
+    token = bind_active_execution_identity(
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
     )
-    await delegate.execute(task)
+    try:
+        router = StrategyExecutionRouter[
+            TaskExecutionInput,
+            TaskResult,
+            TaskResult,
+        ](
+            orchestration_executor=TaskBoundOrchestrationDelegate(
+                task,
+                OrchestrationExecutor(nexus_loop),
+            ),
+        )
+        result = await router.execute(request)
+    finally:
+        reset_active_execution_identity(token)
 
     nexus_loop.handle_task.assert_awaited_once_with(
         task,
         run_id=run_id,
         attempt_id=attempt_id,
     )
+    assert result is expected
+
+
+@pytest.mark.asyncio
+async def test_orchestration_router_fails_closed_when_strategy_is_not_orchestration() -> None:
+    task = Task(
+        task_id=mint_task_id(),
+        tenant_id="tenant-1",
+        user_id="user-1",
+        message="hello",
+        context=TaskContext(),
+    )
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    nexus_loop = MagicMock()
+    nexus_loop.handle_task = AsyncMock()
+    request = ExecutionRequest(
+        input=TaskExecutionInput(message=task.message),
+        capabilities=frozenset({ExecutionCapability.TOOLS}),
+        output_type=TaskResult,
+    )
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    try:
+        router = StrategyExecutionRouter[
+            TaskExecutionInput,
+            TaskResult,
+            TaskResult,
+        ](
+            orchestration_executor=TaskBoundOrchestrationDelegate(
+                task,
+                OrchestrationExecutor(nexus_loop),
+            ),
+        )
+        with pytest.raises(RuntimeError, match="AGENTIC strategy is not configured"):
+            await router.execute(request)
+    finally:
+        reset_active_execution_identity(token)
+
+    nexus_loop.handle_task.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -109,19 +186,12 @@ async def test_nexus_preserves_boundary_execution_id(monkeypatch: pytest.MonkeyP
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="execute")
-    token = bind_active_execution_identity(
-        run_id=run_id,
-        attempt_id=attempt_id,
-        execution_id=execution_id,
-    )
-    try:
-        await loop.handle_task(task, run_id=run_id, attempt_id=attempt_id)
-    finally:
-        reset_active_execution_identity(token)
+    identity = resolve_root_task_identity(run_id=run_id, attempt_id=attempt_id)
+    await execute_root_task(task, nexus_loop=loop, identity=identity)
 
     assert captured["run_id"] == run_id
     assert captured["attempt_id"] == attempt_id
-    assert captured["execution_id"] == execution_id
+    assert captured["execution_id"] != identity.execution_id
     assert validate_execution_id(captured["execution_id"])
 
 
@@ -129,66 +199,54 @@ async def test_nexus_preserves_boundary_execution_id(monkeypatch: pytest.MonkeyP
 async def test_nexus_does_not_rebind_when_boundary_execution_id_active(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from intergrax.runtime.nexus import nexus_loop as nexus_loop_module
+    from intergrax.runtime.execution import boundary as boundary_module
 
     bind_calls: list[tuple[RunId, AttemptId]] = []
+    original_bind = boundary_module.bind_active_execution_identity
 
-    original_bind = bind_active_execution_identity
-
-    def _spy_bind(*, run_id: RunId, attempt_id: AttemptId, execution_id=None):
+    def _spy_bind(*, run_id: RunId, attempt_id: AttemptId, execution_id=None, parent_execution_id=None):
         bind_calls.append((run_id, attempt_id))
-        return original_bind(run_id=run_id, attempt_id=attempt_id, execution_id=execution_id)
+        return original_bind(
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+            parent_execution_id=parent_execution_id,
+        )
 
-    monkeypatch.setattr(nexus_loop_module, "bind_active_execution_identity", _spy_bind)
+    monkeypatch.setattr(boundary_module, "bind_active_execution_identity", _spy_bind)
 
     registry = AgentRegistry()
     loop = NexusLoop(registry)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
-    execution_id = mint_execution_id()
 
     async def _fake_impl(task: Task) -> TaskResult:
         return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="execute")
-    token = nexus_loop_module.bind_active_execution_identity(
-        run_id=run_id,
-        attempt_id=attempt_id,
-        execution_id=execution_id,
-    )
-    try:
-        await loop.handle_task(task, run_id=run_id, attempt_id=attempt_id)
-    finally:
-        nexus_loop_module.reset_active_execution_identity(token)
+    identity = resolve_root_task_identity(run_id=run_id, attempt_id=attempt_id)
+    await execute_root_task(task, nexus_loop=loop, identity=identity)
 
     assert bind_calls == [(run_id, attempt_id)]
 
 
 @pytest.mark.asyncio
-async def test_direct_legacy_nexus_call_binds_run_attempt_without_execution_id(
+async def test_direct_legacy_nexus_call_fails_without_upstream_context(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     registry = AgentRegistry()
     loop = NexusLoop(registry)
     run_id = mint_run_id()
-    captured: dict[str, RunId | AttemptId | ExecutionId | None] = {}
 
     async def _fake_impl(task: Task) -> TaskResult:
-        active_run_id, active_attempt_id = require_active_execution_identity()
-        captured["run_id"] = active_run_id
-        captured["attempt_id"] = active_attempt_id
-        captured["execution_id"] = peek_active_execution_id()
-        return TaskResult(task_id=task.task_id, run_id=active_run_id, state=TaskState.COMPLETED)
+        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="legacy")
-    await loop.handle_task(task, run_id=run_id)
 
-    assert captured["run_id"] == run_id
-    assert captured["attempt_id"] is not None
-    assert captured["execution_id"] is None
-    assert peek_active_execution_identity() is None
+    with pytest.raises(RuntimeError, match="active ExecutionId required"):
+        await loop.handle_task(task, run_id=run_id)
 
 
 @pytest.mark.asyncio
@@ -283,8 +341,8 @@ async def test_unified_task_runner_passes_same_concrete_attempt_to_nexus(
 async def test_resume_checkpoint_preserves_attempt_mints_fresh_execution_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
     from intergrax.runtime.long_running.models import TaskCheckpoint
-    from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
@@ -296,7 +354,6 @@ async def test_resume_checkpoint_preserves_attempt_mints_fresh_execution_id(
         active_run_id, active_attempt_id = require_active_execution_identity()
         seen_execution_ids.append(require_active_execution_id())
         assert active_run_id == run_id
-        # TRANSITIONAL (UE-4B): checkpoint resume keeps AttemptId; ExecutionId is per invocation.
         assert active_attempt_id == attempt_id
         return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
 
@@ -308,7 +365,12 @@ async def test_resume_checkpoint_preserves_attempt_mints_fresh_execution_id(
         tenant_id="t1",
         resume_token="rt_test",
         task_state=TaskState.WAITING_FOR_HUMAN,
-        runtime=RuntimeCheckpoint(run_id=run_id, attempt_id=attempt_id),
+        runtime=minimal_runtime_checkpoint(
+            task_id=task.task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            root_execution_id=mint_execution_id(),
+        ),
     )
 
     await runner.run_task(task, resume_checkpoint=checkpoint)

@@ -41,7 +41,7 @@ from platform_proofs.scenarios.ai_incident_investigation.application.tools impor
     TOOL_THROUGHPUT_READ,
     TOOL_WORKLOAD_READ,
 )
-from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import (
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_data_contracts import (
     LINE_ID,
     STATION_ID,
     TimeWindowLabel,

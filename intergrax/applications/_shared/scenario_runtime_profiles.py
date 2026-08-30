@@ -103,7 +103,6 @@ def build_scenario_lab_runtime(
         settings=settings,
         use_in_memory_trace=False,
         require_runtime_event_persistence=True,
-        diagnostics_required=False,
         workspace=workspace,
         runtime_mode=ScenarioRuntimeMode.LAB,
     )
@@ -119,7 +118,6 @@ def build_scenario_production_runtime(
     trace_db_path: Path | None = None,
     document_store: Any | None = None,
     settings: Any = None,
-    diagnostics_required: bool = True,
 ) -> Any:
     """
     Build a production-attached scenario runtime with explicit durable configuration.
@@ -153,7 +151,6 @@ def build_scenario_production_runtime(
         settings=settings,
         use_in_memory_trace=False,
         require_runtime_event_persistence=True,
-        diagnostics_required=diagnostics_required,
         workspace=None,
         runtime_mode=ScenarioRuntimeMode.PRODUCTION_ATTACHED,
     )

@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from intergrax.contracts.event_severity import EventSeverity
-from intergrax.contracts.execution_identity import mint_attempt_id, mint_event_id, mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_event_id, mint_execution_id, mint_run_id, mint_task_id
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
@@ -69,6 +69,7 @@ async def test_journal_export_plugin_handles_task_completed() -> None:
             task_id=task_id,
             run_id=run_id,
             attempt_id=mint_attempt_id(),
+            execution_id=mint_execution_id(),
             event_type=RuntimeEventType.TASK_COMPLETED,
             phase=ExecutionPhase.COMPLETION,
             severity=EventSeverity.INFO,
@@ -91,6 +92,7 @@ async def test_journal_export_plugin_handles_task_completed() -> None:
         task_id=task_id,
         run_id=run_id,
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
         tenant_id=tenant_id,
         agent_id="agent-1",
         event_type=RuntimeEventType.TASK_COMPLETED,
@@ -129,6 +131,7 @@ async def test_journal_export_queries_trace_reader_with_canonical_run_id() -> No
         task_id=task_id,
         run_id=run_id,
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
         tenant_id=tenant_id,
         event_type=RuntimeEventType.TASK_COMPLETED,
         phase=ExecutionPhase.COMPLETION,
@@ -159,6 +162,7 @@ async def test_journal_export_uses_exact_tenant_id() -> None:
         task_id=task_id,
         run_id=run_id,
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
         tenant_id=tenant_id,
         event_type=RuntimeEventType.TASK_COMPLETED,
         phase=ExecutionPhase.COMPLETION,
@@ -191,6 +195,7 @@ async def test_journal_export_skips_missing_tenant_without_default(tenant_id: st
         task_id=task_id,
         run_id=run_id,
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
         tenant_id=tenant_id,
         event_type=RuntimeEventType.TASK_COMPLETED,
         phase=ExecutionPhase.COMPLETION,
@@ -224,6 +229,7 @@ async def test_journal_export_parser_traces_without_runtime_event_store() -> Non
         task_id=task_id,
         run_id=run_id,
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
         tenant_id=tenant_id,
         event_type=RuntimeEventType.TASK_COMPLETED,
         phase=ExecutionPhase.COMPLETION,

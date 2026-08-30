@@ -1,6 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import build_fixture_runtime_bundle, build_runtime_bundle
 
 import json
 import subprocess
@@ -38,7 +39,6 @@ from platform_proofs.scenarios.ai_incident_investigation.application.investigato
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     OUTCOME_UNRESOLVED,
-    build_runtime_bundle,
     execute_resolved_skeleton,
 )
 
@@ -58,9 +58,10 @@ def repo_root() -> Path:
 
 @pytest.mark.asyncio
 async def test_unresolved_canonical_evidence_content() -> None:
-    bundle = build_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    fixture_bundle = build_fixture_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
-    evaluation = evaluate_scenario_run(result, bundle.fixture)
+    evaluation = evaluate_scenario_run(result, fixture_bundle.fixture)
     evidence = build_platform_proof_evidence(
         result,
         variant=ScenarioVariant.UNRESOLVED,
@@ -95,12 +96,14 @@ async def test_unresolved_canonical_evidence_content() -> None:
 
 @pytest.mark.asyncio
 async def test_resolved_and_unresolved_artifact_identities_distinct() -> None:
-    resolved_bundle = build_runtime_bundle(variant=ScenarioVariant.RESOLVED)
-    unresolved_bundle = build_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    resolved_fixture_bundle = build_fixture_runtime_bundle(variant=ScenarioVariant.RESOLVED)
+    resolved_bundle = resolved_fixture_bundle.bundle
+    unresolved_fixture_bundle = build_fixture_runtime_bundle(variant=ScenarioVariant.UNRESOLVED)
+    unresolved_bundle = unresolved_fixture_bundle.bundle
     resolved_result = await execute_resolved_skeleton(resolved_bundle)
     unresolved_result = await execute_resolved_skeleton(unresolved_bundle)
-    resolved_evaluation = evaluate_scenario_run(resolved_result, resolved_bundle.fixture)
-    unresolved_evaluation = evaluate_scenario_run(unresolved_result, unresolved_bundle.fixture)
+    resolved_evaluation = evaluate_scenario_run(resolved_result, resolved_fixture_bundle.fixture)
+    unresolved_evaluation = evaluate_scenario_run(unresolved_result, unresolved_fixture_bundle.fixture)
     resolved_evidence = build_platform_proof_evidence(
         resolved_result,
         evaluation=resolved_evaluation,

@@ -60,6 +60,7 @@ FLAT_PROFILE_KEYS: frozenset[str] = frozenset(
         "evaluation_profile",
         "codecraft_profile",
         "reliability_profile",
+        "diagnostic_profile",
         "observability_profile",
         "cost_profile",
         "scaling_profile",
@@ -169,6 +170,7 @@ def lift_flat_profile_dict(data: dict[str, Any]) -> dict[str, Any]:
 
     for flat_key, nested_key in (
         ("reliability_profile", "reliability"),
+        ("diagnostic_profile", "diagnostics"),
         ("observability_profile", "observability"),
         ("cost_profile", "cost"),
         ("scaling_profile", "scaling"),
@@ -263,6 +265,7 @@ def flatten_profile_dict(data: dict[str, Any]) -> dict[str, Any]:
             "evaluation_profile": cognition.get("evaluation"),
             "codecraft_profile": cognition.get("codecraft"),
             "reliability_profile": governance.get("reliability"),
+            "diagnostic_profile": governance.get("diagnostics"),
             "observability_profile": governance.get("observability"),
             "cost_profile": governance.get("cost"),
             "scaling_profile": governance.get("scaling"),

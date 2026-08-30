@@ -1,6 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import build_runtime_bundle
 
 import inspect
 
@@ -19,7 +20,6 @@ from platform_proofs.scenarios.ai_incident_investigation.application.investigato
     REVISED_CLAIM_ID,
     TELEMETRY_EVIDENCE_ID,
 )
-from platform_proofs.scenarios.ai_incident_investigation.application.scenario import build_runtime_bundle
 from platform_proofs.scenarios.ai_incident_investigation.application.tools import TOOL_TELEMETRY_READ
 
 pytestmark = pytest.mark.unit

@@ -8,6 +8,10 @@ from typing import TYPE_CHECKING
 
 from intergrax.applications.contracts.environment_profile import GuardrailProfile
 from intergrax.contracts.event_severity import EventSeverity
+from intergrax.contracts.execution_identity import (
+    require_active_execution_id,
+    require_active_execution_identity,
+)
 from intergrax.integrations.contracts.llm_guardrail import GuardrailContext, LlmGuardrailBackend
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
@@ -136,11 +140,17 @@ class LlmGuardrailMiddleware(RuntimeMiddleware):
     ) -> None:
         if self._event_bus is None:
             return
+        active_run_id, attempt_id = require_active_execution_identity()
+        execution_id = require_active_execution_id()
+        if ctx.run_id != active_run_id:
+            raise RuntimeError("guardrail run_id conflicts with active execution identity")
         await self._event_bus.publish(
             RuntimeEvent(
                 tenant_id=str(ctx.runtime_state.get("tenant_id", "")) or None,
                 task_id=ctx.task_id,
                 run_id=ctx.run_id,
+                attempt_id=attempt_id,
+                execution_id=execution_id,
                 node_id=ctx.node_id,
                 agent_id=ctx.agent_id,
                 step_id=ctx.step_id,

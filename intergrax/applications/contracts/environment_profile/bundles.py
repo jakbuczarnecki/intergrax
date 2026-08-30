@@ -44,6 +44,8 @@ from intergrax.applications.contracts.environment_profile.sub_profiles import (
     IdentityProfile,
     IntegrationGovernanceProfile,
     MemoryProfile,
+    DiagnosticPosture,
+    DiagnosticProfile,
     ObservabilityProfile,
     OrchestrationProfile,
     PolicyRulesProfile,
@@ -282,6 +284,7 @@ class GovernanceBundle(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     reliability: ReliabilityProfile = Field(default_factory=ReliabilityProfile)
+    diagnostics: DiagnosticProfile = Field(default_factory=DiagnosticProfile)
     observability: ObservabilityProfile = Field(default_factory=ObservabilityProfile)
     cost: CostProfile = Field(default_factory=CostProfile)
     scaling: ScalingProfile = Field(default_factory=ScalingProfile)
@@ -302,6 +305,7 @@ class GovernanceBundle(BaseModel):
                 idempotency_enabled=True,
                 partial_results_enabled=True,
             ),
+            diagnostics=DiagnosticProfile(posture=DiagnosticPosture.NOT_REQUIRED),
             observability=ObservabilityProfile(
                 trace_sqlite_enabled=True,
                 otel_enabled=False,
@@ -314,6 +318,7 @@ class GovernanceBundle(BaseModel):
     @classmethod
     def production_slo(cls) -> GovernanceBundle:
         return cls(
+            diagnostics=DiagnosticProfile(posture=DiagnosticPosture.REQUIRED),
             observability=ObservabilityProfile(
                 trace_sqlite_enabled=True,
                 otel_enabled=True,

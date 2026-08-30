@@ -25,6 +25,7 @@ from intergrax.contracts.delegation_authority import (
     ParentExecutionAuthority,
 )
 from intergrax.runtime.task.task_contract import HumanApprovalResolution, TaskPauseRecord
+from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.contracts.execution_identity import (
     RunId,
     TaskId,
@@ -183,6 +184,9 @@ class RuntimeRequest:
 
     # Typed declarative HITL grant transport (approval evidence only).
     declarative_hitl_grant: Optional[DeclarativeHitlApprovalGrant] = None
+
+    # Canonical runtime checkpoint state (execution resume only; not metadata authority).
+    runtime_checkpoint: Optional[RuntimeCheckpoint] = None
 
     def __post_init__(self) -> None:
         self.task_id = validate_task_id(self.task_id)

@@ -9,6 +9,7 @@ import pytest
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from testing_support.runtime_events import runtime_event_test_identity
 
 pytestmark = pytest.mark.gate
 
@@ -16,11 +17,10 @@ pytestmark = pytest.mark.gate
 def _sample_event(**updates) -> RuntimeEvent:
     base = RuntimeEvent(
         tenant_id="t1",
-        task_id="task_1",
-        run_id="run_1",
         event_type=RuntimeEventType.TASK_COMPLETED,
         phase=ExecutionPhase.COMPLETION,
         payload={},
+        **runtime_event_test_identity(),
     )
     return base.model_copy(update=updates)
 

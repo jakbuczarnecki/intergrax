@@ -21,6 +21,7 @@ from intergrax.runtime.events.payloads import (
 )
 from intergrax.runtime.events.payloads.base import RuntimeEventPayload
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from testing_support.runtime_events import runtime_event_test_identity
 from intergrax.contracts.execution_phase import ExecutionPhase
 
 pytestmark = pytest.mark.gate
@@ -68,9 +69,18 @@ def test_validate_envelope_allows_legacy_dict_without_schema() -> None:
 
 
 def test_runtime_event_with_payload_merges_envelope() -> None:
+    from intergrax.contracts.execution_identity import (
+        mint_attempt_id,
+        mint_execution_id,
+        mint_run_id,
+        mint_task_id,
+    )
+
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
         event_type=RuntimeEventType.SKILL_RESOLVED,
         phase=ExecutionPhase.AGENT_SELECTION,
     )

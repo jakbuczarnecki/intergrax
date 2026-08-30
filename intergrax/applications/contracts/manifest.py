@@ -27,6 +27,7 @@ from intergrax.applications.contracts.operational_ownership import (
 )
 from intergrax.contracts.agent_budget import AgentBudgetSlice
 from intergrax.contracts.memory_scope import MemoryScope
+from intergrax.applications.contracts.application_owned_tools import ApplicationOwnedToolDeclaration
 from intergrax.integrations.registry.profile import IntegrationProfile
 
 _APP_ID_RE = re.compile(r"^[a-z][a-z0-9_]*$")
@@ -343,6 +344,13 @@ class ApplicationManifest(BaseModel):
     ownership: ApplicationOperationalOwnership | None = Field(
         default=None,
         description="Operational owner/maintainer/escalation metadata (APP-OPS-2)",
+    )
+    application_owned_tools: list[ApplicationOwnedToolDeclaration] = Field(
+        default_factory=list,
+        description=(
+            "Application-owned tool identities declared for conformance closure. "
+            "Implementations must still be registered on ToolRegistry at wiring time."
+        ),
     )
 
     @field_validator("app_id")

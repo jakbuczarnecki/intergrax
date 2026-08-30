@@ -235,10 +235,40 @@ Governance/HITL owns human **decision**. UER owns pause/wait/resume lifecycle. N
 
 | Concern | Authority | Nexus role |
 | ------- | --------- | ------------ |
-| **Governance** | Policy / HITL domains | Coordinate flow per policy results; authority inherits Run → Execution → child → Agent → Tool |
+| **Governance** | Policy / HITL domains | Coordinate flow per policy results; child authority resolved at mandatory Execution authority checkpoint by configured `ExecutionAuthorityPolicy` (platform default: `DefaultStrictAuthorityPolicy`) |
 | **Budget** | Budget subsystem; `RunBudget` root | Schedule only within effective reservation; not private cost counters |
 | **Observability** | Observability persistence | Emit orchestration facts on canonical event path; tie to relevant `ExecutionId` once it exists |
 | **Checkpoint** | Checkpoint domain + UER | Orchestration state is a **component** of canonical Run checkpoint — no separate Nexus checkpoint tree |
+
+### Pluggable child Execution authority
+
+Nexus decides **what** child work to request next; **authority resolution belongs to Execution**, not Nexus.
+
+```text
+Parent Execution
+      ↓
+Nexus decides WHAT executes next
+      ↓
+child Execution request
+      ↓
+mandatory authority checkpoint
+      ↓
+configured ExecutionAuthorityPolicy
+      ↓
+Execution Boundary
+      ↓
+Child Execution
+```
+
+- **Mandatory checkpoint:** every child Execution passes authority resolution before admission; developers cannot disable it.
+- **Pluggable strategy:** the engine invokes `ExecutionAuthorityPolicy` and receives `ChildAuthorityResolution`; the algorithm is replaceable, the checkpoint is not.
+- **Platform default:** when unconfigured, `DefaultStrictAuthorityPolicy` applies UE-8A strict narrowing (monotonic narrowing against immediate parent — not a universal platform law).
+- **Plugin resolution (composition-time, once):** explicit instance override → entry-point id from `intergrax.execution_authority_policies` → `DefaultStrictAuthorityPolicy`. Missing/invalid explicit plugin id fails closed — no silent fallback.
+- **Nexus boundaries:** Nexus does **not** implement, load, select, or bypass `ExecutionAuthorityPolicy`; it routes child work through the mandatory checkpoint owned by the execution lifecycle layer.
+
+**CURRENT IMPLEMENTATION (UE-8P2 / UE-8P2R1):** policy Protocol, default strict policy, instance override, entry-point plugins, `RuntimeConfig` → `build_nexus_loop_from_environment` → `resolve_execution_authority_policy_from_runtime_config` → `NexusLoop` → `GraphExecutor` → `ChildExecutionRunner`.
+
+**TARGET / FUTURE:** governed-elevation and richer strategies when explicitly implemented — not current contracts.
 
 <a href="UNIFIED_EXECUTION_ARCHITECTURE.md">
 <picture>
@@ -267,6 +297,7 @@ NEXUS-INV specialize frozen UEA for the Nexus domain. Full cross-domain set: [UE
 | **NEXUS-INV-008** | Nexus coordinates merge/fan-in over child Execution results |
 | **NEXUS-INV-009** | Governance/Budget/Observability/Checkpoint remain external subsystem authorities |
 | **NEXUS-INV-010** | Direct inference and ordinary agentic execution do not require Nexus |
+| **NEXUS-INV-011** | Nexus MUST route child work through the mandatory Execution authority checkpoint and MUST NOT implement, bypass, or dynamically select `ExecutionAuthorityPolicy` itself |
 
 ## CURRENT IMPLEMENTATION — harness spine
 

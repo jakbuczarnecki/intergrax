@@ -5,7 +5,7 @@
 Direct agentic execution backend (UE-6A).
 
 RuntimeRequest input is TRANSITIONAL and must not become canonical public input.
-Owner of retirement: later canonical agent-input migration / UE-9D final legacy retirement.
+RuntimeRequest remains transitional pending canonical agent-input migration.
 """
 
 from __future__ import annotations
@@ -19,7 +19,6 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.result import ExecutionResult, ExecutionStatus
-from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 
 
@@ -48,10 +47,6 @@ class AgentExecutor:
         run_id, attempt_id = require_active_execution_identity()
         execution_id = require_active_execution_id()
         del attempt_id, execution_id
-
-        strategy = StrategyResolver().resolve(request)
-        if strategy is not ExecutionStrategy.AGENTIC:
-            raise RuntimeError("AgentExecutor requires AGENTIC strategy")
 
         if ExecutionCapability.STREAMING in request.capabilities:
             raise RuntimeError("agentic streaming is not implemented")

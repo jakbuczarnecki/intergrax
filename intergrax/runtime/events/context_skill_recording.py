@@ -11,8 +11,10 @@ if TYPE_CHECKING:
 
 from intergrax.contracts.execution_identity import (
     AttemptId,
+    ExecutionId,
     RunId,
     TaskId,
+    require_active_execution_id,
     require_active_execution_identity,
     validate_run_id,
     validate_task_id,
@@ -33,13 +35,18 @@ if TYPE_CHECKING:
     from intergrax.context.contracts import AssembledContext
 
 
-def _canonical_event_identity(*, task_id: str, run_id: str) -> tuple[TaskId, RunId, AttemptId]:
+def _canonical_event_identity(
+    *,
+    task_id: str,
+    run_id: str,
+) -> tuple[TaskId, RunId, AttemptId, ExecutionId]:
     active_run_id, attempt_id = require_active_execution_identity()
+    execution_id = require_active_execution_id()
     resolved_task_id = validate_task_id(task_id)
     resolved_run_id = validate_run_id(run_id)
     if resolved_run_id != active_run_id:
         raise RuntimeError("run_id conflicts with active execution identity")
-    return resolved_task_id, resolved_run_id, attempt_id
+    return resolved_task_id, resolved_run_id, attempt_id, execution_id
 
 
 def record_skill_resolved(
@@ -51,7 +58,7 @@ def record_skill_resolved(
     run_id: str = "",
     correlation_id: str = "",
 ) -> None:
-    resolved_task_id, resolved_run_id, attempt_id = _canonical_event_identity(
+    resolved_task_id, resolved_run_id, attempt_id, execution_id = _canonical_event_identity(
         task_id=task_id,
         run_id=run_id,
     )
@@ -68,6 +75,7 @@ def record_skill_resolved(
                 task_id=resolved_task_id,
                 run_id=resolved_run_id,
                 attempt_id=attempt_id,
+                execution_id=execution_id,
                 agent_id=agent_id,
                 event_type=RuntimeEventType.SKILL_RESOLVED,
                 phase=ExecutionPhase.AGENT_SELECTION,
@@ -89,7 +97,7 @@ def record_skill_import_failed(
 ) -> None:
     if not task_id or not run_id:
         raise RuntimeError("task_id and run_id required for skill import failure events")
-    resolved_task_id, resolved_run_id, attempt_id = _canonical_event_identity(
+    resolved_task_id, resolved_run_id, attempt_id, execution_id = _canonical_event_identity(
         task_id=task_id,
         run_id=run_id,
     )
@@ -98,6 +106,7 @@ def record_skill_import_failed(
             task_id=resolved_task_id,
             run_id=resolved_run_id,
             attempt_id=attempt_id,
+            execution_id=execution_id,
             event_type=RuntimeEventType.SKILL_IMPORT_FAILED,
             phase=ExecutionPhase.AGENT_SELECTION,
             correlation_id=correlation_id or source,
@@ -118,7 +127,7 @@ def record_context_candidate_collected(
     engine_id: str = "",
     correlation_id: str = "",
 ) -> None:
-    resolved_task_id, resolved_run_id, attempt_id = _canonical_event_identity(
+    resolved_task_id, resolved_run_id, attempt_id, execution_id = _canonical_event_identity(
         task_id=task_id,
         run_id=run_id,
     )
@@ -133,6 +142,7 @@ def record_context_candidate_collected(
                 task_id=resolved_task_id,
                 run_id=resolved_run_id,
                 attempt_id=attempt_id,
+                execution_id=execution_id,
                 node_id=node_id,
                 agent_id=agent_id,
                 event_type=RuntimeEventType.CONTEXT_CANDIDATE_COLLECTED,
@@ -161,7 +171,7 @@ def record_context_candidate_dropped(
     engine_id: str = "",
     correlation_id: str = "",
 ) -> None:
-    resolved_task_id, resolved_run_id, attempt_id = _canonical_event_identity(
+    resolved_task_id, resolved_run_id, attempt_id, execution_id = _canonical_event_identity(
         task_id=task_id,
         run_id=run_id,
     )
@@ -177,6 +187,7 @@ def record_context_candidate_dropped(
                 task_id=resolved_task_id,
                 run_id=resolved_run_id,
                 attempt_id=attempt_id,
+                execution_id=execution_id,
                 node_id=node_id,
                 agent_id=agent_id,
                 event_type=RuntimeEventType.CONTEXT_CANDIDATE_DROPPED,
@@ -205,7 +216,7 @@ def record_context_validation_failed(
     engine_id: str = "",
     correlation_id: str = "",
 ) -> None:
-    resolved_task_id, resolved_run_id, attempt_id = _canonical_event_identity(
+    resolved_task_id, resolved_run_id, attempt_id, execution_id = _canonical_event_identity(
         task_id=task_id,
         run_id=run_id,
     )
@@ -221,6 +232,7 @@ def record_context_validation_failed(
                 task_id=resolved_task_id,
                 run_id=resolved_run_id,
                 attempt_id=attempt_id,
+                execution_id=execution_id,
                 node_id=node_id,
                 agent_id=agent_id,
                 event_type=RuntimeEventType.CONTEXT_VALIDATION_FAILED,
@@ -251,7 +263,7 @@ def record_context_assembly(
     step_kind: str | None = None,
     emit_assembled: bool = True,
 ) -> None:
-    resolved_task_id, resolved_run_id, attempt_id = _canonical_event_identity(
+    resolved_task_id, resolved_run_id, attempt_id, execution_id = _canonical_event_identity(
         task_id=task_id,
         run_id=run_id,
     )
@@ -270,6 +282,7 @@ def record_context_assembly(
                     task_id=resolved_task_id,
                     run_id=resolved_run_id,
                     attempt_id=attempt_id,
+                    execution_id=execution_id,
                     node_id=node_id,
                     agent_id=agent_id,
                     event_type=RuntimeEventType.CONTEXT_ASSEMBLED,
@@ -298,6 +311,7 @@ def record_context_assembly(
                     task_id=resolved_task_id,
                     run_id=resolved_run_id,
                     attempt_id=attempt_id,
+                    execution_id=execution_id,
                     node_id=node_id,
                     agent_id=agent_id,
                     event_type=RuntimeEventType.CONTEXT_TRIMMED,
@@ -336,7 +350,7 @@ def record_context_assembled_from_engine(
     """Record CONTEXT_ASSEMBLED with per-fragment cost attribution (CE-MAINT-02)."""
     if not run_id:
         raise RuntimeError("run_id required for context assembled events")
-    resolved_task_id, resolved_run_id, attempt_id = _canonical_event_identity(
+    resolved_task_id, resolved_run_id, attempt_id, execution_id = _canonical_event_identity(
         task_id=task_id,
         run_id=run_id,
     )
@@ -359,6 +373,7 @@ def record_context_assembled_from_engine(
                 task_id=resolved_task_id,
                 run_id=resolved_run_id,
                 attempt_id=attempt_id,
+                execution_id=execution_id,
                 node_id=node_id,
                 agent_id=agent_id,
                 event_type=RuntimeEventType.CONTEXT_ASSEMBLED,

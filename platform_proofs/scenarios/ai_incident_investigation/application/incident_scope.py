@@ -8,7 +8,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import (
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_data_contracts import (
     COMPARISON_LINE_ID,
     LINE_ID,
     TimeWindowLabel,
@@ -44,7 +44,7 @@ class IncidentScope:
     shift_id: str
 
     @classmethod
-    def from_fixture_defaults(
+    def from_operational_defaults(
         cls,
         *,
         station_id: str,

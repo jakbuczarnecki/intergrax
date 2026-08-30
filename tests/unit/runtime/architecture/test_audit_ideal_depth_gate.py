@@ -499,6 +499,8 @@ def test_audit_ideal_21_2_health_dashboard() -> None:
     wiring = resolve_health_dashboard_wiring(ApplicationEnvironmentProfile.product_defaults())
     assert wiring.enabled is True
     assert wiring.contract is not None
+    assert wiring.contract.auditability.diagnostics_required is True
+    assert wiring.contract.auditability.auditability_ready is False
 
 
 def test_audit_ideal_27_3_agent_simulator() -> None:

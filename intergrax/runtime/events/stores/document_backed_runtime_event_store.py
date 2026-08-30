@@ -21,7 +21,7 @@ from intergrax.runtime.events.persistence_contract import (
     RuntimeEventPersistence,
     _validate_through_limit,
 )
-from intergrax.runtime.events.runtime_event import RuntimeEvent
+from intergrax.runtime.events.runtime_event import RuntimeEvent, parse_runtime_event_payload
 
 
 def _run_partition(tenant_id: str, run_id: str) -> str:
@@ -188,6 +188,6 @@ class DocumentBackedRuntimeEventStore(RuntimeEventPersistence):
         if type(raw_position) is not int or isinstance(raw_position, bool) or raw_position < 1:
             return None
         return PositionedRuntimeEvent(
-            event=RuntimeEvent.model_validate(raw),
+            event=parse_runtime_event_payload(raw),
             position=ExecutionEventPosition(raw_position),
         )

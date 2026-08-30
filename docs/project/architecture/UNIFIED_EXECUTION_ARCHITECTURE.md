@@ -5,7 +5,7 @@
 **Owner:** Intergrax Platform Architecture (semantic coordination)  
 **Audience:** Principal architects, domain owners, implementers, Cursor implementation sessions  
 **Registered in:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md#architecture-artifact-classification-register)  
-**Last updated:** 2026-08-26 — **UE-DOC-0.7** shared execution guarantees, **UEA-INV-021** no-bypass invariant
+**Last updated:** 2026-08-29 — **UE-8P3** pluggable `ExecutionAuthorityPolicy`, **UEA-INV-022** mandatory authority checkpoint
 
 ---
 
@@ -392,14 +392,119 @@ Conceptual future transport envelope preserves: `TaskId`, `RunId`, `AttemptId`, 
 
 **TARGET ARCHITECTURE**
 
-Governance owns policy/authority **decisions**. Execution **coordinates** with Governance but does **not** absorb it.
+Governance owns policy/authority **decisions** and wider governance semantics. Execution **coordinates** with Governance but does **not** absorb it. `ExecutionAuthorityPolicy` owns **child authority-resolution strategy only** — it is **not** a replacement for `PolicyEngine` / Governance.
 
 Every Execution enters governance with canonical identity, tenant/scope, effective authority, execution requirements, and relevant action/effect context. Governance answers whether the Execution or operation is allowed; UER/Execution Runtime applies the lifecycle consequence.
 
+### 12.1 Mandatory authority checkpoint vs pluggable strategy
+
+Intergrax separates two concerns:
+
+**A. Mandatory platform checkpoint (not configurable off)**
+
+Every child Execution **MUST** pass authority resolution before execution admission. Developers **MUST NOT** disable this checkpoint (`authority_check = off` is forbidden) or bypass it from Nexus, executors, or custom plugins.
+
+**B. Pluggable decision strategy (replaceable)**
+
+The execution engine does not hard-code a single inheritance algorithm. At the checkpoint it invokes the configured **`ExecutionAuthorityPolicy`**, which returns **`ChildAuthorityResolution`**. The policy implementation is replaceable; the checkpoint is not.
+
 ```text
-Run authority
+Parent Execution
+      ↓
+Child Execution request
+      ↓
+MANDATORY Authority Policy Checkpoint
+      ↓
+ExecutionAuthorityPolicy
+      ↓
+ChildAuthorityResolution
+      ↓
+Execution Boundary (admission)
+      ↓
+Child Execution
+```
+
+For orchestration:
+
+```text
+Parent Execution
+      ↓
+Nexus decides WHAT executes next
+      ↓
+child Execution request
+      ↓
+mandatory authority checkpoint
+      ↓
+configured ExecutionAuthorityPolicy
+      ↓
+Execution Boundary
+      ↓
+Child Execution
+```
+
+Nexus **does not** compute authority, load authority plugins, or bypass the checkpoint.
+
+**Platform invariant:** Every child Execution **MUST** pass the configured `ExecutionAuthorityPolicy` before execution admission (**UEA-INV-022**).
+
+### 12.2 Default platform strategy: `DefaultStrictAuthorityPolicy`
+
+When the developer configures nothing, Intergrax uses **`DefaultStrictAuthorityPolicy`** as the safe platform default. It preserves UE-8A semantics:
+
+- normal child without explicit delegation → inherits immediate parent authority unchanged
+- explicit delegation (`requested_permission_scopes` is a tuple, including empty) → resulting authority **cannot exceed** immediate parent authority
+- nested child comparisons use **immediate parent Execution authority**, not root Run authority and not orchestration `depends_on` graph topology
+- `None` ≠ empty tuple: `None` means inherit parent with no delegation evidence; `()` triggers explicit delegation narrowing
+
+`DefaultStrictAuthorityPolicy` enforces **monotonic narrowing**: child authority cannot exceed immediate parent authority. This is **default platform behavior**, not a universal law — custom `ExecutionAuthorityPolicy` implementations may define different strategies (e.g. strict narrowing, governed elevation, tenant-specific corporate authority, regulated-domain rules). **Governed elevation** and similar strategies are **custom / future** implementations unless explicitly shipped — do not describe them as current platform contracts.
+
+**Do not** state as universal platform law: “every child authority must be a subset of parent authority.” State instead that the **configured policy** decides at the mandatory checkpoint; the platform default applies strict narrowing (**UEA-INV-009** describes default strict behavior).
+
+### 12.3 Custom `ExecutionAuthorityPolicy` and plugin resolution
+
+Developers may supply a custom policy through:
+
+1. **Direct instance override** — inject `ExecutionAuthorityPolicy` at composition time (highest precedence).
+2. **Python entry-point plugin** — register under entry-point group **`intergrax.execution_authority_policies`**.
+3. **Platform default** — `DefaultStrictAuthorityPolicy` when neither override is configured.
+
+**Resolution order:** explicit instance → explicit entry-point id → `DefaultStrictAuthorityPolicy`.
+
+**Fail-closed:**
+
+- no policy configured → safe platform default (`DefaultStrictAuthorityPolicy`)
+- explicit entry-point id configured but missing or invalid → composition **fails closed** (no silent fallback)
+
+### 12.4 Composition-time resolution
+
+Policy is resolved **once** during runtime composition, not per child Execution:
+
+```text
+RuntimeConfig
+  → build_nexus_loop_from_environment
+  → resolve_execution_authority_policy_from_runtime_config(...)
+  → resolved ExecutionAuthorityPolicy
+  → NexusLoop
+  → GraphExecutor
+  → ChildExecutionRunner
+```
+
+A plugin **MUST NOT** seize Execution lifecycle ownership or bypass the Execution Boundary.
+
+### 12.5 Ownership
+
+| Layer | Owns |
+|-------|------|
+| **Execution lifecycle layer** | Mandatory authority checkpoint integration; child execution admission path; active Execution authority binding |
+| **`ExecutionAuthorityPolicy`** | Authority-resolution strategy only |
+| **Nexus** | What executes next; child work requests — **not** authority algorithm, plugin loading, or checkpoint bypass |
+| **Governance** | Policy/authority decisions and wider governance semantics; custom policies may integrate in future |
+
+```text
+Run authority context
   ↓
 Execution
+  ↓
+[mandatory checkpoint → configured policy]
   ↓
 child Execution
   ↓
@@ -408,11 +513,13 @@ Agent
 Tool
 ```
 
-**Invariant:** child effective authority ≤ parent effective authority. A child may narrow authority; it **MUST NOT** expand it merely because Nexus scheduled it, another worker executes it, another agent is selected, HITL resumed it, or transport redelivered it. Human approval does not implicitly expand unrelated authority (**UEA-INV-009**).
+**Owner (governance decisions):** [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md).
 
-**Owner:** [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md).
+**CURRENT IMPLEMENTATION (UE-8P2 / UE-8P2R1):** `ExecutionAuthorityPolicy` Protocol; `DefaultStrictAuthorityPolicy`; direct instance override; entry-point plugin registry; `RuntimeConfig` composition wiring; explicit missing plugin fails closed.
 
-**CURRENT IMPLEMENTATION / MIGRATION GAP:** Authority propagation is substantially graph/node-centric today.
+**TARGET / FUTURE:** governed-elevation and richer authority strategies when explicitly implemented — **not** current production contracts.
+
+**MIGRATION GAP (broader):** legacy graph/node-centric authority paths may still exist outside the canonical child admission checkpoint on some surfaces; converge on Execution-tree-centric checkpoint admission.
 
 ---
 
@@ -433,6 +540,8 @@ Budget subsystem owns accounting, reservations, consumption, release/reconciliat
 **Budget is part of admission:** a child Execution **MUST NOT** be admitted when required bounded budget cannot be reserved or authorized. For parallel fan-out, children collectively **MUST NOT** overcommit the parent allowance (`parent allowance → reservations for E2/E3/… → consumption → release/reconciliation`).
 
 **CURRENT IMPLEMENTATION / MIGRATION GAP:** Hierarchical budget reservation is not yet the full target model.
+
+**Forward-looking (UE-8B):** The same mandatory-checkpoint / pluggable-strategy architecture is intended to be reused for Execution budget allocation; budget strategy ownership belongs to UE-8B and is not frozen by UE-8P3.
 
 <a href="GOVERNED_EXECUTION.md">
 <picture>
@@ -646,6 +755,7 @@ Every independently executable unit enters the canonical Execution Boundary. Eve
 - canonical runtime identity
 - tenant/scope isolation
 - effective authority context
+- mandatory authority policy checkpoint (configured `ExecutionAuthorityPolicy` for child admission)
 - governance admission / relevant policy evaluation
 - budget context / bounded allowance
 - lifecycle/audit facts
@@ -690,7 +800,9 @@ inference   agentic   orchestration
                         ↓
                       Nexus
                         ↓
-                 child Execution
+                 child Execution request
+                        ↓
+             mandatory authority checkpoint
                         ↓
              canonical Execution Boundary
                         ↓
@@ -702,7 +814,7 @@ inference   agentic   orchestration
 | **Direct inference** | Execution Boundary → governance/budget/evidence → InferenceExecutor |
 | **Agentic** | Execution Boundary → governance/budget/evidence → AgentEngine/UAEP |
 | **Orchestration** | Execution Boundary → governance/budget/evidence → Nexus |
-| **Nexus child** | Nexus → request child Execution → Execution Boundary → governance/budget/evidence → child's strategy executor |
+| **Nexus child** | Nexus → request child Execution → mandatory authority checkpoint → Execution Boundary → governance/budget/evidence → child's strategy executor |
 
 Nexus **MUST NOT** rely on “parent governance already happened” to call AgentEngine or another executor directly. Hard requirement for UE-1+.
 
@@ -735,7 +847,8 @@ No execution strategy may bypass the canonical Execution Boundary or its mandato
 | Orchestration topology | ORCHESTRATION | [`ORCHESTRATION.md`](ORCHESTRATION.md) |
 | Orchestration scheduling / control flow | Nexus | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) |
 | Agent execution | AgentEngine / UAEP | [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) |
-| Governance / authority | GOVERNED_EXECUTION | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) |
+| Governance / authority decisions | GOVERNED_EXECUTION | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) |
+| Child authority-resolution strategy | `ExecutionAuthorityPolicy` (platform default: `DefaultStrictAuthorityPolicy`) | This model §12; implementation in execution lifecycle layer |
 | Budget ledger | Budget subsystem (under existing owner) | UER + Context Engineering / platform budget contracts |
 | HITL decision | Governance / HITL | GOVERNED_EXECUTION, RELIABILITY_FAILURE_AND_HITL |
 | Checkpoint persistence / state | Long-running / checkpoint owner | UER, BACKGROUND_TASKS |
@@ -855,7 +968,7 @@ Stable IDs for implementation constraints. Map to domain invariants where they e
 | **UEA-INV-006** | Orchestration topology ≠ canonical runtime Execution Tree | ORCHESTRATION vs this model |
 | **UEA-INV-007** | Nexus orchestrates Executions; not owner of Run lifecycle, execution identity, budget, DIAG, or observability store | NEXUS_EXECUTION_FLOW |
 | **UEA-INV-008** | Direct execution does not require Nexus | UER entry paths |
-| **UEA-INV-009** | Child effective authority ≤ parent; never expands | GOVERNED_EXECUTION |
+| **UEA-INV-009** | `DefaultStrictAuthorityPolicy` (platform default) enforces monotonic narrowing: child authority cannot exceed immediate parent; custom policies may differ | GOVERNED_EXECUTION, §12 |
 | **UEA-INV-010** | Child budget ≤ effective parent allowance; no competing ledgers in Execution/Nexus | UER, Context budget |
 | **UEA-INV-011** | Transport identity ≠ runtime execution identity | OBS DIAG-1, BACKGROUND_TASKS |
 | **UEA-INV-012** | Pause/resume (incl. HITL) preserves Task/Run/Attempt/Execution identity | UER, REL |
@@ -868,6 +981,7 @@ Stable IDs for implementation constraints. Map to domain invariants where they e
 | **UEA-INV-019** | Nested orchestration is legal; depth/fan-out may be bounded in implementation | ORCHESTRATION, Nexus |
 | **UEA-INV-020** | Strategy resolver must not silently invent unaudited orchestration topology | ORCHESTRATION |
 | **UEA-INV-021** | No strategy may bypass Execution Boundary or mandatory guarantees; every child Execution re-enters the canonical boundary | GOVERNED_EXECUTION, UER, NEXUS |
+| **UEA-INV-022** | Every child Execution MUST undergo authority resolution through the configured `ExecutionAuthorityPolicy` before admission; checkpoint is mandatory, strategy is replaceable | UE-8P, NEXUS_EXECUTION_FLOW |
 
 **Follow-up:** UER/OBS identity tables aligned with five-ID target in UE-DOC-0.6. Remaining `SYSTEM_INVARIANTS.md` cross-reference sync is implementation hygiene, not an open architecture question.
 
@@ -891,7 +1005,7 @@ Sections §3–§21 above.
 | Agent context | `RuntimeExecutionContext` is agent-specific |
 | Checkpoint | `RuntimeCheckpoint` without canonical Execution Tree |
 | Budget | Run-level budgeting exists; hierarchical execution allowances incomplete |
-| Authority | Substantially graph/node-centric propagation |
+| Authority | `ExecutionAuthorityPolicy` + `DefaultStrictAuthorityPolicy`; composition-time resolution (UE-8P2); child admission checkpoint wired; legacy graph/node-centric paths may remain on some surfaces |
 
 ### MIGRATION GAPS (known)
 

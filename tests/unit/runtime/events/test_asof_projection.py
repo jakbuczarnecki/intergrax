@@ -13,6 +13,7 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
+from testing_support.runtime_events import runtime_event_test_identity
 from intergrax.runtime.events.asof_projection import (
     HistoricalEventReference,
     InvalidRunExecutionHistoryError,
@@ -50,19 +51,24 @@ def _event(
     task_id: str,
     run_id: str,
     attempt_id: str,
+    execution_id: str | None = None,
     event_type: RuntimeEventType,
     timestamp: datetime | None = None,
 ) -> RuntimeEvent:
-    return RuntimeEvent(
-        event_id=mint_event_id(),
-        tenant_id=_TENANT,
+    identity = runtime_event_test_identity(
         task_id=task_id,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    return RuntimeEvent(
+        event_id=mint_event_id(),
+        tenant_id=_TENANT,
         event_type=event_type,
         phase=ExecutionPhase.STEP_EXECUTION,
         timestamp=timestamp or _SAME_TS,
         correlation_id=run_id,
+        **identity,
     )
 
 

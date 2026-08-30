@@ -31,8 +31,9 @@ from platform_proofs.scenarios.ai_incident_investigation.application.domain_reas
     telemetry_is_unavailable,
     telemetry_supports_degradation,
 )
-from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import (
-    IncidentFixture,
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_data_contracts import (
+    COMPARISON_LINE_ID,
+    IncidentOperationalData,
     LINE_ID,
     STATION_ID,
     TelemetryAvailability,
@@ -448,8 +449,8 @@ def _scenario_tool_contract(
 
 
 class _WorkloadHandler(ToolHandler[LineWindowInput, WorkloadOutput]):
-    def __init__(self, fixture: IncidentFixture) -> None:
-        self._fixture = fixture
+    def __init__(self, operational_data: IncidentOperationalData) -> None:
+        self._operational_data = operational_data
 
     def execute(self, request: ToolExecutionRequest[LineWindowInput]) -> WorkloadOutput:
         if request.input.line_id != LINE_ID:
@@ -462,9 +463,9 @@ class _WorkloadHandler(ToolHandler[LineWindowInput, WorkloadOutput]):
                 admissible=False,
             )
         if request.input.window == TimeWindowLabel.BASELINE:
-            obs = self._fixture.workload_baseline
+            obs = self._operational_data.workload_baseline
         elif request.input.window == TimeWindowLabel.INCIDENT:
-            obs = self._fixture.workload_incident
+            obs = self._operational_data.workload_incident
         else:
             return WorkloadOutput(
                 line_id=request.input.line_id,
@@ -485,8 +486,8 @@ class _WorkloadHandler(ToolHandler[LineWindowInput, WorkloadOutput]):
 
 
 class _ThroughputHandler(ToolHandler[LineWindowInput, ThroughputOutput]):
-    def __init__(self, fixture: IncidentFixture) -> None:
-        self._fixture = fixture
+    def __init__(self, operational_data: IncidentOperationalData) -> None:
+        self._operational_data = operational_data
 
     def execute(self, request: ToolExecutionRequest[LineWindowInput]) -> ThroughputOutput:
         if request.input.line_id != LINE_ID:
@@ -500,9 +501,9 @@ class _ThroughputHandler(ToolHandler[LineWindowInput, ThroughputOutput]):
                 admissible=False,
             )
         obs_map = {
-            TimeWindowLabel.BASELINE: self._fixture.throughput_baseline,
-            TimeWindowLabel.BEFORE_INCIDENT: self._fixture.throughput_before,
-            TimeWindowLabel.INCIDENT: self._fixture.throughput_incident,
+            TimeWindowLabel.BASELINE: self._operational_data.throughput_baseline,
+            TimeWindowLabel.BEFORE_INCIDENT: self._operational_data.throughput_before,
+            TimeWindowLabel.INCIDENT: self._operational_data.throughput_incident,
         }
         obs = obs_map.get(request.input.window)  # type: ignore[arg-type]
         if obs is None:
@@ -527,13 +528,13 @@ class _ThroughputHandler(ToolHandler[LineWindowInput, ThroughputOutput]):
 
 
 class _StaffingScheduleHandler(ToolHandler[StaffingScheduleInput, StaffingScheduleOutput]):
-    def __init__(self, fixture: IncidentFixture) -> None:
-        self._fixture = fixture
+    def __init__(self, operational_data: IncidentOperationalData) -> None:
+        self._operational_data = operational_data
 
     def execute(
         self, request: ToolExecutionRequest[StaffingScheduleInput]
     ) -> StaffingScheduleOutput:
-        record = self._fixture.staffing_preliminary
+        record = self._operational_data.staffing_preliminary
         if (
             request.input.line_id != record.line_id
             or request.input.shift_id != record.shift_id
@@ -569,13 +570,13 @@ class _StaffingScheduleHandler(ToolHandler[StaffingScheduleInput, StaffingSchedu
 
 
 class _StaffingAttendanceHandler(ToolHandler[StaffingAttendanceInput, StaffingAttendanceOutput]):
-    def __init__(self, fixture: IncidentFixture) -> None:
-        self._fixture = fixture
+    def __init__(self, operational_data: IncidentOperationalData) -> None:
+        self._operational_data = operational_data
 
     def execute(
         self, request: ToolExecutionRequest[StaffingAttendanceInput]
     ) -> StaffingAttendanceOutput:
-        record = self._fixture.staffing_attendance
+        record = self._operational_data.staffing_attendance
         if (
             request.input.line_id != record.line_id
             or request.input.shift_id != record.shift_id
@@ -603,11 +604,11 @@ class _StaffingAttendanceHandler(ToolHandler[StaffingAttendanceInput, StaffingAt
 
 
 class _ComparisonHandler(ToolHandler[ComparisonInput, ComparisonOutput]):
-    def __init__(self, fixture: IncidentFixture) -> None:
-        self._fixture = fixture
+    def __init__(self, operational_data: IncidentOperationalData) -> None:
+        self._operational_data = operational_data
 
     def execute(self, request: ToolExecutionRequest[ComparisonInput]) -> ComparisonOutput:
-        obs = self._fixture.comparison
+        obs = self._operational_data.comparison
         if (
             request.input.reference_line_id != obs.reference_line_id
             or request.input.comparison_line_id != obs.comparison_line_id
@@ -637,11 +638,11 @@ class _ComparisonHandler(ToolHandler[ComparisonInput, ComparisonOutput]):
 
 
 class _TelemetryHandler(ToolHandler[TelemetryInput, TelemetryOutput]):
-    def __init__(self, fixture: IncidentFixture) -> None:
-        self._fixture = fixture
+    def __init__(self, operational_data: IncidentOperationalData) -> None:
+        self._operational_data = operational_data
 
     def execute(self, request: ToolExecutionRequest[TelemetryInput]) -> TelemetryOutput:
-        obs = self._fixture.telemetry
+        obs = self._operational_data.telemetry
         if request.input.station_id != obs.station_id:
             return TelemetryOutput(
                 station_id=request.input.station_id,
@@ -679,7 +680,7 @@ class _TelemetryHandler(ToolHandler[TelemetryInput, TelemetryOutput]):
 
 def register_scenario_tools(
     registry: ToolRegistry,
-    fixture: IncidentFixture,
+    operational_data: IncidentOperationalData,
     *,
     evidence_store: ScenarioEvidenceStore | None = None,
 ) -> ScenarioEvidenceStore:
@@ -691,7 +692,7 @@ def register_scenario_tools(
             WorkloadOutput,
             description="Read production workload observations for a line and time window.",
         ),
-        _WorkloadHandler(fixture),
+        _WorkloadHandler(operational_data),
     )
     registry.register(
         _scenario_tool_contract(
@@ -712,7 +713,7 @@ def register_scenario_tools(
             ThroughputOutput,
             description="Read production throughput observations for a line and time window.",
         ),
-        _ThroughputHandler(fixture),
+        _ThroughputHandler(operational_data),
     )
     registry.register(
         _scenario_tool_contract(
@@ -721,7 +722,7 @@ def register_scenario_tools(
             StaffingScheduleOutput,
             description="Read preliminary staffing schedule export for a line shift window.",
         ),
-        _StaffingScheduleHandler(fixture),
+        _StaffingScheduleHandler(operational_data),
     )
     registry.register(
         _scenario_tool_contract(
@@ -730,7 +731,7 @@ def register_scenario_tools(
             StaffingAttendanceOutput,
             description="Read confirmed staffing attendance for a line shift window.",
         ),
-        _StaffingAttendanceHandler(fixture),
+        _StaffingAttendanceHandler(operational_data),
     )
     registry.register(
         _scenario_tool_contract(
@@ -756,7 +757,7 @@ def register_scenario_tools(
                 "window must be comparison_high_load."
             ),
         ),
-        _ComparisonHandler(fixture),
+        _ComparisonHandler(operational_data),
     )
     registry.register(
         _scenario_tool_contract(
@@ -777,7 +778,7 @@ def register_scenario_tools(
             TelemetryOutput,
             description="Read station telemetry observations for a time window.",
         ),
-        _TelemetryHandler(fixture),
+        _TelemetryHandler(operational_data),
     )
     registry.register(
         _scenario_tool_contract(

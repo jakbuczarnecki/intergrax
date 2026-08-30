@@ -12,12 +12,19 @@ from intergrax.applications._shared.cost_assembly_resolver import assert_cost_as
 from intergrax.applications._shared.cost_wiring import wire_application_cost
 from intergrax.applications._shared.critic_assembly_resolver import assert_critic_assembly_valid
 from intergrax.applications._shared.critic_tool_wiring import build_critic_eval_tool_client
-from intergrax.applications._shared.critic_wiring import wire_application_critic
+from intergrax.applications._shared.critic_wiring import (
+    apply_application_critic_wiring,
+    wire_application_critic,
+)
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_from_tool_wiring,
 )
+from intergrax.applications._shared.diagnostic_assembly_resolver import (
+    DiagnosticAssemblyError,
+    DiagnosticWiring,
+)
 from intergrax.applications._shared.diagnostic_runtime_wiring import (
-    try_build_terminal_execution_diagnostic_trigger,
+    wire_terminal_execution_diagnostics,
 )
 from intergrax.applications._shared.environment_wiring import (
     ApplicationEnvironmentWiring,
@@ -63,11 +70,14 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.contracts.execution_identity import RunId, TaskId, mint_run_id
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import (
     NexusObservabilityStores,
     wire_nexus_observability,
 )
+from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
+from intergrax.tools.registry import ToolRegistry
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult
 
@@ -86,6 +96,8 @@ __all__ = [
     "ScenarioRuntimeWorkspace",
     "build_scenario_runtime_from_environment",
     "execute_scenario_task",
+    "rebuild_scenario_runtime_from_composition",
+    "rewire_scenario_critic_wiring",
     "validate_scenario_tenant_id",
 ]
 
@@ -106,9 +118,13 @@ class ScenarioRuntimeComposition:
     tenant_id: str
     security_wiring: ApplicationSecurityWiring
     guardrail_wiring: ApplicationGuardrailWiring
-    terminal_diagnostic_trigger_attached: bool
+    diagnostic_wiring: DiagnosticWiring
     workspace: ScenarioRuntimeWorkspace | None = None
     runtime_mode: ScenarioRuntimeMode | None = None
+
+    @property
+    def terminal_diagnostic_trigger_attached(self) -> bool:
+        return self.diagnostic_wiring.attached
 
     @property
     def has_runtime_event_store(self) -> bool:
@@ -116,7 +132,7 @@ class ScenarioRuntimeComposition:
 
     @property
     def has_terminal_diagnostic_trigger(self) -> bool:
-        return self.terminal_diagnostic_trigger_attached
+        return self.diagnostic_wiring.attached
 
 
 @dataclass(frozen=True, slots=True)
@@ -216,6 +232,56 @@ def _resolve_observability_stores(
     return wiring.stores
 
 
+def rewire_scenario_critic_wiring(
+    composition: ScenarioRuntimeComposition,
+    *,
+    validation_engine: NexusValidationEngine | None = None,
+) -> None:
+    """Reapply critic hooks and validation engine from the current environment profile."""
+    environment = composition.environment
+    evaluation_wiring = wire_application_evaluation(environment)
+    l1_client = build_critic_eval_tool_client(
+        environment,
+        composition.env_wiring.tool_wiring,
+        evaluation_registry=evaluation_wiring.registry,
+        trace_reader=composition.observability.trace_store,
+    )
+    critic_wiring = wire_application_critic(
+        environment,
+        l1_client=l1_client,
+        validation_engine=validation_engine,
+    )
+    if validation_engine is not None:
+        composition.nexus_loop.apply_validation_engine(validation_engine)
+    apply_application_critic_wiring(composition.nexus_loop, critic_wiring)
+
+
+def rebuild_scenario_runtime_from_composition(
+    composition: ScenarioRuntimeComposition,
+    *,
+    environment: ApplicationEnvironmentProfile,
+    validation_engine: NexusValidationEngine | None = None,
+    manifest: ApplicationManifest | None = None,
+    conformance_check: bool = True,
+) -> ScenarioRuntimeComposition:
+    """Rebuild Nexus-backed scenario runtime while preserving registry and storage paths."""
+    return build_scenario_runtime_from_environment(
+        environment=environment,
+        registry=composition.registry,
+        tenant_id=composition.tenant_id,
+        runtime_events_db_path=composition.observability.runtime_events_db_path,
+        trace_db_path=composition.observability.trace_db_path,
+        manifest=manifest,
+        use_in_memory_trace=False,
+        require_runtime_event_persistence=True,
+        workspace=composition.workspace,
+        runtime_mode=composition.runtime_mode,
+        conformance_check=conformance_check,
+        validation_engine=validation_engine,
+        application_tool_registry=composition.env_wiring.tool_wiring.registry,
+    )
+
+
 def build_scenario_runtime_from_environment(
     *,
     environment: ApplicationEnvironmentProfile,
@@ -228,10 +294,11 @@ def build_scenario_runtime_from_environment(
     manifest: ApplicationManifest | None = None,
     use_in_memory_trace: bool = False,
     require_runtime_event_persistence: bool = True,
-    diagnostics_required: bool = False,
     workspace: ScenarioRuntimeWorkspace | None = None,
     runtime_mode: ScenarioRuntimeMode | None = None,
     conformance_check: bool = True,
+    validation_engine: NexusValidationEngine | None = None,
+    application_tool_registry: ToolRegistry | None = None,
 ) -> ScenarioRuntimeComposition:
     """
     Compose a lighter Nexus-backed scenario runtime from platform primitives.
@@ -249,6 +316,7 @@ def build_scenario_runtime_from_environment(
         tenant_id=resolved_tenant_id,
         document_store=document_store,
         conformance_check=conformance_check,
+        application_tool_registry=application_tool_registry,
     )
     observability = _resolve_observability_stores(
         environment,
@@ -277,7 +345,11 @@ def build_scenario_runtime_from_environment(
         evaluation_registry=evaluation_wiring.registry,
         trace_reader=observability.trace_store,
     )
-    critic_wiring = wire_application_critic(environment, l1_client=l1_client)
+    critic_wiring = wire_application_critic(
+        environment,
+        l1_client=l1_client,
+        validation_engine=validation_engine,
+    )
     assert_critic_assembly_valid(critic_wiring, environment, l1_client=l1_client)
     task_memory = wire_task_memory_from_profile(environment)
     declarative_tool_invoker = build_declarative_invoker_from_tool_wiring(env_wiring.tool_wiring)
@@ -299,6 +371,7 @@ def build_scenario_runtime_from_environment(
         guardrail_wiring=guardrail_wiring,
         critic_wiring=critic_wiring,
         run_budget=cost_wiring.run_budget,
+        validation_engine=validation_engine,
     )
     assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)
     assert_guardrail_assembly_valid(guardrail_wiring, environment, nexus=nexus_loop)
@@ -309,18 +382,16 @@ def build_scenario_runtime_from_environment(
     )
     apply_reliability_governance_wiring(nexus_loop, environment)
 
-    terminal_diagnostic_trigger = try_build_terminal_execution_diagnostic_trigger(
-        env_wiring=env_wiring,
-        observability=observability,
-    )
-    terminal_diagnostic_trigger_attached = terminal_diagnostic_trigger is not None
-    if terminal_diagnostic_trigger is not None:
-        nexus_loop.attach_terminal_diagnostic_trigger(terminal_diagnostic_trigger)
-    if diagnostics_required and not terminal_diagnostic_trigger_attached:
-        raise ScenarioRuntimeBuildError(
-            "diagnostics are required but terminal diagnostic trigger could not be attached. "
-            "Provide document_store and runtime event persistence."
+    try:
+        diagnostic_wiring = wire_terminal_execution_diagnostics(
+            env=environment,
+            env_wiring=env_wiring,
+            observability=observability,
+            nexus_loop=nexus_loop,
+            scenario_runtime_mode=runtime_mode,
         )
+    except DiagnosticAssemblyError as exc:
+        raise ScenarioRuntimeBuildError(str(exc)) from exc
 
     return ScenarioRuntimeComposition(
         environment=environment,
@@ -331,7 +402,7 @@ def build_scenario_runtime_from_environment(
         tenant_id=resolved_tenant_id,
         security_wiring=security_wiring,
         guardrail_wiring=guardrail_wiring,
-        terminal_diagnostic_trigger_attached=terminal_diagnostic_trigger_attached,
+        diagnostic_wiring=diagnostic_wiring,
         workspace=workspace,
         runtime_mode=runtime_mode,
     )
@@ -358,7 +429,7 @@ async def execute_scenario_task(
 
     task = Task(**task_kwargs)
     run_id = mint_run_id()
-    task_result = await composition.nexus_loop.handle_task(task, run_id=run_id)
+    task_result = await UnifiedTaskRunner(composition.nexus_loop).run_task(task, run_id=run_id)
     return ScenarioRuntimeExecutionResult(
         task_result=task_result,
         task_id=task.task_id,

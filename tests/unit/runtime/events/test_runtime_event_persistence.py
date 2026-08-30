@@ -23,12 +23,15 @@ from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRun
 
 
 def _sample_event(**updates: object) -> RuntimeEvent:
+    from intergrax.contracts.execution_identity import mint_execution_id
+
     payload: dict[str, object] = {"human_request": {"urgency": "critical"}}
     fields: dict[str, object] = {
         "tenant_id": "t1",
         "task_id": mint_task_id(),
         "run_id": mint_run_id(),
         "attempt_id": mint_attempt_id(),
+        "execution_id": mint_execution_id(),
         "event_type": RuntimeEventType.HUMAN_APPROVAL_REQUESTED,
         "phase": ExecutionPhase.HUMAN_APPROVAL,
         "payload": payload,

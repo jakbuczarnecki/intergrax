@@ -18,10 +18,14 @@ from scripts.proof.create_scenario_proof import (
 )
 from scripts.proof.init_scenario_implementation import (
     ScenarioImplementationExistsError,
+    ScenarioImplementationInitError,
     ScenarioImplementationRequest,
     init_scenario_implementation,
 )
 from scripts.proof.intergrax_platform_proof_descriptor_loader import load_descriptor
+from scripts.proof.scenario_architecture_conformance import (
+    assert_scenario_application_architecture,
+)
 from scripts.proof.scenario_lifecycle import (
     ScenarioGapDecisionStatus,
     ScenarioGateStatus,
@@ -47,20 +51,6 @@ _FORBIDDEN_IMPORT_MODULES = frozenset(
         "scripts.proof",
     }
 )
-_FORBIDDEN_SYMBOLS = frozenset(
-    {
-        "DiagnosticOrchestrator",
-        "ProblemLifecycleEngine",
-        "ExecutionReconstructor",
-        "GraphExecutor",
-        "HarnessHostRuntime",
-        "NexusLoop",
-        "mint_run_id",
-        "mint_attempt_id",
-        "bind_active_execution_identity",
-    }
-)
-_REQUIRED_REFERENCE = "scenario_runtime_profiles"
 
 
 def _accepted_metadata(slug: str) -> ScenarioLifecycleMetadata:
@@ -95,7 +85,13 @@ def _write_accepted_design_package(
     return package.package_root
 
 
-def _assert_application_architecture_gate(package_root: Path) -> None:
+def _assert_application_architecture_gate(package_root: Path, *, repo_root: Path) -> None:
+    assert_scenario_application_architecture(
+        repo_root=repo_root,
+        scenario_slug=package_root.name,
+        package_root=package_root,
+        skip_lifecycle_check=True,
+    )
     application_dir = package_root / "application"
     for path in application_dir.rglob("*.py"):
         source = path.read_text(encoding="utf-8")
@@ -103,28 +99,13 @@ def _assert_application_architecture_gate(package_root: Path) -> None:
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    if ".proof." in alias.name or alias.name.endswith(".proof"):
-                        pytest.fail(f"proof import in application layer {path}: {alias.name}")
                     module = alias.name.split(".", maxsplit=1)[0]
                     if module in _FORBIDDEN_IMPORT_MODULES:
                         pytest.fail(f"forbidden import in {path}: {alias.name}")
-            if isinstance(node, ast.ImportFrom):
-                if node.module:
-                    root_module = node.module.split(".", maxsplit=1)[0]
-                    if root_module in _FORBIDDEN_IMPORT_MODULES or node.module in _FORBIDDEN_IMPORT_MODULES:
-                        pytest.fail(f"forbidden import in {path}: {node.module}")
-                    if ".proof." in node.module or node.module.endswith(".proof"):
-                        pytest.fail(f"proof import in application layer {path}: {node.module}")
-            if isinstance(node, ast.Name) and node.id in _FORBIDDEN_SYMBOLS:
-                pytest.fail(f"forbidden symbol in {path}: {node.id}")
-            if isinstance(node, ast.Attribute) and node.attr in _FORBIDDEN_SYMBOLS:
-                pytest.fail(f"forbidden symbol in {path}: {node.attr}")
-
-    combined = "\n".join(
-        path.read_text(encoding="utf-8")
-        for path in application_dir.rglob("*.py")
-    )
-    assert _REQUIRED_REFERENCE in combined
+            if isinstance(node, ast.ImportFrom) and node.module:
+                root_module = node.module.split(".", maxsplit=1)[0]
+                if root_module in _FORBIDDEN_IMPORT_MODULES or node.module in _FORBIDDEN_IMPORT_MODULES:
+                    pytest.fail(f"forbidden import in {path}: {node.module}")
 
 
 def test_init_fails_when_lifecycle_is_design(tmp_path: Path) -> None:
@@ -253,7 +234,7 @@ def test_init_happy_path_generates_skeleton_and_updates_lifecycle(tmp_path: Path
     assert "ScenarioExecutionRequest" in scenario_source
     assert "execute_scenario_task" in scenario_source
 
-    _assert_application_architecture_gate(package_root)
+    _assert_application_architecture_gate(package_root, repo_root=tmp_path)
 
 
 def test_second_run_fails_without_overwrite(tmp_path: Path) -> None:
@@ -352,3 +333,104 @@ def test_replace_scenario_spec_frontmatter_preserves_body() -> None:
     updated = replace_scenario_spec_frontmatter(body, metadata)
     assert updated.startswith("---\n")
     assert body.strip() in updated
+
+
+def test_init_validates_architecture_before_lifecycle_update(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    slug = "validate_before_lifecycle"
+    package_root = _write_accepted_design_package(tmp_path, slug=slug)
+    spec_path = package_root / "SCENARIO_SPEC.md"
+    call_order: list[str] = []
+
+    original_assert = assert_scenario_application_architecture
+
+    def _tracking_assert(**kwargs: object) -> object:
+        call_order.append("architecture")
+        return original_assert(**kwargs)
+
+    original_write = write_scenario_spec_frontmatter
+
+    def _tracking_write(path: Path, metadata: ScenarioLifecycleMetadata) -> None:
+        call_order.append("lifecycle")
+        original_write(path, metadata)
+
+    monkeypatch.setattr(
+        "scripts.proof.init_scenario_implementation.assert_scenario_application_architecture",
+        _tracking_assert,
+    )
+    monkeypatch.setattr(
+        "scripts.proof.init_scenario_implementation.write_scenario_spec_frontmatter",
+        _tracking_write,
+    )
+
+    init_scenario_implementation(
+        ScenarioImplementationRequest(
+            slug=validate_scenario_slug(slug),
+            repo_root=tmp_path,
+        ),
+    )
+    assert call_order == ["architecture", "lifecycle"]
+    metadata = load_scenario_lifecycle_metadata(spec_path)
+    assert metadata.lifecycle is ScenarioLifecycle.IMPLEMENTATION_INITIALIZED
+
+
+def test_init_fails_when_generated_architecture_violates_rules(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    slug = "architecture_violation"
+    package_root = _write_accepted_design_package(tmp_path, slug=slug)
+    spec_path = package_root / "SCENARIO_SPEC.md"
+
+    def _bad_runtime_composition(slug: str, agent_class: str) -> str:
+        return (
+            "from intergrax.runtime.nexus.engine.graph_executor import GraphExecutor\n"
+            "GraphExecutor\n"
+        )
+
+    monkeypatch.setattr(
+        "scripts.proof.init_scenario_implementation._build_runtime_composition_py",
+        _bad_runtime_composition,
+    )
+
+    with pytest.raises(ScenarioImplementationInitError, match="architecture conformance"):
+        init_scenario_implementation(
+            ScenarioImplementationRequest(
+                slug=validate_scenario_slug(slug),
+                repo_root=tmp_path,
+            ),
+        )
+
+    metadata = load_scenario_lifecycle_metadata(spec_path)
+    assert metadata.lifecycle is ScenarioLifecycle.ACCEPTED_FOR_IMPLEMENTATION
+    assert metadata.implementation_status is ScenarioImplementationStatus.NOT_INITIALIZED
+    assert not (package_root / "application").exists()
+    assert not (package_root / "run_proof.py").exists()
+
+
+def test_init_failure_does_not_delete_preexisting_user_content(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    slug = "preserve_user_content"
+    package_root = _write_accepted_design_package(tmp_path, slug=slug)
+    user_notes = package_root / "notes.md"
+    user_notes.write_text("operator notes", encoding="utf-8")
+
+    monkeypatch.setattr(
+        "scripts.proof.init_scenario_implementation._build_runtime_composition_py",
+        lambda slug, agent_class: "GraphExecutor\n",
+    )
+
+    with pytest.raises(ScenarioImplementationInitError):
+        init_scenario_implementation(
+            ScenarioImplementationRequest(
+                slug=validate_scenario_slug(slug),
+                repo_root=tmp_path,
+            ),
+        )
+
+    assert user_notes.read_text(encoding="utf-8") == "operator notes"
+

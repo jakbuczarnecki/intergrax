@@ -8,13 +8,23 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 
-
-class HypothesisId(StrEnum):
-    """Scenario-local hypothesis identifiers (H1/H2/H3)."""
-
-    H1 = "H1"
-    H2 = "H2"
-    H3 = "H3"
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_data_contracts import (
+    AttendanceRecord,
+    COMPARISON_LINE_ID,
+    ComparisonObservation,
+    HypothesisId,
+    IncidentOperationalData,
+    LINE_ID,
+    STATION_ID,
+    StaffingRecord,
+    TelemetryAvailability,
+    TelemetryObservation,
+    TelemetryUnavailabilityReason,
+    ThroughputObservation,
+    TimeWindow,
+    TimeWindowLabel,
+    WorkloadObservation,
+)
 
 
 class ScenarioVariant(StrEnum):
@@ -24,35 +34,6 @@ class ScenarioVariant(StrEnum):
     UNRESOLVED = "unresolved"
 
 
-class TelemetryAvailability(StrEnum):
-    """Typed telemetry source response — observation present vs absent for window."""
-
-    AVAILABLE = "available"
-    UNAVAILABLE = "unavailable"
-
-
-class TelemetryUnavailabilityReason(StrEnum):
-    """Bounded reason when telemetry source has no admissible observation."""
-
-    NO_OBSERVATION_FOR_WINDOW = "no_observation_for_window"
-
-
-class TimeWindowLabel(StrEnum):
-    """Typed temporal windows for scenario evidence (not a generic time-series engine)."""
-
-    BASELINE = "baseline_week"
-    BEFORE_INCIDENT = "before_incident"
-    INCIDENT = "incident_window"
-    COMPARISON = "comparison_high_load"
-
-
-INCIDENT_WINDOW_START = datetime(2026, 3, 10, 6, 0, 0)
-INCIDENT_WINDOW_END = datetime(2026, 3, 12, 18, 0, 0)
-LINE_ID = "line4"
-COMPARISON_LINE_ID = "line3"
-STATION_ID = "complex_assembly_station"
-
-
 @dataclass(frozen=True, slots=True)
 class _PrivateFixtureTruth:
     """Evaluator-only ground truth — never model-visible."""
@@ -60,76 +41,6 @@ class _PrivateFixtureTruth:
     initiating_factor_code: str
     station_id: str
     expected_hypothesis: HypothesisId
-
-
-@dataclass(frozen=True, slots=True)
-class TimeWindow:
-    label: str
-    observed_from: datetime
-    observed_to: datetime
-
-
-@dataclass(frozen=True, slots=True)
-class WorkloadObservation:
-    line_id: str
-    window: TimeWindow
-    order_volume_delta_pct: float
-    admissible: bool
-
-
-@dataclass(frozen=True, slots=True)
-class ThroughputObservation:
-    line_id: str
-    window: TimeWindow
-    target_attainment_pct: float
-    baseline_attainment_pct: float
-    admissible: bool
-
-
-@dataclass(frozen=True, slots=True)
-class StaffingRecord:
-    source_id: str
-    line_id: str
-    shift_id: str
-    window: TimeWindow
-    scheduled_headcount: int
-    required_headcount: int
-    record_generated_at: datetime
-    record_valid_for: TimeWindow
-    status: str
-
-
-@dataclass(frozen=True, slots=True)
-class AttendanceRecord:
-    source_id: str
-    line_id: str
-    shift_id: str
-    window: TimeWindow
-    confirmed_headcount: int
-    confirmed_at: datetime
-
-
-@dataclass(frozen=True, slots=True)
-class ComparisonObservation:
-    comparison_line_id: str
-    reference_line_id: str
-    window: TimeWindow
-    workload_delta_pct: float
-    target_attainment_pct: float
-    reference_attainment_pct: float
-    admissible: bool
-
-
-@dataclass(frozen=True, slots=True)
-class TelemetryObservation:
-    station_id: str
-    window: TimeWindow
-    availability: TelemetryAvailability
-    signal_state: str | None = None
-    complex_assembly_throughput_pct: float | None = None
-    baseline_throughput_pct: float | None = None
-    admissible: bool = True
-    unavailability_reason: TelemetryUnavailabilityReason | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -147,6 +58,19 @@ class IncidentFixture:
     staffing_attendance: AttendanceRecord
     comparison: ComparisonObservation
     telemetry: TelemetryObservation
+
+    def to_operational_data(self) -> IncidentOperationalData:
+        return IncidentOperationalData(
+            workload_incident=self.workload_incident,
+            workload_baseline=self.workload_baseline,
+            throughput_incident=self.throughput_incident,
+            throughput_before=self.throughput_before,
+            throughput_baseline=self.throughput_baseline,
+            staffing_preliminary=self.staffing_preliminary,
+            staffing_attendance=self.staffing_attendance,
+            comparison=self.comparison,
+            telemetry=self.telemetry,
+        )
 
 
 def _baseline_window() -> TimeWindow:
@@ -168,8 +92,8 @@ def _before_incident_window() -> TimeWindow:
 def _incident_window() -> TimeWindow:
     return TimeWindow(
         label=TimeWindowLabel.INCIDENT,
-        observed_from=INCIDENT_WINDOW_START,
-        observed_to=INCIDENT_WINDOW_END,
+        observed_from=datetime(2026, 3, 10, 6, 0, 0),
+        observed_to=datetime(2026, 3, 12, 18, 0, 0),
     )
 
 
@@ -304,7 +228,7 @@ def build_skeleton_fixture() -> IncidentFixture:
 
 
 def staffing_record_admissible_for_incident(record: StaffingRecord) -> bool:
-    """Scenario-local admissibility: preliminary roster valid window must overlap incident."""
+    """Fixture-local admissibility: preliminary roster valid window must overlap incident."""
     incident = _incident_window()
     return (
         record.record_valid_for.observed_from <= incident.observed_to

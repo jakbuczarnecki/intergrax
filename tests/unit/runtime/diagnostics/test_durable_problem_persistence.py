@@ -58,6 +58,7 @@ from intergrax.runtime.diagnostics.problem_persistence import (
     ProblemPersistence,
     ProblemPersistenceConflictError,
     ProblemPersistenceIntegrityError,
+    ProblemPersistenceIntegrityReason,
 )
 from intergrax.runtime.diagnostics.problem_record_codec import decode_problem_record
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
@@ -995,11 +996,17 @@ def test_document_store_orphan_reconciliation_index_fails_closed() -> None:
         )
     )
     persistence = DocumentStoreProblemPersistence(store)
-    with pytest.raises(ProblemPersistenceIntegrityError):
+    with pytest.raises(ProblemPersistenceIntegrityError) as exc_info:
         persistence.find_by_reconciliation_key(
             tenant_id=record.tenant_id,
             reconciliation_key=record.provenance.reconciliation_key,
         )
+    exc = exc_info.value
+    assert (
+        exc.reason
+        is ProblemPersistenceIntegrityReason.RECONCILIATION_WINNER_CANONICAL_PENDING
+    )
+    assert "canonical Problem record missing" in str(exc)
 
 
 def test_document_store_orphan_subject_index_fails_closed() -> None:

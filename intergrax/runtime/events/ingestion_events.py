@@ -10,6 +10,7 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from intergrax.runtime.events.runtime_event_identity import runtime_event_identity_kwargs
 
 
 def record_ingestion_failed(
@@ -24,12 +25,12 @@ def record_ingestion_failed(
 ) -> None:
     if bus is None:
         return
-    task_id = run_id or session_id
+    candidate_task_id = session_id
+    if run_id is not None and str(run_id).startswith("task_"):
+        candidate_task_id = run_id
     bus.record(
         RuntimeEvent(
             tenant_id=tenant_id,
-            task_id=task_id,
-            run_id=run_id or session_id,
             event_type=RuntimeEventType.INGESTION_FAILED,
             phase=ExecutionPhase.CONTEXT_BUILDING,
             severity=EventSeverity.ERROR,
@@ -41,5 +42,6 @@ def record_ingestion_failed(
                 "error_type": type(error).__name__,
                 "error_message": str(error),
             },
+            **runtime_event_identity_kwargs(task_id=candidate_task_id, run_id=run_id),
         )
     )

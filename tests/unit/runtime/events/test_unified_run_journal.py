@@ -18,6 +18,7 @@ from intergrax.contracts.execution_identity import (
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from testing_support.runtime_events import runtime_event_test_identity
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.events.unified_run_journal import build_unified_run_journal
 from intergrax.runtime.nexus.tracing.persistence_models import (
@@ -102,18 +103,23 @@ def _event(
     task_id: str,
     run_id: str,
     attempt_id: str,
+    execution_id: str | None = None,
     event_type: RuntimeEventType,
     event_id: str | None = None,
     timestamp: datetime | None = None,
     payload: dict[str, object] | None = None,
     tenant_id: str = _TENANT,
 ) -> RuntimeEvent:
-    return RuntimeEvent(
-        event_id=event_id or mint_event_id(),
-        tenant_id=tenant_id,
+    identity = runtime_event_test_identity(
         task_id=task_id,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    return RuntimeEvent(
+        event_id=event_id or mint_event_id(),
+        tenant_id=tenant_id,
+        **identity,
         event_type=event_type,
         phase=ExecutionPhase.STEP_EXECUTION,
         severity=EventSeverity.INFO,

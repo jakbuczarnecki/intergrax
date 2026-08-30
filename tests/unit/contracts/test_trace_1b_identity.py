@@ -10,6 +10,7 @@ from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
     mint_event_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
     reset_active_execution_identity,
@@ -26,7 +27,7 @@ from intergrax.runtime.nexus.retry.coordinator import RetryCoordinator
 from intergrax.runtime.nexus.retry.retry_engine import RetryRecord
 from intergrax.runtime.task.task import Task, TaskContext
 
-_CANONICAL_ID = re.compile(r"^(task|run|attempt|evt)_[0-9a-f]{32}$")
+_CANONICAL_ID = re.compile(r"^(task|run|attempt|evt|exec)_[0-9a-f]{32}$")
 
 
 @pytest.mark.unit
@@ -79,21 +80,25 @@ def test_runtime_event_requires_all_identity_fields() -> None:
     task_id = mint_task_id()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
     event = RuntimeEvent(
         task_id=task_id,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
         event_type=RuntimeEventType.STEP_STARTED,
         phase=ExecutionPhase.STEP_EXECUTION,
     )
     assert event.task_id == task_id
     assert event.run_id == run_id
     assert event.attempt_id == attempt_id
+    assert event.execution_id == execution_id
     assert _CANONICAL_ID.fullmatch(event.event_id)
     dumped = event.model_dump(mode="json")
     assert dumped["task_id"] == task_id
     assert dumped["run_id"] == run_id
     assert dumped["attempt_id"] == attempt_id
+    assert dumped["execution_id"] == execution_id
     assert dumped["event_id"] == event.event_id
 
 
@@ -129,22 +134,33 @@ def test_emit_context_propagates_to_platform_event() -> None:
     task_id = mint_task_id()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
-    ctx = EmitContext(
-        task_id=task_id,
+    execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
         run_id=run_id,
         attempt_id=attempt_id,
-        bus=bus,
+        execution_id=execution_id,
     )
-    event = emit_platform_event(
-        ctx,
-        event_type=RuntimeEventType.TASK_CREATED,
-        payload=ToolPayloadV1(tool_name="x", status="requested"),
-        phase=ExecutionPhase.INTAKE,
-    )
-    assert event.task_id == task_id
-    assert event.run_id == run_id
-    assert event.attempt_id == attempt_id
-    assert bus.history[-1].attempt_id == attempt_id
+    try:
+        ctx = EmitContext(
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+            bus=bus,
+        )
+        event = emit_platform_event(
+            ctx,
+            event_type=RuntimeEventType.TASK_CREATED,
+            payload=ToolPayloadV1(tool_name="x", status="requested"),
+            phase=ExecutionPhase.INTAKE,
+        )
+        assert event.task_id == task_id
+        assert event.run_id == run_id
+        assert event.attempt_id == attempt_id
+        assert event.execution_id == execution_id
+        assert bus.history[-1].attempt_id == attempt_id
+    finally:
+        reset_active_execution_identity(token)
 
 
 @pytest.mark.unit
@@ -168,13 +184,29 @@ def test_emit_context_propagates_to_domain_signal() -> None:
     task_id = mint_task_id()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
-    ctx = EmitContext(task_id=task_id, run_id=run_id, attempt_id=attempt_id, bus=bus)
-    event = emit_domain_signal(
-        ctx,
-        kind="agents.test.trace_1b",
-        payload=_Payload(),
+    execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
     )
-    assert event.attempt_id == attempt_id
+    try:
+        ctx = EmitContext(
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+            bus=bus,
+        )
+        event = emit_domain_signal(
+            ctx,
+            kind="agents.test.trace_1b",
+            payload=_Payload(),
+        )
+        assert event.attempt_id == attempt_id
+        assert event.execution_id == execution_id
+    finally:
+        reset_active_execution_identity(token)
     clear_event_kind_registry()
 
 
@@ -199,10 +231,12 @@ async def test_runtime_execution_context_tool_events_carry_attempt_id() -> None:
     task_id = mint_task_id()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
     ctx = RuntimeExecutionContext(
         task_id=task_id,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
         agent_id="agent-1",
         tool_gateway=_Gateway(),
         event_emitter=collector,
@@ -215,6 +249,7 @@ async def test_runtime_execution_context_tool_events_carry_attempt_id() -> None:
         assert event.task_id == task_id
         assert event.run_id == run_id
         assert event.attempt_id == attempt_id
+        assert event.execution_id == execution_id
 
 
 @pytest.mark.unit
@@ -224,30 +259,50 @@ def test_retry_coordinator_scheduled_and_started_attempt_ids() -> None:
     run_id = mint_run_id()
     attempt_a1 = mint_attempt_id()
     attempt_a2 = mint_attempt_id()
+    execution_e1 = mint_execution_id()
+    execution_e2 = mint_execution_id()
     coordinator = RetryCoordinator(max_run_retries=1, retry_run_on=frozenset())
-    scheduled = coordinator.scheduled_event_for_agent_retry(
-        task,
+    token = bind_active_execution_identity(
         run_id=run_id,
         attempt_id=attempt_a1,
-        record=RetryRecord(
-            attempt=1,
-            agent_id="a1",
-            reason="validation_failed",
-            alternate_agent_id="a2",
-        ),
+        execution_id=execution_e1,
     )
-    started = RetryCoordinator.build_started_event(
-        task,
+    try:
+        scheduled = coordinator.scheduled_event_for_agent_retry(
+            task,
+            run_id=run_id,
+            attempt_id=attempt_a1,
+            record=RetryRecord(
+                attempt=1,
+                agent_id="a1",
+                reason="validation_failed",
+                alternate_agent_id="a2",
+            ),
+        )
+    finally:
+        reset_active_execution_identity(token)
+    token_started = bind_active_execution_identity(
         run_id=run_id,
         attempt_id=attempt_a2,
-        scope="agent",
-        retry_ordinal=1,
-        reason="validation_failed",
+        execution_id=execution_e2,
     )
+    try:
+        started = RetryCoordinator.build_started_event(
+            task,
+            run_id=run_id,
+            attempt_id=attempt_a2,
+            scope="agent",
+            retry_ordinal=1,
+            reason="validation_failed",
+        )
+    finally:
+        reset_active_execution_identity(token_started)
     assert scheduled.event_type == RuntimeEventType.RETRY_SCHEDULED
     assert scheduled.attempt_id == attempt_a1
+    assert scheduled.execution_id == execution_e1
     assert started.event_type == RuntimeEventType.RETRY_STARTED
     assert started.attempt_id == attempt_a2
+    assert started.execution_id == execution_e2
 
 
 @pytest.mark.unit

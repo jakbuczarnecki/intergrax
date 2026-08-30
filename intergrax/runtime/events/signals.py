@@ -56,11 +56,13 @@ def emit_platform_event(
     entry = get_catalog_entry(event_type)
     if entry is None:
         raise DomainSignalError(f"unknown spine event_type: {event_type.value}")
+    execution_id = ctx.execution_id
     event = RuntimeEvent(
         tenant_id=ctx.tenant_id,
         task_id=ctx.task_id,
         run_id=ctx.run_id,
         attempt_id=ctx.attempt_id,
+        execution_id=execution_id,
         node_id=node_id,
         agent_id=agent_id,
         step_id=step_id,
@@ -99,11 +101,13 @@ def emit_domain_signal(
             f"schema for {kind!r}: {registry_entry.payload_schema_id!r}"
         )
     safe_payload = payload.redact() if ctx.production_mode else payload
+    execution_id = ctx.execution_id
     event = RuntimeEvent(
         tenant_id=ctx.tenant_id,
         task_id=ctx.task_id,
         run_id=ctx.run_id,
         attempt_id=ctx.attempt_id,
+        execution_id=execution_id,
         node_id=node_id,
         agent_id=agent_id,
         step_id=step_id,

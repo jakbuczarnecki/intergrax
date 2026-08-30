@@ -3,7 +3,13 @@
 import pytest
 
 from intergrax.agents.agent_contract import Agent  # noqa: F401 — stabilize import order
-from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    reset_active_execution_identity,
+)
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.partial_results import (
@@ -26,13 +32,23 @@ def test_partial_result_from_checkpoint_extracts_runtime_fields(tmp_path) -> Non
         context=TaskContext(capability="echo.basic"),
         options=TaskExecutionOptions(long_running=TaskLongRunningOptions(enabled=True)),
     )
-    LongRunningCoordinator.persist_checkpoint(
-        task,
-        store,
-        run_id=mint_run_id(),
-        attempt_id=mint_attempt_id(),
-        progress_message="step 1 complete",
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=mint_execution_id(),
     )
+    try:
+        LongRunningCoordinator.persist_checkpoint(
+            task,
+            store,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            progress_message="step 1 complete",
+        )
+    finally:
+        reset_active_execution_identity(token)
     checkpoint = store.get_latest(task.task_id, "t1")
     assert checkpoint is not None
 

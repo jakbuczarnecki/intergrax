@@ -3,6 +3,7 @@
 """APP-1 production runtime boundary checks for incident investigation scenario."""
 
 from __future__ import annotations
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import build_runtime_bundle
 
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -28,7 +29,6 @@ from platform_proofs.scenarios.ai_incident_investigation.application.runtime_com
     build_scenario_runtime_composition,
     resolve_scenario_llm_adapter,
 )
-from platform_proofs.scenarios.ai_incident_investigation.application.scenario import build_runtime_bundle
 from testing_support.builder import FakeLLMAdapter
 
 pytestmark = pytest.mark.unit

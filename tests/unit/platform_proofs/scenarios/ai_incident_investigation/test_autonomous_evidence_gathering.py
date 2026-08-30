@@ -3,6 +3,7 @@
 """APP-2A autonomous evidence gathering and decision observability tests."""
 
 from __future__ import annotations
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import build_fixture_runtime_bundle, build_runtime_bundle
 
 import inspect
 
@@ -38,7 +39,6 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario_co
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     OUTCOME_RESOLVED,
-    build_runtime_bundle,
     execute_resolved_skeleton,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.tools import (
@@ -123,7 +123,7 @@ def _build_runtime_state(bundle) -> RuntimeState:
 
 
 def test_incident_scope_rejects_out_of_scope_line() -> None:
-    scope = IncidentScope.from_fixture_defaults(station_id="complex_assembly_station")
+    scope = IncidentScope.from_operational_defaults(station_id="complex_assembly_station")
     with pytest.raises(IncidentScopeViolationError, match="line_id_out_of_scope"):
         scope.validate_tool_input(
             TOOL_WORKLOAD_READ,
@@ -201,7 +201,7 @@ async def test_alternative_tool_order_executes_planner_selected_sequence(
     gathering = gather_incident_evidence(
         runtime_state=state,
         registry=bundle.registry,
-        scope=IncidentScope.from_fixture_defaults(station_id=bundle.fixture.telemetry.station_id),
+        scope=IncidentScope.from_operational_defaults(station_id=bundle.operational_data.station_id),
         is_revision=True,
         critic_feedback=["unsupported inference"],
     )
@@ -232,7 +232,7 @@ async def test_observability_correlates_decision_trace_tool_trace_and_evidence()
     gathering = gather_incident_evidence(
         runtime_state=state,
         registry=bundle.registry,
-        scope=IncidentScope.from_fixture_defaults(station_id=bundle.fixture.telemetry.station_id),
+        scope=IncidentScope.from_operational_defaults(station_id=bundle.operational_data.station_id),
         is_revision=False,
     )
     planner_events = [
@@ -345,7 +345,7 @@ def test_gather_incident_evidence_requires_runtime_config_tool_invoker() -> None
         gather_incident_evidence(
             runtime_state=state,
             registry=bundle.registry,
-            scope=IncidentScope.from_fixture_defaults(station_id=bundle.fixture.telemetry.station_id),
+            scope=IncidentScope.from_operational_defaults(station_id=bundle.operational_data.station_id),
             is_revision=False,
         )
 
@@ -361,7 +361,7 @@ def test_gather_incident_evidence_delegates_to_runtime_config_tool_invoker() -> 
     gathering = gather_incident_evidence(
         runtime_state=state,
         registry=bundle.registry,
-        scope=IncidentScope.from_fixture_defaults(station_id=bundle.fixture.telemetry.station_id),
+        scope=IncidentScope.from_operational_defaults(station_id=bundle.operational_data.station_id),
         is_revision=False,
     )
 
@@ -380,7 +380,7 @@ def test_incident_scoped_invoker_preserves_decorated_canonical_invoker() -> None
     gathering = gather_incident_evidence(
         runtime_state=state,
         registry=bundle.registry,
-        scope=IncidentScope.from_fixture_defaults(station_id=bundle.fixture.telemetry.station_id),
+        scope=IncidentScope.from_operational_defaults(station_id=bundle.operational_data.station_id),
         is_revision=False,
     )
 
@@ -429,7 +429,7 @@ def test_scope_rejection_does_not_invoke_canonical_tool_invoker(
     gathering = gather_incident_evidence(
         runtime_state=state,
         registry=bundle.registry,
-        scope=IncidentScope.from_fixture_defaults(station_id=bundle.fixture.telemetry.station_id),
+        scope=IncidentScope.from_operational_defaults(station_id=bundle.operational_data.station_id),
         is_revision=False,
     )
 

@@ -245,7 +245,7 @@ def test_production_fail_closed_when_diagnostics_required_without_document_store
     tmp_path: Path,
 ) -> None:
     environment = _production_attached_environment("scenario.production.no_diag")
-    with pytest.raises(ScenarioRuntimeBuildError, match="diagnostics are required"):
+    with pytest.raises(ScenarioRuntimeBuildError, match="central diagnostics are required"):
         build_scenario_production_runtime(
             environment=environment,
             manifest=_scenario_manifest("scenario_prod_no_diag"),
@@ -254,7 +254,6 @@ def test_production_fail_closed_when_diagnostics_required_without_document_store
             runtime_events_db_path=tmp_path / "events.db",
             trace_db_path=tmp_path / "trace.db",
             document_store=None,
-            diagnostics_required=True,
         )
 
 
@@ -268,7 +267,6 @@ def test_production_success_with_explicit_configuration(tmp_path: Path) -> None:
         runtime_events_db_path=tmp_path / "events.db",
         trace_db_path=tmp_path / "trace.db",
         document_store=InMemoryDocumentStore(),
-        diagnostics_required=True,
     )
     assert composition.runtime_mode is ScenarioRuntimeMode.PRODUCTION_ATTACHED
     assert composition.has_runtime_event_store is True

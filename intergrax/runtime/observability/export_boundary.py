@@ -377,7 +377,7 @@ def envelope_from_runtime_event_source(source: RuntimeEventExportSource) -> Obse
         sha256=str(safe_payload.get("args_digest") or ""),
         schema_id=schema_id,
         tenant_id=source.tenant_id,
-        source_schema_id="runtime_event.v1",
+        source_schema_id="runtime_event.v2",
         correlation_id=source.correlation_id,
         event_id=source.event_id,
     )

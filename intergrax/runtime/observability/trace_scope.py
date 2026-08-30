@@ -131,13 +131,23 @@ class TraceScope:
         """
         from intergrax.contracts.event_severity import EventSeverity
         from intergrax.contracts.execution_phase import ExecutionPhase
+        from intergrax.contracts.execution_identity import (
+            require_active_execution_id,
+            require_active_execution_identity,
+        )
         from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 
+        active_run_id, attempt_id = require_active_execution_identity()
+        execution_id = require_active_execution_id()
+        if self._state.run_id != active_run_id:
+            raise RuntimeError("trace scope run_id conflicts with active execution identity")
         started = self._emitter.emit_runtime(
             RuntimeEvent(
                 tenant_id=self._state.tenant_id,
                 task_id=self._state.task_id,
                 run_id=self._state.run_id,
+                attempt_id=attempt_id,
+                execution_id=execution_id,
                 agent_id=agent_id or self._state.agent_id,
                 step_id=step_id,
                 node_id=node_id or self._state.node_id,
@@ -167,6 +177,8 @@ class TraceScope:
                     tenant_id=self._state.tenant_id,
                     task_id=self._state.task_id,
                     run_id=self._state.run_id,
+                    attempt_id=attempt_id,
+                    execution_id=execution_id,
                     agent_id=agent_id or self._state.agent_id,
                     step_id=step_id,
                     node_id=node_id or self._state.node_id,
@@ -184,6 +196,8 @@ class TraceScope:
                     tenant_id=self._state.tenant_id,
                     task_id=self._state.task_id,
                     run_id=self._state.run_id,
+                    attempt_id=attempt_id,
+                    execution_id=execution_id,
                     agent_id=agent_id or self._state.agent_id,
                     step_id=step_id,
                     node_id=node_id or self._state.node_id,

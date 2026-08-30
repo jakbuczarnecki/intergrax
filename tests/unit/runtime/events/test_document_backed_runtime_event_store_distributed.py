@@ -23,6 +23,7 @@ from intergrax.integrations.contracts.document_store import (
     DocumentRecord,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from testing_support.runtime_events import runtime_event_test_identity
 from intergrax.runtime.events.stores.document_backed_runtime_event_store import (
     DocumentBackedRuntimeEventStore,
 )
@@ -56,14 +57,19 @@ def _event(
     task_id: str,
     run_id: str,
     attempt_id: str,
+    execution_id: str | None = None,
     event_id: str | None = None,
 ) -> RuntimeEvent:
-    return RuntimeEvent(
-        event_id=event_id or mint_event_id(),
-        tenant_id=_TENANT,
+    identity = runtime_event_test_identity(
         task_id=task_id,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    return RuntimeEvent(
+        event_id=event_id or mint_event_id(),
+        tenant_id=_TENANT,
+        **identity,
         event_type=RuntimeEventType.STEP_STARTED,
         phase=ExecutionPhase.STEP_EXECUTION,
         timestamp=datetime(2026, 6, 7, 10, 0, 0, tzinfo=timezone.utc),

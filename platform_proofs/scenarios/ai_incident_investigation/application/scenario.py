@@ -27,17 +27,15 @@ from intergrax.runtime.critic.critic_wiring import (
     validate_node_with_critic_detail,
 )
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.tools.registry import ToolRegistry
 from platform_proofs.scenarios.ai_incident_investigation.application.critic_adapter import (
     apply_challenge_lifecycle,
     count_evaluator_loop_iterations_from_persisted_trace,
     first_failed_node_partial_verdict_from_persisted_trace,
 )
-from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import (
-    IncidentFixture,
-    ScenarioVariant,
-    build_resolved_fixture,
-    build_unresolved_fixture,
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_data_contracts import (
+    IncidentOperationalData,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.investigator_agent import (
     COMPARISON_EVIDENCE_ID,
@@ -163,7 +161,7 @@ class ScenarioExecutionResult:
 
 @dataclass(frozen=True, slots=True)
 class ScenarioRuntimeBundle:
-    fixture: IncidentFixture
+    operational_data: IncidentOperationalData
     registry: ToolRegistry
     investigator: IncidentInvestigatorAgent
     runtime_composition: ScenarioRuntimeComposition
@@ -173,39 +171,44 @@ class ScenarioRuntimeBundle:
 
 def build_runtime_bundle(
     *,
-    variant: ScenarioVariant = ScenarioVariant.RESOLVED,
-    fixture: IncidentFixture | None = None,
+    operational_data: IncidentOperationalData,
     runtime_composition: ScenarioRuntimeComposition | None = None,
     tenant_id: str = STANDALONE_SCENARIO_TENANT_ID,
     investigation_input: IncidentInvestigationInput | None = None,
+    llm_adapter_override: LLMAdapter | None = None,
 ) -> ScenarioRuntimeBundle:
-    resolved_fixture = fixture or (
-        build_unresolved_fixture()
-        if variant is ScenarioVariant.UNRESOLVED
-        else build_resolved_fixture()
+    environment = (
+        runtime_composition.environment
+        if runtime_composition is not None
+        else build_scenario_environment_profile()
     )
+    tool_registry = (
+        runtime_composition.tool_registry
+        if runtime_composition is not None
+        else ToolRegistry()
+    )
+    evidence_store = register_scenario_tools(tool_registry, operational_data)
     composition = runtime_composition or ScenarioRuntimeComposition(
-        environment=build_scenario_environment_profile(),
-        tool_registry=ToolRegistry(),
+        environment=environment,
+        tool_registry=tool_registry,
+        llm_adapter_override=llm_adapter_override,
     )
-    if composition._platform is None:
+    if not composition.is_platform_attached:
         agent_registry = AgentRegistry()
         build_scenario_runtime_composition(
-            registry=composition.tool_registry,
+            registry=tool_registry,
             tenant_id=tenant_id,
             environment=composition.environment,
             agent_registry=agent_registry,
             composition=composition,
         )
-    tool_registry = composition.platform.env_wiring.tool_wiring.registry
-    evidence_store = register_scenario_tools(tool_registry, resolved_fixture)
-    composition.tool_registry = tool_registry
+    composition.tool_registry = composition.platform.env_wiring.tool_wiring.registry
     investigator = IncidentInvestigatorAgent(
         registry=tool_registry,
-        station_id=resolved_fixture.telemetry.station_id,
+        station_id=operational_data.station_id,
         runtime_composition=composition,
-        incident_scope=IncidentScope.from_fixture_defaults(
-            station_id=resolved_fixture.telemetry.station_id,
+        incident_scope=IncidentScope.from_operational_defaults(
+            station_id=operational_data.station_id,
         ),
         evidence_store=evidence_store,
         investigation_input=investigation_input,
@@ -213,7 +216,7 @@ def build_runtime_bundle(
     if investigator.get_contract().id not in composition.platform.registry.list_agent_ids():
         composition.platform.registry.register(investigator)
     return ScenarioRuntimeBundle(
-        fixture=resolved_fixture,
+        operational_data=operational_data,
         registry=tool_registry,
         investigator=investigator,
         runtime_composition=composition,
@@ -353,7 +356,7 @@ async def execute_resolved_skeleton(
 
     critic_challenged = failed_critic_verdict is not None and not failed_critic_verdict.passed
 
-    critic_hooks = platform.nexus_loop._graph_executor._critic_graph_hooks
+    critic_hooks = platform.nexus_loop.critic_graph_hooks
     if critic_hooks is None:
         raise RuntimeError("critic hooks required for skeleton")
 

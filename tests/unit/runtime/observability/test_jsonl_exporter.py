@@ -9,6 +9,7 @@ import pytest
 
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from testing_support.runtime_events import runtime_event_test_identity
 from intergrax.runtime.observability.export_boundary import (
     FORBIDDEN_EXPORT_CONTENT_FIELDS,
     ExportRecordKind,
@@ -158,8 +159,6 @@ async def test_works_through_try_export_with_enabled_policy(tmp_path: Path) -> N
     output_path = tmp_path / "nested" / "export.jsonl"
     exporter = JsonlObservabilityExporter(output_path, create_parent_dirs=True)
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
         tenant_id="tenant-a",
         agent_id="agent-1",
         event_type=RuntimeEventType.TOOL_COMPLETED,
@@ -171,6 +170,7 @@ async def test_works_through_try_export_with_enabled_policy(tmp_path: Path) -> N
             "content": "raw body",
             "source_path": "C:\\Users\\secret\\project\\file.txt",
         },
+        **runtime_event_test_identity(),
     )
     envelope = envelope_from_runtime_event(event)
     policy = ObservabilityExportPolicy(enabled=True, export_content=False)
