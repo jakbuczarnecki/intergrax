@@ -397,7 +397,7 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
         ValidationDomain.CONCURRENCY,
         _unit(
             "tests/unit/runtime/execution/test_ue_11d_parallel_root_isolation.py",
-            "test_ue_11d_parallel_root_identity_isolation",
+            "test_ue_11d_shared_runtime_parallel_root_identity_isolation",
         ),
     ),
     _covered(
@@ -405,7 +405,7 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
         ValidationDomain.CONCURRENCY,
         _unit(
             "tests/unit/runtime/execution/test_ue_11d_parallel_root_isolation.py",
-            "test_ue_11d_parallel_root_authority_isolation",
+            "test_ue_11d_shared_runtime_parallel_root_authority_isolation",
         ),
     ),
     _covered(
@@ -413,7 +413,7 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
         ValidationDomain.CONCURRENCY,
         _unit(
             "tests/unit/runtime/execution/test_ue_11d_parallel_root_isolation.py",
-            "test_ue_11d_parallel_root_budget_isolation",
+            "test_ue_11d_shared_runtime_parallel_root_budget_isolation",
         ),
     ),
     _covered(
@@ -437,7 +437,7 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
         ValidationDomain.CONCURRENCY,
         _unit(
             "tests/unit/runtime/execution/test_ue_11d_parallel_root_isolation.py",
-            "test_ue_11d_no_context_cross_talk",
+            "test_ue_11d_shared_runtime_no_context_cross_talk",
         ),
     ),
     # RECOVERY
