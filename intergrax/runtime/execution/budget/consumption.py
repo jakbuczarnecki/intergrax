@@ -16,6 +16,8 @@ def _consume_governed(amounts: BudgetUsageTotals) -> None:
         return
     budget_state = require_active_execution_budget()
     execution_id = require_active_execution_id()
+    if budget_state.execution_id != execution_id:
+        raise RuntimeError("active execution budget execution_id mismatch")
     ledger = budget_state.ledger
     ledger.ensure_shared_participant(
         execution_id,

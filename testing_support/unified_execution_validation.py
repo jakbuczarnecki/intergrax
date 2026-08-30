@@ -302,10 +302,21 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
             "test_nexus_fails_closed_on_active_identity_mismatch",
         ),
     ),
-    _gap(
+    _covered(
         "fail_closed.budget_execution_id_mismatch",
         ValidationDomain.FAIL_CLOSED,
-        GapTarget.UE_11C,
+        _unit(
+            "tests/unit/runtime/execution/budget/test_ue_11c_budget_execution_identity_mismatch.py",
+            "test_budget_execution_id_mismatch_fails_closed_before_llm_consumption",
+        ),
+        _unit(
+            "tests/unit/runtime/execution/budget/test_ue_11c_budget_execution_identity_mismatch.py",
+            "test_budget_execution_id_mismatch_fails_closed_before_tool_consumption",
+        ),
+        _unit(
+            "tests/unit/runtime/execution/budget/test_ue_11c_budget_execution_identity_mismatch.py",
+            "test_matching_budget_execution_id_allows_governed_consumption",
+        ),
     ),
     _covered(
         "fail_closed.authority_metadata_mismatch",

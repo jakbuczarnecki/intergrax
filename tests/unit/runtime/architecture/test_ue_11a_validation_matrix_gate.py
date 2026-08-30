@@ -30,7 +30,6 @@ pytestmark = pytest.mark.unit
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 EXPECTED_GAP_TARGET_BY_DOMAIN: dict[ValidationDomain, GapTarget] = {
     ValidationDomain.ROOT_STRATEGY: GapTarget.UE_11B,
-    ValidationDomain.FAIL_CLOSED: GapTarget.UE_11C,
     ValidationDomain.CHILD_EXECUTION: GapTarget.UE_11D,
     ValidationDomain.CONCURRENCY: GapTarget.UE_11D,
     ValidationDomain.RECOVERY: GapTarget.UE_11E,
@@ -162,7 +161,6 @@ def test_ue_11a_matrix_documents_real_gaps() -> None:
   backlog = gap_backlog()
   assert backlog[GapTarget.UE_11G]
   assert backlog[GapTarget.UE_11B]
-  assert backlog[GapTarget.UE_11C]
   assert backlog[GapTarget.UE_11D]
   assert backlog[GapTarget.UE_11E]
   assert backlog[GapTarget.UE_11F]
