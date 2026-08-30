@@ -445,8 +445,8 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
         "recovery.retry_execution_semantics",
         ValidationDomain.RECOVERY,
         _unit(
-            "tests/unit/runtime/events/test_ue_9b_runtime_event_execution_id.py",
-            "test_local_retry_preserves_execution_id",
+            "tests/unit/runtime/execution/test_ue_11e_retry_recovery.py",
+            "test_ue_11e_local_retry_preserves_identity_and_budget",
         ),
     ),
     _covered(
@@ -478,40 +478,40 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
         ValidationDomain.RECOVERY,
         GapTarget.UE_11E,
         _unit(
-            "tests/unit/runtime/long_running/test_ue_9c_execution_tree_checkpoint.py",
-            "test_completed_child_skipped_on_resume",
+            "tests/unit/runtime/execution/test_ue_11e_resume_recovery.py",
+            "test_ue_11e_resume_execution_tree_continuity",
         ),
     ),
     _covered(
         "recovery.redelivery_run_continuity",
         ValidationDomain.RECOVERY,
         _unit(
-            "tests/unit/runtime/background_execution/test_ue_9a_background_identity_redelivery.py",
-            "test_redelivery_preserves_run_and_task_but_mints_new_attempt_and_execution",
+            "tests/unit/runtime/background_execution/test_ue_11e_redelivery_recovery.py",
+            "test_ue_11e_redelivery_identity_and_budget_continuity",
         ),
     ),
     _covered(
         "recovery.redelivery_attempt_semantics",
         ValidationDomain.RECOVERY,
         _unit(
-            "tests/unit/runtime/background_execution/test_ue_9a_background_identity_redelivery.py",
-            "test_three_consecutive_redeliveries_keep_run_with_distinct_attempts",
+            "tests/unit/runtime/background_execution/test_ue_11e_redelivery_recovery.py",
+            "test_ue_11e_redelivery_identity_and_budget_continuity",
         ),
     ),
     _covered(
         "recovery.redelivery_budget_continuity",
         ValidationDomain.RECOVERY,
         _unit(
-            "tests/unit/runtime/execution/budget/test_ue_9ar1_preserve_run_budget_across_redelivery.py",
-            "test_attempt_two_has_new_attempt_id_but_same_run_budget_state",
+            "tests/unit/runtime/background_execution/test_ue_11e_redelivery_recovery.py",
+            "test_ue_11e_redelivery_identity_and_budget_continuity",
         ),
     ),
     _covered(
         "recovery.redelivery_no_execution_id_reuse",
         ValidationDomain.RECOVERY,
         _unit(
-            "tests/unit/runtime/events/test_ue_9b_runtime_event_execution_id.py",
-            "test_redelivery_uses_new_execution_id",
+            "tests/unit/runtime/background_execution/test_ue_11e_redelivery_recovery.py",
+            "test_ue_11e_redelivery_identity_and_budget_continuity",
         ),
     ),
     # OBSERVABILITY
