@@ -6,20 +6,25 @@ from __future__ import annotations
 
 import threading
 from dataclasses import dataclass
-from unittest.mock import patch
 
 import pytest
 
+from intergrax.agents.agent_contract import Agent
+from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
+from intergrax.contracts.agent_step import AgentStep, StepOutput
+from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
     RunId,
     TaskId,
-    bind_active_execution_identity,
-    mint_execution_id,
     peek_active_execution_id,
     peek_active_execution_identity,
+    require_active_execution_id,
+    require_active_execution_identity,
 )
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 from intergrax.runtime.background_execution.bootstrap import (
@@ -32,24 +37,25 @@ from intergrax.runtime.background_execution.identity_persistence import (
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
 )
-from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
-from intergrax.runtime.execution.budget.models import (
-    BudgetUsageTotals,
-    ChildBudgetAllocationDecision,
-    ExecutionBudgetAllocationMode,
+from intergrax.runtime.execution.active_execution_budget import (
+    peek_active_execution_budget,
+    require_active_execution_budget,
 )
+from intergrax.runtime.execution.budget.consumption import consume_llm_call
 from intergrax.runtime.execution.budget.persistence import (
     KvRunBudgetPersistence,
     create_durable_run_budget_ledger_factory,
 )
-from intergrax.runtime.execution.active_execution_budget import peek_active_execution_budget
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.nexus_worker_execution import NexusWorkerRuntime
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import task_to_execution_payload
 from intergrax.runtime.task.worker_payload import encode_execution_request
-from echo.echo_agent import EchoAgent
+from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -58,6 +64,8 @@ _RUN_BUDGET = RunBudget(max_llm_calls=5)
 _CONSUME_FIRST = 2
 _CONSUME_SECOND = 1
 _CONSUME_THIRD = 1
+_AGENT_ID = "ue_11e_budget_workload"
+_CAPABILITY = "ue.11e.budget_redelivery"
 
 
 class _KV(DistributedKVStore):
@@ -111,7 +119,9 @@ class _DeliveryObservation:
     run_id: RunId
     attempt_id: AttemptId
     execution_id: ExecutionId
-    llm_calls_remaining_before_consume: int | None
+    remaining_before: int
+    remaining_after: int
+    budget_execution_id: ExecutionId
 
 
 def _transport(transport_task_id: str) -> BackgroundTransportExecutionRef:
@@ -122,38 +132,129 @@ def _transport(transport_task_id: str) -> BackgroundTransportExecutionRef:
     )
 
 
-def _consume_llm_calls(
-    ledger,
-    *,
-    root_execution_id: ExecutionId,
-    amount: int,
-) -> None:
-    child_id = mint_execution_id()
-    ledger.grant_child_budget(
-        execution_id=child_id,
-        parent_execution_id=root_execution_id,
-        decision=ChildBudgetAllocationDecision(mode=ExecutionBudgetAllocationMode.SHARED),
-    )
-    ledger.consume_budget(child_id, BudgetUsageTotals(llm_calls=amount))
-    ledger.release_child_budget(child_id)
+def _parse_consume_amount(message: str) -> int:
+    prefix = "consume="
+    if not message.startswith(prefix):
+        raise ValueError(f"expected message prefix {prefix!r}")
+    return int(message[len(prefix) :])
+
+
+class _BudgetRedeliveryWorkloadAgent(Agent):
+    """Deterministic workload that consumes governed budget inside worker execution."""
+
+    __slots__ = ("_observations",)
+
+    def __init__(self, *, observations: list[_DeliveryObservation]) -> None:
+        self._observations = observations
+
+    def get_contract(self) -> AgentContract:
+        return AgentContract(
+            id=_AGENT_ID,
+            name=_AGENT_ID,
+            description="UE-11E budget redelivery workload",
+            capabilities=[_CAPABILITY],
+        )
+
+    def can_handle(self, task_context: object) -> CapabilityMatchResult:
+        if not isinstance(task_context, TaskContext):
+            return CapabilityMatchResult(matched=False)
+        if task_context.capability == _CAPABILITY:
+            return CapabilityMatchResult(
+                matched=True,
+                agent_id=_AGENT_ID,
+                matched_capabilities=[_CAPABILITY],
+                score=1.0,
+            )
+        return CapabilityMatchResult(matched=False)
+
+    def build_context(self, request: RuntimeRequest) -> RuntimeContext:
+        config = RuntimeConfig(
+            llm_adapter=FakeLLMAdapter(fixed_text="ue-11e-budget-workload"),
+            enable_rag=False,
+            production_mode=False,
+            tenant_id=request.tenant_id,
+        )
+        return RuntimeContext.build(
+            config=config,
+            session_manager=build_in_memory_session_manager(),
+        )
+
+    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+        del context
+        return [
+            AgentStep(
+                step_id=f"{_AGENT_ID}_step",
+                step_name=f"{_AGENT_ID}_step",
+                step_index=0,
+                trace_label=_CAPABILITY,
+            )
+        ]
+
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+        del step
+        run_id, attempt_id = require_active_execution_identity()
+        execution_id = require_active_execution_id()
+        budget_state = require_active_execution_budget()
+        if budget_state.execution_id != execution_id:
+            raise RuntimeError("active execution budget execution_id mismatch")
+
+        message = (ctx.request.message or "") if ctx.request is not None else ""
+        consume_amount = _parse_consume_amount(message)
+        remaining_before = budget_state.ledger.snapshot_root_available().max_llm_calls
+        for _ in range(consume_amount):
+            consume_llm_call()
+        remaining_after = budget_state.ledger.snapshot_root_available().max_llm_calls
+
+        self._observations.append(
+            _DeliveryObservation(
+                task_id=ctx.task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                execution_id=execution_id,
+                remaining_before=remaining_before,
+                remaining_after=remaining_after,
+                budget_execution_id=budget_state.execution_id,
+            )
+        )
+        return StepOutput(
+            step_id=f"{_AGENT_ID}_step",
+            summary="ue-11e budget workload complete",
+            data={"consume_amount": consume_amount},
+        )
+
+    def decide_after_step(
+        self,
+        step: AgentStep,
+        output: StepOutput | None,
+        ctx: RuntimeExecutionContext,
+    ) -> AgentDecision:
+        del step, output, ctx
+        return AgentDecision(
+            type=AgentDecisionType.COMPLETE,
+            reason="ue-11e budget workload finished",
+        )
 
 
 def _run_worker_delivery(
     *,
     identity: BackgroundExecutionIdentity,
-    capture: list[_DeliveryObservation],
-    ledger_factory: ExecutionBudgetLedgerFactory,
+    kv: _KV,
+    observations: list[_DeliveryObservation],
     consume_amount: int,
 ) -> None:
     agent_registry = AgentRegistry()
-    agent_registry.register(EchoAgent())
-    runtime = NexusWorkerRuntime.from_registry(agent_registry)
+    agent_registry.register(_BudgetRedeliveryWorkloadAgent(observations=observations))
+    runtime = NexusWorkerRuntime.from_registry(
+        agent_registry,
+        run_budget=_RUN_BUDGET,
+        run_budget_persistence=KvRunBudgetPersistence(kv),
+    )
     task = Task(
         task_id=str(identity.task_id),
         tenant_id=identity.tenant_id,
         user_id="user-1",
-        message="ue-11e redelivery",
-        context=TaskContext(capability="echo.basic"),
+        message=f"consume={consume_amount}",
+        context=TaskContext(capability=_CAPABILITY),
     )
     request = ExecutionRequest(
         run_id="queue-correlation-only",
@@ -163,53 +264,20 @@ def _run_worker_delivery(
     )
     payload = encode_execution_request(request)
 
-    original_bind = bind_active_execution_identity
-
-    def _capturing_bind(**kwargs: object) -> object:
-        if kwargs.get("parent_execution_id") is not None:
-            return original_bind(**kwargs)
-        token = original_bind(**kwargs)
-        execution_id = kwargs["execution_id"]
-        ledger = ledger_factory.create_ledger(
-            _RUN_BUDGET,
-            tenant_id=identity.tenant_id,
-            run_id=identity.run_id,
-            attempt_id=identity.attempt_id,
-        )
-        remaining_before = ledger.snapshot_root_available().max_llm_calls
-        _consume_llm_calls(ledger, root_execution_id=execution_id, amount=consume_amount)
-        capture.append(
-            _DeliveryObservation(
-                task_id=identity.task_id,
-                run_id=kwargs["run_id"],
-                attempt_id=kwargs["attempt_id"],
-                execution_id=execution_id,
-                llm_calls_remaining_before_consume=remaining_before,
-            )
-        )
-        return token
-
-    with patch(
-        "intergrax.runtime.execution.boundary.bind_active_execution_identity",
-        side_effect=_capturing_bind,
-    ):
-        runtime.execute_payload(
-            payload,
-            tenant_id=identity.tenant_id,
-            run_id=str(identity.run_id),
-            execution_identity=identity,
-        )
+    runtime.execute_payload(
+        payload,
+        tenant_id=identity.tenant_id,
+        run_id=str(identity.run_id),
+        execution_identity=identity,
+    )
     assert peek_active_execution_identity() is None
     assert peek_active_execution_id() is None
+    assert peek_active_execution_budget() is None
 
 
 def test_ue_11e_redelivery_identity_and_budget_continuity() -> None:
     kv = _KV()
     identity_persistence = KvBackgroundExecutionIdentityPersistence(kv)
-    ledger_factory = create_durable_run_budget_ledger_factory(
-        KvRunBudgetPersistence(kv),
-        _RUN_BUDGET,
-    )
     transport = _transport("transport-ue-11e-redelivery")
     observations: list[_DeliveryObservation] = []
 
@@ -226,8 +294,8 @@ def test_ue_11e_redelivery_identity_and_budget_continuity() -> None:
     for identity, consume_amount in zip(identities, consume_amounts, strict=True):
         _run_worker_delivery(
             identity=identity,
-            capture=observations,
-            ledger_factory=ledger_factory,
+            kv=kv,
+            observations=observations,
             consume_amount=consume_amount,
         )
 
@@ -239,10 +307,22 @@ def test_ue_11e_redelivery_identity_and_budget_continuity() -> None:
     assert len({first.attempt_id, second.attempt_id, third.attempt_id}) == 3
     assert len({first.execution_id, second.execution_id, third.execution_id}) == 3
 
-    assert first.llm_calls_remaining_before_consume == 5
-    assert second.llm_calls_remaining_before_consume == 3
-    assert third.llm_calls_remaining_before_consume == 2
+    assert first.remaining_before == 5
+    assert first.remaining_after == 3
+    assert first.budget_execution_id == first.execution_id
 
+    assert second.remaining_before == 3
+    assert second.remaining_after == 2
+    assert second.budget_execution_id == second.execution_id
+
+    assert third.remaining_before == 2
+    assert third.remaining_after == 1
+    assert third.budget_execution_id == third.execution_id
+
+    ledger_factory = create_durable_run_budget_ledger_factory(
+        KvRunBudgetPersistence(kv),
+        _RUN_BUDGET,
+    )
     final_ledger = ledger_factory.create_ledger(
         _RUN_BUDGET,
         tenant_id=_TENANT,
