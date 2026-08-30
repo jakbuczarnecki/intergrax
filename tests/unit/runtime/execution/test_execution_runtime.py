@@ -25,6 +25,7 @@ from intergrax.contracts.execution_identity import (
     peek_active_parent_execution_id,
     require_active_execution_id,
     require_active_execution_identity,
+    validate_execution_id,
 )
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.execution.active_execution_budget import peek_active_execution_budget
@@ -116,20 +117,31 @@ class AgentEngineProbe:
         )
 
 
+def _root_options(
+    *,
+    run_id: RunId | None = None,
+    attempt_id: AttemptId | None = None,
+    tenant_id: str | None = None,
+) -> RootExecutionOptions:
+    return RootExecutionOptions(
+        authority=ParentExecutionAuthority.unrestricted_root(),
+        run_id=run_id,
+        attempt_id=attempt_id,
+        tenant_id=tenant_id,
+    )
+
+
 def _root_context(
     *,
     run_id: RunId | None = None,
     attempt_id: AttemptId | None = None,
     tenant_id: str | None = None,
 ) -> RootExecutionContext:
-    return resolve_root_execution_context(
-        RootExecutionOptions(
-            authority=ParentExecutionAuthority.unrestricted_root(),
-            run_id=run_id,
-            attempt_id=attempt_id,
-            tenant_id=tenant_id,
-        )
-    )
+    return resolve_root_execution_context(_root_options(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        tenant_id=tenant_id,
+    ))
 
 
 @pytest.mark.asyncio
@@ -146,23 +158,23 @@ async def test_inference_root_runtime_binds_identity_authority_budget() -> None:
         ExecutionResult[RiskAssessment],
     ](router, run_budget=RunBudget(max_total_tokens=99))
     execution = Execution(runtime)
-    context = _root_context(tenant_id="tenant-1")
+    options = _root_options(tenant_id="tenant-1")
     request = ExecutionRequest(
         input=(ChatMessage(role="user", content="probe"),),
         output_type=RiskAssessment,
     )
 
-    result = await execution.execute(request, root_context=context)
+    result = await execution.execute(request, options=options)
 
     assert result.status is ExecutionStatus.COMPLETED
-    assert str(context.run_id) == adapter.probe["adapter_run_id"]
-    assert adapter.probe["run_id_ctx"] == context.run_id
-    assert adapter.probe["attempt_id_ctx"] == context.attempt_id
-    assert adapter.probe["execution_id"] == context.execution_id
-    assert adapter.probe["authority"] is context.authority
+    assert str(adapter.probe["run_id_ctx"]) == adapter.probe["adapter_run_id"]
+    assert adapter.probe["run_id_ctx"] is not None
+    assert adapter.probe["attempt_id_ctx"] is not None
+    assert validate_execution_id(adapter.probe["execution_id"])
+    assert adapter.probe["authority"] is options.authority
     budget = adapter.probe["budget"]
     assert budget is not None
-    assert budget.execution_id == context.execution_id
+    assert budget.execution_id == adapter.probe["execution_id"]
     assert peek_active_execution_identity() is None
     assert peek_active_execution_id() is None
 
@@ -180,7 +192,8 @@ async def test_agentic_root_runtime_binds_identity_authority_budget() -> None:
         ExecutionResult[AgentExecutionResult],
     ](router, run_budget=RunBudget(max_tool_calls=7))
     execution = Execution(runtime)
-    context = _root_context()
+    run_id = mint_run_id()
+    options = _root_options(run_id=run_id)
     request = ExecutionRequest(
         input=RuntimeRequest(
             agent_id="test-agent",
@@ -188,22 +201,22 @@ async def test_agentic_root_runtime_binds_identity_authority_budget() -> None:
             session_id="session-1",
             message="agent",
             task_id=mint_task_id(),
-            run_id=context.run_id,
+            run_id=run_id,
         ),
         output_type=AgentExecutionResult,
         capabilities=frozenset({ExecutionCapability.AGENT}),
     )
 
-    await execution.execute(request, root_context=context)
+    await execution.execute(request, options=options)
 
     probe = engine.last_probe
-    assert probe["run_id_ctx"][0] == context.run_id
-    assert probe["run_id_ctx"][1] == context.attempt_id
-    assert probe["execution_id"] == context.execution_id
-    assert probe["authority"] == context.authority
+    assert probe["run_id_ctx"][0] == run_id
+    assert probe["run_id_ctx"][1] is not None
+    assert validate_execution_id(probe["execution_id"])
+    assert probe["authority"] == options.authority
     assert probe["budget"] is not None
-    assert probe["budget"].execution_id == context.execution_id
-    assert probe["request_run_id"] == context.run_id
+    assert probe["budget"].execution_id == probe["execution_id"]
+    assert probe["request_run_id"] == run_id
 
 
 @pytest.mark.asyncio

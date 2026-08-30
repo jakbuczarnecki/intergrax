@@ -7,7 +7,11 @@ from __future__ import annotations
 
 from typing import Generic, TypeVar
 
-from intergrax.runtime.execution.runtime import ExecutionRuntime, RootExecutionContext
+from intergrax.runtime.execution.runtime import (
+    ExecutionRuntime,
+    RootExecutionOptions,
+    resolve_root_execution_context,
+)
 
 RequestT = TypeVar("RequestT")
 ResultT = TypeVar("ResultT")
@@ -30,6 +34,7 @@ class Execution(Generic[RequestT, ResultT]):
         self,
         request: RequestT,
         *,
-        root_context: RootExecutionContext,
+        options: RootExecutionOptions,
     ) -> ResultT:
+        root_context = resolve_root_execution_context(options)
         return await self._runtime.execute(request, root_context)

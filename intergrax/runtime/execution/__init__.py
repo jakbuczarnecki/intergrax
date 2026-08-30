@@ -4,7 +4,7 @@ from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionDel
 from intergrax.runtime.execution.facade import Execution
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.result import ExecutionResult, ExecutionStatus
-from intergrax.runtime.execution.runtime import ExecutionRuntime, RootExecutionContext
+from intergrax.runtime.execution.runtime import ExecutionRuntime, RootExecutionOptions
 
 __all__ = [
     "Execution",
@@ -15,5 +15,5 @@ __all__ = [
     "ExecutionResult",
     "ExecutionRuntime",
     "ExecutionStatus",
-    "RootExecutionContext",
+    "RootExecutionOptions",
 ]
