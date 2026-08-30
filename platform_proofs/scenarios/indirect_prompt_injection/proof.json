@@ -1,0 +1,36 @@
+{
+  "schema_version": "intergrax.platform_proof_descriptor.v3",
+  "library_class": "SCENARIO",
+  "proof_id": "SCENARIO-INDIRECT-PROMPT-INJECTION",
+  "title": "Indirect Prompt Injection with Governed Action Prevention",
+  "domains_exercised": [
+    "EXECUTION"
+  ],
+  "proof_kind": "scenario_skeleton",
+  "mechanisms_exercised": [
+    "runtime.scenario_baseline"
+  ],
+  "package_version": "0.0.0-skeleton",
+  "profiles": [
+    "quick"
+  ],
+  "command": {
+    "executable": "uv",
+    "argv": [
+      "run",
+      "python",
+      "platform_proofs/scenarios/indirect_prompt_injection/run_proof.py"
+    ]
+  },
+  "timeout_seconds": 180,
+  "safety_class": "LOCAL_READ_ONLY",
+  "public_evidence_eligible": false,
+  "problem_category": "scenario_skeleton",
+  "problem_summary": "Skeleton placeholder for Indirect Prompt Injection with Governed Action Prevention \u2014 replace before publication.",
+  "failure_mode_summary": "Skeleton placeholder \u2014 define falsification boundary in Scenario Specification.",
+  "evidence_required": false,
+  "tags": [
+    "scenario_skeleton",
+    "platform_native"
+  ]
+}
