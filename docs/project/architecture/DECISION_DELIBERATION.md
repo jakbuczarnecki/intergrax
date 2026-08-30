@@ -225,7 +225,7 @@ Deliberation rounds share the **host Nexus execution budget** with verification 
 
 ## No majority-vote truth assumption
 
-Majority aggregation may inform synthesis candidates but **cannot** delete disagreement artifacts or bypass verification. A slim majority with unresolved evidence should yield challenge, adjudication, or **UNRESOLVED** — not silent ACCEPT.
+Majority aggregation may inform synthesis candidates but **cannot** delete disagreement artifacts or bypass verification. A slim majority with unresolved evidence should yield challenge, adjudication, or **UNRESOLVED** — not silent **ACCEPTED**.
 
 ---
 
@@ -237,7 +237,7 @@ Majority aggregation may inform synthesis candidates but **cannot** delete disag
 | **Verification** | Independent of strategy internals |
 | **Revision** | May follow verification challenge — not strategy round |
 | **Adjudication** | May resolve deadlocked Council or competing branches |
-| **Resolution** | Lifecycle owns ACCEPT / FAIL / UNRESOLVED |
+| **Resolution** | Lifecycle owns `ACCEPTED` / `REJECTED` / `UNRESOLVED` — separate from execution termination |
 
 ---
 

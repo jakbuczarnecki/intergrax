@@ -34,7 +34,7 @@
 | **Deliberation architecture** | **FROZEN** — [`DECISION_DELIBERATION.md`](../../architecture/DECISION_DELIBERATION.md) |
 | **Runtime implementation** | **PLANNED** — no Decision System classes shipped |
 | **Production path** | **CURRENT** — `intergrax/runtime/critic/**` until clean cut |
-| **Evidence** | **PLANNED** — Docker E2E after migration |
+| **Evidence** | **PLANNED** — DS-E2E Docker qualification phase after migration |
 
 ---
 
@@ -79,7 +79,7 @@ Audited against `intergrax/runtime/critic/**` and [`CRITIC_VERIFICATION.md`](../
 | DS-CORE-01 | P0 | Decision ID / Version / scope typed contracts | **Planned** |
 | DS-CORE-02 | P0 | Candidate vs Authoritative Decision records + immutable lineage | **Planned** |
 | DS-CORE-03 | P0 | Lifecycle state machine executed by Nexus (no second runtime) | **Planned** |
-| DS-CORE-04 | P0 | Resolution semantics incl. UNRESOLVED | **Planned** |
+| DS-CORE-04 | P0 | Resolution semantics (`ACCEPTED` / `REJECTED` / `UNRESOLVED`) incl. separation from execution termination | **Planned** |
 | DS-CORE-05 | P1 | Finalize guard — one authoritative per decision scope | **Planned** |
 | DS-CORE-06 | P1 | Nexus checkpoint persistence for lifecycle state | **Planned** |
 | DS-CORE-07 | P1 | Parallel proposal branch lineage | **Planned** |
@@ -150,6 +150,47 @@ Verification Result enforces constructional consistency across pass/stage/challe
 **Successor to:** CRITIC-CONTRACT-BOUNDEDNESS-INTEGRITY (evaluator-loop portion)
 
 Revision loop validates non-negative iteration, identity consistency, exhausted semantics; resume cannot expand budget.
+
+---
+
+## Phase DS-E2E — Docker production qualification (PLANNED)
+
+Real Docker E2E qualification is the **final gate** before any Decision System production-qualified claim. Unit, integration, and mocked E2E alone are **insufficient**.
+
+| ID | Priority | Item | Status |
+|----|----------|------|--------|
+| DS-E2E-01 | P0 | Real single-model Decision System path | **Planned** |
+| DS-E2E-02 | P0 | Real multi-model Council | **Planned** |
+| DS-E2E-03 | P0 | Real independent semantic verifier | **Planned** |
+| DS-E2E-04 | P0 | Real HITL pause/resume | **Planned** |
+| DS-E2E-05 | P0 | Governed real side effect: ALLOW and DENY | **Planned** |
+| DS-E2E-06 | P1 | Docker process/container crash + resume without duplicate decision | **Planned** |
+| DS-E2E-07 | P1 | Concurrent proposal/finalization race test | **Planned** |
+| DS-E2E-08 | P1 | Real budget exhaustion / bounded stop | **Planned** |
+| DS-E2E-09 | P1 | Real provider outage / fail-closed behavior | **Planned** |
+| DS-E2E-10 | P1 | Two-tenant isolation | **Planned** |
+| DS-E2E-11 | P1 | Real observability / OTLP evidence reconstruction | **Planned** |
+| DS-E2E-12 | P1 | `ai_incident_investigation` full real integration proof | **Planned** |
+| DS-E2E-13 | P1 | Cross-scenario qualification proving no scenario-specific Decision runtime branching | **Planned** |
+| DS-FINAL-AUDIT | P0 | Independent exact-commit architecture/runtime/docs/E2E audit | **Planned** |
+
+---
+
+## Definition of done — production qualification
+
+The Decision System is **not** production-qualified after:
+
+- unit tests,
+- integration tests,
+- mocked E2E.
+
+**Production qualification** requires:
+
+1. Runtime migration slices through DS-CORE / DS-MIG complete for in-scope capabilities.
+2. **Phase DS-E2E** rows above executed as **real Docker E2E** — not mocks.
+3. **DS-FINAL-AUDIT** passed at an exact commit pin.
+
+Until then, production correctness remains **CVL / Critic** ([`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md)).
 
 ---
 

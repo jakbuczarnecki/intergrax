@@ -1,6 +1,6 @@
 # Decision System
 
-**Intergrax Decision System** is the platform capability that leads a decision from proposal through optional deliberation, verification, revision, optional adjudication, and resolution to an **Authoritative Decision** — executed entirely as a **Decision Lifecycle model inside Nexus**, not as a second runtime.
+**Intergrax Decision System** is the platform capability that leads a decision from proposal through optional deliberation, verification, revision, optional adjudication, resolution, and finalization to an **authoritative lifecycle outcome** — executed entirely as a **Decision Lifecycle model inside Nexus**, not as a second runtime.
 
 The Decision System answers **„jaki jest autorytatywny wynik decyzji?”** — classification, recommendation, selection, plan, approval, finding, or evidence-backed conclusion. It is **not** an „ulepszony Critic”, **not** Council Runtime, and **not** a parallel execution engine.
 
@@ -42,9 +42,10 @@ The Decision System provides **typed lifecycle semantics, version lineage, compo
 | **Core question** | What is the authoritative decision outcome for this scope? |
 | **Execution owner** | **Nexus only** — Decision Lifecycle is a model, not a runtime |
 | **Lifecycle** | Proposal → optional Deliberation → Verification → Revision → optional Adjudication → Resolution → Finalization |
+| **Decision Resolution** | `ACCEPTED` · `REJECTED` · **`UNRESOLVED`** — merytoryczny wynik lifecycle; oddzielny od termination wykonania |
 | **Strategy** | Pluggable `DecisionStrategy` — Single Model, Council, Rule-Based, Hybrid, future registered strategies |
 | **Artifact** | Typed `Decision Artifact` family — not universal `payload: dict[str, Any]` |
-| **Candidate vs authoritative** | Candidates are proposals; authoritative binds a specific **Decision Version** that met lifecycle gates |
+| **Candidate vs authoritative** | Candidates are proposals; **ACCEPTED** binds a specific **Decision Version**; terminal **REJECTED** / **UNRESOLVED** persist an authoritative **resolution record** without a fake accepted version |
 | **Verification** | Compositional **Verification Pipeline** — see [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) |
 | **Deliberation** | Optional strategy capability — see [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
 | **UNRESOLVED** | First-class auditable outcome when material is insufficient or conflict is irresolvable |
@@ -87,7 +88,7 @@ Decision Lifecycle
 ├── Revision (bounded)
 └── optional Adjudication
       ↓
-Authoritative Decision (version-bound)
+Authoritative lifecycle outcome (accepted decision or resolution record)
       ↓
 Policy / HITL may gate consequential execution
       ↓
@@ -130,7 +131,15 @@ Candidate Decision ≠ Authoritative Decision — history is never overwritten.
 ```
 
 ```text
-UNRESOLVED is a valid, auditable outcome.
+UNRESOLVED is a valid, auditable resolution outcome.
+```
+
+```text
+Decision Resolution ≠ Lifecycle / Execution Termination.
+```
+
+```text
+Execution = FAILED does not imply Decision Resolution = REJECTED.
 ```
 
 ```text
@@ -152,7 +161,7 @@ The lifecycle is a **state machine model** executed by Nexus using existing sche
   <source media="(prefers-color-scheme: dark)" srcset="assets/decision-lifecycle-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/decision-lifecycle-light.svg">
   <img
-    alt="Decision Lifecycle flowchart: Proposal, optional Deliberation, Verification, Revision, optional Adjudication, Resolution with ACCEPT FAIL or UNRESOLVED, and Finalization to Authoritative Decision."
+    alt="Decision Lifecycle flowchart: Proposal, optional Deliberation, Verification, Revision, optional Adjudication, Resolution with ACCEPTED REJECTED or UNRESOLVED, and Finalization to authoritative resolution record or accepted decision version."
     src="assets/decision-lifecycle-light.svg"
   >
 </picture>
@@ -165,10 +174,68 @@ The lifecycle is a **state machine model** executed by Nexus using existing sche
 | **Verification** | Compositional pipeline evaluates a specific **Decision Version** |
 | **Revision** | Explicit process mints **new Decision Version** when verification challenges |
 | **Adjudication** | Optional — resolve competing proposals, verifier conflict, deadlocked Council, or human adjudication |
-| **Resolution** | `ACCEPT` · `FAIL` · **`UNRESOLVED`** — bounded, auditable |
-| **Finalization** | Persist **Authoritative Decision** record for the bound version |
+| **Resolution** | `ACCEPTED` · `REJECTED` · **`UNRESOLVED`** — bounded, auditable **Decision Resolution** |
+| **Finalization** | Persist authoritative **lifecycle outcome** — accepted decision version or terminal resolution record |
 
 Council is **only** a Decision Strategy implementation — not a mandatory stage.
+
+---
+
+## Decision Resolution
+
+**Decision Resolution** answers: *jaki jest merytoryczny wynik procesu decyzyjnego dla tego scope?*
+
+| Outcome | Meaning |
+| ------- | ------- |
+| **`ACCEPTED`** | A specific **Decision Version** satisfied required lifecycle gates and is the accepted decision for the scope |
+| **`REJECTED`** | Lifecycle executed correctly, but **no** proposed version was accepted as the right decision |
+| **`UNRESOLVED`** | The system lacks sufficient basis for a responsible resolution — not a synthetic pass/fail |
+
+Proposal history, disagreement artifacts, and verification lineage **remain preserved** for all three outcomes.
+
+### Decision Resolution ≠ Lifecycle / Execution Termination
+
+**Decision Resolution** and **lifecycle / execution termination** are **independent axes**:
+
+| Axis | Question |
+| ---- | -------- |
+| **Decision Resolution** | What is the substantive decision outcome? |
+| **Lifecycle / Execution Termination** | How did the hosting execution end? (e.g. completed, failed, cancelled, timed out, budget stop, provider outage) |
+
+```text
+Decision Resolution = UNRESOLVED
+Execution = COMPLETED
+```
+
+is a **valid** result — the system ran correctly and responsibly refused an artificial resolution.
+
+```text
+Execution = FAILED
+```
+
+does **not** automatically imply:
+
+```text
+Decision Resolution = REJECTED
+```
+
+Infrastructure failure, cancellation, timeout, and budget stop are **execution/lifecycle termination** events — not substitutes for merytoryczne `REJECTED` or `UNRESOLVED`.
+
+---
+
+## Finalization
+
+**Finalization** persists the terminal **authoritative lifecycle outcome** for a decision scope.
+
+| Decision Resolution | Finalization artifact |
+| ------------------- | --------------------- |
+| **`ACCEPTED`** | **Authoritative Accepted Decision** — binds the accepted **Decision Version** and its typed artifact |
+| **`REJECTED`** | **Authoritative Resolution Record** — terminal lifecycle outcome with `REJECTED`; **no** accepted Decision Version is minted |
+| **`UNRESOLVED`** | **Authoritative Resolution Record** — terminal lifecycle outcome with `UNRESOLVED`; **no** accepted Decision Version is minted |
+
+There is **no** `fake decision` workaround. Candidate versions and proposal history remain in auditable lineage after finalization.
+
+For a given decision scope, **at most one** terminal authoritative lifecycle outcome may exist — either one **Authoritative Accepted Decision** or one terminal **Authoritative Resolution Record**.
 
 ---
 
@@ -197,7 +264,8 @@ Extensibility is **typed and contractual** — registered artifact kinds and sch
 | Concept | Meaning |
 | ------- | ------- |
 | **Candidate Decision** | A proposed decision version — may fail verification or remain non-final |
-| **Authoritative Decision** | The specific **Decision Version** that satisfied required lifecycle gates for a decision scope |
+| **Authoritative Accepted Decision** | The specific **Decision Version** that satisfied required lifecycle gates — only when Decision Resolution is **`ACCEPTED`** |
+| **Authoritative Resolution Record** | Terminal lifecycle outcome for **`REJECTED`** or **`UNRESOLVED`** — authoritative without an accepted Decision Version |
 | **Decision Version** | Immutable identity in lineage — `v1 → challenge → v2 → verification → v3 authoritative` |
 
 v1 and v2 remain in auditable lineage after v3 is authoritative. **Never mutate** a prior version in place.
@@ -219,7 +287,7 @@ v1 and v2 remain in auditable lineage after v3 is authoritative. **Never mutate*
 
 | Responsibility | Question |
 | -------------- | -------- |
-| **Authoritative Decision** | What did the system finally conclude / recommend / find? |
+| **Authoritative Accepted Decision / Resolution Record** | What did the system finally conclude, recommend, find — or explicitly refuse to resolve? |
 | **Execution Authorization** | May this specific action execute in this authority/policy context? |
 | **Execution** | What did Nexus actually execute? |
 
@@ -326,8 +394,9 @@ The Decision System must support full reconstruction of:
 - budget stop,
 - escalation,
 - human authority record,
-- resolution,
-- authoritative decision ID,
+- resolution (ACCEPTED / REJECTED / UNRESOLVED),
+- authoritative accepted decision ID (when ACCEPTED),
+- authoritative resolution record ID (when REJECTED / UNRESOLVED),
 - authorization relation to bound version.
 
 **Do not** persist private chain-of-thought.
@@ -340,15 +409,15 @@ Decision Strategy, Verification, Revision, and Adjudication share the **Nexus ex
 
 ---
 
-## Failure behavior and UNRESOLVED
+## Insufficient material and UNRESOLVED
 
-The system must **not** be forced into synthetic `ACCEPT` / `FAIL` when:
+The system must **not** be forced into synthetic `ACCEPTED` / `REJECTED` when:
 
 - evidence is insufficient,
 - verifiers conflict irreconcilably,
 - parallel branches remain legitimately competing.
 
-**`UNRESOLVED`** is a first-class, auditable resolution outcome.
+**`UNRESOLVED`** is a first-class, auditable **Decision Resolution** outcome — distinct from execution failure.
 
 ---
 
@@ -364,7 +433,7 @@ v1
 
 Both branches preserve history. **No last-write-wins** for finalization.
 
-For a given decision scope, **at most one** **Authoritative Decision** may exist. Competing valid branches require **adjudication**, **preserved conflict artifact**, or **`UNRESOLVED`**.
+For a given decision scope, **at most one** terminal authoritative lifecycle outcome may exist. Competing valid branches require **adjudication**, **preserved conflict artifact**, or **`UNRESOLVED`** resolution.
 
 ---
 
@@ -452,7 +521,7 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
 | **Architecture (A)** | **A4** | Frozen target canon established; boundaries to Nexus, Policy, HITL, Diagnostics explicit |
 | **Implementation (I)** | **I0** | No Decision System runtime migration shipped |
 | **Production (P)** | **P0** | Production path remains CVL / Critic until clean cut |
-| **Evidence (E)** | **E0** | No Decision System E2E proof qualified |
+| **Evidence (E)** | **E0** | No Decision System Docker E2E qualification completed |
 
 ---
 
@@ -463,7 +532,17 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
 | **Architecture** | This hub · [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
 | **Implementation plan** | [`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) |
 | **CURRENT production** | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
-| **Public proof** | Not claimed — pending post-migration Docker E2E |
+| **Public proof** | Not claimed — pending DS-E2E Docker qualification phase |
+
+### Production qualification boundary
+
+The Decision System is **not** production-qualified after:
+
+- unit tests,
+- integration tests,
+- mocked E2E.
+
+**Production qualification** requires completion of the real **Docker E2E qualification phase** ([`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) — Phase DS-E2E).
 
 ---
 

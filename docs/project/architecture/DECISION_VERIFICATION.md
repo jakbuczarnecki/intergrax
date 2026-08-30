@@ -246,7 +246,7 @@ Challenge → Lifecycle Revision → new Decision Version → Pipeline (bounded)
 Pass → Lifecycle continues Resolution / Finalization
 ```
 
-Verification does **not** choose `ACCEPT` / `FAIL` / `UNRESOLVED` alone — it informs lifecycle resolution under policy.
+Verification does **not** choose `ACCEPTED` / `REJECTED` / `UNRESOLVED` alone — it informs lifecycle resolution under policy.
 
 ---
 
