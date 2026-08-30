@@ -28,13 +28,20 @@ from intergrax.applications._shared.diagnostic_read_wiring import (
     resolve_host_diagnostic_read_dependencies,
 )
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
+from intergrax.applications._shared.plugin_bootstrap import bootstrap_application_plugins
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.observability.export_boundary import FORBIDDEN_EXPORT_CONTENT_FIELDS
+from intergrax.runtime.observability.export_health import (
+    ObservabilityExporterHealthRegistry,
+    ObservabilityExporterHealthSnapshot,
+    ObservabilityExporterHealthStatus,
+)
 from intergrax.runtime.observability.operator_wiring import (
     ObservabilityExportOperatorConfig,
     OtlpExportOperatorConfig,
+    build_observability_export_runtime_plugin,
 )
 from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
 
@@ -49,6 +56,7 @@ _FORBIDDEN_PRIVACY_SUBSTRINGS = (
     "raw body",
     "diag-final collector available",
     "diag-final collector unavailable",
+    "diag-final collector recovered",
     "diag-final restart persistence",
 )
 
@@ -75,6 +83,8 @@ class DiagFinalHostComposition:
     runtime: HarnessHostRuntime
     document_store: InMemoryDocumentStore
     observability_export: ObservabilityExportOperatorConfig
+    health_registry: ObservabilityExporterHealthRegistry
+    exporter_id: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -359,6 +369,29 @@ def stop_collector_process_only() -> None:
         )
 
 
+def start_collector_process_only() -> None:
+    completed = _run_compose("start", "otel-collector", timeout=60)
+    if completed.returncode != 0:
+        raise RuntimeError(
+            "failed to start diag-final otel collector:\n"
+            f"stdout={completed.stdout}\nstderr={completed.stderr}",
+        )
+
+    deadline = time.monotonic() + 30.0
+    while time.monotonic() < deadline:
+        if _collector_reachable():
+            break
+        time.sleep(0.5)
+    else:
+        raise RuntimeError("diag-final otel collector endpoint did not become reachable after start")
+
+    _collector_container_id()
+
+
+def assert_collector_unreachable() -> None:
+    assert not _collector_reachable(), "collector OTLP endpoint must be unreachable during outage"
+
+
 def wait_for_collector_event_id(
     stack: DiagFinalCollectorStack,
     event_id: str,
@@ -457,6 +490,8 @@ def build_diag_final_product_host(
     tenant_id: str,
     inject_violation: bool = True,
 ) -> DiagFinalHostComposition:
+    health_registry = ObservabilityExporterHealthRegistry()
+    exporter_id = observability_export.backend_id
     app = create_governed_contractor_backend_app(
         registry_projection=build_governed_contractor_test_registry_projection(),
         settings=GovernedContractorBackendSettings.from_env(),
@@ -464,9 +499,19 @@ def build_diag_final_product_host(
         runtime_events_db_path=tmp_path / "runtime_events.db",
         checkpoints_db_path=tmp_path / "checkpoints.db",
         document_store=document_store,
-        observability_export=observability_export,
+        observability_export=None,
     )
     runtime = app.state.harness_runtime
+    if observability_export.enabled:
+        export_plugin = build_observability_export_runtime_plugin(
+            observability_export,
+            health_registry=health_registry,
+        )
+        if export_plugin is not None:
+            bootstrap_application_plugins(
+                [export_plugin],
+                nexus_loop=runtime.nexus_loop,
+            )
     if inject_violation:
         attach_retry_violation_injector(runtime, tenant_id=tenant_id)
     return DiagFinalHostComposition(
@@ -475,6 +520,42 @@ def build_diag_final_product_host(
         runtime=runtime,
         document_store=document_store,
         observability_export=observability_export,
+        health_registry=health_registry,
+        exporter_id=exporter_id,
+    )
+
+
+def wait_for_exporter_health_snapshot(
+    composition: DiagFinalHostComposition,
+    *,
+    expected_status: ObservabilityExporterHealthStatus,
+    timeout_seconds: float = 30.0,
+    min_consecutive_failures: int | None = None,
+    min_recovery_count: int | None = None,
+) -> ObservabilityExporterHealthSnapshot:
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        snapshot = composition.health_registry.get(composition.exporter_id)
+        if snapshot is None:
+            time.sleep(0.1)
+            continue
+        if snapshot.status is not expected_status:
+            time.sleep(0.1)
+            continue
+        if (
+            min_consecutive_failures is not None
+            and snapshot.consecutive_failures < min_consecutive_failures
+        ):
+            time.sleep(0.1)
+            continue
+        if min_recovery_count is not None and snapshot.recovery_count < min_recovery_count:
+            time.sleep(0.1)
+            continue
+        return snapshot
+    raise AssertionError(
+        "exporter health snapshot did not reach "
+        f"status={expected_status.value!r} for exporter_id={composition.exporter_id!r} "
+        f"within {timeout_seconds}s",
     )
 
 
@@ -568,6 +649,12 @@ def write_proof_artifact(
     restart_verified: bool,
     identity_verified: bool,
     privacy_verified: bool,
+    real_collector_recovery_verified: bool = False,
+    health_degraded_verified: bool = False,
+    health_recovered_verified: bool = False,
+    outage_event_replay_absent: bool = False,
+    recovery_run_id: str | None = None,
+    recovery_event_id: str | None = None,
 ) -> Path:
     artifact_dir.mkdir(parents=True, exist_ok=True)
     artifact_path = artifact_dir / "diag-final-e2e-proof.json"
@@ -587,6 +674,20 @@ def write_proof_artifact(
                 "restart_persistence_verified": restart_verified,
                 "identity_correlation_verified": identity_verified,
                 "hos_privacy_verified": privacy_verified,
+                "real_collector_recovery_verified": real_collector_recovery_verified,
+                "health_degraded_verified": health_degraded_verified,
+                "health_recovered_verified": health_recovered_verified,
+                "outage_event_replay_absent": outage_event_replay_absent,
+                "recovery_run_id": recovery_run_id,
+                "recovery_event_id": recovery_event_id,
+                "verification_summary": {
+                    "real_docker_collector_success_verified": collector_received,
+                    "real_docker_collector_outage_verified": health_degraded_verified,
+                    "real_docker_collector_restart_verified": real_collector_recovery_verified,
+                    "real_hos_export_after_restart_verified": real_collector_recovery_verified,
+                    "process_local_exporter_health_recovery_verified": health_recovered_verified,
+                    "no_replay_verified": outage_event_replay_absent,
+                },
                 "collector_excerpt": collector_excerpt[:2000],
             },
             indent=2,

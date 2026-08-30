@@ -10,10 +10,12 @@ import pytest
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.observability.export_health import ObservabilityExporterHealthStatus
 from tests.integration.runtime.diag_final_otel_support import (
     DiagFinalCollectorStack,
     assert_collector_hos_privacy,
     assert_collector_identity_matches_runtime_event,
+    assert_collector_unreachable,
     assert_problem_truth,
     assert_runtime_event_truth,
     build_diag_final_product_host,
@@ -22,9 +24,10 @@ from tests.integration.runtime.diag_final_otel_support import (
     execute_host_run,
     refresh_collector_output,
     require_docker_for_external_otlp_proof,
+    start_collector_process_only,
     stop_collector_process_only,
     wait_for_collector_event_id,
-    wait_for_collector_run_id,
+    wait_for_exporter_health_snapshot,
     write_proof_artifact,
 )
 
@@ -110,7 +113,16 @@ def test_diag_final_external_otel_spine_proof(
     assert identity_attrs["intergrax.tenant_id"] == _TENANT
     collector_snapshot_before_outage = collector_text
 
+    baseline_health = wait_for_exporter_health_snapshot(
+        composition,
+        expected_status=ObservabilityExporterHealthStatus.HEALTHY,
+    )
+    assert baseline_health.consecutive_failures == 0
+    assert baseline_health.recovery_count == 0
+
     stop_collector_process_only()
+    assert_collector_unreachable()
+
     outage_run = execute_host_run(
         composition,
         tenant_id=_TENANT,
@@ -118,22 +130,74 @@ def test_diag_final_external_otel_spine_proof(
     )
     outage_run_id = str(outage_run["run_id"])
     outage_task_id = str(outage_run["task_id"])
-    assert_runtime_event_truth(
+    outage_terminal_event = assert_runtime_event_truth(
         composition,
         tenant_id=_TENANT,
         run_id=outage_run_id,
         task_id=outage_task_id,
     )
+    outage_event_id = str(outage_terminal_event.event_id)
     assert_problem_truth(
         composition,
         tenant_id=_TENANT,
         run_id=outage_run_id,
     )
 
+    degraded_health = wait_for_exporter_health_snapshot(
+        composition,
+        expected_status=ObservabilityExporterHealthStatus.DEGRADED,
+        min_consecutive_failures=1,
+    )
+    assert degraded_health.last_failure_at is not None
+    assert degraded_health.last_failure_reason == "exporter_failed"
+
     collector_text_after_outage = refresh_collector_output(diag_final_collector_stack)
     assert run_id in collector_snapshot_before_outage
     assert run_id in collector_text_after_outage
     assert outage_run_id not in collector_text_after_outage
+    assert outage_event_id not in collector_text_after_outage
+
+    start_collector_process_only()
+
+    recovery_run = execute_host_run(
+        composition,
+        tenant_id=_TENANT,
+        message="diag-final collector recovered",
+    )
+    recovery_run_id = str(recovery_run["run_id"])
+    recovery_task_id = str(recovery_run["task_id"])
+    recovery_terminal_event = assert_runtime_event_truth(
+        composition,
+        tenant_id=_TENANT,
+        run_id=recovery_run_id,
+        task_id=recovery_task_id,
+    )
+    recovery_event_id = str(recovery_terminal_event.event_id)
+
+    collector_text_after_recovery = wait_for_collector_event_id(
+        diag_final_collector_stack,
+        recovery_event_id,
+    )
+    assert_collector_identity_matches_runtime_event(
+        collector_text_after_recovery,
+        terminal_event=recovery_terminal_event,
+    )
+
+    recovered_health = wait_for_exporter_health_snapshot(
+        composition,
+        expected_status=ObservabilityExporterHealthStatus.HEALTHY,
+        min_recovery_count=1,
+    )
+    assert recovered_health.consecutive_failures == 0
+    assert recovered_health.recovery_count >= 1
+    assert recovered_health.last_success_at is not None
+    assert recovered_health.last_failure_at is not None
+
+    collector_text_final = refresh_collector_output(diag_final_collector_stack)
+    assert recovery_event_id in collector_text_final
+    assert outage_event_id not in collector_text_final
+    assert outage_run_id not in collector_text_final
+    assert_collector_hos_privacy(collector_text_final)
 
     composition.client.close()
     restarted = build_diag_final_product_host(
@@ -143,12 +207,11 @@ def test_diag_final_external_otel_spine_proof(
         tenant_id=_TENANT,
         inject_violation=False,
     )
-    restarted_run = execute_host_run(
+    execute_host_run(
         restarted,
         tenant_id=_TENANT,
         message="diag-final restart persistence",
     )
-    restarted_run_id = str(restarted_run["run_id"])
 
     store = restarted.runtime.observability.runtime_event_store
     assert store is not None
@@ -174,11 +237,17 @@ def test_diag_final_external_otel_spine_proof(
         problem_id=problem_id,
         terminal_event_type=terminal_event.event_type.value,
         collector_received=True,
-        collector_excerpt=collector_text,
+        collector_excerpt=collector_text_final,
         collector_available=False,
         restart_verified=True,
         identity_verified=True,
         privacy_verified=True,
+        real_collector_recovery_verified=True,
+        health_degraded_verified=True,
+        health_recovered_verified=True,
+        outage_event_replay_absent=True,
+        recovery_run_id=recovery_run_id,
+        recovery_event_id=recovery_event_id,
     )
     assert artifact_path.is_file()
     restarted.client.close()
