@@ -50,9 +50,6 @@ temp_documents/
 # ADR archive (load cited ADR only)
 docs/project/technical/adr/entries/
 
-# Implementation journal archive
-docs/project/maintainers/implementation-journal/entries/
-
 # Bulky agent test fixtures
 agents/**/tests/fixtures/**
 agents/**/tests/**/snapshots/

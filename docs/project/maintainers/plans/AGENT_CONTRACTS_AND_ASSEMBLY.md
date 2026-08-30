@@ -36,7 +36,7 @@
 | **AUDIT-IDEAL (§12–§20)** | Registry snapshot · cap-graph CI · lifecycle owner | **Done** | — |
 | **Gate maintenance** | §6.1 continuous | **Active** | `pytest -m gate` on every PR |
 
-**Architecture-complete DoD (ACP-FINISH):** GAP-ACP-36/37 **Closed** · §28.3 **37 Closed · 0 Open** · ACP-TOK-* green · one implementation journal entry · domain audit prompt regenerated.
+**Architecture-complete DoD (ACP-FINISH):** GAP-ACP-36/37 **Closed** · §28.3 **37 Closed · 0 Open** · ACP-TOK-* green · domain audit prompt regenerated.
 
 **Ordered queue:** [§6.1bc](.#61bc-harness-implementation-queue--acp-finish-closed) — **Done** (2026-06-13).
 

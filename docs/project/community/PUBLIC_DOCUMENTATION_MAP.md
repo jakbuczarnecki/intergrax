@@ -14,7 +14,7 @@ Use this map when you know what you want to do but not which document to open.
 | **This map** | Intent-based fallback router — find the right next document by goal |
 | [Proof Library](../proofs/PROOF_LIBRARY.md) | Problem-first Scenario Proof catalog — difficult real-world problems and executable falsification |
 | [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) | Project-level architectural mental model |
-| [Runtime architecture hub](../architecture/intergrax_runtime_architecture.md) | Complete technical index — 24 domain pairs + cross-layer feature pairs |
+| [Runtime architecture hub](../architecture/intergrax_runtime_architecture.md) | Complete technical index — primary domain-pair baseline + additional canonical pairs + cross-layer feature pairs |
 
 **First contact** stays in the [README](../../../README.md) — including the three public entry points (**Scenarios**, **Products**, **Platform**), grouped Platform Map, and documentation-layer guide. This file routes by **reader intent**; it does not duplicate the full platform index or persona table.
 

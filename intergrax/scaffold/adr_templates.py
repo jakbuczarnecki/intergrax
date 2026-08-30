@@ -117,7 +117,7 @@ def render_harness_adr_readme() -> str:
         docs/project/technical/adr/entries/YYYY-MM-DD/ADR-{{AREA}}-{{NNN}}.md
         ```
 
-        Day folders group ADRs by creation date (same convention as the implementation journal).
+        Day folders group ADRs by creation date (YYYY-MM-DD).
 
         ## Process
 

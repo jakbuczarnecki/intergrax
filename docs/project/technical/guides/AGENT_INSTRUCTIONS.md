@@ -68,7 +68,6 @@ Include **only**:
 9. Out-of-scope findings
 10. Suggested next step (one line)
 11. One-line commit message (English) — no commit unless operator asks
-12. Journal — entry path **only if written**; else **"no journal needed"** + one-line rationale
 
 ---
 
@@ -121,7 +120,6 @@ applications/    MAY import from agents/ and intergrax/
 - Agent workflow → `docs/project/technical/guides/AGENT_CREATION_GUIDE.md`
 - Harness AI terms → `docs/project/architecture/PLATFORM_FOUNDATION.md` §5.3 only
 - Nexus execution flow → `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` + `docs/project/maintainers/plans/NEXUS_EXECUTION_FLOW.md` · ADR → `docs/project/technical/adr/entries/2026-06-07/ADR-FLOW-001.md`
-- Completed implementation **milestones** → `docs/project/maintainers/implementation-journal/` (optional for routine iterations; see journal README)
 
 ### Harness platform
 
@@ -166,7 +164,6 @@ applications/    MAY import from agents/ and intergrax/
 | Platform audit | [docs/audit_results/AUDIT_PROTOCOL.md](../../../audit_results/AUDIT_PROTOCOL.md) · [docs/audit_results/README.md](../../../audit_results/README.md) |
 | System invariants (never violate) | [docs/project/technical/guides/SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) |
 | Layer completion (full domain closeout) | [docs/project/technical/guides/LAYER_COMPLETION_MODE.md](LAYER_COMPLETION_MODE.md) |
-| Implementation journal | [docs/project/maintainers/implementation-journal/README.md](../../maintainers/implementation-journal/README.md) |
 
 ---
 
@@ -193,7 +190,6 @@ python scripts/maintenance/check_harness_no_getattr.py
 uv run python scripts/maintenance/check_observability_gates.py
 python scripts/docs/check_docs_domain_pairs.py
 python scripts/maintenance/check_reasoning_gates.py
-python scripts/maintenance/check_implementation_journal.py
 python scripts/maintenance/check_harness_adr.py
 python scripts/maintenance/check_plan_hub_size.py
 python scripts/ci/check_cursor_token_setup.py

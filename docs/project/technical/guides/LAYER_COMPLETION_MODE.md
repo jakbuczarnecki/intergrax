@@ -2,7 +2,7 @@
 
 **Status:** Canonical (2026-06-17)  
 **Audience:** Maintainers, architects, implementation agents  
-**Related:** [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md) · [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) · [MATURITY_TAXONOMY.md](MATURITY_TAXONOMY.md) · [audit_results/AUDIT_PROTOCOL.md](../../../audit_results/AUDIT_PROTOCOL.md) · [EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md](../../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#architecture-vs-implementation-rules-boundary) (architecture vs implementation rules) · [implementation-journal/](../../maintainers/implementation-journal/README.md)
+**Related:** [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md) · [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) · [MATURITY_TAXONOMY.md](MATURITY_TAXONOMY.md) · [audit_results/AUDIT_PROTOCOL.md](../../../audit_results/AUDIT_PROTOCOL.md) · [EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md](../../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#architecture-vs-implementation-rules-boundary) (architecture vs implementation rules)
 
 **Cursor iteration (every session):** [`.cursor/rules/intergrax-iteration.mdc`](../../../../.cursor/rules/intergrax-iteration.mdc) — single-item gate maintenance; **this guide** is the extended workflow for **closing an entire harness layer** to architectural maturity.
 
@@ -234,8 +234,7 @@ After each sprint:
 - update tests,
 - run verification (minimum: `uv run pytest -m "gate and not no_ci" -q` plus scripts from [AGENT_INSTRUCTIONS.md](AGENT_INSTRUCTIONS.md) and [SYSTEM_INVARIANTS.md §7](SYSTEM_INVARIANTS.md#7-ci-enforcement-map-selected) relevant to the layer),
 - verify alignment with architecture **and** [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md),
-- commit **only when the operator explicitly requests**,
-- add an [implementation journal](../../maintainers/implementation-journal/README.md) entry when the **layer closeout milestone** completes (see journal README §milestone triggers; skip routine rows).
+- commit **only when the operator explicitly requests**.
 
 Advance to the next sprint **only** when the current sprint is closed and no P0/P1 blocker remains.
 
@@ -326,10 +325,6 @@ Before ending the session, present:
 
 - `SYS-INV-*` violations found and fixed,
 - residual risks referencing [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md).
-
-### Journal
-
-- path under `docs/project/maintainers/implementation-journal/entries/YYYY-MM-DD` — **required** for layer closeout (milestone); see [README §milestone triggers](../../maintainers/implementation-journal/README.md).
 
 ### Remaining risks
 

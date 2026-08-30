@@ -170,9 +170,8 @@ python scripts/maintenance/check_environment_profile_bundle_schema.py
 python scripts/maintenance/check_harness_no_getattr.py
 python scripts/maintenance/check_agent_registry_bypass.py
 
-# Domain pair + journal
+# Domain pair
 python scripts/docs/check_docs_domain_pairs.py
-python scripts/maintenance/check_implementation_journal.py
 
 # Full gate (includes agent + platform)
 uv run pytest -m gate -q

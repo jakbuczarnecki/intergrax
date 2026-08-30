@@ -11,7 +11,7 @@
 **Maturity:** [`../technical/guides/MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md) — four-axis A/I/P/E vocabulary; legacy L3/L4/L5 mapping (P2-ARCH-02). Maturity labels elsewhere in this hub are summaries only; authoritative production readiness claims require four-axis A/I/P/E statements in the owning architecture/plan pair.
 **Layer completion:** [`../technical/guides/LAYER_COMPLETION_MODE.md`](../technical/guides/LAYER_COMPLETION_MODE.md) — deep domain layer closeout workflow
 **Doc boundaries (Experimentation/DX):** [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#architecture-vs-implementation-rules-boundary) — architecture vs Cursor/workflow rules placement (P2-ARCH-13)
-**Audit:** [`../technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](../../audit_results/legacy/plan-audit-history/README.md) · **Idea intake (Mode I):** [`../maintainers/bootstrap/idea_audit.txt`](../maintainers/bootstrap/README.md) · **Cursor bootstrap:** [`../maintainers/bootstrap`](../maintainers/bootstrap) · **Domain audit prompts:** [`../maintainers/audit`](../../audit_results/README.md) · **Architecture audit results:** [`audit_results/`](../../audit_results/README.md) · **Implementation journal:** [`../maintainers/implementation-journal`](../maintainers/implementation-journal/README.md)
+**Audit:** [`../technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](../../audit_results/legacy/plan-audit-history/README.md) · **Idea intake (Mode I):** [`../maintainers/bootstrap/idea_audit.txt`](../maintainers/bootstrap/README.md) · **Cursor bootstrap:** [`../maintainers/bootstrap`](../maintainers/bootstrap) · **Domain audit prompts:** [`../maintainers/audit`](../../audit_results/README.md) · **Architecture audit results:** [`audit_results/`](../../audit_results/README.md)
 **Authoring:** [`../technical/guides`](../technical/guides)
 **Platform proofs:** [`../../../platform_proofs/README.md`](../../../platform_proofs/README.md) — reusable platform mechanism proof methodology and coverage map (execution via [`scripts/proof/`](../../../scripts/proof/); public dashboard [`../proofs/PROOFS.md`](../proofs/PROOFS.md))
 
@@ -60,7 +60,7 @@ Current feature pairs:
 | 15 | `MODALITY` | [`MODALITY.md`](MODALITY.md) | [`../maintainers/plans/MODALITY.md`](../maintainers/plans/MODALITY.md) |
 | 16 | `OBSERVABILITY` | [`OBSERVABILITY.md`](OBSERVABILITY.md) | [`../maintainers/plans/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) |
 | 17 | `RELIABILITY_FAILURE_AND_HITL` | [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) | [`../maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md`](../maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md) |
-| 18 | `CRITIC_VERIFICATION` *(CURRENT snapshot)* | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) | [`../maintainers/plans/CRITIC_VERIFICATION.md`](../maintainers/plans/CRITIC_VERIFICATION.md) — **TARGET:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) |
+| 18 | `CRITIC_VERIFICATION` *(CURRENT implementation snapshot — not target canonical domain owner)* | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) | [`../maintainers/plans/CRITIC_VERIFICATION.md`](../maintainers/plans/CRITIC_VERIFICATION.md) — pending clean-cut migration to [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) |
 | 19 | `ADAPTIVE_HARNESS_INTELLIGENCE` | [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md) | [`../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
 | 20 | `ELASTIC_CAPACITY_AND_SCALING` | [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) | [`../maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md`](../maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md) |
 | 21 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) | [`../maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
@@ -88,10 +88,20 @@ Every canonical architecture artifact is classified **exactly once**. Do not pro
 
 | Domain | Architecture | Plan |
 |--------|--------------|------|
+| `DECISION_SYSTEM` | [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) | [`../maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) |
 | `GOVERNED_EXECUTION` | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) | [`../maintainers/plans/GOVERNED_EXECUTION.md`](../maintainers/plans/GOVERNED_EXECUTION.md) |
 | `AGENT_DISTRIBUTION` | [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) | [`../maintainers/plans/AGENT_DISTRIBUTION.md`](../maintainers/plans/AGENT_DISTRIBUTION.md) |
 | `PLATFORM_PLUGINS` | [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md) | [`../maintainers/plans/PLATFORM_PLUGINS.md`](../maintainers/plans/PLATFORM_PLUGINS.md) |
 | `PROOF_RECEIPTS` | [`PROOF_RECEIPTS.md`](PROOF_RECEIPTS.md) | [`../maintainers/plans/PROOF_RECEIPTS.md`](../maintainers/plans/PROOF_RECEIPTS.md) |
+
+**Decision System subordinate architecture hubs** (not separate DOMAIN pairs — subordinate to [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md)):
+
+| Hub | Role |
+|-----|------|
+| [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) | Verification pipeline canon — subordinate verification hub |
+| [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) | Deliberation / council canon — subordinate deliberation hub |
+
+**CURRENT implementation snapshot** (primary-24 row #18 only — not target canonical domain owner): [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) ↔ [`../maintainers/plans/CRITIC_VERIFICATION.md`](../maintainers/plans/CRITIC_VERIFICATION.md).
 
 **Cross-layer index:** [`SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md) — compact `SYS-INV-*` authority; domain pairs remain semantic owners. **Remediation:** **CLA-CANON-TOPOLOGY-INTEGRITY** in [`PLATFORM_FOUNDATION` plan](../maintainers/plans/PLATFORM_FOUNDATION.md) — **ACCEPTED / PLANNED** only.
 
