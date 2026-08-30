@@ -356,6 +356,67 @@ def test_adversarial_malformed_execution_identity_rejected() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
+def test_decision_contracts_validate_without_post_construction_mutation() -> None:
+    """Decision contracts validate but do not perform post-construction mutation."""
+    decision_id = mint_decision_id()
+    version = DecisionVersion(2)
+    namespace = "incident"
+    subject = "incident-123"
+    tenant_id = "tenant-a"
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+
+    scope = DecisionScope(namespace=namespace, subject=subject)
+    assert scope.namespace is namespace
+    assert scope.subject is subject
+    with pytest.raises(AttributeError):
+        scope.namespace = "other"
+
+    lineage = DecisionExecutionLineage(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    assert lineage.task_id is task_id
+    assert lineage.run_id is run_id
+    assert lineage.attempt_id is attempt_id
+    assert lineage.execution_id is execution_id
+    with pytest.raises(AttributeError):
+        lineage.task_id = mint_task_id()
+
+    version_obj = DecisionVersion(version.value)
+    assert version_obj.value == version.value
+    with pytest.raises(AttributeError):
+        version_obj.value = 3
+
+    identity = DecisionIdentity(
+        decision_id=decision_id,
+        version=version,
+        scope=scope,
+        tenant_id=tenant_id,
+        execution=lineage,
+    )
+    assert identity.decision_id is decision_id
+    assert identity.version is version
+    assert identity.scope is scope
+    assert identity.tenant_id is tenant_id
+    assert identity.execution is lineage
+    with pytest.raises(AttributeError):
+        identity.tenant_id = "other"
+
+    with pytest.raises(ValueError):
+        DecisionScope(namespace=" incident", subject=subject)
+    with pytest.raises(ValueError):
+        DecisionVersion(0)
+    with pytest.raises(ValueError):
+        validate_decision_id("decision_bad")
+
+
+@pytest.mark.unit
+@pytest.mark.gate
 def test_adversarial_implicit_default_tenant_rejected() -> None:
     with pytest.raises(ValueError):
         DecisionIdentity(

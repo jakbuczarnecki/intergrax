@@ -69,7 +69,7 @@ class DecisionVersion:
     value: int
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "value", validate_decision_version(self.value))
+        validate_decision_version(self.value)
 
 
 def initial_decision_version() -> DecisionVersion:
@@ -100,16 +100,8 @@ class DecisionScope:
     subject: str
 
     def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "namespace",
-            _validate_scope_field(self.namespace, "DecisionScope.namespace"),
-        )
-        object.__setattr__(
-            self,
-            "subject",
-            _validate_scope_field(self.subject, "DecisionScope.subject"),
-        )
+        _validate_scope_field(self.namespace, "DecisionScope.namespace")
+        _validate_scope_field(self.subject, "DecisionScope.subject")
 
 
 def _validate_tenant_id(value: object) -> str:
@@ -137,15 +129,11 @@ class DecisionExecutionLineage:
     execution_id: ExecutionId | None = None
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "task_id", validate_task_id(self.task_id))
-        object.__setattr__(self, "run_id", validate_run_id(self.run_id))
-        object.__setattr__(self, "attempt_id", validate_attempt_id(self.attempt_id))
+        validate_task_id(self.task_id)
+        validate_run_id(self.run_id)
+        validate_attempt_id(self.attempt_id)
         if self.execution_id is not None:
-            object.__setattr__(
-                self,
-                "execution_id",
-                validate_execution_id(self.execution_id),
-            )
+            validate_execution_id(self.execution_id)
 
 
 @dataclass(frozen=True, slots=True)
@@ -159,11 +147,11 @@ class DecisionIdentity:
     execution: DecisionExecutionLineage
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "decision_id", validate_decision_id(self.decision_id))
+        validate_decision_id(self.decision_id)
         if type(self.version) is not DecisionVersion:
             raise TypeError("DecisionIdentity.version must be DecisionVersion")
         if type(self.scope) is not DecisionScope:
             raise TypeError("DecisionIdentity.scope must be DecisionScope")
-        object.__setattr__(self, "tenant_id", _validate_tenant_id(self.tenant_id))
+        _validate_tenant_id(self.tenant_id)
         if type(self.execution) is not DecisionExecutionLineage:
             raise TypeError("DecisionIdentity.execution must be DecisionExecutionLineage")
