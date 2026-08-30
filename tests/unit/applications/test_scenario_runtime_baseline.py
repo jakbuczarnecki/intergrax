@@ -288,24 +288,33 @@ async def test_execute_scenario_task_identity_and_tenant(
         task_id=explicit_task_id,
     )
 
-    captured: dict[str, object] = {}
-    original_handle = composition.nexus_loop.handle_task
-
-    async def _capture_handle(task: object, *, run_id: object, attempt_id: object = None) -> object:
-        captured["run_id"] = run_id
-        captured["attempt_id"] = attempt_id
-        return await original_handle(task, run_id=run_id, attempt_id=attempt_id)
-
-    composition.nexus_loop.handle_task = _capture_handle  # type: ignore[method-assign]
-
     result = await execute_scenario_task(composition, request)
 
-    assert result.run_id == captured["run_id"]
-    assert captured["attempt_id"] is None
     assert result.task_id == explicit_task_id
     assert result.tenant_id == _TENANT
     assert result.task_result.task_id == str(explicit_task_id)
     assert result.task_result.run_id == str(result.run_id)
+
+    store = composition.observability.runtime_event_store
+    assert store is not None
+    events = store.list_for_task(explicit_task_id, tenant_id=_TENANT)
+    event = next(
+        (
+            candidate
+            for candidate in events
+            if candidate.event_type == RuntimeEventType.TASK_COMPLETED
+            and candidate.task_id == explicit_task_id
+            and candidate.run_id == result.run_id
+            and candidate.tenant_id == _TENANT
+        ),
+        None,
+    )
+    assert event is not None
+    assert event.task_id == explicit_task_id
+    assert event.run_id == result.run_id
+    assert event.tenant_id == _TENANT
+    assert event.attempt_id
+    assert event.execution_id
 
 
 @pytest.mark.asyncio
