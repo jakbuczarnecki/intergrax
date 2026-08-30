@@ -92,6 +92,7 @@ jobs:
           tests/unit/runtime/diagnostics/test_harden_1d_problem_persistence_write_failure.py
           tests/integration/applications/architecture/test_harden_1d_durable_problem_store_failure_semantics.py
           tests/integration/runtime/test_harden_4b_tenant_diagnostic_isolation_e2e.py
+          tests/integration/runtime/test_harden_4c_clean_diagnostic_host_e2e.py
           -q --tb=line
 
       - name: Diagnostic concurrency deterministic gate
@@ -200,6 +201,7 @@ jobs:
           tests/unit/runtime/diagnostics/test_harden_1d_problem_persistence_write_failure.py
           tests/integration/applications/architecture/test_harden_1d_durable_problem_store_failure_semantics.py
           tests/integration/runtime/test_harden_4b_tenant_diagnostic_isolation_e2e.py
+          tests/integration/runtime/test_harden_4c_clean_diagnostic_host_e2e.py
           -q --tb=line
 
       - name: Diagnostic concurrency deterministic gate

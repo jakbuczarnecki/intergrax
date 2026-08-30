@@ -45,6 +45,7 @@
 | File | Test | Level | Infrastructure | Invariant |
 |------|------|-------|----------------|-----------|
 | `tests/integration/runtime/test_harden_4b_tenant_diagnostic_isolation_e2e.py` | `test_harden_4b_same_violation_isolated_between_tenants`; `test_harden_4b_cross_tenant_problem_id_read_returns_none` | P3 | Governed-contractor HTTP host (shared), SQLite RuntimeEvents, InMemory DocumentStore, observability disabled | M17/M18 same violation class → separate Problems; tenant-scoped lists; direct-ID read isolation |
+| `tests/integration/runtime/test_harden_4c_clean_diagnostic_host_e2e.py` | `test_harden_4c_clean_product_host_execution_creates_no_problem` | P3 | Governed-contractor HTTP host (shared), SQLite RuntimeEvents, InMemory DocumentStore, observability disabled, `inject_violation=False` | M1 clean HTTP execution → TASK_COMPLETED → diagnostics active → zero Problems |
 | `tests/integration/runtime/test_diag_final_external_otel_e2e.py` | `test_diag_final_external_otel_spine_proof` | P4 | Governed-contractor HTTP host, SQLite RuntimeEvents, InMemory DocumentStore, Docker OTLP Collector | execution → RuntimeEvent → terminal diagnostics → Problem → DiagnosticReadService; vendor DOWN/UP; restart persistence |
 | `tests/integration/runtime/test_terminal_diagnostic_production_e2e.py` | `test_clean_execution_does_not_create_problem` | P3 | NexusLoop + UnifiedTaskRunner, in-memory stores | clean success → no Problem |
 | same | `test_real_nexus_execution_triggers_diagnostics_without_manual_orchestrator` | P3 | NexusLoop path | violation → orchestrator findings |
@@ -77,7 +78,7 @@
 
 | ID | Scenario | User-visible guarantee | Existing proof | Level | Deterministic | External | Status | Gap |
 |----|----------|------------------------|----------------|-------|---------------|----------|--------|-----|
-| M1 | Clean success / no false positive | Successful execution leaves canonical evidence and **no** Problem | `test_terminal_diagnostic_production_e2e.py::test_clean_execution_does_not_create_problem`; `test_terminal_execution_diagnostic_trigger.py::test_clean_execution_sequence_produces_no_problem` | P3 / P1 | yes | no | **PARTIALLY_PROVEN** | No product HTTP host proof (`diag_final` always injects violation for Problem path) |
+| M1 | Clean success / no false positive | Successful execution leaves canonical evidence and **no** Problem | `test_harden_4c_clean_diagnostic_host_e2e.py::test_harden_4c_clean_product_host_execution_creates_no_problem`; `test_terminal_diagnostic_production_e2e.py::test_clean_execution_does_not_create_problem`; `test_terminal_execution_diagnostic_trigger.py::test_clean_execution_sequence_produces_no_problem` | P3 / P1 | yes | no | **PROVEN** | — |
 | M2 | Deterministic violation → Problem | execution → evidence → detection → central Problem → read API | `test_diag_final_external_otel_e2e.py::test_diag_final_external_otel_spine_proof` (`assert_problem_truth`); `test_terminal_diagnostic_production_e2e.py::test_separate_terminal_executions_reconcile_same_problem` (read path) | P4 + P3 | yes | Docker (OTel slice) | **PROVEN** | — |
 | M3 | Occurrence aggregation | Same logical problem → one Problem, occurrences increment | `test_terminal_diagnostic_production_e2e.py::test_separate_terminal_executions_reconcile_same_problem`; `test_harden_2a_durable_problem_concurrency_proof.py::test_harden_2a_cross_process_concurrent_update_on_mongodb` | P3 + P4 | yes | Mongo (concurrency) | **PROVEN** | — |
 | M4 | Different problem separation | Distinct signatures → distinct Problems | `test_terminal_diagnostic_production_e2e.py::test_different_terminal_signatures_create_distinct_problems` | P3 | yes | no | **PROVEN** | — |
@@ -117,8 +118,8 @@
 | Metric | Count |
 |--------|------:|
 | Total required (M1–M24) | 24 |
-| **PROVEN** | 16 |
-| **PARTIALLY_PROVEN** | 7 |
+| **PROVEN** | 17 |
+| **PARTIALLY_PROVEN** | 6 |
 | **MISSING** | 0 |
 | **NOT_APPLICABLE** | 1 |
 | **DEFERRED** | 0 |
@@ -128,7 +129,7 @@
 | Severity | IDs | Rationale |
 |----------|-----|-----------|
 | **P0** | — | M17/M18 closed by HARDEN-4B product-host E2E |
-| **P1** | M1 (host), M5, M6 | Core lifecycle truth and false-positive guarantee at operator-facing host boundary |
+| **P1** | M5, M6 | Core lifecycle truth at operator-facing host boundary |
 | **P2** | M8 (Mongo FI), M19, M20, M22 | Quality/durability depth; abstraction proofs exist but skeptical gap remains |
 
 ---
@@ -152,14 +153,14 @@ Matrix is substantially built (HARDEN-1/2/3 slices cover durability, OCC, vendor
 | **Scope** | `build_diag_final_product_host` dual-tenant runs on shared host persistence |
 | **CI class** | PR deterministic gate (`Durable diagnostics deterministic gate`), no Docker |
 
-### HARDEN-4C — Product-host clean path + violation Problem E2E
+### HARDEN-4C — Product-host clean path + violation Problem E2E ✅
 
 | Field | Value |
 |-------|-------|
 | **Goal** | M1 at P3 on governed-contractor HTTP host; explicit `inject_violation=False` run asserts zero Problems + canonical TASK_COMPLETED |
 | **Minimum level** | P3 |
-| **Scope** | Extend `diag_final_otel_support.py` + small test module (or add cases to existing diag_final suite) |
-| **CI class** | PR deterministic gate (`pytest.mark.gate`), no Docker required |
+| **Scope** | `test_harden_4c_clean_diagnostic_host_e2e.py` on shared `build_diag_final_product_host` harness |
+| **CI class** | PR deterministic gate (`Durable diagnostics deterministic gate`), no Docker required |
 
 ### HARDEN-4D — Lifecycle resolve + recurrence reopen host E2E
 
@@ -194,7 +195,7 @@ Matrix is substantially built (HARDEN-1/2/3 slices cover durability, OCC, vendor
 ```text
 HARDEN-4A — matrix inventory ✅
 HARDEN-4B — product-host multi-tenant diagnostic isolation E2E ✅
-HARDEN-4C — product-host clean / no-false-positive E2E
+HARDEN-4C — product-host clean / no-false-positive E2E ✅
 HARDEN-4D — resolve + recurrence reopen host E2E
 HARDEN-4E — reconstruction / unavailable read host E2E (optional)
 HARDEN-4F — durable Mongo store failure E2E (optional)
