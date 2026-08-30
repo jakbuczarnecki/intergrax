@@ -162,7 +162,7 @@ def test_ue_11a_matrix_documents_real_gaps() -> None:
   assert backlog[GapTarget.UE_11G]
   assert backlog[GapTarget.UE_11B]
   assert backlog[GapTarget.UE_11D] == ()
-  assert backlog[GapTarget.UE_11E]
+  assert backlog[GapTarget.UE_11E] == ()
   assert backlog[GapTarget.UE_11F]
 
 

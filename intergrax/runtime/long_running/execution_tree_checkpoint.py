@@ -341,6 +341,12 @@ def build_execution_tree_resume_plan(
         if entry.status is ExecutionCheckpointStatus.RUNNING:
             entry.status = ExecutionCheckpointStatus.INTERRUPTED
 
+    historical_root_execution_id = next(
+        entry.execution_id
+        for entry in historical_entries
+        if entry.parent_execution_id is None
+    )
+
     active_recorder = ExecutionTreeRecorder.start_root(
         task_id=task_id,
         run_id=run_id,
@@ -359,7 +365,12 @@ def build_execution_tree_resume_plan(
             and entry.prior_output is not None
         ):
             skip_nodes.add(entry.graph_node_id)
-            active_recorder.adopt_historical_entry(entry)
+            adopted_entry = entry
+            if entry.parent_execution_id == historical_root_execution_id:
+                adopted_entry = entry.model_copy(
+                    update={"parent_execution_id": new_root_execution_id}
+                )
+            active_recorder.adopt_historical_entry(adopted_entry)
         elif entry.status in (
             ExecutionCheckpointStatus.INTERRUPTED,
             ExecutionCheckpointStatus.RUNNING,

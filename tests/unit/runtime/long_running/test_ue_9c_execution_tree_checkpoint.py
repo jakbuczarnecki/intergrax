@@ -255,6 +255,103 @@ def test_redelivery_mints_new_active_execution_id() -> None:
     assert plan.resume_graph_node_ids == frozenset({"n3"})
 
 
+def test_resume_plan_reparents_nested_completed_children() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_a1 = mint_attempt_id()
+    old_root = mint_execution_id()
+    execution_a = mint_execution_id()
+    execution_b = mint_execution_id()
+    prior_a = ExecutionPriorOutput(
+        agent_id="a1",
+        summary="done-a",
+        status="completed",
+        graph_node_id="n_a",
+    )
+    prior_b = ExecutionPriorOutput(
+        agent_id="a2",
+        summary="done-b",
+        status="completed",
+        graph_node_id="n_b",
+    )
+    checkpoint_tree = _tree(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_a1,
+        entries=[
+            _entry(old_root, status=ExecutionCheckpointStatus.INTERRUPTED),
+            _entry(
+                execution_a,
+                parent=old_root,
+                graph_node_id="n_a",
+                prior_output=prior_a,
+            ),
+            _entry(
+                execution_b,
+                parent=execution_a,
+                graph_node_id="n_b",
+                prior_output=prior_b,
+            ),
+        ],
+    )
+    attempt_a2 = mint_attempt_id()
+    new_root = mint_execution_id()
+    plan = build_execution_tree_resume_plan(
+        checkpoint_tree,
+        task_id=task_id,
+        run_id=run_id,
+        new_attempt_id=attempt_a2,
+        new_root_execution_id=new_root,
+    )
+
+    assert plan.historical_snapshot != plan.active_snapshot
+    assert new_root != old_root
+
+    historical_root = next(
+        entry
+        for entry in plan.historical_snapshot.entries
+        if entry.parent_execution_id is None
+    )
+    assert historical_root.execution_id == old_root
+
+    active_root = next(
+        entry
+        for entry in plan.active_snapshot.entries
+        if entry.parent_execution_id is None
+    )
+    assert active_root.execution_id == new_root
+    assert active_root.parent_execution_id is None
+
+    historical_a = plan.historical_snapshot.entry_by_graph_node_id("n_a")
+    historical_b = plan.historical_snapshot.entry_by_graph_node_id("n_b")
+    assert historical_a is not None
+    assert historical_b is not None
+    assert historical_a.parent_execution_id == old_root
+    assert historical_b.parent_execution_id == execution_a
+
+    active_a = plan.active_snapshot.entry_by_graph_node_id("n_a")
+    active_b = plan.active_snapshot.entry_by_graph_node_id("n_b")
+    assert active_a is not None
+    assert active_b is not None
+    assert active_a.execution_id == execution_a
+    assert active_b.execution_id == execution_b
+    assert active_a.parent_execution_id == new_root
+    assert active_b.parent_execution_id == execution_a
+
+    active_execution_ids = {
+        entry.execution_id for entry in plan.active_snapshot.entries
+    }
+    assert old_root not in active_execution_ids
+    for entry in plan.active_snapshot.entries:
+        if entry.parent_execution_id is not None:
+            assert entry.parent_execution_id != old_root
+            assert entry.parent_execution_id in active_execution_ids
+
+    plan.historical_snapshot.validate_tree()
+    plan.active_snapshot.validate_tree()
+    assert plan.skip_graph_node_ids == frozenset({"n_a", "n_b"})
+
+
 def test_old_incomplete_execution_not_reused_as_active() -> None:
     task_id = mint_task_id()
     run_id = mint_run_id()

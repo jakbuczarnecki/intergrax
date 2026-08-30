@@ -233,13 +233,6 @@ def _execution_id_for_node(
     return entry.execution_id
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "PRODUCTION DEFECT: build_execution_tree_resume_plan adopts completed children "
-        "with parent_execution_id of interrupted root missing from active snapshot"
-    ),
-)
 async def test_ue_11e_resume_execution_tree_continuity(tmp_path: Path) -> None:
     task_id = mint_task_id()
     run_id = mint_run_id()

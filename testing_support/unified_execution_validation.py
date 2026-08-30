@@ -473,10 +473,9 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
             "test_resume_checkpoint_preserves_attempt_mints_fresh_execution_id",
         ),
     ),
-    _partial(
+    _covered(
         "recovery.resume_execution_tree_continuity",
         ValidationDomain.RECOVERY,
-        GapTarget.UE_11E,
         _unit(
             "tests/unit/runtime/execution/test_ue_11e_resume_recovery.py",
             "test_ue_11e_resume_execution_tree_continuity",
