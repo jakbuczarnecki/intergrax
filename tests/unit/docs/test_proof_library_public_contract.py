@@ -13,11 +13,19 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PROOF_LIBRARY_PATH = REPO_ROOT / "docs" / "project" / "proofs" / "PROOF_LIBRARY.md"
+_FEATURED_SECTION_HEADING = "## D. Featured scenarios in development"
 _SCENARIO_DESIGN_PATH = (
     REPO_ROOT
     / "platform_proofs"
     / "scenarios"
     / "ai_incident_investigation"
+    / "README.md"
+)
+_INDIRECT_PROMPT_INJECTION_DESIGN_PATH = (
+    REPO_ROOT
+    / "platform_proofs"
+    / "scenarios"
+    / "indirect_prompt_injection"
     / "README.md"
 )
 
@@ -82,13 +90,20 @@ def test_challenge_intergrax_route(proof_library_text: str) -> None:
     assert "scenario_proposal.yml" in proof_library_text
 
 
+def _featured_section(proof_library_text: str) -> str:
+    section = proof_library_text.split(_FEATURED_SECTION_HEADING, 1)[1]
+    return section.split("## E. How to read a proof", 1)[0]
+
+
 def test_featured_incident_scenario_no_stale_logistics_framing(
     proof_library_text: str,
 ) -> None:
     """Featured AI Incident Investigation prose must not regress to logistics fixture wording."""
-    featured_section = proof_library_text.split("## D. Featured scenario in development", 1)[1]
-    featured_section = featured_section.split("## E. How to read a proof", 1)[0]
-    normalized = re.sub(r"[*_`]", "", featured_section).lower()
+    featured_section = _featured_section(proof_library_text)
+    incident_section = featured_section.split(
+        "### Indirect Prompt Injection with Governed Action Prevention", 1
+    )[0]
+    normalized = re.sub(r"[*_`]", "", incident_section).lower()
     for marker in _STALE_INCIDENT_SCENARIO_LOGISTICS_MARKERS:
         assert marker not in normalized, (
             f"Stale logistics framing in featured incident scenario: {marker!r}"
@@ -101,8 +116,9 @@ def test_catalog_truth(proof_library_text: str) -> None:
     assert "no accepted scenario proofs are published yet" in normalized
     assert "in development" in normalized
     assert "ai_incident_investigation" in proof_library_text
-    featured_section = proof_library_text.split("## D. Featured scenario in development", 1)[1]
-    featured_normalized = re.sub(r"[*_`]", "", featured_section[:800]).lower()
+    assert "indirect_prompt_injection" in proof_library_text
+    featured_section = _featured_section(proof_library_text)
+    featured_normalized = re.sub(r"[*_`]", "", featured_section[:1200]).lower()
     assert "not accepted proof evidence" in featured_normalized or "in development" in featured_normalized
     assert "verdict: pass" not in featured_normalized
 
@@ -156,9 +172,11 @@ def test_incident_scenario_projection_semantics(proof_library_text: str) -> None
     )
     assert "no executable proof yet" not in normalized
     assert "design accepted for implementation" not in normalized
-    featured_section = proof_library_text.split("## D. Featured scenario in development", 1)[1]
-    featured_section = featured_section.split("## E. How to read a proof", 1)[0]
-    featured_normalized = re.sub(r"[*_`]", "", featured_section).lower()
+    featured_section = _featured_section(proof_library_text)
+    incident_section = featured_section.split(
+        "### Indirect Prompt Injection with Governed Action Prevention", 1
+    )[0]
+    featured_normalized = re.sub(r"[*_`]", "", incident_section).lower()
     assert "no report, evidence bundle, or reproduction path exists yet" not in featured_normalized
     assert (
         "no accepted published evidence bundle" in featured_normalized
@@ -172,7 +190,7 @@ def test_premium_structure(proof_library_text: str) -> None:
         "## A. What is a Scenario Proof?",
         "## B. What makes a scenario worth publishing?",
         "## C. Scenario catalog",
-        "## D. Featured scenario in development",
+        "## D. Featured scenarios in development",
         "## E. How to read a proof",
         "## F. PASS / FAIL / UNRESOLVED semantics",
         "## G. Challenge Intergrax",
@@ -198,5 +216,20 @@ def test_proofs_dashboard_distinction(proof_library_text: str) -> None:
     assert "evidence dashboard" in proof_library_text.lower()
 
 
+def test_indirect_prompt_injection_featured_projection(proof_library_text: str) -> None:
+    """Indirect prompt injection featured block must not claim verified proof."""
+    featured_section = _featured_section(proof_library_text)
+    injection_section = featured_section.split(
+        "### Indirect Prompt Injection with Governed Action Prevention", 1
+    )[1]
+    normalized = re.sub(r"[*_`]", "", injection_section).lower()
+    assert "implementation initialized" in normalized
+    assert "no verified proof run yet" in normalized
+    assert "indirect_prompt_injection/assets/scenario-overview.png" in injection_section
+    assert "verdict: pass" not in normalized
+    assert "production ready" not in normalized
+
+
 def test_scenario_design_link_exists() -> None:
     assert _SCENARIO_DESIGN_PATH.is_file()
+    assert _INDIRECT_PROMPT_INJECTION_DESIGN_PATH.is_file()
