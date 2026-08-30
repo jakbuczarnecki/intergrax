@@ -275,6 +275,10 @@ No separate Council Runtime.
 
 | Depth | Route |
 | ----- | ----- |
+| **Extended engineering model** | [`satellites/DECISION_DELIBERATION_extended_depth.md`](satellites/DECISION_DELIBERATION_extended_depth.md) |
+| Council / disagreement | [`satellites/DECISION_DELIBERATION_council_disagreement.md`](satellites/DECISION_DELIBERATION_council_disagreement.md) |
+| Independence / context visibility | [`satellites/DECISION_DELIBERATION_independence_context_visibility.md`](satellites/DECISION_DELIBERATION_independence_context_visibility.md) |
+| Bounded execution | [`satellites/DECISION_DELIBERATION_bounded_execution.md`](satellites/DECISION_DELIBERATION_bounded_execution.md) |
 | Decision Lifecycle | [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) |
 | Verification | [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) |
 | Implementation plan | [`maintainers/plans/DECISION_DELIBERATION.md`](../maintainers/plans/DECISION_DELIBERATION.md) |
@@ -286,4 +290,6 @@ No separate Council Runtime.
 
 **Default:** strategy role + Council diagram + disagreement section.
 
-- **Implement deliberation:** this file + [`maintainers/plans/DECISION_DELIBERATION.md`](../maintainers/plans/DECISION_DELIBERATION.md).
+- **Implement deliberation:** this file + [`maintainers/plans/DECISION_DELIBERATION.md`](../maintainers/plans/DECISION_DELIBERATION.md) hub.
+- **Architecture satellite:** at most **one** [`satellites/`](satellites/) file per session.
+- **Plan satellite:** [`maintainers/plans/satellites/DECISION_DELIBERATION_implementation_strategies.md`](../maintainers/plans/satellites/DECISION_DELIBERATION_implementation_strategies.md) on demand.

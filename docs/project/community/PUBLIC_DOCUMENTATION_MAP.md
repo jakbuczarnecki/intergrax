@@ -76,6 +76,7 @@ with Try LKW as the repository’s primary product action.
 | Audit evidence and public claims | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | Explore a partner, integrator or design-partner path | [Partners](PARTNERS.md) |
 | Explore Governed Execution | [Governed Execution](../architecture/GOVERNED_EXECUTION.md) |
+| Explore Decision System | [Decision System](../architecture/DECISION_SYSTEM.md) — candidate proposals, verification, deliberation, authoritative outcomes separate from authorization (**target canon**; **CURRENT:** [Critic Verification](../architecture/CRITIC_VERIFICATION.md)) |
 | Explore Token Optimization | [Token Optimization](../capabilities/token_optimization/README.md) |
 | Explore strategic future directions | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) · [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) · [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) — see [Strategic directions](#strategic-directions) below |
 | Check current proof status | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |

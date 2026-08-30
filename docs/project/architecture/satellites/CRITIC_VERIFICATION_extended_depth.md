@@ -2,6 +2,13 @@
 
 **Parent hub:** [`CRITIC_VERIFICATION.md`](../CRITIC_VERIFICATION.md)
 
+> [!CAUTION]
+> **CURRENT IMPLEMENTATION SNAPSHOT — NOT TARGET CANON**
+>
+> This satellite documents the **shipped Critic / CVL runtime**. Target architecture: [`DECISION_VERIFICATION.md`](../DECISION_VERIFICATION.md) · [`DECISION_SYSTEM.md`](../DECISION_SYSTEM.md).
+> Route target readers to Decision Verification satellites — not this file.
+
+
 ## 7. Component architecture
 
 ```text

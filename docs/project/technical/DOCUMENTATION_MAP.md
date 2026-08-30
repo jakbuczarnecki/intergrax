@@ -20,7 +20,20 @@ Public readers looking for product value, proof paths, evaluation, partnership o
 | **Governed Execution** (policy enforcement capability) | [GOVERNED_EXECUTION.md](../architecture/GOVERNED_EXECUTION.md) |
 | **Central Diagnostics** (canonical Problem spine, authority, qualification) | [DIAGNOSTICS.md](../architecture/DIAGNOSTICS.md) · qualification [DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md](../maintainers/qualification/DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md) |
 | **Observability** (HOS, RuntimeEvent, export) | [OBSERVABILITY.md](../architecture/OBSERVABILITY.md) |
-| **Decision System** (target canon — lifecycle, verification, deliberation) | [DECISION_SYSTEM.md](../architecture/DECISION_SYSTEM.md) · **CURRENT:** [CRITIC_VERIFICATION.md](../architecture/CRITIC_VERIFICATION.md) |
+| **Decision System** (target canon — lifecycle, verification, deliberation) | [DECISION_SYSTEM.md](../architecture/DECISION_SYSTEM.md) · [DECISION_VERIFICATION.md](../architecture/DECISION_VERIFICATION.md) · [DECISION_DELIBERATION.md](../architecture/DECISION_DELIBERATION.md) · **CURRENT:** [CRITIC_VERIFICATION.md](../architecture/CRITIC_VERIFICATION.md) |
+
+**Decision System — progressive routing (technical):**
+
+```text
+Decision System
+├ architecture hub ............... DECISION_SYSTEM.md
+├ Verification / Deliberation .... paired sub-hubs (subordinate to Decision System)
+├ architecture satellites ........ satellites/DECISION_* (on demand — hub Go deeper)
+└ implementation plan ............ maintainers/plans/DECISION_*.md + plans/satellites/
+```
+
+Critic = **CURRENT implementation snapshot only** — not equal target canon.
+
 | **Token Optimization main guide** | [capabilities/token_optimization/README.md](../capabilities/token_optimization/README.md) |
 | **This map** (roles and workflows) | `docs/project/technical/DOCUMENTATION_MAP.md` |
 | **Extend Intergrax / build plugins** | [EXTENSION_AUTHOR_GUIDE.md](guides/EXTENSION_AUTHOR_GUIDE.md) → surface matrix → domain guide · design: [PLATFORM_PLUGINS.md](../architecture/PLATFORM_PLUGINS.md) |

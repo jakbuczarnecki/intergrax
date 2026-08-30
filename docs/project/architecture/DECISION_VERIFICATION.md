@@ -301,6 +301,10 @@ See disposition matrix in [`maintainers/plans/DECISION_SYSTEM.md`](../maintainer
 
 | Depth | Route |
 | ----- | ----- |
+| **Extended engineering model** | [`satellites/DECISION_VERIFICATION_extended_depth.md`](satellites/DECISION_VERIFICATION_extended_depth.md) |
+| Pipeline / stage architecture | [`satellites/DECISION_VERIFICATION_pipeline_stages.md`](satellites/DECISION_VERIFICATION_pipeline_stages.md) |
+| Security / independence | [`satellites/DECISION_VERIFICATION_security_independence.md`](satellites/DECISION_VERIFICATION_security_independence.md) |
+| Revision / failure semantics | [`satellites/DECISION_VERIFICATION_revision_failure_semantics.md`](satellites/DECISION_VERIFICATION_revision_failure_semantics.md) |
 | Decision Lifecycle | [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) |
 | Deliberation | [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
 | Implementation plan | [`maintainers/plans/DECISION_VERIFICATION.md`](../maintainers/plans/DECISION_VERIFICATION.md) |
@@ -313,5 +317,7 @@ See disposition matrix in [`maintainers/plans/DECISION_SYSTEM.md`](../maintainer
 
 **Default:** pipeline diagram + stage table + challenge boundary only.
 
-- **Implement verification:** this file + [`maintainers/plans/DECISION_VERIFICATION.md`](../maintainers/plans/DECISION_VERIFICATION.md).
+- **Implement verification:** this file + [`maintainers/plans/DECISION_VERIFICATION.md`](../maintainers/plans/DECISION_VERIFICATION.md) hub.
+- **Architecture satellite:** at most **one** [`satellites/`](satellites/) file per session.
+- **Plan satellite:** [`maintainers/plans/satellites/DECISION_VERIFICATION_implementation_pipeline.md`](../maintainers/plans/satellites/DECISION_VERIFICATION_implementation_pipeline.md) on demand.
 - **Audit CURRENT code:** add [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) snapshot sections only.

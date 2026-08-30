@@ -4,11 +4,11 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> **DS-DOC (2026-08-30):** Canonical target architecture **FROZEN**. Implementation **NOT STARTED**. Production remains CVL / Critic until clean-cut migration slice.
+> **DS-DOC-HARDEN (2026-08-30):** Canonical target architecture **FROZEN**. Implementation **NOT STARTED**. Production remains CVL / Critic until clean-cut migration slice.
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub**.
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`satellites/` on demand).
 
-**Last updated:** 2026-08-30 — DS-DOC documentation foundation.
+**Last updated:** 2026-08-30 — DS-DOC-HARDEN documentation architecture.
 
 ---
 
@@ -16,12 +16,24 @@
 
 **Do not read this entire file in one session.**
 
-- **Implement / audit default:** §Critic disposition · open DS-* rows · architecture frozen banner.
-- **Use** `Read` with offset/limit — open Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Implement / audit default:** architecture frozen banner · Critic disposition · Phase DS-E2E blocking gate summary.
+- **Use** `Read` with offset/limit — open **P0/P1** rows with Status ≠ Done in **one** implementation satellite only.
 - **Skip** **Done** / closed unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md) read-scope block only.
-- **Paired docs:** [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](../../architecture/DECISION_DELIBERATION.md) — on demand, one per session max.
+- **Paired architecture:** [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](../../architecture/DECISION_DELIBERATION.md) — one per session max.
 - **CURRENT implementation:** [`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) — migration audit only.
+- **Satellites:** at most **one** [`satellites/`](satellites/) file per session unless RESUME cites more.
+
+---
+
+## Implementation satellites (read on demand)
+
+| Satellite | Contents |
+| --------- | -------- |
+| [`satellites/DECISION_SYSTEM_implementation_core.md`](satellites/DECISION_SYSTEM_implementation_core.md) | DS-CORE lifecycle foundation · plugin architecture |
+| [`satellites/DECISION_SYSTEM_implementation_integration.md`](satellites/DECISION_SYSTEM_implementation_integration.md) | Nexus · governance/HITL · observability · recovery · Critic migration · security hardening |
+| [`satellites/DECISION_VERIFICATION_implementation_pipeline.md`](satellites/DECISION_VERIFICATION_implementation_pipeline.md) | Verification pipeline + stage migration rows |
+| [`satellites/DECISION_DELIBERATION_implementation_strategies.md`](satellites/DECISION_DELIBERATION_implementation_strategies.md) | DecisionStrategy · Council strategy rows |
 
 ---
 
@@ -35,6 +47,18 @@
 | **Runtime implementation** | **PLANNED** — no Decision System classes shipped |
 | **Production path** | **CURRENT** — `intergrax/runtime/critic/**` until clean cut |
 | **Evidence** | **PLANNED** — DS-E2E Docker qualification phase after migration |
+
+---
+
+## Phase index
+
+| Phase | Status | Detail satellite |
+| ----- | ------ | ---------------- |
+| **DS-CORE** | PLANNED | [`implementation_core`](satellites/DECISION_SYSTEM_implementation_core.md) |
+| **DS-VER-PIPE / DS-VER-STAGES** | PLANNED | [`DECISION_VERIFICATION_implementation_pipeline`](satellites/DECISION_VERIFICATION_implementation_pipeline.md) |
+| **DS-DELIB / DS-COUNCIL** | PLANNED | [`DECISION_DELIBERATION_implementation_strategies`](satellites/DECISION_DELIBERATION_implementation_strategies.md) |
+| **DS-MIG** (Critic clean cut) | PLANNED | [`implementation_integration`](satellites/DECISION_SYSTEM_implementation_integration.md) |
+| **DS-E2E** (Docker qualification) | PLANNED | **below — blocking production gate** |
 
 ---
 
@@ -68,92 +92,26 @@ Audited against `intergrax/runtime/critic/**` and [`CRITIC_VERIFICATION.md`](../
 | `borderline_l1_score` L2 escalation heuristic | HITL policy trigger via Lifecycle | **MOVE** |
 | `ToolRegistryCriticEvalClient` | Verification stage tool client | **REUSE** |
 
-**CRITIC_VERIFICATION docs:** **CURRENT IMPLEMENTATION SNAPSHOT** — physical **DELETE** planned in clean-cut slice after runtime migration ([`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) banner).
-
----
-
-## Phase DS-CORE — Decision Lifecycle foundation (PLANNED)
-
-| ID | Priority | Item | Status |
-|----|----------|------|--------|
-| DS-CORE-01 | P0 | Decision ID / Version / scope typed contracts | **Planned** |
-| DS-CORE-02 | P0 | Candidate vs Authoritative Decision records + immutable lineage | **Planned** |
-| DS-CORE-03 | P0 | Lifecycle state machine executed by Nexus (no second runtime) | **Planned** |
-| DS-CORE-04 | P0 | Resolution semantics (`ACCEPTED` / `REJECTED` / `UNRESOLVED`) incl. separation from execution termination | **Planned** |
-| DS-CORE-05 | P1 | Finalize guard — one authoritative per decision scope | **Planned** |
-| DS-CORE-06 | P1 | Nexus checkpoint persistence for lifecycle state | **Planned** |
-| DS-CORE-07 | P1 | Parallel proposal branch lineage | **Planned** |
-| DS-CORE-08 | P2 | Decision Artifact kind registration | **Planned** |
-
----
-
-## Phase DS-MIG — Critic clean cut (PLANNED)
-
-| ID | Priority | Item | Status |
-|----|----------|------|--------|
-| DS-MIG-01 | P0 | Wire graph/UAEP paths to Decision Lifecycle | **Planned** |
-| DS-MIG-02 | P0 | Retire `CriticOrchestrator` after pipeline parity | **Planned** |
-| DS-MIG-03 | P1 | Remove L2 from verification model; route HITL via Lifecycle | **Planned** |
-| DS-MIG-04 | P1 | DELETE [`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) docs + retire `intergrax/runtime/critic/**` | **Planned** |
-| DS-MIG-05 | P2 | Update application CriticProfile/CVL references | **Planned** |
+**CRITIC_VERIFICATION docs:** **CURRENT IMPLEMENTATION SNAPSHOT** — physical **DELETE** planned in clean-cut slice ([`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) banner).
 
 ---
 
 ## Migrated open requirements (from Critic audit)
 
-Source: [`CRITIC_VERIFICATION` plan](CRITIC_VERIFICATION.md) Protocol v2 findings — re-owned with Decision-oriented IDs.
+Re-owned from [`CRITIC_VERIFICATION` plan](CRITIC_VERIFICATION.md) Protocol v2 findings. Full rows: [`DECISION_VERIFICATION_implementation_pipeline.md`](satellites/DECISION_VERIFICATION_implementation_pipeline.md) · [`implementation_integration`](satellites/DECISION_SYSTEM_implementation_integration.md).
 
-### DS-VER-RUBRIC-PROVENANCE-INTEGRITY
-
-**Priority:** P0/P1 · **Status:** `ACCEPTED / PLANNED`
-**Owner:** [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md)
-**Successor to:** CRITIC-SEMANTIC-AUTHORITY-INTEGRITY (rubric portion)
-
-Named rubric refs resolve to versioned criteria with provenance before semantic stages; unresolvable rubric fails closed.
-
-### DS-VER-PRODUCER-INDEPENDENCE
-
-**Priority:** P0/P1 · **Status:** `ACCEPTED / PLANNED`
-**Owner:** [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](../../architecture/DECISION_DELIBERATION.md)
-**Successor to:** CRITIC-SEMANTIC-AUTHORITY-INTEGRITY (independence portion)
-
-Independent verification profiles prove producer/verifier separation or explicitly label non-independent modes.
-
-### DS-VER-ADVERSARIAL-SEMANTIC
-
-**Priority:** P1 · **Status:** `ACCEPTED / PLANNED`
-**Owner:** [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md)
-**Successor to:** CRITIC-SEMANTIC-AUTHORITY-INTEGRITY (adversarial portion)
-
-Judge construction isolates trusted rubric from untrusted candidate; adversarial tests for high-assurance profiles.
-
-### DS-DEC-EXECUTION-IDENTITY-BINDING
-
-**Priority:** P0/P1 · **Status:** `ACCEPTED / PLANNED`
-**Owner:** [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md)
-**Successor to:** CRITIC-EXECUTION-IDENTITY-INTEGRITY
-
-Decision / verification / approval records bind canonical tenant/task/run/attempt/execution identity — no `"default"` fallbacks.
-
-### DS-VER-RESULT-COHERENCE
-
-**Priority:** P1/P2 · **Status:** `ACCEPTED / PLANNED`
-**Owner:** [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md)
-**Successor to:** CRITIC-CONTRACT-BOUNDEDNESS-INTEGRITY (verdict portion)
-
-Verification Result enforces constructional consistency across pass/stage/challenge fields.
-
-### DS-DEC-REVISION-LOOP-BOUNDEDNESS
-
-**Priority:** P1/P2 · **Status:** `ACCEPTED / PLANNED`
-**Owner:** [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md)
-**Successor to:** CRITIC-CONTRACT-BOUNDEDNESS-INTEGRITY (evaluator-loop portion)
-
-Revision loop validates non-negative iteration, identity consistency, exhausted semantics; resume cannot expand budget.
+| ID | Owner | Status |
+| -- | ----- | ------ |
+| DS-VER-RUBRIC-PROVENANCE-INTEGRITY | Verification | ACCEPTED / PLANNED |
+| DS-VER-PRODUCER-INDEPENDENCE | Verification · Deliberation | ACCEPTED / PLANNED |
+| DS-VER-ADVERSARIAL-SEMANTIC | Verification | ACCEPTED / PLANNED |
+| DS-DEC-EXECUTION-IDENTITY-BINDING | Decision System | ACCEPTED / PLANNED |
+| DS-VER-RESULT-COHERENCE | Verification | ACCEPTED / PLANNED |
+| DS-DEC-REVISION-LOOP-BOUNDEDNESS | Decision System | ACCEPTED / PLANNED |
 
 ---
 
-## Phase DS-E2E — Docker production qualification (PLANNED)
+## Phase DS-E2E — Docker production qualification (PLANNED) — **blocking gate**
 
 Real Docker E2E qualification is the **final gate** before any Decision System production-qualified claim. Unit, integration, and mocked E2E alone are **insufficient**.
 
@@ -178,16 +136,12 @@ Real Docker E2E qualification is the **final gate** before any Decision System p
 
 ## Definition of done — production qualification
 
-The Decision System is **not** production-qualified after:
-
-- unit tests,
-- integration tests,
-- mocked E2E.
+The Decision System is **not** production-qualified after unit tests, integration tests, or mocked E2E alone.
 
 **Production qualification** requires:
 
 1. Runtime migration slices through DS-CORE / DS-MIG complete for in-scope capabilities.
-2. **Phase DS-E2E** rows above executed as **real Docker E2E** — not mocks.
+2. **Phase DS-E2E** rows executed as **real Docker E2E** — not mocks.
 3. **DS-FINAL-AUDIT** passed at an exact commit pin.
 
 Until then, production correctness remains **CVL / Critic** ([`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md)).
@@ -208,4 +162,4 @@ Until then, production correctness remains **CVL / Critic** ([`CRITIC_VERIFICATI
 
 ## Delivery rule
 
-One **DS-\*** ID per PR → update this table → documentation gates green → no `shipped` claim until runtime slice lands.
+One **DS-\*** ID per PR → update the owning satellite row → documentation gates green → no `shipped` claim until runtime slice lands.

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img">
+  <title>HITL version binding</title>
+  <desc>Exact version approval and stale invalidation after revision.</desc>
+  <rect width="1200" height="700" fill="#0d1117"/>
+  <rect x="24" y="24" width="1152" height="652" rx="20" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+  
+  <text x="600" y="58" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="24" font-weight="700" fill="#e6edf3">HITL and exact version binding</text>
+  <rect x="80" y="100" width="300" height="70" rx="12" fill="#eef4ff" stroke="#1a5fb4" stroke-width="2"/>
+  <text x="230" y="132" text-anchor="middle" font-size="16" font-weight="700" fill="#e6edf3">Decision v1 ACCEPTED</text>
+  <text x="230" y="154" text-anchor="middle" font-size="13" fill="#8b949e">authoritative version bound</text>
+  <rect x="450" y="100" width="300" height="70" rx="12" fill="#fff3e0" stroke="#ef6c00" stroke-width="2"/>
+  <text x="600" y="132" text-anchor="middle" font-size="16" font-weight="700" fill="#e6edf3">Challenge → Revision</text>
+  <text x="600" y="154" text-anchor="middle" font-size="13" fill="#8b949e">mint Decision v2</text>
+  <rect x="820" y="100" width="300" height="70" rx="12" fill="#ffebee" stroke="#c62828" stroke-width="2"/>
+  <text x="970" y="132" text-anchor="middle" font-size="16" font-weight="700" fill="#e6edf3">v1 approval INVALID</text>
+  <text x="970" y="154" text-anchor="middle" font-size="13" fill="#8b949e">stale approval protection</text>
+  <line x1="380" y1="135" x2="450" y2="135" stroke="#1a5fb4" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="750" y1="135" x2="820" y2="135" stroke="#ef6c00" stroke-width="2"/>
+  <rect x="200" y="240" width="800" height="90" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+  <text x="600" y="275" text-anchor="middle" font-size="17" font-weight="700" fill="#e6edf3">Policy / HITL evaluates exact Decision ID + Version</text>
+  <text x="600" y="302" text-anchor="middle" font-size="14" fill="#8b949e">Authorization for v1 does not authorize v2</text>
+  <rect x="200" y="380" width="360" height="80" rx="12" fill="#f3e8ff" stroke="#7c3aed" stroke-width="2"/>
+  <text x="380" y="415" text-anchor="middle" font-size="16" font-weight="700" fill="#e6edf3">Execution Authorization</text>
+  <text x="380" y="438" text-anchor="middle" font-size="13" fill="#8b949e">separate from decision correctness</text>
+  <rect x="640" y="380" width="360" height="80" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+  <text x="820" y="415" text-anchor="middle" font-size="16" font-weight="700" fill="#e6edf3">Nexus side effect</text>
+  <text x="820" y="438" text-anchor="middle" font-size="13" fill="#8b949e">only after bound approval</text>
+  <line x1="600" y1="330" x2="380" y2="380" stroke="#30363d" stroke-width="2"/>
+  <line x1="600" y1="330" x2="820" y2="380" stroke="#30363d" stroke-width="2"/>
+  <text x="600" y="560" text-anchor="middle" font-size="15" fill="#8b949e">Decision quality ≠ permission to execute</text>
+
+</svg>

@@ -362,6 +362,17 @@ The legacy **L2 Human Critic** concept is **removed** from the target model. Hum
 
 The Decision System **invokes** the existing HITL mechanism ([`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md)) — it does **not** implement a Human Engine.
 
+<a href="assets/fullsize/decision-hitl-version-binding.md">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/decision-hitl-version-binding-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/decision-hitl-version-binding-light.svg">
+  <img
+    alt="HITL and policy bind execution authorization to exact Decision Version; approval for v1 is invalid after revision mints v2."
+    src="assets/decision-hitl-version-binding-light.svg"
+  >
+</picture>
+</a>
+
 ---
 
 ## Diagnostics boundary
@@ -400,6 +411,17 @@ The Decision System must support full reconstruction of:
 - authorization relation to bound version.
 
 **Do not** persist private chain-of-thought.
+
+<a href="assets/fullsize/decision-observability-audit-reconstruction.md">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/decision-observability-audit-reconstruction-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/decision-observability-audit-reconstruction-light.svg">
+  <img
+    alt="Audit reconstruction chain from request through proposal, verification, challenge, revision, resolution, human and policy records to execution — excluding private chain-of-thought."
+    src="assets/decision-observability-audit-reconstruction-light.svg"
+  >
+</picture>
+</a>
 
 ---
 
@@ -495,6 +517,43 @@ Platform plugin architecture applies at extension boundaries ([`PLATFORM_PLUGINS
 
 No scenario requires a special-case exception to the frozen fundamentals above.
 
+### Scenario walkthrough — AI Incident Investigation
+
+<a href="assets/fullsize/decision-scenario-incident-investigation.md">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/decision-scenario-incident-investigation-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/decision-scenario-incident-investigation-light.svg">
+  <img
+    alt="Incident investigation flow: signals through hypotheses and evidence to candidate conclusion, independent verification, challenge or revision, ending in ACCEPTED or UNRESOLVED."
+    src="assets/decision-scenario-incident-investigation-light.svg"
+  >
+</picture>
+</a>
+
+### Scenario walkthrough — Regulated Action
+
+<a href="assets/fullsize/decision-scenario-regulated-action.md">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/decision-scenario-regulated-action-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/decision-scenario-regulated-action-light.svg">
+  <img
+    alt="Regulated action flow: candidate decision through verification and ACCEPTED resolution, then policy and HITL gates before execution authorization and Nexus side effect."
+    src="assets/decision-scenario-regulated-action-light.svg"
+  >
+</picture>
+</a>
+
+```mermaid
+stateDiagram-v2
+    [*] --> Proposal
+    Proposal --> Verification
+    Verification --> Resolution: pass
+    Verification --> Revision: challenge
+    Revision --> Verification
+    Resolution --> Finalization: ACCEPTED / REJECTED / UNRESOLVED
+    Finalization --> [*]
+```
+
 ---
 
 ## Relationship to Intergrax
@@ -550,6 +609,12 @@ The Decision System is **not** production-qualified after:
 
 | Depth | Route |
 | ----- | ----- |
+| **Extended engineering model** | [`satellites/DECISION_SYSTEM_extended_depth.md`](satellites/DECISION_SYSTEM_extended_depth.md) |
+| Identity / versioning / lineage | [`satellites/DECISION_SYSTEM_identity_version_lineage.md`](satellites/DECISION_SYSTEM_identity_version_lineage.md) |
+| Lifecycle / state / resolution | [`satellites/DECISION_SYSTEM_lifecycle_state_resolution.md`](satellites/DECISION_SYSTEM_lifecycle_state_resolution.md) |
+| Authority / finalization | [`satellites/DECISION_SYSTEM_authority_finalization.md`](satellites/DECISION_SYSTEM_authority_finalization.md) |
+| Concurrency / recovery | [`satellites/DECISION_SYSTEM_concurrency_recovery.md`](satellites/DECISION_SYSTEM_concurrency_recovery.md) |
+| Platform boundaries | [`satellites/DECISION_SYSTEM_platform_boundaries.md`](satellites/DECISION_SYSTEM_platform_boundaries.md) |
 | Verification pipeline | [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) |
 | Deliberation / Council | [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
 | Implementation plan | [`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) |
@@ -567,6 +632,8 @@ The Decision System is **not** production-qualified after:
 **Default:** this hub read-scope block + at-a-glance + one cited diagram section.
 
 - **Implement Decision System:** read this file + [`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) hub only.
-- **Verification slice:** add [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) + matching plan — one satellite max.
-- **Deliberation slice:** add [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) + matching plan — one satellite max.
+- **Architecture satellite:** at most **one** [`satellites/`](satellites/) file per session unless RESUME cites more.
+- **Plan satellite:** at most **one** [`maintainers/plans/satellites/`](../maintainers/plans/satellites/) file per session.
+- **Verification slice:** add [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) + matching plan — one architecture/plan satellite max.
+- **Deliberation slice:** add [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) + matching plan — one architecture/plan satellite max.
 - **Skip** full [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) unless auditing CURRENT implementation or migration disposition.
