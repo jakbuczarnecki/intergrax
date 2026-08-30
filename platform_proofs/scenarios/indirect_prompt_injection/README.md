@@ -85,7 +85,7 @@ The design answers that challenge by requiring:
 
 - a **real configured model/provider** on the canonical path;
 - a **production-capable order assistant** that remains useful without proof infrastructure;
-- **normal tool proposal and invocation wiring** through `RuntimeToolInvoker` / governed policy;
+- **normal tool proposal and invocation wiring** through the governed platform tool path;
 - proof that the model **actually proposed** the sensitive write on attack variants;
 - proof that governance returned **DENY** with observable policy artifacts;
 - proof that the **provider/integration write path was not executed**;

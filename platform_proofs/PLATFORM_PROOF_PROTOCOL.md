@@ -81,7 +81,41 @@ Use **production-capable** (architecture suitable for real deployment; no test-o
 
 Every proof declares **`domains_exercised`** (non-empty; no owning or primary domain) and **`mechanisms_exercised`**. A proof does not belong to one domain — it exercises one or more domains. Library metadata (`library_class`, `domains_exercised`, `mechanisms_exercised`, SCENARIO problem fields) is descriptor-owned and does not appear in runner-facing `ProofManifestEntry` unless execution genuinely requires it (currently: domain metadata is not execution authority).
 
-**Scenario documentation:** Scenario design is **problem-owned and multi-domain by default** — participating domains are discovered during Intergrax Fit, then declared truthfully in `domains_exercised` when the proof package ships. See [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md).
+**Scenario documentation:** Scenario design is **problem-owned and multi-domain by default** — required platform capabilities are anticipated during solution design and verified during implementation preparation; participating domains are declared truthfully in `domains_exercised` when the proof package ships. See [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md).
+
+**Scenario-first lifecycle (normative):**
+
+```text
+REAL PROBLEM → WOW QUALIFICATION → SOLUTION ARCHITECTURE → PROOF DESIGN
+→ SCENARIO QUALITY GATE → ACCEPTED FOR IMPLEMENTATION
+→ IMPLEMENTATION PREPARATION (verify Intergrax fit)
+→ INITIALIZE IMPLEMENTATION → BUILD ON INTERGRAX
+→ RESOLVE PLATFORM GAPS IF DISCOVERED → EXECUTE / EVIDENCE / PUBLICATION
+```
+
+**Architecture preservation rule:**
+
+> Scenario architecture **MUST NOT** be weakened merely because the current platform does not yet provide a required capability. Develop reusable Intergrax capability instead.
+
+**Platform gap resolution (normative):**
+
+Reusable missing capability **MUST NOT** be implemented as a proof-local substitute. Gap discovery does **not** need to occur before design acceptance. During implementation:
+
+```text
+accepted solution architecture
+↓
+implementation attempts to realize it
+↓
+missing reusable capability discovered
+↓
+Scenario implementation pauses
+↓
+platform capability implemented separately
+↓
+verified
+↓
+Scenario resumes
+```
 
 Every descriptor declares `library_class`, `domains_exercised`, and `mechanisms_exercised`. SCENARIO additionally requires `problem_category`, `problem_summary`, and `failure_mode_summary`. CONFORMANCE forbids those problem fields.
 
