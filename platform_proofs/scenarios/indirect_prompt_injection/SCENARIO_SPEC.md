@@ -2,7 +2,7 @@
 scenario_slug: indirect_prompt_injection
 lifecycle: ACCEPTED_FOR_IMPLEMENTATION
 implementation_status: NOT_INITIALIZED
-intergrax_fit: NOT_COMPLETED
+intergrax_fit: COMPLETED
 gap_decision: NOT_COMPLETED
 observability_contract: COMPLETED
 application_vs_proof_ownership: COMPLETED
@@ -554,43 +554,60 @@ This scenario does **not** claim:
 
 ## C. INTERGRAX FIT
 
-**Status: IMPLEMENTATION FIT NOT YET VERIFIED**
+**Status: IMPLEMENTATION FIT VERIFIED AT HEAD (audit complete)**
 
-At design stage, § C documents **anticipated platform capabilities** required by the accepted solution — not a verified audit at current HEAD.
+Audit date: 2026-08-30 · repository HEAD audited for task-scoped authority → governed tool side-effect prevention.
 
-| Application need | Required platform capability |
-| --- | --- |
-| Autonomous order-assistance workflow | Production-capable application runtime with real LLM/provider boundary |
-| Governed tool invocation | Tool runtime with policy-enforced invocation path before side effects |
-| Task-scoped authority | Mechanism to mint and carry effective authority from user intent through execution |
-| Sensitive-write prevention | Compare proposed action against granted authority; deny before external mutation |
-| External data retrieval | Typed provider/tool contracts for order reads |
-| Controlled integration side effects | Observable provider mutation log behind normal tool contract |
-| Execution observability | Structured trace of retrieval → proposal → policy decision → outcome |
-| Evidence projection | Proof evidence contract for falsification and report rendering |
+### Audit matrix
 
-The accepted solution requires **task-scoped authority to constrain sensitive actions before execution**. Exact mapping to current Intergrax mechanisms is verified during implementation preparation. Any reusable missing capability discovered there will be implemented in the platform before Scenario implementation continues.
+| Potrzeba | Czy Intergrax to ma? | Gdzie | Ocena | Dlaczego |
+| --- | --- | --- | --- | --- |
+| task authority | Tak — typed scopes per task/run | `ParentExecutionAuthority` · `Task.execution_authority` · `ExecutionBoundary` / `RootExecutionContext` | **AVAILABLE** | Application can mint `ParentExecutionAuthority.scoped(("order.read",))` or write scopes on the task before execution starts. |
+| authority propagation | Tak — root → active context → child delegation | `bind_active_execution_authority` · `require_active_execution_authority()` · `mint_effective_delegation_authority` · `GraphExecutor` | **AVAILABLE** | Effective scopes are carried on the canonical execution spine; child delegation narrows fail-closed. |
+| action permission requirement | Brak uniwersalnego wymagania scope per tool/action | `ToolContract` (`side_effects`, `risk_level` only) · `MeaningfulSideEffectRequest.action` (adapter-owned) | **MISSING** | Catalog tools do not declare a required execution-permission scope (e.g. `order.shipping_address.write`); no shared contract field for subset enforcement. |
+| comparison authority vs action | Brak porównania effective authority ↔ required scope na canonical tool path | `RuntimeToolInvoker` · `DeclarativePolicyEnforcer` (tool_id rules) · `ToolScopePolicy` (tool allow-list) | **MISSING** | Invoker checks declarative rules and optional tool allow-list, not `peek_active_execution_authority().permission_scopes` against a declared action scope. Retrieved content cannot expand authority without this comparison. |
+| deny before side effect | Tak — na canonical invoker path, przed executorem | `RuntimeToolInvoker.invoke` → declarative policy / scope policy → dopiero `_execute_with_policy` | **AVAILABLE BUT NEEDS WIRING** | Block-before-executor spine exists, but today it does not evaluate task authority vs sensitive action; scenario must not substitute proof-local denial. |
+| allow authorized action | Mechanizm ALLOW istnieje; brak dynamicznego scope-ALLOW | `DeclarativePolicyEnforcer` · `PolicyRuleAction.ALLOW` · `MeaningfulSideEffectAuthorizationBoundary` (collaborative-work) | **AVAILABLE BUT NEEDS WIRING** | Static declarative ALLOW per tool_id would permit writes even on read-only tasks; collaborative-work boundary uses a different authority model and is not wired through standard catalog tool invocation. |
+| bypass prevention | Canonical catalog path jest gated; direct bypass pozostaje host-qualified | `ToolRuntime` / `RuntimeToolGateway` → `catalog_dispatch` → `RuntimeToolInvoker` | **AVAILABLE BUT NEEDS WIRING** | Normal agent/tool path reaches invoker; agents calling integrations or `ToolExecutor` directly bypass governance (forbidden by architecture, not mechanically blocked platform-wide). |
+| observability | Tak — trace + typed diagnostics | `TraceEvent` · `ToolCallTrace` · `DeclarativePolicyEvaluationDiagV1` · `ToolInvocation*DiagV1` · graph authority metadata | **AVAILABLE** | Material chain retrieval → proposal → policy → outcome is structurally observable once enforcement emits decisions on the governed path. |
+| proof evidence support | Tak — contract v3 + projection hooks | `intergrax.platform_proof_evidence.v3` · scenario proof patterns (e.g. ai_incident_investigation) | **AVAILABLE BUT NEEDS WIRING** | Evidence framework exists; this scenario still needs implementation-time projection wiring after platform gap closure. |
 
-Do **not** weaken this architecture to match a specific current interface (e.g. a particular scope-policy class). How Intergrax realizes the authority boundary is an implementation-preparation decision.
+### Fit summary
+
+Intergrax **already provides** task-scoped authority minting and propagation, a governed tool invocation boundary that blocks before handler execution, and observability/evidence contracts.
+
+Intergrax **does not yet provide** a reusable platform mechanism that declares required permission scopes for sensitive tool actions and **denies when the proposed action scope is not a subset of the active task authority** on the canonical `RuntimeToolInvoker` path.
+
+**Scaffold decision:** **blocked** until the platform gap in § D is implemented and re-verified (`gap_decision: RESOLVED`).
 
 ---
 
 ## D. GAP DECISION
 
-**Status: NO IMPLEMENTATION-TIME GAP ASSESSMENT PERFORMED YET**
+**Status: PLATFORM GAP IDENTIFIED**
 
-Platform gaps are evaluated against the accepted solution architecture during implementation preparation and implementation.
+Frontmatter `gap_decision` remains `NOT_COMPLETED` (canonical lifecycle enum — blocks `init_scenario_implementation.py` until the gap is resolved and reassessed).
 
-The accepted solution requires task-scoped authority to constrain sensitive actions before execution. Exact mapping to current Intergrax mechanisms is verified during implementation preparation. Any reusable missing capability discovered there will be implemented in the platform before Scenario implementation continues.
+### Platform gap — task authority vs action scope enforcement
 
-At design stage, do **not** record `NO REUSABLE PLATFORM GAP IDENTIFIED` or `PLATFORM GAP BLOCKS SCENARIO DESIGN` — both are premature.
+| | |
+| --- | --- |
+| **Czego potrzebujemy** | Reusable platform check: `required_action_permission_scope ⊆ effective_task_authority` immediately **before** any side-effecting tool/integration executor runs on the canonical path. |
+| **Co Intergrax ma dzisiaj** | `ParentExecutionAuthority.permission_scopes` on `Task`; propagation via `ActiveExecutionAuthority` and delegation; `RuntimeToolInvoker` with declarative policy (tool_id-centric) and optional `ToolScopePolicy`; partial `MeaningfulSideEffectAuthorizationBoundary` on collaborative-work / adapter paths (G3B **PARTIAL** — not universal catalog tool coverage). |
+| **Czego brakuje między tymi elementami** | A shared declaration of required permission scope per sensitive tool/action **and** a platform-owned enforcer on `RuntimeToolInvoker` (or thin canonical adapter) that reads active execution authority and fails closed when the proposed write exceeds minted task authority. |
+| **Dlaczego to ma być platformowe** | Without it, each application/scenario would reimplement authority-vs-action mapping locally — exactly the cheat this scenario falsifies (proof-local deny instead of structural guarantee that untrusted retrieved content cannot expand authority). |
 
-Possible outcomes after implementation preparation:
+### Remediation path
+
+1. Implement reusable platform capability (owner: Governed Execution / tool invocation boundary — aligns with PG-FIX-A composable effective authorization target).
+2. Re-run Intergrax fit audit on HEAD.
+3. Set `gap_decision: RESOLVED` only when dynamic scope enforcement is available on the canonical tool path without scenario-local substitutes.
+4. Then run `init_scenario_implementation.py`.
 
 | Outcome | Meaning |
 | --- | --- |
 | **NO GAP** | Required capabilities exist or are wireable without new reusable platform work |
-| **PLATFORM GAP IDENTIFIED** | Pause scenario → implement reusable platform capability → verify → resume |
+| **PLATFORM GAP IDENTIFIED** | **Current state** — pause scenario → implement reusable platform capability → verify → resume |
 
 ---
 
