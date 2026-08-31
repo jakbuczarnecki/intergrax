@@ -11,6 +11,7 @@ from typing import Protocol
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.delegation_authority import resolve_root_parent_execution_authority
 from intergrax.contracts.execution_identity import (
+    AttemptId,
     RunId,
     mint_attempt_id,
     mint_run_id,
@@ -135,7 +136,13 @@ class HostTaskExecutionPort(Protocol):
     @property
     def nexus_loop(self) -> NexusLoop: ...
 
-    async def execute(self, task: Task) -> TaskResult: ...
+    async def execute(
+        self,
+        task: Task,
+        *,
+        run_id: RunId | None = None,
+        attempt_id: AttemptId | None = None,
+    ) -> TaskResult: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -175,7 +182,13 @@ class HostTaskExecution:
             run_budget=self._run_budget,
         )
 
-    async def execute(self, task: Task) -> TaskResult:
+    async def execute(
+        self,
+        task: Task,
+        *,
+        run_id: RunId | None = None,
+        attempt_id: AttemptId | None = None,
+    ) -> TaskResult:
         capabilities = resolve_task_execution_capabilities(
             task,
             orchestration_triggers=self._orchestration_triggers,
@@ -186,20 +199,20 @@ class HostTaskExecution:
             capabilities=capabilities,
             output_type=TaskResult,
         )
-        run_id = mint_run_id()
-        attempt_id = mint_attempt_id()
+        resolved_run_id = run_id or mint_run_id()
+        resolved_attempt_id = attempt_id or mint_attempt_id()
         options = RootExecutionOptions(
             authority=resolve_root_parent_execution_authority(task.execution_authority),
             tenant_id=task.tenant_id,
-            run_id=run_id,
-            attempt_id=attempt_id,
+            run_id=resolved_run_id,
+            attempt_id=resolved_attempt_id,
         )
-        await ActiveTaskRegistry.register(task, run_id)
+        await ActiveTaskRegistry.register(task, resolved_run_id)
         try:
             execution = Execution(self._execution_runtime_for_task(task))
             return await execution.execute(request, options=options)
         finally:
-            await ActiveTaskRegistry.unregister(task.task_id, run_id)
+            await ActiveTaskRegistry.unregister(task.task_id, resolved_run_id)
 
 
 def build_host_task_execution(

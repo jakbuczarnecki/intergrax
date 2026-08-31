@@ -8,7 +8,7 @@ import json
 
 import pytest
 
-from intergrax.contracts.execution_identity import validate_task_id
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id, mint_task_id, validate_task_id
 from intergrax.queueing.contracts.task_queue import TaskRequest, TaskStatus
 from intergrax.tools.registry.wiring import ToolWiringContext  # noqa: F401 — primes import graph
 from intergrax.runtime.task.task import Task, TaskResult as RuntimeTaskResult, TaskState
@@ -62,17 +62,27 @@ def _sample_request(
 class _FakeRunner:
     def __init__(self) -> None:
         self.tasks: list[Task] = []
+        self.run_ids: list[str] = []
+        self.attempt_ids: list[str] = []
         self.raise_error: Exception | None = None
         self.ingest_used = True
         self.ingest_reason = "ingest_complete"
 
-    async def run_task(self, task: Task) -> RuntimeTaskResult:
+    async def run_task(
+        self,
+        task: Task,
+        *,
+        run_id: str,
+        attempt_id: str,
+    ) -> RuntimeTaskResult:
         if self.raise_error is not None:
             raise self.raise_error
         self.tasks.append(task)
+        self.run_ids.append(run_id)
+        self.attempt_ids.append(attempt_id)
         return RuntimeTaskResult(
             task_id=task.task_id,
-            run_id=task.task_id,
+            run_id=run_id,
             state=TaskState.COMPLETED,
             answer="indexed",
             agent_id=task.agent_id,
@@ -83,6 +93,14 @@ class _FakeRunner:
                 }
             },
         )
+
+
+def _identity_kwargs() -> dict[str, str]:
+    return {
+        "task_id": mint_task_id(),
+        "run_id": mint_run_id(),
+        "attempt_id": mint_attempt_id(),
+    }
 
 
 def test_decode_helper_accepts_valid_task_request() -> None:
@@ -121,7 +139,7 @@ def test_runtime_task_builder_maps_job_to_local_workspace_index_task() -> None:
     )
     request = _sample_request(job, run_id=broker_run_id)
 
-    task = build_background_ingest_runtime_task(request, job)
+    task = build_background_ingest_runtime_task(request, job, task_id=mint_task_id())
 
     assert task.task_id.startswith("task_")
     validate_task_id(task.task_id)
@@ -148,7 +166,7 @@ def test_runtime_task_builder_excludes_raw_content_like_fields() -> None:
     job = _sample_job()
     request = _sample_request(job)
 
-    task = build_background_ingest_runtime_task(request, job)
+    task = build_background_ingest_runtime_task(request, job, task_id=mint_task_id())
 
     assert _FORBIDDEN_METADATA_KEYS.isdisjoint(task.metadata.keys())
 
@@ -159,7 +177,7 @@ async def test_handler_output_excludes_execution_identity_block() -> None:
     request = _sample_request(job)
     runner = _FakeRunner()
 
-    queue_result = await handle_background_ingest_task_request(request, runner)
+    queue_result = await handle_background_ingest_task_request(request, runner, **_identity_kwargs())
 
     assert queue_result.status == TaskStatus.SUCCEEDED
     assert queue_result.output is not None
@@ -174,7 +192,7 @@ async def test_handler_delegates_to_runner_and_returns_queue_success_result() ->
     request = _sample_request(job)
     runner = _FakeRunner()
 
-    queue_result = await handle_background_ingest_task_request(request, runner)
+    queue_result = await handle_background_ingest_task_request(request, runner, **_identity_kwargs())
 
     assert queue_result.status == TaskStatus.SUCCEEDED
     assert queue_result.output is not None
@@ -192,7 +210,7 @@ async def test_handler_reaches_runner_without_task_id_validation_error() -> None
     request = _sample_request(job, run_id="lkw.background_ingest.v1:deadbeef")
     runner = _FakeRunner()
 
-    queue_result = await handle_background_ingest_task_request(request, runner)
+    queue_result = await handle_background_ingest_task_request(request, runner, **_identity_kwargs())
 
     assert queue_result.status == TaskStatus.SUCCEEDED
     assert len(runner.tasks) == 1
@@ -207,7 +225,7 @@ async def test_handler_returns_failed_when_request_task_name_is_wrong() -> None:
     request = _sample_request(job, task_name="other.task.v1")
     runner = _FakeRunner()
 
-    queue_result = await handle_background_ingest_task_request(request, runner)
+    queue_result = await handle_background_ingest_task_request(request, runner, **_identity_kwargs())
 
     assert queue_result.status == TaskStatus.FAILED
     assert queue_result.error_message is not None
@@ -221,7 +239,7 @@ async def test_handler_returns_failed_when_payload_is_invalid() -> None:
     request = _sample_request(job, payload=b"not-json")
     runner = _FakeRunner()
 
-    queue_result = await handle_background_ingest_task_request(request, runner)
+    queue_result = await handle_background_ingest_task_request(request, runner, **_identity_kwargs())
 
     assert queue_result.status == TaskStatus.FAILED
     assert queue_result.error_message is not None
@@ -236,7 +254,7 @@ async def test_handler_returns_failed_when_ingest_did_not_index() -> None:
     runner.ingest_used = False
     runner.ingest_reason = "source_not_found"
 
-    queue_result = await handle_background_ingest_task_request(request, runner)
+    queue_result = await handle_background_ingest_task_request(request, runner, **_identity_kwargs())
 
     assert queue_result.status == TaskStatus.FAILED
     assert queue_result.error_message == "source_not_found"
@@ -249,7 +267,7 @@ async def test_handler_returns_failed_when_runner_raises() -> None:
     runner = _FakeRunner()
     runner.raise_error = RuntimeError("runner_failed")
 
-    queue_result = await handle_background_ingest_task_request(request, runner)
+    queue_result = await handle_background_ingest_task_request(request, runner, **_identity_kwargs())
 
     assert queue_result.status == TaskStatus.FAILED
     assert queue_result.error_message is not None

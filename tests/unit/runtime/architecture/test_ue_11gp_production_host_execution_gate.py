@@ -27,7 +27,6 @@ _TEMPORARY_BYPASS_ALLOWLIST = frozenset(
         "applications/lab_application/host/factory.py",
         "applications/lab_application/serving/fastapi_router.py",
         "applications/legal_application/serving/fastapi_router.py",
-        "applications/local_workspace_application/host/background_worker_factory.py",
         "applications/poc_template_application/mcp/server.py",
         "applications/poc_template_application/serving/fastapi_router.py",
         "applications/research_application/mcp/server.py",
@@ -164,12 +163,8 @@ def test_lkw_production_host_is_not_allowlisted() -> None:
         or path.parts[1:3] == ("local_workspace_application", "serving")
     }
     allowlisted_lkw = sorted(path for path in _TEMPORARY_BYPASS_ALLOWLIST if path.startswith("applications/local_workspace_application/"))
-    assert allowlisted_lkw == ["applications/local_workspace_application/host/background_worker_factory.py"]
-    assert not any(
-        path in _TEMPORARY_BYPASS_ALLOWLIST
-        for path in lkw_paths
-        if path != "applications/local_workspace_application/host/background_worker_factory.py"
-    )
+    assert allowlisted_lkw == []
+    assert not any(path in _TEMPORARY_BYPASS_ALLOWLIST for path in lkw_paths)
 
 
 def test_governed_contractor_serving_host_is_not_allowlisted() -> None:
