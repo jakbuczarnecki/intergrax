@@ -54,7 +54,7 @@ Decision Deliberation defines **strategy contracts, participant independence, di
   <source media="(prefers-color-scheme: dark)" srcset="assets/decision-deliberation-council-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/decision-deliberation-council-light.svg">
   <img
-    alt="Council deliberation diagram: Decision Strategy Council with parallel Participant A B C proposals feeding Disagreement artifact with positions alternatives evidence refs to Candidate Decision Versions under Nexus budget."
+    alt="Council deliberation diagram: Decision Strategy Council with parallel Participant A B C proposals feeding Disagreement artifact with positions alternatives evidence refs to Candidate Decision Versions under hosting Execution budget."
     src="assets/decision-deliberation-council-light.svg"
   >
 </picture>
