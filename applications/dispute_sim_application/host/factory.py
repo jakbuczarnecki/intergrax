@@ -38,6 +38,7 @@ from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
 from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from intergrax.runtime.task.nexus_task_execution_adapter import NexusTaskExecutionAdapter
+from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
 from dispute_sim_application.host.settings import DisputeSimBackendSettings
 from dispute_sim_application.host.environment_profile import build_dispute_sim_environment_profile
 from dispute_sim_application.manifest import build_dispute_sim_manifest
@@ -71,6 +72,7 @@ def create_dispute_sim_backend_app(
         key_value_cache=key_value_cache,
     )
     nexus_loop = runtime.nexus_loop
+    host_execution = build_environment_host_task_execution(nexus_loop, env)
     platform = bootstrap_nexus_platform(
         nexus_loop,
         trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
@@ -179,7 +181,7 @@ def create_dispute_sim_backend_app(
         from dispute_sim_application.mcp.server import build_dispute_sim_mcp_server
 
         mcp = build_dispute_sim_mcp_server(
-            nexus_loop=nexus_loop,
+            host_execution=host_execution,
             route_prefix=settings.route_prefix,
             tool_registry=runtime.env_wiring.tool_wiring.registry,
         )

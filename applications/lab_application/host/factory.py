@@ -22,6 +22,7 @@ from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
 )
+from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.host.tool_wiring import wire_lab_tools
 from lab_application.host.wiring import bootstrap_lab_integration_wiring, build_lab_registry
@@ -107,6 +108,7 @@ def create_lab_application(
         notification_adapter=integrations.notification_adapter,
     )
     nexus_loop = runtime.nexus_loop
+    host_execution = build_environment_host_task_execution(nexus_loop, lab_env)
     plugin_bootstrap = bootstrap_nexus_platform(
         nexus_loop,
         trace_store=integrations.trace_store,  # type: ignore[arg-type]
@@ -208,7 +210,7 @@ def create_lab_application(
             harness=settings.harness,
         )
         mcp = build_lab_mcp_server(
-            nexus_loop=nexus_loop,
+            host_execution=host_execution,
             route_prefix=settings.route_prefix,
             tool_registry=tool_wiring.registry,
         )

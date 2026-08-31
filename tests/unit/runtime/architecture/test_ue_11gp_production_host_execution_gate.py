@@ -14,22 +14,20 @@ pytestmark = pytest.mark.unit
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _APPLICATIONS_ROOT = _REPO_ROOT / "applications"
 _HOST_TASK_PATH = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "host_task.py"
+_SHARED_MCP_EXECUTION_PATHS = (
+    _REPO_ROOT / "intergrax" / "applications" / "_shared" / "mcp_nexus_server.py",
+)
 
 # TEMPORARY UE-11G-P migration debt — migrate in UE-11G-P2/P3.
 _TEMPORARY_BYPASS_ALLOWLIST = frozenset(
     {
         "applications/attestation_demo/serving/fastapi_router.py",
-        "applications/dispute_sim_application/mcp/server.py",
         "applications/dispute_sim_application/serving/fastapi_router.py",
-        "applications/governed_contractor_application/mcp/server.py",
-        "applications/intergrax_assistant_application/mcp/server.py",
         "applications/intergrax_assistant_application/serving/fastapi_router.py",
         "applications/lab_application/host/factory.py",
         "applications/lab_application/serving/fastapi_router.py",
         "applications/legal_application/serving/fastapi_router.py",
-        "applications/poc_template_application/mcp/server.py",
         "applications/poc_template_application/serving/fastapi_router.py",
-        "applications/research_application/mcp/server.py",
         "applications/research_application/serving/fastapi_router.py",
     }
 )
@@ -149,6 +147,8 @@ def test_production_applications_have_no_root_nexus_or_unified_task_runner_bypas
     violations: list[str] = []
     for path in _iter_application_python_files():
         violations.extend(_collect_root_bypass_violations(path))
+    for path in _SHARED_MCP_EXECUTION_PATHS:
+        violations.extend(_collect_root_bypass_violations(path))
     assert violations == [], (
         "production application hosts must not root-execute via NexusLoop or UnifiedTaskRunner: "
         + ", ".join(violations)
@@ -180,6 +180,21 @@ def test_governed_contractor_serving_host_is_not_allowlisted() -> None:
     )
     assert allowlisted_governed == []
     assert not any(path in _TEMPORARY_BYPASS_ALLOWLIST for path in governed_paths)
+
+
+def test_governed_contractor_mcp_host_is_not_allowlisted() -> None:
+    governed_mcp_paths = {
+        path.relative_to(_REPO_ROOT).as_posix()
+        for path in _iter_application_python_files()
+        if path.parts[1:4] == ("governed_contractor_application", "mcp", "server.py")
+    }
+    allowlisted_governed_mcp = sorted(
+        path
+        for path in _TEMPORARY_BYPASS_ALLOWLIST
+        if path.startswith("applications/governed_contractor_application/mcp/")
+    )
+    assert allowlisted_governed_mcp == []
+    assert not any(path in _TEMPORARY_BYPASS_ALLOWLIST for path in governed_mcp_paths)
 
 
 def test_host_task_does_not_bypass_execution_facade() -> None:

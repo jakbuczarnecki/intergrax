@@ -382,7 +382,7 @@ def create_local_workspace_backend_app(
         )
 
         mcp = build_local_workspace_mcp_server(
-            nexus_loop=nexus_loop,
+            host_execution=lkw_host_execution,
             route_prefix=resolved_settings.route_prefix,
             tool_registry=runtime.env_wiring.tool_wiring.registry,
         )

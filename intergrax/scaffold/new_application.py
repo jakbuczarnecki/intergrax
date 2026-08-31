@@ -472,6 +472,7 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
             build_factory_lifespans,
         )
         from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
+        from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
         from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
         from {pkg}.serving.fastapi_router import mount_{short}_routes
 
@@ -497,6 +498,7 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
                 use_in_memory_trace=db_path is None,
             )
             nexus_loop = runtime.nexus_loop
+            host_execution = build_environment_host_task_execution(nexus_loop, env)
             resolved_registry = registry or runtime.registry
             platform = bootstrap_nexus_platform(
                 nexus_loop,
@@ -564,7 +566,7 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
 
                 tool_registry = runtime.env_wiring.tool_wiring.registry
                 mcp = build_{short}_mcp_server(
-                    nexus_loop=nexus_loop,
+                    host_execution=host_execution,
                     route_prefix=settings.route_prefix,
                     tool_registry=tool_registry,
                 )
@@ -803,22 +805,22 @@ def _mcp_server_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpe
         from fastmcp import FastMCP
 
         from intergrax.applications._shared.mcp_nexus_server import build_nexus_mcp_server
-        from intergrax.runtime.nexus.nexus_loop import NexusLoop
+        from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 
 
         def build_{short}_mcp_server(
             *,
-            nexus_loop: NexusLoop,
+            host_execution: HostTaskExecutionPort,
             route_prefix: str,
             tool_registry: object | None = None,
         ) -> FastMCP:
-            """MCP tools mirror the lab HTTP API (same NexusLoop / UnifiedTaskRunner)."""
+            """MCP tools mirror the lab HTTP API (canonical host task execution)."""
             _ = route_prefix
             from intergrax.tools.registry.runtime import ToolRegistry
 
             kwargs: dict[str, object] = {{
                 "name": "{display} MCP",
-                "nexus_loop": nexus_loop,
+                "host_execution": host_execution,
                 "default_capability": "{cap}",
             }}
             if isinstance(tool_registry, ToolRegistry):

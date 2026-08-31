@@ -170,7 +170,7 @@ def create_governed_contractor_backend_app(
         from governed_contractor_application.mcp.server import build_governed_contractor_mcp_server
 
         mcp = build_governed_contractor_mcp_server(
-            nexus_loop=nexus_loop,
+            host_execution=host_execution,
             route_prefix=settings.route_prefix,
             tool_registry=runtime.env_wiring.tool_wiring.registry,
         )

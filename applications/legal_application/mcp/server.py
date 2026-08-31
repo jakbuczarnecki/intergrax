@@ -7,23 +7,23 @@ from __future__ import annotations
 from fastmcp import FastMCP
 
 from intergrax.applications._shared.mcp_nexus_server import build_nexus_mcp_server
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 
 
 def build_legal_mcp_server(
     *,
-    nexus_loop: NexusLoop,
+    host_execution: HostTaskExecutionPort,
     route_prefix: str,
     default_capability: str = "legal.review",
     tool_registry=None,
 ) -> FastMCP:
-    """MCP tools for the Legal product host (same Nexus loop as HTTP)."""
+    """MCP tools for the Legal product host (canonical host task execution)."""
     _ = route_prefix
     from intergrax.tools.registry.runtime import ToolRegistry
 
-    kwargs: dict = {
+    kwargs: dict[str, object] = {
         "name": "Intergrax Legal MCP",
-        "nexus_loop": nexus_loop,
+        "host_execution": host_execution,
         "default_capability": default_capability,
         "default_tenant_id": "legal",
         "default_user_id": "legal-user",

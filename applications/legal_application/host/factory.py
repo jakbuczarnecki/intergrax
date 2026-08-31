@@ -42,6 +42,7 @@ from intergrax.applications._shared.task_control_wiring import (
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
+from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
 from legal_application.host.settings import LegalBackendSettings
 from legal_application.host.wiring import build_legal_environment_profile, build_legal_manifest
 
@@ -83,6 +84,7 @@ def create_legal_backend_app(
         key_value_cache=key_value_cache,
     )
     nexus_loop = runtime.nexus_loop
+    host_execution = build_environment_host_task_execution(nexus_loop, env)
     registry = runtime.registry
     observability = runtime.observability
     platform = bootstrap_nexus_platform(
@@ -200,7 +202,7 @@ def create_legal_backend_app(
         from legal_application.mcp.server import build_legal_mcp_server
 
         mcp = build_legal_mcp_server(
-            nexus_loop=nexus_loop,
+            host_execution=host_execution,
             route_prefix=settings.route_prefix,
             tool_registry=runtime.env_wiring.tool_wiring.registry,
         )
