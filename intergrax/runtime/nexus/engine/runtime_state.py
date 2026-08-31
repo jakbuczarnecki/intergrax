@@ -168,17 +168,25 @@ class RuntimeState(RuntimeStateContract):
 
     def _get_observability_emitter(self) -> ObservabilityEmitter:
         if self._observability_emitter is None:
-            from intergrax.contracts.execution_identity import mint_attempt_id, peek_active_execution_identity
+            from intergrax.contracts.execution_identity import (
+                mint_attempt_id,
+                peek_active_execution_identity,
+                require_active_execution_id,
+            )
             from intergrax.runtime.observability.emitter import ObservabilityEmitter
 
             active = peek_active_execution_identity()
             attempt_id = active[1] if active is not None else mint_attempt_id()
+            execution_id = ""
+            if active is not None:
+                execution_id = str(require_active_execution_id())
             self._observability_emitter = ObservabilityEmitter(
                 run_id=self.run_id,
                 task_id=self.task_id,
                 tenant_id=self.tenant_id,
                 agent_id=self.request.agent_id or "",
                 attempt_id=str(attempt_id),
+                execution_id=execution_id,
                 trace_writer=self.context.trace_writer,
                 event_bus=self.context.config.runtime_event_bus,
                 trace_events=self.trace_events,

@@ -50,11 +50,9 @@ def read_sqlite_runtime_identity_evidence(
     if not parsed_events:
         raise SqliteEvidenceReadError("runtime_events_empty")
     root_event = parsed_events[0]
-    root_execution_id = root_event.get("execution_id")
     root_attempt_id = root_event.get("attempt_id")
     if not isinstance(root_attempt_id, str) or not root_attempt_id:
         raise SqliteEvidenceReadError("runtime_attempt_id_missing")
-    root_execution = root_execution_id if isinstance(root_execution_id, str) else None
     execution_ids: list[str] = []
     attempt_ids: list[str] = []
     task_ids: list[str] = []
@@ -67,7 +65,7 @@ def read_sqlite_runtime_identity_evidence(
         task_id = payload.get("task_id")
         agent_id = payload.get("agent_id")
         event_type = payload.get("event_type")
-        if isinstance(execution_id, str) and execution_id not in execution_ids:
+        if isinstance(execution_id, str) and execution_id and execution_id not in execution_ids:
             execution_ids.append(execution_id)
         if isinstance(attempt_id, str) and attempt_id not in attempt_ids:
             attempt_ids.append(attempt_id)
@@ -82,8 +80,16 @@ def read_sqlite_runtime_identity_evidence(
             tool_id = event_payload.get("tool_id")
             if isinstance(tool_id, str) and tool_id not in tool_ids:
                 tool_ids.append(tool_id)
-    if root_execution is not None and root_execution not in execution_ids:
-        raise SqliteEvidenceReadError("runtime_root_execution_missing")
+    root_execution = execution_ids[0] if len(execution_ids) == 1 else None
+    if len(execution_ids) > 1:
+        raise SqliteEvidenceReadError("runtime_execution_id_not_unique")
+    if root_execution is None:
+        root_execution_id = root_event.get("execution_id")
+        root_execution = (
+            root_execution_id
+            if isinstance(root_execution_id, str) and root_execution_id
+            else None
+        )
     return OtlpIdentityEvidence(
         run_id=run_id,
         task_id=task_ids[0] if task_ids else None,

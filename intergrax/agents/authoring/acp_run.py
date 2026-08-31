@@ -63,6 +63,8 @@ from intergrax.contracts.execution_identity import (
     mint_attempt_id,
     mint_run_id,
     mint_task_id,
+    peek_active_execution_id,
+    peek_active_parent_execution_id,
     reset_active_execution_identity,
     validate_run_id,
     validate_task_id,
@@ -213,7 +215,12 @@ async def run_acp_session(
             duration_ms=int((time.perf_counter() - started) * 1000),
         )
 
-    identity_token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    identity_token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=peek_active_execution_id(),
+        parent_execution_id=peek_active_parent_execution_id(),
+    )
     try:
         return await _run_acp_session_bound(
             agent=agent,

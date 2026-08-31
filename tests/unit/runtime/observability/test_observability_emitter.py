@@ -124,6 +124,49 @@ def test_trace_scope_step_builds_causal_parent_chain() -> None:
     assert completed.parent_event_id == started.event_id
 
 
+def test_emitter_preserves_captured_execution_id_after_context_reset() -> None:
+    store = InMemoryRuntimeEventStore()
+    bus = RuntimeEventBus(persistence=store)
+    identity = runtime_event_test_identity()
+    task_id = str(identity["task_id"])
+    run_id = str(identity["run_id"])
+    execution_id = str(identity["execution_id"])
+    token = bind_active_execution_identity(
+        run_id=identity["run_id"],
+        attempt_id=identity["attempt_id"],
+        execution_id=identity["execution_id"],
+    )
+    try:
+        emitter = ObservabilityEmitter(
+            run_id=run_id,
+            task_id=task_id,
+            tenant_id="tenant-1",
+            agent_id="agent-1",
+            attempt_id=str(identity["attempt_id"]),
+            execution_id=execution_id,
+            event_bus=bus,
+        )
+    finally:
+        reset_active_execution_identity(token)
+
+    token = bind_active_execution_identity(
+        run_id=identity["run_id"],
+        attempt_id=identity["attempt_id"],
+    )
+    try:
+        emitter.emit_diagnostic(
+            component=TraceComponent.ENGINE,
+            step="execution_identity_probe",
+            message="probe",
+        )
+    finally:
+        reset_active_execution_identity(token)
+
+    events = store.list_for_task(task_id, tenant_id="tenant-1")
+    assert len(events) == 1
+    assert str(events[0].execution_id) == execution_id
+
+
 def test_nested_trace_scope_inherits_correlation_id() -> None:
     store = InMemoryRuntimeEventStore()
     bus = RuntimeEventBus(persistence=store)

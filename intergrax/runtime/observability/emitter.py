@@ -9,8 +9,10 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, List, Optional, Protocol
 
 from intergrax.contracts.execution_identity import (
+    ExecutionId,
     peek_active_execution_identity,
     validate_attempt_id,
+    validate_execution_id,
     validate_run_id,
 )
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -66,6 +68,7 @@ class ObservabilityEmitter:
     tenant_id: str
     agent_id: str = ""
     attempt_id: str = ""
+    execution_id: str = ""
     trace_writer: Optional[RunTraceWriter] = None
     event_bus: Optional[RuntimeEventBus] = None
     trace_events: Optional[List[TraceEvent]] = None
@@ -199,6 +202,9 @@ class ObservabilityEmitter:
             agent_id=self.agent_id,
         )
         correlation_id = scope.correlation_id if scope is not None else self.task_id
+        bridge_execution_id: ExecutionId | None = None
+        if self.execution_id:
+            bridge_execution_id = validate_execution_id(self.execution_id)
         active = peek_active_execution_identity()
         if active is not None:
             bridge_run_id, bridge_attempt_id = active
@@ -217,6 +223,7 @@ class ObservabilityEmitter:
             subject,
             run_id=bridge_run_id,
             attempt_id=bridge_attempt_id,
+            execution_id=bridge_execution_id,
             correlation_id=correlation_id,
         )
         runtime = self._apply_scope(runtime, scope)
