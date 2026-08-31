@@ -25,6 +25,7 @@ from intergrax.contracts.decision_record import (
     candidate_decision_ref,
     decision_lineage_ref,
     decision_proposal_ref,
+    decision_proposal_ref_sort_key,
     decision_version_lineage,
     initial_decision_branch_id,
     validate_decision_artifact_kind,
@@ -663,6 +664,86 @@ def test_decision_proposal_ref_direct_constructor_safe() -> None:
         lineage_ref=decision_lineage_ref(DecisionVersion(1), DecisionBranchId("analysis-a")),
     )
     assert ref.identity.decision_id == identity.decision_id
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_decision_proposal_ref_sort_key_optional_execution_id_comparable() -> None:
+    execution_with_id = _execution_lineage()
+    execution_without_id = DecisionExecutionLineage(
+        task_id=execution_with_id.task_id,
+        run_id=execution_with_id.run_id,
+        attempt_id=execution_with_id.attempt_id,
+        execution_id=None,
+    )
+    identity = _identity(version=DecisionVersion(2))
+    ref_with_execution = _proposal_ref(
+        identity=replace(identity, execution=execution_with_id),
+        branch_id="analysis-a",
+        version=DecisionVersion(2),
+    )
+    ref_without_execution = _proposal_ref(
+        identity=replace(identity, execution=execution_without_id),
+        branch_id="analysis-a",
+        version=DecisionVersion(2),
+    )
+    sorted_refs = sorted(
+        (ref_with_execution, ref_without_execution),
+        key=decision_proposal_ref_sort_key,
+    )
+    assert len(sorted_refs) == 2
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_decision_proposal_ref_sort_key_reverse_input_deterministic() -> None:
+    execution_with_id = _execution_lineage()
+    execution_without_id = DecisionExecutionLineage(
+        task_id=execution_with_id.task_id,
+        run_id=execution_with_id.run_id,
+        attempt_id=execution_with_id.attempt_id,
+        execution_id=None,
+    )
+    identity = _identity(version=DecisionVersion(2))
+    ref_with_execution = _proposal_ref(
+        identity=replace(identity, execution=execution_with_id),
+        branch_id="analysis-a",
+        version=DecisionVersion(2),
+    )
+    ref_without_execution = _proposal_ref(
+        identity=replace(identity, execution=execution_without_id),
+        branch_id="analysis-a",
+        version=DecisionVersion(2),
+    )
+    order_ab = sorted(
+        (ref_with_execution, ref_without_execution),
+        key=decision_proposal_ref_sort_key,
+    )
+    order_ba = sorted(
+        (ref_without_execution, ref_with_execution),
+        key=decision_proposal_ref_sort_key,
+    )
+    assert order_ab == order_ba
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_decision_proposal_ref_sort_key_same_decision_siblings() -> None:
+    identity = _identity(version=DecisionVersion(2))
+    ref_a = _proposal_ref(identity=identity, branch_id="analysis-a", version=DecisionVersion(2))
+    ref_b = _proposal_ref(identity=identity, branch_id="analysis-b", version=DecisionVersion(2))
+    sorted_refs = sorted((ref_b, ref_a), key=decision_proposal_ref_sort_key)
+    assert sorted_refs[0].lineage_ref.branch_id == "analysis-a"
+    assert sorted_refs[1].lineage_ref.branch_id == "analysis-b"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_decision_proposal_ref_sort_key_exact_duplicate_same_key() -> None:
+    identity = _identity(version=DecisionVersion(2))
+    ref = _proposal_ref(identity=identity, branch_id="analysis-a", version=DecisionVersion(2))
+    duplicate = _proposal_ref(identity=identity, branch_id="analysis-a", version=DecisionVersion(2))
+    assert decision_proposal_ref_sort_key(ref) == decision_proposal_ref_sort_key(duplicate)
 
 
 @pytest.mark.unit

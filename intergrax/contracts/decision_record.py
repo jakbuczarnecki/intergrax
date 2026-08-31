@@ -195,9 +195,15 @@ def _validate_proposal_ref_identity_lineage_alignment(
         )
 
 
-def decision_proposal_ref_sort_key(ref: DecisionProposalRef) -> tuple[str | int | None, ...]:
+def decision_proposal_ref_sort_key(
+    ref: DecisionProposalRef,
+) -> tuple[str, str, str, str, str, str, str, int, str, int, str]:
     """Deterministic ordering key using typed Decision identity and lineage fields."""
     execution = ref.identity.execution
+    execution_id_present = 0 if execution.execution_id is None else 1
+    execution_id_value = (
+        "" if execution.execution_id is None else str(execution.execution_id)
+    )
     return (
         str(ref.identity.decision_id),
         ref.identity.tenant_id,
@@ -206,7 +212,8 @@ def decision_proposal_ref_sort_key(ref: DecisionProposalRef) -> tuple[str | int 
         str(ref.identity.execution.task_id),
         str(ref.identity.execution.run_id),
         str(ref.identity.execution.attempt_id),
-        str(execution.execution_id) if execution.execution_id is not None else None,
+        execution_id_present,
+        execution_id_value,
         ref.lineage_ref.version.value,
         str(ref.lineage_ref.branch_id),
     )
