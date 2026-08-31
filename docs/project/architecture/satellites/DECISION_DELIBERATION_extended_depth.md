@@ -78,7 +78,7 @@ Meaningful separation between participant models/providers — or explicit **non
 
 ## 9. Context visibility
 
-Per-role visibility policy controls tool, evidence, and context exposure — **no hidden shared chain-of-thought store**. Visibility choices are auditable configuration, not implicit platform defaults.
+Per-role visibility policy controls tool-derived context, evidence surfaces, and other configured context channels - **no hidden shared chain-of-thought store**. **Tool exposure** means visibility of tool-derived context/results to a role, **not** authorization to invoke tools or execute side effects. Visibility choices are auditable configuration, not implicit platform defaults. Invariant: **decision quality != authorization != execution**.
 
 ---
 
