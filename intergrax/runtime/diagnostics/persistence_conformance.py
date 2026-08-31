@@ -7,8 +7,6 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-import pytest
-
 from intergrax.contracts.execution_identity import RunId, TaskId, mint_run_id, mint_task_id
 from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
     STRATEGY_ID,
@@ -654,6 +652,23 @@ def pytest_raises_integrity() -> _IntegrityContext:
     return _IntegrityContext()
 
 
+class _CursorQueryContext:
+    def __init__(self, expected: type[BaseException]) -> None:
+        self._expected = expected
+
+    def __enter__(self) -> None:
+        return None
+
+    def __exit__(self, exc_type, exc, tb) -> bool:
+        if exc_type is not self._expected:
+            raise AssertionError(f"expected {self._expected.__name__}") from exc
+        return True
+
+
+def raises_expected(expected: type[BaseException]) -> _CursorQueryContext:
+    return _CursorQueryContext(expected)
+
+
 def assert_problem_occurrence_persistence_conformance(
     store: ProblemOccurrencePersistence,
     *,
@@ -768,7 +783,7 @@ def assert_problem_occurrence_persistence_conformance(
         problem_id=problem_a,
         store_cursor="forged",
     )
-    with pytest.raises(ProblemOccurrenceQueryCursorError):
+    with raises_expected(ProblemOccurrenceQueryCursorError):
         store.query_occurrences(
             tenant_id=tenant_a,
             problem_id=problem_b,
