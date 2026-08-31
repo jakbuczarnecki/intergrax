@@ -7,22 +7,20 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Literal
 from uuid import uuid4
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import RuntimeStateContract
-from intergrax.runtime.nexus.tracing.trace_models import (
-    TraceComponent,
-    TraceLevel,
-)
 from intergrax.contracts.idempotency_store import (
     ActiveInvocationClaimError,
     ClaimOutcome,
+    ClaimResult,
     IdempotencyStore,
+    InvocationClaim,
     InvocationUncertaintyError,
 )
+from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import RuntimeStateContract
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.runtime.tools.operation_identity import compute_invocation_operation_identity
 from intergrax.tools.core.contracts import ToolContract
-from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.execution_models import (
     ToolEffectCertainty,
     ToolExecutionRequest,
@@ -30,9 +28,10 @@ from intergrax.tools.execution_models import (
 )
 
 if TYPE_CHECKING:
-    from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+    from pydantic import BaseModel as PydanticBaseModel
 
 _DEFAULT_LEASE_SECONDS = 300
+
 
 def classify_idempotency_outcome(
     contract: ToolContract,
@@ -48,58 +47,54 @@ def classify_idempotency_outcome(
     return "uncertain"
 
 
-class IdempotentToolInvoker:
-    """
-    Ledger-based idempotent tool invoker.
+class PreEffectClaimContext(BaseModel):
+    """Request-scoped idempotency claim handle for one invocation."""
 
-    Provides duplicate suppression and execution-uncertainty tracking for tools
-    with side effects. Does not claim exactly-once across external boundaries.
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    tenant_id: str
+    key: str
+    claim: InvocationClaim
+
+
+class PreEffectCoordinationResult(BaseModel):
+    """Typed pre-effect idempotency decision before external tool execution."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    outcome: ClaimOutcome
+    claim_context: PreEffectClaimContext | None = None
+    replay_result: ToolExecutionResult[BaseModel] | None = None
+
+
+class IdempotencyPreEffectCoordinator:
+    """
+    Idempotency coordination immediately before external tool effects.
+
+    Owns claim acquisition, replay disposition, and post-effect ledger finalization.
+    Does not execute tools, evaluate governance, or persist claims on shared state.
     """
 
     def __init__(
         self,
         *,
-        base_invoker: RuntimeToolInvoker,
         idempotency_store: IdempotencyStore,
         lease_seconds: int = _DEFAULT_LEASE_SECONDS,
     ) -> None:
-        self._base_invoker = base_invoker
         self._store = idempotency_store
         self._lease_seconds = lease_seconds
 
-    @property
-    def registry(self) -> ToolRegistry:
-        return self._base_invoker.registry
-
-    def invoke(
+    def before_external_effect(
         self,
         *,
         state: RuntimeStateContract,
-        agent_id: str,
-        request: ToolExecutionRequest[BaseModel],
-    ) -> ToolExecutionResult[BaseModel]:
-
-        registry = self._base_invoker.registry
-        reg = registry.get(request.tool_id)
-        contract = reg.contract
-
-        if not contract.side_effects or not request.idempotency_key:
-            return self._base_invoker.invoke(
-                state=state,
-                agent_id=agent_id,
-                request=request,
-            )
-
-        admission_outcome = self._base_invoker.admit(
-            state=state,
-            agent_id=agent_id,
-            request=request,
-        )
-        if isinstance(admission_outcome, ToolExecutionResult):
-            return admission_outcome
-
+        contract: ToolContract,
+        request: ToolExecutionRequest[PydanticBaseModel],
+    ) -> PreEffectCoordinationResult:
         tenant_id = state.tenant_id
         key = request.idempotency_key
+        if key is None:
+            raise RuntimeError("Idempotency key is required for side-effect coordination.")
         owner_id = f"invoker-{uuid4().hex}"
         operation_identity = compute_invocation_operation_identity(
             request.tool_id,
@@ -113,7 +108,47 @@ class IdempotentToolInvoker:
             self._lease_seconds,
             operation_identity=operation_identity,
         )
+        return self._to_coordination_result(
+            state=state,
+            contract=contract,
+            request=request,
+            claim_result=claim_result,
+            tenant_id=tenant_id,
+            key=key,
+        )
 
+    def after_external_effect(
+        self,
+        *,
+        claim_context: PreEffectClaimContext,
+        contract: ToolContract,
+        result: ToolExecutionResult[BaseModel],
+    ) -> None:
+        outcome_kind = classify_idempotency_outcome(contract, result)
+        if outcome_kind == "safe_terminal":
+            self._store.complete_with_claim(
+                claim_context.tenant_id,
+                claim_context.key,
+                claim_context.claim,
+                result,
+            )
+        else:
+            self._store.mark_uncertain_with_claim(
+                claim_context.tenant_id,
+                claim_context.key,
+                claim_context.claim,
+            )
+
+    def _to_coordination_result(
+        self,
+        *,
+        state: RuntimeStateContract,
+        contract: ToolContract,
+        request: ToolExecutionRequest[PydanticBaseModel],
+        claim_result: ClaimResult,
+        tenant_id: str,
+        key: str,
+    ) -> PreEffectCoordinationResult:
         if claim_result.outcome == ClaimOutcome.REPLAY_COMPLETED:
             cached = claim_result.completed_result
             if cached is None:
@@ -128,10 +163,13 @@ class IdempotentToolInvoker:
                 level=TraceLevel.INFO,
                 message=(
                     f"Tool call deduplicated via idempotency "
-                    f"(tool_id={request.tool_id}, key={key})."
+                    f"(tool_id={contract.tool_id}, key={key})."
                 ),
             )
-            return cached
+            return PreEffectCoordinationResult(
+                outcome=ClaimOutcome.REPLAY_COMPLETED,
+                replay_result=cached,
+            )
 
         if claim_result.outcome == ClaimOutcome.BLOCKED_ACTIVE:
             raise ActiveInvocationClaimError(
@@ -149,23 +187,11 @@ class IdempotentToolInvoker:
         if claim is None:
             raise RuntimeError("Ledger inconsistency: ACQUIRED without claim.")
 
-        result = self._base_invoker._execute_after_admission(
-            state=state,
-            agent_id=agent_id,
-            request=request,
-            admission=admission_outcome,
+        return PreEffectCoordinationResult(
+            outcome=ClaimOutcome.ACQUIRED,
+            claim_context=PreEffectClaimContext(
+                tenant_id=tenant_id,
+                key=key,
+                claim=claim,
+            ),
         )
-
-        outcome_kind = classify_idempotency_outcome(contract, result)
-        if outcome_kind == "safe_terminal":
-            self._store.complete_with_claim(tenant_id, key, claim, result)
-        else:
-            self._store.mark_uncertain_with_claim(tenant_id, key, claim)
-
-        return result
-
-    @staticmethod
-    def docstring_denies_exactly_once() -> bool:
-        """Inspection helper: invoker must not claim universal exactly-once."""
-        doc = IdempotentToolInvoker.__doc__ or ""
-        return "enforces exactly-once" not in doc.lower()

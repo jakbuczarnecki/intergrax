@@ -20,7 +20,9 @@ from intergrax.contracts.idempotency_store import (
 from intergrax.contracts.lease_claim import StaleClaimError
 from intergrax.contracts.persistence_topology import PersistenceTopology
 from intergrax.distributed.providers.redis_idempotency_store import RedisIdempotencyStore
-from intergrax.runtime.tools.idempotent_invoker import IdempotentToolInvoker
+from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
+    IdempotencyPreEffectCoordinator,
+)
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from intergrax.runtime.tools.sqlite_idempotency_store import SQLiteIdempotencyStore
 from intergrax.tools.core.contracts import ToolContract
@@ -69,7 +71,7 @@ class DummyState:
         del args, kwargs
 
 
-def _build_invoker(store: InMemoryIdempotencyStore, executor: CountingExecutor) -> IdempotentToolInvoker:
+def _build_invoker(store: InMemoryIdempotencyStore, executor: CountingExecutor) -> RuntimeToolInvoker:
     registry = ToolRegistry()
     registry.register(
         contract=ToolContract(
@@ -83,8 +85,15 @@ def _build_invoker(store: InMemoryIdempotencyStore, executor: CountingExecutor) 
         ),
         handler=DummyHandler(),
     )
-    base = RuntimeToolInvoker(registry=registry, executor=executor)
-    return IdempotentToolInvoker(base_invoker=base, idempotency_store=store, lease_seconds=2)
+    coordinator = IdempotencyPreEffectCoordinator(
+        idempotency_store=store,
+        lease_seconds=2,
+    )
+    return RuntimeToolInvoker(
+        registry=registry,
+        executor=executor,
+        pre_effect_coordinator=coordinator,
+    )
 
 
 def _request() -> ToolExecutionRequest[DummyInput]:
@@ -193,7 +202,8 @@ def test_a6_current_owner_completes() -> None:
 
 
 def test_a7_false_exactly_once_claim_removed() -> None:
-    assert IdempotentToolInvoker.docstring_denies_exactly_once()
+    doc = RuntimeToolInvoker.__doc__ or ""
+    assert "enforces exactly-once" not in doc.lower()
 
 
 def test_a8_topology_regression() -> None:

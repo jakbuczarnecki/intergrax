@@ -21,7 +21,7 @@ class RuntimeStateContract(ABC):
     Minimal contract required by runtime tool layer.
 
     This contract intentionally exposes only the surface
-    needed by IdempotentToolInvoker and related components.
+    needed by idempotency pre-effect coordination and related components.
     """
 
     # --- Tenant ---

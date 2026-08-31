@@ -6,14 +6,16 @@ from __future__ import annotations
 
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
-from typing import Optional, Protocol, Type, runtime_checkable
+from typing import TYPE_CHECKING, Optional, Protocol, Type, runtime_checkable
 
 from pydantic import BaseModel
 
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+    from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
+        IdempotencyPreEffectCoordinator,
+        PreEffectClaimContext,
+    )
 
 from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
     DeclarativePolicyHitlRequiredError,
@@ -30,7 +32,7 @@ from intergrax.runtime.policy.policy_trace_diagnostics import DeclarativePolicyE
 from intergrax.runtime.policy.declarative_enforcer import resolve_declarative_policy_enforcer
 from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
 from intergrax.runtime.policy.rules.schema import PolicyRuleAction
-from intergrax.runtime.tools.operation_identity import compute_invocation_operation_identity
+from intergrax.contracts.idempotency_store import ClaimOutcome
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.contracts import SideEffectRetrySafety, ToolContract
 from intergrax.tools.execution_models import (
@@ -56,52 +58,6 @@ class TraceEmitter(Protocol):
     ) -> None: ...
 
 
-class ToolInvocationAdmission:
-    """Typed proof that pre-effect admission passed for one tool invocation.
-
-    Instances are minted only by :meth:`RuntimeToolInvoker.admit` and cannot be
-    constructed through the public constructor.
-    """
-
-    __slots__ = (
-        "agent_id",
-        "tool_id",
-        "operation_identity",
-        "tenant_id",
-        "run_id",
-        "task_id",
-        "_issuing_mint",
-    )
-
-    def __init__(self, *_args: object, **_kwargs: object) -> None:
-        raise TypeError(
-            "ToolInvocationAdmission cannot be constructed directly; "
-            "obtain via RuntimeToolInvoker.admit()."
-        )
-
-    @classmethod
-    def _mint(
-        cls,
-        *,
-        agent_id: str,
-        tool_id: str,
-        operation_identity: str,
-        tenant_id: str,
-        run_id: str,
-        task_id: str | None,
-        mint: object,
-    ) -> ToolInvocationAdmission:
-        admission = object.__new__(cls)
-        admission.agent_id = agent_id
-        admission.tool_id = tool_id
-        admission.operation_identity = operation_identity
-        admission.tenant_id = tenant_id
-        admission.run_id = run_id
-        admission.task_id = task_id
-        admission._issuing_mint = mint
-        return admission
-
-
 class RuntimeToolInvoker:
     """
     Nexus-owned enforcement wrapper for tool invocation.
@@ -112,6 +68,7 @@ class RuntimeToolInvoker:
     - output schema validation
     - error mapping -> RuntimeErrorCode
     - trace start/end/error
+    - optional idempotency coordination before external effects
     """
 
     def __init__(
@@ -120,11 +77,12 @@ class RuntimeToolInvoker:
         registry: ToolRegistry,
         executor: ToolExecutor,
         scope_policy: Optional[ToolScopePolicy] = None,
+        pre_effect_coordinator: Optional[IdempotencyPreEffectCoordinator] = None,
     ) -> None:
         self._registry = registry
         self._executor = executor
         self._scope_policy = scope_policy
-        self._admission_mint = object()
+        self._pre_effect_coordinator = pre_effect_coordinator
 
     @property
     def registry(self) -> ToolRegistry:
@@ -138,27 +96,66 @@ class RuntimeToolInvoker:
         agent_id: str,
         request: ToolExecutionRequest[BaseModel],
     ) -> ToolExecutionResult[BaseModel]:
-        admission_outcome = self.admit(
+        preparation = self._prepare_invocation(
             state=state,
             agent_id=agent_id,
             request=request,
         )
-        if isinstance(admission_outcome, ToolExecutionResult):
-            return admission_outcome
-        return self._execute_after_admission(
+        if isinstance(preparation, ToolExecutionResult):
+            return preparation
+
+        contract = preparation
+        claim_context: PreEffectClaimContext | None = None
+
+        if self._requires_idempotency_coordination(contract, request):
+            coordinator = self._pre_effect_coordinator
+            if coordinator is None:
+                raise RuntimeError(
+                    "Side-effect tool with idempotency key requires a pre-effect coordinator.",
+                )
+            coordination = coordinator.before_external_effect(
+                state=state,
+                contract=contract,
+                request=request,
+            )
+            if coordination.outcome == ClaimOutcome.REPLAY_COMPLETED:
+                replay = coordination.replay_result
+                if replay is None:
+                    raise RuntimeError(
+                        "Ledger inconsistency: REPLAY_COMPLETED without stored result.",
+                    )
+                return replay
+            claim_context = coordination.claim_context
+            if claim_context is None:
+                raise RuntimeError("Ledger inconsistency: ACQUIRED without claim context.")
+
+        result = self._execute_external_effect(
             state=state,
             agent_id=agent_id,
+            contract=contract,
             request=request,
-            admission=admission_outcome,
         )
 
-    def admit(
+        if claim_context is not None:
+            coordinator = self._pre_effect_coordinator
+            if coordinator is None:
+                raise RuntimeError(
+                    "Pre-effect claim context present without coordinator.",
+                )
+            coordinator.after_external_effect(
+                claim_context=claim_context,
+                contract=contract,
+                result=result,
+            )
+        return result
+
+    def _prepare_invocation(
         self,
         *,
         state: "RuntimeState",
         agent_id: str,
         request: ToolExecutionRequest[BaseModel],
-    ) -> ToolInvocationAdmission | ToolExecutionResult[BaseModel]:
+    ) -> ToolContract | ToolExecutionResult[BaseModel]:
         # 0) scope authorization check (capability boundary)
         if self._scope_policy is not None:
 
@@ -193,11 +190,9 @@ class RuntimeToolInvoker:
                     tool_id=request.tool_id,
                 )
 
-        admission_task_id: str | None = None
         declarative_enforcer = resolve_declarative_policy_enforcer(state)
         if declarative_enforcer is not None:
             task_id = state.task_id
-            admission_task_id = task_id
             policy_context = PolicyEvaluationContext(
                 tool_id=request.tool_id,
                 tenant_id=state.tenant_id,
@@ -301,37 +296,23 @@ class RuntimeToolInvoker:
             )
             return result
 
-        return ToolInvocationAdmission._mint(
-            agent_id=agent_id,
-            tool_id=request.tool_id,
-            operation_identity=compute_invocation_operation_identity(
-                request.tool_id,
-                request.input,
-            ),
-            tenant_id=state.tenant_id,
-            run_id=request.run_id,
-            task_id=admission_task_id,
-            mint=self._admission_mint,
-        )
+        return contract
 
-    def _execute_after_admission(
+    @staticmethod
+    def _requires_idempotency_coordination(
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+    ) -> bool:
+        return contract.side_effects and request.idempotency_key is not None
+
+    def _execute_external_effect(
         self,
         *,
         state: "RuntimeState",
         agent_id: str,
+        contract: ToolContract,
         request: ToolExecutionRequest[BaseModel],
-        admission: ToolInvocationAdmission,
     ) -> ToolExecutionResult[BaseModel]:
-        self._validate_admission(
-            state=state,
-            agent_id=agent_id,
-            request=request,
-            admission=admission,
-        )
-
-        reg = self._registry.get(request.tool_id)
-        contract = reg.contract
-
         # 3) trace start
         state.trace_event(
             component=TraceComponent.TOOLS,
@@ -357,42 +338,6 @@ class RuntimeToolInvoker:
             contract=contract,
             request=request,
         )
-
-    def _validate_admission(
-        self,
-        *,
-        state: "RuntimeState",
-        agent_id: str,
-        request: ToolExecutionRequest[BaseModel],
-        admission: ToolInvocationAdmission,
-    ) -> None:
-        if admission._issuing_mint is not self._admission_mint:
-            raise RuntimeError("Invalid tool invocation admission token.")
-        if admission.agent_id != agent_id:
-            raise RuntimeError("Tool invocation admission agent mismatch.")
-        if admission.tool_id != request.tool_id:
-            raise RuntimeError("Tool invocation admission tool mismatch.")
-        if admission.tenant_id != state.tenant_id:
-            raise RuntimeError("Tool invocation admission tenant mismatch.")
-        if admission.run_id != request.run_id:
-            raise RuntimeError("Tool invocation admission run mismatch.")
-        if admission.task_id is not None:
-            state_task_id = self._resolve_state_task_id(state)
-            if state_task_id is None or state_task_id != admission.task_id:
-                raise RuntimeError("Tool invocation admission task mismatch.")
-        expected_identity = compute_invocation_operation_identity(
-            request.tool_id,
-            request.input,
-        )
-        if admission.operation_identity != expected_identity:
-            raise RuntimeError("Tool invocation admission operation identity mismatch.")
-
-    @staticmethod
-    def _resolve_state_task_id(state: "RuntimeState") -> str | None:
-        try:
-            return state.task_id
-        except AttributeError:
-            return None
 
     def _execute_with_policy(
         self,

@@ -37,8 +37,10 @@ from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
     UniqueDeclarativeHitlCandidate,
     maybe_assign_declarative_hitl_scope,
 )
-from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker, ToolInvocationAdmission
-from intergrax.runtime.tools.idempotent_invoker import IdempotentToolInvoker
+from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
+    IdempotencyPreEffectCoordinator,
+)
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from intergrax.runtime.tools.operation_identity import compute_invocation_operation_identity
 from intergrax.runtime.tools.scope_policy import StaticToolScopePolicy
@@ -162,15 +164,16 @@ def _idempotent_invoker(
     tools: tuple[str, ...] = ("tool_a",),
     side_effects: bool = True,
     store: InMemoryIdempotencyStore | None = None,
-) -> tuple[IdempotentToolInvoker, InMemoryIdempotencyStore]:
+) -> tuple[RuntimeToolInvoker, InMemoryIdempotencyStore]:
     ledger = store or InMemoryIdempotencyStore()
     registry = ToolRegistry()
     for tool_id in tools:
         _register_tool(registry, tool_id=tool_id, side_effects=side_effects)
-    base = RuntimeToolInvoker(registry=registry, executor=executor)
-    invoker = IdempotentToolInvoker(
-        base_invoker=base,
-        idempotency_store=ledger,
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=ledger)
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=executor,
+        pre_effect_coordinator=coordinator,
     )
     return invoker, ledger
 
@@ -355,8 +358,12 @@ def test_side_effect_timeout_marks_uncertain_and_blocks_replay() -> None:
     store = InMemoryIdempotencyStore()
     registry = ToolRegistry()
     _register_tool(registry, tool_id="slow_tool", side_effects=True, timeout_ms=50)
-    base = RuntimeToolInvoker(registry=registry, executor=SlowExecutor())
-    invoker = IdempotentToolInvoker(base_invoker=base, idempotency_store=store)
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=SlowExecutor(),
+        pre_effect_coordinator=coordinator,
+    )
     state = DummyState()
     request = _request(tool_id="slow_tool", key="timeout-key")
 
@@ -375,8 +382,12 @@ def test_validation_failure_before_claim_has_no_ledger_state() -> None:
     store = InMemoryIdempotencyStore()
     registry = ToolRegistry()
     _register_tool(registry, tool_id="tool_a", side_effects=True)
-    base = RuntimeToolInvoker(registry=registry, executor=executor)
-    invoker = IdempotentToolInvoker(base_invoker=base, idempotency_store=store)
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=executor,
+        pre_effect_coordinator=coordinator,
+    )
     state = DummyState()
     bad_request = ToolExecutionRequest(
         run_id="run1",
@@ -398,12 +409,13 @@ def test_scope_denial_before_claim_leaves_ledger_untouched() -> None:
     store = InMemoryIdempotencyStore()
     registry = ToolRegistry()
     _register_tool(registry, tool_id="tool_a", side_effects=True)
-    base = RuntimeToolInvoker(
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = RuntimeToolInvoker(
         registry=registry,
         executor=executor,
         scope_policy=StaticToolScopePolicy(allowed_tools=set()),
+        pre_effect_coordinator=coordinator,
     )
-    invoker = IdempotentToolInvoker(base_invoker=base, idempotency_store=store)
     state = DummyState()
     request = _request(key="scope-deny-key")
 
@@ -429,8 +441,12 @@ def test_output_validation_failure_after_executor_marks_uncertain() -> None:
     store = InMemoryIdempotencyStore()
     registry = ToolRegistry()
     _register_tool(registry, tool_id="tool_a", side_effects=True)
-    base = RuntimeToolInvoker(registry=registry, executor=BadOutputExecutor())
-    invoker = IdempotentToolInvoker(base_invoker=base, idempotency_store=store)
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=BadOutputExecutor(),
+        pre_effect_coordinator=coordinator,
+    )
     state = DummyState()
     request = _request(key="bad-output-key")
 
@@ -466,8 +482,12 @@ def test_mapped_validation_error_after_executor_marks_uncertain() -> None:
         ),
         handler=DummyHandler(),
     )
-    base = RuntimeToolInvoker(registry=registry, executor=MutatingFailExecutor())
-    invoker = IdempotentToolInvoker(base_invoker=base, idempotency_store=store)
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=MutatingFailExecutor(),
+        pre_effect_coordinator=coordinator,
+    )
     state = DummyState()
     request = _request(key="mapped-validation-key")
 
@@ -494,8 +514,12 @@ def test_unknown_executor_failure_marks_uncertain() -> None:
     store = InMemoryIdempotencyStore()
     registry = ToolRegistry()
     _register_tool(registry, tool_id="tool_a", side_effects=True)
-    base = RuntimeToolInvoker(registry=registry, executor=FailExecutor())
-    invoker = IdempotentToolInvoker(base_invoker=base, idempotency_store=store)
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=FailExecutor(),
+        pre_effect_coordinator=coordinator,
+    )
     state = DummyState()
     request = _request(key="fail-key")
 
@@ -605,18 +629,22 @@ def _governance_idempotent_invoker(
     executor: CountingExecutor,
     *,
     store: InMemoryIdempotencyStore | None = None,
-) -> tuple[IdempotentToolInvoker, InMemoryIdempotencyStore, RuntimeToolInvoker]:
+) -> tuple[RuntimeToolInvoker, InMemoryIdempotencyStore]:
     ledger = store or InMemoryIdempotencyStore()
     registry = ToolRegistry()
     _register_tool(registry, tool_id=_HITL_TOOL_ID, side_effects=True)
-    base = RuntimeToolInvoker(registry=registry, executor=executor)
-    invoker = IdempotentToolInvoker(base_invoker=base, idempotency_store=ledger)
-    return invoker, ledger, base
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=ledger)
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=executor,
+        pre_effect_coordinator=coordinator,
+    )
+    return invoker, ledger
 
 
 def test_concurrent_governance_allow_executes_once() -> None:
     executor = CountingExecutor()
-    invoker, _, _ = _governance_idempotent_invoker(executor)
+    invoker, _ = _governance_idempotent_invoker(executor)
     state = DummyState()
     request = ToolExecutionRequest(
         run_id="run1",
@@ -653,7 +681,7 @@ def test_concurrent_governance_allow_executes_once() -> None:
 
 def test_deny_then_allow_executes_once_without_cached_denial() -> None:
     executor = CountingExecutor()
-    invoker, store, _ = _governance_idempotent_invoker(executor)
+    invoker, store = _governance_idempotent_invoker(executor)
     state = GovernanceDummyState()
     deny_bundle = _policy_bundle(
         action="deny",
@@ -689,7 +717,7 @@ def test_deny_then_allow_executes_once_without_cached_denial() -> None:
 
 def test_hitl_resume_claims_and_executes_once() -> None:
     executor = CountingExecutor()
-    invoker, store, _ = _governance_idempotent_invoker(executor)
+    invoker, store = _governance_idempotent_invoker(executor)
     state = GovernanceDummyState()
     bundle = _policy_bundle(
         action="require_hitl",
@@ -754,48 +782,30 @@ def _governance_request(
     )
 
 
-def test_manual_admission_forgery_cannot_execute() -> None:
+def test_invoke_is_canonical_execution_path() -> None:
     executor = CountingExecutor()
-    _, _, base = _governance_idempotent_invoker(executor)
+    invoker, _ = _governance_idempotent_invoker(executor)
+    assert callable(invoker.invoke)
+    assert not hasattr(invoker, "admit")
+    assert not hasattr(invoker, "_execute_after_admission")
+
+
+def test_governance_deny_cannot_bypass_via_invoke() -> None:
+    executor = CountingExecutor()
+    invoker, store = _governance_idempotent_invoker(executor)
     state = GovernanceDummyState()
     state.context.config.policy_bundle = _deny_governance_bundle()
     request = _governance_request()
 
-    with pytest.raises(TypeError, match="cannot be constructed directly"):
-        ToolInvocationAdmission(
-            agent_id="agent",
-            tool_id=_HITL_TOOL_ID,
-            operation_identity=compute_invocation_operation_identity(
-                request.tool_id,
-                request.input,
-            ),
-        )
-
-    forged = ToolInvocationAdmission._mint(
-        agent_id="agent",
-        tool_id=request.tool_id,
-        operation_identity=compute_invocation_operation_identity(
-            request.tool_id,
-            request.input,
-        ),
-        tenant_id=state.tenant_id,
-        run_id=request.run_id,
-        task_id=state.task_id,
-        mint=object(),
-    )
-    with pytest.raises(RuntimeError, match="Invalid tool invocation admission token"):
-        base._execute_after_admission(
-            state=state,
-            agent_id="agent",
-            request=request,
-            admission=forged,
-        )
+    with pytest.raises(DeclarativePolicyViolationError):
+        invoker.invoke(state=state, agent_id="agent", request=request)
     assert executor.calls == 0
+    assert store.get_status(state.tenant_id, "admission-key") is None
 
 
-def test_admission_cannot_cross_operation() -> None:
+def test_cross_operation_same_key_conflicts_on_invoke() -> None:
     executor = CountingExecutor()
-    _, _, base = _governance_idempotent_invoker(executor)
+    invoker, _ = _governance_idempotent_invoker(executor)
     state = GovernanceDummyState()
     allow_env = ApplicationEnvironmentProfile.lab_defaults(profile_id="governance.allow")
     allow_env.policy_rules = PolicyRulesProfile(
@@ -804,23 +814,17 @@ def test_admission_cannot_cross_operation() -> None:
     )
     state.context.config.policy_bundle = wire_policy_bundle(allow_env)
     request_x = _governance_request(value=3, key="cross-op-key")
-    admission = base.admit(state=state, agent_id="agent", request=request_x)
-    assert not isinstance(admission, ToolExecutionResult)
+    invoker.invoke(state=state, agent_id="agent", request=request_x)
 
     request_y = _governance_request(value=9, key="cross-op-key")
-    with pytest.raises(RuntimeError, match="operation identity mismatch"):
-        base._execute_after_admission(
-            state=state,
-            agent_id="agent",
-            request=request_y,
-            admission=admission,
-        )
-    assert executor.calls == 0
+    with pytest.raises(IdempotencyOperationConflictError):
+        invoker.invoke(state=state, agent_id="agent", request=request_y)
+    assert executor.calls == 1
 
 
-def test_admission_cannot_cross_agent() -> None:
+def test_replay_after_success_does_not_execute_again() -> None:
     executor = CountingExecutor()
-    _, _, base = _governance_idempotent_invoker(executor)
+    invoker, _ = _governance_idempotent_invoker(executor)
     state = GovernanceDummyState()
     allow_env = ApplicationEnvironmentProfile.lab_defaults(profile_id="governance.allow")
     allow_env.policy_rules = PolicyRulesProfile(
@@ -828,69 +832,11 @@ def test_admission_cannot_cross_agent() -> None:
         policy_enforcement_mode="enforce",
     )
     state.context.config.policy_bundle = wire_policy_bundle(allow_env)
-    request = _governance_request()
-    admission = base.admit(state=state, agent_id="agent-a", request=request)
-    assert not isinstance(admission, ToolExecutionResult)
+    request = _governance_request(key="replay-single-path-key")
 
-    with pytest.raises(RuntimeError, match="agent mismatch"):
-        base._execute_after_admission(
-            state=state,
-            agent_id="agent-b",
-            request=request,
-            admission=admission,
-        )
-    assert executor.calls == 0
+    first = invoker.invoke(state=state, agent_id="agent", request=request)
+    replay = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert first.success and replay.success
+    assert first.output == replay.output
+    assert executor.calls == 1
 
-
-def test_admission_cannot_cross_runtime_state() -> None:
-    executor = CountingExecutor()
-    _, _, base = _governance_idempotent_invoker(executor)
-    allow_env = ApplicationEnvironmentProfile.lab_defaults(profile_id="governance.allow")
-    allow_env.policy_rules = PolicyRulesProfile(
-        inline_rules=[],
-        policy_enforcement_mode="enforce",
-    )
-    bundle = wire_policy_bundle(allow_env)
-    state_a = GovernanceDummyState(tenant_id="tenant-a")
-    state_a.context.config.policy_bundle = bundle
-    state_b = GovernanceDummyState(tenant_id="tenant-b")
-    state_b.context.config.policy_bundle = bundle
-    request = _governance_request()
-    admission = base.admit(state=state_a, agent_id="agent", request=request)
-    assert not isinstance(admission, ToolExecutionResult)
-
-    with pytest.raises(RuntimeError, match="tenant mismatch"):
-        base._execute_after_admission(
-            state=state_b,
-            agent_id="agent",
-            request=request,
-            admission=admission,
-        )
-    assert executor.calls == 0
-
-
-def test_admission_cannot_cross_invoker() -> None:
-    executor_a = CountingExecutor()
-    executor_b = CountingExecutor()
-    _, _, base_a = _governance_idempotent_invoker(executor_a)
-    _, _, base_b = _governance_idempotent_invoker(executor_b)
-    state = GovernanceDummyState()
-    allow_env = ApplicationEnvironmentProfile.lab_defaults(profile_id="governance.allow")
-    allow_env.policy_rules = PolicyRulesProfile(
-        inline_rules=[],
-        policy_enforcement_mode="enforce",
-    )
-    state.context.config.policy_bundle = wire_policy_bundle(allow_env)
-    request = _governance_request()
-    admission = base_a.admit(state=state, agent_id="agent", request=request)
-    assert not isinstance(admission, ToolExecutionResult)
-
-    with pytest.raises(RuntimeError, match="Invalid tool invocation admission token"):
-        base_b._execute_after_admission(
-            state=state,
-            agent_id="agent",
-            request=request,
-            admission=admission,
-        )
-    assert executor_a.calls == 0
-    assert executor_b.calls == 0

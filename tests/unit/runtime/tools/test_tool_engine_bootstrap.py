@@ -18,7 +18,9 @@ from intergrax.runtime.nexus.errors.tool_scope_violation_error import ToolScopeV
 from intergrax.runtime.nexus.tools.catalog_tool_planner import CatalogToolPlanner
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.planner_bootstrap import wire_catalog_tool_planner_if_enabled
-from intergrax.runtime.tools.idempotent_invoker import IdempotentToolInvoker
+from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
+    IdempotencyPreEffectCoordinator,
+)
 from intergrax.runtime.tools.scope_policy import StaticToolScopePolicy
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
@@ -119,9 +121,10 @@ def test_runtime_context_build_wires_planner_and_scope_policy() -> None:
     assert isinstance(ctx.config.tool_planner, CatalogToolPlanner)
     invoker = ctx.config.tool_invoker
     assert invoker is not None
-    base = invoker._base_invoker if isinstance(invoker, IdempotentToolInvoker) else invoker
-    assert isinstance(base, RuntimeToolInvoker)
-    assert base._scope_policy is scope
+    assert isinstance(invoker, RuntimeToolInvoker)
+    assert invoker._pre_effect_coordinator is not None
+    assert isinstance(invoker._pre_effect_coordinator, IdempotencyPreEffectCoordinator)
+    assert invoker._scope_policy is scope
 
 
 def test_runtime_context_scope_policy_denies_on_invoke_path() -> None:
