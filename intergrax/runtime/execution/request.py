@@ -9,7 +9,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Generic, TypeVar
 
-from intergrax.runtime.execution.inference_profile import InferenceProfileId
+from intergrax.runtime.execution.inference_profile import (
+    InferenceProfileId,
+    validate_inference_profile_id,
+)
 
 InputT = TypeVar("InputT")
 OutputT = TypeVar("OutputT")
@@ -42,3 +45,7 @@ class ExecutionRequest(Generic[InputT, OutputT]):
     output_type: type[OutputT] | None = None
     capabilities: frozenset[ExecutionCapability] = field(default_factory=frozenset)
     inference_profile_id: InferenceProfileId | None = None
+
+    def __post_init__(self) -> None:
+        if self.inference_profile_id is not None:
+            validate_inference_profile_id(self.inference_profile_id)

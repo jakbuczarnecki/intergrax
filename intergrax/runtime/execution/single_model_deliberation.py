@@ -30,5 +30,5 @@ def single_model_inference_execution_request(
     return ExecutionRequest(
         input=deliberation_input.messages,
         output_type=deliberation_input.output_type,
-        inference_profile_id=inference.llm_profile_id,
+        inference_profile_id=inference.inference_profile_id,
     )

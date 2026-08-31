@@ -38,6 +38,7 @@ from intergrax.llm_adapters._shared.adapter_response_builders import build_adapt
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.runtime.execution.inference import InferenceExecutor
 from intergrax.runtime.execution.inference_profile import (
     InferenceProfileAlreadyRegisteredError,
@@ -48,6 +49,7 @@ from intergrax.runtime.execution.inference_profile import (
     validate_inference_profile_id,
 )
 from intergrax.runtime.execution.request import ExecutionRequest
+from intergrax.runtime.execution.result import ExecutionResult
 from intergrax.runtime.execution.single_model_deliberation import (
     single_model_inference_execution_request,
 )
@@ -63,7 +65,7 @@ class SampleDecisionPayload:
 
 
 class FakeAdapterA(LLMAdapter):
-    provider = "fake-a"
+    provider = LLMProvider.GROQ
     model = "fake-a"
 
     def __init__(self) -> None:
@@ -116,7 +118,7 @@ class FakeAdapterA(LLMAdapter):
 
 
 class FakeAdapterB(LLMAdapter):
-    provider = "fake-b"
+    provider = LLMProvider.OLLAMA
     model = "fake-b"
 
     def __init__(self) -> None:
@@ -213,10 +215,10 @@ def test_inference_profile_id_rejects_blank() -> None:
 def test_inference_profile_catalog_duplicate_registration_fails() -> None:
     with pytest.raises(InferenceProfileAlreadyRegisteredError):
         InferenceProfileCatalog(
-            [
+            (
                 ("primary", FakeAdapterA()),
                 ("primary", FakeAdapterB()),
-            ],
+            ),
         )
 
 
@@ -232,8 +234,8 @@ async def test_two_profiles_map_to_two_different_adapters() -> None:
     adapter_a = catalog.resolve(InferenceProfileId("primary"))
     adapter_b = catalog.resolve(InferenceProfileId("cheap"))
     assert adapter_a is not adapter_b
-    assert adapter_a.provider == "fake-a"
-    assert adapter_b.provider == "fake-b"
+    assert adapter_a.provider == LLMProvider.GROQ
+    assert adapter_b.provider == LLMProvider.OLLAMA
 
 
 @pytest.mark.asyncio
@@ -250,7 +252,7 @@ async def test_single_model_profile_selects_adapter_through_execution_path(
     unused_adapter_provider: str,
 ) -> None:
     inference = SingleModelInferenceConfiguration(
-        llm_profile_id=validate_inference_profile_id(profile_name),
+        inference_profile_id=validate_inference_profile_id(profile_name),
     )
     strategy = SingleModelStrategy(inference=inference)
     deliberation_input = _deliberation_input()
@@ -269,7 +271,7 @@ async def test_single_model_profile_selects_adapter_through_execution_path(
     router = StrategyExecutionRouter[
         tuple[ChatMessage, ...],
         SampleDecisionPayload,
-        object,
+        ExecutionResult[SampleDecisionPayload],
     ](inference_executor=executor)
 
     token = bind_active_execution_identity(
@@ -300,7 +302,7 @@ async def test_explicit_unknown_profile_fails_closed() -> None:
     router = StrategyExecutionRouter[
         tuple[ChatMessage, ...],
         SampleDecisionPayload,
-        object,
+        ExecutionResult[SampleDecisionPayload],
     ](inference_executor=executor)
 
     token = bind_active_execution_identity(
@@ -330,7 +332,7 @@ async def test_explicit_profile_never_silently_falls_back_to_default() -> None:
     router = StrategyExecutionRouter[
         tuple[ChatMessage, ...],
         SampleDecisionPayload,
-        object,
+        ExecutionResult[SampleDecisionPayload],
     ](inference_executor=executor)
 
     token = bind_active_execution_identity(
@@ -361,7 +363,7 @@ async def test_absent_profile_uses_host_default_adapter() -> None:
     router = StrategyExecutionRouter[
         tuple[ChatMessage, ...],
         SampleDecisionPayload,
-        object,
+        ExecutionResult[SampleDecisionPayload],
     ](inference_executor=executor)
 
     token = bind_active_execution_identity(
@@ -381,7 +383,7 @@ async def test_absent_profile_uses_host_default_adapter() -> None:
 def test_inference_profile_catalog_is_immutable() -> None:
     catalog = _profile_catalog()
     with pytest.raises(TypeError):
-        catalog._adapters["primary"] = FakeAdapterA()  # noqa: SLF001
+        catalog._adapters["primary"] = FakeAdapterA()  # noqa: SLF001  # pyright: ignore[reportIndexIssue]
 
 
 def test_single_model_candidate_decision_uses_explicit_none_lineage_check() -> None:
@@ -418,7 +420,7 @@ async def test_explicit_profile_without_resolver_fails_closed() -> None:
     router = StrategyExecutionRouter[
         tuple[ChatMessage, ...],
         SampleDecisionPayload,
-        object,
+        ExecutionResult[SampleDecisionPayload],
     ](inference_executor=executor)
 
     token = bind_active_execution_identity(

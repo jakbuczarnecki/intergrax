@@ -41,7 +41,10 @@ from intergrax.contracts.single_model_strategy import (
     single_model_strategy_registration,
 )
 from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.execution.inference_profile import validate_inference_profile_id
+from intergrax.runtime.execution.inference_profile import (
+    InferenceProfileId,
+    validate_inference_profile_id,
+)
 from intergrax.runtime.execution.request import ExecutionCapability
 from intergrax.runtime.execution.single_model_deliberation import (
     single_model_inference_execution_request,
@@ -58,7 +61,7 @@ class SampleDecisionPayload:
 
 def _inference_config() -> SingleModelInferenceConfiguration:
     return SingleModelInferenceConfiguration(
-        llm_profile_id=validate_inference_profile_id("primary"),
+        inference_profile_id=validate_inference_profile_id("primary"),
     )
 
 
@@ -115,7 +118,7 @@ def test_single_model_registers_in_existing_registry() -> None:
         single_model_strategy_kind(),
     )
     assert isinstance(resolved, SingleModelStrategy)
-    assert resolved.inference.llm_profile_id == "primary"
+    assert resolved.inference.inference_profile_id == "primary"
 
 
 @pytest.mark.unit
@@ -192,7 +195,7 @@ def test_single_model_uses_canonical_inference_execution_seam() -> None:
     )
     assert request.input == deliberation_input.messages
     assert request.output_type is SampleDecisionPayload
-    assert request.inference_profile_id == inference.llm_profile_id
+    assert request.inference_profile_id == inference.inference_profile_id
     assert ExecutionCapability.ORCHESTRATION not in request.capabilities
     assert ExecutionCapability.AGENT not in request.capabilities
     assert ExecutionCapability.TOOLS not in request.capabilities
@@ -279,7 +282,7 @@ def test_single_model_registry_remains_immutable() -> None:
 @pytest.mark.gate
 def test_single_model_inference_configuration_rejects_blank_profile_id() -> None:
     with pytest.raises(ValueError):
-        SingleModelInferenceConfiguration(llm_profile_id="   ")
+        SingleModelInferenceConfiguration(inference_profile_id=InferenceProfileId("   "))
 
 
 @pytest.mark.unit

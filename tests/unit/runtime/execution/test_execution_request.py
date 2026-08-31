@@ -8,6 +8,7 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 from intergrax.runtime.execution import ExecutionCapability, ExecutionRequest
+from intergrax.runtime.execution.inference_profile import InferenceProfileId
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -143,7 +144,9 @@ def test_no_metadata_options_or_config_escape_hatch_fields() -> None:
     assert "metadata" not in public_fields
     assert "options" not in public_fields
     assert "config" not in public_fields
-    assert public_fields == frozenset({"input", "output_type", "capabilities"})
+    assert public_fields == frozenset(
+        {"input", "output_type", "capabilities", "inference_profile_id"},
+    )
 
 
 def test_package_root_exports_execution_request_symbols() -> None:
@@ -152,3 +155,41 @@ def test_package_root_exports_execution_request_symbols() -> None:
 
     assert ExportedCapability is ExecutionCapability
     assert ExportedRequest is ExecutionRequest
+
+
+@pytest.mark.parametrize(
+    ("profile_id", "expected"),
+    [
+        (None, None),
+        (InferenceProfileId("primary"), InferenceProfileId("primary")),
+    ],
+)
+def test_inference_profile_id_accepts_none_and_valid_profile(
+    profile_id: InferenceProfileId | None,
+    expected: InferenceProfileId | None,
+) -> None:
+    request = ExecutionRequest[PromptInput, SummaryOutput](
+        input=PromptInput(text="profile"),
+        inference_profile_id=profile_id,
+    )
+
+    assert request.inference_profile_id == expected
+
+
+@pytest.mark.parametrize(
+    "invalid_profile_id",
+    [
+        InferenceProfileId(""),
+        InferenceProfileId("   "),
+        InferenceProfileId(" primary "),
+        42,
+    ],
+)
+def test_inference_profile_id_rejects_invalid_direct_constructor_values(
+    invalid_profile_id: object,
+) -> None:
+    with pytest.raises((TypeError, ValueError)):
+        ExecutionRequest[PromptInput, SummaryOutput](
+            input=PromptInput(text="invalid profile"),
+            inference_profile_id=invalid_profile_id,  # type: ignore[arg-type]
+        )

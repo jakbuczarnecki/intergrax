@@ -51,10 +51,10 @@ def single_model_strategy_kind() -> DecisionStrategyKind:
 class SingleModelInferenceConfiguration:
     """Provider-neutral inference profile reference resolved by Execution host."""
 
-    llm_profile_id: InferenceProfileId
+    inference_profile_id: InferenceProfileId
 
     def __post_init__(self) -> None:
-        validate_inference_profile_id(self.llm_profile_id)
+        validate_inference_profile_id(self.inference_profile_id)
 
 
 @dataclass(frozen=True, slots=True)
