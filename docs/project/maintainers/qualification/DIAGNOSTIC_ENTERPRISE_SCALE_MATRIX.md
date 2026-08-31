@@ -45,7 +45,7 @@ Operator Problem list reads are bounded by page/query instead of materializing e
 
 ## E2 — Bounded occurrence history (`DIAG-ENTERPRISE-2`)
 
-**Status:** `IN_PROGRESS` — R2 stats convergence + Mongo qualification landed; E2 not PROVEN until Mongo PASS
+**Status:** `PROVEN` — R3 exactly-once stats contribution (InMemory + Mongo qualification)
 
 Canonical `Problem` is a bounded aggregate (no inline `occurrences` / `current_subject_refs`). Durable occurrence history uses `ProblemOccurrencePersistence` with `DocumentStoreProblemOccurrencePersistence` over `ConditionalDocumentStore` (InMemory + Mongo-capable).
 
@@ -53,20 +53,20 @@ Canonical `Problem` is a bounded aggregate (no inline `occurrences` / `current_s
 |---|---|---|
 | Bounded Problem aggregate | no unbounded occurrence tuple on `Problem` | `tests/unit/runtime/diagnostics/test_diag_enterprise_2_occurrence_persistence.py` |
 | Occurrence persistence contract | `append_if_absent`, `query_occurrences`, `aggregate_stats` | conformance + `test_diag_enterprise_2_r2_stats_convergence.py` |
-| Stats convergence (R2) | per-occurrence contribution marker + bounded OCC | `test_diag_enterprise_2_r2_stats_convergence.py` |
+| Stats convergence (R2/R3) | pending contribution marker + snapshot + `last_committed_occurrence_id` | `test_diag_enterprise_2_r3_stats_exactly_once.py` |
 | Lifecycle write protocol | occurrence append → aggregate converge | `test_problem_lifecycle.py` + F1/F2/F3 in R2 suite |
 | Paginated occurrence read | `DiagnosticReadService.list_problem_occurrences` | `test_diagnostic_read_service.py` |
-| 100k bounded proof | aggregate shape stable; page limit=100 | `test_100k_bounded_aggregate_and_paginated_history` |
+| 100k bounded proof | aggregate shape stable; page limit=100 | `test_100k_bounded_aggregate_and_paginated_history` + R3 injected failures |
 | Legacy v1 migration | `problem_occurrence_migration.py` | `test_migration_1000_legacy_occurrences_resumable_after_failure` |
-| Mongo durability proof (R2) | M1–M9 restart + concurrency + S1 | `tests/integration/runtime/test_diag_enterprise_2_r2_mongo_occurrence.py` |
-| E1 regression | R1–R6 | pending full green suite |
+| Mongo durability proof (R2/R3) | M1–M9 restart + concurrency + S1 | `tests/integration/runtime/test_diag_enterprise_2_r2_mongo_occurrence.py` |
+| E1 regression | R1–R6 | full diagnostics unit suite |
 
 **Design notes**
 
 - Occurrence partition: `intergrax.diagnostic_problem_occurrence.v1:{tenant_id}:{problem_id}`
 - Row key: `occ:{inverted_observed_at_micros}:{occurrence_id}` where `occurrence_id = subject_ref.index_token`
-- Stats row: `meta:stats` (derived aggregate)
-- Stats contribution marker: `meta:stats_contrib:{occurrence_id}` (idempotent per-occurrence gate; bounded)
+- Stats row: `meta:stats` (derived aggregate; `last_committed_occurrence_id` for exactly-once)
+- Stats contribution marker: `meta:stats_contrib:{occurrence_id}` (`stats_count_snapshot`, `phase: pending|applied`)
 - Subject ownership index remains on `ProblemPersistence` via `indexed_subject_refs` on create/update (not on aggregate)
 - Source hierarchy: execution evidence → occurrence rows → derived stats → Problem aggregate
 
