@@ -10,17 +10,21 @@ from typing import Protocol
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.delegation_authority import resolve_root_parent_execution_authority
-from intergrax.contracts.execution_identity import RunId, require_active_execution_identity
+from intergrax.contracts.execution_identity import (
+    RunId,
+    mint_attempt_id,
+    mint_run_id,
+    require_active_execution_identity,
+)
 from intergrax.runtime.execution.agentic import AgentEnginePort
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 from intergrax.runtime.execution.facade import Execution
 from intergrax.runtime.execution.orchestration import (
     OrchestrationExecutor,
     TaskBoundOrchestrationDelegate,
-    resolve_root_task_identity,
 )
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
-from intergrax.runtime.execution.runtime import ExecutionRuntime, RootExecutionContext, RootTaskIdentity
+from intergrax.runtime.execution.runtime import ExecutionRuntime, RootExecutionOptions
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
 from intergrax.runtime.nexus.agent_router import AgentRouter
@@ -28,7 +32,7 @@ from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.orchestration_capabilities import is_orchestration_capability
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
-from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
+from intergrax.runtime.task.task import Task, TaskResult, TaskState
 
 
 def resolve_task_execution_capabilities(
@@ -127,61 +131,9 @@ def build_host_task_strategy_router(
     )
 
 
-async def execute_canonical_host_task(
-    task: Task,
-    *,
-    nexus_loop: NexusLoop,
-    agent_engine: AgentEnginePort,
-    agent_router: AgentRouter,
-    orchestration_triggers: frozenset[str],
-    pipeline_capability_suffix: str,
-    identity: RootTaskIdentity,
-    ledger_factory: ExecutionBudgetLedgerFactory | None = None,
-    run_budget: RunBudget | None = None,
-) -> TaskResult:
-    capabilities = resolve_task_execution_capabilities(
-        task,
-        orchestration_triggers=orchestration_triggers,
-        pipeline_capability_suffix=pipeline_capability_suffix,
-    )
-    request = execution_request_from_task(
-        task,
-        capabilities=capabilities,
-        output_type=TaskResult,
-    )
-    router = build_host_task_strategy_router(
-        task,
-        nexus_loop=nexus_loop,
-        agent_engine=agent_engine,
-        agent_router=agent_router,
-    )
-    runtime = ExecutionRuntime[
-        ExecutionRequest[TaskExecutionInput, TaskResult],
-        TaskResult,
-    ](
-        router,
-        ledger_factory=ledger_factory,
-        run_budget=run_budget,
-    )
-    root_context = RootExecutionContext(
-        run_id=identity.run_id,
-        attempt_id=identity.attempt_id,
-        execution_id=identity.execution_id,
-        authority=resolve_root_parent_execution_authority(task.execution_authority),
-        tenant_id=task.tenant_id,
-    )
-    return await runtime.execute(request, root_context)
-
-
 class HostTaskExecutionPort(Protocol):
     @property
     def nexus_loop(self) -> NexusLoop: ...
-
-    @property
-    def execution(self) -> Execution[
-        ExecutionRequest[TaskExecutionInput, TaskResult],
-        TaskResult,
-    ]: ...
 
     async def execute(self, task: Task) -> TaskResult: ...
 
@@ -200,22 +152,6 @@ class HostTaskExecution:
     @property
     def nexus_loop(self) -> NexusLoop:
         return self._nexus_loop
-
-    @property
-    def execution(self) -> Execution[
-        ExecutionRequest[TaskExecutionInput, TaskResult],
-        TaskResult,
-    ]:
-        return Execution(
-            self._execution_runtime_for_task(
-                Task(
-                    tenant_id="host-task-execution-probe",
-                    user_id="probe",
-                    message="",
-                    context=TaskContext(),
-                )
-            )
-        )
 
     def _execution_runtime_for_task(
         self,
@@ -240,22 +176,30 @@ class HostTaskExecution:
         )
 
     async def execute(self, task: Task) -> TaskResult:
-        identity = resolve_root_task_identity()
-        await ActiveTaskRegistry.register(task, identity.run_id)
+        capabilities = resolve_task_execution_capabilities(
+            task,
+            orchestration_triggers=self._orchestration_triggers,
+            pipeline_capability_suffix=self._pipeline_capability_suffix,
+        )
+        request = execution_request_from_task(
+            task,
+            capabilities=capabilities,
+            output_type=TaskResult,
+        )
+        run_id = mint_run_id()
+        attempt_id = mint_attempt_id()
+        options = RootExecutionOptions(
+            authority=resolve_root_parent_execution_authority(task.execution_authority),
+            tenant_id=task.tenant_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+        )
+        await ActiveTaskRegistry.register(task, run_id)
         try:
-            return await execute_canonical_host_task(
-                task,
-                nexus_loop=self._nexus_loop,
-                agent_engine=self._nexus_loop.agent_engine,
-                agent_router=self._agent_router,
-                orchestration_triggers=self._orchestration_triggers,
-                pipeline_capability_suffix=self._pipeline_capability_suffix,
-                identity=identity,
-                ledger_factory=self._ledger_factory,
-                run_budget=self._run_budget,
-            )
+            execution = Execution(self._execution_runtime_for_task(task))
+            return await execution.execute(request, options=options)
         finally:
-            await ActiveTaskRegistry.unregister(task.task_id, identity.run_id)
+            await ActiveTaskRegistry.unregister(task.task_id, run_id)
 
 
 def build_host_task_execution(

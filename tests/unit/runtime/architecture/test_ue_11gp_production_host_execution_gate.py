@@ -13,6 +13,7 @@ pytestmark = pytest.mark.unit
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _APPLICATIONS_ROOT = _REPO_ROOT / "applications"
+_HOST_TASK_PATH = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "host_task.py"
 
 # TEMPORARY UE-11G-P migration debt — migrate in UE-11G-P2/P3.
 _TEMPORARY_BYPASS_ALLOWLIST = frozenset(
@@ -116,6 +117,36 @@ def _collect_root_bypass_violations(path: Path) -> list[str]:
     return violations
 
 
+def _is_execution_runtime_execute_call(node: ast.Call) -> bool:
+    if not isinstance(node.func, ast.Attribute) or node.func.attr != "execute":
+        return False
+    receiver = node.func.value
+    if isinstance(receiver, ast.Name):
+        return receiver.id == "runtime"
+    if isinstance(receiver, ast.Call):
+        return _call_name(receiver.func) == "ExecutionRuntime"
+    return False
+
+
+def _collect_host_task_facade_bypass_violations() -> list[str]:
+    source = _HOST_TASK_PATH.read_text(encoding="utf-8-sig")
+    tree = ast.parse(source, filename=str(_HOST_TASK_PATH))
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        name = _call_name(node.func)
+        if name == "RootExecutionContext":
+            violations.append(f"host_task.py:{node.lineno}: RootExecutionContext()")
+        if name == "resolve_root_task_identity":
+            violations.append(f"host_task.py:{node.lineno}: resolve_root_task_identity()")
+        if name == "mint_root_execution_identity":
+            violations.append(f"host_task.py:{node.lineno}: mint_root_execution_identity()")
+        if _is_execution_runtime_execute_call(node):
+            violations.append(f"host_task.py:{node.lineno}: ExecutionRuntime.execute()")
+    return violations
+
+
 def test_production_applications_have_no_root_nexus_or_unified_task_runner_bypasses() -> None:
     violations: list[str] = []
     for path in _iter_application_python_files():
@@ -139,4 +170,12 @@ def test_lkw_production_host_is_not_allowlisted() -> None:
         path in _TEMPORARY_BYPASS_ALLOWLIST
         for path in lkw_paths
         if path != "applications/local_workspace_application/host/background_worker_factory.py"
+    )
+
+
+def test_host_task_does_not_bypass_execution_facade() -> None:
+    violations = _collect_host_task_facade_bypass_violations()
+    assert violations == [], (
+        "host task execution must route through Execution facade, not mint or call runtime directly: "
+        + ", ".join(violations)
     )

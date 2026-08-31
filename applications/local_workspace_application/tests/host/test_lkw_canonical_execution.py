@@ -51,10 +51,38 @@ def _build_executor(nexus_loop: NexusLoop) -> LocalWorkspaceTaskExecutor:
 
 @pytest.mark.asyncio
 async def test_lkw_application_root_uses_canonical_execution_facade() -> None:
-    settings = _settings()
-    env = build_local_workspace_environment_profile(settings)
-    host_execution = build_lkw_host_task_execution(NexusLoop(AgentRegistry()), env)
-    assert isinstance(host_execution.execution, ExecutionFacade)
+    registry = AgentRegistry()
+    nexus_loop = NexusLoop(registry)
+    executor = _build_executor(nexus_loop)
+    task = Task(
+        task_id=mint_task_id(),
+        tenant_id="tenant-1",
+        user_id="user-1",
+        message="facade proof",
+        context=TaskContext(capability="local.workspace.search"),
+    )
+    facade_calls = 0
+    original_execute = ExecutionFacade.execute
+
+    async def _spy_execute(self, request, *, options):
+        nonlocal facade_calls
+        facade_calls += 1
+        return await original_execute(self, request, options=options)
+
+    with patch.object(ExecutionFacade, "execute", _spy_execute):
+        with patch(
+            "intergrax.runtime.execution.host_task.TaskBoundAgenticDelegate.execute",
+            new_callable=AsyncMock,
+            return_value=TaskResult(
+                task_id=task.task_id,
+                run_id=mint_run_id(),
+                state=TaskState.COMPLETED,
+                answer="ok",
+            ),
+        ):
+            await executor.execute(task)
+
+    assert facade_calls == 1
     factory_source = (
         Path(__file__).resolve().parents[2] / "host" / "factory.py"
     ).read_text(encoding="utf-8")
@@ -217,14 +245,21 @@ async def test_lkw_request_produces_single_root_execution_invocation() -> None:
         message="single root",
         context=TaskContext(capability="local.workspace.search"),
     )
-    calls = 0
+    router_calls = 0
+    facade_calls = 0
+    original_facade_execute = ExecutionFacade.execute
 
-    async def _count_execute(
+    async def _count_facade_execute(self, request, *, options):
+        nonlocal facade_calls
+        facade_calls += 1
+        return await original_facade_execute(self, request, options=options)
+
+    async def _count_router_execute(
         self: StrategyExecutionRouter[TaskExecutionInput, TaskResult, TaskResult],
         request: ExecutionRequest[TaskExecutionInput, TaskResult],
     ) -> TaskResult:
-        nonlocal calls
-        calls += 1
+        nonlocal router_calls
+        router_calls += 1
         return TaskResult(
             task_id=task.task_id,
             run_id=mint_run_id(),
@@ -232,7 +267,9 @@ async def test_lkw_request_produces_single_root_execution_invocation() -> None:
             answer="one",
         )
 
-    with patch.object(StrategyExecutionRouter, "execute", _count_execute):
-        await executor.execute(task)
+    with patch.object(ExecutionFacade, "execute", _count_facade_execute):
+        with patch.object(StrategyExecutionRouter, "execute", _count_router_execute):
+            await executor.execute(task)
 
-    assert calls == 1
+    assert facade_calls == 1
+    assert router_calls == 1
