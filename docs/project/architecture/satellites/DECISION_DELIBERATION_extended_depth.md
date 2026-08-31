@@ -14,7 +14,7 @@
 | Capability | Description |
 | ---------- | ----------- |
 | Single-shot proposal | Emit one or more candidate versions |
-| Multi-round deliberation | Bounded rounds under shared Nexus budget |
+| Multi-round deliberation | Bounded rounds under shared hosting Execution budget |
 | Parallel proposals | Branching candidates with preserved lineage |
 | Disagreement capture | Structured artifact when participants diverge |
 | Synthesis | Optional merged candidate for verification — does not erase dissent |
@@ -134,11 +134,11 @@ stateDiagram-v2
 
 ---
 
-## 17. Nexus budget and crash / resume
+## 17. Hosting Execution budget and crash / resume
 
-Council, verification, and revision **share the hosting execution budget** — no separate Council budget engine. Resume cannot expand a previously granted Nexus budget ceiling.
+Council, verification, and revision **share the hosting execution budget** — no separate Council budget engine. Resume cannot expand a previously granted hosting Execution budget ceiling.
 
-Strategy state needed for resume persists through **Nexus checkpoints** — not a second scheduler. After crash, deliberation continues from checkpoint without duplicating terminal outcomes.
+Strategy state needed for resume persists through the **canonical hosting Execution checkpoint/persistence boundary** — not a second scheduler. Nexus may participate only when ORCHESTRATION is selected. After crash, deliberation continues from checkpoint without duplicating terminal outcomes.
 
 ---
 

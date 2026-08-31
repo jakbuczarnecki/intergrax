@@ -96,7 +96,10 @@ def decision_lineage_ref(
     """Build one lineage node; default branch is the deterministic root branch."""
     if type(version) is not DecisionVersion:
         raise TypeError("version must be DecisionVersion")
-    resolved_branch = branch_id or initial_decision_branch_id()
+    if branch_id is None:
+        resolved_branch = initial_decision_branch_id()
+    else:
+        resolved_branch = validate_decision_branch_id(branch_id)
     return DecisionLineageRef(version=version, branch_id=resolved_branch)
 
 

@@ -152,6 +152,30 @@ def test_initial_decision_branch_id_is_deterministic_main() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
+def test_decision_lineage_ref_defaults_branch_to_main() -> None:
+    ref = decision_lineage_ref(initial_decision_version())
+    assert ref.branch_id == initial_decision_branch_id()
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_decision_lineage_ref_rejects_explicit_empty_branch() -> None:
+    with pytest.raises(ValueError):
+        decision_lineage_ref(initial_decision_version(), DecisionBranchId(""))
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.parametrize("branch_id", ["   ", " branch "])
+def test_decision_lineage_ref_rejects_explicit_whitespace_branch(
+    branch_id: str,
+) -> None:
+    with pytest.raises(ValueError):
+        decision_lineage_ref(initial_decision_version(), DecisionBranchId(branch_id))
+
+
+@pytest.mark.unit
+@pytest.mark.gate
 def test_decision_artifact_accepts_valid_typed_payload() -> None:
     artifact = _artifact(recommendation="contain")
     assert artifact.content.recommendation == "contain"
