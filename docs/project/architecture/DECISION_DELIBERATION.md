@@ -156,7 +156,38 @@ One `RoleDefinition` may bind to many `ParticipantBinding` entries (e.g. three s
 
 ## Context visibility
 
-Each participant receives only the context their role policy allows. Visibility rules are part of strategy configuration — not implicit full transcript sharing. **Private chain-of-thought is not stored** — only structured positions, alternatives, evidence refs, and unresolved questions.
+Each participant receives only the context their **role visibility policy** allows. Visibility is **per-role**, auditable configuration — not implicit full transcript sharing. Role names and context channel identifiers remain **opaque user-defined strings**; the platform does not hardcode proposer/skeptic vocabulary or a fixed context catalog.
+
+| Rule | Detail |
+| ---- | ------ |
+| **Policy unit** | `ParticipantContextVisibilityPolicy` — one allowlist per `ParticipantRoleId` |
+| **Default** | **Default-deny** — context not explicitly listed is not visible |
+| **Active roles** | Every role referenced by a `ParticipantBinding` must have an explicit policy |
+| **Unused roles** | Role definitions without bindings do not require a policy |
+| **Instruction** | Role `instruction` is always supplied separately — not part of `visible_contexts` |
+| **Private CoT** | Not stored — no chain-of-thought / scratchpad context channels |
+| **Tool results** | Tool-derived context may appear as a configured channel; **visibility ≠ execution authorization** |
+
+```text
+ParticipantRoleId("sceptyk")
+        │
+        ↓
+ParticipantContextVisibilityPolicy
+        │
+        ├── "problem"
+        ├── "evidence"
+        └── "peer-proposals"
+                 │
+                 ↓
+       future context materializer
+                 │
+                 ↓
+            participant
+```
+
+Contract: `intergrax/contracts/decision_context_visibility.py` — `DeliberationContextId`, `ParticipantContextVisibilityPolicy`, `ParticipantContextVisibilityConfiguration`.
+
+**Private chain-of-thought is not stored** — only structured positions, alternatives, evidence refs, and unresolved questions may appear as explicitly configured context surfaces.
 
 ---
 

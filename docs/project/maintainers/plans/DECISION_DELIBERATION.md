@@ -49,7 +49,7 @@
 | DS-DELIB-02 | P0 | Single Model strategy (baseline) | **Done** — profile-bound inference via `intergrax/runtime/execution/inference_profile.py`; `intergrax/contracts/single_model_strategy.py`; `intergrax/runtime/execution/single_model_deliberation.py`; `tests/unit/runtime/execution/test_inference_profile_resolution.py` |
 | DS-DELIB-03 | P1 | Disagreement artifact typed contract | **Done** — identity hardening via `DecisionProposalRef`; `intergrax/contracts/decision_disagreement.py`; `tests/unit/contracts/test_decision_disagreement.py` |
 | DS-DELIB-04 | P1 | Participant role configuration model | **Done** — `intergrax/contracts/decision_participants.py`; `tests/unit/contracts/test_decision_participants.py` |
-| DS-DELIB-05 | P1 | Context visibility policy per role | **Planned** |
+| DS-DELIB-05 | P1 | Context visibility policy per role | **Done** — `intergrax/contracts/decision_context_visibility.py`; `tests/unit/contracts/test_decision_context_visibility.py` |
 | DS-DELIB-06 | P2 | Rule-Based strategy | **Planned** |
 | DS-DELIB-07 | P2 | Hybrid strategy composition | **Planned** |
 
