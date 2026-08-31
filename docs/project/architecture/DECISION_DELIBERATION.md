@@ -105,13 +105,39 @@ Single Model declares a **logical inference profile** requirement in strategy co
 
 ## Participant roles
 
-Roles are **configuration**, not hard-coded platform personas:
+Participant roles are **user-defined opaque string identifiers**. Platform core does **not** define proposer/skeptic/synthesizer role enums — those names appear only as configuration examples. Role semantics come from the host-supplied **instruction** on each `ParticipantRoleDefinition`; `role_id` itself carries no platform meaning.
 
 | Concept | Rule |
 | ------- | ---- |
-| **Role definition** | Strategy config / profile — e.g. proposer, skeptic, synthesizer |
-| **Participant binding** | Maps role → model profile / provider / tool access |
-| **Context visibility** | Per-role policy — what each participant may see |
+| **Role definition** | `ParticipantRoleDefinition` — opaque `role_id` + semantic `instruction` |
+| **Participant binding** | `ParticipantBinding` — maps `participant_id` + `role_id` → logical `InferenceProfileId` |
+| **Context visibility** | Per-role policy — what each participant may see (DS-DELIB-05) |
+
+```text
+RoleDefinition
+    │
+    ├─ role_id: "sceptyk"          (user-defined opaque string)
+    └─ instruction                 (semantic role instruction)
+            │
+            ↓
+ParticipantBinding
+    ├─ participant_id
+    ├─ role_id
+    └─ inference_profile_id
+            │
+            ↓
+Execution System
+            │
+            ↓
+InferenceProfileResolver
+            │
+            ↓
+LLMAdapter
+```
+
+One `RoleDefinition` may bind to many `ParticipantBinding` entries (e.g. three skeptics with different profiles). The same `InferenceProfileId` may appear across different roles. Unused role definitions without bindings are allowed — runtime strategy may select a subset later.
+
+**Model resolution:** Decision System declares only `InferenceProfileId`. **Execution System** resolves `InferenceProfileId` → `LLMAdapter` via host-owned `InferenceProfileResolver` — Decision Strategy does not construct adapters.
 
 <a href="assets/fullsize/decision-deliberation-independence.md">
 <picture>
