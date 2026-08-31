@@ -68,7 +68,7 @@
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-PLUGIN-01 | P1 | DecisionStrategy registry + configuration | **Planned** |
+| DS-PLUGIN-01 | P1 | Platform Plugins discovery/config integration for `DecisionStrategy` (same canonical registry as DS-DELIB-01) | **Planned** |
 | DS-PLUGIN-02 | P1 | Verification stage registration surface | **Planned** |
 | DS-PLUGIN-03 | P2 | Plugin/config integration for Decision Artifact kind registration | **Planned** |
 

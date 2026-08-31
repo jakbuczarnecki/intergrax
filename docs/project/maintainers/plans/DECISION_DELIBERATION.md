@@ -7,7 +7,7 @@
 
 > **DS-DOC-CLEAN (2026-08-30):** Deliberation / Council strategy architecture **FROZEN**. **Council runtime NOT STARTED.**
 
-**Last updated:** 2026-08-30 — DS-DOC-CLEAN plan consolidation.
+**Last updated:** 2026-08-31 — DS-DELIB-01 strategy contracts + registry ownership alignment.
 
 ---
 
@@ -26,7 +26,7 @@
 | Layer | Status |
 | ----- | ------ |
 | **Target architecture** | **FROZEN** |
-| **DecisionStrategy contract** | **PLANNED** |
+| **DecisionStrategy contract** | **Done** — DS-DELIB-01 |
 | **Council strategy** | **PLANNED** — not started |
 | **CURRENT production** | Single-model agent/graph paths only |
 
@@ -36,16 +36,16 @@
 
 | Phase | Status | Section |
 | ----- | ------ | ------- |
-| DS-DELIB | PLANNED | [below](#phase-ds-delib--strategy-foundation) |
+| DS-DELIB | IN PROGRESS | [below](#phase-ds-delib--strategy-foundation) |
 | DS-COUNCIL | PLANNED | [below](#phase-ds-council--council-strategy) |
 
 ---
 
-## Phase DS-DELIB — Strategy foundation (PLANNED)
+## Phase DS-DELIB — Strategy foundation (IN PROGRESS)
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-DELIB-01 | P0 | `DecisionStrategy` protocol + registry | **Planned** |
+| DS-DELIB-01 | P0 | `DecisionStrategy` protocol + canonical domain registry | **Done** — `intergrax/contracts/decision_strategy.py`; `tests/unit/contracts/test_decision_strategy.py` |
 | DS-DELIB-02 | P0 | Single Model strategy (baseline) | **Planned** |
 | DS-DELIB-03 | P1 | Disagreement artifact typed contract | **Planned** |
 | DS-DELIB-04 | P1 | Participant role configuration model | **Planned** |
@@ -62,7 +62,7 @@
 | DS-COUNCIL-01 | P1 | Council strategy — parallel proposals | **Planned** |
 | DS-COUNCIL-02 | P1 | Structured disagreement capture | **Planned** |
 | DS-COUNCIL-03 | P1 | Synthesis candidate emission | **Planned** |
-| DS-COUNCIL-04 | P1 | Bounded rounds under Nexus budget | **Planned** |
+| DS-COUNCIL-04 | P1 | Bounded rounds under hosting Execution budget | **Planned** |
 | DS-COUNCIL-05 | P2 | Deadlock → Adjudication / UNRESOLVED routing | **Planned** |
 
 ---
