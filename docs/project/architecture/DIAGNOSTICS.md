@@ -643,7 +643,13 @@ Reconstruction **does not** materialize `tuple[all PlatformFunctionalEvidence]`.
 - Traversal semantics: **monotonic ordered scan** (Option B). No snapshot isolation.
 - Late insert **after** cursor: visible in subsequent pages of the same traversal.
 - Late insert **before** already-consumed cursor: not visible in the current traversal; requires a new reconstruction cycle. No offset duplicates/skips.
-- InMemory query: O(log N + page_size) per page — no full-history sort per page.
+- **Contract semantics:** keyset pagination correctness is provider-independent; offset pagination is forbidden.
+- **InMemory provider complexity (F1-R2 — honest, provider-specific):**
+  - `append`: O(N) worst-case per execution scope — `bisect.insort` on a Python `list` shifts elements after O(log N) position lookup.
+  - Unfiltered page: O(log N + page_size) for cursor positioning plus bounded record materialization; no full-history resort per page.
+  - Filtered page (`attempt_id`, `kind`): O(log N + scanned_records); worst-case O(N) when filters are sparse relative to scope cardinality.
+  - Reconstruction CPU: O(N) streamed over paginated history; reconstruction memory: O(1) relative to history cardinality (bounded accumulator).
+- The generic `FunctionalEvidencePersistence` contract does **not** promise asymptotic bounds — scale SLOs belong to per-provider qualification.
 
 ### Completeness vs diagnostic certainty (F1-R1)
 
@@ -681,7 +687,58 @@ optional higher-level inference later (NOT in F1/F2)
 
 **Code references:** `functional_validation.py` · `functional_validation_evidence.py` · `functional_evidence.py` · `functional_evidence_persistence.py` · `functional_evidence_query_cursor.py` · `functional_evidence_reconstruction.py` · `in_memory_functional_evidence_persistence.py` · `problem_signal.py` · `intergrax/contracts/functional_evidence_bounds.py`.
 
-**Persistence qualification:** `InMemoryFunctionalEvidencePersistence` = test/local/conformance only. Durable DocumentStore/Mongo evidence backend = not yet qualified.
+### Functional evidence persistence qualification (F1-R2)
+
+```text
+FunctionalEvidencePersistence (contract semantics)
+        │
+        ├── InMemoryFunctionalEvidencePersistence
+        │     correctness: qualified
+        │     contract conformance: qualified
+        │     durable: NO
+        │     scale-qualified: NO
+        │     intended use: unit / local / conformance
+        │
+        └── DocumentStore / Mongo (future)
+              correctness: pending
+              durable: pending
+              scale-qualified: pending
+              intended use: future production
+```
+
+| Provider | Correctness | Durable | Scale qualified | Intended use |
+| -------- | ----------- | ------- | --------------- | ------------ |
+| `InMemoryFunctionalEvidencePersistence` | YES | NO | NO | unit / local / conformance |
+| DocumentStore (future) | pending | pending | pending | future production |
+| Mongo (future) | pending | pending | pending | future production |
+
+**Qualification levels (do not conflate):**
+
+| Level | F1-R2 status |
+| ----- | ------------ |
+| Architecture qualified | YES — generic typed evidence + bounded reconstruction + keyset semantics |
+| Correctness qualified | YES — pagination, boundedness, correlation, late-arrival semantics |
+| Production durability qualified | NO — durable functional-evidence backend not implemented |
+| Production scale qualified | NO — no bounded-index durable provider or high-cardinality proof |
+
+Functional Diagnostics must **not** be labelled **PRODUCTION SCALE QUALIFIED** until a durable provider exists with a bounded query index strategy and passes real high-cardinality qualification.
+
+**F1-R2 foundation freeze (qualified):** functional diagnostics architecture · functional evidence contracts · bounded reconstruction semantics · pagination semantics.
+
+**Not frozen (explicit gaps):** production persistence qualification · production scale qualification · root-cause analysis.
+
+```text
+FUNCTIONAL DIAGNOSTICS ARCHITECTURE = QUALIFIED
+FUNCTIONAL EVIDENCE FOUNDATION = QUALIFIED
+BOUNDED RECONSTRUCTION = QUALIFIED
+PAGINATION CORRECTNESS = QUALIFIED
+
+DURABLE PERSISTENCE = NOT YET QUALIFIED
+PRODUCTION SCALE = NOT YET QUALIFIED
+ROOT-CAUSE ANALYSIS = NOT YET IMPLEMENTED
+```
+
+Recommendation after R2: **READY_FOR_DIAG-FUNCTIONAL-2** (generic analysis may proceed on contract + InMemory conformance provider; production deployment qualification remains a separate later gate).
 
 ---
 

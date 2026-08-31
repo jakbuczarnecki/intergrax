@@ -1,7 +1,22 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework — proprietary and confidential.
 
-"""In-memory functional evidence persistence (tests, conformance, local lab)."""
+"""In-memory functional evidence persistence (correctness / conformance only).
+
+Intended use: unit tests, local lab, contract conformance — **not** enterprise
+scale-qualified production storage.
+
+Complexity (per execution scope, N = records for tenant+task+run):
+
+- append: O(N) worst-case — ``bisect.insort`` on a Python ``list`` shifts
+  elements after O(log N) position lookup.
+- unfiltered page: O(log N + page_size) — cursor positioning plus bounded page
+  materialization; no full-history resort per page.
+- filtered page (``attempt_id``, ``kind``): O(log N + scanned_records);
+  worst-case O(N) when filters are sparse.
+- reconstruction (via ``FunctionalEvidenceReconstructor``): O(N) streamed CPU;
+  O(1) memory retained relative to history cardinality.
+"""
 
 from __future__ import annotations
 
