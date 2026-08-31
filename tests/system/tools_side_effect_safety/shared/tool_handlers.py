@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import contextvars
 import os
 
 import httpx
@@ -16,10 +15,6 @@ from tests.system.tools_side_effect_safety.shared.contracts import (
     ChargeOutput,
 )
 
-proof_mode_var: contextvars.ContextVar[str] = contextvars.ContextVar("proof_mode", default="normal")
-proof_delay_var: contextvars.ContextVar[int] = contextvars.ContextVar("proof_delay_ms", default=0)
-http_timeout_var: contextvars.ContextVar[float] = contextvars.ContextVar("http_timeout_s", default=120.0)
-
 
 class ChargeHandler:
     def __init__(self, *, effect_service_url: str, worker_source: str) -> None:
@@ -27,19 +22,20 @@ class ChargeHandler:
         self._worker_source = worker_source
 
     def execute(self, request: ToolExecutionRequest[ChargeInput]) -> ChargeOutput:
-        mode = proof_mode_var.get()
-        delay_ms = proof_delay_var.get()
+        inp = request.input
+        mode = inp.proof_mode
+        delay_ms = inp.proof_delay_ms
         headers = {
             "X-Proof-Mode": str(mode),
             "X-Proof-Delay-Ms": str(delay_ms),
             "X-Worker-Source": self._worker_source,
         }
         payload = {
-            "business_operation_id": request.input.business_operation_id,
-            "amount": request.input.amount,
+            "business_operation_id": inp.business_operation_id,
+            "amount": inp.amount,
             "worker_source": self._worker_source,
         }
-        timeout_s = max(http_timeout_var.get(), 1.0)
+        timeout_s = max(inp.http_timeout_s, 1.0)
         with httpx.Client(timeout=timeout_s) as client:
             response = client.post(
                 f"{self._effect_service_url}/charge",
@@ -62,12 +58,17 @@ class FailBeforeHandler:
 
 class BadOutputHandler(ChargeHandler):
     def execute(self, request: ToolExecutionRequest[ChargeInput]) -> BaseModel:
-        token = proof_mode_var.set("bad_output_after_commit")
-        try:
-            super().execute(request)
-            return ChargeInput(business_operation_id="invalid", amount=-1)
-        finally:
-            proof_mode_var.reset(token)
+        patched_input = request.input.model_copy(update={"proof_mode": "bad_output_after_commit"})
+        patched_request = ToolExecutionRequest(
+            run_id=request.run_id,
+            step_id=request.step_id,
+            tool_id=request.tool_id,
+            input=patched_input,
+            idempotency_key=request.idempotency_key,
+            declarative_hitl_invocation_scope_id=request.declarative_hitl_invocation_scope_id,
+        )
+        super().execute(patched_request)
+        return ChargeInput(business_operation_id="invalid", amount=-1)
 
 
 def resolve_effect_service_url() -> str:

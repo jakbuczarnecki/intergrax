@@ -15,7 +15,11 @@ CREATE TABLE IF NOT EXISTS effect_attempts (
     request_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
     worker_source TEXT,
     proof_mode TEXT,
-    received_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    received_delay_ms INTEGER,
+    received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    effect_committed_at TIMESTAMPTZ,
+    response_started_at TIMESTAMPTZ,
+    response_finished_at TIMESTAMPTZ
 );
 
 CREATE INDEX IF NOT EXISTS idx_effect_attempts_business_operation_id

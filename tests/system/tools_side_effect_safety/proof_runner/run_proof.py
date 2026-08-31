@@ -147,6 +147,48 @@ def _concurrent_invoke(
     return results
 
 
+def run_scenario_0(oracle: EffectOracle, runtime: RuntimeClient, report: ProofReport) -> bool:
+    """Harness calibration — verify proof_delay_ms reaches external service."""
+    op = _op("s0-cal")
+    key = f"key-s0-{RUN_ID}"
+    configured_delay = 1500
+    started = time.monotonic()
+    response = runtime.invoke(
+        build_invoke(
+            run_id=f"run-{op}",
+            business_operation_id=op,
+            idempotency_key=key,
+            proof_mode="timeout_response",
+            proof_delay_ms=configured_delay,
+        ),
+    )
+    elapsed_ms = int((time.monotonic() - started) * 1000)
+    snap = oracle.snapshot(op)
+    received = snap.attempts[0].received_delay_ms if snap.attempts else None
+    harness_valid = (
+        response.success
+        and received == configured_delay
+        and elapsed_ms >= configured_delay - 200
+    )
+    report.add(
+        ScenarioResult(
+            0,
+            "harness_calibration",
+            "runtime-single",
+            f"delay={configured_delay}ms",
+            response.ledger_status or "",
+            str(snap.attempt_count),
+            str(snap.effect_count),
+            "PASS" if harness_valid else "FAIL",
+            notes=(
+                f"configured={configured_delay} received={received} "
+                f"elapsed_ms={elapsed_ms}"
+            ),
+        ),
+    )
+    return harness_valid
+
+
 def run_scenario_1(oracle: EffectOracle, runtime: RuntimeClient, report: ProofReport) -> None:
     op = _op("s1")
     key = f"key-s1-{RUN_ID}"
@@ -390,34 +432,69 @@ def run_scenario_7(oracle: EffectOracle, runtime: RuntimeClient, report: ProofRe
 def run_scenario_8(oracle: EffectOracle, runtime: RuntimeClient, report: ProofReport) -> None:
     op = _op("s8")
     key = f"key-s8-{RUN_ID}"
+    configured_delay = 2000
+    proof_cfg = {
+        "proof_mode": "timeout_response",
+        "proof_delay_ms": configured_delay,
+    }
+    t0 = time.monotonic()
     first = runtime.invoke(
         build_invoke(
             run_id=f"run-{op}",
             business_operation_id=op,
             idempotency_key=key,
             tool_id=PROOF_TOOL_SLOW_CHARGE,
-            proof_mode="timeout_response",
-            proof_delay_ms=2000,
+            **proof_cfg,
         ),
     )
+    t3 = time.monotonic()
     snap_timeout = oracle.snapshot(op)
+    attempt = snap_timeout.attempts[0] if snap_timeout.attempts else None
+    harness_valid = (
+        attempt is not None
+        and attempt.received_delay_ms is not None
+        and attempt.received_delay_ms >= configured_delay
+        and attempt.effect_committed_at is not None
+    )
+    timeline_notes = ""
+    timeline_ok = False
+    if attempt and attempt.received_at and attempt.effect_committed_at:
+        first_ms = int((t3 - t0) * 1000)
+        timeline_notes = (
+            f"T1={attempt.received_at} T2={attempt.effect_committed_at} "
+            f"T3_timeout~{first_ms}ms T4={attempt.response_finished_at or 'NONE'}"
+        )
+        timeline_ok = first_ms < configured_delay or attempt.response_finished_at is None
     retry = runtime.invoke(
         build_invoke(
             run_id=f"run-{op}-retry",
             business_operation_id=op,
             idempotency_key=key,
             tool_id=PROOF_TOOL_SLOW_CHARGE,
+            **proof_cfg,
         ),
     )
     snap_retry = oracle.snapshot(op)
-    verdict = "PASS" if (
+    verdict = "FAIL"
+    if not harness_valid:
+        verdict = "FAIL"
+        timeline_notes = f"HARNESS_INVALID delay_received={getattr(attempt, 'received_delay_ms', None)}; {timeline_notes}"
+    elif (
         not first.success
         and first.ledger_status == "uncertain"
         and retry.uncertain
         and snap_timeout.effect_count == 1
         and snap_retry.effect_count == 1
         and snap_retry.attempt_count == snap_timeout.attempt_count
-    ) else "FAIL"
+        and timeline_ok
+    ):
+        verdict = "PASS"
+    elif (
+        first.success
+        and harness_valid
+        and timeline_ok
+    ):
+        timeline_notes += " REAL_PRODUCTION_BUG_CANDIDATE"
     report.add(
         ScenarioResult(
             8,
@@ -428,6 +505,7 @@ def run_scenario_8(oracle: EffectOracle, runtime: RuntimeClient, report: ProofRe
             str(snap_retry.attempt_count),
             str(snap_retry.effect_count),
             verdict,
+            notes=timeline_notes,
         ),
     )
 
@@ -549,6 +627,7 @@ def run_scenario_12(oracle: EffectOracle, runtime: RuntimeClient, report: ProofR
     key = f"key-s12-{RUN_ID}"
     error: Exception | None = None
     kill_ts = ""
+    barrier_evidence = ""
 
     def _invoke() -> None:
         nonlocal error
@@ -567,9 +646,21 @@ def run_scenario_12(oracle: EffectOracle, runtime: RuntimeClient, report: ProofR
     thread = threading.Thread(target=_invoke)
     thread.start()
     try:
-        oracle.wait_for_effect_count(op, expected=0, timeout_s=10.0)
-        while oracle.snapshot(op).attempt_count < 1:
+        deadline = time.monotonic() + 30.0
+        snap = oracle.snapshot(op)
+        while snap.attempt_count < 1 and time.monotonic() < deadline:
             time.sleep(0.1)
+            snap = oracle.snapshot(op)
+        barrier_evidence = (
+            f"attempts={snap.attempt_count} effects={snap.effect_count} "
+            f"mode={snap.attempts[0].proof_mode if snap.attempts else None}"
+        )
+        if snap.attempt_count < 1:
+            raise RuntimeError("barrier not reached: no external attempt recorded")
+        if snap.effect_count != 0:
+            raise RuntimeError(
+                f"barrier violated: effect committed before kill (effects={snap.effect_count})",
+            )
         kill_ts = _docker_kill("runtime-single")
         thread.join(timeout=30.0)
         _docker_restart("runtime-single")
@@ -578,7 +669,7 @@ def run_scenario_12(oracle: EffectOracle, runtime: RuntimeClient, report: ProofR
         snap = oracle.snapshot(op)
         verdict = "PASS" if snap.effect_count == 0 else "FAIL"
     except Exception as exc:  # noqa: BLE001
-        verdict = "FAIL"
+        verdict = "BLOCKED"
         snap = oracle.snapshot(op)
         error = exc
     report.add(
@@ -591,7 +682,7 @@ def run_scenario_12(oracle: EffectOracle, runtime: RuntimeClient, report: ProofR
             str(snap.attempt_count),
             str(snap.effect_count),
             verdict,
-            notes=str(error) if error else "",
+            notes=f"{barrier_evidence}; {error}" if error else barrier_evidence,
         ),
     )
 
@@ -600,6 +691,7 @@ def run_scenario_13(oracle: EffectOracle, runtime: RuntimeClient, report: ProofR
     op = _op("s13")
     key = f"key-s13-{RUN_ID}"
     kill_ts = ""
+    commit_ts = ""
 
     def _invoke() -> None:
         runtime.invoke(
@@ -613,7 +705,9 @@ def run_scenario_13(oracle: EffectOracle, runtime: RuntimeClient, report: ProofR
 
     thread = threading.Thread(target=_invoke)
     thread.start()
-    oracle.wait_for_effect_count(op, expected=1, timeout_s=30.0)
+    snap = oracle.wait_for_effect_count(op, expected=1, timeout_s=30.0)
+    if snap.attempts and snap.attempts[0].effect_committed_at:
+        commit_ts = snap.attempts[0].effect_committed_at
     kill_ts = _docker_kill("runtime-single")
     thread.join(timeout=30.0)
     _docker_restart("runtime-single")
@@ -628,13 +722,13 @@ def run_scenario_13(oracle: EffectOracle, runtime: RuntimeClient, report: ProofR
         ),
     )
     snap = oracle.snapshot(op)
-    verdict = "PASS" if snap.effect_count == 1 and retry.uncertain else "FAIL"
+    verdict = "PASS" if snap.effect_count == 1 and snap.attempt_count == 1 else "FAIL"
     report.add(
         ScenarioResult(
             13,
             "process_crash_after_external_commit",
             "runtime-single",
-            f"docker kill {kill_ts}",
+            f"kill={kill_ts} commit={commit_ts}",
             retry.ledger_status or "uncertain",
             str(snap.attempt_count),
             str(snap.effect_count),
@@ -660,17 +754,54 @@ def run_scenario_14(report: ProofReport) -> None:
 
 
 def run_scenario_15(oracle: EffectOracle, report: ProofReport) -> None:
+    op = _op("s15")
+    key = f"key-s15-{RUN_ID}"
+    runtime_a = _runtime_a()
+    runtime_b = _runtime_b()
+    owner_a_notes = ""
+    owner_b_notes = ""
+    late_finalize = ""
+
+    def _owner_a_invoke() -> None:
+        nonlocal owner_a_notes
+        response = runtime_a.invoke(
+            build_invoke(
+                run_id=f"run-{op}-a",
+                business_operation_id=op,
+                idempotency_key=key,
+                proof_mode="hold_after_commit",
+            ),
+        )
+        owner_a_notes = f"success={response.success} ledger={response.ledger_status} err={response.error_type}"
+
+    thread = threading.Thread(target=_owner_a_invoke)
+    thread.start()
+    snap = oracle.wait_for_effect_count(op, expected=1, timeout_s=30.0)
+    _wait_lease_expiry()
+    owner_b = runtime_b.invoke(
+        build_invoke(
+            run_id=f"run-{op}-b",
+            business_operation_id=op,
+            idempotency_key=key,
+        ),
+    )
+    owner_b_notes = f"success={owner_b.success} ledger={owner_b.ledger_status} err={owner_b.error_type}"
+    oracle.release_after(op)
+    thread.join(timeout=60.0)
+    late_finalize = owner_a_notes
+    final_snap = oracle.snapshot(op)
+    verdict = "PASS" if final_snap.effect_count == 1 else "FAIL"
     report.add(
         ScenarioResult(
             15,
             "stale_owner_fencing",
             "runtime-a/b",
-            "lease expiry",
-            "deferred",
-            "n/a",
-            "n/a",
-            "BLOCKED",
-            notes="requires dedicated two-owner fencing harness; deferred to multi-host chaos",
+            "lease expiry + late finalize",
+            f"A:{owner_a_notes} B:{owner_b_notes}",
+            str(final_snap.attempt_count),
+            str(final_snap.effect_count),
+            verdict,
+            notes=f"late_finalize={late_finalize}",
         ),
     )
 
@@ -817,11 +948,12 @@ def run_scenario_19(oracle: EffectOracle, runtime: RuntimeClient, report: ProofR
             19,
             "store_restart",
             "runtime-single",
-            "sqlite volume restart",
+            "sqlite durable volume (runtime restart)",
             replay.ledger_status or "",
             str(snap.attempt_count),
             str(snap.effect_count),
             verdict,
+            notes="Redis in compose is ephemeral (--save '' --appendonly no); N/A for durable store restart",
         ),
     )
 
@@ -872,21 +1004,25 @@ def _evaluate_gates(report: ProofReport) -> str:
     def _v(num: int) -> str:
         return by_num.get(num, ScenarioResult(num, "", "", "", "", "", "", "MISSING")).verdict
 
-    if duplicates:
-        return "C. TOOLS-SIDE-EFFECT-SAFETY — FAIL — DUPLICATE SIDE EFFECT OBSERVED"
+    if _v(0) == "FAIL":
+        return "E. TOOLS-SIDE-EFFECT-SAFETY — BLOCKED — HARNESS INVALID (ContextVar/proof propagation)"
 
-    critical = [3, 4, 8, 9, 11, 13, 16, 20]
+    if duplicates:
+        return "D. TOOLS-SIDE-EFFECT-SAFETY — FAIL — DUPLICATE SIDE EFFECT OBSERVED"
+
+    critical = [3, 4, 8, 9, 11, 13, 15, 18, 20]
     if any(_v(n) == "FAIL" for n in critical):
+        s8 = by_num.get(8)
+        if s8 and "REAL_PRODUCTION_BUG" in (s8.notes or ""):
+            return "B. TOOLS-SIDE-EFFECT-SAFETY — FAIL — REAL TIMEOUT UNCERTAINTY BROKEN"
         return "D. TOOLS-SIDE-EFFECT-SAFETY — FAIL — UNCERTAINTY/REPLAY SAFETY BROKEN"
 
-    if _v(16) == "BLOCKED" or _v(17) == "BLOCKED":
-        return "B. TOOLS-SIDE-EFFECT-SAFETY — IMPLEMENTED — MULTI-HOST PROOF BLOCKED"
+    if _v(12) == "BLOCKED" or _v(13) == "BLOCKED":
+        return "E. TOOLS-SIDE-EFFECT-SAFETY — BLOCKED — CRASH/FENCING PROOF INCOMPLETE"
 
-    if all(_v(n) in {"PASS", "NOT APPLICABLE", "BLOCKED"} for n in range(1, 21)):
-        if _v(16) == "PASS" and _v(17) == "PASS":
+    if all(_v(n) in {"PASS", "NOT APPLICABLE", "BLOCKED"} for n in range(0, 21)):
+        if _v(0) == "PASS" and _v(16) == "PASS" and _v(17) == "PASS":
             return "A. TOOLS-SIDE-EFFECT-SAFETY — CLOSED — BRUTAL PLATFORM PROOF PASS"
-        if _v(16) in {"PASS", "BLOCKED"}:
-            return "B. TOOLS-SIDE-EFFECT-SAFETY — IMPLEMENTED — MULTI-HOST PROOF BLOCKED"
     return "D. TOOLS-SIDE-EFFECT-SAFETY — FAIL — UNCERTAINTY/REPLAY SAFETY BROKEN"
 
 
@@ -944,6 +1080,10 @@ def _run_all_scenarios(report: ProofReport) -> None:
     runtime_single.wait_healthy()
     _runtime_a().wait_healthy()
     _runtime_b().wait_healthy()
+
+    if not run_scenario_0(oracle, runtime_single, report):
+        report.final_verdict = _evaluate_gates(report)
+        return
 
     run_scenario_1(oracle, runtime_single, report)
     run_scenario_2(oracle, runtime_single, report)

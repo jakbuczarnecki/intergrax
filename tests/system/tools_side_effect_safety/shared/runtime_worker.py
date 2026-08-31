@@ -62,9 +62,6 @@ from tests.system.tools_side_effect_safety.shared.tool_handlers import (
     BadOutputHandler,
     ChargeHandler,
     FailBeforeHandler,
-    http_timeout_var,
-    proof_delay_var,
-    proof_mode_var,
     resolve_effect_service_url,
 )
 
@@ -274,9 +271,6 @@ class RuntimeWorkerApp:
             policy_bundle=policy_bundle,
             declarative_hitl_grant=hitl_grant,
         )
-        mode_token = proof_mode_var.set(body.proof_mode)
-        delay_token = proof_delay_var.set(body.proof_delay_ms)
-        timeout_token = http_timeout_var.set(120.0)
         request = ToolExecutionRequest(
             run_id=body.run_id,
             step_id=body.step_id,
@@ -284,6 +278,9 @@ class RuntimeWorkerApp:
             input=ChargeInput(
                 business_operation_id=body.business_operation_id,
                 amount=body.amount,
+                proof_mode=body.proof_mode,
+                proof_delay_ms=body.proof_delay_ms,
+                http_timeout_s=120.0,
             ),
             idempotency_key=body.idempotency_key,
         )
@@ -297,12 +294,7 @@ class RuntimeWorkerApp:
             )
 
         try:
-            try:
-                result = self.invoker.invoke(state=state, agent_id="proof-agent", request=request)
-            finally:
-                proof_mode_var.reset(mode_token)
-                proof_delay_var.reset(delay_token)
-                http_timeout_var.reset(timeout_token)
+            result = self.invoker.invoke(state=state, agent_id="proof-agent", request=request)
         except IdempotencyOperationConflictError as exc:
             return InvokeResponse(
                 success=False,

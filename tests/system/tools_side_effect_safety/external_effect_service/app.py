@@ -78,6 +78,22 @@ class _Runtime:
 runtime = _Runtime()
 
 
+def _ensure_schema(conn: psycopg.Connection) -> None:
+    conn.execute(
+        "ALTER TABLE effect_attempts ADD COLUMN IF NOT EXISTS received_delay_ms INTEGER",
+    )
+    conn.execute(
+        "ALTER TABLE effect_attempts ADD COLUMN IF NOT EXISTS effect_committed_at TIMESTAMPTZ",
+    )
+    conn.execute(
+        "ALTER TABLE effect_attempts ADD COLUMN IF NOT EXISTS response_started_at TIMESTAMPTZ",
+    )
+    conn.execute(
+        "ALTER TABLE effect_attempts ADD COLUMN IF NOT EXISTS response_finished_at TIMESTAMPTZ",
+    )
+    conn.commit()
+
+
 def _connect() -> psycopg.Connection:
     return psycopg.connect(DATABASE_URL)
 
@@ -90,6 +106,7 @@ def _wait_for_db(deadline_s: float = 60.0) -> None:
         try:
             with _connect() as conn:
                 conn.execute("SELECT 1")
+                _ensure_schema(conn)
             return
         except Exception:
             time.sleep(0.5)
@@ -144,9 +161,15 @@ def get_effects(business_operation_id: str) -> dict[str, Any]:
             (business_operation_id,),
         ).fetchall()
         attempts = conn.execute(
-            "SELECT COUNT(*) FROM effect_attempts WHERE business_operation_id = %s",
+            """
+            SELECT id, proof_mode, received_delay_ms, worker_source,
+                   received_at, effect_committed_at, response_started_at, response_finished_at
+            FROM effect_attempts
+            WHERE business_operation_id = %s
+            ORDER BY id
+            """,
             (business_operation_id,),
-        ).fetchone()
+        ).fetchall()
     return {
         "effects": [
             {
@@ -158,7 +181,20 @@ def get_effects(business_operation_id: str) -> dict[str, Any]:
             }
             for row in rows
         ],
-        "attempt_count": int(attempts[0]) if attempts else 0,
+        "attempt_count": len(attempts),
+        "attempts": [
+            {
+                "id": row[0],
+                "proof_mode": row[1],
+                "received_delay_ms": row[2],
+                "worker_source": row[3],
+                "received_at": row[4].isoformat() if row[4] else None,
+                "effect_committed_at": row[5].isoformat() if row[5] else None,
+                "response_started_at": row[6].isoformat() if row[6] else None,
+                "response_finished_at": row[7].isoformat() if row[7] else None,
+            }
+            for row in attempts
+        ],
     }
 
 
@@ -182,21 +218,29 @@ async def charge(request: Request, body: ChargeRequest) -> Response:
     proof_mode = request.headers.get("X-Proof-Mode", "normal")
     delay_ms = int(request.headers.get("X-Proof-Delay-Ms", "0"))
     worker_source = body.worker_source or request.headers.get("X-Worker-Source")
+    received_at = datetime.now(UTC)
 
     with _connect() as conn:
-        conn.execute(
+        attempt_row = conn.execute(
             """
-            INSERT INTO effect_attempts (business_operation_id, request_payload, worker_source, proof_mode)
-            VALUES (%s, %s::jsonb, %s, %s)
+            INSERT INTO effect_attempts (
+                business_operation_id, request_payload, worker_source,
+                proof_mode, received_delay_ms, received_at
+            )
+            VALUES (%s, %s::jsonb, %s, %s, %s, %s)
+            RETURNING id
             """,
             (
                 body.business_operation_id,
                 json.dumps(body.model_dump()),
                 worker_source,
                 proof_mode,
+                delay_ms,
+                received_at,
             ),
-        )
+        ).fetchone()
         conn.commit()
+    attempt_id = int(attempt_row[0])
 
     if proof_mode == "fail_before_commit":
         raise HTTPException(status_code=500, detail="fail_before_commit")
@@ -226,6 +270,10 @@ async def charge(request: Request, body: ChargeRequest) -> Response:
                 committed_at,
             ),
         ).fetchone()
+        conn.execute(
+            "UPDATE effect_attempts SET effect_committed_at = %s WHERE id = %s",
+            (committed_at, attempt_id),
+        )
         conn.commit()
     effect_id = int(row[0])
 
@@ -235,6 +283,7 @@ async def charge(request: Request, body: ChargeRequest) -> Response:
         except TimeoutError:
             raise HTTPException(status_code=504, detail="hold_after_commit_timeout") from None
 
+    response_started_at = datetime.now(UTC)
     if proof_mode in {"delay_after_commit", "timeout_response"}:
         await asyncio.sleep(max(delay_ms, 0) / 1000.0)
 
@@ -244,6 +293,17 @@ async def charge(request: Request, body: ChargeRequest) -> Response:
         await asyncio.sleep(3600)
 
     if proof_mode == "bad_output_after_commit":
+        response_finished_at = datetime.now(UTC)
+        with _connect() as conn:
+            conn.execute(
+                """
+                UPDATE effect_attempts
+                SET response_started_at = %s, response_finished_at = %s
+                WHERE id = %s
+                """,
+                (response_started_at, response_finished_at, attempt_id),
+            )
+            conn.commit()
         return Response(
             content=json.dumps({"unexpected": True}),
             media_type="application/json",
@@ -255,4 +315,15 @@ async def charge(request: Request, body: ChargeRequest) -> Response:
         business_operation_id=body.business_operation_id,
         committed_at=committed_at.isoformat(),
     )
+    response_finished_at = datetime.now(UTC)
+    with _connect() as conn:
+        conn.execute(
+            """
+            UPDATE effect_attempts
+            SET response_started_at = %s, response_finished_at = %s
+            WHERE id = %s
+            """,
+            (response_started_at, response_finished_at, attempt_id),
+        )
+        conn.commit()
     return Response(content=payload.model_dump_json(), media_type="application/json")

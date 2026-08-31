@@ -19,6 +19,9 @@ DEFAULT_AGENT = "proof-agent"
 class ChargeInput(BaseModel):
     business_operation_id: str = Field(min_length=1)
     amount: int = Field(default=100, ge=0)
+    proof_mode: str = "normal"
+    proof_delay_ms: int = 0
+    http_timeout_s: float = 120.0
 
 
 class ChargeOutput(BaseModel):

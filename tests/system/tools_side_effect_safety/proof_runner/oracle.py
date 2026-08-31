@@ -13,10 +13,23 @@ import httpx
 
 
 @dataclass(frozen=True, slots=True)
+class AttemptRecord:
+    id: int
+    proof_mode: str | None
+    received_delay_ms: int | None
+    worker_source: str | None
+    received_at: str | None
+    effect_committed_at: str | None
+    response_started_at: str | None
+    response_finished_at: str | None
+
+
+@dataclass(frozen=True, slots=True)
 class OperationSnapshot:
     business_operation_id: str
     effect_count: int
     attempt_count: int
+    attempts: tuple[AttemptRecord, ...] = ()
 
 
 class EffectOracle:
@@ -50,10 +63,24 @@ class EffectOracle:
             response = client.get(f"{self._base_url}/admin/effects/{business_operation_id}")
             response.raise_for_status()
             payload = response.json()
+        attempts = tuple(
+            AttemptRecord(
+                id=int(item["id"]),
+                proof_mode=item.get("proof_mode"),
+                received_delay_ms=item.get("received_delay_ms"),
+                worker_source=item.get("worker_source"),
+                received_at=item.get("received_at"),
+                effect_committed_at=item.get("effect_committed_at"),
+                response_started_at=item.get("response_started_at"),
+                response_finished_at=item.get("response_finished_at"),
+            )
+            for item in payload.get("attempts", [])
+        )
         return OperationSnapshot(
             business_operation_id=business_operation_id,
             effect_count=len(payload.get("effects", [])),
-            attempt_count=int(payload.get("attempt_count", 0)),
+            attempt_count=int(payload.get("attempt_count", len(attempts))),
+            attempts=attempts,
         )
 
     def wait_for_effect_count(
