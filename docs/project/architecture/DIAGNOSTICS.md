@@ -429,9 +429,35 @@ List-index rows carry minimal metadata: `problem_id`, `record_version`, `last_se
 
 Crash recovery: incomplete create/update leaves skippable projections; subsequent idempotent `create` / `update` repair paths converge indexes (`_repair_indexes_for_record`, `_ensure_list_indexes`).
 
-### List cursor trust model (DIAG-ENTERPRISE-1-R1)
+### Projection reconciliation (DIAG-ENTERPRISE-1-R2)
 
-Production hosts authenticate continuation cursors with HMAC-SHA256 over a tenant- and status-filter-bound payload. Secret enters only through composition (`INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET` via `resolve_problem_list_cursor_secret()`). **No static default secret in production.** Restart with a new secret invalidates previously issued cursors (documented limitation; no transparent rotation in this slice).
+Derived `list:{scope}:…` rows can become **proven stale** or **proven orphan** only via explicit bounded maintenance — never in the hot read path.
+
+| Classification | Meaning | Hot read | Maintenance (`reconcile_list_indexes`) |
+|---|---|---|---|
+| `CONSISTENT` | Index matches canonical at same `record_version` | Return Problem | No-op; v1 rows may upgrade to v2 metadata |
+| `TRANSIENT_OR_UNCERTAIN` | Active transition or missing `projection_written_at` / before cutoff | Skip | No delete/repair |
+| `PROVEN_STALE` | Mismatch persists and `projection_written_at < stale_before` | Skip | Repair from canonical (conditional replace/delete) |
+| `PROVEN_ORPHAN` | Canonical missing and `projection_written_at < stale_before` | Skip | Conditional delete |
+| `CORRUPT` | Same-version metadata/id mismatch | `ProblemPersistenceIntegrityError` | Count only; no silent repair |
+
+List-index schema v2 adds `projection_written_at` (UTC, writer clock). v1 rows remain readable; reconciliation upgrades consistent v1 rows to v2. Writers emit v2 only.
+
+Maintenance contract:
+
+```text
+DocumentStoreProblemPersistence.reconcile_list_indexes(
+  tenant_id, stale_before, scope?, limit, cursor?
+) → ProblemListIndexReconciliationPage
+```
+
+Bounded by `limit` index rows per call; continuation via document-store cursor. No scheduler/daemon in R2 — callable maintenance seam for admin/tests/future lifecycle.
+
+Operator visibility: `projection_telemetry_snapshot()` (skip/repair counters) and `projection_health()` (`HEALTHY` / `DEGRADED`). No RuntimeEvent recursion.
+
+### List cursor trust model (DIAG-ENTERPRISE-1-R1 / R2)
+
+Production hosts authenticate continuation cursors with HMAC-SHA256 over a tenant- and status-filter-bound payload. Secret enters only through composition (`INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET` via `resolve_problem_list_cursor_secret()`). **Minimum 32 UTF-8 bytes** (random 256-bit recommended). **No static default secret in production.** Restart with a new secret invalidates previously issued cursors (documented limitation; no transparent rotation in this slice).
 
 ### Production persistence contract
 

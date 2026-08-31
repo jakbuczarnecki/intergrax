@@ -9,6 +9,7 @@ import base64
 import binascii
 import hmac
 import json
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Literal
@@ -20,7 +21,8 @@ from intergrax.runtime.diagnostics.problem_lifecycle import ProblemId, ProblemSt
 if TYPE_CHECKING:
     from intergrax.runtime.diagnostics.problem_lifecycle import Problem
 
-_LIST_INDEX_SCHEMA = "intergrax.diagnostic_problem.list_index.v1"
+_LIST_INDEX_SCHEMA_V1 = "intergrax.diagnostic_problem.list_index.v1"
+_LIST_INDEX_SCHEMA_V2 = "intergrax.diagnostic_problem.list_index.v2"
 _LIST_ROW_PREFIX = "list:"
 _LIST_SCOPE_ALL = "all"
 _MAX_LIST_INDEX_MICROS = 10**16
@@ -31,7 +33,23 @@ _PROBLEM_ID_FIELD = "problem_id"
 _LAST_SEEN_AT_FIELD = "last_seen_at"
 _STATUS_FIELD = "status"
 _RECORD_VERSION_FIELD = "record_version"
+_PROJECTION_WRITTEN_AT_FIELD = "projection_written_at"
 _UTC_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
+
+
+@dataclass(frozen=True, slots=True)
+class DecodedListIndexData:
+    """Typed decode result for a derived Problem list index row."""
+
+    problem_id: ProblemId
+    last_seen_at: datetime
+    status: ProblemStatus
+    record_version: int
+    projection_written_at: datetime | None
+    schema_version: Literal[
+        "intergrax.diagnostic_problem.list_index.v1",
+        "intergrax.diagnostic_problem.list_index.v2",
+    ]
 
 
 class ProblemListQueryCursorError(Exception):
@@ -196,25 +214,30 @@ def encode_list_index_data(
     last_seen_at: datetime,
     status: ProblemStatus,
     record_version: int,
+    projection_written_at: datetime | None = None,
 ) -> dict[str, str]:
     _validate_list_index_record_version(record_version)
     _validate_list_index_timestamp(last_seen_at)
-    return {
-        "schema_version": _LIST_INDEX_SCHEMA,
+    payload: dict[str, str] = {
         _PROBLEM_ID_FIELD: str(problem_id),
         _LAST_SEEN_AT_FIELD: _encode_datetime(last_seen_at),
         _STATUS_FIELD: status.value,
         _RECORD_VERSION_FIELD: str(record_version),
     }
+    if projection_written_at is None:
+        payload["schema_version"] = _LIST_INDEX_SCHEMA_V1
+        return payload
+    _validate_list_index_timestamp(projection_written_at)
+    payload["schema_version"] = _LIST_INDEX_SCHEMA_V2
+    payload[_PROJECTION_WRITTEN_AT_FIELD] = _encode_datetime(projection_written_at)
+    return payload
 
 
-def decode_list_index_data(
-    data: object,
-) -> tuple[ProblemId, datetime, ProblemStatus, int]:
+def decode_list_index_data(data: object) -> DecodedListIndexData:
     if not isinstance(data, dict):
         raise ValueError("invalid diagnostic problem list index")
     schema_version = data.get("schema_version")
-    if schema_version != _LIST_INDEX_SCHEMA:
+    if schema_version not in {_LIST_INDEX_SCHEMA_V1, _LIST_INDEX_SCHEMA_V2}:
         raise ValueError("unsupported diagnostic problem list index schema")
     problem_id = data.get(_PROBLEM_ID_FIELD)
     last_seen_at = data.get(_LAST_SEEN_AT_FIELD)
@@ -232,7 +255,34 @@ def decode_list_index_data(
     _validate_list_index_record_version(parsed_version)
     parsed_last_seen = _decode_datetime(last_seen_at)
     _validate_list_index_timestamp(parsed_last_seen)
-    return ProblemId(problem_id), parsed_last_seen, ProblemStatus(status), parsed_version
+    projection_written_at: datetime | None = None
+    if schema_version == _LIST_INDEX_SCHEMA_V2:
+        raw_projection_written_at = data.get(_PROJECTION_WRITTEN_AT_FIELD)
+        if not isinstance(raw_projection_written_at, str) or not raw_projection_written_at:
+            raise ValueError("invalid diagnostic problem list index projection_written_at")
+        projection_written_at = _decode_datetime(raw_projection_written_at)
+        _validate_list_index_timestamp(projection_written_at)
+    return DecodedListIndexData(
+        problem_id=ProblemId(problem_id),
+        last_seen_at=parsed_last_seen,
+        status=ProblemStatus(status),
+        record_version=parsed_version,
+        projection_written_at=projection_written_at,
+        schema_version=schema_version,
+    )
+
+
+def list_index_scope_from_row_key(row_key: str) -> ProblemListScope | None:
+    if not row_key.startswith(_LIST_ROW_PREFIX):
+        return None
+    remainder = row_key[len(_LIST_ROW_PREFIX) :]
+    scope_token, _, _problem_id = remainder.partition(":")
+    if not scope_token or not _:
+        return None
+    try:
+        return ProblemListScope(scope_token)
+    except ValueError:
+        return None
 
 
 def list_index_row_key(*, scope: ProblemListScope, problem: Problem) -> str:
