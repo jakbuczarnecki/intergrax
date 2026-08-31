@@ -56,7 +56,7 @@ _MAX_QUERY_PAGE_LIMIT = 5000
 _MAX_OCCURRENCE_PAGE_LIMIT = 1000
 _MAX_SORT_MICROS = 10**16
 _UTC_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
-_MAX_ATOMIC_BATCH_RETRIES = 64
+_MAX_ATOMIC_BATCH_RETRIES = 256
 
 
 @runtime_checkable
@@ -323,7 +323,7 @@ class DocumentStoreProblemOccurrencePersistence(ProblemOccurrencePersistence):
             )
         try:
             result = self._document_store.execute_partition_atomic_batch(batch)
-        except RuntimeError:
+        except (RuntimeError, OSError):
             return None
         if result.primary_created:
             return ProblemOccurrenceAppendResult.CREATED

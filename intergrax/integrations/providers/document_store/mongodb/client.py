@@ -243,8 +243,33 @@ class MongoCollectionClient:
                         raise TypeError("partition_atomic_batch_on_created_op_invalid")
             return PartitionAtomicBatchResult(primary_created=primary_created)
 
-        with self._client.start_session() as session:
-            return session.with_transaction(_callback)
+        try:
+            with self._client.start_session() as session:
+                return session.with_transaction(_callback)
+        except PartitionAtomicBatchConflictError:
+            raise
+        except Exception as exc:
+            if self._is_retryable_partition_batch_error(exc):
+                raise PartitionAtomicBatchConflictError(
+                    "partition_atomic_batch_transient",
+                ) from exc
+            raise
+
+    @staticmethod
+    def _is_retryable_partition_batch_error(exc: BaseException) -> bool:
+        try:
+            from pymongo.errors import OperationFailure, PyMongoError
+        except ImportError:
+            return False
+        if isinstance(exc, OperationFailure):
+            labels = getattr(exc, "details", {}) or {}
+            error_labels = labels.get("errorLabels") or getattr(exc, "_error_labels", ())
+            if "TransientTransactionError" in error_labels:
+                return True
+            if "UnknownTransactionCommitResult" in error_labels:
+                return True
+            return int(getattr(exc, "code", 0)) in {112, 251}
+        return isinstance(exc, PyMongoError)
 
     def _put_if_absent_in_session(
         self,

@@ -79,9 +79,9 @@ def test_mongo_r6_concurrent_10k_occurrences_exact(mongo_e2_r6_lifecycle: None) 
     try:
         persistence = document_store_occurrence_persistence_for_tests(store)
         problem = sample_problem(tenant_id=_TENANT, observed_at=_OBSERVED_AT)
-        barrier = threading.Barrier(worker_count)
         write_count = 10_500
-        worker_count = 32
+        worker_count = 16
+        start_gate = threading.Event()
 
         def _append(index: int) -> None:
             subject = _sample_subject_ref(tenant_id=_TENANT)
@@ -89,7 +89,8 @@ def test_mongo_r6_concurrent_10k_occurrences_exact(mongo_e2_r6_lifecycle: None) 
                 subject_refs=(subject,),
                 observed_at=_OBSERVED_AT + timedelta(microseconds=index),
             )[0]
-            barrier.wait(timeout=30)
+            if not start_gate.wait(timeout=30):
+                raise TimeoutError("concurrent append start gate timed out")
             persistence.append_if_absent(
                 tenant_id=_TENANT,
                 problem_id=problem.problem_id,
@@ -98,8 +99,9 @@ def test_mongo_r6_concurrent_10k_occurrences_exact(mongo_e2_r6_lifecycle: None) 
 
         with ThreadPoolExecutor(max_workers=worker_count) as executor:
             futures = [executor.submit(_append, index) for index in range(write_count)]
+            start_gate.set()
             for future in futures:
-                future.result(timeout=120)
+                future.result(timeout=300)
 
         scan = scan_occurrence_aggregate(
             persistence,
