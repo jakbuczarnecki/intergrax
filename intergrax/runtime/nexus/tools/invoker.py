@@ -92,6 +92,9 @@ class RuntimeToolInvoker:
         self._executor = executor
         self._scope_policy = scope_policy
         self._pre_effect_coordinator = pre_effect_coordinator
+        # Shared pool for timeout-isolated tool execution; default worker count
+        # preserves concurrent independent invocations (not max_workers=1).
+        self._execution_pool = ThreadPoolExecutor()
 
     @property
     def registry(self) -> ToolRegistry:
@@ -330,6 +333,44 @@ class RuntimeToolInvoker:
     ) -> bool:
         return contract.side_effects and request.idempotency_key is not None
 
+    @staticmethod
+    def _emit_tool_invocation_start_non_blocking(
+        *,
+        state: "RuntimeState",
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+    ) -> None:
+        """Emit tool_invocation_start; observability failures must not block execution."""
+        try:
+            state.trace_event(
+                component=TraceComponent.TOOLS,
+                step="tool_invocation_start",
+                message="Tool invocation started.",
+                level=TraceLevel.INFO,
+                payload=ToolInvocationStartDiagV1(
+                    tool_id=contract.tool_id,
+                    step_id=str(request.step_id),
+                    side_effects=contract.side_effects,
+                    input_payload=request.input.model_dump(),
+                    risk_level=contract.risk_level.value,
+                    injects_context=contract.injects_context,
+                    category=contract.category,
+                    timeout_ms=contract.timeout_ms,
+                ),
+            )
+        except Exception:
+            # Observability-only: execution and idempotency path continue.
+            try:
+                state.trace_event(
+                    component=TraceComponent.TOOLS,
+                    step="tool_invocation_start_trace_error",
+                    message="Tool invocation start trace failed (non-blocking).",
+                    level=TraceLevel.WARNING,
+                )
+            except Exception:
+                # Best-effort warning; do not mask ToolExecutor failures.
+                pass
+
     def _execute_external_effect(
         self,
         *,
@@ -339,22 +380,11 @@ class RuntimeToolInvoker:
         request: ToolExecutionRequest[BaseModel],
         boundary: _ExternalEffectBoundary | None = None,
     ) -> ToolExecutionResult[BaseModel]:
-        # 3) trace start
-        state.trace_event(
-            component=TraceComponent.TOOLS,
-            step="tool_invocation_start",
-            message="Tool invocation started.",
-            level=TraceLevel.INFO,
-            payload=ToolInvocationStartDiagV1(
-                tool_id=contract.tool_id,
-                step_id=str(request.step_id),
-                side_effects=contract.side_effects,
-                input_payload=request.input.model_dump(),
-                risk_level=contract.risk_level.value,
-                injects_context=contract.injects_context,
-                category=contract.category,
-                timeout_ms=contract.timeout_ms,
-            ),
+        # 3) trace start (non-blocking after idempotency claim / replay resolution)
+        self._emit_tool_invocation_start_non_blocking(
+            state=state,
+            contract=contract,
+            request=request,
         )
 
         # 4) execute + normalize (timeout + runtime-managed retries)
@@ -551,11 +581,10 @@ class RuntimeToolInvoker:
         boundary: _ExternalEffectBoundary | None = None,
     ) -> BaseModel:
         timeout_s = contract.timeout_ms / 1000.0
-        with ThreadPoolExecutor(max_workers=1) as pool:
-            if boundary is not None:
-                boundary.may_have_started = True
-            future = pool.submit(self._executor.execute, request)
-            return future.result(timeout=timeout_s)
+        future = self._execution_pool.submit(self._executor.execute, request)
+        if boundary is not None:
+            boundary.may_have_started = True
+        return future.result(timeout=timeout_s)
 
     @staticmethod
     def _map_error(contract: ToolContract, exc: Exception) -> RuntimeErrorCode:

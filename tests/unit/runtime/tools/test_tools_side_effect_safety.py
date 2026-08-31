@@ -126,6 +126,49 @@ class EscapeAfterEffectBoundaryInvoker(RuntimeToolInvoker):
         raise RuntimeError("unexpected escape after effect boundary")
 
 
+class PreSubmitFailureInvoker(RuntimeToolInvoker):
+    def _execute_with_policy(self, **kwargs):
+        raise RuntimeError("unexpected pre-submit failure")
+
+
+class SubmitBoundaryProbeInvoker(RuntimeToolInvoker):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.boundary_before_submit: bool | None = None
+
+    def _execute_once(self, contract, request, *, boundary=None):
+        if boundary is not None:
+            self.boundary_before_submit = boundary.may_have_started
+        return super()._execute_once(contract, request, boundary=boundary)
+
+
+class SlowCountingExecutor:
+    def __init__(self, *, delay_s: float = 0.15) -> None:
+        self.calls = 0
+        self.concurrent = 0
+        self.max_concurrent = 0
+        self._lock = threading.Lock()
+        self._delay_s = delay_s
+
+    def execute(self, request: ToolExecutionRequest[ValueInput]) -> ValueOutput:
+        with self._lock:
+            self.calls += 1
+            self.concurrent += 1
+            self.max_concurrent = max(self.max_concurrent, self.concurrent)
+        try:
+            time.sleep(self._delay_s)
+            return ValueOutput(result=request.input.value * 2)
+        finally:
+            with self._lock:
+                self.concurrent -= 1
+
+
+class FailingExecutor:
+    def execute(self, request: ToolExecutionRequest[ValueInput]) -> ValueOutput:
+        del request
+        raise RuntimeError("executor side-effect failed")
+
+
 class GovernanceDummyState(DummyState):
     def __init__(
         self,
@@ -867,21 +910,110 @@ def test_replay_after_success_does_not_execute_again() -> None:
     assert executor.calls == 1
 
 
-def test_post_claim_trace_failure_before_executor_finalizes_not_started() -> None:
+def test_post_claim_trace_failure_before_executor_still_executes_and_replays() -> None:
     executor = CountingExecutor()
     invoker, store = _idempotent_invoker(executor)
     state = TraceFailBeforeExecutorState()
-    request = _request(key="r5-trace-before-executor")
+    request = _request(key="r6-trace-before-executor")
 
-    with pytest.raises(RuntimeError, match="trace failed before executor"):
+    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert result.success
+    assert executor.calls == 1
+    assert store.get_status("tenant_test", "r6-trace-before-executor") == InvocationStatus.COMPLETED
+
+    replay = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert replay.success
+    assert executor.calls == 1
+
+
+def test_post_claim_trace_failure_with_executor_failure_marks_uncertain() -> None:
+    executor = FailingExecutor()
+    invoker, store = _idempotent_invoker(executor)
+    state = TraceFailBeforeExecutorState()
+    request = _request(key="r6-trace-before-executor-fail")
+
+    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert result.success is False
+    assert store.get_status("tenant_test", "r6-trace-before-executor-fail") == InvocationStatus.UNCERTAIN
+
+    with pytest.raises(InvocationUncertaintyError):
+        invoker.invoke(state=state, agent_id="agent", request=request)
+
+
+def test_submit_boundary_set_only_after_successful_submit() -> None:
+    executor = CountingExecutor()
+    store = InMemoryIdempotencyStore()
+    registry = ToolRegistry()
+    _register_tool(registry, tool_id="tool_a", side_effects=True)
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = SubmitBoundaryProbeInvoker(
+        registry=registry,
+        executor=executor,
+        pre_effect_coordinator=coordinator,
+    )
+    state = DummyState()
+    request = _request(key="r6-submit-boundary")
+
+    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert result.success
+    assert invoker.boundary_before_submit is False
+    assert executor.calls == 1
+
+
+def test_defensive_pre_submit_failure_finalizes_not_started() -> None:
+    executor = CountingExecutor()
+    store = InMemoryIdempotencyStore()
+    registry = ToolRegistry()
+    _register_tool(registry, tool_id="tool_a", side_effects=True)
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = PreSubmitFailureInvoker(
+        registry=registry,
+        executor=executor,
+        pre_effect_coordinator=coordinator,
+    )
+    state = DummyState()
+    request = _request(key="r6-defensive-pre-submit")
+
+    with pytest.raises(RuntimeError, match="unexpected pre-submit failure"):
         invoker.invoke(state=state, agent_id="agent", request=request)
 
     assert executor.calls == 0
-    assert store.get_status("tenant_test", "r5-trace-before-executor") == InvocationStatus.COMPLETED
+    assert store.get_status("tenant_test", "r6-defensive-pre-submit") == InvocationStatus.COMPLETED
+    cached = store.get_completed_result("tenant_test", "r6-defensive-pre-submit")
+    assert cached is not None
+    assert cached.success is False
+    assert cached.effect_certainty == ToolEffectCertainty.NOT_STARTED
 
-    replay = invoker.invoke(state=state, agent_id="agent", request=request)
-    assert replay.success is False
-    assert executor.calls == 0
+
+def test_independent_keys_execute_concurrently() -> None:
+    executor = SlowCountingExecutor()
+    invoker, store = _idempotent_invoker(executor)
+    state = DummyState()
+    request_a = _request(key="r6-concurrent-a", value=2)
+    request_b = _request(key="r6-concurrent-b", value=3)
+    results: list[ToolExecutionResult[ValueOutput]] = []
+    errors: list[Exception] = []
+
+    def worker(request: ToolExecutionRequest[ValueInput]) -> None:
+        try:
+            results.append(invoker.invoke(state=state, agent_id="agent", request=request))
+        except Exception as exc:
+            errors.append(exc)
+
+    t1 = threading.Thread(target=worker, args=(request_a,))
+    t2 = threading.Thread(target=worker, args=(request_b,))
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
+
+    assert not errors
+    assert len(results) == 2
+    assert all(result.success for result in results)
+    assert executor.calls == 2
+    assert executor.max_concurrent == 2
+    assert store.get_status("tenant_test", "r6-concurrent-a") == InvocationStatus.COMPLETED
+    assert store.get_status("tenant_test", "r6-concurrent-b") == InvocationStatus.COMPLETED
 
 
 def test_post_claim_trace_failure_after_executor_marks_uncertain() -> None:
