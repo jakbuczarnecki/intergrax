@@ -34,6 +34,69 @@ def test_empty_registry_valid() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
+def test_direct_constructor_empty_registry_valid() -> None:
+    registry = DecisionArtifactKindRegistry()
+    assert registry.kinds == ()
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_direct_constructor_canonical_kinds_valid() -> None:
+    kind_a = validate_decision_artifact_kind("alpha")
+    kind_b = validate_decision_artifact_kind("beta")
+    registry = DecisionArtifactKindRegistry(kinds=(kind_a, kind_b))
+    assert registry.kinds == (kind_a, kind_b)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_direct_constructor_invalid_empty_kind_rejected() -> None:
+    with pytest.raises(ValueError):
+        DecisionArtifactKindRegistry(kinds=(DecisionArtifactKind(""),))
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_direct_constructor_duplicate_rejected() -> None:
+    kind = validate_decision_artifact_kind("alpha")
+    with pytest.raises(DecisionArtifactKindAlreadyRegisteredError):
+        DecisionArtifactKindRegistry(kinds=(kind, kind))
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_direct_constructor_noncanonical_order_rejected() -> None:
+    kind_a = validate_decision_artifact_kind("alpha")
+    kind_b = validate_decision_artifact_kind("beta")
+    with pytest.raises(ValueError, match="canonical order"):
+        DecisionArtifactKindRegistry(kinds=(kind_b, kind_a))
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_direct_constructor_cannot_bypass_factory_invariants() -> None:
+    """Direct construction must enforce the same invariants as the factory."""
+    kind_a = validate_decision_artifact_kind("alpha")
+    kind_b = validate_decision_artifact_kind("beta")
+
+    with pytest.raises(ValueError):
+        DecisionArtifactKindRegistry(kinds=(DecisionArtifactKind(""),))
+
+    with pytest.raises(DecisionArtifactKindAlreadyRegisteredError):
+        DecisionArtifactKindRegistry(kinds=(kind_a, kind_a))
+
+    with pytest.raises(ValueError, match="canonical order"):
+        DecisionArtifactKindRegistry(kinds=(kind_b, kind_a))
+
+    canonical = DecisionArtifactKindRegistry(kinds=(kind_a, kind_b))
+    assert canonical.kinds == (kind_a, kind_b)
+
+    factory_canonicalized = decision_artifact_kind_registry((kind_b, kind_a))
+    assert factory_canonicalized.kinds == (kind_a, kind_b)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
 def test_one_valid_kind() -> None:
     kind = validate_decision_artifact_kind("incident_resolution")
     registry = decision_artifact_kind_registry((kind,))

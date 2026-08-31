@@ -32,6 +32,9 @@ class DecisionArtifactKindRegistry:
 
     kinds: tuple[DecisionArtifactKind, ...] = ()
 
+    def __post_init__(self) -> None:
+        _validate_registry_kinds(self.kinds)
+
 
 def decision_artifact_kind_registry(
     kinds: tuple[DecisionArtifactKind, ...] = (),
@@ -75,7 +78,7 @@ def require_registered_decision_artifact_kind(
     return validated
 
 
-def _canonicalize_kinds(
+def _validate_kinds_no_duplicates(
     kinds: tuple[DecisionArtifactKind, ...],
 ) -> tuple[DecisionArtifactKind, ...]:
     validated: list[DecisionArtifactKind] = []
@@ -88,4 +91,22 @@ def _canonicalize_kinds(
             )
         seen.add(normalized)
         validated.append(normalized)
+    return tuple(validated)
+
+
+def _validate_registry_kinds(
+    kinds: tuple[DecisionArtifactKind, ...],
+) -> None:
+    validated = _validate_kinds_no_duplicates(kinds)
+    canonical = tuple(sorted(validated, key=lambda value: value))
+    if validated != canonical:
+        raise ValueError(
+            "DecisionArtifactKindRegistry.kinds must be in canonical order",
+        )
+
+
+def _canonicalize_kinds(
+    kinds: tuple[DecisionArtifactKind, ...],
+) -> tuple[DecisionArtifactKind, ...]:
+    validated = _validate_kinds_no_duplicates(kinds)
     return tuple(sorted(validated, key=lambda value: value))
