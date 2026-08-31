@@ -185,6 +185,57 @@ def _validate_identity_lineage_alignment(
         )
 
 
+def _validate_proposal_ref_identity_lineage_alignment(
+    identity: DecisionIdentity,
+    lineage_ref: DecisionLineageRef,
+) -> None:
+    if identity.version != lineage_ref.version:
+        raise ValueError(
+            "DecisionProposalRef identity.version must match lineage_ref.version",
+        )
+
+
+def decision_proposal_ref_sort_key(ref: DecisionProposalRef) -> tuple[str | int | None, ...]:
+    """Deterministic ordering key using typed Decision identity and lineage fields."""
+    execution = ref.identity.execution
+    return (
+        str(ref.identity.decision_id),
+        ref.identity.tenant_id,
+        ref.identity.scope.namespace,
+        ref.identity.scope.subject,
+        str(ref.identity.execution.task_id),
+        str(ref.identity.execution.run_id),
+        str(ref.identity.execution.attempt_id),
+        str(execution.execution_id) if execution.execution_id is not None else None,
+        ref.lineage_ref.version.value,
+        str(ref.lineage_ref.branch_id),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionProposalRef:
+    """Exact proposal reference within one canonical Decision identity boundary."""
+
+    identity: DecisionIdentity
+    lineage_ref: DecisionLineageRef
+
+    def __post_init__(self) -> None:
+        if type(self.identity) is not DecisionIdentity:
+            raise TypeError("DecisionProposalRef.identity must be DecisionIdentity")
+        if type(self.lineage_ref) is not DecisionLineageRef:
+            raise TypeError("DecisionProposalRef.lineage_ref must be DecisionLineageRef")
+        _validate_proposal_ref_identity_lineage_alignment(self.identity, self.lineage_ref)
+
+
+def decision_proposal_ref(
+    *,
+    identity: DecisionIdentity,
+    lineage_ref: DecisionLineageRef,
+) -> DecisionProposalRef:
+    """Build one exact proposal reference with identity/lineage alignment enforced."""
+    return DecisionProposalRef(identity=identity, lineage_ref=lineage_ref)
+
+
 @dataclass(frozen=True, slots=True)
 class CandidateDecision(Generic[T]):
     """Proposed decision version subject to verification, revision, or adjudication."""
@@ -201,6 +252,16 @@ class CandidateDecision(Generic[T]):
         if type(self.lineage) is not DecisionVersionLineage:
             raise TypeError("CandidateDecision.lineage must be DecisionVersionLineage")
         _validate_identity_lineage_alignment(self.identity, self.lineage)
+
+
+def candidate_decision_ref(candidate: CandidateDecision[T]) -> DecisionProposalRef:
+    """Derive the exact proposal reference for one candidate decision."""
+    if type(candidate) is not CandidateDecision:
+        raise TypeError("candidate must be CandidateDecision")
+    return DecisionProposalRef(
+        identity=candidate.identity,
+        lineage_ref=candidate.lineage.current,
+    )
 
 
 @dataclass(frozen=True, slots=True)

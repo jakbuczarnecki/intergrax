@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import pytest
 
@@ -20,8 +20,11 @@ from intergrax.contracts.decision_record import (
     DecisionArtifactKind,
     DecisionBranchId,
     DecisionLineageRef,
+    DecisionProposalRef,
     DecisionVersionLineage,
+    candidate_decision_ref,
     decision_lineage_ref,
+    decision_proposal_ref,
     decision_version_lineage,
     initial_decision_branch_id,
     validate_decision_artifact_kind,
@@ -587,3 +590,92 @@ def test_adversarial_scope_substitution_records_not_equal() -> None:
         identity=_identity(namespace="incident", subject="incident-999"),
     )
     assert trusted != substituted
+
+
+def _proposal_ref(
+    *,
+    identity: DecisionIdentity | None = None,
+    branch_id: str = "analysis-a",
+    version: DecisionVersion | None = None,
+) -> DecisionProposalRef:
+    resolved_identity = identity or _identity()
+    resolved_version = version or resolved_identity.version
+    return decision_proposal_ref(
+        identity=resolved_identity,
+        lineage_ref=decision_lineage_ref(resolved_version, DecisionBranchId(branch_id)),
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_decision_proposal_ref_valid() -> None:
+    ref = _proposal_ref()
+    assert ref.identity.version == ref.lineage_ref.version
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_decision_proposal_ref_identity_version_mismatch_rejected() -> None:
+    identity = _identity(version=DecisionVersion(2))
+    with pytest.raises(ValueError, match="identity.version must match lineage_ref.version"):
+        DecisionProposalRef(
+            identity=identity,
+            lineage_ref=decision_lineage_ref(DecisionVersion(3), DecisionBranchId("analysis-a")),
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_sibling_same_decision_distinct_proposal_refs() -> None:
+    identity = _identity(version=DecisionVersion(2))
+    ref_a = _proposal_ref(identity=identity, branch_id="analysis-a", version=DecisionVersion(2))
+    ref_b = _proposal_ref(identity=identity, branch_id="analysis-b", version=DecisionVersion(2))
+    assert ref_a != ref_b
+    assert ref_a.identity == ref_b.identity
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_same_lineage_different_decision_distinct_proposal_refs() -> None:
+    identity_a = _identity()
+    identity_b = _identity()
+    ref_a = _proposal_ref(identity=identity_a, branch_id="analysis-a")
+    ref_b = _proposal_ref(identity=identity_b, branch_id="analysis-a")
+    assert ref_a.lineage_ref == ref_b.lineage_ref
+    assert ref_a != ref_b
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_decision_proposal_ref_is_immutable() -> None:
+    ref = _proposal_ref()
+    replaced = replace(ref)
+    assert replaced == ref
+    assert replaced is not ref
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_decision_proposal_ref_direct_constructor_safe() -> None:
+    identity = _identity(version=DecisionVersion(1))
+    ref = DecisionProposalRef(
+        identity=identity,
+        lineage_ref=decision_lineage_ref(DecisionVersion(1), DecisionBranchId("analysis-a")),
+    )
+    assert ref.identity.decision_id == identity.decision_id
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_candidate_decision_ref_derivation() -> None:
+    identity = _identity(version=DecisionVersion(2))
+    parent = decision_lineage_ref(DecisionVersion(1))
+    lineage = _linear_lineage(DecisionVersion(2), parent, branch_id=DecisionBranchId("analysis-a"))
+    candidate = CandidateDecision(
+        identity=identity,
+        artifact=_artifact(),
+        lineage=lineage,
+    )
+    derived = candidate_decision_ref(candidate)
+    expected = decision_proposal_ref(identity=identity, lineage_ref=lineage.current)
+    assert derived == expected

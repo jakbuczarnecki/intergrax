@@ -175,6 +175,10 @@ Structured fields include:
 - **evidence refs** — shared evidentiary pointers,
 - **unresolved questions** — open items for adjudication or UNRESOLVED.
 
+Disagreement binds exact proposals within one canonical Decision identity boundary;
+proposal references pair `DecisionIdentity` with `DecisionLineageRef` so sibling
+branches from different decisions, tenants, or scopes cannot be mixed.
+
 ---
 
 ## Synthesis
