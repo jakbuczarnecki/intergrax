@@ -123,6 +123,7 @@ class ProblemListMaintenanceCycleState:
     had_issues: bool = False
     current_cycle_found_issues: bool = False
     started_at: datetime | None = None
+    page_in_flight: bool = False
 
 
 @dataclass(slots=True)
@@ -283,6 +284,7 @@ class ProblemListIndexReconciler:
             cursor=cursor,
             now=now,
         )
+        self._admit_maintenance_page(cycle_state=cycle_state)
 
         partition_key = f"intergrax.diagnostic_problem.v1:{tenant_id}"
         row_key_prefix = (
@@ -307,82 +309,85 @@ class ProblemListIndexReconciler:
         last_row_key: str | None = None
         continuation = store_cursor
         has_more = False
+        page_complete = False
 
-        while examined < limit:
-            fetch_limit = min(limit - examined, _RECONCILE_PAGE_LIMIT)
-            page = self.document_store.query(
-                partition_key,
-                limit=fetch_limit,
-                row_key_prefix=row_key_prefix,
-                cursor=continuation,
-            )
-            if not page.documents:
-                break
-
-            for index_document in page.documents:
-                if examined >= limit:
-                    has_more = True
+        try:
+            while examined < limit:
+                fetch_limit = min(limit - examined, _RECONCILE_PAGE_LIMIT)
+                page = self.document_store.query(
+                    partition_key,
+                    limit=fetch_limit,
+                    row_key_prefix=row_key_prefix,
+                    cursor=continuation,
+                )
+                if not page.documents:
                     break
-                examined += 1
-                last_row_key = index_document.row_key
-                outcome = self._reconcile_one(
-                    index_document=index_document,
-                    tenant_id=tenant_id,
+
+                for index_document in page.documents:
+                    if examined >= limit:
+                        has_more = True
+                        break
+                    examined += 1
+                    last_row_key = index_document.row_key
+                    outcome = self._reconcile_one(
+                        index_document=index_document,
+                        tenant_id=tenant_id,
+                        partition_key=partition_key,
+                        now=now,
+                        minimum_projection_age=effective_minimum_age,
+                    )
+                    if outcome is ProblemListIndexClassification.CONSISTENT:
+                        consistent += 1
+                    elif outcome is ProblemListIndexClassification.TRANSIENT_OR_UNCERTAIN:
+                        transient += 1
+                    elif outcome is ProblemListIndexClassification.PROVEN_STALE:
+                        repaired += 1
+                    elif outcome is ProblemListIndexClassification.PROVEN_ORPHAN:
+                        deleted += 1
+                    else:
+                        corrupt += 1
+
+                if examined >= limit:
+                    has_more = (
+                        page.next_cursor is not None
+                        or len(page.documents) >= fetch_limit
+                    )
+                    break
+
+                if page.next_cursor is None:
+                    break
+                continuation = page.next_cursor
+
+            next_cursor: str | None = None
+            if has_more and last_row_key is not None:
+                next_cursor = self.document_query_cursor_codec.encode(
                     partition_key=partition_key,
-                    now=now,
-                    minimum_projection_age=effective_minimum_age,
+                    row_key_prefix=row_key_prefix,
+                    last_row_key=last_row_key,
                 )
-                if outcome is ProblemListIndexClassification.CONSISTENT:
-                    consistent += 1
-                elif outcome is ProblemListIndexClassification.TRANSIENT_OR_UNCERTAIN:
-                    transient += 1
-                elif outcome is ProblemListIndexClassification.PROVEN_STALE:
-                    repaired += 1
-                elif outcome is ProblemListIndexClassification.PROVEN_ORPHAN:
-                    deleted += 1
-                else:
-                    corrupt += 1
 
-            if examined >= limit:
-                has_more = (
-                    page.next_cursor is not None
-                    or len(page.documents) >= fetch_limit
-                )
-                break
+            if repaired > 0 or deleted > 0 or corrupt > 0:
+                with self.health_state._lock:
+                    cycle_state.current_cycle_found_issues = True
+                    cycle_state.had_issues = True
 
-            if page.next_cursor is None:
-                break
-            continuation = page.next_cursor
-
-        next_cursor: str | None = None
-        if has_more and last_row_key is not None:
-            next_cursor = self.document_query_cursor_codec.encode(
-                partition_key=partition_key,
-                row_key_prefix=row_key_prefix,
-                last_row_key=last_row_key,
+            page_complete = not has_more
+            return ProblemListIndexReconciliationPage(
+                examined=examined,
+                consistent=consistent,
+                transient=transient,
+                repaired=repaired,
+                deleted=deleted,
+                corrupt=corrupt,
+                next_cursor=next_cursor,
+                has_more=has_more,
             )
-
-        if repaired > 0 or deleted > 0 or corrupt > 0:
-            with self.health_state._lock:
-                cycle_state.current_cycle_found_issues = True
-                cycle_state.had_issues = True
-
-        if not has_more:
-            self._complete_maintenance_cycle(
+        finally:
+            self._release_maintenance_page(
                 cycle_key=cycle_key,
                 cycle_state=cycle_state,
+                complete=page_complete,
             )
-
-        return ProblemListIndexReconciliationPage(
-            examined=examined,
-            consistent=consistent,
-            transient=transient,
-            repaired=repaired,
-            deleted=deleted,
-            corrupt=corrupt,
-            next_cursor=next_cursor,
-            has_more=has_more,
-        )
 
     def _begin_or_continue_cycle(
         self,
@@ -424,22 +429,38 @@ class ProblemListIndexReconciler:
                 )
             return existing
 
-    def _complete_maintenance_cycle(
+    def _admit_maintenance_page(
+        self,
+        *,
+        cycle_state: ProblemListMaintenanceCycleState,
+    ) -> None:
+        with self.health_state._lock:
+            if cycle_state.page_in_flight:
+                raise ProblemListIndexReconciliationError(
+                    "maintenance cycle page already in progress",
+                )
+            cycle_state.page_in_flight = True
+
+    def _release_maintenance_page(
         self,
         *,
         cycle_key: ProblemListMaintenanceCycleKey,
         cycle_state: ProblemListMaintenanceCycleState,
+        complete: bool,
     ) -> None:
         with self.health_state._lock:
-            cycle_state.in_progress = False
-            if (
-                not cycle_state.had_issues
-                or (
-                    cycle_state.had_issues
-                    and not cycle_state.current_cycle_found_issues
-                )
-            ):
-                self.health_state.maintenance_cycles.pop(cycle_key, None)
+            if complete:
+                cycle_state.in_progress = False
+            cycle_state.page_in_flight = False
+            if complete:
+                if (
+                    not cycle_state.had_issues
+                    or (
+                        cycle_state.had_issues
+                        and not cycle_state.current_cycle_found_issues
+                    )
+                ):
+                    self.health_state.maintenance_cycles.pop(cycle_key, None)
 
     def _reconcile_one(
         self,
