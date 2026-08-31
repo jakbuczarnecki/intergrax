@@ -16,6 +16,9 @@ from intergrax.runtime.diagnostics.persistence_conformance import (
     sample_occurrences,
     sample_problem,
 )
+from intergrax.runtime.diagnostics.problem_occurrence_aggregate_reconciliation import (
+    scan_occurrence_aggregate,
+)
 from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
     ProblemOccurrenceAppendResult,
 )
@@ -131,20 +134,21 @@ def test_mongo_occurrence_persistence_matrix(mongo_e2_r2_lifecycle: None) -> Non
                 cursor=forged,
             )
 
-        stats = persistence.aggregate_stats(
+        scan = scan_occurrence_aggregate(
+            persistence,
             tenant_id=_TENANT,
             problem_id=problem.problem_id,
         )
-        assert stats is not None
-        assert stats.occurrence_count == 3
+        assert scan.occurrence_count == 3
 
         # M5 — restart/recreate persistence instance
         restarted = document_store_occurrence_persistence_for_tests(store)
-        stats_restarted = restarted.aggregate_stats(
+        scan_restarted = scan_occurrence_aggregate(
+            restarted,
             tenant_id=_TENANT,
             problem_id=problem.problem_id,
         )
-        assert stats_restarted == stats
+        assert scan_restarted.occurrence_count == scan.occurrence_count
 
         # M6 — S1 crash recovery via retry
         crash_subject = _sample_subject_ref(tenant_id=_TENANT)
@@ -181,12 +185,12 @@ def test_mongo_occurrence_persistence_matrix(mongo_e2_r2_lifecycle: None) -> Non
             )
             is ProblemOccurrenceAppendResult.ALREADY_EXISTS
         )
-        stats_after_s1 = restarted.aggregate_stats(
+        scan_after_s1 = scan_occurrence_aggregate(
+            restarted,
             tenant_id=_TENANT,
             problem_id=problem.problem_id,
         )
-        assert stats_after_s1 is not None
-        assert stats_after_s1.occurrence_count == 4
+        assert scan_after_s1.occurrence_count == 4
 
         # M7 — concurrent duplicate
         dup_subject = _sample_subject_ref(tenant_id=_TENANT)
@@ -253,14 +257,14 @@ def test_mongo_occurrence_persistence_matrix(mongo_e2_r2_lifecycle: None) -> Non
             for result in distinct_results
         )
 
-        final_stats = restarted.aggregate_stats(
+        final_scan = scan_occurrence_aggregate(
+            restarted,
             tenant_id=_TENANT,
             problem_id=problem.problem_id,
         )
-        assert final_stats is not None
-        assert final_stats.occurrence_count == 7
+        assert final_scan.occurrence_count == 7
 
-        # M9 — Problem aggregate convergence
+        # M9 — Problem aggregate reconciliation from durable rows
         agg_problem = sample_problem(
             tenant_id=_TENANT,
             occurrence_count=0,
@@ -277,14 +281,9 @@ def test_mongo_occurrence_persistence_matrix(mongo_e2_r2_lifecycle: None) -> Non
             problem_id=agg_problem.problem_id,
             occurrence=agg_occurrence,
         )
-        agg_stats = restarted.aggregate_stats(
-            tenant_id=_TENANT,
-            problem_id=agg_problem.problem_id,
-        )
-        assert agg_stats is not None
-        assert agg_stats.occurrence_count == 1
-        from intergrax.runtime.diagnostics.problem_occurrence_aggregate_convergence import (
-            converge_problem_from_durable_stats,
+        from intergrax.runtime.diagnostics.problem_occurrence_aggregate_reconciliation import (
+            reconcile_problem_occurrence_aggregate,
+            mark_problem_reconciliation_required,
         )
 
         loaded = problem_persistence.get(
@@ -292,13 +291,12 @@ def test_mongo_occurrence_persistence_matrix(mongo_e2_r2_lifecycle: None) -> Non
             problem_id=agg_problem.problem_id,
         )
         assert loaded is not None
-        converged = converge_problem_from_durable_stats(
-            loaded,
-            stats=agg_stats,
-        )
-        updated = problem_persistence.update(
-            converged,
-            expected_version=loaded.record_version,
+        stale = mark_problem_reconciliation_required(loaded)
+        problem_persistence.update(stale, expected_version=loaded.record_version)
+        updated = reconcile_problem_occurrence_aggregate(
+            stale,
+            occurrence_persistence=restarted,
+            problem_persistence=problem_persistence,
         )
         assert updated.occurrence_count == 1
         assert updated.first_seen_at == agg_occurrence.observed_at

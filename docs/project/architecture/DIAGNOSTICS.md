@@ -496,7 +496,7 @@ Rules:
 
 Production hosts authenticate continuation cursors with HMAC-SHA256 over a tenant- and status-filter-bound payload. Secret enters only through composition (`INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET` via `resolve_problem_list_cursor_secret()`). **Minimum 32 UTF-8 bytes** (random 256-bit recommended). **No static default secret in production.** Restart with a new secret invalidates previously issued cursors (documented limitation; no transparent rotation in this slice).
 
-### Bounded occurrence history (DIAG-ENTERPRISE-2 / E2-R2 / E2-R3)
+### Bounded occurrence history (DIAG-ENTERPRISE-2 / E2-R4 — IN_PROGRESS)
 
 Source-of-truth hierarchy:
 
@@ -505,37 +505,26 @@ canonical execution evidence
         ↓
 accepted durable ProblemOccurrence history (occurrence rows)
         ↓
-derived occurrence aggregate stats (`meta:stats`)
-        ↓
-bounded Problem aggregate
+bounded Problem aggregate (+ typed occurrence_aggregate_health)
 ```
 
-Occurrence rows are authoritative. `meta:stats` is a derived optimization/convergence aid — never more authoritative than durable occurrence history.
+Occurrence rows are authoritative. Problem `occurrence_count` / `first_seen_at` / `last_seen_at` are a bounded derived projection — not a central mutable stats counter.
 
 **Write protocol (idempotent, bounded O(1) per append):**
 
-1. `put_if_absent` durable occurrence row (`occ:{inverted_observed_at_micros}:{occurrence_id}`).
-2. Read current `meta:stats.count` snapshot `C`.
-3. `put_if_absent` per-occurrence contribution marker (`meta:stats_contrib:{occurrence_id}`) with `{stats_count_snapshot: C, phase: pending}`.
-4. If stats already records `last_committed_occurrence_id == occurrence_id`, finalize marker to `applied` only (no increment).
-5. Else if `stats.count == snapshot` (or stats missing), increment `meta:stats` via optimistic CAS and set `last_committed_occurrence_id`.
-6. Else if `stats.count > snapshot` and this occurrence is not yet committed, increment once (concurrent writers advanced aggregate).
-7. Finalize marker `phase: applied` via bounded `replace_if_match` (best-effort; stats `last_committed_occurrence_id` is the authority).
-8. On `ALREADY_EXISTS` for the occurrence row, still run steps 2–7 so stats converge after partial-write / crash windows.
+1. `put_if_absent` durable occurrence row (`occ:{inverted_observed_at_micros}:{occurrence_id}`) only.
+2. Hot path (lifecycle): when append returns `CREATED`, apply bounded delta to Problem aggregate and persist via optimistic CAS with `occurrence_aggregate_health=CONSISTENT`.
+3. On aggregate CAS failure or ambiguous partial write, a subsequent reconcile detects drift via paginated occurrence scan and runs bounded repair (default page size 500, O(1) accumulator memory).
+4. `ProblemOccurrenceAggregateHealth`: `CONSISTENT` (count exact) vs `RECONCILIATION_REQUIRED` (count may be stale until repair completes).
+5. Duplicate retry (`ALREADY_EXISTS`) never blind-increments; repair is authority when scan ≠ Problem aggregate.
 
-`ALREADY_EXISTS` does **not** short-circuit stats convergence. Duplicate markers with `phase: applied` skip re-increment (no double count).
-
-**Exactly-once proof (E2-R3):** pending marker + `stats_count_snapshot` repairs the R2 gap (`marker exists`, `stats.count` unchanged). `last_committed_occurrence_id` prevents double increment after successful stats CAS when marker finalize is lost.
+**Removed (E2-R2/R3):** `meta:stats`, `meta:stats_contrib:*`, `last_committed_occurrence_id`, central exactly-once stats increment.
 
 **Timestamp encoding:** row-key sort tokens use integer-only UTC epoch microseconds (`astimezone(UTC)` delta arithmetic). No `float` timestamp multiplication.
 
 **Occurrence cursor secret:** same minimum 32 UTF-8 bytes as E1 list cursors (`resolve_problem_list_cursor_secret()` at composition boundary).
 
-**Stats integrity:** malformed `meta:stats` (invalid count, `first_seen_at > last_seen_at`) → `ProblemOccurrencePersistenceIntegrityError` (fail closed, no silent repair).
-
-**Bounded OCC:** `_MAX_STATS_CONFLICT_RETRIES = 3` (aligned with lifecycle persistence retries). Exhaustion → typed integrity error.
-
-**Hot-path complexity:** max 4 reads (`stats`, marker get, stats re-read inside CAS loop), max 3 writes (occurrence, marker, stats CAS + marker finalize), max 3 CAS retries each.
+**Repair:** paginated `query_occurrences` only — no full-history hot-path scan. Repeat-until-stable when hot-path updates race with repair scan.
 
 ### Production persistence contract
 

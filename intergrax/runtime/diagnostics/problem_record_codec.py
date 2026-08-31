@@ -48,6 +48,9 @@ from intergrax.runtime.diagnostics.problem_lifecycle import (
     ProblemReconciliationKey,
     ProblemStatus,
 )
+from intergrax.runtime.diagnostics.problem_lifecycle import (
+    ProblemOccurrenceAggregateHealth,
+)
 from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistenceIntegrityError
 from intergrax.runtime.events.asof_projection import (
     RunExecutionLifecycleStatus,
@@ -134,6 +137,7 @@ def _encode_problem_payload_v2(problem: Problem) -> dict[str, object]:
         "occurrence_count": problem.occurrence_count,
         "provenance": _encode_provenance(problem.provenance),
         "record_version": problem.record_version,
+        "occurrence_aggregate_health": problem.occurrence_aggregate_health.value,
     }
 
 
@@ -147,7 +151,25 @@ def _decode_problem_payload_v2(payload: Mapping[str, object]) -> Problem:
         occurrence_count=int(payload["occurrence_count"]),  # type: ignore[arg-type]
         provenance=_decode_provenance(payload["provenance"]),
         record_version=int(payload["record_version"]),  # type: ignore[arg-type]
+        occurrence_aggregate_health=_decode_occurrence_aggregate_health(
+            payload.get("occurrence_aggregate_health"),
+        ),
     )
+
+
+def _decode_occurrence_aggregate_health(value: object) -> ProblemOccurrenceAggregateHealth:
+    if value is None:
+        return ProblemOccurrenceAggregateHealth.CONSISTENT
+    if not isinstance(value, str):
+        raise ProblemPersistenceIntegrityError(
+            "invalid diagnostic problem occurrence aggregate health",
+        )
+    try:
+        return ProblemOccurrenceAggregateHealth(value)
+    except ValueError as exc:
+        raise ProblemPersistenceIntegrityError(
+            "unsupported diagnostic problem occurrence aggregate health",
+        ) from exc
 
 
 def _decode_problem_payload_v1(payload: Mapping[str, object]) -> Problem:
@@ -164,6 +186,9 @@ def _decode_bounded_problem_fields(payload: Mapping[str, object]) -> Problem:
         occurrence_count=int(payload["occurrence_count"]),  # type: ignore[arg-type]
         provenance=_decode_provenance(payload["provenance"]),
         record_version=int(payload["record_version"]),  # type: ignore[arg-type]
+        occurrence_aggregate_health=_decode_occurrence_aggregate_health(
+            payload.get("occurrence_aggregate_health"),
+        ),
     )
 
 

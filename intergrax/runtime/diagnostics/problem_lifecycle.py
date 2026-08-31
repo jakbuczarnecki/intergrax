@@ -64,6 +64,13 @@ class ProblemStatus(StrEnum):
     RESOLVED = "resolved"
 
 
+class ProblemOccurrenceAggregateHealth(StrEnum):
+    """Operator-readable aggregate projection quality for one Problem."""
+
+    CONSISTENT = "consistent"
+    RECONCILIATION_REQUIRED = "reconciliation_required"
+
+
 @runtime_checkable
 class ProblemReconciliationKey(Protocol):
     """Strategy-specific recurrence evidence — not opaque Problem identity."""
@@ -116,6 +123,9 @@ class Problem:
     occurrence_count: int
     provenance: ProblemLifecycleProvenance
     record_version: int = 1
+    occurrence_aggregate_health: ProblemOccurrenceAggregateHealth = (
+        ProblemOccurrenceAggregateHealth.CONSISTENT
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -350,6 +360,45 @@ class ProblemLifecycleEngine:
 
         raise AssertionError("unreachable resolve persistence conflict retry loop")
 
+    def reconcile_occurrence_aggregate(
+        self,
+        *,
+        tenant_id: str,
+        problem_id: ProblemId,
+    ) -> Problem:
+        from intergrax.runtime.diagnostics.problem_occurrence_aggregate_reconciliation import (
+            reconcile_problem_occurrence_aggregate,
+        )
+
+        validated_problem_id = validate_problem_id(problem_id)
+        existing = self._persistence.get(
+            tenant_id=tenant_id,
+            problem_id=validated_problem_id,
+        )
+        if existing is None:
+            raise ProblemLifecycleIntegrityError("Problem does not exist for tenant scope")
+        return reconcile_problem_occurrence_aggregate(
+            existing,
+            occurrence_persistence=self._occurrence_persistence,
+            problem_persistence=self._persistence,
+        )
+
+    def _mark_reconciliation_required_best_effort(self, existing: Problem) -> None:
+        from intergrax.runtime.diagnostics.problem_occurrence_aggregate_reconciliation import (
+            mark_problem_reconciliation_required,
+        )
+
+        marked = mark_problem_reconciliation_required(existing)
+        if marked == existing:
+            return
+        try:
+            self._persistence.update(
+                marked,
+                expected_version=existing.record_version,
+            )
+        except ProblemPersistenceConflictError:
+            return
+
     def _converge_after_create_conflict(
         self,
         *,
@@ -496,8 +545,10 @@ class ProblemLifecycleEngine:
     ) -> tuple[Problem, bool, tuple[ProblemGroupingSubjectRef, ...]]:
         from intergrax.runtime.diagnostics.problem_occurrence_aggregate_convergence import (
             apply_occurrence_delta_to_problem,
-            converge_problem_from_durable_stats,
-            problem_needs_occurrence_convergence,
+        )
+        from intergrax.runtime.diagnostics.problem_occurrence_aggregate_reconciliation import (
+            reconcile_problem_occurrence_aggregate,
+            scan_occurrence_aggregate,
         )
 
         if not reconciliation_keys_equal(
@@ -546,6 +597,20 @@ class ProblemLifecycleEngine:
             reconciliation_key=reconciliation_key,
         )
 
+        if (
+            existing.occurrence_aggregate_health
+            is ProblemOccurrenceAggregateHealth.RECONCILIATION_REQUIRED
+        ):
+            repaired = reconcile_problem_occurrence_aggregate(
+                existing,
+                occurrence_persistence=self._occurrence_persistence,
+                problem_persistence=self._persistence,
+                provenance=provenance,
+            )
+            if repaired != existing:
+                return repaired, True, indexed_subject_refs
+            return existing, False, indexed_subject_refs
+
         if created_occurrences:
             next_record = apply_occurrence_delta_to_problem(
                 existing,
@@ -554,55 +619,46 @@ class ProblemLifecycleEngine:
             )
             return next_record, True, indexed_subject_refs
 
-        if not created_occurrences:
-            if not append_results:
-                if not problem_needs_occurrence_convergence(
-                    existing,
-                    occurrence_persistence=self._occurrence_persistence,
-                    tenant_id=existing.tenant_id,
-                ):
-                    return existing, False, ()
-            elif all(
-                result is ProblemOccurrenceAppendResult.ALREADY_EXISTS
-                for _, result in append_results
-            ) and not problem_needs_occurrence_convergence(
+        if not append_results:
+            return existing, False, ()
+
+        scan = scan_occurrence_aggregate(
+            self._occurrence_persistence,
+            tenant_id=existing.tenant_id,
+            problem_id=existing.problem_id,
+        )
+        if (
+            scan.occurrence_count != existing.occurrence_count
+            or (
+                scan.first_seen_at is not None
+                and scan.first_seen_at != existing.first_seen_at
+            )
+            or (
+                scan.last_seen_at is not None
+                and scan.last_seen_at != existing.last_seen_at
+            )
+        ):
+            repaired = reconcile_problem_occurrence_aggregate(
                 existing,
                 occurrence_persistence=self._occurrence_persistence,
-                tenant_id=existing.tenant_id,
-            ):
-                missing_indexes = tuple(
-                    occurrence.subject_ref
-                    for occurrence, _ in append_results
-                    if self._persistence.find_by_subject_ref(
-                        tenant_id=existing.tenant_id,
-                        subject_ref=occurrence.subject_ref,
-                    )
-                    is None
-                )
-                if missing_indexes:
-                    return existing, True, missing_indexes
-                return existing, False, ()
-
-        if problem_needs_occurrence_convergence(
-            existing,
-            occurrence_persistence=self._occurrence_persistence,
-            tenant_id=existing.tenant_id,
-        ):
-            stats = self._occurrence_persistence.aggregate_stats(
-                tenant_id=existing.tenant_id,
-                problem_id=existing.problem_id,
-            )
-            if stats is None:
-                return existing, False, ()
-            converged = converge_problem_from_durable_stats(
-                existing,
-                stats=stats,
+                problem_persistence=self._persistence,
                 provenance=provenance,
             )
-            if converged == existing:
-                return existing, False, ()
-            return converged, True, indexed_subject_refs
+            if repaired != existing:
+                return repaired, True, indexed_subject_refs
+            return existing, False, indexed_subject_refs
 
+        missing_indexes = tuple(
+            occurrence.subject_ref
+            for occurrence, _ in append_results
+            if self._persistence.find_by_subject_ref(
+                tenant_id=existing.tenant_id,
+                subject_ref=occurrence.subject_ref,
+            )
+            is None
+        )
+        if missing_indexes:
+            return existing, True, missing_indexes
         return existing, False, ()
 
     def _append_occurrences(
@@ -719,6 +775,7 @@ def _build_resolved_problem(existing: Problem) -> Problem:
         occurrence_count=existing.occurrence_count,
         provenance=existing.provenance,
         record_version=existing.record_version + 1,
+        occurrence_aggregate_health=existing.occurrence_aggregate_health,
     )
 
 

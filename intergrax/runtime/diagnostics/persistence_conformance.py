@@ -728,9 +728,16 @@ def assert_problem_occurrence_persistence_conformance(
     assert len(page.items) == 1
     assert page.items[0] == occurrences_a[0]
 
-    stats = store.aggregate_stats(tenant_id=tenant_a, problem_id=problem_a)
-    assert stats is not None
-    assert stats.occurrence_count == 1
+    from intergrax.runtime.diagnostics.problem_occurrence_aggregate_reconciliation import (
+        scan_occurrence_aggregate,
+    )
+
+    scan = scan_occurrence_aggregate(
+        store,
+        tenant_id=tenant_a,
+        problem_id=problem_a,
+    )
+    assert scan.occurrence_count == 1
 
     store.append_if_absent(
         tenant_id=tenant_a,

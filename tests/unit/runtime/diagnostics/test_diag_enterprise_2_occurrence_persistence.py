@@ -73,12 +73,16 @@ def test_append_idempotent_and_paginated_history() -> None:
         limit=10,
     )
     assert len(page.items) == 1
-    stats = occurrence_persistence.aggregate_stats(
+    from intergrax.runtime.diagnostics.problem_occurrence_aggregate_reconciliation import (
+        scan_occurrence_aggregate,
+    )
+
+    scan = scan_occurrence_aggregate(
+        occurrence_persistence,
         tenant_id=_TENANT,
         problem_id=problem.problem_id,
     )
-    assert stats is not None
-    assert stats.occurrence_count == 1
+    assert scan.occurrence_count == 1
 
 
 def test_cursor_rejects_cross_problem_scope() -> None:
@@ -134,12 +138,16 @@ def test_100k_bounded_aggregate_and_paginated_history() -> None:
             occurrence=occurrences[0],
         )
 
-    stats = occurrence_persistence.aggregate_stats(
+    from intergrax.runtime.diagnostics.problem_occurrence_aggregate_reconciliation import (
+        scan_occurrence_aggregate,
+    )
+
+    scan = scan_occurrence_aggregate(
+        occurrence_persistence,
         tenant_id=_TENANT,
         problem_id=problem.problem_id,
     )
-    assert stats is not None
-    assert stats.occurrence_count == 100_000
+    assert scan.occurrence_count == 100_000
 
     bounded_page = occurrence_persistence.query_occurrences(
         tenant_id=_TENANT,
@@ -255,16 +263,20 @@ def test_migration_1000_legacy_occurrences_resumable_after_failure() -> None:
     assert len(first_page.migrated_problem_ids) == 1
     assert first_page.has_more is False
 
-    stats = occurrence_persistence.aggregate_stats(
+    from intergrax.runtime.diagnostics.problem_occurrence_aggregate_reconciliation import (
+        scan_occurrence_aggregate,
+    )
+
+    scan = scan_occurrence_aggregate(
+        occurrence_persistence,
         tenant_id=_TENANT,
         problem_id=problem.problem_id,
     )
-    assert stats is not None
-    assert stats.occurrence_count == 1000
+    assert scan.occurrence_count == 1000
     loaded = problem_persistence.get(tenant_id=_TENANT, problem_id=problem.problem_id)
     assert loaded is not None
     assert loaded.occurrence_count == 1000
-    assert len(tuple(fields(loaded))) == 8
+    assert len(tuple(fields(loaded))) == 9
     assert verify_legacy_occurrences_migrated(
         tenant_id=_TENANT,
         problem_id=problem.problem_id,

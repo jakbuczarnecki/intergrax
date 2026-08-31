@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
@@ -31,15 +30,6 @@ class ProblemOccurrencePage:
     has_more: bool
 
 
-@dataclass(frozen=True, slots=True)
-class ProblemOccurrenceAggregateStats:
-    """Derived durable occurrence statistics for aggregate convergence."""
-
-    occurrence_count: int
-    first_seen_at: datetime
-    last_seen_at: datetime
-
-
 class ProblemOccurrencePersistenceIntegrityError(Exception):
     """Raised when stored occurrence data is malformed or inconsistent."""
 
@@ -49,6 +39,7 @@ class ProblemOccurrencePersistence(ABC):
     Durable full history for accepted ProblemOccurrence records.
 
     Implementations must not require callers to load full history into memory.
+    Aggregate convergence uses paginated ``query_occurrences`` — not a central counter.
     """
 
     @abstractmethod
@@ -78,12 +69,3 @@ class ProblemOccurrencePersistence(ABC):
         Return one bounded page ordered by ``observed_at`` descending with
         deterministic occurrence-id tie-break.
         """
-
-    @abstractmethod
-    def aggregate_stats(
-        self,
-        *,
-        tenant_id: str,
-        problem_id: ProblemId,
-    ) -> ProblemOccurrenceAggregateStats | None:
-        """Return durable aggregate stats or ``None`` when no occurrences exist."""

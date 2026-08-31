@@ -156,6 +156,7 @@ class DiagnosticReadService:
             occurrence_count=problem.occurrence_count,
             record_version=problem.record_version,
             grouping_provenance=grouping_provenance,
+            occurrence_aggregate_health=problem.occurrence_aggregate_health,
             occurrences=occurrence_views,
             returned_occurrence_count=len(occurrence_views),
             total_occurrence_count=problem.occurrence_count,
@@ -203,6 +204,7 @@ def _summary_from_problem(problem: Problem) -> DiagnosticProblemSummary:
         last_seen_at=problem.last_seen_at,
         occurrence_count=problem.occurrence_count,
         grouping_provenance=grouping_provenance_from_problem_provenance(problem.provenance),
+        occurrence_aggregate_health=problem.occurrence_aggregate_health,
     )
 
 

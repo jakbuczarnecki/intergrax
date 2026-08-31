@@ -20,7 +20,6 @@ from intergrax.runtime.diagnostics.problem_occurrence_id import (
     problem_occurrence_id_for,
 )
 from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
-    ProblemOccurrenceAggregateStats,
     ProblemOccurrenceAppendResult,
     ProblemOccurrencePage,
     ProblemOccurrencePersistence,
@@ -31,23 +30,15 @@ from intergrax.runtime.diagnostics.problem_occurrence_query import (
     _MIN_OCCURRENCE_CURSOR_SECRET_BYTES,
 )
 from intergrax.runtime.diagnostics.problem_occurrence_record_codec import (
-    OccurrenceStatsContributionMarker,
-    decode_occurrence_stats_contribution_marker,
-    decode_occurrence_stats_record,
     decode_problem_occurrence_record,
-    encode_occurrence_stats_contribution_marker,
-    encode_occurrence_stats_record,
     encode_problem_occurrence_record,
 )
 
 _PARTITION_PREFIX = "intergrax.diagnostic_problem_occurrence.v1"
 _OCCURRENCE_ROW_PREFIX = "occ:"
-_STATS_ROW_KEY = "meta:stats"
-_STATS_CONTRIBUTION_ROW_PREFIX = "meta:stats_contrib:"
 _MAX_QUERY_PAGE_LIMIT = 5000
 _MAX_OCCURRENCE_PAGE_LIMIT = 1000
 _MAX_SORT_MICROS = 10**16
-_MAX_STATS_CONFLICT_RETRIES = 3
 _UTC_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 
 
@@ -70,10 +61,6 @@ def _occurrence_row_key(
     observed_micros = _observed_at_micros(occurrence.observed_at)
     sort_token = _MAX_SORT_MICROS - observed_micros
     return f"{_OCCURRENCE_ROW_PREFIX}{sort_token:016d}:{occurrence_id}"
-
-
-def _stats_contribution_row_key(occurrence_id: ProblemOccurrenceId) -> str:
-    return f"{_STATS_CONTRIBUTION_ROW_PREFIX}{occurrence_id}"
 
 
 def _observed_at_micros(observed_at: datetime) -> int:
@@ -157,11 +144,6 @@ class DocumentStoreProblemOccurrencePersistence(ProblemOccurrencePersistence):
         )
         created = self._document_store.put_if_absent(document)
         if created:
-            self._ensure_stats_contribution(
-                partition_key=partition_key,
-                occurrence=occurrence,
-                occurrence_id=occurrence_id,
-            )
             return ProblemOccurrenceAppendResult.CREATED
 
         existing = self._document_store.get(partition_key, row_key)
@@ -174,11 +156,6 @@ class DocumentStoreProblemOccurrencePersistence(ProblemOccurrencePersistence):
             raise ProblemOccurrencePersistenceIntegrityError(
                 "conflicting durable occurrence for stable occurrence id",
             )
-        self._ensure_stats_contribution(
-            partition_key=partition_key,
-            occurrence=occurrence,
-            occurrence_id=occurrence_id,
-        )
         return ProblemOccurrenceAppendResult.ALREADY_EXISTS
 
     def query_occurrences(
@@ -232,248 +209,6 @@ class DocumentStoreProblemOccurrencePersistence(ProblemOccurrencePersistence):
             items=tuple(items),
             next_cursor=next_cursor,
             has_more=has_more,
-        )
-
-    def aggregate_stats(
-        self,
-        *,
-        tenant_id: str,
-        problem_id: ProblemId,
-    ) -> ProblemOccurrenceAggregateStats | None:
-        partition_key = _occurrence_partition(tenant_id, problem_id)
-        stats_record = self._document_store.get(partition_key, _STATS_ROW_KEY)
-        if stats_record is None:
-            return None
-        count, first_seen_at, last_seen_at, _ = decode_occurrence_stats_record(
-            dict(stats_record.data),
-        )
-        return ProblemOccurrenceAggregateStats(
-            occurrence_count=count,
-            first_seen_at=first_seen_at,
-            last_seen_at=last_seen_at,
-        )
-
-    def _read_stats_count_snapshot(self, partition_key: str) -> int:
-        stats_record = self._document_store.get(partition_key, _STATS_ROW_KEY)
-        if stats_record is None:
-            return 0
-        count, _, _, _ = decode_occurrence_stats_record(dict(stats_record.data))
-        return count
-
-    def _ensure_stats_contribution(
-        self,
-        *,
-        partition_key: str,
-        occurrence: ProblemOccurrence,
-        occurrence_id: ProblemOccurrenceId,
-    ) -> None:
-        marker_key = _stats_contribution_row_key(occurrence_id)
-        stats_count_snapshot = self._read_stats_count_snapshot(partition_key)
-        marker = DocumentRecord(
-            partition_key=partition_key,
-            row_key=marker_key,
-            data=encode_occurrence_stats_contribution_marker(
-                occurrence_id=occurrence_id,
-                observed_at=occurrence.observed_at,
-                stats_count_snapshot=stats_count_snapshot,
-            ),
-        )
-        if self._document_store.put_if_absent(marker):
-            self._apply_stats_contribution(
-                partition_key=partition_key,
-                occurrence=occurrence,
-                occurrence_id=occurrence_id,
-                marker=marker,
-                contribution=decode_occurrence_stats_contribution_marker(
-                    dict(marker.data),
-                    expected_occurrence_id=occurrence_id,
-                ),
-            )
-            return
-
-        existing_marker = self._document_store.get(partition_key, marker_key)
-        if existing_marker is None:
-            raise ProblemOccurrencePersistenceIntegrityError(
-                "occurrence stats contribution marker missing after concurrent create",
-            )
-        contribution = decode_occurrence_stats_contribution_marker(
-            dict(existing_marker.data),
-            expected_occurrence_id=occurrence_id,
-        )
-        self._apply_stats_contribution(
-            partition_key=partition_key,
-            occurrence=occurrence,
-            occurrence_id=occurrence_id,
-            marker=existing_marker,
-            contribution=contribution,
-        )
-
-    def _apply_stats_contribution(
-        self,
-        *,
-        partition_key: str,
-        occurrence: ProblemOccurrence,
-        occurrence_id: ProblemOccurrenceId,
-        marker: DocumentRecord,
-        contribution: OccurrenceStatsContributionMarker,
-    ) -> None:
-        if contribution.phase == "applied":
-            return
-
-        stats_record = self._document_store.get(partition_key, _STATS_ROW_KEY)
-        current_count = 0
-        last_committed: str | None = None
-        if stats_record is not None:
-            current_count, _, _, last_committed = decode_occurrence_stats_record(
-                dict(stats_record.data),
-            )
-
-        occurrence_id_text = str(occurrence_id)
-        if last_committed == occurrence_id_text:
-            self._finalize_stats_contribution_marker(
-                partition_key=partition_key,
-                marker=marker,
-                occurrence_id=occurrence_id,
-                contribution=contribution,
-            )
-            return
-
-        needs_increment = False
-        if stats_record is None:
-            needs_increment = True
-        elif contribution.stats_count_snapshot is not None:
-            if current_count == contribution.stats_count_snapshot:
-                needs_increment = True
-            elif (
-                current_count > contribution.stats_count_snapshot
-                and last_committed != occurrence_id_text
-            ):
-                needs_increment = True
-        elif last_committed != occurrence_id_text:
-            needs_increment = True
-
-        if needs_increment:
-            self._apply_stats_increment(
-                partition_key=partition_key,
-                occurrence=occurrence,
-                occurrence_id=occurrence_id,
-            )
-        self._finalize_stats_contribution_marker(
-            partition_key=partition_key,
-            marker=marker,
-            occurrence_id=occurrence_id,
-            contribution=contribution,
-        )
-
-    def _finalize_stats_contribution_marker(
-        self,
-        *,
-        partition_key: str,
-        marker: DocumentRecord,
-        occurrence_id: ProblemOccurrenceId,
-        contribution: OccurrenceStatsContributionMarker,
-    ) -> None:
-        if contribution.phase == "applied":
-            return
-        occurrence_id_text = str(occurrence_id)
-        for _ in range(_MAX_STATS_CONFLICT_RETRIES + 1):
-            existing = self._document_store.get(partition_key, marker.row_key)
-            if existing is None:
-                break
-            current = decode_occurrence_stats_contribution_marker(
-                dict(existing.data),
-                expected_occurrence_id=occurrence_id,
-            )
-            if current.phase == "applied":
-                return
-            replacement = DocumentRecord(
-                partition_key=partition_key,
-                row_key=marker.row_key,
-                data=encode_occurrence_stats_contribution_marker(
-                    occurrence_id=occurrence_id,
-                    observed_at=current.observed_at,
-                    stats_count_snapshot=(
-                        current.stats_count_snapshot
-                        if current.stats_count_snapshot is not None
-                        else self._read_stats_count_snapshot(partition_key)
-                    ),
-                    phase="applied",
-                ),
-            )
-            if self._document_store.replace_if_match(
-                expected=existing,
-                replacement=replacement,
-            ):
-                return
-
-        stats_record = self._document_store.get(partition_key, _STATS_ROW_KEY)
-        if stats_record is not None:
-            _, _, _, last_committed = decode_occurrence_stats_record(
-                dict(stats_record.data),
-            )
-            if last_committed == occurrence_id_text:
-                return
-
-        existing = self._document_store.get(partition_key, marker.row_key)
-        if existing is not None:
-            finalized = decode_occurrence_stats_contribution_marker(
-                dict(existing.data),
-                expected_occurrence_id=occurrence_id,
-            )
-            if finalized.phase == "applied":
-                return
-
-        raise ProblemOccurrencePersistenceIntegrityError(
-            "occurrence stats contribution marker finalize race lost",
-        )
-
-    def _apply_stats_increment(
-        self,
-        *,
-        partition_key: str,
-        occurrence: ProblemOccurrence,
-        occurrence_id: ProblemOccurrenceId,
-    ) -> None:
-        for attempt in range(_MAX_STATS_CONFLICT_RETRIES + 1):
-            existing = self._document_store.get(partition_key, _STATS_ROW_KEY)
-            if existing is None:
-                replacement = DocumentRecord(
-                    partition_key=partition_key,
-                    row_key=_STATS_ROW_KEY,
-                    data=encode_occurrence_stats_record(
-                        occurrence_count=1,
-                        first_seen_at=occurrence.observed_at,
-                        last_seen_at=occurrence.observed_at,
-                        last_committed_occurrence_id=str(occurrence_id),
-                    ),
-                )
-                if self._document_store.put_if_absent(replacement):
-                    return
-                continue
-
-            count, first_seen_at, last_seen_at, last_committed = (
-                decode_occurrence_stats_record(dict(existing.data))
-            )
-            if last_committed == str(occurrence_id):
-                return
-            replacement = DocumentRecord(
-                partition_key=partition_key,
-                row_key=_STATS_ROW_KEY,
-                data=encode_occurrence_stats_record(
-                    occurrence_count=count + 1,
-                    first_seen_at=min(first_seen_at, occurrence.observed_at),
-                    last_seen_at=max(last_seen_at, occurrence.observed_at),
-                    last_committed_occurrence_id=str(occurrence_id),
-                ),
-            )
-            if self._document_store.replace_if_match(
-                expected=existing,
-                replacement=replacement,
-            ):
-                return
-
-        raise ProblemOccurrencePersistenceIntegrityError(
-            "occurrence stats merge failed after bounded optimistic concurrency retries",
         )
 
 

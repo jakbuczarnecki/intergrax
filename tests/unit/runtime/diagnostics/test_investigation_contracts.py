@@ -52,6 +52,9 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     problem_grouping_subject_ref_for_execution,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import (
+    ProblemOccurrenceAggregateHealth,
+)
+from intergrax.runtime.diagnostics.problem_lifecycle import (
     ProblemId,
     ProblemReconciliationKeyKind,
     ProblemStatus,
@@ -89,6 +92,7 @@ def _problem_summary(
         last_seen_at=_OBSERVED_AT,
         occurrence_count=1,
         grouping_provenance=_grouping_provenance(),
+        occurrence_aggregate_health=ProblemOccurrenceAggregateHealth.CONSISTENT,
     )
 
 
@@ -308,6 +312,7 @@ def test_input_from_problem_details_preserves_occurrence_assessment_and_limitati
         occurrence_count=1,
         record_version=1,
         grouping_provenance=_grouping_provenance(),
+        occurrence_aggregate_health=ProblemOccurrenceAggregateHealth.CONSISTENT,
         occurrences=(
             DiagnosticProblemOccurrenceView(
                 subject_ref=problem_grouping_subject_ref_for_execution(

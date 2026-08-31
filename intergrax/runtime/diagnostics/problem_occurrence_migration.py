@@ -162,15 +162,20 @@ def verify_legacy_occurrences_migrated(
     occurrence_persistence: ProblemOccurrencePersistence,
     document_store: ConditionalDocumentStore,
 ) -> bool:
+    from intergrax.runtime.diagnostics.problem_occurrence_aggregate_reconciliation import (
+        scan_occurrence_aggregate,
+    )
+
     partition_key = _document_partition(tenant_id)
     record = document_store.get(partition_key, _record_row_key(problem_id))
     if record is None:
         return False
     problem = decode_problem_record(dict(record.data))
-    stats = occurrence_persistence.aggregate_stats(
+    scan = scan_occurrence_aggregate(
+        occurrence_persistence,
         tenant_id=tenant_id,
         problem_id=problem_id,
     )
-    if stats is None:
+    if scan.occurrence_count == 0:
         return problem.occurrence_count == 0
-    return stats.occurrence_count == problem.occurrence_count
+    return scan.occurrence_count == problem.occurrence_count

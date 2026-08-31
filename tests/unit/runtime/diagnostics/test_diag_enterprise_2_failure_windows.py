@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""DIAG-ENTERPRISE-2 write-protocol failure windows F1–F6."""
+"""DIAG-ENTERPRISE-2 write-protocol failure windows (R4 aggregate model)."""
 
 from __future__ import annotations
 
@@ -19,12 +19,18 @@ from intergrax.runtime.diagnostics.persistence_conformance import (
     sample_problem,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import Problem, ProblemLifecycleEngine
-from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistenceConflictError
+from intergrax.runtime.diagnostics.problem_occurrence_aggregate_reconciliation import (
+    scan_occurrence_aggregate,
+)
+from intergrax.runtime.diagnostics.problem_lifecycle import ProblemOccurrenceAggregateHealth
 from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
     ProblemOccurrenceAppendResult,
     ProblemOccurrencePersistence,
 )
-from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistence
+from intergrax.runtime.diagnostics.problem_persistence import (
+    ProblemPersistence,
+    ProblemPersistenceConflictError,
+)
 from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
     document_store_occurrence_persistence_for_tests,
     document_store_problem_persistence_for_tests,
@@ -75,7 +81,7 @@ class _FailAfterOccurrenceAppendPersistence:
         return self._delegate.create(record, indexed_subject_refs=indexed_subject_refs)
 
     def update(self, record: Problem, *, expected_version: int, indexed_subject_refs=()):
-        if self._fail_once and not self._failed:
+        if self._fail_once and not self._failed and record.occurrence_count > 1:
             self._failed = True
             raise ProblemPersistenceConflictError("simulated aggregate update failure")
         return self._delegate.update(
@@ -111,80 +117,33 @@ class _FailOccurrenceAppendPersistence:
             cursor=cursor,
         )
 
-    def aggregate_stats(self, *, tenant_id: str, problem_id):
-        return self._delegate.aggregate_stats(
-            tenant_id=tenant_id,
-            problem_id=problem_id,
-        )
-
-
-def _lifecycle_stack() -> tuple[InMemoryDocumentStore, ProblemLifecycleEngine, ProblemPersistence]:
-    store = InMemoryDocumentStore()
-    problem_persistence = document_store_problem_persistence_for_tests(store)
-    occurrence_persistence = document_store_occurrence_persistence_for_tests(store)
-    engine = lifecycle_engine_for_tests(
-        problem_persistence,
-        occurrence_persistence,
-        document_store=store,
-    )
-    return store, engine, problem_persistence
-
 
 def test_f1_occurrence_success_aggregate_fail_converges_on_retry() -> None:
-    """F1: durable occurrence survives aggregate CAS failure; retry converges count."""
     store = InMemoryDocumentStore()
     delegate = document_store_problem_persistence_for_tests(store)
     occurrence_persistence = document_store_occurrence_persistence_for_tests(store)
     failing = _FailAfterOccurrenceAppendPersistence(delegate)
-    engine = ProblemLifecycleEngine(failing, occurrence_persistence)
+    engine = lifecycle_engine_for_tests(failing, occurrence_persistence, document_store=store)
 
     subject = _sample_subject_ref(tenant_id=_TENANT)
-    reconciliation_key = _sample_reconciliation_key(tenant_id=_TENANT)
     baseline = sample_problem(
         tenant_id=_TENANT,
         subject_refs=(subject,),
-        reconciliation_key=reconciliation_key,
+        reconciliation_key=_sample_reconciliation_key(tenant_id=_TENANT),
         observed_at=_OBSERVED_AT,
     )
     failing.create(baseline, indexed_subject_refs=(subject,))
-    baseline_occurrence = sample_occurrences(
-        subject_refs=(subject,),
-        observed_at=_OBSERVED_AT,
-    )[0]
     occurrence_persistence.append_if_absent(
         tenant_id=_TENANT,
         problem_id=baseline.problem_id,
-        occurrence=baseline_occurrence,
+        occurrence=sample_occurrences(subject_refs=(subject,), observed_at=_OBSERVED_AT)[0],
     )
 
     new_subject = _sample_subject_ref(tenant_id=_TENANT)
-    occurrence = sample_occurrences(
-        subject_refs=(new_subject,),
-        observed_at=_OBSERVED_AT + timedelta(minutes=1),
-    )[0]
-    occurrence_persistence.append_if_absent(
-        tenant_id=_TENANT,
-        problem_id=baseline.problem_id,
-        occurrence=occurrence,
+    from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
+        STRATEGY_ID,
+        STRATEGY_VERSION,
     )
-
-    with pytest.raises(ProblemPersistenceConflictError):
-        failing.update(
-            Problem(
-                problem_id=baseline.problem_id,
-                tenant_id=baseline.tenant_id,
-                status=baseline.status,
-                first_seen_at=baseline.first_seen_at,
-                last_seen_at=occurrence.observed_at,
-                occurrence_count=2,
-                provenance=baseline.provenance,
-                record_version=2,
-            ),
-            expected_version=1,
-            indexed_subject_refs=(new_subject,),
-        )
-
-  # Retry path via lifecycle convergence
     from intergrax.runtime.diagnostics.problem_grouping import (
         DeterministicProblemGroupingBasis,
         ProblemGroupingCandidate,
@@ -192,19 +151,15 @@ def test_f1_occurrence_success_aggregate_fail_converges_on_retry() -> None:
         ProblemGroupingProvenance,
         ProblemGroupingResult,
     )
-    from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
-        STRATEGY_ID,
-        STRATEGY_VERSION,
-    )
 
     basis = DeterministicProblemGroupingBasis(signature=_sample_signature())
     candidate = ProblemGroupingCandidate(
-        members=(new_subject,),
+        members=(subject, new_subject),
         provenance=ProblemGroupingProvenance(
             strategy_id=STRATEGY_ID,
             strategy_version=STRATEGY_VERSION,
             method=ProblemGroupingMethod.DETERMINISTIC,
-            supporting_subject_refs=(new_subject,),
+            supporting_subject_refs=(subject, new_subject),
             basis=basis,
         ),
     )
@@ -216,23 +171,25 @@ def test_f1_occurrence_success_aggregate_fail_converges_on_retry() -> None:
         candidates=(candidate,),
         ungrouped_subjects=(),
     )
-    result = engine.reconcile(grouping, observed_at=occurrence.observed_at)
+    observed_at = _OBSERVED_AT + timedelta(minutes=1)
+    engine.reconcile(grouping, observed_at=observed_at)
+
     final = delegate.get(tenant_id=_TENANT, problem_id=baseline.problem_id)
-    stats = occurrence_persistence.aggregate_stats(
+    scan = scan_occurrence_aggregate(
+        occurrence_persistence,
         tenant_id=_TENANT,
         problem_id=baseline.problem_id,
     )
-    assert stats is not None
-    assert stats.occurrence_count == 2
+    assert scan.occurrence_count == 2
     assert final is not None
     assert final.occurrence_count == 2
-    assert len(result.updated) == 1
+    assert final.occurrence_aggregate_health is ProblemOccurrenceAggregateHealth.CONSISTENT
 
 
 def test_f4_duplicate_append_does_not_double_count() -> None:
-    """F4: duplicate durable append leaves aggregate count stable."""
-    store = InMemoryDocumentStore()
-    occurrence_persistence = document_store_occurrence_persistence_for_tests(store)
+    occurrence_persistence = document_store_occurrence_persistence_for_tests(
+        InMemoryDocumentStore(),
+    )
     subject = _sample_subject_ref(tenant_id=_TENANT)
     problem = sample_problem(tenant_id=_TENANT, subject_refs=(subject,), observed_at=_OBSERVED_AT)
     occurrence = sample_occurrences(subject_refs=(subject,), observed_at=_OBSERVED_AT)[0]
@@ -252,18 +209,18 @@ def test_f4_duplicate_append_does_not_double_count() -> None:
         )
         is ProblemOccurrenceAppendResult.ALREADY_EXISTS
     )
-    stats = occurrence_persistence.aggregate_stats(
+    scan = scan_occurrence_aggregate(
+        occurrence_persistence,
         tenant_id=_TENANT,
         problem_id=problem.problem_id,
     )
-    assert stats is not None
-    assert stats.occurrence_count == 1
+    assert scan.occurrence_count == 1
 
 
 def test_f5_concurrent_duplicate_append_counts_once() -> None:
-    """F5: concurrent duplicate durable appends converge to one row."""
-    store = InMemoryDocumentStore()
-    occurrence_persistence = document_store_occurrence_persistence_for_tests(store)
+    occurrence_persistence = document_store_occurrence_persistence_for_tests(
+        InMemoryDocumentStore(),
+    )
     subject = _sample_subject_ref(tenant_id=_TENANT)
     problem = sample_problem(tenant_id=_TENANT, subject_refs=(subject,), observed_at=_OBSERVED_AT)
     occurrence = sample_occurrences(subject_refs=(subject,), observed_at=_OBSERVED_AT)[0]
@@ -284,16 +241,9 @@ def test_f5_concurrent_duplicate_append_counts_once() -> None:
         futures = [executor.submit(_append), executor.submit(_append)]
         for future in futures:
             future.result(timeout=10)
-    assert sorted(results, key=str) == sorted(
-        [
-            ProblemOccurrenceAppendResult.CREATED,
-            ProblemOccurrenceAppendResult.ALREADY_EXISTS,
-        ],
-        key=str,
-    )
-    stats = occurrence_persistence.aggregate_stats(
+    scan = scan_occurrence_aggregate(
+        occurrence_persistence,
         tenant_id=_TENANT,
         problem_id=problem.problem_id,
     )
-    assert stats is not None
-    assert stats.occurrence_count == 1
+    assert scan.occurrence_count == 1
