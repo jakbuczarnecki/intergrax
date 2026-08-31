@@ -455,7 +455,22 @@ DocumentStoreProblemPersistence.reconcile_list_indexes(
 
 Bounded by `limit` index rows per call; continuation via document-store cursor. No scheduler/daemon — callable maintenance seam for admin/tests/future lifecycle.
 
-**Projection health (R3):** cumulative telemetry counters (`repaired_projection`, `deleted_orphan_projection`, skip counters) remain historical and are not reset to recover health. Current health reflects the latest completed maintenance cycle (`last_completed_cycle_had_issues`), in-progress cycle issues, read skip threshold, and unresolved same-version corruption (`same_version_integrity_failure > 0`). Health recovers to `HEALTHY` only after a full maintenance traversal (`has_more=False`) with zero issues on that cycle, and only when corruption counters are zero. A clean scan of one tenant does not mask corruption detected on another tenant (process-local global health).
+**Projection health (R3/R4):** cumulative telemetry counters (`repaired_projection`, `deleted_orphan_projection`, skip counters) remain historical and are not reset to recover health. Current health is **process-local** and resets on host restart. It reflects per-identity maintenance cycle state keyed by `(tenant_id, scope)`, read skip threshold, and unresolved same-version corruption (`same_version_integrity_failure > 0`).
+
+Maintenance cycle identity:
+
+```text
+ProblemListMaintenanceCycleKey = (tenant_id, scope)
+ProblemListMaintenanceCycleState = in_progress, had_issues, current_cycle_found_issues, started_at
+```
+
+Rules:
+
+- `cursor=None` starts a new cycle only when no cycle for the same key is `in_progress`; otherwise `ProblemListIndexReconciliationError` (continuation required — no silent reset).
+- A cycle with issues (`repaired`/`deleted`/`corrupt`) sets `had_issues` for that key until a **full** clean traversal (`has_more=False`) with zero issues on that same key.
+- An abandoned cycle (`has_more=True` after issues) keeps health `DEGRADED`; a clean complete cycle on another tenant or scope does not mask it.
+- Completed clean cycles prune registry entries; degraded/incomplete entries are retained.
+- Health recovers to `HEALTHY` only when no tracked key is degraded, corruption counters are zero, and read skips are below threshold.
 
 ### List cursor trust model (DIAG-ENTERPRISE-1-R1 / R2)
 
