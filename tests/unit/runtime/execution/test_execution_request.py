@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, fields
-from dataclasses import FrozenInstanceError
+from dataclasses import dataclass, fields, is_dataclass, replace
+from pathlib import Path
 
 import pytest
 
@@ -48,10 +48,6 @@ class OrchestrationWork:
     topology_id: str
 
 
-def _attempt_field_assignment(instance: object, field_name: str, value: object) -> None:
-    exec(f"instance.{field_name} = value", {"instance": instance, "value": value})
-
-
 def test_request_stores_strongly_typed_non_dict_input() -> None:
     payload = PromptInput(text="summarize this")
 
@@ -62,21 +58,31 @@ def test_request_stores_strongly_typed_non_dict_input() -> None:
     assert not isinstance(request.input, dict)
 
 
-def test_request_is_immutable() -> None:
+def test_execution_request_is_immutable_value_object() -> None:
+    original_input = PromptInput(text="immutable")
+    original_capabilities = frozenset({ExecutionCapability.TOOLS})
     request = ExecutionRequest[PromptInput, SummaryOutput](
-        input=PromptInput(text="immutable"),
-        capabilities=frozenset({ExecutionCapability.TOOLS}),
+        input=original_input,
+        capabilities=original_capabilities,
     )
 
-    with pytest.raises(FrozenInstanceError):
-        _attempt_field_assignment(request, "input", PromptInput(text="mutated"))
+    assert is_dataclass(request)
+    assert request.input is original_input
+    assert request.input.text == "immutable"
+    assert request.capabilities == original_capabilities
 
-    with pytest.raises(FrozenInstanceError):
-        _attempt_field_assignment(
-            request,
-            "capabilities",
-            frozenset({ExecutionCapability.STREAMING}),
-        )
+    updated_capabilities = frozenset({ExecutionCapability.STREAMING})
+    replacement = replace(request, capabilities=updated_capabilities)
+
+    assert replacement is not request
+    assert request.input is original_input
+    assert request.capabilities == original_capabilities
+    assert replacement.input is original_input
+    assert replacement.capabilities == updated_capabilities
+
+    source = Path("intergrax/runtime/execution/request.py").read_text(encoding="utf-8")
+    assert "@dataclass(frozen=True, slots=True)" in source
+    assert "class ExecutionRequest" in source
 
 
 def test_output_type_declaration_is_preserved_exactly() -> None:
