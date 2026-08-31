@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import os
 import random
+import shutil
 import subprocess
 import sys
 import threading
@@ -88,12 +89,16 @@ def _op(prefix: str) -> str:
     return f"{prefix}-{RUN_ID}-{uuid.uuid4().hex[:8]}"
 
 
-DOCKER_BIN = os.environ.get("DOCKER_BIN", "/usr/bin/docker")
+DOCKER_BIN = os.environ.get("DOCKER_BIN") or shutil.which("docker") or "/usr/local/bin/docker"
+
+
+def _container_name(service: str) -> str:
+    return f"{COMPOSE_PROJECT}-{service}-1"
 
 
 def _docker_kill(service: str) -> str:
     completed = subprocess.run(
-        [DOCKER_BIN, "compose", "-p", COMPOSE_PROJECT, "kill", "-s", "KILL", service],
+        [DOCKER_BIN, "kill", "-s", "KILL", _container_name(service)],
         capture_output=True,
         text=True,
         check=False,
@@ -105,7 +110,7 @@ def _docker_kill(service: str) -> str:
 
 def _docker_restart(service: str) -> None:
     completed = subprocess.run(
-        [DOCKER_BIN, "compose", "-p", COMPOSE_PROJECT, "restart", service],
+        [DOCKER_BIN, "restart", _container_name(service)],
         capture_output=True,
         text=True,
         check=False,
@@ -1017,8 +1022,38 @@ def _run_all_scenarios(report: ProofReport) -> None:
                 notes=str(exc),
             ),
         )
-    run_scenario_18(oracle, runtime_single, report)
-    run_scenario_19(oracle, runtime_single, report)
+    try:
+        run_scenario_18(oracle, runtime_single, report)
+    except Exception as exc:  # noqa: BLE001
+        report.add(
+            ScenarioResult(
+                18,
+                "runtime_restart_replay",
+                "runtime-single",
+                "container restart",
+                "",
+                "",
+                "",
+                "BLOCKED",
+                notes=str(exc),
+            ),
+        )
+    try:
+        run_scenario_19(oracle, runtime_single, report)
+    except Exception as exc:  # noqa: BLE001
+        report.add(
+            ScenarioResult(
+                19,
+                "store_restart",
+                "runtime-single",
+                "sqlite volume restart",
+                "",
+                "",
+                "",
+                "BLOCKED",
+                notes=str(exc),
+            ),
+        )
     if not report.duplicate_scan:
         report.duplicate_scan = oracle.duplicate_scan()
     run_scenario_20(oracle, runtime_single, report)

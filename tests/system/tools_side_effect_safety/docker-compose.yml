@@ -1,14 +1,14 @@
 # TOOLS-SIDE-EFFECT-SAFETY — brutal platform-native Docker E2E proof
 # Run from repository root:
-#   docker compose -f tests/system/tools_side_effect_safety/docker-compose.yml up --build --abort-on-container-exit --exit-code-from proof-runner
+#   docker compose -f tests/system/tools_side_effect_safety/docker-compose.yml up --build --exit-code-from proof-runner
 
 name: tools-side-effect-safety-proof
 
 x-runtime-command-base: &runtime_command_base
-  bash -lc 'pip install -q uv && cd /workspace && uv venv "$$UV_PROJECT_ENVIRONMENT" && UV_PROJECT_ENVIRONMENT="$$UV_PROJECT_ENVIRONMENT" uv sync --frozen --no-dev && UV_PROJECT_ENVIRONMENT="$$UV_PROJECT_ENVIRONMENT" uv run python -m tests.system.tools_side_effect_safety.shared'
+  bash -lc 'pip install -q uv && cd /workspace && uv venv --clear "$$UV_PROJECT_ENVIRONMENT" && UV_PROJECT_ENVIRONMENT="$$UV_PROJECT_ENVIRONMENT" uv sync --frozen --no-dev && UV_PROJECT_ENVIRONMENT="$$UV_PROJECT_ENVIRONMENT" uv run python -m tests.system.tools_side_effect_safety.shared'
 
 x-runtime-command-redis: &runtime_command_redis
-  bash -lc 'pip install -q uv && cd /workspace && uv venv "$$UV_PROJECT_ENVIRONMENT" && UV_PROJECT_ENVIRONMENT="$$UV_PROJECT_ENVIRONMENT" uv sync --frozen --no-dev && uv pip install --python "$$UV_PROJECT_ENVIRONMENT/bin/python" "redis>=5.0" && UV_PROJECT_ENVIRONMENT="$$UV_PROJECT_ENVIRONMENT" uv run python -m tests.system.tools_side_effect_safety.shared'
+  bash -lc 'pip install -q uv && cd /workspace && uv venv --clear "$$UV_PROJECT_ENVIRONMENT" && UV_PROJECT_ENVIRONMENT="$$UV_PROJECT_ENVIRONMENT" uv sync --frozen --no-dev && uv pip install --python "$$UV_PROJECT_ENVIRONMENT/bin/python" "redis>=5.0" && UV_PROJECT_ENVIRONMENT="$$UV_PROJECT_ENVIRONMENT" uv run python -m tests.system.tools_side_effect_safety.shared'
 
 x-runtime-volumes: &runtime_volumes
   - ../../..:/workspace
@@ -70,6 +70,7 @@ services:
 
   runtime-single:
     image: python:3.12-slim
+    restart: unless-stopped
     working_dir: /workspace
     volumes:
       - ../../..:/workspace
@@ -103,6 +104,7 @@ services:
 
   runtime-a:
     image: python:3.12-slim
+    restart: unless-stopped
     working_dir: /workspace
     volumes: *runtime_volumes
     environment:
@@ -137,6 +139,7 @@ services:
 
   runtime-b:
     image: python:3.12-slim
+    restart: unless-stopped
     working_dir: /workspace
     volumes: *runtime_volumes
     environment:

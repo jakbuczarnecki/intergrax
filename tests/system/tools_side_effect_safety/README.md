@@ -7,7 +7,7 @@ Platform-native proof for idempotent side-effect safety with an **external Postg
 From repository root:
 
 ```bash
-docker compose -f tests/system/tools_side_effect_safety/docker-compose.yml up --build --abort-on-container-exit --exit-code-from proof-runner
+docker compose -f tests/system/tools_side_effect_safety/docker-compose.yml up --build --exit-code-from proof-runner
 ```
 
 Teardown:
