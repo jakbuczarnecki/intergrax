@@ -805,6 +805,9 @@ def test_handler_discovery_occurs_once_per_bundle(
         discover_entry_points=True,
         package_qualification_lookup=_lookup_for(qualification),
     )
+    assert calls["count"] == 1
+
+
 def _strict_env(profile_id: str) -> ApplicationEnvironmentProfile:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id=profile_id)
     return env.model_copy(
