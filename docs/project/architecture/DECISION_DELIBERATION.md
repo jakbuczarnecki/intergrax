@@ -94,6 +94,8 @@ The **Decision Lifecycle** invokes strategies through a **stable strategy contra
 | Strategy | Summary |
 | -------- | ------- |
 | **Single Model** | One producer → candidate version |
+
+Single Model declares a **logical inference profile** requirement in strategy configuration. **Execution System** owns profile → adapter resolution and provider invocation; Decision Strategy does not construct adapters or import provider SDKs.
 | **Council** | Multi-participant proposals + disagreement + optional synthesis |
 | **Rule-Based** | Deterministic selection / transformation |
 | **Hybrid** | Composed strategies behind registration |

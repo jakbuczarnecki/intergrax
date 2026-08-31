@@ -9,6 +9,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Generic, TypeVar
 
+from intergrax.runtime.execution.inference_profile import InferenceProfileId
+
 InputT = TypeVar("InputT")
 OutputT = TypeVar("OutputT")
 
@@ -39,3 +41,4 @@ class ExecutionRequest(Generic[InputT, OutputT]):
     input: InputT
     output_type: type[OutputT] | None = None
     capabilities: frozenset[ExecutionCapability] = field(default_factory=frozenset)
+    inference_profile_id: InferenceProfileId | None = None

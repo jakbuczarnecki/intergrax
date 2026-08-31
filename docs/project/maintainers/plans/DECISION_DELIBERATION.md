@@ -46,7 +46,7 @@
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
 | DS-DELIB-01 | P0 | `DecisionStrategy` protocol + canonical domain registry | **Done** — `intergrax/contracts/decision_strategy.py`; `tests/unit/contracts/test_decision_strategy.py` |
-| DS-DELIB-02 | P0 | Single Model strategy (baseline) | **Done** — `intergrax/contracts/single_model_strategy.py`; `intergrax/runtime/execution/single_model_deliberation.py`; `tests/unit/contracts/test_single_model_strategy.py` |
+| DS-DELIB-02 | P0 | Single Model strategy (baseline) | **Done** — profile-bound inference via `intergrax/runtime/execution/inference_profile.py`; `intergrax/contracts/single_model_strategy.py`; `intergrax/runtime/execution/single_model_deliberation.py`; `tests/unit/runtime/execution/test_inference_profile_resolution.py` |
 | DS-DELIB-03 | P1 | Disagreement artifact typed contract | **Planned** |
 | DS-DELIB-04 | P1 | Participant role configuration model | **Planned** |
 | DS-DELIB-05 | P1 | Context visibility policy per role | **Planned** |

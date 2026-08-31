@@ -41,6 +41,7 @@ from intergrax.contracts.single_model_strategy import (
     single_model_strategy_registration,
 )
 from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.execution.inference_profile import validate_inference_profile_id
 from intergrax.runtime.execution.request import ExecutionCapability
 from intergrax.runtime.execution.single_model_deliberation import (
     single_model_inference_execution_request,
@@ -56,7 +57,9 @@ class SampleDecisionPayload:
 
 
 def _inference_config() -> SingleModelInferenceConfiguration:
-    return SingleModelInferenceConfiguration(llm_profile_id="primary")
+    return SingleModelInferenceConfiguration(
+        llm_profile_id=validate_inference_profile_id("primary"),
+    )
 
 
 def _identity() -> DecisionIdentity:
@@ -182,9 +185,14 @@ def test_single_model_no_direct_provider_sdk_dependency() -> None:
 @pytest.mark.gate
 def test_single_model_uses_canonical_inference_execution_seam() -> None:
     deliberation_input = _deliberation_input()
-    request = single_model_inference_execution_request(deliberation_input)
+    inference = _inference_config()
+    request = single_model_inference_execution_request(
+        deliberation_input,
+        inference=inference,
+    )
     assert request.input == deliberation_input.messages
     assert request.output_type is SampleDecisionPayload
+    assert request.inference_profile_id == inference.llm_profile_id
     assert ExecutionCapability.ORCHESTRATION not in request.capabilities
     assert ExecutionCapability.AGENT not in request.capabilities
     assert ExecutionCapability.TOOLS not in request.capabilities
@@ -272,6 +280,30 @@ def test_single_model_registry_remains_immutable() -> None:
 def test_single_model_inference_configuration_rejects_blank_profile_id() -> None:
     with pytest.raises(ValueError):
         SingleModelInferenceConfiguration(llm_profile_id="   ")
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_single_model_deliberation_input_rejects_empty_messages() -> None:
+    with pytest.raises(ValueError):
+        SingleModelDeliberationInput(
+            messages=(),
+            output_type=SampleDecisionPayload,
+            artifact_kind=validate_decision_artifact_kind("incident_resolution"),
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_single_model_candidate_decision_explicit_none_lineage() -> None:
+    identity = _identity()
+    candidate = single_model_candidate_decision(
+        identity=identity,
+        artifact_kind=validate_decision_artifact_kind("incident_resolution"),
+        payload=SampleDecisionPayload(recommendation="hold"),
+        lineage=None,
+    )
+    assert candidate.lineage.current.version == DecisionVersion(1)
 
 
 @pytest.mark.unit

@@ -32,6 +32,10 @@ from intergrax.contracts.decision_strategy import (
     validate_decision_strategy_kind,
 )
 from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.execution.inference_profile import (
+    InferenceProfileId,
+    validate_inference_profile_id,
+)
 
 _SINGLE_MODEL_KIND = validate_decision_strategy_kind("single_model")
 
@@ -47,23 +51,10 @@ def single_model_strategy_kind() -> DecisionStrategyKind:
 class SingleModelInferenceConfiguration:
     """Provider-neutral inference profile reference resolved by Execution host."""
 
-    llm_profile_id: str
+    llm_profile_id: InferenceProfileId
 
     def __post_init__(self) -> None:
-        if type(self.llm_profile_id) is not str:
-            raise TypeError(
-                "SingleModelInferenceConfiguration.llm_profile_id must be str",
-            )
-        if not self.llm_profile_id or not self.llm_profile_id.strip():
-            raise ValueError(
-                "SingleModelInferenceConfiguration.llm_profile_id must be "
-                "non-empty and not whitespace-only",
-            )
-        if self.llm_profile_id != self.llm_profile_id.strip():
-            raise ValueError(
-                "SingleModelInferenceConfiguration.llm_profile_id must not "
-                "contain leading or trailing whitespace",
-            )
+        validate_inference_profile_id(self.llm_profile_id)
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,6 +68,8 @@ class SingleModelDeliberationInput(Generic[T]):
     def __post_init__(self) -> None:
         if type(self.messages) is not tuple:
             raise TypeError("SingleModelDeliberationInput.messages must be tuple")
+        if len(self.messages) == 0:
+            raise ValueError("SingleModelDeliberationInput.messages must not be empty")
         if type(self.output_type) is not type:
             raise TypeError(
                 "SingleModelDeliberationInput.output_type must be type",
@@ -127,9 +120,12 @@ def single_model_candidate_decision(
     lineage: DecisionVersionLineage | None = None,
 ) -> CandidateDecision[T]:
     """Assemble a typed candidate from Single Model inference output."""
-    resolved_lineage = lineage or decision_version_lineage(
-        current=decision_lineage_ref(identity.version),
-    )
+    if lineage is None:
+        resolved_lineage = decision_version_lineage(
+            current=decision_lineage_ref(identity.version),
+        )
+    else:
+        resolved_lineage = lineage
     artifact = DecisionArtifact(kind=artifact_kind, content=payload)
     return CandidateDecision(
         identity=identity,
