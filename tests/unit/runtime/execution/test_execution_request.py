@@ -8,7 +8,10 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 from intergrax.runtime.execution import ExecutionCapability, ExecutionRequest
-from intergrax.runtime.execution.inference_profile import InferenceProfileId
+from intergrax.runtime.execution.inference_profile import (
+    InferenceProfileId,
+    validate_inference_profile_id,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -45,6 +48,10 @@ class OrchestrationWork:
     topology_id: str
 
 
+def _attempt_field_assignment(instance: object, field_name: str, value: object) -> None:
+    exec(f"instance.{field_name} = value", {"instance": instance, "value": value})
+
+
 def test_request_stores_strongly_typed_non_dict_input() -> None:
     payload = PromptInput(text="summarize this")
 
@@ -62,10 +69,14 @@ def test_request_is_immutable() -> None:
     )
 
     with pytest.raises(FrozenInstanceError):
-        request.input = PromptInput(text="mutated")  # type: ignore[misc]
+        _attempt_field_assignment(request, "input", PromptInput(text="mutated"))
 
     with pytest.raises(FrozenInstanceError):
-        request.capabilities = frozenset({ExecutionCapability.STREAMING})  # type: ignore[misc]
+        _attempt_field_assignment(
+            request,
+            "capabilities",
+            frozenset({ExecutionCapability.STREAMING}),
+        )
 
 
 def test_output_type_declaration_is_preserved_exactly() -> None:
@@ -182,14 +193,18 @@ def test_inference_profile_id_accepts_none_and_valid_profile(
         InferenceProfileId(""),
         InferenceProfileId("   "),
         InferenceProfileId(" primary "),
-        42,
     ],
 )
 def test_inference_profile_id_rejects_invalid_direct_constructor_values(
-    invalid_profile_id: object,
+    invalid_profile_id: InferenceProfileId,
 ) -> None:
-    with pytest.raises((TypeError, ValueError)):
+    with pytest.raises(ValueError):
         ExecutionRequest[PromptInput, SummaryOutput](
             input=PromptInput(text="invalid profile"),
-            inference_profile_id=invalid_profile_id,  # type: ignore[arg-type]
+            inference_profile_id=invalid_profile_id,
         )
+
+
+def test_inference_profile_id_rejects_non_string_runtime_type() -> None:
+    with pytest.raises(TypeError):
+        validate_inference_profile_id(42)

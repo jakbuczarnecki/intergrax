@@ -381,9 +381,21 @@ async def test_absent_profile_uses_host_default_adapter() -> None:
 
 
 def test_inference_profile_catalog_is_immutable() -> None:
-    catalog = _profile_catalog()
-    with pytest.raises(TypeError):
-        catalog._adapters["primary"] = FakeAdapterA()  # noqa: SLF001  # pyright: ignore[reportIndexIssue]
+    profile_entries: list[tuple[str, FakeAdapterA | FakeAdapterB]] = [
+        ("primary", FakeAdapterA()),
+        ("cheap", FakeAdapterB()),
+    ]
+    catalog = InferenceProfileCatalog(tuple(profile_entries))
+    resolved_primary = catalog.resolve(InferenceProfileId("primary"))
+    resolved_cheap = catalog.resolve(InferenceProfileId("cheap"))
+
+    profile_entries.append(("intruder", FakeAdapterB()))
+    profile_entries[0] = ("primary", FakeAdapterB())
+
+    assert catalog.resolve(InferenceProfileId("primary")) is resolved_primary
+    assert catalog.resolve(InferenceProfileId("cheap")) is resolved_cheap
+    with pytest.raises(InferenceProfileNotFoundError):
+        catalog.resolve(InferenceProfileId("intruder"))
 
 
 def test_single_model_candidate_decision_uses_explicit_none_lineage_check() -> None:
