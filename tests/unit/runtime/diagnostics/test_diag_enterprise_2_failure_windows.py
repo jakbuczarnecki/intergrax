@@ -258,3 +258,42 @@ def test_f4_duplicate_append_does_not_double_count() -> None:
     )
     assert stats is not None
     assert stats.occurrence_count == 1
+
+
+def test_f5_concurrent_duplicate_append_counts_once() -> None:
+    """F5: concurrent duplicate durable appends converge to one row."""
+    store = InMemoryDocumentStore()
+    occurrence_persistence = document_store_occurrence_persistence_for_tests(store)
+    subject = _sample_subject_ref(tenant_id=_TENANT)
+    problem = sample_problem(tenant_id=_TENANT, subject_refs=(subject,), observed_at=_OBSERVED_AT)
+    occurrence = sample_occurrences(subject_refs=(subject,), observed_at=_OBSERVED_AT)[0]
+    barrier = threading.Barrier(2)
+    results: list[ProblemOccurrenceAppendResult] = []
+
+    def _append() -> None:
+        barrier.wait(timeout=5)
+        results.append(
+            occurrence_persistence.append_if_absent(
+                tenant_id=_TENANT,
+                problem_id=problem.problem_id,
+                occurrence=occurrence,
+            ),
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [executor.submit(_append), executor.submit(_append)]
+        for future in futures:
+            future.result(timeout=10)
+    assert sorted(results, key=str) == sorted(
+        [
+            ProblemOccurrenceAppendResult.CREATED,
+            ProblemOccurrenceAppendResult.ALREADY_EXISTS,
+        ],
+        key=str,
+    )
+    stats = occurrence_persistence.aggregate_stats(
+        tenant_id=_TENANT,
+        problem_id=problem.problem_id,
+    )
+    assert stats is not None
+    assert stats.occurrence_count == 1
