@@ -7,7 +7,7 @@
 
 > **DS-DOC-CLEAN (2026-08-30):** Deliberation / Council strategy architecture **FROZEN**. **Council runtime NOT STARTED.**
 
-**Last updated:** 2026-08-31 — DS-DELIB-01 strategy contracts + registry ownership alignment.
+**Last updated:** 2026-08-31 — DS-DELIB-02 Single Model strategy foundation.
 
 ---
 
@@ -46,7 +46,7 @@
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
 | DS-DELIB-01 | P0 | `DecisionStrategy` protocol + canonical domain registry | **Done** — `intergrax/contracts/decision_strategy.py`; `tests/unit/contracts/test_decision_strategy.py` |
-| DS-DELIB-02 | P0 | Single Model strategy (baseline) | **Planned** |
+| DS-DELIB-02 | P0 | Single Model strategy (baseline) | **Done** — `intergrax/contracts/single_model_strategy.py`; `intergrax/runtime/execution/single_model_deliberation.py`; `tests/unit/contracts/test_single_model_strategy.py` |
 | DS-DELIB-03 | P1 | Disagreement artifact typed contract | **Planned** |
 | DS-DELIB-04 | P1 | Participant role configuration model | **Planned** |
 | DS-DELIB-05 | P1 | Context visibility policy per role | **Planned** |

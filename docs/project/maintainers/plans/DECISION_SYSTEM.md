@@ -80,8 +80,45 @@
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
+| DS-EXEC-00 | P0 | Prove Decision capability is optional: ordinary Execution flows bypass Decision Lifecycle entirely when no authoritative decision is required | **Planned** |
 | DS-EXEC-01 | P0 | Execution host / strategy-routing hooks → Decision Lifecycle | **Planned** |
 | DS-EXEC-02 | P1 | Lifecycle stage persistence via canonical Execution checkpoint ports | **Planned** |
+
+### DS-EXEC-00 — Decision System optionality / bypass contract (PLANNED)
+
+Decision System is **optional per flow**. Ordinary Execution work must complete without entering Decision Lifecycle when no authoritative decision is required.
+
+**Acceptance contract (future proof):**
+
+```text
+A. Execution without Decision:
+Application → Execution → normal execution work → completion
+
+B. Execution with Decision:
+Application → Execution → Decision Lifecycle → strategy / verification / resolution → continue execution as required
+```
+
+**Required future proofs:**
+
+| Proof | Expectation |
+| ----- | ----------- |
+| Decision System disabled / absent | Ordinary Execution still works |
+| Decision System not selected for a flow | No Decision identity · no Decision lifecycle · no Decision checkpoint · no Decision finalization · no Decision verification |
+| Decision System selected | Canonical Decision Lifecycle applies |
+
+**Future invariant:** No Decision artifacts or lifecycle state are created for a flow that does not request Decision capability.
+
+**Future test matrix (runtime — not in DS-DELIB-02 slice):**
+
+| Flow class | Without Decision | With Decision |
+| ---------- | ---------------- | ------------- |
+| INFERENCE | ordinary inference flow without Decision | Decision-enabled inference flow |
+| AGENTIC | ordinary agentic flow without Decision | Decision-enabled agentic flow |
+| ORCHESTRATION | ordinary orchestration flow without Decision | Decision-enabled orchestration flow |
+
+Goal: **Decision capability orthogonal to ExecutionStrategy** — none of INFERENCE, AGENTIC, or ORCHESTRATION require Decision System.
+
+**Non-goals for DS-EXEC-00 scoping:** no premature global `DECISION_SYSTEM_ENABLED` flag; no `NoDecisionStrategy` / `NullDecisionStrategy` workaround — absence means Lifecycle is not entered.
 
 ### Orchestration-specific integration (Nexus)
 
