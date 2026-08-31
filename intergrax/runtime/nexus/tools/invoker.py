@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
-from dataclasses import dataclass, field
 from typing import Optional, Protocol, Type, runtime_checkable
 
 from pydantic import BaseModel
@@ -57,17 +56,50 @@ class TraceEmitter(Protocol):
     ) -> None: ...
 
 
-_ADMISSION_SEAL = object()
-
-
-@dataclass(frozen=True, slots=True)
 class ToolInvocationAdmission:
-    """Typed proof that pre-effect admission passed for one tool invocation."""
+    """Typed proof that pre-effect admission passed for one tool invocation.
 
-    agent_id: str
-    tool_id: str
-    operation_identity: str
-    _seal: object = field(default=_ADMISSION_SEAL, repr=False, compare=False)
+    Instances are minted only by :meth:`RuntimeToolInvoker.admit` and cannot be
+    constructed through the public constructor.
+    """
+
+    __slots__ = (
+        "agent_id",
+        "tool_id",
+        "operation_identity",
+        "tenant_id",
+        "run_id",
+        "task_id",
+        "_issuing_mint",
+    )
+
+    def __init__(self, *_args: object, **_kwargs: object) -> None:
+        raise TypeError(
+            "ToolInvocationAdmission cannot be constructed directly; "
+            "obtain via RuntimeToolInvoker.admit()."
+        )
+
+    @classmethod
+    def _mint(
+        cls,
+        *,
+        agent_id: str,
+        tool_id: str,
+        operation_identity: str,
+        tenant_id: str,
+        run_id: str,
+        task_id: str | None,
+        mint: object,
+    ) -> ToolInvocationAdmission:
+        admission = object.__new__(cls)
+        admission.agent_id = agent_id
+        admission.tool_id = tool_id
+        admission.operation_identity = operation_identity
+        admission.tenant_id = tenant_id
+        admission.run_id = run_id
+        admission.task_id = task_id
+        admission._issuing_mint = mint
+        return admission
 
 
 class RuntimeToolInvoker:
@@ -92,6 +124,7 @@ class RuntimeToolInvoker:
         self._registry = registry
         self._executor = executor
         self._scope_policy = scope_policy
+        self._admission_mint = object()
 
     @property
     def registry(self) -> ToolRegistry:
@@ -112,7 +145,7 @@ class RuntimeToolInvoker:
         )
         if isinstance(admission_outcome, ToolExecutionResult):
             return admission_outcome
-        return self.execute_after_admission(
+        return self._execute_after_admission(
             state=state,
             agent_id=agent_id,
             request=request,
@@ -160,9 +193,11 @@ class RuntimeToolInvoker:
                     tool_id=request.tool_id,
                 )
 
+        admission_task_id: str | None = None
         declarative_enforcer = resolve_declarative_policy_enforcer(state)
         if declarative_enforcer is not None:
             task_id = state.task_id
+            admission_task_id = task_id
             policy_context = PolicyEvaluationContext(
                 tool_id=request.tool_id,
                 tenant_id=state.tenant_id,
@@ -266,16 +301,20 @@ class RuntimeToolInvoker:
             )
             return result
 
-        return ToolInvocationAdmission(
+        return ToolInvocationAdmission._mint(
             agent_id=agent_id,
             tool_id=request.tool_id,
             operation_identity=compute_invocation_operation_identity(
                 request.tool_id,
                 request.input,
             ),
+            tenant_id=state.tenant_id,
+            run_id=request.run_id,
+            task_id=admission_task_id,
+            mint=self._admission_mint,
         )
 
-    def execute_after_admission(
+    def _execute_after_admission(
         self,
         *,
         state: "RuntimeState",
@@ -283,18 +322,12 @@ class RuntimeToolInvoker:
         request: ToolExecutionRequest[BaseModel],
         admission: ToolInvocationAdmission,
     ) -> ToolExecutionResult[BaseModel]:
-        if admission._seal is not _ADMISSION_SEAL:
-            raise RuntimeError("Invalid tool invocation admission token.")
-        if admission.agent_id != agent_id:
-            raise RuntimeError("Tool invocation admission agent mismatch.")
-        if admission.tool_id != request.tool_id:
-            raise RuntimeError("Tool invocation admission tool mismatch.")
-        expected_identity = compute_invocation_operation_identity(
-            request.tool_id,
-            request.input,
+        self._validate_admission(
+            state=state,
+            agent_id=agent_id,
+            request=request,
+            admission=admission,
         )
-        if admission.operation_identity != expected_identity:
-            raise RuntimeError("Tool invocation admission operation identity mismatch.")
 
         reg = self._registry.get(request.tool_id)
         contract = reg.contract
@@ -324,6 +357,42 @@ class RuntimeToolInvoker:
             contract=contract,
             request=request,
         )
+
+    def _validate_admission(
+        self,
+        *,
+        state: "RuntimeState",
+        agent_id: str,
+        request: ToolExecutionRequest[BaseModel],
+        admission: ToolInvocationAdmission,
+    ) -> None:
+        if admission._issuing_mint is not self._admission_mint:
+            raise RuntimeError("Invalid tool invocation admission token.")
+        if admission.agent_id != agent_id:
+            raise RuntimeError("Tool invocation admission agent mismatch.")
+        if admission.tool_id != request.tool_id:
+            raise RuntimeError("Tool invocation admission tool mismatch.")
+        if admission.tenant_id != state.tenant_id:
+            raise RuntimeError("Tool invocation admission tenant mismatch.")
+        if admission.run_id != request.run_id:
+            raise RuntimeError("Tool invocation admission run mismatch.")
+        if admission.task_id is not None:
+            state_task_id = self._resolve_state_task_id(state)
+            if state_task_id is None or state_task_id != admission.task_id:
+                raise RuntimeError("Tool invocation admission task mismatch.")
+        expected_identity = compute_invocation_operation_identity(
+            request.tool_id,
+            request.input,
+        )
+        if admission.operation_identity != expected_identity:
+            raise RuntimeError("Tool invocation admission operation identity mismatch.")
+
+    @staticmethod
+    def _resolve_state_task_id(state: "RuntimeState") -> str | None:
+        try:
+            return state.task_id
+        except AttributeError:
+            return None
 
     def _execute_with_policy(
         self,

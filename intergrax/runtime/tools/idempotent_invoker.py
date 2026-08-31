@@ -149,7 +149,7 @@ class IdempotentToolInvoker:
         if claim is None:
             raise RuntimeError("Ledger inconsistency: ACQUIRED without claim.")
 
-        result = self._base_invoker.execute_after_admission(
+        result = self._base_invoker._execute_after_admission(
             state=state,
             agent_id=agent_id,
             request=request,

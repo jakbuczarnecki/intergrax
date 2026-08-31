@@ -37,7 +37,7 @@ from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
     UniqueDeclarativeHitlCandidate,
     maybe_assign_declarative_hitl_scope,
 )
-from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker, ToolInvocationAdmission
 from intergrax.runtime.tools.idempotent_invoker import IdempotentToolInvoker
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from intergrax.runtime.tools.operation_identity import compute_invocation_operation_identity
@@ -729,3 +729,168 @@ def test_hitl_resume_claims_and_executes_once() -> None:
     replay = invoker.invoke(state=state, agent_id="agent", request=request)
     assert replay.success
     assert executor.calls == 1
+
+
+def _deny_governance_bundle() -> object:
+    return _policy_bundle(
+        action="deny",
+        tool_id=_HITL_TOOL_ID,
+        rule_id=_HITL_RULE_ID,
+    )
+
+
+def _governance_request(
+    *,
+    value: int = 5,
+    key: str = "admission-key",
+    run_id: str = _HITL_RUN_ID,
+) -> ToolExecutionRequest[ValueInput]:
+    return ToolExecutionRequest(
+        run_id=run_id,
+        step_id="step1",
+        tool_id=_HITL_TOOL_ID,
+        input=ValueInput(value=value),
+        idempotency_key=key,
+    )
+
+
+def test_manual_admission_forgery_cannot_execute() -> None:
+    executor = CountingExecutor()
+    _, _, base = _governance_idempotent_invoker(executor)
+    state = GovernanceDummyState()
+    state.context.config.policy_bundle = _deny_governance_bundle()
+    request = _governance_request()
+
+    with pytest.raises(TypeError, match="cannot be constructed directly"):
+        ToolInvocationAdmission(
+            agent_id="agent",
+            tool_id=_HITL_TOOL_ID,
+            operation_identity=compute_invocation_operation_identity(
+                request.tool_id,
+                request.input,
+            ),
+        )
+
+    forged = ToolInvocationAdmission._mint(
+        agent_id="agent",
+        tool_id=request.tool_id,
+        operation_identity=compute_invocation_operation_identity(
+            request.tool_id,
+            request.input,
+        ),
+        tenant_id=state.tenant_id,
+        run_id=request.run_id,
+        task_id=state.task_id,
+        mint=object(),
+    )
+    with pytest.raises(RuntimeError, match="Invalid tool invocation admission token"):
+        base._execute_after_admission(
+            state=state,
+            agent_id="agent",
+            request=request,
+            admission=forged,
+        )
+    assert executor.calls == 0
+
+
+def test_admission_cannot_cross_operation() -> None:
+    executor = CountingExecutor()
+    _, _, base = _governance_idempotent_invoker(executor)
+    state = GovernanceDummyState()
+    allow_env = ApplicationEnvironmentProfile.lab_defaults(profile_id="governance.allow")
+    allow_env.policy_rules = PolicyRulesProfile(
+        inline_rules=[],
+        policy_enforcement_mode="enforce",
+    )
+    state.context.config.policy_bundle = wire_policy_bundle(allow_env)
+    request_x = _governance_request(value=3, key="cross-op-key")
+    admission = base.admit(state=state, agent_id="agent", request=request_x)
+    assert not isinstance(admission, ToolExecutionResult)
+
+    request_y = _governance_request(value=9, key="cross-op-key")
+    with pytest.raises(RuntimeError, match="operation identity mismatch"):
+        base._execute_after_admission(
+            state=state,
+            agent_id="agent",
+            request=request_y,
+            admission=admission,
+        )
+    assert executor.calls == 0
+
+
+def test_admission_cannot_cross_agent() -> None:
+    executor = CountingExecutor()
+    _, _, base = _governance_idempotent_invoker(executor)
+    state = GovernanceDummyState()
+    allow_env = ApplicationEnvironmentProfile.lab_defaults(profile_id="governance.allow")
+    allow_env.policy_rules = PolicyRulesProfile(
+        inline_rules=[],
+        policy_enforcement_mode="enforce",
+    )
+    state.context.config.policy_bundle = wire_policy_bundle(allow_env)
+    request = _governance_request()
+    admission = base.admit(state=state, agent_id="agent-a", request=request)
+    assert not isinstance(admission, ToolExecutionResult)
+
+    with pytest.raises(RuntimeError, match="agent mismatch"):
+        base._execute_after_admission(
+            state=state,
+            agent_id="agent-b",
+            request=request,
+            admission=admission,
+        )
+    assert executor.calls == 0
+
+
+def test_admission_cannot_cross_runtime_state() -> None:
+    executor = CountingExecutor()
+    _, _, base = _governance_idempotent_invoker(executor)
+    allow_env = ApplicationEnvironmentProfile.lab_defaults(profile_id="governance.allow")
+    allow_env.policy_rules = PolicyRulesProfile(
+        inline_rules=[],
+        policy_enforcement_mode="enforce",
+    )
+    bundle = wire_policy_bundle(allow_env)
+    state_a = GovernanceDummyState(tenant_id="tenant-a")
+    state_a.context.config.policy_bundle = bundle
+    state_b = GovernanceDummyState(tenant_id="tenant-b")
+    state_b.context.config.policy_bundle = bundle
+    request = _governance_request()
+    admission = base.admit(state=state_a, agent_id="agent", request=request)
+    assert not isinstance(admission, ToolExecutionResult)
+
+    with pytest.raises(RuntimeError, match="tenant mismatch"):
+        base._execute_after_admission(
+            state=state_b,
+            agent_id="agent",
+            request=request,
+            admission=admission,
+        )
+    assert executor.calls == 0
+
+
+def test_admission_cannot_cross_invoker() -> None:
+    executor_a = CountingExecutor()
+    executor_b = CountingExecutor()
+    _, _, base_a = _governance_idempotent_invoker(executor_a)
+    _, _, base_b = _governance_idempotent_invoker(executor_b)
+    state = GovernanceDummyState()
+    allow_env = ApplicationEnvironmentProfile.lab_defaults(profile_id="governance.allow")
+    allow_env.policy_rules = PolicyRulesProfile(
+        inline_rules=[],
+        policy_enforcement_mode="enforce",
+    )
+    state.context.config.policy_bundle = wire_policy_bundle(allow_env)
+    request = _governance_request()
+    admission = base_a.admit(state=state, agent_id="agent", request=request)
+    assert not isinstance(admission, ToolExecutionResult)
+
+    with pytest.raises(RuntimeError, match="Invalid tool invocation admission token"):
+        base_b._execute_after_admission(
+            state=state,
+            agent_id="agent",
+            request=request,
+            admission=admission,
+        )
+    assert executor_a.calls == 0
+    assert executor_b.calls == 0
