@@ -36,7 +36,13 @@ def functional_validation_evidence_id(
     correlation: DiagnosticExecutionCorrelation,
     idempotency_key: str,
 ) -> EventId:
-    """Deterministic validation identity for duplicate-safe emission."""
+    """
+    Deterministic validation identity for duplicate-safe emission.
+
+    Same semantic validation retry (same validator, kind, correlation, idempotency_key)
+    yields the same ``validation_id``. A different validation operation must use a
+    different ``idempotency_key`` (caller contract).
+    """
     digest = hashlib.sha256(
         ":".join(
             (
@@ -45,6 +51,7 @@ def functional_validation_evidence_id(
                 correlation.tenant_id,
                 str(correlation.task_id),
                 str(correlation.run_id),
+                str(correlation.attempt_id or ""),
                 idempotency_key,
             )
         ).encode("utf-8")

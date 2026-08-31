@@ -12,7 +12,6 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
 )
 from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
-from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticCertainty
 from intergrax.runtime.diagnostics.functional_evidence import (
     PipelineEvidenceKind,
     PipelineEvidenceProvenance,
@@ -27,6 +26,7 @@ from intergrax.runtime.diagnostics.functional_evidence_persistence import (
     FunctionalEvidenceQueryRequest,
 )
 from intergrax.runtime.diagnostics.functional_evidence_reconstruction import (
+    FunctionalEvidenceCompletenessStatus,
     FunctionalEvidenceReconstructor,
 )
 from intergrax.runtime.diagnostics.functional_validation import (
@@ -181,7 +181,15 @@ def test_t4_tenant_mismatch_fails_closed() -> None:
                 tenant_id="tenant-b",
                 task_id=correlation.task_id,
                 run_id=correlation.run_id,
-                cursor=f"tenant-a|{correlation.task_id}|{correlation.run_id}|0",
+                cursor=persistence.query_cursor_codec.encode(
+                    tenant_id=correlation.tenant_id,
+                    task_id=correlation.task_id,
+                    run_id=correlation.run_id,
+                    attempt_id=None,
+                    kind=None,
+                    last_recorded_at=evidence.provenance.recorded_at,
+                    last_evidence_id=evidence.evidence_id,
+                ),
             )
         )
 
@@ -257,12 +265,21 @@ def test_t6_out_of_order_evidence_has_deterministic_reconstruction_order() -> No
         task_id=correlation.task_id,
         run_id=correlation.run_id,
     )
+    page = persistence.query_evidence(
+        FunctionalEvidenceQueryRequest(
+            tenant_id=correlation.tenant_id,
+            task_id=correlation.task_id,
+            run_id=correlation.run_id,
+            page_size=10,
+        )
+    )
     operation_names = tuple(
         item.operation_outcome.operation_name
-        for item in reconstruction.evidence
+        for item in page.items
         if item.operation_outcome is not None
     )
     assert operation_names == ("embed", "index")
+    assert reconstruction.evidence_summary.total_evidence_count == 2
 
 
 def test_t7_missing_evidence_yields_insufficient_evidence() -> None:
@@ -275,7 +292,9 @@ def test_t7_missing_evidence_yields_insufficient_evidence() -> None:
         required_kinds=frozenset({PipelineEvidenceKind.CANDIDATE_RANK}),
     )
 
-    assert reconstruction.certainty is DiagnosticCertainty.INSUFFICIENT_EVIDENCE
+    assert reconstruction.completeness_status is (
+        FunctionalEvidenceCompletenessStatus.INCOMPLETE_FOR_REQUIREMENTS
+    )
     assert PipelineEvidenceKind.CANDIDATE_RANK in reconstruction.completeness.missing_kinds
 
 

@@ -21,8 +21,11 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
     validate_task_id,
 )
-from intergrax.runtime.observability.functional_validation_evidence import DiagnosticExecutionCorrelation
+from intergrax.contracts.functional_evidence_bounds import (
+    MAX_DIRECT_UPSTREAM_EVIDENCE_REFS,
+)
 from intergrax.runtime.observability.export_attributes import ObservabilityArtifactReference
+from intergrax.runtime.observability.functional_validation_evidence import DiagnosticExecutionCorrelation
 
 PLATFORM_FUNCTIONAL_EVIDENCE_SCHEMA = "platform_functional_evidence.v1"
 
@@ -134,7 +137,12 @@ class PipelineEvidenceProvenance(BaseModel):
             return ()
         if type(value) is not tuple:
             raise TypeError("upstream_evidence_ids must be a tuple")
-        return tuple(validate_event_id(item) for item in value)
+        normalized = tuple(validate_event_id(item) for item in value)
+        if len(normalized) > MAX_DIRECT_UPSTREAM_EVIDENCE_REFS:
+            raise ValueError(
+                f"upstream_evidence_ids must contain <= {MAX_DIRECT_UPSTREAM_EVIDENCE_REFS} refs",
+            )
+        return normalized
 
     @field_validator("recorded_at")
     @classmethod
@@ -335,22 +343,37 @@ class PlatformFunctionalEvidence(BaseModel):
 
     @model_validator(mode="after")
     def _validate_kind_payload_alignment(self) -> PlatformFunctionalEvidence:
-        payload_by_kind: dict[PipelineEvidenceKind, object | None] = {
-            PipelineEvidenceKind.ARTIFACT_LINEAGE: self.artifact_lineage,
-            PipelineEvidenceKind.OPERATION_OUTCOME: self.operation_outcome,
-            PipelineEvidenceKind.CANDIDATE_RANK: self.candidate,
-            PipelineEvidenceKind.SELECTION: self.selection,
-            PipelineEvidenceKind.OUTPUT_RELATION: self.output_relation,
-            PipelineEvidenceKind.VALIDATION: self.validation_link,
-        }
-        active_payload = payload_by_kind[self.kind]
-        if active_payload is None:
-            raise ValueError(f"kind {self.kind.value!r} requires matching typed payload")
-        for other_kind, other_payload in payload_by_kind.items():
-            if other_kind is not self.kind and other_payload is not None:
-                raise ValueError(
-                    f"kind {self.kind.value!r} cannot coexist with payload for {other_kind.value!r}",
-                )
+        match self.kind:
+            case PipelineEvidenceKind.ARTIFACT_LINEAGE:
+                if self.artifact_lineage is None:
+                    raise ValueError("kind 'artifact_lineage' requires matching typed payload")
+            case PipelineEvidenceKind.OPERATION_OUTCOME:
+                if self.operation_outcome is None:
+                    raise ValueError("kind 'operation_outcome' requires matching typed payload")
+            case PipelineEvidenceKind.CANDIDATE_RANK:
+                if self.candidate is None:
+                    raise ValueError("kind 'candidate_rank' requires matching typed payload")
+            case PipelineEvidenceKind.SELECTION:
+                if self.selection is None:
+                    raise ValueError("kind 'selection' requires matching typed payload")
+            case PipelineEvidenceKind.OUTPUT_RELATION:
+                if self.output_relation is None:
+                    raise ValueError("kind 'output_relation' requires matching typed payload")
+            case PipelineEvidenceKind.VALIDATION:
+                if self.validation_link is None:
+                    raise ValueError("kind 'validation' requires matching typed payload")
+        if self.kind is not PipelineEvidenceKind.ARTIFACT_LINEAGE and self.artifact_lineage is not None:
+            raise ValueError("kind cannot coexist with payload for 'artifact_lineage'")
+        if self.kind is not PipelineEvidenceKind.OPERATION_OUTCOME and self.operation_outcome is not None:
+            raise ValueError("kind cannot coexist with payload for 'operation_outcome'")
+        if self.kind is not PipelineEvidenceKind.CANDIDATE_RANK and self.candidate is not None:
+            raise ValueError("kind cannot coexist with payload for 'candidate_rank'")
+        if self.kind is not PipelineEvidenceKind.SELECTION and self.selection is not None:
+            raise ValueError("kind cannot coexist with payload for 'selection'")
+        if self.kind is not PipelineEvidenceKind.OUTPUT_RELATION and self.output_relation is not None:
+            raise ValueError("kind cannot coexist with payload for 'output_relation'")
+        if self.kind is not PipelineEvidenceKind.VALIDATION and self.validation_link is not None:
+            raise ValueError("kind cannot coexist with payload for 'validation'")
         return self
 
 

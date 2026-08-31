@@ -606,16 +606,57 @@ Functional evidence is **not** packed into `RuntimeEvent` payloads. It uses a se
 
 | Contract | Role |
 | -------- | ---- |
-| `FunctionalValidationEvidence` | Bounded validator outcome (validator identity, validation kind, outcome, expected/actual relation, correlation, upstream evidence refs) |
+| `FunctionalValidationEvidence` | Bounded validator outcome (validator identity, validation kind, outcome, expected/actual relation, correlation, bounded upstream refs) |
 | `PlatformFunctionalEvidence` | Composable pipeline facts: artifact lineage, operation outcome, candidate rank, selection, output relation, validation link |
-| `FunctionalEvidencePersistence` | Append-only, tenant-scoped, paginated read (`query_evidence`) |
-| `FunctionalEvidenceReconstructor` | Deterministic reconstruction; missing required kinds → `DiagnosticCertainty.INSUFFICIENT_EVIDENCE` |
+| `FunctionalEvidencePersistence` | Append-only, tenant-scoped, keyset-paginated read (`query_evidence`) |
+| `FunctionalEvidenceReconstructor` | Bounded derived projection; completeness status separate from diagnostic certainty |
+
+### Bounded reconstruction (F1-R1)
+
+```text
+Functional evidence history (canonical persistence)
+        │
+        │ paginated keyset scan (monotonic traversal)
+        ▼
+bounded reconstruction accumulator
+        │
+        ├─ completeness status (NOT_EVALUATED | COMPLETE | INCOMPLETE)
+        ├─ per-kind counts (closed enum — bounded)
+        ├─ bounded supporting refs (≤ MAX_SUPPORTING_EVIDENCE_REFS)
+        └─ limitations (late-arrival semantics)
+        │
+        ▼
+future deterministic analyzers (NOT in F1-R1)
+```
+
+Reconstruction **does not** materialize `tuple[all PlatformFunctionalEvidence]`. Memory retained is O(1) relative to history cardinality.
+
+| Limit | Value | Semantics |
+| ----- | ----- | --------- |
+| `MAX_DIRECT_UPSTREAM_EVIDENCE_REFS` | 8 | Inline provenance per fact; overflow fails validation |
+| `MAX_SUPPORTING_EVIDENCE_REFS` | 16 | Illustrative sample refs in reconstruction projection |
+
+### Keyset pagination and late arrival (F1-R1)
+
+- Canonical order: `(recorded_at, evidence_id)` ascending.
+- Cursor: authenticated, scope-bound (`tenant`, `task`, `run`, optional `attempt_id`, optional `kind`); filter mutation fails closed.
+- Traversal semantics: **monotonic ordered scan** (Option B). No snapshot isolation.
+- Late insert **after** cursor: visible in subsequent pages of the same traversal.
+- Late insert **before** already-consumed cursor: not visible in the current traversal; requires a new reconstruction cycle. No offset duplicates/skips.
+- InMemory query: O(log N + page_size) per page — no full-history sort per page.
+
+### Completeness vs diagnostic certainty (F1-R1)
+
+- `FunctionalEvidenceCompletenessStatus.NOT_EVALUATED` when `required_kinds` is empty — **not** `PROVEN`.
+- `DiagnosticCertainty.PROVEN` belongs to specific findings/claims, not “scan completed”.
 
 ### Identity, correlation, idempotency
 
 - Correlation uses typed `Tenant` + `TaskId` + `RunId` (+ optional `AttemptId` / `EventId`).
 - Tenant mismatch and signal/correlation drift fail closed (`FunctionalValidationIntegrityError`).
 - `validation_id` / `evidence_id` provide stable identity; persistence `append` is idempotent on `evidence_id`.
+- `validation_id` includes `attempt_id` when attempt-scoped; same semantic retry + same `idempotency_key` → same id.
+- `PlatformProblemSignal` enforces functional-validation correlation invariant at model level (not builder-only).
 - Out-of-order persistence is tolerated; query/reconstruction order is deterministic on `(recorded_at, evidence_id)`.
 
 ### Boundedness and privacy
@@ -638,7 +679,9 @@ deterministic findings / limitations
 optional higher-level inference later (NOT in F1/F2)
 ```
 
-**Code references:** `functional_validation.py` · `functional_validation_evidence.py` · `functional_evidence.py` · `functional_evidence_persistence.py` · `functional_evidence_reconstruction.py` · `in_memory_functional_evidence_persistence.py` · `problem_signal.py`.
+**Code references:** `functional_validation.py` · `functional_validation_evidence.py` · `functional_evidence.py` · `functional_evidence_persistence.py` · `functional_evidence_query_cursor.py` · `functional_evidence_reconstruction.py` · `in_memory_functional_evidence_persistence.py` · `problem_signal.py` · `intergrax/contracts/functional_evidence_bounds.py`.
+
+**Persistence qualification:** `InMemoryFunctionalEvidencePersistence` = test/local/conformance only. Durable DocumentStore/Mongo evidence backend = not yet qualified.
 
 ---
 

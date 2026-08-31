@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 
-from intergrax.contracts.execution_identity import RunId, TaskId
+from intergrax.contracts.execution_identity import AttemptId, RunId, TaskId
 from intergrax.runtime.diagnostics.functional_evidence import (
     PipelineEvidenceKind,
     PlatformFunctionalEvidence,
@@ -38,6 +38,7 @@ class FunctionalEvidenceQueryRequest:
     tenant_id: str
     task_id: TaskId
     run_id: RunId
+    attempt_id: AttemptId | None = None
     kind: PipelineEvidenceKind | None = None
     page_size: int = 100
     cursor: str | None = None
@@ -76,6 +77,10 @@ class FunctionalEvidencePersistence(ABC):
         Return one bounded page of evidence for an execution scope.
 
         Results are tenant-scoped and ordered by ``functional_evidence_query_order_key``.
+        Pagination uses authenticated keyset cursors bound to the full query scope
+        (tenant, task, run, optional attempt filter, optional kind filter).
+        One traversal is a monotonic ordered scan; late evidence inserted before
+        an already-consumed cursor may require a subsequent reconstruction cycle.
         """
 
 

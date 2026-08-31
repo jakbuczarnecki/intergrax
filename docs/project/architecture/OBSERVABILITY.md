@@ -982,7 +982,7 @@ Diagnostic projections (`ExecutionReconstruction`, `LifecycleAnalysis`, `Diagnos
 
 **Incomplete evidence:** missing evidence does **not** authorize DIAG to invent lineage — represent truncation/limitation, retain uncertainty, do not guess parent Execution, do not promote `correlation_id` to lineage, do not claim root cause as proven.
 
-**Functional evidence boundary (DIAG-FUNCTIONAL-1):** Observability records and exports typed functional/AI pipeline evidence (`PlatformFunctionalEvidence`) and problem signals carrying `FunctionalValidationEvidence`. Observability does **not** own functional diagnosis — it records facts such as `candidate rank=17 selected=False`; central DIAG interprets meaning. Functional evidence is correlated to execution identity but stored outside `RuntimeEvent` payloads. See [`DIAGNOSTICS.md`](DIAGNOSTICS.md) § Functional diagnostics.
+**Functional evidence boundary (DIAG-FUNCTIONAL-1 / R1):** Observability records and exports typed functional/AI pipeline evidence (`PlatformFunctionalEvidence`) and problem signals carrying `FunctionalValidationEvidence`. Observability does **not** own functional diagnosis — it records facts such as `candidate rank=17 selected=False`; central DIAG interprets meaning. Functional evidence is correlated to execution identity but stored outside `RuntimeEvent` payloads. Direct inline `upstream_evidence_ids` are bounded (`MAX_DIRECT_UPSTREAM_EVIDENCE_REFS`); `relation_summary` is a safe bounded summary only. `PlatformProblemSignal` enforces functional-validation correlation invariants at model construction. See [`DIAGNOSTICS.md`](DIAGNOSTICS.md) § Functional diagnostics.
 
 ### Causal evidence plane (DIAG-1)
 

@@ -21,6 +21,9 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
     validate_task_id,
 )
+from intergrax.contracts.functional_evidence_bounds import (
+    MAX_DIRECT_UPSTREAM_EVIDENCE_REFS,
+)
 
 PLATFORM_FUNCTIONAL_VALIDATION_EVIDENCE_SCHEMA = "platform_functional_validation_evidence.v1"
 
@@ -127,6 +130,7 @@ class FunctionalValidationEvidence(BaseModel):
     Bounded functional validation fact emitted by an external/domain validator.
 
     Does not alter execution terminal state. DIAG interprets this evidence.
+    ``relation_summary`` is a bounded safe summary only — not canonical raw content.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -159,7 +163,12 @@ class FunctionalValidationEvidence(BaseModel):
             return ()
         if type(value) is not tuple:
             raise TypeError("upstream_evidence_ids must be a tuple")
-        return tuple(validate_event_id(item) for item in value)
+        normalized = tuple(validate_event_id(item) for item in value)
+        if len(normalized) > MAX_DIRECT_UPSTREAM_EVIDENCE_REFS:
+            raise ValueError(
+                f"upstream_evidence_ids must contain <= {MAX_DIRECT_UPSTREAM_EVIDENCE_REFS} refs",
+            )
+        return normalized
 
     @field_validator("relation_summary")
     @classmethod
