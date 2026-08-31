@@ -241,7 +241,9 @@ class AgentEngine:
                 valid=result.status.value == "succeeded",
                 errors=[error.message for error in result.errors],
             )
-            return answer, validation, agent.build_context(request), None, dict(result.structured_data)
+            context = agent.build_context(request)
+            context.close()
+            return answer, validation, context, None, dict(result.structured_data)
 
         if supports_uaep(agent):
             from intergrax.llm.messages import (
@@ -262,6 +264,7 @@ class AgentEngine:
                 request,
                 contract=resolved_contract,
             )
+            context.close()
             return answer, validation, context, governance, {}
 
         raise ValueError(

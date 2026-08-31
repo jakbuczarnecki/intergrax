@@ -98,6 +98,12 @@ class RuntimeContext:
     policy_bundle: Optional[RuntimePolicyBundle] = None
     max_parallel_per_tenant: Optional[int] = None
 
+    def close(self) -> None:
+        """Release runtime-owned resources (tool execution pool)."""
+        invoker = self.config.tool_invoker
+        if invoker is not None:
+            invoker.close()
+
     async def get_llm_usage_runs(self) -> list[LLMUsageRunRecord]:
         async with self.llm_usage_lock:
             return list(self.llm_usage_runs)

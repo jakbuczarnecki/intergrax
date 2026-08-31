@@ -1144,3 +1144,89 @@ def test_post_claim_success_finalizes_completed_once() -> None:
     assert replay.success
     assert executor.calls == 1
 
+
+def test_close_shuts_down_execution_pool() -> None:
+    executor = CountingExecutor()
+    invoker, _ = _idempotent_invoker(executor)
+    state = DummyState()
+    request = _request(key="r6a-close-pool")
+
+    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert result.success
+    assert executor.calls == 1
+
+    invoker.close()
+    after_close = invoker.invoke(
+        state=state,
+        agent_id="agent",
+        request=_request(key="r6a-close-pool-new"),
+    )
+    assert not after_close.success
+    assert after_close.error is not None
+    assert "cannot schedule new futures after shutdown" in after_close.error.error_message
+    assert executor.calls == 1
+
+
+def test_active_call_completes_during_close() -> None:
+    executor = SlowCountingExecutor(delay_s=0.25)
+    invoker, store = _idempotent_invoker(executor)
+    state = DummyState()
+    request = _request(key="r6a-active-close")
+    result_holder: dict[str, ToolExecutionResult[ValueOutput]] = {}
+    errors: list[Exception] = []
+
+    def invoke_worker() -> None:
+        try:
+            result_holder["result"] = invoker.invoke(
+                state=state,
+                agent_id="agent",
+                request=request,
+            )
+        except Exception as exc:
+            errors.append(exc)
+
+    worker = threading.Thread(target=invoke_worker)
+    worker.start()
+    time.sleep(0.05)
+    invoker.close()
+    worker.join(timeout=5.0)
+
+    assert not errors
+    assert worker.is_alive() is False
+    assert result_holder["result"].success
+    assert executor.calls == 1
+    assert store.get_status("tenant_test", "r6a-active-close") == InvocationStatus.COMPLETED
+
+
+def test_close_is_idempotent() -> None:
+    invoker, _ = _idempotent_invoker(CountingExecutor())
+    invoker.close()
+    invoker.close()
+
+
+def test_replay_before_close_preserves_exactly_once() -> None:
+    executor = CountingExecutor()
+    invoker, store = _idempotent_invoker(executor)
+    state = DummyState()
+    request = _request(key="r6a-replay-before-close", value=7)
+
+    first = invoker.invoke(state=state, agent_id="agent", request=request)
+    replay = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert first.success and replay.success
+    assert executor.calls == 1
+    assert store.get_status("tenant_test", "r6a-replay-before-close") == InvocationStatus.COMPLETED
+
+    invoker.close()
+    replay_after_close = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert replay_after_close.success
+    assert executor.calls == 1
+    after_close = invoker.invoke(
+        state=state,
+        agent_id="agent",
+        request=_request(key="r6a-replay-before-close-new", value=7),
+    )
+    assert not after_close.success
+    assert after_close.error is not None
+    assert "cannot schedule new futures after shutdown" in after_close.error.error_message
+    assert executor.calls == 1
+

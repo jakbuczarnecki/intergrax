@@ -95,6 +95,14 @@ class RuntimeToolInvoker:
         # Shared pool for timeout-isolated tool execution; default worker count
         # preserves concurrent independent invocations (not max_workers=1).
         self._execution_pool = ThreadPoolExecutor()
+        self._execution_pool_closed = False
+
+    def close(self) -> None:
+        """Shut down the shared execution pool; waits for active tool calls to finish."""
+        if self._execution_pool_closed:
+            return
+        self._execution_pool.shutdown(wait=True)
+        self._execution_pool_closed = True
 
     @property
     def registry(self) -> ToolRegistry:

@@ -148,3 +148,62 @@ def test_runtime_context_scope_policy_denies_on_invoke_path() -> None:
 
     with pytest.raises(ToolScopeViolationError):
         invoker.invoke(state=_TraceState(), agent_id="agent", request=request)
+
+
+class _ClosePoolState:
+    run_id = "run-r6a-context-close"
+    tenant_id = "tenant-bootstrap"
+
+    @property
+    def context(self):
+        return type("Ctx", (), {"config": type("Cfg", (), {"policy_bundle": None})()})()
+
+    def trace_event(self, *args, **kwargs) -> None:
+        del args, kwargs
+
+
+def test_runtime_context_close_shuts_down_tool_invoker_pool() -> None:
+    registry = ToolRegistry()
+    _register_dummy(registry, "r6a.context.tool")
+    config = RuntimeConfig(
+        llm_adapter=FakeLLMAdapter(),
+        production_mode=False,
+        enable_rag=False,
+        enable_websearch=False,
+        tools_mode="auto",
+        tool_registry=registry,
+    )
+    ctx = RuntimeContext.build(
+        config=config,
+        session_manager=build_in_memory_session_manager(),
+    )
+    invoker = ctx.config.tool_invoker
+    assert invoker is not None
+
+    request = ToolExecutionRequest(
+        run_id="run-r6a-context-close",
+        step_id="step1",
+        tool_id="r6a.context.tool",
+        input=_In(value=3),
+        idempotency_key="r6a-context-close-key",
+    )
+    state = _ClosePoolState()
+
+    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert result.success
+
+    ctx.close()
+    after_close = invoker.invoke(
+        state=state,
+        agent_id="agent",
+        request=ToolExecutionRequest(
+            run_id="run-r6a-context-close",
+            step_id="step1",
+            tool_id="r6a.context.tool",
+            input=_In(value=4),
+            idempotency_key="r6a-context-close-key-new",
+        ),
+    )
+    assert not after_close.success
+    assert after_close.error is not None
+    assert "cannot schedule new futures after shutdown" in after_close.error.error_message
