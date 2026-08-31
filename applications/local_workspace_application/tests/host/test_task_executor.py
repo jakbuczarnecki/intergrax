@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from intergrax.contracts.execution_identity import mint_task_id
 from intergrax.runtime.interactions.errors import HostNotAcceptingWorkError
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from local_workspace_application.host.lifecycle import LocalWorkspaceHostLifecycle
@@ -31,6 +32,13 @@ class _FakeReadiness:
         return self.snapshot
 
 
+def _host_execution_mock(*, execute_result: TaskResult) -> AsyncMock:
+    host_execution = AsyncMock()
+    host_execution.execute = AsyncMock(return_value=execute_result)
+    host_execution.nexus_loop = AsyncMock()
+    return host_execution
+
+
 @pytest.fixture
 def lifecycle() -> LocalWorkspaceHostLifecycle:
     host = LocalWorkspaceHostLifecycle()
@@ -41,11 +49,12 @@ def lifecycle() -> LocalWorkspaceHostLifecycle:
 
 @pytest.mark.asyncio
 async def test_executor_applies_application_enrichment(lifecycle: LocalWorkspaceHostLifecycle) -> None:
-    nexus = AsyncMock()
-    nexus.handle_task.return_value = TaskResult(
-        task_id="task-1",
-        state=TaskState.COMPLETED,
-        answer="ok",
+    host_execution = _host_execution_mock(
+        execute_result=TaskResult(
+            task_id="task-1",
+            state=TaskState.COMPLETED,
+            answer="ok",
+        ),
     )
     env = LOCAL_WORKSPACE_APPLICATION_MANIFEST.environment
     assert env is not None
@@ -53,31 +62,41 @@ async def test_executor_applies_application_enrichment(lifecycle: LocalWorkspace
         env,
         default_capability="local.workspace.search",
     )
-    executor = LocalWorkspaceTaskExecutor(nexus, task_enricher=enricher, readiness=lifecycle)
+    executor = LocalWorkspaceTaskExecutor(
+        host_execution,
+        task_enricher=enricher,
+        readiness=lifecycle,
+    )
     task = Task(
-        task_id="task-1",
+        task_id=mint_task_id(),
         tenant_id="t1",
         user_id="u1",
         message="hello",
         context=TaskContext(),
     )
     await executor.execute(task)
-    sent = nexus.handle_task.await_args.args[0]
+    sent = host_execution.execute.await_args.args[0]
     assert sent.context.capability == "local.workspace.search"
 
 
 @pytest.mark.asyncio
 async def test_executor_rejects_unsupported_capability(lifecycle: LocalWorkspaceHostLifecycle) -> None:
-    nexus = AsyncMock()
+    host_execution = _host_execution_mock(
+        execute_result=TaskResult(task_id="task-1", state=TaskState.COMPLETED),
+    )
     env = LOCAL_WORKSPACE_APPLICATION_MANIFEST.environment
     assert env is not None
     enricher = build_lkw_application_task_enricher(
         env,
         default_capability="local.workspace.search",
     )
-    executor = LocalWorkspaceTaskExecutor(nexus, task_enricher=enricher, readiness=lifecycle)
+    executor = LocalWorkspaceTaskExecutor(
+        host_execution,
+        task_enricher=enricher,
+        readiness=lifecycle,
+    )
     task = Task(
-        task_id="task-1",
+        task_id=mint_task_id(),
         tenant_id="t1",
         user_id="u1",
         message="hello",
@@ -85,7 +104,7 @@ async def test_executor_rejects_unsupported_capability(lifecycle: LocalWorkspace
     )
     with pytest.raises(ValueError, match="unsupported_lkw_capability"):
         await executor.execute(task)
-    nexus.handle_task.assert_not_called()
+    host_execution.execute.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -94,32 +113,45 @@ async def test_executor_rejects_when_host_not_ready() -> None:
     lifecycle.set_executor_available(True)
     lifecycle.transition_to_ready()
     lifecycle.transition_to_stopping()
-    nexus = AsyncMock()
-    executor = LocalWorkspaceTaskExecutor(nexus, task_enricher=None, readiness=lifecycle)
-    task = Task(task_id="t1", tenant_id="t1", user_id="u1", message="m")
+    host_execution = _host_execution_mock(
+        execute_result=TaskResult(task_id="t1", state=TaskState.COMPLETED),
+    )
+    executor = LocalWorkspaceTaskExecutor(
+        host_execution,
+        task_enricher=None,
+        readiness=lifecycle,
+    )
+    task = Task(task_id=mint_task_id(), tenant_id="t1", user_id="u1", message="m")
     with pytest.raises(HostNotAcceptingWorkError) as exc:
         await executor.execute(task)
     assert exc.value.error_id == "lkw_host_stopping"
 
 
 @pytest.mark.asyncio
-async def test_executor_delegates_to_nexus_once(lifecycle: LocalWorkspaceHostLifecycle) -> None:
-    nexus = AsyncMock()
-    nexus.handle_task.return_value = TaskResult(
-        task_id="task-1",
-        state=TaskState.COMPLETED,
-        answer="ok",
+async def test_executor_delegates_to_host_execution_once(
+    lifecycle: LocalWorkspaceHostLifecycle,
+) -> None:
+    host_execution = _host_execution_mock(
+        execute_result=TaskResult(
+            task_id="task-1",
+            state=TaskState.COMPLETED,
+            answer="ok",
+        ),
     )
-    executor = LocalWorkspaceTaskExecutor(nexus, task_enricher=None, readiness=lifecycle)
+    executor = LocalWorkspaceTaskExecutor(
+        host_execution,
+        task_enricher=None,
+        readiness=lifecycle,
+    )
     task = Task(
-        task_id="task-1",
+        task_id=mint_task_id(),
         tenant_id="t1",
         user_id="u1",
         message="hello",
         context=TaskContext(capability="local.workspace.search"),
     )
     result = await executor.execute(task)
-    nexus.handle_task.assert_awaited_once()
+    host_execution.execute.assert_awaited_once()
     assert result.answer == "ok"
 
 
@@ -141,22 +173,27 @@ async def test_executor_uses_readiness_provider_snapshot() -> None:
         ),
     )
     readiness = _FakeReadiness(snapshot=accepting)
-    nexus = AsyncMock()
-    nexus.handle_task.return_value = TaskResult(
-        task_id="task-1",
-        state=TaskState.COMPLETED,
-        answer="ok",
+    host_execution = _host_execution_mock(
+        execute_result=TaskResult(
+            task_id="task-1",
+            state=TaskState.COMPLETED,
+            answer="ok",
+        ),
     )
-    executor = LocalWorkspaceTaskExecutor(nexus, task_enricher=None, readiness=readiness)
+    executor = LocalWorkspaceTaskExecutor(
+        host_execution,
+        task_enricher=None,
+        readiness=readiness,
+    )
     task = Task(
-        task_id="task-1",
+        task_id=mint_task_id(),
         tenant_id="t1",
         user_id="u1",
         message="hello",
         context=TaskContext(capability="local.workspace.search"),
     )
     await executor.execute(task)
-    nexus.handle_task.assert_awaited_once()
+    host_execution.execute.assert_awaited_once()
     assert len(readiness.calls) == 1
 
     readiness.snapshot = LocalWorkspaceReadinessSnapshot(

@@ -1,0 +1,142 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""UE-11G-P1 — production application hosts must not root-execute Nexus."""
+
+from __future__ import annotations
+
+import ast
+from pathlib import Path
+
+import pytest
+
+pytestmark = pytest.mark.unit
+
+_REPO_ROOT = Path(__file__).resolve().parents[4]
+_APPLICATIONS_ROOT = _REPO_ROOT / "applications"
+
+# TEMPORARY UE-11G-P migration debt — migrate in UE-11G-P2/P3.
+_TEMPORARY_BYPASS_ALLOWLIST = frozenset(
+    {
+        "applications/attestation_demo/serving/fastapi_router.py",
+        "applications/dispute_sim_application/mcp/server.py",
+        "applications/dispute_sim_application/serving/fastapi_router.py",
+        "applications/governed_contractor_application/mcp/server.py",
+        "applications/governed_contractor_application/serving/fastapi_router.py",
+        "applications/intergrax_assistant_application/mcp/server.py",
+        "applications/intergrax_assistant_application/serving/fastapi_router.py",
+        "applications/lab_application/host/factory.py",
+        "applications/lab_application/serving/fastapi_router.py",
+        "applications/legal_application/serving/fastapi_router.py",
+        "applications/local_workspace_application/host/background_worker_factory.py",
+        "applications/poc_template_application/mcp/server.py",
+        "applications/poc_template_application/serving/fastapi_router.py",
+        "applications/research_application/mcp/server.py",
+        "applications/research_application/serving/fastapi_router.py",
+    }
+)
+
+
+def _call_name(func: ast.AST) -> str | None:
+    if isinstance(func, ast.Name):
+        return func.id
+    if isinstance(func, ast.Attribute):
+        return func.attr
+    return None
+
+
+def _is_unified_task_runner_instantiation(node: ast.AST) -> bool:
+    if not isinstance(node, ast.Call):
+        return False
+    func = node.func
+    if isinstance(func, ast.Name) and func.id == "UnifiedTaskRunner":
+        return True
+    return isinstance(func, ast.Attribute) and func.attr == "UnifiedTaskRunner"
+
+
+def _iter_application_python_files() -> list[Path]:
+    paths: list[Path] = []
+    for path in _APPLICATIONS_ROOT.rglob("*.py"):
+        if "__pycache__" in path.parts:
+            continue
+        if "docker" in path.parts:
+            continue
+        if path.name.startswith("test_"):
+            continue
+        if path.parts[-2:] == ("tests", path.name):
+            continue
+        if "tests" in path.parts:
+            continue
+        paths.append(path)
+    return paths
+
+
+def _collect_root_bypass_violations(path: Path) -> list[str]:
+    rel = path.relative_to(_REPO_ROOT).as_posix()
+    if rel in _TEMPORARY_BYPASS_ALLOWLIST:
+        return []
+
+    source = path.read_text(encoding="utf-8-sig")
+    tree = ast.parse(source, filename=str(path))
+    violations: list[str] = []
+
+    unified_runner_names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module == "intergrax.runtime.task.unified_task_runner":
+            for alias in node.names:
+                if alias.name == "UnifiedTaskRunner":
+                    violations.append(f"{rel}:{node.lineno}: import UnifiedTaskRunner")
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == "intergrax.runtime.task.unified_task_runner":
+                    violations.append(f"{rel}:{node.lineno}: import unified_task_runner")
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and _is_unified_task_runner_instantiation(node.value):
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    unified_runner_names.add(target.id)
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        name = _call_name(node.func)
+        if name == "handle_task":
+            violations.append(f"{rel}:{node.lineno}: handle_task()")
+            continue
+        if name != "run_task":
+            continue
+        if not isinstance(node.func, ast.Attribute):
+            continue
+        receiver = node.func.value
+        if isinstance(receiver, ast.Name) and receiver.id in unified_runner_names:
+            violations.append(f"{rel}:{node.lineno}: UnifiedTaskRunner.run_task()")
+        if _is_unified_task_runner_instantiation(receiver):
+            violations.append(f"{rel}:{node.lineno}: UnifiedTaskRunner().run_task()")
+
+    return violations
+
+
+def test_production_applications_have_no_root_nexus_or_unified_task_runner_bypasses() -> None:
+    violations: list[str] = []
+    for path in _iter_application_python_files():
+        violations.extend(_collect_root_bypass_violations(path))
+    assert violations == [], (
+        "production application hosts must not root-execute via NexusLoop or UnifiedTaskRunner: "
+        + ", ".join(violations)
+    )
+
+
+def test_lkw_production_host_is_not_allowlisted() -> None:
+    lkw_paths = {
+        path.relative_to(_REPO_ROOT).as_posix()
+        for path in _iter_application_python_files()
+        if path.parts[1:3] == ("local_workspace_application", "host")
+        or path.parts[1:3] == ("local_workspace_application", "serving")
+    }
+    allowlisted_lkw = sorted(path for path in _TEMPORARY_BYPASS_ALLOWLIST if path.startswith("applications/local_workspace_application/"))
+    assert allowlisted_lkw == ["applications/local_workspace_application/host/background_worker_factory.py"]
+    assert not any(
+        path in _TEMPORARY_BYPASS_ALLOWLIST
+        for path in lkw_paths
+        if path != "applications/local_workspace_application/host/background_worker_factory.py"
+    )

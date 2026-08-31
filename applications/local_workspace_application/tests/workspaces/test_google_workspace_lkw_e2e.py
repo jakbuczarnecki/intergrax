@@ -26,6 +26,7 @@ from local_workspace_application.host.lkw_task_enricher import (
     build_lkw_combined_task_enricher,
 )
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.host.execution_wiring import build_lkw_host_task_execution
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
 from local_workspace_application.serving.workspace_routes import (
     mount_managed_workspace_routes,
@@ -290,7 +291,7 @@ def _restart_with_google(
         idempotency_store=harness_runtime.reliability.idempotency_store,
     )
     task_executor = LocalWorkspaceTaskExecutor(
-        harness_runtime.nexus_loop,
+        build_lkw_host_task_execution(harness_runtime.nexus_loop, environment),
         task_enricher=task_enricher,
         readiness=lifecycle,
     )
