@@ -54,7 +54,7 @@ The Decision System provides **typed lifecycle semantics, version lineage, compo
 | **Version binding** | Every verification result, challenge, approval, adjudication, and authorization record binds **Decision ID + Decision Version + scope + tenant + execution identity** |
 | **Concurrency** | Parallel proposal branches preserve lineage; no duplicate authoritative decisions per scope |
 | **Crash / resume** | Canonical hosting Execution checkpoint/persistence — **no** Decision checkpoint engine |
-| **Retry boundaries** | Technical retry (Nexus) · decision revision (Lifecycle) · deliberation rounds (Strategy) — never one generic loop |
+| **Retry boundaries** | Technical retry (Execution / Reliability) · decision revision (Decision Lifecycle) · deliberation rounds (Decision Strategy) — never one generic loop |
 | **HITL** | Invokes platform HITL — does not implement Human Engine |
 | **Policy** | Cross-cutting authorization — Decision System does not own Runtime Policy Engine |
 | **Diagnostics** | May feed investigation — does not own Decision System |
