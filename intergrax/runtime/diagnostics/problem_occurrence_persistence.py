@@ -12,6 +12,9 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from intergrax.runtime.diagnostics.problem_lifecycle import ProblemId, ProblemOccurrence
+    from intergrax.runtime.diagnostics.problem_occurrence_partition_fingerprint import (
+        ProblemOccurrenceRepairBoundary,
+    )
 
 
 class ProblemOccurrenceAppendResult(StrEnum):
@@ -57,6 +60,19 @@ class ProblemOccurrencePersistence(ABC):
         """
 
     @abstractmethod
+    def capture_occurrence_repair_boundary(
+        self,
+        *,
+        tenant_id: str,
+        problem_id: ProblemId,
+    ) -> ProblemOccurrenceRepairBoundary | None:
+        """
+        Capture a bounded partition fingerprint for one repair round.
+
+        Returns ``None`` when no durable occurrence history exists.
+        """
+
+    @abstractmethod
     def query_occurrences(
         self,
         *,
@@ -64,8 +80,12 @@ class ProblemOccurrencePersistence(ABC):
         problem_id: ProblemId,
         limit: int,
         cursor: str | None = None,
+        repair_boundary: ProblemOccurrenceRepairBoundary | None = None,
     ) -> ProblemOccurrencePage:
         """
         Return one bounded page ordered by ``observed_at`` descending with
         deterministic occurrence-id tie-break.
+
+        When ``repair_boundary`` is set, only rows inside the closed snapshot
+        ``min_row_key <= row_key <= terminal_row_key`` are returned.
         """

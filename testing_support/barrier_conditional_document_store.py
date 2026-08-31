@@ -55,12 +55,14 @@ class BarrierConditionalDocumentStore:
         limit: int = 100,
         row_key_prefix: str | None = None,
         cursor: str | None = None,
+        row_key_upper_bound: str | None = None,
     ) -> DocumentQueryPageV1:
         return self._delegate.query(
             partition_key,
             limit=limit,
             row_key_prefix=row_key_prefix,
             cursor=cursor,
+            row_key_upper_bound=row_key_upper_bound,
         )
 
     def close(self) -> None:

@@ -22,10 +22,10 @@ from intergrax.runtime.diagnostics.problem_lifecycle import (
     Problem,
     ProblemLifecycleEngine,
     ProblemLifecycleIntegrityError,
+    ProblemOccurrenceAggregateHealth,
 )
 from intergrax.runtime.diagnostics.problem_occurrence_aggregate_reconciliation import (
     DEFAULT_REPAIR_PAGE_SIZE,
-    ProblemOccurrenceAggregateHealth,
     mark_problem_reconciliation_required,
     reconcile_problem_occurrence_aggregate,
     scan_occurrence_aggregate,

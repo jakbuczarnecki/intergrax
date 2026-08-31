@@ -29,6 +29,16 @@ from intergrax.runtime.diagnostics.problem_occurrence_query import (
     ProblemOccurrenceQueryCursorCodec,
     _MIN_OCCURRENCE_CURSOR_SECRET_BYTES,
 )
+from intergrax.runtime.diagnostics.problem_occurrence_partition_fingerprint import (
+    decode_occurrence_partition_fingerprint,
+    encode_occurrence_partition_fingerprint,
+    initial_occurrence_partition_fingerprint,
+    next_occurrence_partition_fingerprint,
+    occurrence_partition_fingerprint_row_key,
+    ProblemOccurrencePartitionFingerprint,
+    ProblemOccurrenceRepairBoundary,
+    repair_boundary_from_fingerprint,
+)
 from intergrax.runtime.diagnostics.problem_occurrence_record_codec import (
     decode_problem_occurrence_record,
     encode_problem_occurrence_record,
@@ -40,6 +50,7 @@ _MAX_QUERY_PAGE_LIMIT = 5000
 _MAX_OCCURRENCE_PAGE_LIMIT = 1000
 _MAX_SORT_MICROS = 10**16
 _UTC_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
+_MAX_FINGERPRINT_CAS_RETRIES = 8
 
 
 @runtime_checkable
@@ -144,6 +155,7 @@ class DocumentStoreProblemOccurrencePersistence(ProblemOccurrencePersistence):
         )
         created = self._document_store.put_if_absent(document)
         if created:
+            self._record_occurrence_write(partition_key, row_key)
             return ProblemOccurrenceAppendResult.CREATED
 
         existing = self._document_store.get(partition_key, row_key)
@@ -158,6 +170,24 @@ class DocumentStoreProblemOccurrencePersistence(ProblemOccurrencePersistence):
             )
         return ProblemOccurrenceAppendResult.ALREADY_EXISTS
 
+    def capture_occurrence_repair_boundary(
+        self,
+        *,
+        tenant_id: str,
+        problem_id: ProblemId,
+    ) -> ProblemOccurrenceRepairBoundary | None:
+        partition_key = _occurrence_partition(tenant_id, problem_id)
+        fingerprint = self._read_partition_fingerprint(partition_key)
+        if fingerprint is None:
+            fingerprint = self._bootstrap_partition_fingerprint(
+                partition_key,
+                tenant_id=tenant_id,
+                problem_id=problem_id,
+            )
+        if fingerprint is None:
+            return None
+        return repair_boundary_from_fingerprint(fingerprint)
+
     def query_occurrences(
         self,
         *,
@@ -165,6 +195,7 @@ class DocumentStoreProblemOccurrencePersistence(ProblemOccurrencePersistence):
         problem_id: ProblemId,
         limit: int,
         cursor: str | None = None,
+        repair_boundary: ProblemOccurrenceRepairBoundary | None = None,
     ) -> ProblemOccurrencePage:
         if type(limit) is not int or isinstance(limit, bool) or limit < 1:
             raise ValueError("limit must be a positive int")
@@ -180,11 +211,16 @@ class DocumentStoreProblemOccurrencePersistence(ProblemOccurrencePersistence):
                 problem_id=problem_id,
             )
 
+        row_key_upper_bound: str | None = None
+        if repair_boundary is not None:
+            row_key_upper_bound = repair_boundary.terminal_row_key
+
         page = self._document_store.query(
             partition_key,
             limit=min(limit, _MAX_QUERY_PAGE_LIMIT),
             row_key_prefix=_OCCURRENCE_ROW_PREFIX,
             cursor=store_cursor,
+            row_key_upper_bound=row_key_upper_bound,
         )
         items: list[ProblemOccurrence] = []
         last_row_key: str | None = None
@@ -210,6 +246,103 @@ class DocumentStoreProblemOccurrencePersistence(ProblemOccurrencePersistence):
             next_cursor=next_cursor,
             has_more=has_more,
         )
+
+    def _read_partition_fingerprint(
+        self,
+        partition_key: str,
+    ) -> ProblemOccurrencePartitionFingerprint | None:
+        fingerprint_row_key = occurrence_partition_fingerprint_row_key()
+        record = self._document_store.get(partition_key, fingerprint_row_key)
+        if record is None:
+            return None
+        return decode_occurrence_partition_fingerprint(dict(record.data))
+
+    def _record_occurrence_write(self, partition_key: str, occurrence_row_key: str) -> None:
+        fingerprint_row_key = occurrence_partition_fingerprint_row_key()
+        for _ in range(_MAX_FINGERPRINT_CAS_RETRIES):
+            current_record = self._document_store.get(partition_key, fingerprint_row_key)
+            if current_record is None:
+                initial = initial_occurrence_partition_fingerprint(
+                    occurrence_row_key=occurrence_row_key,
+                )
+                created = self._document_store.put_if_absent(
+                    DocumentRecord(
+                        partition_key=partition_key,
+                        row_key=fingerprint_row_key,
+                        data=encode_occurrence_partition_fingerprint(initial),
+                    ),
+                )
+                if created:
+                    return
+                continue
+
+            current = decode_occurrence_partition_fingerprint(dict(current_record.data))
+            replacement = next_occurrence_partition_fingerprint(
+                current,
+                occurrence_row_key=occurrence_row_key,
+            )
+            if self._document_store.replace_if_match(
+                expected=current_record,
+                replacement=DocumentRecord(
+                    partition_key=partition_key,
+                    row_key=fingerprint_row_key,
+                    data=encode_occurrence_partition_fingerprint(replacement),
+                ),
+            ):
+                return
+
+        raise ProblemOccurrencePersistenceIntegrityError(
+            "failed to advance occurrence partition fingerprint after bounded retries",
+        )
+
+    def _bootstrap_partition_fingerprint(
+        self,
+        partition_key: str,
+        *,
+        tenant_id: str,
+        problem_id: ProblemId,
+    ) -> ProblemOccurrencePartitionFingerprint | None:
+        min_row_key: str | None = None
+        max_row_key: str | None = None
+        occurrence_count = 0
+        store_cursor: str | None = None
+        while True:
+            page = self._document_store.query(
+                partition_key,
+                limit=_MAX_QUERY_PAGE_LIMIT,
+                row_key_prefix=_OCCURRENCE_ROW_PREFIX,
+                cursor=store_cursor,
+            )
+            if not page.documents:
+                break
+            for document in page.documents:
+                occurrence_count += 1
+                row_key = document.row_key
+                if min_row_key is None or row_key < min_row_key:
+                    min_row_key = row_key
+                if max_row_key is None or row_key > max_row_key:
+                    max_row_key = row_key
+            if page.next_cursor is None:
+                break
+            store_cursor = page.next_cursor
+
+        if occurrence_count == 0 or min_row_key is None or max_row_key is None:
+            return None
+
+        fingerprint = ProblemOccurrencePartitionFingerprint(
+            write_generation=occurrence_count,
+            min_row_key=min_row_key,
+            max_row_key=max_row_key,
+        )
+        fingerprint_row_key = occurrence_partition_fingerprint_row_key()
+        self._document_store.put_if_absent(
+            DocumentRecord(
+                partition_key=partition_key,
+                row_key=fingerprint_row_key,
+                data=encode_occurrence_partition_fingerprint(fingerprint),
+            ),
+        )
+        return fingerprint
 
 
 def wire_problem_occurrence_persistence(

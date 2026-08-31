@@ -79,6 +79,7 @@ class InMemoryDocumentStore:
         limit: int = 100,
         row_key_prefix: str | None = None,
         cursor: str | None = None,
+        row_key_upper_bound: str | None = None,
     ) -> DocumentQueryPageV1:
         validate_document_query_limit(limit)
         with self._lock:
@@ -87,6 +88,8 @@ class InMemoryDocumentStore:
                 if pk != partition_key:
                     continue
                 if row_key_prefix is not None and not rk.startswith(row_key_prefix):
+                    continue
+                if row_key_upper_bound is not None and rk > row_key_upper_bound:
                     continue
                 rows.append(doc)
             rows.sort(key=lambda doc: doc.row_key)

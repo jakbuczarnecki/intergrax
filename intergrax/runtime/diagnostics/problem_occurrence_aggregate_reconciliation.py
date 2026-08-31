@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework — proprietary and confidential.
 
-"""Bounded Problem aggregate reconciliation from durable occurrence history (DIAG-ENTERPRISE-2-R4)."""
+"""Bounded Problem aggregate reconciliation from durable occurrence history (DIAG-ENTERPRISE-2-R4/R5)."""
 
 from __future__ import annotations
 
@@ -15,6 +15,10 @@ from intergrax.runtime.diagnostics.problem_lifecycle import (
     ProblemLifecycleProvenance,
     ProblemOccurrenceAggregateHealth,
     ProblemStatus,
+)
+from intergrax.runtime.diagnostics.problem_occurrence_partition_fingerprint import (
+    ProblemOccurrenceRepairBoundary,
+    repair_boundary_stable,
 )
 from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
     ProblemOccurrencePersistence,
@@ -57,10 +61,14 @@ def accumulate_occurrence(
             first_seen_at=observed_at,
             last_seen_at=observed_at,
         )
+    first_seen = accumulator.first_seen_at
+    last_seen = accumulator.last_seen_at
+    if first_seen is None or last_seen is None:
+        raise ValueError("occurrence aggregate accumulator invariant violated")
     return OccurrenceAggregateAccumulator(
         count=accumulator.count + 1,
-        first_seen_at=min(accumulator.first_seen_at, observed_at),  # type: ignore[type-var]
-        last_seen_at=max(accumulator.last_seen_at, observed_at),  # type: ignore[type-var]
+        first_seen_at=min(first_seen, observed_at),
+        last_seen_at=max(last_seen, observed_at),
     )
 
 
@@ -70,6 +78,7 @@ def scan_occurrence_aggregate(
     tenant_id: str,
     problem_id: ProblemId,
     page_size: int = DEFAULT_REPAIR_PAGE_SIZE,
+    repair_boundary: ProblemOccurrenceRepairBoundary | None = None,
 ) -> OccurrenceAggregateScan:
     """Paginated authoritative scan — never loads full history into memory."""
     if type(page_size) is not int or isinstance(page_size, bool) or page_size < 1:
@@ -83,6 +92,7 @@ def scan_occurrence_aggregate(
             problem_id=problem_id,
             limit=page_size,
             cursor=cursor,
+            repair_boundary=repair_boundary,
         )
         for occurrence in page.items:
             accumulator = accumulate_occurrence(
@@ -157,6 +167,29 @@ def aggregate_matches_problem(existing: Problem, scan: OccurrenceAggregateScan) 
     )
 
 
+def _persist_reconciliation_required_best_effort(
+    existing: Problem,
+    *,
+    problem_persistence: ProblemPersistence,
+) -> Problem:
+    marked = mark_problem_reconciliation_required(existing)
+    if marked == existing:
+        return existing
+    try:
+        return problem_persistence.update(
+            marked,
+            expected_version=existing.record_version,
+        )
+    except ProblemPersistenceConflictError:
+        refreshed = problem_persistence.get(
+            tenant_id=existing.tenant_id,
+            problem_id=existing.problem_id,
+        )
+        if refreshed is None:
+            return marked
+        return refreshed
+
+
 def reconcile_problem_occurrence_aggregate(
     existing: Problem,
     *,
@@ -166,19 +199,40 @@ def reconcile_problem_occurrence_aggregate(
     provenance: ProblemLifecycleProvenance | None = None,
 ) -> Problem:
     """
-    Repeat-until-stable paginated repair.
+    Snapshot-safe paginated repair using partition fingerprint boundaries.
 
-    Hot-path updates may advance the Problem aggregate while scan is in flight;
-    when ``Problem.occurrence_count`` exceeds the scan total the scan is repeated.
+    ``CONSISTENT`` is written only when the scan fingerprint is stable across the
+    round and the aggregate matches the closed snapshot range.
     """
     current = existing
     for _ in range(_MAX_RECONCILIATION_ROUNDS):
+        start_boundary = occurrence_persistence.capture_occurrence_repair_boundary(
+            tenant_id=current.tenant_id,
+            problem_id=current.problem_id,
+        )
+        if start_boundary is None:
+            raise ProblemLifecycleIntegrityError(
+                "Problem occurrence aggregate reconciliation requires durable occurrence history",
+            )
+
         scan = scan_occurrence_aggregate(
             occurrence_persistence,
             tenant_id=current.tenant_id,
             problem_id=current.problem_id,
             page_size=page_size,
+            repair_boundary=start_boundary,
         )
+        end_boundary = occurrence_persistence.capture_occurrence_repair_boundary(
+            tenant_id=current.tenant_id,
+            problem_id=current.problem_id,
+        )
+        if end_boundary is None:
+            raise ProblemLifecycleIntegrityError(
+                "occurrence partition fingerprint disappeared during aggregate reconciliation",
+            )
+
+        boundary_stable = repair_boundary_stable(start_boundary, end_boundary)
+
         latest = problem_persistence.get(
             tenant_id=current.tenant_id,
             problem_id=current.problem_id,
@@ -190,11 +244,15 @@ def reconcile_problem_occurrence_aggregate(
             continue
 
         if (
-            current.occurrence_aggregate_health
+            boundary_stable
+            and current.occurrence_aggregate_health
             is ProblemOccurrenceAggregateHealth.CONSISTENT
             and aggregate_matches_problem(current, scan)
         ):
             return current
+
+        if not boundary_stable:
+            continue
 
         next_record = converge_problem_from_occurrence_scan(
             current,
@@ -220,6 +278,10 @@ def reconcile_problem_occurrence_aggregate(
                 ) from None
             current = refreshed
 
+    current = _persist_reconciliation_required_best_effort(
+        current,
+        problem_persistence=problem_persistence,
+    )
     raise ProblemLifecycleIntegrityError(
         "occurrence aggregate reconciliation did not stabilize within bounded rounds",
     )

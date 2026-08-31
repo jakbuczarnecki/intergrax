@@ -622,44 +622,69 @@ class ProblemLifecycleEngine:
         if not append_results:
             return existing, False, ()
 
-        scan = scan_occurrence_aggregate(
-            self._occurrence_persistence,
-            tenant_id=existing.tenant_id,
-            problem_id=existing.problem_id,
-        )
         if (
-            scan.occurrence_count != existing.occurrence_count
-            or (
-                scan.first_seen_at is not None
-                and scan.first_seen_at != existing.first_seen_at
-            )
-            or (
-                scan.last_seen_at is not None
-                and scan.last_seen_at != existing.last_seen_at
-            )
+            existing.occurrence_aggregate_health
+            is ProblemOccurrenceAggregateHealth.CONSISTENT
         ):
-            repaired = reconcile_problem_occurrence_aggregate(
-                existing,
-                occurrence_persistence=self._occurrence_persistence,
-                problem_persistence=self._persistence,
-                provenance=provenance,
+            all_subjects_indexed = all(
+                self._persistence.find_by_subject_ref(
+                    tenant_id=existing.tenant_id,
+                    subject_ref=occurrence.subject_ref,
+                )
+                is not None
+                for occurrence, _ in append_results
             )
-            if repaired != existing:
-                return repaired, True, indexed_subject_refs
+            if all_subjects_indexed:
+                return existing, False, indexed_subject_refs
+
+            scan = scan_occurrence_aggregate(
+                self._occurrence_persistence,
+                tenant_id=existing.tenant_id,
+                problem_id=existing.problem_id,
+            )
+            if (
+                scan.occurrence_count != existing.occurrence_count
+                or (
+                    scan.first_seen_at is not None
+                    and scan.first_seen_at != existing.first_seen_at
+                )
+                or (
+                    scan.last_seen_at is not None
+                    and scan.last_seen_at != existing.last_seen_at
+                )
+            ):
+                repaired = reconcile_problem_occurrence_aggregate(
+                    existing,
+                    occurrence_persistence=self._occurrence_persistence,
+                    problem_persistence=self._persistence,
+                    provenance=provenance,
+                )
+                if repaired != existing:
+                    return repaired, True, indexed_subject_refs
+                return existing, False, indexed_subject_refs
+
+            missing_indexes = tuple(
+                occurrence.subject_ref
+                for occurrence, _ in append_results
+                if self._persistence.find_by_subject_ref(
+                    tenant_id=existing.tenant_id,
+                    subject_ref=occurrence.subject_ref,
+                )
+                is None
+            )
+            if missing_indexes:
+                return existing, True, missing_indexes
             return existing, False, indexed_subject_refs
 
-        missing_indexes = tuple(
-            occurrence.subject_ref
-            for occurrence, _ in append_results
-            if self._persistence.find_by_subject_ref(
-                tenant_id=existing.tenant_id,
-                subject_ref=occurrence.subject_ref,
-            )
-            is None
+        repaired = reconcile_problem_occurrence_aggregate(
+            existing,
+            occurrence_persistence=self._occurrence_persistence,
+            problem_persistence=self._persistence,
+            provenance=provenance,
         )
-        if missing_indexes:
-            return existing, True, missing_indexes
-        return existing, False, ()
+        if repaired != existing:
+            return repaired, True, indexed_subject_refs
+        return existing, False, indexed_subject_refs
 
     def _append_occurrences(
         self,

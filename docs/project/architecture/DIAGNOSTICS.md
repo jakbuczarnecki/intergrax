@@ -496,7 +496,7 @@ Rules:
 
 Production hosts authenticate continuation cursors with HMAC-SHA256 over a tenant- and status-filter-bound payload. Secret enters only through composition (`INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET` via `resolve_problem_list_cursor_secret()`). **Minimum 32 UTF-8 bytes** (random 256-bit recommended). **No static default secret in production.** Restart with a new secret invalidates previously issued cursors (documented limitation; no transparent rotation in this slice).
 
-### Bounded occurrence history (DIAG-ENTERPRISE-2 / E2-R4 — IN_PROGRESS)
+### Bounded occurrence history (DIAG-ENTERPRISE-2 / E2-R4 / E2-R5 — IN_PROGRESS)
 
 Source-of-truth hierarchy:
 
@@ -513,10 +513,13 @@ Occurrence rows are authoritative. Problem `occurrence_count` / `first_seen_at` 
 **Write protocol (idempotent, bounded O(1) per append):**
 
 1. `put_if_absent` durable occurrence row (`occ:{inverted_observed_at_micros}:{occurrence_id}`) only.
-2. Hot path (lifecycle): when append returns `CREATED`, apply bounded delta to Problem aggregate and persist via optimistic CAS with `occurrence_aggregate_health=CONSISTENT`.
-3. On aggregate CAS failure or ambiguous partial write, a subsequent reconcile detects drift via paginated occurrence scan and runs bounded repair (default page size 500, O(1) accumulator memory).
-4. `ProblemOccurrenceAggregateHealth`: `CONSISTENT` (count exact) vs `RECONCILIATION_REQUIRED` (count may be stale until repair completes).
-5. Duplicate retry (`ALREADY_EXISTS`) never blind-increments; repair is authority when scan ≠ Problem aggregate.
+2. On `CREATED`, advance partition fingerprint (`meta:occurrence_partition_fingerprint`: monotonic `write_generation` + `min_row_key` / `max_row_key` tie-break bounds).
+3. Hot path (lifecycle): when append returns `CREATED`, apply bounded delta to Problem aggregate and persist via optimistic CAS with `occurrence_aggregate_health=CONSISTENT`.
+4. On aggregate CAS failure, mark `RECONCILIATION_REQUIRED` best-effort and reconcile via bounded repair.
+5. `ProblemOccurrenceAggregateHealth`: `CONSISTENT` (count exact for a closed snapshot) vs `RECONCILIATION_REQUIRED` (count may be stale until repair completes).
+6. Duplicate retry (`ALREADY_EXISTS`) never blind-increments; when health is `CONSISTENT`, no unconditional full-history scan.
+
+**Repair snapshot (E2-R5):** capture partition fingerprint boundary `H` (bounded O(1)); paginated scan only rows with `min_row_key <= row_key <= terminal_row_key`; `CONSISTENT` only when start/end fingerprint stable (no concurrent writes during scan) and aggregate matches scan. Late/out-of-order inserts bump `write_generation` and force another round.
 
 **Removed (E2-R2/R3):** `meta:stats`, `meta:stats_contrib:*`, `last_committed_occurrence_id`, central exactly-once stats increment.
 
@@ -524,7 +527,7 @@ Occurrence rows are authoritative. Problem `occurrence_count` / `first_seen_at` 
 
 **Occurrence cursor secret:** same minimum 32 UTF-8 bytes as E1 list cursors (`resolve_problem_list_cursor_secret()` at composition boundary).
 
-**Repair:** paginated `query_occurrences` only — no full-history hot-path scan. Repeat-until-stable when hot-path updates race with repair scan.
+**Repair:** paginated `query_occurrences` with optional repair boundary — no full-history hot-path scan. Bounded rounds; unstable fingerprint → remain `RECONCILIATION_REQUIRED`.
 
 ### Production persistence contract
 

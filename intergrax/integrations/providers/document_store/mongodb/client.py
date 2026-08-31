@@ -122,6 +122,7 @@ class MongoCollectionClient:
         limit: int = 100,
         row_key_prefix: Optional[str] = None,
         after_row_key: Optional[str] = None,
+        row_key_upper_bound: Optional[str] = None,
     ) -> list[DocumentRecord]:
         bounded_limit = validate_document_query_limit(limit)
         query_filter: dict[str, Any] = {"partition_key": partition_key}
@@ -130,6 +131,8 @@ class MongoCollectionClient:
             row_key_filter["$regex"] = f"^{row_key_prefix}"
         if after_row_key:
             row_key_filter["$gt"] = after_row_key
+        if row_key_upper_bound is not None:
+            row_key_filter["$lte"] = row_key_upper_bound
         if row_key_filter:
             query_filter["row_key"] = row_key_filter
         mongo_cursor = (

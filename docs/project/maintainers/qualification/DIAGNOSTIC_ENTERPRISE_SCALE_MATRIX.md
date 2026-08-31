@@ -45,30 +45,31 @@ Operator Problem list reads are bounded by page/query instead of materializing e
 
 ## E2 — Bounded occurrence history (`DIAG-ENTERPRISE-2`)
 
-**Status:** `PROVEN` — R3 exactly-once stats contribution (InMemory + Mongo qualification)
+**Status:** `IN_PROGRESS` — R5 snapshot-safe repair (InMemory + Mongo qualification)
 
 Canonical `Problem` is a bounded aggregate (no inline `occurrences` / `current_subject_refs`). Durable occurrence history uses `ProblemOccurrencePersistence` with `DocumentStoreProblemOccurrencePersistence` over `ConditionalDocumentStore` (InMemory + Mongo-capable).
 
 | Capability | Semantics | Proof |
 |---|---|---|
 | Bounded Problem aggregate | no unbounded occurrence tuple on `Problem` | `tests/unit/runtime/diagnostics/test_diag_enterprise_2_occurrence_persistence.py` |
-| Occurrence persistence contract | `append_if_absent`, `query_occurrences`, `aggregate_stats` | conformance + `test_diag_enterprise_2_r2_stats_convergence.py` |
-| Stats convergence (R2/R3) | pending contribution marker + snapshot + `last_committed_occurrence_id` | `test_diag_enterprise_2_r3_stats_exactly_once.py` |
-| Lifecycle write protocol | occurrence append → aggregate converge | `test_problem_lifecycle.py` + F1/F2/F3 in R2 suite |
+| Occurrence persistence contract | `append_if_absent`, `query_occurrences`, repair boundary capture | conformance + R4/R5 suites |
+| Paginated aggregate repair (R4) | O(1) accumulator; bounded pages | `test_diag_enterprise_2_r4_aggregate_reconciliation.py` |
+| Snapshot-safe repair (R5) | partition fingerprint + closed row-key range; no false `CONSISTENT` under late insert | `test_diag_enterprise_2_r5_aggregate_reconciliation.py` |
+| Lifecycle write protocol | occurrence append → aggregate converge / repair fallback | `test_problem_lifecycle.py` + R4/R5 suites |
 | Paginated occurrence read | `DiagnosticReadService.list_problem_occurrences` | `test_diagnostic_read_service.py` |
-| 100k bounded proof | aggregate shape stable; page limit=100 | `test_100k_bounded_aggregate_and_paginated_history` + R3 injected failures |
-| Legacy v1 migration | `problem_occurrence_migration.py` | `test_migration_1000_legacy_occurrences_resumable_after_failure` |
-| Mongo durability proof (R2/R3) | M1–M9 restart + concurrency + S1 | `tests/integration/runtime/test_diag_enterprise_2_r2_mongo_occurrence.py` |
+| 100k bounded proof | late insert during repair; exact count | R5 `test_repair_paginated_exact_100k_with_late_insert` |
+| 1M no_ci proof | memory O(1); page count bounded | R5 `test_repair_paginated_exact_1m` |
+| Mongo durability proof (R5) | 10k+ rows + late insert + second repair converges | `tests/integration/runtime/test_diag_enterprise_2_r5_mongo_occurrence.py` |
 | E1 regression | R1–R6 | full diagnostics unit suite |
 
 **Design notes**
 
 - Occurrence partition: `intergrax.diagnostic_problem_occurrence.v1:{tenant_id}:{problem_id}`
 - Row key: `occ:{inverted_observed_at_micros}:{occurrence_id}` where `occurrence_id = subject_ref.index_token`
-- Stats row: `meta:stats` (derived aggregate; `last_committed_occurrence_id` for exactly-once)
-- Stats contribution marker: `meta:stats_contrib:{occurrence_id}` (`stats_count_snapshot`, `phase: pending|applied`)
+- Partition fingerprint: `meta:occurrence_partition_fingerprint` (`write_generation`, `min_row_key`, `max_row_key`) — monotonic on `CREATED` append; repair snapshot authority (not `meta:stats`)
+- Repair snapshot rows: ascending `row_key` with `min_row_key <= row_key <= terminal_row_key`; stable fingerprint across scan required for `CONSISTENT`
 - Subject ownership index remains on `ProblemPersistence` via `indexed_subject_refs` on create/update (not on aggregate)
-- Source hierarchy: execution evidence → occurrence rows → derived stats → Problem aggregate
+- Source hierarchy: execution evidence → occurrence rows → derived aggregate → Problem record
 
 ## E3 — Contention / hot-partition load
 

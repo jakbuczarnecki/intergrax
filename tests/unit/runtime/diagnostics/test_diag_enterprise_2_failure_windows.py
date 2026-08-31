@@ -109,12 +109,19 @@ class _FailOccurrenceAppendPersistence:
             occurrence=occurrence,
         )
 
-    def query_occurrences(self, *, tenant_id: str, problem_id, limit: int, cursor=None):
+    def capture_occurrence_repair_boundary(self, *, tenant_id: str, problem_id):
+        return self._delegate.capture_occurrence_repair_boundary(
+            tenant_id=tenant_id,
+            problem_id=problem_id,
+        )
+
+    def query_occurrences(self, *, tenant_id: str, problem_id, limit: int, cursor=None, repair_boundary=None):
         return self._delegate.query_occurrences(
             tenant_id=tenant_id,
             problem_id=problem_id,
             limit=limit,
             cursor=cursor,
+            repair_boundary=repair_boundary,
         )
 
 
