@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 from intergrax.runtime.nexus.tracing.trace_models import DEFAULT_REDACTED_TEXT, DiagnosticPayload
 
@@ -18,7 +17,7 @@ class OrderRetrievalDiagV1(DiagnosticPayload):
     def schema_id(cls) -> str:
         return "order_assistant.retrieval.v1"
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         return {
             "order_id": self.order_id,
             "tool_id": self.tool_id,
@@ -43,7 +42,7 @@ class OrderPlannerRoundDiagV1(DiagnosticPayload):
     def schema_id(cls) -> str:
         return "order_assistant.planner_round.v1"
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         return {
             "round_index": self.round_index,
             "proposed_tool_ids": list(self.proposed_tool_ids),
@@ -68,7 +67,7 @@ class OrderPolicyDenialDiagV1(DiagnosticPayload):
     def schema_id(cls) -> str:
         return "order_assistant.policy_denial.v1"
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         return {
             "tool_id": self.tool_id,
             "matched_rule_ids": list(self.matched_rule_ids),
@@ -91,7 +90,7 @@ class OrderWorkflowCompletionDiagV1(DiagnosticPayload):
     def schema_id(cls) -> str:
         return "order_assistant.workflow_completion.v1"
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         return {
             "workflow_kind": self.workflow_kind,
             "outcome": self.outcome,

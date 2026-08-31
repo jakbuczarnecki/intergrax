@@ -19,6 +19,7 @@ from platform_proofs.scenarios.indirect_prompt_injection.application.order_provi
 )
 from platform_proofs.scenarios.indirect_prompt_injection.application.order_workflow import (
     execute_order_workflow,
+    tool_trace_to_dict,
 )
 from platform_proofs.scenarios.indirect_prompt_injection.application.runtime_composition import (
     ORDER_ASSISTANT_AGENT_ID,
@@ -118,8 +119,10 @@ class OrderAssistantAgent(Agent):
             "outcome": workflow_result.outcome,
             "terminal_summary": workflow_result.terminal_summary,
             "order_facts": workflow_result.order_facts,
-            "retrieved_notes": list(workflow_result.retrieved_notes),
-            "tool_trace_count": len(workflow_result.tool_traces),
+            "retrieved_notes": [
+                note.model_dump(mode="json") for note in workflow_result.retrieved_notes
+            ],
+            "tool_traces": [tool_trace_to_dict(trace) for trace in workflow_result.tool_traces],
             "policy_evaluations": list(workflow_result.policy_evaluations),
             "planner_rounds": list(workflow_result.planner_rounds),
             "write_tool_proposed": workflow_result.write_tool_proposed,

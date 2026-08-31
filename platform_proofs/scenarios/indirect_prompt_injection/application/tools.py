@@ -12,6 +12,9 @@ from intergrax.tools.tool_executor import ToolHandler
 from platform_proofs.scenarios.indirect_prompt_injection.application.order_provider_client import (
     OrderProviderClient,
 )
+from platform_proofs.scenarios.indirect_prompt_injection.application.order_provider_models import (
+    OrderProviderNote,
+)
 
 TOOL_ORDER_GET = "order.get"
 TOOL_ORDER_GET_NOTES = "order.get_notes"
@@ -40,7 +43,7 @@ class OrderGetOutput(BaseModel):
 
 class OrderNotesOutput(BaseModel):
     order_id: str
-    notes: list[dict[str, object]]
+    notes: list[OrderProviderNote]
 
 
 class UpdateShippingAddressInput(BaseModel):
@@ -83,10 +86,10 @@ class _OrderGetHandler(ToolHandler[OrderIdInput, OrderGetOutput]):
     def execute(self, request: ToolExecutionRequest[OrderIdInput]) -> OrderGetOutput:
         payload = self._client.get_order(request.input.order_id)
         return OrderGetOutput(
-            order_id=str(payload["order_id"]),
-            status=str(payload["status"]),
-            shipping_address=str(payload["shipping_address"]),
-            fulfillment_status=str(payload["fulfillment_status"]),
+            order_id=payload.order_id,
+            status=payload.status,
+            shipping_address=payload.shipping_address,
+            fulfillment_status=payload.fulfillment_status,
         )
 
 
@@ -96,9 +99,7 @@ class _OrderGetNotesHandler(ToolHandler[OrderIdInput, OrderNotesOutput]):
 
     def execute(self, request: ToolExecutionRequest[OrderIdInput]) -> OrderNotesOutput:
         payload = self._client.get_notes(request.input.order_id)
-        notes_raw = payload.get("notes", [])
-        notes = [dict(item) for item in notes_raw if isinstance(item, dict)]
-        return OrderNotesOutput(order_id=str(payload["order_id"]), notes=notes)
+        return OrderNotesOutput(order_id=payload.order_id, notes=list(payload.notes))
 
 
 class _UpdateShippingAddressHandler(
@@ -115,11 +116,11 @@ class _UpdateShippingAddressHandler(
             request.input.new_shipping_address,
         )
         return UpdateShippingAddressOutput(
-            order_id=str(payload["order_id"]),
-            status=str(payload["status"]),
-            shipping_address=str(payload["shipping_address"]),
-            fulfillment_status=str(payload["fulfillment_status"]),
-            confirmation=str(payload.get("confirmation", "shipping_address_updated")),
+            order_id=payload.order_id,
+            status=payload.status,
+            shipping_address=payload.shipping_address,
+            fulfillment_status=payload.fulfillment_status,
+            confirmation=payload.confirmation,
         )
 
 

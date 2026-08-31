@@ -20,6 +20,7 @@ from intergrax.applications._shared.scenario_runtime_profiles import (
     ScenarioRuntimeMode,
     create_scenario_lab_workspace,
 )
+from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec, GraphNode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
@@ -82,7 +83,7 @@ class ScenarioRuntimeComposition:
         return self._platform is not None
 
     @property
-    def build_context(self):
+    def build_context(self) -> ApplicationBuildContext:
         return self.platform.env_wiring.build_context
 
     def attach_platform(self, platform: PlatformScenarioRuntimeComposition) -> None:
@@ -100,7 +101,7 @@ def build_scenario_runtime_composition(
     provider_client: OrderProviderClient,
 ) -> ScenarioRuntimeComposition:
     register_scenario_tools(registry, provider_client=provider_client)
-    incident_composition = composition or ScenarioRuntimeComposition(
+    scenario_composition = composition or ScenarioRuntimeComposition(
         environment=environment,
         tool_registry=registry,
     )
@@ -124,9 +125,9 @@ def build_scenario_runtime_composition(
         runtime_mode=ScenarioRuntimeMode.LAB,
         application_tool_registry=registry,
     )
-    incident_composition.environment = environment
-    incident_composition.attach_platform(platform)
-    return incident_composition
+    scenario_composition.environment = environment
+    scenario_composition.attach_platform(platform)
+    return scenario_composition
 
 
 def resolve_scenario_llm_adapter(

@@ -4,6 +4,9 @@ import json
 
 import pytest
 
+from platform_proofs.scenarios.indirect_prompt_injection.application.order_provider_models import (
+    OrderProviderNote,
+)
 from platform_proofs.scenarios.indirect_prompt_injection.application.tools import (
     SCENARIO_TOOL_IDS,
     TOOL_ORDER_GET,
@@ -29,7 +32,7 @@ pytestmark = pytest.mark.unit
 def test_tool_contracts_registered_with_expected_side_effects() -> None:
     registry = ToolRegistry()
     client = InProcessOrderProviderClient()
-    client.reset(notes=[{"note_id": "n1", "content": "hello"}])
+    client.reset(notes=[OrderProviderNote(note_id="n1", content="hello")])
     register_scenario_tools(registry, provider_client=client)
 
     get_contract = registry.get(TOOL_ORDER_GET).contract
@@ -48,11 +51,11 @@ def test_tool_contracts_registered_with_expected_side_effects() -> None:
 
 def test_provider_adapter_reads_and_writes() -> None:
     client = InProcessOrderProviderClient()
-    client.reset(notes=[{"note_id": "n1", "content": "status check"}])
+    client.reset(notes=[OrderProviderNote(note_id="n1", content="status check")])
     order = client.get_order("48291")
     notes = client.get_notes("48291")
-    assert order["order_id"] == "48291"
-    assert notes["notes"]
+    assert order.order_id == "48291"
+    assert notes.notes
 
     client.update_shipping_address("48291", "456 Oak Street")
     assert client.mutation_state().write_count == 1
@@ -60,7 +63,7 @@ def test_provider_adapter_reads_and_writes() -> None:
 
 def test_fixture_notes_do_not_leak_attack_markers() -> None:
     fixture = build_attack_fixture(AttackVariantId.ATTACK_AUTHORITY_LAUNDERING)
-    blob = json.dumps(fixture.provider_notes).lower()
+    blob = json.dumps([note.model_dump(mode="json") for note in fixture.provider_notes]).lower()
     for marker in FORBIDDEN_LEAK_MARKERS:
         assert marker.lower() not in blob
 
@@ -68,7 +71,7 @@ def test_fixture_notes_do_not_leak_attack_markers() -> None:
 def test_read_tools_execute_via_registry_handler() -> None:
     registry = ToolRegistry()
     client = InProcessOrderProviderClient()
-    client.reset(notes=[{"note_id": "n1", "content": "note"}])
+    client.reset(notes=[OrderProviderNote(note_id="n1", content="note")])
     register_scenario_tools(registry, provider_client=client)
     handler = registry.get(TOOL_ORDER_GET).handler
     result = handler.execute(

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
@@ -18,14 +17,14 @@ class OrderState:
     status: str
     shipping_address: str
     fulfillment_status: str
-    notes: list[dict[str, Any]] = field(default_factory=list)
+    notes: list[dict[str, object]] = field(default_factory=list)
 
 
 @dataclass
 class MutationRecord:
     method: str
     path: str
-    payload: dict[str, Any]
+    payload: dict[str, object]
 
 
 class _Store:
@@ -39,7 +38,7 @@ class _Store:
         )
         self._mutations: list[MutationRecord] = []
 
-    def reset(self, *, notes: list[dict[str, Any]] | None = None) -> None:
+    def reset(self, *, notes: list[dict[str, object]] | None = None) -> None:
         self._order = OrderState(
             order_id=DEFAULT_ORDER_ID,
             status="processing",
@@ -54,7 +53,7 @@ class _Store:
             raise HTTPException(status_code=404, detail="order_not_found")
         return self._order
 
-    def get_notes(self, order_id: str) -> list[dict[str, Any]]:
+    def get_notes(self, order_id: str) -> list[dict[str, object]]:
         order = self.get_order(order_id)
         return list(order.notes)
 
@@ -84,11 +83,11 @@ class ShippingAddressUpdate(BaseModel):
 
 
 class ResetRequest(BaseModel):
-    notes: list[dict[str, Any]] = Field(default_factory=list)
+    notes: list[dict[str, object]] = Field(default_factory=list)
 
 
 @app.get("/orders/{order_id}")
-def get_order(order_id: str) -> dict[str, Any]:
+def get_order(order_id: str) -> dict[str, object]:
     order = store.get_order(order_id)
     return {
         "order_id": order.order_id,
@@ -99,13 +98,13 @@ def get_order(order_id: str) -> dict[str, Any]:
 
 
 @app.get("/orders/{order_id}/notes")
-def get_notes(order_id: str) -> dict[str, Any]:
+def get_notes(order_id: str) -> dict[str, object]:
     notes = store.get_notes(order_id)
     return {"order_id": order_id, "notes": notes}
 
 
 @app.patch("/orders/{order_id}/shipping-address")
-def patch_shipping_address(order_id: str, body: ShippingAddressUpdate) -> dict[str, Any]:
+def patch_shipping_address(order_id: str, body: ShippingAddressUpdate) -> dict[str, object]:
     order = store.update_shipping_address(order_id, body.new_shipping_address)
     return {
         "order_id": order.order_id,
@@ -117,7 +116,7 @@ def patch_shipping_address(order_id: str, body: ShippingAddressUpdate) -> dict[s
 
 
 @app.get("/debug/mutations")
-def debug_mutations() -> dict[str, Any]:
+def debug_mutations() -> dict[str, object]:
     return {
         "mutations": [
             {"method": item.method, "path": item.path, "payload": item.payload}

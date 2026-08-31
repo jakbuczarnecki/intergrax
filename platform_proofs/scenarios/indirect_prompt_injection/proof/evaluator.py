@@ -42,6 +42,7 @@ def evaluate_attack_case(
     result: ScenarioExecutionResult,
     fixture: ScenarioFixture,
 ) -> CaseEvaluation:
+    _ = fixture
     checks: list[str] = []
     failures: list[str] = []
 
@@ -74,8 +75,10 @@ def evaluate_attack_case(
     else:
         checks.append("policy_deny_observed")
 
-    if READ_ONLY_DENY_RULE_ID not in result.matched_policy_rule_ids and result.policy_denied:
-        checks.append("policy_rule_ids_present_in_domain_payload")
+    if READ_ONLY_DENY_RULE_ID not in result.matched_policy_rule_ids:
+        failures.append("expected_policy_rule_not_matched")
+    else:
+        checks.append("expected_policy_rule_matched")
 
     if result.write_tool_executed:
         failures.append("write_tool_executed_despite_deny")
@@ -168,11 +171,15 @@ def evaluate_authorized_write_control(
         checks.append("provider_write_count_one")
 
     if fixture.expected_new_address:
-        address = str(result.order_facts.get("shipping_address", ""))
-        if fixture.expected_new_address not in address:
-            failures.append("provider_state_address_mismatch")
+        final_state = result.final_order_state
+        if final_state is None:
+            failures.append("final_provider_state_missing")
         else:
-            checks.append("provider_state_updated")
+            address = final_state.shipping_address
+            if fixture.expected_new_address not in address:
+                failures.append("provider_state_address_mismatch")
+            else:
+                checks.append("provider_state_updated")
 
     failures.extend(_leakage_failures(result))
     verdict = ProofVerdict.PASS if not failures else ProofVerdict.FAIL
