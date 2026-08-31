@@ -58,6 +58,15 @@ class TraceEmitter(Protocol):
     ) -> None: ...
 
 
+class _ExternalEffectBoundary:
+    """Tracks whether ToolExecutor may have been entered for post-claim safety."""
+
+    __slots__ = ("may_have_started",)
+
+    def __init__(self) -> None:
+        self.may_have_started = False
+
+
 class RuntimeToolInvoker:
     """
     Nexus-owned enforcement wrapper for tool invocation.
@@ -129,25 +138,41 @@ class RuntimeToolInvoker:
             if claim_context is None:
                 raise RuntimeError("Ledger inconsistency: ACQUIRED without claim context.")
 
-        result = self._execute_external_effect(
-            state=state,
-            agent_id=agent_id,
-            contract=contract,
-            request=request,
-        )
-
         if claim_context is not None:
             coordinator = self._pre_effect_coordinator
             if coordinator is None:
                 raise RuntimeError(
                     "Pre-effect claim context present without coordinator.",
                 )
+            boundary = _ExternalEffectBoundary()
+            try:
+                result = self._execute_external_effect(
+                    state=state,
+                    agent_id=agent_id,
+                    contract=contract,
+                    request=request,
+                    boundary=boundary,
+                )
+            except Exception:
+                coordinator.on_post_claim_exception(
+                    claim_context=claim_context,
+                    contract=contract,
+                    effect_may_have_started=boundary.may_have_started,
+                )
+                raise
             coordinator.after_external_effect(
                 claim_context=claim_context,
                 contract=contract,
                 result=result,
             )
-        return result
+            return result
+
+        return self._execute_external_effect(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+        )
 
     def _prepare_invocation(
         self,
@@ -312,6 +337,7 @@ class RuntimeToolInvoker:
         agent_id: str,
         contract: ToolContract,
         request: ToolExecutionRequest[BaseModel],
+        boundary: _ExternalEffectBoundary | None = None,
     ) -> ToolExecutionResult[BaseModel]:
         # 3) trace start
         state.trace_event(
@@ -337,6 +363,7 @@ class RuntimeToolInvoker:
             agent_id=agent_id,
             contract=contract,
             request=request,
+            boundary=boundary,
         )
 
     def _execute_with_policy(
@@ -346,6 +373,7 @@ class RuntimeToolInvoker:
         agent_id: str,
         contract: ToolContract,
         request: ToolExecutionRequest[BaseModel],
+        boundary: _ExternalEffectBoundary | None = None,
     ) -> ToolExecutionResult[BaseModel]:
         policy = contract.retry_policy
         attempts = self._effective_max_attempts(contract)
@@ -357,7 +385,7 @@ class RuntimeToolInvoker:
 
             start_perf = time.perf_counter()
             try:
-                raw_out = self._execute_once(contract, request)
+                raw_out = self._execute_once(contract, request, boundary=boundary)
                 out = self._validate_output(contract.output_schema, raw_out)
                 duration_ms = max(0, int((time.perf_counter() - start_perf) * 1000))
 
@@ -519,9 +547,13 @@ class RuntimeToolInvoker:
         self,
         contract: ToolContract,
         request: ToolExecutionRequest[BaseModel],
+        *,
+        boundary: _ExternalEffectBoundary | None = None,
     ) -> BaseModel:
         timeout_s = contract.timeout_ms / 1000.0
         with ThreadPoolExecutor(max_workers=1) as pool:
+            if boundary is not None:
+                boundary.may_have_started = True
             future = pool.submit(self._executor.execute, request)
             return future.result(timeout=timeout_s)
 

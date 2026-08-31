@@ -18,6 +18,7 @@ from intergrax.contracts.idempotency_store import (
     InvocationUncertaintyError,
 )
 from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import RuntimeStateContract
+from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.runtime.tools.operation_identity import compute_invocation_operation_identity
 from intergrax.tools.core.contracts import ToolContract
@@ -138,6 +139,35 @@ class IdempotencyPreEffectCoordinator:
                 claim_context.key,
                 claim_context.claim,
             )
+
+    def on_post_claim_exception(
+        self,
+        *,
+        claim_context: PreEffectClaimContext,
+        contract: ToolContract,
+        effect_may_have_started: bool,
+    ) -> None:
+        """Finalize ledger after an unexpected live-process failure post-claim."""
+        del contract
+        if effect_may_have_started:
+            self._store.mark_uncertain_with_claim(
+                claim_context.tenant_id,
+                claim_context.key,
+                claim_context.claim,
+            )
+            return
+
+        safe_failure = ToolExecutionResult.fail(
+            RuntimeErrorCode.TOOL_ERROR,
+            "Tool invocation failed before external effect.",
+            effect_certainty=ToolEffectCertainty.NOT_STARTED,
+        )
+        self._store.complete_with_claim(
+            claim_context.tenant_id,
+            claim_context.key,
+            claim_context.claim,
+            safe_failure,
+        )
 
     def _to_coordination_result(
         self,

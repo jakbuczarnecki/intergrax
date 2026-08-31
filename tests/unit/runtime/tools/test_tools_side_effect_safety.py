@@ -40,6 +40,7 @@ from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
     IdempotencyPreEffectCoordinator,
+    PreEffectClaimContext,
 )
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from intergrax.runtime.tools.operation_identity import compute_invocation_operation_identity
@@ -49,7 +50,11 @@ from intergrax.tools.core.contracts import (
     ToolContract,
     ToolRetryPolicy,
 )
-from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
+from intergrax.tools.execution_models import (
+    ToolEffectCertainty,
+    ToolExecutionRequest,
+    ToolExecutionResult,
+)
 from intergrax.tools.registry import ToolRegistry
 from tests.unit.runtime.nexus.tools.conftest import FakeRegistry
 
@@ -98,6 +103,27 @@ class DummyState:
 
     def trace_event(self, *args, **kwargs) -> None:
         del args, kwargs
+
+
+class TraceFailBeforeExecutorState(DummyState):
+    def trace_event(self, *args, **kwargs) -> None:
+        if kwargs.get("step") == "tool_invocation_start":
+            raise RuntimeError("trace failed before executor")
+        DummyState.trace_event(self, *args, **kwargs)
+
+
+class TraceFailAfterExecutorState(DummyState):
+    def trace_event(self, *args, **kwargs) -> None:
+        if kwargs.get("step") == "tool_invocation_end":
+            raise RuntimeError("trace failed after effect")
+        DummyState.trace_event(self, *args, **kwargs)
+
+
+class EscapeAfterEffectBoundaryInvoker(RuntimeToolInvoker):
+    def _execute_external_effect(self, *, boundary=None, **kwargs):
+        if boundary is not None:
+            boundary.may_have_started = True
+        raise RuntimeError("unexpected escape after effect boundary")
 
 
 class GovernanceDummyState(DummyState):
@@ -838,5 +864,151 @@ def test_replay_after_success_does_not_execute_again() -> None:
     replay = invoker.invoke(state=state, agent_id="agent", request=request)
     assert first.success and replay.success
     assert first.output == replay.output
+    assert executor.calls == 1
+
+
+def test_post_claim_trace_failure_before_executor_finalizes_not_started() -> None:
+    executor = CountingExecutor()
+    invoker, store = _idempotent_invoker(executor)
+    state = TraceFailBeforeExecutorState()
+    request = _request(key="r5-trace-before-executor")
+
+    with pytest.raises(RuntimeError, match="trace failed before executor"):
+        invoker.invoke(state=state, agent_id="agent", request=request)
+
+    assert executor.calls == 0
+    assert store.get_status("tenant_test", "r5-trace-before-executor") == InvocationStatus.COMPLETED
+
+    replay = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert replay.success is False
+    assert executor.calls == 0
+
+
+def test_post_claim_trace_failure_after_executor_marks_uncertain() -> None:
+    executor = CountingExecutor()
+    invoker, store = _idempotent_invoker(executor)
+    state = TraceFailAfterExecutorState()
+    request = _request(key="r5-trace-after-executor")
+
+    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert result.success is False
+    assert executor.calls == 1
+    assert store.get_status("tenant_test", "r5-trace-after-executor") == InvocationStatus.UNCERTAIN
+
+    with pytest.raises(InvocationUncertaintyError):
+        invoker.invoke(state=state, agent_id="agent", request=request)
+    assert executor.calls == 1
+
+
+def test_on_post_claim_exception_before_effect_completes_not_started() -> None:
+    store = InMemoryIdempotencyStore()
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    acquired = store.claim(
+        "tenant_test",
+        "r5-coordinator-not-started",
+        "owner-r5",
+        lease_seconds=30,
+        operation_identity=compute_invocation_operation_identity("tool_a", ValueInput(value=1)),
+    )
+    assert acquired.claim is not None
+    claim_context = PreEffectClaimContext(
+        tenant_id="tenant_test",
+        key="r5-coordinator-not-started",
+        claim=acquired.claim,
+    )
+    contract = ToolContract(
+        tool_id="tool_a",
+        name="tool_a",
+        description="tool_a",
+        input_schema=ValueInput,
+        output_schema=ValueOutput,
+        error_mapping={},
+        side_effects=True,
+    )
+
+    coordinator.on_post_claim_exception(
+        claim_context=claim_context,
+        contract=contract,
+        effect_may_have_started=False,
+    )
+    assert store.get_status("tenant_test", "r5-coordinator-not-started") == InvocationStatus.COMPLETED
+    cached = store.get_completed_result("tenant_test", "r5-coordinator-not-started")
+    assert cached is not None
+    assert cached.success is False
+    assert cached.effect_certainty == ToolEffectCertainty.NOT_STARTED
+
+
+def test_post_claim_escape_after_effect_boundary_marks_uncertain() -> None:
+    executor = CountingExecutor()
+    store = InMemoryIdempotencyStore()
+    registry = ToolRegistry()
+    _register_tool(registry, tool_id="tool_a", side_effects=True)
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = EscapeAfterEffectBoundaryInvoker(
+        registry=registry,
+        executor=executor,
+        pre_effect_coordinator=coordinator,
+    )
+    state = DummyState()
+    request = _request(key="r5-escape-after-boundary")
+
+    with pytest.raises(RuntimeError, match="unexpected escape after effect boundary"):
+        invoker.invoke(state=state, agent_id="agent", request=request)
+
+    assert executor.calls == 0
+    assert store.get_status("tenant_test", "r5-escape-after-boundary") == InvocationStatus.UNCERTAIN
+
+    with pytest.raises(InvocationUncertaintyError):
+        invoker.invoke(state=state, agent_id="agent", request=request)
+    assert executor.calls == 0
+
+
+def test_on_post_claim_exception_after_effect_marks_uncertain() -> None:
+    store = InMemoryIdempotencyStore()
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    acquired = store.claim(
+        "tenant_test",
+        "r5-coordinator-uncertain",
+        "owner-r5",
+        lease_seconds=30,
+        operation_identity=compute_invocation_operation_identity("tool_a", ValueInput(value=1)),
+    )
+    assert acquired.claim is not None
+    claim_context = PreEffectClaimContext(
+        tenant_id="tenant_test",
+        key="r5-coordinator-uncertain",
+        claim=acquired.claim,
+    )
+    contract = ToolContract(
+        tool_id="tool_a",
+        name="tool_a",
+        description="tool_a",
+        input_schema=ValueInput,
+        output_schema=ValueOutput,
+        error_mapping={},
+        side_effects=True,
+    )
+
+    coordinator.on_post_claim_exception(
+        claim_context=claim_context,
+        contract=contract,
+        effect_may_have_started=True,
+    )
+    assert store.get_status("tenant_test", "r5-coordinator-uncertain") == InvocationStatus.UNCERTAIN
+
+
+def test_post_claim_success_finalizes_completed_once() -> None:
+    executor = CountingExecutor()
+    invoker, store = _idempotent_invoker(executor)
+    state = DummyState()
+    request = _request(key="r5-success-once")
+
+    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert result.success
+    assert executor.calls == 1
+    assert store.get_status("tenant_test", "r5-success-once") == InvocationStatus.COMPLETED
+
+    replay = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert replay.success
     assert executor.calls == 1
 
