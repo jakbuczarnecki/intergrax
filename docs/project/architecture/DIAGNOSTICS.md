@@ -222,13 +222,31 @@ stateDiagram-v2
 
 ## Problem Store architecture
 
+```text
+Runtime evidence
+      ↓
+Grouping
+      ↓
+ProblemLifecycleEngine
+   ┌───────────┴───────────┐
+   ↓                       ↓
+ProblemPersistence   ProblemOccurrencePersistence
+   ↓                       ↓
+bounded Problem       durable full history
+   └───────────┬───────────┘
+               ↓
+     ConditionalDocumentStore
+               ↓
+        Mongo / InMemory / …
+```
+
 Mongo is a **provider**, not part of the central diagnostics contract:
 
 ```text
 IntegrationProfile
   → DocumentStore abstraction
   → ConditionalDocumentStore capability
-  → DocumentStoreProblemPersistence
+  → DocumentStoreProblemPersistence + DocumentStoreProblemOccurrencePersistence
   → ProblemLifecycleEngine
 ```
 

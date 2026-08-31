@@ -55,26 +55,53 @@ from intergrax.runtime.events.asof_projection import (
 )
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 
-_PERSISTENCE_SCHEMA = "intergrax.diagnostic_problem.persistence.v1"
+_PERSISTENCE_SCHEMA_V1 = "intergrax.diagnostic_problem.persistence.v1"
+_PERSISTENCE_SCHEMA_V2 = "intergrax.diagnostic_problem.persistence.v2"
 _PAYLOAD_FIELD = "payload"
 
 
 def encode_problem_record(problem: Problem) -> dict[str, Any]:
-    """Serialize a Problem for document/KV storage."""
+    """Serialize a bounded Problem aggregate for document/KV storage."""
     return {
-        "schema_version": _PERSISTENCE_SCHEMA,
-        _PAYLOAD_FIELD: _encode_problem_payload(problem),
+        "schema_version": _PERSISTENCE_SCHEMA_V2,
+        _PAYLOAD_FIELD: _encode_problem_payload_v2(problem),
     }
 
 
 def decode_problem_record(data: object) -> Problem:
-    """Reconstruct a typed Problem from stored representation."""
+    """Reconstruct a typed bounded Problem from stored representation."""
     if not isinstance(data, dict):
         raise ProblemPersistenceIntegrityError("invalid diagnostic problem persistence record")
     schema_version = data.get("schema_version")
-    if schema_version != _PERSISTENCE_SCHEMA:
+    payload = data.get(_PAYLOAD_FIELD)
+    if not isinstance(payload, dict):
         raise ProblemPersistenceIntegrityError(
-            "unsupported diagnostic problem persistence schema",
+            "invalid diagnostic problem persistence payload",
+        )
+    try:
+        if schema_version == _PERSISTENCE_SCHEMA_V2:
+            return _decode_problem_payload_v2(payload)
+        if schema_version == _PERSISTENCE_SCHEMA_V1:
+            return _decode_problem_payload_v1(payload)
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ProblemPersistenceIntegrityError(
+            "malformed diagnostic problem persistence payload",
+        ) from exc
+    raise ProblemPersistenceIntegrityError(
+        "unsupported diagnostic problem persistence schema",
+    )
+
+
+def decode_legacy_problem_record_with_occurrences(
+    data: object,
+) -> tuple[Problem, tuple[ProblemOccurrence, ...], tuple[ProblemGroupingSubjectRef, ...]]:
+    """Decode legacy v1 records retaining inline occurrence history for migration."""
+    if not isinstance(data, dict):
+        raise ProblemPersistenceIntegrityError("invalid diagnostic problem persistence record")
+    schema_version = data.get("schema_version")
+    if schema_version != _PERSISTENCE_SCHEMA_V1:
+        raise ProblemPersistenceIntegrityError(
+            "legacy inline occurrence decode requires v1 schema",
         )
     payload = data.get(_PAYLOAD_FIELD)
     if not isinstance(payload, dict):
@@ -82,14 +109,70 @@ def decode_problem_record(data: object) -> Problem:
             "invalid diagnostic problem persistence payload",
         )
     try:
-        return _decode_problem_payload(payload)
+        inline_occurrences = tuple(
+            _decode_occurrence(item) for item in _require_sequence(payload["occurrences"])
+        )
+        inline_subject_refs = tuple(
+            _decode_subject_ref(item)
+            for item in _require_sequence(payload["current_subject_refs"])
+        )
+        problem = _decode_bounded_problem_fields(payload)
+        return problem, inline_occurrences, inline_subject_refs
     except (KeyError, TypeError, ValueError) as exc:
         raise ProblemPersistenceIntegrityError(
             "malformed diagnostic problem persistence payload",
         ) from exc
 
 
-def _encode_problem_payload(problem: Problem) -> dict[str, Any]:
+def _encode_problem_payload_v2(problem: Problem) -> dict[str, object]:
+    return {
+        "problem_id": str(problem.problem_id),
+        "tenant_id": problem.tenant_id,
+        "status": problem.status.value,
+        "first_seen_at": _encode_datetime(problem.first_seen_at),
+        "last_seen_at": _encode_datetime(problem.last_seen_at),
+        "occurrence_count": problem.occurrence_count,
+        "provenance": _encode_provenance(problem.provenance),
+        "record_version": problem.record_version,
+    }
+
+
+def _decode_problem_payload_v2(payload: Mapping[str, object]) -> Problem:
+    return Problem(
+        problem_id=ProblemId(str(payload["problem_id"])),
+        tenant_id=str(payload["tenant_id"]),
+        status=ProblemStatus(str(payload["status"])),
+        first_seen_at=_decode_datetime(payload["first_seen_at"]),
+        last_seen_at=_decode_datetime(payload["last_seen_at"]),
+        occurrence_count=int(payload["occurrence_count"]),  # type: ignore[arg-type]
+        provenance=_decode_provenance(payload["provenance"]),
+        record_version=int(payload["record_version"]),  # type: ignore[arg-type]
+    )
+
+
+def _decode_problem_payload_v1(payload: Mapping[str, object]) -> Problem:
+    return _decode_bounded_problem_fields(payload)
+
+
+def _decode_bounded_problem_fields(payload: Mapping[str, object]) -> Problem:
+    return Problem(
+        problem_id=ProblemId(str(payload["problem_id"])),
+        tenant_id=str(payload["tenant_id"]),
+        status=ProblemStatus(str(payload["status"])),
+        first_seen_at=_decode_datetime(payload["first_seen_at"]),
+        last_seen_at=_decode_datetime(payload["last_seen_at"]),
+        occurrence_count=int(payload["occurrence_count"]),  # type: ignore[arg-type]
+        provenance=_decode_provenance(payload["provenance"]),
+        record_version=int(payload["record_version"]),  # type: ignore[arg-type]
+    )
+
+
+def _encode_legacy_problem_payload_v1(
+    *,
+    problem: Problem,
+    current_subject_refs: tuple[ProblemGroupingSubjectRef, ...],
+    occurrences: tuple[ProblemOccurrence, ...],
+) -> dict[str, Any]:
     return {
         "problem_id": str(problem.problem_id),
         "tenant_id": problem.tenant_id,
@@ -98,35 +181,12 @@ def _encode_problem_payload(problem: Problem) -> dict[str, Any]:
         "last_seen_at": _encode_datetime(problem.last_seen_at),
         "occurrence_count": problem.occurrence_count,
         "current_subject_refs": [
-            _encode_subject_ref(subject_ref)
-            for subject_ref in problem.current_subject_refs
+            _encode_subject_ref(subject_ref) for subject_ref in current_subject_refs
         ],
-        "occurrences": [
-            _encode_occurrence(occurrence) for occurrence in problem.occurrences
-        ],
+        "occurrences": [_encode_occurrence(occurrence) for occurrence in occurrences],
         "provenance": _encode_provenance(problem.provenance),
         "record_version": problem.record_version,
     }
-
-
-def _decode_problem_payload(payload: Mapping[str, object]) -> Problem:
-    return Problem(
-        problem_id=ProblemId(str(payload["problem_id"])),
-        tenant_id=str(payload["tenant_id"]),
-        status=ProblemStatus(str(payload["status"])),
-        first_seen_at=_decode_datetime(payload["first_seen_at"]),
-        last_seen_at=_decode_datetime(payload["last_seen_at"]),
-        occurrence_count=int(payload["occurrence_count"]),  # type: ignore[arg-type]
-        current_subject_refs=tuple(
-            _decode_subject_ref(item)
-            for item in _require_sequence(payload["current_subject_refs"])
-        ),
-        occurrences=tuple(
-            _decode_occurrence(item) for item in _require_sequence(payload["occurrences"])
-        ),
-        provenance=_decode_provenance(payload["provenance"]),
-        record_version=int(payload["record_version"]),  # type: ignore[arg-type]
-    )
 
 
 def _encode_datetime(value: datetime) -> str:
@@ -187,6 +247,16 @@ def _decode_subject_ref(value: object) -> ProblemGroupingSubjectRef:
             instance_id=str(value["instance_id"]),
         )
     raise ValueError("unsupported diagnostic subject kind")
+
+
+def encode_problem_occurrence_payload(occurrence: ProblemOccurrence) -> dict[str, object]:
+    """Public occurrence payload encoder for occurrence persistence."""
+    return _encode_occurrence(occurrence)
+
+
+def decode_problem_occurrence_payload(payload: Mapping[str, object]) -> ProblemOccurrence:
+    """Public occurrence payload decoder for occurrence persistence."""
+    return _decode_occurrence(payload)
 
 
 def _encode_occurrence(occurrence: ProblemOccurrence) -> dict[str, object]:

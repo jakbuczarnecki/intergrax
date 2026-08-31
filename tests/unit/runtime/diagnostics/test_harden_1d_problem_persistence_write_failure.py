@@ -12,8 +12,10 @@ from intergrax.runtime.diagnostics.document_store_problem_persistence import (
     DocumentStoreProblemPersistence,
 )
 from intergrax.runtime.diagnostics.persistence_conformance import (
+    _sample_subject_ref,
     query_all_problems_for_tenant,
     sample_problem,
+    sample_subject_refs,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import Problem
 from testing_support.delegating_failing_conditional_document_store import (
@@ -49,9 +51,7 @@ def test_harden_1d_update_cas_write_failure_is_not_reported_as_success() -> None
     created = sample_problem(tenant_id="tenant-harden-1d-update")
     assert persistence.create(created) == created
 
-    subject_a = created.current_subject_refs[0]
-    from intergrax.runtime.diagnostics.persistence_conformance import query_all_problems_for_tenant, _sample_subject_ref
-
+    subject_a = sample_subject_refs(created)[0]
     subject_b = _sample_subject_ref(tenant_id=created.tenant_id)
     updated = Problem(
         problem_id=created.problem_id,
@@ -60,15 +60,13 @@ def test_harden_1d_update_cas_write_failure_is_not_reported_as_success() -> None
         first_seen_at=created.first_seen_at,
         last_seen_at=_OBSERVED_AT_LATER,
         occurrence_count=created.occurrence_count + 1,
-        current_subject_refs=(subject_a, subject_b),
-        occurrences=created.occurrences,
         provenance=created.provenance,
         record_version=2,
     )
 
     store.set_write_failure_mode(DocumentStoreWriteFailureMode.FAIL_WRITES)
     with pytest.raises(ControlledDocumentStoreWriteFailure):
-        persistence.update(updated, expected_version=1)
+        persistence.update(updated, expected_version=1, indexed_subject_refs=(subject_b,))
 
     stored = persistence.get(tenant_id=created.tenant_id, problem_id=created.problem_id)
     assert stored == created
@@ -93,9 +91,7 @@ def test_harden_1d_store_recovery_allows_subsequent_create_and_update() -> None:
     store.set_write_failure_mode(DocumentStoreWriteFailureMode.HEALTHY)
     assert persistence.create(record) == record
 
-    subject_a = record.current_subject_refs[0]
-    from intergrax.runtime.diagnostics.persistence_conformance import query_all_problems_for_tenant, _sample_subject_ref
-
+    subject_a = sample_subject_refs(record)[0]
     subject_b = _sample_subject_ref(tenant_id=record.tenant_id)
     updated = Problem(
         problem_id=record.problem_id,
@@ -104,15 +100,20 @@ def test_harden_1d_store_recovery_allows_subsequent_create_and_update() -> None:
         first_seen_at=record.first_seen_at,
         last_seen_at=_OBSERVED_AT_LATER,
         occurrence_count=record.occurrence_count + 1,
-        current_subject_refs=(subject_a, subject_b),
-        occurrences=record.occurrences,
         provenance=record.provenance,
         record_version=2,
     )
 
     store.set_write_failure_mode(DocumentStoreWriteFailureMode.FAIL_WRITES)
     with pytest.raises(ControlledDocumentStoreWriteFailure):
-        persistence.update(updated, expected_version=1)
+        persistence.update(updated, expected_version=1, indexed_subject_refs=(subject_b,))
 
     store.set_write_failure_mode(DocumentStoreWriteFailureMode.HEALTHY)
-    assert persistence.update(updated, expected_version=1) == updated
+    assert (
+        persistence.update(
+            updated,
+            expected_version=1,
+            indexed_subject_refs=(subject_b,),
+        )
+        == updated
+    )

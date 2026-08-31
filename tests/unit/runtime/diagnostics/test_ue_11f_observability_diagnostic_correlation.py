@@ -46,7 +46,9 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingEngine,
     ProblemGroupingStrategyRegistry,
 )
-from intergrax.runtime.diagnostics.problem_lifecycle import ProblemLifecycleEngine
+from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+    lifecycle_engine_for_tests,
+)
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTrigger,
 )
@@ -251,7 +253,7 @@ def _build_diagnostic_stack(
         lifecycle_analyzer=LifecycleAnomalyAnalyzer(),
         assessment_builder=DiagnosticAssessmentBuilder(),
         grouping_engine=_build_grouping_engine(),
-        problem_lifecycle_engine=ProblemLifecycleEngine(persistence),
+        problem_lifecycle_engine=lifecycle_engine_for_tests(persistence),
     )
     trigger = TerminalExecutionDiagnosticTrigger(orchestrator)
     return orchestrator, reconstructor, trigger

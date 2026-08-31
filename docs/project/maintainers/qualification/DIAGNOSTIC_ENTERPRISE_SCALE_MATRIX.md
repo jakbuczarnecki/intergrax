@@ -43,11 +43,28 @@ Operator Problem list reads are bounded by page/query instead of materializing e
 - Pagination is cursor-based continuation, not snapshot isolation; concurrent updates may shift ordering between pages without loops or cross-tenant leakage.
 - Production cursor secret: `INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET` — minimum 32 UTF-8 bytes, randomly generated; restart invalidates prior cursors.
 
-## E2 — Bounded occurrence history
+## E2 — Bounded occurrence history (`DIAG-ENTERPRISE-2`)
 
-**Status:** `NOT_YET_QUALIFIED`
+**Status:** `IN_PROGRESS` — core abstraction landed; full proof matrix incomplete
 
-`Problem.occurrences` remains embedded in canonical records; unbounded occurrence history is out of scope for E1.
+Canonical `Problem` is a bounded aggregate (no inline `occurrences` / `current_subject_refs`). Durable occurrence history uses `ProblemOccurrencePersistence` with `DocumentStoreProblemOccurrencePersistence` over `ConditionalDocumentStore` (InMemory + Mongo-capable).
+
+| Capability | Semantics | Proof |
+|---|---|---|
+| Bounded Problem aggregate | no unbounded occurrence tuple on `Problem` | `tests/unit/runtime/diagnostics/test_diag_enterprise_2_occurrence_persistence.py` |
+| Occurrence persistence contract | `append_if_absent`, `query_occurrences`, `aggregate_stats` | same + conformance in progress |
+| Lifecycle write protocol | occurrence append → aggregate converge | `test_problem_lifecycle.py` |
+| Paginated occurrence read | `DiagnosticReadService.list_problem_occurrences` | `test_diagnostic_read_service.py` |
+| 100k bounded proof | aggregate shape stable; page limit=100 | `test_100k_bounded_aggregate_and_paginated_history` |
+| Legacy v1 migration | `problem_occurrence_migration.py` | not yet fully proven |
+| Mongo durability proof | restart + pagination | not yet run in this iteration |
+| E1 regression | R1–R6 | pending full green suite |
+
+**Design notes**
+
+- Occurrence partition: `intergrax.diagnostic_problem_occurrence.v1:{tenant_id}:{problem_id}`
+- Row key: `occ:{inverted_observed_at_micros}:{occurrence_id}` where `occurrence_id = subject_ref.index_token`
+- Subject ownership index remains on `ProblemPersistence` via `indexed_subject_refs` on create/update (not on aggregate)
 
 ## E3 — Contention / hot-partition load
 

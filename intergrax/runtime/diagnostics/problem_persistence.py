@@ -104,16 +104,28 @@ class ProblemPersistence(ABC):
         """Return the Problem that already accepted ``subject_ref``, if any."""
 
     @abstractmethod
-    def create(self, record: Problem) -> Problem:
+    def create(
+        self,
+        record: Problem,
+        *,
+        indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
+    ) -> Problem:
         """
         Persist a new Problem atomically.
 
+        ``indexed_subject_refs`` seeds durable subject→Problem lookup indexes.
         Idempotent when the same ``problem_id`` is written with identical content.
         Raises ``ProblemPersistenceConflictError`` on identity or index conflicts.
         """
 
     @abstractmethod
-    def update(self, record: Problem, *, expected_version: int) -> Problem:
+    def update(
+        self,
+        record: Problem,
+        *,
+        expected_version: int,
+        indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
+    ) -> Problem:
         """
         Compare-and-set update for an existing Problem.
 

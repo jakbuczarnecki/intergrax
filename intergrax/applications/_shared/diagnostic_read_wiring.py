@@ -12,8 +12,12 @@ from intergrax.applications._shared.diagnostic_cursor_secret import (
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.integrations._shared.conformance import assert_conditional_document_store
 from intergrax.runtime.diagnostics.diagnostic_read_service import DiagnosticReadService
+from intergrax.runtime.diagnostics.document_store_problem_occurrence_persistence import (
+    wire_problem_occurrence_persistence,
+)
 from intergrax.runtime.diagnostics.document_store_problem_persistence import wire_problem_persistence
 from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
+from intergrax.runtime.diagnostics.problem_occurrence_persistence import ProblemOccurrencePersistence
 from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistence
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.observability.causal_evidence_persistence import CausalEvidencePersistence
@@ -27,6 +31,7 @@ class HostDiagnosticReadDependencies:
     """Shared platform diagnostic persistence resolved from one harness host runtime."""
 
     problem_persistence: ProblemPersistence
+    occurrence_persistence: ProblemOccurrencePersistence
     runtime_event_persistence: RuntimeEventPersistence
     causal_evidence_persistence: CausalEvidencePersistence
 
@@ -63,6 +68,10 @@ def resolve_host_diagnostic_read_dependencies(
             document_store=document_store,
             list_cursor_secret=resolve_problem_list_cursor_secret(),
         ),
+        occurrence_persistence=wire_problem_occurrence_persistence(
+            document_store=document_store,
+            occurrence_cursor_secret=resolve_problem_list_cursor_secret(),
+        ),
         runtime_event_persistence=runtime_events,
         causal_evidence_persistence=wire_causal_evidence_persistence(
             document_store=document_store,
@@ -76,6 +85,7 @@ def build_diagnostic_read_service(
     """Construct canonical DiagnosticReadService over shared platform persistence."""
     return DiagnosticReadService(
         problem_persistence=dependencies.problem_persistence,
+        occurrence_persistence=dependencies.occurrence_persistence,
         execution_reconstructor=ExecutionReconstructor(
             runtime_events=dependencies.runtime_event_persistence,
             causal_evidence=dependencies.causal_evidence_persistence,

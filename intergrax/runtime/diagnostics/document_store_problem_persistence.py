@@ -148,12 +148,14 @@ class _IndexClaims:
         canonical: Problem,
         *,
         partition_key: str,
+        indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
     ) -> None:
         required_keys = {
             (document.partition_key, document.row_key)
             for document in _required_index_documents(
                 canonical,
                 partition_key=partition_key,
+                indexed_subject_refs=indexed_subject_refs,
             )
         }
         for document in reversed(self._claimed):
@@ -179,6 +181,7 @@ def _required_index_documents(
     canonical: Problem,
     *,
     partition_key: str,
+    indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
 ) -> tuple[DocumentRecord, ...]:
     documents = [
         DocumentRecord(
@@ -187,7 +190,7 @@ def _required_index_documents(
             data=_encode_index_ref(canonical.problem_id),
         ),
     ]
-    for subject_ref in canonical.current_subject_refs:
+    for subject_ref in indexed_subject_refs:
         documents.append(
             DocumentRecord(
                 partition_key=partition_key,
@@ -196,18 +199,6 @@ def _required_index_documents(
             ),
         )
     return tuple(documents)
-
-
-def _new_subject_refs(
-    existing: Problem,
-    record: Problem,
-) -> tuple[ProblemGroupingSubjectRef, ...]:
-    existing_refs = set(existing.current_subject_refs)
-    return tuple(
-        subject_ref
-        for subject_ref in record.current_subject_refs
-        if subject_ref not in existing_refs
-    )
 
 
 class DocumentStoreProblemPersistence(ProblemPersistence):
@@ -518,18 +509,20 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
             raise ProblemPersistenceIntegrityError(
                 "canonical Problem id does not match subject index reference",
             )
-        if subject_ref not in problem.current_subject_refs:
-            raise ProblemPersistenceIntegrityError(
-                "canonical Problem does not contain indexed subject_ref",
-            )
         return problem
 
-    def create(self, record: Problem) -> Problem:
+    def create(
+        self,
+        record: Problem,
+        *,
+        indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
+    ) -> Problem:
         partition_key = _document_partition(record.tenant_id)
         claims = _IndexClaims(self._document_store)
         try:
             self._claim_indexes_for_create(
                 record=record,
+                indexed_subject_refs=indexed_subject_refs,
                 partition_key=partition_key,
                 claims=claims,
             )
@@ -558,8 +551,13 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
                     existing_record,
                     record,
                     partition_key=partition_key,
+                    indexed_subject_refs=indexed_subject_refs,
                 )
-            claims.rollback_except_required_by(stored, partition_key=partition_key)
+            claims.rollback_except_required_by(
+                stored,
+                partition_key=partition_key,
+                indexed_subject_refs=indexed_subject_refs,
+            )
             raise ProblemPersistenceConflictError("conflicting Problem for problem_id")
 
         return self._resolve_canonical_create_race(
@@ -567,9 +565,16 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
             canonical_document=canonical_document,
             partition_key=partition_key,
             claims=claims,
+            indexed_subject_refs=indexed_subject_refs,
         )
 
-    def update(self, record: Problem, *, expected_version: int) -> Problem:
+    def update(
+        self,
+        record: Problem,
+        *,
+        expected_version: int,
+        indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
+    ) -> Problem:
         partition_key = _document_partition(record.tenant_id)
         row_key = _record_row_key(record.problem_id)
         existing_record = self._document_store.get(partition_key, row_key)
@@ -591,20 +596,13 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
             record=record,
             partition_key=partition_key,
         )
-        for subject_ref in existing.current_subject_refs:
-            self._verify_subject_index_for_update(
-                record=record,
-                subject_ref=subject_ref,
-                partition_key=partition_key,
-            )
 
-        new_subject_refs = _new_subject_refs(existing, record)
         claims = _IndexClaims(self._document_store)
         list_index_plan: _ListIndexUpdatePlan | None = None
         try:
             self._claim_new_subject_indexes_for_update(
                 record=record,
-                new_subject_refs=new_subject_refs,
+                new_subject_refs=indexed_subject_refs,
                 partition_key=partition_key,
                 claims=claims,
             )
@@ -653,6 +651,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
         self,
         *,
         record: Problem,
+        indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...],
         partition_key: str,
         claims: _IndexClaims,
     ) -> None:
@@ -663,7 +662,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
         if not claims.try_claim(reconciliation_document):
             self._verify_index_document(reconciliation_document, record)
 
-        for subject_ref in record.current_subject_refs:
+        for subject_ref in indexed_subject_refs:
             subject_document = self._subject_index_document(
                 record=record,
                 subject_ref=subject_ref,
@@ -688,6 +687,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
         canonical_document: DocumentRecord,
         partition_key: str,
         claims: _IndexClaims,
+        indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...],
     ) -> Problem:
         existing_record = self._document_store.get(
             partition_key,
@@ -701,8 +701,13 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
                 existing_record,
                 record,
                 partition_key=partition_key,
+                indexed_subject_refs=indexed_subject_refs,
             )
-        claims.rollback_except_required_by(stored, partition_key=partition_key)
+        claims.rollback_except_required_by(
+            stored,
+            partition_key=partition_key,
+            indexed_subject_refs=indexed_subject_refs,
+        )
         raise ProblemPersistenceConflictError("conflicting Problem for problem_id")
 
     def _canonical_document(self, record: Problem) -> DocumentRecord:
@@ -887,9 +892,10 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
         record: Problem,
         *,
         partition_key: str,
+        indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
     ) -> Problem:
         self._ensure_reconciliation_index(record=record, partition_key=partition_key)
-        for subject_ref in record.current_subject_refs:
+        for subject_ref in indexed_subject_refs:
             self._ensure_subject_index(
                 record=record,
                 subject_ref=subject_ref,
@@ -904,6 +910,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
         incoming: Problem,
         *,
         partition_key: str,
+        indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
     ) -> Problem:
         stored = decode_problem_record(dict(existing_record.data))
         if stored != incoming:
@@ -911,7 +918,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
                 "conflicting Problem for problem_id",
             )
         self._ensure_reconciliation_index(record=stored, partition_key=partition_key)
-        for subject_ref in stored.current_subject_refs:
+        for subject_ref in indexed_subject_refs:
             self._ensure_subject_index(
                 record=stored,
                 subject_ref=subject_ref,

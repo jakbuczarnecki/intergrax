@@ -19,6 +19,7 @@ from intergrax.runtime.diagnostics.document_store_problem_persistence import (
 )
 from intergrax.runtime.diagnostics.persistence_conformance import (
     query_all_problems_for_tenant,
+    sample_occurrences,
     _sample_reconciliation_key,
     _sample_signature,
     _sample_subject_ref,
@@ -50,7 +51,10 @@ from intergrax.integrations._shared.in_memory_document_store import InMemoryDocu
 from intergrax.integrations.contracts.document_store import DocumentRecord
 from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
     TEST_PROBLEM_LIST_CURSOR_SECRET,
+    document_store_occurrence_persistence_for_tests,
     document_store_problem_persistence_for_tests,
+    lifecycle_engine_for_tests,
+    query_all_occurrences_for_problem,
 )
 
 pytestmark = pytest.mark.unit
@@ -59,6 +63,31 @@ _OBSERVED_AT = datetime(2026, 8, 29, 12, 0, tzinfo=UTC)
 _OBSERVED_AT_A = _OBSERVED_AT + timedelta(minutes=1)
 _OBSERVED_AT_B = _OBSERVED_AT + timedelta(minutes=2)
 _RESOLVED_AT = _OBSERVED_AT + timedelta(hours=1)
+
+
+def _seed_baseline_problem(
+    store: InMemoryDocumentStore,
+    *,
+    baseline: Problem,
+    baseline_subject,
+    observed_at: datetime,
+) -> None:
+    problem_persistence = document_store_problem_persistence_for_tests(store)
+    occurrence_persistence = document_store_occurrence_persistence_for_tests(store)
+    baseline_occurrence = sample_occurrences(
+        subject_refs=(baseline_subject,),
+        observed_at=observed_at,
+    )[0]
+    occurrence_persistence.append_if_absent(
+        tenant_id=baseline.tenant_id,
+        problem_id=baseline.problem_id,
+        occurrence=baseline_occurrence,
+    )
+    problem_persistence.create(
+        baseline,
+        indexed_subject_refs=(baseline_subject,),
+    )
+    problem_persistence.close()
 
 
 def _singleton_grouping_result(
@@ -104,10 +133,20 @@ class _SynchronizedUpdatePersistence(DocumentStoreProblemPersistence):
         self._update_barrier = update_barrier
         self._synchronized_expected_version = synchronized_expected_version
 
-    def update(self, record: Problem, *, expected_version: int) -> Problem:
+    def update(
+        self,
+        record: Problem,
+        *,
+        expected_version: int,
+        indexed_subject_refs: tuple = (),
+    ) -> Problem:
         if expected_version == self._synchronized_expected_version:
             self._update_barrier.wait(timeout=5)
-        return super().update(record, expected_version=expected_version)
+        return super().update(
+            record,
+            expected_version=expected_version,
+            indexed_subject_refs=indexed_subject_refs,
+        )
 
 
 class _SynchronizedResolvePersistence(DocumentStoreProblemPersistence):
@@ -126,13 +165,23 @@ class _SynchronizedResolvePersistence(DocumentStoreProblemPersistence):
         self._resolve_barrier = resolve_barrier
         self._synchronized_expected_version = synchronized_expected_version
 
-    def update(self, record: Problem, *, expected_version: int) -> Problem:
+    def update(
+        self,
+        record: Problem,
+        *,
+        expected_version: int,
+        indexed_subject_refs: tuple = (),
+    ) -> Problem:
         if (
             record.status is ProblemStatus.RESOLVED
             and expected_version == self._synchronized_expected_version
         ):
             self._resolve_barrier.wait(timeout=5)
-        return super().update(record, expected_version=expected_version)
+        return super().update(
+            record,
+            expected_version=expected_version,
+            indexed_subject_refs=indexed_subject_refs,
+        )
 
 
 class _AlwaysConflictReplaceStore(InMemoryDocumentStore):
@@ -180,15 +229,30 @@ class _ConflictThenVanishPersistence:
             subject_ref=subject_ref,
         )
 
-    def create(self, record: Problem) -> Problem:
-        return self._delegate.create(record)
+    def create(
+        self,
+        record: Problem,
+        *,
+        indexed_subject_refs=(),
+    ) -> Problem:
+        return self._delegate.create(record, indexed_subject_refs=indexed_subject_refs)
 
-    def update(self, record: Problem, *, expected_version: int) -> Problem:
+    def update(
+        self,
+        record: Problem,
+        *,
+        expected_version: int,
+        indexed_subject_refs=(),
+    ) -> Problem:
         if self._force_conflict_once:
             self._force_conflict_once = False
             self._vanish_on_next_get = True
             raise ProblemPersistenceConflictError("forced conflict for reload-vanish proof")
-        return self._delegate.update(record, expected_version=expected_version)
+        return self._delegate.update(
+            record,
+            expected_version=expected_version,
+            indexed_subject_refs=indexed_subject_refs,
+        )
 
     def close(self) -> None:
         close = getattr(self._delegate, "close", None)
@@ -224,10 +288,21 @@ class _CreateConflictLookupIntegrityPersistence:
     def find_by_subject_ref(self, *, tenant_id: str, subject_ref):
         return None
 
-    def create(self, record: Problem) -> Problem:
+    def create(
+        self,
+        record: Problem,
+        *,
+        indexed_subject_refs=(),
+    ) -> Problem:
         raise ProblemPersistenceConflictError("forced create conflict for lookup proof")
 
-    def update(self, record: Problem, *, expected_version: int) -> Problem:
+    def update(
+        self,
+        record: Problem,
+        *,
+        expected_version: int,
+        indexed_subject_refs=(),
+    ) -> Problem:
         raise ProblemPersistenceConflictError("unexpected update in lookup proof")
 
     def close(self) -> None:
@@ -259,7 +334,7 @@ def test_harden_2d_create_lookup_integrity_error_without_pending_reason_fails_cl
 
     for lookup_exc in lookup_cases:
         persistence = _CreateConflictLookupIntegrityPersistence(lookup_exc=lookup_exc)
-        lifecycle = ProblemLifecycleEngine(persistence)
+        lifecycle = lifecycle_engine_for_tests(persistence)
         with pytest.raises(
             ProblemLifecycleIntegrityError,
             match="persistence lookup failure",
@@ -288,15 +363,19 @@ def test_harden_2b_lifecycle_update_race_preserves_distinct_occurrences() -> Non
         tenant_id=tenant_id,
         subject_refs=(baseline_subject,),
         reconciliation_key=reconciliation_key,
+        observed_at=_OBSERVED_AT,
     )
     store = InMemoryDocumentStore()
     update_barrier = threading.Barrier(2)
     assert baseline.occurrence_count == 1
     assert baseline.record_version == 1
 
-    seed = document_store_problem_persistence_for_tests(store)
-    seed.create(baseline)
-    seed.close()
+    _seed_baseline_problem(
+        store,
+        baseline=baseline,
+        baseline_subject=baseline_subject,
+        observed_at=_OBSERVED_AT,
+    )
 
     grouping_a = _singleton_grouping_result(
         tenant_id=tenant_id,
@@ -320,7 +399,7 @@ def test_harden_2b_lifecycle_update_race_preserves_distinct_occurrences() -> Non
             update_barrier=update_barrier,
             synchronized_expected_version=baseline.record_version,
         )
-        lifecycle = ProblemLifecycleEngine(persistence)
+        lifecycle = lifecycle_engine_for_tests(persistence, document_store=store)
         try:
             results.append(
                 lifecycle.reconcile(grouping_result, observed_at=observed_at),
@@ -345,13 +424,19 @@ def test_harden_2b_lifecycle_update_race_preserves_distinct_occurrences() -> Non
     assert all(result.unchanged == () for result in results)
 
     verifier = document_store_problem_persistence_for_tests(store)
+    occurrence_verifier = document_store_occurrence_persistence_for_tests(store)
     try:
         final = verifier.get(tenant_id=tenant_id, problem_id=baseline.problem_id)
         assert final is not None
         assert final.record_version == 3
         assert final.occurrence_count == 3
-        assert len(final.occurrences) == 3
-        final_subjects = {occurrence.subject_ref for occurrence in final.occurrences}
+        durable_occurrences = query_all_occurrences_for_problem(
+            occurrence_verifier,
+            tenant_id=tenant_id,
+            problem_id=baseline.problem_id,
+        )
+        assert len(durable_occurrences) == 3
+        final_subjects = {occurrence.subject_ref for occurrence in durable_occurrences}
         assert final_subjects == {baseline_subject, subject_a, subject_b}
         assert verifier.find_by_reconciliation_key(
             tenant_id=tenant_id,
@@ -375,12 +460,13 @@ def test_harden_2b_retry_exhaustion_raises_lifecycle_integrity_error() -> None:
         tenant_id=tenant_id,
         subject_refs=(baseline_subject,),
         reconciliation_key=reconciliation_key,
+        observed_at=_OBSERVED_AT,
     )
 
     persistence = document_store_problem_persistence_for_tests(store)
-    lifecycle = ProblemLifecycleEngine(persistence)
+    lifecycle = lifecycle_engine_for_tests(persistence, document_store=store)
     try:
-        persistence.create(baseline)
+        persistence.create(baseline, indexed_subject_refs=(baseline_subject,))
         grouping = _singleton_grouping_result(
             tenant_id=tenant_id,
             member=new_subject,
@@ -413,12 +499,13 @@ def test_harden_2b_reload_disappears_after_conflict_fails_closed() -> None:
         tenant_id=tenant_id,
         subject_refs=(baseline_subject,),
         reconciliation_key=reconciliation_key,
+        observed_at=_OBSERVED_AT,
     )
 
     delegate = InMemoryProblemPersistence()
     persistence = _ConflictThenVanishPersistence(delegate)
-    lifecycle = ProblemLifecycleEngine(persistence)
-    persistence.create(baseline)
+    lifecycle = lifecycle_engine_for_tests(persistence)
+    persistence.create(baseline, indexed_subject_refs=(baseline_subject,))
     grouping = _singleton_grouping_result(
         tenant_id=tenant_id,
         member=new_subject,
@@ -443,12 +530,19 @@ def test_harden_2b_idempotent_converged_outcome_after_winner_applied_candidate()
         tenant_id=tenant_id,
         subject_refs=(baseline_subject,),
         reconciliation_key=reconciliation_key,
+        observed_at=_OBSERVED_AT,
     )
 
-    persistence = document_store_problem_persistence_for_tests(InMemoryDocumentStore())
-    lifecycle = ProblemLifecycleEngine(persistence)
+    store = InMemoryDocumentStore()
+    _seed_baseline_problem(
+        store,
+        baseline=baseline,
+        baseline_subject=baseline_subject,
+        observed_at=_OBSERVED_AT,
+    )
+    persistence = document_store_problem_persistence_for_tests(store)
+    lifecycle = lifecycle_engine_for_tests(persistence, document_store=store)
     try:
-        persistence.create(baseline)
         grouping = _singleton_grouping_result(
             tenant_id=tenant_id,
             member=subject_a,
@@ -477,13 +571,14 @@ def test_harden_2d_concurrent_identical_resolve_converges_once() -> None:
         tenant_id=tenant_id,
         subject_refs=(baseline_subject,),
         reconciliation_key=reconciliation_key,
+        observed_at=_OBSERVED_AT,
     )
     store = InMemoryDocumentStore()
     resolve_barrier = threading.Barrier(2)
     assert baseline.record_version == 1
 
     seed = document_store_problem_persistence_for_tests(store)
-    seed.create(baseline)
+    seed.create(baseline, indexed_subject_refs=(baseline_subject,))
     seed.close()
 
     resolved_results: list[Problem] = []
@@ -495,7 +590,7 @@ def test_harden_2d_concurrent_identical_resolve_converges_once() -> None:
             resolve_barrier=resolve_barrier,
             synchronized_expected_version=baseline.record_version,
         )
-        lifecycle = ProblemLifecycleEngine(persistence)
+        lifecycle = lifecycle_engine_for_tests(persistence, document_store=store)
         try:
             resolved_results.append(
                 lifecycle.resolve(
@@ -543,12 +638,13 @@ def test_harden_2d_resolve_retry_exhaustion_raises_lifecycle_integrity_error() -
         tenant_id=tenant_id,
         subject_refs=(baseline_subject,),
         reconciliation_key=reconciliation_key,
+        observed_at=_OBSERVED_AT,
     )
 
     persistence = document_store_problem_persistence_for_tests(store)
-    lifecycle = ProblemLifecycleEngine(persistence)
+    lifecycle = lifecycle_engine_for_tests(persistence, document_store=store)
     try:
-        persistence.create(baseline)
+        persistence.create(baseline, indexed_subject_refs=(baseline_subject,))
         with pytest.raises(ProblemLifecycleIntegrityError) as exc_info:
             lifecycle.resolve(
                 tenant_id=tenant_id,
@@ -575,13 +671,14 @@ def test_harden_2d_resolve_race_with_concurrent_occurrence_update_preserves_late
         tenant_id=tenant_id,
         subject_refs=(baseline_subject,),
         reconciliation_key=reconciliation_key,
+        observed_at=_OBSERVED_AT,
     )
     store = InMemoryDocumentStore()
     update_barrier = threading.Barrier(2)
     assert baseline.record_version == 1
 
     seed = document_store_problem_persistence_for_tests(store)
-    seed.create(baseline)
+    seed.create(baseline, indexed_subject_refs=(baseline_subject,))
     seed.close()
 
     grouping = _singleton_grouping_result(
@@ -600,7 +697,7 @@ def test_harden_2d_resolve_race_with_concurrent_occurrence_update_preserves_late
             resolve_barrier=update_barrier,
             synchronized_expected_version=baseline.record_version,
         )
-        lifecycle = ProblemLifecycleEngine(persistence)
+        lifecycle = lifecycle_engine_for_tests(persistence, document_store=store)
         try:
             lifecycle.resolve(
                 tenant_id=tenant_id,
@@ -618,7 +715,7 @@ def test_harden_2d_resolve_race_with_concurrent_occurrence_update_preserves_late
             update_barrier=update_barrier,
             synchronized_expected_version=baseline.record_version,
         )
-        lifecycle = ProblemLifecycleEngine(persistence)
+        lifecycle = lifecycle_engine_for_tests(persistence, document_store=store)
         try:
             reconcile_result.append(
                 lifecycle.reconcile(grouping, observed_at=_OBSERVED_AT_A),
@@ -640,13 +737,19 @@ def test_harden_2d_resolve_race_with_concurrent_occurrence_update_preserves_late
     assert len(reconcile_result) == 1
 
     verifier = document_store_problem_persistence_for_tests(store)
+    occurrence_verifier = document_store_occurrence_persistence_for_tests(store)
     try:
         final = verifier.get(tenant_id=tenant_id, problem_id=baseline.problem_id)
         assert final is not None
         assert final.status is ProblemStatus.RESOLVED
         assert final.record_version == 3
         assert final.occurrence_count == 2
-        assert subject_a in {occurrence.subject_ref for occurrence in final.occurrences}
+        durable_occurrences = query_all_occurrences_for_problem(
+            occurrence_verifier,
+            tenant_id=tenant_id,
+            problem_id=baseline.problem_id,
+        )
+        assert subject_a in {occurrence.subject_ref for occurrence in durable_occurrences}
     finally:
         verifier.close()
 
@@ -730,7 +833,7 @@ def test_harden_2d_create_race_converges_while_winner_canonical_pending() -> Non
             list_cursor_secret=TEST_PROBLEM_LIST_CURSOR_SECRET,
             document_query_cursor_codec=store.query_cursor_codec,
         )
-        lifecycle = ProblemLifecycleEngine(persistence)
+        lifecycle = lifecycle_engine_for_tests(persistence, document_store=store)
         try:
             results.append(
                 lifecycle.reconcile(grouping_result, observed_at=observed_at),
@@ -752,6 +855,7 @@ def test_harden_2d_create_race_converges_while_winner_canonical_pending() -> Non
     assert len(results) == 2
 
     verifier = document_store_problem_persistence_for_tests(store)
+    occurrence_verifier = document_store_occurrence_persistence_for_tests(store)
     try:
         listed = query_all_problems_for_tenant(verifier, tenant_id)
         assert len(listed) == 1
@@ -762,7 +866,12 @@ def test_harden_2d_create_race_converges_while_winner_canonical_pending() -> Non
             tenant_id=tenant_id,
             reconciliation_key=reconciliation_key,
         ) == final
-        final_subjects = {occurrence.subject_ref for occurrence in final.occurrences}
+        durable_occurrences = query_all_occurrences_for_problem(
+            occurrence_verifier,
+            tenant_id=tenant_id,
+            problem_id=final.problem_id,
+        )
+        final_subjects = {occurrence.subject_ref for occurrence in durable_occurrences}
         assert final_subjects == {subject_a, subject_b}
     finally:
         verifier.close()

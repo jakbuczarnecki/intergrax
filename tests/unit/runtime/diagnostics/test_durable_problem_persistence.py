@@ -48,6 +48,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicProblemSignature,
     ProblemGroupingEngine,
     ProblemGroupingStrategyRegistry,
+    problem_grouping_subject_ref_for_execution,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import (
     Problem,
@@ -69,7 +70,13 @@ from intergrax.runtime.observability.document_store_causal_evidence_persistence 
 from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
 from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
     TEST_PROBLEM_LIST_CURSOR_SECRET,
+    create_problem_for_tests,
+    document_store_occurrence_persistence_for_tests,
     document_store_problem_persistence_for_tests,
+    in_memory_document_store_for_problem_tests,
+    lifecycle_engine_for_tests,
+    query_all_occurrences_for_problem,
+    update_problem_for_tests,
 )
 from tests.unit.runtime.diagnostics.test_diagnostic_orchestrator import (
     _OBSERVED_AT,
@@ -182,9 +189,14 @@ def _build_grouping_engine() -> ProblemGroupingEngine:
     )
 
 
-def _orchestration_semantics(persistence: ProblemPersistence) -> dict[str, object]:
+def _orchestration_semantics(
+    persistence: ProblemPersistence,
+    *,
+    document_store: InMemoryDocumentStore | None = None,
+) -> dict[str, object]:
     runtime_store = InMemoryRuntimeEventStore()
     causal_store = DocumentStoreCausalEvidencePersistence(InMemoryDocumentStore())
+    shared_store = document_store or in_memory_document_store_for_problem_tests()
     orchestrator = DiagnosticOrchestrator(
         execution_reconstructor=ExecutionReconstructor(
             runtime_events=runtime_store,
@@ -193,7 +205,10 @@ def _orchestration_semantics(persistence: ProblemPersistence) -> dict[str, objec
         lifecycle_analyzer=LifecycleAnomalyAnalyzer(),
         assessment_builder=DiagnosticAssessmentBuilder(),
         grouping_engine=_build_grouping_engine(),
-        problem_lifecycle_engine=ProblemLifecycleEngine(persistence),
+        problem_lifecycle_engine=lifecycle_engine_for_tests(
+            persistence,
+            document_store=shared_store,
+        ),
     )
     first_task, first_run = _seed_retry_violation_sequence(runtime_store)
     second_task, second_run = _seed_retry_violation_sequence(runtime_store)
@@ -215,8 +230,8 @@ def _orchestration_semantics(persistence: ProblemPersistence) -> dict[str, objec
         "status": updated.status,
         "occurrence_count": updated.occurrence_count,
         "reconciliation_token": updated.provenance.reconciliation_key.index_token(),
-        "subject_ref_count": len(updated.current_subject_refs),
-        "subject_tenant_ids": tuple(ref.tenant_id for ref in updated.current_subject_refs),
+        "subject_ref_count": updated.occurrence_count,
+        "subject_tenant_ids": (_TENANT_A,) * updated.occurrence_count,
         "first_seen_at": updated.first_seen_at,
         "last_seen_at": updated.last_seen_at,
     }
@@ -253,8 +268,6 @@ def test_document_store_restart_survives_new_adapter_instance() -> None:
             first_seen_at=record.first_seen_at,
             last_seen_at=record.last_seen_at + timedelta(hours=1),
             occurrence_count=record.occurrence_count + 1,
-            current_subject_refs=record.current_subject_refs,
-            occurrences=record.occurrences,
             provenance=record.provenance,
             record_version=2,
         )
@@ -361,8 +374,6 @@ def test_document_store_concurrent_cas_same_expected_version() -> None:
         first_seen_at=record.first_seen_at,
         last_seen_at=record.last_seen_at + timedelta(hours=1),
         occurrence_count=record.occurrence_count + 1,
-        current_subject_refs=record.current_subject_refs,
-        occurrences=record.occurrences,
         provenance=record.provenance,
         record_version=2,
     )
@@ -435,7 +446,7 @@ def test_document_store_concurrent_reconciliation_key_collision() -> None:
 def test_document_store_concurrent_subject_collision() -> None:
     store = InMemoryDocumentStore()
     tenant_id = "tenant-subject-race"
-    shared = sample_problem(tenant_id=tenant_id).current_subject_refs[0]
+    shared = _sample_subject_ref(tenant_id=tenant_id)
     first_key = _sample_reconciliation_key(tenant_id=tenant_id)
     second_key = _sample_reconciliation_key(
         tenant_id=tenant_id,
@@ -459,7 +470,7 @@ def test_document_store_concurrent_subject_collision() -> None:
         persistence = document_store_problem_persistence_for_tests(store)
         try:
             barrier.wait(timeout=5)
-            results.append(persistence.create(candidate))
+            results.append(persistence.create(candidate, indexed_subject_refs=(shared,)))
         except BaseException as exc:  # noqa: BLE001
             errors.append(exc)
         finally:
@@ -495,7 +506,7 @@ def test_document_store_concurrent_subject_collision() -> None:
             == winner
         )
 
-        reuse_subject = sample_problem(tenant_id=tenant_id).current_subject_refs[0]
+        reuse_subject = _sample_subject_ref(tenant_id=tenant_id)
         reused = sample_problem(
             tenant_id=tenant_id,
             subject_refs=(reuse_subject,),
@@ -509,8 +520,8 @@ def test_document_store_concurrent_subject_collision() -> None:
 def test_document_store_multi_subject_partial_claim_rolls_back() -> None:
     store = InMemoryDocumentStore()
     tenant_id = "tenant-partial-subject-claim"
-    owned_subject = sample_problem(tenant_id=tenant_id).current_subject_refs[0]
-    free_subject = sample_problem(tenant_id=tenant_id).current_subject_refs[0]
+    owned_subject = _sample_subject_ref(tenant_id=tenant_id)
+    free_subject = _sample_subject_ref(tenant_id=tenant_id)
     key_a = _sample_reconciliation_key(tenant_id=tenant_id)
     key_b = _sample_reconciliation_key(
         tenant_id=tenant_id,
@@ -527,10 +538,10 @@ def test_document_store_multi_subject_partial_claim_rolls_back() -> None:
         reconciliation_key=key_b,
     )
     persistence = document_store_problem_persistence_for_tests(store)
-    persistence.create(problem_a)
+    persistence.create(problem_a, indexed_subject_refs=(owned_subject,))
 
     with pytest.raises(ProblemPersistenceConflictError):
-        persistence.create(problem_b)
+        persistence.create(problem_b, indexed_subject_refs=(free_subject, owned_subject))
 
     assert (
         persistence.find_by_reconciliation_key(
@@ -563,7 +574,7 @@ def test_document_store_update_adds_subject_index_before_canonical_cas() -> None
     subject_b = _sample_subject_ref(tenant_id=tenant_id)
     created = sample_problem(tenant_id=tenant_id, subject_refs=(subject_a,))
     persistence = document_store_problem_persistence_for_tests(store)
-    persistence.create(created)
+    persistence.create(created, indexed_subject_refs=(subject_a,))
     updated = Problem(
         problem_id=created.problem_id,
         tenant_id=created.tenant_id,
@@ -571,12 +582,14 @@ def test_document_store_update_adds_subject_index_before_canonical_cas() -> None
         first_seen_at=created.first_seen_at,
         last_seen_at=_OBSERVED_AT_LATER,
         occurrence_count=created.occurrence_count + 1,
-        current_subject_refs=(subject_a, subject_b),
-        occurrences=created.occurrences,
         provenance=created.provenance,
         record_version=2,
     )
-    assert persistence.update(updated, expected_version=1) == updated
+    assert persistence.update(
+        updated,
+        expected_version=1,
+        indexed_subject_refs=(subject_b,),
+    ) == updated
     assert persistence.find_by_subject_ref(
         tenant_id=tenant_id,
         subject_ref=subject_b,
@@ -589,16 +602,17 @@ def test_document_store_update_subject_collision_leaves_canonical_unchanged() ->
     owned_subject = _sample_subject_ref(tenant_id=tenant_id)
     problem_q = sample_problem(tenant_id=tenant_id, subject_refs=(owned_subject,))
     persistence = document_store_problem_persistence_for_tests(store)
-    persistence.create(problem_q)
+    persistence.create(problem_q, indexed_subject_refs=(owned_subject,))
+    problem_p_subject = _sample_subject_ref(tenant_id=tenant_id)
     problem_p = sample_problem(
         tenant_id=tenant_id,
-        subject_refs=(_sample_subject_ref(tenant_id=tenant_id),),
+        subject_refs=(problem_p_subject,),
         reconciliation_key=_sample_reconciliation_key(
             tenant_id=tenant_id,
             signature=DeterministicProblemSignature(findings=(), limitations=()),
         ),
     )
-    persistence.create(problem_p)
+    persistence.create(problem_p, indexed_subject_refs=(problem_p_subject,))
     collision_update = Problem(
         problem_id=problem_p.problem_id,
         tenant_id=problem_p.tenant_id,
@@ -606,13 +620,15 @@ def test_document_store_update_subject_collision_leaves_canonical_unchanged() ->
         first_seen_at=problem_p.first_seen_at,
         last_seen_at=_OBSERVED_AT_LATER,
         occurrence_count=problem_p.occurrence_count + 1,
-        current_subject_refs=problem_p.current_subject_refs + (owned_subject,),
-        occurrences=problem_p.occurrences,
         provenance=problem_p.provenance,
         record_version=2,
     )
     with pytest.raises(ProblemPersistenceConflictError):
-        persistence.update(collision_update, expected_version=1)
+        persistence.update(
+            collision_update,
+            expected_version=1,
+            indexed_subject_refs=(owned_subject,),
+        )
     assert persistence.get(tenant_id=tenant_id, problem_id=problem_p.problem_id) == problem_p
     assert (
         persistence.find_by_subject_ref(
@@ -631,7 +647,7 @@ def test_document_store_update_multi_subject_partial_claim_rolls_back() -> None:
     only_a = _sample_subject_ref(tenant_id=tenant_id)
     problem_q = sample_problem(tenant_id=tenant_id, subject_refs=(owned_subject,))
     persistence = document_store_problem_persistence_for_tests(store)
-    persistence.create(problem_q)
+    persistence.create(problem_q, indexed_subject_refs=(owned_subject,))
     problem_p = sample_problem(
         tenant_id=tenant_id,
         subject_refs=(only_a,),
@@ -640,7 +656,7 @@ def test_document_store_update_multi_subject_partial_claim_rolls_back() -> None:
             signature=DeterministicProblemSignature(findings=(), limitations=()),
         ),
     )
-    persistence.create(problem_p)
+    persistence.create(problem_p, indexed_subject_refs=(only_a,))
     partial_update = Problem(
         problem_id=problem_p.problem_id,
         tenant_id=problem_p.tenant_id,
@@ -648,13 +664,15 @@ def test_document_store_update_multi_subject_partial_claim_rolls_back() -> None:
         first_seen_at=problem_p.first_seen_at,
         last_seen_at=_OBSERVED_AT_LATER,
         occurrence_count=problem_p.occurrence_count + 2,
-        current_subject_refs=(only_a, free_subject, owned_subject),
-        occurrences=problem_p.occurrences,
         provenance=problem_p.provenance,
         record_version=2,
     )
     with pytest.raises(ProblemPersistenceConflictError):
-        persistence.update(partial_update, expected_version=1)
+        persistence.update(
+            partial_update,
+            expected_version=1,
+            indexed_subject_refs=(free_subject, owned_subject),
+        )
     assert (
         persistence.find_by_subject_ref(
             tenant_id=tenant_id,
@@ -679,7 +697,7 @@ def test_document_store_update_concurrent_cas_after_new_subject_claim() -> None:
     subject_b = _sample_subject_ref(tenant_id=tenant_id)
     created = sample_problem(tenant_id=tenant_id, subject_refs=(subject_a,))
     persistence = document_store_problem_persistence_for_tests(store)
-    persistence.create(created)
+    persistence.create(created, indexed_subject_refs=(subject_a,))
     with_subject_b = Problem(
         problem_id=created.problem_id,
         tenant_id=created.tenant_id,
@@ -687,8 +705,6 @@ def test_document_store_update_concurrent_cas_after_new_subject_claim() -> None:
         first_seen_at=created.first_seen_at,
         last_seen_at=_OBSERVED_AT_LATER,
         occurrence_count=created.occurrence_count + 1,
-        current_subject_refs=(subject_a, subject_b),
-        occurrences=created.occurrences,
         provenance=created.provenance,
         record_version=2,
     )
@@ -699,8 +715,6 @@ def test_document_store_update_concurrent_cas_after_new_subject_claim() -> None:
         first_seen_at=created.first_seen_at,
         last_seen_at=_OBSERVED_AT_LATER,
         occurrence_count=created.occurrence_count + 1,
-        current_subject_refs=(subject_a,),
-        occurrences=created.occurrences,
         provenance=created.provenance,
         record_version=2,
     )
@@ -708,11 +722,17 @@ def test_document_store_update_concurrent_cas_after_new_subject_claim() -> None:
     results: list[Problem] = []
     errors: list[BaseException] = []
 
-    def _update(candidate: Problem) -> None:
+    def _update(candidate: Problem, *, indexed_subject_refs=()) -> None:
         worker = document_store_problem_persistence_for_tests(store)
         try:
             barrier.wait(timeout=5)
-            results.append(worker.update(candidate, expected_version=1))
+            results.append(
+                worker.update(
+                    candidate,
+                    expected_version=1,
+                    indexed_subject_refs=indexed_subject_refs,
+                ),
+            )
         except BaseException as exc:  # noqa: BLE001
             errors.append(exc)
         finally:
@@ -720,7 +740,7 @@ def test_document_store_update_concurrent_cas_after_new_subject_claim() -> None:
 
     with ThreadPoolExecutor(max_workers=2) as executor:
         futures = [
-            executor.submit(_update, with_subject_b),
+            executor.submit(_update, with_subject_b, indexed_subject_refs=(subject_b,)),
             executor.submit(_update, without_subject_b),
         ]
         for future in futures:
@@ -733,7 +753,7 @@ def test_document_store_update_concurrent_cas_after_new_subject_claim() -> None:
     verifier = document_store_problem_persistence_for_tests(store)
     try:
         assert verifier.get(tenant_id=tenant_id, problem_id=created.problem_id) == winner
-        if subject_b in winner.current_subject_refs:
+        if winner is with_subject_b:
             assert (
                 verifier.find_by_subject_ref(
                     tenant_id=tenant_id,
@@ -760,7 +780,7 @@ def test_document_store_update_uncertain_cas_with_durable_replacement_succeeds()
     subject_b = _sample_subject_ref(tenant_id=tenant_id)
     created = sample_problem(tenant_id=tenant_id, subject_refs=(subject_a,))
     persistence = document_store_problem_persistence_for_tests(store)
-    persistence.create(created)
+    persistence.create(created, indexed_subject_refs=(subject_a,))
     updated = Problem(
         problem_id=created.problem_id,
         tenant_id=created.tenant_id,
@@ -768,12 +788,14 @@ def test_document_store_update_uncertain_cas_with_durable_replacement_succeeds()
         first_seen_at=created.first_seen_at,
         last_seen_at=_OBSERVED_AT_LATER,
         occurrence_count=created.occurrence_count + 1,
-        current_subject_refs=(subject_a, subject_b),
-        occurrences=created.occurrences,
         provenance=created.provenance,
         record_version=2,
     )
-    assert persistence.update(updated, expected_version=1) == updated
+    assert persistence.update(
+        updated,
+        expected_version=1,
+        indexed_subject_refs=(subject_b,),
+    ) == updated
     assert persistence.find_by_subject_ref(
         tenant_id=tenant_id,
         subject_ref=subject_b,
@@ -787,7 +809,7 @@ def test_document_store_update_uncertain_cas_without_write_rolls_back_claims() -
     subject_b = _sample_subject_ref(tenant_id=tenant_id)
     created = sample_problem(tenant_id=tenant_id, subject_refs=(subject_a,))
     persistence = document_store_problem_persistence_for_tests(store)
-    persistence.create(created)
+    persistence.create(created, indexed_subject_refs=(subject_a,))
     updated = Problem(
         problem_id=created.problem_id,
         tenant_id=created.tenant_id,
@@ -795,13 +817,15 @@ def test_document_store_update_uncertain_cas_without_write_rolls_back_claims() -
         first_seen_at=created.first_seen_at,
         last_seen_at=_OBSERVED_AT_LATER,
         occurrence_count=created.occurrence_count + 1,
-        current_subject_refs=(subject_a, subject_b),
-        occurrences=created.occurrences,
         provenance=created.provenance,
         record_version=2,
     )
     with pytest.raises(RuntimeError, match="simulated uncertain diagnostic problem CAS"):
-        persistence.update(updated, expected_version=1)
+        persistence.update(
+            updated,
+            expected_version=1,
+            indexed_subject_refs=(subject_b,),
+        )
     assert persistence.get(tenant_id=tenant_id, problem_id=created.problem_id) == created
     assert (
         persistence.find_by_subject_ref(
@@ -810,7 +834,11 @@ def test_document_store_update_uncertain_cas_without_write_rolls_back_claims() -
         )
         is None
     )
-    assert persistence.update(updated, expected_version=1) == updated
+    assert persistence.update(
+        updated,
+        expected_version=1,
+        indexed_subject_refs=(subject_b,),
+    ) == updated
 
 
 def test_document_store_update_rolls_back_claims_after_pre_cas_failure() -> None:
@@ -820,7 +848,7 @@ def test_document_store_update_rolls_back_claims_after_pre_cas_failure() -> None
     subject_b = _sample_subject_ref(tenant_id=tenant_id)
     created = sample_problem(tenant_id=tenant_id, subject_refs=(subject_a,))
     persistence = document_store_problem_persistence_for_tests(store)
-    persistence.create(created)
+    persistence.create(created, indexed_subject_refs=(subject_a,))
     updated = Problem(
         problem_id=created.problem_id,
         tenant_id=created.tenant_id,
@@ -828,16 +856,22 @@ def test_document_store_update_rolls_back_claims_after_pre_cas_failure() -> None
         first_seen_at=created.first_seen_at,
         last_seen_at=_OBSERVED_AT_LATER,
         occurrence_count=created.occurrence_count + 1,
-        current_subject_refs=(subject_a, subject_b),
-        occurrences=created.occurrences,
         provenance=created.provenance,
         record_version=2,
     )
     with pytest.raises(RuntimeError, match="simulated uncertain diagnostic problem CAS"):
-        persistence.update(updated, expected_version=1)
+        persistence.update(
+            updated,
+            expected_version=1,
+            indexed_subject_refs=(subject_b,),
+        )
     assert persistence.get(tenant_id=tenant_id, problem_id=created.problem_id) == created
     retry_store = document_store_problem_persistence_for_tests(store)
-    assert retry_store.update(updated, expected_version=1) == updated
+    assert retry_store.update(
+        updated,
+        expected_version=1,
+        indexed_subject_refs=(subject_b,),
+    ) == updated
 
 
 def test_document_store_resolve_update_does_not_claim_new_subject_indexes() -> None:
@@ -845,7 +879,9 @@ def test_document_store_resolve_update_does_not_claim_new_subject_indexes() -> N
     tenant_id = "tenant-resolve-no-claims"
     created = sample_problem(tenant_id=tenant_id)
     persistence = document_store_problem_persistence_for_tests(store)
-    persistence.create(created)
+    from intergrax.runtime.diagnostics.persistence_conformance import sample_subject_refs
+
+    persistence.create(created, indexed_subject_refs=sample_subject_refs(created))
     store.put_if_absent_calls = 0
     resolved = Problem(
         problem_id=created.problem_id,
@@ -854,8 +890,6 @@ def test_document_store_resolve_update_does_not_claim_new_subject_indexes() -> N
         first_seen_at=created.first_seen_at,
         last_seen_at=created.last_seen_at,
         occurrence_count=created.occurrence_count,
-        current_subject_refs=created.current_subject_refs,
-        occurrences=created.occurrences,
         provenance=created.provenance,
         record_version=2,
     )
@@ -870,7 +904,7 @@ def test_document_store_restart_after_subject_adding_update_resolves_lookup() ->
     subject_b = _sample_subject_ref(tenant_id=tenant_id)
     created = sample_problem(tenant_id=tenant_id, subject_refs=(subject_a,))
     first = document_store_problem_persistence_for_tests(store)
-    first.create(created)
+    first.create(created, indexed_subject_refs=(subject_a,))
     updated = Problem(
         problem_id=created.problem_id,
         tenant_id=created.tenant_id,
@@ -878,12 +912,10 @@ def test_document_store_restart_after_subject_adding_update_resolves_lookup() ->
         first_seen_at=created.first_seen_at,
         last_seen_at=_OBSERVED_AT_LATER,
         occurrence_count=created.occurrence_count + 1,
-        current_subject_refs=(subject_a, subject_b),
-        occurrences=created.occurrences,
         provenance=created.provenance,
         record_version=2,
     )
-    first.update(updated, expected_version=1)
+    first.update(updated, expected_version=1, indexed_subject_refs=(subject_b,))
     first.close()
 
     second = document_store_problem_persistence_for_tests(store)
@@ -922,7 +954,7 @@ def test_document_store_create_rolls_back_after_canonical_write_failure() -> Non
         )
         is None
     )
-    for subject_ref in record.current_subject_refs:
+    for subject_ref in (_sample_subject_ref(tenant_id=record.tenant_id),):
         assert (
             persistence.find_by_subject_ref(
                 tenant_id=record.tenant_id,
@@ -951,17 +983,17 @@ def test_document_store_create_retries_after_reconciliation_index_write_failure(
 
 
 def test_document_store_create_retries_after_subject_index_write_failure() -> None:
-    record = sample_problem(tenant_id="tenant-partial-subject")
+    subject_ref = _sample_subject_ref(tenant_id="tenant-partial-subject")
+    record = sample_problem(tenant_id="tenant-partial-subject", subject_refs=(subject_ref,))
     partition_key = f"intergrax.diagnostic_problem.v1:{record.tenant_id}"
-    subject_ref = record.current_subject_refs[0]
     subject_key = (partition_key, f"subject:{subject_ref.index_token}")
     store = _FailingPutIfAbsentDocumentStore(fail_keys=frozenset({subject_key}))
     persistence = document_store_problem_persistence_for_tests(store)
 
     with pytest.raises(RuntimeError, match="simulated diagnostic problem index write failure"):
-        persistence.create(record)
+        persistence.create(record, indexed_subject_refs=(subject_ref,))
 
-    assert persistence.create(record) == record
+    assert persistence.create(record, indexed_subject_refs=(subject_ref,)) == record
     assert persistence.find_by_subject_ref(
         tenant_id=record.tenant_id,
         subject_ref=subject_ref,
@@ -1017,7 +1049,7 @@ def test_document_store_orphan_reconciliation_index_fails_closed() -> None:
 def test_document_store_orphan_subject_index_fails_closed() -> None:
     store = InMemoryDocumentStore()
     record = sample_problem(tenant_id="tenant-orphan-subject")
-    subject_ref = record.current_subject_refs[0]
+    subject_ref = _sample_subject_ref(tenant_id=record.tenant_id)
     partition_key = f"intergrax.diagnostic_problem.v1:{record.tenant_id}"
     store.put(
         DocumentRecord(
@@ -1085,7 +1117,7 @@ def test_orchestrator_durable_problem_persistence_survives_adapter_restart() -> 
         lifecycle_analyzer=LifecycleAnomalyAnalyzer(),
         assessment_builder=DiagnosticAssessmentBuilder(),
         grouping_engine=_build_grouping_engine(),
-        problem_lifecycle_engine=ProblemLifecycleEngine(persistence),
+        problem_lifecycle_engine=lifecycle_engine_for_tests(persistence, document_store=store),
     )
 
     first_task, first_run = _seed_retry_violation_sequence(runtime_store)
@@ -1103,7 +1135,7 @@ def test_orchestrator_durable_problem_persistence_survives_adapter_restart() -> 
         lifecycle_analyzer=LifecycleAnomalyAnalyzer(),
         assessment_builder=DiagnosticAssessmentBuilder(),
         grouping_engine=_build_grouping_engine(),
-        problem_lifecycle_engine=ProblemLifecycleEngine(persistence),
+        problem_lifecycle_engine=lifecycle_engine_for_tests(persistence, document_store=store),
     )
 
     third_task, third_run = _seed_retry_violation_sequence(runtime_store)
@@ -1118,7 +1150,11 @@ def test_orchestrator_durable_problem_persistence_survives_adapter_restart() -> 
     updated = second.lifecycle_result.updated[0]
     assert updated.problem_id == problem_id
     assert updated.occurrence_count == 3
-    third_subject = updated.current_subject_refs[2]
+    third_subject = problem_grouping_subject_ref_for_execution(
+        tenant_id=_TENANT_A,
+        task_id=third_task,
+        run_id=third_run,
+    )
     assert persistence.find_by_subject_ref(
         tenant_id=_TENANT_A,
         subject_ref=third_subject,
@@ -1134,8 +1170,10 @@ def test_orchestrator_durable_problem_persistence_survives_adapter_restart() -> 
 
 def test_orchestrator_semantics_equivalent_across_problem_persistence_backends() -> None:
     memory_semantics = _orchestration_semantics(InMemoryProblemPersistence())
+    shared_store = InMemoryDocumentStore()
     document_semantics = _orchestration_semantics(
-        document_store_problem_persistence_for_tests(InMemoryDocumentStore()),
+        document_store_problem_persistence_for_tests(shared_store),
+        document_store=shared_store,
     )
     assert memory_semantics == document_semantics
 

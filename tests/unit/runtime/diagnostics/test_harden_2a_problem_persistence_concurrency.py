@@ -58,29 +58,19 @@ def _append_occurrence(
     *,
     subject_ref,
     observed_at: datetime,
-) -> Problem:
-    new_occurrence = ProblemOccurrence(
-        subject_ref=subject_ref,
-        observed_at=observed_at,
-        strategy_id=STRATEGY_ID,
-        strategy_version=STRATEGY_VERSION,
-        method=ProblemGroupingMethod.DETERMINISTIC,
-    )
-    merged_occurrences = base.occurrences + (new_occurrence,)
-    merged_subject_refs = base.current_subject_refs
-    if subject_ref not in merged_subject_refs:
-        merged_subject_refs = base.current_subject_refs + (subject_ref,)
-    return Problem(
-        problem_id=base.problem_id,
-        tenant_id=base.tenant_id,
-        status=ProblemStatus.OPEN,
-        first_seen_at=min(base.first_seen_at, observed_at),
-        last_seen_at=max(base.last_seen_at, observed_at),
-        occurrence_count=base.occurrence_count + 1,
-        current_subject_refs=merged_subject_refs,
-        occurrences=merged_occurrences,
-        provenance=base.provenance,
-        record_version=base.record_version + 1,
+) -> tuple[Problem, tuple]:
+    return (
+        Problem(
+            problem_id=base.problem_id,
+            tenant_id=base.tenant_id,
+            status=ProblemStatus.OPEN,
+            first_seen_at=min(base.first_seen_at, observed_at),
+            last_seen_at=max(base.last_seen_at, observed_at),
+            occurrence_count=base.occurrence_count + 1,
+            provenance=base.provenance,
+            record_version=base.record_version + 1,
+        ),
+        (subject_ref,),
     )
 
 
@@ -159,15 +149,15 @@ def test_harden_2a_update_race_distinct_occurrences_cas_conflict_not_silent_succ
     assert baseline.record_version == 1
 
     seed = document_store_problem_persistence_for_tests(store)
-    seed.create(baseline)
+    seed.create(baseline, indexed_subject_refs=(baseline_subject,))
     seed.close()
 
-    update_a = _append_occurrence(
+    update_a, indexed_a = _append_occurrence(
         baseline,
         subject_ref=subject_a,
         observed_at=_OBSERVED_AT_A,
     )
-    update_b = _append_occurrence(
+    update_b, indexed_b = _append_occurrence(
         baseline,
         subject_ref=subject_b,
         observed_at=_OBSERVED_AT_B,
@@ -177,18 +167,27 @@ def test_harden_2a_update_race_distinct_occurrences_cas_conflict_not_silent_succ
     results: list[Problem] = []
     errors: list[BaseException] = []
 
-    def _update(candidate: Problem) -> None:
+    def _update(candidate: Problem, indexed_subject_refs: tuple) -> None:
         persistence = document_store_problem_persistence_for_tests(store)
         try:
             entry_barrier.wait(timeout=5)
-            results.append(persistence.update(candidate, expected_version=1))
+            results.append(
+                persistence.update(
+                    candidate,
+                    expected_version=1,
+                    indexed_subject_refs=indexed_subject_refs,
+                ),
+            )
         except BaseException as exc:  # noqa: BLE001
             errors.append(exc)
         finally:
             persistence.close()
 
     with ThreadPoolExecutor(max_workers=2) as executor:
-        futures = [executor.submit(_update, update_a), executor.submit(_update, update_b)]
+        futures = [
+            executor.submit(_update, update_a, indexed_a),
+            executor.submit(_update, update_b, indexed_b),
+        ]
         for future in futures:
             future.result(timeout=10)
 
@@ -202,12 +201,15 @@ def test_harden_2a_update_race_distinct_occurrences_cas_conflict_not_silent_succ
         assert final is not None
         assert final.record_version == 2
         assert final.occurrence_count == 2
-        assert len(final.occurrences) == 2
         winner = results[0]
         assert final == winner
         loser_subject = subject_b if winner == update_a else subject_a
-        assert all(
-            occurrence.subject_ref != loser_subject for occurrence in final.occurrences
+        assert (
+            verifier.find_by_subject_ref(
+                tenant_id=tenant_id,
+                subject_ref=loser_subject,
+            )
+            is None
         )
         assert verifier.find_by_reconciliation_key(
             tenant_id=tenant_id,
