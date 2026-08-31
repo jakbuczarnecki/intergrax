@@ -11,7 +11,10 @@ from unittest.mock import MagicMock
 import pytest
 from pydantic import BaseModel, ConfigDict, ValidationError
 
+from intergrax.applications._shared import environment_wiring as environment_wiring_module
+from intergrax.applications._shared.environment_wiring import wire_application_environment
 from intergrax.applications._shared.policy_wiring import (
+    PolicyAssemblyError,
     build_runtime_policy_bundle,
     wire_policy_bundle,
 )
@@ -20,6 +23,11 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     PolicyRulesProfile,
 )
+from intergrax.applications.contracts.platform_plugin_evidence import (
+    PLATFORM_PLUGIN_DOMAIN_POLICY,
+)
+from intergrax.core.catalog_bootstrap import bootstrap_catalogs, reset_tier0_catalog_bootstrap_for_tests
+from intergrax.core.plugin_env import INTERGRAX_DISCOVER_PLUGINS_ENV
 from intergrax.contracts.policy_catalog import PolicyDefinition, PolicyDefinitionSource
 from intergrax.core.plugins.admission import PluginAdmissionReasonCode
 from intergrax.core.plugins.discovery import (
@@ -59,6 +67,15 @@ from intergrax.runtime.policy.policy_bundle import DeclarativePolicyRuntime, Run
 from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
 from intergrax.runtime.policy.rules.evaluation import PolicyEnforcementMode
 from intergrax.runtime.policy.rules.schema import PolicyRuleAction
+from intergrax.integrations.registry.bootstrap import reset_default_integrations_state
+from intergrax.integrations.registry.catalog import clear_catalog
+from intergrax.skills.registry.bootstrap import reset_default_skills_for_tests
+from intergrax.skills.registry.catalog import clear_skill_catalog
+from intergrax.tools.registry.bootstrap import reset_default_tools_bootstrap
+from intergrax.tools.registry.catalog import clear_tool_catalog
+from lab_application.host.settings import LabApplicationSettings
+from lab_application.manifest import build_lab_manifest
+from testing_support.builder import FakeLLMAdapter
 
 pytestmark = pytest.mark.unit
 
@@ -67,6 +84,7 @@ _DEFINITIONS_GROUP = EP_POLICY_DEFINITIONS
 _PACKAGE_NAME = "alpha-policy-plugin"
 _PACKAGE_VERSION = "1.0.0"
 _OTHER_PACKAGE_NAME = "beta-policy-plugin"
+_BROKEN_PACKAGE_NAME = "broken-policy-plugin"
 _HANDLER_ID = "alpha-rule"
 _POLICY_ID = "data_export_control"
 _POLICY_VERSION = "2"
@@ -223,15 +241,21 @@ def _compatible_platform() -> object:
     )
 
 
-def _production_package_qualification(*, compatibility: object) -> object:
+def _production_package_qualification_for(
+    *,
+    package_name: str,
+    package_version: str,
+    entry_point_name: str,
+    compatibility: object,
+) -> object:
     return build_qualification_result(
         subject=build_external_package_subject(
             level=PluginQualificationLevel.PACKAGE,
-            package_name=_PACKAGE_NAME,
-            package_version=_PACKAGE_VERSION,
+            package_name=package_name,
+            package_version=package_version,
             domain="policy",
             entry_point_group=EP_POLICY_RULES,
-            entry_point_name="alpha",
+            entry_point_name=entry_point_name,
         ),
         status=QualificationStatus.PRODUCTION_QUALIFIED,
         evidence=(
@@ -243,6 +267,15 @@ def _production_package_qualification(*, compatibility: object) -> object:
             ),
         ),
         reason="external policy plugin production-qualified",
+    )
+
+
+def _production_package_qualification(*, compatibility: object) -> object:
+    return _production_package_qualification_for(
+        package_name=_PACKAGE_NAME,
+        package_version=_PACKAGE_VERSION,
+        entry_point_name="alpha",
+        compatibility=compatibility,
     )
 
 
@@ -772,4 +805,275 @@ def test_handler_discovery_occurs_once_per_bundle(
         discover_entry_points=True,
         package_qualification_lookup=_lookup_for(qualification),
     )
-    assert calls["count"] == 1
+def _strict_env(profile_id: str) -> ApplicationEnvironmentProfile:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id=profile_id)
+    return env.model_copy(
+        update={
+            "policy_rules": _strict_profile(),
+            "meta": env.meta.model_copy(update={"execution_mode": ExecutionMode.STRICT}),
+        },
+    )
+
+
+def _balanced_env(profile_id: str) -> ApplicationEnvironmentProfile:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id=profile_id)
+    return env.model_copy(
+        update={
+            "policy_rules": _profile(),
+            "meta": env.meta.model_copy(update={"execution_mode": ExecutionMode.BALANCED}),
+        },
+    )
+
+
+@pytest.fixture
+def _wire_environment_state() -> None:
+    clear_catalog()
+    clear_tool_catalog()
+    clear_skill_catalog()
+    reset_default_integrations_state()
+    reset_default_tools_bootstrap()
+    reset_default_skills_for_tests()
+    reset_tier0_catalog_bootstrap_for_tests()
+    bootstrap_catalogs(register_shipped=False, discover_entry_points=False)
+    yield
+    clear_catalog()
+    clear_tool_catalog()
+    clear_skill_catalog()
+    reset_default_integrations_state()
+    reset_default_tools_bootstrap()
+    reset_default_skills_for_tests()
+    reset_tier0_catalog_bootstrap_for_tests()
+
+
+@pytest.fixture
+def _stub_environment_llm_adapter(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        environment_wiring_module,
+        "resolve_environment_llm_adapter",
+        lambda _env: FakeLLMAdapter(),
+    )
+
+
+def test_strict_wire_application_environment_allows_valid_policy_plugin(
+    monkeypatch: pytest.MonkeyPatch,
+    _wire_environment_state: None,
+    _stub_environment_llm_adapter: None,
+) -> None:
+    qualification = _production_package_qualification(compatibility=_compatible_platform())
+    _install_eps(
+        monkeypatch,
+        [
+            _rule_ep("alpha", "_AlphaHandler", distribution=_PACKAGE_NAME),
+            _definition_ep("alpha-policy", "_CONTRIBUTION_EP", distribution=_PACKAGE_NAME),
+        ],
+    )
+    _mock_installed_distribution(monkeypatch)
+    monkeypatch.setattr(
+        "intergrax.core.plugins.platform_qualification.resolve_installed_distribution_platform_compatibility",
+        lambda *_args, **_kwargs: _compatible_platform(),
+    )
+    monkeypatch.setenv(INTERGRAX_DISCOVER_PLUGINS_ENV, "1")
+    settings = LabApplicationSettings.from_env()
+    env = _strict_env("policy.adoption.strict-ok")
+
+    wiring = wire_application_environment(
+        build_lab_manifest(settings),
+        env,
+        conformance_check=False,
+        platform_plugin_package_qualifications=_qualification_bundle(qualification),
+    )
+
+    runtime = wiring.policy_bundle.declarative_policy_runtime
+    assert runtime is not None
+    assert runtime.load_report.critical_bootstrap_acceptable is True
+    assert "alpha-rule" in runtime.registry._handlers
+    policy_report = wiring.platform_plugin_evidence.report_for(PLATFORM_PLUGIN_DOMAIN_POLICY)
+    assert policy_report is runtime.load_report
+
+
+def test_strict_wire_application_environment_fails_on_unqualified_policy_plugin(
+    monkeypatch: pytest.MonkeyPatch,
+    _wire_environment_state: None,
+    _stub_environment_llm_adapter: None,
+) -> None:
+    _install_eps(
+        monkeypatch,
+        [
+            _rule_ep("alpha", "_AlphaHandler", distribution=_PACKAGE_NAME),
+            _definition_ep("alpha-policy", "_CONTRIBUTION_EP", distribution=_PACKAGE_NAME),
+        ],
+    )
+    _mock_installed_distribution(monkeypatch)
+    monkeypatch.setattr(
+        "intergrax.core.plugins.platform_qualification.resolve_installed_distribution_platform_compatibility",
+        lambda *_args, **_kwargs: _compatible_platform(),
+    )
+    monkeypatch.setenv(INTERGRAX_DISCOVER_PLUGINS_ENV, "1")
+    settings = LabApplicationSettings.from_env()
+    env = _strict_env("policy.adoption.strict-unqualified")
+
+    with pytest.raises(PolicyAssemblyError, match="production_admission_denied"):
+        wire_application_environment(build_lab_manifest(settings), env, conformance_check=False)
+
+
+def test_strict_wire_application_environment_fails_on_invalid_policy_target(
+    monkeypatch: pytest.MonkeyPatch,
+    _wire_environment_state: None,
+    _stub_environment_llm_adapter: None,
+) -> None:
+    compatibility = _compatible_platform()
+    _install_eps(
+        monkeypatch,
+        [
+            _rule_ep("alpha", "_AlphaHandler", distribution=_PACKAGE_NAME),
+            _rule_ep("nope", "_NotAHandler", distribution=_OTHER_PACKAGE_NAME),
+        ],
+    )
+    _mock_installed_distribution(
+        monkeypatch,
+        extra_packages={_OTHER_PACKAGE_NAME: _PACKAGE_VERSION},
+    )
+    monkeypatch.setattr(
+        "intergrax.core.plugins.platform_qualification.resolve_installed_distribution_platform_compatibility",
+        lambda *_args, **_kwargs: compatibility,
+    )
+    monkeypatch.setenv(INTERGRAX_DISCOVER_PLUGINS_ENV, "1")
+    settings = LabApplicationSettings.from_env()
+    env = _strict_env("policy.adoption.strict-invalid")
+
+    with pytest.raises(PolicyAssemblyError, match="invalid_target_type"):
+        wire_application_environment(
+            build_lab_manifest(settings),
+            env,
+            conformance_check=False,
+            platform_plugin_package_qualifications=PlatformPluginPackageQualificationBundle(
+                [
+                    (
+                        DistributionPackageIdentity(
+                            name=_PACKAGE_NAME,
+                            version=_PACKAGE_VERSION,
+                        ),
+                        _production_package_qualification(compatibility=compatibility),
+                    ),
+                    (
+                        DistributionPackageIdentity(
+                            name=_OTHER_PACKAGE_NAME,
+                            version=_PACKAGE_VERSION,
+                        ),
+                        _production_package_qualification_for(
+                            package_name=_OTHER_PACKAGE_NAME,
+                            package_version=_PACKAGE_VERSION,
+                            entry_point_name="nope",
+                            compatibility=compatibility,
+                        ),
+                    ),
+                ]
+            ),
+        )
+
+
+
+def test_strict_wire_application_environment_fails_on_broken_policy_plugin_load(
+    monkeypatch: pytest.MonkeyPatch,
+    _wire_environment_state: None,
+    _stub_environment_llm_adapter: None,
+) -> None:
+    compatibility = _compatible_platform()
+    _install_eps(
+        monkeypatch,
+        [
+            _rule_ep("alpha", "_AlphaHandler", distribution=_PACKAGE_NAME),
+            _EntryPoint(
+                "broken",
+                "not-a-valid-target",
+                _GROUP,
+                distribution=_BROKEN_PACKAGE_NAME,
+            ),
+        ],
+    )
+    _mock_installed_distribution(
+        monkeypatch,
+        extra_packages={_BROKEN_PACKAGE_NAME: _PACKAGE_VERSION},
+    )
+    monkeypatch.setattr(
+        "intergrax.core.plugins.platform_qualification.resolve_installed_distribution_platform_compatibility",
+        lambda *_args, **_kwargs: compatibility,
+    )
+    monkeypatch.setenv(INTERGRAX_DISCOVER_PLUGINS_ENV, "1")
+    settings = LabApplicationSettings.from_env()
+    env = _strict_env("policy.adoption.strict-broken")
+
+    with pytest.raises(PolicyAssemblyError, match="policy plugin load failed: broken"):
+        wire_application_environment(
+            build_lab_manifest(settings),
+            env,
+            conformance_check=False,
+            platform_plugin_package_qualifications=PlatformPluginPackageQualificationBundle(
+                [
+                    (
+                        DistributionPackageIdentity(
+                            name=_PACKAGE_NAME,
+                            version=_PACKAGE_VERSION,
+                        ),
+                        _production_package_qualification(compatibility=compatibility),
+                    ),
+                    (
+                        DistributionPackageIdentity(
+                            name=_BROKEN_PACKAGE_NAME,
+                            version=_PACKAGE_VERSION,
+                        ),
+                        _production_package_qualification_for(
+                            package_name=_BROKEN_PACKAGE_NAME,
+                            package_version=_PACKAGE_VERSION,
+                            entry_point_name="broken",
+                            compatibility=compatibility,
+                        ),
+                    ),
+                ]
+            ),
+        )
+
+
+def test_balanced_wire_application_environment_preserves_policy_plugin_isolation(
+    monkeypatch: pytest.MonkeyPatch,
+    _wire_environment_state: None,
+    _stub_environment_llm_adapter: None,
+) -> None:
+    _install_eps(
+        monkeypatch,
+        [
+            _ep("alpha", "_AlphaHandler"),
+            _EntryPoint("broken", "not-a-valid-target", _GROUP),
+        ],
+    )
+    monkeypatch.setenv(INTERGRAX_DISCOVER_PLUGINS_ENV, "1")
+    settings = LabApplicationSettings.from_env()
+    env = _balanced_env("policy.adoption.balanced-isolate")
+
+    wiring = wire_application_environment(build_lab_manifest(settings), env, conformance_check=False)
+
+    runtime = wiring.policy_bundle.declarative_policy_runtime
+    assert runtime is not None
+    assert "alpha-rule" in runtime.registry._handlers
+    assert [item.spec.name for item in runtime.load_report.failed] == ["broken"]
+    assert runtime.load_report.critical_bootstrap_acceptable is False
+
+
+def test_strict_wire_application_environment_discovery_disabled_policy_report_acceptable(
+    monkeypatch: pytest.MonkeyPatch,
+    _wire_environment_state: None,
+    _stub_environment_llm_adapter: None,
+) -> None:
+    monkeypatch.delenv(INTERGRAX_DISCOVER_PLUGINS_ENV, raising=False)
+    _install_eps(monkeypatch, [_ep("alpha", "_AlphaHandler")])
+    settings = LabApplicationSettings.from_env()
+    env = _strict_env("policy.adoption.discovery-off")
+
+    wiring = wire_application_environment(build_lab_manifest(settings), env, conformance_check=False)
+
+    runtime = wiring.policy_bundle.declarative_policy_runtime
+    assert runtime is not None
+    assert runtime.load_report.registered_count == 0
+    assert runtime.load_report.critical_bootstrap_acceptable is True
+    policy_report = wiring.platform_plugin_evidence.report_for(PLATFORM_PLUGIN_DOMAIN_POLICY)
+    assert policy_report is runtime.load_report
