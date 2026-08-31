@@ -541,6 +541,107 @@ Full hosting composition: [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md).
 
 ---
 
+## Functional diagnostics
+
+**Status:** `FUNCTIONAL DIAGNOSTICS FOUNDATION = IMPLEMENTED` · `FUNCTIONAL ROOT-CAUSE ANALYSIS = NOT YET IMPLEMENTED` · `C1 INSTRUMENTATION = NOT YET IMPLEMENTED`
+
+Central diagnostics must represent two independent facts:
+
+```text
+technical execution outcome (RuntimeEvent truth)
+        ≠
+functional/domain validation outcome (external validator truth)
+```
+
+A run may be **technically COMPLETED** while a domain validator reports **functional FAILED**. Diagnostics records and interprets both without rewriting execution history.
+
+### Technical vs functional failure
+
+| Dimension | Technical execution failure | Functional outcome failure |
+| --------- | --------------------------- | -------------------------- |
+| Authority | Execution Runtime + `RuntimeEvent` journal | External/domain validator |
+| Trigger into DIAG | Terminal execution diagnostics / lifecycle anomalies | `PlatformProblemSignal` with typed `functional_validation` |
+| Effect on execution truth | May change terminal execution state | **Must not** change terminal execution state |
+| Evidence | Runtime events, causal evidence | Typed functional/AI pipeline evidence facts |
+
+### Architecture flow
+
+```text
+Execution
+   │
+   ├─ RuntimeEvent ─────────────────────┐
+   │                                    │
+AI pipeline operations                 │
+   │                                    │
+   └─ typed functional evidence ──────┤
+                                        ▼
+External/domain validator ──► PlatformProblemSignal
+                                        │
+                                        ▼
+                               Central Diagnostics
+                                        │
+                             reconstruction/assessment
+                                        │
+                                        ▼
+                           evidence-backed diagnosis
+```
+
+### Canonical trigger decision
+
+`PlatformProblemSignal` is the canonical functional-failure trigger. External/domain validators emit typed `FunctionalValidationEvidence`; observability may export the signal; central diagnostics consumes it. No parallel `FunctionalProblemSignal` bus.
+
+New platform kind: `platform.functional_outcome_invalid` (`PROBLEM_KIND_PLATFORM_FUNCTIONAL_OUTCOME_INVALID`).
+
+### Evidence ownership
+
+| Layer | Owns | Does not own |
+| ----- | ---- | ------------ |
+| **Observability** | Record/export typed functional evidence facts; correlate to execution identity | Functional root-cause diagnosis |
+| **Diagnostics** | Reconstruction, completeness, deterministic findings/limitations | Mint execution identity; rewrite execution terminal state |
+| **External validator** | Domain pass/fail decision | Execution lifecycle authority |
+
+Functional evidence is **not** packed into `RuntimeEvent` payloads. It uses a separate typed evidence stream/store correlated by `DiagnosticExecutionCorrelation` / `PipelineEvidenceScope`.
+
+### Typed contracts (F1/F2 foundation)
+
+| Contract | Role |
+| -------- | ---- |
+| `FunctionalValidationEvidence` | Bounded validator outcome (validator identity, validation kind, outcome, expected/actual relation, correlation, upstream evidence refs) |
+| `PlatformFunctionalEvidence` | Composable pipeline facts: artifact lineage, operation outcome, candidate rank, selection, output relation, validation link |
+| `FunctionalEvidencePersistence` | Append-only, tenant-scoped, paginated read (`query_evidence`) |
+| `FunctionalEvidenceReconstructor` | Deterministic reconstruction; missing required kinds → `DiagnosticCertainty.INSUFFICIENT_EVIDENCE` |
+
+### Identity, correlation, idempotency
+
+- Correlation uses typed `Tenant` + `TaskId` + `RunId` (+ optional `AttemptId` / `EventId`).
+- Tenant mismatch and signal/correlation drift fail closed (`FunctionalValidationIntegrityError`).
+- `validation_id` / `evidence_id` provide stable identity; persistence `append` is idempotent on `evidence_id`.
+- Out-of-order persistence is tolerated; query/reconstruction order is deterministic on `(recorded_at, evidence_id)`.
+
+### Boundedness and privacy
+
+- No full documents, prompts, responses, embedding vectors, secrets, or credentials in canonical functional evidence.
+- Evidence uses `ObservabilityArtifactReference` and bounded summaries only.
+- High-cardinality candidate histories are persisted outside Problem aggregates via paginated evidence queries.
+
+### Source-of-truth hierarchy
+
+```text
+canonical execution facts
+        +
+canonical functional/AI evidence facts
+        ↓
+Diagnostics reconstruction
+        ↓
+deterministic findings / limitations
+        ↓
+optional higher-level inference later (NOT in F1/F2)
+```
+
+**Code references:** `functional_validation.py` · `functional_validation_evidence.py` · `functional_evidence.py` · `functional_evidence_persistence.py` · `functional_evidence_reconstruction.py` · `in_memory_functional_evidence_persistence.py` · `problem_signal.py`.
+
+---
+
 ## Qualification summary
 
 **Engine qualification** — HARDEN-1 through HARDEN-5 **complete**.

@@ -982,6 +982,8 @@ Diagnostic projections (`ExecutionReconstruction`, `LifecycleAnalysis`, `Diagnos
 
 **Incomplete evidence:** missing evidence does **not** authorize DIAG to invent lineage — represent truncation/limitation, retain uncertainty, do not guess parent Execution, do not promote `correlation_id` to lineage, do not claim root cause as proven.
 
+**Functional evidence boundary (DIAG-FUNCTIONAL-1):** Observability records and exports typed functional/AI pipeline evidence (`PlatformFunctionalEvidence`) and problem signals carrying `FunctionalValidationEvidence`. Observability does **not** own functional diagnosis — it records facts such as `candidate rank=17 selected=False`; central DIAG interprets meaning. Functional evidence is correlated to execution identity but stored outside `RuntimeEvent` payloads. See [`DIAGNOSTICS.md`](DIAGNOSTICS.md) § Functional diagnostics.
+
 ### Causal evidence plane (DIAG-1)
 
 `PlatformCausalEvidence` records an immutable, tenant-scoped causal fact between existing identity domains — for example a provider-neutral async transport task (`MessageBusTaskRef`) that **triggered** canonical runtime execution (`RuntimeExecutionRef` with `TaskId` / `RunId` / `AttemptId`; **TARGET:** + `ExecutionId`). It does **not** extend `RuntimeEvent`, mint synthetic execution identity, redefine `ExecutionId`, duplicate the Execution Tree, or replace `RuntimeEvent` history.
