@@ -1,0 +1,8 @@
+[
+  {
+    "name": "effect-proxy",
+    "listen": "0.0.0.0:8666",
+    "upstream": "external-effect-service:8080",
+    "enabled": true
+  }
+]
