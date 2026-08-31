@@ -107,7 +107,7 @@ async def test_uaep_sandbox_tool_gateway(tmp_path):
         metadata={SANDBOX_FLAG: True, "task_id": "task_sbox_1"},
     )
 
-    answer, validation, _context, _governance = await uaep.execute(agent, request)
+    answer, validation, _governance = await uaep.execute(agent, request)
 
     assert validation.valid is True
     assert answer.route is not None

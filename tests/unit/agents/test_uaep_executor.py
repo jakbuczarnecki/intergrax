@@ -92,7 +92,7 @@ async def test_uaep_executor_runs_runtime_controlled_steps():
         metadata={"run_id": "run_uaep_1", "task_id": "task_uaep_1"},
     )
 
-    answer, validation, _context, _governance = await executor.execute(agent, request)
+    answer, validation, _governance = await executor.execute(agent, request)
 
     assert validation.valid
     assert answer.answer == "out:second"

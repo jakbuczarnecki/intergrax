@@ -299,7 +299,7 @@ async def test_uaep_agent_decision_deny_blocks_subsequent_protected_step() -> No
     )
     token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
     try:
-        _answer, _validation, _context, governance = await executor.execute(agent, request)
+        _answer, _validation, governance = await executor.execute(agent, request)
     finally:
         reset_active_execution_identity(token)
 

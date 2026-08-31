@@ -222,7 +222,7 @@ async def test_uaep_executor_stops_on_cancellation():
         },
     )
 
-    answer, validation, _, _ = await executor.execute(agent, request)
+    answer, validation, _ = await executor.execute(agent, request)
 
     assert _MultiStepUaepAgent.step_runs == 0
     assert not validation.valid

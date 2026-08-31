@@ -83,7 +83,7 @@ async def test_uaep_executor_wires_memory_view():
         metadata={"run_id": "run_mem_1", "task_id": "task_mem_1"},
     )
 
-    answer, validation, _context, _governance = await executor.execute(agent, request)
+    answer, validation, _governance = await executor.execute(agent, request)
 
     assert validation.valid
     assert "Acme Q1" in answer.answer

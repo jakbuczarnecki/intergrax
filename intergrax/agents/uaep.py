@@ -206,7 +206,7 @@ class UAEPExecutor:
         request: RuntimeRequest,
         *,
         contract: AgentContract | None = None,
-    ) -> tuple[RuntimeAnswer, ValidationResult, RuntimeContext, Optional[GovernanceResolution]]:
+    ) -> tuple[RuntimeAnswer, ValidationResult, Optional[GovernanceResolution]]:
         contract = contract or agent.get_contract()
         task_options = execution_options_for_request(request)
         run_id, attempt_id = require_active_execution_identity()
@@ -259,387 +259,391 @@ class UAEPExecutor:
         )
 
         runtime_context = agent.build_context(request)
-        from intergrax.agents.authoring.acp_uaep_shim import apply_host_tool_invoker_to_runtime_context
-
-        apply_host_tool_invoker_to_runtime_context(runtime_context, request.metadata)
-        if self._context_engine is not None:
-            runtime_context.config.context_engine = self._context_engine
-        from intergrax.runtime.attestation.kernel_wiring import apply_boundary_export_to_kernel
-
-        apply_boundary_export_to_kernel(kernel_ctx, runtime_context.config)
-        from intergrax.runtime.nexus.context.memory_context_invocation import (
-            populate_request_memory_recall_metadata,
-        )
-
-        await populate_request_memory_recall_metadata(
-            request,
-            config=runtime_context.config,
-            session_manager=runtime_context.session_manager,
-        )
-        if self._context_engine is not None and self._llm_adapter is not None:
-            from intergrax.llm.messages import StructuredModelInputRequiredError, STRUCTURED_MODEL_INPUT_REQUIRED_REASON
-            from intergrax.runtime.nexus.context.graph_assembly import text_from_assembled_messages
-            from intergrax.runtime.nexus.context.uaep_assemble import assemble_uaep_session_messages
-
-            assembled_messages = await assemble_uaep_session_messages(
+        try:
+            from intergrax.agents.authoring.acp_uaep_shim import apply_host_tool_invoker_to_runtime_context
+    
+            apply_host_tool_invoker_to_runtime_context(runtime_context, request.metadata)
+            if self._context_engine is not None:
+                runtime_context.config.context_engine = self._context_engine
+            from intergrax.runtime.attestation.kernel_wiring import apply_boundary_export_to_kernel
+    
+            apply_boundary_export_to_kernel(kernel_ctx, runtime_context.config)
+            from intergrax.runtime.nexus.context.memory_context_invocation import (
+                populate_request_memory_recall_metadata,
+            )
+    
+            await populate_request_memory_recall_metadata(
                 request,
-                agent_id=contract.id,
-                engine=self._context_engine,
-                llm_adapter=self._llm_adapter,
-                event_bus=self._event_bus,
+                config=runtime_context.config,
+                session_manager=runtime_context.session_manager,
             )
-            try:
-                assembled_prompt = text_from_assembled_messages(assembled_messages)
-            except StructuredModelInputRequiredError as exc:
-                raise UAEPBlockedError(STRUCTURED_MODEL_INPUT_REQUIRED_REASON) from exc
-            if assembled_prompt and assembled_prompt != (request.message or ""):
-                request = replace(request, message=assembled_prompt)
-        exec_ctx.domain_context = runtime_context
-        from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-
-        exec_ctx.metadata["runtime_state"] = RuntimeState(
-            context=runtime_context,
-            request=request,
-            run_id=run_id,
-            declarative_hitl_grant=request.declarative_hitl_grant,
-        )
-        from intergrax.runtime.wiring.llm_routing_runtime_bridge import (
-            sync_llm_routing_snapshot_for_state,
-            wire_llm_routing_observability_on_state,
-        )
-
-        runtime_state = exec_ctx.metadata["runtime_state"]
-        assert isinstance(runtime_state, RuntimeState)
-        wire_llm_routing_observability_on_state(runtime_state)
-        sync_llm_routing_snapshot_for_state(runtime_state)
-        exec_ctx.tool_gateway = BoundToolGateway(
-            exec_ctx,
-            allowed_tools=list(contract.allowed_tools),
-            middleware=self._middleware,
-        )
-
-        await self._guard_hook(
-            await self._middleware.run_after(
-                HookPoint.AFTER_CONTEXT_BUILD,
-                hook_base.model_copy(update={"phase": ExecutionPhase.CONTEXT_BUILDING}),
-            )
-        )
-        prompt_text = str(request.message or "")
-        context_chars = len(prompt_text)
-        await self._emit_context_assembled(
-            exec_ctx,
-            node_id=exec_ctx.node_id or contract.id,
-            agent_id=contract.id,
-            context_original_chars=context_chars,
-            context_final_chars=context_chars,
-            engine_id="default",
-        )
-
-        steps = self._resolve_steps(agent, runtime_context, contract.max_steps)
-        last_output: Optional[StepOutput] = None
-        governance: Optional[GovernanceResolution] = None
-        runtime_ckpt = request.runtime_checkpoint
-        uaep_resume_approval = None
-        pause_record = request.hitl_pause_record
-        if pause_record is not None and request.task_id:
-            uaep_resume_approval = HumanPauseCoordinator.approved_resolution_for_resume(
-                task_id=request.task_id,
-                resolution=request.hitl_resolution,
-                expected_pause_id=pause_record.pause_id,
-                expected_human_request_id=pause_record.human_request_id,
-                run_id=run_id,
-            )
-
-        for index, step in enumerate(steps):
-            if CancellationCoordinator.is_requested(request.metadata):
-                validation = ValidationResult(valid=False, errors=["task_cancelled"])
-                answer = self._build_answer(exec_ctx, last_output, run_id)
-                if answer.route is None:
-                    answer.route = RouteInfo(extra={})
-                answer.route.extra[CANCELLATION_REQUESTED_KEY] = True
-                return answer, validation, runtime_context, None
-
-            exec_ctx.phase = ExecutionPhase.STEP_EXECUTION
-            hook_step = hook_base.model_copy(
-                update={"step_id": step.step_id, "phase": ExecutionPhase.STEP_EXECUTION},
-            )
-            await self._guard_hook(
-                await self._middleware.run_before(HookPoint.BEFORE_STEP, hook_step)
-            )
-
-            runtime_state = exec_ctx.metadata.get("runtime_state")
-            if isinstance(runtime_state, RuntimeState):
-                from intergrax.runtime.wiring.llm_routing_runtime_bridge import (
-                    sync_llm_routing_snapshot_for_state,
-                )
-
-                request.metadata["step_index"] = index
-                sync_llm_routing_snapshot_for_state(runtime_state)
-
-            started = time.perf_counter()
-            try:
-                if should_skip_uaep_step(
-                    step_index=index,
-                    step_id=step.step_id,
-                    checkpoint=runtime_ckpt,
-                    approval=uaep_resume_approval,
-                ):
-                    last_output = StepOutput.model_validate(runtime_ckpt.last_step_output.model_dump())
-                    step_result = StepExecutionResult(output=last_output)
-                elif should_resume_uaep_step(
-                    step_index=index,
-                    step_id=step.step_id,
-                    checkpoint=runtime_ckpt,
-                    approval=uaep_resume_approval,
-                ):
-                    assert runtime_ckpt is not None
-                    exec_ctx.metadata[UAEP_STEP_CURSOR_KEY] = dict(runtime_ckpt.uaep_step_cursor.values)
-                    step_result = await self._execute_step_with_resume(
-                        agent,
-                        step,
-                        exec_ctx,
-                        runtime_ckpt.uaep_step_cursor.values if runtime_ckpt.uaep_step_cursor else {},
-                    )
-                else:
-                    step_result = await self.execute_step(agent, step, exec_ctx)
-            except Exception as exc:
-                from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
-                    DeclarativePolicyHitlPauseRequired,
-                )
-
-                if not isinstance(exc, DeclarativePolicyHitlPauseRequired):
-                    raise
-                governance = exc.governance.model_copy(
-                    update={"declarative_hitl_pending": exc.pending}
-                )
-                exec_ctx.metadata["governance_resolution"] = governance
-                runtime_snapshot = self._build_runtime_checkpoint(
-                    request=request,
-                    contract_id=contract.id,
-                    step_index=index,
-                    step=step,
-                    last_output=last_output,
-                    resolution=governance,
-                    step_cursor=exec_ctx.metadata.get(UAEP_STEP_CURSOR_KEY)
-                    if isinstance(exec_ctx.metadata.get(UAEP_STEP_CURSOR_KEY), dict)
-                    else None,
-                )
-                request.runtime_checkpoint = runtime_snapshot
-                answer = self._build_answer(exec_ctx, last_output, run_id)
-                validation = ValidationResult(valid=False, errors=["awaiting human input"])
-                return answer, validation, runtime_context, governance
-            step_result.duration_ms = int((time.perf_counter() - started) * 1000)
-
-            await self._guard_hook(
-                await self._middleware.run_after(HookPoint.AFTER_STEP, hook_step)
-            )
-            if step_result.output is not None:
-                await self._scan_step_output_hooks(
-                    hook_step,
-                    step_result.output,
+            if self._context_engine is not None and self._llm_adapter is not None:
+                from intergrax.llm.messages import StructuredModelInputRequiredError, STRUCTURED_MODEL_INPUT_REQUIRED_REASON
+                from intergrax.runtime.nexus.context.graph_assembly import text_from_assembled_messages
+                from intergrax.runtime.nexus.context.uaep_assemble import assemble_uaep_session_messages
+    
+                assembled_messages = await assemble_uaep_session_messages(
                     request,
-                    exec_ctx=exec_ctx,
+                    agent_id=contract.id,
+                    engine=self._context_engine,
+                    llm_adapter=self._llm_adapter,
+                    event_bus=self._event_bus,
                 )
-
-            if step_result.output is not None:
-                last_output = step_result.output
-
-            critic_resolution = self._verify_uaep_step_critic(
-                contract=contract,
-                step=step,
-                step_result=step_result,
+                try:
+                    assembled_prompt = text_from_assembled_messages(assembled_messages)
+                except StructuredModelInputRequiredError as exc:
+                    raise UAEPBlockedError(STRUCTURED_MODEL_INPUT_REQUIRED_REASON) from exc
+                if assembled_prompt and assembled_prompt != (request.message or ""):
+                    request = replace(request, message=assembled_prompt)
+            exec_ctx.domain_context = runtime_context
+            from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+    
+            exec_ctx.metadata["runtime_state"] = RuntimeState(
+                context=runtime_context,
                 request=request,
                 run_id=run_id,
-                task_id=task_id,
-                task_options=task_options,
-                exec_ctx=exec_ctx,
+                declarative_hitl_grant=request.declarative_hitl_grant,
             )
-            if critic_resolution is not None:
-                governance = critic_resolution
-                exec_ctx.metadata["governance_resolution"] = critic_resolution
-                step_cursor = exec_ctx.metadata.get(UAEP_STEP_CURSOR_KEY)
-                runtime_snapshot = self._build_runtime_checkpoint(
-                    request=request,
-                    contract_id=contract.id,
-                    step_index=index,
-                    step=step,
-                    last_output=last_output,
-                    resolution=critic_resolution,
-                    step_cursor=step_cursor if isinstance(step_cursor, dict) else None,
+            from intergrax.runtime.wiring.llm_routing_runtime_bridge import (
+                sync_llm_routing_snapshot_for_state,
+                wire_llm_routing_observability_on_state,
+            )
+    
+            runtime_state = exec_ctx.metadata["runtime_state"]
+            assert isinstance(runtime_state, RuntimeState)
+            wire_llm_routing_observability_on_state(runtime_state)
+            sync_llm_routing_snapshot_for_state(runtime_state)
+            exec_ctx.tool_gateway = BoundToolGateway(
+                exec_ctx,
+                allowed_tools=list(contract.allowed_tools),
+                middleware=self._middleware,
+            )
+    
+            await self._guard_hook(
+                await self._middleware.run_after(
+                    HookPoint.AFTER_CONTEXT_BUILD,
+                    hook_base.model_copy(update={"phase": ExecutionPhase.CONTEXT_BUILDING}),
                 )
-                request.runtime_checkpoint = runtime_snapshot
-                break
-
-            decision = step_result.decision or self._decide_after_step(
-                agent, step, step_result.output, exec_ctx
             )
-            decision_ctx = hook_context_for_task(
-                task_id=task_id,
-                run_id=run_id,
+            prompt_text = str(request.message or "")
+            context_chars = len(prompt_text)
+            await self._emit_context_assembled(
+                exec_ctx,
+                node_id=exec_ctx.node_id or contract.id,
                 agent_id=contract.id,
-                step_id=step.step_id,
-                phase=ExecutionPhase.STEP_EXECUTION,
-                runtime_state={"decision_type": decision.type.value},
+                context_original_chars=context_chars,
+                context_final_chars=context_chars,
+                engine_id="default",
             )
-            await run_hook_pair(
-                self._middleware,
-                HookPoint.BEFORE_DECISION,
-                HookPoint.AFTER_DECISION,
-                decision_ctx,
-            )
-            replan_context: dict[str, object] = {}
-            replan_policy = request.metadata.get("replan_policy.v1")
-            if isinstance(replan_policy, dict):
-                replan_context.update(replan_policy)
-            resolution = self._interrupt_handler.resolve_decision(
-                decision,
-                task_id=task_id,
-                run_id=run_id,
-                agent_id=contract.id,
-                step_id=step.step_id,
-                context=replan_context or None,
-                decision_policy_context=AgentDecisionPolicyContext(
-                    require_human_on_critical=task_options.governance.require_human_on_critical,
-                    has_unresolved_critical_interrupt=bool(
-                        exec_ctx.metadata.get("has_unresolved_critical_interrupt", False)
-                    ),
-                ),
-            )
-            if resolution.interrupt is not None:
-                interrupt_ctx = hook_context_for_task(
+    
+            steps = self._resolve_steps(agent, runtime_context, contract.max_steps)
+            last_output: Optional[StepOutput] = None
+            governance: Optional[GovernanceResolution] = None
+            runtime_ckpt = request.runtime_checkpoint
+            uaep_resume_approval = None
+            pause_record = request.hitl_pause_record
+            if pause_record is not None and request.task_id:
+                uaep_resume_approval = HumanPauseCoordinator.approved_resolution_for_resume(
+                    task_id=request.task_id,
+                    resolution=request.hitl_resolution,
+                    expected_pause_id=pause_record.pause_id,
+                    expected_human_request_id=pause_record.human_request_id,
+                    run_id=run_id,
+                )
+    
+            for index, step in enumerate(steps):
+                if CancellationCoordinator.is_requested(request.metadata):
+                    validation = ValidationResult(valid=False, errors=["task_cancelled"])
+                    answer = self._build_answer(exec_ctx, last_output, run_id)
+                    if answer.route is None:
+                        answer.route = RouteInfo(extra={})
+                    answer.route.extra[CANCELLATION_REQUESTED_KEY] = True
+                    return answer, validation, None
+    
+                exec_ctx.phase = ExecutionPhase.STEP_EXECUTION
+                hook_step = hook_base.model_copy(
+                    update={"step_id": step.step_id, "phase": ExecutionPhase.STEP_EXECUTION},
+                )
+                await self._guard_hook(
+                    await self._middleware.run_before(HookPoint.BEFORE_STEP, hook_step)
+                )
+    
+                runtime_state = exec_ctx.metadata.get("runtime_state")
+                if isinstance(runtime_state, RuntimeState):
+                    from intergrax.runtime.wiring.llm_routing_runtime_bridge import (
+                        sync_llm_routing_snapshot_for_state,
+                    )
+    
+                    request.metadata["step_index"] = index
+                    sync_llm_routing_snapshot_for_state(runtime_state)
+    
+                started = time.perf_counter()
+                try:
+                    if should_skip_uaep_step(
+                        step_index=index,
+                        step_id=step.step_id,
+                        checkpoint=runtime_ckpt,
+                        approval=uaep_resume_approval,
+                    ):
+                        last_output = StepOutput.model_validate(runtime_ckpt.last_step_output.model_dump())
+                        step_result = StepExecutionResult(output=last_output)
+                    elif should_resume_uaep_step(
+                        step_index=index,
+                        step_id=step.step_id,
+                        checkpoint=runtime_ckpt,
+                        approval=uaep_resume_approval,
+                    ):
+                        assert runtime_ckpt is not None
+                        exec_ctx.metadata[UAEP_STEP_CURSOR_KEY] = dict(runtime_ckpt.uaep_step_cursor.values)
+                        step_result = await self._execute_step_with_resume(
+                            agent,
+                            step,
+                            exec_ctx,
+                            runtime_ckpt.uaep_step_cursor.values if runtime_ckpt.uaep_step_cursor else {},
+                        )
+                    else:
+                        step_result = await self.execute_step(agent, step, exec_ctx)
+                except Exception as exc:
+                    from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
+                        DeclarativePolicyHitlPauseRequired,
+                    )
+    
+                    if not isinstance(exc, DeclarativePolicyHitlPauseRequired):
+                        raise
+                    governance = exc.governance.model_copy(
+                        update={"declarative_hitl_pending": exc.pending}
+                    )
+                    exec_ctx.metadata["governance_resolution"] = governance
+                    runtime_snapshot = self._build_runtime_checkpoint(
+                        request=request,
+                        contract_id=contract.id,
+                        step_index=index,
+                        step=step,
+                        last_output=last_output,
+                        resolution=governance,
+                        step_cursor=exec_ctx.metadata.get(UAEP_STEP_CURSOR_KEY)
+                        if isinstance(exec_ctx.metadata.get(UAEP_STEP_CURSOR_KEY), dict)
+                        else None,
+                    )
+                    request.runtime_checkpoint = runtime_snapshot
+                    answer = self._build_answer(exec_ctx, last_output, run_id)
+                    validation = ValidationResult(valid=False, errors=["awaiting human input"])
+                    return answer, validation, governance
+                step_result.duration_ms = int((time.perf_counter() - started) * 1000)
+    
+                await self._guard_hook(
+                    await self._middleware.run_after(HookPoint.AFTER_STEP, hook_step)
+                )
+                if step_result.output is not None:
+                    await self._scan_step_output_hooks(
+                        hook_step,
+                        step_result.output,
+                        request,
+                        exec_ctx=exec_ctx,
+                    )
+    
+                if step_result.output is not None:
+                    last_output = step_result.output
+    
+                critic_resolution = self._verify_uaep_step_critic(
+                    contract=contract,
+                    step=step,
+                    step_result=step_result,
+                    request=request,
+                    run_id=run_id,
+                    task_id=task_id,
+                    task_options=task_options,
+                    exec_ctx=exec_ctx,
+                )
+                if critic_resolution is not None:
+                    governance = critic_resolution
+                    exec_ctx.metadata["governance_resolution"] = critic_resolution
+                    step_cursor = exec_ctx.metadata.get(UAEP_STEP_CURSOR_KEY)
+                    runtime_snapshot = self._build_runtime_checkpoint(
+                        request=request,
+                        contract_id=contract.id,
+                        step_index=index,
+                        step=step,
+                        last_output=last_output,
+                        resolution=critic_resolution,
+                        step_cursor=step_cursor if isinstance(step_cursor, dict) else None,
+                    )
+                    request.runtime_checkpoint = runtime_snapshot
+                    break
+    
+                decision = step_result.decision or self._decide_after_step(
+                    agent, step, step_result.output, exec_ctx
+                )
+                decision_ctx = hook_context_for_task(
                     task_id=task_id,
                     run_id=run_id,
                     agent_id=contract.id,
                     step_id=step.step_id,
-                    phase=ExecutionPhase.INTERRUPT_HANDLING,
-                    runtime_state={"interrupt_type": resolution.interrupt.type.value},
+                    phase=ExecutionPhase.STEP_EXECUTION,
+                    runtime_state={"decision_type": decision.type.value},
                 )
                 await run_hook_pair(
                     self._middleware,
-                    HookPoint.BEFORE_INTERRUPT,
-                    HookPoint.AFTER_INTERRUPT,
-                    interrupt_ctx,
+                    HookPoint.BEFORE_DECISION,
+                    HookPoint.AFTER_DECISION,
+                    decision_ctx,
                 )
-            governance = resolution
-            exec_ctx.metadata["governance_resolution"] = resolution
-
-            from intergrax.contracts.uaep_decision_record import DecisionRecord
-
-            tenant_id = str(request.tenant_id or request.metadata.get("tenant_id") or "default")
-            decision_record = DecisionRecord(
-                trace_id=run_id,
-                run_id=run_id,
-                tenant_id=tenant_id,
-                task_id=task_id,
-                agent_id=contract.id,
-                step_id=step.step_id,
-                decision_type=decision.type.value,
-                rationale=decision.reason,
-                policy_action=resolution.policy_decision.action.value,
+                replan_context: dict[str, object] = {}
+                replan_policy = request.metadata.get("replan_policy.v1")
+                if isinstance(replan_policy, dict):
+                    replan_context.update(replan_policy)
+                resolution = self._interrupt_handler.resolve_decision(
+                    decision,
+                    task_id=task_id,
+                    run_id=run_id,
+                    agent_id=contract.id,
+                    step_id=step.step_id,
+                    context=replan_context or None,
+                    decision_policy_context=AgentDecisionPolicyContext(
+                        require_human_on_critical=task_options.governance.require_human_on_critical,
+                        has_unresolved_critical_interrupt=bool(
+                            exec_ctx.metadata.get("has_unresolved_critical_interrupt", False)
+                        ),
+                    ),
+                )
+                if resolution.interrupt is not None:
+                    interrupt_ctx = hook_context_for_task(
+                        task_id=task_id,
+                        run_id=run_id,
+                        agent_id=contract.id,
+                        step_id=step.step_id,
+                        phase=ExecutionPhase.INTERRUPT_HANDLING,
+                        runtime_state={"interrupt_type": resolution.interrupt.type.value},
+                    )
+                    await run_hook_pair(
+                        self._middleware,
+                        HookPoint.BEFORE_INTERRUPT,
+                        HookPoint.AFTER_INTERRUPT,
+                        interrupt_ctx,
+                    )
+                governance = resolution
+                exec_ctx.metadata["governance_resolution"] = resolution
+    
+                from intergrax.contracts.uaep_decision_record import DecisionRecord
+    
+                tenant_id = str(request.tenant_id or request.metadata.get("tenant_id") or "default")
+                decision_record = DecisionRecord(
+                    trace_id=run_id,
+                    run_id=run_id,
+                    tenant_id=tenant_id,
+                    task_id=task_id,
+                    agent_id=contract.id,
+                    step_id=step.step_id,
+                    decision_type=decision.type.value,
+                    rationale=decision.reason,
+                    policy_action=resolution.policy_decision.action.value,
+                )
+                await self._emit(
+                    exec_ctx,
+                    RuntimeEventType.DECISION_EMITTED,
+                    ExecutionPhase.STEP_EXECUTION,
+                    {
+                        "step_id": step.step_id,
+                        "decision": decision.type.value,
+                        "policy_action": resolution.policy_decision.action.value,
+                        "decision_record": decision_record.model_dump(mode="json"),
+                    },
+                )
+                await self._emit_governance(exec_ctx, resolution)
+    
+                if (
+                    decision.type is AgentDecisionType.MODIFY_PLAN
+                    and not resolution.should_fail
+                    and not resolution.should_block_execution
+                ):
+                    from intergrax.contracts.agent_handoff import handoff_from_decision
+                    from intergrax.runtime.execution.budget.consumption import consume_replan
+    
+                    if handoff_from_decision(decision) is None:
+                        consume_replan()
+    
+                if resolution.should_pause or resolution.should_fail:
+                    step_cursor = exec_ctx.metadata.get(UAEP_STEP_CURSOR_KEY)
+                    runtime_snapshot = self._build_runtime_checkpoint(
+                        request=request,
+                        contract_id=contract.id,
+                        step_index=index,
+                        step=step,
+                        last_output=last_output,
+                        resolution=resolution,
+                        step_cursor=step_cursor if isinstance(step_cursor, dict) else None,
+                    )
+                    request.runtime_checkpoint = runtime_snapshot
+                    break
+                if resolution.should_block_execution:
+                    governance = resolution
+                    exec_ctx.metadata["governance_resolution"] = resolution
+                    last_output = StepOutput(
+                        step_id=step.step_id,
+                        summary=resolution.policy_decision.reason or "policy_denied",
+                        data={"policy_action": resolution.policy_decision.action.value},
+                    )
+                    decision = agent_decision_failure_from_resolution(resolution)
+                    break
+                if decision.type != AgentDecisionType.CONTINUE:
+                    break
+    
+            answer = self._build_answer(exec_ctx, last_output, run_id)
+            if last_output is not None and isinstance(last_output.data, dict):
+                # Promote typed domain summaries into TaskResult.structured_data via route.extra.
+                for key in ("search_summary", "ingest_summary", "domain_summary"):
+                    value = last_output.data.get(key)
+                    if isinstance(value, dict) and value:
+                        if answer.route is None:
+                            answer.route = RouteInfo(extra={})
+                        answer.route.extra[key] = dict(value)
+            bridged_kernel = exec_ctx.metadata.get(UaepBridgeMetadataKey.KERNEL_SESSION)
+            if bridged_kernel is not None:
+                if answer.route is None:
+                    answer.route = RouteInfo(extra={})
+                answer.route.extra[AcpStructuredDataKey.TRACE_SUMMARY] = trace_summary_from_kernel(
+                    bridged_kernel
+                )
+            self._annotate_answer_with_shadow(answer, exec_ctx)
+            self._annotate_answer_with_sandbox(answer, exec_ctx)
+    
+            if governance is not None and governance.should_pause:
+                validation = ValidationResult(valid=False, errors=["awaiting human input"])
+                return answer, validation, governance
+    
+            exec_ctx.phase = ExecutionPhase.VALIDATION
+            hook_val = hook_base.model_copy(update={"phase": ExecutionPhase.VALIDATION})
+            await self._guard_hook(
+                await self._middleware.run_before(HookPoint.BEFORE_VALIDATION, hook_val)
+            )
+            validation = agent.validate(answer, context=runtime_context)
+            await self._guard_hook(
+                await self._middleware.run_after(HookPoint.AFTER_VALIDATION, hook_val)
             )
             await self._emit(
                 exec_ctx,
-                RuntimeEventType.DECISION_EMITTED,
-                ExecutionPhase.STEP_EXECUTION,
-                {
-                    "step_id": step.step_id,
-                    "decision": decision.type.value,
-                    "policy_action": resolution.policy_decision.action.value,
-                    "decision_record": decision_record.model_dump(mode="json"),
-                },
+                RuntimeEventType.VALIDATION_PASSED if validation.valid else RuntimeEventType.VALIDATION_FAILED,
+                ExecutionPhase.VALIDATION,
+                {"errors": validation.errors},
             )
-            await self._emit_governance(exec_ctx, resolution)
-
-            if (
-                decision.type is AgentDecisionType.MODIFY_PLAN
-                and not resolution.should_fail
-                and not resolution.should_block_execution
-            ):
-                from intergrax.contracts.agent_handoff import handoff_from_decision
-                from intergrax.runtime.execution.budget.consumption import consume_replan
-
-                if handoff_from_decision(decision) is None:
-                    consume_replan()
-
-            if resolution.should_pause or resolution.should_fail:
-                step_cursor = exec_ctx.metadata.get(UAEP_STEP_CURSOR_KEY)
-                runtime_snapshot = self._build_runtime_checkpoint(
-                    request=request,
-                    contract_id=contract.id,
-                    step_index=index,
-                    step=step,
-                    last_output=last_output,
-                    resolution=resolution,
-                    step_cursor=step_cursor if isinstance(step_cursor, dict) else None,
-                )
-                request.runtime_checkpoint = runtime_snapshot
-                break
-            if resolution.should_block_execution:
-                governance = resolution
-                exec_ctx.metadata["governance_resolution"] = resolution
-                last_output = StepOutput(
-                    step_id=step.step_id,
-                    summary=resolution.policy_decision.reason or "policy_denied",
-                    data={"policy_action": resolution.policy_decision.action.value},
-                )
-                decision = agent_decision_failure_from_resolution(resolution)
-                break
-            if decision.type != AgentDecisionType.CONTINUE:
-                break
-
-        answer = self._build_answer(exec_ctx, last_output, run_id)
-        if last_output is not None and isinstance(last_output.data, dict):
-            # Promote typed domain summaries into TaskResult.structured_data via route.extra.
-            for key in ("search_summary", "ingest_summary", "domain_summary"):
-                value = last_output.data.get(key)
-                if isinstance(value, dict) and value:
-                    if answer.route is None:
-                        answer.route = RouteInfo(extra={})
-                    answer.route.extra[key] = dict(value)
-        bridged_kernel = exec_ctx.metadata.get(UaepBridgeMetadataKey.KERNEL_SESSION)
-        if bridged_kernel is not None:
-            if answer.route is None:
-                answer.route = RouteInfo(extra={})
-            answer.route.extra[AcpStructuredDataKey.TRACE_SUMMARY] = trace_summary_from_kernel(
-                bridged_kernel
+    
+            if not validation.valid and validation.errors and answer.route is not None:
+                answer.route.extra.setdefault("agent_validation_errors", validation.errors)
+    
+            from intergrax.runtime.governance.post_run_governance_bridge import (
+                invoke_post_run_governance,
             )
-        self._annotate_answer_with_shadow(answer, exec_ctx)
-        self._annotate_answer_with_sandbox(answer, exec_ctx)
+    
+            invoke_post_run_governance(
+                self._governance_service,
+                run_id=run_id,
+                agent_id=contract.id,
+            )
+    
+            return answer, validation, governance
 
-        if governance is not None and governance.should_pause:
-            validation = ValidationResult(valid=False, errors=["awaiting human input"])
-            return answer, validation, runtime_context, governance
-
-        exec_ctx.phase = ExecutionPhase.VALIDATION
-        hook_val = hook_base.model_copy(update={"phase": ExecutionPhase.VALIDATION})
-        await self._guard_hook(
-            await self._middleware.run_before(HookPoint.BEFORE_VALIDATION, hook_val)
-        )
-        validation = agent.validate(answer, context=runtime_context)
-        await self._guard_hook(
-            await self._middleware.run_after(HookPoint.AFTER_VALIDATION, hook_val)
-        )
-        await self._emit(
-            exec_ctx,
-            RuntimeEventType.VALIDATION_PASSED if validation.valid else RuntimeEventType.VALIDATION_FAILED,
-            ExecutionPhase.VALIDATION,
-            {"errors": validation.errors},
-        )
-
-        if not validation.valid and validation.errors and answer.route is not None:
-            answer.route.extra.setdefault("agent_validation_errors", validation.errors)
-
-        from intergrax.runtime.governance.post_run_governance_bridge import (
-            invoke_post_run_governance,
-        )
-
-        invoke_post_run_governance(
-            self._governance_service,
-            run_id=run_id,
-            agent_id=contract.id,
-        )
-
-        return answer, validation, runtime_context, governance
+        finally:
+            runtime_context.close()
 
     def _verify_uaep_step_critic(
         self,

@@ -143,6 +143,18 @@ def attach_acp_catalog_exec_ctx(
     step_ctx.metadata["uaep_exec_ctx"] = exec_ctx
 
 
+def close_acp_catalog_exec_ctx(step_ctx: AgentStepContext) -> None:
+    """Release per-step ACP catalog ``RuntimeContext`` (tool execution pool)."""
+    raw = step_ctx.metadata.pop("uaep_exec_ctx", None)
+    if not isinstance(raw, RuntimeExecutionContext):
+        return
+    runtime_state = raw.metadata.get("runtime_state")
+    from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+
+    if isinstance(runtime_state, RuntimeState):
+        runtime_state.context.close()
+
+
 def _run_input_from_request(exec_ctx: RuntimeExecutionContext) -> str | dict[str, Any]:
     request = exec_ctx.request
     if request is None:
