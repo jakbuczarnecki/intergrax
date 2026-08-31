@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from threading import Lock
@@ -124,6 +124,15 @@ class ProblemListMaintenanceCycleState:
     current_cycle_found_issues: bool = False
     started_at: datetime | None = None
     page_in_flight: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class _MaintenanceCycleAdmission:
+    """Admission metadata for one reconcile_list_indexes call."""
+
+    cycle_state: ProblemListMaintenanceCycleState
+    created_new_cycle: bool
+    previous_cycle_state: ProblemListMaintenanceCycleState | None
 
 
 @dataclass(slots=True)
@@ -279,11 +288,12 @@ class ProblemListIndexReconciler:
             tenant_id=tenant_id,
             scope=scope,
         )
-        cycle_state = self._begin_or_continue_cycle(
+        admission = self._begin_or_continue_cycle(
             cycle_key=cycle_key,
             cursor=cursor,
             now=now,
         )
+        cycle_state = admission.cycle_state
         self._admit_maintenance_page(cycle_state=cycle_state)
 
         partition_key = f"intergrax.diagnostic_problem.v1:{tenant_id}"
@@ -310,6 +320,8 @@ class ProblemListIndexReconciler:
         continuation = store_cursor
         has_more = False
         page_complete = False
+        page_succeeded = False
+        page_found_issues = False
 
         try:
             while examined < limit:
@@ -342,10 +354,13 @@ class ProblemListIndexReconciler:
                         transient += 1
                     elif outcome is ProblemListIndexClassification.PROVEN_STALE:
                         repaired += 1
+                        page_found_issues = True
                     elif outcome is ProblemListIndexClassification.PROVEN_ORPHAN:
                         deleted += 1
+                        page_found_issues = True
                     else:
                         corrupt += 1
+                        page_found_issues = True
 
                 if examined >= limit:
                     has_more = (
@@ -372,6 +387,7 @@ class ProblemListIndexReconciler:
                     cycle_state.had_issues = True
 
             page_complete = not has_more
+            page_succeeded = True
             return ProblemListIndexReconciliationPage(
                 examined=examined,
                 consistent=consistent,
@@ -387,6 +403,10 @@ class ProblemListIndexReconciler:
                 cycle_key=cycle_key,
                 cycle_state=cycle_state,
                 complete=page_complete,
+                created_new_cycle=admission.created_new_cycle,
+                page_succeeded=page_succeeded,
+                page_found_issues=page_found_issues,
+                previous_cycle_state=admission.previous_cycle_state,
             )
 
     def _begin_or_continue_cycle(
@@ -395,7 +415,7 @@ class ProblemListIndexReconciler:
         cycle_key: ProblemListMaintenanceCycleKey,
         cursor: str | None,
         now: datetime,
-    ) -> ProblemListMaintenanceCycleState:
+    ) -> _MaintenanceCycleAdmission:
         with self.health_state._lock:
             cycles = self.health_state.maintenance_cycles
             existing = cycles.get(cycle_key)
@@ -405,6 +425,11 @@ class ProblemListIndexReconciler:
                         "maintenance cycle already in progress for tenant/scope; "
                         "continuation cursor required",
                     )
+                previous_cycle_state = (
+                    replace(existing, page_in_flight=False)
+                    if existing is not None
+                    else None
+                )
                 cycle_state = ProblemListMaintenanceCycleState(
                     in_progress=True,
                     had_issues=existing.had_issues if existing is not None else False,
@@ -412,7 +437,11 @@ class ProblemListIndexReconciler:
                     started_at=now,
                 )
                 cycles[cycle_key] = cycle_state
-                return cycle_state
+                return _MaintenanceCycleAdmission(
+                    cycle_state=cycle_state,
+                    created_new_cycle=True,
+                    previous_cycle_state=previous_cycle_state,
+                )
 
             if existing is None:
                 cycle_state = ProblemListMaintenanceCycleState(
@@ -422,12 +451,20 @@ class ProblemListIndexReconciler:
                     started_at=now,
                 )
                 cycles[cycle_key] = cycle_state
-                return cycle_state
+                return _MaintenanceCycleAdmission(
+                    cycle_state=cycle_state,
+                    created_new_cycle=False,
+                    previous_cycle_state=None,
+                )
             if not existing.in_progress:
                 raise ProblemListIndexReconciliationError(
                     "maintenance continuation cursor does not match an in-progress cycle",
                 )
-            return existing
+            return _MaintenanceCycleAdmission(
+                cycle_state=existing,
+                created_new_cycle=False,
+                previous_cycle_state=None,
+            )
 
     def _admit_maintenance_page(
         self,
@@ -447,11 +484,25 @@ class ProblemListIndexReconciler:
         cycle_key: ProblemListMaintenanceCycleKey,
         cycle_state: ProblemListMaintenanceCycleState,
         complete: bool,
+        created_new_cycle: bool,
+        page_succeeded: bool,
+        page_found_issues: bool,
+        previous_cycle_state: ProblemListMaintenanceCycleState | None,
     ) -> None:
         with self.health_state._lock:
+            cycle_state.page_in_flight = False
+            if not page_succeeded:
+                if created_new_cycle:
+                    self._rollback_new_cycle_start(
+                        cycle_key=cycle_key,
+                        cycle_state=cycle_state,
+                        page_found_issues=page_found_issues,
+                        previous_cycle_state=previous_cycle_state,
+                    )
+                return
+
             if complete:
                 cycle_state.in_progress = False
-            cycle_state.page_in_flight = False
             if complete:
                 if (
                     not cycle_state.had_issues
@@ -461,6 +512,33 @@ class ProblemListIndexReconciler:
                     )
                 ):
                     self.health_state.maintenance_cycles.pop(cycle_key, None)
+
+    def _rollback_new_cycle_start(
+        self,
+        *,
+        cycle_key: ProblemListMaintenanceCycleKey,
+        cycle_state: ProblemListMaintenanceCycleState,
+        page_found_issues: bool,
+        previous_cycle_state: ProblemListMaintenanceCycleState | None,
+    ) -> None:
+        cycles = self.health_state.maintenance_cycles
+        if previous_cycle_state is not None:
+            cycles[cycle_key] = replace(previous_cycle_state, page_in_flight=False)
+            return
+        if (
+            cycle_state.had_issues
+            or cycle_state.current_cycle_found_issues
+            or page_found_issues
+        ):
+            cycles[cycle_key] = ProblemListMaintenanceCycleState(
+                in_progress=False,
+                had_issues=True,
+                current_cycle_found_issues=False,
+                started_at=None,
+                page_in_flight=False,
+            )
+            return
+        cycles.pop(cycle_key, None)
 
     def _reconcile_one(
         self,

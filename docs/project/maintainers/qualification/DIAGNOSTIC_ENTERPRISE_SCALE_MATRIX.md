@@ -8,9 +8,9 @@ Status vocabulary:
 - `REQUALIFICATION_REQUIRED` — prior proof invalidated; remediation in flight
 - `NOT_YET_QUALIFIED` — not proven in-repo yet; do not treat as production scale guarantee
 
-## E1 — Scalable Problem reads (`DIAG-ENTERPRISE-1` / `DIAG-ENTERPRISE-1-R1` / `DIAG-ENTERPRISE-1-R2` / `DIAG-ENTERPRISE-1-R3` / `DIAG-ENTERPRISE-1-R4` / `DIAG-ENTERPRISE-1-R5`)
+## E1 — Scalable Problem reads (`DIAG-ENTERPRISE-1` / `DIAG-ENTERPRISE-1-R1` / `DIAG-ENTERPRISE-1-R2` / `DIAG-ENTERPRISE-1-R3` / `DIAG-ENTERPRISE-1-R4` / `DIAG-ENTERPRISE-1-R5` / `DIAG-ENTERPRISE-1-R6`)
 
-**Status:** `PROVEN` — R5 maintenance single-flight (awaiting E1 freeze decision)
+**Status:** `PROVEN` — R6 first-page failure recovery (awaiting E1 freeze decision)
 
 Operator Problem list reads are bounded by page/query instead of materializing entire tenant cardinality. Stale/orphan derived list projections have a bounded maintenance path; active writer transitions are never deleted by maintenance. Callers cannot bypass `MIN_SAFE_PROJECTION_AGE` (5 minutes).
 
@@ -23,6 +23,7 @@ Operator Problem list reads are bounded by page/query instead of materializing e
 | Recoverable projection health | cumulative telemetry preserved; current health recovers after full clean cycle on same `(tenant_id, scope)` | R3 + R4 suites |
 | Maintenance cycle identity | per `(tenant_id, scope)` process-local cycle state; abandoned/incomplete cycles cannot be masked by unrelated clean scans; restart clears health state | `tests/unit/runtime/diagnostics/test_diag_enterprise_1_r4_maintenance_cycle_identity.py` |
 | Maintenance single-flight | one active page per `(tenant_id, scope)`; same-key parallel continuation rejected; different tenant/scope concurrent; ownership released on exception | `tests/unit/runtime/diagnostics/test_diag_enterprise_1_r5_single_flight.py` |
+| First-page failure recovery | newly started cycle first-page failure rolls back only process-local cycle state (restore prior degraded snapshot or remove fresh entry); continuation failure retains cycle; persistence/telemetry not rolled back | `tests/unit/runtime/diagnostics/test_diag_enterprise_1_r6_first_page_failure_recovery.py` |
 | Projection telemetry | skip/repair counters + `HEALTHY`/`DEGRADED` health snapshot | R2 + R3 + R4 suites |
 | Large garbage proof | 10k orphan/stale indexes + 1k valid Problems; bounded maintenance pages | `test_large_garbage_reconciliation_and_read_recovery` |
 | Public ordering | `last_seen_at DESC`, `problem_id ASC` tie-break | same + `test_diagnostic_read_service.py` |

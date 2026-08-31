@@ -455,7 +455,7 @@ DocumentStoreProblemPersistence.reconcile_list_indexes(
 
 Bounded by `limit` index rows per call; continuation via document-store cursor. No scheduler/daemon — callable maintenance seam for admin/tests/future lifecycle.
 
-**Projection health (R3/R4/R5):** cumulative telemetry counters (`repaired_projection`, `deleted_orphan_projection`, skip counters) remain historical and are not reset to recover health. Current health is **process-local** and resets on host restart. It reflects per-identity maintenance cycle state keyed by `(tenant_id, scope)`, read skip threshold, and unresolved same-version corruption (`same_version_integrity_failure > 0`).
+**Projection health (R3/R4/R5/R6):** cumulative telemetry counters (`repaired_projection`, `deleted_orphan_projection`, skip counters) remain historical and are not reset to recover health. Current health is **process-local** and resets on host restart. It reflects per-identity maintenance cycle state keyed by `(tenant_id, scope)`, read skip threshold, and unresolved same-version corruption (`same_version_integrity_failure > 0`).
 
 Maintenance cycle identity:
 
@@ -468,6 +468,7 @@ Rules:
 
 - `cursor=None` starts a new cycle only when no cycle for the same key is `in_progress`; otherwise `ProblemListIndexReconciliationError` (continuation required — no silent reset).
 - **Single-flight (R5):** maintenance reconciliation is single-flight per `(tenant_id, scope)` — at most one active page processor per cycle key. Parallel continuation on the same key is rejected with `ProblemListIndexReconciliationError` (`maintenance cycle page already in progress`); the rejected caller mutates nothing. Different tenants or scopes may reconcile concurrently. Ownership is process-local (`page_in_flight`) and always released in `finally`, including on DocumentStore/query/repair exceptions.
+- **First-page failure recovery (R6):** when a newly started maintenance cycle (`cursor=None`) fails before the page completes successfully, only process-local cycle state is rolled back — restoring a prior degraded snapshot when one existed, removing a fresh registry entry when no issues were found, or retaining `had_issues` when partial repairs/deletes occurred before the exception. Retry with `cursor=None` is allowed. Continuation-page failures (`cursor != None`) retain the existing in-progress cycle; retry uses the same cursor. Persistence writes and cumulative telemetry are not rolled back; convergence remains idempotent.
 - A cycle with issues (`repaired`/`deleted`/`corrupt`) sets `had_issues` for that key until a **full** clean traversal (`has_more=False`) with zero issues on that same key.
 - An abandoned cycle (`has_more=True` after issues) keeps health `DEGRADED`; a clean complete cycle on another tenant or scope does not mask it.
 - Completed clean cycles prune registry entries; degraded/incomplete entries are retained.
