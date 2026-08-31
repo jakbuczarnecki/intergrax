@@ -13,7 +13,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PROOF_LIBRARY_PATH = REPO_ROOT / "docs" / "project" / "proofs" / "PROOF_LIBRARY.md"
-_FEATURED_SECTION_HEADING = "## D. Featured scenarios in development"
+_FEATURED_SECTION_HEADING = "## B. Featured scenarios in development"
+_CATALOG_SECTION_HEADING = "## A. Scenario catalog"
+_METHODOLOGY_SECTION_HEADING = "## C. What is a Scenario Proof?"
 _SCENARIO_DESIGN_PATH = (
     REPO_ROOT
     / "platform_proofs"
@@ -92,7 +94,7 @@ def test_challenge_intergrax_route(proof_library_text: str) -> None:
 
 def _featured_section(proof_library_text: str) -> str:
     section = proof_library_text.split(_FEATURED_SECTION_HEADING, 1)[1]
-    return section.split("## E. How to read a proof", 1)[0]
+    return section.split(_METHODOLOGY_SECTION_HEADING, 1)[0]
 
 
 def test_featured_incident_scenario_no_stale_logistics_framing(
@@ -187,10 +189,10 @@ def test_incident_scenario_projection_semantics(proof_library_text: str) -> None
 
 def test_premium_structure(proof_library_text: str) -> None:
     for heading in (
-        "## A. What is a Scenario Proof?",
-        "## B. What makes a scenario worth publishing?",
-        "## C. Scenario catalog",
-        "## D. Featured scenarios in development",
+        _CATALOG_SECTION_HEADING,
+        _FEATURED_SECTION_HEADING,
+        _METHODOLOGY_SECTION_HEADING,
+        "## D. What makes a scenario worth publishing?",
         "## E. How to read a proof",
         "## F. PASS / FAIL / UNRESOLVED semantics",
         "## G. Challenge Intergrax",
@@ -198,6 +200,21 @@ def test_premium_structure(proof_library_text: str) -> None:
         "## I. Related routes",
     ):
         assert heading in proof_library_text, f"Missing section: {heading}"
+
+
+def test_scenario_catalog_precedes_methodology(proof_library_text: str) -> None:
+    catalog_idx = proof_library_text.index(_CATALOG_SECTION_HEADING)
+    methodology_idx = proof_library_text.index(_METHODOLOGY_SECTION_HEADING)
+    assert catalog_idx < methodology_idx
+
+
+def test_catalog_thumbnail_previews(proof_library_text: str) -> None:
+    catalog_section = proof_library_text.split(_CATALOG_SECTION_HEADING, 1)[1].split(
+        _FEATURED_SECTION_HEADING, 1
+    )[0]
+    assert "ai_incident_investigation/assets/proof-story-light.svg" in catalog_section
+    assert "indirect_prompt_injection/assets/scenario-overview.png" in catalog_section
+    assert "| Preview | Scenario | What makes it hard | Status |" in catalog_section
 
 
 def test_visual_integration(proof_library_text: str) -> None:

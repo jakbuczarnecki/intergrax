@@ -42,6 +42,10 @@ class _MongoDBDocumentStore:
     def mongo_client(self) -> MongoCollectionClient:
         return self._client
 
+    @property
+    def query_cursor_codec(self) -> DocumentQueryCursorCodec:
+        return self._cursor_codec
+
     def get(self, partition_key: str, row_key: str) -> Optional[DocumentRecord]:
         self._require_open()
         return self._client.get(partition_key, row_key)

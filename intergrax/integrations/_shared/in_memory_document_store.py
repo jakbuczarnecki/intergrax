@@ -56,6 +56,10 @@ class InMemoryDocumentStore:
         self._rows: dict[tuple[str, str], DocumentRecord] = {}
         self._lock = threading.RLock()
 
+    @property
+    def query_cursor_codec(self) -> DocumentQueryCursorCodec:
+        return self._cursor_codec
+
     def get(self, partition_key: str, row_key: str) -> DocumentRecord | None:
         with self._lock:
             return self._rows.get((partition_key, row_key))

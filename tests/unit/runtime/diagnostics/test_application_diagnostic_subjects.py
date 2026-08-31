@@ -21,6 +21,7 @@ from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrch
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import (
     InMemoryProblemPersistence,
 )
+from intergrax.runtime.diagnostics.persistence_conformance import query_all_problems_for_tenant
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
 from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingEngine,
@@ -137,7 +138,7 @@ def test_application_subject_first_occurrence() -> None:
     assert result.signal_subject_results[0].assessment.has_findings
     assert len(result.lifecycle_result.created) == 1
     assert result.lifecycle_result.created[0].occurrence_count == 1
-    assert persistence.list_for_tenant(_TENANT_A) == (result.lifecycle_result.created[0],)
+    assert query_all_problems_for_tenant(persistence, _TENANT_A) == (result.lifecycle_result.created[0],)
 
 
 def test_recurrence_across_instance_ids() -> None:
@@ -194,8 +195,8 @@ def test_tenant_isolation_for_application_subjects() -> None:
     problem_a = tenant_a.lifecycle_result.created[0].problem_id
     problem_b = tenant_b.lifecycle_result.created[0].problem_id
     assert problem_a != problem_b
-    assert len(persistence.list_for_tenant(_TENANT_A)) == 1
-    assert len(persistence.list_for_tenant(_TENANT_B)) == 1
+    assert len(query_all_problems_for_tenant(persistence, _TENANT_A)) == 1
+    assert len(query_all_problems_for_tenant(persistence, _TENANT_B)) == 1
 
 
 def test_different_signature_isolation() -> None:

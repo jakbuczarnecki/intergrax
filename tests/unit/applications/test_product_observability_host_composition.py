@@ -42,6 +42,9 @@ from tests.unit.applications.test_product_observability_dashboard_wiring import 
     _assess_retry_pair,
     _grouping_engine,
 )
+from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+    TEST_PROBLEM_LIST_CURSOR_SECRET,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -139,7 +142,7 @@ def test_host_composition_dashboard_diagnostics_ready_with_tenant_scope(
     _stub_host_llm: None,
 ) -> None:
     document_store = InMemoryDocumentStore()
-    persistence = wire_problem_persistence(document_store=document_store)
+    persistence = wire_problem_persistence(list_cursor_secret=TEST_PROBLEM_LIST_CURSOR_SECRET, document_store=document_store)
     _seed_problems_via_lifecycle(
         persistence,
         tenant_id=_TENANT_A,
@@ -237,7 +240,7 @@ def test_durable_problem_persistence_survives_adapter_restart(
     _stub_host_llm: None,
 ) -> None:
     document_store = InMemoryDocumentStore()
-    first = wire_problem_persistence(document_store=document_store)
+    first = wire_problem_persistence(list_cursor_secret=TEST_PROBLEM_LIST_CURSOR_SECRET, document_store=document_store)
     _seed_problems_via_lifecycle(
         first,
         tenant_id=_TENANT_A,
@@ -247,7 +250,7 @@ def test_durable_problem_persistence_survives_adapter_restart(
     if isinstance(first, DocumentStoreProblemPersistence):
         first.close()
 
-    restarted = wire_problem_persistence(document_store=document_store)
+    restarted = wire_problem_persistence(list_cursor_secret=TEST_PROBLEM_LIST_CURSOR_SECRET, document_store=document_store)
     runtime = build_harness_host_runtime(
         build_governed_contractor_manifest(),
         _product_env(),

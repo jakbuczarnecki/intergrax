@@ -413,6 +413,30 @@ Ordering invariant: `last_seen_at DESC`, `problem_id ASC` tie-break. Optional `P
 
 Qualification: [`DIAGNOSTIC_ENTERPRISE_SCALE_MATRIX.md`](../maintainers/qualification/DIAGNOSTIC_ENTERPRISE_SCALE_MATRIX.md) § E1.
 
+### Concurrent read-index semantics (DIAG-ENTERPRISE-1-R1)
+
+Canonical `Problem` records remain truth; `list:{scope}:…` rows are **derived projections** only.
+
+| Transition window | Reader behavior |
+|---|---|
+| Index visible, canonical missing (create in flight) | Skip entry; bounded overfetch |
+| Index `record_version` > canonical (update in flight) | Skip entry |
+| Index `record_version` < canonical (stale projection) | Skip entry |
+| Same `record_version`, metadata mismatch | `ProblemPersistenceIntegrityError` (corruption) |
+| Index `problem_id` ≠ canonical | `ProblemPersistenceIntegrityError` (corruption) |
+
+List-index rows carry minimal metadata: `problem_id`, `record_version`, `last_seen_at`, `status`. Readers reconcile projection vs canonical with bounded work (`limit × 16` index rows examined max per page).
+
+Crash recovery: incomplete create/update leaves skippable projections; subsequent idempotent `create` / `update` repair paths converge indexes (`_repair_indexes_for_record`, `_ensure_list_indexes`).
+
+### List cursor trust model (DIAG-ENTERPRISE-1-R1)
+
+Production hosts authenticate continuation cursors with HMAC-SHA256 over a tenant- and status-filter-bound payload. Secret enters only through composition (`INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET` via `resolve_problem_list_cursor_secret()`). **No static default secret in production.** Restart with a new secret invalidates previously issued cursors (documented limitation; no transparent rotation in this slice).
+
+### Production persistence contract
+
+Full-tenant Problem listing is **not** part of the production `ProblemPersistence` contract. Callers must use `query_problems` with bounded pages. Test/conformance helpers may materialize via paginated `query_all_problems_for_tenant`.
+
 Full hosting composition: [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md).
 
 ---

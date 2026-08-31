@@ -56,7 +56,11 @@ def _build_diagnostic_operations_pane(
 ) -> DiagnosticOperationsPane:
     """Project central diagnostic read capability for the host tenant scope."""
     if not env.observability_profile.diagnostics_pane_enabled:
-        return DiagnosticOperationsPane(ready=False, problem_count=0, open_problem_count=0)
+        return DiagnosticOperationsPane(
+            ready=False,
+            problem_count=0,
+            open_problem_count=0,
+        )
 
     auditability = (
         project_auditability_health_snapshot(auditability_facts)
@@ -65,9 +69,17 @@ def _build_diagnostic_operations_pane(
     )
     read_side_ready = diagnostic_read_service is not None
     if auditability is not None and not auditability.auditability_ready:
-        return DiagnosticOperationsPane(ready=False, problem_count=0, open_problem_count=0)
+        return DiagnosticOperationsPane(
+            ready=False,
+            problem_count=0,
+            open_problem_count=0,
+        )
     if not read_side_ready:
-        return DiagnosticOperationsPane(ready=False, problem_count=0, open_problem_count=0)
+        return DiagnosticOperationsPane(
+            ready=False,
+            problem_count=0,
+            open_problem_count=0,
+        )
 
     tenant_id = env.profile_id
     all_problems = diagnostic_read_service.list_problems(tenant_id=tenant_id)
@@ -75,20 +87,16 @@ def _build_diagnostic_operations_pane(
         tenant_id=tenant_id,
         status=ProblemStatus.OPEN,
     )
-    problem_count = (
-        all_problems.total_count
-        if all_problems.total_count is not None
-        else all_problems.returned_count
-    )
-    open_problem_count = (
-        open_problems.total_count
-        if open_problems.total_count is not None
-        else open_problems.returned_count
-    )
     return DiagnosticOperationsPane(
         ready=True,
-        problem_count=problem_count,
-        open_problem_count=open_problem_count,
+        problem_count=all_problems.total_count
+        if all_problems.total_count is not None
+        else all_problems.returned_count,
+        open_problem_count=open_problems.total_count
+        if open_problems.total_count is not None
+        else open_problems.returned_count,
+        problem_count_is_exact=all_problems.total_count is not None,
+        open_problem_count_is_exact=open_problems.total_count is not None,
     )
 
 

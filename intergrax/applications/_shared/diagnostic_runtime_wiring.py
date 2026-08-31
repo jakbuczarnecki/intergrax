@@ -13,6 +13,9 @@ from intergrax.applications._shared.diagnostic_assembly_resolver import (
     assert_diagnostic_assembly_valid,
     resolve_central_diagnostics_required,
 )
+from intergrax.applications._shared.diagnostic_cursor_secret import (
+    resolve_problem_list_cursor_secret,
+)
 from intergrax.applications._shared.environment_wiring import ApplicationEnvironmentWiring
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.integrations._shared.conformance import assert_conditional_document_store
@@ -68,7 +71,10 @@ def resolve_host_diagnostic_runtime_dependencies(
         return None
 
     return HostDiagnosticReadDependencies(
-        problem_persistence=wire_problem_persistence(document_store=document_store),
+        problem_persistence=wire_problem_persistence(
+            document_store=document_store,
+            list_cursor_secret=resolve_problem_list_cursor_secret(),
+        ),
         runtime_event_persistence=runtime_events,
         causal_evidence_persistence=wire_causal_evidence_persistence(
             document_store=document_store,

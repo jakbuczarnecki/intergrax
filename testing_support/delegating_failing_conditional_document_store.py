@@ -8,6 +8,7 @@ from enum import StrEnum
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import (
+    DocumentQueryCursorCodec,
     DocumentQueryPageV1,
     DocumentRecord,
 )
@@ -31,7 +32,9 @@ class DelegatingFailingConditionalDocumentStore:
     """
 
     def __init__(self, delegate: InMemoryDocumentStore | None = None) -> None:
-        self._delegate = delegate or InMemoryDocumentStore()
+        self._delegate = delegate or InMemoryDocumentStore(
+            cursor_secret=b"delegating-fail-test-document-store-cursor-secret",
+        )
         self._mode = DocumentStoreWriteFailureMode.HEALTHY
 
     @property
@@ -93,6 +96,10 @@ class DelegatingFailingConditionalDocumentStore:
 
     def delete_if_match(self, *, expected: DocumentRecord) -> bool:
         return self._delegate.delete_if_match(expected=expected)
+
+    @property
+    def query_cursor_codec(self) -> DocumentQueryCursorCodec:
+        return self._delegate.query_cursor_codec
 
 
 __all__ = [

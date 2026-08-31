@@ -27,6 +27,9 @@ from intergrax.applications.contracts.manifest import AgentBinding, ApplicationM
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.diagnostics.persistence_conformance import sample_problem
 from intergrax.runtime.diagnostics.document_store_problem_persistence import wire_problem_persistence
+from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+    TEST_PROBLEM_LIST_CURSOR_SECRET,
+)
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import TaskState
@@ -138,7 +141,7 @@ async def test_lab_document_store_supports_problem_persistence(
     wiring_context = composition.env_wiring.build_context.tool_wiring_context
     assert wiring_context is not None
     assert wiring_context.document_store is not None
-    persistence = wire_problem_persistence(document_store=wiring_context.document_store)
+    persistence = wire_problem_persistence(list_cursor_secret=TEST_PROBLEM_LIST_CURSOR_SECRET, document_store=wiring_context.document_store)
     record = persistence.create(sample_problem(tenant_id=_TENANT))
     loaded = persistence.get(tenant_id=_TENANT, problem_id=record.problem_id)
     assert loaded is not None

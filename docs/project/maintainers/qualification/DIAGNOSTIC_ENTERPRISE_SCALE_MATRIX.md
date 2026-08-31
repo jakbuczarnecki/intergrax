@@ -5,9 +5,10 @@ Enterprise-scale qualification ledger for diagnostics beyond functional HARDEN p
 Status vocabulary:
 
 - `PROVEN` — bounded proof exists in this repository for the stated semantics
+- `REQUALIFICATION_REQUIRED` — prior proof invalidated; remediation in flight
 - `NOT_YET_QUALIFIED` — not proven in-repo yet; do not treat as production scale guarantee
 
-## E1 — Scalable Problem reads (`DIAG-ENTERPRISE-1`)
+## E1 — Scalable Problem reads (`DIAG-ENTERPRISE-1` / `DIAG-ENTERPRISE-1-R1`)
 
 **Status:** `PROVEN`
 
@@ -16,19 +17,22 @@ Operator Problem list reads are bounded by page/query instead of materializing e
 | Capability | Semantics | Proof |
 |---|---|---|
 | Bounded persistence query | `ProblemPersistence.query_problems(tenant_id, status?, limit, cursor?) → ProblemListPage` | `tests/unit/runtime/diagnostics/test_diag_enterprise_1_scalable_problem_reads.py` |
+| Concurrent transition tolerance | index leads / canonical leads → skip, not false `IntegrityError` | `tests/unit/runtime/diagnostics/test_diag_enterprise_1_r1_read_index_races.py` |
 | Public ordering | `last_seen_at DESC`, `problem_id ASC` tie-break | same + `test_diagnostic_read_service.py` |
 | Status filter without full scan | `OPEN` / `RESOLVED` / all via derived list index scopes | same |
-| Opaque query-bound cursor | HMAC envelope binds tenant + status filter + store continuation | same |
-| Integrity fail-closed | orphan/stale list index → `ProblemPersistenceIntegrityError` | same |
+| Authenticated query-bound cursor | HMAC envelope binds tenant + status filter + store continuation; production secret required | same + R1 race/cursor suite |
+| Integrity fail-closed | same-version metadata mismatch / id mismatch → `ProblemPersistenceIntegrityError` | same |
 | Real Mongo provider | paginated query on DocumentStore/Mongo path | `tests/integration/runtime/test_diag_enterprise_1_mongo_scalable_read.py` |
-| 10k bounded-work proof | one index query page + ≤ page-size canonical fetches | `test_bounded_query_does_not_materialize_full_tenant` |
+| 10k bounded-work proof | bounded index examination + canonical fetches | `test_bounded_query_does_not_materialize_full_tenant` |
+| No full-tenant list API | `list_for_tenant` removed from production contract | architecture + conformance helpers |
 
 **Design notes**
 
-- Canonical Problem records remain truth; `list:{scope}:…` rows are **derived read indexes** only.
-- `DiagnosticReadService.list_problems` uses persistence query; it does **not** call full `list_for_tenant`.
-- `total_count` is exact only when `cursor is None` and `has_more is False`; otherwise `None` (no full-scan count).
+- Canonical Problem records remain truth; `list:{scope}:…` rows are **derived read indexes** with `record_version` metadata.
+- `DiagnosticReadService.list_problems` uses persistence query only.
+- `total_count` is exact only when `cursor is None` and `has_more is False`; dashboard exposes `problem_count_is_exact` / `open_problem_count_is_exact`.
 - Pagination is cursor-based continuation, not snapshot isolation; concurrent updates may shift ordering between pages without loops or cross-tenant leakage.
+- Production cursor secret: `INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET` (restart invalidates prior cursors).
 
 ## E2 — Bounded occurrence history
 

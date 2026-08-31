@@ -6,10 +6,6 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.runtime.diagnostics.document_store_problem_persistence import (
-    DocumentStoreProblemPersistence,
-)
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import (
     InMemoryProblemPersistence,
 )
@@ -19,6 +15,10 @@ from intergrax.runtime.diagnostics.persistence_conformance import (
     assert_problem_update_publishes_subject_indexes_atomically,
 )
 from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistence
+from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+    document_store_problem_persistence_for_tests,
+    in_memory_document_store_for_problem_tests,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -29,7 +29,9 @@ pytestmark = pytest.mark.unit
         ("memory", lambda: InMemoryProblemPersistence()),
         (
             "document_store",
-            lambda: DocumentStoreProblemPersistence(InMemoryDocumentStore()),
+            lambda: document_store_problem_persistence_for_tests(
+                in_memory_document_store_for_problem_tests(),
+            ),
         ),
     ],
 )

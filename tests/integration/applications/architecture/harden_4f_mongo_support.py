@@ -41,6 +41,7 @@ from intergrax.runtime.diagnostics.document_store_problem_persistence import (
 from intergrax.runtime.diagnostics.problem_lifecycle import Problem, ProblemId
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from tests.integration.runtime.diag_final_otel_support import attach_retry_violation_injector
+from tests.unit.runtime.diagnostics.problem_persistence_test_support import document_store_problem_persistence_for_tests
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _COMPOSE_FILE = _REPO_ROOT / "infra" / "docker" / "mongodb" / "docker-compose.yml"
@@ -375,7 +376,7 @@ def read_problem_via_fresh_store_persistence(
     """Provider-truth read through a new DocumentStore composition (not host cache)."""
     store = create_proof_document_store()
     try:
-        persistence = DocumentStoreProblemPersistence(store)
+        persistence = document_store_problem_persistence_for_tests(store)
         return persistence.get(tenant_id=tenant_id, problem_id=problem_id)
     finally:
         store.close()

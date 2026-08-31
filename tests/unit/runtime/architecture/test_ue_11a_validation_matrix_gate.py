@@ -157,13 +157,13 @@ def test_ue_11a_matrix_has_expected_capability_count() -> None:
 def test_ue_11a_matrix_documents_real_gaps() -> None:
   counts = count_by_status()
   assert counts[ValidationStatus.GAP] >= 5
-  assert counts[ValidationStatus.PARTIAL] >= 3
+  assert counts[ValidationStatus.PARTIAL] >= 2
   backlog = gap_backlog()
   assert backlog[GapTarget.UE_11G]
   assert backlog[GapTarget.UE_11B]
   assert backlog[GapTarget.UE_11D] == ()
   assert backlog[GapTarget.UE_11E] == ()
-  assert backlog[GapTarget.UE_11F]
+  assert backlog[GapTarget.UE_11F] == ()
 
 
 def test_ue_11a_partial_and_gap_targets_match_canonical_roadmap() -> None:

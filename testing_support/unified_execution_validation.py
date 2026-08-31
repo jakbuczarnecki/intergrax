@@ -575,29 +575,30 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
             "test_trigger_builds_single_execution_orchestration_request",
         ),
     ),
-    _partial(
+    _covered(
         "diag.terminal_failure_correlates_execution",
         ValidationDomain.DIAGNOSTICS,
-        GapTarget.UE_11F,
         _unit(
-            "tests/unit/runtime/diagnostics/test_diagnostic_subsystem_failure_evidence.py",
-            "test_failure_event_preserves_execution_identity",
+            "tests/unit/runtime/diagnostics/test_ue_11f_observability_diagnostic_correlation.py",
+            "test_ue_11f_terminal_failure_correlates_execution_identity_through_obs_evidence",
         ),
     ),
-    _partial(
+    _covered(
         "diag.consumes_observability_evidence",
         ValidationDomain.DIAGNOSTICS,
-        GapTarget.UE_11F,
         _unit(
-            "tests/unit/runtime/diagnostics/test_diagnostic_assessment.py",
-            "test_causal_without_runtime_emits_proven_finding",
+            "tests/unit/runtime/diagnostics/test_ue_11f_observability_diagnostic_correlation.py",
+            "test_ue_11f_terminal_failure_correlates_execution_identity_through_obs_evidence",
         ),
     ),
-    _partial(
+    _covered(
         "diag.no_execution_lifecycle_ownership",
         ValidationDomain.DIAGNOSTICS,
-        GapTarget.UE_11F,
         _unit(
+            "tests/unit/runtime/diagnostics/test_ue_11f_observability_diagnostic_correlation.py",
+            "test_ue_11f_diagnostics_has_no_execution_lifecycle_ownership",
+        ),
+        _gate(
             "tests/unit/runtime/architecture/test_diag_foundation_4_entrypoint_consistency.py",
             "test_df4_nexus_loop_is_single_terminal_diagnostic_emitter",
         ),

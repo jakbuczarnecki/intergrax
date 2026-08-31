@@ -9,6 +9,7 @@ from collections.abc import Callable
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import (
+    DocumentQueryCursorCodec,
     DocumentQueryPageV1,
     DocumentRecord,
 )
@@ -30,7 +31,9 @@ class BarrierConditionalDocumentStore:
         put_if_absent_hook: Callable[[DocumentRecord], None] | None = None,
         replace_if_match_hook: Callable[[DocumentRecord, DocumentRecord], None] | None = None,
     ) -> None:
-        self._delegate = delegate or InMemoryDocumentStore()
+        self._delegate = delegate or InMemoryDocumentStore(
+            cursor_secret=b"barrier-test-document-store-cursor-secret",
+        )
         self._put_if_absent_barrier = put_if_absent_barrier
         self._replace_if_match_barrier = replace_if_match_barrier
         self._put_if_absent_hook = put_if_absent_hook
@@ -87,6 +90,10 @@ class BarrierConditionalDocumentStore:
 
     def delete_if_match(self, *, expected: DocumentRecord) -> bool:
         return self._delegate.delete_if_match(expected=expected)
+
+    @property
+    def query_cursor_codec(self) -> DocumentQueryCursorCodec:
+        return self._delegate.query_cursor_codec
 
 
 __all__ = ["BarrierConditionalDocumentStore"]

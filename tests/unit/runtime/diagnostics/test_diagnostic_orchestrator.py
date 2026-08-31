@@ -37,6 +37,7 @@ from intergrax.runtime.diagnostics.execution_reconstruction import (
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import (
     InMemoryProblemPersistence,
 )
+from intergrax.runtime.diagnostics.persistence_conformance import query_all_problems_for_tenant
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
 from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingEngine,
@@ -279,7 +280,7 @@ def test_single_execution_with_findings_creates_singleton_problem() -> None:
     assert len(result.grouping_result.candidates) == 1
     assert len(result.lifecycle_result.created) == 1
     assert result.lifecycle_result.created[0].occurrence_count == 1
-    assert persistence.list_for_tenant("tenant-a") == (result.lifecycle_result.created)
+    assert query_all_problems_for_tenant(persistence, "tenant-a") == (result.lifecycle_result.created)
 
 
 def test_mixed_tenant_fails_before_reconstruction() -> None:
