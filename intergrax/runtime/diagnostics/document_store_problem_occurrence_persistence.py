@@ -14,6 +14,12 @@ from intergrax.integrations.contracts.document_store import (
     DocumentRecord,
     DocumentStore,
 )
+from intergrax.integrations.contracts.partition_atomic_document_store import (
+    PartitionAtomicBatch,
+    PartitionAtomicDocumentStore,
+    PartitionPutIfAbsentOnCreated,
+    PartitionReplaceIfMatchOnCreated,
+)
 from intergrax.runtime.diagnostics.problem_lifecycle import ProblemId, ProblemOccurrence
 from intergrax.runtime.diagnostics.problem_occurrence_id import (
     ProblemOccurrenceId,
@@ -50,7 +56,7 @@ _MAX_QUERY_PAGE_LIMIT = 5000
 _MAX_OCCURRENCE_PAGE_LIMIT = 1000
 _MAX_SORT_MICROS = 10**16
 _UTC_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
-_MAX_FINGERPRINT_CAS_RETRIES = 8
+_MAX_ATOMIC_BATCH_RETRIES = 64
 
 
 @runtime_checkable
@@ -98,15 +104,19 @@ def _validate_occurrence_cursor_secret(secret: bytes) -> None:
 
 
 class DocumentStoreProblemOccurrencePersistence(ProblemOccurrencePersistence):
-    """ConditionalDocumentStore-backed durable occurrence history per Problem."""
+    """PartitionAtomicDocumentStore-backed durable occurrence history per Problem."""
 
     def __init__(
         self,
-        document_store: ConditionalDocumentStore,
+        document_store: PartitionAtomicDocumentStore,
         *,
         occurrence_cursor_secret: bytes,
         document_query_cursor_codec: DocumentQueryCursorCodec | None = None,
     ) -> None:
+        if not isinstance(document_store, PartitionAtomicDocumentStore):
+            raise TypeError(
+                "problem occurrence persistence requires PartitionAtomicDocumentStore",
+            )
         if not isinstance(document_store, ConditionalDocumentStore):
             raise TypeError(
                 "problem occurrence persistence requires ConditionalDocumentStore",
@@ -153,10 +163,19 @@ class DocumentStoreProblemOccurrencePersistence(ProblemOccurrencePersistence):
             row_key=row_key,
             data=encode_problem_occurrence_record(occurrence),
         )
-        created = self._document_store.put_if_absent(document)
-        if created:
-            self._record_occurrence_write(partition_key, row_key)
-            return ProblemOccurrenceAppendResult.CREATED
+        for _ in range(_MAX_ATOMIC_BATCH_RETRIES):
+            batch_result = self._append_occurrence_atomically(
+                partition_key=partition_key,
+                occurrence_document=document,
+            )
+            if batch_result is ProblemOccurrenceAppendResult.CREATED:
+                return ProblemOccurrenceAppendResult.CREATED
+            if batch_result is ProblemOccurrenceAppendResult.ALREADY_EXISTS:
+                break
+        else:
+            raise ProblemOccurrencePersistenceIntegrityError(
+                "failed to append occurrence after bounded atomic batch retries",
+            )
 
         existing = self._document_store.get(partition_key, row_key)
         if existing is None:
@@ -257,43 +276,58 @@ class DocumentStoreProblemOccurrencePersistence(ProblemOccurrencePersistence):
             return None
         return decode_occurrence_partition_fingerprint(dict(record.data))
 
-    def _record_occurrence_write(self, partition_key: str, occurrence_row_key: str) -> None:
+    def _append_occurrence_atomically(
+        self,
+        *,
+        partition_key: str,
+        occurrence_document: DocumentRecord,
+    ) -> ProblemOccurrenceAppendResult | None:
         fingerprint_row_key = occurrence_partition_fingerprint_row_key()
-        for _ in range(_MAX_FINGERPRINT_CAS_RETRIES):
-            current_record = self._document_store.get(partition_key, fingerprint_row_key)
-            if current_record is None:
-                initial = initial_occurrence_partition_fingerprint(
-                    occurrence_row_key=occurrence_row_key,
-                )
-                created = self._document_store.put_if_absent(
-                    DocumentRecord(
-                        partition_key=partition_key,
-                        row_key=fingerprint_row_key,
-                        data=encode_occurrence_partition_fingerprint(initial),
+        current_record = self._document_store.get(partition_key, fingerprint_row_key)
+        if current_record is None:
+            initial = initial_occurrence_partition_fingerprint(
+                occurrence_row_key=occurrence_document.row_key,
+            )
+            batch = PartitionAtomicBatch(
+                partition_key=partition_key,
+                primary_put_if_absent=occurrence_document,
+                on_created_ops=(
+                    PartitionPutIfAbsentOnCreated(
+                        document=DocumentRecord(
+                            partition_key=partition_key,
+                            row_key=fingerprint_row_key,
+                            data=encode_occurrence_partition_fingerprint(initial),
+                        ),
                     ),
-                )
-                if created:
-                    return
-                continue
-
+                ),
+            )
+        else:
             current = decode_occurrence_partition_fingerprint(dict(current_record.data))
             replacement = next_occurrence_partition_fingerprint(
                 current,
-                occurrence_row_key=occurrence_row_key,
+                occurrence_row_key=occurrence_document.row_key,
             )
-            if self._document_store.replace_if_match(
-                expected=current_record,
-                replacement=DocumentRecord(
-                    partition_key=partition_key,
-                    row_key=fingerprint_row_key,
-                    data=encode_occurrence_partition_fingerprint(replacement),
+            batch = PartitionAtomicBatch(
+                partition_key=partition_key,
+                primary_put_if_absent=occurrence_document,
+                on_created_ops=(
+                    PartitionReplaceIfMatchOnCreated(
+                        expected=current_record,
+                        replacement=DocumentRecord(
+                            partition_key=partition_key,
+                            row_key=fingerprint_row_key,
+                            data=encode_occurrence_partition_fingerprint(replacement),
+                        ),
+                    ),
                 ),
-            ):
-                return
-
-        raise ProblemOccurrencePersistenceIntegrityError(
-            "failed to advance occurrence partition fingerprint after bounded retries",
-        )
+            )
+        try:
+            result = self._document_store.execute_partition_atomic_batch(batch)
+        except RuntimeError:
+            return None
+        if result.primary_created:
+            return ProblemOccurrenceAppendResult.CREATED
+        return ProblemOccurrenceAppendResult.ALREADY_EXISTS
 
     def _bootstrap_partition_fingerprint(
         self,
@@ -335,14 +369,49 @@ class DocumentStoreProblemOccurrencePersistence(ProblemOccurrencePersistence):
             max_row_key=max_row_key,
         )
         fingerprint_row_key = occurrence_partition_fingerprint_row_key()
-        self._document_store.put_if_absent(
-            DocumentRecord(
+        for _ in range(_MAX_ATOMIC_BATCH_RETRIES):
+            current_record = self._document_store.get(partition_key, fingerprint_row_key)
+            if current_record is None:
+                created = self._document_store.put_if_absent(
+                    DocumentRecord(
+                        partition_key=partition_key,
+                        row_key=fingerprint_row_key,
+                        data=encode_occurrence_partition_fingerprint(fingerprint),
+                    ),
+                )
+                if created:
+                    return fingerprint
+                continue
+
+            current = decode_occurrence_partition_fingerprint(dict(current_record.data))
+            merged = _merge_partition_fingerprints(current, fingerprint)
+            if merged == current:
+                return current
+            replacement = DocumentRecord(
                 partition_key=partition_key,
                 row_key=fingerprint_row_key,
-                data=encode_occurrence_partition_fingerprint(fingerprint),
-            ),
+                data=encode_occurrence_partition_fingerprint(merged),
+            )
+            if self._document_store.replace_if_match(
+                expected=current_record,
+                replacement=replacement,
+            ):
+                return merged
+
+        raise ProblemOccurrencePersistenceIntegrityError(
+            "failed to bootstrap occurrence partition fingerprint after bounded retries",
         )
-        return fingerprint
+
+
+def _merge_partition_fingerprints(
+    stored: ProblemOccurrencePartitionFingerprint,
+    scanned: ProblemOccurrencePartitionFingerprint,
+) -> ProblemOccurrencePartitionFingerprint:
+    return ProblemOccurrencePartitionFingerprint(
+        write_generation=max(stored.write_generation, scanned.write_generation),
+        min_row_key=min(stored.min_row_key, scanned.min_row_key),
+        max_row_key=max(stored.max_row_key, scanned.max_row_key),
+    )
 
 
 def wire_problem_occurrence_persistence(
@@ -353,9 +422,9 @@ def wire_problem_occurrence_persistence(
     """Platform composition boundary: storage capability → occurrence persistence."""
     if document_store is None:
         raise ValueError("wire_problem_occurrence_persistence requires document_store")
-    if not isinstance(document_store, ConditionalDocumentStore):
+    if not isinstance(document_store, PartitionAtomicDocumentStore):
         raise TypeError(
-            "problem occurrence persistence requires ConditionalDocumentStore",
+            "problem occurrence persistence requires PartitionAtomicDocumentStore",
         )
     _validate_occurrence_cursor_secret(occurrence_cursor_secret)
     return DocumentStoreProblemOccurrencePersistence(

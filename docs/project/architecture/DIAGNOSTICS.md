@@ -235,7 +235,8 @@ ProblemPersistence   ProblemOccurrencePersistence
 bounded Problem       durable full history
    └───────────┬───────────┘
                ↓
-     ConditionalDocumentStore
+     PartitionAtomicDocumentStore
+     (extends ConditionalDocumentStore)
                ↓
         Mongo / InMemory / …
 ```
@@ -246,6 +247,7 @@ Mongo is a **provider**, not part of the central diagnostics contract:
 IntegrationProfile
   → DocumentStore abstraction
   → ConditionalDocumentStore capability
+  → PartitionAtomicDocumentStore capability (E2-R6 — required for occurrence persistence)
   → DocumentStoreProblemPersistence + DocumentStoreProblemOccurrencePersistence
   → ProblemLifecycleEngine
 ```
@@ -496,7 +498,7 @@ Rules:
 
 Production hosts authenticate continuation cursors with HMAC-SHA256 over a tenant- and status-filter-bound payload. Secret enters only through composition (`INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET` via `resolve_problem_list_cursor_secret()`). **Minimum 32 UTF-8 bytes** (random 256-bit recommended). **No static default secret in production.** Restart with a new secret invalidates previously issued cursors (documented limitation; no transparent rotation in this slice).
 
-### Bounded occurrence history (DIAG-ENTERPRISE-2 / E2-R4 / E2-R5 — IN_PROGRESS)
+### Bounded occurrence history (DIAG-ENTERPRISE-2 / E2-R4 / E2-R5 / E2-R6 — IN_PROGRESS)
 
 Source-of-truth hierarchy:
 
@@ -510,16 +512,18 @@ bounded Problem aggregate (+ typed occurrence_aggregate_health)
 
 Occurrence rows are authoritative. Problem `occurrence_count` / `first_seen_at` / `last_seen_at` are a bounded derived projection — not a central mutable stats counter.
 
-**Write protocol (idempotent, bounded O(1) per append):**
+**Write protocol (idempotent, bounded O(1) per append — E2-R6 atomic):**
 
-1. `put_if_absent` durable occurrence row (`occ:{inverted_observed_at_micros}:{occurrence_id}`) only.
-2. On `CREATED`, advance partition fingerprint (`meta:occurrence_partition_fingerprint`: monotonic `write_generation` + `min_row_key` / `max_row_key` tie-break bounds).
+1. `execute_partition_atomic_batch`: atomically `put_if_absent` occurrence row **and**, only when created, advance partition fingerprint (`meta:occurrence_partition_fingerprint`: monotonic `write_generation` + `min_row_key` / `max_row_key`).
+2. Either both commit or neither — no partial success window between occurrence row and fingerprint metadata.
 3. Hot path (lifecycle): when append returns `CREATED`, apply bounded delta to Problem aggregate and persist via optimistic CAS with `occurrence_aggregate_health=CONSISTENT`.
 4. On aggregate CAS failure, mark `RECONCILIATION_REQUIRED` best-effort and reconcile via bounded repair.
 5. `ProblemOccurrenceAggregateHealth`: `CONSISTENT` (count exact for a closed snapshot) vs `RECONCILIATION_REQUIRED` (count may be stale until repair completes).
-6. Duplicate retry (`ALREADY_EXISTS`) never blind-increments; when health is `CONSISTENT`, no unconditional full-history scan.
+6. Duplicate retry (`ALREADY_EXISTS`) never blind-increments fingerprint; when health is `CONSISTENT`, no unconditional full-history scan.
 
-**Repair snapshot (E2-R5):** capture partition fingerprint boundary `H` (bounded O(1)); paginated scan only rows with `min_row_key <= row_key <= terminal_row_key`; `CONSISTENT` only when start/end fingerprint stable (no concurrent writes during scan) and aggregate matches scan. Late/out-of-order inserts bump `write_generation` and force another round.
+**Storage capability (E2-R6):** `ProblemOccurrencePersistence` wiring requires `PartitionAtomicDocumentStore` — fail closed when absent. Mongo adapter implements the batch via replica-set transactions; InMemory via process lock. Standalone Mongo without replica set does **not** satisfy the contract.
+
+**Repair snapshot (E2-R5/R6):** capture partition fingerprint boundary `H` (bounded O(1)); paginated scan only rows with `min_row_key <= row_key <= terminal_row_key`; `CONSISTENT` only when start/end fingerprint stable (no concurrent writes during scan) and aggregate matches scan. Late/out-of-order inserts bump `write_generation` and force another round. Legacy bootstrap merges scanned bounds with any concurrent fingerprint via bounded CAS.
 
 **Removed (E2-R2/R3):** `meta:stats`, `meta:stats_contrib:*`, `last_committed_occurrence_id`, central exactly-once stats increment.
 

@@ -32,8 +32,14 @@ from intergrax.applications._shared.diagnostic_read_wiring import (
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications._shared.integration_wiring import bootstrap_application_integration_catalog
 from intergrax.integrations._shared.conformance import assert_conditional_document_store
+from intergrax.integrations._shared.partition_atomic_conformance import (
+    assert_partition_atomic_document_store,
+)
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.document_store import ConditionalDocumentStore
+from intergrax.integrations.contracts.partition_atomic_document_store import (
+    PartitionAtomicDocumentStore,
+)
 from intergrax.integrations.providers.document_store.mongodb.bundle import create_mongodb_document_store
 from intergrax.runtime.diagnostics.document_store_problem_persistence import (
     DocumentStoreProblemPersistence,
@@ -46,7 +52,8 @@ from tests.unit.runtime.diagnostics.problem_persistence_test_support import docu
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _COMPOSE_FILE = _REPO_ROOT / "infra" / "docker" / "mongodb" / "docker-compose.yml"
 _COMPOSE_PROJECT = "harden-4f-mongo-proof"
-_DEFAULT_URI = "mongodb://localhost:27017"
+_DEFAULT_BOOTSTRAP_URI = "mongodb://localhost:27017"
+_DEFAULT_URI = "mongodb://localhost:27017/?replicaSet=rs0"
 _DEFAULT_DATABASE = "intergrax_harden_4f"
 _COLLECTION_PREFIX = "harden_4f_"
 _DOCUMENT_PARTITION_PREFIX = "intergrax.diagnostic_problem.v1"
@@ -108,14 +115,21 @@ def _with_bounded_mongo_timeout(uri: str) -> str:
     return f"{uri}{separator}serverSelectionTimeoutMS={_MONGO_SELECTION_TIMEOUT_MS}"
 
 
-def resolve_mongodb_uri() -> str:
-    raw = os.environ.get("INTERGRAX_MONGODB_URI", _DEFAULT_URI).strip() or _DEFAULT_URI
+def resolve_mongodb_uri(*, require_replica_set: bool = True) -> str:
+    raw = os.environ.get("INTERGRAX_MONGODB_URI", "").strip()
+    if not raw:
+        raw = _DEFAULT_URI if require_replica_set else _DEFAULT_BOOTSTRAP_URI
     return _with_bounded_mongo_timeout(raw)
+
+
+def resolve_mongodb_bootstrap_uri() -> str:
+    return resolve_mongodb_uri(require_replica_set=False)
 
 
 def proof_env(*, collection_name: str | None = None) -> dict[str, str]:
     env = os.environ.copy()
     env["INTERGRAX_MONGODB_URI"] = resolve_mongodb_uri()
+    env["INTERGRAX_MONGODB_BOOTSTRAP_URI"] = resolve_mongodb_bootstrap_uri()
     env["INTERGRAX_MONGODB_DATABASE"] = _DEFAULT_DATABASE
     env["INTERGRAX_MONGODB_COLLECTION"] = collection_name or (
         f"{_COLLECTION_PREFIX}{uuid.uuid4().hex}"
@@ -178,9 +192,110 @@ def _resolve_mongo_container_id() -> str | None:
     return None
 
 
+def _mongo_replica_set_unavailable_message() -> str | None:
+    container_id = _resolve_mongo_container_id()
+    if container_id is None:
+        return "mongo container unavailable"
+    completed = subprocess.run(
+        [
+            "docker",
+            "exec",
+            container_id,
+            "mongosh",
+            "--quiet",
+            "--eval",
+            "try { rs.status().ok } catch (e) { e.message }",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+    )
+    if completed.returncode != 0:
+        return completed.stderr.strip() or "mongo shell unavailable"
+    message = completed.stdout.strip()
+    if message == "1" or message == "true":
+        return None
+    return message or "mongo replica set unavailable"
+
+
+def _recreate_mongo_with_replica_set() -> None:
+    container_id = _resolve_mongo_container_id()
+    if container_id is not None:
+        subprocess.run(
+            ["docker", "rm", "-f", container_id],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+    up = _run_compose("up", "-d", "--force-recreate", timeout=180)
+    if up.returncode != 0:
+        raise RuntimeError(
+            "failed to recreate HARDEN-4F Mongo replica-set stack:\n"
+            f"stdout={up.stdout}\nstderr={up.stderr}",
+        )
+
+
+def ensure_mongo_replica_set_initialized() -> None:
+    unavailable = _mongo_replica_set_unavailable_message()
+    if unavailable is not None and "not running with --replSet" in unavailable:
+        _recreate_mongo_with_replica_set()
+    container_id = _resolve_mongo_container_id()
+    if container_id is None:
+        return
+    completed = subprocess.run(
+        [
+            "docker",
+            "exec",
+            container_id,
+            "mongosh",
+            "--quiet",
+            "--eval",
+            "try { rs.status().ok } catch (e) { rs.initiate({_id:'rs0', members:[{_id:0, host:'localhost:27017'}]}) }",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(
+            "failed to initialize Mongo replica set for HARDEN-4F:\n"
+            f"stdout={completed.stdout}\nstderr={completed.stderr}",
+        )
+    deadline = time.monotonic() + _REACHABILITY_TIMEOUT_SECONDS
+    while time.monotonic() < deadline:
+        status = subprocess.run(
+            [
+                "docker",
+                "exec",
+                container_id,
+                "mongosh",
+                "--quiet",
+                "--eval",
+                "rs.status().members[0].stateStr",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+        )
+        if status.returncode == 0 and "PRIMARY" in status.stdout:
+            return
+        time.sleep(_REACHABILITY_POLL_SECONDS)
+    raise AssertionError("Mongo replica set did not elect PRIMARY within timeout")
+
+
 def ensure_mongo_running() -> None:
     global _stopped_container_id
     if probe_mongo_document_store():
+        ensure_mongo_replica_set_initialized()
+        _stopped_container_id = None
+        return
+    if _probe_mongo_container_reachable():
+        ensure_mongo_replica_set_initialized()
+        wait_until_mongo_reachable()
         _stopped_container_id = None
         return
     if _stopped_container_id is not None:
@@ -188,10 +303,28 @@ def ensure_mongo_running() -> None:
         return
     up = _run_compose("up", "-d", timeout=180)
     if up.returncode != 0:
-        raise RuntimeError(
-            "failed to start HARDEN-4F Mongo stack:\n"
-            f"stdout={up.stdout}\nstderr={up.stderr}",
-        )
+        if "already in use" in (up.stderr or ""):
+            container_id = _resolve_mongo_container_id()
+            if container_id is not None:
+                subprocess.run(
+                    ["docker", "start", container_id],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=60,
+                )
+            else:
+                raise RuntimeError(
+                    "failed to start HARDEN-4F Mongo stack:\n"
+                    f"stdout={up.stdout}\nstderr={up.stderr}",
+                )
+        else:
+            raise RuntimeError(
+                "failed to start HARDEN-4F Mongo stack:\n"
+                f"stdout={up.stdout}\nstderr={up.stderr}",
+            )
+    wait_until_mongo_reachable()
+    ensure_mongo_replica_set_initialized()
     wait_until_mongo_reachable()
 
 
@@ -233,6 +366,8 @@ def start_mongo_container() -> None:
             f"stdout={completed.stdout}\nstderr={completed.stderr}",
         )
     wait_until_mongo_reachable()
+    ensure_mongo_replica_set_initialized()
+    wait_until_mongo_reachable()
     _stopped_container_id = None
 
 
@@ -240,6 +375,20 @@ def _open_platform_document_store() -> ConditionalDocumentStore:
     bootstrap_application_integration_catalog()
     store = create_mongodb_document_store()
     return assert_conditional_document_store(store)
+
+
+def _probe_mongo_container_reachable() -> bool:
+    try:
+        from pymongo import MongoClient
+    except ImportError:
+        return False
+    try:
+        client = MongoClient(resolve_mongodb_bootstrap_uri())
+        client.admin.command("ping")
+        client.close()
+        return True
+    except (ConnectionError, TimeoutError, OSError, PyMongoError):
+        return False
 
 
 def probe_mongo_document_store() -> bool:
@@ -274,10 +423,10 @@ def wait_until_mongo_unreachable(*, timeout_seconds: float = _REACHABILITY_TIMEO
     raise AssertionError(f"MongoDB did not become unreachable within {timeout_seconds}s")
 
 
-def create_proof_document_store() -> ConditionalDocumentStore:
+def create_proof_document_store() -> PartitionAtomicDocumentStore:
     bootstrap_application_integration_catalog()
     store = create_mongodb_document_store()
-    return assert_conditional_document_store(store)
+    return assert_partition_atomic_document_store(store)
 
 
 def build_harden_4f_mongo_product_host(
