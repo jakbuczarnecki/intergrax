@@ -1,6 +1,6 @@
 # Decision System
 
-**Intergrax Decision System** is the platform capability that leads a decision from proposal through optional deliberation, verification, revision, optional adjudication, resolution, and finalization to an **authoritative lifecycle outcome** — executed entirely as a **Decision Lifecycle model inside Nexus**, not as a second runtime.
+**Intergrax Decision System** is the platform capability that leads a decision from proposal through optional deliberation, verification, revision, optional adjudication, resolution, and finalization to an **authoritative lifecycle outcome** — a **semantic capability hosted inside canonical Execution**, not a second runtime.
 
 The Decision System answers **„jaki jest autorytatywny wynik decyzji?”** — classification, recommendation, selection, plan, approval, finding, or evidence-backed conclusion. It is **not** an „ulepszony Critic”, **not** Council Runtime, and **not** a parallel execution engine.
 
@@ -29,9 +29,9 @@ Without a single platform Decision System:
 - crash resume can mint duplicate authoritative outcomes or expand budgets,
 - diagnostics and decision-making compete for the same ownership.
 
-The Decision System provides **typed lifecycle semantics, version lineage, compositional verification, extensible strategies, and audit surfaces** so applications compose domain decisions safely while Nexus remains the sole execution owner.
+The Decision System provides **typed lifecycle semantics, version lineage, compositional verification, extensible strategies, and audit surfaces** so applications compose domain decisions safely while the **Execution System** remains the canonical host for execution lifecycle, identity, and strategy routing.
 
-**Nexus executes Decision Lifecycle. Domain/application owns what is being decided.**
+**Decision Lifecycle is hosted by canonical Execution. Domain/application owns what is being decided.**
 
 ---
 
@@ -40,7 +40,8 @@ The Decision System provides **typed lifecycle semantics, version lineage, compo
 | Concern | Summary |
 | -------- | -------- |
 | **Core question** | What is the authoritative decision outcome for this scope? |
-| **Execution owner** | **Nexus only** — Decision Lifecycle is a model, not a runtime |
+| **Execution host** | **Execution System** — canonical execution lifecycle, identity, and strategy routing |
+| **Decision capability** | Semantic lifecycle inside hosting Execution — **no** DecisionRuntime |
 | **Lifecycle** | Proposal → optional Deliberation → Verification → Revision → optional Adjudication → Resolution → Finalization |
 | **Decision Resolution** | `ACCEPTED` · `REJECTED` · **`UNRESOLVED`** — merytoryczny wynik lifecycle; oddzielny od termination wykonania |
 | **Strategy** | Pluggable `DecisionStrategy` — Single Model, Council, Rule-Based, Hybrid, future registered strategies |
@@ -52,7 +53,7 @@ The Decision System provides **typed lifecycle semantics, version lineage, compo
 | **Decision ≠ Authorization ≠ Execution** | Three separate platform responsibilities — see [below](#decision--authorization--execution) |
 | **Version binding** | Every verification result, challenge, approval, adjudication, and authorization record binds **Decision ID + Decision Version + scope + tenant + execution identity** |
 | **Concurrency** | Parallel proposal branches preserve lineage; no duplicate authoritative decisions per scope |
-| **Crash / resume** | Uses Nexus checkpoint/persistence — **no** Decision checkpoint engine |
+| **Crash / resume** | Canonical hosting Execution checkpoint/persistence — **no** Decision checkpoint engine |
 | **Retry boundaries** | Technical retry (Nexus) · decision revision (Lifecycle) · deliberation rounds (Strategy) — never one generic loop |
 | **HITL** | Invokes platform HITL — does not implement Human Engine |
 | **Policy** | Cross-cutting authorization — Decision System does not own Runtime Policy Engine |
@@ -69,21 +70,21 @@ The Decision System provides **typed lifecycle semantics, version lineage, compo
   <source media="(prefers-color-scheme: dark)" srcset="assets/decision-system-flagship-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/decision-system-flagship-light.svg">
   <img
-    alt="Conceptual diagram: Application flows through Nexus into Decision Lifecycle with Strategy, Verification, Revision, and Adjudication to Authoritative Decision, bounded by Policy, HITL, Execution, Observability, and Diagnostics."
+    alt="Conceptual diagram: Application flows through Execution into optional Decision Lifecycle with Strategy, Verification, Revision, and Adjudication to Authoritative Decision, bounded by Policy, HITL, Execution, Observability, and Diagnostics."
     src="assets/decision-system-flagship-light.svg"
   >
 </picture>
 </a>
 
-> **Nexus executes Decision Lifecycle. Decision correctness ≠ permission to execute ≠ execution itself.**
+> **Decision Lifecycle is hosted by canonical Execution. Decision correctness ≠ permission to execute ≠ execution itself.**
 
 ```text
 Application intent
       ↓
-Nexus (sole execution owner)
+Execution (canonical host)
       ↓
-Decision Lifecycle
-├── optional Decision Strategy (Council / Single / Rule / Hybrid)
+optional Decision Lifecycle
+├── Decision Strategy (Council / Single / Rule / Hybrid)
 ├── Verification Pipeline
 ├── Revision (bounded)
 └── optional Adjudication
@@ -92,19 +93,36 @@ Authoritative lifecycle outcome (accepted decision or resolution record)
       ↓
 Policy / HITL may gate consequential execution
       ↓
-Nexus Execution (side effects)
+Execution System routes work
+├── INFERENCE
+├── AGENTIC
+└── ORCHESTRATION → Nexus (when orchestration is required)
 ```
 
 ---
 
 ## Responsibility model
 
+| Concern | Owner |
+| ------- | ----- |
+| Decision lifecycle semantics | Decision System |
+| Hosting execution lifecycle | Execution System |
+| Strategy routing | Execution System |
+| Orchestration scheduling | Nexus |
+| Decision verification | Verification Pipeline |
+| Decision resolution/finalization semantics | Decision System |
+| Durable execution/checkpoint host | Execution System / canonical execution persistence boundary |
+| Authorization | Policy / Governed Execution |
+| HITL authority | HITL |
+| Audit evidence | Observability |
+
 | Domain | Owns | Does not own |
 | ------ | ---- | ------------ |
-| **Decision System** | Lifecycle, candidate/authoritative semantics, version lineage, resolution (incl. UNRESOLVED), strategy orchestration contract | Global retry, authorization, side effects, diagnostics classification, private CoT |
+| **Decision System** | Lifecycle semantics, candidate/authoritative semantics, version lineage, resolution (incl. UNRESOLVED), strategy orchestration contract | Global retry, authorization, side effects, diagnostics classification, private CoT, execution hosting |
 | **Verification Pipeline** | Check correctness of a **Decision Version** — stages, challenges, fail-closed rules | Finalize authoritative decision, mutate versions, policy, HITL, global retry |
 | **Decision Strategy** | Deliberation rounds, parallel proposals, disagreement artifacts, synthesis candidates | Separate runtime, scheduler, checkpoint engine, authorization |
-| **Nexus** | Execute lifecycle stages, budgets, checkpoints, technical retry, persistence | Domain rubric content, business permission meaning |
+| **Execution System** | Execution lifecycle, identity, root execution establishment, canonical boundary, strategy routing, hosting Decision capability | Domain rubric content, decision semantics |
+| **Nexus** | ORCHESTRATION execution strategy — scheduling child Executions, dependency/readiness/fan-out/merge, orchestration control flow | Universal host of Decision System, Decision persistence by definition, mandatory path for every Decision |
 | **Governance / Policy** | Execution authorization for consequential actions | Whether a decision artifact is correct |
 | **HITL** | Human approver / adjudicator / escalation records | Decision lifecycle orchestration |
 | **Reliability** | Technical retry on provider/tool failure | Semantic revision loops |
@@ -119,7 +137,16 @@ Domain   → artifact types, rubrics, strategy selection, correctness criteria
 ### Public invariants
 
 ```text
-Nexus executes Decision Lifecycle — never Nexus → second Decision Runtime.
+Decision Lifecycle hosted by canonical Execution — never a second DecisionRuntime.
+```
+
+```text
+Decision capability MUST NOT require ORCHESTRATION strategy.
+```
+
+```text
+A Decision Lifecycle may be hosted by an Execution routed through
+INFERENCE, AGENTIC, or ORCHESTRATION as required by its work.
 ```
 
 ```text
@@ -154,7 +181,7 @@ Approval for v1 does NOT authorize v2.
 
 ## Decision Lifecycle
 
-The lifecycle is a **state machine model** executed by Nexus using existing scheduler, retry, checkpoint, budget, and execution identity infrastructure.
+The lifecycle is a **state machine model** hosted by canonical Execution — semantic stages execute within the hosting Execution boundary. Work required by a Decision Strategy is routed through the Execution System (INFERENCE, AGENTIC, or ORCHESTRATION).
 
 <a href="assets/fullsize/decision-lifecycle.md">
 <picture>
@@ -178,6 +205,67 @@ The lifecycle is a **state machine model** executed by Nexus using existing sche
 | **Finalization** | Persist authoritative **lifecycle outcome** — accepted decision version or terminal resolution record |
 
 Council is **only** a Decision Strategy implementation — not a mandatory stage.
+
+---
+
+## Decision Strategy ≠ Execution Strategy
+
+**DecisionStrategy** and **ExecutionStrategy** are distinct axes.
+
+| Axis | Question | Examples |
+| ---- | -------- | -------- |
+| **DecisionStrategy** | How do we reach a decision? | Single Model, Rule-Based, Hybrid, Council |
+| **ExecutionStrategy** | How is a concrete unit of work executed? | INFERENCE, AGENTIC, ORCHESTRATION |
+
+Council may use ORCHESTRATION but is not synonymous with Nexus as a system. Single Model and Rule-Based may operate without Nexus.
+
+### Example — simple decision (no Nexus)
+
+```text
+Execution
+↓
+Decision Lifecycle
+↓
+Single Model
+↓
+Verification
+↓
+ACCEPTED
+```
+
+### Example — rule decision (no Nexus)
+
+```text
+Execution
+↓
+Decision Lifecycle
+↓
+Rule-Based Strategy
+↓
+REJECTED
+```
+
+### Example — council (Nexus when orchestration required)
+
+```text
+Execution
+↓
+Decision Lifecycle
+↓
+Council
+↓
+parallel analyses required
+↓
+Execution System
+↓
+ORCHESTRATION
+↓
+Nexus
+↓
+child Executions
+```
+
+Nexus appears because orchestration work is required — not because every Decision mandates it.
 
 ---
 
@@ -237,6 +325,8 @@ There is **no** `fake decision` workaround. Candidate versions and proposal hist
 
 For a given decision scope, **at most one** terminal authoritative lifecycle outcome may exist — either one **Authoritative Accepted Decision** or one terminal **Authoritative Resolution Record**.
 
+Pure finalize guard semantics define authoritative conflict/idempotency rules in contracts. Durable atomic enforcement belongs to the hosting Execution persistence boundary (DS-CORE-06+).
+
 ---
 
 ## Decision Artifacts
@@ -279,7 +369,7 @@ v1 and v2 remain in auditable lineage after v3 is authoritative. **Never mutate*
   <source media="(prefers-color-scheme: dark)" srcset="assets/decision-authorization-execution-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/decision-authorization-execution-light.svg">
   <img
-    alt="Three-column diagram separating Authoritative Decision (what the system concluded), Execution Authorization (whether action may proceed), and Execution (what Nexus actually did), with Decision System, Policy, and Nexus ownership boxes."
+    alt="Three-column diagram separating Authoritative Decision (what the system concluded), Execution Authorization (whether action may proceed), and Execution (what the hosting Execution actually did), with Decision System, Policy, and Execution ownership boxes."
     src="assets/decision-authorization-execution-light.svg"
   >
 </picture>
@@ -289,7 +379,7 @@ v1 and v2 remain in auditable lineage after v3 is authoritative. **Never mutate*
 | -------------- | -------- |
 | **Authoritative Accepted Decision / Resolution Record** | What did the system finally conclude, recommend, find — or explicitly refuse to resolve? |
 | **Execution Authorization** | May this specific action execute in this authority/policy context? |
-| **Execution** | What did Nexus actually execute? |
+| **Execution** | What did the hosting Execution actually execute? |
 
 A correct **Authoritative Decision** may still be **blocked**, **deferred**, or **require human approval** before side effects. Policy evaluates at configured execution points — not solely as one post-decision gate ([`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md)).
 
@@ -330,17 +420,19 @@ Approval for `v1` does **not** pass to `v2`. Authorization for `v1` does **not**
 
 ---
 
-## Nexus boundary
+## Execution / orchestration boundary
 
-**Hard rule:** `Nexus executes Decision Lifecycle`.
+**Hard rule:** Decision Lifecycle is hosted by canonical Execution — **no** DecisionRuntime.
 
 The Decision Lifecycle:
 
 - is **not** a separate runtime,
 - has **no** own scheduler / retry / checkpoint / budget / execution identity,
-- uses Nexus infrastructure for all execution mechanics.
+- uses the hosting Execution System for execution mechanics and strategy routing.
 
-**Never:** `Nexus → second Decision Runtime`.
+**Never:** introduce a second DecisionRuntime.
+
+Nexus participates **only** when the hosting Execution selects ORCHESTRATION strategy for work required by the Decision Strategy (e.g. parallel Council analyses, child Executions).
 
 ---
 
@@ -427,7 +519,7 @@ The Decision System must support full reconstruction of:
 
 ## Budgets
 
-Decision Strategy, Verification, Revision, and Adjudication share the **Nexus execution budget** for the hosting execution. Deliberation continuation, revision loops, and verification stages must respect configured ceilings. Resume **cannot** increase a previously granted budget ceiling.
+Decision Strategy, Verification, Revision, and Adjudication share the **hosting Execution budget**. Deliberation continuation, revision loops, and verification stages must respect configured ceilings. Resume **cannot** increase a previously granted budget ceiling.
 
 ---
 
@@ -461,14 +553,16 @@ For a given decision scope, **at most one** terminal authoritative lifecycle out
 
 ## Crash / resume
 
-Decision state must be recoverable via **existing Nexus checkpoint / persistence** — **no** Decision checkpoint engine.
+Decision state must be recoverable via the **canonical hosting Execution checkpoint / persistence boundary** — **no** Decision checkpoint engine.
+
+If the hosting Execution uses ORCHESTRATION, Nexus may participate in orchestration checkpointing, but Decision durability **MUST NOT** depend on Nexus being the selected execution strategy.
 
 <a href="assets/fullsize/decision-crash-concurrency.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/decision-crash-concurrency-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/decision-crash-concurrency-light.svg">
   <img
-    alt="Crash recovery diagram: Nexus checkpoint recovers decision state and version lineage with finalize guard against duplicate authoritative decisions and budget ceiling on resume."
+    alt="Crash recovery diagram: canonical Execution checkpoint recovers decision state and version lineage with finalize guard against duplicate authoritative decisions and budget ceiling on resume."
     src="assets/decision-crash-concurrency-light.svg"
   >
 </picture>
@@ -476,7 +570,7 @@ Decision state must be recoverable via **existing Nexus checkpoint / persistence
 
 | Requirement | Rule |
 | ----------- | ---- |
-| Durability | Lifecycle stage, version lineage, finalize guard state |
+| Durability | Lifecycle state, version lineage, finalize guard state persisted through canonical hosting Execution checkpoint/persistence boundary |
 | Resume | Continue from persisted stage — not full deliberation restart without cause |
 | Crash safety | Cannot mint duplicate authoritative decision |
 | Budget | Resume cannot expand prior granted budget |
@@ -487,7 +581,7 @@ Decision state must be recoverable via **existing Nexus checkpoint / persistence
 
 | Kind | Trigger | Owner |
 | ---- | ------- | ----- |
-| **Technical retry** | Model / tool / provider failure | Nexus Reliability |
+| **Technical retry** | Model / tool / provider failure | Execution System / Reliability |
 | **Decision revision** | Semantically insufficient decision content | Decision Lifecycle |
 | **Deliberation continuation** | Another Council / strategy round | Decision Strategy |
 
@@ -560,7 +654,8 @@ stateDiagram-v2
 
 | Neighbor | Relationship |
 | -------- | ------------- |
-| [**Nexus Execution Flow**](NEXUS_EXECUTION_FLOW.md) | Hosts Decision Lifecycle execution |
+| [**Unified Execution Architecture**](UNIFIED_EXECUTION_ARCHITECTURE.md) | Canonical host — lifecycle, identity, strategy routing |
+| [**Nexus Execution Flow**](NEXUS_EXECUTION_FLOW.md) | ORCHESTRATION backend when selected by Execution strategy routing |
 | [**Unified Execution Runtime**](UNIFIED_EXECUTION_RUNTIME.md) | Profiles, budgets, checkpoint ports |
 | [**Decision Verification**](DECISION_VERIFICATION.md) | Compositional verification pipeline |
 | [**Decision Deliberation**](DECISION_DELIBERATION.md) | Strategy / Council / deliberation |
@@ -577,7 +672,7 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
 
 | Axis | Level | Rationale |
 | ---- | ----- | --------- |
-| **Architecture (A)** | **A4** | Frozen target canon established; boundaries to Nexus, Policy, HITL, Diagnostics explicit |
+| **Architecture (A)** | **A4** | Frozen target canon established; boundaries to Execution, Policy, HITL, Diagnostics explicit |
 | **Implementation (I)** | **I0** | No Decision System runtime migration shipped |
 | **Production (P)** | **P0** | Production path remains CVL / Critic until clean cut |
 | **Evidence (E)** | **E0** | No Decision System Docker E2E qualification completed |

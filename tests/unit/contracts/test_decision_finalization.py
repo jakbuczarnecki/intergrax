@@ -1,5 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
+from pathlib import Path
+
 from dataclasses import FrozenInstanceError, dataclass, fields
 from typing import get_type_hints
 
@@ -134,6 +136,14 @@ def _resolution(
 
 def _guard_for_identity(identity: DecisionIdentity) -> DecisionFinalizeGuardState[IncidentDecisionPayload]:
     return initial_decision_finalize_guard(decision_finalization_key(identity))
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_decision_finalization_module_does_not_import_private_decision_identity_names() -> None:
+    source = Path("intergrax/contracts/decision_finalization.py").read_text(encoding="utf-8")
+    assert "_validate_tenant_id" not in source
+    assert "from intergrax.contracts.decision_identity import" in source
 
 
 @pytest.mark.unit

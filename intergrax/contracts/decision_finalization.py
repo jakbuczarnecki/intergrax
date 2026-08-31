@@ -5,8 +5,10 @@
 
 Pure domain guard enforcing DS-INV-003: at most one terminal authoritative
 outcome per decision scope. Durable atomic compare-and-set / uniqueness
-belongs to Nexus persistence integration (DS-CORE-06+); this module does
-not provide storage, locks, or cross-process concurrency.
+belongs to the canonical hosting Execution persistence/checkpoint boundary
+(DS-CORE-06+); Nexus participates only when the hosting Execution uses
+orchestration. This module does not provide storage, locks, or cross-process
+concurrency.
 """
 
 from __future__ import annotations
@@ -19,8 +21,8 @@ from intergrax.contracts.decision_identity import (
     DecisionId,
     DecisionIdentity,
     DecisionScope,
-    _validate_tenant_id,
     validate_decision_id,
+    validate_decision_tenant_id,
 )
 from intergrax.contracts.decision_record import AuthoritativeAcceptedDecision
 from intergrax.contracts.decision_resolution import AuthoritativeResolutionRecord
@@ -56,7 +58,7 @@ class DecisionFinalizationKey:
         validate_decision_id(self.decision_id)
         if type(self.scope) is not DecisionScope:
             raise TypeError("DecisionFinalizationKey.scope must be DecisionScope")
-        _validate_tenant_id(self.tenant_id)
+        validate_decision_tenant_id(self.tenant_id)
 
 
 def decision_finalization_key(identity: DecisionIdentity) -> DecisionFinalizationKey:

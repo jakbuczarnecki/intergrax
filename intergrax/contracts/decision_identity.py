@@ -104,7 +104,7 @@ class DecisionScope:
         _validate_scope_field(self.subject, "DecisionScope.subject")
 
 
-def _validate_tenant_id(value: object) -> str:
+def validate_decision_tenant_id(value: object) -> str:
     if type(value) is not str:
         raise TypeError(
             f"tenant_id must be str, got {type(value).__name__}",
@@ -118,7 +118,7 @@ def _validate_tenant_id(value: object) -> str:
 
 @dataclass(frozen=True, slots=True)
 class DecisionExecutionLineage:
-    """Binds a decision to the Nexus execution tree.
+    """Binds a decision to the canonical hosting Execution tree.
 
   ``execution_id`` is optional when a decision is created before ExecutionId mint.
     """
@@ -152,6 +152,6 @@ class DecisionIdentity:
             raise TypeError("DecisionIdentity.version must be DecisionVersion")
         if type(self.scope) is not DecisionScope:
             raise TypeError("DecisionIdentity.scope must be DecisionScope")
-        _validate_tenant_id(self.tenant_id)
+        validate_decision_tenant_id(self.tenant_id)
         if type(self.execution) is not DecisionExecutionLineage:
             raise TypeError("DecisionIdentity.execution must be DecisionExecutionLineage")
