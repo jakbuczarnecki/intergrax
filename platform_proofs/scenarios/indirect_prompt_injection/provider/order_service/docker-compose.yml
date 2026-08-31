@@ -1,0 +1,10 @@
+services:
+  order-service:
+    build: .
+    ports:
+      - "18091:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/orders/48291')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
