@@ -6,6 +6,10 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
+from intergrax.collaborative_work.materialization_factory import (
+    CollaborativeWorkPersistenceFactory,
+    binding_from_profile_options,
+)
 from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
 from intergrax.integrations._shared.config import merge_config
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
@@ -47,20 +51,13 @@ def resolve_collaborative_work_repositories(
     slug = resolve_slug(category, profile=profile)
     merged = merge_config(profile.options_for_slug(slug), None)
     entry = get_entry(slug)
+    factory = entry.factory
+    if not isinstance(factory, CollaborativeWorkPersistenceFactory):
+        raise IntegrationConfigurationError(
+            "Selected relational store provider "
+            f"({slug}) does not implement Collaborative Work persistence "
+            "materialization."
+        )
 
-    try:
-        result = entry.factory(_collaborative_work_materialization=True, **merged)
-    except TypeError:
-        result = entry.factory(**merged)
-
-    if isinstance(result, CollaborativeWorkRepositories):
-        return result
-    if isinstance(result, CollaborativeWorkPersistenceProvider):
-        return result.materialize_collaborative_work_repositories()
-
-    provider_name = type(result).__name__
-    raise IntegrationConfigurationError(
-        "Selected relational store provider "
-        f"({provider_name}) does not implement Collaborative Work persistence "
-        "materialization."
-    )
+    binding = binding_from_profile_options(merged)
+    return factory.materialize_collaborative_work_repositories(binding)

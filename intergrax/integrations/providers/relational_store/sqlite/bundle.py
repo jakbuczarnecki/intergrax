@@ -13,8 +13,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
+from intergrax.collaborative_work.materialization_factory import (
+    CollaborativeWorkMaterializationBinding,
+    CollaborativeWorkPersistenceFactory,
+)
 from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
 from intergrax.integrations.providers.relational_store.sqlite.adapter import _SQLiteRelationalStore
 from intergrax.integrations.providers.relational_store.sqlite.config import SQLiteIntegrationConfig
@@ -106,28 +109,50 @@ def create_sqlite_integration(
     )
 
 
-def create_sqlite_relational_store(
-    *,
-    data_dir: Path | str | None = None,
-    db_path: Path | str | None = None,
-    _collaborative_work_materialization: bool = False,
-    **config_overrides: object,
-) -> SqliteRelationalStoreIntegration | CollaborativeWorkRepositories:
+def _sqlite_materialization_paths(
+    binding: CollaborativeWorkMaterializationBinding,
+) -> SqliteStorePaths:
+    overrides: dict[str, object] = {}
+    if binding.relational_db is not None:
+        overrides["relational_db"] = Path(binding.relational_db)
+    _, paths = _build_paths(data_dir=binding.data_dir, **overrides)
+    return paths
+
+
+class SQLiteRelationalStoreFactory:
     """Catalog factory for ``"sqlite"`` / ``RELATIONAL_STORE``."""
-    overrides: dict[str, object] = dict(config_overrides)
-    if db_path is not None:
-        overrides["relational_db"] = Path(db_path)
-    _, paths = _build_paths(data_dir=data_dir, **overrides)
-    if _collaborative_work_materialization:
+
+    def __call__(
+        self,
+        *,
+        data_dir: Path | str | None = None,
+        db_path: Path | str | None = None,
+        **config_overrides: object,
+    ) -> SqliteRelationalStoreIntegration:
+        overrides: dict[str, object] = dict(config_overrides)
+        if db_path is not None:
+            overrides["relational_db"] = Path(db_path)
+        _, paths = _build_paths(data_dir=data_dir, **overrides)
+        store = _SQLiteRelationalStore(paths.relational)
+        integration = SqliteRelationalStoreIntegration.from_client(store)
+        integration.connect()
+        return integration
+
+    def materialize_collaborative_work_repositories(
+        self,
+        binding: CollaborativeWorkMaterializationBinding,
+    ) -> CollaborativeWorkRepositories:
         from intergrax.collaborative_work.persistence import (
             open_sqlite_collaborative_work_repositories,
         )
 
+        paths = _sqlite_materialization_paths(binding)
         return open_sqlite_collaborative_work_repositories(str(paths.relational))
-    store = _SQLiteRelationalStore(paths.relational)
-    integration = SqliteRelationalStoreIntegration.from_client(store)
-    integration.connect()
-    return integration
+
+
+create_sqlite_relational_store: SQLiteRelationalStoreFactory & CollaborativeWorkPersistenceFactory = (
+    SQLiteRelationalStoreFactory()
+)
 
 
 def create_sqlite_trace_store(

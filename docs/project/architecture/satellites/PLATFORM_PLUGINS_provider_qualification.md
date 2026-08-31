@@ -696,7 +696,8 @@ Do **not** classify qualification binding as fully reusable without the typed br
 | Stage | Scope |
 |-------|-------|
 | **PROVIDER-QUAL-3A-R1** | Architecture correction only (this freeze) |
-| **PROVIDER-QUAL-3B-R1** | **READY_FOR_REVIEW** — lifecycle-safe provider materialization correction — `CollaborativeWorkPersistenceProvider.materialize_collaborative_work_repositories()`; domain resolver `resolve_collaborative_work_repositories(profile)` composes `resolve_relational_store` |
+| **PROVIDER-QUAL-3B-R1** | **READY_FOR_REVIEW** — lifecycle-safe provider materialization correction — `CollaborativeWorkPersistenceProvider.materialize_collaborative_work_repositories()`; domain resolver `resolve_collaborative_work_repositories(profile)` composes `resolve_relational_store` |
+| **PROVIDER-QUAL-3B-R2** | **READY_FOR_REVIEW** - explicit typed materialization factory - `CollaborativeWorkPersistenceFactory.materialize_collaborative_work_repositories(binding)`; no `_collaborative_work_materialization` keyword protocol; no `TypeError` capability probing; pre-built SQLite fail-closed |
 | **PROVIDER-QUAL-3C** | Qualification evidence persistence/index + record accepted PostgreSQL 16.6 evidence through the canonical binding |
 
 **PROVIDER-QUAL-3B** implementation (review gate): `intergrax/collaborative_work/persistence_provider.py`; vendor adapters on `SqliteRelationalStoreIntegration` / `PostgresqlRelationalStoreIntegration`; `CollaborativeWorkRepositories.store` typed as `CollaborativeWorkStoreOwner` (lifecycle-only).
