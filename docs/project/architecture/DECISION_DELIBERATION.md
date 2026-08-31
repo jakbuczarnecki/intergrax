@@ -25,7 +25,7 @@ Without explicit deliberation architecture:
 - parallel proposals collapse to last-write-wins,
 - strategy selection hard-codes giant `if council ...` branches in lifecycle code.
 
-Decision Deliberation defines **strategy contracts, participant independence, disagreement artifacts, bounded rounds, and Nexus budget sharing** — all executed **inside** Nexus.
+Decision Deliberation defines **strategy contracts, participant independence, disagreement artifacts, bounded rounds, and hosting Execution budget consumption** — Decision Strategy runs inside hosting Execution; ORCHESTRATION may route through Nexus when required.
 
 ---
 
@@ -42,8 +42,8 @@ Decision Deliberation defines **strategy contracts, participant independence, di
 | **Disagreement** | First-class structured artifact — not erased by synthesis |
 | **Synthesis** | Produces candidate for verification — not final authority alone |
 | **Rounds** | Bounded — deliberation continuation owned by strategy |
-| **Budget** | Shared Nexus execution budget — no separate Council budget engine |
-| **Runtime** | **No** Council Runtime — Nexus executes strategy steps |
+| **Budget** | Council/deliberation consumes the hosting Execution budget — no separate Council budget engine |
+| **Runtime** | **No** Council Runtime — Council is a Decision Strategy hosted through canonical Execution |
 
 ---
 
@@ -60,7 +60,7 @@ Decision Deliberation defines **strategy contracts, participant independence, di
 </picture>
 </a>
 
-> **Council is a Decision Strategy. Nexus executes it. Verification and Lifecycle finalize authority.**
+> **Council is a Decision Strategy. Execution System hosts strategy work. Verification and Lifecycle finalize authority.**
 
 ```text
 Decision Strategy (e.g. Council)
@@ -194,7 +194,7 @@ When synthesis cannot reconcile conflict → lifecycle may adjudicate or resolve
   <source media="(prefers-color-scheme: dark)" srcset="assets/decision-deliberation-bounded-rounds-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/decision-deliberation-bounded-rounds-light.svg">
   <img
-    alt="Bounded deliberation rounds under Nexus execution budget: Round 1 and Round 2 deliberation with budget stop, distinct from technical retry and revision loop."
+    alt="Bounded deliberation rounds under hosting Execution budget: Round 1 and Round 2 deliberation with budget stop, distinct from technical retry and revision loop."
     src="assets/decision-deliberation-bounded-rounds-light.svg"
   >
 </picture>
@@ -204,9 +204,9 @@ When synthesis cannot reconcile conflict → lifecycle may adjudicate or resolve
 | --------- | ----- | ------- |
 | **Deliberation continuation** | Decision Strategy | Another council round within budget |
 | **Decision revision** | Decision Lifecycle | Verification challenge |
-| **Technical retry** | Nexus Reliability | Provider / tool failure |
+| **Technical retry** | Execution / Reliability appropriate to failing operation | Provider / tool failure |
 
-Deliberation rounds share the **host Nexus execution budget** with verification and revision — no separate Council scheduler or budget engine.
+Deliberation rounds consume the **hosting Execution budget** with verification and revision — no separate Council scheduler or budget engine. ORCHESTRATION may route through Nexus when required.
 
 ---
 
@@ -217,7 +217,7 @@ Deliberation rounds share the **host Nexus execution budget** with verification 
 - Council does **not** own scheduler, retry, checkpoint, or execution identity.
 - Council does **not** finalize authoritative decisions.
 - Council does **not** perform verification (feeds candidates **to** Verification Pipeline).
-- `Nexus executes Decision Lifecycle` includes strategy execution steps.
+- Decision Strategy runs inside hosting Execution; ORCHESTRATION may route through Nexus when required.
 
 **Never:** `Council Runtime` as peer to Nexus.
 

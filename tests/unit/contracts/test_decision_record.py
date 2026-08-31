@@ -18,8 +18,14 @@ from intergrax.contracts.decision_record import (
     CandidateDecision,
     DecisionArtifact,
     DecisionArtifactKind,
+    DecisionBranchId,
+    DecisionLineageRef,
     DecisionVersionLineage,
+    decision_lineage_ref,
+    decision_version_lineage,
+    initial_decision_branch_id,
     validate_decision_artifact_kind,
+    validate_decision_branch_id,
 )
 from intergrax.contracts.execution_identity import (
     mint_attempt_id,
@@ -70,6 +76,26 @@ def _artifact(
     )
 
 
+def _root_ref() -> DecisionLineageRef:
+    return decision_lineage_ref(initial_decision_version())
+
+
+def _root_lineage() -> DecisionVersionLineage:
+    return DecisionVersionLineage(current=_root_ref())
+
+
+def _linear_lineage(
+    current: DecisionVersion,
+    parent: DecisionLineageRef,
+    *,
+    branch_id: DecisionBranchId | None = None,
+) -> DecisionVersionLineage:
+    return DecisionVersionLineage(
+        current=decision_lineage_ref(current, branch_id),
+        parents=(parent,),
+    )
+
+
 def _candidate(
     *,
     identity: DecisionIdentity | None = None,
@@ -77,12 +103,51 @@ def _candidate(
     lineage: DecisionVersionLineage | None = None,
 ) -> CandidateDecision[IncidentDecisionPayload]:
     resolved_identity = identity or _identity()
-    resolved_lineage = lineage or DecisionVersionLineage(resolved_identity.version)
+    resolved_lineage = lineage or DecisionVersionLineage(
+        current=decision_lineage_ref(resolved_identity.version),
+    )
     return CandidateDecision(
         identity=resolved_identity,
         artifact=artifact or _artifact(),
         lineage=resolved_lineage,
     )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_decision_branch_id_valid() -> None:
+    branch_id = validate_decision_branch_id("branch-A")
+    assert branch_id == "branch-A"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_decision_branch_id_rejects_wrong_type() -> None:
+    with pytest.raises(TypeError):
+        validate_decision_branch_id(42)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.parametrize("branch_id", ["", "   "])
+def test_decision_branch_id_rejects_blank(branch_id: str) -> None:
+    with pytest.raises(ValueError):
+        validate_decision_branch_id(branch_id)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.parametrize("branch_id", [" branch-A", "branch-A "])
+def test_decision_branch_id_rejects_surrounding_whitespace(branch_id: str) -> None:
+    with pytest.raises(ValueError):
+        validate_decision_branch_id(branch_id)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_initial_decision_branch_id_is_deterministic_main() -> None:
+    assert initial_decision_branch_id() == "main"
+    assert initial_decision_branch_id() == initial_decision_branch_id()
 
 
 @pytest.mark.unit
@@ -133,58 +198,156 @@ def test_decision_artifact_kind_not_silently_normalized() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
-def test_lineage_v1_parent_none_valid() -> None:
-    lineage = DecisionVersionLineage(DecisionVersion(1))
-    assert lineage.current_version.value == 1
-    assert lineage.parent_version is None
+def test_lineage_v1_main_root_valid() -> None:
+    lineage = _root_lineage()
+    assert lineage.current.version.value == 1
+    assert lineage.current.branch_id == "main"
+    assert lineage.parents == ()
 
 
 @pytest.mark.unit
 @pytest.mark.gate
-def test_lineage_v2_parent_v1_valid() -> None:
-    lineage = DecisionVersionLineage(DecisionVersion(2), DecisionVersion(1))
-    assert lineage.current_version.value == 2
-    assert lineage.parent_version is not None
-    assert lineage.parent_version.value == 1
+def test_lineage_non_v1_without_parents_rejected() -> None:
+    with pytest.raises(ValueError, match="without parents requires current version 1"):
+        DecisionVersionLineage(current=decision_lineage_ref(DecisionVersion(2)))
 
 
 @pytest.mark.unit
 @pytest.mark.gate
-def test_lineage_v3_parent_v2_valid() -> None:
-    lineage = DecisionVersionLineage(DecisionVersion(3), DecisionVersion(2))
-    assert lineage.current_version.value == 3
-    assert lineage.parent_version is not None
-    assert lineage.parent_version.value == 2
+def test_lineage_v1_with_parents_rejected() -> None:
+    with pytest.raises(ValueError, match="requires current version > 1"):
+        DecisionVersionLineage(
+            current=_root_ref(),
+            parents=(decision_lineage_ref(DecisionVersion(1), validate_decision_branch_id("A")),),
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_lineage_v2_main_parent_v1_main_valid() -> None:
+    parent = _root_ref()
+    lineage = _linear_lineage(DecisionVersion(2), parent)
+    assert lineage.current.version.value == 2
+    assert lineage.current.branch_id == "main"
+    assert lineage.parents == (parent,)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_lineage_v3_main_parent_v2_main_valid() -> None:
+    parent = decision_lineage_ref(DecisionVersion(2))
+    lineage = _linear_lineage(DecisionVersion(3), parent)
+    assert lineage.current.version.value == 3
+    assert lineage.parents == (parent,)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_lineage_parallel_sibling_refs_are_distinct() -> None:
+    root = _root_ref()
+    branch_a = validate_decision_branch_id("A")
+    branch_b = validate_decision_branch_id("B")
+    lineage_a = _linear_lineage(DecisionVersion(2), root, branch_id=branch_a)
+    lineage_b = _linear_lineage(DecisionVersion(2), root, branch_id=branch_b)
+
+    assert lineage_a.current.version == lineage_b.current.version
+    assert lineage_a.current != lineage_b.current
+    assert lineage_a.parents == lineage_b.parents == (root,)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_lineage_two_sibling_candidates_share_version_distinct_branch() -> None:
+    root = _root_ref()
+    branch_a = validate_decision_branch_id("A")
+    branch_b = validate_decision_branch_id("B")
+    identity_a = _identity(version=DecisionVersion(2))
+    identity_b = _identity(version=DecisionVersion(2))
+    candidate_a = _candidate(
+        identity=identity_a,
+        lineage=_linear_lineage(DecisionVersion(2), root, branch_id=branch_a),
+    )
+    candidate_b = _candidate(
+        identity=identity_b,
+        lineage=_linear_lineage(DecisionVersion(2), root, branch_id=branch_b),
+    )
+
+    assert candidate_a.identity.version == candidate_b.identity.version
+    assert candidate_a.lineage.current != candidate_b.lineage.current
+    assert candidate_a.lineage.parents == candidate_b.lineage.parents
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_lineage_synthesis_multi_parent_valid() -> None:
+    root = _root_ref()
+    v2a = decision_lineage_ref(DecisionVersion(2), validate_decision_branch_id("A"))
+    v2b = decision_lineage_ref(DecisionVersion(2), validate_decision_branch_id("B"))
+    _linear_lineage(DecisionVersion(2), root, branch_id=validate_decision_branch_id("A"))
+    _linear_lineage(DecisionVersion(2), root, branch_id=validate_decision_branch_id("B"))
+    synthesis = decision_version_lineage(
+        current=decision_lineage_ref(DecisionVersion(3)),
+        parents=(v2a, v2b),
+    )
+
+    assert synthesis.current.version.value == 3
+    assert synthesis.current.branch_id == "main"
+    assert synthesis.parents == (v2a, v2b)
 
 
 @pytest.mark.unit
 @pytest.mark.gate
 @pytest.mark.parametrize(
-    ("current", "parent"),
+    ("current", "parent_version"),
     [
         (2, 2),
         (2, 3),
         (3, 5),
     ],
 )
-def test_lineage_rejects_current_not_after_parent(current: int, parent: int) -> None:
+def test_lineage_rejects_parent_not_earlier_than_current(
+    current: int,
+    parent_version: int,
+) -> None:
+    parent = decision_lineage_ref(
+        DecisionVersion(parent_version),
+        validate_decision_branch_id("parent"),
+    )
     with pytest.raises(ValueError):
-        DecisionVersionLineage(DecisionVersion(current), DecisionVersion(parent))
+        DecisionVersionLineage(
+            current=decision_lineage_ref(
+                DecisionVersion(current),
+                validate_decision_branch_id("current"),
+            ),
+            parents=(parent,),
+        )
 
 
 @pytest.mark.unit
 @pytest.mark.gate
-def test_lineage_rejects_invalid_parent_type() -> None:
-    with pytest.raises(TypeError):
-        DecisionVersionLineage(DecisionVersion(2), 1)
+def test_lineage_rejects_duplicate_parent_ref() -> None:
+    parent = decision_lineage_ref(DecisionVersion(2), validate_decision_branch_id("A"))
+    with pytest.raises(ValueError, match="duplicates"):
+        DecisionVersionLineage(
+            current=decision_lineage_ref(DecisionVersion(3)),
+            parents=(parent, parent),
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_lineage_rejects_current_as_parent() -> None:
+    current = decision_lineage_ref(DecisionVersion(2), validate_decision_branch_id("A"))
+    with pytest.raises(ValueError, match="cannot appear in parents"):
+        DecisionVersionLineage(current=current, parents=(current,))
 
 
 @pytest.mark.unit
 @pytest.mark.gate
 def test_lineage_is_immutable() -> None:
-    lineage = DecisionVersionLineage(DecisionVersion(1))
+    lineage = _root_lineage()
     with pytest.raises(AttributeError):
-        lineage.current_version = DecisionVersion(2)
+        lineage.current = decision_lineage_ref(DecisionVersion(2))
 
 
 @pytest.mark.unit
@@ -199,8 +362,8 @@ def test_candidate_valid_accepted() -> None:
 @pytest.mark.gate
 def test_candidate_requires_identity_version_matches_lineage_current() -> None:
     identity = _identity(version=DecisionVersion(3))
-    lineage = DecisionVersionLineage(DecisionVersion(2), DecisionVersion(1))
-    with pytest.raises(ValueError, match="current_version"):
+    lineage = _linear_lineage(DecisionVersion(2), _root_ref())
+    with pytest.raises(ValueError, match="current.version"):
         _candidate(identity=identity, lineage=lineage)
 
 
@@ -226,14 +389,14 @@ def test_candidate_preserves_artifact() -> None:
 def test_candidate_equality_semantics() -> None:
     identity = _identity()
     artifact = _artifact()
-    lineage = DecisionVersionLineage(identity.version)
+    lineage = DecisionVersionLineage(current=decision_lineage_ref(identity.version))
     first = CandidateDecision(identity=identity, artifact=artifact, lineage=lineage)
     second = CandidateDecision(identity=identity, artifact=artifact, lineage=lineage)
     assert first == second
 
     other_version = _candidate(
         identity=_identity(version=DecisionVersion(2)),
-        lineage=DecisionVersionLineage(DecisionVersion(2), DecisionVersion(1)),
+        lineage=_linear_lineage(DecisionVersion(2), _root_ref()),
     )
     other_tenant = _candidate(identity=_identity(tenant_id="tenant-b"))
     other_scope = _candidate(
@@ -251,7 +414,7 @@ def test_candidate_equality_semantics() -> None:
 def test_authoritative_accepted_valid_contract() -> None:
     identity = _identity()
     artifact = _artifact()
-    lineage = DecisionVersionLineage(identity.version)
+    lineage = DecisionVersionLineage(current=decision_lineage_ref(identity.version))
     accepted = AuthoritativeAcceptedDecision(
         identity=identity,
         artifact=artifact,
@@ -264,10 +427,28 @@ def test_authoritative_accepted_valid_contract() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
+def test_authoritative_accepted_preserves_multi_parent_lineage() -> None:
+    v2a = decision_lineage_ref(DecisionVersion(2), validate_decision_branch_id("A"))
+    v2b = decision_lineage_ref(DecisionVersion(2), validate_decision_branch_id("B"))
+    lineage = decision_version_lineage(
+        current=decision_lineage_ref(DecisionVersion(3)),
+        parents=(v2a, v2b),
+    )
+    identity = _identity(version=DecisionVersion(3))
+    accepted = AuthoritativeAcceptedDecision(
+        identity=identity,
+        artifact=_artifact(),
+        lineage=lineage,
+    )
+    assert accepted.lineage.parents == (v2a, v2b)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
 def test_authoritative_accepted_enforces_identity_lineage_consistency() -> None:
     identity = _identity(version=DecisionVersion(2))
-    lineage = DecisionVersionLineage(DecisionVersion(1))
-    with pytest.raises(ValueError, match="current_version"):
+    lineage = _root_lineage()
+    with pytest.raises(ValueError, match="current.version"):
         AuthoritativeAcceptedDecision(
             identity=identity,
             artifact=_artifact(),
@@ -282,7 +463,7 @@ def test_authoritative_accepted_is_immutable() -> None:
     accepted = AuthoritativeAcceptedDecision(
         identity=identity,
         artifact=_artifact(),
-        lineage=DecisionVersionLineage(identity.version),
+        lineage=DecisionVersionLineage(current=decision_lineage_ref(identity.version)),
     )
     with pytest.raises(AttributeError):
         accepted.artifact = _artifact(recommendation="other")
@@ -296,7 +477,7 @@ def test_authoritative_accepted_retains_artifact() -> None:
     accepted = AuthoritativeAcceptedDecision(
         identity=identity,
         artifact=artifact,
-        lineage=DecisionVersionLineage(identity.version),
+        lineage=DecisionVersionLineage(current=decision_lineage_ref(identity.version)),
     )
     assert accepted.artifact.content.recommendation == "patch"
 
@@ -308,22 +489,24 @@ def test_authoritative_accepted_differs_by_version_tenant_scope() -> None:
     base = AuthoritativeAcceptedDecision(
         identity=base_identity,
         artifact=_artifact(),
-        lineage=DecisionVersionLineage(base_identity.version),
+        lineage=DecisionVersionLineage(
+            current=decision_lineage_ref(base_identity.version),
+        ),
     )
     other_version = AuthoritativeAcceptedDecision(
         identity=_identity(version=DecisionVersion(2)),
         artifact=_artifact(),
-        lineage=DecisionVersionLineage(DecisionVersion(2), DecisionVersion(1)),
+        lineage=_linear_lineage(DecisionVersion(2), _root_ref()),
     )
     other_tenant = AuthoritativeAcceptedDecision(
         identity=_identity(tenant_id="tenant-b"),
         artifact=_artifact(),
-        lineage=DecisionVersionLineage(initial_decision_version()),
+        lineage=_root_lineage(),
     )
     other_scope = AuthoritativeAcceptedDecision(
         identity=_identity(namespace="routing", subject="route-9"),
         artifact=_artifact(),
-        lineage=DecisionVersionLineage(initial_decision_version()),
+        lineage=_root_lineage(),
     )
     assert base != other_version
     assert base != other_tenant
@@ -334,8 +517,11 @@ def test_authoritative_accepted_differs_by_version_tenant_scope() -> None:
 @pytest.mark.gate
 def test_adversarial_identity_v2_lineage_current_v3_rejected() -> None:
     identity = _identity(version=DecisionVersion(2))
-    lineage = DecisionVersionLineage(DecisionVersion(3), DecisionVersion(2))
-    with pytest.raises(ValueError, match="current_version"):
+    lineage = _linear_lineage(
+        DecisionVersion(3),
+        decision_lineage_ref(DecisionVersion(2)),
+    )
+    with pytest.raises(ValueError, match="current.version"):
         CandidateDecision(
             identity=identity,
             artifact=_artifact(),
@@ -347,7 +533,10 @@ def test_adversarial_identity_v2_lineage_current_v3_rejected() -> None:
 @pytest.mark.gate
 def test_adversarial_lineage_escalation_parent_v99_rejected() -> None:
     with pytest.raises(ValueError):
-        DecisionVersionLineage(DecisionVersion(2), DecisionVersion(99))
+        DecisionVersionLineage(
+            current=decision_lineage_ref(DecisionVersion(2)),
+            parents=(decision_lineage_ref(DecisionVersion(99)),),
+        )
 
 
 @pytest.mark.unit

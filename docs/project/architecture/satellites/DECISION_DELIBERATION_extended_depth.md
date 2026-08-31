@@ -148,7 +148,7 @@ Strategy state needed for resume persists through **Nexus checkpoints** — not 
 | ---- | ----- | ------- |
 | Deliberation continuation | DecisionStrategy | Next round within budget |
 | Semantic revision | Decision Lifecycle | Challenge / adjudication revision policy |
-| Technical retry | Nexus Reliability | Provider/tool failure — not rubric insufficiency |
+| Technical retry | Execution / Reliability appropriate to failing operation | Provider/tool failure — not rubric insufficiency |
 
 Private chain-of-thought is **not** persisted as authoritative evidence.
 

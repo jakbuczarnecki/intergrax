@@ -37,7 +37,10 @@ from intergrax.contracts.decision_record import (
     AuthoritativeAcceptedDecision,
     DecisionArtifact,
     DecisionVersionLineage,
+    decision_lineage_ref,
+    decision_version_lineage,
     validate_decision_artifact_kind,
+    validate_decision_branch_id,
 )
 from intergrax.contracts.decision_resolution import (
     AuthoritativeResolutionRecord,
@@ -99,6 +102,20 @@ def _artifact(
     )
 
 
+def _root_lineage() -> DecisionVersionLineage:
+    return DecisionVersionLineage(current=decision_lineage_ref(initial_decision_version()))
+
+
+def _linear_lineage(
+    current: DecisionVersion,
+    parent_version: DecisionVersion,
+) -> DecisionVersionLineage:
+    return DecisionVersionLineage(
+        current=decision_lineage_ref(current),
+        parents=(decision_lineage_ref(parent_version),),
+    )
+
+
 def _accepted(
     *,
     identity: DecisionIdentity | None = None,
@@ -106,7 +123,9 @@ def _accepted(
     lineage: DecisionVersionLineage | None = None,
 ) -> AuthoritativeAcceptedDecision[IncidentDecisionPayload]:
     resolved_identity = identity or _identity()
-    resolved_lineage = lineage or DecisionVersionLineage(resolved_identity.version)
+    resolved_lineage = lineage or DecisionVersionLineage(
+        current=decision_lineage_ref(resolved_identity.version),
+    )
     return AuthoritativeAcceptedDecision(
         identity=resolved_identity,
         artifact=artifact or _artifact(),
@@ -248,10 +267,7 @@ def test_valid_terminal_accepted_checkpoint() -> None:
     identity = _identity(version=next_decision_version(initial_decision_version()))
     accepted = _accepted(
         identity=identity,
-        lineage=DecisionVersionLineage(
-            identity.version,
-            initial_decision_version(),
-        ),
+        lineage=_linear_lineage(identity.version, initial_decision_version()),
     )
     lifecycle = _lifecycle(identity, stage=DecisionLifecycleStage.TERMINAL, transition_index=5)
     finalization = _guard_for_identity(identity, outcome=accepted)
@@ -499,14 +515,11 @@ def test_competing_outcome_conflict_after_restore() -> None:
     )
     accepted_v1 = _accepted(
         identity=identity_v1,
-        lineage=DecisionVersionLineage(identity_v1.version),
+        lineage=_root_lineage(),
     )
     accepted_v2 = _accepted(
         identity=identity_v2,
-        lineage=DecisionVersionLineage(
-            identity_v2.version,
-            identity_v1.version,
-        ),
+        lineage=_linear_lineage(identity_v2.version, identity_v1.version),
     )
     lifecycle = _lifecycle(identity_v1, stage=DecisionLifecycleStage.TERMINAL)
     checkpoint = decision_checkpoint_state(
@@ -536,3 +549,41 @@ def test_checkpoint_state_is_immutable() -> None:
 
     with pytest.raises(FrozenInstanceError):
         setattr(checkpoint, "lifecycle", checkpoint.lifecycle)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_branched_synthesis_lineage_preserved_through_restore() -> None:
+    v2a = decision_lineage_ref(
+        next_decision_version(initial_decision_version()),
+        validate_decision_branch_id("A"),
+    )
+    v2b = decision_lineage_ref(
+        next_decision_version(initial_decision_version()),
+        validate_decision_branch_id("B"),
+    )
+    synthesis_lineage = decision_version_lineage(
+        current=decision_lineage_ref(DecisionVersion(3)),
+        parents=(v2a, v2b),
+    )
+    identity = _identity(version=DecisionVersion(3))
+    accepted = _accepted(identity=identity, lineage=synthesis_lineage)
+    lifecycle = _lifecycle(identity, stage=DecisionLifecycleStage.TERMINAL)
+    checkpoint = decision_checkpoint_state(
+        lifecycle=lifecycle,
+        finalization=_guard_for_identity(identity, outcome=accepted),
+    )
+    persistence = _FakeDecisionCheckpointPersistence()
+
+    save_decision_checkpoint(persistence, checkpoint=checkpoint)
+    restored = load_decision_checkpoint(
+        persistence,
+        key=decision_finalization_key(identity),
+    )
+
+    assert restored is not None
+    outcome = restored.finalization.authoritative_outcome
+    assert isinstance(outcome, AuthoritativeAcceptedDecision)
+    assert outcome.lineage == synthesis_lineage
+    assert outcome.lineage.parents == (v2a, v2b)
+    assert restore_decision_checkpoint_state(restored).finalization.authoritative_outcome == outcome

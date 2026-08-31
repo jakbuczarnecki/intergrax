@@ -61,7 +61,7 @@
 | DS-CORE-04 | P0 | Resolution semantics (`ACCEPTED` / `REJECTED` / `UNRESOLVED`) | **Done** — `intergrax/contracts/decision_resolution.py`; `tests/unit/contracts/test_decision_resolution.py` |
 | DS-CORE-05 | P1 | Finalize guard — one authoritative per decision scope | **Done** — `intergrax/contracts/decision_finalization.py`; `tests/unit/contracts/test_decision_finalization.py` |
 | DS-CORE-06 | P1 | Execution-hosted checkpoint persistence for Decision lifecycle state | **Done** — `intergrax/contracts/decision_checkpoint.py`; `intergrax/runtime/execution/decision_checkpoint_persistence.py`; `tests/unit/contracts/test_decision_checkpoint.py` |
-| DS-CORE-07 | P1 | Parallel proposal branch lineage | **Planned** |
+| DS-CORE-07 | P1 | Parallel proposal branch lineage | **Done** |
 | DS-CORE-08 | P2 | Decision Artifact kind registration | **Planned** |
 
 ### Plugin architecture (PLANNED)

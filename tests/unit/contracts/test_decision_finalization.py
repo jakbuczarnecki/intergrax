@@ -31,7 +31,10 @@ from intergrax.contracts.decision_record import (
     AuthoritativeAcceptedDecision,
     DecisionArtifact,
     DecisionVersionLineage,
+    decision_lineage_ref,
+    decision_version_lineage,
     validate_decision_artifact_kind,
+    validate_decision_branch_id,
 )
 from intergrax.contracts.decision_resolution import (
     AuthoritativeResolutionRecord,
@@ -108,6 +111,20 @@ def _artifact(
     )
 
 
+def _root_lineage() -> DecisionVersionLineage:
+    return DecisionVersionLineage(current=decision_lineage_ref(initial_decision_version()))
+
+
+def _linear_lineage(
+    current: DecisionVersion,
+    parent_version: DecisionVersion,
+) -> DecisionVersionLineage:
+    return DecisionVersionLineage(
+        current=decision_lineage_ref(current),
+        parents=(decision_lineage_ref(parent_version),),
+    )
+
+
 def _accepted(
     *,
     identity: DecisionIdentity | None = None,
@@ -115,7 +132,9 @@ def _accepted(
     lineage: DecisionVersionLineage | None = None,
 ) -> AuthoritativeAcceptedDecision[IncidentDecisionPayload]:
     resolved_identity = identity or _identity()
-    resolved_lineage = lineage or DecisionVersionLineage(resolved_identity.version)
+    resolved_lineage = lineage or DecisionVersionLineage(
+        current=decision_lineage_ref(resolved_identity.version),
+    )
     return AuthoritativeAcceptedDecision(
         identity=resolved_identity,
         artifact=artifact or _artifact(),
@@ -311,14 +330,11 @@ def test_accepted_version_conflict() -> None:
     )
     accepted_v1 = _accepted(
         identity=identity_v1,
-        lineage=DecisionVersionLineage(identity_v1.version),
+        lineage=_root_lineage(),
     )
     accepted_v2 = _accepted(
         identity=identity_v2,
-        lineage=DecisionVersionLineage(
-            identity_v2.version,
-            identity_v1.version,
-        ),
+        lineage=_linear_lineage(identity_v2.version, identity_v1.version),
     )
     guard = _guard_for_identity(identity_v1)
     finalized = guard_decision_finalization(guard, accepted_v1)
@@ -334,12 +350,12 @@ def test_accepted_payload_conflict() -> None:
     accepted_a = _accepted(
         identity=identity,
         artifact=_artifact(recommendation="contain"),
-        lineage=DecisionVersionLineage(identity.version),
+        lineage=DecisionVersionLineage(current=decision_lineage_ref(identity.version)),
     )
     accepted_b = _accepted(
         identity=identity,
         artifact=_artifact(recommendation="rollback"),
-        lineage=DecisionVersionLineage(identity.version),
+        lineage=DecisionVersionLineage(current=decision_lineage_ref(identity.version)),
     )
     guard = _guard_for_identity(identity)
     finalized = guard_decision_finalization(guard, accepted_a)
@@ -467,6 +483,61 @@ def test_reconstructed_outcome_with_new_execution_lineage_is_not_idempotent() ->
 
     with pytest.raises(DecisionFinalizationConflictError):
         guard_decision_finalization(finalized.state, accepted_reconstructed)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_idempotent_accepted_replay_requires_exact_lineage() -> None:
+    root = decision_lineage_ref(initial_decision_version())
+    v2a = decision_lineage_ref(
+        next_decision_version(initial_decision_version()),
+        validate_decision_branch_id("A"),
+    )
+    lineage = DecisionVersionLineage(current=v2a, parents=(root,))
+    identity = _identity(version=next_decision_version(initial_decision_version()))
+    accepted = _accepted(identity=identity, lineage=lineage)
+    guard = _guard_for_identity(identity)
+    first = guard_decision_finalization(guard, accepted)
+
+    replay = guard_decision_finalization(first.state, accepted)
+
+    assert replay.disposition is DecisionFinalizeDisposition.IDEMPOTENT_REPLAY
+    assert replay.state is first.state
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_accepted_same_version_different_branch_lineage_conflict() -> None:
+    fixed_id = mint_decision_id()
+    scope = DecisionScope(namespace="incident", subject="incident-123")
+    version = next_decision_version(initial_decision_version())
+    root = decision_lineage_ref(initial_decision_version())
+    identity = _identity(
+        decision_id=fixed_id,
+        namespace=scope.namespace,
+        subject=scope.subject,
+        version=version,
+    )
+    accepted_a = _accepted(
+        identity=identity,
+        lineage=DecisionVersionLineage(
+            current=decision_lineage_ref(version, validate_decision_branch_id("A")),
+            parents=(root,),
+        ),
+    )
+    accepted_b = _accepted(
+        identity=identity,
+        artifact=accepted_a.artifact,
+        lineage=DecisionVersionLineage(
+            current=decision_lineage_ref(version, validate_decision_branch_id("B")),
+            parents=(root,),
+        ),
+    )
+    guard = _guard_for_identity(identity)
+    finalized = guard_decision_finalization(guard, accepted_a)
+
+    with pytest.raises(DecisionFinalizationConflictError, match="decision_id="):
+        guard_decision_finalization(finalized.state, accepted_b)
 
 
 @pytest.mark.unit
