@@ -17,11 +17,9 @@ from typing import Generic, TypeVar
 from intergrax.contracts.decision_identity import DecisionIdentity
 from intergrax.contracts.decision_record import (
     CandidateDecision,
-    DecisionArtifact,
     DecisionArtifactKind,
     DecisionVersionLineage,
-    decision_lineage_ref,
-    decision_version_lineage,
+    candidate_decision,
     validate_decision_artifact_kind,
 )
 from intergrax.contracts.decision_strategy import (
@@ -120,15 +118,9 @@ def single_model_candidate_decision(
     lineage: DecisionVersionLineage | None = None,
 ) -> CandidateDecision[T]:
     """Assemble a typed candidate from Single Model inference output."""
-    if lineage is None:
-        resolved_lineage = decision_version_lineage(
-            current=decision_lineage_ref(identity.version),
-        )
-    else:
-        resolved_lineage = lineage
-    artifact = DecisionArtifact(kind=artifact_kind, content=payload)
-    return CandidateDecision(
+    return candidate_decision(
         identity=identity,
-        artifact=artifact,
-        lineage=resolved_lineage,
+        artifact_kind=artifact_kind,
+        payload=payload,
+        lineage=lineage,
     )

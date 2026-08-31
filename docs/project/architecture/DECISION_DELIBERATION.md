@@ -97,7 +97,23 @@ The **Decision Lifecycle** invokes strategies through a **stable strategy contra
 
 Single Model declares a **logical inference profile** requirement in strategy configuration. **Execution System** owns profile → adapter resolution and provider invocation; Decision Strategy does not construct adapters or import provider SDKs.
 | **Council** | Multi-participant proposals + disagreement + optional synthesis |
-| **Rule-Based** | Deterministic selection / transformation |
+| **Rule-Based** | Typed deterministic domain evaluator → candidate version |
+
+Rule-Based binds one host-supplied `RuleBasedEvaluator` — no LLM, no provider, no platform-owned rule DSL. Same declared input and evaluator version is expected to produce the same semantic output; nondeterminism is not enforced at runtime. Evaluator output becomes `CandidateDecision` and still passes through Verification and Decision Lifecycle gates — deterministic result is not authoritative acceptance and does not authorize execution.
+
+```text
+Typed domain input
+       ↓
+RuleBasedStrategy
+       ↓
+RuleBasedEvaluator
+       ↓
+typed output
+       ↓
+CandidateDecision
+       ↓
+Verification
+```
 | **Hybrid** | Composed strategies behind registration |
 | **Future registered** | Plugin-registered strategies — typed contracts |
 

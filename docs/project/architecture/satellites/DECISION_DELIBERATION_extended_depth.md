@@ -29,7 +29,7 @@ One producer emits candidate Decision Versions for verification. Minimal deliber
 
 ## 3. Rule-Based strategy
 
-Deterministic or rule-driven proposal without LLM deliberation rounds. Outputs typed Decision Artifacts bound to versions — same verification and finalization contracts as model strategies.
+Host-supplied deterministic domain logic via typed RuleBasedEvaluator — not Policy/Governance, not execution authorization, not side-effect execution. No LLM, no provider, no platform-owned rule DSL. Produces CandidateDecision; Verification and Lifecycle gates still apply.
 
 ---
 

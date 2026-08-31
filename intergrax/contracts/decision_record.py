@@ -261,6 +261,28 @@ class CandidateDecision(Generic[T]):
         _validate_identity_lineage_alignment(self.identity, self.lineage)
 
 
+def candidate_decision(
+    *,
+    identity: DecisionIdentity,
+    artifact_kind: DecisionArtifactKind,
+    payload: T,
+    lineage: DecisionVersionLineage | None = None,
+) -> CandidateDecision[T]:
+    """Assemble a typed candidate from deliberation output."""
+    if lineage is None:
+        resolved_lineage = decision_version_lineage(
+            current=decision_lineage_ref(identity.version),
+        )
+    else:
+        resolved_lineage = lineage
+    artifact = DecisionArtifact(kind=artifact_kind, content=payload)
+    return CandidateDecision(
+        identity=identity,
+        artifact=artifact,
+        lineage=resolved_lineage,
+    )
+
+
 def candidate_decision_ref(candidate: CandidateDecision[T]) -> DecisionProposalRef:
     """Derive the exact proposal reference for one candidate decision."""
     if type(candidate) is not CandidateDecision:
