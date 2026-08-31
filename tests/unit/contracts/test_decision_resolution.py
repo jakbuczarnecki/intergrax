@@ -93,6 +93,30 @@ def _identity(
     )
 
 
+def _authoritative_resolution_record_with_resolution(
+    resolution: str | bool | int | None,
+) -> None:
+    AuthoritativeResolutionRecord(
+        identity=_identity(),
+        resolution=resolution,
+    )
+
+
+def _authoritative_resolution_record_with_identity(
+    identity: str | bool | None,
+) -> None:
+    AuthoritativeResolutionRecord(
+        identity=identity,
+        resolution=DecisionResolution.REJECTED,
+    )
+
+
+def _validate_authoritative_resolution_record_untyped(
+    record: AuthoritativeResolutionRecord | object,
+) -> AuthoritativeResolutionRecord:
+    return validate_authoritative_resolution_record(record)
+
+
 @pytest.mark.unit
 @pytest.mark.gate
 def test_decision_resolution_exact_set() -> None:
@@ -170,13 +194,10 @@ def test_authoritative_resolution_record_is_immutable() -> None:
     ],
 )
 def test_authoritative_resolution_record_rejects_non_enum_resolution(
-    invalid_resolution: object,
+    invalid_resolution: str | bool | int | None,
 ) -> None:
     with pytest.raises(TypeError, match="resolution must be DecisionResolution"):
-        AuthoritativeResolutionRecord(
-            identity=_identity(),
-            resolution=invalid_resolution,  # type: ignore[arg-type]
-        )
+        _authoritative_resolution_record_with_resolution(invalid_resolution)
 
 
 @pytest.mark.unit
@@ -190,13 +211,10 @@ def test_authoritative_resolution_record_rejects_non_enum_resolution(
     ],
 )
 def test_authoritative_resolution_record_rejects_invalid_identity(
-    invalid_identity: object,
+    invalid_identity: str | bool | None,
 ) -> None:
     with pytest.raises(TypeError, match="identity must be DecisionIdentity"):
-        AuthoritativeResolutionRecord(
-            identity=invalid_identity,  # type: ignore[arg-type]
-            resolution=DecisionResolution.REJECTED,
-        )
+        _authoritative_resolution_record_with_identity(invalid_identity)
 
 
 @pytest.mark.unit
@@ -240,7 +258,7 @@ def test_authoritative_resolution_records_differ_by_identity_context() -> None:
 @pytest.mark.gate
 def test_validate_authoritative_resolution_record_rejects_wrong_type() -> None:
     with pytest.raises(TypeError, match="record must be AuthoritativeResolutionRecord"):
-        validate_authoritative_resolution_record(object())  # type: ignore[arg-type]
+        _validate_authoritative_resolution_record_untyped(object())
 
 
 @pytest.mark.unit
