@@ -11,14 +11,16 @@ idempotency, session, organization profile) MUST use this module or
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from intergrax.collaborative_work.materialization_factory import (
-    CollaborativeWorkMaterializationBinding,
     CollaborativeWorkPersistenceFactory,
 )
 from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.sqlite.adapter import _SQLiteRelationalStore
 from intergrax.integrations.providers.relational_store.sqlite.config import SQLiteIntegrationConfig
 from intergrax.integrations.providers.relational_store.sqlite.opens import (
@@ -109,14 +111,30 @@ def create_sqlite_integration(
     )
 
 
-def _sqlite_materialization_paths(
-    binding: CollaborativeWorkMaterializationBinding,
+def _sqlite_materialization_paths_from_options(
+    options: Mapping[str, Any],
 ) -> SqliteStorePaths:
-    overrides: dict[str, object] = {}
-    if binding.relational_db is not None:
-        overrides["relational_db"] = Path(binding.relational_db)
-    _, paths = _build_paths(data_dir=binding.data_dir, **overrides)
+    overrides: dict[str, object] = dict(options)
+    data_dir = overrides.pop("data_dir", None)
+    relational_db = overrides.pop("relational_db", None)
+    if relational_db is not None:
+        overrides["relational_db"] = Path(relational_db)
+    _, paths = _build_paths(data_dir=data_dir, **overrides)
     return paths
+
+
+@dataclass(frozen=True)
+class _SQLiteCollaborativeWorkMaterializer:
+    _paths: SqliteStorePaths
+
+    def materialize_collaborative_work_repositories(
+        self,
+    ) -> CollaborativeWorkRepositories:
+        from intergrax.collaborative_work.persistence import (
+            open_sqlite_collaborative_work_repositories,
+        )
+
+        return open_sqlite_collaborative_work_repositories(str(self._paths.relational))
 
 
 class SQLiteRelationalStoreFactory:
@@ -138,16 +156,20 @@ class SQLiteRelationalStoreFactory:
         integration.connect()
         return integration
 
+    def bind_collaborative_work_materialization(
+        self,
+        options: Mapping[str, Any],
+    ) -> CollaborativeWorkPersistenceFactory:
+        paths = _sqlite_materialization_paths_from_options(options)
+        return _SQLiteCollaborativeWorkMaterializer(paths)
+
     def materialize_collaborative_work_repositories(
         self,
-        binding: CollaborativeWorkMaterializationBinding,
     ) -> CollaborativeWorkRepositories:
-        from intergrax.collaborative_work.persistence import (
-            open_sqlite_collaborative_work_repositories,
+        raise IntegrationConfigurationError(
+            "SQLite Collaborative Work materialization requires bound integration "
+            "options from Integrations profile resolution."
         )
-
-        paths = _sqlite_materialization_paths(binding)
-        return open_sqlite_collaborative_work_repositories(str(paths.relational))
 
 
 create_sqlite_relational_store: SQLiteRelationalStoreFactory & CollaborativeWorkPersistenceFactory = (
@@ -284,7 +306,6 @@ def create_sqlite_user_profile_store(
     _, paths = _build_paths(data_dir=data_dir, **overrides)
     return open_user_profile_store_at(paths.user_profile)
 
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.sqlite.integration import (
     SQLITE_RELATIONAL_STORE_PROVIDER_ID,
     SqliteRelationalStoreIntegration,

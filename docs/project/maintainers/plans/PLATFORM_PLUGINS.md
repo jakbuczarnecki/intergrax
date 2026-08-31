@@ -162,6 +162,7 @@ Extends PLUGIN-7 qualification for **provider-scoped** evidence without a new qu
 | **PROVIDER-QUAL-3B** | Typed domain-provider binding | **READY_FOR_REVIEW** | Initial `CollaborativeWorkPersistenceProvider` bridge; superseded by **PROVIDER-QUAL-3B-R1** lifecycle correction |
 | **PROVIDER-QUAL-3B-R1** | Lifecycle-safe provider materialization | **READY_FOR_REVIEW** | Single provider lifecycle; `_collaborative_work_materialization` catalog path; no abandoned generic relational runtime; connection_factory preserved |
 | **PROVIDER-QUAL-3B-R2** | Explicit typed materialization factory | **READY_FOR_REVIEW** | `CollaborativeWorkPersistenceFactory` + `CollaborativeWorkMaterializationBinding`; no magic keyword protocol; no `TypeError` capability probing; pre-built SQLite fail-closed |
+| **PROVIDER-QUAL-3B-R3** | Provider-owned typed configuration materialization | **READY_FOR_REVIEW** | `CollaborativeWorkPersistenceFactory.materialize_collaborative_work_repositories()` only; provider `bind_collaborative_work_materialization(options)` owns typed config; no CW vendor config bag; Oracle adds no CW config fields |
 | **PROVIDER-QUAL-3C** | Evidence persistence/integration | Planned | Qualification run persistence/index integration; mapping to existing ProofReceipt where appropriate; record accepted PostgreSQL 16.6 evidence through canonical binding; **requires 3B** |
 
 **Explicit out of scope (PROVIDER-QUAL-1):** runtime Python changes, GHA vendor jobs, LKW integration, MP-2, admission policy engine, automatic staleness engine.

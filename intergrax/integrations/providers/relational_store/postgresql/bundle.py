@@ -11,14 +11,15 @@ Connections are opened only in ``session.PostgreSQLConnectionProvider``. Tier-3 
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 from intergrax.collaborative_work.materialization_factory import (
-    CollaborativeWorkMaterializationBinding,
     CollaborativeWorkPersistenceFactory,
 )
 from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.integrations.providers.relational_store.postgresql.config import PostgreSQLIntegrationConfig
 from intergrax.integrations.providers.relational_store.postgresql.opens import open_postgresql_relational_store
@@ -50,27 +51,40 @@ def create_postgresql_integration(
     return PostgreSQLIntegrationBundle(config=config, relational_store=store)
 
 
-def _postgresql_config_overrides(
-    binding: CollaborativeWorkMaterializationBinding,
-) -> dict[str, object]:
-    overrides: dict[str, object] = {}
-    if binding.dsn is not None:
-        overrides["dsn"] = binding.dsn
-    if binding.host is not None:
-        overrides["host"] = binding.host
-    if binding.port is not None:
-        overrides["port"] = binding.port
-    if binding.user is not None:
-        overrides["user"] = binding.user
-    if binding.password is not None:
-        overrides["password"] = binding.password
-    if binding.database is not None:
-        overrides["database"] = binding.database
-    if binding.sslmode is not None:
-        overrides["sslmode"] = binding.sslmode
-    if binding.tenant_schema is not None:
-        overrides["tenant_schema"] = binding.tenant_schema
-    return overrides
+def _postgresql_materialization_inputs(
+    options: Mapping[str, Any],
+) -> tuple[dict[str, object], Callable[[], object] | None]:
+    connection_factory = options.get("connection_factory")
+    if "connection_factory" in options and not callable(connection_factory):
+        raise IntegrationConfigurationError(
+            "PostgreSQL connection_factory must be callable when explicitly provided."
+        )
+    overrides: dict[str, object] = {
+        key: value
+        for key, value in options.items()
+        if key != "connection_factory" and value is not None
+    }
+    bound_factory = connection_factory if callable(connection_factory) else None
+    return overrides, bound_factory
+
+
+@dataclass(frozen=True)
+class _PostgreSQLCollaborativeWorkMaterializer:
+    _config_overrides: dict[str, object]
+    _connection_factory: Callable[[], object] | None
+
+    def materialize_collaborative_work_repositories(
+        self,
+    ) -> CollaborativeWorkRepositories:
+        from intergrax.collaborative_work.persistence import (
+            open_postgresql_collaborative_work_repositories,
+        )
+
+        config = resolve_postgresql_config(**self._config_overrides)
+        return open_postgresql_collaborative_work_repositories(
+            config=config,
+            connection_factory=self._connection_factory,
+        )
 
 
 class PostgreSQLRelationalStoreFactory:
@@ -90,18 +104,19 @@ class PostgreSQLRelationalStoreFactory:
         )
         return bundle.relational_store
 
+    def bind_collaborative_work_materialization(
+        self,
+        options: Mapping[str, Any],
+    ) -> CollaborativeWorkPersistenceFactory:
+        overrides, connection_factory = _postgresql_materialization_inputs(options)
+        return _PostgreSQLCollaborativeWorkMaterializer(overrides, connection_factory)
+
     def materialize_collaborative_work_repositories(
         self,
-        binding: CollaborativeWorkMaterializationBinding,
     ) -> CollaborativeWorkRepositories:
-        from intergrax.collaborative_work.persistence import (
-            open_postgresql_collaborative_work_repositories,
-        )
-
-        config = resolve_postgresql_config(**_postgresql_config_overrides(binding))
-        return open_postgresql_collaborative_work_repositories(
-            config=config,
-            connection_factory=binding.connection_factory,
+        raise IntegrationConfigurationError(
+            "PostgreSQL Collaborative Work materialization requires bound integration "
+            "options from Integrations profile resolution."
         )
 
 
@@ -109,7 +124,6 @@ create_postgresql_relational_store: PostgreSQLRelationalStoreFactory & Collabora
     PostgreSQLRelationalStoreFactory()
 )
 
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.postgresql.integration import (
     POSTGRESQL_RELATIONAL_STORE_PROVIDER_ID,
     PostgresqlRelationalStoreIntegration,

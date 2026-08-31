@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Tests for typed Collaborative Work persistence provider binding (PROVIDER-QUAL-3B-R2)."""
+"""Tests for typed Collaborative Work persistence provider binding (PROVIDER-QUAL-3B-R3)."""
 
 from __future__ import annotations
 
@@ -21,7 +21,6 @@ from intergrax.collaborative_work.in_memory_repository import (
 )
 from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
 from intergrax.collaborative_work.materialization_factory import (
-    CollaborativeWorkMaterializationBinding,
     CollaborativeWorkPersistenceFactory,
 )
 from intergrax.collaborative_work.persistence_provider import (
@@ -64,6 +63,25 @@ _FORBIDDEN_ATTRIBUTES = frozenset({"__dict__", "__setattr__"})
 _VENDOR_LITERALS = frozenset({"postgresql", "sqlite", "oracle"})
 _BINDING_FILES = (
     "intergrax/collaborative_work/persistence_provider.py",
+    "intergrax/collaborative_work/materialization_factory.py",
+)
+_MATERIALIZATION_CONTRACT_FILES = (
+    "intergrax/collaborative_work/materialization_factory.py",
+)
+_FORBIDDEN_PROVIDER_CONFIG_NAMES = frozenset(
+    {
+        "dsn",
+        "host",
+        "port",
+        "user",
+        "password",
+        "database",
+        "sslmode",
+        "tenant_schema",
+        "data_dir",
+        "relational_db",
+        "connection_factory",
+    }
 )
 
 
@@ -151,9 +169,7 @@ class _FutureVendorRelationalStoreFactory:
 
     def materialize_collaborative_work_repositories(
         self,
-        binding: CollaborativeWorkMaterializationBinding,
     ) -> CollaborativeWorkRepositories:
-        del binding
         self.materialization_invocations += 1
         return _in_memory_collaborative_work_repositories()
 
@@ -167,9 +183,7 @@ class _TypeErrorRelationalStoreFactory:
 
     def materialize_collaborative_work_repositories(
         self,
-        binding: CollaborativeWorkMaterializationBinding,
     ) -> CollaborativeWorkRepositories:
-        del binding
         self.materialization_invocations += 1
         raise TypeError("internal factory bug")
 
@@ -277,6 +291,59 @@ def _collect_vendor_dispatch_violations(path: Path) -> list[str]:
                 f"{path.name}:{node.lineno} compares vendor literal {node.left.value!r}"
             )
     return violations
+
+
+def _collect_materialization_contract_violations(path: Path) -> list[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef):
+            for statement in node.body:
+                if isinstance(statement, ast.AnnAssign) and isinstance(statement.target, ast.Name):
+                    if statement.target.id in _FORBIDDEN_PROVIDER_CONFIG_NAMES:
+                        violations.append(
+                            f"{path.name}:{statement.lineno} defines provider config field "
+                            f"{statement.target.id!r}"
+                        )
+        if isinstance(node, ast.Subscript):
+            slice_node = node.slice
+            if isinstance(slice_node, ast.Tuple):
+                elements = slice_node.elts
+            else:
+                elements = [slice_node]
+            for element in elements:
+                if isinstance(element, ast.Name) and element.id == "Any":
+                    violations.append(f"{path.name}:{node.lineno} uses Any in type annotation")
+        if isinstance(node, ast.Name) and node.id == "Any":
+            violations.append(f"{path.name}:{node.lineno} references Any")
+        if isinstance(node, ast.FunctionDef):
+            for arg in node.args.kwonlyargs + node.args.args:
+                if arg.arg in _FORBIDDEN_PROVIDER_CONFIG_NAMES:
+                    violations.append(
+                        f"{path.name}:{node.lineno} defines provider config parameter "
+                        f"{arg.arg!r}"
+                    )
+            if node.args.vararg is not None:
+                violations.append(f"{path.name}:{node.lineno} uses *args in materialization contract")
+            if node.args.kwarg is not None:
+                violations.append(f"{path.name}:{node.lineno} uses **kwargs in materialization contract")
+    source = path.read_text(encoding="utf-8")
+    if "Mapping[str, Any]" in source or "dict[str, Any]" in source:
+        violations.append(f"{path.name} contains Mapping[str, Any] or dict[str, Any]")
+    if "binding_from_profile_options" in source:
+        violations.append(f"{path.name} contains binding_from_profile_options")
+    if "CollaborativeWorkMaterializationBinding" in source:
+        violations.append(f"{path.name} contains CollaborativeWorkMaterializationBinding")
+    return violations
+
+
+@pytest.mark.parametrize("relative_path", _MATERIALIZATION_CONTRACT_FILES)
+def test_collaborative_work_materialization_contract_has_no_provider_config_bag(
+    relative_path: str,
+) -> None:
+    path = _repo_root() / relative_path
+    violations = _collect_materialization_contract_violations(path)
+    assert not violations, "\n".join(violations)
 
 
 @pytest.mark.parametrize("relative_path", _BINDING_FILES)
@@ -427,6 +494,22 @@ def test_provider_factory_internal_typeerror_propagates_once() -> None:
     assert failing_factory.materialization_invocations == 1
 
 
+def test_postgresql_invalid_connection_factory_fails_closed() -> None:
+    register_postgresql_integration()
+    profile = IntegrationProfile(
+        relational_store=POSTGRESQL,
+        options={
+            POSTGRESQL.slug: {
+                "dsn": "postgresql://localhost/test",
+                "connection_factory": "not-callable",
+            }
+        },
+    )
+
+    with pytest.raises(IntegrationConfigurationError, match="connection_factory"):
+        resolve_collaborative_work_repositories(profile)
+
+
 def test_postgresql_factory_materialization_invoked_exactly_once() -> None:
     register_postgresql_integration()
     profile = IntegrationProfile(
@@ -439,9 +522,9 @@ def test_postgresql_factory_materialization_invoked_exactly_once() -> None:
     with (
         patch.object(
             factory,
-            "materialize_collaborative_work_repositories",
-            wraps=factory.materialize_collaborative_work_repositories,
-        ) as materialize,
+            "bind_collaborative_work_materialization",
+            wraps=factory.bind_collaborative_work_materialization,
+        ) as bind,
         patch(
             "intergrax.collaborative_work.persistence.open_postgresql_collaborative_work_repositories",
             return_value=_in_memory_collaborative_work_repositories(),
@@ -449,7 +532,7 @@ def test_postgresql_factory_materialization_invoked_exactly_once() -> None:
     ):
         bundle = resolve_collaborative_work_repositories(profile)
 
-    materialize.assert_called_once()
+    bind.assert_called_once()
     bundle.close()
 
 

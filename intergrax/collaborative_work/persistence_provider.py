@@ -4,11 +4,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Protocol, runtime_checkable
 
 from intergrax.collaborative_work.materialization_factory import (
     CollaborativeWorkPersistenceFactory,
-    binding_from_profile_options,
 )
 from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
 from intergrax.integrations._shared.config import merge_config
@@ -24,6 +24,17 @@ class CollaborativeWorkPersistenceProvider(Protocol):
 
     def materialize_collaborative_work_repositories(self) -> CollaborativeWorkRepositories:
         """Construct the authoritative Collaborative Work repository bundle."""
+
+
+@runtime_checkable
+class _CollaborativeWorkMaterializationBinder(Protocol):
+    """Integrations-owned binding of profile options to a configured CW materializer."""
+
+    def bind_collaborative_work_materialization(
+        self,
+        options: Mapping[str, object],
+    ) -> CollaborativeWorkPersistenceFactory:
+        """Return a provider-configured materializer for Collaborative Work persistence."""
 
 
 def resolve_collaborative_work_repositories(
@@ -59,5 +70,8 @@ def resolve_collaborative_work_repositories(
             "materialization."
         )
 
-    binding = binding_from_profile_options(merged)
-    return factory.materialize_collaborative_work_repositories(binding)
+    if isinstance(factory, _CollaborativeWorkMaterializationBinder):
+        materializer = factory.bind_collaborative_work_materialization(merged)
+        return materializer.materialize_collaborative_work_repositories()
+
+    return factory.materialize_collaborative_work_repositories()
