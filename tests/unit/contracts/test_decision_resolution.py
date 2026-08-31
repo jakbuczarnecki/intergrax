@@ -1,6 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
 from dataclasses import FrozenInstanceError, fields
+from typing import get_type_hints
 
 import pytest
 
@@ -93,30 +94,6 @@ def _identity(
     )
 
 
-def _authoritative_resolution_record_with_resolution(
-    resolution: str | bool | int | None,
-) -> None:
-    AuthoritativeResolutionRecord(
-        identity=_identity(),
-        resolution=resolution,
-    )
-
-
-def _authoritative_resolution_record_with_identity(
-    identity: str | bool | None,
-) -> None:
-    AuthoritativeResolutionRecord(
-        identity=identity,
-        resolution=DecisionResolution.REJECTED,
-    )
-
-
-def _validate_authoritative_resolution_record_untyped(
-    record: AuthoritativeResolutionRecord | object,
-) -> AuthoritativeResolutionRecord:
-    return validate_authoritative_resolution_record(record)
-
-
 @pytest.mark.unit
 @pytest.mark.gate
 def test_decision_resolution_exact_set() -> None:
@@ -184,37 +161,51 @@ def test_authoritative_resolution_record_is_immutable() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
-@pytest.mark.parametrize(
-    "invalid_resolution",
-    [
-        "rejected",
-        None,
-        True,
-        1,
-    ],
-)
-def test_authoritative_resolution_record_rejects_non_enum_resolution(
-    invalid_resolution: str | bool | int | None,
-) -> None:
-    with pytest.raises(TypeError, match="resolution must be DecisionResolution"):
-        _authoritative_resolution_record_with_resolution(invalid_resolution)
+def test_authoritative_resolution_record_strict_field_type_contract() -> None:
+    hints = get_type_hints(AuthoritativeResolutionRecord)
+    assert hints["identity"] is DecisionIdentity
+    assert hints["resolution"] is DecisionResolution
 
 
 @pytest.mark.unit
 @pytest.mark.gate
 @pytest.mark.parametrize(
-    "invalid_identity",
-    [
-        None,
-        "tenant-a",
-        True,
-    ],
+    "wrong_type",
+    [str, bool, int, type(None)],
 )
-def test_authoritative_resolution_record_rejects_invalid_identity(
-    invalid_identity: str | bool | None,
+def test_authoritative_resolution_record_resolution_field_is_not(
+    wrong_type: type,
 ) -> None:
-    with pytest.raises(TypeError, match="identity must be DecisionIdentity"):
-        _authoritative_resolution_record_with_identity(invalid_identity)
+    hints = get_type_hints(AuthoritativeResolutionRecord)
+    assert hints["resolution"] is not wrong_type
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.parametrize(
+    "wrong_type",
+    [str, bool, type(None)],
+)
+def test_authoritative_resolution_record_identity_field_is_not(
+    wrong_type: type,
+) -> None:
+    hints = get_type_hints(AuthoritativeResolutionRecord)
+    assert hints["identity"] is not wrong_type
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_decision_resolution_runtime_guard_requires_enum_instance_not_value_alias() -> None:
+    assert DecisionResolution.REJECTED.value == "rejected"
+    assert type(DecisionResolution.REJECTED) is DecisionResolution
+    assert type("rejected") is str
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_validate_authoritative_resolution_record_strict_parameter_type_contract() -> None:
+    hints = get_type_hints(validate_authoritative_resolution_record)
+    assert hints["record"] is AuthoritativeResolutionRecord
 
 
 @pytest.mark.unit
@@ -252,13 +243,6 @@ def test_authoritative_resolution_records_differ_by_identity_context() -> None:
     assert different_scope != same
     assert different_version != same
     assert different_decision_id != same
-
-
-@pytest.mark.unit
-@pytest.mark.gate
-def test_validate_authoritative_resolution_record_rejects_wrong_type() -> None:
-    with pytest.raises(TypeError, match="record must be AuthoritativeResolutionRecord"):
-        _validate_authoritative_resolution_record_untyped(object())
 
 
 @pytest.mark.unit
