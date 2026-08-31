@@ -496,6 +496,39 @@ Rules:
 
 Production hosts authenticate continuation cursors with HMAC-SHA256 over a tenant- and status-filter-bound payload. Secret enters only through composition (`INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET` via `resolve_problem_list_cursor_secret()`). **Minimum 32 UTF-8 bytes** (random 256-bit recommended). **No static default secret in production.** Restart with a new secret invalidates previously issued cursors (documented limitation; no transparent rotation in this slice).
 
+### Bounded occurrence history (DIAG-ENTERPRISE-2 / E2-R2)
+
+Source-of-truth hierarchy:
+
+```text
+canonical execution evidence
+        ↓
+accepted durable ProblemOccurrence history (occurrence rows)
+        ↓
+derived occurrence aggregate stats (`meta:stats`)
+        ↓
+bounded Problem aggregate
+```
+
+Occurrence rows are authoritative. `meta:stats` is a derived optimization/convergence aid — never more authoritative than durable occurrence history.
+
+**Write protocol (idempotent, bounded O(1) per append):**
+
+1. `put_if_absent` durable occurrence row (`occ:{inverted_observed_at_micros}:{occurrence_id}`).
+2. `put_if_absent` per-occurrence stats contribution marker (`meta:stats_contrib:{occurrence_id}`).
+3. When the marker is newly created, increment `meta:stats` via optimistic CAS (bounded retries, no recursion).
+4. On `ALREADY_EXISTS` for the occurrence row, still run steps 2–3 so stats converge after partial-write / crash windows.
+
+`ALREADY_EXISTS` does **not** short-circuit stats convergence. Duplicate markers skip re-increment (no double count).
+
+**Timestamp encoding:** row-key sort tokens use integer-only UTC epoch microseconds (`astimezone(UTC)` delta arithmetic). No `float` timestamp multiplication.
+
+**Occurrence cursor secret:** same minimum 32 UTF-8 bytes as E1 list cursors (`resolve_problem_list_cursor_secret()` at composition boundary).
+
+**Stats integrity:** malformed `meta:stats` (invalid count, `first_seen_at > last_seen_at`) → `ProblemOccurrencePersistenceIntegrityError` (fail closed, no silent repair).
+
+**Bounded OCC:** `_MAX_STATS_CONFLICT_RETRIES = 3` (aligned with lifecycle persistence retries). Exhaustion → typed integrity error.
+
 ### Production persistence contract
 
 Full-tenant Problem listing is **not** part of the production `ProblemPersistence` contract. Callers must use `query_problems` with bounded pages. Test/conformance helpers may materialize via paginated `query_all_problems_for_tenant`.

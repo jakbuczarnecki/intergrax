@@ -17,6 +17,7 @@ from intergrax.runtime.diagnostics.problem_lifecycle import ProblemId
 
 _OCCURRENCE_CURSOR_SCHEMA = "intergrax.diagnostic_problem_occurrence_cursor.v1"
 _OCCURRENCE_CURSOR_MAX_TOKEN_LENGTH = 4096
+_MIN_OCCURRENCE_CURSOR_SECRET_BYTES = 32
 
 
 class ProblemOccurrenceQueryCursorError(Exception):
@@ -38,6 +39,8 @@ class ProblemOccurrenceQueryCursorCodec:
     def __init__(self, *, secret: bytes) -> None:
         if not isinstance(secret, bytes) or not secret:
             raise ValueError("problem_occurrence_cursor_secret_invalid")
+        if len(secret) < _MIN_OCCURRENCE_CURSOR_SECRET_BYTES:
+            raise ValueError("problem_occurrence_cursor_secret_too_short")
         self._secret = secret
 
     @staticmethod

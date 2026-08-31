@@ -28,10 +28,13 @@ from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
 )
 from intergrax.runtime.diagnostics.problem_occurrence_query import (
     ProblemOccurrenceQueryCursorCodec,
+    _MIN_OCCURRENCE_CURSOR_SECRET_BYTES,
 )
 from intergrax.runtime.diagnostics.problem_occurrence_record_codec import (
+    decode_occurrence_stats_contribution_marker,
     decode_occurrence_stats_record,
     decode_problem_occurrence_record,
+    encode_occurrence_stats_contribution_marker,
     encode_occurrence_stats_record,
     encode_problem_occurrence_record,
 )
@@ -39,9 +42,12 @@ from intergrax.runtime.diagnostics.problem_occurrence_record_codec import (
 _PARTITION_PREFIX = "intergrax.diagnostic_problem_occurrence.v1"
 _OCCURRENCE_ROW_PREFIX = "occ:"
 _STATS_ROW_KEY = "meta:stats"
+_STATS_CONTRIBUTION_ROW_PREFIX = "meta:stats_contrib:"
 _MAX_QUERY_PAGE_LIMIT = 5000
 _MAX_OCCURRENCE_PAGE_LIMIT = 1000
 _MAX_SORT_MICROS = 10**16
+_MAX_STATS_CONFLICT_RETRIES = 3
+_UTC_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 
 
 @runtime_checkable
@@ -65,10 +71,31 @@ def _occurrence_row_key(
     return f"{_OCCURRENCE_ROW_PREFIX}{sort_token:016d}:{occurrence_id}"
 
 
+def _stats_contribution_row_key(occurrence_id: ProblemOccurrenceId) -> str:
+    return f"{_STATS_CONTRIBUTION_ROW_PREFIX}{occurrence_id}"
+
+
 def _observed_at_micros(observed_at: datetime) -> int:
     if observed_at.tzinfo is None:
         raise ValueError("timezone-aware datetime required")
-    return int(observed_at.timestamp() * 1_000_000)
+    return _datetime_to_epoch_micros(observed_at)
+
+
+def _datetime_to_epoch_micros(value: datetime) -> int:
+    normalized = value.astimezone(UTC)
+    delta = normalized - _UTC_EPOCH
+    return (
+        delta.days * 86_400 * 1_000_000
+        + delta.seconds * 1_000_000
+        + delta.microseconds
+    )
+
+
+def _validate_occurrence_cursor_secret(secret: bytes) -> None:
+    if not isinstance(secret, bytes) or not secret:
+        raise ValueError("problem_occurrence_cursor_secret_invalid")
+    if len(secret) < _MIN_OCCURRENCE_CURSOR_SECRET_BYTES:
+        raise ValueError("problem_occurrence_cursor_secret_too_short")
 
 
 class DocumentStoreProblemOccurrencePersistence(ProblemOccurrencePersistence):
@@ -85,6 +112,7 @@ class DocumentStoreProblemOccurrencePersistence(ProblemOccurrencePersistence):
             raise TypeError(
                 "problem occurrence persistence requires ConditionalDocumentStore",
             )
+        _validate_occurrence_cursor_secret(occurrence_cursor_secret)
         self._document_store = document_store
         self._occurrence_cursor_codec = ProblemOccurrenceQueryCursorCodec(
             secret=occurrence_cursor_secret,
@@ -126,10 +154,12 @@ class DocumentStoreProblemOccurrencePersistence(ProblemOccurrencePersistence):
             row_key=row_key,
             data=encode_problem_occurrence_record(occurrence),
         )
-        if self._document_store.put_if_absent(document):
-            self._merge_stats_on_append(
+        created = self._document_store.put_if_absent(document)
+        if created:
+            self._ensure_stats_contribution(
                 partition_key=partition_key,
                 occurrence=occurrence,
+                occurrence_id=occurrence_id,
             )
             return ProblemOccurrenceAppendResult.CREATED
 
@@ -143,6 +173,11 @@ class DocumentStoreProblemOccurrencePersistence(ProblemOccurrencePersistence):
             raise ProblemOccurrencePersistenceIntegrityError(
                 "conflicting durable occurrence for stable occurrence id",
             )
+        self._ensure_stats_contribution(
+            partition_key=partition_key,
+            occurrence=occurrence,
+            occurrence_id=occurrence_id,
+        )
         return ProblemOccurrenceAppendResult.ALREADY_EXISTS
 
     def query_occurrences(
@@ -217,53 +252,87 @@ class DocumentStoreProblemOccurrencePersistence(ProblemOccurrencePersistence):
             last_seen_at=last_seen_at,
         )
 
-    def _merge_stats_on_append(
+    def _ensure_stats_contribution(
+        self,
+        *,
+        partition_key: str,
+        occurrence: ProblemOccurrence,
+        occurrence_id: ProblemOccurrenceId,
+    ) -> None:
+        marker_key = _stats_contribution_row_key(occurrence_id)
+        marker = DocumentRecord(
+            partition_key=partition_key,
+            row_key=marker_key,
+            data=encode_occurrence_stats_contribution_marker(
+                occurrence_id=occurrence_id,
+                observed_at=occurrence.observed_at,
+            ),
+        )
+        if self._document_store.put_if_absent(marker):
+            self._apply_stats_increment(
+                partition_key=partition_key,
+                occurrence=occurrence,
+            )
+            return
+
+        existing_marker = self._document_store.get(partition_key, marker_key)
+        if existing_marker is None:
+            raise ProblemOccurrencePersistenceIntegrityError(
+                "occurrence stats contribution marker missing after concurrent create",
+            )
+        decode_occurrence_stats_contribution_marker(
+            dict(existing_marker.data),
+            expected_occurrence_id=occurrence_id,
+        )
+        if self._document_store.get(partition_key, _STATS_ROW_KEY) is None:
+            self._apply_stats_increment(
+                partition_key=partition_key,
+                occurrence=occurrence,
+            )
+
+    def _apply_stats_increment(
         self,
         *,
         partition_key: str,
         occurrence: ProblemOccurrence,
     ) -> None:
-        existing = self._document_store.get(partition_key, _STATS_ROW_KEY)
-        if existing is None:
+        for attempt in range(_MAX_STATS_CONFLICT_RETRIES + 1):
+            existing = self._document_store.get(partition_key, _STATS_ROW_KEY)
+            if existing is None:
+                replacement = DocumentRecord(
+                    partition_key=partition_key,
+                    row_key=_STATS_ROW_KEY,
+                    data=encode_occurrence_stats_record(
+                        occurrence_count=1,
+                        first_seen_at=occurrence.observed_at,
+                        last_seen_at=occurrence.observed_at,
+                    ),
+                )
+                if self._document_store.put_if_absent(replacement):
+                    return
+                continue
+
+            count, first_seen_at, last_seen_at = decode_occurrence_stats_record(
+                dict(existing.data),
+            )
             replacement = DocumentRecord(
                 partition_key=partition_key,
                 row_key=_STATS_ROW_KEY,
                 data=encode_occurrence_stats_record(
-                    occurrence_count=1,
-                    first_seen_at=occurrence.observed_at,
-                    last_seen_at=occurrence.observed_at,
+                    occurrence_count=count + 1,
+                    first_seen_at=min(first_seen_at, occurrence.observed_at),
+                    last_seen_at=max(last_seen_at, occurrence.observed_at),
                 ),
             )
-            if self._document_store.put_if_absent(replacement):
+            if self._document_store.replace_if_match(
+                expected=existing,
+                replacement=replacement,
+            ):
                 return
-            existing = self._document_store.get(partition_key, _STATS_ROW_KEY)
-            if existing is None:
-                raise ProblemOccurrencePersistenceIntegrityError(
-                    "occurrence stats record missing after concurrent create",
-                )
 
-        count, first_seen_at, last_seen_at = decode_occurrence_stats_record(
-            dict(existing.data),
+        raise ProblemOccurrencePersistenceIntegrityError(
+            "occurrence stats merge failed after bounded optimistic concurrency retries",
         )
-        replacement = DocumentRecord(
-            partition_key=partition_key,
-            row_key=_STATS_ROW_KEY,
-            data=encode_occurrence_stats_record(
-                occurrence_count=count + 1,
-                first_seen_at=min(first_seen_at, occurrence.observed_at),
-                last_seen_at=max(last_seen_at, occurrence.observed_at),
-            ),
-        )
-        if not self._document_store.replace_if_match(
-            expected=existing,
-            replacement=replacement,
-        ):
-            refreshed = self._document_store.get(partition_key, _STATS_ROW_KEY)
-            if refreshed is None:
-                raise ProblemOccurrencePersistenceIntegrityError(
-                    "occurrence stats record disappeared during merge",
-                )
-            self._merge_stats_on_append(partition_key=partition_key, occurrence=occurrence)
 
 
 def wire_problem_occurrence_persistence(
@@ -278,8 +347,7 @@ def wire_problem_occurrence_persistence(
         raise TypeError(
             "problem occurrence persistence requires ConditionalDocumentStore",
         )
-    if not isinstance(occurrence_cursor_secret, bytes) or not occurrence_cursor_secret:
-        raise ValueError("problem_occurrence_cursor_secret_invalid")
+    _validate_occurrence_cursor_secret(occurrence_cursor_secret)
     return DocumentStoreProblemOccurrencePersistence(
         document_store,
         occurrence_cursor_secret=occurrence_cursor_secret,

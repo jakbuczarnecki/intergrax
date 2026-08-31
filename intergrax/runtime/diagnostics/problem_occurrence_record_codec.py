@@ -114,7 +114,63 @@ def decode_occurrence_stats_record(data: object) -> tuple[int, datetime, datetim
         raise ProblemOccurrencePersistenceIntegrityError(
             "invalid diagnostic problem occurrence stats count",
         )
+    if first_seen_at > last_seen_at:
+        raise ProblemOccurrencePersistenceIntegrityError(
+            "invalid diagnostic problem occurrence stats timestamp ordering",
+        )
     return count, first_seen_at, last_seen_at
+
+
+_STATS_CONTRIBUTION_SCHEMA = (
+    "intergrax.diagnostic_problem_occurrence.stats_contribution.v1"
+)
+
+
+def encode_occurrence_stats_contribution_marker(
+    *,
+    occurrence_id: ProblemOccurrenceId,
+    observed_at: datetime,
+) -> dict[str, object]:
+    return {
+        "schema_version": _STATS_CONTRIBUTION_SCHEMA,
+        _PAYLOAD_FIELD: {
+            "occurrence_id": str(occurrence_id),
+            "observed_at": _encode_datetime(observed_at),
+        },
+    }
+
+
+def decode_occurrence_stats_contribution_marker(
+    data: object,
+    *,
+    expected_occurrence_id: ProblemOccurrenceId,
+) -> datetime:
+    if not isinstance(data, dict):
+        raise ProblemOccurrencePersistenceIntegrityError(
+            "invalid diagnostic problem occurrence stats contribution record",
+        )
+    schema_version = data.get("schema_version")
+    if schema_version != _STATS_CONTRIBUTION_SCHEMA:
+        raise ProblemOccurrencePersistenceIntegrityError(
+            "unsupported diagnostic problem occurrence stats contribution schema",
+        )
+    payload = data.get(_PAYLOAD_FIELD)
+    if not isinstance(payload, dict):
+        raise ProblemOccurrencePersistenceIntegrityError(
+            "invalid diagnostic problem occurrence stats contribution payload",
+        )
+    try:
+        stored_id = payload["occurrence_id"]
+        observed_at = _decode_datetime(payload["observed_at"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ProblemOccurrencePersistenceIntegrityError(
+            "malformed diagnostic problem occurrence stats contribution payload",
+        ) from exc
+    if not isinstance(stored_id, str) or stored_id != str(expected_occurrence_id):
+        raise ProblemOccurrencePersistenceIntegrityError(
+            "diagnostic problem occurrence stats contribution id mismatch",
+        )
+    return observed_at
 
 
 def _encode_datetime(value: datetime) -> str:
