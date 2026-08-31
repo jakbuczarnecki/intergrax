@@ -84,7 +84,7 @@ def create_research_backend_app(
 
     mount_research_routes(
         app,
-        nexus_loop=nexus,
+        host_execution=host_execution,
         prefix=settings.route_prefix,
     )
 

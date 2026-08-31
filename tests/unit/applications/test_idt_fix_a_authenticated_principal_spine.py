@@ -37,7 +37,7 @@ from intergrax.integrations.contracts.identity_provider import IdentityUser
 from intergrax.runtime.interactions.actor_resolution import resolve_actor_from_envelope
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import Task
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from legal_application.serving.schemas import LegalChatRequestV1
 from research_application.serving.fastapi_router import ResearchRunService
 from research_application.serving.schemas import ResearchRunRequestV1
@@ -390,8 +390,8 @@ def test_idt_a7_api_key_cannot_choose_arbitrary_tenant(
 
 @pytest.mark.asyncio
 async def test_idt_a8_research_concrete_regression() -> None:
-    runner = AsyncMock(spec=UnifiedTaskRunner)
-    service = ResearchRunService(task_runner=runner)
+    host_execution = AsyncMock(spec=HostTaskExecutionPort)
+    service = ResearchRunService(host_execution=host_execution)
     principal = HarnessAuthenticatedPrincipal(
         tenant_id="A",
         user_id="U1",
@@ -403,20 +403,20 @@ async def test_idt_a8_research_concrete_regression() -> None:
     with pytest.raises(HTTPException) as exc:
         await service.run_pipeline(body, authenticated_principal=principal)
     assert exc.value.status_code == 400
-    runner.run_task.assert_not_called()
+    host_execution.execute.assert_not_called()
 
 
 @pytest.mark.asyncio
 async def test_idt_a9_matching_assertion_succeeds() -> None:
-    runner = AsyncMock(spec=UnifiedTaskRunner)
-    runner.run_task.return_value = MagicMock(
+    host_execution = AsyncMock(spec=HostTaskExecutionPort)
+    host_execution.execute.return_value = MagicMock(
         task_id="task-1",
         run_id="run-1",
         state=MagicMock(value="completed"),
         answer="ok",
         metadata={},
     )
-    service = ResearchRunService(task_runner=runner)
+    service = ResearchRunService(host_execution=host_execution)
     principal = HarnessAuthenticatedPrincipal(
         tenant_id="A",
         user_id="U1",
@@ -426,28 +426,28 @@ async def test_idt_a9_matching_assertion_succeeds() -> None:
     )
     body = ResearchRunRequestV1(tenant_id="A", user_id="U1", message="summarize")
     await service.run_pipeline(body, authenticated_principal=principal)
-    runner.run_task.assert_awaited_once()
-    task = runner.run_task.await_args.args[0]
+    host_execution.execute.assert_awaited_once()
+    task = host_execution.execute.await_args.args[0]
     assert task.tenant_id == "A"
     assert task.user_id == "U1"
 
 
-def _research_runner_with_completed_task() -> AsyncMock:
-    runner = AsyncMock(spec=UnifiedTaskRunner)
-    runner.run_task.return_value = MagicMock(
+def _research_host_execution_with_completed_task() -> AsyncMock:
+    host_execution = AsyncMock(spec=HostTaskExecutionPort)
+    host_execution.execute.return_value = MagicMock(
         task_id="task-1",
         run_id="run-1",
         state=MagicMock(value="completed"),
         answer="ok",
         metadata={},
     )
-    return runner
+    return host_execution
 
 
 @pytest.mark.asyncio
 async def test_idt_r2_t1_research_task_receives_canonical_user_principal() -> None:
-    runner = _research_runner_with_completed_task()
-    service = ResearchRunService(task_runner=runner)
+    host_execution = _research_host_execution_with_completed_task()
+    service = ResearchRunService(host_execution=host_execution)
     principal = HarnessAuthenticatedPrincipal(
         tenant_id="A",
         user_id="U1",
@@ -458,15 +458,15 @@ async def test_idt_r2_t1_research_task_receives_canonical_user_principal() -> No
     canonical = harness_principal_to_request_identity(principal)
     body = ResearchRunRequestV1(tenant_id="A", user_id="U1", message="summarize")
     await service.run_pipeline(body, authenticated_principal=principal)
-    task = runner.run_task.await_args.args[0]
+    task = host_execution.execute.await_args.args[0]
     assert task.canonical_identity == canonical
     assert task.canonical_identity is not None
 
 
 @pytest.mark.asyncio
 async def test_idt_r2_t2_research_service_principal_preserved() -> None:
-    runner = _research_runner_with_completed_task()
-    service = ResearchRunService(task_runner=runner)
+    host_execution = _research_host_execution_with_completed_task()
+    service = ResearchRunService(host_execution=host_execution)
     principal = HarnessAuthenticatedPrincipal(
         tenant_id="A",
         user_id="platform-api",
@@ -477,7 +477,7 @@ async def test_idt_r2_t2_research_service_principal_preserved() -> None:
     canonical = harness_principal_to_request_identity(principal)
     body = ResearchRunRequestV1(tenant_id="A", user_id="platform-api", message="summarize")
     await service.run_pipeline(body, authenticated_principal=principal)
-    task = runner.run_task.await_args.args[0]
+    task = host_execution.execute.await_args.args[0]
     assert task.canonical_identity is not None
     assert task.canonical_identity.principal_type is PrincipalType.SERVICE
     assert task.canonical_identity.auth_subject == "platform-api"
@@ -490,8 +490,8 @@ async def test_idt_r2_t2_research_service_principal_preserved() -> None:
 
 @pytest.mark.asyncio
 async def test_idt_r2_t3_user_end_to_end_principal_preservation() -> None:
-    runner = _research_runner_with_completed_task()
-    service = ResearchRunService(task_runner=runner)
+    host_execution = _research_host_execution_with_completed_task()
+    service = ResearchRunService(host_execution=host_execution)
     principal = HarnessAuthenticatedPrincipal(
         tenant_id="A",
         user_id="U1",
@@ -502,7 +502,7 @@ async def test_idt_r2_t3_user_end_to_end_principal_preservation() -> None:
     canonical = harness_principal_to_request_identity(principal)
     body = ResearchRunRequestV1(tenant_id="A", user_id="U1", message="summarize")
     await service.run_pipeline(body, authenticated_principal=principal)
-    task = runner.run_task.await_args.args[0]
+    task = host_execution.execute.await_args.args[0]
     assert task.canonical_identity == canonical
     task.agent_id = "research-agent"
     runtime_request = task.to_runtime_request(run_id="run_a3aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
@@ -513,8 +513,8 @@ async def test_idt_r2_t3_user_end_to_end_principal_preservation() -> None:
 
 @pytest.mark.asyncio
 async def test_idt_r2_t4_metadata_cannot_override_after_research_task() -> None:
-    runner = _research_runner_with_completed_task()
-    service = ResearchRunService(task_runner=runner)
+    host_execution = _research_host_execution_with_completed_task()
+    service = ResearchRunService(host_execution=host_execution)
     principal = HarnessAuthenticatedPrincipal(
         tenant_id="A",
         user_id="U1",
@@ -525,7 +525,7 @@ async def test_idt_r2_t4_metadata_cannot_override_after_research_task() -> None:
     canonical = harness_principal_to_request_identity(principal)
     body = ResearchRunRequestV1(tenant_id="A", user_id="U1", message="summarize")
     await service.run_pipeline(body, authenticated_principal=principal)
-    task = runner.run_task.await_args.args[0]
+    task = host_execution.execute.await_args.args[0]
     task.agent_id = "research-agent"
     runtime_request = task.to_runtime_request(run_id="run_a3aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
     assert runtime_request.canonical_identity == canonical
@@ -537,11 +537,11 @@ async def test_idt_r2_t4_metadata_cannot_override_after_research_task() -> None:
 
 @pytest.mark.asyncio
 async def test_idt_r2_t5_legacy_local_research_path() -> None:
-    runner = _research_runner_with_completed_task()
-    service = ResearchRunService(task_runner=runner)
+    host_execution = _research_host_execution_with_completed_task()
+    service = ResearchRunService(host_execution=host_execution)
     body = ResearchRunRequestV1(tenant_id="legacy-t", user_id="legacy-u", message="summarize")
     await service.run_pipeline(body, authenticated_principal=None)
-    task = runner.run_task.await_args.args[0]
+    task = host_execution.execute.await_args.args[0]
     assert task.canonical_identity is None
     assert task.tenant_id == "legacy-t"
     assert task.user_id == "legacy-u"

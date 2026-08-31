@@ -160,7 +160,7 @@ def create_legal_backend_app(
         prefix=settings.route_prefix,
         identity_source=settings.identity_source,
         trace_store=observability.trace_store,
-        task_runner=task_runner,
+        host_execution=host_execution,
     )
 
     if settings.include_task_control:

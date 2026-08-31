@@ -52,7 +52,7 @@ def test_legal_backend_exposes_health_and_openapi(dev_settings: LegalBackendSett
 
 
 @pytest.mark.gate
-def test_legal_backend_chat_with_unified_task_runner(
+def test_legal_backend_chat_with_host_execution(
     dev_settings: LegalBackendSettings,
     product_harness_api_key: str,
     harness_auth_headers: dict[str, str],
@@ -68,7 +68,7 @@ def test_legal_backend_chat_with_unified_task_runner(
         answer="nexus host ok",
     )
     with patch(
-        "intergrax.runtime.task.unified_task_runner.UnifiedTaskRunner.run_runtime_request",
+        "intergrax.runtime.execution.host_task.HostTaskExecution.execute",
         new_callable=AsyncMock,
         return_value=task_result,
     ) as run_mock:

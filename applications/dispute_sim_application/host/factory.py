@@ -140,7 +140,7 @@ def create_dispute_sim_backend_app(
 
     mount_dispute_sim_routes(
         app,
-        nexus_loop=nexus_loop,
+        host_execution=host_execution,
         prefix=settings.route_prefix,
         default_agent_id=settings.default_agent_id,
     )

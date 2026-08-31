@@ -8,10 +8,9 @@ from typing import Any, Optional
 from fastapi import APIRouter, FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
 
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import new_run_id
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 
 class IntergraxAssistantRunRequestV1(BaseModel):
@@ -34,11 +33,14 @@ class IntergraxAssistantRunResponseV1(BaseModel):
 
 @dataclass
 class IntergraxAssistantRunService:
-    task_runner: UnifiedTaskRunner
+    host_execution: HostTaskExecutionPort
 
     @classmethod
-    def from_nexus_loop(cls, nexus_loop: NexusLoop) -> IntergraxAssistantRunService:
-        return cls(task_runner=UnifiedTaskRunner(nexus_loop))
+    def from_host_execution(
+        cls,
+        host_execution: HostTaskExecutionPort,
+    ) -> IntergraxAssistantRunService:
+        return cls(host_execution=host_execution)
 
     async def run_task(self, body: IntergraxAssistantRunRequestV1) -> IntergraxAssistantRunResponseV1:
         run_id = new_run_id()
@@ -51,7 +53,7 @@ class IntergraxAssistantRunService:
             context=TaskContext(capability=body.capability),
             metadata=dict(body.metadata),
         )
-        result = await self.task_runner.run_task(task)
+        result = await self.host_execution.execute(task)
         return IntergraxAssistantRunResponseV1(
             task_id=result.task_id,
             run_id=result.run_id,
@@ -65,10 +67,11 @@ class IntergraxAssistantRunService:
 def mount_intergrax_assistant_routes(
     app: FastAPI,
     *,
-    nexus_loop: NexusLoop,
+    host_execution: HostTaskExecutionPort,
     prefix: str = "/v1/intergrax_assistant",
 ) -> IntergraxAssistantRunService:
-    service = IntergraxAssistantRunService.from_nexus_loop(nexus_loop)
+    nexus_loop = host_execution.nexus_loop
+    service = IntergraxAssistantRunService.from_host_execution(host_execution)
     router = APIRouter(prefix=prefix, tags=["intergrax_assistant"])
 
     @router.post("/run", response_model=IntergraxAssistantRunResponseV1)

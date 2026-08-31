@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""UE-11G-P1 — production application hosts must not root-execute Nexus."""
+"""Production application hosts must execute through canonical Unified Execution."""
 
 from __future__ import annotations
 
@@ -16,20 +16,6 @@ _APPLICATIONS_ROOT = _REPO_ROOT / "applications"
 _HOST_TASK_PATH = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "host_task.py"
 _SHARED_MCP_EXECUTION_PATHS = (
     _REPO_ROOT / "intergrax" / "applications" / "_shared" / "mcp_nexus_server.py",
-)
-
-# TEMPORARY UE-11G-P migration debt — migrate in UE-11G-P2/P3.
-_TEMPORARY_BYPASS_ALLOWLIST = frozenset(
-    {
-        "applications/attestation_demo/serving/fastapi_router.py",
-        "applications/dispute_sim_application/serving/fastapi_router.py",
-        "applications/intergrax_assistant_application/serving/fastapi_router.py",
-        "applications/lab_application/host/factory.py",
-        "applications/lab_application/serving/fastapi_router.py",
-        "applications/legal_application/serving/fastapi_router.py",
-        "applications/poc_template_application/serving/fastapi_router.py",
-        "applications/research_application/serving/fastapi_router.py",
-    }
 )
 
 
@@ -69,8 +55,6 @@ def _iter_application_python_files() -> list[Path]:
 
 def _collect_root_bypass_violations(path: Path) -> list[str]:
     rel = path.relative_to(_REPO_ROOT).as_posix()
-    if rel in _TEMPORARY_BYPASS_ALLOWLIST:
-        return []
 
     source = path.read_text(encoding="utf-8-sig")
     tree = ast.parse(source, filename=str(path))
@@ -159,42 +143,32 @@ def test_lkw_production_host_is_not_allowlisted() -> None:
     lkw_paths = {
         path.relative_to(_REPO_ROOT).as_posix()
         for path in _iter_application_python_files()
-        if path.parts[1:3] == ("local_workspace_application", "host")
-        or path.parts[1:3] == ("local_workspace_application", "serving")
+        if path.relative_to(_APPLICATIONS_ROOT).parts[:2]
+        == ("local_workspace_application", "host")
+        or path.relative_to(_APPLICATIONS_ROOT).parts[:2]
+        == ("local_workspace_application", "serving")
     }
-    allowlisted_lkw = sorted(path for path in _TEMPORARY_BYPASS_ALLOWLIST if path.startswith("applications/local_workspace_application/"))
-    assert allowlisted_lkw == []
-    assert not any(path in _TEMPORARY_BYPASS_ALLOWLIST for path in lkw_paths)
+    assert lkw_paths
 
 
 def test_governed_contractor_serving_host_is_not_allowlisted() -> None:
     governed_paths = {
         path.relative_to(_REPO_ROOT).as_posix()
         for path in _iter_application_python_files()
-        if path.parts[1:3] == ("governed_contractor_application", "serving")
+        if path.relative_to(_APPLICATIONS_ROOT).parts[:2]
+        == ("governed_contractor_application", "serving")
     }
-    allowlisted_governed = sorted(
-        path
-        for path in _TEMPORARY_BYPASS_ALLOWLIST
-        if path.startswith("applications/governed_contractor_application/serving/")
-    )
-    assert allowlisted_governed == []
-    assert not any(path in _TEMPORARY_BYPASS_ALLOWLIST for path in governed_paths)
+    assert governed_paths
 
 
 def test_governed_contractor_mcp_host_is_not_allowlisted() -> None:
     governed_mcp_paths = {
         path.relative_to(_REPO_ROOT).as_posix()
         for path in _iter_application_python_files()
-        if path.parts[1:4] == ("governed_contractor_application", "mcp", "server.py")
+        if path.relative_to(_APPLICATIONS_ROOT).parts[:3]
+        == ("governed_contractor_application", "mcp", "server.py")
     }
-    allowlisted_governed_mcp = sorted(
-        path
-        for path in _TEMPORARY_BYPASS_ALLOWLIST
-        if path.startswith("applications/governed_contractor_application/mcp/")
-    )
-    assert allowlisted_governed_mcp == []
-    assert not any(path in _TEMPORARY_BYPASS_ALLOWLIST for path in governed_mcp_paths)
+    assert governed_mcp_paths
 
 
 def test_host_task_does_not_bypass_execution_facade() -> None:

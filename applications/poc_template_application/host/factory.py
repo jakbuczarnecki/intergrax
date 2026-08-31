@@ -103,7 +103,11 @@ def create_poc_template_application(
         runtime_event_store=runtime.observability.runtime_event_store,
     )
     app.title = "Intergrax Poc Template Lab Application"
-    mount_poc_template_routes(app, nexus_loop=nexus_loop, prefix=settings.route_prefix)
+    mount_poc_template_routes(
+        app,
+        host_execution=host_execution,
+        prefix=settings.route_prefix,
+    )
     if settings.include_task_control:
         wire_harness_task_control(
             app,

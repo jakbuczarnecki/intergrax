@@ -17,7 +17,6 @@ from intergrax.runtime.interactions.router import create_interaction_intake_rout
 from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
@@ -42,7 +41,11 @@ from intergrax.runtime.adaptive.proposal_store import SQLiteProposalStore, defau
 from intergrax.runtime.adaptive.signal_store import SQLiteSignalStore, default_signal_store_path
 from lab_application.serving.fastapi_router import mount_lab_routes
 from intergrax.applications._shared.reliability_wiring import apply_reliability_task_defaults
-from intergrax.applications._shared.task_control_wiring import wire_harness_task_control
+from intergrax.applications._shared.task_control_wiring import (
+    build_reliability_task_enricher,
+    build_task_runner_with_enricher,
+    wire_harness_task_control,
+)
 from intergrax.applications._shared.mvp_evolution_routes import create_mvp_evolution_router
 from intergrax.applications._shared.replay_routes import create_replay_router
 from intergrax.applications._shared.scaling_wiring import wire_application_scaling
@@ -65,7 +68,7 @@ def create_lab_application(
 
     Combines:
 
-    - ``POST /v1/lab/run`` — execute arbitrary registered agents via UnifiedTaskRunner
+    - ``POST /v1/lab/run`` — execute arbitrary registered agents via canonical host execution
     - ``GET /v1/lab/agents`` — list active agents and capabilities
     - ``POST /v1/interactions/intake`` — production Slack / Teams / lab inbound webhooks (B.12)
     - Long-running scheduler — HITL timeout / delayed resume (B.05)
@@ -113,14 +116,6 @@ def create_lab_application(
         nexus_loop,
         trace_store=integrations.trace_store,  # type: ignore[arg-type]
     )
-    task_runner = UnifiedTaskRunner(nexus_loop)
-    scheduler_wiring = wire_long_running_scheduler(
-        checkpoint_store=integrations.checkpoint_store,
-        task_runner=task_runner,
-        notification_adapter=integrations.notification_adapter,
-        poll_interval_seconds=settings.scheduler_poll_seconds,
-        enabled=settings.include_scheduler,
-    )
     lab_notify_enricher = make_lab_harness_task_enricher(
         default_notify_channel=integrations.default_long_running_notify_channel,
         harness=settings.harness,
@@ -135,6 +130,15 @@ def create_lab_application(
         if lab_notify_enricher is not None:
             task = lab_notify_enricher(task)
         return task
+
+    task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
+    scheduler_wiring = wire_long_running_scheduler(
+        checkpoint_store=integrations.checkpoint_store,
+        task_runner=task_runner,
+        notification_adapter=integrations.notification_adapter,
+        poll_interval_seconds=settings.scheduler_poll_seconds,
+        enabled=settings.include_scheduler,
+    )
     interaction_service = DebugInteractionIntakeService(
         nexus_loop=nexus_loop,
         adapter=integrations.interaction_adapter,
@@ -171,7 +175,7 @@ def create_lab_application(
     )
     mount_lab_routes(
         app,
-        nexus_loop=nexus_loop,
+        host_execution=host_execution,
         prefix=settings.route_prefix,
         task_enricher=task_enricher,
     )

@@ -17,21 +17,26 @@ from legal_application.serving.fastapi_router import (
 from legal_application.serving.schemas import LegalChatRequestV1
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.execution.host_task import build_host_task_execution
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import TaskResult, TaskState
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 pytestmark = pytest.mark.unit
 
 
 class _DummyAgent(Agent):
     def get_contract(self) -> AgentContract:
-        return AgentContract(id="legal-test", name="Dummy", description="test")
+        return AgentContract(
+            id="legal-test",
+            name="Dummy",
+            description="test",
+            capabilities=["legal.contract_review"],
+        )
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        raise RuntimeError("not used when UnifiedTaskRunner.run_runtime_request is mocked")
+        raise RuntimeError("not used when HostTaskExecution.execute is mocked")
 
 
 def _http_ctx(*, tenant: str, user: str) -> RequestContext:
@@ -51,7 +56,7 @@ def _service(*, identity_source: str) -> DefaultLegalAgentService:
     config = LegalAgentServingConfig(
         registry=registry,
         default_agent_id="legal-test",
-        task_runner=UnifiedTaskRunner(NexusLoop(registry)),
+        host_execution=build_host_task_execution(NexusLoop(registry), orchestration_triggers=frozenset()),
         identity_source=identity_source,  # type: ignore[arg-type]
     )
     return DefaultLegalAgentService(config=config)
@@ -68,7 +73,7 @@ async def test_context_only_accepts_identity_from_request_context() -> None:
         answer="ok",
     )
     with patch(
-        "intergrax.runtime.task.unified_task_runner.UnifiedTaskRunner.run_runtime_request",
+        "intergrax.runtime.execution.host_task.HostTaskExecution.execute",
         new_callable=AsyncMock,
         return_value=task_result,
     ) as run_mock:
@@ -76,11 +81,10 @@ async def test_context_only_accepts_identity_from_request_context() -> None:
 
     assert out.answer == "ok"
     run_mock.assert_awaited_once()
-    assert run_mock.await_args.kwargs["tenant_id"] == "ten-a"
-    assert run_mock.await_args.kwargs["user_id"] == "user-a"
-    req = run_mock.await_args.args[0]
-    assert req.tenant_id == "ten-a"
-    assert req.user_id == "user-a"
+    executed_task = run_mock.await_args.args[0]
+    assert executed_task.tenant_id == "ten-a"
+    assert executed_task.user_id == "user-a"
+    assert executed_task.context.capability == "legal.contract_review"
 
 
 @pytest.mark.asyncio

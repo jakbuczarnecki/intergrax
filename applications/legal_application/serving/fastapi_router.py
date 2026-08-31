@@ -13,10 +13,10 @@ from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
 LegalIdentitySource = Literal["body_or_context", "context_only"]
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.task.task_run_bridge import mint_intake_execution_identity
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from intergrax.runtime.task.task_run_bridge import mint_intake_execution_identity, task_from_runtime_request
 
 from legal.legal_agent import LegalAgent
 from legal_application.serving.runtime_bridge import LegalApiV1RuntimeMapper
@@ -46,7 +46,7 @@ class LegalAgentServingConfig:
 
     registry: AgentRegistry
     default_agent_id: str
-    task_runner: UnifiedTaskRunner = field(repr=False)
+    host_execution: HostTaskExecutionPort = field(repr=False)
     identity_source: LegalIdentitySource = "body_or_context"
     trace_store: Optional[RunTraceWriter] = None
 
@@ -65,7 +65,7 @@ class LegalAgentServingConfig:
         default_agent_id: str,
         identity_source: LegalIdentitySource = "body_or_context",
         trace_store: Optional[RunTraceWriter] = None,
-        task_runner: UnifiedTaskRunner,
+        host_execution: HostTaskExecutionPort,
     ) -> "LegalAgentServingConfig":
         registry = AgentRegistry.from_agents(dict(agents))
         return cls(
@@ -73,13 +73,13 @@ class LegalAgentServingConfig:
             default_agent_id=default_agent_id,
             identity_source=identity_source,
             trace_store=trace_store,
-            task_runner=task_runner,
+            host_execution=host_execution,
         )
 
 
 @dataclass
 class DefaultLegalAgentService:
-    """Validate identity, drive UnifiedTaskRunner (NexusLoop), map responses."""
+    """Validate identity, drive canonical host execution, map responses."""
 
     config: LegalAgentServingConfig
     mapper: LegalApiV1RuntimeMapper = field(default_factory=LegalApiV1RuntimeMapper)
@@ -107,14 +107,15 @@ class DefaultLegalAgentService:
             task_id=task_id,
             run_id=run_id,
         )
+        task = task_from_runtime_request(
+            runtime_req,
+            tenant_id=tenant,
+            user_id=user,
+            capability="legal.contract_review",
+        )
 
         try:
-            result = await self.config.task_runner.run_runtime_request(
-                runtime_req,
-                tenant_id=tenant,
-                user_id=user,
-                capability="legal.contract_review",
-            )
+            result = await self.config.host_execution.execute(task)
             answer = RuntimeAnswer(
                 run_id=result.run_id or run_id,
                 answer=result.answer,
@@ -234,7 +235,7 @@ def mount_legal_agent_routes(
     mapper: LegalApiV1RuntimeMapper | None = None,
     identity_source: LegalIdentitySource = "body_or_context",
     trace_store: Optional[RunTraceWriter] = None,
-    task_runner: UnifiedTaskRunner,
+    host_execution: HostTaskExecutionPort,
 ) -> DefaultLegalAgentService:
     """
     Register legal routes on ``app`` via ``dependency_overrides``.
@@ -249,7 +250,7 @@ def mount_legal_agent_routes(
             default_agent_id=default_agent_id,
             identity_source=identity_source,
             trace_store=trace_store,
-            task_runner=task_runner,
+            host_execution=host_execution,
         )
     else:
         config = LegalAgentServingConfig(
@@ -257,7 +258,7 @@ def mount_legal_agent_routes(
             default_agent_id=default_agent_id,
             identity_source=identity_source,
             trace_store=trace_store,
-            task_runner=task_runner,
+            host_execution=host_execution,
         )
 
     svc = DefaultLegalAgentService(
