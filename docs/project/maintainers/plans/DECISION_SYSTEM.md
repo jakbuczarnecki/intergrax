@@ -62,7 +62,7 @@
 | DS-CORE-05 | P1 | Finalize guard — one authoritative per decision scope | **Done** — `intergrax/contracts/decision_finalization.py`; `tests/unit/contracts/test_decision_finalization.py` |
 | DS-CORE-06 | P1 | Execution-hosted checkpoint persistence for Decision lifecycle state | **Done** — `intergrax/contracts/decision_checkpoint.py`; `intergrax/runtime/execution/decision_checkpoint_persistence.py`; `tests/unit/contracts/test_decision_checkpoint.py` |
 | DS-CORE-07 | P1 | Parallel proposal branch lineage | **Done** |
-| DS-CORE-08 | P2 | Decision Artifact kind registration | **Planned** |
+| DS-CORE-08 | P2 | Core typed Decision Artifact kind registration contracts | **Done** — `intergrax/contracts/decision_artifact_registry.py`; `tests/unit/contracts/test_decision_artifact_registry.py` |
 
 ### Plugin architecture (PLANNED)
 
@@ -70,7 +70,7 @@
 |----|----------|------|--------|
 | DS-PLUGIN-01 | P1 | DecisionStrategy registry + configuration | **Planned** |
 | DS-PLUGIN-02 | P1 | Verification stage registration surface | **Planned** |
-| DS-PLUGIN-03 | P2 | Decision Artifact kind registry | **Planned** |
+| DS-PLUGIN-03 | P2 | Plugin/config integration for Decision Artifact kind registration | **Planned** |
 
 ---
 
