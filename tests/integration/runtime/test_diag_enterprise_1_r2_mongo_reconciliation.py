@@ -32,7 +32,7 @@ _TENANT = "diag-enterprise-1-r2-mongo"
 _PARTITION = f"intergrax.diagnostic_problem.v1:{_TENANT}"
 _BASE_TIME = datetime(2026, 8, 26, 9, 0, tzinfo=UTC)
 _NOW = datetime(2026, 8, 31, 12, 0, tzinfo=UTC)
-_CUTOFF = _NOW - timedelta(hours=1)
+_MINIMUM_PROJECTION_AGE = timedelta(hours=1)
 
 pytestmark = [
     pytest.mark.integration,
@@ -96,7 +96,7 @@ def test_mongo_reconcile_deletes_proven_orphan_and_restores_query(
 
         page = persistence.reconcile_list_indexes(
             tenant_id=_TENANT,
-            stale_before=_CUTOFF,
+            minimum_projection_age=_MINIMUM_PROJECTION_AGE,
             limit=100,
         )
         assert page.deleted >= len(list_scopes_for_status(orphan.status))

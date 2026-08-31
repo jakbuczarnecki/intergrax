@@ -429,31 +429,33 @@ List-index rows carry minimal metadata: `problem_id`, `record_version`, `last_se
 
 Crash recovery: incomplete create/update leaves skippable projections; subsequent idempotent `create` / `update` repair paths converge indexes (`_repair_indexes_for_record`, `_ensure_list_indexes`).
 
-### Projection reconciliation (DIAG-ENTERPRISE-1-R2)
+### Projection reconciliation (DIAG-ENTERPRISE-1-R2 / R3)
 
 Derived `list:{scope}:…` rows can become **proven stale** or **proven orphan** only via explicit bounded maintenance — never in the hot read path.
 
 | Classification | Meaning | Hot read | Maintenance (`reconcile_list_indexes`) |
 |---|---|---|---|
 | `CONSISTENT` | Index matches canonical at same `record_version` | Return Problem | No-op; v1 rows may upgrade to v2 metadata |
-| `TRANSIENT_OR_UNCERTAIN` | Active transition or missing `projection_written_at` / before cutoff | Skip | No delete/repair |
-| `PROVEN_STALE` | Mismatch persists and `projection_written_at < stale_before` | Skip | Repair from canonical (conditional replace/delete) |
-| `PROVEN_ORPHAN` | Canonical missing and `projection_written_at < stale_before` | Skip | Conditional delete |
+| `TRANSIENT_OR_UNCERTAIN` | Active transition, missing `projection_written_at`, below safety age, or future-dated projection | Skip | No delete/repair |
+| `PROVEN_STALE` | Mismatch persists and projection age `> MIN_SAFE_PROJECTION_AGE` | Skip | Repair from canonical (conditional replace/delete) |
+| `PROVEN_ORPHAN` | Canonical missing and projection age `> MIN_SAFE_PROJECTION_AGE` | Skip | Conditional delete |
 | `CORRUPT` | Same-version metadata/id mismatch | `ProblemPersistenceIntegrityError` | Count only; no silent repair |
 
 List-index schema v2 adds `projection_written_at` (UTC, writer clock). v1 rows remain readable; reconciliation upgrades consistent v1 rows to v2. Writers emit v2 only.
+
+**Safety-age contract (R3):** `MIN_SAFE_PROJECTION_AGE = 5 minutes` (aligned with platform 300s lease convention). Callers pass `minimum_projection_age` (relative); the reconciler computes `safe_cutoff = now - effective_age` using its injected clock. Callers cannot request an age below the platform minimum (`ProblemListIndexReconciliationError`). Future-dated `projection_written_at` (clock skew) is always `TRANSIENT_OR_UNCERTAIN` — never destructive.
 
 Maintenance contract:
 
 ```text
 DocumentStoreProblemPersistence.reconcile_list_indexes(
-  tenant_id, stale_before, scope?, limit, cursor?
+  tenant_id, minimum_projection_age?, scope?, limit, cursor?
 ) → ProblemListIndexReconciliationPage
 ```
 
-Bounded by `limit` index rows per call; continuation via document-store cursor. No scheduler/daemon in R2 — callable maintenance seam for admin/tests/future lifecycle.
+Bounded by `limit` index rows per call; continuation via document-store cursor. No scheduler/daemon — callable maintenance seam for admin/tests/future lifecycle.
 
-Operator visibility: `projection_telemetry_snapshot()` (skip/repair counters) and `projection_health()` (`HEALTHY` / `DEGRADED`). No RuntimeEvent recursion.
+**Projection health (R3):** cumulative telemetry counters (`repaired_projection`, `deleted_orphan_projection`, skip counters) remain historical and are not reset to recover health. Current health reflects the latest completed maintenance cycle (`last_completed_cycle_had_issues`), in-progress cycle issues, read skip threshold, and unresolved same-version corruption (`same_version_integrity_failure > 0`). Health recovers to `HEALTHY` only after a full maintenance traversal (`has_more=False`) with zero issues on that cycle, and only when corruption counters are zero. A clean scan of one tenant does not mask corruption detected on another tenant (process-local global health).
 
 ### List cursor trust model (DIAG-ENTERPRISE-1-R1 / R2)
 

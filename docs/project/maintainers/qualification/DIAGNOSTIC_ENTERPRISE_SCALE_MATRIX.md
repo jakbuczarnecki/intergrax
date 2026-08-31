@@ -8,18 +8,20 @@ Status vocabulary:
 - `REQUALIFICATION_REQUIRED` — prior proof invalidated; remediation in flight
 - `NOT_YET_QUALIFIED` — not proven in-repo yet; do not treat as production scale guarantee
 
-## E1 — Scalable Problem reads (`DIAG-ENTERPRISE-1` / `DIAG-ENTERPRISE-1-R1` / `DIAG-ENTERPRISE-1-R2`)
+## E1 — Scalable Problem reads (`DIAG-ENTERPRISE-1` / `DIAG-ENTERPRISE-1-R1` / `DIAG-ENTERPRISE-1-R2` / `DIAG-ENTERPRISE-1-R3`)
 
-**Status:** `PROVEN`
+**Status:** `PROVEN` — **FINAL PROVEN** (R3 safety-age + recoverable health)
 
-Operator Problem list reads are bounded by page/query instead of materializing entire tenant cardinality. Stale/orphan derived list projections have a bounded maintenance path; active writer transitions are never deleted by maintenance.
+Operator Problem list reads are bounded by page/query instead of materializing entire tenant cardinality. Stale/orphan derived list projections have a bounded maintenance path; active writer transitions are never deleted by maintenance. Callers cannot bypass `MIN_SAFE_PROJECTION_AGE` (5 minutes).
 
 | Capability | Semantics | Proof |
 |---|---|---|
 | Bounded persistence query | `ProblemPersistence.query_problems(tenant_id, status?, limit, cursor?) → ProblemListPage` | `tests/unit/runtime/diagnostics/test_diag_enterprise_1_scalable_problem_reads.py` |
 | Concurrent transition tolerance | index leads / canonical leads → skip, not false `IntegrityError` | `tests/unit/runtime/diagnostics/test_diag_enterprise_1_r1_read_index_races.py` |
-| Projection reconciliation | `reconcile_list_indexes(stale_before, …)` bounded; proven orphan delete / proven stale repair | `tests/unit/runtime/diagnostics/test_diag_enterprise_1_r2_list_index_reconciliation.py` |
-| Projection telemetry | skip/repair counters + `HEALTHY`/`DEGRADED` health snapshot | same |
+| Projection reconciliation | `reconcile_list_indexes(minimum_projection_age, …)` bounded; proven orphan delete / proven stale repair | `tests/unit/runtime/diagnostics/test_diag_enterprise_1_r2_list_index_reconciliation.py` |
+| Maintenance safety age | `MIN_SAFE_PROJECTION_AGE`; caller cannot request zero/unsafe age; future projections safe | `tests/unit/runtime/diagnostics/test_diag_enterprise_1_r3_maintenance_safety.py` |
+| Recoverable projection health | cumulative telemetry preserved; current health recovers after full clean cycle | same |
+| Projection telemetry | skip/repair counters + `HEALTHY`/`DEGRADED` health snapshot | R2 + R3 suites |
 | Large garbage proof | 10k orphan/stale indexes + 1k valid Problems; bounded maintenance pages | `test_large_garbage_reconciliation_and_read_recovery` |
 | Public ordering | `last_seen_at DESC`, `problem_id ASC` tie-break | same + `test_diagnostic_read_service.py` |
 | Status filter without full scan | `OPEN` / `RESOLVED` / all via derived list index scopes | same |

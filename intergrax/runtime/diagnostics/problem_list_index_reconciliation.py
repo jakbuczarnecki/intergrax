@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 
 from intergrax.integrations.contracts.document_store import (
@@ -30,6 +30,15 @@ from intergrax.runtime.diagnostics.problem_record_codec import decode_problem_re
 _LIST_ROW_PREFIX = "list:"
 _RECONCILE_PAGE_LIMIT = 500
 _PROJECTION_HEALTH_DEGRADED_SKIP_THRESHOLD = 10
+
+# Platform minimum destructive-maintenance age. Matches the 300s lease convention used
+# across queueing/long-running workers and provides a conservative eventual-consistency
+# window for derived list-index writes without requiring distributed writer leases.
+MIN_SAFE_PROJECTION_AGE = timedelta(minutes=5)
+
+
+class ProblemListIndexReconciliationError(ValueError):
+    """Typed failure for invalid maintenance reconciliation parameters."""
 
 
 class ProblemListIndexClassification(StrEnum):
@@ -100,25 +109,77 @@ class ProblemListIndexReconciliationPage:
 @dataclass(slots=True)
 class _ProblemListProjectionHealthState:
     last_query_skip_count: int = 0
-    maintenance_degraded: bool = False
+    maintenance_cycle_in_progress: bool = False
+    active_cycle_had_issues: bool = False
+    last_completed_cycle_had_issues: bool = False
+    last_completed_cycle_at: datetime | None = None
+
+
+def resolve_effective_minimum_projection_age(
+    *,
+    minimum_projection_age: timedelta,
+) -> timedelta:
+    """Return caller-requested age clamped to the platform minimum (fail-closed)."""
+    if minimum_projection_age < MIN_SAFE_PROJECTION_AGE:
+        raise ProblemListIndexReconciliationError(
+            "minimum_projection_age must be at least "
+            f"{MIN_SAFE_PROJECTION_AGE.total_seconds():.0f} seconds",
+        )
+    return minimum_projection_age
+
+
+def compute_safe_cutoff(
+    *,
+    now: datetime,
+    minimum_projection_age: timedelta,
+) -> datetime:
+    """Derive destructive cutoff from reconciler clock authority."""
+    if now.tzinfo is None:
+        raise ProblemListIndexReconciliationError("reconciler clock must be timezone-aware UTC")
+    return now - minimum_projection_age
+
+
+def projection_age_is_below_destructive_threshold(
+    *,
+    projection_written_at: datetime | None,
+    now: datetime,
+    minimum_projection_age: timedelta,
+) -> bool:
+    """Return True when destructive maintenance must not run for this projection."""
+    if projection_written_at is None:
+        return True
+    if projection_written_at.tzinfo is None:
+        raise ProblemListIndexReconciliationError(
+            "projection_written_at must be timezone-aware UTC",
+        )
+    if projection_written_at > now:
+        return True
+    age = now - projection_written_at
+    return age <= minimum_projection_age
 
 
 def classify_list_index_projection(
     *,
     index: DecodedListIndexData,
     canonical: Problem | None,
-    stale_before: datetime,
+    now: datetime,
+    minimum_projection_age: timedelta,
 ) -> ProblemListIndexClassification:
     """
     Classify one derived list index row against canonical truth.
 
-    ``stale_before`` is an explicit maintenance cutoff — projections newer than this
-  timestamp remain ``TRANSIENT_OR_UNCERTAIN`` during active writer transitions.
+    Destructive classifications require ``projection_written_at`` to be strictly older
+    than ``minimum_projection_age`` relative to the reconciler clock. Future-dated
+    projections and v1 rows without timestamps remain ``TRANSIENT_OR_UNCERTAIN``.
     """
+    too_young = projection_age_is_below_destructive_threshold(
+        projection_written_at=index.projection_written_at,
+        now=now,
+        minimum_projection_age=minimum_projection_age,
+    )
+
     if canonical is None:
-        if index.projection_written_at is None:
-            return ProblemListIndexClassification.TRANSIENT_OR_UNCERTAIN
-        if index.projection_written_at >= stale_before:
+        if too_young:
             return ProblemListIndexClassification.TRANSIENT_OR_UNCERTAIN
         return ProblemListIndexClassification.PROVEN_ORPHAN
 
@@ -133,7 +194,7 @@ def classify_list_index_projection(
             return ProblemListIndexClassification.CONSISTENT
         return ProblemListIndexClassification.CORRUPT
 
-    if index.projection_written_at is None or index.projection_written_at >= stale_before:
+    if too_young:
         return ProblemListIndexClassification.TRANSIENT_OR_UNCERTAIN
 
     return ProblemListIndexClassification.PROVEN_STALE
@@ -144,11 +205,13 @@ def projection_health_from_state(
     telemetry: ProblemListProjectionTelemetry,
     health_state: _ProblemListProjectionHealthState,
 ) -> ProblemListProjectionHealth:
-    if health_state.maintenance_degraded:
+    if telemetry.same_version_integrity_failure > 0:
+        return ProblemListProjectionHealth.DEGRADED
+    if health_state.active_cycle_had_issues:
+        return ProblemListProjectionHealth.DEGRADED
+    if health_state.last_completed_cycle_had_issues:
         return ProblemListProjectionHealth.DEGRADED
     if health_state.last_query_skip_count > _PROJECTION_HEALTH_DEGRADED_SKIP_THRESHOLD:
-        return ProblemListProjectionHealth.DEGRADED
-    if telemetry.same_version_integrity_failure > 0:
         return ProblemListProjectionHealth.DEGRADED
     return ProblemListProjectionHealth.HEALTHY
 
@@ -171,13 +234,23 @@ class ProblemListIndexReconciler:
         self,
         *,
         tenant_id: str,
-        stale_before: datetime,
+        minimum_projection_age: timedelta = MIN_SAFE_PROJECTION_AGE,
         scope: ProblemListScope | None = None,
         limit: int = 100,
         cursor: str | None = None,
     ) -> ProblemListIndexReconciliationPage:
         if type(limit) is not int or isinstance(limit, bool) or limit < 1:
             raise ValueError("limit must be a positive int")
+
+        effective_minimum_age = resolve_effective_minimum_projection_age(
+            minimum_projection_age=minimum_projection_age,
+        )
+        now = self.clock()
+
+        if cursor is None:
+            self.health_state.maintenance_cycle_in_progress = True
+            self.health_state.active_cycle_had_issues = False
+
         partition_key = f"intergrax.diagnostic_problem.v1:{tenant_id}"
         row_key_prefix = (
             problem_list_row_key_prefix(scope)
@@ -223,7 +296,8 @@ class ProblemListIndexReconciler:
                     index_document=index_document,
                     tenant_id=tenant_id,
                     partition_key=partition_key,
-                    stale_before=stale_before,
+                    now=now,
+                    minimum_projection_age=effective_minimum_age,
                 )
                 if outcome is ProblemListIndexClassification.CONSISTENT:
                     consistent += 1
@@ -256,7 +330,14 @@ class ProblemListIndexReconciler:
             )
 
         if repaired > 0 or deleted > 0 or corrupt > 0:
-            self.health_state.maintenance_degraded = True
+            self.health_state.active_cycle_had_issues = True
+
+        if not has_more:
+            self.health_state.maintenance_cycle_in_progress = False
+            self.health_state.last_completed_cycle_had_issues = (
+                self.health_state.active_cycle_had_issues
+            )
+            self.health_state.last_completed_cycle_at = now
 
         return ProblemListIndexReconciliationPage(
             examined=examined,
@@ -275,7 +356,8 @@ class ProblemListIndexReconciler:
         index_document: DocumentRecord,
         tenant_id: str,
         partition_key: str,
-        stale_before: datetime,
+        now: datetime,
+        minimum_projection_age: timedelta,
     ) -> ProblemListIndexClassification:
         try:
             index = decode_list_index_data(dict(index_document.data))
@@ -299,7 +381,8 @@ class ProblemListIndexReconciler:
         classification = classify_list_index_projection(
             index=index,
             canonical=canonical,
-            stale_before=stale_before,
+            now=now,
+            minimum_projection_age=minimum_projection_age,
         )
 
         if classification is ProblemListIndexClassification.CONSISTENT:
@@ -368,6 +451,8 @@ class ProblemListIndexReconciler:
         partition_key: str,
         projection_written_at: datetime,
     ) -> DocumentRecord:
+        if projection_written_at.tzinfo is None:
+            projection_written_at = projection_written_at.replace(tzinfo=UTC)
         return DocumentRecord(
             partition_key=partition_key,
             row_key=list_index_row_key(scope=scope, problem=canonical),

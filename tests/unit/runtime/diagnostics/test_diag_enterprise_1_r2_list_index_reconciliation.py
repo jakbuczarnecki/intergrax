@@ -46,7 +46,7 @@ _TENANT = "enterprise-1-r2-tenant"
 _BASE_TIME = datetime(2026, 8, 26, 9, 0, tzinfo=UTC)
 _PARTITION = f"intergrax.diagnostic_problem.v1:{_TENANT}"
 _NOW = datetime(2026, 8, 31, 12, 0, tzinfo=UTC)
-_CUTOFF = _NOW - timedelta(hours=1)
+_MINIMUM_PROJECTION_AGE = timedelta(hours=1)
 
 
 class _CountingDocumentStore(InMemoryDocumentStore):
@@ -146,7 +146,7 @@ def test_orphan_before_cutoff_is_not_deleted() -> None:
 
     page = persistence.reconcile_list_indexes(
         tenant_id=_TENANT,
-        stale_before=_CUTOFF,
+        minimum_projection_age=_MINIMUM_PROJECTION_AGE,
         limit=100,
     )
     assert page.deleted == 0
@@ -168,7 +168,7 @@ def test_orphan_after_cutoff_is_deleted() -> None:
 
     page = persistence.reconcile_list_indexes(
         tenant_id=_TENANT,
-        stale_before=_CUTOFF,
+        minimum_projection_age=_MINIMUM_PROJECTION_AGE,
         limit=100,
     )
     assert page.deleted == len(list_scopes_for_status(problem.status))
@@ -191,7 +191,7 @@ def test_active_writer_before_cutoff_is_preserved() -> None:
 
     before = persistence.reconcile_list_indexes(
         tenant_id=_TENANT,
-        stale_before=_CUTOFF,
+        minimum_projection_age=_MINIMUM_PROJECTION_AGE,
         limit=100,
     )
     assert before.deleted == 0
@@ -236,7 +236,7 @@ def test_stale_behind_canonical_is_repaired_after_cutoff() -> None:
 
     page = persistence.reconcile_list_indexes(
         tenant_id=_TENANT,
-        stale_before=_CUTOFF,
+        minimum_projection_age=_MINIMUM_PROJECTION_AGE,
         limit=100,
     )
     assert page.repaired >= len(list_scopes_for_status(problem.status))
@@ -265,7 +265,7 @@ def test_index_ahead_of_canonical_repaired_after_cutoff() -> None:
 
     page = persistence.reconcile_list_indexes(
         tenant_id=_TENANT,
-        stale_before=_CUTOFF,
+        minimum_projection_age=_MINIMUM_PROJECTION_AGE,
         limit=100,
     )
     assert page.repaired >= len(list_scopes_for_status(ahead.status))
@@ -329,7 +329,7 @@ def test_large_garbage_reconciliation_and_read_recovery() -> None:
     while True:
         page = persistence.reconcile_list_indexes(
             tenant_id=_TENANT,
-            stale_before=_CUTOFF,
+            minimum_projection_age=_MINIMUM_PROJECTION_AGE,
             limit=500,
             cursor=cursor,
         )
@@ -358,7 +358,7 @@ def test_v1_index_decode_and_upgrade_on_reconciliation() -> None:
 
     page = persistence.reconcile_list_indexes(
         tenant_id=_TENANT,
-        stale_before=_CUTOFF,
+        minimum_projection_age=_MINIMUM_PROJECTION_AGE,
         limit=100,
     )
     assert page.consistent + page.repaired >= len(list_scopes_for_status(problem.status))
@@ -378,7 +378,8 @@ def test_classify_transient_without_projection_timestamp() -> None:
         classify_list_index_projection(
             index=index,
             canonical=None,
-            stale_before=_CUTOFF,
+            now=_NOW,
+            minimum_projection_age=_MINIMUM_PROJECTION_AGE,
         )
         is ProblemListIndexClassification.TRANSIENT_OR_UNCERTAIN
     )

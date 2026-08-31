@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from typing import Protocol, runtime_checkable
 
@@ -44,6 +44,7 @@ from intergrax.runtime.diagnostics.problem_list_query import (
     problem_list_scope_for_status,
 )
 from intergrax.runtime.diagnostics.problem_list_index_reconciliation import (
+    MIN_SAFE_PROJECTION_AGE,
     ProblemListIndexReconciler,
     ProblemListIndexReconciliationPage,
     ProblemListProjectionHealth,
@@ -258,7 +259,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
         self,
         *,
         tenant_id: str,
-        stale_before: datetime,
+        minimum_projection_age: timedelta = MIN_SAFE_PROJECTION_AGE,
         scope: ProblemListScope | None = None,
         limit: int = 100,
         cursor: str | None = None,
@@ -266,12 +267,13 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
         """
         Bounded maintenance reconciliation for derived list index projections.
 
-        Projections newer than ``stale_before`` are never deleted — active writer
-        transitions remain safe.
+        Destructive repair/delete requires projections to be older than
+        ``minimum_projection_age`` relative to the reconciler clock. Callers cannot
+        request an age below ``MIN_SAFE_PROJECTION_AGE``.
         """
         return self._list_index_reconciler.reconcile_list_indexes(
             tenant_id=tenant_id,
-            stale_before=stale_before,
+            minimum_projection_age=minimum_projection_age,
             scope=scope,
             limit=limit,
             cursor=cursor,
