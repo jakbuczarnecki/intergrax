@@ -22,7 +22,6 @@ _TEMPORARY_BYPASS_ALLOWLIST = frozenset(
         "applications/dispute_sim_application/mcp/server.py",
         "applications/dispute_sim_application/serving/fastapi_router.py",
         "applications/governed_contractor_application/mcp/server.py",
-        "applications/governed_contractor_application/serving/fastapi_router.py",
         "applications/intergrax_assistant_application/mcp/server.py",
         "applications/intergrax_assistant_application/serving/fastapi_router.py",
         "applications/lab_application/host/factory.py",
@@ -171,6 +170,21 @@ def test_lkw_production_host_is_not_allowlisted() -> None:
         for path in lkw_paths
         if path != "applications/local_workspace_application/host/background_worker_factory.py"
     )
+
+
+def test_governed_contractor_serving_host_is_not_allowlisted() -> None:
+    governed_paths = {
+        path.relative_to(_REPO_ROOT).as_posix()
+        for path in _iter_application_python_files()
+        if path.parts[1:3] == ("governed_contractor_application", "serving")
+    }
+    allowlisted_governed = sorted(
+        path
+        for path in _TEMPORARY_BYPASS_ALLOWLIST
+        if path.startswith("applications/governed_contractor_application/serving/")
+    )
+    assert allowlisted_governed == []
+    assert not any(path in _TEMPORARY_BYPASS_ALLOWLIST for path in governed_paths)
 
 
 def test_host_task_does_not_bypass_execution_facade() -> None:

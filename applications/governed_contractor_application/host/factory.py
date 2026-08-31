@@ -40,6 +40,7 @@ from intergrax.applications._shared.product_observability_dashboard_wiring impor
 )
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
+from governed_contractor_application.host.execution_wiring import build_governed_contractor_host_task_execution
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 from governed_contractor_application.host.environment_profile import build_governed_contractor_environment_profile
 from governed_contractor_application.manifest import build_governed_contractor_manifest
@@ -72,6 +73,7 @@ def create_governed_contractor_backend_app(
         document_store=document_store,
     )
     nexus_loop = runtime.nexus_loop
+    host_execution = build_governed_contractor_host_task_execution(nexus_loop, env)
     registry = runtime.registry
     platform = bootstrap_nexus_platform(
         nexus_loop,
@@ -130,7 +132,7 @@ def create_governed_contractor_backend_app(
 
     mount_governed_contractor_routes(
         app,
-        nexus_loop=nexus_loop,
+        host_execution=host_execution,
         prefix=settings.route_prefix,
         default_agent_id=settings.default_agent_id,
     )
