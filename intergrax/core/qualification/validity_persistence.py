@@ -26,8 +26,7 @@ from intergrax.core.qualification.validity import (
     validate_validity_evaluation_id,
 )
 from intergrax.core.qualification.validity_evaluation import (
-    establish_current_qualification_validity,
-    interpret_latest_qualification_validity,
+    QualificationValidityEstablishmentError,
 )
 from intergrax.core.security import (
     SecretSafetyValidationError,
@@ -35,6 +34,7 @@ from intergrax.core.security import (
 )
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
+    DocumentDataEquality,
     DocumentDataSort,
     DocumentRecord,
     DocumentStore,
@@ -51,6 +51,17 @@ _PROVIDER_QUALIFICATION_VALIDITY_SCHEMA = "intergrax.provider_qualification_vali
 _VALIDITY_DISCOVERY_SORT: tuple[DocumentDataSort, ...] = (
     DocumentDataSort(path="recorded_at", direction="desc"),
     DocumentDataSort(path="run_id", direction="desc"),
+    DocumentDataSort(path="$row_key", direction="desc"),
+)
+_REVOKED_VALIDITY_EQUALITY: tuple[DocumentDataEquality, ...] = (
+    DocumentDataEquality(
+        path="domain_evidence.validity",
+        value=QualificationEvidenceValidity.REVOKED.value,
+    ),
+)
+_CURRENT_VIEW_SORT: tuple[DocumentDataSort, ...] = (
+    DocumentDataSort(path="domain_evidence.evaluated_at", direction="desc"),
+    DocumentDataSort(path="domain_evidence.validity_evaluation_id", direction="desc"),
     DocumentDataSort(path="$row_key", direction="desc"),
 )
 
@@ -367,12 +378,29 @@ class DocumentStoreProviderQualificationValidityPersistence:
         self,
         qualification_run_id: QualificationRunId | str,
     ) -> QualificationValidityInterpretation | None:
-        """Return the latest validity interpretation when evaluations exist."""
+        """Return the effective validity interpretation using bounded storage queries."""
         validated_run_id = validate_qualification_run_id(qualification_run_id)
-        records = self.list_evaluations(validated_run_id)
-        if not records:
+        revoked_record = self._query_single_validity_record(
+            validated_run_id,
+            data_equalities=_REVOKED_VALIDITY_EQUALITY,
+        )
+        if revoked_record is not None:
+            return QualificationValidityInterpretation(
+                qualification_run_id=validated_run_id,
+                validity=QualificationEvidenceValidity.REVOKED,
+                latest_record=revoked_record,
+            )
+        latest_record = self._query_single_validity_record(
+            validated_run_id,
+            sort=_CURRENT_VIEW_SORT,
+        )
+        if latest_record is None:
             return None
-        return interpret_latest_qualification_validity(validated_run_id, records)
+        return QualificationValidityInterpretation(
+            qualification_run_id=validated_run_id,
+            validity=latest_record.validity,
+            latest_record=latest_record,
+        )
 
     def establish_current_validity(
         self,
@@ -380,11 +408,35 @@ class DocumentStoreProviderQualificationValidityPersistence:
     ) -> QualificationValidityInterpretation:
         """Fail-closed current validity resolution from persisted evaluations."""
         validated_run_id = validate_qualification_run_id(qualification_run_id)
-        records = self.list_evaluations(validated_run_id)
-        return establish_current_qualification_validity(validated_run_id, records)
+        interpretation = self.get_current_validity(validated_run_id)
+        if interpretation is None:
+            raise QualificationValidityEstablishmentError(
+                f"no validity evaluations for qualification_run_id {validated_run_id!s}",
+            )
+        return interpretation
 
     def close(self) -> None:
         """Release adapter resources; DocumentStore lifecycle remains caller-owned."""
+
+    def _query_single_validity_record(
+        self,
+        qualification_run_id: QualificationRunId,
+        *,
+        data_equalities: tuple[DocumentDataEquality, ...] = (),
+        sort: tuple[DocumentDataSort, ...] = (),
+    ) -> QualificationValidityRecord | None:
+        partition_key = proof_receipt_partition_key(PROVIDER_QUALIFICATION_APPLICATION_ID)
+        prefix = _validity_row_key_prefix(qualification_run_id)
+        page = self._document_store.query(
+            partition_key,
+            limit=1,
+            row_key_prefix=prefix,
+            data_equalities=data_equalities,
+            sort=sort,
+        )
+        if not page.documents:
+            return None
+        return self._document_to_record(page.documents[0])
 
     def _document_to_record(self, document: object) -> QualificationValidityRecord:
         from intergrax.integrations.contracts.document_store import DocumentRecord

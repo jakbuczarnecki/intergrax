@@ -770,6 +770,14 @@ PostgreSQL evidence must **not** be persisted before **PROVIDER-QUAL-3B** is ind
 ## 20. PROVIDER-QUAL-5 - evidence validity lifecycle
 
 **Status:** **READY_FOR_REVIEW**
+### 20.1 PROVIDER-QUAL-5-R1 - terminal revocation + bounded current view
+
+**Status:** **READY_FOR_REVIEW**
+
+**REVOKED is terminal for one qualification_run_id.** Once any append-only REVOKED evaluation exists for a run, later CURRENT or STALE records do not reactivate it. Trust can only be restored by a new qualification run (new qualification_run_id).
+
+**Current view** uses bounded generic DocumentStore queries: storage-side REVOKED existence check (limit 1), otherwise newest evaluation query (limit 1). **History API** (`list_evaluations`) remains append-only full-history.
+
 
 Historical ProviderQualificationRun records remain immutable. Separate append-only QualificationValidityRecord evaluations determine whether evidence is **CURRENT**, **STALE**, or **REVOKED** today.
 

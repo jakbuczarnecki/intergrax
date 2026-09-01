@@ -145,16 +145,31 @@ def record_provider_qualification_validity_revocation(
     )
 
 
+def _validity_record_sort_key(
+    record: QualificationValidityRecord,
+) -> tuple[datetime, str]:
+    return (record.evaluated_at, str(record.validity_evaluation_id))
+
+
 def resolve_latest_qualification_validity(
     records: Sequence[QualificationValidityRecord],
 ) -> QualificationValidityRecord | None:
-    """Return the latest validity evaluation; None when no records exist."""
+    """
+    Return the effective validity evaluation; None when no records exist.
+
+    REVOKED is terminal for one qualification_run_id: once any REVOKED record
+    exists, later CURRENT or STALE records do not reactivate the run.
+    """
     if not records:
         return None
-    return max(
-        records,
-        key=lambda record: (record.evaluated_at, str(record.validity_evaluation_id)),
+    revoked_records = tuple(
+        record
+        for record in records
+        if record.validity is QualificationEvidenceValidity.REVOKED
     )
+    if revoked_records:
+        return max(revoked_records, key=_validity_record_sort_key)
+    return max(records, key=_validity_record_sort_key)
 
 
 def interpret_latest_qualification_validity(

@@ -32,6 +32,7 @@ from intergrax.core.qualification import (
 from intergrax.core.qualification.validity_evaluation import (
     QualificationValidityEstablishmentError,
     QualificationValidityNotFoundError,
+    resolve_latest_qualification_validity,
 )
 
 pytestmark = pytest.mark.unit
@@ -42,6 +43,9 @@ _EVALUATED_AT_T2 = datetime(2026, 8, 18, 9, 0, 0, tzinfo=timezone.utc)
 _FIXED_RUN_ID = QualificationRunId("qual_run_0123456789abcdef0123456789abcdef")
 _FIXED_EVAL_ID_CURRENT = ValidityEvaluationId("valid_eval_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 _FIXED_EVAL_ID_STALE = ValidityEvaluationId("valid_eval_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+_EVALUATED_AT_T3 = datetime(2026, 8, 19, 10, 0, 0, tzinfo=timezone.utc)
+_FIXED_EVAL_ID_REVOKED = ValidityEvaluationId("valid_eval_cccccccccccccccccccccccccccccccc")
+_FIXED_EVAL_ID_LATER = ValidityEvaluationId("valid_eval_dddddddddddddddddddddddddddddddd")
 
 
 def _subject(
@@ -205,6 +209,168 @@ def test_revoked_overrides_normal_reliance() -> None:
     interpretation = get_current_qualification_validity(run.qualification_run_id, (revoked,))
     assert interpretation.validity is QualificationEvidenceValidity.REVOKED
     assert run.status is QualificationStatus.PRODUCTION_QUALIFIED
+
+
+def test_revoked_is_terminal_after_later_current() -> None:
+    run = _run()
+    context = _context_from_run(run)
+    current_t1 = evaluate_provider_qualification_validity(
+        run,
+        context,
+        evaluated_at=_EVALUATED_AT_T1,
+        validity_evaluation_id=_FIXED_EVAL_ID_CURRENT,
+    )
+    revoked = record_provider_qualification_validity_revocation(
+        run.qualification_run_id,
+        reason="operator_withdrew_evidence",
+        evaluated_at=_EVALUATED_AT_T2,
+        validity_evaluation_id=_FIXED_EVAL_ID_REVOKED,
+    )
+    current_t3 = evaluate_provider_qualification_validity(
+        run,
+        context,
+        evaluated_at=_EVALUATED_AT_T3,
+        validity_evaluation_id=_FIXED_EVAL_ID_LATER,
+    )
+    interpretation = get_current_qualification_validity(
+        run.qualification_run_id,
+        (current_t1, revoked, current_t3),
+    )
+    assert interpretation.validity is QualificationEvidenceValidity.REVOKED
+    assert interpretation.latest_record == revoked
+
+
+def test_revoked_is_terminal_after_later_stale() -> None:
+    run = _run()
+    matching_context = _context_from_run(run)
+    stale_context = ProviderQualificationValidityContext(
+        provider_id=matching_context.provider_id,
+        provider_version="16.7",
+        capability_id=matching_context.capability_id,
+        domain=matching_context.domain,
+        intergrax_revision=matching_context.intergrax_revision,
+        qualification_suite_id=matching_context.qualification_suite_id,
+        qualification_suite_version=matching_context.qualification_suite_version,
+        environment_id=matching_context.environment_id,
+        source_revision=matching_context.source_revision,
+        adapter_identity=matching_context.adapter_identity,
+    )
+    stale_t1 = evaluate_provider_qualification_validity(
+        run,
+        stale_context,
+        evaluated_at=_EVALUATED_AT_T1,
+        validity_evaluation_id=_FIXED_EVAL_ID_STALE,
+    )
+    revoked = record_provider_qualification_validity_revocation(
+        run.qualification_run_id,
+        reason="operator_withdrew_evidence",
+        evaluated_at=_EVALUATED_AT_T2,
+        validity_evaluation_id=_FIXED_EVAL_ID_REVOKED,
+    )
+    stale_t3 = evaluate_provider_qualification_validity(
+        run,
+        stale_context,
+        evaluated_at=_EVALUATED_AT_T3,
+        validity_evaluation_id=_FIXED_EVAL_ID_LATER,
+    )
+    interpretation = get_current_qualification_validity(
+        run.qualification_run_id,
+        (stale_t1, revoked, stale_t3),
+    )
+    assert interpretation.validity is QualificationEvidenceValidity.REVOKED
+    assert interpretation.latest_record == revoked
+
+
+def test_later_current_without_revocation_wins() -> None:
+    run = _run()
+    context = _context_from_run(run)
+    current_t1 = evaluate_provider_qualification_validity(
+        run,
+        context,
+        evaluated_at=_EVALUATED_AT_T1,
+        validity_evaluation_id=_FIXED_EVAL_ID_CURRENT,
+    )
+    stale_context = ProviderQualificationValidityContext(
+        provider_id=context.provider_id,
+        provider_version="16.7",
+        capability_id=context.capability_id,
+        domain=context.domain,
+        intergrax_revision=context.intergrax_revision,
+        qualification_suite_id=context.qualification_suite_id,
+        qualification_suite_version=context.qualification_suite_version,
+        environment_id=context.environment_id,
+        source_revision=context.source_revision,
+        adapter_identity=context.adapter_identity,
+    )
+    stale_t2 = evaluate_provider_qualification_validity(
+        run,
+        stale_context,
+        evaluated_at=_EVALUATED_AT_T2,
+        validity_evaluation_id=_FIXED_EVAL_ID_STALE,
+    )
+    current_t3 = evaluate_provider_qualification_validity(
+        run,
+        context,
+        evaluated_at=_EVALUATED_AT_T3,
+        validity_evaluation_id=_FIXED_EVAL_ID_LATER,
+    )
+    interpretation = get_current_qualification_validity(
+        run.qualification_run_id,
+        (current_t1, stale_t2, current_t3),
+    )
+    assert interpretation.validity is QualificationEvidenceValidity.CURRENT
+    assert interpretation.latest_record == current_t3
+
+
+def test_revoked_record_preserved_in_history() -> None:
+    run = _run()
+    context = _context_from_run(run)
+    current = evaluate_provider_qualification_validity(
+        run,
+        context,
+        evaluated_at=_EVALUATED_AT_T1,
+        validity_evaluation_id=_FIXED_EVAL_ID_CURRENT,
+    )
+    revoked = record_provider_qualification_validity_revocation(
+        run.qualification_run_id,
+        reason="operator_withdrew_evidence",
+        evaluated_at=_EVALUATED_AT_T2,
+        validity_evaluation_id=_FIXED_EVAL_ID_REVOKED,
+    )
+    later_current = evaluate_provider_qualification_validity(
+        run,
+        context,
+        evaluated_at=_EVALUATED_AT_T3,
+        validity_evaluation_id=_FIXED_EVAL_ID_LATER,
+    )
+    history = (current, revoked, later_current)
+    assert resolve_latest_qualification_validity(history) == revoked
+    assert len(history) == 3
+    assert revoked.validity is QualificationEvidenceValidity.REVOKED
+
+
+def test_non_revoked_tie_breaking_uses_validity_evaluation_id() -> None:
+    run = _run()
+    context = _context_from_run(run)
+    shared_time = _EVALUATED_AT_T2
+    earlier = evaluate_provider_qualification_validity(
+        run,
+        context,
+        evaluated_at=shared_time,
+        validity_evaluation_id=ValidityEvaluationId(
+            "valid_eval_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        ),
+    )
+    later = evaluate_provider_qualification_validity(
+        run,
+        context,
+        evaluated_at=shared_time,
+        validity_evaluation_id=ValidityEvaluationId(
+            "valid_eval_ffffffffffffffffffffffffffffffff",
+        ),
+    )
+    resolved = resolve_latest_qualification_validity((earlier, later))
+    assert resolved == later
 
 
 def test_corrupt_validity_scope_fails_closed() -> None:

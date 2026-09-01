@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -40,6 +40,9 @@ _EVALUATED_AT_T1 = datetime(2026, 8, 17, 13, 0, 0, tzinfo=timezone.utc)
 _EVALUATED_AT_T2 = datetime(2026, 8, 18, 9, 0, 0, tzinfo=timezone.utc)
 _FIXED_EVAL_ID_CURRENT = ValidityEvaluationId("valid_eval_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 _FIXED_EVAL_ID_STALE = ValidityEvaluationId("valid_eval_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+_EVALUATED_AT_T3 = datetime(2026, 8, 19, 10, 0, 0, tzinfo=timezone.utc)
+_FIXED_EVAL_ID_REVOKED = ValidityEvaluationId("valid_eval_cccccccccccccccccccccccccccccccc")
+_FIXED_EVAL_ID_LATER = ValidityEvaluationId("valid_eval_dddddddddddddddddddddddddddddddd")
 
 
 def _current_record(run_id: QualificationRunId) -> QualificationValidityRecord:
@@ -201,6 +204,110 @@ def test_revoked_record_persists_and_resolves() -> None:
     interpretation = persistence.get_current_validity(run.qualification_run_id)
     assert interpretation is not None
     assert interpretation.validity is QualificationEvidenceValidity.REVOKED
+
+
+def test_terminal_revocation_current_view_after_later_current_append() -> None:
+    run = _run()
+    store = InMemoryDocumentStore()
+    persistence = DocumentStoreProviderQualificationValidityPersistence(store)
+    current = _current_record(run.qualification_run_id)
+    revoked = record_provider_qualification_validity_revocation(
+        run.qualification_run_id,
+        reason="operator_revoked",
+        evaluated_at=_EVALUATED_AT_T2,
+        validity_evaluation_id=_FIXED_EVAL_ID_REVOKED,
+    )
+    later_current = replace(
+        current,
+        evaluated_at=_EVALUATED_AT_T3,
+        validity_evaluation_id=_FIXED_EVAL_ID_LATER,
+    )
+    persistence.append_evaluation(current)
+    persistence.append_evaluation(revoked)
+    persistence.append_evaluation(later_current)
+
+    interpretation = persistence.get_current_validity(run.qualification_run_id)
+    history = persistence.list_evaluations(run.qualification_run_id)
+
+    assert interpretation is not None
+    assert interpretation.validity is QualificationEvidenceValidity.REVOKED
+    assert len(history) == 3
+    assert history[0] == current
+    assert history[1] == revoked
+    assert history[2] == later_current
+
+
+def test_get_current_validity_uses_bounded_decode_not_full_history() -> None:
+    run = _run()
+    store = InMemoryDocumentStore()
+    persistence = DocumentStoreProviderQualificationValidityPersistence(store)
+    current = _current_record(run.qualification_run_id)
+    revoked = record_provider_qualification_validity_revocation(
+        run.qualification_run_id,
+        reason="operator_revoked",
+        evaluated_at=_EVALUATED_AT_T2,
+        validity_evaluation_id=_FIXED_EVAL_ID_REVOKED,
+    )
+    persistence.append_evaluation(current)
+    persistence.append_evaluation(revoked)
+
+    decode_calls = 0
+    original_decode = persistence._document_to_record
+
+    def counting_decode(document: object) -> QualificationValidityRecord:
+        nonlocal decode_calls
+        decode_calls += 1
+        return original_decode(document)
+
+    persistence._document_to_record = counting_decode  # type: ignore[method-assign]
+
+    for index in range(98):
+        persistence.append_evaluation(
+            replace(
+                current,
+                evaluated_at=_EVALUATED_AT_T3 + timedelta(seconds=index),
+                validity_evaluation_id=new_validity_evaluation_id(),
+            ),
+        )
+
+    interpretation = persistence.get_current_validity(run.qualification_run_id)
+
+    assert interpretation is not None
+    assert interpretation.validity is QualificationEvidenceValidity.REVOKED
+    assert decode_calls == 1
+
+
+def test_get_current_validity_without_revocation_decodes_single_latest_record() -> None:
+    run = _run()
+    store = InMemoryDocumentStore()
+    persistence = DocumentStoreProviderQualificationValidityPersistence(store)
+    current = _current_record(run.qualification_run_id)
+    persistence.append_evaluation(current)
+
+    decode_calls = 0
+    original_decode = persistence._document_to_record
+
+    def counting_decode(document: object) -> QualificationValidityRecord:
+        nonlocal decode_calls
+        decode_calls += 1
+        return original_decode(document)
+
+    persistence._document_to_record = counting_decode  # type: ignore[method-assign]
+
+    for index in range(99):
+        persistence.append_evaluation(
+            replace(
+                current,
+                evaluated_at=_EVALUATED_AT_T3 + timedelta(seconds=index),
+                validity_evaluation_id=new_validity_evaluation_id(),
+            ),
+        )
+
+    interpretation = persistence.get_current_validity(run.qualification_run_id)
+
+    assert interpretation is not None
+    assert interpretation.validity is QualificationEvidenceValidity.CURRENT
+    assert decode_calls == 1
 
 
 def test_wire_provider_qualification_validity_persistence() -> None:
