@@ -306,6 +306,39 @@ canonical DecisionLifecycle contracts (decision_lifecycle.py)
 
 Proof gate: DS-EXEC-01 (`tests/unit/runtime/execution/test_decision_lifecycle_host.py`).
 
+### Execution-hosted Decision checkpoint persistence (DS-EXEC-02)
+
+Canonical Execution owns **hosting scope** for an optional Decision checkpoint persistence capability. Decision-aware code explicitly saves and loads canonical `DecisionCheckpointState` snapshots; Execution does **not** automatically checkpoint, restore, or resume lifecycle work.
+
+```text
+ExecutionRuntime
+ ├── optional DecisionLifecycleHost
+ └── optional DecisionCheckpointPersistence
+      ↓ execution-scoped binding
+decision-aware lifecycle code
+      ↓
+save_decision_checkpoint / load_decision_checkpoint
+      ↓
+existing DecisionCheckpointState contracts
+```
+
+| Invariant | Meaning |
+| --------- | ------- |
+| **Persistence presence ≠ lifecycle entered** | Configuring persistence does not create lifecycle state |
+| **Persistence presence ≠ automatic checkpoint** | No save/load on `ExecutionRuntime.execute()` unless decision-aware code invokes helpers |
+| **Decision-aware flow explicitly invokes persistence** | `require_active_decision_checkpoint_persistence()` inside governed delegate work |
+
+| Layer | Owns |
+| ----- | ---- |
+| **ExecutionRuntime** | Persistence hosting scope (optional scoped bind/reset around canonical boundary) |
+| **DecisionCheckpointPersistence** | Execution-facing durability port (`load`, `save`) keyed by `DecisionFinalizationKey` |
+| **`decision_checkpoint.py`** | Checkpoint semantics and validation |
+| **DecisionLifecycleHost** | Lifecycle operations only (`start`, `transition`) — no persistence ownership |
+
+Execution hosts persistence access. Decision contracts own checkpoint semantics. No automatic save/load/resume.
+
+Proof gate: DS-EXEC-02 (`tests/unit/runtime/execution/test_decision_checkpoint_runtime_integration.py`).
+
 ---
 
 ## Decision Resolution

@@ -82,7 +82,7 @@
 |----|----------|------|--------|
 | DS-EXEC-00 | P0 | Prove Decision capability is optional: ordinary Execution flows bypass Decision Lifecycle entirely when no authoritative decision is required | **Done** |
 | DS-EXEC-01 | P0 | Execution host optional scoped Decision Lifecycle capability (`DecisionLifecycleHost` + active binding in `ExecutionRuntime`) | **Done** |
-| DS-EXEC-02 | P1 | Lifecycle stage persistence via canonical Execution checkpoint ports | **Planned** |
+| DS-EXEC-02 | P1 | Lifecycle stage persistence via canonical Execution checkpoint ports | **Done** |
 
 ### DS-EXEC-00 — Decision System optionality / bypass contract (DONE)
 
@@ -127,6 +127,14 @@ Goal: **Decision capability orthogonal to ExecutionStrategy** — none of INFERE
 **Invariants:** host presence does not create `DecisionIdentity` or lifecycle state; `ExecutionBoundary` and `StrategyExecutionRouter` remain Decision-neutral; canonical lifecycle semantics stay in `intergrax/contracts/decision_lifecycle.py`.
 
 Proof gate: `tests/unit/runtime/execution/test_decision_lifecycle_host.py`.
+
+### DS-EXEC-02 — Execution-hosted Decision checkpoint persistence (DONE)
+
+`ExecutionRuntime` may accept an optional `decision_checkpoint_persistence`. When configured, the port is bound for the execution scope around canonical `ExecutionBoundary` work and reset in `finally` — success or failure. Decision-aware delegate code obtains persistence via `require_active_decision_checkpoint_persistence()` and explicitly calls `save_decision_checkpoint(...)` / `load_decision_checkpoint(...)`.
+
+**Invariants:** persistence presence does not auto-save or auto-load checkpoints; `DecisionLifecycleHost` does not own persistence; `ExecutionBoundary` and `StrategyExecutionRouter` remain Decision-neutral; canonical checkpoint semantics stay in `intergrax/contracts/decision_checkpoint.py`.
+
+Proof gate: `tests/unit/runtime/execution/test_decision_checkpoint_runtime_integration.py`.
 
 ### Orchestration-specific integration (Nexus)
 

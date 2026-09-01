@@ -17,9 +17,16 @@ from intergrax.contracts.execution_identity import (
     mint_execution_id,
     mint_run_id,
 )
+from intergrax.runtime.execution.active_decision_checkpoint_persistence import (
+    bind_active_decision_checkpoint_persistence,
+    reset_active_decision_checkpoint_persistence,
+)
 from intergrax.runtime.execution.active_decision_lifecycle_host import (
     bind_active_decision_lifecycle_host,
     reset_active_decision_lifecycle_host,
+)
+from intergrax.runtime.execution.decision_checkpoint_persistence import (
+    DecisionCheckpointPersistence,
 )
 from intergrax.runtime.execution.active_execution_budget import (
     bind_root_execution_budget,
@@ -40,6 +47,7 @@ from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
 RequestT = TypeVar("RequestT")
 ResultT = TypeVar("ResultT")
+CheckpointPayloadT = TypeVar("CheckpointPayloadT")
 
 
 @dataclass(frozen=True, slots=True)
@@ -114,6 +122,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         "_run_budget",
         "_admission_hooks",
         "_decision_lifecycle_host",
+        "_decision_checkpoint_persistence",
     )
 
     def __init__(
@@ -124,6 +133,9 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         run_budget: RunBudget | None = None,
         admission_hooks: tuple[ExecutionAdmissionHook[RequestT], ...] = (),
         decision_lifecycle_host: DecisionLifecycleHost | None = None,
+        decision_checkpoint_persistence: (
+            DecisionCheckpointPersistence[CheckpointPayloadT] | None
+        ) = None,
     ) -> None:
         self._delegate = delegate
         self._ledger_factory = (
@@ -134,6 +146,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         self._run_budget = run_budget
         self._admission_hooks = admission_hooks
         self._decision_lifecycle_host = decision_lifecycle_host
+        self._decision_checkpoint_persistence = decision_checkpoint_persistence
 
     async def execute(
         self,
@@ -163,13 +176,20 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
             ledger=ledger,
         )
         host_token = None
+        persistence_token = None
         try:
             if self._decision_lifecycle_host is not None:
                 host_token = bind_active_decision_lifecycle_host(
                     self._decision_lifecycle_host,
                 )
+            if self._decision_checkpoint_persistence is not None:
+                persistence_token = bind_active_decision_checkpoint_persistence(
+                    self._decision_checkpoint_persistence,
+                )
             return await boundary.execute(request)
         finally:
+            if persistence_token is not None:
+                reset_active_decision_checkpoint_persistence(persistence_token)
             if host_token is not None:
                 reset_active_decision_lifecycle_host(host_token)
             reset_active_execution_budget(budget_token)
