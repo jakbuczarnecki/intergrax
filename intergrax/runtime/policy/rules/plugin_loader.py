@@ -184,17 +184,3 @@ def load_policy_rule_plugin_report(
             sorted(handler_provenance, key=lambda item: item.rule_id)
         ),
     )
-
-
-def load_policy_rule_plugins(
-    registry: PolicyRuleRegistry,
-    *,
-    policy: PolicyRuleLoadPolicy | None = None,
-) -> int:
-    """Compatibility wrapper. Default remains fail-fast when ``policy`` is omitted."""
-    chosen = (
-        policy
-        if policy is not None
-        else PolicyRuleLoadPolicy(on_load_failure="fail_fast")
-    )
-    return load_policy_rule_plugin_report(registry, policy=chosen).report.registered_count

@@ -100,7 +100,11 @@ class PolicyRuleRegistry:
 ### EP loader
 
 ```python
-def load_policy_rule_plugins(registry: PolicyRuleRegistry) -> int:
+def load_policy_rule_plugin_report(
+    registry: PolicyRuleRegistry,
+    *,
+    policy: PolicyRuleLoadPolicy | None = None,
+) -> PolicyRulePluginLoadOutcome:
     """Register handlers from intergrax.policy_rules entry points."""
 ```
 
@@ -194,13 +198,13 @@ deny_sandbox = "acme_policy_rules.handlers:DenySandboxExecHandler"
 1. pip install acme-policy-rules                    # handler code installed
 2. Host builds PolicyRuleRegistry:
      registry = PolicyRuleRegistry()
-     load_policy_rule_plugins(registry)              # EP handlers registered (host must call)
+     load_policy_rule_plugin_report(registry)        # EP handlers registered (host must call)
 3. Host sets PolicyRulesProfile on ApplicationEnvironmentProfile:
      policy_rules = PolicyRulesProfile(rules_path=Path("policy/rules.yaml"))
 4. wire_policy_bundle(env) → RuntimePolicyBundle with domain_fragments
 ```
 
-**Current gap:** `wire_policy_bundle` / `build_runtime_policy_bundle` create `PolicyRuleRegistry()` but **do not** call `load_policy_rule_plugins`. Hosts that need EP handlers must invoke the loader explicitly and pass the populated registry into bundle composition (advanced composition — §5).
+**Current gap:** `wire_policy_bundle` / `build_runtime_policy_bundle` create `PolicyRuleRegistry()` but **do not** call `load_policy_rule_plugin_report`. Hosts that need EP handlers must invoke the loader explicitly and pass the populated registry into bundle composition (advanced composition — §5).
 
 ---
 
@@ -210,12 +214,12 @@ deny_sandbox = "acme_policy_rules.handlers:DenySandboxExecHandler"
 
 ```python
 from intergrax.runtime.policy.rules.registry import PolicyRuleRegistry
-from intergrax.runtime.policy.rules.plugin_loader import load_policy_rule_plugins
+from intergrax.runtime.policy.rules.plugin_loader import load_policy_rule_plugin_report
 
 registry = PolicyRuleRegistry()  # includes shipped DenyToolRuleHandler
 registry.register(DenySandboxExecHandler())
 # Optional EP merge:
-load_policy_rule_plugins(registry)
+load_policy_rule_plugin_report(registry)
 ```
 
 Pass the registry into `RuntimePolicyBundle.domain_fragments["policy_rule_registry"]` when building a custom bundle. Shipped `build_runtime_policy_bundle(policy_rules=profile)` always creates a **fresh** registry without EP handlers.
@@ -258,7 +262,6 @@ Handlers are stateless instances. Host may register the same handler class once.
 | Mechanism | Called from shipped Tier-3 wiring? |
 |-----------|-----------------------------------|
 | `load_policy_rule_plugin_report(registry, ...)` | **Yes** — when `policy_rules` set and `INTERGRAX_DISCOVER_PLUGINS` enabled |
-| `load_policy_rule_plugins(registry)` | Legacy int wrapper; report API preferred |
 | `PolicyRuleRegistry.register(handler)` | Host / tests; EP path via loader |
 | `load_policy_rules_from_path` | Yes — via `PolicyRulesProfile` when `wire_policy_bundle` runs |
 
@@ -272,7 +275,7 @@ Standard policy wiring uses `PolicyRuleLoadPolicy` with `on_load_failure="isolat
 
 - Broken EP → recorded in `DomainPluginLoadReport.failed`; siblings continue loading
 - Invalid handler type → `rejected` in load report
-- Legacy `load_policy_rule_plugins` without policy → fail-fast preserved for compatibility
+- `PolicyRuleLoadPolicy(on_load_failure="fail_fast")` → first load failure aborts remaining EPs
 
 ---
 
@@ -380,7 +383,7 @@ assert action == PolicyRuleAction.DENY
 | Tool not blocked despite deny YAML | `AUDIT_ONLY` mode, or no matching rule/handler |
 | `DENY` despite expected allow | Unknown handler fail-closed, or handler exception |
 | `TypeError` at load | EP target not `PolicyRuleHandler` |
-| `PluginLoadError` on broken EP import | Enterprise/policy-governed load (`PolicyRuleLoadPolicy`, default `on_load_failure="isolate"`) records failure; siblings may continue. Legacy `load_policy_rule_plugins(registry)` without policy → fail-fast blocks remaining EPs |
+| `PluginLoadError` on broken EP import | Enterprise/policy-governed load (`PolicyRuleLoadPolicy`, default `on_load_failure="isolate"`) records failure; siblings may continue. `PolicyRuleLoadPolicy(on_load_failure="fail_fast")` aborts on first failure |
 | Custom handler not used | `rule_id` mismatch with YAML |
 
 ---

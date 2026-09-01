@@ -12,7 +12,6 @@ from intergrax.core.plugins.errors import PluginLoadError
 from intergrax.runtime.policy.rules.plugin_loader import (
     PolicyRuleLoadPolicy,
     load_policy_rule_plugin_report,
-    load_policy_rule_plugins,
 )
 from intergrax.runtime.policy.rules.registry import PolicyRuleRegistry
 from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
@@ -113,7 +112,7 @@ def test_broken_and_valid_handler_isolate(monkeypatch: pytest.MonkeyPatch) -> No
     assert "deny_tool" in registry._handlers
 
 
-def test_fail_fast_preserves_legacy_raise(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_fail_fast_raises_on_broken_ep(monkeypatch: pytest.MonkeyPatch) -> None:
     _install_eps(
         monkeypatch,
         [
@@ -123,7 +122,10 @@ def test_fail_fast_preserves_legacy_raise(monkeypatch: pytest.MonkeyPatch) -> No
     )
     registry = PolicyRuleRegistry()
     with pytest.raises(PluginLoadError):
-        load_policy_rule_plugins(registry)
+        load_policy_rule_plugin_report(
+            registry,
+            policy=PolicyRuleLoadPolicy(on_load_failure="fail_fast"),
+        )
 
 
 def test_invalid_handler_target_structured_result(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -140,11 +142,3 @@ def test_invalid_handler_target_structured_result(monkeypatch: pytest.MonkeyPatc
     assert report.rejected[0].reason_code is PluginAdmissionReasonCode.INVALID_TARGET_TYPE
     assert report.rejected[0].spec.name == "nope"
     assert "alpha-rule" in registry._handlers
-
-
-def test_int_compatibility_wrapper(monkeypatch: pytest.MonkeyPatch) -> None:
-    _install_eps(monkeypatch, [_ep("alpha", "_AlphaHandler")])
-    registry = PolicyRuleRegistry()
-    count = load_policy_rule_plugins(registry)
-    assert isinstance(count, int)
-    assert count == 1

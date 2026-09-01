@@ -17,7 +17,6 @@ from intergrax.runtime.security.defense_plugin_loader import (
     LEGACY_UNCONDITIONAL_OVERRIDE_POLICY,
     SecurityDefenseAdmissionPolicy,
     load_security_defense_plugin_report,
-    load_security_defense_plugins,
 )
 from intergrax.runtime.security.defense_registry import (
     get_security_defense_plugin,
@@ -146,7 +145,6 @@ def test_discovery_disabled_returns_empty_report() -> None:
     assert report.failed == ()
     assert report.rejected == ()
     assert report.critical_bootstrap_acceptable is True
-    assert isinstance(load_security_defense_plugins(discover_entry_points=False), int)
 
 
 def test_one_valid_ep_registers(monkeypatch: pytest.MonkeyPatch) -> None:
