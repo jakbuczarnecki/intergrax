@@ -13,19 +13,16 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TypeAlias
 
-import pyarrow as pa
 import pyarrow.parquet as pq
 
-SAMPLER_VERSION = "verified_product_identification_wdc_sampler/1.0.0"
+SAMPLER_VERSION = "verified_product_identification_wdc_sampler/1.1.0"
 DATASET_DIR = Path(__file__).resolve().parent
 DEFAULT_INPUT_PATH = DATASET_DIR / "processed" / "selected_offers.parquet"
-DEFAULT_SAMPLE_SIZE = 1_000
+DEFAULT_SAMPLE_SIZE = 5_000
 DEFAULT_BATCH_SIZE = 10_000
 
 JsonPrimitive: TypeAlias = str | int | float | bool | None
 JsonValue: TypeAlias = JsonPrimitive | list["JsonValue"] | dict[str, "JsonValue"]
-
-PARQUET_SCHEMA = pa.schema([("record_json", pa.string())])
 
 
 @dataclass(frozen=True)
@@ -44,7 +41,7 @@ class SampleResult:
 
 
 def default_output_path(input_path: Path, sample_size: int) -> Path:
-    return input_path.with_name(f"{input_path.stem}_sample_{sample_size}.parquet")
+    return input_path.with_name(f"{input_path.stem}_sample_{sample_size}.json")
 
 
 def default_manifest_path(output_path: Path) -> Path:
@@ -95,18 +92,12 @@ def reservoir_sample(
     return reservoir, source_record_count
 
 
-def write_sample_parquet(output_path: Path, records: list[str]) -> None:
+def write_sample_json(output_path: Path, records: list[str]) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with pq.ParquetWriter(
-        where=str(output_path),
-        schema=PARQUET_SCHEMA,
-        compression="zstd",
-    ) as writer:
-        table = pa.Table.from_arrays(
-            [pa.array(records, type=pa.string())],
-            schema=PARQUET_SCHEMA,
-        )
-        writer.write_table(table)
+    with output_path.open("w", encoding="utf-8") as handle:
+        for record in records:
+            handle.write(record)
+            handle.write("\n")
 
 
 def build_manifest(
@@ -124,16 +115,15 @@ def build_manifest(
             "uniform reservoir sampling over record_json rows "
             "(single pass, bounded memory)"
         ),
-        "output_format": "parquet",
-        "compression": "zstd",
+        "output_format": "json",
         "output_path": str(result.output_path.resolve()),
         "output_size_bytes": result.output_size_bytes,
         "output_sha256": result.output_sha256,
-        "parquet_representation": {
-            "columns": ["record_json"],
+        "json_representation": {
+            "encoding": "ndjson",
             "nested_encoding": (
-                "Each sampled record is copied losslessly from the source Parquet "
-                "record_json column."
+                "Each sampled record is written as one UTF-8 JSON object per line, "
+                "copied losslessly from the source Parquet record_json column."
             ),
         },
         "sample_started_at": result.sample_started_at.isoformat(),
@@ -188,7 +178,7 @@ def sample_dataset(
         rng=rng,
     )
 
-    write_sample_parquet(resolved_output_path, sampled_records)
+    write_sample_json(resolved_output_path, sampled_records)
 
     sample_completed_at = datetime.now(UTC)
     output_size_bytes = resolved_output_path.stat().st_size
@@ -230,7 +220,7 @@ def _print_summary(result: SampleResult) -> None:
     print(f"REQUESTED SAMPLE SIZE: {result.sample_size:,}")
     print(f"SAMPLED RECORDS: {result.sampled_record_count:,}")
     print(f"RANDOM SEED: {result.random_seed}")
-    print("OUTPUT FORMAT: parquet (zstd, record_json column)")
+    print("OUTPUT FORMAT: json (ndjson, one object per line)")
     print(f"OUTPUT FILE SIZE: {result.output_size_bytes:,} bytes")
     print(f"OUTPUT SHA256: {result.output_sha256}")
     print(f"SAMPLE TIME: {_format_duration(sample_seconds)}")
@@ -259,8 +249,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=Path,
         default=None,
         help=(
-            "Path to output Parquet file "
-            "(default: <input_stem>_sample_<size>.parquet next to input)."
+            "Path to output JSON file "
+            "(default: <input_stem>_sample_<size>.json next to input)."
         ),
     )
     parser.add_argument(

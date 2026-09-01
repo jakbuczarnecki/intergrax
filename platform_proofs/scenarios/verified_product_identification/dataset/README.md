@@ -54,7 +54,7 @@ Keep every source record where `keyValuePairs != null` OR `specTableContent != n
 
 ## Sample
 
-Create a smaller Parquet subset (default: 1 000 records) from `processed/selected_offers.parquet`:
+Create a smaller JSON subset (default: 5 000 records) from `processed/selected_offers.parquet`:
 
 ```bash
 uv run --group platform-proofs-vpi-dataset python platform_proofs/scenarios/verified_product_identification/dataset/sample_wdc_dataset.py
@@ -63,9 +63,9 @@ uv run --group platform-proofs-vpi-dataset python platform_proofs/scenarios/veri
 Defaults:
 
 - input: `dataset/processed/selected_offers.parquet`
-- output: `dataset/processed/selected_offers_sample_1000.parquet`
-- manifest: `dataset/processed/selected_offers_sample_1000_manifest.json`
-- sample size: `1000`
+- output: `dataset/processed/selected_offers_sample_5000.json`
+- manifest: `dataset/processed/selected_offers_sample_5000_manifest.json`
+- sample size: `5000`
 - random seed: `42`
 
 Override when needed:
@@ -73,8 +73,8 @@ Override when needed:
 ```bash
 uv run --group platform-proofs-vpi-dataset python platform_proofs/scenarios/verified_product_identification/dataset/sample_wdc_dataset.py \
   --input <path-to-selected_offers.parquet> \
-  --output <path-to-sample.parquet> \
-  --size 1000 \
+  --output <path-to-sample.json> \
+  --size 5000 \
   --seed 42
 ```
 
