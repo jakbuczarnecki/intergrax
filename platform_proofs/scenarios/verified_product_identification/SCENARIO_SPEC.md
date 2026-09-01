@@ -899,6 +899,8 @@ Frontmatter `gap_decision: RESOLVED`.
 
 Provider-neutral application stages — storage/retrieval backends are configured per deployment, not hard-coded:
 
+**Implementation note (VPI-IMPLEMENTATION-1):** Provider-neutral catalog/search contracts and immutable scenario-owned domain models established under `application/domain`, `application/contracts`, `application/ports`, and `application/catalog`. No real storage provider implemented yet.
+
 1. **Catalog runtime / storage** — immutable `record_json`, identifier tables, configuration via catalog/search **contracts**; wire qualified vector and lexical backends behind platform integration boundaries.
 2. **Preprocessing / search representation** — deterministic ingest from `selected_offers.parquet`; normalized identifiers, lexical text, structured attribute subset, embeddings.
 3. **Candidate channels** — application query understanding; exact identifier lookup; lexical retrieval; structured filters; dense vector via configured vector backend.
