@@ -34,13 +34,19 @@ class ActiveDecisionCheckpointPersistenceBinding(Generic[T]):
         binding = _active_decision_checkpoint_persistence.get()
         if binding is None:
             return None
-        return binding.persistence
+        if binding.persistence is not self.persistence:
+            return None
+        return self.persistence
 
     def require_active(self) -> DecisionCheckpointPersistence[T]:
-        persistence = self.get_active()
-        if persistence is None:
+        binding = _active_decision_checkpoint_persistence.get()
+        if binding is None:
             raise RuntimeError("active decision checkpoint persistence required")
-        return persistence
+        if binding.persistence is not self.persistence:
+            raise RuntimeError(
+                "active decision checkpoint persistence does not match this binding",
+            )
+        return self.persistence
 
 
 _active_decision_checkpoint_persistence: ContextVar[

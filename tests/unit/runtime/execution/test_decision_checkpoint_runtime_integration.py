@@ -740,3 +740,78 @@ async def test_alternate_payload_type_has_separate_typed_access() -> None:
 
     assert probe_seen is probe_store
     assert alternate_seen is alternate_store
+
+
+@pytest.mark.asyncio
+async def test_binding_rejects_active_alternate_persistence_different_payload() -> None:
+    store_probe = RecordingDecisionCheckpointPersistence()
+    access_probe = ActiveDecisionCheckpointPersistenceBinding.for_persistence(store_probe)
+    store_alternate = AlternateRecordingDecisionCheckpointPersistence()
+    observed: DecisionCheckpointPersistence[ProbeCheckpointPayload] | None = None
+
+    async def _delegate(_request: ProbeRequest) -> ProbeResult:
+        nonlocal observed
+        observed = access_probe.get_active()
+        with pytest.raises(
+            RuntimeError,
+            match="active decision checkpoint persistence does not match this binding",
+        ):
+            access_probe.require_active()
+        return ProbeResult(value="rejected")
+
+    runtime = ExecutionRuntime(
+        ProbeDelegate(_delegate),
+        decision_checkpoint_persistence=store_alternate,
+    )
+    await runtime.execute(_PROBE, _root_context())
+
+    assert observed is None
+
+
+@pytest.mark.asyncio
+async def test_binding_rejects_active_same_payload_different_instance() -> None:
+    store_a1 = RecordingDecisionCheckpointPersistence()
+    store_a2 = RecordingDecisionCheckpointPersistence()
+    access_a1 = ActiveDecisionCheckpointPersistenceBinding.for_persistence(store_a1)
+    observed: DecisionCheckpointPersistence[ProbeCheckpointPayload] | None = None
+
+    async def _delegate(_request: ProbeRequest) -> ProbeResult:
+        nonlocal observed
+        observed = access_a1.get_active()
+        with pytest.raises(
+            RuntimeError,
+            match="active decision checkpoint persistence does not match this binding",
+        ):
+            access_a1.require_active()
+        return ProbeResult(value="rejected")
+
+    runtime = ExecutionRuntime(
+        ProbeDelegate(_delegate),
+        decision_checkpoint_persistence=store_a2,
+    )
+    await runtime.execute(_PROBE, _root_context())
+
+    assert observed is None
+
+
+@pytest.mark.asyncio
+async def test_binding_returns_bound_persistence_when_active_matches() -> None:
+    store = RecordingDecisionCheckpointPersistence()
+    access = ActiveDecisionCheckpointPersistenceBinding.for_persistence(store)
+    observed_get: DecisionCheckpointPersistence[ProbeCheckpointPayload] | None = None
+    observed_require: DecisionCheckpointPersistence[ProbeCheckpointPayload] | None = None
+
+    async def _delegate(_request: ProbeRequest) -> ProbeResult:
+        nonlocal observed_get, observed_require
+        observed_get = access.get_active()
+        observed_require = access.require_active()
+        return ProbeResult(value="ok")
+
+    runtime = ExecutionRuntime(
+        ProbeDelegate(_delegate),
+        decision_checkpoint_persistence=store,
+    )
+    await runtime.execute(_PROBE, _root_context())
+
+    assert observed_get is store
+    assert observed_require is store
