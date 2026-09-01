@@ -28,6 +28,14 @@ from intergrax.core.qualification.validity import (
     validate_qualification_run_id,
     validate_validity_evaluation_id,
 )
+from intergrax.core.qualification.requalification import (
+    ProviderRequalificationDecision,
+    ProviderRequalificationPreparationError,
+    ProviderRequalificationRunIdentity,
+    determine_provider_requalification_requirement,
+    establish_provider_requalification_requirement,
+    prepare_provider_requalification_run_identity,
+)
 from intergrax.core.qualification.validity_evaluation import (
     evaluate_provider_qualification_validity,
     establish_current_qualification_validity,
@@ -39,6 +47,9 @@ from intergrax.core.qualification.validity_evaluation import (
 )
 
 __all__ = [
+    "ProviderRequalificationDecision",
+    "ProviderRequalificationPreparationError",
+    "ProviderRequalificationRunIdentity",
     "ProviderQualificationValidityContext",
     "QualificationEvidence",
     "QualificationEvidenceValidity",
@@ -53,11 +64,14 @@ __all__ = [
     "ProviderQualificationResultSummary",
     "ProviderQualificationRun",
     "ProviderQualificationSubject",
+    "determine_provider_requalification_requirement",
     "evaluate_provider_qualification_validity",
     "establish_current_qualification_validity",
+    "establish_provider_requalification_requirement",
     "get_current_qualification_validity",
     "interpret_latest_qualification_validity",
     "new_qualification_run_id",
+    "prepare_provider_requalification_run_identity",
     "new_validity_evaluation_id",
     "qualification_status_satisfies",
     "record_provider_qualification_validity_revocation",
