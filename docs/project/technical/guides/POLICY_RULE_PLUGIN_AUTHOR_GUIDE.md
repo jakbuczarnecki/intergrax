@@ -196,21 +196,35 @@ deny_sandbox = "acme_policy_rules.handlers:DenySandboxExecHandler"
 
 ```text
 1. pip install acme-policy-rules                    # handler code installed
-2. Host builds PolicyRuleRegistry:
-     registry = PolicyRuleRegistry()
-     load_policy_rule_plugin_report(registry)        # EP handlers registered (host must call)
-3. Host sets PolicyRulesProfile on ApplicationEnvironmentProfile:
+2. Host sets PolicyRulesProfile on ApplicationEnvironmentProfile:
      policy_rules = PolicyRulesProfile(rules_path=Path("policy/rules.yaml"))
-4. wire_policy_bundle(env) → RuntimePolicyBundle with domain_fragments
+3. wire_policy_bundle(env) with plugin discovery enabled
+     → shared policy wiring calls load_policy_rule_plugin_report(...)
+     → PolicyRuleRegistry contains shipped + admitted EP handlers
+     → RuntimePolicyBundle with declarative_policy_runtime
 ```
 
-**Current gap:** `wire_policy_bundle` / `build_runtime_policy_bundle` create `PolicyRuleRegistry()` but **do not** call `load_policy_rule_plugin_report`. Hosts that need EP handlers must invoke the loader explicitly and pass the populated registry into bundle composition (advanced composition — §5).
+**Standard Tier-3 path** (when `policy_rules` is configured and plugin discovery is enabled):
+
+```text
+ApplicationEnvironmentProfile.policy_rules
+        +
+plugin discovery enabled
+        ↓
+shared policy wiring (wire_policy_bundle / build_runtime_policy_bundle)
+        ↓
+load_policy_rule_plugin_report(...)
+        ↓
+PolicyRuleRegistry with shipped + admitted EP handlers
+```
+
+`pip install` alone does not register handlers or activate YAML rules. Discovery must be enabled (`INTERGRAX_DISCOVER_PLUGINS` or explicit `discover_entry_points=True`) for EP handlers to load on the standard path (§9).
 
 ---
 
 ## 5. Local / host path
 
-**Classification:** local `PolicyRuleRegistry.register()` supported; EP path requires explicit host bootstrap.
+**Classification:** local `PolicyRuleRegistry.register()` supported; standard Tier-3 wiring loads EP handlers automatically when discovery is enabled (§9). The manual composition below is an **advanced host alternative**, not a requirement for the standard path.
 
 ```python
 from intergrax.runtime.policy.rules.registry import PolicyRuleRegistry
@@ -218,11 +232,11 @@ from intergrax.runtime.policy.rules.plugin_loader import load_policy_rule_plugin
 
 registry = PolicyRuleRegistry()  # includes shipped DenyToolRuleHandler
 registry.register(DenySandboxExecHandler())
-# Optional EP merge:
+# Optional EP merge (also invoked automatically on the standard path when discovery is enabled):
 load_policy_rule_plugin_report(registry)
 ```
 
-Pass the registry into `RuntimePolicyBundle.domain_fragments["policy_rule_registry"]` when building a custom bundle. Shipped `build_runtime_policy_bundle(policy_rules=profile)` always creates a **fresh** registry without EP handlers.
+For **advanced host composition**, pass the registry into `RuntimePolicyBundle.domain_fragments["policy_rule_registry"]` when building a custom bundle. Standard `build_runtime_policy_bundle(policy_rules=profile)` / `wire_policy_bundle(env)` creates a registry and calls `load_policy_rule_plugin_report` when `policy_rules` is set and plugin discovery is enabled (§9).
 
 There is no `register_policy_rule_plugin()` catalog helper analogous to Tools.
 
