@@ -146,6 +146,25 @@ def test_adoption_guard_covers_non_suffix_application_names(tmp_path: Path) -> N
     assert check_host_wiring_adoption(repo_root=tmp_path) == []
 
 
+def test_destructive_host_wiring_missing_spine_detected_for_manifest_app(
+    tmp_path: Path,
+) -> None:
+    """Regression: wiring guard must apply to every manifest-discovered application."""
+    app_dir = tmp_path / "applications" / "x7"
+    host_dir = app_dir / "host"
+    host_dir.mkdir(parents=True)
+    (app_dir / "manifest.py").write_text("# contract\n", encoding="utf-8")
+    (host_dir / "wiring.py").write_text(
+        "def wire_host():\n    pass\n",
+        encoding="utf-8",
+    )
+    violations = check_host_wiring_adoption(repo_root=tmp_path)
+    assert len(violations) == 1
+    assert violations[0].startswith("applications/x7/host/wiring.py:")
+    assert "wire_application_environment" in violations[0]
+    assert "build_harness_host_runtime" in violations[0]
+
+
 def test_all_initialized_scenarios_pass_architecture_conformance() -> None:
     slugs = discover_initialized_scenario_slugs(REPO_ROOT)
     assert "ai_incident_investigation" in slugs
@@ -226,8 +245,10 @@ def test_destructive_case_c_manual_nexus_bypass_detected_by_production_gate(
     tmp_path: Path,
 ) -> None:
     applications_root = tmp_path / "applications"
-    factory_dir = applications_root / "bypass_demo" / "host"
+    app_dir = applications_root / "bypass_demo"
+    factory_dir = app_dir / "host"
     factory_dir.mkdir(parents=True)
+    (app_dir / "manifest.py").write_text("# contract\n", encoding="utf-8")
     (factory_dir / "factory.py").write_text(
         "from intergrax.runtime.nexus.nexus_loop import NexusLoop\n\n"
         "def create_app():\n"
