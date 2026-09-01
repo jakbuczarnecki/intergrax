@@ -141,20 +141,24 @@ class FunctionalDiagnosticAnalyzer:
     ) -> FunctionalDiagnosticAnalysis:
         normalized_tenant = _require_tenant_id(tenant_id)
         validated_spec = validate_functional_diagnostic_specification(specification)
-        validation_lookup = validations or FunctionalValidationEvidenceLookup(validations=())
+        validation_lookup = _resolve_validation_lookup(
+            tenant_id=normalized_tenant,
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            validations=validations,
+        )
         statuses: dict[FunctionalDiagnosticCheckId, FunctionalDiagnosticCheckStatus] = {}
-        results: list[FunctionalDiagnosticCheckResult] = []
+        results_by_id: dict[FunctionalDiagnosticCheckId, FunctionalDiagnosticCheckResult] = {}
         analysis_limitations: list[str] = []
 
-        for check in validated_spec.checks:
+        for check in _topological_evaluation_order(validated_spec.checks):
             gate_status = _dependency_gate_status(check, statuses)
             if gate_status is not None:
                 statuses[check.check_id] = gate_status
-                results.append(
-                    _blocked_result(
-                        check=check,
-                        status=gate_status,
-                    ),
+                results_by_id[check.check_id] = _blocked_result(
+                    check=check,
+                    status=gate_status,
                 )
                 continue
 
@@ -169,15 +173,15 @@ class FunctionalDiagnosticAnalyzer:
             )
             statuses[check.check_id] = status
             bounded_limitations = limitations[:MAX_FUNCTIONAL_DIAGNOSTIC_LIMITATIONS_PER_RESULT]
-            results.append(
-                FunctionalDiagnosticCheckResult(
-                    check_id=check.check_id,
-                    status=status,
-                    factual_claim=claim,
-                    supporting_evidence_refs=refs[:MAX_FUNCTIONAL_DIAGNOSTIC_SUPPORTING_REFS],
-                    limitations=bounded_limitations,
-                ),
+            results_by_id[check.check_id] = FunctionalDiagnosticCheckResult(
+                check_id=check.check_id,
+                status=status,
+                factual_claim=claim,
+                supporting_evidence_refs=refs[:MAX_FUNCTIONAL_DIAGNOSTIC_SUPPORTING_REFS],
+                limitations=bounded_limitations,
             )
+
+        results = tuple(results_by_id[check.check_id] for check in validated_spec.checks)
 
         first_failure = _resolve_first_proven_failure(validated_spec.checks, statuses)
         return FunctionalDiagnosticAnalysis(
@@ -356,6 +360,73 @@ def _evidence_kind_for_requirement(
             raise FunctionalDiagnosticAnalysisIntegrityError(
                 "validation_outcome uses lookup, not evidence pagination",
             )
+
+
+def _topological_evaluation_order(
+    checks: tuple[FunctionalDiagnosticCheck, ...],
+) -> tuple[FunctionalDiagnosticCheck, ...]:
+    """
+    Deterministic topological order for dependency evaluation.
+
+    Tie-breaker: original specification tuple index (stable, operator-visible order).
+    """
+    specification_index = {check.check_id: index for index, check in enumerate(checks)}
+    check_by_id = {check.check_id: check for check in checks}
+    in_degree = {check.check_id: len(check.dependencies) for check in checks}
+    successors: dict[FunctionalDiagnosticCheckId, list[FunctionalDiagnosticCheckId]] = {
+        check.check_id: [] for check in checks
+    }
+    for check in checks:
+        for dependency in check.dependencies:
+            successors[dependency].append(check.check_id)
+
+    ready = sorted(
+        (check_id for check_id, degree in in_degree.items() if degree == 0),
+        key=lambda check_id: specification_index[check_id],
+    )
+    ordered_ids: list[FunctionalDiagnosticCheckId] = []
+    while ready:
+        current = ready.pop(0)
+        ordered_ids.append(current)
+        newly_ready: list[FunctionalDiagnosticCheckId] = []
+        for successor in successors[current]:
+            in_degree[successor] -= 1
+            if in_degree[successor] == 0:
+                newly_ready.append(successor)
+        if newly_ready:
+            ready.extend(newly_ready)
+            ready.sort(key=lambda check_id: specification_index[check_id])
+
+    if len(ordered_ids) != len(checks):
+        raise FunctionalDiagnosticAnalysisIntegrityError(
+            "dependency graph could not be topologically ordered",
+        )
+    return tuple(check_by_id[check_id] for check_id in ordered_ids)
+
+
+def _resolve_validation_lookup(
+    *,
+    tenant_id: str,
+    task_id: TaskId,
+    run_id: RunId,
+    attempt_id: AttemptId | None,
+    validations: FunctionalValidationEvidenceLookup | None,
+) -> FunctionalValidationEvidenceLookup:
+    if validations is None:
+        return FunctionalValidationEvidenceLookup.for_scope(
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            validations=(),
+        )
+    return FunctionalValidationEvidenceLookup.for_scope(
+        tenant_id=tenant_id,
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        validations=validations.validations,
+    )
 
 
 def _dependency_gate_status(

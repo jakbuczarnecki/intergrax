@@ -1,10 +1,14 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Reference single-process production lifecycle launcher (AGENT-CONSOLIDATION-3-FIX-4).
+"""REFERENCE / DEMO lifecycle orchestration — not production deployment authority.
 
-Wires canonical AP-9/AP-10 services from one ``ProductionProcessComposition``,
-consumes explicit ``RegistryProjectionInputBundle`` + ``ActivateRuntimeRevisionRequest``,
-and commits traffic-serving state to the same store instances used by host serving.
+Wires AP-9/AP-10 services from one ``ProductionProcessComposition`` for explicit
+single-process proofs. Uses ``FakeInMemoryRuntimeDeploymentAdapter`` and expects the
+caller to supply frozen ``RegistryProjectionInputBundle`` inputs.
+
+**Not production deployment/readiness authority.** Real production registry inputs
+must be assembled via ``production_registry_projection_input_bundle`` from canonical
+lifecycle state and immutable materialization artifacts.
 
 Does **not** read manifest defaults, fabricate revisions at host startup, or own
 application business logic.

@@ -400,7 +400,7 @@ def list_application_projects(repo_root: Path) -> list[str]:
     if not root.is_dir():
         return apps
     for path in sorted(root.iterdir()):
-        if path.is_dir() and (path / "pyproject.toml").is_file():
+        if path.is_dir() and (path / "manifest.py").is_file():
             apps.append(path.name)
     return apps
 

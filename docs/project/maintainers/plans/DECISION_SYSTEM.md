@@ -80,11 +80,11 @@
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-EXEC-00 | P0 | Prove Decision capability is optional: ordinary Execution flows bypass Decision Lifecycle entirely when no authoritative decision is required | **Planned** |
-| DS-EXEC-01 | P0 | Execution host / strategy-routing hooks → Decision Lifecycle | **Planned** |
-| DS-EXEC-02 | P1 | Lifecycle stage persistence via canonical Execution checkpoint ports | **Planned** |
+| DS-EXEC-00 | P0 | Prove Decision capability is optional: ordinary Execution flows bypass Decision Lifecycle entirely when no authoritative decision is required | **Done** |
+| DS-EXEC-01 | P0 | Execution host optional scoped Decision Lifecycle capability (`DecisionLifecycleHost` + active binding in `ExecutionRuntime`) | **Done** |
+| DS-EXEC-02 | P1 | Lifecycle stage persistence via canonical Execution checkpoint ports | **Done** |
 
-### DS-EXEC-00 — Decision System optionality / bypass contract (PLANNED)
+### DS-EXEC-00 — Decision System optionality / bypass contract (DONE)
 
 Decision System is **optional per flow**. Ordinary Execution work must complete without entering Decision Lifecycle when no authoritative decision is required.
 
@@ -118,14 +118,49 @@ Application → Execution → Decision Lifecycle → strategy / verification / r
 
 Goal: **Decision capability orthogonal to ExecutionStrategy** — none of INFERENCE, AGENTIC, or ORCHESTRATION require Decision System.
 
-**Non-goals for DS-EXEC-00 scoping:** no premature global `DECISION_SYSTEM_ENABLED` flag; no `NoDecisionStrategy` / `NullDecisionStrategy` workaround — absence means Lifecycle is not entered.
+**Non-goals for DS-EXEC-00 scoping:** no premature global `DECISION_SYSTEM_ENABLED` flag; no `NoDecisionStrategy` / `NullDecisionStrategy` workaround — absence means Lifecycle is not entered. DS-EXEC-00 does **not** forbid optional Decision host seams in Execution (DS-EXEC-01); it proves ordinary flows do not **require** Decision configuration or lifecycle entry.
+
+### DS-EXEC-01 — Execution-hosted Decision Lifecycle capability (DONE)
+
+`ExecutionRuntime` may accept an optional `decision_lifecycle_host`. When configured, the host is bound for the execution scope around canonical `ExecutionBoundary` work and reset in `finally` — success or failure. Decision-aware delegate code obtains the host via `require_active_decision_lifecycle_host()` and explicitly calls `start(identity)` / `transition(...)`.
+
+**Invariants:** host presence does not create `DecisionIdentity` or lifecycle state; `ExecutionBoundary` and `StrategyExecutionRouter` remain Decision-neutral; canonical lifecycle semantics stay in `intergrax/contracts/decision_lifecycle.py`.
+
+Proof gate: `tests/unit/runtime/execution/test_decision_lifecycle_host.py`.
+
+### DS-EXEC-02 — Execution-hosted Decision checkpoint persistence (DONE)
+
+`ExecutionRuntime` may accept an optional `decision_checkpoint_persistence`. When configured, the port is bound for the execution scope around canonical `ExecutionBoundary` work and reset in `finally` — success or failure. Decision-aware delegate code obtains persistence via `require_active_decision_checkpoint_persistence()` and explicitly calls `save_decision_checkpoint(...)` / `load_decision_checkpoint(...)`.
+
+**Invariants:** persistence presence does not auto-save or auto-load checkpoints; `DecisionLifecycleHost` does not own persistence; `ExecutionBoundary` and `StrategyExecutionRouter` remain Decision-neutral; canonical checkpoint semantics stay in `intergrax/contracts/decision_checkpoint.py`.
+
+Proof gate: `tests/unit/runtime/execution/test_decision_checkpoint_runtime_integration.py`.
 
 ### Orchestration-specific integration (Nexus)
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-NEXUS-01 | P0 | Graph / UAEP hooks for ORCHESTRATION-backed Decision Strategy work | **Planned** |
+| DS-NEXUS-01 | P0 | Canonical Execution work submission for Decision Strategy work (ORCHESTRATION capability via Execution-owned child seam; Nexus remains private) | **Done** |
 | DS-NEXUS-02 | P1 | Orchestration checkpoint participation when ORCHESTRATION is selected | **Planned** |
+
+#### DS-NEXUS-01 — Decision → Execution work seam (DONE)
+
+Decision-aware code submits canonical `ExecutionRequest` work through an optional execution-scoped `ExecutionWorkPort` hosted by `ExecutionRuntime`. Child work is minted via `ChildExecutionRunner` and routed by the wired `StrategyExecutionRouter` — Decision does **not** import Nexus, construct orchestration backends, or select `ExecutionStrategy`.
+
+```text
+Decision Strategy (decision-aware delegate)
+      ↓ require_active_execution_work_port()
+ExecutionWorkPort
+      ↓ ChildExecutionRunner (child ExecutionId + parent lineage)
+StrategyExecutionRouter
+      ├── INFERENCE
+      ├── AGENTIC
+      └── ORCHESTRATION → private Nexus implementation
+```
+
+**Invariants:** no Nexus field on Decision contracts; no global DecisionStrategy → ExecutionStrategy mapping; ordinary flows without work port do not require orchestration backend; missing orchestration backend fails closed via canonical Execution error.
+
+Proof gate: `tests/unit/runtime/execution/test_decision_execution_work.py`.
 
 ### Governance / HITL / Execution Authority
 

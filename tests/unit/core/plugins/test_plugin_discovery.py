@@ -20,10 +20,10 @@ from intergrax.core.plugins.discovery import (
 from intergrax.core.plugins.errors import PluginConflictError, PluginLoadError
 from intergrax.integrations.examples.custom_memory_kv import CustomMemoryKvPlugin
 from intergrax.runtime.hooks.hook_point import HookPoint
-from intergrax.runtime.policy.rules.plugin_loader import load_policy_rule_plugins
+from intergrax.runtime.policy.rules.plugin_loader import load_policy_rule_plugin_report
 from intergrax.runtime.policy.rules.registry import PolicyRuleRegistry
 from intergrax.runtime.security.defense_plugin import SecurityFailMode, SecurityInspectionResult
-from intergrax.runtime.security.defense_plugin_loader import load_security_defense_plugins
+from intergrax.runtime.security.defense_plugin_loader import load_security_defense_plugin_report
 from intergrax.runtime.security.defense_registry import get_security_defense_plugin
 
 pytestmark = pytest.mark.unit
@@ -463,9 +463,9 @@ def test_security_loader_instantiates_class_targets_once(
     )
     monkeypatch.setattr(importlib.metadata, "entry_points", lambda: entries)
 
-    count = load_security_defense_plugins(discover_entry_points=True)
+    report = load_security_defense_plugin_report(discover_entry_points=True)
 
-    assert count == 2
+    assert [item.name for item in report.accepted] == ["class-defense", "instance-defense"]
     class_plugin = get_security_defense_plugin("class-defense")
     instance_plugin = get_security_defense_plugin("instance-defense")
     assert class_plugin is not None
@@ -494,10 +494,22 @@ def test_policy_loader_preserves_class_and_instance_semantics(
     monkeypatch.setattr(importlib.metadata, "entry_points", lambda: entries)
     registry = PolicyRuleRegistry()
 
-    count = load_policy_rule_plugins(registry)
+    report = load_policy_rule_plugin_report(registry).report
 
-    assert count == 2
+    assert [item.name for item in report.accepted] == ["class-rule", "instance-rule"]
     class_handler = registry._handlers["class-rule"]
     instance_handler = registry._handlers["instance-rule"]
     assert isinstance(class_handler, _PolicyRuleClassHandler)
     assert instance_handler is _POLICY_RULE_INSTANCE
+
+
+def test_security_count_wrapper_not_exported() -> None:
+    import intergrax.runtime.security.defense_plugin_loader as module
+
+    assert "load_security_defense_plugins" not in module.__dict__
+
+
+def test_policy_count_wrapper_not_exported() -> None:
+    import intergrax.runtime.policy.rules.plugin_loader as module
+
+    assert "load_policy_rule_plugins" not in module.__dict__

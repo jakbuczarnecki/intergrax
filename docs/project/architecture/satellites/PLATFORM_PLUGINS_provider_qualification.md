@@ -698,7 +698,8 @@ Do **not** classify qualification binding as fully reusable without the typed br
 | **PROVIDER-QUAL-3A-R1** | Architecture correction only (this freeze) |
 | **PROVIDER-QUAL-3B-R1** | **READY_FOR_REVIEW** — lifecycle-safe provider materialization correction — `CollaborativeWorkPersistenceProvider.materialize_collaborative_work_repositories()`; domain resolver `resolve_collaborative_work_repositories(profile)` composes `resolve_relational_store` |
 | **PROVIDER-QUAL-3B-R2** | **READY_FOR_REVIEW** - explicit typed materialization factory - `CollaborativeWorkPersistenceFactory.materialize_collaborative_work_repositories(binding)`; no `_collaborative_work_materialization` keyword protocol; no `TypeError` capability probing; pre-built SQLite fail-closed |
-| **PROVIDER-QUAL-3B-R3** | **READY_FOR_REVIEW** - provider-owned typed configuration materialization - CW owns semantic CollaborativeWorkPersistenceFactory only; provider factory ind_collaborative_work_materialization(options) resolves typed provider config; no CW vendor config bag; invalid explicit connection_factory fails closed; Oracle adds no CW config fields |
+| **PROVIDER-QUAL-3B-R3** | **READY_FOR_REVIEW** - provider-owned typed configuration materialization - CW owns semantic CollaborativeWorkPersistenceFactory only; provider factory bind_collaborative_work_materialization(options) resolves typed provider config; no CW vendor config bag; invalid explicit connection_factory fails closed; Oracle adds no CW config fields |
+| **PROVIDER-QUAL-3B-R4** | **READY_FOR_REVIEW** - separate binder from configured materializer - unbound catalog factory implements CollaborativeWorkMaterializationBinder only; configured materializer implements CollaborativeWorkPersistenceFactory; central resolver checks binder before materializer; binder return validated fail-closed; no fake unbound materialize method |
 | **PROVIDER-QUAL-3C** | Qualification evidence persistence/index + record accepted PostgreSQL 16.6 evidence through the canonical binding |
 
 **PROVIDER-QUAL-3B** implementation (review gate): `intergrax/collaborative_work/persistence_provider.py`; vendor adapters on `SqliteRelationalStoreIntegration` / `PostgresqlRelationalStoreIntegration`; `CollaborativeWorkRepositories.store` typed as `CollaborativeWorkStoreOwner` (lifecycle-only).
@@ -730,19 +731,42 @@ PostgreSQL evidence must **not** be persisted before **PROVIDER-QUAL-3B** is ind
 
 ---
 
-## 16. PROVIDER-QUAL-3C — evidence persistence/integration (deferred)
+## 16. PROVIDER-QUAL-3C � evidence persistence/integration
+
+**Status:** **READY_FOR_REVIEW**
+
+- `ProviderQualificationRun` persists through existing `ProofReceipt` / `DocumentStore` mechanics
+- authoritative lookup by `qualification_run_id`
+- `proof_id` remains a separate persistence locator
+- idempotent persist for semantically identical runs; explicit conflict on divergent history
+- durable read after persistence adapter reconstruction (caller-owned `DocumentStore` lifecycle)
+
+**Out of scope (3C):** broad discovery/index, staleness automation, requalification runner, admission policy, vendor CI execution.
+
 
-- qualification run persistence/index integration
-- mapping to existing `ProofReceipt` where appropriate
-- recording the PostgreSQL template as a live `ProofReceipt` (already accepted PostgreSQL 16.6 bounded qualification evidence)
-- query/discovery surface for qualification evidence as already architected
-- **binding:** canonical flow per §15.7 (Integrations resolution › typed domain-provider bridge › CW suite) — **PROVIDER-QUAL-3B** must land first
+## 17. PROVIDER-QUAL-3C-R1 - evidence durability and safe persistence hardening
 
-**Out of scope until 3C:** persisting PostgreSQL 16.6 evidence before **PROVIDER-QUAL-3B** approval.
+**Status:** **READY_FOR_REVIEW**
 
----
+- qualification results continue to use existing `ProofReceipt` / `DocumentStore` mechanics (no parallel qualification store)
+- unsafe credential-bearing evidence (including credential-bearing URLs/DSNs in free-text fields such as `evidence.ref`) is rejected before `ProofReceipt` write via `intergrax.core.security.secret_safety`
+- adapter reconstruction against caller-owned storage remains supported but is not labeled as restart durability
+- fake MongoDB collection unit test proves adapter reconstruction over shared in-memory backing only (not durable persistence)
 
-## 17. References
+**Out of scope (3C-R1):** discovery/index, staleness, requalification runner, vendor CI, Oracle qualification, broad E2E, MP-2.
+
+
+## 18. PROVIDER-QUAL-3C-R2 - real durable DocumentStore reopen proof
+
+**Status:** **READY_FOR_REVIEW**
+
+- real persistent MongoDB DocumentStore integration proof: store A persist -> close -> independent store B recovers same qualification_run_id
+- store A and store B are independent adapter/client instances; no shared fake collection or in-process dict backs persistence
+- qualification persistence remains generic DocumentStore / ProofReceipt based (no MongoDB-specific qualification adapter)
+- separate OS process restart is not required for R2 when external database retains state
+
+**Out of scope (3C-R2):** discovery/index, staleness, requalification runner, vendor CI, Oracle qualification, broad E2E, MP-2.
+## 19. References
 
 - [`PLATFORM_PLUGINS.md`](../PLATFORM_PLUGINS.md) section 18
 - [`PROOF_RECEIPTS.md`](../PROOF_RECEIPTS.md)

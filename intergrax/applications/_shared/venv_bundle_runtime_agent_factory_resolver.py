@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import builtins
 import importlib.abc
 import importlib.machinery
 import importlib.util
@@ -18,7 +19,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Final
 
-from intergrax.utils import attribute_access
 from intergrax.agent_distribution._digest import normalize_package_digest
 from intergrax.agent_distribution.binding import AgentBindingFactoryReference
 from intergrax.agent_distribution.dependency import MaterializedRuntimeLock
@@ -48,9 +48,8 @@ _FactoryCacheLock = threading.RLock()
 _FactoryCache: dict[tuple[str, str, str | None, str | None], AgentFactory] = {}
 _ArtifactScopeRegistryLock = threading.RLock()
 _ArtifactScopeRegistry: dict[str, _ArtifactImportScope] = {}
-_TopLevelPackageDispatchLock = threading.RLock()
-_TopLevelPackageDispatchModules: dict[str, types.ModuleType] = {}
 _ScopeLoadLock = threading.RLock()
+_OriginalBuiltinImport = builtins.__import__
 _ActiveArtifactImportScope: ContextVar[_ArtifactImportScope | None] = ContextVar(
     "_active_artifact_import_scope",
     default=None,
@@ -121,37 +120,73 @@ def _module_exists_in_artifact(site_packages: Path, module_path: str) -> bool:
     return True
 
 
-def _ensure_top_level_package_dispatch(package_name: str) -> types.ModuleType:
-    with _TopLevelPackageDispatchLock:
-        existing = _TopLevelPackageDispatchModules.get(package_name)
-        if existing is not None:
-            return existing
-        dispatch = types.ModuleType(package_name)
-        dispatch.__doc__ = "Intergrax artifact-scoped top-level package dispatch stub."
-        dispatch.__path__ = []
-        dispatch.__package__ = package_name
-        _TopLevelPackageDispatchModules[package_name] = dispatch
-        sys.modules.setdefault(package_name, dispatch)
-        return dispatch
+def _scoped_import_name_if_artifact_owned(
+    scope: _ArtifactImportScope,
+    module_path: str,
+) -> str | None:
+    if not _module_exists_in_artifact(scope.site_packages, module_path):
+        return None
+    return _scoped_module_name(scope.scope_root, module_path)
 
 
-def _register_top_level_package_dispatchers(site_packages: Path) -> None:
-    for entry in site_packages.iterdir():
-        if not entry.is_dir() or entry.name.startswith(".") or entry.name.startswith("_"):
+def _attach_scoped_module_chain(
+    scope: _ArtifactImportScope,
+    original_module_path: str,
+) -> None:
+    parts = original_module_path.split(".")
+    if len(parts) <= 1:
+        return
+    for index in range(1, len(parts)):
+        parent_original = ".".join(parts[:index])
+        child_original = ".".join(parts[:index + 1])
+        parent_name = _scoped_module_name(scope.scope_root, parent_original)
+        child_name = _scoped_module_name(scope.scope_root, child_original)
+        parent_module = sys.modules.get(parent_name)
+        child_module = sys.modules.get(child_name)
+        if not isinstance(parent_module, types.ModuleType):
             continue
-        if not (entry / "__init__.py").is_file():
+        if not isinstance(child_module, types.ModuleType):
             continue
-        has_submodules = any(
-            child.name != "__init__.py" and ((child.is_file() and child.suffix == ".py") or child.is_dir())
-            for child in entry.iterdir()
-        )
-        if has_submodules:
-            _ensure_top_level_package_dispatch(entry.name)
+        attr_name = parts[index]
+        parent_namespace = vars(parent_module)
+        existing = parent_namespace.get(attr_name)
+        if existing is not child_module:
+            parent_namespace[attr_name] = child_module
+
+
+def _artifact_aware_import(
+    name: str,
+    globals: dict[str, object] | None = None,
+    locals: dict[str, object] | None = None,
+    fromlist: Sequence[str] = (),
+    level: int = 0,
+) -> object:
+    scope = _ActiveArtifactImportScope.get()
+    if scope is None or level != 0:
+        return _OriginalBuiltinImport(name, globals, locals, fromlist, level)
+    scoped_name = _scoped_import_name_if_artifact_owned(scope, name)
+    if scoped_name is None:
+        return _OriginalBuiltinImport(name, globals, locals, fromlist, level)
+    if fromlist:
+        module = _OriginalBuiltinImport(scoped_name, globals, locals, fromlist, level)
+        if "." in name:
+            _attach_scoped_module_chain(scope, name)
+        return module
+    if "." in name:
+        top_level_original = name.split(".", 1)[0]
+        top_level_scoped = _scoped_module_name(scope.scope_root, top_level_original)
+        _import_scoped_module(scope, name)
+        _attach_scoped_module_chain(scope, name)
+        return sys.modules[top_level_scoped]
+    if "." in scoped_name:
+        parent, leaf = scoped_name.rsplit(".", 1)
+        _OriginalBuiltinImport(parent, globals, locals, [leaf], level)
+        return sys.modules[scoped_name]
+    return _OriginalBuiltinImport(scoped_name, globals, locals, fromlist, level)
 
 
 def _register_artifact_scope(*, artifact_digest: str, site_packages: Path) -> _ArtifactImportScope:
     resolved_site_packages = site_packages.resolve()
-    _register_top_level_package_dispatchers(resolved_site_packages)
     scope_root = _artifact_scope_root(artifact_digest)
     with _ArtifactScopeRegistryLock:
         existing = _ArtifactScopeRegistry.get(scope_root)
@@ -179,12 +214,9 @@ def _scope_for_scoped_name(fullname: str) -> _ArtifactImportScope | None:
 
 
 def _scope_for_import_target(target: object | None) -> _ArtifactImportScope | None:
-    if target is None:
+    if not isinstance(target, types.ModuleType):
         return None
-    target_name = attribute_access.optional(target, "__name__", None)
-    if not isinstance(target_name, str):
-        return None
-    return _scope_for_scoped_name(target_name)
+    return _scope_for_scoped_name(target.__name__)
 
 
 def _package_search_locations(
@@ -357,6 +389,8 @@ class _ArtifactModuleLoader(importlib.machinery.SourceFileLoader):
 _ARTIFACT_IMPORT_FINDER = _ArtifactScopedImportFinder()
 if not any(isinstance(finder, _ArtifactScopedImportFinder) for finder in sys.meta_path):
     sys.meta_path.insert(0, _ARTIFACT_IMPORT_FINDER)
+if builtins.__import__ is not _artifact_aware_import:
+    builtins.__import__ = _artifact_aware_import
 
 
 def _ensure_scope_root(scope: _ArtifactImportScope) -> None:
@@ -437,6 +471,7 @@ def _import_scoped_module(
             sys.modules[scoped_name] = module
             touched.append(scoped_name)
             spec.loader.exec_module(module)
+            _attach_scoped_module_chain(scope, original_module_path)
             return module
         except Exception as exc:
             _cleanup_scoped_modules(touched, scope_root=scope.scope_root)
@@ -581,11 +616,16 @@ def _load_callable_from_site_packages(
         site_packages=site_packages,
     )
     module = _import_scoped_module(scope, module_path)
-    target = attribute_access.optional(module, attr_name, None)
-    if target is None:
+    if not isinstance(module, types.ModuleType):
+        raise RuntimeAgentFactoryResolutionError(
+            f"factory module {module_path!r} did not resolve to a module object"
+        )
+    module_namespace = vars(module)
+    if attr_name not in module_namespace:
         raise RuntimeAgentFactoryResolutionError(
             f"factory attribute {attr_name!r} missing from module {module_path!r}"
         )
+    target = module_namespace[attr_name]
     if not callable(target):
         raise RuntimeAgentFactoryResolutionError(
             f"factory reference {module_path}.{attr_name} is not callable"

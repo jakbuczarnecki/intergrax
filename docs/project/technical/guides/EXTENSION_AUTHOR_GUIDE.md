@@ -127,7 +127,7 @@ All canonical setuptools entry-point surfaces (architecture §20.1). One row per
 | RAG reranker | Custom reranking | `BaseReranker` / `BaseRerankerPlugin` | `intergrax.rag.rerankers` | Advanced host registry composition — **external-EP-first** | `RagProfile` + bootstrap kwargs | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
 | Vendor Knowledge | External knowledge source contributions | `VendorKnowledgeProviderContribution` | `intergrax.vendor_knowledge.providers` | Host builder composition — **not Tier-0 catalog registration** | `KnowledgeSourceBinding` + tenant scope | [`VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md`](VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md) · [`intergrax_reference_vendor_knowledge_plugin`](../../../../examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/) |
 | Security defense | Runtime inspection at `HookPoint`s | `SecurityDefensePlugin` | `intergrax.security_defenses` | `register_security_defense_plugin()` + profile ids — advanced host composition | `ApplicationSecurityProfile` | [`SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md`](SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) |
-| Policy rule handler | Custom policy evaluation handlers | `PolicyRuleHandler` | `intergrax.policy_rules` | `PolicyRuleRegistry.register()` + explicit `load_policy_rule_plugins()` | `PolicyRulesProfile` / YAML bundle | [`POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md`](POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md) · [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
+| Policy rule handler | Custom policy evaluation handlers | `PolicyRuleHandler` | `intergrax.policy_rules` | `PolicyRuleRegistry.register()` + explicit `load_policy_rule_plugin_report()` | `PolicyRulesProfile` / YAML bundle | [`POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md`](POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md) · [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
 | Tool invocation pattern | Custom tool batch orchestration mode | `ToolInvocationPattern` | `intergrax.tool_invocation_patterns` | `RuntimeConfig.tool_invocation_pattern` instance override | `ToolInvocationMode` | [`TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md`](TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md) · [`TOOLS.md`](../../architecture/TOOLS.md) |
 
 ---
@@ -763,7 +763,7 @@ Swap backends in Tier-3 by registering an EP plugin (where wired) or composing `
 
 **Canonical author guide:** [`POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md`](POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md)
 
-Entry point group: `intergrax.policy_rules` · handler protocol `PolicyRuleHandler` · loader `load_policy_rule_plugins(registry)`.
+Entry point group: `intergrax.policy_rules` · handler protocol `PolicyRuleHandler` · loader `load_policy_rule_plugin_report(registry)`.
 
 Policy handlers are **not** Security Defense plugins. YAML / `PolicyRulesProfile` and handler packages are separate activation steps — installing a handler wheel does not enable rules.
 

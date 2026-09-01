@@ -53,8 +53,8 @@ class FunctionalDiagnosticAnalysis:
     """
     Deterministic functional diagnostic output for one execution scope.
 
-    NOT persisted and NOT a source of truth. Future operator-facing
-    ``DiagnosticAssessment`` composition may consume this projection.
+    NOT persisted and NOT a source of truth. Consumed by operator-facing
+    ``DiagnosticAssessmentComposer`` / ``FunctionalOperatorProjector`` (F4).
     """
 
     tenant_id: str

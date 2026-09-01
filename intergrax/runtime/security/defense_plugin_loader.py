@@ -137,18 +137,6 @@ def load_security_defense_plugin_report(
     )
 
 
-def load_security_defense_plugins(
-    *,
-    discover_entry_points: bool = True,
-    admission: SecurityDefenseAdmissionPolicy | None = None,
-) -> int:
-    """Compatibility wrapper: registered count from :func:`load_security_defense_plugin_report`."""
-    return load_security_defense_plugin_report(
-        discover_entry_points=discover_entry_points,
-        admission=admission,
-    ).registered_count
-
-
 def _plugin_id_occupation(
     plugin_id: str,
     *,

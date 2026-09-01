@@ -92,7 +92,7 @@ def inspect(self, point: HookPoint, ctx: HookContext) -> SecurityInspectionResul
 | `register_security_defense_plugin(plugin, *, override=False)` | `intergrax.runtime.security.defense_registry` | Register shipped or host-loaded instance |
 | `get_security_defense_plugin(plugin_id)` | same | Lookup by id (shipped bundles or dynamic registry) |
 | `resolve_security_defense_plugins(plugin_ids, bundle_ids)` | same | Resolve profile ids to plugin instances |
-| `load_security_defense_plugins(*, discover_entry_points=True)` | `intergrax.runtime.security.defense_plugin_loader` | Load all `intergrax.security_defenses` EPs |
+| `load_security_defense_plugin_report(*, discover_entry_points=True)` | `intergrax.runtime.security.defense_plugin_loader` | Load all `intergrax.security_defenses` EPs; returns typed admission report |
 | `bootstrap_security_providers(*, discover_entry_points=False)` | `intergrax.core.security_bootstrap` | Catalog bootstrap entry — loads EPs when requested |
 
 Entry point group:
@@ -257,7 +257,7 @@ Defense plugins are **stateless or self-contained** instances. The host does not
 | Step | API |
 |------|-----|
 | Scan EP group | `iter_entry_point_specs("intergrax.security_defenses")` |
-| Load + register | `load_security_defense_plugins(discover_entry_points=True)` |
+| Load + register | `load_security_defense_plugin_report(discover_entry_points=True)` |
 | Catalog bootstrap | `bootstrap_catalogs(discover_entry_points=True)` also calls `bootstrap_security_providers` |
 
 Default production posture: `discover_entry_points=False` until `INTERGRAX_DISCOVER_PLUGINS` is set (same as other Tier-0 catalogs).
@@ -335,7 +335,7 @@ No unload API. Dynamic registry can be cleared in tests via `reset_security_defe
 
 **Legacy:** `LEGACY_UNCONDITIONAL_OVERRIDE_POLICY` uses fail-fast load (`on_load_failure="fail_fast"`).
 
-`load_security_defense_plugins` int wrapper preserves production admission defaults; report API preferred for operator visibility.
+Production hosts load EPs through `bootstrap_security_providers` (report-based path). Use `load_security_defense_plugin_report` directly in tests and advanced host composition.
 
 ---
 
@@ -351,11 +351,12 @@ No unload API. Dynamic registry can be cleared in tests via `reset_security_defe
 Example unit test pattern:
 
 ```python
-from intergrax.runtime.security.defense_plugin_loader import load_security_defense_plugins
+from intergrax.runtime.security.defense_plugin_loader import load_security_defense_plugin_report
 from intergrax.runtime.security.defense_registry import get_security_defense_plugin, reset_security_defense_registry_for_tests
 
 reset_security_defense_registry_for_tests()
-load_security_defense_plugins(discover_entry_points=True)
+report = load_security_defense_plugin_report(discover_entry_points=True)
+assert any(item.name == "fixture_ep.defense" for item in report.accepted)
 assert get_security_defense_plugin("fixture_ep.defense") is not None
 ```
 

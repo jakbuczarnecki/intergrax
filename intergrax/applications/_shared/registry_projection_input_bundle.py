@@ -1,11 +1,14 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Build canonical ``RegistryProjectionInputBundle`` for reference production lifecycle.
+"""REFERENCE / DEMO / TEST ONLY projection input synthesis (AC-3).
 
-Explicit deploy input — not startup manifest projection. Uses process-local
-``InMemoryRuntimeAgentFactoryResolver`` with caller-supplied factories for reference
-simulation. Production ``VENV_BUNDLE`` artifact loading uses
-``VenvBundleRuntimeAgentFactoryResolver``; OCI/sidecar remain deferred.
+**Not production authority.** Builds synthetic ``EffectiveRoster``, lock/revision
+digests, and ``InMemoryRuntimeAgentFactoryResolver`` instances from manifest-local
+data for explicit reference lifecycle proofs.
+
+Production revision-bound startup must use
+``production_registry_projection_input_bundle.build_production_registry_projection_input_bundle``
+with canonical lifecycle state and ``VenvBundleRuntimeAgentFactoryResolver``.
 """
 
 from __future__ import annotations

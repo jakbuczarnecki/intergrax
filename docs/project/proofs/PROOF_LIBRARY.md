@@ -28,6 +28,7 @@ The library operating model is ready. Accepted Scenario Proofs appear here only 
 | --- | --- | --- | --- |
 | <a href="../../../platform_proofs/scenarios/ai_incident_investigation/README.md"><img src="../../../platform_proofs/scenarios/ai_incident_investigation/assets/proof-story-light.svg" width="180" alt="AI Incident Investigation scenario preview"></a> | [**AI Incident Investigation with Independent Verification**](../../../platform_proofs/scenarios/ai_incident_investigation/README.md) | Plausible correlation points to the wrong root cause. The system must gather and falsify evidence instead of confidently guessing. | **In development** — FULL-1 RESOLVED and FULL-2 UNRESOLVED implemented and executable; public Scenario Proof not yet accepted |
 | <a href="../../../platform_proofs/scenarios/indirect_prompt_injection/README.md"><img src="../../../platform_proofs/scenarios/indirect_prompt_injection/assets/scenario-overview.png" width="180" alt="Indirect Prompt Injection scenario preview"></a> | [**Indirect Prompt Injection with Governed Action Prevention**](../../../platform_proofs/scenarios/indirect_prompt_injection/README.md) | Hostile retrieved data may genuinely fool the model into requesting a dangerous write. Governance must still stop the real side effect. | **Implementation initialized** — scenario architecture accepted; executable business proof not yet implemented |
+| <a href="../../../platform_proofs/scenarios/verified_product_identification/README.md"><img src="../../../platform_proofs/scenarios/verified_product_identification/assets/proof-story-light.svg" width="180" alt="Verified Product Identification scenario preview"></a> | [**Verified Product Identification at Catalog Scale**](../../../platform_proofs/scenarios/verified_product_identification/README.md) | Millions of noisy offers and near-identical variants. Top semantic retrieval must not be mistaken for verified product identity. | **Design ready for quality gate** — real 3.77M-offer dataset foundation validated; solution architecture documented; implementation not initialized |
 
 When a scenario is accepted, each entry will expose:
 
@@ -113,6 +114,37 @@ The execution boundary must still win.
 [View full-size scenario overview](../../../platform_proofs/scenarios/indirect_prompt_injection/assets/scenario-overview.png)
 
 **[Scenario design document](../../../platform_proofs/scenarios/indirect_prompt_injection/README.md)**
+
+---
+
+### Verified Product Identification at Catalog Scale
+
+> **Can a system verify product identity from incomplete descriptions against millions of noisy catalog offers — without mistaking the top search result for a verified match?**
+
+A technician or buyer describes a part imperfectly. The catalog holds 3.77 million real product offers with missing fields, conflicting attributes, and near-identical variants. Several candidates look semantically close. The scenario tests whether independent retrieval channels plus evidence-based verification can establish identity — or honestly refuse when evidence is contradictory, ambiguous, or insufficient.
+
+The WOW moment is uncomfortable and simple:
+
+```text
+top search result  ≠  verified product
+```
+
+**Status:** design ready for quality gate — real WDC dataset foundation validated (3,770,377 offers); solution architecture documented; implementation not initialized; no executable proof, evidence, or report yet.
+
+<a href="../../../platform_proofs/scenarios/verified_product_identification/assets/proof-story-light.svg">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../../../platform_proofs/scenarios/verified_product_identification/assets/proof-story-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="../../../platform_proofs/scenarios/verified_product_identification/assets/proof-story-light.svg">
+  <img
+    src="../../../platform_proofs/scenarios/verified_product_identification/assets/proof-story-light.svg"
+    alt="Verified product identification — incomplete request, noisy catalog, multi-channel retrieval, evidence verification, and bounded outcomes"
+  >
+</picture>
+</a>
+
+[View full-size diagram](../../../platform_proofs/scenarios/verified_product_identification/assets/proof-story-light.svg)
+
+**[Scenario design document](../../../platform_proofs/scenarios/verified_product_identification/README.md)**
 
 ---
 

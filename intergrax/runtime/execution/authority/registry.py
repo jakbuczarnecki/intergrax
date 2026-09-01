@@ -4,9 +4,15 @@
 
 from __future__ import annotations
 
-from importlib.metadata import entry_points
 from typing import TYPE_CHECKING
 
+from intergrax.core.plugins.discovery import (
+    EP_EXECUTION_AUTHORITY_POLICIES,
+    get_entry_point_spec,
+    instantiate_entry_point_target,
+    iter_entry_point_specs,
+    load_entry_point_value,
+)
 from intergrax.runtime.execution.authority.policy import (
     DefaultStrictAuthorityPolicy,
     ExecutionAuthorityPolicy,
@@ -15,7 +21,7 @@ from intergrax.runtime.execution.authority.policy import (
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.config import RuntimeConfig
 
-_ENTRY_POINT_GROUP = "intergrax.execution_authority_policies"
+_ENTRY_POINT_GROUP = EP_EXECUTION_AUTHORITY_POLICIES
 
 
 class ExecutionAuthorityPolicyConfigurationError(RuntimeError):
@@ -24,35 +30,22 @@ class ExecutionAuthorityPolicyConfigurationError(RuntimeError):
 
 def load_execution_authority_policy(policy_id: str) -> ExecutionAuthorityPolicy | None:
     """Load a policy by entry-point name from ``intergrax.execution_authority_policies``."""
-    try:
-        eps = entry_points(group=_ENTRY_POINT_GROUP)
-    except TypeError:  # pragma: no cover — Python 3.11
-        eps = entry_points().select(group=_ENTRY_POINT_GROUP)
-
-    for ep in eps:
-        if ep.name != policy_id:
-            continue
-        loaded = ep.load()
-        if isinstance(loaded, type):
-            instance: ExecutionAuthorityPolicy = loaded()
-        else:
-            instance = loaded
-        if not isinstance(instance, ExecutionAuthorityPolicy):
-            raise TypeError(
-                f"execution authority entry point {ep.name!r} must return "
-                "ExecutionAuthorityPolicy"
-            )
-        return instance
-    return None
+    spec = get_entry_point_spec(_ENTRY_POINT_GROUP, policy_id)
+    if spec is None:
+        return None
+    loaded = load_entry_point_value(spec.value)
+    instance = instantiate_entry_point_target(loaded)
+    if not isinstance(instance, ExecutionAuthorityPolicy):
+        raise TypeError(
+            f"execution authority entry point {spec.name!r} must return "
+            "ExecutionAuthorityPolicy"
+        )
+    return instance
 
 
 def list_execution_authority_policy_ids() -> tuple[str, ...]:
     """Return registered entry-point policy ids (sorted)."""
-    try:
-        eps = entry_points(group=_ENTRY_POINT_GROUP)
-    except TypeError:  # pragma: no cover — Python 3.11
-        eps = entry_points().select(group=_ENTRY_POINT_GROUP)
-    return tuple(sorted(ep.name for ep in eps))
+    return tuple(spec.name for spec in iter_entry_point_specs(_ENTRY_POINT_GROUP))
 
 
 def resolve_execution_authority_policy(

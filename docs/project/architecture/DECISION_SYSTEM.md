@@ -267,6 +267,109 @@ child Executions
 
 Nexus appears because orchestration work is required — not because every Decision mandates it.
 
+### Decision capability optionality
+
+Decision System is **optional per flow**. When no authoritative decision is required, ordinary Execution completes without entering Decision Lifecycle.
+
+- **Absence** means Decision Lifecycle is **not entered** — not a `NoDecisionStrategy` / null-strategy workaround.
+- **No global on/off flag** — optionality is per flow, not a `DECISION_SYSTEM_ENABLED` switch.
+- **Orthogonal to ExecutionStrategy** — INFERENCE, AGENTIC, and ORCHESTRATION each work without Decision capability; neither axis implies the other.
+- **Optional host seam** — Execution runtime may reference optional Decision capability hooks (DS-EXEC-01); ordinary flows remain fully valid without selecting or entering Decision Lifecycle.
+
+Proof gate: DS-EXEC-00 (`tests/unit/runtime/execution/test_decision_optionality.py`).
+
+### Execution-hosted Decision Lifecycle (DS-EXEC-01)
+
+Canonical Execution owns **hosting scope** for an optional Decision Lifecycle capability. Decision-aware code explicitly invokes the scoped host; Execution does **not** automatically start Decision Lifecycle before delegate routing.
+
+```text
+ExecutionRuntime
+      ↓ optional scoped host binding
+DecisionLifecycleHost
+      ↓
+canonical DecisionLifecycle contracts (decision_lifecycle.py)
+```
+
+| Invariant | Meaning |
+| --------- | ------- |
+| **Host presence ≠ Decision selected** | Configuring a host does not imply a flow needs a decision |
+| **Host presence ≠ lifecycle entered** | No `DecisionIdentity` or `DecisionLifecycleState` is created until decision-aware code calls the host |
+| **Decision-aware flow explicitly invokes host** | `require_active_decision_lifecycle_host()` inside governed delegate work |
+
+| Layer | Owns |
+| ----- | ---- |
+| **ExecutionRuntime** | Lifecycle hosting scope (optional scoped host bind/reset around canonical boundary) |
+| **DecisionLifecycleHost** | Typed access to canonical lifecycle operations (`start`, `transition`) |
+| **`decision_lifecycle.py`** | State machine semantics and legal transitions |
+| **StrategyExecutionRouter** | Physical `ExecutionStrategy` routing (INFERENCE · AGENTIC · ORCHESTRATION) |
+| **ExecutionBoundary** | Context / admission / delegate coordination — no Decision semantics |
+
+Proof gate: DS-EXEC-01 (`tests/unit/runtime/execution/test_decision_lifecycle_host.py`).
+
+### Execution-hosted Decision checkpoint persistence (DS-EXEC-02)
+
+Canonical Execution owns **hosting scope** for an optional Decision checkpoint persistence capability. Decision-aware code explicitly saves and loads canonical `DecisionCheckpointState` snapshots; Execution does **not** automatically checkpoint, restore, or resume lifecycle work.
+
+```text
+ExecutionRuntime
+ ├── optional DecisionLifecycleHost
+ └── optional DecisionCheckpointPersistence
+      ↓ execution-scoped binding
+decision-aware lifecycle code
+      ↓
+save_decision_checkpoint / load_decision_checkpoint
+      ↓
+existing DecisionCheckpointState contracts
+```
+
+| Invariant | Meaning |
+| --------- | ------- |
+| **Persistence presence ≠ lifecycle entered** | Configuring persistence does not create lifecycle state |
+| **Persistence presence ≠ automatic checkpoint** | No save/load on `ExecutionRuntime.execute()` unless decision-aware code invokes helpers |
+| **Decision-aware flow explicitly invokes persistence** | `require_active_decision_checkpoint_persistence()` inside governed delegate work |
+
+| Layer | Owns |
+| ----- | ---- |
+| **ExecutionRuntime** | Persistence hosting scope (optional scoped bind/reset around canonical boundary) |
+| **DecisionCheckpointPersistence** | Execution-facing durability port (`load`, `save`) keyed by `DecisionFinalizationKey` |
+| **`decision_checkpoint.py`** | Checkpoint semantics and validation |
+| **DecisionLifecycleHost** | Lifecycle operations only (`start`, `transition`) — no persistence ownership |
+
+Execution hosts persistence access. Decision contracts own checkpoint semantics. No automatic save/load/resume.
+
+Proof gate: DS-EXEC-02 (`tests/unit/runtime/execution/test_decision_checkpoint_runtime_integration.py`).
+
+### Execution-hosted Decision work submission (DS-NEXUS-01)
+
+Decision Strategy implementations may require physical work (INFERENCE, AGENTIC, or ORCHESTRATION) without knowing internal execution engines. Decision-aware delegate code obtains an optional execution-scoped `ExecutionWorkPort` and submits canonical `ExecutionRequest` values — including `ExecutionCapability.ORCHESTRATION` when orchestration is required.
+
+```text
+ExecutionRuntime
+      ↓ optional execution-scoped work port binding
+Decision-aware delegate
+      ↓ require_active_execution_work_port()
+ExecutionWorkPort
+      ↓ ChildExecutionRunner (child ExecutionId under active parent)
+StrategyExecutionRouter
+      ├── INFERENCE
+      ├── AGENTIC
+      └── ORCHESTRATION
+            ↓ private implementation
+          Nexus
+```
+
+| Invariant | Meaning |
+| --------- | ------- |
+| **Nexus is private** | Decision contracts and decision-aware helpers must not import `intergrax.runtime.nexus` or reference Nexus types |
+| **Work port presence ≠ orchestration required** | Ordinary Execution flows remain valid without configuring a work port |
+| **Decision does not route strategies** | `StrategyExecutionRouter`, `OrchestrationExecutor`, and Nexus are Execution-owned composition concerns |
+| **Child lineage preserved** | Work port submits child Executions under the active parent via `ChildExecutionRunner` |
+| **Missing backend fails closed** | ORCHESTRATION requests without a configured backend raise canonical Execution errors — no Decision-specific fallback |
+
+Nexus appears only when Execution strategy routing selects ORCHESTRATION for submitted work — not because Decision System exists.
+
+Proof gate: DS-NEXUS-01 (`tests/unit/runtime/execution/test_decision_execution_work.py`).
+
 ---
 
 ## Decision Resolution

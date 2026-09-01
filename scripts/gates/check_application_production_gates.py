@@ -19,6 +19,7 @@ for path in (REPO_ROOT, APPLICATIONS_ROOT, REPO_ROOT / "agents"):
 _CI_DIR = REPO_ROOT / "scripts" / "ci"
 if str(_CI_DIR) not in sys.path:
     sys.path.insert(0, str(_CI_DIR))
+from intergrax.applications._shared.application_runtime_graph import list_application_projects  # noqa: E402
 from script_paths import resolve_script  # noqa: E402
 
 REQUIRED_FACTORY_MARKERS = (
@@ -57,7 +58,10 @@ def check_no_ad_hoc_nexus_in_factories(
     if not applications_root.is_dir():
         return [f"missing {applications_root}"]
 
-    for path in applications_root.glob("*_application/host/factory.py"):
+    for app_name in list_application_projects(root):
+        path = applications_root / app_name / "host" / "factory.py"
+        if not path.is_file():
+            continue
         rel = path.relative_to(root).as_posix()
         text = path.read_text(encoding="utf-8")
         if not any(marker in text for marker in REQUIRED_FACTORY_MARKERS):

@@ -28,7 +28,7 @@ from intergrax.runtime.long_running.scheduled_resume import (
     ScheduledResume,
     ScheduledResumeStatus,
 )
-from intergrax.runtime.task.task import TaskState
+from intergrax.runtime.task.task_state import TaskState
 
 __all__ = [
     "DEFAULT_TASK_CHECKPOINTS_DB",

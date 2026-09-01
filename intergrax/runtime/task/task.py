@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-from enum import Enum
 from typing import Any, Dict, Optional
 from uuid import uuid4
 
@@ -25,22 +24,7 @@ from intergrax.runtime.task.task_contract import (
     TaskResultSummary,
     TaskRuntimeState,
 )
-
-
-class TaskState(str, Enum):
-    CREATED = "created"
-    CLASSIFIED = "classified"
-    PLANNED = "planned"
-    WAITING_FOR_RESOURCES = "waiting_for_resources"
-    WAITING_FOR_HUMAN = "waiting_for_human"
-    RUNNING = "running"
-    VALIDATING = "validating"
-    COMPLETED = "completed"
-    PARTIALLY_COMPLETED = "partially_completed"
-    NEEDS_MORE_INFORMATION = "needs_more_information"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
-    EXPIRED = "expired"
+from intergrax.runtime.task.task_state import TaskState
 
 
 class TaskContext(BaseModel):

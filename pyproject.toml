@@ -86,6 +86,10 @@ quality = [
   "ruff",
   "pyright",
 ]
+# Offline dataset tooling for platform_proofs/scenarios/verified_product_identification.
+platform-proofs-vpi-dataset = [
+  "pyarrow>=18,<22",
+]
 
 [tool.uv]
 # Resolve for CI (linux) and local dev (win32). Do not restrict to a single OS.

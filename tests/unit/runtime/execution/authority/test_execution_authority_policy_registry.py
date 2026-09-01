@@ -4,10 +4,15 @@
 
 from __future__ import annotations
 
+import importlib.metadata
 from unittest.mock import MagicMock
 
 import pytest
 
+from intergrax.core.plugins.discovery import (
+    EP_EXECUTION_AUTHORITY_POLICIES,
+    reset_entry_point_spec_cache_for_tests,
+)
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.runtime.execution.authority.policy import (
     ChildAuthorityContext,
@@ -17,6 +22,7 @@ from intergrax.runtime.execution.authority.policy import (
 )
 from intergrax.runtime.execution.authority.registry import (
     ExecutionAuthorityPolicyConfigurationError,
+    list_execution_authority_policy_ids,
     load_execution_authority_policy,
     resolve_execution_authority_policy,
     resolve_execution_authority_policy_from_runtime_config,
@@ -27,12 +33,18 @@ pytestmark = pytest.mark.unit
 
 
 class _EntryPoint:
-    def __init__(self, name: str, value: object) -> None:
+    def __init__(self, name: str, value: str, group: str) -> None:
         self.name = name
-        self._value = value
+        self.value = value
+        self.group = group
 
-    def load(self) -> object:
-        return self._value
+
+class _EntryPoints:
+    def __init__(self, entries: list[_EntryPoint]) -> None:
+        self._entries = entries
+
+    def select(self, *, group: str) -> list[_EntryPoint]:
+        return [entry for entry in self._entries if entry.group == group]
 
 
 class _CustomAuthorityPolicy:
@@ -47,8 +59,26 @@ class _CustomAuthorityPolicy:
         )
 
 
+_CUSTOM_AUTHORITY_POLICY_INSTANCE = _CustomAuthorityPolicy()
+
+
 class _InvalidAuthorityPolicy:
     pass
+
+
+@pytest.fixture(autouse=True)
+def _reset_entry_point_spec_cache() -> None:
+    reset_entry_point_spec_cache_for_tests()
+    yield
+    reset_entry_point_spec_cache_for_tests()
+
+
+def _install_eps(monkeypatch: pytest.MonkeyPatch, entries: list[_EntryPoint]) -> None:
+    monkeypatch.setattr(importlib.metadata, "entry_points", lambda: _EntryPoints(entries))
+
+
+def _policy_ep(name: str, attr: str) -> _EntryPoint:
+    return _EntryPoint(name, f"{__name__}:{attr}", EP_EXECUTION_AUTHORITY_POLICIES)
 
 
 def test_resolve_prefers_explicit_instance() -> None:
@@ -66,10 +96,7 @@ def test_resolve_without_configuration_returns_default() -> None:
 
 
 def test_resolve_loads_valid_entry_point(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "intergrax.runtime.execution.authority.registry.entry_points",
-        lambda group=None: [_EntryPoint("custom", _CustomAuthorityPolicy)],
-    )
+    _install_eps(monkeypatch, [_policy_ep("custom", "_CustomAuthorityPolicy")])
     resolved = resolve_execution_authority_policy(entry_point_policy_id="custom")
     assert isinstance(resolved, _CustomAuthorityPolicy)
 
@@ -77,12 +104,19 @@ def test_resolve_loads_valid_entry_point(monkeypatch: pytest.MonkeyPatch) -> Non
 def test_load_execution_authority_policy_instantiates_class_entry_point(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(
-        "intergrax.runtime.execution.authority.registry.entry_points",
-        lambda group=None: [_EntryPoint("custom", _CustomAuthorityPolicy)],
-    )
+    _install_eps(monkeypatch, [_policy_ep("custom", "_CustomAuthorityPolicy")])
     loaded = load_execution_authority_policy("custom")
     assert isinstance(loaded, _CustomAuthorityPolicy)
+
+
+def test_load_instance_entry_point_returns_instance(monkeypatch: pytest.MonkeyPatch) -> None:
+    _install_eps(monkeypatch, [_policy_ep("custom", "_CUSTOM_AUTHORITY_POLICY_INSTANCE")])
+    loaded = load_execution_authority_policy("custom")
+    assert loaded is _CUSTOM_AUTHORITY_POLICY_INSTANCE
+
+
+def test_load_missing_entry_point_returns_none() -> None:
+    assert load_execution_authority_policy("missing-policy") is None
 
 
 def test_resolve_missing_entry_point_fails_closed() -> None:
@@ -93,12 +127,20 @@ def test_resolve_missing_entry_point_fails_closed() -> None:
 def test_load_invalid_entry_point_object_fails_closed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(
-        "intergrax.runtime.execution.authority.registry.entry_points",
-        lambda group=None: [_EntryPoint("bad", _InvalidAuthorityPolicy)],
-    )
+    _install_eps(monkeypatch, [_policy_ep("bad", "_InvalidAuthorityPolicy")])
     with pytest.raises(TypeError, match="ExecutionAuthorityPolicy"):
         load_execution_authority_policy("bad")
+
+
+def test_list_execution_authority_policy_ids_sorted(monkeypatch: pytest.MonkeyPatch) -> None:
+    _install_eps(
+        monkeypatch,
+        [
+            _policy_ep("beta", "_CustomAuthorityPolicy"),
+            _policy_ep("alpha", "_CustomAuthorityPolicy"),
+        ],
+    )
+    assert list_execution_authority_policy_ids() == ("alpha", "beta")
 
 
 def test_resolve_from_runtime_config_prefers_instance_override() -> None:
@@ -111,6 +153,7 @@ def test_resolve_from_runtime_config_prefers_instance_override() -> None:
 
 
 def test_entry_point_group_name() -> None:
+    from intergrax.core.plugins.discovery import EP_EXECUTION_AUTHORITY_POLICIES
     from intergrax.runtime.execution.authority import registry
 
-    assert registry._ENTRY_POINT_GROUP == "intergrax.execution_authority_policies"
+    assert registry._ENTRY_POINT_GROUP == EP_EXECUTION_AUTHORITY_POLICIES

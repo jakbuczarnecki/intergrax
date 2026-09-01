@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from echo.echo_agent import EchoAgent
+from intergrax.applications._shared.application_runtime_graph import list_application_projects
 from intergrax.applications._shared.diagnostic_assembly_resolver import (
     DiagnosticAssemblyError,
     DiagnosticReadiness,
@@ -23,6 +24,7 @@ from intergrax.applications.contracts.manifest import AgentBinding, ApplicationM
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from scripts.gates.check_application_production_gates import check_no_ad_hoc_nexus_in_factories
+from scripts.maintenance.check_harness_registry_resolution import check_host_wiring_adoption
 from scripts.proof.create_scenario_proof import (
     ScenarioDesignRequest,
     create_scenario_design_package,
@@ -120,6 +122,49 @@ def test_all_application_factories_use_harness_host_runtime_spine() -> None:
     assert violations == []
 
 
+def test_all_application_host_wiring_uses_environment_wiring_spine() -> None:
+    violations = check_host_wiring_adoption()
+    assert violations == []
+
+
+def test_adoption_guard_covers_non_suffix_application_names(tmp_path: Path) -> None:
+    """Regression: discovery must not require *_application directory suffix."""
+    app_dir = tmp_path / "applications" / "x7"
+    host_dir = app_dir / "host"
+    host_dir.mkdir(parents=True)
+    (app_dir / "manifest.py").write_text("# contract\n", encoding="utf-8")
+    (host_dir / "factory.py").write_text(
+        "def build_factory():\n    build_harness_host_runtime()\n",
+        encoding="utf-8",
+    )
+    (host_dir / "wiring.py").write_text(
+        "def wire_host():\n    wire_application_environment()\n",
+        encoding="utf-8",
+    )
+    assert list_application_projects(tmp_path) == ["x7"]
+    assert check_no_ad_hoc_nexus_in_factories(repo_root=tmp_path) == []
+    assert check_host_wiring_adoption(repo_root=tmp_path) == []
+
+
+def test_destructive_host_wiring_missing_spine_detected_for_manifest_app(
+    tmp_path: Path,
+) -> None:
+    """Regression: wiring guard must apply to every manifest-discovered application."""
+    app_dir = tmp_path / "applications" / "x7"
+    host_dir = app_dir / "host"
+    host_dir.mkdir(parents=True)
+    (app_dir / "manifest.py").write_text("# contract\n", encoding="utf-8")
+    (host_dir / "wiring.py").write_text(
+        "def wire_host():\n    pass\n",
+        encoding="utf-8",
+    )
+    violations = check_host_wiring_adoption(repo_root=tmp_path)
+    assert len(violations) == 1
+    assert violations[0].startswith("applications/x7/host/wiring.py:")
+    assert "wire_application_environment" in violations[0]
+    assert "build_harness_host_runtime" in violations[0]
+
+
 def test_all_initialized_scenarios_pass_architecture_conformance() -> None:
     slugs = discover_initialized_scenario_slugs(REPO_ROOT)
     assert "ai_incident_investigation" in slugs
@@ -200,17 +245,29 @@ def test_destructive_case_c_manual_nexus_bypass_detected_by_production_gate(
     tmp_path: Path,
 ) -> None:
     applications_root = tmp_path / "applications"
-    factory_dir = applications_root / "bypass_demo_application" / "host"
+    app_dir = applications_root / "bypass_demo"
+    factory_dir = app_dir / "host"
     factory_dir.mkdir(parents=True)
+    (app_dir / "manifest.py").write_text("# contract\n", encoding="utf-8")
     (factory_dir / "factory.py").write_text(
         "from intergrax.runtime.nexus.nexus_loop import NexusLoop\n\n"
         "def create_app():\n"
         "    return NexusLoop()\n",
         encoding="utf-8",
     )
+    (applications_root / "bypass_demo" / "pyproject.toml").write_text(
+        (
+            "[project]\n"
+            "name = \"intergrax-bypass-demo\"\n"
+            "version = \"0.1.0\"\n"
+            "requires-python = \">=3.12,<3.13\"\n"
+            "dependencies = []\n"
+        ),
+        encoding="utf-8",
+    )
     violations = check_no_ad_hoc_nexus_in_factories(repo_root=tmp_path)
     assert len(violations) == 2
-    assert any("bypass_demo_application" in item for item in violations)
+    assert any("bypass_demo" in item for item in violations)
     assert any("build_harness_host_runtime" in item for item in violations)
     assert any("NexusLoop" in item for item in violations)
 
