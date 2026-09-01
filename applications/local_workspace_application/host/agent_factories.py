@@ -7,6 +7,7 @@ from intergrax.applications.contracts.manifest import AgentBinding
 from local_indexer.local_indexer_agent import LocalIndexerAgent
 from local_search.local_search_agent import LocalSearchAgent
 from local_synthesizer.local_synthesizer_agent import LocalSynthesizerAgent
+from tool_selection_qualifier.tool_selection_qualifier_agent import ToolSelectionQualifierAgent
 from local_workspace_application.host.agent_builders import LOCAL_WORKSPACE_AGENT_BUILDERS
 
 
@@ -41,3 +42,14 @@ def build_local_workspace_local_synthesizer_from_context(
     if factory is None:
         raise ValueError(f"No builder registered for {binding.import_path!r}")
     return factory(ctx, binding)
+
+
+def build_local_workspace_tool_selection_qualifier_from_context(
+    ctx: ApplicationBuildContext,
+    binding: AgentBinding,
+) -> ToolSelectionQualifierAgent:
+    from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+
+    adapter = resolve_llm_adapter(ctx.environment_profile)
+    _ = binding
+    return ToolSelectionQualifierAgent(llm_adapter=adapter)

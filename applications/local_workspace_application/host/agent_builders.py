@@ -9,6 +9,7 @@ from intergrax.applications.contracts.manifest import AgentBinding
 from local_indexer.local_indexer_agent import LocalIndexerAgent
 from local_search.local_search_agent import LocalSearchAgent
 from local_synthesizer.local_synthesizer_agent import LocalSynthesizerAgent
+from tool_selection_qualifier.tool_selection_qualifier_agent import ToolSelectionQualifierAgent
 
 
 def _zero_arg_factory(agent_cls: type[Agent]) -> AgentFactory:
@@ -22,4 +23,5 @@ LOCAL_WORKSPACE_AGENT_BUILDERS: dict[type[Agent], AgentFactory] = {
     LocalIndexerAgent: _zero_arg_factory(LocalIndexerAgent),
     LocalSearchAgent: _zero_arg_factory(LocalSearchAgent),
     LocalSynthesizerAgent: _zero_arg_factory(LocalSynthesizerAgent),
+    ToolSelectionQualifierAgent: _zero_arg_factory(ToolSelectionQualifierAgent),
 }

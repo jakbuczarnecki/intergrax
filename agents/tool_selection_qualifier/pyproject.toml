@@ -1,0 +1,28 @@
+# © Artur Czarnecki. All rights reserved.
+# Tier-2 agent dependency project (workspace member).
+# Import path preserved: tool_selection_qualifier
+
+[project]
+name = "intergrax-tool-selection-qualifier-agent"
+version = "0.1.0"
+description = "Reusable Tier-2 agent package: tool_selection_qualifier"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "Intergrax-ai",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = [
+  "tool_selection_qualifier",
+  "tool_selection_qualifier.steps",
+]
+
+[tool.setuptools.package-dir]
+"tool_selection_qualifier" = "."
+
+[tool.uv.sources]
+Intergrax-ai = { workspace = true }

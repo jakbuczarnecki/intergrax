@@ -32,6 +32,7 @@ _LKW_CORE_CAPABILITIES = frozenset(
         "local.workspace.search",
         "local.workspace.index",
         "local.workspace.synthesize",
+        "local.workspace.tool_selection_qualification",
     }
 )
 
