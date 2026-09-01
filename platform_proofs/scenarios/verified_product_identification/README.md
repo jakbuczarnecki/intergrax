@@ -34,25 +34,40 @@ The WOW moment is simple and uncomfortable: **top search result ≠ verified pro
 
 ## Visual proof story
 
-<a href="assets/proof-story-light.svg">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/proof-story-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="assets/proof-story-light.svg">
-  <img alt="Product identification flows from incomplete user request through noisy catalog retrieval to evidence verification and VERIFIED or bounded refusal outcomes" src="assets/proof-story-light.svg">
-</picture>
+<a href="assets/scenario-overview.png">
+  <img
+    src="assets/scenario-overview.png"
+    alt="Verified Product Identification at Catalog Scale — multi-channel product retrieval, reranking, evidence verification and bounded outcomes"
+  >
 </a>
 
-[View full-size diagram](assets/proof-story-light.svg)
+[View full-size scenario overview](assets/scenario-overview.png)
 
-<a href="assets/search-verification-architecture-light.svg">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/search-verification-architecture-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="assets/search-verification-architecture-light.svg">
-  <img alt="Multi-channel retrieval through fusion and reranking to identity verification with message that top-ranked result is not verified identity" src="assets/search-verification-architecture-light.svg">
-</picture>
-</a>
+## How the solution works
 
-[View full-size architecture diagram](assets/search-verification-architecture-light.svg)
+```mermaid
+flowchart TD
+    UR[User request] --> QU[Query understanding]
+    QU --> CG[Candidate generation]
+    CG --> EI[Exact identifier retrieval]
+    CG --> LX[Lexical / BM25 retrieval]
+    CG --> SA[Structured attribute retrieval]
+    CG --> DV[Dense vector retrieval]
+    EI --> HF[Hybrid fusion]
+    LX --> HF
+    SA --> HF
+    DV --> HF
+    HF --> RR[Reranker]
+    RR --> TK[Top-K candidates]
+    TK --> EE[Evidence extraction]
+    EE --> IV[Identity verification]
+    IV --> V[VERIFIED]
+    IV --> A[AMBIGUOUS]
+    IV --> II[INSUFFICIENT_INFORMATION]
+    IV --> NM[NO_MATCH]
+    II --> CL[Ask user for missing distinguishing facts]
+    CL --> QU
+```
 
 ## The problem
 
