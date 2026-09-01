@@ -20,11 +20,11 @@ from intergrax.tools.providers.rag.source_scope_transport import (
     reset_rag_retrieval_source_scope,
 )
 from local_search.diagnostics import SearchSummaryReason
-from intergrax.runtime.diagnostics.c1_retrieval_evidence import (
-    parse_retrieval_evidence_items,
-    top_ranked_artifact_ref,
-)
 from local_search.rag_functional_evidence import emit_search_functional_evidence
+from local_search.retrieval_selection import (
+    candidates_from_formatted_evidence,
+    select_top_ranked_candidate,
+)
 
 SEARCH_STEP_ID = "local_search_step"
 
@@ -190,6 +190,7 @@ def _output(
     evidence: list[dict[str, object]] | None = None,
     num_results: int = 0,
     raw_tool_reason: str | None = None,
+    selected_artifact_ref: str | None = None,
 ) -> dict[str, object]:
     num_results = num_results if used else 0
     evidence = evidence or []
@@ -210,6 +211,8 @@ def _output(
     }
     if raw_tool_reason:
         search_summary["raw_tool_reason"] = raw_tool_reason
+    if selected_artifact_ref is not None:
+        search_summary["selected_artifact_ref"] = selected_artifact_ref
     return {
         "summary": answer,
         "answer": answer,
@@ -322,13 +325,13 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
     chunks = list(entry.get("chunks") or [])
     citations = list(entry.get("citations") or [])
     evidence = _format_evidence(chunks, citations, workspace_id=workspace_id)
-    evidence_items = parse_retrieval_evidence_items(evidence)
-    actual_selected_artifact_ref = top_ranked_artifact_ref(evidence_items)
+    candidates = candidates_from_formatted_evidence(evidence)
+    selection = select_top_ranked_candidate(candidates)
     emit_search_functional_evidence(
         exec_ctx,
         metadata=metadata,
-        evidence_items=evidence_items,
-        actual_selected_artifact_ref=actual_selected_artifact_ref,
+        candidates=candidates,
+        selected_artifact_ref=selection.selected_artifact_ref,
         retrieve_succeeded=True,
     )
     return _output(
@@ -340,4 +343,5 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
         workspace_id=workspace_id,
         evidence=evidence,
         num_results=len(evidence),
+        selected_artifact_ref=selection.selected_artifact_ref,
     )

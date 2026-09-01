@@ -54,6 +54,25 @@ Set:
 | External oracle | REAL / deterministic (`c1.rag.date_oracle.v1`) |
 | Mocks | NONE on core path |
 
+## Decision / Observation / Diagnosis separation
+
+```text
+Qdrant
+   ↓
+Search selection (local_search/retrieval_selection.py)
+   ↓
+actual selection (selected_artifact_ref in search_summary)
+   ├────────────→ normal pipeline / synthesizer handoff
+   ↓
+OBS evidence (rag_functional_evidence adapters)
+   ↓
+DIAG (FunctionalDiagnosticAnalyzer)
+   ↓
+Operator
+```
+
+**Architectural invariant:** Search owns selection semantics. Observability records the selected artifact. Diagnostics never participates in selection.
+
 ## Evidence independence proof
 
 Qualification expectation and DIAG specification do **not** control emitted functional evidence.

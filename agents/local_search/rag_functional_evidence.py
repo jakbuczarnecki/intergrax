@@ -5,9 +5,9 @@
 from __future__ import annotations
 
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from intergrax.runtime.diagnostics.c1_retrieval_evidence import (
-    RetrievalEvidenceItem,
-    artifact_ref_from_retrieval_item,
+from local_search.retrieval_selection import (
+    SearchRetrievalCandidate,
+    artifact_ref_from_candidate,
 )
 from intergrax.runtime.diagnostics.functional_evidence import PipelineOperationStatus
 from intergrax.runtime.diagnostics.specifications.c1_rag_functional_diagnostic_specification import (
@@ -24,16 +24,11 @@ def emit_search_functional_evidence(
     exec_ctx: RuntimeExecutionContext | None,
     *,
     metadata: dict[str, object],
-    evidence_items: tuple[RetrievalEvidenceItem, ...],
-    actual_selected_artifact_ref: str,
+    candidates: tuple[SearchRetrievalCandidate, ...],
+    selected_artifact_ref: str,
     retrieve_succeeded: bool,
 ) -> None:
-    """
-    Record retrieval operation, candidates, and selection facts for central DIAG.
-
-    ``actual_selected_artifact_ref`` must come from the pipeline decision point;
-    instrumentation only observes and persists that fact.
-    """
+    """Record retrieval operation, candidates, and selection facts — observation only."""
     recorder = recorder_from_exec_ctx(exec_ctx)
     if recorder is None:
         return
@@ -51,16 +46,16 @@ def emit_search_functional_evidence(
         suppressed_kinds=suppressed,
     )
 
-    for index, item in enumerate(evidence_items, start=1):
-        ref = artifact_ref_from_retrieval_item(item)
+    for index, candidate in enumerate(candidates, start=1):
+        ref = artifact_ref_from_candidate(candidate)
         recorder.record_candidate_rank(
             scope=scope,
             operation_id=C1_RAG_RETRIEVE_OPERATION_ID,
             query_id=C1_RAG_QUERY_ID,
             candidate_artifact_ref=ref,
             rank=index,
-            selected=ref == actual_selected_artifact_ref,
-            score=item.score,
+            selected=ref == selected_artifact_ref,
+            score=candidate.score,
             suppressed_kinds=suppressed,
         )
 
@@ -68,8 +63,8 @@ def emit_search_functional_evidence(
         scope=scope,
         operation_id=C1_RAG_RETRIEVE_OPERATION_ID,
         query_id=C1_RAG_QUERY_ID,
-        selected_artifact_ref=actual_selected_artifact_ref,
-        candidate_count=len(evidence_items),
+        selected_artifact_ref=selected_artifact_ref,
+        candidate_count=len(candidates),
         selection_reason="top_ranked",
         suppressed_kinds=suppressed,
     )

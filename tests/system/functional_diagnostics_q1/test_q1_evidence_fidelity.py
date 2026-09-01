@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""DIAG-FUNCTIONAL-Q1-R1 evidence fidelity and architecture gates."""
+"""DIAG-FUNCTIONAL-Q1-R2 evidence fidelity and decision-independence gates."""
 
 from __future__ import annotations
 
@@ -9,12 +9,6 @@ from pathlib import Path
 
 import pytest
 
-from intergrax.runtime.diagnostics.c1_retrieval_evidence import (
-    RetrievalEvidenceItem,
-    artifact_ref_from_retrieval_item,
-    parse_retrieval_evidence_items,
-    top_ranked_artifact_ref,
-)
 from intergrax.runtime.diagnostics.functional_evidence import PipelineEvidenceKind
 from intergrax.runtime.diagnostics.functional_evidence_persistence import FunctionalEvidenceQueryRequest
 from intergrax.runtime.diagnostics.in_memory_functional_evidence_persistence import (
@@ -28,6 +22,12 @@ from intergrax.contracts.execution_identity import mint_attempt_id, mint_executi
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from local_search.rag_functional_evidence import emit_search_functional_evidence
+from local_search.retrieval_selection import (
+    SearchRetrievalCandidate,
+    artifact_ref_from_candidate,
+    candidates_from_formatted_evidence,
+    select_top_ranked_candidate,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -38,25 +38,53 @@ _PRODUCTION_INSTRUMENTATION = (
     _REPO_ROOT / "agents" / "local_synthesizer" / "rag_functional_evidence.py",
     _REPO_ROOT / "agents" / "local_synthesizer" / "steps" / "synthesize_job.py",
 )
+_SEARCH_SELECTION_MODULE = _REPO_ROOT / "agents" / "local_search" / "retrieval_selection.py"
+_DIAGNOSTICS_DIR = _REPO_ROOT / "intergrax" / "runtime" / "diagnostics"
+_FORBIDDEN_DIAG_IMPORT_PREFIXES = (
+    "intergrax.runtime.diagnostics",
+    "functional_diagnostic",
+    "functional_diagnostics_q1",
+    "qualification.oracle",
+)
+_FORBIDDEN_SELECTION_EXPORTS = frozenset(
+    {
+        "top_ranked_artifact_ref",
+        "select_top_ranked_candidate",
+        "parse_retrieval_evidence_items",
+        "candidates_from_formatted_evidence",
+    }
+)
+
+
+def _collect_import_modules(path: Path) -> list[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    modules: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            modules.extend(alias.name for alias in node.names)
+        if isinstance(node, ast.ImportFrom) and node.module:
+            modules.append(node.module)
+    return modules
 
 
 def test_artifact_ref_uses_chunk_id_not_path_heuristic() -> None:
-    item = RetrievalEvidenceItem(
+    candidate = SearchRetrievalCandidate(
         chunk_id="qdrant-chunk-42",
         source_path="/cert-fixtures/workspace/operations-decoy.md",
         score=0.9,
     )
-    assert artifact_ref_from_retrieval_item(item) == "chunk:qdrant-chunk-42"
+    assert artifact_ref_from_candidate(candidate) == "chunk:qdrant-chunk-42"
 
 
 def test_top_ranked_selection_is_first_candidate() -> None:
-    items = parse_retrieval_evidence_items(
+    candidates = candidates_from_formatted_evidence(
         [
             {"chunk_id": "decoy-1", "source_path": "/x/operations-decoy.md", "score": 0.99},
             {"chunk_id": "incident-1", "source_path": "/x/incident-report.md", "score": 0.5},
         ],
     )
-    assert top_ranked_artifact_ref(items) == "chunk:decoy-1"
+    selection = select_top_ranked_candidate(candidates)
+    assert selection.selected_artifact_ref == "chunk:decoy-1"
 
 
 def test_emit_search_records_actual_selection_not_heuristic() -> None:
@@ -82,7 +110,7 @@ def test_emit_search_records_actual_selection_not_heuristic() -> None:
         ),
     )
     attach_functional_evidence_recorder(exec_ctx, recorder)
-    items = parse_retrieval_evidence_items(
+    candidates = candidates_from_formatted_evidence(
         [
             {"chunk_id": "decoy-1", "source_path": "/x/operations-decoy.md"},
             {"chunk_id": "incident-1", "source_path": "/x/incident-report.md"},
@@ -91,8 +119,8 @@ def test_emit_search_records_actual_selection_not_heuristic() -> None:
     emit_search_functional_evidence(
         exec_ctx,
         metadata={},
-        evidence_items=items,
-        actual_selected_artifact_ref="chunk:decoy-1",
+        candidates=candidates,
+        selected_artifact_ref="chunk:decoy-1",
         retrieve_succeeded=True,
     )
     page = persistence.query_evidence(
@@ -121,11 +149,48 @@ def test_production_instrumentation_has_no_qualification_force_hooks(path: Path)
 
 def test_production_instrumentation_does_not_import_qualification_oracle() -> None:
     for path in _PRODUCTION_INSTRUMENTATION:
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    assert "functional_diagnostics_q1" not in alias.name
-            if isinstance(node, ast.ImportFrom) and node.module:
-                assert "functional_diagnostics_q1" not in node.module
-                assert "qualification.oracle" not in node.module
+        for module in _collect_import_modules(path):
+            assert "functional_diagnostics_q1" not in module
+            assert "qualification.oracle" not in module
+
+
+def test_search_selection_module_has_no_diagnostics_dependency() -> None:
+    for module in _collect_import_modules(_SEARCH_SELECTION_MODULE):
+        for prefix in _FORBIDDEN_DIAG_IMPORT_PREFIXES:
+            assert not module.startswith(prefix), f"{_SEARCH_SELECTION_MODULE.name} imports {module}"
+
+
+def test_search_job_does_not_import_diagnostics_selection_helpers() -> None:
+    search_job = _REPO_ROOT / "agents" / "local_search" / "steps" / "search_job.py"
+    for module in _collect_import_modules(search_job):
+        assert module != "intergrax.runtime.diagnostics.c1_retrieval_evidence"
+        assert "top_ranked_artifact_ref" not in search_job.read_text(encoding="utf-8")
+
+
+def test_synthesizer_does_not_reconstruct_selection_via_diagnostics() -> None:
+    synthesize_job = _REPO_ROOT / "agents" / "local_synthesizer" / "steps" / "synthesize_job.py"
+    source = synthesize_job.read_text(encoding="utf-8")
+    for module in _collect_import_modules(synthesize_job):
+        assert module != "intergrax.runtime.diagnostics.c1_retrieval_evidence"
+    assert "top_ranked_artifact_ref" not in source
+    assert "parse_retrieval_evidence_items" not in source
+
+
+def test_diagnostics_does_not_export_search_selection_policy() -> None:
+    violations: list[str] = []
+    for path in sorted(_DIAGNOSTICS_DIR.rglob("*.py")):
+        source = path.read_text(encoding="utf-8")
+        for symbol in _FORBIDDEN_SELECTION_EXPORTS:
+            if f"def {symbol}" in source:
+                violations.append(f"{path.relative_to(_REPO_ROOT)} defines {symbol}")
+    assert violations == [], "; ".join(violations)
+
+
+def test_decision_diagnostics_independence() -> None:
+    """Search selection can run without importing or calling DIAG modules."""
+    for module in _collect_import_modules(_SEARCH_SELECTION_MODULE):
+        for prefix in _FORBIDDEN_DIAG_IMPORT_PREFIXES:
+            assert not module.startswith(prefix), f"search selection imports {module}"
+    candidates = candidates_from_formatted_evidence([{"chunk_id": "incident-1"}])
+    selection = select_top_ranked_candidate(candidates)
+    assert selection.selected_artifact_ref == "chunk:incident-1"

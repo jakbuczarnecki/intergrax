@@ -21,10 +21,6 @@ from intergrax.core.qualification.functional_diagnostic_expectation import (
     QualificationExecutionOutcome,
     QualificationFunctionalOutcome,
 )
-from intergrax.runtime.diagnostics.c1_retrieval_evidence import (
-    parse_retrieval_evidence_items,
-    top_ranked_artifact_ref,
-)
 from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessment
 from intergrax.runtime.diagnostics.diagnostic_assessment_composer import DiagnosticAssessmentComposer
 from intergrax.runtime.diagnostics.functional_diagnostic_analyzer import FunctionalDiagnosticAnalyzer
@@ -373,6 +369,7 @@ def _run_synthesis_case(
         run_id=search_response.run_id,
     )
     candidate_refs = _candidate_refs_from_items(search_remote)
+    selected_ref = _selection_ref_from_items(search_remote)
     handoff_evidence = _build_synthesis_handoff_evidence(
         candidate_refs=candidate_refs,
         fixture_texts=fixture_texts,
@@ -382,10 +379,12 @@ def _run_synthesis_case(
         "shadow_workspace": True,
         "output_name": metadata.get("output_name", "q1-synthesis-draft.md"),
         "evidence": handoff_evidence,
+        "selected_artifact_ref": selected_ref,
         "search_summary": {
             "query": metadata.get("query", search_request_message()),
             "num_results": len(handoff_evidence),
             "evidence": handoff_evidence,
+            "selected_artifact_ref": selected_ref,
         },
     }
     synth_response = client.run_synthesize(
@@ -572,6 +571,29 @@ def _run_case(
     )
 
 
+def _decision_diagnostics_independence_gate() -> bool:
+    """Static gate: search selection policy has zero DIAG imports."""
+    import ast
+
+    selection_path = Path(__file__).resolve().parents[3] / "agents" / "local_search" / "retrieval_selection.py"
+    tree = ast.parse(selection_path.read_text(encoding="utf-8"))
+    forbidden = (
+        "intergrax.runtime.diagnostics",
+        "functional_diagnostic",
+        "functional_diagnostics_q1",
+        "qualification.oracle",
+    )
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if any(alias.name.startswith(prefix) for prefix in forbidden):
+                    return False
+        if isinstance(node, ast.ImportFrom) and node.module:
+            if any(node.module.startswith(prefix) for prefix in forbidden):
+                return False
+    return True
+
+
 def run_evidence_independence_probe(
     client: LkwClient,
     config: ProofConfig,
@@ -729,6 +751,7 @@ def run_qualification() -> QualificationReport:
         config,
         expected_selection_artifact_ref=expected_selection,
     )
+    decision_independence_pass = _decision_diagnostics_independence_gate()
 
     matched = sum(1 for item in records if item.comparison.result is QualificationComparisonResult.MATCH)
     mismatched = len(records) - matched
@@ -757,7 +780,12 @@ def run_qualification() -> QualificationReport:
     all_matched = mismatched == 0
     verdict = (
         "PASS"
-        if all_matched and repeatability_pass and synthesis_repeatability_pass and fidelity_pass and independence_pass
+        if all_matched
+        and repeatability_pass
+        and synthesis_repeatability_pass
+        and fidelity_pass
+        and independence_pass
+        and decision_independence_pass
         else "FAILED"
     )
     report = QualificationReport(
@@ -772,7 +800,12 @@ def run_qualification() -> QualificationReport:
         expected_selection_artifact_ref=expected_selection,
         records=tuple(records),
     )
-    _write_artifact(report, independence_pass=independence_pass, fidelity_pass=fidelity_pass)
+    _write_artifact(
+        report,
+        independence_pass=independence_pass,
+        fidelity_pass=fidelity_pass,
+        decision_diagnostics_independence_pass=decision_independence_pass,
+    )
     return report
 
 
@@ -790,7 +823,7 @@ def _blocked_report(reason: str) -> QualificationReport:
         records=(),
         blocked_reason=reason,
     )
-    _write_artifact(report, independence_pass=False, fidelity_pass=False)
+    _write_artifact(report, independence_pass=False, fidelity_pass=False, decision_diagnostics_independence_pass=False)
     return report
 
 
@@ -799,6 +832,7 @@ def _write_artifact(
     *,
     independence_pass: bool,
     fidelity_pass: bool,
+    decision_diagnostics_independence_pass: bool,
 ) -> None:
     _ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     payload: dict[str, Any] = {
@@ -813,6 +847,9 @@ def _write_artifact(
         "expected_selection_artifact_ref": report.expected_selection_artifact_ref,
         "evidence_independence_pass": independence_pass,
         "evidence_fidelity_pass": fidelity_pass,
+        "decision_diagnostics_independence": (
+            "PASS" if decision_diagnostics_independence_pass else "FAIL"
+        ),
         "blocked_reason": report.blocked_reason,
         "records": [
             {

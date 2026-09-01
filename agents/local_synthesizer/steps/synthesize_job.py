@@ -10,10 +10,6 @@ from intergrax.agents.authoring.runtime_tool_helpers import (
     invoke_catalog_tool,
     request_metadata,
 )
-from intergrax.runtime.diagnostics.c1_retrieval_evidence import (
-    parse_retrieval_evidence_items,
-    top_ranked_artifact_ref,
-)
 from local_synthesizer.rag_functional_evidence import emit_synthesize_functional_evidence
 from intergrax.contracts.runtime_execution_context import WORKSPACE_WRITE_FILE_TOOL_ID
 
@@ -128,6 +124,18 @@ def _resolve_content(
     if message:
         return f"# Synthesis draft\n\n{message}\n"
     return ""
+
+
+def _resolve_upstream_selected_artifact_ref(metadata: dict[str, Any]) -> str | None:
+    direct = metadata.get("selected_artifact_ref")
+    if isinstance(direct, str) and direct.strip():
+        return direct.strip()
+    search_summary = metadata.get("search_summary")
+    if isinstance(search_summary, dict):
+        nested = search_summary.get("selected_artifact_ref")
+        if isinstance(nested, str) and nested.strip():
+            return nested.strip()
+    return None
 
 
 def _content_type_for_path(path: str) -> str:
@@ -265,8 +273,7 @@ async def run_synthesize_job(step_ctx: AgentStepContext) -> dict[str, object]:
 
     artifact_path = entry.get("relative_path") or output_name
     artifact_ref = _artifact_ref_from_tool_entry(entry) or f"output:{output_name}"
-    evidence_items = parse_retrieval_evidence_items(evidence)
-    selected_artifact_ref = top_ranked_artifact_ref(evidence_items)
+    selected_artifact_ref = _resolve_upstream_selected_artifact_ref(metadata) or "chunk:unknown"
     emit_synthesize_functional_evidence(
         exec_ctx,
         metadata=metadata,
