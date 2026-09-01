@@ -65,6 +65,19 @@ from intergrax.runtime.diagnostics.diagnostic_assessment import (
     DiagnosticLimitation,
     DiagnosticLimitationKind,
 )
+from intergrax.runtime.diagnostics.diagnostic_assessment_composer import (
+    DiagnosticAssessmentComposer,
+    OperatorDiagnosticAssessment,
+)
+from intergrax.runtime.diagnostics.functional_operator_projection import (
+    FunctionalCheckPassResult,
+    FunctionalDiagnosticOperatorFinding,
+    FunctionalDiagnosticOperatorLimitation,
+    FunctionalDiagnosticOperatorProjection,
+    FunctionalDiagnosticSummary,
+    FunctionalOperatorOutcomeStatus,
+    FunctionalOperatorProjector,
+)
 from intergrax.runtime.diagnostics.lifecycle_analysis import (
     LifecycleAnalysis,
     LifecycleAnomaly,
@@ -219,6 +232,7 @@ __all__ = [
     "problem_grouping_subject_ref_for_execution",
     "DiagnosticAssessment",
     "DiagnosticAssessmentBuilder",
+    "DiagnosticAssessmentComposer",
     "DiagnosticAssessmentIntegrityError",
     "DiagnosticCertainty",
     "DiagnosticGroupingProvenance",
@@ -235,7 +249,15 @@ __all__ = [
     "DiagnosticLimitation",
     "DiagnosticLimitationKind",
     "ExecutionReconstruction",
+    "FunctionalCheckPassResult",
+    "FunctionalDiagnosticOperatorFinding",
+    "FunctionalDiagnosticOperatorLimitation",
+    "FunctionalDiagnosticOperatorProjection",
+    "FunctionalDiagnosticSummary",
+    "FunctionalOperatorOutcomeStatus",
+    "FunctionalOperatorProjector",
     "grouping_provenance_from_problem_provenance",
+    "OperatorDiagnosticAssessment",
     "MAX_OCCURRENCE_LIMIT",
     "MAX_PROBLEM_LIST_LIMIT",
     "ExecutionReconstructionIntegrityError",

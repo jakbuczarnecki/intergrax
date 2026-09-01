@@ -653,7 +653,24 @@ FunctionalDiagnosticAnalyzer (one generic analyzer)
         └─ bounded supporting refs + limitations
         │
         ▼
-future DiagnosticAssessment composition (NOT in F2)
+FunctionalDiagnosticAnalysis
+        │
+        ▼
+operator diagnostic view (DIAG-FUNCTIONAL-4)
+```
+
+```text
+execution reconstruction
+        │
+        ▼
+lifecycle analysis ────────────────┐
+                                   │
+functional evidence                │
+        │                          │
+        ▼                          │
+functional analysis ───────────────┤
+                                   ▼
+                         operator diagnostic view
 ```
 
 **Invariant:** Facts first. Diagnosis second. No evidence = no conclusion.
@@ -695,26 +712,58 @@ future DiagnosticAssessment composition (NOT in F2)
 
 **OBS boundary:** Observability records evidence. Observability does **not** execute check evaluation. Diagnostics executes evaluation.
 
-**Code references:** `functional_diagnostic_specification.py` · `functional_diagnostic_analyzer.py` · `functional_diagnostic_analysis.py` · `functional_diagnostic_identity.py` · `functional_validation_lookup.py` · `intergrax/contracts/functional_diagnostic_bounds.py`.
+**Code references:** `functional_diagnostic_specification.py` · `functional_diagnostic_analyzer.py` · `functional_diagnostic_analysis.py` · `functional_diagnostic_identity.py` · `functional_validation_lookup.py` · `functional_operator_projection.py` · `diagnostic_assessment_composer.py` · `intergrax/contracts/functional_diagnostic_bounds.py`.
+
+### Operator functional projection (DIAG-FUNCTIONAL-4)
+
+F4 does **not** perform new diagnosis. It composes ready lifecycle and functional analyses into one operator view.
+
+| Contract | Role |
+| -------- | ---- |
+| `FunctionalOperatorProjector` | Maps `FunctionalDiagnosticAnalysis` → bounded operator projection |
+| `DiagnosticAssessmentComposer` | Composes lifecycle `DiagnosticAssessment` + optional functional projection |
+| `OperatorDiagnosticAssessment` | One operator view; lifecycle findings unchanged; functional layer separate |
+
+**Functional operator outcome (exact semantics):**
+
+| Status | Meaning |
+| ------ | ------- |
+| `PROVEN_FUNCTIONAL_FAILURE` | At least one check is `PROVEN_FAIL` |
+| `PROVEN_FUNCTIONAL_SUCCESS` | Every check is `PROVEN_PASS` |
+| `INCONCLUSIVE` | No proven failure, but insufficient/blocked/not-evaluated checks remain |
+
+Absence of proven failure is **not** proven success. `first_proven_failed_check` is presentation order from analysis — **not** causal root cause.
+
+**Status mapping:** `PROVEN_FAIL` → operator failure finding; `INSUFFICIENT_EVIDENCE` / `BLOCKED_BY_UPSTREAM` / `NOT_EVALUATED` → limitations; `PROVEN_PASS` → separate bounded `pass_results` (not problem findings).
+
+**Composition invariants:** scope mismatch (`tenant`/`task`/`run`) fails closed; execution terminal state is **not** duplicated — owned by Execution System contracts; existing lifecycle findings (`MULTIPLE_TERMINAL_OUTCOMES`, `EVENT_AFTER_TERMINAL`, …) remain unchanged.
+
+**Boundedness (operator projection):**
+
+| Limit | Value |
+| ----- | ----- |
+| `MAX_FUNCTIONAL_OPERATOR_FAILURES` | 64 |
+| `MAX_FUNCTIONAL_OPERATOR_LIMITATIONS` | 16 |
+| `MAX_FUNCTIONAL_OPERATOR_PASS_RESULTS` | 64 |
+| supporting refs / claim length | reuse F2/F3 bounds |
 
 ```text
 FUNCTIONAL DIAGNOSTICS ARCHITECTURE = QUALIFIED
 FUNCTIONAL EVIDENCE FOUNDATION = QUALIFIED
 GENERIC FUNCTIONAL ANALYSIS = QUALIFIED
+OPERATOR FUNCTIONAL PROJECTION = QUALIFIED
 
-validation isolation = qualified
-DAG dependency evaluation = qualified
-typed requirements = qualified
-
-OPERATOR-GRADE FUNCTIONAL FINDINGS = NOT YET IMPLEMENTED
+H1 TEST-SUITE HEALTH = OPEN
 DURABLE PERSISTENCE = NOT YET QUALIFIED
 PRODUCTION SCALE = NOT YET QUALIFIED
 REAL WORKLOAD QUALIFICATION = NOT YET COMPLETE
 ```
 
-Recommendation after F2-R1: **READY_FOR_F4** (operator-facing `DiagnosticAssessment` composition; durable persistence and production scale remain separate gates).
+Recommendation after F4: **READY_FOR_REAL_WORKLOAD_QUALIFICATION** (durable persistence and production scale remain separate gates).
 
 **H1 remains open:** DIAG test-suite health cleanup (slow 100k occurrence test · flaky problem-list health test) — separate roadmap task.
+
+**Prior F2 status block (superseded by F4 operator projection):**
 
 ### Keyset pagination and late arrival (F1-R1)
 
