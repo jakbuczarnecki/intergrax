@@ -9,6 +9,14 @@ import re
 import sys
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+for path in (REPO_ROOT, REPO_ROOT / "applications", REPO_ROOT / "agents"):
+    text = str(path)
+    if text not in sys.path:
+        sys.path.insert(0, text)
+
+from intergrax.applications._shared.application_runtime_graph import list_application_projects
+
 APPLICATIONS_ROOT = "applications"
 SHARED_WIRING_ROOT = "intergrax/applications/_shared"
 
@@ -37,7 +45,10 @@ def _check_host_wiring(repo_root: Path) -> list[str]:
     if not apps_root.is_dir():
         return [f"missing applications root: {APPLICATIONS_ROOT}"]
 
-    for path in apps_root.glob("*_application/host/wiring.py"):
+    for app_name in list_application_projects(repo_root):
+        path = apps_root / app_name / "host" / "wiring.py"
+        if not path.is_file():
+            continue
         rel = path.relative_to(repo_root).as_posix()
         text = path.read_text(encoding="utf-8")
         if not any(marker in text for marker in REQUIRED_WIRING_MARKERS):
@@ -45,6 +56,15 @@ def _check_host_wiring(repo_root: Path) -> list[str]:
                 f"{rel}: must call wire_application_environment or build_harness_host_runtime"
             )
     return violations
+
+
+def check_host_wiring_adoption(
+    *,
+    repo_root: Path | None = None,
+) -> list[str]:
+    """Return violations when Tier-3 host wiring bypasses canonical environment assembly."""
+    root = repo_root or REPO_ROOT
+    return _check_host_wiring(root)
 
 
 def _check_direct_registry_construction(repo_root: Path) -> list[str]:
