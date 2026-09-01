@@ -543,7 +543,7 @@ Full hosting composition: [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md).
 
 ## Functional diagnostics
 
-**Status:** `FUNCTIONAL DIAGNOSTICS FOUNDATION = IMPLEMENTED` · `FUNCTIONAL ROOT-CAUSE ANALYSIS = NOT YET IMPLEMENTED` · `C1 INSTRUMENTATION = NOT YET IMPLEMENTED`
+**Status:** `FUNCTIONAL DIAGNOSTICS FOUNDATION = IMPLEMENTED` · `GENERIC FUNCTIONAL ANALYSIS = IMPLEMENTED` · `OPERATOR-GRADE FUNCTIONAL FINDINGS = NOT YET IMPLEMENTED` · `C1 INSTRUMENTATION = NOT YET IMPLEMENTED`
 
 Central diagnostics must represent two independent facts:
 
@@ -596,8 +596,8 @@ New platform kind: `platform.functional_outcome_invalid` (`PROBLEM_KIND_PLATFORM
 
 | Layer | Owns | Does not own |
 | ----- | ---- | ------------ |
-| **Observability** | Record/export typed functional evidence facts; correlate to execution identity | Functional root-cause diagnosis |
-| **Diagnostics** | Reconstruction, completeness, deterministic findings/limitations | Mint execution identity; rewrite execution terminal state |
+| **Observability** | Record/export typed functional evidence facts; correlate to execution identity | Functional root-cause diagnosis; check evaluation |
+| **Diagnostics** | Reconstruction, completeness, deterministic functional check evaluation, findings/limitations | Mint execution identity; rewrite execution terminal state |
 | **External validator** | Domain pass/fail decision | Execution lifecycle authority |
 
 Functional evidence is **not** packed into `RuntimeEvent` payloads. It uses a separate typed evidence stream/store correlated by `DiagnosticExecutionCorrelation` / `PipelineEvidenceScope`.
@@ -626,7 +626,7 @@ bounded reconstruction accumulator
         └─ limitations (late-arrival semantics)
         │
         ▼
-future deterministic analyzers (NOT in F1-R1)
+future deterministic analyzers (DIAG-FUNCTIONAL-2)
 ```
 
 Reconstruction **does not** materialize `tuple[all PlatformFunctionalEvidence]`. Memory retained is O(1) relative to history cardinality.
@@ -635,6 +635,77 @@ Reconstruction **does not** materialize `tuple[all PlatformFunctionalEvidence]`.
 | ----- | ----- | --------- |
 | `MAX_DIRECT_UPSTREAM_EVIDENCE_REFS` | 8 | Inline provenance per fact; overflow fails validation |
 | `MAX_SUPPORTING_EVIDENCE_REFS` | 16 | Illustrative sample refs in reconstruction projection |
+
+### Generic functional diagnosis (DIAG-FUNCTIONAL-2)
+
+```text
+typed functional evidence
+        │
+        │ bounded keyset queries (per-check kind filter)
+        ▼
+FunctionalDiagnosticSpecification (versioned profile)
+        │
+        ▼
+FunctionalDiagnosticAnalyzer (one generic analyzer)
+        │
+        ├─ PROVEN_PASS / PROVEN_FAIL / INSUFFICIENT_EVIDENCE
+        ├─ BLOCKED_BY_UPSTREAM (dependency gate)
+        └─ bounded supporting refs + limitations
+        │
+        ▼
+future DiagnosticAssessment composition (NOT in F2)
+```
+
+**Invariant:** Facts first. Diagnosis second. No evidence = no conclusion.
+
+| Contract | Role |
+| -------- | ---- |
+| `FunctionalDiagnosticSpecification` | Versioned, bounded diagnostic plan — checks, dependencies, typed requirements |
+| `FunctionalDiagnosticRequirement` | Generic predicates: operation outcome status, candidate/selection/output presence, selection artifact match, validation outcome |
+| `FunctionalDiagnosticAnalyzer` | One deterministic analyzer for all workload profiles — no domain-specific engines |
+| `FunctionalDiagnosticAnalysis` | Bounded per-scope result: check results, optional `first_proven_failure`, limitations |
+
+**Check statuses (exact semantics):**
+
+| Status | Meaning |
+| ------ | ------- |
+| `PROVEN_PASS` | Direct evidence proves the check condition was met |
+| `PROVEN_FAIL` | Direct evidence proves the check condition was not met |
+| `INSUFFICIENT_EVIDENCE` | Not enough facts to prove PASS or FAIL — absence is **not** failure |
+| `NOT_EVALUATED` | Check not reached in this analysis cycle |
+| `BLOCKED_BY_UPSTREAM` | A dependency did not reach `PROVEN_PASS`; downstream check is not inferred as FAIL |
+
+**Contradiction:** when the same check receives both PASS- and FAIL-supporting evidence, the result is `INSUFFICIENT_EVIDENCE` with an explicit contradiction limitation — never arbitrary winner selection.
+
+**Dependency semantics:** DAG dependencies are supported. Independent branches continue evaluation after a `PROVEN_FAIL` elsewhere. `first_proven_failure` is the first check in specification order with `PROVEN_FAIL`.
+
+**Boundedness:**
+
+| Limit | Value |
+| ----- | ----- |
+| `MAX_FUNCTIONAL_DIAGNOSTIC_CHECKS` | 64 |
+| `MAX_FUNCTIONAL_DIAGNOSTIC_DEPENDENCIES` | 8 |
+| `MAX_FUNCTIONAL_DIAGNOSTIC_SUPPORTING_REFS` | 8 |
+| `MAX_FUNCTIONAL_DIAGNOSTIC_LIMITATIONS_PER_RESULT` | 8 |
+
+**OBS boundary:** Observability records evidence. Observability does **not** execute check evaluation. Diagnostics executes evaluation.
+
+**Code references:** `functional_diagnostic_specification.py` · `functional_diagnostic_analyzer.py` · `functional_diagnostic_analysis.py` · `functional_diagnostic_identity.py` · `functional_validation_lookup.py` · `intergrax/contracts/functional_diagnostic_bounds.py`.
+
+```text
+FUNCTIONAL DIAGNOSTICS ARCHITECTURE = QUALIFIED
+FUNCTIONAL EVIDENCE FOUNDATION = QUALIFIED
+GENERIC FUNCTIONAL ANALYSIS = IMPLEMENTED
+
+OPERATOR-GRADE FUNCTIONAL FINDINGS = NOT YET IMPLEMENTED
+DURABLE PERSISTENCE = NOT YET QUALIFIED
+PRODUCTION SCALE = NOT YET QUALIFIED
+REAL WORKLOAD QUALIFICATION = NOT YET COMPLETE
+```
+
+Recommendation after F2: **READY_FOR_DIAG-FUNCTIONAL-3 / F4** (operator-facing `DiagnosticAssessment` composition; durable persistence and production scale remain separate gates).
+
+**H1 remains open:** DIAG test-suite health cleanup (slow 100k occurrence test · flaky problem-list health test) — separate roadmap task.
 
 ### Keyset pagination and late arrival (F1-R1)
 
@@ -725,20 +796,7 @@ Functional Diagnostics must **not** be labelled **PRODUCTION SCALE QUALIFIED** u
 
 **F1-R2 foundation freeze (qualified):** functional diagnostics architecture · functional evidence contracts · bounded reconstruction semantics · pagination semantics.
 
-**Not frozen (explicit gaps):** production persistence qualification · production scale qualification · root-cause analysis.
-
-```text
-FUNCTIONAL DIAGNOSTICS ARCHITECTURE = QUALIFIED
-FUNCTIONAL EVIDENCE FOUNDATION = QUALIFIED
-BOUNDED RECONSTRUCTION = QUALIFIED
-PAGINATION CORRECTNESS = QUALIFIED
-
-DURABLE PERSISTENCE = NOT YET QUALIFIED
-PRODUCTION SCALE = NOT YET QUALIFIED
-ROOT-CAUSE ANALYSIS = NOT YET IMPLEMENTED
-```
-
-Recommendation after R2: **READY_FOR_DIAG-FUNCTIONAL-2** (generic analysis may proceed on contract + InMemory conformance provider; production deployment qualification remains a separate later gate).
+**Not frozen (explicit gaps):** production persistence qualification · production scale qualification · operator-grade functional findings · real workload qualification.
 
 ---
 
