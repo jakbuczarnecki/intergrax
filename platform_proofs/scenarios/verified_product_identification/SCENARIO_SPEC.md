@@ -13,7 +13,7 @@ application_vs_proof_ownership: COMPLETED
 **Scenario:** Verified Product Identification at Catalog Scale  
 **Slug:** `verified_product_identification`  
 **Proof class:** SCENARIO  
-**Status:** ACCEPTED FOR IMPLEMENTATION — human Scenario Quality Gate accepted; implementation not yet initialized; no executable proof, evidence, or report yet.
+**Status:** IMPLEMENTATION INITIALIZED — gated skeleton generated; domain implementation in progress; no executable proof, evidence, or report yet.
 
 [← Back to public Scenario page](README.md)
 
@@ -695,7 +695,7 @@ See § Adversarial conditions (15 case classes). Proof stratifies cases across i
 - Single bounded domain: **product identification from catalog evidence** at measured WDC scale.
 - Dataset distribution / public artifact hosting **not finalized** (`DATASET_DISTRIBUTION = OPEN`).
 - `cluster_id` useful for benchmark construction — requires quality filters and human/deterministic validation for hard gold sets.
-- Implementation not initialized; no executable proof or verified run.
+- Implementation initialized (gated skeleton only); no executable proof or verified run yet.
 - Benchmark thresholds not yet calibrated on gold set.
 - Attribute normalization scope deliberately bounded — not all raw KVP names modeled relationally.
 
@@ -736,7 +736,7 @@ Audit date: 2026-09-01 · repository HEAD `768c1d6f5bc55194d6e0bb7d2d8642a3caece
 
 Participating domains (discovered during fit): **RAG** (retrieval, vectorstore, reranker, ingest, routing), **Integrations** (PgVector provider), **Execution / Observability** (trace, functional diagnostics), **Decision System** (generic lifecycle only — not product identity), **Platform Proofs** (evidence / evaluator framework).
 
-**TEST-ONLY SUBSTITUTE on canonical scenario path:** **NO** (scenario not initialized; audit confirms no prohibited harness shortcuts are required for fit classification).
+**TEST-ONLY SUBSTITUTE on canonical scenario path:** **NO** (implementation initialized — gated skeleton only; audit confirms no prohibited harness shortcuts are required for fit classification).
 
 ### Fit matrix
 
@@ -921,6 +921,6 @@ If the canonical reference deployment chooses PostgreSQL + pgvector:
 
 ## E. PROOF BUILD
 
-NOT STARTED — blocked on implementation initialization and dataset distribution resolution (scenario acceptance, Intergrax Fit, and Gap Decision are complete).
+NOT STARTED — implementation initialized (gated skeleton); domain implementation and proof wiring in progress; dataset distribution resolution pending (scenario acceptance, Intergrax Fit, and Gap Decision are complete).
 
 Before implementation confirm: production-capable application exists; canonical path has no prohibited fake/test shortcuts; controlled providers use normal application contracts; real model boundary configured if AI behavior is material; full 3.77M catalog loaded in search infrastructure.
