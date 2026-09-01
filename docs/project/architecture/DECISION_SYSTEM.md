@@ -274,6 +274,7 @@ Decision System is **optional per flow**. When no authoritative decision is requ
 - **Absence** means Decision Lifecycle is **not entered** — not a `NoDecisionStrategy` / null-strategy workaround.
 - **No global on/off flag** — optionality is per flow, not a `DECISION_SYSTEM_ENABLED` switch.
 - **Orthogonal to ExecutionStrategy** — INFERENCE, AGENTIC, and ORCHESTRATION each work without Decision capability; neither axis implies the other.
+- **Optional host seam** — Execution runtime may reference optional Decision capability hooks (DS-EXEC-01); ordinary flows remain fully valid without selecting or entering Decision Lifecycle.
 
 Proof gate: DS-EXEC-00 (`tests/unit/runtime/execution/test_decision_optionality.py`).
 

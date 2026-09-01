@@ -1,12 +1,15 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""DS-EXEC-00 — prove canonical Execution completes without Decision System."""
+"""DS-EXEC-00 — prove ordinary Execution works without Decision capability.
+
+Decision integration may exist in Execution (DS-EXEC-01 optional host hook),
+but ordinary flows must remain constructible and executable without it.
+"""
 
 from __future__ import annotations
 
-import ast
 from collections.abc import Sequence
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
@@ -18,6 +21,8 @@ from intergrax.contracts.agent_execution_result import (
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     RunId,
+    mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
     require_active_execution_id,
@@ -58,30 +63,13 @@ from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
-_CANONICAL_ORDINARY_PATH_FILES = (
-    Path("intergrax/runtime/execution/runtime.py"),
-    Path("intergrax/runtime/execution/boundary.py"),
-    Path("intergrax/runtime/execution/request.py"),
+_STRATEGY_ROUTING_FILES = (
     Path("intergrax/runtime/execution/strategy.py"),
     Path("intergrax/runtime/execution/strategy_router.py"),
-    Path("intergrax/runtime/execution/inference.py"),
-    Path("intergrax/runtime/execution/agentic.py"),
 )
 
-_FORBIDDEN_MANDATORY_DECISION_IMPORT_PREFIXES = (
-    "intergrax.contracts.decision_",
-    "intergrax.runtime.execution.decision_",
-)
-
-_FORBIDDEN_DECISION_RUNTIME_TOKENS = frozenset(
+_GLOBAL_DECISION_DISABLE_WORKAROUND_TOKENS = frozenset(
     {
-        "DecisionIdentity",
-        "DecisionLifecycle",
-        "CandidateDecision",
-        "DecisionCheckpoint",
-        "DecisionResolution",
-        "DecisionFinalization",
-        "mint_decision_id",
         "NoDecisionStrategy",
         "NullDecisionStrategy",
         "DisabledDecisionStrategy",
@@ -90,15 +78,6 @@ _FORBIDDEN_DECISION_RUNTIME_TOKENS = frozenset(
         "decision_enabled",
         "enable_decision_system",
         "disable_decision_system",
-    }
-)
-
-_FORBIDDEN_DECISION_CONFIG_FIELD_TOKENS = frozenset(
-    {
-        "decision_required",
-        "decision_strategy",
-        "decision_config",
-        "decision_id",
     }
 )
 
@@ -227,26 +206,6 @@ def _agentic_execution_stack(
     return Execution(runtime)
 
 
-def _collect_imported_modules(path: Path) -> tuple[str, ...]:
-    source = path.read_text(encoding="utf-8")
-    module = ast.parse(source, filename=str(path))
-    imported: list[str] = []
-    for node in ast.walk(module):
-        if isinstance(node, ast.Import):
-            imported.extend(alias.name for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.module is not None:
-            imported.append(node.module)
-    return tuple(imported)
-
-
-def _field_names(
-    dataclass_type: type[RootExecutionOptions]
-    | type[RootExecutionContext]
-    | type[NeutralExecutionRequest],
-) -> frozenset[str]:
-    return frozenset(field.name for field in fields(dataclass_type))
-
-
 @pytest.mark.asyncio
 async def test_inference_root_runtime_completes_without_decision() -> None:
     expected = RiskAssessment(risk="low")
@@ -331,33 +290,48 @@ async def test_orchestration_root_runtime_completes_without_decision(
     assert result is expected
 
 
-def test_root_execution_contracts_have_no_decision_configuration_fields() -> None:
-    contract_fields = (
-        _field_names(RootExecutionOptions)
-        | _field_names(RootExecutionContext)
-        | _field_names(NeutralExecutionRequest)
+def test_root_execution_options_constructible_without_decision_config() -> None:
+    options = RootExecutionOptions(
+        authority=ParentExecutionAuthority.unrestricted_root(),
     )
 
-    assert contract_fields.isdisjoint(_FORBIDDEN_DECISION_CONFIG_FIELD_TOKENS)
-    assert all("decision" not in name.lower() for name in contract_fields)
+    assert options.authority is not None
+    assert options.run_id is None
+    assert options.attempt_id is None
+    assert options.tenant_id is None
 
 
-def test_ordinary_execution_path_has_no_mandatory_decision_imports() -> None:
-    for path in _CANONICAL_ORDINARY_PATH_FILES:
-        imported = _collect_imported_modules(path)
-        for module_name in imported:
-            for prefix in _FORBIDDEN_MANDATORY_DECISION_IMPORT_PREFIXES:
-                assert not (
-                    module_name == prefix.rstrip("_")
-                    or module_name.startswith(prefix)
-                ), f"{path} imports mandatory Decision dependency: {module_name}"
+def test_ordinary_execution_request_constructible_without_decision_config() -> None:
+    request = ExecutionRequest(
+        input=(ChatMessage(role="user", content="probe"),),
+        output_type=RiskAssessment,
+    )
+    neutral_request = NeutralExecutionRequest(
+        input=TaskExecutionInput(message="probe"),
+        output_type=TaskResult,
+        capabilities=frozenset({ExecutionCapability.ORCHESTRATION}),
+    )
+    run_id = mint_run_id()
+    context = RootExecutionContext(
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+        authority=ParentExecutionAuthority.unrestricted_root(),
+    )
+
+    assert request.input is not None
+    assert request.output_type is RiskAssessment
+    assert neutral_request.capabilities == frozenset({ExecutionCapability.ORCHESTRATION})
+    assert context.run_id == run_id
 
 
-def test_ordinary_execution_path_has_no_decision_runtime_tokens() -> None:
-    for path in _CANONICAL_ORDINARY_PATH_FILES:
+def test_strategy_routing_has_no_global_decision_disable_workaround() -> None:
+    for path in _STRATEGY_ROUTING_FILES:
         source = path.read_text(encoding="utf-8")
-        for token in _FORBIDDEN_DECISION_RUNTIME_TOKENS:
-            assert token not in source, f"{path} contains forbidden Decision token: {token}"
+        for token in _GLOBAL_DECISION_DISABLE_WORKAROUND_TOKENS:
+            assert token not in source, (
+                f"{path} introduces global Decision disable workaround: {token}"
+            )
 
 
 def test_strategy_resolver_is_orthogonal_to_decision_strategy() -> None:
