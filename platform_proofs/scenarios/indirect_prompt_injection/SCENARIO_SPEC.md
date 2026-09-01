@@ -1,7 +1,7 @@
 ---
 scenario_slug: indirect_prompt_injection
-lifecycle: IMPLEMENTATION_INITIALIZED
-implementation_status: INITIALIZED
+lifecycle: IMPLEMENTATION_COMPLETE
+implementation_status: COMPLETE
 intergrax_fit: COMPLETED
 gap_decision: RESOLVED
 observability_contract: COMPLETED

@@ -500,6 +500,7 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
         from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
         from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
         from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
+        from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
         from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
         from intergrax.runtime.interactions.router import create_interaction_intake_router
         from intergrax.applications._shared.task_control_wiring import (
@@ -542,6 +543,7 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
                 registry_projection=registry_projection,
             )
             nexus_loop = runtime.nexus_loop
+            host_execution = build_environment_host_task_execution(nexus_loop, env)
             registry = runtime.registry
             platform = bootstrap_nexus_platform(
                 nexus_loop,
@@ -630,7 +632,7 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
                 from {pkg}.mcp.server import build_{short}_mcp_server
 
                 mcp = build_{short}_mcp_server(
-                    nexus_loop=nexus_loop,
+                    host_execution=host_execution,
                     route_prefix=settings.route_prefix,
                     tool_registry=runtime.env_wiring.tool_wiring.registry,
                 )

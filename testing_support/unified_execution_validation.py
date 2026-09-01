@@ -580,7 +580,7 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
         ValidationDomain.DIAGNOSTICS,
         _unit(
             "tests/unit/runtime/diagnostics/test_ue_11f_observability_diagnostic_correlation.py",
-            "test_ue_11f_terminal_failure_correlates_execution_identity_through_obs_evidence",
+            "test_ue_11f_real_terminal_failure_correlates_execution_identity_through_obs_evidence",
         ),
     ),
     _covered(
@@ -588,7 +588,11 @@ UNIFIED_EXECUTION_VALIDATION_MATRIX: tuple[ValidationCapability, ...] = (
         ValidationDomain.DIAGNOSTICS,
         _unit(
             "tests/unit/runtime/diagnostics/test_ue_11f_observability_diagnostic_correlation.py",
-            "test_ue_11f_terminal_failure_correlates_execution_identity_through_obs_evidence",
+            "test_ue_11f_diagnostics_consumes_execution_identity_from_observability_evidence",
+        ),
+        _unit(
+            "tests/unit/runtime/diagnostics/test_ue_11f_observability_diagnostic_correlation.py",
+            "test_ue_11f_real_terminal_failure_correlates_execution_identity_through_obs_evidence",
         ),
     ),
     _covered(

@@ -323,10 +323,10 @@ Do **not** create a second general-purpose arbitrary DAG runtime for internal ag
 
 **TARGET ARCHITECTURE**
 
-Not every Execution requires a Decision Lifecycle. When profiled, semantic decision progression runs **inside** the Nexus execution model — not as a parallel Decision Runtime:
+Not every Execution requires a Decision Lifecycle. When profiled, semantic decision progression runs **inside** canonical Execution — not as a parallel Decision Runtime:
 
 ```text
-Execution (Nexus)
+Execution
 └ optional Decision Lifecycle
    ├── Strategy / Proposal (optional Deliberation)
    ├── Verification
@@ -335,7 +335,20 @@ Execution (Nexus)
    └── Resolution / Finalization
 ```
 
-Nexus owns scheduling, checkpoint, budget, and technical retry. Decision Lifecycle owns semantic progression (`ACCEPTED` / `REJECTED` / `UNRESOLVED`). Governed Execution answers whether an **exact Decision Version** may execute — separate from decision correctness.
+Decision Lifecycle may request work routed by Execution strategy:
+
+```text
+Decision Lifecycle
+↓
+may request work
+↓
+Execution Strategy
+├── INFERENCE
+├── AGENTIC
+└── ORCHESTRATION → Nexus
+```
+
+Execution System owns hosting execution lifecycle and strategy routing. Decision System owns semantic decision progression. Nexus owns orchestration runtime only when ORCHESTRATION is selected. Governed Execution answers whether an **exact Decision Version** may execute — separate from decision correctness.
 
 **Canonical:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) · [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md). **CURRENT production:** [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md).
 

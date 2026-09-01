@@ -10,6 +10,9 @@ from intergrax.collaborative_work.persistence import (
     CollaborativeWorkStoreOwner,
     open_sqlite_collaborative_work_repositories,
 )
+from intergrax.collaborative_work.materialization_factory import (
+    CollaborativeWorkPersistenceFactory,
+)
 from intergrax.collaborative_work.persistence_provider import (
     CollaborativeWorkPersistenceProvider,
     resolve_collaborative_work_repositories,
@@ -68,6 +71,7 @@ from intergrax.collaborative_work.repository import (
 )
 
 __all__ = [
+    "CollaborativeWorkPersistenceFactory",
     "CollaborativeWorkPersistenceProvider",
     "CollaborativeWorkRepositories",
     "CollaborativeWorkStoreOwner",

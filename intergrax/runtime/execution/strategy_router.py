@@ -17,6 +17,16 @@ OutputT = TypeVar("OutputT")
 ResultT = TypeVar("ResultT")
 
 
+class AgenticRouterDelegate(Protocol):
+    """Agentic backend invoked by :class:`StrategyExecutionRouter`."""
+
+    async def execute(
+        self,
+        request: ExecutionRequest[InputT, OutputT],
+    ) -> ResultT:
+        ...
+
+
 class OrchestrationRouterDelegate(Protocol):
     """Orchestration backend invoked by :class:`StrategyExecutionRouter`."""
 
@@ -46,7 +56,7 @@ class StrategyExecutionRouter(Generic[InputT, OutputT, ResultT]):
         *,
         resolver: StrategyResolver | None = None,
         inference_executor: InferenceExecutor[OutputT] | None = None,
-        agent_executor: AgentExecutor | None = None,
+        agent_executor: AgentExecutor | AgenticRouterDelegate | None = None,
         orchestration_executor: OrchestrationRouterDelegate | None = None,
     ) -> None:
         self._resolver = resolver or StrategyResolver()

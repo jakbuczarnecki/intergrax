@@ -23,6 +23,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
 from intergrax.runtime.diagnostics.problem_lifecycle import (
     ProblemId,
     ProblemLifecycleProvenance,
+    ProblemOccurrenceAggregateHealth,
     ProblemReconciliationKeyKind,
     ProblemStatus,
 )
@@ -68,6 +69,7 @@ class DiagnosticProblemSummary:
     last_seen_at: datetime
     occurrence_count: int
     grouping_provenance: DiagnosticGroupingProvenance
+    occurrence_aggregate_health: ProblemOccurrenceAggregateHealth
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,6 +104,7 @@ class DiagnosticProblemDetail:
     occurrence_count: int
     record_version: int
     grouping_provenance: DiagnosticGroupingProvenance
+    occurrence_aggregate_health: ProblemOccurrenceAggregateHealth
     occurrences: tuple[DiagnosticProblemOccurrenceView, ...]
     returned_occurrence_count: int
     total_occurrence_count: int

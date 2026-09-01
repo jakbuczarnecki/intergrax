@@ -57,31 +57,75 @@
 |----|----------|------|--------|
 | DS-CORE-01 | P0 | Decision ID / Version / scope typed contracts | **Done** — `intergrax/contracts/decision_identity.py`; `tests/unit/contracts/test_decision_identity.py` |
 | DS-CORE-02 | P0 | Candidate vs Authoritative Decision records + immutable lineage | **Done** — `intergrax/contracts/decision_record.py`; `tests/unit/contracts/test_decision_record.py` |
-| DS-CORE-03 | P0 | Lifecycle state machine executed by Nexus (no second runtime) | **Done** — `intergrax/contracts/decision_lifecycle.py`; `tests/unit/contracts/test_decision_lifecycle.py` |
-| DS-CORE-04 | P0 | Resolution semantics (`ACCEPTED` / `REJECTED` / `UNRESOLVED`) | **Planned** |
-| DS-CORE-05 | P1 | Finalize guard — one authoritative per decision scope | **Planned** |
-| DS-CORE-06 | P1 | Nexus checkpoint persistence for lifecycle state | **Planned** |
-| DS-CORE-07 | P1 | Parallel proposal branch lineage | **Planned** |
-| DS-CORE-08 | P2 | Decision Artifact kind registration | **Planned** |
+| DS-CORE-03 | P0 | Lifecycle state machine hosted by canonical Execution (no second runtime) | **Done** — `intergrax/contracts/decision_lifecycle.py`; `tests/unit/contracts/test_decision_lifecycle.py` |
+| DS-CORE-04 | P0 | Resolution semantics (`ACCEPTED` / `REJECTED` / `UNRESOLVED`) | **Done** — `intergrax/contracts/decision_resolution.py`; `tests/unit/contracts/test_decision_resolution.py` |
+| DS-CORE-05 | P1 | Finalize guard — one authoritative per decision scope | **Done** — `intergrax/contracts/decision_finalization.py`; `tests/unit/contracts/test_decision_finalization.py` |
+| DS-CORE-06 | P1 | Execution-hosted checkpoint persistence for Decision lifecycle state | **Done** — `intergrax/contracts/decision_checkpoint.py`; `intergrax/runtime/execution/decision_checkpoint_persistence.py`; `tests/unit/contracts/test_decision_checkpoint.py` |
+| DS-CORE-07 | P1 | Parallel proposal branch lineage | **Done** |
+| DS-CORE-08 | P2 | Core typed Decision Artifact kind registration contracts | **Done** — `intergrax/contracts/decision_artifact_registry.py`; `tests/unit/contracts/test_decision_artifact_registry.py` |
 
 ### Plugin architecture (PLANNED)
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-PLUGIN-01 | P1 | DecisionStrategy registry + configuration | **Planned** |
+| DS-PLUGIN-01 | P1 | Platform Plugins discovery/config integration for `DecisionStrategy` (same canonical registry as DS-DELIB-01) | **Planned** |
 | DS-PLUGIN-02 | P1 | Verification stage registration surface | **Planned** |
-| DS-PLUGIN-03 | P2 | Decision Artifact kind registry | **Planned** |
+| DS-PLUGIN-03 | P2 | Plugin/config integration for Decision Artifact kind registration | **Planned** |
 
 ---
 
-## Phase DS-INTEGRATION — Nexus · governance · observability · recovery (PLANNED)
+## Phase DS-INTEGRATION — Execution host · orchestration · governance · observability · recovery (PLANNED)
 
-### Nexus integration
+### Execution-host integration
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-NEXUS-01 | P0 | Graph / UAEP hooks → Decision Lifecycle | **Planned** |
-| DS-NEXUS-02 | P1 | Lifecycle stage persistence via Nexus checkpoint ports | **Planned** |
+| DS-EXEC-00 | P0 | Prove Decision capability is optional: ordinary Execution flows bypass Decision Lifecycle entirely when no authoritative decision is required | **Planned** |
+| DS-EXEC-01 | P0 | Execution host / strategy-routing hooks → Decision Lifecycle | **Planned** |
+| DS-EXEC-02 | P1 | Lifecycle stage persistence via canonical Execution checkpoint ports | **Planned** |
+
+### DS-EXEC-00 — Decision System optionality / bypass contract (PLANNED)
+
+Decision System is **optional per flow**. Ordinary Execution work must complete without entering Decision Lifecycle when no authoritative decision is required.
+
+**Acceptance contract (future proof):**
+
+```text
+A. Execution without Decision:
+Application → Execution → normal execution work → completion
+
+B. Execution with Decision:
+Application → Execution → Decision Lifecycle → strategy / verification / resolution → continue execution as required
+```
+
+**Required future proofs:**
+
+| Proof | Expectation |
+| ----- | ----------- |
+| Decision System disabled / absent | Ordinary Execution still works |
+| Decision System not selected for a flow | No Decision identity · no Decision lifecycle · no Decision checkpoint · no Decision finalization · no Decision verification |
+| Decision System selected | Canonical Decision Lifecycle applies |
+
+**Future invariant:** No Decision artifacts or lifecycle state are created for a flow that does not request Decision capability.
+
+**Future test matrix (runtime — not in DS-DELIB-02 slice):**
+
+| Flow class | Without Decision | With Decision |
+| ---------- | ---------------- | ------------- |
+| INFERENCE | ordinary inference flow without Decision | Decision-enabled inference flow |
+| AGENTIC | ordinary agentic flow without Decision | Decision-enabled agentic flow |
+| ORCHESTRATION | ordinary orchestration flow without Decision | Decision-enabled orchestration flow |
+
+Goal: **Decision capability orthogonal to ExecutionStrategy** — none of INFERENCE, AGENTIC, or ORCHESTRATION require Decision System.
+
+**Non-goals for DS-EXEC-00 scoping:** no premature global `DECISION_SYSTEM_ENABLED` flag; no `NoDecisionStrategy` / `NullDecisionStrategy` workaround — absence means Lifecycle is not entered.
+
+### Orchestration-specific integration (Nexus)
+
+| ID | Priority | Item | Status |
+|----|----------|------|--------|
+| DS-NEXUS-01 | P0 | Graph / UAEP hooks for ORCHESTRATION-backed Decision Strategy work | **Planned** |
+| DS-NEXUS-02 | P1 | Orchestration checkpoint participation when ORCHESTRATION is selected | **Planned** |
 
 ### Governance / HITL / Execution Authority
 

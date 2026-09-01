@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -64,6 +64,46 @@ from intergrax.runtime.policy.rules.registry import PolicyRuleRegistry
 from intergrax.runtime.policy.rules.schema import DeclarativePolicyRule
 
 _STANDARD_POLICY_LOAD_POLICY = PolicyRuleLoadPolicy(on_load_failure="isolate")
+
+
+class PolicyAssemblyError(ValueError):
+    """Raised when policy assembly validation fails."""
+
+    def __init__(self, errors: Sequence[str]) -> None:
+        self.errors: tuple[str, ...] = tuple(errors)
+        message = "; ".join(self.errors)
+        super().__init__(message)
+
+
+def policy_plugin_bootstrap_errors(report: DomainPluginLoadReport) -> tuple[str, ...]:
+    errors: list[str] = []
+    for item in report.failed:
+        errors.append(f"policy plugin load failed: {item.spec.name}: {item.error}")
+    for item in report.rejected:
+        if item.fail_closed:
+            errors.append(
+                "policy plugin admission rejected: "
+                f"{item.spec.name}: {item.reason_code.value}",
+            )
+    if not errors:
+        errors.append("policy plugin bootstrap admission is not acceptable")
+    return tuple(errors)
+
+
+def assert_strict_policy_bootstrap_acceptable(
+    env: ApplicationEnvironmentProfile,
+    policy_bundle: RuntimePolicyBundle,
+) -> None:
+    if env.execution_mode is not ExecutionMode.STRICT:
+        return
+    declarative_runtime = policy_bundle.declarative_policy_runtime
+    if declarative_runtime is None:
+        return
+    if declarative_runtime.load_report.critical_bootstrap_acceptable:
+        return
+    raise PolicyAssemblyError(
+        policy_plugin_bootstrap_errors(declarative_runtime.load_report),
+    )
 
 
 @dataclass(frozen=True, slots=True)

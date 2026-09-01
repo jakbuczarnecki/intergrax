@@ -191,6 +191,7 @@ def incident_investigation_input_from_problem_details(
             last_seen_at=detail.last_seen_at,
             occurrence_count=detail.occurrence_count,
             grouping_provenance=detail.grouping_provenance,
+            occurrence_aggregate_health=detail.occurrence_aggregate_health,
         )
         contexts.append(
             IncidentInvestigationProblemContext(

@@ -13,6 +13,7 @@ from intergrax.contracts.decision_identity import (
     mint_decision_id,
     next_decision_version,
     validate_decision_id,
+    validate_decision_tenant_id,
     validate_decision_version,
 )
 from intergrax.contracts.execution_identity import (
@@ -231,6 +232,28 @@ def test_decision_identity_valid_aggregate() -> None:
     assert identity.tenant_id == "tenant-a"
     assert identity.scope.namespace == "incident"
     assert identity.scope.subject == "incident-123"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_validate_decision_tenant_id_accepts_valid_tenant() -> None:
+    assert validate_decision_tenant_id("tenant-a") == "tenant-a"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.parametrize("tenant_id", ["", "   ", " tenant-a", "tenant-a "])
+def test_validate_decision_tenant_id_rejects_invalid(tenant_id: str) -> None:
+    with pytest.raises(ValueError):
+        validate_decision_tenant_id(tenant_id)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.parametrize("value", [123, None, object()])
+def test_validate_decision_tenant_id_rejects_non_string(value: object) -> None:
+    with pytest.raises(TypeError):
+        validate_decision_tenant_id(value)
 
 
 @pytest.mark.unit

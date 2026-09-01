@@ -1,4 +1,4 @@
-﻿# Platform Plugins — Provider qualification architecture (PROVIDER-QUAL-1)
+# Platform Plugins — Provider qualification architecture (PROVIDER-QUAL-1)
 
 **Status:** Architecture freeze + contract design — **READY_FOR_REVIEW**
 **Parent hub:** [`PLATFORM_PLUGINS.md`](../PLATFORM_PLUGINS.md) §18
@@ -696,7 +696,9 @@ Do **not** classify qualification binding as fully reusable without the typed br
 | Stage | Scope |
 |-------|-------|
 | **PROVIDER-QUAL-3A-R1** | Architecture correction only (this freeze) |
-| **PROVIDER-QUAL-3B-R1** | **READY_FOR_REVIEW** — lifecycle-safe provider materialization correction — `CollaborativeWorkPersistenceProvider.materialize_collaborative_work_repositories()`; domain resolver `resolve_collaborative_work_repositories(profile)` composes `resolve_relational_store` |
+| **PROVIDER-QUAL-3B-R1** | **READY_FOR_REVIEW** — lifecycle-safe provider materialization correction — `CollaborativeWorkPersistenceProvider.materialize_collaborative_work_repositories()`; domain resolver `resolve_collaborative_work_repositories(profile)` composes `resolve_relational_store` |
+| **PROVIDER-QUAL-3B-R2** | **READY_FOR_REVIEW** - explicit typed materialization factory - `CollaborativeWorkPersistenceFactory.materialize_collaborative_work_repositories(binding)`; no `_collaborative_work_materialization` keyword protocol; no `TypeError` capability probing; pre-built SQLite fail-closed |
+| **PROVIDER-QUAL-3B-R3** | **READY_FOR_REVIEW** - provider-owned typed configuration materialization - CW owns semantic CollaborativeWorkPersistenceFactory only; provider factory ind_collaborative_work_materialization(options) resolves typed provider config; no CW vendor config bag; invalid explicit connection_factory fails closed; Oracle adds no CW config fields |
 | **PROVIDER-QUAL-3C** | Qualification evidence persistence/index + record accepted PostgreSQL 16.6 evidence through the canonical binding |
 
 **PROVIDER-QUAL-3B** implementation (review gate): `intergrax/collaborative_work/persistence_provider.py`; vendor adapters on `SqliteRelationalStoreIntegration` / `PostgresqlRelationalStoreIntegration`; `CollaborativeWorkRepositories.store` typed as `CollaborativeWorkStoreOwner` (lifecycle-only).

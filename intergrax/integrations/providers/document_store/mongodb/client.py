@@ -11,7 +11,18 @@ from typing import Any, Mapping, Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.document_store import DocumentRecord, validate_document_query_limit
+from intergrax.integrations.contracts.partition_atomic_document_store import (
+    PartitionAtomicBatch,
+    PartitionAtomicBatchResult,
+    PartitionPutIfAbsentOnCreated,
+    PartitionReplaceIfMatchOnCreated,
+    validate_partition_atomic_batch,
+)
 from intergrax.integrations.providers.document_store.mongodb.config import MongoDBIntegrationConfig
+
+
+class PartitionAtomicBatchConflictError(RuntimeError):
+    """Raised when an on-created operation cannot commit inside a partition batch."""
 
 
 def _utcnow() -> datetime:
@@ -122,6 +133,7 @@ class MongoCollectionClient:
         limit: int = 100,
         row_key_prefix: Optional[str] = None,
         after_row_key: Optional[str] = None,
+        row_key_upper_bound: Optional[str] = None,
     ) -> list[DocumentRecord]:
         bounded_limit = validate_document_query_limit(limit)
         query_filter: dict[str, Any] = {"partition_key": partition_key}
@@ -130,6 +142,8 @@ class MongoCollectionClient:
             row_key_filter["$regex"] = f"^{row_key_prefix}"
         if after_row_key:
             row_key_filter["$gt"] = after_row_key
+        if row_key_upper_bound is not None:
+            row_key_filter["$lte"] = row_key_upper_bound
         if row_key_filter:
             query_filter["row_key"] = row_key_filter
         mongo_cursor = (
@@ -176,6 +190,122 @@ class MongoCollectionClient:
     def delete_if_match(self, *, expected: DocumentRecord) -> bool:
         result = self._collection.delete_one(_match_filter(expected))
         return int(result.deleted_count) == 1
+
+    def supports_partition_atomic_batch(self) -> bool:
+        if self._client is None:
+            return False
+        try:
+            hello = self._client.admin.command("hello")
+        except Exception:
+            return False
+        set_name = hello.get("setName")
+        return isinstance(set_name, str) and bool(set_name)
+
+    def execute_partition_atomic_batch(
+        self,
+        batch: PartitionAtomicBatch,
+    ) -> PartitionAtomicBatchResult:
+        validated = validate_partition_atomic_batch(batch)
+        if self._client is None:
+            raise IntegrationConfigurationError(
+                "MongoDB partition atomic batch requires an open pymongo client",
+            )
+        if not self.supports_partition_atomic_batch():
+            raise IntegrationConfigurationError(
+                "MongoDB partition atomic batch requires a replica-set deployment",
+            )
+
+        def _callback(session: object) -> PartitionAtomicBatchResult:
+            primary_created = self._put_if_absent_in_session(
+                validated.primary_put_if_absent,
+                session=session,
+            )
+            if primary_created:
+                for op in validated.on_created_ops:
+                    if isinstance(op, PartitionPutIfAbsentOnCreated):
+                        if not self._put_if_absent_in_session(
+                            op.document,
+                            session=session,
+                        ):
+                            raise PartitionAtomicBatchConflictError(
+                                "partition_atomic_batch_on_created_conflict",
+                            )
+                    elif isinstance(op, PartitionReplaceIfMatchOnCreated):
+                        if not self._replace_if_match_in_session(
+                            expected=op.expected,
+                            replacement=op.replacement,
+                            session=session,
+                        ):
+                            raise PartitionAtomicBatchConflictError(
+                                "partition_atomic_batch_on_created_stale",
+                            )
+                    else:
+                        raise TypeError("partition_atomic_batch_on_created_op_invalid")
+            return PartitionAtomicBatchResult(primary_created=primary_created)
+
+        try:
+            with self._client.start_session() as session:
+                return session.with_transaction(_callback)
+        except PartitionAtomicBatchConflictError:
+            raise
+        except Exception as exc:
+            if self._is_retryable_partition_batch_error(exc):
+                raise PartitionAtomicBatchConflictError(
+                    "partition_atomic_batch_transient",
+                ) from exc
+            raise
+
+    @staticmethod
+    def _is_retryable_partition_batch_error(exc: BaseException) -> bool:
+        try:
+            from pymongo.errors import OperationFailure, PyMongoError
+        except ImportError:
+            return False
+        if isinstance(exc, OperationFailure):
+            labels = getattr(exc, "details", {}) or {}
+            error_labels = labels.get("errorLabels") or getattr(exc, "_error_labels", ())
+            if "TransientTransactionError" in error_labels:
+                return True
+            if "UnknownTransactionCommitResult" in error_labels:
+                return True
+            return int(getattr(exc, "code", 0)) in {112, 251}
+        return isinstance(exc, PyMongoError)
+
+    def _put_if_absent_in_session(
+        self,
+        document: DocumentRecord,
+        *,
+        session: object,
+    ) -> bool:
+        payload = _payload_from_document(document)
+        try:
+            result = self._collection.update_one(
+                _document_filter(document.partition_key, document.row_key),
+                {"$setOnInsert": payload},
+                upsert=True,
+                session=session,
+            )
+        except Exception as exc:
+            if self._is_duplicate_key_error(exc):
+                return False
+            raise
+        return result.upserted_id is not None
+
+    def _replace_if_match_in_session(
+        self,
+        *,
+        expected: DocumentRecord,
+        replacement: DocumentRecord,
+        session: object,
+    ) -> bool:
+        _require_matching_keys(expected=expected, replacement=replacement)
+        result = self._collection.replace_one(
+            _match_filter(expected),
+            _payload_from_document(replacement),
+            upsert=False,
+            session=session,
+        )
+        return int(result.matched_count) == 1
 
     def close(self) -> None:
         if self._client is not None:

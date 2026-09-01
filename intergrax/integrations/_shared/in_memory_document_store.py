@@ -14,6 +14,13 @@ from intergrax.integrations.contracts.document_store import (
     DocumentRecord,
     validate_document_query_limit,
 )
+from intergrax.integrations.contracts.partition_atomic_document_store import (
+    PartitionAtomicBatch,
+    PartitionAtomicBatchResult,
+    PartitionPutIfAbsentOnCreated,
+    PartitionReplaceIfMatchOnCreated,
+    validate_partition_atomic_batch,
+)
 
 
 def _require_matching_keys(*, expected: DocumentRecord, replacement: DocumentRecord) -> None:
@@ -79,6 +86,7 @@ class InMemoryDocumentStore:
         limit: int = 100,
         row_key_prefix: str | None = None,
         cursor: str | None = None,
+        row_key_upper_bound: str | None = None,
     ) -> DocumentQueryPageV1:
         validate_document_query_limit(limit)
         with self._lock:
@@ -87,6 +95,8 @@ class InMemoryDocumentStore:
                 if pk != partition_key:
                     continue
                 if row_key_prefix is not None and not rk.startswith(row_key_prefix):
+                    continue
+                if row_key_upper_bound is not None and rk > row_key_upper_bound:
                     continue
                 rows.append(doc)
             rows.sort(key=lambda doc: doc.row_key)
@@ -146,3 +156,57 @@ class InMemoryDocumentStore:
                 return False
             del self._rows[key]
             return True
+
+    def execute_partition_atomic_batch(
+        self,
+        batch: PartitionAtomicBatch,
+    ) -> PartitionAtomicBatchResult:
+        validated = validate_partition_atomic_batch(batch)
+        with self._lock:
+            snapshot = dict(self._rows)
+            primary_created = self._put_if_absent_unlocked(
+                validated.primary_put_if_absent,
+                rows=snapshot,
+            )
+            if primary_created:
+                for op in validated.on_created_ops:
+                    if isinstance(op, PartitionPutIfAbsentOnCreated):
+                        if not self._put_if_absent_unlocked(op.document, rows=snapshot):
+                            raise RuntimeError("partition_atomic_batch_on_created_conflict")
+                    elif isinstance(op, PartitionReplaceIfMatchOnCreated):
+                        if not self._replace_if_match_unlocked(
+                            expected=op.expected,
+                            replacement=op.replacement,
+                            rows=snapshot,
+                        ):
+                            raise RuntimeError("partition_atomic_batch_on_created_stale")
+                    else:
+                        raise TypeError("partition_atomic_batch_on_created_op_invalid")
+            self._rows = snapshot
+            return PartitionAtomicBatchResult(primary_created=primary_created)
+
+    @staticmethod
+    def _put_if_absent_unlocked(
+        document: DocumentRecord,
+        *,
+        rows: dict[tuple[str, str], DocumentRecord],
+    ) -> bool:
+        key = (document.partition_key, document.row_key)
+        if key in rows:
+            return False
+        rows[key] = document
+        return True
+
+    @staticmethod
+    def _replace_if_match_unlocked(
+        *,
+        expected: DocumentRecord,
+        replacement: DocumentRecord,
+        rows: dict[tuple[str, str], DocumentRecord],
+    ) -> bool:
+        _require_matching_keys(expected=expected, replacement=replacement)
+        current = rows.get((expected.partition_key, expected.row_key))
+        if current is None or not _data_matches(current, expected):
+            return False
+        rows[(replacement.partition_key, replacement.row_key)] = replacement
+        return True

@@ -41,6 +41,9 @@ from intergrax.runtime.diagnostics.problem_persistence import (
     ProblemPersistenceConflictError,
     ProblemPersistenceIntegrityError,
 )
+from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
+    ProblemOccurrencePersistence,
+)
 
 
 def query_all_problems_for_tenant(
@@ -76,6 +79,7 @@ from intergrax.runtime.events.runtime_event import RuntimeEventType
 
 _OBSERVED_AT = datetime(2026, 8, 26, 9, 0, tzinfo=UTC)
 _OBSERVED_AT_LATER = _OBSERVED_AT + timedelta(hours=1)
+_CONFORMANCE_OCCURRENCE_CURSOR_SECRET = b"deterministic-test-problem-list-cursor-v1"
 
 
 def _sample_signature() -> DeterministicProblemSignature:
@@ -135,15 +139,9 @@ def sample_problem(
 ) -> Problem:
     resolved_subject_refs = subject_refs or (_sample_subject_ref(tenant_id=tenant_id),)
     resolved_key = reconciliation_key or _sample_reconciliation_key(tenant_id=tenant_id)
-    occurrences = tuple(
-        ProblemOccurrence(
-            subject_ref=subject_ref,
-            observed_at=observed_at,
-            strategy_id=STRATEGY_ID,
-            strategy_version=STRATEGY_VERSION,
-            method=ProblemGroupingMethod.DETERMINISTIC,
-        )
-        for subject_ref in resolved_subject_refs
+    occurrences = sample_occurrences(
+        subject_refs=resolved_subject_refs,
+        observed_at=observed_at,
     )
     resolved_count = occurrence_count if occurrence_count is not None else len(occurrences)
     observed_times = [occurrence.observed_at for occurrence in occurrences]
@@ -154,8 +152,6 @@ def sample_problem(
         first_seen_at=min(observed_times) if observed_times else observed_at,
         last_seen_at=max(observed_times) if observed_times else observed_at,
         occurrence_count=resolved_count,
-        current_subject_refs=resolved_subject_refs,
-        occurrences=occurrences,
         provenance=ProblemLifecycleProvenance(
             strategy_id=STRATEGY_ID,
             strategy_version=STRATEGY_VERSION,
@@ -164,6 +160,34 @@ def sample_problem(
         ),
         record_version=record_version,
     )
+
+
+def sample_occurrences(
+    *,
+    subject_refs: tuple[ProblemGroupingSubjectRef, ...],
+    observed_at: datetime = _OBSERVED_AT,
+) -> tuple[ProblemOccurrence, ...]:
+    return tuple(
+        ProblemOccurrence(
+            subject_ref=subject_ref,
+            observed_at=observed_at,
+            strategy_id=STRATEGY_ID,
+            strategy_version=STRATEGY_VERSION,
+            method=ProblemGroupingMethod.DETERMINISTIC,
+        )
+        for subject_ref in subject_refs
+    )
+
+
+def sample_subject_refs(
+    problem: Problem,
+    *,
+    subject_refs: tuple[ProblemGroupingSubjectRef, ...] | None = None,
+    tenant_id: str | None = None,
+) -> tuple[ProblemGroupingSubjectRef, ...]:
+    if subject_refs is not None:
+        return subject_refs
+    return (_sample_subject_ref(tenant_id=tenant_id or problem.tenant_id),)
 
 
 def assert_problem_persistence_conformance(
@@ -197,10 +221,10 @@ def assert_problem_persistence_conformance(
         reconciliation_key=_sample_reconciliation_key(tenant_id=tenant_b),
     )
 
-    created = store.create(first)
+    created = store.create(first, indexed_subject_refs=(subject_a1, subject_a2))
     assert created == first
-    assert store.create(duplicate) == first
-    store.create(foreign)
+    assert store.create(duplicate, indexed_subject_refs=(subject_a1, subject_a2)) == first
+    store.create(foreign, indexed_subject_refs=(subject_b,))
 
     assert store.get(tenant_id=tenant_a, problem_id=first.problem_id) == first
     assert store.get(tenant_id=tenant_b, problem_id=foreign.problem_id) == foreign
@@ -238,8 +262,6 @@ def assert_problem_persistence_conformance(
         first_seen_at=first.first_seen_at,
         last_seen_at=_OBSERVED_AT_LATER,
         occurrence_count=first.occurrence_count + 1,
-        current_subject_refs=first.current_subject_refs,
-        occurrences=first.occurrences,
         provenance=first.provenance,
         record_version=2,
     )
@@ -261,7 +283,7 @@ def assert_problem_persistence_conformance(
         observed_at=_OBSERVED_AT_LATER,
     )
     with pytest_raises_conflict():
-        store.create(conflicting)
+        store.create(conflicting, indexed_subject_refs=(subject_a1,))
 
     other_signature = DeterministicProblemSignature(findings=(), limitations=())
     other_reconciliation = _sample_reconciliation_key(
@@ -274,7 +296,7 @@ def assert_problem_persistence_conformance(
         subject_refs=(collision_subject,),
         reconciliation_key=other_reconciliation,
     )
-    store.create(first_collision)
+    store.create(first_collision, indexed_subject_refs=(collision_subject,))
     third_signature = DeterministicProblemSignature(
         findings=(
             DeterministicFindingSignature(
@@ -294,7 +316,7 @@ def assert_problem_persistence_conformance(
         ),
     )
     with pytest_raises_conflict():
-        store.create(second_collision)
+        store.create(second_collision, indexed_subject_refs=(collision_subject,))
 
     reconciliation_collision = _sample_reconciliation_key(
         tenant_id=f"{label}-collision-tenant",
@@ -303,13 +325,13 @@ def assert_problem_persistence_conformance(
         tenant_id=f"{label}-collision-tenant",
         reconciliation_key=reconciliation_collision,
     )
-    store.create(winner)
+    store.create(winner, indexed_subject_refs=sample_subject_refs(winner))
     loser = sample_problem(
         tenant_id=f"{label}-collision-tenant",
         reconciliation_key=reconciliation_collision,
     )
     with pytest_raises_conflict():
-        store.create(loser)
+        store.create(loser, indexed_subject_refs=sample_subject_refs(loser))
     assert query_all_problems_for_tenant(store, f"{label}-collision-tenant") == (winner,)
 
     assert_failed_create_leaves_no_orphan_indexes(store, label=label)
@@ -338,9 +360,9 @@ def assert_failed_create_leaves_no_orphan_indexes(
         subject_refs=(shared,),
         reconciliation_key=loser_key,
     )
-    store.create(winner)
+    store.create(winner, indexed_subject_refs=(shared,))
     with pytest_raises_conflict():
-        store.create(loser)
+        store.create(loser, indexed_subject_refs=(shared,))
 
     assert query_all_problems_for_tenant(store, tenant_id) == (winner,)
     assert store.get(tenant_id=tenant_id, problem_id=loser.problem_id) is None
@@ -359,7 +381,7 @@ def assert_failed_create_leaves_no_orphan_indexes(
         subject_refs=(reuse_subject,),
         reconciliation_key=loser.provenance.reconciliation_key,
     )
-    assert store.create(reused) == reused
+    assert store.create(reused, indexed_subject_refs=(reuse_subject,)) == reused
 
     partial_tenant = f"{label}-partial-claim"
     owned_subject = _sample_subject_ref(tenant_id=partial_tenant)
@@ -374,14 +396,14 @@ def assert_failed_create_leaves_no_orphan_indexes(
         subject_refs=(owned_subject,),
         reconciliation_key=partial_key_a,
     )
-    store.create(problem_a)
+    store.create(problem_a, indexed_subject_refs=(owned_subject,))
     problem_b = sample_problem(
         tenant_id=partial_tenant,
         subject_refs=(free_subject, owned_subject),
         reconciliation_key=partial_key_b,
     )
     with pytest_raises_conflict():
-        store.create(problem_b)
+        store.create(problem_b, indexed_subject_refs=(free_subject, owned_subject))
 
     assert (
         store.find_by_reconciliation_key(
@@ -422,7 +444,7 @@ def assert_problem_update_publishes_subject_indexes_atomically(
         subject_refs=(subject_a,),
         reconciliation_key=reconciliation_key,
     )
-    store.create(created)
+    store.create(created, indexed_subject_refs=(subject_a,))
 
     updated = Problem(
         problem_id=created.problem_id,
@@ -431,12 +453,17 @@ def assert_problem_update_publishes_subject_indexes_atomically(
         first_seen_at=created.first_seen_at,
         last_seen_at=_OBSERVED_AT_LATER,
         occurrence_count=created.occurrence_count + 1,
-        current_subject_refs=(subject_a, subject_b),
-        occurrences=created.occurrences,
         provenance=created.provenance,
         record_version=2,
     )
-    assert store.update(updated, expected_version=1) == updated
+    assert (
+        store.update(
+            updated,
+            expected_version=1,
+            indexed_subject_refs=(subject_b,),
+        )
+        == updated
+    )
     assert store.get(tenant_id=tenant_id, problem_id=created.problem_id) == updated
     assert store.find_by_subject_ref(tenant_id=tenant_id, subject_ref=subject_b) == updated
 
@@ -448,7 +475,7 @@ def assert_problem_update_publishes_subject_indexes_atomically(
         subject_refs=(owned_subject,),
         reconciliation_key=_sample_reconciliation_key(tenant_id=collision_tenant),
     )
-    store.create(problem_q)
+    store.create(problem_q, indexed_subject_refs=(owned_subject,))
     problem_p = sample_problem(
         tenant_id=collision_tenant,
         subject_refs=(_sample_subject_ref(tenant_id=collision_tenant),),
@@ -457,7 +484,10 @@ def assert_problem_update_publishes_subject_indexes_atomically(
             signature=DeterministicProblemSignature(findings=(), limitations=()),
         ),
     )
-    store.create(problem_p)
+    store.create(
+        problem_p,
+        indexed_subject_refs=sample_subject_refs(problem_p),
+    )
     collision_update = Problem(
         problem_id=problem_p.problem_id,
         tenant_id=problem_p.tenant_id,
@@ -465,13 +495,15 @@ def assert_problem_update_publishes_subject_indexes_atomically(
         first_seen_at=problem_p.first_seen_at,
         last_seen_at=_OBSERVED_AT_LATER,
         occurrence_count=problem_p.occurrence_count + 1,
-        current_subject_refs=problem_p.current_subject_refs + (owned_subject,),
-        occurrences=problem_p.occurrences,
         provenance=problem_p.provenance,
         record_version=2,
     )
     with pytest_raises_conflict():
-        store.update(collision_update, expected_version=1)
+        store.update(
+            collision_update,
+            expected_version=1,
+            indexed_subject_refs=(owned_subject,),
+        )
     assert store.get(tenant_id=collision_tenant, problem_id=problem_p.problem_id) == problem_p
     assert (
         store.find_by_subject_ref(
@@ -490,7 +522,7 @@ def assert_problem_update_publishes_subject_indexes_atomically(
         subject_refs=(owned,),
         reconciliation_key=_sample_reconciliation_key(tenant_id=partial_tenant),
     )
-    store.create(partial_q)
+    store.create(partial_q, indexed_subject_refs=(owned,))
     partial_p = sample_problem(
         tenant_id=partial_tenant,
         subject_refs=(only_a,),
@@ -499,7 +531,7 @@ def assert_problem_update_publishes_subject_indexes_atomically(
             signature=DeterministicProblemSignature(findings=(), limitations=()),
         ),
     )
-    store.create(partial_p)
+    store.create(partial_p, indexed_subject_refs=(only_a,))
     partial_update = Problem(
         problem_id=partial_p.problem_id,
         tenant_id=partial_p.tenant_id,
@@ -507,13 +539,15 @@ def assert_problem_update_publishes_subject_indexes_atomically(
         first_seen_at=partial_p.first_seen_at,
         last_seen_at=_OBSERVED_AT_LATER,
         occurrence_count=partial_p.occurrence_count + 2,
-        current_subject_refs=(only_a, free, owned),
-        occurrences=partial_p.occurrences,
         provenance=partial_p.provenance,
         record_version=2,
     )
     with pytest_raises_conflict():
-        store.update(partial_update, expected_version=1)
+        store.update(
+            partial_update,
+            expected_version=1,
+            indexed_subject_refs=(free, owned),
+        )
     assert (
         store.find_by_subject_ref(
             tenant_id=partial_tenant,
@@ -536,7 +570,7 @@ def assert_problem_update_publishes_subject_indexes_atomically(
         tenant_id=resolve_tenant,
         subject_refs=(resolve_subject,),
     )
-    store.create(resolve_problem)
+    store.create(resolve_problem, indexed_subject_refs=(resolve_subject,))
     resolved = Problem(
         problem_id=resolve_problem.problem_id,
         tenant_id=resolve_problem.tenant_id,
@@ -544,8 +578,6 @@ def assert_problem_update_publishes_subject_indexes_atomically(
         first_seen_at=resolve_problem.first_seen_at,
         last_seen_at=resolve_problem.last_seen_at,
         occurrence_count=resolve_problem.occurrence_count,
-        current_subject_refs=resolve_problem.current_subject_refs,
-        occurrences=resolve_problem.occurrences,
         provenance=resolve_problem.provenance,
         record_version=2,
     )
@@ -580,33 +612,16 @@ def assert_problem_persistence_typed_round_trip(
         first_seen_at=_OBSERVED_AT,
         last_seen_at=observed_later,
         occurrence_count=2,
-        current_subject_refs=record.current_subject_refs,
-        occurrences=(
-            ProblemOccurrence(
-                subject_ref=subject_a,
-                observed_at=_OBSERVED_AT,
-                strategy_id=STRATEGY_ID,
-                strategy_version=STRATEGY_VERSION,
-                method=ProblemGroupingMethod.DETERMINISTIC,
-            ),
-            ProblemOccurrence(
-                subject_ref=subject_b,
-                observed_at=observed_later,
-                strategy_id=STRATEGY_ID,
-                strategy_version=STRATEGY_VERSION,
-                method=ProblemGroupingMethod.DETERMINISTIC,
-            ),
-        ),
         provenance=record.provenance,
         record_version=record.record_version,
     )
-    store.create(record)
+    store.create(record, indexed_subject_refs=(subject_a, subject_b))
     loaded = store.get(tenant_id=tenant_id, problem_id=record.problem_id)
     assert loaded == record
     assert loaded is not None
     assert loaded.first_seen_at.tzinfo is not None
     assert loaded.last_seen_at.tzinfo is not None
-    assert len(loaded.occurrences) == 2
+    assert loaded.occurrence_count == 2
 
 
 class _ConflictContext:
@@ -635,3 +650,143 @@ class _IntegrityContext:
 
 def pytest_raises_integrity() -> _IntegrityContext:
     return _IntegrityContext()
+
+
+class _CursorQueryContext:
+    def __init__(self, expected: type[BaseException]) -> None:
+        self._expected = expected
+
+    def __enter__(self) -> None:
+        return None
+
+    def __exit__(self, exc_type, exc, tb) -> bool:
+        if exc_type is not self._expected:
+            raise AssertionError(f"expected {self._expected.__name__}") from exc
+        return True
+
+
+def raises_expected(expected: type[BaseException]) -> _CursorQueryContext:
+    return _CursorQueryContext(expected)
+
+
+def assert_problem_occurrence_persistence_conformance(
+    store: ProblemOccurrencePersistence,
+    *,
+    label: str,
+) -> None:
+    """Shared behavioral contract for ``ProblemOccurrencePersistence`` backends."""
+    from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
+        ProblemOccurrenceAppendResult,
+    )
+    from intergrax.runtime.diagnostics.problem_occurrence_query import (
+        ProblemOccurrenceQueryCursorError,
+    )
+    from intergrax.runtime.diagnostics.problem_lifecycle import mint_problem_id
+    from intergrax.runtime.diagnostics.problem_occurrence_query import (
+        ProblemOccurrenceQueryCursorCodec,
+    )
+
+    _CONFORMANCE_CURSOR_SECRET = _CONFORMANCE_OCCURRENCE_CURSOR_SECRET
+
+    tenant_a = f"{label}-tenant-a"
+    tenant_b = f"{label}-tenant-b"
+    problem_a = mint_problem_id()
+    problem_b = mint_problem_id()
+    subject_a1 = _sample_subject_ref(tenant_id=tenant_a)
+    subject_a2 = _sample_subject_ref(tenant_id=tenant_a)
+    subject_b = _sample_subject_ref(tenant_id=tenant_b)
+    occurrences_a = sample_occurrences(
+        subject_refs=(subject_a1, subject_a2),
+        observed_at=_OBSERVED_AT,
+    )
+    occurrence_b = sample_occurrences(
+        subject_refs=(subject_b,),
+        observed_at=_OBSERVED_AT_LATER,
+    )[0]
+
+    first = store.append_if_absent(
+        tenant_id=tenant_a,
+        problem_id=problem_a,
+        occurrence=occurrences_a[0],
+    )
+    assert first is ProblemOccurrenceAppendResult.CREATED
+    assert (
+        store.append_if_absent(
+            tenant_id=tenant_a,
+            problem_id=problem_a,
+            occurrence=occurrences_a[0],
+        )
+        is ProblemOccurrenceAppendResult.ALREADY_EXISTS
+    )
+    assert (
+        store.append_if_absent(
+            tenant_id=tenant_b,
+            problem_id=problem_b,
+            occurrence=occurrence_b,
+        )
+        is ProblemOccurrenceAppendResult.CREATED
+    )
+    assert (
+        store.append_if_absent(
+            tenant_id=tenant_a,
+            problem_id=problem_b,
+            occurrence=occurrences_a[1],
+        )
+        is ProblemOccurrenceAppendResult.CREATED
+    )
+
+    page = store.query_occurrences(
+        tenant_id=tenant_a,
+        problem_id=problem_a,
+        limit=10,
+    )
+    assert len(page.items) == 1
+    assert page.items[0] == occurrences_a[0]
+
+    from intergrax.runtime.diagnostics.problem_occurrence_aggregate_reconciliation import (
+        scan_occurrence_aggregate,
+    )
+
+    scan = scan_occurrence_aggregate(
+        store,
+        tenant_id=tenant_a,
+        problem_id=problem_a,
+    )
+    assert scan.occurrence_count == 1
+
+    store.append_if_absent(
+        tenant_id=tenant_a,
+        problem_id=problem_a,
+        occurrence=occurrences_a[1],
+    )
+    ordered = store.query_occurrences(
+        tenant_id=tenant_a,
+        problem_id=problem_a,
+        limit=1,
+    )
+    assert len(ordered.items) == 1
+    assert ordered.has_more is True
+    second_page = store.query_occurrences(
+        tenant_id=tenant_a,
+        problem_id=problem_a,
+        limit=10,
+        cursor=ordered.next_cursor,
+    )
+    assert len(second_page.items) == 1
+    assert second_page.has_more is False
+    assert ordered.items[0].observed_at >= second_page.items[0].observed_at
+
+    forged_cursor = ProblemOccurrenceQueryCursorCodec(
+        secret=_CONFORMANCE_CURSOR_SECRET,
+    ).encode(
+        tenant_id=tenant_a,
+        problem_id=problem_a,
+        store_cursor="forged",
+    )
+    with raises_expected(ProblemOccurrenceQueryCursorError):
+        store.query_occurrences(
+            tenant_id=tenant_a,
+            problem_id=problem_b,
+            limit=1,
+            cursor=forged_cursor,
+        )

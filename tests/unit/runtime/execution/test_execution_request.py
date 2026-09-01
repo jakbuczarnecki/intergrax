@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, fields
-from dataclasses import FrozenInstanceError
+from dataclasses import dataclass, fields, is_dataclass, replace
+from pathlib import Path
 
 import pytest
 
 from intergrax.runtime.execution import ExecutionCapability, ExecutionRequest
+from intergrax.runtime.execution.inference_profile import (
+    InferenceProfileId,
+    validate_inference_profile_id,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -54,17 +58,31 @@ def test_request_stores_strongly_typed_non_dict_input() -> None:
     assert not isinstance(request.input, dict)
 
 
-def test_request_is_immutable() -> None:
+def test_execution_request_is_immutable_value_object() -> None:
+    original_input = PromptInput(text="immutable")
+    original_capabilities = frozenset({ExecutionCapability.TOOLS})
     request = ExecutionRequest[PromptInput, SummaryOutput](
-        input=PromptInput(text="immutable"),
-        capabilities=frozenset({ExecutionCapability.TOOLS}),
+        input=original_input,
+        capabilities=original_capabilities,
     )
 
-    with pytest.raises(FrozenInstanceError):
-        request.input = PromptInput(text="mutated")  # type: ignore[misc]
+    assert is_dataclass(request)
+    assert request.input is original_input
+    assert request.input.text == "immutable"
+    assert request.capabilities == original_capabilities
 
-    with pytest.raises(FrozenInstanceError):
-        request.capabilities = frozenset({ExecutionCapability.STREAMING})  # type: ignore[misc]
+    updated_capabilities = frozenset({ExecutionCapability.STREAMING})
+    replacement = replace(request, capabilities=updated_capabilities)
+
+    assert replacement is not request
+    assert request.input is original_input
+    assert request.capabilities == original_capabilities
+    assert replacement.input is original_input
+    assert replacement.capabilities == updated_capabilities
+
+    source = Path("intergrax/runtime/execution/request.py").read_text(encoding="utf-8")
+    assert "@dataclass(frozen=True, slots=True)" in source
+    assert "class ExecutionRequest" in source
 
 
 def test_output_type_declaration_is_preserved_exactly() -> None:
@@ -143,7 +161,9 @@ def test_no_metadata_options_or_config_escape_hatch_fields() -> None:
     assert "metadata" not in public_fields
     assert "options" not in public_fields
     assert "config" not in public_fields
-    assert public_fields == frozenset({"input", "output_type", "capabilities"})
+    assert public_fields == frozenset(
+        {"input", "output_type", "capabilities", "inference_profile_id"},
+    )
 
 
 def test_package_root_exports_execution_request_symbols() -> None:
@@ -152,3 +172,45 @@ def test_package_root_exports_execution_request_symbols() -> None:
 
     assert ExportedCapability is ExecutionCapability
     assert ExportedRequest is ExecutionRequest
+
+
+@pytest.mark.parametrize(
+    ("profile_id", "expected"),
+    [
+        (None, None),
+        (InferenceProfileId("primary"), InferenceProfileId("primary")),
+    ],
+)
+def test_inference_profile_id_accepts_none_and_valid_profile(
+    profile_id: InferenceProfileId | None,
+    expected: InferenceProfileId | None,
+) -> None:
+    request = ExecutionRequest[PromptInput, SummaryOutput](
+        input=PromptInput(text="profile"),
+        inference_profile_id=profile_id,
+    )
+
+    assert request.inference_profile_id == expected
+
+
+@pytest.mark.parametrize(
+    "invalid_profile_id",
+    [
+        InferenceProfileId(""),
+        InferenceProfileId("   "),
+        InferenceProfileId(" primary "),
+    ],
+)
+def test_inference_profile_id_rejects_invalid_direct_constructor_values(
+    invalid_profile_id: InferenceProfileId,
+) -> None:
+    with pytest.raises(ValueError):
+        ExecutionRequest[PromptInput, SummaryOutput](
+            input=PromptInput(text="invalid profile"),
+            inference_profile_id=invalid_profile_id,
+        )
+
+
+def test_inference_profile_id_rejects_non_string_runtime_type() -> None:
+    with pytest.raises(TypeError):
+        validate_inference_profile_id(42)

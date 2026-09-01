@@ -63,6 +63,8 @@ from intergrax.contracts.execution_identity import (
     mint_attempt_id,
     mint_run_id,
     mint_task_id,
+    peek_active_execution_id,
+    peek_active_parent_execution_id,
     reset_active_execution_identity,
     validate_run_id,
     validate_task_id,
@@ -213,7 +215,12 @@ async def run_acp_session(
             duration_ms=int((time.perf_counter() - started) * 1000),
         )
 
-    identity_token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    identity_token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=peek_active_execution_id(),
+        parent_execution_id=peek_active_parent_execution_id(),
+    )
     try:
         return await _run_acp_session_bound(
             agent=agent,
@@ -468,52 +475,59 @@ async def _run_acp_session_bound(
     last_outcome = None
     last_record = None
 
-    from intergrax.agents.authoring.acp_uaep_shim import attach_acp_catalog_exec_ctx
+    from intergrax.agents.authoring.acp_uaep_shim import (
+        attach_acp_catalog_exec_ctx,
+        close_acp_catalog_exec_ctx,
+    )
 
     for _ in range(max_iterations):
+        loop_step_ctx = step_ctx
         attach_acp_catalog_exec_ctx(
-            step_ctx,
+            loop_step_ctx,
             kernel_ctx=kernel_ctx,
             request=request,
             contract=contract,
         )
-        outcome, record = await AgentRuntime.advance_step(agent, step_ctx, kernel_ctx)
-        last_outcome = outcome
-        last_record = record
-        if record.error_code == AgentRunErrorCode.MAX_STEPS_EXCEEDED:
-            break
-        if record.error_code is not None and not record.outcome_applied:
-            fail_terminal = (
-                TerminalReason.BUDGET_EXCEEDED
-                if record.error_code == AgentRunErrorCode.BUDGET_EXCEEDED
-                else TerminalReason.ERROR
+        try:
+            outcome, record = await AgentRuntime.advance_step(agent, loop_step_ctx, kernel_ctx)
+            last_outcome = outcome
+            last_record = record
+            if record.error_code == AgentRunErrorCode.MAX_STEPS_EXCEEDED:
+                break
+            if record.error_code is not None and not record.outcome_applied:
+                fail_terminal = (
+                    TerminalReason.BUDGET_EXCEEDED
+                    if record.error_code == AgentRunErrorCode.BUDGET_EXCEEDED
+                    else TerminalReason.ERROR
+                )
+                return _failed_result(
+                    run_id=run_id,
+                    trace_id=trace_id,
+                    merged=merged,
+                    kernel_ctx=kernel_ctx,
+                    errors=outcome.errors
+                    or [
+                        AgentRunError(
+                            code=record.error_code,
+                            message=record.error_code.value,
+                        )
+                    ],
+                    duration_ms=int((time.perf_counter() - started) * 1000),
+                    terminal_reason=fail_terminal,
+                )
+            if outcome.is_terminal or outcome.next_action == StepNextAction.PAUSE_HITL:
+                break
+            step_ctx = step_ctx.model_copy(
+                update={
+                    "step_index": step_ctx.step_index + 1,
+                    "state_snapshot": dict(kernel_ctx.state_root),
+                    "invocation_usage": step_ctx.invocation_usage,
+                },
             )
-            return _failed_result(
-                run_id=run_id,
-                trace_id=trace_id,
-                merged=merged,
-                kernel_ctx=kernel_ctx,
-                errors=outcome.errors
-                or [
-                    AgentRunError(
-                        code=record.error_code,
-                        message=record.error_code.value,
-                    )
-                ],
-                duration_ms=int((time.perf_counter() - started) * 1000),
-                terminal_reason=fail_terminal,
-            )
-        if outcome.is_terminal or outcome.next_action == StepNextAction.PAUSE_HITL:
-            break
-        step_ctx = step_ctx.model_copy(
-            update={
-                "step_index": step_ctx.step_index + 1,
-                "state_snapshot": dict(kernel_ctx.state_root),
-                "invocation_usage": step_ctx.invocation_usage,
-            },
-        )
-        step_ctx.metadata.pop("uaep_exec_ctx", None)
-        step_ctx_holder[0] = step_ctx
+            step_ctx.metadata.pop("uaep_exec_ctx", None)
+            step_ctx_holder[0] = step_ctx
+        finally:
+            close_acp_catalog_exec_ctx(loop_step_ctx)
 
     if last_outcome is None or last_record is None:
         return _failed_result(

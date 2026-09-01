@@ -26,8 +26,13 @@ from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAna
 from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingEngine,
     ProblemGroupingStrategyRegistry,
+    problem_grouping_subject_ref_for_application_instance,
 )
-from intergrax.runtime.diagnostics.problem_lifecycle import ProblemLifecycleEngine
+from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+    document_store_occurrence_persistence_for_tests,
+    in_memory_document_store_for_problem_tests,
+    lifecycle_engine_for_tests,
+)
 from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessmentBuilder
 from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
@@ -94,7 +99,7 @@ def _build_orchestrator(
         lifecycle_analyzer=LifecycleAnomalyAnalyzer(),
         assessment_builder=DiagnosticAssessmentBuilder(),
         grouping_engine=ProblemGroupingEngine(registry),
-        problem_lifecycle_engine=ProblemLifecycleEngine(persistence),
+        problem_lifecycle_engine=lifecycle_engine_for_tests(persistence),
     )
     return orchestrator, persistence
 
@@ -244,7 +249,11 @@ def test_empty_subject_inputs_rejected() -> None:
 def test_application_subject_does_not_synthesize_task_run_ids() -> None:
     orchestrator, _ = _build_orchestrator()
     result = orchestrator.run(_signal_request(_signal_scope("instance-i1")))
-    subject_ref = result.lifecycle_result.created[0].current_subject_refs[0]
+    subject_ref = problem_grouping_subject_ref_for_application_instance(
+        tenant_id=_TENANT_A,
+        application_id=_APP_ID,
+        instance_id="instance-i1",
+    )
     assert subject_ref.execution() is None
     app_ref = subject_ref.application_instance()
     assert app_ref is not None

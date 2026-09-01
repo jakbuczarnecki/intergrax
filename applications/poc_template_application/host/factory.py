@@ -28,6 +28,7 @@ from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
 from poc_template_application.host.settings import PocTemplateApplicationSettings
 from poc_template_application.host.wiring import build_poc_template_registry
 from poc_template_application.manifest import build_poc_template_manifest
@@ -58,6 +59,7 @@ def create_poc_template_application(
         checkpoints_db_path=checkpoints_db_path,
     )
     nexus_loop = runtime.nexus_loop
+    host_execution = build_environment_host_task_execution(nexus_loop, env)
     resolved_registry = registry
     platform = bootstrap_nexus_platform(
         nexus_loop,
@@ -101,7 +103,11 @@ def create_poc_template_application(
         runtime_event_store=runtime.observability.runtime_event_store,
     )
     app.title = "Intergrax Poc Template Lab Application"
-    mount_poc_template_routes(app, nexus_loop=nexus_loop, prefix=settings.route_prefix)
+    mount_poc_template_routes(
+        app,
+        host_execution=host_execution,
+        prefix=settings.route_prefix,
+    )
     if settings.include_task_control:
         wire_harness_task_control(
             app,
@@ -129,7 +135,7 @@ def create_poc_template_application(
         from poc_template_application.mcp.server import build_poc_template_mcp_server
 
         mcp = build_poc_template_mcp_server(
-            nexus_loop=nexus_loop,
+            host_execution=host_execution,
             route_prefix=settings.route_prefix,
             tool_registry=runtime.env_wiring.tool_wiring.registry,
         )

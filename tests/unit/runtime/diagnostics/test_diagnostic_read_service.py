@@ -48,6 +48,15 @@ from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
 )
 from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
+from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+    document_store_occurrence_persistence_for_tests,
+    in_memory_document_store_for_problem_tests,
+    lifecycle_engine_for_tests,
+    read_service_for_tests,
+)
+from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
+    ProblemOccurrencePersistence,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -127,35 +136,79 @@ def _retry_after_completed_sequence(
     ]
 
 
+from weakref import WeakKeyDictionary
+
+_OCCURRENCE_BY_PERSISTENCE: WeakKeyDictionary[
+    InMemoryProblemPersistence,
+    ProblemOccurrencePersistence,
+] = WeakKeyDictionary()
+
+
+def _occurrence_persistence_for(
+    persistence: InMemoryProblemPersistence,
+) -> ProblemOccurrencePersistence:
+    existing = _OCCURRENCE_BY_PERSISTENCE.get(persistence)
+    if existing is not None:
+        return existing
+    store = in_memory_document_store_for_problem_tests()
+    occurrence_persistence = document_store_occurrence_persistence_for_tests(store)
+    _OCCURRENCE_BY_PERSISTENCE[persistence] = occurrence_persistence
+    return occurrence_persistence
+
+
+def _diagnostic_stack(
+    persistence: InMemoryProblemPersistence | None = None,
+) -> tuple[InMemoryProblemPersistence, ProblemOccurrencePersistence]:
+    resolved_persistence = persistence or InMemoryProblemPersistence()
+    return resolved_persistence, _occurrence_persistence_for(resolved_persistence)
+
+
+def _lifecycle_engine(persistence: InMemoryProblemPersistence) -> ProblemLifecycleEngine:
+    return lifecycle_engine_for_tests(
+        persistence,
+        _occurrence_persistence_for(persistence),
+    )
+
+
 def _persist_problem(
     *,
     tenant_id: str = _TENANT_A,
     observed_at: datetime = _OBSERVED_AT,
     persistence: InMemoryProblemPersistence | None = None,
     runtime_store: InMemoryRuntimeEventStore | None = None,
-) -> tuple[Problem, InMemoryProblemPersistence, InMemoryRuntimeEventStore]:
-    persistence = persistence or InMemoryProblemPersistence()
+) -> tuple[
+    Problem,
+    InMemoryProblemPersistence,
+    ProblemOccurrencePersistence,
+    InMemoryRuntimeEventStore,
+]:
+    persistence, occurrence_persistence = _diagnostic_stack(persistence)
     runtime_store = runtime_store or InMemoryRuntimeEventStore()
-    lifecycle = ProblemLifecycleEngine(persistence)
+    lifecycle = lifecycle_engine_for_tests(persistence, occurrence_persistence)
     grouping = _grouping_engine().group(
         _assess_retry_pair(tenant_id=tenant_id, runtime_store=runtime_store),
         strategy_id=STRATEGY_ID,
     )
     result = lifecycle.reconcile(grouping, observed_at=observed_at)
     problem = result.created[0]
-    return problem, persistence, runtime_store
+    return problem, persistence, occurrence_persistence, runtime_store
 
 
 def _read_service(
     persistence: InMemoryProblemPersistence,
     runtime_store: InMemoryRuntimeEventStore | None = None,
+    *,
+    occurrence_persistence: ProblemOccurrencePersistence | None = None,
 ) -> DiagnosticReadService:
-    return DiagnosticReadService(
-        problem_persistence=persistence,
-        execution_reconstructor=ExecutionReconstructor(
+    _, resolved_occurrence = _diagnostic_stack(persistence)
+    occurrence = occurrence_persistence or resolved_occurrence
+    return read_service_for_tests(
+        persistence,
+        ExecutionReconstructor(
             runtime_events=runtime_store or InMemoryRuntimeEventStore(),
             causal_evidence=InMemoryCausalEvidencePersistence(),
         ),
+        occurrence_persistence=occurrence,
     )
 
 
@@ -185,8 +238,8 @@ def test_list_empty_tenant_returns_empty_result() -> None:
 
 def test_list_returns_only_tenant_scoped_problems() -> None:
     persistence = InMemoryProblemPersistence()
-    problem_a, _, _ = _persist_problem(tenant_id=_TENANT_A, persistence=persistence)
-    problem_b, _, _ = _persist_problem(tenant_id=_TENANT_B, persistence=persistence)
+    problem_a, _, _, _ = _persist_problem(tenant_id=_TENANT_A, persistence=persistence)
+    problem_b, _, _, _ = _persist_problem(tenant_id=_TENANT_B, persistence=persistence)
     service = _read_service(persistence)
 
     result_a = service.list_problems(tenant_id=_TENANT_A)
@@ -198,8 +251,8 @@ def test_list_returns_only_tenant_scoped_problems() -> None:
 
 def test_list_status_filter() -> None:
     persistence = InMemoryProblemPersistence()
-    problem, _, _ = _persist_problem(persistence=persistence)
-    lifecycle = ProblemLifecycleEngine(persistence)
+    problem, _, _, _ = _persist_problem(persistence=persistence)
+    lifecycle = _lifecycle_engine(persistence)
     lifecycle.resolve(
         tenant_id=_TENANT_A,
         problem_id=problem.problem_id,
@@ -217,7 +270,7 @@ def test_list_status_filter() -> None:
 
 def test_list_deterministic_ordering() -> None:
     persistence = InMemoryProblemPersistence()
-    lifecycle = ProblemLifecycleEngine(persistence)
+    lifecycle = _lifecycle_engine(persistence)
     first_grouping = _grouping_engine().group(_assess_retry_pair(), strategy_id=STRATEGY_ID)
     lifecycle.reconcile(first_grouping, observed_at=_OBSERVED_AT_EARLIER)
     second_grouping = _grouping_engine().group(
@@ -235,7 +288,7 @@ def test_list_deterministic_ordering() -> None:
 
 def test_list_limit_truncation_explicit() -> None:
     persistence = InMemoryProblemPersistence()
-    lifecycle = ProblemLifecycleEngine(persistence)
+    lifecycle = _lifecycle_engine(persistence)
     for observed_at, violating_event_type in (
         (_OBSERVED_AT_EARLIER, RuntimeEventType.RETRY_SCHEDULED),
         (_OBSERVED_AT_LATER, RuntimeEventType.TASK_FAILED),
@@ -259,9 +312,10 @@ def test_list_does_not_call_execution_reconstructor() -> None:
     persistence = InMemoryProblemPersistence()
     _persist_problem(persistence=persistence)
     reconstructor = MagicMock(spec=ExecutionReconstructor)
-    service = DiagnosticReadService(
-        problem_persistence=persistence,
-        execution_reconstructor=reconstructor,
+    service = read_service_for_tests(
+        persistence,
+        reconstructor,
+        occurrence_persistence=_occurrence_persistence_for(persistence),
     )
 
     service.list_problems(tenant_id=_TENANT_A)
@@ -271,7 +325,7 @@ def test_list_does_not_call_execution_reconstructor() -> None:
 
 def test_get_problem_returns_stable_fields() -> None:
     persistence = InMemoryProblemPersistence()
-    problem, _, runtime_store = _persist_problem(persistence=persistence)
+    problem, _, _, runtime_store = _persist_problem(persistence=persistence)
     service = _read_service(persistence, runtime_store)
 
     detail = service.get_problem(tenant_id=_TENANT_A, problem_id=problem.problem_id)
@@ -289,7 +343,7 @@ def test_get_problem_returns_stable_fields() -> None:
 def test_get_problem_occurrences_ordered_newest_first() -> None:
     persistence = InMemoryProblemPersistence()
     runtime_store = InMemoryRuntimeEventStore()
-    lifecycle = ProblemLifecycleEngine(persistence)
+    lifecycle = _lifecycle_engine(persistence)
     first_input, second_input = _assess_retry_pair(runtime_store=runtime_store)
     third_input, _ = _assess_retry_pair(runtime_store=runtime_store)
     pair_grouping = _grouping_engine().group((first_input, second_input), strategy_id=STRATEGY_ID)
@@ -312,14 +366,15 @@ def test_get_problem_occurrences_ordered_newest_first() -> None:
 
 def test_get_problem_reconstructs_through_diag_pipeline() -> None:
     persistence = InMemoryProblemPersistence()
-    problem, _, runtime_store = _persist_problem(persistence=persistence)
+    problem, _, _, runtime_store = _persist_problem(persistence=persistence)
     reconstructor = ExecutionReconstructor(
         runtime_events=runtime_store,
         causal_evidence=InMemoryCausalEvidencePersistence(),
     )
-    service = DiagnosticReadService(
-        problem_persistence=persistence,
-        execution_reconstructor=reconstructor,
+    service = read_service_for_tests(
+        persistence,
+        reconstructor,
+        occurrence_persistence=_occurrence_persistence_for(persistence),
     )
 
     detail = service.get_problem(tenant_id=_TENANT_A, problem_id=problem.problem_id)
@@ -340,15 +395,35 @@ def test_get_problem_reconstructs_through_diag_pipeline() -> None:
 
 def test_get_problem_other_tenant_returns_none() -> None:
     persistence = InMemoryProblemPersistence()
-    problem, _, runtime_store = _persist_problem(persistence=persistence)
+    problem, _, _, runtime_store = _persist_problem(persistence=persistence)
     service = _read_service(persistence, runtime_store)
 
     assert service.get_problem(tenant_id=_TENANT_B, problem_id=problem.problem_id) is None
 
 
 def test_get_problem_malformed_occurrence_tenant_mismatch_fails_closed() -> None:
-    persistence = InMemoryProblemPersistence()
-    problem, _, runtime_store = _persist_problem(persistence=persistence)
+    from intergrax.integrations.contracts.document_store import DocumentRecord
+    from intergrax.runtime.diagnostics.document_store_problem_occurrence_persistence import (
+        _occurrence_partition,
+        _occurrence_row_key,
+    )
+    from intergrax.runtime.diagnostics.problem_occurrence_id import problem_occurrence_id_for
+    from intergrax.runtime.diagnostics.problem_occurrence_record_codec import (
+        encode_problem_occurrence_record,
+    )
+    from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+        document_store_lifecycle_stack_for_tests,
+    )
+
+    store, problem_persistence, occurrence_persistence, lifecycle = (
+        document_store_lifecycle_stack_for_tests()
+    )
+    runtime_store = InMemoryRuntimeEventStore()
+    grouping = _grouping_engine().group(
+        _assess_retry_pair(runtime_store=runtime_store),
+        strategy_id=STRATEGY_ID,
+    )
+    problem = lifecycle.reconcile(grouping, observed_at=_OBSERVED_AT).created[0]
     bad_occurrence = ProblemOccurrence(
         subject_ref=problem_grouping_subject_ref_for_execution(
             tenant_id=_TENANT_B,
@@ -360,20 +435,23 @@ def test_get_problem_malformed_occurrence_tenant_mismatch_fails_closed() -> None
         strategy_version=problem.provenance.strategy_version,
         method=ProblemGroupingMethod.DETERMINISTIC,
     )
-    corrupted = Problem(
-        problem_id=problem.problem_id,
-        tenant_id=problem.tenant_id,
-        status=problem.status,
-        first_seen_at=problem.first_seen_at,
-        last_seen_at=problem.last_seen_at,
-        occurrence_count=problem.occurrence_count + 1,
-        current_subject_refs=problem.current_subject_refs + (bad_occurrence.subject_ref,),
-        occurrences=problem.occurrences + (bad_occurrence,),
-        provenance=problem.provenance,
-        record_version=problem.record_version,
+    occurrence_id = problem_occurrence_id_for(bad_occurrence)
+    store.put_if_absent(
+        DocumentRecord(
+            partition_key=_occurrence_partition(_TENANT_A, problem.problem_id),
+            row_key=_occurrence_row_key(bad_occurrence, occurrence_id=occurrence_id),
+            data=encode_problem_occurrence_record(bad_occurrence),
+        ),
     )
-    persistence._records[(problem.tenant_id, problem.problem_id)] = corrupted
-    service = _read_service(persistence, runtime_store)
+    service = read_service_for_tests(
+        problem_persistence,
+        ExecutionReconstructor(
+            runtime_events=runtime_store,
+            causal_evidence=InMemoryCausalEvidencePersistence(),
+        ),
+        occurrence_persistence=occurrence_persistence,
+        document_store=store,
+    )
 
     with pytest.raises(DiagnosticReadIntegrityError):
         service.get_problem(tenant_id=_TENANT_A, problem_id=problem.problem_id)
@@ -382,7 +460,7 @@ def test_get_problem_malformed_occurrence_tenant_mismatch_fails_closed() -> None
 def test_get_problem_occurrence_truncation_explicit() -> None:
     persistence = InMemoryProblemPersistence()
     runtime_store = InMemoryRuntimeEventStore()
-    lifecycle = ProblemLifecycleEngine(persistence)
+    lifecycle = _lifecycle_engine(persistence)
     first_input, second_input = _assess_retry_pair(runtime_store=runtime_store)
     third_input, _ = _assess_retry_pair(runtime_store=runtime_store)
     pair_grouping = _grouping_engine().group((first_input, second_input), strategy_id=STRATEGY_ID)
@@ -409,7 +487,7 @@ def test_get_problem_occurrence_truncation_explicit() -> None:
 
 def test_get_problem_unavailable_when_execution_evidence_missing() -> None:
     persistence = InMemoryProblemPersistence()
-    problem, _, _ = _persist_problem(persistence=persistence)
+    problem, _, _, _ = _persist_problem(persistence=persistence)
     empty_runtime_store = InMemoryRuntimeEventStore()
     service = _read_service(persistence, empty_runtime_store)
 
@@ -426,7 +504,7 @@ def test_get_problem_unavailable_when_execution_evidence_missing() -> None:
 
 def test_read_dtos_exclude_forbidden_fields() -> None:
     persistence = InMemoryProblemPersistence()
-    problem, _, runtime_store = _persist_problem(persistence=persistence)
+    problem, _, _, runtime_store = _persist_problem(persistence=persistence)
     service = _read_service(persistence, runtime_store)
 
     list_result = service.list_problems(tenant_id=_TENANT_A)
@@ -450,6 +528,7 @@ def test_read_service_is_read_only() -> None:
     )
     service = DiagnosticReadService(
         problem_persistence=persistence,
+        occurrence_persistence=MagicMock(spec=ProblemOccurrencePersistence),
         execution_reconstructor=MagicMock(spec=ExecutionReconstructor),
     )
 
@@ -461,7 +540,7 @@ def test_read_service_is_read_only() -> None:
 
 def test_get_problem_does_not_mutate_persistence() -> None:
     persistence = InMemoryProblemPersistence()
-    problem, _, runtime_store = _persist_problem(persistence=persistence)
+    problem, _, _, runtime_store = _persist_problem(persistence=persistence)
     before = persistence.get(tenant_id=_TENANT_A, problem_id=problem.problem_id)
     service = _read_service(persistence, runtime_store)
 
@@ -482,13 +561,14 @@ def _read_service_with_list_records(
     )
     return DiagnosticReadService(
         problem_persistence=persistence,
+        occurrence_persistence=MagicMock(spec=ProblemOccurrencePersistence),
         execution_reconstructor=MagicMock(spec=ExecutionReconstructor),
     )
 
 
 def test_list_matching_tenant_records_unchanged() -> None:
     persistence = InMemoryProblemPersistence()
-    problem, _, _ = _persist_problem(persistence=persistence)
+    problem, _, _, _ = _persist_problem(persistence=persistence)
     service = _read_service(persistence)
 
     result = service.list_problems(tenant_id=_TENANT_A)
@@ -499,7 +579,7 @@ def test_list_matching_tenant_records_unchanged() -> None:
 
 
 def test_list_cross_tenant_record_raises_integrity_error() -> None:
-    problem, _, _ = _persist_problem(tenant_id=_TENANT_A)
+    problem, _, _, _ = _persist_problem(tenant_id=_TENANT_A)
     cross_tenant = replace(problem, tenant_id=_TENANT_B)
     service = _read_service_with_list_records((cross_tenant,))
 
@@ -511,8 +591,8 @@ def test_list_cross_tenant_record_raises_integrity_error() -> None:
 
 
 def test_list_mixed_tenant_records_raises_without_partial_result() -> None:
-    problem_a, _, _ = _persist_problem(tenant_id=_TENANT_A)
-    problem_b, _, _ = _persist_problem(tenant_id=_TENANT_B)
+    problem_a, _, _, _ = _persist_problem(tenant_id=_TENANT_A)
+    problem_b, _, _, _ = _persist_problem(tenant_id=_TENANT_B)
     service = _read_service_with_list_records((problem_a, problem_b))
 
     with pytest.raises(DiagnosticReadIntegrityError):
@@ -520,7 +600,7 @@ def test_list_mixed_tenant_records_raises_without_partial_result() -> None:
 
 
 def test_list_cross_tenant_fails_before_summary_conversion() -> None:
-    problem, _, _ = _persist_problem(tenant_id=_TENANT_A)
+    problem, _, _, _ = _persist_problem(tenant_id=_TENANT_A)
     cross_tenant = replace(problem, tenant_id=_TENANT_B)
     service = _read_service_with_list_records((cross_tenant,))
 
@@ -535,7 +615,7 @@ def test_list_cross_tenant_fails_before_summary_conversion() -> None:
 
 def test_list_status_open_filter_works() -> None:
     persistence = InMemoryProblemPersistence()
-    problem, _, _ = _persist_problem(persistence=persistence)
+    problem, _, _, _ = _persist_problem(persistence=persistence)
     service = _read_service(persistence)
 
     result = service.list_problems(tenant_id=_TENANT_A, status=ProblemStatus.OPEN)

@@ -11,10 +11,14 @@ from typing import Optional, Protocol
 
 from pydantic import BaseModel, Field
 
+from intergrax.contracts.execution_identity import AttemptId, RunId
 from intergrax.queueing.contracts.task_queue import TaskRequest, TaskStatus
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
-from intergrax.runtime.task.task import TaskResult as RuntimeTaskResult
+from intergrax.runtime.background_execution.identity_admission import (
+    assert_handler_run_id_matches_identity,
+)
+from intergrax.runtime.task.task import Task, TaskResult as RuntimeTaskResult
 from intergrax.tools.execution_models import ToolExecutionResult
 from local_workspace_application.background_ingest.contracts import (
     LKW_BACKGROUND_INGEST_TASK_NAME,
@@ -28,7 +32,13 @@ from local_workspace_application.background_ingest.handler import (
 
 
 class BackgroundIngestTaskRunner(Protocol):
-    async def run_task(self, task: object) -> RuntimeTaskResult:
+    async def run_task(
+        self,
+        task: Task,
+        *,
+        run_id: RunId,
+        attempt_id: AttemptId,
+    ) -> RuntimeTaskResult:
         ...
 
 
@@ -64,7 +74,6 @@ def make_background_ingest_worker_handler(
         idempotency_key: Optional[str] = None,
         execution_identity: BackgroundExecutionIdentity,
     ) -> ToolExecutionResult[BackgroundIngestWorkerOutput]:
-        _ = execution_identity
         try:
             job = decode_background_ingest_job(payload)
             if job.tenant_id != tenant_id:
@@ -72,6 +81,20 @@ def make_background_ingest_worker_handler(
                     "background_ingest_tenant_mismatch",
                     "background_ingest_tenant_mismatch",
                 )
+            if execution_identity.tenant_id != tenant_id:
+                return ToolExecutionResult.fail(
+                    "background_ingest_tenant_mismatch",
+                    "background_ingest_tenant_mismatch",
+                )
+            if job.tenant_id != execution_identity.tenant_id:
+                return ToolExecutionResult.fail(
+                    "background_ingest_tenant_mismatch",
+                    "background_ingest_tenant_mismatch",
+                )
+            assert_handler_run_id_matches_identity(
+                handler_run_id=run_id,
+                execution_identity=execution_identity,
+            )
             resolved_idempotency = idempotency_key or background_ingest_idempotency_key(job)
             request = TaskRequest(
                 tenant_id=tenant_id,
@@ -81,7 +104,13 @@ def make_background_ingest_worker_handler(
                 idempotency_key=resolved_idempotency,
             )
             queue_result = _run_coro_sync(
-                handle_background_ingest_task_request(request, runner),
+                handle_background_ingest_task_request(
+                    request,
+                    runner,
+                    task_id=execution_identity.task_id,
+                    run_id=execution_identity.run_id,
+                    attempt_id=execution_identity.attempt_id,
+                ),
             )
             if queue_result.status != TaskStatus.SUCCEEDED:
                 message = queue_result.error_message or queue_result.status.value

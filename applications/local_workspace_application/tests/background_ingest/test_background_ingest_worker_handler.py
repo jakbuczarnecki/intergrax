@@ -83,10 +83,16 @@ def _bootstrap_identity(*, tenant_id: str, transport_task_id: str):
 
 
 class _FakeRunner:
-    async def run_task(self, task: Task) -> RuntimeTaskResult:
+    async def run_task(
+        self,
+        task: Task,
+        *,
+        run_id: str,
+        attempt_id: str,
+    ) -> RuntimeTaskResult:
         return RuntimeTaskResult(
             task_id=task.task_id,
-            run_id=task.task_id,
+            run_id=run_id,
             state=TaskState.COMPLETED,
             answer="indexed",
             agent_id=task.agent_id,

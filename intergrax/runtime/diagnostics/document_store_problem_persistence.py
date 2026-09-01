@@ -5,7 +5,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 
 from typing import Protocol, runtime_checkable
 
@@ -40,6 +42,14 @@ from intergrax.runtime.diagnostics.problem_list_query import (
     list_scopes_for_status,
     problem_list_row_key_prefix,
     problem_list_scope_for_status,
+)
+from intergrax.runtime.diagnostics.problem_list_index_reconciliation import (
+    MIN_SAFE_PROJECTION_AGE,
+    ProblemListIndexReconciler,
+    ProblemListIndexReconciliationPage,
+    ProblemListProjectionHealth,
+    ProblemListProjectionTelemetrySnapshot,
+    projection_health_from_state,
 )
 from intergrax.runtime.diagnostics.problem_record_codec import (
     decode_problem_record,
@@ -138,12 +148,14 @@ class _IndexClaims:
         canonical: Problem,
         *,
         partition_key: str,
+        indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
     ) -> None:
         required_keys = {
             (document.partition_key, document.row_key)
             for document in _required_index_documents(
                 canonical,
                 partition_key=partition_key,
+                indexed_subject_refs=indexed_subject_refs,
             )
         }
         for document in reversed(self._claimed):
@@ -169,6 +181,7 @@ def _required_index_documents(
     canonical: Problem,
     *,
     partition_key: str,
+    indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
 ) -> tuple[DocumentRecord, ...]:
     documents = [
         DocumentRecord(
@@ -177,7 +190,7 @@ def _required_index_documents(
             data=_encode_index_ref(canonical.problem_id),
         ),
     ]
-    for subject_ref in canonical.current_subject_refs:
+    for subject_ref in indexed_subject_refs:
         documents.append(
             DocumentRecord(
                 partition_key=partition_key,
@@ -186,18 +199,6 @@ def _required_index_documents(
             ),
         )
     return tuple(documents)
-
-
-def _new_subject_refs(
-    existing: Problem,
-    record: Problem,
-) -> tuple[ProblemGroupingSubjectRef, ...]:
-    existing_refs = set(existing.current_subject_refs)
-    return tuple(
-        subject_ref
-        for subject_ref in record.current_subject_refs
-        if subject_ref not in existing_refs
-    )
 
 
 class DocumentStoreProblemPersistence(ProblemPersistence):
@@ -216,14 +217,69 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
             )
         self._document_store = document_store
         self._list_cursor_codec = ProblemListQueryCursorCodec(secret=list_cursor_secret)
+        self._document_query_cursor_codec = self._resolve_document_query_cursor_codec(
+            document_store,
+            document_query_cursor_codec,
+        )
+        self._clock: Callable[[], datetime] = lambda: datetime.now(UTC)
+        self._list_index_reconciler = ProblemListIndexReconciler(
+            document_store=document_store,
+            document_query_cursor_codec=self._document_query_cursor_codec,
+            clock=self._clock,
+        )
+
+    @staticmethod
+    def _resolve_document_query_cursor_codec(
+        document_store: ConditionalDocumentStore,
+        document_query_cursor_codec: DocumentQueryCursorCodec | None,
+    ) -> DocumentQueryCursorCodec:
         if document_query_cursor_codec is not None:
-            self._document_query_cursor_codec = document_query_cursor_codec
-        elif isinstance(document_store, DocumentStoreQueryCursorProvider):
-            self._document_query_cursor_codec = document_store.query_cursor_codec
-        else:
-            raise TypeError(
-                "problem persistence requires document store query cursor codec",
-            )
+            return document_query_cursor_codec
+        if isinstance(document_store, DocumentStoreQueryCursorProvider):
+            return document_store.query_cursor_codec
+        raise TypeError(
+            "problem persistence requires document store query cursor codec",
+        )
+
+    def set_clock_for_tests(self, clock: Callable[[], datetime]) -> None:
+        """Inject deterministic UTC clock (tests only)."""
+        self._clock = clock
+        self._list_index_reconciler.clock = clock
+
+    def reconcile_list_indexes(
+        self,
+        *,
+        tenant_id: str,
+        minimum_projection_age: timedelta = MIN_SAFE_PROJECTION_AGE,
+        scope: ProblemListScope | None = None,
+        limit: int = 100,
+        cursor: str | None = None,
+    ) -> ProblemListIndexReconciliationPage:
+        """
+        Bounded maintenance reconciliation for derived list index projections.
+
+        Destructive repair/delete requires projections to be older than
+        ``minimum_projection_age`` relative to the reconciler clock. Callers cannot
+        request an age below ``MIN_SAFE_PROJECTION_AGE``.
+        """
+        return self._list_index_reconciler.reconcile_list_indexes(
+            tenant_id=tenant_id,
+            minimum_projection_age=minimum_projection_age,
+            scope=scope,
+            limit=limit,
+            cursor=cursor,
+        )
+
+    def projection_telemetry_snapshot(self) -> ProblemListProjectionTelemetrySnapshot:
+        """Return process-local projection skip/repair counters for operator visibility."""
+        return self._list_index_reconciler.telemetry.snapshot()
+
+    def projection_health(self) -> ProblemListProjectionHealth:
+        """Return process-local projection health derived from reads and maintenance."""
+        return projection_health_from_state(
+            telemetry=self._list_index_reconciler.telemetry,
+            health_state=self._list_index_reconciler.health_state,
+        )
 
     def get(self, *, tenant_id: str, problem_id: ProblemId) -> Problem | None:
         partition_key = _document_partition(tenant_id)
@@ -259,6 +315,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
                 status_filter=scope,
             )
 
+        self._list_index_reconciler.health_state.last_query_skip_count = 0
         problems, last_index_row_key, has_more = self._collect_bounded_query_page(
             tenant_id=tenant_id,
             partition_key=partition_key,
@@ -452,18 +509,20 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
             raise ProblemPersistenceIntegrityError(
                 "canonical Problem id does not match subject index reference",
             )
-        if subject_ref not in problem.current_subject_refs:
-            raise ProblemPersistenceIntegrityError(
-                "canonical Problem does not contain indexed subject_ref",
-            )
         return problem
 
-    def create(self, record: Problem) -> Problem:
+    def create(
+        self,
+        record: Problem,
+        *,
+        indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
+    ) -> Problem:
         partition_key = _document_partition(record.tenant_id)
         claims = _IndexClaims(self._document_store)
         try:
             self._claim_indexes_for_create(
                 record=record,
+                indexed_subject_refs=indexed_subject_refs,
                 partition_key=partition_key,
                 claims=claims,
             )
@@ -492,8 +551,13 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
                     existing_record,
                     record,
                     partition_key=partition_key,
+                    indexed_subject_refs=indexed_subject_refs,
                 )
-            claims.rollback_except_required_by(stored, partition_key=partition_key)
+            claims.rollback_except_required_by(
+                stored,
+                partition_key=partition_key,
+                indexed_subject_refs=indexed_subject_refs,
+            )
             raise ProblemPersistenceConflictError("conflicting Problem for problem_id")
 
         return self._resolve_canonical_create_race(
@@ -501,9 +565,16 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
             canonical_document=canonical_document,
             partition_key=partition_key,
             claims=claims,
+            indexed_subject_refs=indexed_subject_refs,
         )
 
-    def update(self, record: Problem, *, expected_version: int) -> Problem:
+    def update(
+        self,
+        record: Problem,
+        *,
+        expected_version: int,
+        indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
+    ) -> Problem:
         partition_key = _document_partition(record.tenant_id)
         row_key = _record_row_key(record.problem_id)
         existing_record = self._document_store.get(partition_key, row_key)
@@ -525,20 +596,13 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
             record=record,
             partition_key=partition_key,
         )
-        for subject_ref in existing.current_subject_refs:
-            self._verify_subject_index_for_update(
-                record=record,
-                subject_ref=subject_ref,
-                partition_key=partition_key,
-            )
 
-        new_subject_refs = _new_subject_refs(existing, record)
         claims = _IndexClaims(self._document_store)
         list_index_plan: _ListIndexUpdatePlan | None = None
         try:
             self._claim_new_subject_indexes_for_update(
                 record=record,
-                new_subject_refs=new_subject_refs,
+                new_subject_refs=indexed_subject_refs,
                 partition_key=partition_key,
                 claims=claims,
             )
@@ -587,6 +651,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
         self,
         *,
         record: Problem,
+        indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...],
         partition_key: str,
         claims: _IndexClaims,
     ) -> None:
@@ -597,7 +662,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
         if not claims.try_claim(reconciliation_document):
             self._verify_index_document(reconciliation_document, record)
 
-        for subject_ref in record.current_subject_refs:
+        for subject_ref in indexed_subject_refs:
             subject_document = self._subject_index_document(
                 record=record,
                 subject_ref=subject_ref,
@@ -622,6 +687,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
         canonical_document: DocumentRecord,
         partition_key: str,
         claims: _IndexClaims,
+        indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...],
     ) -> Problem:
         existing_record = self._document_store.get(
             partition_key,
@@ -635,8 +701,13 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
                 existing_record,
                 record,
                 partition_key=partition_key,
+                indexed_subject_refs=indexed_subject_refs,
             )
-        claims.rollback_except_required_by(stored, partition_key=partition_key)
+        claims.rollback_except_required_by(
+            stored,
+            partition_key=partition_key,
+            indexed_subject_refs=indexed_subject_refs,
+        )
         raise ProblemPersistenceConflictError("conflicting Problem for problem_id")
 
     def _canonical_document(self, record: Problem) -> DocumentRecord:
@@ -821,9 +892,10 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
         record: Problem,
         *,
         partition_key: str,
+        indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
     ) -> Problem:
         self._ensure_reconciliation_index(record=record, partition_key=partition_key)
-        for subject_ref in record.current_subject_refs:
+        for subject_ref in indexed_subject_refs:
             self._ensure_subject_index(
                 record=record,
                 subject_ref=subject_ref,
@@ -838,6 +910,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
         incoming: Problem,
         *,
         partition_key: str,
+        indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
     ) -> Problem:
         stored = decode_problem_record(dict(existing_record.data))
         if stored != incoming:
@@ -845,13 +918,28 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
                 "conflicting Problem for problem_id",
             )
         self._ensure_reconciliation_index(record=stored, partition_key=partition_key)
-        for subject_ref in stored.current_subject_refs:
+        for subject_ref in indexed_subject_refs:
             self._ensure_subject_index(
                 record=stored,
                 subject_ref=subject_ref,
                 partition_key=partition_key,
             )
         self._ensure_list_indexes(record=stored, partition_key=partition_key)
+        return stored
+
+    def _get_stored_list_index_document(
+        self,
+        *,
+        record: Problem,
+        scope: ProblemListScope,
+        partition_key: str,
+    ) -> DocumentRecord:
+        row_key = list_index_row_key(scope=scope, problem=record)
+        stored = self._document_store.get(partition_key, row_key)
+        if stored is None:
+            raise ProblemPersistenceIntegrityError(
+                "diagnostic problem list index missing for update",
+            )
         return stored
 
     def _list_index_document(
@@ -869,6 +957,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
                 last_seen_at=record.last_seen_at,
                 status=record.status,
                 record_version=record.record_version,
+                projection_written_at=self._clock(),
             ),
         )
 
@@ -878,17 +967,15 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
             raise ProblemPersistenceIntegrityError(
                 "diagnostic problem list index verification failed",
             )
-        indexed_id, indexed_last_seen, indexed_status, indexed_version = decode_list_index_data(
-            dict(existing.data),
-        )
-        if indexed_id != record.problem_id:
+        indexed = decode_list_index_data(dict(existing.data))
+        if indexed.problem_id != record.problem_id:
             raise ProblemPersistenceConflictError(
                 "list index already bound to another Problem",
             )
         if (
-            indexed_last_seen != record.last_seen_at
-            or indexed_status is not record.status
-            or indexed_version != record.record_version
+            indexed.last_seen_at != record.last_seen_at
+            or indexed.status is not record.status
+            or indexed.record_version != record.record_version
         ):
             raise ProblemPersistenceConflictError(
                 "list index already bound to incompatible Problem metadata",
@@ -903,27 +990,33 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
         expected_status: ProblemStatus | None,
     ) -> Problem | None:
         try:
-            indexed_id, indexed_last_seen, indexed_status, indexed_version = (
-                decode_list_index_data(dict(index_document.data))
-            )
+            indexed = decode_list_index_data(dict(index_document.data))
         except ValueError as exc:
             raise ProblemPersistenceIntegrityError(
                 "invalid diagnostic problem list index",
             ) from exc
-        record = self._document_store.get(partition_key, _record_row_key(indexed_id))
+        record = self._document_store.get(partition_key, _record_row_key(indexed.problem_id))
         if record is None:
+            self._list_index_reconciler.telemetry.skipped_missing_canonical += 1
+            self._list_index_reconciler.health_state.last_query_skip_count += 1
             return None
         problem = decode_problem_record(dict(record.data))
         self._verify_canonical_tenant(problem, tenant_id=tenant_id)
-        if problem.problem_id != indexed_id:
+        if problem.problem_id != indexed.problem_id:
             raise ProblemPersistenceIntegrityError(
                 "canonical Problem id does not match list index reference",
             )
-        if problem.record_version > indexed_version:
+        if problem.record_version > indexed.record_version:
+            self._list_index_reconciler.telemetry.skipped_version_behind += 1
+            self._list_index_reconciler.health_state.last_query_skip_count += 1
             return None
-        if problem.record_version < indexed_version:
+        if problem.record_version < indexed.record_version:
+            self._list_index_reconciler.telemetry.skipped_version_ahead += 1
+            self._list_index_reconciler.health_state.last_query_skip_count += 1
             return None
-        if problem.last_seen_at != indexed_last_seen or problem.status != indexed_status:
+        if problem.last_seen_at != indexed.last_seen_at or problem.status != indexed.status:
+            self._list_index_reconciler.telemetry.same_version_integrity_failure += 1
+            self._list_index_reconciler.health_state.last_query_skip_count += 1
             raise ProblemPersistenceIntegrityError(
                 "diagnostic problem list index metadata inconsistent with canonical Problem",
                 reason=ProblemPersistenceIntegrityReason.LIST_INDEX_CANONICAL_METADATA_MISMATCH,
@@ -951,7 +1044,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
 
         for scope in scopes_to_remove:
             deletes.append(
-                self._list_index_document(
+                self._get_stored_list_index_document(
                     record=existing,
                     scope=scope,
                     partition_key=partition_key,
@@ -959,7 +1052,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
             )
 
         for scope in scopes_to_keep:
-            old_document = self._list_index_document(
+            old_document = self._get_stored_list_index_document(
                 record=existing,
                 scope=scope,
                 partition_key=partition_key,

@@ -27,7 +27,10 @@ from intergrax.applications._shared.rag_runtime_bridge import (
     resolve_rag_stack_for_environment,
 )
 from intergrax.applications._shared.modality_wiring import wire_modality_extras
-from intergrax.applications._shared.policy_wiring import wire_policy_bundle
+from intergrax.applications._shared.policy_wiring import (
+    assert_strict_policy_bootstrap_acceptable,
+    wire_policy_bundle,
+)
 from intergrax.applications._shared.prompt_wiring import resolve_prompt_registry
 from intergrax.applications._shared.capability_graph_assembly_resolver import (
     assert_capability_graph_assembly_valid,
@@ -388,6 +391,7 @@ def wire_application_environment(
         ),
         package_qualifications=platform_plugin_package_qualifications,
     )
+    assert_strict_policy_bootstrap_acceptable(env, policy_bundle)
     prompt_registry = resolve_prompt_registry(env.prompt_profile)
 
     tool_registry = tool_wiring.registry

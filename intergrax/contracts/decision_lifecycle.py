@@ -3,7 +3,8 @@
 
 """Decision System lifecycle stage contracts (DS-CORE-03).
 
-Declarative semantic progression model executed by Nexus — not a second runtime.
+Declarative semantic progression model hosted by canonical Execution
+— not a second runtime.
 """
 
 from __future__ import annotations

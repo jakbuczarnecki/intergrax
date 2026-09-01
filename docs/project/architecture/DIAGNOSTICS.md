@@ -222,13 +222,33 @@ stateDiagram-v2
 
 ## Problem Store architecture
 
+```text
+Runtime evidence
+      ↓
+Grouping
+      ↓
+ProblemLifecycleEngine
+   ┌───────────┴───────────┐
+   ↓                       ↓
+ProblemPersistence   ProblemOccurrencePersistence
+   ↓                       ↓
+bounded Problem       durable full history
+   └───────────┬───────────┘
+               ↓
+     PartitionAtomicDocumentStore
+     (extends ConditionalDocumentStore)
+               ↓
+        Mongo / InMemory / …
+```
+
 Mongo is a **provider**, not part of the central diagnostics contract:
 
 ```text
 IntegrationProfile
   → DocumentStore abstraction
   → ConditionalDocumentStore capability
-  → DocumentStoreProblemPersistence
+  → PartitionAtomicDocumentStore capability (E2-R6 — required for occurrence persistence)
+  → DocumentStoreProblemPersistence + DocumentStoreProblemOccurrencePersistence
   → ProblemLifecycleEngine
 ```
 
@@ -429,15 +449,354 @@ List-index rows carry minimal metadata: `problem_id`, `record_version`, `last_se
 
 Crash recovery: incomplete create/update leaves skippable projections; subsequent idempotent `create` / `update` repair paths converge indexes (`_repair_indexes_for_record`, `_ensure_list_indexes`).
 
-### List cursor trust model (DIAG-ENTERPRISE-1-R1)
+### Projection reconciliation (DIAG-ENTERPRISE-1-R2 / R3)
 
-Production hosts authenticate continuation cursors with HMAC-SHA256 over a tenant- and status-filter-bound payload. Secret enters only through composition (`INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET` via `resolve_problem_list_cursor_secret()`). **No static default secret in production.** Restart with a new secret invalidates previously issued cursors (documented limitation; no transparent rotation in this slice).
+Derived `list:{scope}:…` rows can become **proven stale** or **proven orphan** only via explicit bounded maintenance — never in the hot read path.
+
+| Classification | Meaning | Hot read | Maintenance (`reconcile_list_indexes`) |
+|---|---|---|---|
+| `CONSISTENT` | Index matches canonical at same `record_version` | Return Problem | No-op; v1 rows may upgrade to v2 metadata |
+| `TRANSIENT_OR_UNCERTAIN` | Active transition, missing `projection_written_at`, below safety age, or future-dated projection | Skip | No delete/repair |
+| `PROVEN_STALE` | Mismatch persists and projection age `> MIN_SAFE_PROJECTION_AGE` | Skip | Repair from canonical (conditional replace/delete) |
+| `PROVEN_ORPHAN` | Canonical missing and projection age `> MIN_SAFE_PROJECTION_AGE` | Skip | Conditional delete |
+| `CORRUPT` | Same-version metadata/id mismatch | `ProblemPersistenceIntegrityError` | Count only; no silent repair |
+
+List-index schema v2 adds `projection_written_at` (UTC, writer clock). v1 rows remain readable; reconciliation upgrades consistent v1 rows to v2. Writers emit v2 only.
+
+**Safety-age contract (R3):** `MIN_SAFE_PROJECTION_AGE = 5 minutes` (aligned with platform 300s lease convention). Callers pass `minimum_projection_age` (relative); the reconciler computes `safe_cutoff = now - effective_age` using its injected clock. Callers cannot request an age below the platform minimum (`ProblemListIndexReconciliationError`). Future-dated `projection_written_at` (clock skew) is always `TRANSIENT_OR_UNCERTAIN` — never destructive.
+
+Maintenance contract:
+
+```text
+DocumentStoreProblemPersistence.reconcile_list_indexes(
+  tenant_id, minimum_projection_age?, scope?, limit, cursor?
+) → ProblemListIndexReconciliationPage
+```
+
+Bounded by `limit` index rows per call; continuation via document-store cursor. No scheduler/daemon — callable maintenance seam for admin/tests/future lifecycle.
+
+**Projection health (R3/R4/R5/R6):** cumulative telemetry counters (`repaired_projection`, `deleted_orphan_projection`, skip counters) remain historical and are not reset to recover health. Current health is **process-local** and resets on host restart. It reflects per-identity maintenance cycle state keyed by `(tenant_id, scope)`, read skip threshold, and unresolved same-version corruption (`same_version_integrity_failure > 0`).
+
+Maintenance cycle identity:
+
+```text
+ProblemListMaintenanceCycleKey = (tenant_id, scope)
+ProblemListMaintenanceCycleState = in_progress, had_issues, current_cycle_found_issues, started_at, page_in_flight
+```
+
+Rules:
+
+- `cursor=None` starts a new cycle only when no cycle for the same key is `in_progress`; otherwise `ProblemListIndexReconciliationError` (continuation required — no silent reset).
+- **Single-flight (R5):** maintenance reconciliation is single-flight per `(tenant_id, scope)` — at most one active page processor per cycle key. Parallel continuation on the same key is rejected with `ProblemListIndexReconciliationError` (`maintenance cycle page already in progress`); the rejected caller mutates nothing. Different tenants or scopes may reconcile concurrently. Ownership is process-local (`page_in_flight`) and always released in `finally`, including on DocumentStore/query/repair exceptions.
+- **First-page failure recovery (R6):** when a newly started maintenance cycle (`cursor=None`) fails before the page completes successfully, only process-local cycle state is rolled back — restoring a prior degraded snapshot when one existed, removing a fresh registry entry when no issues were found, or retaining `had_issues` when partial repairs/deletes occurred before the exception. Retry with `cursor=None` is allowed. Continuation-page failures (`cursor != None`) retain the existing in-progress cycle; retry uses the same cursor. Persistence writes and cumulative telemetry are not rolled back; convergence remains idempotent.
+- A cycle with issues (`repaired`/`deleted`/`corrupt`) sets `had_issues` for that key until a **full** clean traversal (`has_more=False`) with zero issues on that same key.
+- An abandoned cycle (`has_more=True` after issues) keeps health `DEGRADED`; a clean complete cycle on another tenant or scope does not mask it.
+- Completed clean cycles prune registry entries; degraded/incomplete entries are retained.
+- Health recovers to `HEALTHY` only when no tracked key is degraded, corruption counters are zero, and read skips are below threshold.
+
+### List cursor trust model (DIAG-ENTERPRISE-1-R1 / R2)
+
+Production hosts authenticate continuation cursors with HMAC-SHA256 over a tenant- and status-filter-bound payload. Secret enters only through composition (`INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET` via `resolve_problem_list_cursor_secret()`). **Minimum 32 UTF-8 bytes** (random 256-bit recommended). **No static default secret in production.** Restart with a new secret invalidates previously issued cursors (documented limitation; no transparent rotation in this slice).
+
+### Bounded occurrence history (DIAG-ENTERPRISE-2 / E2-R4 / E2-R5 / E2-R6 — IN_PROGRESS)
+
+Source-of-truth hierarchy:
+
+```text
+canonical execution evidence
+        ↓
+accepted durable ProblemOccurrence history (occurrence rows)
+        ↓
+bounded Problem aggregate (+ typed occurrence_aggregate_health)
+```
+
+Occurrence rows are authoritative. Problem `occurrence_count` / `first_seen_at` / `last_seen_at` are a bounded derived projection — not a central mutable stats counter.
+
+**Write protocol (idempotent, bounded O(1) per append — E2-R6 atomic):**
+
+1. `execute_partition_atomic_batch`: atomically `put_if_absent` occurrence row **and**, only when created, advance partition fingerprint (`meta:occurrence_partition_fingerprint`: monotonic `write_generation` + `min_row_key` / `max_row_key`).
+2. Either both commit or neither — no partial success window between occurrence row and fingerprint metadata.
+3. Hot path (lifecycle): when append returns `CREATED`, apply bounded delta to Problem aggregate and persist via optimistic CAS with `occurrence_aggregate_health=CONSISTENT`.
+4. On aggregate CAS failure, mark `RECONCILIATION_REQUIRED` best-effort and reconcile via bounded repair.
+5. `ProblemOccurrenceAggregateHealth`: `CONSISTENT` (count exact for a closed snapshot) vs `RECONCILIATION_REQUIRED` (count may be stale until repair completes).
+6. Duplicate retry (`ALREADY_EXISTS`) never blind-increments fingerprint; when health is `CONSISTENT`, no unconditional full-history scan.
+
+**Storage capability (E2-R6):** `ProblemOccurrencePersistence` wiring requires `PartitionAtomicDocumentStore` — fail closed when absent. Mongo adapter implements the batch via replica-set transactions; InMemory via process lock. Standalone Mongo without replica set does **not** satisfy the contract.
+
+**Repair snapshot (E2-R5/R6):** capture partition fingerprint boundary `H` (bounded O(1)); paginated scan only rows with `min_row_key <= row_key <= terminal_row_key`; `CONSISTENT` only when start/end fingerprint stable (no concurrent writes during scan) and aggregate matches scan. Late/out-of-order inserts bump `write_generation` and force another round. Legacy bootstrap merges scanned bounds with any concurrent fingerprint via bounded CAS.
+
+**Removed (E2-R2/R3):** `meta:stats`, `meta:stats_contrib:*`, `last_committed_occurrence_id`, central exactly-once stats increment.
+
+**Timestamp encoding:** row-key sort tokens use integer-only UTC epoch microseconds (`astimezone(UTC)` delta arithmetic). No `float` timestamp multiplication.
+
+**Occurrence cursor secret:** same minimum 32 UTF-8 bytes as E1 list cursors (`resolve_problem_list_cursor_secret()` at composition boundary).
+
+**Repair:** paginated `query_occurrences` with optional repair boundary — no full-history hot-path scan. Bounded rounds; unstable fingerprint → remain `RECONCILIATION_REQUIRED`.
 
 ### Production persistence contract
 
 Full-tenant Problem listing is **not** part of the production `ProblemPersistence` contract. Callers must use `query_problems` with bounded pages. Test/conformance helpers may materialize via paginated `query_all_problems_for_tenant`.
 
 Full hosting composition: [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md).
+
+---
+
+## Functional diagnostics
+
+**Status:** `FUNCTIONAL DIAGNOSTICS FOUNDATION = IMPLEMENTED` · `GENERIC FUNCTIONAL ANALYSIS = IMPLEMENTED` · `OPERATOR-GRADE FUNCTIONAL FINDINGS = NOT YET IMPLEMENTED` · `C1 INSTRUMENTATION = NOT YET IMPLEMENTED`
+
+Central diagnostics must represent two independent facts:
+
+```text
+technical execution outcome (RuntimeEvent truth)
+        ≠
+functional/domain validation outcome (external validator truth)
+```
+
+A run may be **technically COMPLETED** while a domain validator reports **functional FAILED**. Diagnostics records and interprets both without rewriting execution history.
+
+### Technical vs functional failure
+
+| Dimension | Technical execution failure | Functional outcome failure |
+| --------- | --------------------------- | -------------------------- |
+| Authority | Execution Runtime + `RuntimeEvent` journal | External/domain validator |
+| Trigger into DIAG | Terminal execution diagnostics / lifecycle anomalies | `PlatformProblemSignal` with typed `functional_validation` |
+| Effect on execution truth | May change terminal execution state | **Must not** change terminal execution state |
+| Evidence | Runtime events, causal evidence | Typed functional/AI pipeline evidence facts |
+
+### Architecture flow
+
+```text
+Execution
+   │
+   ├─ RuntimeEvent ─────────────────────┐
+   │                                    │
+AI pipeline operations                 │
+   │                                    │
+   └─ typed functional evidence ──────┤
+                                        ▼
+External/domain validator ──► PlatformProblemSignal
+                                        │
+                                        ▼
+                               Central Diagnostics
+                                        │
+                             reconstruction/assessment
+                                        │
+                                        ▼
+                           evidence-backed diagnosis
+```
+
+### Canonical trigger decision
+
+`PlatformProblemSignal` is the canonical functional-failure trigger. External/domain validators emit typed `FunctionalValidationEvidence`; observability may export the signal; central diagnostics consumes it. No parallel `FunctionalProblemSignal` bus.
+
+New platform kind: `platform.functional_outcome_invalid` (`PROBLEM_KIND_PLATFORM_FUNCTIONAL_OUTCOME_INVALID`).
+
+### Evidence ownership
+
+| Layer | Owns | Does not own |
+| ----- | ---- | ------------ |
+| **Observability** | Record/export typed functional evidence facts; correlate to execution identity | Functional root-cause diagnosis; check evaluation |
+| **Diagnostics** | Reconstruction, completeness, deterministic functional check evaluation, findings/limitations | Mint execution identity; rewrite execution terminal state |
+| **External validator** | Domain pass/fail decision | Execution lifecycle authority |
+
+Functional evidence is **not** packed into `RuntimeEvent` payloads. It uses a separate typed evidence stream/store correlated by `DiagnosticExecutionCorrelation` / `PipelineEvidenceScope`.
+
+### Typed contracts (F1/F2 foundation)
+
+| Contract | Role |
+| -------- | ---- |
+| `FunctionalValidationEvidence` | Bounded validator outcome (validator identity, validation kind, outcome, expected/actual relation, correlation, bounded upstream refs) |
+| `PlatformFunctionalEvidence` | Composable pipeline facts: artifact lineage, operation outcome, candidate rank, selection, output relation, validation link |
+| `FunctionalEvidencePersistence` | Append-only, tenant-scoped, keyset-paginated read (`query_evidence`) |
+| `FunctionalEvidenceReconstructor` | Bounded derived projection; completeness status separate from diagnostic certainty |
+
+### Bounded reconstruction (F1-R1)
+
+```text
+Functional evidence history (canonical persistence)
+        │
+        │ paginated keyset scan (monotonic traversal)
+        ▼
+bounded reconstruction accumulator
+        │
+        ├─ completeness status (NOT_EVALUATED | COMPLETE | INCOMPLETE)
+        ├─ per-kind counts (closed enum — bounded)
+        ├─ bounded supporting refs (≤ MAX_SUPPORTING_EVIDENCE_REFS)
+        └─ limitations (late-arrival semantics)
+        │
+        ▼
+future deterministic analyzers (DIAG-FUNCTIONAL-2)
+```
+
+Reconstruction **does not** materialize `tuple[all PlatformFunctionalEvidence]`. Memory retained is O(1) relative to history cardinality.
+
+| Limit | Value | Semantics |
+| ----- | ----- | --------- |
+| `MAX_DIRECT_UPSTREAM_EVIDENCE_REFS` | 8 | Inline provenance per fact; overflow fails validation |
+| `MAX_SUPPORTING_EVIDENCE_REFS` | 16 | Illustrative sample refs in reconstruction projection |
+
+### Generic functional diagnosis (DIAG-FUNCTIONAL-2)
+
+```text
+typed functional evidence
+        │
+        │ bounded keyset queries (per-check kind filter)
+        ▼
+FunctionalDiagnosticSpecification (versioned profile)
+        │
+        ▼
+FunctionalDiagnosticAnalyzer (one generic analyzer)
+        │
+        ├─ PROVEN_PASS / PROVEN_FAIL / INSUFFICIENT_EVIDENCE
+        ├─ BLOCKED_BY_UPSTREAM (dependency gate)
+        └─ bounded supporting refs + limitations
+        │
+        ▼
+future DiagnosticAssessment composition (NOT in F2)
+```
+
+**Invariant:** Facts first. Diagnosis second. No evidence = no conclusion.
+
+| Contract | Role |
+| -------- | ---- |
+| `FunctionalDiagnosticSpecification` | Versioned, bounded diagnostic plan — checks, dependencies, typed requirements |
+| `FunctionalDiagnosticRequirement` | Generic predicates: operation outcome status, candidate/selection/output presence, selection artifact match, validation outcome |
+| `FunctionalDiagnosticAnalyzer` | One deterministic analyzer for all workload profiles — no domain-specific engines |
+| `FunctionalDiagnosticAnalysis` | Bounded per-scope result: check results, optional `first_proven_failure`, limitations |
+
+**Check statuses (exact semantics):**
+
+| Status | Meaning |
+| ------ | ------- |
+| `PROVEN_PASS` | Direct evidence proves the check condition was met |
+| `PROVEN_FAIL` | Direct evidence proves the check condition was not met |
+| `INSUFFICIENT_EVIDENCE` | Not enough facts to prove PASS or FAIL — absence is **not** failure |
+| `NOT_EVALUATED` | Check not reached in this analysis cycle |
+| `BLOCKED_BY_UPSTREAM` | A dependency did not reach `PROVEN_PASS`; downstream check is not inferred as FAIL |
+
+**Contradiction:** when the same check receives both PASS- and FAIL-supporting evidence, the result is `INSUFFICIENT_EVIDENCE` with an explicit contradiction limitation — never arbitrary winner selection.
+
+**Dependency semantics:** DAG dependencies are supported. Independent branches continue evaluation after a `PROVEN_FAIL` elsewhere. `first_proven_failure` is the first check in specification order with `PROVEN_FAIL`.
+
+**Boundedness:**
+
+| Limit | Value |
+| ----- | ----- |
+| `MAX_FUNCTIONAL_DIAGNOSTIC_CHECKS` | 64 |
+| `MAX_FUNCTIONAL_DIAGNOSTIC_DEPENDENCIES` | 8 |
+| `MAX_FUNCTIONAL_DIAGNOSTIC_SUPPORTING_REFS` | 8 |
+| `MAX_FUNCTIONAL_DIAGNOSTIC_LIMITATIONS_PER_RESULT` | 8 |
+
+**OBS boundary:** Observability records evidence. Observability does **not** execute check evaluation. Diagnostics executes evaluation.
+
+**Code references:** `functional_diagnostic_specification.py` · `functional_diagnostic_analyzer.py` · `functional_diagnostic_analysis.py` · `functional_diagnostic_identity.py` · `functional_validation_lookup.py` · `intergrax/contracts/functional_diagnostic_bounds.py`.
+
+```text
+FUNCTIONAL DIAGNOSTICS ARCHITECTURE = QUALIFIED
+FUNCTIONAL EVIDENCE FOUNDATION = QUALIFIED
+GENERIC FUNCTIONAL ANALYSIS = IMPLEMENTED
+
+OPERATOR-GRADE FUNCTIONAL FINDINGS = NOT YET IMPLEMENTED
+DURABLE PERSISTENCE = NOT YET QUALIFIED
+PRODUCTION SCALE = NOT YET QUALIFIED
+REAL WORKLOAD QUALIFICATION = NOT YET COMPLETE
+```
+
+Recommendation after F2: **READY_FOR_DIAG-FUNCTIONAL-3 / F4** (operator-facing `DiagnosticAssessment` composition; durable persistence and production scale remain separate gates).
+
+**H1 remains open:** DIAG test-suite health cleanup (slow 100k occurrence test · flaky problem-list health test) — separate roadmap task.
+
+### Keyset pagination and late arrival (F1-R1)
+
+- Canonical order: `(recorded_at, evidence_id)` ascending.
+- Cursor: authenticated, scope-bound (`tenant`, `task`, `run`, optional `attempt_id`, optional `kind`); filter mutation fails closed.
+- Traversal semantics: **monotonic ordered scan** (Option B). No snapshot isolation.
+- Late insert **after** cursor: visible in subsequent pages of the same traversal.
+- Late insert **before** already-consumed cursor: not visible in the current traversal; requires a new reconstruction cycle. No offset duplicates/skips.
+- **Contract semantics:** keyset pagination correctness is provider-independent; offset pagination is forbidden.
+- **InMemory provider complexity (F1-R2 — honest, provider-specific):**
+  - `append`: O(N) worst-case per execution scope — `bisect.insort` on a Python `list` shifts elements after O(log N) position lookup.
+  - Unfiltered page: O(log N + page_size) for cursor positioning plus bounded record materialization; no full-history resort per page.
+  - Filtered page (`attempt_id`, `kind`): O(log N + scanned_records); worst-case O(N) when filters are sparse relative to scope cardinality.
+  - Reconstruction CPU: O(N) streamed over paginated history; reconstruction memory: O(1) relative to history cardinality (bounded accumulator).
+- The generic `FunctionalEvidencePersistence` contract does **not** promise asymptotic bounds — scale SLOs belong to per-provider qualification.
+
+### Completeness vs diagnostic certainty (F1-R1)
+
+- `FunctionalEvidenceCompletenessStatus.NOT_EVALUATED` when `required_kinds` is empty — **not** `PROVEN`.
+- `DiagnosticCertainty.PROVEN` belongs to specific findings/claims, not “scan completed”.
+
+### Identity, correlation, idempotency
+
+- Correlation uses typed `Tenant` + `TaskId` + `RunId` (+ optional `AttemptId` / `EventId`).
+- Tenant mismatch and signal/correlation drift fail closed (`FunctionalValidationIntegrityError`).
+- `validation_id` / `evidence_id` provide stable identity; persistence `append` is idempotent on `evidence_id`.
+- `validation_id` includes `attempt_id` when attempt-scoped; same semantic retry + same `idempotency_key` → same id.
+- `PlatformProblemSignal` enforces functional-validation correlation invariant at model level (not builder-only).
+- Out-of-order persistence is tolerated; query/reconstruction order is deterministic on `(recorded_at, evidence_id)`.
+
+### Boundedness and privacy
+
+- No full documents, prompts, responses, embedding vectors, secrets, or credentials in canonical functional evidence.
+- Evidence uses `ObservabilityArtifactReference` and bounded summaries only.
+- High-cardinality candidate histories are persisted outside Problem aggregates via paginated evidence queries.
+
+### Source-of-truth hierarchy
+
+```text
+canonical execution facts
+        +
+canonical functional/AI evidence facts
+        ↓
+Diagnostics reconstruction
+        ↓
+deterministic findings / limitations
+        ↓
+optional higher-level inference later (NOT in F1/F2)
+```
+
+**Code references:** `functional_validation.py` · `functional_validation_evidence.py` · `functional_evidence.py` · `functional_evidence_persistence.py` · `functional_evidence_query_cursor.py` · `functional_evidence_reconstruction.py` · `in_memory_functional_evidence_persistence.py` · `problem_signal.py` · `intergrax/contracts/functional_evidence_bounds.py`.
+
+### Functional evidence persistence qualification (F1-R2)
+
+```text
+FunctionalEvidencePersistence (contract semantics)
+        │
+        ├── InMemoryFunctionalEvidencePersistence
+        │     correctness: qualified
+        │     contract conformance: qualified
+        │     durable: NO
+        │     scale-qualified: NO
+        │     intended use: unit / local / conformance
+        │
+        └── DocumentStore / Mongo (future)
+              correctness: pending
+              durable: pending
+              scale-qualified: pending
+              intended use: future production
+```
+
+| Provider | Correctness | Durable | Scale qualified | Intended use |
+| -------- | ----------- | ------- | --------------- | ------------ |
+| `InMemoryFunctionalEvidencePersistence` | YES | NO | NO | unit / local / conformance |
+| DocumentStore (future) | pending | pending | pending | future production |
+| Mongo (future) | pending | pending | pending | future production |
+
+**Qualification levels (do not conflate):**
+
+| Level | F1-R2 status |
+| ----- | ------------ |
+| Architecture qualified | YES — generic typed evidence + bounded reconstruction + keyset semantics |
+| Correctness qualified | YES — pagination, boundedness, correlation, late-arrival semantics |
+| Production durability qualified | NO — durable functional-evidence backend not implemented |
+| Production scale qualified | NO — no bounded-index durable provider or high-cardinality proof |
+
+Functional Diagnostics must **not** be labelled **PRODUCTION SCALE QUALIFIED** until a durable provider exists with a bounded query index strategy and passes real high-cardinality qualification.
+
+**F1-R2 foundation freeze (qualified):** functional diagnostics architecture · functional evidence contracts · bounded reconstruction semantics · pagination semantics.
+
+**Not frozen (explicit gaps):** production persistence qualification · production scale qualification · operator-grade functional findings · real workload qualification.
 
 ---
 

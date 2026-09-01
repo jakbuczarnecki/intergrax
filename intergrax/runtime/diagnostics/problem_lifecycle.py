@@ -38,6 +38,10 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingStrategyVersion,
     ProblemGroupingSubjectRef,
 )
+from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
+    ProblemOccurrenceAppendResult,
+    ProblemOccurrencePersistence,
+)
 from intergrax.runtime.diagnostics.problem_persistence import (
     ProblemPersistence,
     ProblemPersistenceConflictError,
@@ -58,6 +62,13 @@ class ProblemLifecycleIntegrityError(Exception):
 class ProblemStatus(StrEnum):
     OPEN = "open"
     RESOLVED = "resolved"
+
+
+class ProblemOccurrenceAggregateHealth(StrEnum):
+    """Operator-readable aggregate projection quality for one Problem."""
+
+    CONSISTENT = "consistent"
+    RECONCILIATION_REQUIRED = "reconciliation_required"
 
 
 @runtime_checkable
@@ -96,7 +107,8 @@ class Problem:
     """
     Persisted derived operational diagnostic state — NOT canonical execution truth.
 
-    Rebuildable in principle from canonical evidence and validated grouping output.
+    Bounded aggregate: durable occurrence history lives in
+    ``ProblemOccurrencePersistence``, not inline on this record.
 
     ``first_seen_at`` / ``last_seen_at`` are min/max of accepted
     ``ProblemOccurrence.observed_at`` — not lifecycle mutation times.
@@ -109,10 +121,11 @@ class Problem:
     first_seen_at: datetime
     last_seen_at: datetime
     occurrence_count: int
-    current_subject_refs: tuple[ProblemGroupingSubjectRef, ...]
-    occurrences: tuple[ProblemOccurrence, ...]
     provenance: ProblemLifecycleProvenance
     record_version: int = 1
+    occurrence_aggregate_health: ProblemOccurrenceAggregateHealth = (
+        ProblemOccurrenceAggregateHealth.CONSISTENT
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -194,11 +207,13 @@ class ProblemLifecycleEngine:
     def __init__(
         self,
         persistence: ProblemPersistence,
+        occurrence_persistence: ProblemOccurrencePersistence,
         *,
         reconciliation_policies: tuple[ProblemReconciliationPolicy, ...] | None = None,
     ) -> None:
         policies = reconciliation_policies or (DeterministicProblemReconciliationPolicy(),)
         self._persistence = persistence
+        self._occurrence_persistence = occurrence_persistence
         self._policies_by_kind = {
             policy.supported_basis_kind: policy for policy in policies
         }
@@ -245,7 +260,7 @@ class ProblemLifecycleEngine:
                 problem_id=target_problem_id,
             )
             if existing is None:
-                record = _create_problem(
+                record, initial_occurrences = _create_problem(
                     problem_id=target_problem_id,
                     tenant_id=tenant_id,
                     candidate=candidate,
@@ -253,7 +268,10 @@ class ProblemLifecycleEngine:
                     observed_at=observed_at,
                 )
                 try:
-                    persisted = self._persistence.create(record)
+                    persisted = self._persist_new_problem(
+                        record=record,
+                        initial_occurrences=initial_occurrences,
+                    )
                 except ProblemPersistenceConflictError as exc:
                     persisted, changed = self._converge_after_create_conflict(
                         tenant_id=tenant_id,
@@ -342,6 +360,45 @@ class ProblemLifecycleEngine:
 
         raise AssertionError("unreachable resolve persistence conflict retry loop")
 
+    def reconcile_occurrence_aggregate(
+        self,
+        *,
+        tenant_id: str,
+        problem_id: ProblemId,
+    ) -> Problem:
+        from intergrax.runtime.diagnostics.problem_occurrence_aggregate_reconciliation import (
+            reconcile_problem_occurrence_aggregate,
+        )
+
+        validated_problem_id = validate_problem_id(problem_id)
+        existing = self._persistence.get(
+            tenant_id=tenant_id,
+            problem_id=validated_problem_id,
+        )
+        if existing is None:
+            raise ProblemLifecycleIntegrityError("Problem does not exist for tenant scope")
+        return reconcile_problem_occurrence_aggregate(
+            existing,
+            occurrence_persistence=self._occurrence_persistence,
+            problem_persistence=self._persistence,
+        )
+
+    def _mark_reconciliation_required_best_effort(self, existing: Problem) -> None:
+        from intergrax.runtime.diagnostics.problem_occurrence_aggregate_reconciliation import (
+            mark_problem_reconciliation_required,
+        )
+
+        marked = mark_problem_reconciliation_required(existing)
+        if marked == existing:
+            return
+        try:
+            self._persistence.update(
+                marked,
+                expected_version=existing.record_version,
+            )
+        except ProblemPersistenceConflictError:
+            return
+
     def _converge_after_create_conflict(
         self,
         *,
@@ -396,6 +453,25 @@ class ProblemLifecycleEngine:
 
         raise AssertionError("unreachable create conflict convergence loop")
 
+    def _persist_new_problem(
+        self,
+        *,
+        record: Problem,
+        initial_occurrences: tuple[ProblemOccurrence, ...],
+    ) -> Problem:
+        accepted = self._append_occurrences(
+            tenant_id=record.tenant_id,
+            problem_id=record.problem_id,
+            occurrences=initial_occurrences,
+        )
+        indexed_subject_refs = tuple(
+            occurrence.subject_ref for occurrence in accepted
+        )
+        return self._persistence.create(
+            record,
+            indexed_subject_refs=indexed_subject_refs,
+        )
+
     def _persist_candidate_with_occ_retry(
         self,
         *,
@@ -422,8 +498,8 @@ class ProblemLifecycleEngine:
                 reconciliation_key=reconciliation_key,
             )
 
-            next_record, changed = _apply_candidate_to_problem(
-                existing,
+            next_record, changed, indexed_subject_refs = self._prepare_candidate_update(
+                existing=existing,
                 candidate=candidate,
                 reconciliation_key=reconciliation_key,
                 observed_at=observed_at,
@@ -436,6 +512,7 @@ class ProblemLifecycleEngine:
                     self._persistence.update(
                         next_record,
                         expected_version=existing.record_version,
+                        indexed_subject_refs=indexed_subject_refs,
                     ),
                     True,
                 )
@@ -457,6 +534,190 @@ class ProblemLifecycleEngine:
                 existing = latest
 
         raise AssertionError("unreachable persistence conflict retry loop")
+
+    def _prepare_candidate_update(
+        self,
+        *,
+        existing: Problem,
+        candidate: ProblemGroupingCandidate,
+        reconciliation_key: ProblemReconciliationKey,
+        observed_at: datetime,
+    ) -> tuple[Problem, bool, tuple[ProblemGroupingSubjectRef, ...]]:
+        from intergrax.runtime.diagnostics.problem_occurrence_aggregate_convergence import (
+            apply_occurrence_delta_to_problem,
+        )
+        from intergrax.runtime.diagnostics.problem_occurrence_aggregate_reconciliation import (
+            reconcile_problem_occurrence_aggregate,
+            scan_occurrence_aggregate,
+        )
+
+        if not reconciliation_keys_equal(
+            existing.provenance.reconciliation_key,
+            reconciliation_key,
+        ):
+            raise ProblemLifecycleIntegrityError(
+                "candidate reconciliation key does not match existing Problem provenance",
+            )
+
+        candidate_occurrences = _candidate_occurrences(
+            candidate=candidate,
+            observed_at=observed_at,
+        )
+        pending_occurrences: list[ProblemOccurrence] = []
+        for occurrence in candidate_occurrences:
+            owner = self._persistence.find_by_subject_ref(
+                tenant_id=existing.tenant_id,
+                subject_ref=occurrence.subject_ref,
+            )
+            if owner is not None and owner.problem_id != existing.problem_id:
+                raise ProblemLifecycleIntegrityError(
+                    "candidate member already belongs to a different stable Problem",
+                )
+            if owner is None:
+                pending_occurrences.append(occurrence)
+
+        append_results = self._append_occurrences_with_results(
+            tenant_id=existing.tenant_id,
+            problem_id=existing.problem_id,
+            occurrences=tuple(pending_occurrences),
+        )
+        created_occurrences = tuple(
+            occurrence
+            for occurrence, result in append_results
+            if result is ProblemOccurrenceAppendResult.CREATED
+        )
+        indexed_subject_refs = tuple(
+            occurrence.subject_ref for occurrence, _ in append_results
+        )
+
+        provenance = ProblemLifecycleProvenance(
+            strategy_id=candidate.provenance.strategy_id,
+            strategy_version=candidate.provenance.strategy_version,
+            method=candidate.provenance.method,
+            reconciliation_key=reconciliation_key,
+        )
+
+        if (
+            existing.occurrence_aggregate_health
+            is ProblemOccurrenceAggregateHealth.RECONCILIATION_REQUIRED
+        ):
+            repaired = reconcile_problem_occurrence_aggregate(
+                existing,
+                occurrence_persistence=self._occurrence_persistence,
+                problem_persistence=self._persistence,
+                provenance=provenance,
+            )
+            if repaired != existing:
+                return repaired, True, indexed_subject_refs
+            return existing, False, indexed_subject_refs
+
+        if created_occurrences:
+            next_record = apply_occurrence_delta_to_problem(
+                existing,
+                newly_accepted=created_occurrences,
+                provenance=provenance,
+            )
+            return next_record, True, indexed_subject_refs
+
+        if not append_results:
+            return existing, False, ()
+
+        if (
+            existing.occurrence_aggregate_health
+            is ProblemOccurrenceAggregateHealth.CONSISTENT
+        ):
+            all_subjects_indexed = all(
+                self._persistence.find_by_subject_ref(
+                    tenant_id=existing.tenant_id,
+                    subject_ref=occurrence.subject_ref,
+                )
+                is not None
+                for occurrence, _ in append_results
+            )
+            if all_subjects_indexed:
+                return existing, False, indexed_subject_refs
+
+            scan = scan_occurrence_aggregate(
+                self._occurrence_persistence,
+                tenant_id=existing.tenant_id,
+                problem_id=existing.problem_id,
+            )
+            if (
+                scan.occurrence_count != existing.occurrence_count
+                or (
+                    scan.first_seen_at is not None
+                    and scan.first_seen_at != existing.first_seen_at
+                )
+                or (
+                    scan.last_seen_at is not None
+                    and scan.last_seen_at != existing.last_seen_at
+                )
+            ):
+                repaired = reconcile_problem_occurrence_aggregate(
+                    existing,
+                    occurrence_persistence=self._occurrence_persistence,
+                    problem_persistence=self._persistence,
+                    provenance=provenance,
+                )
+                if repaired != existing:
+                    return repaired, True, indexed_subject_refs
+                return existing, False, indexed_subject_refs
+
+            missing_indexes = tuple(
+                occurrence.subject_ref
+                for occurrence, _ in append_results
+                if self._persistence.find_by_subject_ref(
+                    tenant_id=existing.tenant_id,
+                    subject_ref=occurrence.subject_ref,
+                )
+                is None
+            )
+            if missing_indexes:
+                return existing, True, missing_indexes
+            return existing, False, indexed_subject_refs
+
+        repaired = reconcile_problem_occurrence_aggregate(
+            existing,
+            occurrence_persistence=self._occurrence_persistence,
+            problem_persistence=self._persistence,
+            provenance=provenance,
+        )
+        if repaired != existing:
+            return repaired, True, indexed_subject_refs
+        return existing, False, indexed_subject_refs
+
+    def _append_occurrences(
+        self,
+        *,
+        tenant_id: str,
+        problem_id: ProblemId,
+        occurrences: tuple[ProblemOccurrence, ...],
+    ) -> tuple[ProblemOccurrence, ...]:
+        return tuple(
+            occurrence
+            for occurrence, _ in self._append_occurrences_with_results(
+                tenant_id=tenant_id,
+                problem_id=problem_id,
+                occurrences=occurrences,
+            )
+        )
+
+    def _append_occurrences_with_results(
+        self,
+        *,
+        tenant_id: str,
+        problem_id: ProblemId,
+        occurrences: tuple[ProblemOccurrence, ...],
+    ) -> tuple[tuple[ProblemOccurrence, ProblemOccurrenceAppendResult], ...]:
+        results: list[tuple[ProblemOccurrence, ProblemOccurrenceAppendResult]] = []
+        for occurrence in occurrences:
+            result = self._occurrence_persistence.append_if_absent(
+                tenant_id=tenant_id,
+                problem_id=problem_id,
+                occurrence=occurrence,
+            )
+            results.append((occurrence, result))
+        return tuple(results)
 
     def _extract_reconciliation_key(
         self,
@@ -537,10 +798,9 @@ def _build_resolved_problem(existing: Problem) -> Problem:
         first_seen_at=existing.first_seen_at,
         last_seen_at=existing.last_seen_at,
         occurrence_count=existing.occurrence_count,
-        current_subject_refs=existing.current_subject_refs,
-        occurrences=existing.occurrences,
         provenance=existing.provenance,
         record_version=existing.record_version + 1,
+        occurrence_aggregate_health=existing.occurrence_aggregate_health,
     )
 
 
@@ -606,7 +866,7 @@ def _create_problem(
     candidate: ProblemGroupingCandidate,
     reconciliation_key: ProblemReconciliationKey,
     observed_at: datetime,
-) -> Problem:
+) -> tuple[Problem, tuple[ProblemOccurrence, ...]]:
     occurrences = tuple(
         _occurrence_for_member(
             member=member,
@@ -615,15 +875,13 @@ def _create_problem(
         )
         for member in candidate.members
     )
-    return Problem(
+    problem = Problem(
         problem_id=problem_id,
         tenant_id=tenant_id,
         status=ProblemStatus.OPEN,
         first_seen_at=observed_at,
         last_seen_at=observed_at,
         occurrence_count=len(occurrences),
-        current_subject_refs=candidate.members,
-        occurrences=occurrences,
         provenance=ProblemLifecycleProvenance(
             strategy_id=candidate.provenance.strategy_id,
             strategy_version=candidate.provenance.strategy_version,
@@ -632,77 +890,63 @@ def _create_problem(
         ),
         record_version=1,
     )
+    return problem, occurrences
 
 
-def _apply_candidate_to_problem(
-    existing: Problem,
+def _candidate_occurrences(
     *,
     candidate: ProblemGroupingCandidate,
-    reconciliation_key: ProblemReconciliationKey,
     observed_at: datetime,
-) -> tuple[Problem, bool]:
-    if not reconciliation_keys_equal(
-        existing.provenance.reconciliation_key,
-        reconciliation_key,
-    ):
-        raise ProblemLifecycleIntegrityError(
-            "candidate reconciliation key does not match existing Problem provenance",
+) -> tuple[ProblemOccurrence, ...]:
+    return tuple(
+        _occurrence_for_member(
+            member=member,
+            provenance=candidate.provenance,
+            observed_at=observed_at,
         )
+        for member in candidate.members
+    )
 
-    known_subject_refs = {occurrence.subject_ref for occurrence in existing.occurrences}
-    new_occurrences: list[ProblemOccurrence] = []
-    for member in candidate.members:
-        if member in known_subject_refs:
-            continue
-        new_occurrences.append(
-            _occurrence_for_member(
-                member=member,
-                provenance=candidate.provenance,
-                observed_at=observed_at,
-            )
+
+def _append_occurrences_if_absent(
+    occurrence_persistence: ProblemOccurrencePersistence,
+    *,
+    tenant_id: str,
+    problem_id: ProblemId,
+    occurrences: tuple[ProblemOccurrence, ...],
+) -> tuple[ProblemOccurrence, ...]:
+    accepted: list[ProblemOccurrence] = []
+    for occurrence in occurrences:
+        result = occurrence_persistence.append_if_absent(
+            tenant_id=tenant_id,
+            problem_id=problem_id,
+            occurrence=occurrence,
         )
-
-    if not new_occurrences:
-        return existing, False
-
-    merged_occurrences = existing.occurrences + tuple(new_occurrences)
-    merged_subject_refs = _merge_subject_refs(
-        existing.current_subject_refs,
-        candidate.members,
-    )
-    next_status = existing.status
-    if existing.status is ProblemStatus.RESOLVED:
-        next_status = ProblemStatus.OPEN
-
-    next_record = Problem(
-        problem_id=existing.problem_id,
-        tenant_id=existing.tenant_id,
-        status=next_status,
-        first_seen_at=min(existing.first_seen_at, observed_at),
-        last_seen_at=max(existing.last_seen_at, observed_at),
-        occurrence_count=existing.occurrence_count + len(new_occurrences),
-        current_subject_refs=merged_subject_refs,
-        occurrences=merged_occurrences,
-        provenance=ProblemLifecycleProvenance(
-            strategy_id=candidate.provenance.strategy_id,
-            strategy_version=candidate.provenance.strategy_version,
-            method=candidate.provenance.method,
-            reconciliation_key=reconciliation_key,
-        ),
-        record_version=existing.record_version + 1,
-    )
-    return next_record, True
+        if result in (
+            ProblemOccurrenceAppendResult.CREATED,
+            ProblemOccurrenceAppendResult.ALREADY_EXISTS,
+        ):
+            accepted.append(occurrence)
+    return tuple(accepted)
 
 
-def _merge_subject_refs(
-    existing_refs: tuple[ProblemGroupingSubjectRef, ...],
-    candidate_members: tuple[ProblemGroupingSubjectRef, ...],
-) -> tuple[ProblemGroupingSubjectRef, ...]:
-    merged: list[ProblemGroupingSubjectRef] = list(existing_refs)
-    seen = set(existing_refs)
-    for member in candidate_members:
-        if member in seen:
-            continue
-        merged.append(member)
-        seen.add(member)
-    return tuple(merged)
+def _append_occurrences_if_absent(
+    occurrence_persistence: ProblemOccurrencePersistence,
+    *,
+    tenant_id: str,
+    problem_id: ProblemId,
+    occurrences: tuple[ProblemOccurrence, ...],
+) -> tuple[ProblemOccurrence, ...]:
+    accepted: list[ProblemOccurrence] = []
+    for occurrence in occurrences:
+        result = occurrence_persistence.append_if_absent(
+            tenant_id=tenant_id,
+            problem_id=problem_id,
+            occurrence=occurrence,
+        )
+        if result in (
+            ProblemOccurrenceAppendResult.CREATED,
+            ProblemOccurrenceAppendResult.ALREADY_EXISTS,
+        ):
+            accepted.append(occurrence)
+    return tuple(accepted)

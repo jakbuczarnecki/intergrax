@@ -28,6 +28,7 @@ from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
 from attestation_demo.host.agent_builders import ATTESTATION_DEMO_AGENT_BUILDERS
 from attestation_demo.host.integration_wiring import wire_attestation_demo_integrations
 from attestation_demo.host.settings import AttestationDemoSettings
@@ -68,6 +69,7 @@ def create_attestation_demo_application(
         boundary_event_buffer=resolved_buffer,
     )
     nexus_loop = runtime.nexus_loop
+    host_execution = build_environment_host_task_execution(nexus_loop, env)
     resolved_registry = runtime.registry
     platform = bootstrap_nexus_platform(
         nexus_loop,
@@ -99,10 +101,9 @@ def create_attestation_demo_application(
     app.title = "Intergrax Attestation Demo (Partner PoC)"
     mount_attestation_demo_routes(
         app,
-        task_runner=task_runner,
+        host_execution=host_execution,
         boundary_event_buffer=runtime.boundary_event_buffer or resolved_buffer,
         prefix=settings.route_prefix,
-        nexus_loop=nexus_loop,
     )
     if settings.include_task_control:
         wire_harness_task_control(

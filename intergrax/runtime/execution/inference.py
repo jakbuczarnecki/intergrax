@@ -14,6 +14,10 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.runtime.execution.inference_profile import (
+    InferenceProfileResolutionError,
+    InferenceProfileResolver,
+)
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.result import ExecutionResult, ExecutionStatus
 
@@ -23,10 +27,30 @@ OutputT = TypeVar("OutputT")
 class InferenceExecutor(Generic[OutputT]):
     """Structured direct inference backend behind :class:`ExecutionBoundary`."""
 
-    __slots__ = ("_adapter",)
+    __slots__ = ("_default_adapter", "_profile_resolver")
 
-    def __init__(self, adapter: LLMAdapter) -> None:
-        self._adapter = adapter
+    def __init__(
+        self,
+        adapter: LLMAdapter,
+        *,
+        profile_resolver: InferenceProfileResolver | None = None,
+    ) -> None:
+        self._default_adapter = adapter
+        self._profile_resolver = profile_resolver
+
+    def _select_adapter(
+        self,
+        request: ExecutionRequest[tuple[ChatMessage, ...], OutputT],
+    ) -> LLMAdapter:
+        profile_id = request.inference_profile_id
+        if profile_id is None:
+            return self._default_adapter
+        if self._profile_resolver is None:
+            raise InferenceProfileResolutionError(
+                "explicit inference profile requested but no profile resolver "
+                f"is configured: {profile_id!r}",
+            )
+        return self._profile_resolver.resolve(profile_id)
 
     async def execute(
         self,
@@ -43,11 +67,13 @@ class InferenceExecutor(Generic[OutputT]):
         if output_type is None:
             raise RuntimeError("structured inference requires output_type")
 
-        if not self._adapter.supports_structured_output():
+        adapter = self._select_adapter(request)
+
+        if not adapter.supports_structured_output():
             raise RuntimeError("inference adapter does not support structured output")
 
         def _invoke() -> OutputT:
-            structured = self._adapter.generate_structured(
+            structured = adapter.generate_structured(
                 request.input,
                 output_type,
                 run_id=run_id,

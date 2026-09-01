@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 from typing import Protocol
 
-from intergrax.contracts.execution_identity import mint_task_id
+from intergrax.contracts.execution_identity import AttemptId, RunId, TaskId
 from intergrax.queueing.contracts.task_queue import TaskRequest
 from intergrax.queueing.contracts.task_queue import TaskResult as QueueTaskResult
 from intergrax.queueing.contracts.task_queue import TaskStatus
@@ -25,7 +25,13 @@ LKW_BACKGROUND_INGEST_AGENT_ID = "local_indexer"
 
 
 class BackgroundIngestTaskRunner(Protocol):
-    async def run_task(self, task: Task) -> RuntimeTaskResult:
+    async def run_task(
+        self,
+        task: Task,
+        *,
+        run_id: RunId,
+        attempt_id: AttemptId,
+    ) -> RuntimeTaskResult:
         ...
 
 
@@ -41,6 +47,8 @@ def decode_background_ingest_task_request(request: TaskRequest) -> LkwBackground
 def build_background_ingest_runtime_task(
     request: TaskRequest,
     job: LkwBackgroundIngestJob,
+    *,
+    task_id: TaskId,
 ) -> Task:
     metadata: dict[str, object] = {
         "_hydrate_legacy": False,
@@ -64,7 +72,7 @@ def build_background_ingest_runtime_task(
         metadata["background_ingest_change_token"] = job.change_token
 
     return Task(
-        task_id=mint_task_id(),
+        task_id=task_id,
         tenant_id=job.tenant_id,
         user_id=job.requested_by or "background_ingest",
         agent_id=LKW_BACKGROUND_INGEST_AGENT_ID,
@@ -103,11 +111,19 @@ def _failed_queue_result(error: BaseException) -> QueueTaskResult:
 async def handle_background_ingest_task_request(
     request: TaskRequest,
     runner: BackgroundIngestTaskRunner,
+    *,
+    task_id: TaskId,
+    run_id: RunId,
+    attempt_id: AttemptId,
 ) -> QueueTaskResult:
     try:
         job = decode_background_ingest_task_request(request)
-        task = build_background_ingest_runtime_task(request, job)
-        runtime_result = await runner.run_task(task)
+        task = build_background_ingest_runtime_task(request, job, task_id=task_id)
+        runtime_result = await runner.run_task(
+            task,
+            run_id=run_id,
+            attempt_id=attempt_id,
+        )
     except Exception as exc:
         return _failed_queue_result(exc)
 

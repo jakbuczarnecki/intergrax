@@ -6,32 +6,31 @@ from dataclasses import dataclass
 
 from fastapi import APIRouter, FastAPI, HTTPException, status
 
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import mint_intake_execution_identity
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from dispute_sim_application.serving.schemas import DisputeSimRunRequestV1, DisputeSimRunResponseV1
 
 
 @dataclass
 class DisputeSimRunService:
-    task_runner: UnifiedTaskRunner
+    host_execution: HostTaskExecutionPort
     default_agent_id: str
 
     @classmethod
-    def from_nexus_loop(
+    def from_host_execution(
         cls,
-        nexus_loop: NexusLoop,
+        host_execution: HostTaskExecutionPort,
         *,
         default_agent_id: str,
     ) -> DisputeSimRunService:
         return cls(
-            task_runner=UnifiedTaskRunner(nexus_loop),
+            host_execution=host_execution,
             default_agent_id=default_agent_id,
         )
 
     async def run_task(self, body: DisputeSimRunRequestV1) -> DisputeSimRunResponseV1:
-        task_id, run_id = mint_intake_execution_identity()
+        task_id, _ = mint_intake_execution_identity()
         task = Task(
             task_id=task_id,
             tenant_id=body.tenant_id,
@@ -41,7 +40,7 @@ class DisputeSimRunService:
             context=TaskContext(capability=body.capability or "dispute.intake"),
             metadata=dict(body.metadata),
         )
-        result = await self.task_runner.run_task(task, run_id=run_id)
+        result = await self.host_execution.execute(task)
         return DisputeSimRunResponseV1(
             task_id=result.task_id,
             run_id=result.run_id,
@@ -55,12 +54,13 @@ class DisputeSimRunService:
 def mount_dispute_sim_routes(
     app: FastAPI,
     *,
-    nexus_loop: NexusLoop,
+    host_execution: HostTaskExecutionPort,
     prefix: str = "/v1/dispute_sim",
     default_agent_id: str = "echo",
 ) -> DisputeSimRunService:
-    service = DisputeSimRunService.from_nexus_loop(
-        nexus_loop,
+    nexus_loop = host_execution.nexus_loop
+    service = DisputeSimRunService.from_host_execution(
+        host_execution,
         default_agent_id=default_agent_id,
     )
     router = APIRouter(prefix=prefix, tags=["dispute_sim"])

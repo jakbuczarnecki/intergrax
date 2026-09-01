@@ -1,18 +1,21 @@
-# DECISION_SYSTEM — extended architecture
+﻿# DECISION_SYSTEM — extended architecture
 
 **Parent hub:** [`DECISION_SYSTEM.md`](../DECISION_SYSTEM.md)
 
-> **Canon:** frozen target. Nexus executes Decision Lifecycle — no second runtime.
+> **Canon:** frozen target. Decision Lifecycle is hosted by canonical Execution — no DecisionRuntime.
 
 ---
 
 ## 1. Scope and ownership
 
-The Decision System owns **lifecycle semantics, version lineage, resolution outcomes, and strategy orchestration contracts** for platform decisions. Nexus is the sole execution owner; Policy/Governed Execution owns authorization; HITL owns human authority records; Observability owns audit evidence; Diagnostics may inform investigation but does not own lifecycle.
+The Decision System owns **lifecycle semantics, version lineage, resolution outcomes, and strategy orchestration contracts** for platform decisions. The Execution System is the canonical host for execution lifecycle, identity, and strategy routing; Policy/Governed Execution owns authorization; HITL owns human authority records; Observability owns audit evidence; Diagnostics may inform investigation but does not own lifecycle.
 
 | Concern | Owner |
 | ------- | ----- |
-| Lifecycle orchestration | Nexus |
+| Decision lifecycle semantics | Decision System |
+| Hosting execution lifecycle | Execution System |
+| Strategy routing | Execution System |
+| Orchestration scheduling | Nexus |
 | Strategy semantics | DecisionStrategy plugins |
 | Correctness gates | Verification Pipeline |
 | Execution authorization | Policy / Governed Execution |
@@ -20,7 +23,6 @@ The Decision System owns **lifecycle semantics, version lineage, resolution outc
 | Audit evidence | Observability |
 | Problem classification | Diagnostics (adjacent, not owner) |
 
----
 
 ## 2. Decision identity
 
@@ -66,8 +68,8 @@ Verification results, challenges, adjudication outcomes, and execution authoriza
 
 | Stage | Owner | Persists |
 | ----- | ----- | -------- |
-| Proposal | Nexus lifecycle | Candidate Decision + Decision Version |
-| Deliberation (optional) | DecisionStrategy via Nexus | Candidate versions + disagreement artifact |
+| Proposal | Decision Lifecycle hosted by Execution | Candidate Decision + Decision Version |
+| Deliberation (optional) | DecisionStrategy (work routed via Execution System) | Candidate versions + disagreement artifact |
 | Verification | Verification Pipeline | Verification Result (+ Challenge) |
 | Revision | Decision Lifecycle | New immutable Decision Version |
 | Adjudication (optional) | Lifecycle + HITL invocation | Adjudication record |
@@ -123,7 +125,7 @@ Finalize guard enforces **at most one** terminal authoritative lifecycle outcome
 | ----- | -------- |
 | Decision | What did the system conclude? |
 | Authorization | May this action proceed under policy? |
-| Execution | What did Nexus actually do? |
+| Execution | What did the hosting Execution actually execute? |
 
 ---
 
@@ -155,22 +157,28 @@ Resume and retry paths must not mint duplicate terminal outcomes or duplicate si
 
 ## 9. Crash / recovery
 
-Lifecycle stage, version lineage, and finalize guard state are persisted via **Nexus checkpoint** — no Decision-owned checkpoint engine.
+Lifecycle state, version lineage, and finalize guard state are persisted through the canonical hosting Execution checkpoint/persistence boundary — no Decision-owned checkpoint engine.
 
-Resume cannot expand a previously granted Nexus budget ceiling. Deliberation, verification, and revision share the hosting execution budget.
+If the hosting Execution uses ORCHESTRATION, Nexus may participate in orchestration checkpointing, but Decision durability MUST NOT depend on Nexus being the selected execution strategy.
+
+Resume cannot expand a previously granted hosting Execution budget ceiling. Deliberation, verification, and revision share the hosting execution budget.
 
 Finalize guards and idempotent persistence keys prevent double authoritative decisions after process death.
 
 ```mermaid
 sequenceDiagram
-    participant N as Nexus
+    participant E as Hosting Execution
     participant L as Decision Lifecycle
-    N->>L: execute stage
-    L-->>N: checkpoint state
-    Note over N: crash
-    N->>L: resume from checkpoint
-    L-->>N: continue exact stage
+    participant N as Nexus
+    E->>L: host semantic stage
+    L-->>E: checkpoint state
+    Note over E: crash
+    E->>L: resume from checkpoint
+    L-->>E: continue exact stage
     Note over L: no duplicate finalize
+    opt ORCHESTRATION required
+        E->>N: schedule child Executions
+    end
 ```
 
 ---
@@ -204,7 +212,8 @@ Correlate: Decision ID, Decision Version, lifecycle events, verification events,
 
 | Neighbor | Relationship |
 | -------- | ------------- |
-| **Nexus** | Sole execution owner for lifecycle stages, budgets, checkpoints, technical retry, persistence |
+| **Execution System** | Canonical host — execution lifecycle, identity, strategy routing, hosting Decision capability |
+| **Nexus** | ORCHESTRATION backend — scheduling child Executions when ORCHESTRATION is selected |
 | **Policy / Governance** | Cross-cutting execution authorization — does not determine decision correctness |
 | **HITL** | Canonical human approver / adjudicator — invoked by lifecycle |
 | **Reliability** | Technical retry on provider/tool failure — distinct from semantic revision |
@@ -213,7 +222,6 @@ Correlate: Decision ID, Decision Version, lifecycle events, verification events,
 | **Evidence Claims / Eval** | Evidence claims support evidence-backed decisions; online/shadow/offline eval remain **outside** runtime verification ownership |
 | **Tools / LLM adapters** | Invoked by strategies and verification stages under governed boundaries |
 
----
 
 ## 13. Security invariants
 

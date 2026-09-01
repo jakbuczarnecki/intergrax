@@ -98,7 +98,7 @@ async def test_uaep_attaches_shadow_workspace(tmp_path):
         },
     )
 
-    answer, validation, _context, _governance = await uaep.execute(agent, request)
+    answer, validation, _governance = await uaep.execute(agent, request)
 
     assert validation.valid is True
     assert answer.route is not None

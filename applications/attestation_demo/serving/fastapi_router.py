@@ -11,10 +11,9 @@ from pydantic import BaseModel, Field
 from intergrax.applications._shared.harness_auth import require_harness_api_key
 
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import new_run_id
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 
 class AttestationPocRunRequestV1(BaseModel):
@@ -48,7 +47,7 @@ class AttestationPocRunResponseV1(BaseModel):
 
 @dataclass
 class AttestationPocRunService:
-    task_runner: UnifiedTaskRunner
+    host_execution: HostTaskExecutionPort
     boundary_event_buffer: BoundaryEventBuffer
 
     async def run_task(self, body: AttestationPocRunRequestV1) -> AttestationPocRunResponseV1:
@@ -68,7 +67,7 @@ class AttestationPocRunService:
             context=TaskContext(capability=body.capability),
             metadata=metadata,
         )
-        result = await self.task_runner.run_task(task)
+        result = await self.host_execution.execute(task)
         resolved_run_id = result.run_id or run_id
         boundary_events = self.boundary_event_buffer.snapshot_for_run(resolved_run_id)
         host_signed = any(event.get("signed") is True for event in boundary_events)
@@ -97,13 +96,13 @@ class AttestationPocRunService:
 def mount_attestation_demo_routes(
     app: FastAPI,
     *,
-    task_runner: UnifiedTaskRunner,
+    host_execution: HostTaskExecutionPort,
     boundary_event_buffer: BoundaryEventBuffer,
-    nexus_loop: NexusLoop,
     prefix: str = "/v1/attestation_demo",
 ) -> AttestationPocRunService:
+    nexus_loop = host_execution.nexus_loop
     service = AttestationPocRunService(
-        task_runner=task_runner,
+        host_execution=host_execution,
         boundary_event_buffer=boundary_event_buffer,
     )
     router = APIRouter(prefix=prefix, tags=["attestation_demo"])

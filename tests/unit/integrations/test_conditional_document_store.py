@@ -13,11 +13,18 @@ from intergrax.integrations._shared.conformance import (
     assert_conditional_document_store,
     assert_document_store,
 )
+from intergrax.integrations._shared.partition_atomic_conformance import (
+    assert_partition_atomic_document_store,
+    assert_partition_atomic_document_store_semantics,
+)
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
     DocumentRecord,
     DocumentStore,
+)
+from intergrax.integrations.contracts.partition_atomic_document_store import (
+    PartitionAtomicDocumentStore,
 )
 
 pytestmark = pytest.mark.unit
@@ -33,6 +40,13 @@ def test_in_memory_implements_conditional_document_store() -> None:
     store = InMemoryDocumentStore()
     assert isinstance(store, ConditionalDocumentStore)
     assert_conditional_document_store(store)
+
+
+def test_in_memory_implements_partition_atomic_document_store() -> None:
+    store = InMemoryDocumentStore()
+    assert isinstance(store, PartitionAtomicDocumentStore)
+    assert_partition_atomic_document_store(store)
+    assert_partition_atomic_document_store_semantics(store)
 
 
 def test_put_if_absent_writes_missing_record() -> None:

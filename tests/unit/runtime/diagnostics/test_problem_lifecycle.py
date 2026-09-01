@@ -37,12 +37,20 @@ from intergrax.runtime.diagnostics.problem_lifecycle import (
     mint_problem_id,
     validate_problem_id,
 )
+from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
+    ProblemOccurrencePersistence,
+)
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
 )
 from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
+from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+    document_store_occurrence_persistence_for_tests,
+    in_memory_document_store_for_problem_tests,
+    query_all_occurrences_for_problem,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -53,9 +61,24 @@ _OBSERVED_AT_LATER = _OBSERVED_AT + timedelta(hours=1)
 _OBSERVED_AT_EARLIER = _OBSERVED_AT - timedelta(hours=1)
 _RESOLVED_AT = _OBSERVED_AT_LATER + timedelta(hours=2)
 
+_SHARED_OCCURRENCE_STORE = in_memory_document_store_for_problem_tests()
+_SHARED_OCCURRENCE_PERSISTENCE = document_store_occurrence_persistence_for_tests(
+    _SHARED_OCCURRENCE_STORE,
+)
 
-def assert_occurrence_timestamps_match(problem: Problem) -> None:
-    observed_times = [occurrence.observed_at for occurrence in problem.occurrences]
+
+def assert_occurrence_timestamps_match(
+    problem: Problem,
+    *,
+    occurrence_persistence: ProblemOccurrencePersistence | None = None,
+) -> None:
+    persistence = occurrence_persistence or _SHARED_OCCURRENCE_PERSISTENCE
+    occurrences = query_all_occurrences_for_problem(
+        persistence,
+        tenant_id=problem.tenant_id,
+        problem_id=problem.problem_id,
+    )
+    observed_times = [occurrence.observed_at for occurrence in occurrences]
     assert problem.first_seen_at == min(observed_times)
     assert problem.last_seen_at == max(observed_times)
 
@@ -67,7 +90,24 @@ def _engine() -> ProblemGroupingEngine:
 
 
 def _lifecycle_engine() -> ProblemLifecycleEngine:
-    return ProblemLifecycleEngine(InMemoryProblemPersistence())
+    return ProblemLifecycleEngine(
+        InMemoryProblemPersistence(),
+        _SHARED_OCCURRENCE_PERSISTENCE,
+    )
+
+
+def _isolated_lifecycle_engine() -> tuple[
+    InMemoryProblemPersistence,
+    ProblemOccurrencePersistence,
+    ProblemLifecycleEngine,
+]:
+    occurrence_store = in_memory_document_store_for_problem_tests()
+    persistence = InMemoryProblemPersistence()
+    occurrence_persistence = document_store_occurrence_persistence_for_tests(
+        occurrence_store,
+    )
+    engine = ProblemLifecycleEngine(persistence, occurrence_persistence)
+    return persistence, occurrence_persistence, engine
 
 
 def _assess_attempt_sequence(
@@ -244,8 +284,7 @@ def test_later_candidate_with_new_subject_increments_count() -> None:
 def test_same_recurrence_key_in_another_tenant_is_isolated() -> None:
     grouping_a, _, _ = _group_pair(tenant_id=_TENANT_A)
     grouping_b, _, _ = _group_pair(tenant_id=_TENANT_B)
-    persistence = InMemoryProblemPersistence()
-    lifecycle = ProblemLifecycleEngine(persistence)
+    persistence, occurrence_persistence, lifecycle = _isolated_lifecycle_engine()
 
     result_a = lifecycle.reconcile(grouping_a, observed_at=_OBSERVED_AT)
     result_b = lifecycle.reconcile(grouping_b, observed_at=_OBSERVED_AT)
@@ -426,8 +465,7 @@ def test_duplicate_subject_does_not_increment_count() -> None:
 def test_explicit_resolve_and_recurrence_reopens() -> None:
     first_input, second_input = _assess_retry_pair()
     third_input, _ = _assess_retry_pair()
-    persistence = InMemoryProblemPersistence()
-    lifecycle = ProblemLifecycleEngine(persistence)
+    persistence, occurrence_persistence, lifecycle = _isolated_lifecycle_engine()
 
     pair_grouping = _engine().group(
         (first_input, second_input),
@@ -450,7 +488,7 @@ def test_explicit_resolve_and_recurrence_reopens() -> None:
     assert reopened.first_seen_at == _OBSERVED_AT
     assert reopened.last_seen_at == _OBSERVED_AT_LATER
     assert reopened.occurrence_count == 3
-    assert_occurrence_timestamps_match(reopened)
+    assert_occurrence_timestamps_match(reopened, occurrence_persistence=occurrence_persistence)
 
 
 def test_one_occurrence_cannot_attach_to_two_existing_problems() -> None:
@@ -461,8 +499,7 @@ def test_one_occurrence_cannot_attach_to_two_existing_problems() -> None:
     grouping_ab = _engine().group((retry_first, retry_second), strategy_id=STRATEGY_ID)
     grouping_cd = _engine().group((failed_first, failed_second), strategy_id=STRATEGY_ID)
 
-    persistence = InMemoryProblemPersistence()
-    lifecycle = ProblemLifecycleEngine(persistence)
+    persistence, occurrence_persistence, lifecycle = _isolated_lifecycle_engine()
     lifecycle.reconcile(grouping_ab, observed_at=_OBSERVED_AT)
     lifecycle.reconcile(grouping_cd, observed_at=_OBSERVED_AT)
 

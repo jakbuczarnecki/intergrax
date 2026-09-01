@@ -27,6 +27,9 @@ from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrch
 from intergrax.runtime.diagnostics.diagnostic_problem_grouping_feature_projector import (
     DiagnosticProblemGroupingFeatureProjector,
 )
+from intergrax.runtime.diagnostics.document_store_problem_occurrence_persistence import (
+    wire_problem_occurrence_persistence,
+)
 from intergrax.runtime.diagnostics.document_store_problem_persistence import wire_problem_persistence
 from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
@@ -75,6 +78,10 @@ def resolve_host_diagnostic_runtime_dependencies(
             document_store=document_store,
             list_cursor_secret=resolve_problem_list_cursor_secret(),
         ),
+        occurrence_persistence=wire_problem_occurrence_persistence(
+            document_store=document_store,
+            occurrence_cursor_secret=resolve_problem_list_cursor_secret(),
+        ),
         runtime_event_persistence=runtime_events,
         causal_evidence_persistence=wire_causal_evidence_persistence(
             document_store=document_store,
@@ -99,7 +106,10 @@ def build_diagnostic_orchestrator(
             registry,
             feature_projector=DiagnosticProblemGroupingFeatureProjector(),
         ),
-        problem_lifecycle_engine=ProblemLifecycleEngine(dependencies.problem_persistence),
+        problem_lifecycle_engine=ProblemLifecycleEngine(
+            dependencies.problem_persistence,
+            dependencies.occurrence_persistence,
+        ),
     )
 
 

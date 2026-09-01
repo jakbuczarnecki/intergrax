@@ -67,6 +67,7 @@ class _CassandraDocumentStore:
         limit: int = 100,
         row_key_prefix: Optional[str] = None,
         cursor: Optional[str] = None,
+        row_key_upper_bound: Optional[str] = None,
     ) -> DocumentQueryPageV1:
         self._require_open()
         if cursor is not None:

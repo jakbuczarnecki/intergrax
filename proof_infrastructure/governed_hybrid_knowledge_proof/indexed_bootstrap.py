@@ -26,6 +26,7 @@ from local_workspace_application.host.environment_profile import (
 from local_workspace_application.host.lifecycle import LocalWorkspaceHostLifecycle
 from local_workspace_application.host.lkw_task_enricher import build_lkw_combined_task_enricher
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.host.execution_wiring import build_lkw_host_task_execution
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 from local_workspace_application.workspaces.document_indexing import (
@@ -222,7 +223,7 @@ async def bootstrap_indexed_proof_stack(
     idempotency_store=harness_runtime.reliability.idempotency_store,
   )
   inner_executor = LocalWorkspaceTaskExecutor(
-    harness_runtime.nexus_loop,
+    build_lkw_host_task_execution(harness_runtime.nexus_loop, env),
     task_enricher=task_enricher,
     readiness=lifecycle,
   )

@@ -21,7 +21,6 @@ from intergrax.contracts.agent_execution_result import AgentExecutionResult, Age
 from intergrax.contracts.runtime_mapping import runtime_answer_to_agent_result
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.policy.policy_engine import PolicyEngine, coerce_policy_engine
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
@@ -96,7 +95,7 @@ class AgentEngine:
         contract = self._resolve_agent_contract(agent)
         run_id = request.run_id
         try:
-            answer, validation, _context, governance, structured_data = (
+            answer, validation, governance, structured_data = (
                 await self._execute_agent_impl(
                     agent,
                     request,
@@ -166,7 +165,7 @@ class AgentEngine:
         registry: AgentRegistry | None = None,
     ) -> RuntimeAnswer:
         executor = AgentEngine._resolve_static_executor(uaep_executor, event_bus)
-        answer, _validation, _context, _governance, _structured = await AgentEngine._execute_agent_impl(
+        answer, _validation, _governance, _structured = await AgentEngine._execute_agent_impl(
             agent,
             request,
             executor,
@@ -189,7 +188,7 @@ class AgentEngine:
             contract = registry.get_contract(contract.id)
         run_id = request.run_id
         try:
-            answer, validation, _context, governance, structured_data = (
+            answer, validation, governance, structured_data = (
                 await AgentEngine._execute_agent_impl(
                     agent,
                     request,
@@ -226,7 +225,6 @@ class AgentEngine:
     ) -> tuple[
         RuntimeAnswer,
         ValidationResult,
-        RuntimeContext,
         Optional[GovernanceResolution],
         dict[str, Any],
     ]:
@@ -241,7 +239,7 @@ class AgentEngine:
                 valid=result.status.value == "succeeded",
                 errors=[error.message for error in result.errors],
             )
-            return answer, validation, agent.build_context(request), None, dict(result.structured_data)
+            return answer, validation, None, dict(result.structured_data)
 
         if supports_uaep(agent):
             from intergrax.llm.messages import (
@@ -257,12 +255,12 @@ class AgentEngine:
             resolved_contract = author_contract
             if registry is not None and registry.has(author_contract.id):
                 resolved_contract = registry.get_contract(author_contract.id)
-            answer, validation, context, governance = await uaep_executor.execute(
+            answer, validation, governance = await uaep_executor.execute(
                 agent,
                 request,
                 contract=resolved_contract,
             )
-            return answer, validation, context, governance, {}
+            return answer, validation, governance, {}
 
         raise ValueError(
             f"{type(agent).__name__} is not executable: set acp.session.v1 metadata for "

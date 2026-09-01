@@ -38,7 +38,10 @@ from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
     maybe_assign_declarative_hitl_scope,
 )
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.tools.idempotent_invoker import IdempotentToolInvoker
+from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
+    IdempotencyPreEffectCoordinator,
+    PreEffectClaimContext,
+)
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from intergrax.runtime.tools.operation_identity import compute_invocation_operation_identity
 from intergrax.runtime.tools.scope_policy import StaticToolScopePolicy
@@ -47,7 +50,11 @@ from intergrax.tools.core.contracts import (
     ToolContract,
     ToolRetryPolicy,
 )
-from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
+from intergrax.tools.execution_models import (
+    ToolEffectCertainty,
+    ToolExecutionRequest,
+    ToolExecutionResult,
+)
 from intergrax.tools.registry import ToolRegistry
 from tests.unit.runtime.nexus.tools.conftest import FakeRegistry
 
@@ -96,6 +103,70 @@ class DummyState:
 
     def trace_event(self, *args, **kwargs) -> None:
         del args, kwargs
+
+
+class TraceFailBeforeExecutorState(DummyState):
+    def trace_event(self, *args, **kwargs) -> None:
+        if kwargs.get("step") == "tool_invocation_start":
+            raise RuntimeError("trace failed before executor")
+        DummyState.trace_event(self, *args, **kwargs)
+
+
+class TraceFailAfterExecutorState(DummyState):
+    def trace_event(self, *args, **kwargs) -> None:
+        if kwargs.get("step") == "tool_invocation_end":
+            raise RuntimeError("trace failed after effect")
+        DummyState.trace_event(self, *args, **kwargs)
+
+
+class EscapeAfterEffectBoundaryInvoker(RuntimeToolInvoker):
+    def _execute_external_effect(self, *, boundary=None, **kwargs):
+        if boundary is not None:
+            boundary.may_have_started = True
+        raise RuntimeError("unexpected escape after effect boundary")
+
+
+class PreSubmitFailureInvoker(RuntimeToolInvoker):
+    def _execute_with_policy(self, **kwargs):
+        raise RuntimeError("unexpected pre-submit failure")
+
+
+class SubmitBoundaryProbeInvoker(RuntimeToolInvoker):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.boundary_before_submit: bool | None = None
+
+    def _execute_once(self, contract, request, *, boundary=None):
+        if boundary is not None:
+            self.boundary_before_submit = boundary.may_have_started
+        return super()._execute_once(contract, request, boundary=boundary)
+
+
+class SlowCountingExecutor:
+    def __init__(self, *, delay_s: float = 0.15) -> None:
+        self.calls = 0
+        self.concurrent = 0
+        self.max_concurrent = 0
+        self._lock = threading.Lock()
+        self._delay_s = delay_s
+
+    def execute(self, request: ToolExecutionRequest[ValueInput]) -> ValueOutput:
+        with self._lock:
+            self.calls += 1
+            self.concurrent += 1
+            self.max_concurrent = max(self.max_concurrent, self.concurrent)
+        try:
+            time.sleep(self._delay_s)
+            return ValueOutput(result=request.input.value * 2)
+        finally:
+            with self._lock:
+                self.concurrent -= 1
+
+
+class FailingExecutor:
+    def execute(self, request: ToolExecutionRequest[ValueInput]) -> ValueOutput:
+        del request
+        raise RuntimeError("executor side-effect failed")
 
 
 class GovernanceDummyState(DummyState):
@@ -162,15 +233,16 @@ def _idempotent_invoker(
     tools: tuple[str, ...] = ("tool_a",),
     side_effects: bool = True,
     store: InMemoryIdempotencyStore | None = None,
-) -> tuple[IdempotentToolInvoker, InMemoryIdempotencyStore]:
+) -> tuple[RuntimeToolInvoker, InMemoryIdempotencyStore]:
     ledger = store or InMemoryIdempotencyStore()
     registry = ToolRegistry()
     for tool_id in tools:
         _register_tool(registry, tool_id=tool_id, side_effects=side_effects)
-    base = RuntimeToolInvoker(registry=registry, executor=executor)
-    invoker = IdempotentToolInvoker(
-        base_invoker=base,
-        idempotency_store=ledger,
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=ledger)
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=executor,
+        pre_effect_coordinator=coordinator,
     )
     return invoker, ledger
 
@@ -355,8 +427,12 @@ def test_side_effect_timeout_marks_uncertain_and_blocks_replay() -> None:
     store = InMemoryIdempotencyStore()
     registry = ToolRegistry()
     _register_tool(registry, tool_id="slow_tool", side_effects=True, timeout_ms=50)
-    base = RuntimeToolInvoker(registry=registry, executor=SlowExecutor())
-    invoker = IdempotentToolInvoker(base_invoker=base, idempotency_store=store)
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=SlowExecutor(),
+        pre_effect_coordinator=coordinator,
+    )
     state = DummyState()
     request = _request(tool_id="slow_tool", key="timeout-key")
 
@@ -375,8 +451,12 @@ def test_validation_failure_before_claim_has_no_ledger_state() -> None:
     store = InMemoryIdempotencyStore()
     registry = ToolRegistry()
     _register_tool(registry, tool_id="tool_a", side_effects=True)
-    base = RuntimeToolInvoker(registry=registry, executor=executor)
-    invoker = IdempotentToolInvoker(base_invoker=base, idempotency_store=store)
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=executor,
+        pre_effect_coordinator=coordinator,
+    )
     state = DummyState()
     bad_request = ToolExecutionRequest(
         run_id="run1",
@@ -398,12 +478,13 @@ def test_scope_denial_before_claim_leaves_ledger_untouched() -> None:
     store = InMemoryIdempotencyStore()
     registry = ToolRegistry()
     _register_tool(registry, tool_id="tool_a", side_effects=True)
-    base = RuntimeToolInvoker(
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = RuntimeToolInvoker(
         registry=registry,
         executor=executor,
         scope_policy=StaticToolScopePolicy(allowed_tools=set()),
+        pre_effect_coordinator=coordinator,
     )
-    invoker = IdempotentToolInvoker(base_invoker=base, idempotency_store=store)
     state = DummyState()
     request = _request(key="scope-deny-key")
 
@@ -429,8 +510,12 @@ def test_output_validation_failure_after_executor_marks_uncertain() -> None:
     store = InMemoryIdempotencyStore()
     registry = ToolRegistry()
     _register_tool(registry, tool_id="tool_a", side_effects=True)
-    base = RuntimeToolInvoker(registry=registry, executor=BadOutputExecutor())
-    invoker = IdempotentToolInvoker(base_invoker=base, idempotency_store=store)
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=BadOutputExecutor(),
+        pre_effect_coordinator=coordinator,
+    )
     state = DummyState()
     request = _request(key="bad-output-key")
 
@@ -466,8 +551,12 @@ def test_mapped_validation_error_after_executor_marks_uncertain() -> None:
         ),
         handler=DummyHandler(),
     )
-    base = RuntimeToolInvoker(registry=registry, executor=MutatingFailExecutor())
-    invoker = IdempotentToolInvoker(base_invoker=base, idempotency_store=store)
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=MutatingFailExecutor(),
+        pre_effect_coordinator=coordinator,
+    )
     state = DummyState()
     request = _request(key="mapped-validation-key")
 
@@ -494,8 +583,12 @@ def test_unknown_executor_failure_marks_uncertain() -> None:
     store = InMemoryIdempotencyStore()
     registry = ToolRegistry()
     _register_tool(registry, tool_id="tool_a", side_effects=True)
-    base = RuntimeToolInvoker(registry=registry, executor=FailExecutor())
-    invoker = IdempotentToolInvoker(base_invoker=base, idempotency_store=store)
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=FailExecutor(),
+        pre_effect_coordinator=coordinator,
+    )
     state = DummyState()
     request = _request(key="fail-key")
 
@@ -605,18 +698,22 @@ def _governance_idempotent_invoker(
     executor: CountingExecutor,
     *,
     store: InMemoryIdempotencyStore | None = None,
-) -> tuple[IdempotentToolInvoker, InMemoryIdempotencyStore, RuntimeToolInvoker]:
+) -> tuple[RuntimeToolInvoker, InMemoryIdempotencyStore]:
     ledger = store or InMemoryIdempotencyStore()
     registry = ToolRegistry()
     _register_tool(registry, tool_id=_HITL_TOOL_ID, side_effects=True)
-    base = RuntimeToolInvoker(registry=registry, executor=executor)
-    invoker = IdempotentToolInvoker(base_invoker=base, idempotency_store=ledger)
-    return invoker, ledger, base
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=ledger)
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=executor,
+        pre_effect_coordinator=coordinator,
+    )
+    return invoker, ledger
 
 
 def test_concurrent_governance_allow_executes_once() -> None:
     executor = CountingExecutor()
-    invoker, _, _ = _governance_idempotent_invoker(executor)
+    invoker, _ = _governance_idempotent_invoker(executor)
     state = DummyState()
     request = ToolExecutionRequest(
         run_id="run1",
@@ -653,7 +750,7 @@ def test_concurrent_governance_allow_executes_once() -> None:
 
 def test_deny_then_allow_executes_once_without_cached_denial() -> None:
     executor = CountingExecutor()
-    invoker, store, _ = _governance_idempotent_invoker(executor)
+    invoker, store = _governance_idempotent_invoker(executor)
     state = GovernanceDummyState()
     deny_bundle = _policy_bundle(
         action="deny",
@@ -689,7 +786,7 @@ def test_deny_then_allow_executes_once_without_cached_denial() -> None:
 
 def test_hitl_resume_claims_and_executes_once() -> None:
     executor = CountingExecutor()
-    invoker, store, _ = _governance_idempotent_invoker(executor)
+    invoker, store = _governance_idempotent_invoker(executor)
     state = GovernanceDummyState()
     bundle = _policy_bundle(
         action="require_hitl",
@@ -729,3 +826,407 @@ def test_hitl_resume_claims_and_executes_once() -> None:
     replay = invoker.invoke(state=state, agent_id="agent", request=request)
     assert replay.success
     assert executor.calls == 1
+
+
+def _deny_governance_bundle() -> object:
+    return _policy_bundle(
+        action="deny",
+        tool_id=_HITL_TOOL_ID,
+        rule_id=_HITL_RULE_ID,
+    )
+
+
+def _governance_request(
+    *,
+    value: int = 5,
+    key: str = "admission-key",
+    run_id: str = _HITL_RUN_ID,
+) -> ToolExecutionRequest[ValueInput]:
+    return ToolExecutionRequest(
+        run_id=run_id,
+        step_id="step1",
+        tool_id=_HITL_TOOL_ID,
+        input=ValueInput(value=value),
+        idempotency_key=key,
+    )
+
+
+def test_invoke_is_canonical_execution_path() -> None:
+    executor = CountingExecutor()
+    invoker, _ = _governance_idempotent_invoker(executor)
+    assert callable(invoker.invoke)
+    assert not hasattr(invoker, "admit")
+    assert not hasattr(invoker, "_execute_after_admission")
+
+
+def test_governance_deny_cannot_bypass_via_invoke() -> None:
+    executor = CountingExecutor()
+    invoker, store = _governance_idempotent_invoker(executor)
+    state = GovernanceDummyState()
+    state.context.config.policy_bundle = _deny_governance_bundle()
+    request = _governance_request()
+
+    with pytest.raises(DeclarativePolicyViolationError):
+        invoker.invoke(state=state, agent_id="agent", request=request)
+    assert executor.calls == 0
+    assert store.get_status(state.tenant_id, "admission-key") is None
+
+
+def test_cross_operation_same_key_conflicts_on_invoke() -> None:
+    executor = CountingExecutor()
+    invoker, _ = _governance_idempotent_invoker(executor)
+    state = GovernanceDummyState()
+    allow_env = ApplicationEnvironmentProfile.lab_defaults(profile_id="governance.allow")
+    allow_env.policy_rules = PolicyRulesProfile(
+        inline_rules=[],
+        policy_enforcement_mode="enforce",
+    )
+    state.context.config.policy_bundle = wire_policy_bundle(allow_env)
+    request_x = _governance_request(value=3, key="cross-op-key")
+    invoker.invoke(state=state, agent_id="agent", request=request_x)
+
+    request_y = _governance_request(value=9, key="cross-op-key")
+    with pytest.raises(IdempotencyOperationConflictError):
+        invoker.invoke(state=state, agent_id="agent", request=request_y)
+    assert executor.calls == 1
+
+
+def test_replay_after_success_does_not_execute_again() -> None:
+    executor = CountingExecutor()
+    invoker, _ = _governance_idempotent_invoker(executor)
+    state = GovernanceDummyState()
+    allow_env = ApplicationEnvironmentProfile.lab_defaults(profile_id="governance.allow")
+    allow_env.policy_rules = PolicyRulesProfile(
+        inline_rules=[],
+        policy_enforcement_mode="enforce",
+    )
+    state.context.config.policy_bundle = wire_policy_bundle(allow_env)
+    request = _governance_request(key="replay-single-path-key")
+
+    first = invoker.invoke(state=state, agent_id="agent", request=request)
+    replay = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert first.success and replay.success
+    assert first.output == replay.output
+    assert executor.calls == 1
+
+
+def test_post_claim_trace_failure_before_executor_still_executes_and_replays() -> None:
+    executor = CountingExecutor()
+    invoker, store = _idempotent_invoker(executor)
+    state = TraceFailBeforeExecutorState()
+    request = _request(key="r6-trace-before-executor")
+
+    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert result.success
+    assert executor.calls == 1
+    assert store.get_status("tenant_test", "r6-trace-before-executor") == InvocationStatus.COMPLETED
+
+    replay = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert replay.success
+    assert executor.calls == 1
+
+
+def test_post_claim_trace_failure_with_executor_failure_marks_uncertain() -> None:
+    executor = FailingExecutor()
+    invoker, store = _idempotent_invoker(executor)
+    state = TraceFailBeforeExecutorState()
+    request = _request(key="r6-trace-before-executor-fail")
+
+    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert result.success is False
+    assert store.get_status("tenant_test", "r6-trace-before-executor-fail") == InvocationStatus.UNCERTAIN
+
+    with pytest.raises(InvocationUncertaintyError):
+        invoker.invoke(state=state, agent_id="agent", request=request)
+
+
+def test_submit_boundary_set_only_after_successful_submit() -> None:
+    executor = CountingExecutor()
+    store = InMemoryIdempotencyStore()
+    registry = ToolRegistry()
+    _register_tool(registry, tool_id="tool_a", side_effects=True)
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = SubmitBoundaryProbeInvoker(
+        registry=registry,
+        executor=executor,
+        pre_effect_coordinator=coordinator,
+    )
+    state = DummyState()
+    request = _request(key="r6-submit-boundary")
+
+    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert result.success
+    assert invoker.boundary_before_submit is False
+    assert executor.calls == 1
+
+
+def test_defensive_pre_submit_failure_finalizes_not_started() -> None:
+    executor = CountingExecutor()
+    store = InMemoryIdempotencyStore()
+    registry = ToolRegistry()
+    _register_tool(registry, tool_id="tool_a", side_effects=True)
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = PreSubmitFailureInvoker(
+        registry=registry,
+        executor=executor,
+        pre_effect_coordinator=coordinator,
+    )
+    state = DummyState()
+    request = _request(key="r6-defensive-pre-submit")
+
+    with pytest.raises(RuntimeError, match="unexpected pre-submit failure"):
+        invoker.invoke(state=state, agent_id="agent", request=request)
+
+    assert executor.calls == 0
+    assert store.get_status("tenant_test", "r6-defensive-pre-submit") == InvocationStatus.COMPLETED
+    cached = store.get_completed_result("tenant_test", "r6-defensive-pre-submit")
+    assert cached is not None
+    assert cached.success is False
+    assert cached.effect_certainty == ToolEffectCertainty.NOT_STARTED
+
+
+def test_independent_keys_execute_concurrently() -> None:
+    executor = SlowCountingExecutor()
+    invoker, store = _idempotent_invoker(executor)
+    state = DummyState()
+    request_a = _request(key="r6-concurrent-a", value=2)
+    request_b = _request(key="r6-concurrent-b", value=3)
+    results: list[ToolExecutionResult[ValueOutput]] = []
+    errors: list[Exception] = []
+
+    def worker(request: ToolExecutionRequest[ValueInput]) -> None:
+        try:
+            results.append(invoker.invoke(state=state, agent_id="agent", request=request))
+        except Exception as exc:
+            errors.append(exc)
+
+    t1 = threading.Thread(target=worker, args=(request_a,))
+    t2 = threading.Thread(target=worker, args=(request_b,))
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
+
+    assert not errors
+    assert len(results) == 2
+    assert all(result.success for result in results)
+    assert executor.calls == 2
+    assert executor.max_concurrent == 2
+    assert store.get_status("tenant_test", "r6-concurrent-a") == InvocationStatus.COMPLETED
+    assert store.get_status("tenant_test", "r6-concurrent-b") == InvocationStatus.COMPLETED
+
+
+def test_post_claim_trace_failure_after_executor_marks_uncertain() -> None:
+    executor = CountingExecutor()
+    invoker, store = _idempotent_invoker(executor)
+    state = TraceFailAfterExecutorState()
+    request = _request(key="r5-trace-after-executor")
+
+    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert result.success is False
+    assert executor.calls == 1
+    assert store.get_status("tenant_test", "r5-trace-after-executor") == InvocationStatus.UNCERTAIN
+
+    with pytest.raises(InvocationUncertaintyError):
+        invoker.invoke(state=state, agent_id="agent", request=request)
+    assert executor.calls == 1
+
+
+def test_on_post_claim_exception_before_effect_completes_not_started() -> None:
+    store = InMemoryIdempotencyStore()
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    acquired = store.claim(
+        "tenant_test",
+        "r5-coordinator-not-started",
+        "owner-r5",
+        lease_seconds=30,
+        operation_identity=compute_invocation_operation_identity("tool_a", ValueInput(value=1)),
+    )
+    assert acquired.claim is not None
+    claim_context = PreEffectClaimContext(
+        tenant_id="tenant_test",
+        key="r5-coordinator-not-started",
+        claim=acquired.claim,
+    )
+    contract = ToolContract(
+        tool_id="tool_a",
+        name="tool_a",
+        description="tool_a",
+        input_schema=ValueInput,
+        output_schema=ValueOutput,
+        error_mapping={},
+        side_effects=True,
+    )
+
+    coordinator.on_post_claim_exception(
+        claim_context=claim_context,
+        contract=contract,
+        effect_may_have_started=False,
+    )
+    assert store.get_status("tenant_test", "r5-coordinator-not-started") == InvocationStatus.COMPLETED
+    cached = store.get_completed_result("tenant_test", "r5-coordinator-not-started")
+    assert cached is not None
+    assert cached.success is False
+    assert cached.effect_certainty == ToolEffectCertainty.NOT_STARTED
+
+
+def test_post_claim_escape_after_effect_boundary_marks_uncertain() -> None:
+    executor = CountingExecutor()
+    store = InMemoryIdempotencyStore()
+    registry = ToolRegistry()
+    _register_tool(registry, tool_id="tool_a", side_effects=True)
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = EscapeAfterEffectBoundaryInvoker(
+        registry=registry,
+        executor=executor,
+        pre_effect_coordinator=coordinator,
+    )
+    state = DummyState()
+    request = _request(key="r5-escape-after-boundary")
+
+    with pytest.raises(RuntimeError, match="unexpected escape after effect boundary"):
+        invoker.invoke(state=state, agent_id="agent", request=request)
+
+    assert executor.calls == 0
+    assert store.get_status("tenant_test", "r5-escape-after-boundary") == InvocationStatus.UNCERTAIN
+
+    with pytest.raises(InvocationUncertaintyError):
+        invoker.invoke(state=state, agent_id="agent", request=request)
+    assert executor.calls == 0
+
+
+def test_on_post_claim_exception_after_effect_marks_uncertain() -> None:
+    store = InMemoryIdempotencyStore()
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    acquired = store.claim(
+        "tenant_test",
+        "r5-coordinator-uncertain",
+        "owner-r5",
+        lease_seconds=30,
+        operation_identity=compute_invocation_operation_identity("tool_a", ValueInput(value=1)),
+    )
+    assert acquired.claim is not None
+    claim_context = PreEffectClaimContext(
+        tenant_id="tenant_test",
+        key="r5-coordinator-uncertain",
+        claim=acquired.claim,
+    )
+    contract = ToolContract(
+        tool_id="tool_a",
+        name="tool_a",
+        description="tool_a",
+        input_schema=ValueInput,
+        output_schema=ValueOutput,
+        error_mapping={},
+        side_effects=True,
+    )
+
+    coordinator.on_post_claim_exception(
+        claim_context=claim_context,
+        contract=contract,
+        effect_may_have_started=True,
+    )
+    assert store.get_status("tenant_test", "r5-coordinator-uncertain") == InvocationStatus.UNCERTAIN
+
+
+def test_post_claim_success_finalizes_completed_once() -> None:
+    executor = CountingExecutor()
+    invoker, store = _idempotent_invoker(executor)
+    state = DummyState()
+    request = _request(key="r5-success-once")
+
+    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert result.success
+    assert executor.calls == 1
+    assert store.get_status("tenant_test", "r5-success-once") == InvocationStatus.COMPLETED
+
+    replay = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert replay.success
+    assert executor.calls == 1
+
+
+def test_close_shuts_down_execution_pool() -> None:
+    executor = CountingExecutor()
+    invoker, _ = _idempotent_invoker(executor)
+    state = DummyState()
+    request = _request(key="r6a-close-pool")
+
+    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert result.success
+    assert executor.calls == 1
+
+    invoker.close()
+    after_close = invoker.invoke(
+        state=state,
+        agent_id="agent",
+        request=_request(key="r6a-close-pool-new"),
+    )
+    assert not after_close.success
+    assert after_close.error is not None
+    assert "cannot schedule new futures after shutdown" in after_close.error.error_message
+    assert executor.calls == 1
+
+
+def test_active_call_completes_during_close() -> None:
+    executor = SlowCountingExecutor(delay_s=0.25)
+    invoker, store = _idempotent_invoker(executor)
+    state = DummyState()
+    request = _request(key="r6a-active-close")
+    result_holder: dict[str, ToolExecutionResult[ValueOutput]] = {}
+    errors: list[Exception] = []
+
+    def invoke_worker() -> None:
+        try:
+            result_holder["result"] = invoker.invoke(
+                state=state,
+                agent_id="agent",
+                request=request,
+            )
+        except Exception as exc:
+            errors.append(exc)
+
+    worker = threading.Thread(target=invoke_worker)
+    worker.start()
+    time.sleep(0.05)
+    invoker.close()
+    worker.join(timeout=5.0)
+
+    assert not errors
+    assert worker.is_alive() is False
+    assert result_holder["result"].success
+    assert executor.calls == 1
+    assert store.get_status("tenant_test", "r6a-active-close") == InvocationStatus.COMPLETED
+
+
+def test_close_is_idempotent() -> None:
+    invoker, _ = _idempotent_invoker(CountingExecutor())
+    invoker.close()
+    invoker.close()
+
+
+def test_replay_before_close_preserves_exactly_once() -> None:
+    executor = CountingExecutor()
+    invoker, store = _idempotent_invoker(executor)
+    state = DummyState()
+    request = _request(key="r6a-replay-before-close", value=7)
+
+    first = invoker.invoke(state=state, agent_id="agent", request=request)
+    replay = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert first.success and replay.success
+    assert executor.calls == 1
+    assert store.get_status("tenant_test", "r6a-replay-before-close") == InvocationStatus.COMPLETED
+
+    invoker.close()
+    replay_after_close = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert replay_after_close.success
+    assert executor.calls == 1
+    after_close = invoker.invoke(
+        state=state,
+        agent_id="agent",
+        request=_request(key="r6a-replay-before-close-new", value=7),
+    )
+    assert not after_close.success
+    assert after_close.error is not None
+    assert "cannot schedule new futures after shutdown" in after_close.error.error_message
+    assert executor.calls == 1
+

@@ -19,7 +19,9 @@ from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.persistence.integration_profile_wiring import open_trace_store_from_profile
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
 from intergrax.runtime.replay.service import ReplayService
-from intergrax.runtime.tools.idempotent_invoker import IdempotentToolInvoker
+from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
+    IdempotencyPreEffectCoordinator,
+)
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from intergrax.tools.registry import ToolRegistry, ToolWiringContext, build_registry_from_profile
 if TYPE_CHECKING:
@@ -95,6 +97,12 @@ class RuntimeContext:
 
     policy_bundle: Optional[RuntimePolicyBundle] = None
     max_parallel_per_tenant: Optional[int] = None
+
+    def close(self) -> None:
+        """Release runtime-owned resources (tool execution pool)."""
+        invoker = self.config.tool_invoker
+        if invoker is not None:
+            invoker.close()
 
     async def get_llm_usage_runs(self) -> list[LLMUsageRunRecord]:
         async with self.llm_usage_lock:
@@ -326,10 +334,20 @@ class RuntimeContext:
                 )
 
         executor = RegistryToolExecutor(registry)
+        pre_effect_coordinator: IdempotencyPreEffectCoordinator | None = None
+        if config.idempotency_store is None:
+            config.idempotency_store = InMemoryIdempotencyStore()
+
+        if config.idempotency_store is not None:
+            pre_effect_coordinator = IdempotencyPreEffectCoordinator(
+                idempotency_store=config.idempotency_store,
+            )
+
         base_invoker = RuntimeToolInvoker(
             registry=registry,
             executor=executor,
             scope_policy=config.tool_scope_policy,
+            pre_effect_coordinator=pre_effect_coordinator,
         )
 
         from intergrax.runtime.nexus.tools.planner_bootstrap import wire_catalog_tool_planner_if_enabled
@@ -340,16 +358,7 @@ class RuntimeContext:
             prompt_registry=prompt_registry,
         )
 
-        if config.idempotency_store is None:
-            config.idempotency_store = InMemoryIdempotencyStore()
-
-        if config.idempotency_store is not None:
-            config.tool_invoker = IdempotentToolInvoker(
-                base_invoker=base_invoker,
-                idempotency_store=config.idempotency_store,
-            )
-        else:
-            config.tool_invoker = base_invoker
+        config.tool_invoker = base_invoker
 
 
         # Register tools from providers

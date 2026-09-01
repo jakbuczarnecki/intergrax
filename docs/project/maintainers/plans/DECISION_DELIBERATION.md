@@ -7,7 +7,7 @@
 
 > **DS-DOC-CLEAN (2026-08-30):** Deliberation / Council strategy architecture **FROZEN**. **Council runtime NOT STARTED.**
 
-**Last updated:** 2026-08-30 — DS-DOC-CLEAN plan consolidation.
+**Last updated:** 2026-08-31 — DS-DELIB-04 participant role configuration.
 
 ---
 
@@ -26,7 +26,7 @@
 | Layer | Status |
 | ----- | ------ |
 | **Target architecture** | **FROZEN** |
-| **DecisionStrategy contract** | **PLANNED** |
+| **DecisionStrategy contract** | **Done** — DS-DELIB-01 |
 | **Council strategy** | **PLANNED** — not started |
 | **CURRENT production** | Single-model agent/graph paths only |
 
@@ -36,22 +36,22 @@
 
 | Phase | Status | Section |
 | ----- | ------ | ------- |
-| DS-DELIB | PLANNED | [below](#phase-ds-delib--strategy-foundation) |
+| DS-DELIB | Done | [below](#phase-ds-delib--strategy-foundation) |
 | DS-COUNCIL | PLANNED | [below](#phase-ds-council--council-strategy) |
 
 ---
 
-## Phase DS-DELIB — Strategy foundation (PLANNED)
+## Phase DS-DELIB — Strategy foundation (Done)
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-DELIB-01 | P0 | `DecisionStrategy` protocol + registry | **Planned** |
-| DS-DELIB-02 | P0 | Single Model strategy (baseline) | **Planned** |
-| DS-DELIB-03 | P1 | Disagreement artifact typed contract | **Planned** |
-| DS-DELIB-04 | P1 | Participant role configuration model | **Planned** |
-| DS-DELIB-05 | P1 | Context visibility policy per role | **Planned** |
-| DS-DELIB-06 | P2 | Rule-Based strategy | **Planned** |
-| DS-DELIB-07 | P2 | Hybrid strategy composition | **Planned** |
+| DS-DELIB-01 | P0 | `DecisionStrategy` protocol + canonical domain registry | **Done** — `intergrax/contracts/decision_strategy.py`; `tests/unit/contracts/test_decision_strategy.py` |
+| DS-DELIB-02 | P0 | Single Model strategy (baseline) | **Done** — profile-bound inference via `intergrax/runtime/execution/inference_profile.py`; `intergrax/contracts/single_model_strategy.py`; `intergrax/runtime/execution/single_model_deliberation.py`; `tests/unit/runtime/execution/test_inference_profile_resolution.py` |
+| DS-DELIB-03 | P1 | Disagreement artifact typed contract | **Done** — identity hardening via `DecisionProposalRef`; `intergrax/contracts/decision_disagreement.py`; `tests/unit/contracts/test_decision_disagreement.py` |
+| DS-DELIB-04 | P1 | Participant role configuration model | **Done** — `intergrax/contracts/decision_participants.py`; `tests/unit/contracts/test_decision_participants.py` |
+| DS-DELIB-05 | P1 | Context visibility policy per role | **Done** — `intergrax/contracts/decision_context_visibility.py`; `tests/unit/contracts/test_decision_context_visibility.py` |
+| DS-DELIB-06 | P2 | Rule-Based strategy | **Done** — `intergrax/contracts/rule_based_strategy.py`; `tests/unit/contracts/test_rule_based_strategy.py` |
+| DS-DELIB-07 | P2 | Hybrid strategy composition | **Done** — `intergrax/contracts/hybrid_strategy.py`; `tests/unit/contracts/test_hybrid_strategy.py` |
 
 ---
 
@@ -62,7 +62,7 @@
 | DS-COUNCIL-01 | P1 | Council strategy — parallel proposals | **Planned** |
 | DS-COUNCIL-02 | P1 | Structured disagreement capture | **Planned** |
 | DS-COUNCIL-03 | P1 | Synthesis candidate emission | **Planned** |
-| DS-COUNCIL-04 | P1 | Bounded rounds under Nexus budget | **Planned** |
+| DS-COUNCIL-04 | P1 | Bounded rounds under hosting Execution budget | **Planned** |
 | DS-COUNCIL-05 | P2 | Deadlock → Adjudication / UNRESOLVED routing | **Planned** |
 
 ---

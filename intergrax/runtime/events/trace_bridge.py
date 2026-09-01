@@ -21,6 +21,7 @@ from intergrax.contracts.execution_identity import (
     RunId,
     TaskId,
     peek_active_execution_identity,
+    peek_active_execution_id,
     require_active_execution_id,
     validate_attempt_id,
     validate_execution_id,
@@ -435,6 +436,12 @@ def _resolve_bridge_execution_identity(
             resolved_attempt_id = validate_attempt_id(attempt_id)
             if resolved_attempt_id != active_attempt_id:
                 raise RuntimeError("attempt_id conflicts with active execution identity")
+        if execution_id is not None:
+            resolved_execution_id = validate_execution_id(execution_id)
+            active_execution_id = peek_active_execution_id()
+            if active_execution_id is not None and active_execution_id != resolved_execution_id:
+                raise RuntimeError("execution_id conflicts with active execution identity")
+            return active_run_id, active_attempt_id, resolved_execution_id
         return active_run_id, active_attempt_id, require_active_execution_id()
 
     resolved_run_id: RunId | None = None

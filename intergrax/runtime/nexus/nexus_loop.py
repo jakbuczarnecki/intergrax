@@ -343,6 +343,10 @@ class NexusLoop:
     def registry(self) -> AgentRegistry:
         return self._registry
 
+    @property
+    def agent_engine(self) -> AgentEngine:
+        return self._engine
+
     def apply_validation_engine(self, validation_engine: NexusValidationEngine) -> None:
         """Replace the active validation engine across Nexus execution surfaces."""
         self._validation_engine = validation_engine

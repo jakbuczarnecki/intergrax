@@ -37,6 +37,10 @@ from intergrax.runtime.diagnostics.problem_lifecycle import (
     ProblemStatus,
     validate_problem_id,
 )
+from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
+    ProblemOccurrencePage,
+    ProblemOccurrencePersistence,
+)
 from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistence
 
 DEFAULT_PROBLEM_LIST_LIMIT = 100
@@ -56,12 +60,14 @@ class DiagnosticReadService:
     def __init__(
         self,
         problem_persistence: ProblemPersistence,
+        occurrence_persistence: ProblemOccurrencePersistence,
         execution_reconstructor: ExecutionReconstructor,
         *,
         lifecycle_analyzer: LifecycleAnomalyAnalyzer | None = None,
         assessment_builder: DiagnosticAssessmentBuilder | None = None,
     ) -> None:
         self._persistence = problem_persistence
+        self._occurrence_persistence = occurrence_persistence
         self._reconstructor = execution_reconstructor
         self._lifecycle_analyzer = lifecycle_analyzer or LifecycleAnomalyAnalyzer()
         self._assessment_builder = assessment_builder or DiagnosticAssessmentBuilder()
@@ -124,10 +130,11 @@ class DiagnosticReadService:
             )
 
         grouping_provenance = grouping_provenance_from_problem_provenance(problem.provenance)
-        ordered_occurrences = _order_occurrences_newest_first(problem.occurrences)
-        total_occurrence_count = len(ordered_occurrences)
-        selected_occurrences = ordered_occurrences[:occurrence_limit]
-
+        occurrence_page = self._occurrence_persistence.query_occurrences(
+            tenant_id=tenant_id,
+            problem_id=problem_id,
+            limit=occurrence_limit,
+        )
         occurrence_views = tuple(
             _reconstruct_occurrence_view(
                 occurrence,
@@ -137,7 +144,7 @@ class DiagnosticReadService:
                 lifecycle_analyzer=self._lifecycle_analyzer,
                 assessment_builder=self._assessment_builder,
             )
-            for occurrence in selected_occurrences
+            for occurrence in occurrence_page.items
         )
 
         return DiagnosticProblemDetail(
@@ -149,11 +156,43 @@ class DiagnosticReadService:
             occurrence_count=problem.occurrence_count,
             record_version=problem.record_version,
             grouping_provenance=grouping_provenance,
+            occurrence_aggregate_health=problem.occurrence_aggregate_health,
             occurrences=occurrence_views,
             returned_occurrence_count=len(occurrence_views),
-            total_occurrence_count=total_occurrence_count,
-            is_occurrences_truncated=total_occurrence_count > len(occurrence_views),
+            total_occurrence_count=problem.occurrence_count,
+            is_occurrences_truncated=(
+                problem.occurrence_count > len(occurrence_views)
+                or occurrence_page.has_more
+            ),
         )
+
+    def list_problem_occurrences(
+        self,
+        *,
+        tenant_id: str,
+        problem_id: ProblemId,
+        limit: int = DEFAULT_OCCURRENCE_LIMIT,
+        cursor: str | None = None,
+    ) -> ProblemOccurrencePage:
+        tenant_id = _require_tenant_id(tenant_id)
+        problem_id = validate_problem_id(problem_id)
+        limit = _validate_bounded_limit(limit, max_limit=MAX_OCCURRENCE_LIMIT)
+
+        problem = self._persistence.get(tenant_id=tenant_id, problem_id=problem_id)
+        if problem is None:
+            return ProblemOccurrencePage(items=(), next_cursor=None, has_more=False)
+        if problem.tenant_id != tenant_id:
+            raise DiagnosticReadIntegrityError(
+                "persisted Problem tenant_id does not match lookup tenant scope",
+            )
+
+        page = self._occurrence_persistence.query_occurrences(
+            tenant_id=tenant_id,
+            problem_id=problem_id,
+            limit=limit,
+            cursor=cursor,
+        )
+        return page
 
 
 def _summary_from_problem(problem: Problem) -> DiagnosticProblemSummary:
@@ -165,6 +204,7 @@ def _summary_from_problem(problem: Problem) -> DiagnosticProblemSummary:
         last_seen_at=problem.last_seen_at,
         occurrence_count=problem.occurrence_count,
         grouping_provenance=grouping_provenance_from_problem_provenance(problem.provenance),
+        occurrence_aggregate_health=problem.occurrence_aggregate_health,
     )
 
 

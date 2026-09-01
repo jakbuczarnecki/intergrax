@@ -54,6 +54,11 @@ from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
 )
 from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
+from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+    document_store_occurrence_persistence_for_tests,
+    in_memory_document_store_for_problem_tests,
+    lifecycle_engine_for_tests,
+)
 from intergrax.runtime.observability.problem_signal import (
     PROBLEM_KIND_PLATFORM_TOOL_FAILURE,
     PROBLEM_SEVERITY_ERROR,
@@ -147,7 +152,12 @@ def _build_orchestrator(
         assessment_builder=DiagnosticAssessmentBuilder(),
         grouping_engine=grouping_engine or _build_grouping_engine(),
         problem_lifecycle_engine=problem_lifecycle_engine
-        or ProblemLifecycleEngine(persistence),
+        or lifecycle_engine_for_tests(
+            persistence,
+            document_store_occurrence_persistence_for_tests(
+                in_memory_document_store_for_problem_tests(),
+            ),
+        ),
     )
     return orchestrator, runtime_store, causal_store, persistence
 
@@ -376,7 +386,12 @@ def test_one_spine_call_sequence() -> None:
     )
     lifecycle_engine = MagicMock(
         spec=ProblemLifecycleEngine,
-        wraps=ProblemLifecycleEngine(InMemoryProblemPersistence()),
+        wraps=lifecycle_engine_for_tests(
+            InMemoryProblemPersistence(),
+            document_store_occurrence_persistence_for_tests(
+                in_memory_document_store_for_problem_tests(),
+            ),
+        ),
     )
     orchestrator = DiagnosticOrchestrator(
         execution_reconstructor=reconstructor,

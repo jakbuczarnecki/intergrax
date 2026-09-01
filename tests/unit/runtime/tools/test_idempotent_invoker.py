@@ -8,8 +8,8 @@ from intergrax.tools.registry import ToolRegistry
 from intergrax.runtime.tools.in_memory_idempotency_store import (
     InMemoryIdempotencyStore,
 )
-from intergrax.runtime.tools.idempotent_invoker import (
-    IdempotentToolInvoker,
+from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
+    IdempotencyPreEffectCoordinator,
 )
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 
@@ -73,15 +73,12 @@ def test_side_effect_tool_is_idempotent():
     )
 
     executor = CountingExecutor()
-    base_invoker = RuntimeToolInvoker(
+    store = InMemoryIdempotencyStore()
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = RuntimeToolInvoker(
         registry=registry,
         executor=executor,
-    )
-
-    store = InMemoryIdempotencyStore()
-    invoker = IdempotentToolInvoker(
-        base_invoker=base_invoker,
-        idempotency_store=store,
+        pre_effect_coordinator=coordinator,
     )
 
     state = DummyState()

@@ -113,7 +113,12 @@ class InMemoryProblemPersistence(ProblemPersistence):
                 return None
             return self._records.get((tenant_id, problem_id))
 
-    def create(self, record: Problem) -> Problem:
+    def create(
+        self,
+        record: Problem,
+        *,
+        indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
+    ) -> Problem:
         with self._lock:
             storage_key = (record.tenant_id, record.problem_id)
             existing = self._records.get(storage_key)
@@ -134,7 +139,7 @@ class InMemoryProblemPersistence(ProblemPersistence):
                     "reconciliation key already bound to another Problem",
                 )
 
-            for subject_ref in record.current_subject_refs:
+            for subject_ref in indexed_subject_refs:
                 subject_index = _subject_index_key(record.tenant_id, subject_ref)
                 indexed_subject_problem = self._by_subject_ref.get(subject_index)
                 if (
@@ -147,13 +152,19 @@ class InMemoryProblemPersistence(ProblemPersistence):
 
             self._records[storage_key] = record
             self._by_reconciliation_key[reconciliation_index] = record.problem_id
-            for subject_ref in record.current_subject_refs:
+            for subject_ref in indexed_subject_refs:
                 self._by_subject_ref[_subject_index_key(record.tenant_id, subject_ref)] = (
                     record.problem_id
                 )
             return record
 
-    def update(self, record: Problem, *, expected_version: int) -> Problem:
+    def update(
+        self,
+        record: Problem,
+        *,
+        expected_version: int,
+        indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
+    ) -> Problem:
         with self._lock:
             storage_key = (record.tenant_id, record.problem_id)
             existing = self._records.get(storage_key)
@@ -174,7 +185,7 @@ class InMemoryProblemPersistence(ProblemPersistence):
                     "reconciliation key already bound to another Problem",
                 )
 
-            for subject_ref in record.current_subject_refs:
+            for subject_ref in indexed_subject_refs:
                 subject_index = _subject_index_key(record.tenant_id, subject_ref)
                 indexed_subject_problem = self._by_subject_ref.get(subject_index)
                 if (
@@ -187,7 +198,7 @@ class InMemoryProblemPersistence(ProblemPersistence):
 
             self._records[storage_key] = record
             self._by_reconciliation_key[reconciliation_index] = record.problem_id
-            for subject_ref in record.current_subject_refs:
+            for subject_ref in indexed_subject_refs:
                 self._by_subject_ref[_subject_index_key(record.tenant_id, subject_ref)] = (
                     record.problem_id
                 )

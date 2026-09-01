@@ -58,6 +58,7 @@ from local_workspace_application.host.environment_profile import (
 from local_workspace_application.host.observability_wiring import (
     build_local_workspace_observability_plugins,
 )
+from local_workspace_application.host.execution_wiring import build_lkw_host_task_execution
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 from local_workspace_application.workspaces.document_store_factory import (
@@ -158,8 +159,9 @@ def create_local_workspace_backend_app(
         compensation_queue_store=runtime.compensation_queue_store,
         idempotency_store=runtime.reliability.idempotency_store,
     )
+    lkw_host_execution = build_lkw_host_task_execution(nexus_loop, env)
     lkw_task_executor = LocalWorkspaceTaskExecutor(
-        nexus_loop,
+        lkw_host_execution,
         task_enricher=lkw_task_enricher,
         readiness=resolved_readiness,
     )
@@ -380,7 +382,7 @@ def create_local_workspace_backend_app(
         )
 
         mcp = build_local_workspace_mcp_server(
-            nexus_loop=nexus_loop,
+            host_execution=lkw_host_execution,
             route_prefix=resolved_settings.route_prefix,
             tool_registry=runtime.env_wiring.tool_wiring.registry,
         )

@@ -1,0 +1,206 @@
+# TOOLS-SIDE-EFFECT-SAFETY — brutal platform-native Docker E2E proof
+# Run from repository root:
+#   docker compose -f tests/system/tools_side_effect_safety/docker-compose.yml up --build --exit-code-from proof-runner --attach proof-runner --attach-dependencies=false
+
+name: tools-side-effect-safety-proof
+
+x-runtime-command-base: &runtime_command_base
+  bash -lc 'pip install -q uv && cd /workspace && uv venv --clear "$$UV_PROJECT_ENVIRONMENT" && UV_PROJECT_ENVIRONMENT="$$UV_PROJECT_ENVIRONMENT" uv sync --frozen --no-dev && UV_PROJECT_ENVIRONMENT="$$UV_PROJECT_ENVIRONMENT" uv run python -m tests.system.tools_side_effect_safety.shared'
+
+x-runtime-command-redis: &runtime_command_redis
+  bash -lc 'pip install -q uv && cd /workspace && uv venv --clear "$$UV_PROJECT_ENVIRONMENT" && UV_PROJECT_ENVIRONMENT="$$UV_PROJECT_ENVIRONMENT" uv sync --frozen --no-dev && uv pip install --python "$$UV_PROJECT_ENVIRONMENT/bin/python" "redis>=5.0" && UV_PROJECT_ENVIRONMENT="$$UV_PROJECT_ENVIRONMENT" uv run python -m tests.system.tools_side_effect_safety.shared'
+
+x-runtime-volumes: &runtime_volumes
+  - ../../..:/workspace
+  - /workspace/.venv
+
+services:
+  effect-postgres:
+    image: postgres:16.6
+    environment:
+      POSTGRES_USER: intergrax
+      POSTGRES_PASSWORD: intergrax
+      POSTGRES_DB: side_effect_proof
+    volumes:
+      - ./schema/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U intergrax -d side_effect_proof"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  external-effect-service:
+    build: ./external_effect_service
+    environment:
+      EFFECT_DATABASE_URL: postgresql://intergrax:intergrax@effect-postgres:5432/side_effect_proof
+    depends_on:
+      effect-postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+  redis:
+    image: redis:7.2.4
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.9.0
+    depends_on:
+      external-effect-service:
+        condition: service_healthy
+    command: ["-config", "/config/config.json", "-host", "0.0.0.0"]
+    volumes:
+      - ./toxiproxy/config.json:/config/config.json:ro
+
+  runtime-single:
+    image: python:3.12-slim
+    restart: unless-stopped
+    working_dir: /workspace
+    volumes:
+      - ../../..:/workspace
+      - /workspace/.venv
+      - runtime_single_data:/data
+    environment:
+      PYTHONPATH: /workspace
+      UV_PROJECT_ENVIRONMENT: /opt/venv-runtime-single
+      PERSISTENCE_TOPOLOGY: durable_single_host
+      SQLITE_DB_PATH: /data/idempotency.db
+      EFFECT_SERVICE_URL: http://toxiproxy:8666
+      WORKER_SOURCE: runtime-single
+      RUNTIME_PORT: "8090"
+      IDEMPOTENCY_LEASE_SECONDS: "5"
+    command: *runtime_command_base
+    depends_on:
+      toxiproxy:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 600s
+
+  runtime-a:
+    image: python:3.12-slim
+    restart: unless-stopped
+    working_dir: /workspace
+    volumes: *runtime_volumes
+    environment:
+      PYTHONPATH: /workspace
+      UV_PROJECT_ENVIRONMENT: /opt/venv-runtime-a
+      PERSISTENCE_TOPOLOGY: shared_multi_host
+      REDIS_URL: redis://redis:6379/0
+      EFFECT_SERVICE_URL: http://toxiproxy:8666
+      WORKER_SOURCE: runtime-a
+      RUNTIME_PORT: "8090"
+      IDEMPOTENCY_LEASE_SECONDS: "5"
+    command: *runtime_command_redis
+    depends_on:
+      redis:
+        condition: service_healthy
+      toxiproxy:
+        condition: service_started
+      runtime-single:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 600s
+
+  runtime-b:
+    image: python:3.12-slim
+    restart: unless-stopped
+    working_dir: /workspace
+    volumes: *runtime_volumes
+    environment:
+      PYTHONPATH: /workspace
+      UV_PROJECT_ENVIRONMENT: /opt/venv-runtime-b
+      PERSISTENCE_TOPOLOGY: shared_multi_host
+      REDIS_URL: redis://redis:6379/0
+      EFFECT_SERVICE_URL: http://toxiproxy:8666
+      WORKER_SOURCE: runtime-b
+      RUNTIME_PORT: "8090"
+      IDEMPOTENCY_LEASE_SECONDS: "5"
+    command: *runtime_command_redis
+    depends_on:
+      redis:
+        condition: service_healthy
+      toxiproxy:
+        condition: service_started
+      runtime-a:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 600s
+
+  proof-runner:
+    build: ./proof_runner
+    working_dir: /workspace
+    volumes:
+      - ../../..:/workspace
+      - /workspace/.venv
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      COMPOSE_PROJECT_NAME: tools-side-effect-safety-proof
+      EFFECT_SERVICE_URL: http://external-effect-service:8080
+      RUNTIME_SINGLE_URL: http://runtime-single:8090
+      RUNTIME_A_URL: http://runtime-a:8090
+      RUNTIME_B_URL: http://runtime-b:8090
+      TOXIPROXY_URL: http://toxiproxy:8474
+      TOXIPROXY_UPSTREAM: external-effect-service:8080
+      IDEMPOTENCY_LEASE_SECONDS: "5"
+      PROOF_ARTIFACT_DIR: /workspace/.tmp/session/tools-side-effect-safety-proof/docker-run
+      UV_PROJECT_ENVIRONMENT: /opt/venv-proof-runner
+    depends_on:
+      runtime-single:
+        condition: service_healthy
+      runtime-a:
+        condition: service_healthy
+      runtime-b:
+        condition: service_healthy
+      external-effect-service:
+        condition: service_healthy
+      toxiproxy:
+        condition: service_started
+
+volumes:
+  runtime_single_data:

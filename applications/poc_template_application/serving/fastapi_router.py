@@ -8,10 +8,9 @@ from typing import Any, Optional
 from fastapi import APIRouter, FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
 
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import new_run_id
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 
 class PocTemplateRunRequestV1(BaseModel):
@@ -34,11 +33,14 @@ class PocTemplateRunResponseV1(BaseModel):
 
 @dataclass
 class PocTemplateRunService:
-    task_runner: UnifiedTaskRunner
+    host_execution: HostTaskExecutionPort
 
     @classmethod
-    def from_nexus_loop(cls, nexus_loop: NexusLoop) -> PocTemplateRunService:
-        return cls(task_runner=UnifiedTaskRunner(nexus_loop))
+    def from_host_execution(
+        cls,
+        host_execution: HostTaskExecutionPort,
+    ) -> PocTemplateRunService:
+        return cls(host_execution=host_execution)
 
     async def run_task(self, body: PocTemplateRunRequestV1) -> PocTemplateRunResponseV1:
         run_id = new_run_id()
@@ -51,7 +53,7 @@ class PocTemplateRunService:
             context=TaskContext(capability=body.capability),
             metadata=dict(body.metadata),
         )
-        result = await self.task_runner.run_task(task)
+        result = await self.host_execution.execute(task)
         return PocTemplateRunResponseV1(
             task_id=result.task_id,
             run_id=result.run_id,
@@ -65,10 +67,11 @@ class PocTemplateRunService:
 def mount_poc_template_routes(
     app: FastAPI,
     *,
-    nexus_loop: NexusLoop,
+    host_execution: HostTaskExecutionPort,
     prefix: str = "/v1/poc_template",
 ) -> PocTemplateRunService:
-    service = PocTemplateRunService.from_nexus_loop(nexus_loop)
+    nexus_loop = host_execution.nexus_loop
+    service = PocTemplateRunService.from_host_execution(host_execution)
     router = APIRouter(prefix=prefix, tags=["poc_template"])
 
     @router.post("/run", response_model=PocTemplateRunResponseV1)

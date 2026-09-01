@@ -10,14 +10,13 @@ from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
 from intergrax.applications._shared.harness_auth import require_harness_api_key
 from pydantic import BaseModel, Field
 
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.applications._shared.task_intake import (
     apply_long_running_enabled,
     apply_orchestration_graph_id,
 )
 from intergrax.runtime.task.task_run_bridge import new_run_id
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 
 class LabRunRequestV1(BaseModel):
@@ -42,18 +41,18 @@ class LabRunResponseV1(BaseModel):
 
 @dataclass
 class LabRunService:
-    task_runner: UnifiedTaskRunner
+    host_execution: HostTaskExecutionPort
     task_enricher: Callable[[Task], Task] | None = None
 
     @classmethod
-    def from_nexus_loop(
+    def from_host_execution(
         cls,
-        nexus_loop: NexusLoop,
+        host_execution: HostTaskExecutionPort,
         *,
         task_enricher: Callable[[Task], Task] | None = None,
     ) -> LabRunService:
         return cls(
-            task_runner=UnifiedTaskRunner(nexus_loop),
+            host_execution=host_execution,
             task_enricher=task_enricher,
         )
 
@@ -76,7 +75,7 @@ class LabRunService:
         task = apply_orchestration_graph_id(task, body.graph_id)
         if self.task_enricher is not None:
             task = self.task_enricher(task)
-        result = await self.task_runner.run_task(task)
+        result = await self.host_execution.execute(task)
         return LabRunResponseV1(
             task_id=result.task_id,
             run_id=result.run_id,
@@ -90,11 +89,15 @@ class LabRunService:
 def mount_lab_routes(
     app: FastAPI,
     *,
-    nexus_loop: NexusLoop,
+    host_execution: HostTaskExecutionPort,
     prefix: str = "/v1/lab",
     task_enricher: Callable[[Task], Task] | None = None,
 ) -> LabRunService:
-    service = LabRunService.from_nexus_loop(nexus_loop, task_enricher=task_enricher)
+    nexus_loop = host_execution.nexus_loop
+    service = LabRunService.from_host_execution(
+        host_execution,
+        task_enricher=task_enricher,
+    )
     router = APIRouter(
         prefix=prefix,
         tags=["lab"],

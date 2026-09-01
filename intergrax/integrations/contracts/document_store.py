@@ -191,6 +191,7 @@ class DocumentStore(Protocol):
         limit: int = 100,
         row_key_prefix: str | None = None,
         cursor: str | None = None,
+        row_key_upper_bound: str | None = None,
     ) -> DocumentQueryPageV1:
         """List documents in deterministic bounded pages."""
         ...

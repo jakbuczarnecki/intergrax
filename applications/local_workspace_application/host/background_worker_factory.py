@@ -13,17 +13,19 @@ from intergrax.applications._shared.host_queue_execution_wiring import (
 )
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.applications._shared.task_control_wiring import (
+    TaskEnricher,
     build_reliability_task_enricher,
-    build_task_runner_with_enricher,
 )
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.background_tasks.definition import TaskDefinition
 from intergrax.background_tasks.registry import TaskRegistry
+from intergrax.contracts.execution_identity import AttemptId, RunId
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations.providers.message_bus.kafka.bundle import create_kafka_worker
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from intergrax.runtime.execution.host_task import HostTaskExecution
+from intergrax.runtime.task.task import Task, TaskResult as RuntimeTaskResult
 from local_workspace_application.background_ingest.contracts import (
     LKW_BACKGROUND_INGEST_TASK_NAME,
     LkwBackgroundIngestJob,
@@ -31,6 +33,10 @@ from local_workspace_application.background_ingest.contracts import (
 from local_workspace_application.background_ingest.worker_handler import (
     make_background_ingest_worker_handler,
 )
+from local_workspace_application.host.environment_profile import (
+    build_local_workspace_environment_profile,
+)
+from local_workspace_application.host.execution_wiring import build_lkw_host_task_execution
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.workspaces.document_store_factory import (
     resolve_lkw_runtime_document_store,
@@ -38,9 +44,29 @@ from local_workspace_application.workspaces.document_store_factory import (
 
 
 @dataclass(frozen=True, slots=True)
+class _BackgroundIngestHostExecutionRunner:
+    _host_execution: HostTaskExecution
+    _task_enricher: TaskEnricher
+
+    async def run_task(
+        self,
+        task: Task,
+        *,
+        run_id: RunId,
+        attempt_id: AttemptId,
+    ) -> RuntimeTaskResult:
+        prepared = self._task_enricher(task) if self._task_enricher is not None else task
+        return await self._host_execution.execute(
+            prepared,
+            run_id=run_id,
+            attempt_id=attempt_id,
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class LocalWorkspaceBackgroundWorkerWiring:
     runtime: HarnessHostRuntime
-    task_runner: UnifiedTaskRunner
+    host_execution: HostTaskExecution
     registry: TaskExecutionRegistry
     kv_store: DistributedKVStore
     idempotency_store: IdempotencyStore | None
@@ -70,11 +96,15 @@ def build_local_workspace_background_worker_wiring(
         compensation_queue_store=runtime.compensation_queue_store,
         idempotency_store=runtime.reliability.idempotency_store,
     )
-    task_runner = build_task_runner_with_enricher(runtime.nexus_loop, task_enricher)
+    host_execution = build_lkw_host_task_execution(runtime.nexus_loop, environment)
+    runner = _BackgroundIngestHostExecutionRunner(
+        _host_execution=host_execution,
+        _task_enricher=task_enricher,
+    )
 
     registry = TaskExecutionRegistry()
     task_registry = TaskRegistry()
-    handler = make_background_ingest_worker_handler(task_runner)
+    handler = make_background_ingest_worker_handler(runner)
     task_registry.register(
         TaskDefinition(
             task_name=LKW_BACKGROUND_INGEST_TASK_NAME,
@@ -94,7 +124,7 @@ def build_local_workspace_background_worker_wiring(
     )
     return LocalWorkspaceBackgroundWorkerWiring(
         runtime=runtime,
-        task_runner=task_runner,
+        host_execution=host_execution,
         registry=registry,
         kv_store=queue_dependencies.kv_store,
         idempotency_store=runtime.reliability.idempotency_store,

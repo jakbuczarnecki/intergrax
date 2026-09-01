@@ -18,7 +18,9 @@ from intergrax.runtime.nexus.errors.tool_scope_violation_error import ToolScopeV
 from intergrax.runtime.nexus.tools.catalog_tool_planner import CatalogToolPlanner
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.planner_bootstrap import wire_catalog_tool_planner_if_enabled
-from intergrax.runtime.tools.idempotent_invoker import IdempotentToolInvoker
+from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
+    IdempotencyPreEffectCoordinator,
+)
 from intergrax.runtime.tools.scope_policy import StaticToolScopePolicy
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
@@ -119,9 +121,10 @@ def test_runtime_context_build_wires_planner_and_scope_policy() -> None:
     assert isinstance(ctx.config.tool_planner, CatalogToolPlanner)
     invoker = ctx.config.tool_invoker
     assert invoker is not None
-    base = invoker._base_invoker if isinstance(invoker, IdempotentToolInvoker) else invoker
-    assert isinstance(base, RuntimeToolInvoker)
-    assert base._scope_policy is scope
+    assert isinstance(invoker, RuntimeToolInvoker)
+    assert invoker._pre_effect_coordinator is not None
+    assert isinstance(invoker._pre_effect_coordinator, IdempotencyPreEffectCoordinator)
+    assert invoker._scope_policy is scope
 
 
 def test_runtime_context_scope_policy_denies_on_invoke_path() -> None:
@@ -145,3 +148,62 @@ def test_runtime_context_scope_policy_denies_on_invoke_path() -> None:
 
     with pytest.raises(ToolScopeViolationError):
         invoker.invoke(state=_TraceState(), agent_id="agent", request=request)
+
+
+class _ClosePoolState:
+    run_id = "run-r6a-context-close"
+    tenant_id = "tenant-bootstrap"
+
+    @property
+    def context(self):
+        return type("Ctx", (), {"config": type("Cfg", (), {"policy_bundle": None})()})()
+
+    def trace_event(self, *args, **kwargs) -> None:
+        del args, kwargs
+
+
+def test_runtime_context_close_shuts_down_tool_invoker_pool() -> None:
+    registry = ToolRegistry()
+    _register_dummy(registry, "r6a.context.tool")
+    config = RuntimeConfig(
+        llm_adapter=FakeLLMAdapter(),
+        production_mode=False,
+        enable_rag=False,
+        enable_websearch=False,
+        tools_mode="auto",
+        tool_registry=registry,
+    )
+    ctx = RuntimeContext.build(
+        config=config,
+        session_manager=build_in_memory_session_manager(),
+    )
+    invoker = ctx.config.tool_invoker
+    assert invoker is not None
+
+    request = ToolExecutionRequest(
+        run_id="run-r6a-context-close",
+        step_id="step1",
+        tool_id="r6a.context.tool",
+        input=_In(value=3),
+        idempotency_key="r6a-context-close-key",
+    )
+    state = _ClosePoolState()
+
+    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    assert result.success
+
+    ctx.close()
+    after_close = invoker.invoke(
+        state=state,
+        agent_id="agent",
+        request=ToolExecutionRequest(
+            run_id="run-r6a-context-close",
+            step_id="step1",
+            tool_id="r6a.context.tool",
+            input=_In(value=4),
+            idempotency_key="r6a-context-close-key-new",
+        ),
+    )
+    assert not after_close.success
+    assert after_close.error is not None
+    assert "cannot schedule new futures after shutdown" in after_close.error.error_message

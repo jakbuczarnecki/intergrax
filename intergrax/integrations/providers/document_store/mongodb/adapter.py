@@ -15,6 +15,10 @@ from intergrax.integrations.contracts.document_store import (
     DocumentRecord,
     validate_document_query_limit,
 )
+from intergrax.integrations.contracts.partition_atomic_document_store import (
+    PartitionAtomicBatch,
+    PartitionAtomicBatchResult,
+)
 from intergrax.integrations.providers.document_store.mongodb.client import MongoCollectionClient
 from intergrax.integrations.providers.document_store.mongodb.config import MongoDBIntegrationConfig
 
@@ -65,6 +69,7 @@ class _MongoDBDocumentStore:
         limit: int = 100,
         row_key_prefix: Optional[str] = None,
         cursor: str | None = None,
+        row_key_upper_bound: str | None = None,
     ) -> DocumentQueryPageV1:
         self._require_open()
         bounded_limit = validate_document_query_limit(limit)
@@ -83,6 +88,7 @@ class _MongoDBDocumentStore:
                 limit=fetch_limit,
                 row_key_prefix=row_key_prefix,
                 after_row_key=after_row_key,
+                row_key_upper_bound=row_key_upper_bound,
             )
             has_more = len(documents) > bounded_limit
             page = documents[:bounded_limit]
@@ -92,6 +98,7 @@ class _MongoDBDocumentStore:
                 limit=bounded_limit,
                 row_key_prefix=row_key_prefix,
                 after_row_key=after_row_key,
+                row_key_upper_bound=row_key_upper_bound,
             )
             page = documents[:bounded_limit]
             has_more = (
@@ -103,6 +110,7 @@ class _MongoDBDocumentStore:
                         limit=1,
                         row_key_prefix=row_key_prefix,
                         after_row_key=page[-1].row_key,
+                        row_key_upper_bound=row_key_upper_bound,
                     )
                 ) > 0
             )
@@ -136,6 +144,17 @@ class _MongoDBDocumentStore:
     def delete_if_match(self, *, expected: DocumentRecord) -> bool:
         self._require_open()
         return self._client.delete_if_match(expected=expected)
+
+    def supports_partition_atomic_batch(self) -> bool:
+        self._require_open()
+        return self._client.supports_partition_atomic_batch()
+
+    def execute_partition_atomic_batch(
+        self,
+        batch: PartitionAtomicBatch,
+    ) -> PartitionAtomicBatchResult:
+        self._require_open()
+        return self._client.execute_partition_atomic_batch(batch)
 
     def close(self) -> None:
         if not self._closed:

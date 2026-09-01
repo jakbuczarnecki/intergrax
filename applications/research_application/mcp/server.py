@@ -4,20 +4,18 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from fastmcp import FastMCP
 
-from intergrax.applications._shared.mcp_nexus_server import build_nexus_mcp_server
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.runtime.task.task_run_bridge import new_run_id
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from intergrax.applications._shared.mcp_nexus_server import (
+    build_nexus_mcp_server,
+    execute_mcp_agent_task,
+)
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 
 
 def build_research_mcp_server(
     *,
-    nexus_loop: NexusLoop,
+    host_execution: HostTaskExecutionPort,
     route_prefix: str,
     tool_registry=None,
 ) -> FastMCP:
@@ -25,9 +23,9 @@ def build_research_mcp_server(
     _ = route_prefix
     from intergrax.tools.registry.runtime import ToolRegistry
 
-    kwargs: dict = {
+    kwargs: dict[str, object] = {
         "name": "Intergrax Research MCP",
-        "nexus_loop": nexus_loop,
+        "host_execution": host_execution,
         "default_capability": "research.pipeline",
         "default_tenant_id": "research",
         "default_user_id": "research-user",
@@ -35,34 +33,21 @@ def build_research_mcp_server(
     if isinstance(tool_registry, ToolRegistry):
         kwargs["tool_registry"] = tool_registry
     mcp = build_nexus_mcp_server(**kwargs)
-    runner = UnifiedTaskRunner(nexus_loop)
 
     @mcp.tool
     async def run_research_pipeline(
         message: str,
         tenant_id: str = "research",
         user_id: str = "research-user",
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """Run research → summarize pipeline (same as POST .../run)."""
-        run_id = new_run_id()
-        task = Task(
-            task_id=run_id,
+        return await execute_mcp_agent_task(
+            host_execution,
+            message=message,
+            capability="research.pipeline",
             tenant_id=tenant_id,
             user_id=user_id,
-            message=message,
-            context=TaskContext(
-                capability="research.pipeline",
-                intent="research_summarize",
-            ),
+            intent="research_summarize",
         )
-        result = await runner.run_task(task)
-        return {
-            "task_id": result.task_id,
-            "run_id": result.run_id,
-            "state": result.state.value,
-            "answer": result.answer,
-            "agent_id": result.agent_id,
-            "metadata": dict(result.metadata),
-        }
 
     return mcp

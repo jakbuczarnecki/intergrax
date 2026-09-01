@@ -14,7 +14,7 @@
 | Capability | Description |
 | ---------- | ----------- |
 | Single-shot proposal | Emit one or more candidate versions |
-| Multi-round deliberation | Bounded rounds under shared Nexus budget |
+| Multi-round deliberation | Bounded rounds under shared hosting Execution budget |
 | Parallel proposals | Branching candidates with preserved lineage |
 | Disagreement capture | Structured artifact when participants diverge |
 | Synthesis | Optional merged candidate for verification — does not erase dissent |
@@ -29,13 +29,26 @@ One producer emits candidate Decision Versions for verification. Minimal deliber
 
 ## 3. Rule-Based strategy
 
-Deterministic or rule-driven proposal without LLM deliberation rounds. Outputs typed Decision Artifacts bound to versions — same verification and finalization contracts as model strategies.
+Host-supplied deterministic domain logic via typed RuleBasedEvaluator — not Policy/Governance, not execution authorization, not side-effect execution. No LLM, no provider, no platform-owned rule DSL. Produces CandidateDecision; Verification and Lifecycle gates still apply.
 
 ---
 
 ## 4. Hybrid strategy
 
-Combines rule-based gates with model proposal (or council) under one strategy profile. Orchestration remains Nexus-owned; strategy declares which phases are rule vs model.
+Hybrid composition is declarative `DecisionStrategy` sequencing — not a workflow engine. Each `HybridPhase` binds an opaque `HybridPhaseId` to a registered `DecisionStrategyKind`; the canonical registry resolves component strategies. Phase order is developer-defined and preserved exactly.
+
+Hybrid does not own branching, retry, parallelism, checkpoints, or budget. Execution and orchestration remain canonical platform responsibility (Nexus when graph routing is required). Direct Hybrid → Hybrid nesting is rejected in the current contract.
+
+```text
+HybridStrategy
+      │
+      ├── phase "precheck" → DecisionStrategyKind A
+      ├── phase "proposal" → DecisionStrategyKind B
+      └── phase "review"   → DecisionStrategyKind C
+                                   │
+                                   ↓
+                       DecisionStrategyRegistry
+```
 
 ---
 
@@ -78,7 +91,7 @@ Meaningful separation between participant models/providers — or explicit **non
 
 ## 9. Context visibility
 
-Per-role visibility policy controls tool, evidence, and context exposure — **no hidden shared chain-of-thought store**. Visibility choices are auditable configuration, not implicit platform defaults.
+Per-role visibility policy controls tool-derived context, evidence surfaces, and other configured context channels - **no hidden shared chain-of-thought store**. **Tool exposure** means visibility of tool-derived context/results to a role, **not** authorization to invoke tools or execute side effects. Visibility choices are auditable configuration, not implicit platform defaults. Invariant: **decision quality != authorization != execution**.
 
 ---
 
@@ -134,11 +147,11 @@ stateDiagram-v2
 
 ---
 
-## 17. Nexus budget and crash / resume
+## 17. Hosting Execution budget and crash / resume
 
-Council, verification, and revision **share the hosting execution budget** — no separate Council budget engine. Resume cannot expand a previously granted Nexus budget ceiling.
+Council, verification, and revision **share the hosting execution budget** — no separate Council budget engine. Resume cannot expand a previously granted hosting Execution budget ceiling.
 
-Strategy state needed for resume persists through **Nexus checkpoints** — not a second scheduler. After crash, deliberation continues from checkpoint without duplicating terminal outcomes.
+Strategy state needed for resume persists through the **canonical hosting Execution checkpoint/persistence boundary** — not a second scheduler. Nexus may participate only when ORCHESTRATION is selected. After crash, deliberation continues from checkpoint without duplicating terminal outcomes.
 
 ---
 
@@ -148,7 +161,7 @@ Strategy state needed for resume persists through **Nexus checkpoints** — not 
 | ---- | ----- | ------- |
 | Deliberation continuation | DecisionStrategy | Next round within budget |
 | Semantic revision | Decision Lifecycle | Challenge / adjudication revision policy |
-| Technical retry | Nexus Reliability | Provider/tool failure — not rubric insufficiency |
+| Technical retry | Execution / Reliability appropriate to failing operation | Provider/tool failure — not rubric insufficiency |
 
 Private chain-of-thought is **not** persisted as authoritative evidence.
 

@@ -1,0 +1,148 @@
+# UE-11G-C1 — real agentic production E2E certification
+# Run from repository root:
+#   docker compose -f tests/system/unified_execution/docker-compose.yml up --build --exit-code-from proof-runner
+
+name: ue-11g-c1-proof
+
+x-uv-init: &uv_init
+  bash -lc 'pip install -q uv && cd /workspace && uv venv --clear "$$UV_PROJECT_ENVIRONMENT" && UV_PROJECT_ENVIRONMENT="$$UV_PROJECT_ENVIRONMENT" uv sync --frozen --no-dev'
+
+services:
+  lkw-mongodb:
+    image: mongo:7.0.14
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: intergrax
+      MONGO_INITDB_ROOT_PASSWORD: intergrax-local-dev-only
+      MONGO_INITDB_DATABASE: intergrax_proofs
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--username",
+          "intergrax",
+          "--password",
+          "intergrax-local-dev-only",
+          "--authenticationDatabase",
+          "admin",
+          "--quiet",
+          "--eval",
+          "db.adminCommand('ping').ok",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/6333'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 10s
+      retries: 18
+      start_period: 20s
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    user: "0:0"
+    volumes:
+      - ../../../applications/local_workspace_application/docker/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+      - lkw_otel_data:/var/lib/otelcol
+
+  local_workspace:
+    build:
+      context: ../../../applications/local_workspace_application/docker/runtime-context
+      dockerfile: Dockerfile
+    image: local_workspace-application:ue-11g-c1
+    ports:
+      - "8021:8020"
+    environment:
+      INTERGRAX_ENV: dev
+      LOCAL_WORKSPACE_BACKEND_ENV: dev
+      LOCAL_WORKSPACE_DATA_HOME: /var/lib/intergrax/lkw
+      LOCAL_WORKSPACE_BACKEND_HOST: "0.0.0.0"
+      LOCAL_WORKSPACE_BACKEND_PORT: "8020"
+      LOCAL_WORKSPACE_INCLUDE_MCP: "false"
+      INTERGRAX_MONGODB_URI: mongodb://intergrax:intergrax-local-dev-only@lkw-mongodb:27017/intergrax_proofs?authSource=admin
+      INTERGRAX_MONGODB_DATABASE: intergrax_proofs
+      INTERGRAX_MONGODB_COLLECTION: proof_receipts
+      LOCAL_WORKSPACE_VECTOR_STORE: qdrant
+      INTERGRAX_QDRANT_URL: http://qdrant:6333
+      INTERGRAX_QDRANT_COLLECTION: local_workspace
+      OLLAMA_HOST: http://ollama:11434
+      INTERGRAX_EMBEDDING_PROVIDER: ollama
+      INTERGRAX_EMBEDDING_MODEL: nomic-embed-text
+      LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT: http://otel-collector:4318/v1/logs
+      LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED: "true"
+      LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND: otlp
+      INTERGRAX_ALLOWED_READ_ROOTS: /cert-fixtures
+      LOCAL_WORKSPACE_BACKEND_BOOTSTRAP_API_KEY: ue-11g-c1-certification-secret
+      LOCAL_WORKSPACE_BACKEND_BOOTSTRAP_TENANT_ID: tenant-ue-11g-c1
+      LOCAL_WORKSPACE_BACKEND_BOOTSTRAP_USER_ID: ue-11g-c1-operator
+      LOCAL_WORKSPACE_ENABLE_RAG: "true"
+      LOCAL_WORKSPACE_ENABLE_RAG_INGEST: "true"
+      INTERGRAX_SQLITE_DATA_DIR: /var/lib/intergrax/lkw/data/sqlite
+      INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET: ue-11g-c1-diagnostic-cursor-secret-local-only
+    volumes:
+      - lkw_application_data:/var/lib/intergrax/lkw
+      - ./fixtures/workspace:/cert-fixtures/workspace:ro
+    depends_on:
+      lkw-mongodb:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8020/v1/local_workspace/readiness')",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 40
+      start_period: 180s
+
+  proof-runner:
+    build: ./proof_runner
+    working_dir: /workspace
+    volumes:
+      - ../../..:/workspace
+      - /workspace/.venv
+      - lkw_otel_data:/var/lib/otelcol:ro
+      - lkw_application_data:/lkw-data:ro
+    environment:
+      LKW_BASE_URL: http://local_workspace:8020
+      LOCAL_WORKSPACE_BACKEND_BOOTSTRAP_API_KEY: ue-11g-c1-certification-secret
+      INTERGRAX_EMBEDDING_MODEL: nomic-embed-text
+      UE_11G_C1_OTLP_LOG_PATH: /var/lib/otelcol/lkw-otlp-logs.jsonl
+      UE_11G_C1_RUNTIME_EVENTS_DB: /lkw-data/data/sqlite/intergrax_runtime_events.db
+      UE_11G_C1_ARTIFACT_DIR: /workspace/.tmp/session/ue-11g-c1/docker-run
+      UV_PROJECT_ENVIRONMENT: /opt/venv-proof-runner
+    depends_on:
+      local_workspace:
+        condition: service_healthy
+
+volumes:
+  lkw_mongodb_data:
+  ollama_data:
+  lkw_application_data:
+  lkw_otel_data:
