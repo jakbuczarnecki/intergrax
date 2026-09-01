@@ -80,11 +80,11 @@
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-EXEC-00 | P0 | Prove Decision capability is optional: ordinary Execution flows bypass Decision Lifecycle entirely when no authoritative decision is required | **Planned** |
+| DS-EXEC-00 | P0 | Prove Decision capability is optional: ordinary Execution flows bypass Decision Lifecycle entirely when no authoritative decision is required | **Done** |
 | DS-EXEC-01 | P0 | Execution host / strategy-routing hooks → Decision Lifecycle | **Planned** |
 | DS-EXEC-02 | P1 | Lifecycle stage persistence via canonical Execution checkpoint ports | **Planned** |
 
-### DS-EXEC-00 — Decision System optionality / bypass contract (PLANNED)
+### DS-EXEC-00 — Decision System optionality / bypass contract (DONE)
 
 Decision System is **optional per flow**. Ordinary Execution work must complete without entering Decision Lifecycle when no authoritative decision is required.
 

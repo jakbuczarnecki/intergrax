@@ -267,6 +267,16 @@ child Executions
 
 Nexus appears because orchestration work is required — not because every Decision mandates it.
 
+### Decision capability optionality
+
+Decision System is **optional per flow**. When no authoritative decision is required, ordinary Execution completes without entering Decision Lifecycle.
+
+- **Absence** means Decision Lifecycle is **not entered** — not a `NoDecisionStrategy` / null-strategy workaround.
+- **No global on/off flag** — optionality is per flow, not a `DECISION_SYSTEM_ENABLED` switch.
+- **Orthogonal to ExecutionStrategy** — INFERENCE, AGENTIC, and ORCHESTRATION each work without Decision capability; neither axis implies the other.
+
+Proof gate: DS-EXEC-00 (`tests/unit/runtime/execution/test_decision_optionality.py`).
+
 ---
 
 ## Decision Resolution
