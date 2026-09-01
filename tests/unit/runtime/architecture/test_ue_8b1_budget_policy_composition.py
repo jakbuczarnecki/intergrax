@@ -4,12 +4,17 @@
 
 from __future__ import annotations
 
+import importlib.metadata
 from unittest.mock import MagicMock
 
 import pytest
 
 from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.core.plugins.discovery import (
+    EP_EXECUTION_BUDGET_ALLOCATION_POLICIES,
+    reset_entry_point_spec_cache_for_tests,
+)
 from intergrax.runtime.execution.budget.models import (
     ChildBudgetAllocationContext,
     ChildBudgetAllocationDecision,
@@ -27,12 +32,33 @@ pytestmark = pytest.mark.unit
 
 
 class _EntryPoint:
-    def __init__(self, name: str, value: object) -> None:
+    def __init__(self, name: str, value: str, group: str) -> None:
         self.name = name
-        self._value = value
+        self.value = value
+        self.group = group
 
-    def load(self) -> object:
-        return self._value
+
+class _EntryPoints:
+    def __init__(self, entries: list[_EntryPoint]) -> None:
+        self._entries = entries
+
+    def select(self, *, group: str) -> list[_EntryPoint]:
+        return [entry for entry in self._entries if entry.group == group]
+
+
+@pytest.fixture(autouse=True)
+def _reset_entry_point_spec_cache() -> None:
+    reset_entry_point_spec_cache_for_tests()
+    yield
+    reset_entry_point_spec_cache_for_tests()
+
+
+def _install_eps(monkeypatch: pytest.MonkeyPatch, entries: list[_EntryPoint]) -> None:
+    monkeypatch.setattr(importlib.metadata, "entry_points", lambda: _EntryPoints(entries))
+
+
+def _policy_ep(name: str, attr: str) -> _EntryPoint:
+    return _EntryPoint(name, f"{__name__}:{attr}", EP_EXECUTION_BUDGET_ALLOCATION_POLICIES)
 
 
 class _CustomBudgetPolicy:
@@ -72,10 +98,7 @@ def test_runtime_config_direct_instance_reaches_graph_executor_child_runner() ->
 def test_runtime_config_entry_point_id_reaches_graph_executor_child_runner(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(
-        "intergrax.runtime.execution.budget.registry.entry_points",
-        lambda group=None: [_EntryPoint("custom", _CustomBudgetPolicy)],
-    )
+    _install_eps(monkeypatch, [_policy_ep("custom", "_CustomBudgetPolicy")])
     config = RuntimeConfig(llm_adapter=MagicMock())
     config.execution_budget_allocation_policy_id = "custom"
 

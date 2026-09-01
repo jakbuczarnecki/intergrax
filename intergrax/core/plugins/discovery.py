@@ -31,6 +31,9 @@ EP_SECURITY_DEFENSES = "intergrax.security_defenses"
 EP_POLICY_RULES = "intergrax.policy_rules"
 EP_POLICY_DEFINITIONS = "intergrax.policy_definitions"
 EP_TOOL_INVOCATION_PATTERNS = "intergrax.tool_invocation_patterns"
+EP_TOOL_SELECTION_STRATEGIES = "intergrax.tool_selection_strategies"
+EP_EXECUTION_BUDGET_ALLOCATION_POLICIES = "intergrax.execution_budget_allocation_policies"
+EP_EXECUTION_AUTHORITY_POLICIES = "intergrax.execution_authority_policies"
 
 T = TypeVar("T")
 
