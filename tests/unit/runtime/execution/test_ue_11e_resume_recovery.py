@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -31,14 +32,20 @@ from intergrax.runtime.execution.active_execution_budget import (
     require_active_execution_budget,
     reset_active_execution_budget,
 )
+from intergrax.runtime.execution.active_execution_resume import (
+    ActiveExecutionResumePlan,
+    bind_active_execution_resume_plan,
+    peek_active_execution_resume_plan,
+    reset_active_execution_resume_plan,
+)
 from intergrax.runtime.governance.active_execution_authority import peek_active_execution_authority
 from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
 from intergrax.runtime.execution.budget.consumption import consume_llm_call
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.long_running.checkpoint_builder import (
-    apply_resume_lineage_to_graph_executor,
     apply_runtime_checkpoint_to_task,
     build_runtime_checkpoint,
+    build_task_checkpoint_resume_plan,
     prepare_task_for_checkpoint_resume,
     resolve_task_runtime_checkpoint,
 )
@@ -328,11 +335,18 @@ async def test_ue_11e_resume_execution_tree_continuity(tmp_path: Path) -> None:
         message="ue-11e resume continue",
         context=TaskContext(capability=_CAPABILITY),
     )
-    _, resume_plan = prepare_task_for_checkpoint_resume(
+    resume_plan = build_task_checkpoint_resume_plan(
         task_b,
         loaded,
         active_attempt_id=attempt_id,
         active_root_execution_id=resumed_root,
+    )
+    prepare_task_for_checkpoint_resume(
+        task_b,
+        loaded,
+        active_attempt_id=attempt_id,
+        active_root_execution_id=resumed_root,
+        resume_plan=resume_plan,
     )
 
     engine._gate_open = True
@@ -341,17 +355,22 @@ async def test_ue_11e_resume_execution_tree_continuity(tmp_path: Path) -> None:
         engine=engine,
         retry_engine=RetryEngine(registry, policy=RetryPolicy(max_retries=0)),
     )
-    apply_resume_lineage_to_graph_executor(resume_executor, resume_plan)
     resume_graph = _sequential_graph(task_id)
 
-    await _run_graph(
-        executor=resume_executor,
-        task=task_b,
-        graph=resume_graph,
-        run_id=run_id,
-        attempt_id=attempt_id,
-        root_execution_id=resumed_root,
+    resume_plan_token = bind_active_execution_resume_plan(
+        ActiveExecutionResumePlan(plan=resume_plan),
     )
+    try:
+        await _run_graph(
+            executor=resume_executor,
+            task=task_b,
+            graph=resume_graph,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            root_execution_id=resumed_root,
+        )
+    finally:
+        reset_active_execution_resume_plan(resume_plan_token)
 
     counts_final = engine.snapshot_counts()
     assert counts_final.agent_a == 1
@@ -396,10 +415,173 @@ async def test_ue_11e_resume_execution_tree_continuity(tmp_path: Path) -> None:
     assert entry_d.status is ExecutionCheckpointStatus.COMPLETED
 
     assert resume_graph.node_by_id(_NODE_D).status == ExecutionNodeStatus.COMPLETED
+    assert peek_active_execution_resume_plan() is None
     assert peek_active_execution_identity() is None
     assert peek_active_execution_id() is None
     assert peek_active_execution_authority() is None
     assert peek_active_execution_budget() is None
+
+
+async def test_concurrent_checkpoint_resumes_isolate_lineage_on_shared_graph_executor(
+    tmp_path: Path,
+) -> None:
+    registry = AgentRegistry()
+    _register_resume_agents(registry)
+    engine = _GatedCountingAgentEngine(registry, gate_open=True)
+    shared_executor = GraphExecutor(
+        registry,
+        engine=engine,
+        retry_engine=RetryEngine(registry, policy=RetryPolicy(max_retries=0)),
+    )
+
+    async def _resume_branch(
+        *,
+        branch: str,
+        task_id: str,
+        run_id: RunId,
+        attempt_id: AttemptId,
+        root_before: ExecutionId,
+    ) -> tuple[ExecutionId, ExecutionId, ExecutionId]:
+        interrupt_executor = GraphExecutor(
+            registry,
+            engine=engine,
+            retry_engine=RetryEngine(registry, policy=RetryPolicy(max_retries=0)),
+        )
+        task_interrupt = Task(
+            task_id=task_id,
+            tenant_id="t1",
+            user_id="u1",
+            message=f"ue-11e concurrent interrupt {branch}",
+            context=TaskContext(capability=_CAPABILITY),
+        )
+        graph = _sequential_graph(task_id)
+        apply_runtime_checkpoint_to_task(
+            task_interrupt,
+            RuntimeCheckpoint(
+                run_id=run_id,
+                attempt_id=attempt_id,
+                execution_tree=ExecutionTreeRecorder.start_root(
+                    task_id=task_id,
+                    run_id=run_id,
+                    attempt_id=attempt_id,
+                    root_execution_id=root_before,
+                ).snapshot,
+            ),
+        )
+        engine._gate_open = False
+        await _run_graph(
+            executor=interrupt_executor,
+            task=task_interrupt,
+            graph=graph,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            root_execution_id=root_before,
+        )
+        runtime_before = resolve_task_runtime_checkpoint(task_interrupt)
+        assert runtime_before is not None
+        execution_c_before = _execution_id_for_node(runtime_before, _NODE_C)
+        assert execution_c_before is not None
+
+        checkpoint = TaskCheckpoint(
+            task_id=task_id,
+            tenant_id="t1",
+            resume_token=f"rt_ue_11e_concurrent_{branch}",
+            task_state=TaskState.WAITING_FOR_HUMAN,
+            runtime=build_runtime_checkpoint(
+                task_interrupt,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                graph=graph,
+            ),
+        )
+        store = SQLiteTaskCheckpointStore(
+            db_path=tmp_path / f"ue_11e_concurrent_{branch}.db",
+        )
+        store.save(checkpoint)
+        loaded = store.get_by_token(task_id, "t1", f"rt_ue_11e_concurrent_{branch}")
+        assert loaded is not None and loaded.runtime is not None
+
+        resumed_root = mint_execution_id()
+        task_resume = Task(
+            task_id=task_id,
+            tenant_id="t1",
+            user_id="u1",
+            message=f"ue-11e concurrent resume {branch}",
+            context=TaskContext(capability=_CAPABILITY),
+        )
+        resume_plan = build_task_checkpoint_resume_plan(
+            task_resume,
+            loaded,
+            active_attempt_id=attempt_id,
+            active_root_execution_id=resumed_root,
+        )
+        prepare_task_for_checkpoint_resume(
+            task_resume,
+            loaded,
+            active_attempt_id=attempt_id,
+            active_root_execution_id=resumed_root,
+            resume_plan=resume_plan,
+        )
+        resume_graph = _sequential_graph(task_id)
+        resume_plan_token = bind_active_execution_resume_plan(
+            ActiveExecutionResumePlan(plan=resume_plan),
+        )
+        try:
+            await _run_graph(
+                executor=shared_executor,
+                task=task_resume,
+                graph=resume_graph,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                root_execution_id=resumed_root,
+            )
+        finally:
+            reset_active_execution_resume_plan(resume_plan_token)
+
+        runtime_after = resolve_task_runtime_checkpoint(task_resume)
+        assert runtime_after is not None
+        execution_c_after = _execution_id_for_node(runtime_after, _NODE_C)
+        assert execution_c_after is not None
+        entry_c_after = runtime_after.execution_tree.entry_by_graph_node_id(_NODE_C)
+        assert entry_c_after is not None
+        return execution_c_before, execution_c_after, entry_c_after.resumed_from_execution_id
+
+    task_id_a = mint_task_id()
+    task_id_b = mint_task_id()
+    run_id_a = mint_run_id()
+    run_id_b = mint_run_id()
+    attempt_id_a = mint_attempt_id()
+    attempt_id_b = mint_attempt_id()
+    root_before_a = mint_execution_id()
+    root_before_b = mint_execution_id()
+
+    (
+        (a_c_old, a_c_new, a_resumed_from),
+        (b_c_old, b_c_new, b_resumed_from),
+    ) = await asyncio.gather(
+        _resume_branch(
+            branch="a",
+            task_id=task_id_a,
+            run_id=run_id_a,
+            attempt_id=attempt_id_a,
+            root_before=root_before_a,
+        ),
+        _resume_branch(
+            branch="b",
+            task_id=task_id_b,
+            run_id=run_id_b,
+            attempt_id=attempt_id_b,
+            root_before=root_before_b,
+        ),
+    )
+
+    assert a_resumed_from == a_c_old
+    assert b_resumed_from == b_c_old
+    assert a_c_new != a_c_old
+    assert b_c_new != b_c_old
+    assert a_resumed_from != b_c_old
+    assert b_resumed_from != a_c_old
+    assert peek_active_execution_resume_plan() is None
 
 
 async def test_same_attempt_fresh_root_rebases_execution_tree_through_production_path(
@@ -559,6 +741,7 @@ async def test_same_attempt_fresh_root_rebases_execution_tree_through_production
     assert entry_d.status is ExecutionCheckpointStatus.COMPLETED
 
     assert resume_graph.node_by_id(_NODE_D).status == ExecutionNodeStatus.COMPLETED
+    assert peek_active_execution_resume_plan() is None
     assert peek_active_execution_identity() is None
     assert peek_active_execution_id() is None
     assert peek_active_execution_authority() is None

@@ -16,6 +16,11 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
 )
+from intergrax.runtime.execution.active_execution_resume import (
+    ActiveExecutionResumePlan,
+    bind_active_execution_resume_plan,
+    reset_active_execution_resume_plan,
+)
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.runtime import (
@@ -27,8 +32,8 @@ from intergrax.runtime.execution.runtime import (
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
 from intergrax.runtime.long_running.checkpoint_builder import (
-    apply_resume_lineage_to_graph_executor,
     apply_runtime_checkpoint_to_task,
+    build_task_checkpoint_resume_plan,
     prepare_task_for_checkpoint_resume,
 )
 from intergrax.runtime.long_running.models import TaskCheckpoint
@@ -124,6 +129,7 @@ async def execute_root_task(
     ledger_factory: ExecutionBudgetLedgerFactory | None = None,
     run_budget: RunBudget | None = None,
 ) -> TaskResult:
+    resume_plan_token = None
     if resume_checkpoint is not None and resume_checkpoint.runtime is not None:
         _checkpoint_run_id, checkpoint_attempt_id = execution_identity_from_checkpoint(
             resume_checkpoint
@@ -139,15 +145,21 @@ async def execute_root_task(
             identity.attempt_id != checkpoint_attempt_id
             or identity.execution_id != checkpoint_root_execution_id
         ):
-            _, resume_plan = prepare_task_for_checkpoint_resume(
+            resume_plan = build_task_checkpoint_resume_plan(
                 task,
                 resume_checkpoint,
                 active_attempt_id=identity.attempt_id,
                 active_root_execution_id=identity.execution_id,
             )
-            apply_resume_lineage_to_graph_executor(
-                nexus_loop._graph_executor,
-                resume_plan,
+            prepare_task_for_checkpoint_resume(
+                task,
+                resume_checkpoint,
+                active_attempt_id=identity.attempt_id,
+                active_root_execution_id=identity.execution_id,
+                resume_plan=resume_plan,
+            )
+            resume_plan_token = bind_active_execution_resume_plan(
+                ActiveExecutionResumePlan(plan=resume_plan),
             )
         elif task.runtime.orchestration.runtime_checkpoint is None:
             apply_runtime_checkpoint_to_task(task, resume_checkpoint.runtime)
@@ -182,4 +194,8 @@ async def execute_root_task(
         authority=resolve_root_parent_execution_authority(task.execution_authority),
         tenant_id=task.tenant_id,
     )
-    return await runtime.execute(request, root_context)
+    try:
+        return await runtime.execute(request, root_context)
+    finally:
+        if resume_plan_token is not None:
+            reset_active_execution_resume_plan(resume_plan_token)

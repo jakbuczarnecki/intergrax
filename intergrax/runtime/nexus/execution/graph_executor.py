@@ -33,6 +33,9 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_identity,
     validate_task_id,
 )
+from intergrax.runtime.execution.active_execution_resume import (
+    peek_active_execution_resume_plan,
+)
 from intergrax.runtime.governance.active_execution_authority import (
     peek_active_effective_delegation,
     require_active_execution_authority,
@@ -219,9 +222,6 @@ class GraphExecutor:
             budget_policy=budget_allocation_policy,
         )
         self._execution_tree_recorder: ExecutionTreeRecorder | None = None
-        self._resume_historical_by_graph_node_id: (
-            dict[str, ExecutionCheckpointEntry] | None
-        ) = None
         self._graph_node_child_delegate = _GraphNodeChildDelegate(self)
         self._strategy_router = StrategyExecutionRouter(
             agent_executor=AgentExecutor(self._engine),
@@ -259,19 +259,14 @@ class GraphExecutor:
             middleware=self._middleware,
         )
 
-    def bind_resume_historical_by_graph_node_id(
-        self,
-        historical_by_graph_node_id: dict[str, ExecutionCheckpointEntry],
-    ) -> None:
-        self._resume_historical_by_graph_node_id = dict(historical_by_graph_node_id)
-
     def _resolve_historical_checkpoint_entry(
         self,
         graph_node_id: str,
         runtime_ckpt: Optional[RuntimeCheckpoint],
     ) -> ExecutionCheckpointEntry | None:
-        if self._resume_historical_by_graph_node_id is not None:
-            historical_entry = self._resume_historical_by_graph_node_id.get(
+        resume_binding = peek_active_execution_resume_plan()
+        if resume_binding is not None:
+            historical_entry = resume_binding.plan.historical_by_graph_node_id.get(
                 graph_node_id,
             )
             if historical_entry is not None:
@@ -306,18 +301,15 @@ class GraphExecutor:
         on_node_complete: Optional[Callable[[ExecutionNode], None]] = None,
         critic_trace_emitter: Optional["CriticTraceEmitter"] = None,
     ) -> tuple[List[AgentExecutionResult], List[RetryRecord], ExecutionGraph, bool]:
-        try:
-            return await self._execute_graph(
-                graph,
-                task,
-                plan_criteria=plan_criteria,
-                on_retry=on_retry,
-                on_node_start=on_node_start,
-                on_node_complete=on_node_complete,
-                critic_trace_emitter=critic_trace_emitter,
-            )
-        finally:
-            self._resume_historical_by_graph_node_id = None
+        return await self._execute_graph(
+            graph,
+            task,
+            plan_criteria=plan_criteria,
+            on_retry=on_retry,
+            on_node_start=on_node_start,
+            on_node_complete=on_node_complete,
+            critic_trace_emitter=critic_trace_emitter,
+        )
 
     async def _execute_graph(
         self,

@@ -414,7 +414,7 @@ def test_old_incomplete_execution_not_reused_as_active() -> None:
     )
     attempt_a2 = mint_attempt_id()
     root_a2 = mint_execution_id()
-    runtime, _resume_plan = prepare_task_for_checkpoint_resume(
+    runtime = prepare_task_for_checkpoint_resume(
         task,
         checkpoint,
         active_attempt_id=attempt_a2,
