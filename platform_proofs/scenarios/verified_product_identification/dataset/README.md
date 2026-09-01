@@ -79,3 +79,24 @@ uv run --group platform-proofs-vpi-dataset python platform_proofs/scenarios/veri
 ```
 
 Sampling uses single-pass reservoir sampling over `record_json` rows (bounded memory).
+
+## Profile
+
+Build a full statistical profile of `processed/selected_offers.parquet`:
+
+```bash
+uv run --group platform-proofs-vpi-dataset python platform_proofs/scenarios/verified_product_identification/dataset/profile_selected_dataset.py \
+  --input platform_proofs/scenarios/verified_product_identification/dataset/processed/selected_offers.parquet \
+  --output platform_proofs/scenarios/verified_product_identification/dataset/processed/selected_offers_profile.json
+```
+
+Optional human-readable summary:
+
+```bash
+uv run --group platform-proofs-vpi-dataset python platform_proofs/scenarios/verified_product_identification/dataset/profile_selected_dataset.py \
+  --input <path-to-selected_offers.parquet> \
+  --output <path-to-profile.json> \
+  --markdown <path-to-profile.md>
+```
+
+Profiling is single-pass, streaming over Parquet row batches. Generated profile artifacts remain local/gitignored.
