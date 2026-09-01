@@ -8,10 +8,17 @@ from __future__ import annotations
 import secrets
 import threading
 
+from collections.abc import Sequence
+
+from intergrax.integrations._shared.document_store_query_support import query_documents_with_data_filters
 from intergrax.integrations.contracts.document_store import (
+    DocumentDataEquality,
+    DocumentDataSort,
     DocumentQueryCursorCodec,
     DocumentQueryPageV1,
     DocumentRecord,
+    normalize_document_data_equalities,
+    normalize_document_data_sort,
     validate_document_query_limit,
 )
 from intergrax.integrations.contracts.partition_atomic_document_store import (
@@ -62,10 +69,15 @@ class InMemoryDocumentStore:
         )
         self._rows: dict[tuple[str, str], DocumentRecord] = {}
         self._lock = threading.RLock()
+        self._last_query_rows_examined = 0
 
     @property
     def query_cursor_codec(self) -> DocumentQueryCursorCodec:
         return self._cursor_codec
+
+    @property
+    def last_query_rows_examined(self) -> int:
+        return self._last_query_rows_examined
 
     def get(self, partition_key: str, row_key: str) -> DocumentRecord | None:
         with self._lock:
@@ -87,40 +99,28 @@ class InMemoryDocumentStore:
         row_key_prefix: str | None = None,
         cursor: str | None = None,
         row_key_upper_bound: str | None = None,
+        data_equalities: Sequence[DocumentDataEquality] = (),
+        sort: Sequence[DocumentDataSort] = (),
     ) -> DocumentQueryPageV1:
         validate_document_query_limit(limit)
+        normalize_document_data_equalities(data_equalities)
+        normalize_document_data_sort(sort)
         with self._lock:
-            rows: list[DocumentRecord] = []
-            for (pk, rk), doc in self._rows.items():
-                if pk != partition_key:
-                    continue
-                if row_key_prefix is not None and not rk.startswith(row_key_prefix):
-                    continue
-                if row_key_upper_bound is not None and rk > row_key_upper_bound:
-                    continue
-                rows.append(doc)
-            rows.sort(key=lambda doc: doc.row_key)
-            if cursor is not None:
-                last_row_key = self._cursor_codec.decode(
-                    cursor,
-                    partition_key=partition_key,
-                    row_key_prefix=row_key_prefix,
-                ).last_row_key
-                rows = [doc for doc in rows if doc.row_key > last_row_key]
-            sliced = rows[:limit]
-            next_cursor = (
-                self._cursor_codec.encode(
-                    partition_key=partition_key,
-                    row_key_prefix=row_key_prefix,
-                    last_row_key=sliced[-1].row_key,
-                )
-                if len(rows) > limit and sliced
-                else None
+            rows_examined_counter = [0]
+            page, next_cursor = query_documents_with_data_filters(
+                rows=tuple(self._rows.values()),
+                partition_key=partition_key,
+                limit=limit,
+                row_key_prefix=row_key_prefix,
+                row_key_upper_bound=row_key_upper_bound,
+                data_equalities=data_equalities,
+                sort=sort,
+                cursor_codec=self._cursor_codec,
+                cursor=cursor,
+                rows_examined_counter=rows_examined_counter,
             )
-            return DocumentQueryPageV1(
-                documents=tuple(sliced),
-                next_cursor=next_cursor,
-            )
+            self._last_query_rows_examined = rows_examined_counter[0]
+            return DocumentQueryPageV1(documents=page, next_cursor=next_cursor)
 
     def close(self) -> None:
         with self._lock:

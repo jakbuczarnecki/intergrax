@@ -5,12 +5,26 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any, Mapping, Optional
 
+from intergrax.integrations._shared.document_store_query_support import (
+    build_mongo_data_field,
+    build_mongo_equality_filter,
+    build_mongo_keyset_filter,
+    decode_v2_sort_values,
+)
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.contracts.document_store import DocumentRecord, validate_document_query_limit
+from intergrax.integrations.contracts.document_store import (
+    DocumentDataEquality,
+    DocumentDataSort,
+    DocumentQueryCursorCodec,
+    DocumentRecord,
+    normalize_document_data_equalities,
+    normalize_document_data_sort,
+    validate_document_query_limit,
+)
 from intergrax.integrations.contracts.partition_atomic_document_store import (
     PartitionAtomicBatch,
     PartitionAtomicBatchResult,
@@ -134,8 +148,14 @@ class MongoCollectionClient:
         row_key_prefix: Optional[str] = None,
         after_row_key: Optional[str] = None,
         row_key_upper_bound: Optional[str] = None,
+        data_equalities: Sequence[DocumentDataEquality] = (),
+        sort: Sequence[DocumentDataSort] = (),
+        cursor_codec: DocumentQueryCursorCodec | None = None,
+        cursor: Optional[str] = None,
     ) -> list[DocumentRecord]:
         bounded_limit = validate_document_query_limit(limit)
+        normalized_equalities = normalize_document_data_equalities(data_equalities)
+        normalized_sort = normalize_document_data_sort(sort)
         query_filter: dict[str, Any] = {"partition_key": partition_key}
         row_key_filter: dict[str, Any] = {}
         if row_key_prefix:
@@ -146,9 +166,35 @@ class MongoCollectionClient:
             row_key_filter["$lte"] = row_key_upper_bound
         if row_key_filter:
             query_filter["row_key"] = row_key_filter
-        mongo_cursor = (
-            self._collection.find(query_filter).sort("row_key", 1).limit(bounded_limit)
-        )
+        query_filter.update(build_mongo_equality_filter(normalized_equalities))
+
+        if normalized_sort and cursor is not None:
+            if cursor_codec is None:
+                raise ValueError("document_store_cursor_invalid")
+            payload = cursor_codec.decode_v2(
+                cursor,
+                partition_key=partition_key,
+                row_key_prefix=row_key_prefix,
+                row_key_upper_bound=row_key_upper_bound,
+                data_equalities=normalized_equalities,
+                sort=normalized_sort,
+            )
+            query_filter.update(
+                build_mongo_keyset_filter(normalized_sort, decode_v2_sort_values(payload)),
+            )
+
+        mongo_sort: list[tuple[str, int]] = []
+        for spec in normalized_sort:
+            direction = -1 if spec.direction == "desc" else 1
+            mongo_sort.append((build_mongo_data_field(spec.path), direction))
+
+        mongo_cursor = self._collection.find(query_filter)
+        if mongo_sort:
+            mongo_cursor = mongo_cursor.sort(mongo_sort)
+        else:
+            mongo_cursor = mongo_cursor.sort("row_key", 1)
+        mongo_cursor = mongo_cursor.limit(bounded_limit)
+
         documents: list[DocumentRecord] = []
         for doc in mongo_cursor:
             if _is_expired(doc.get("expires_at")):
