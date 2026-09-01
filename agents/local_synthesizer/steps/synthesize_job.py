@@ -10,7 +10,7 @@ from intergrax.agents.authoring.runtime_tool_helpers import (
     invoke_catalog_tool,
     request_metadata,
 )
-from intergrax.contracts.agent_step_context import AgentStepContext
+from local_synthesizer.rag_functional_evidence import emit_synthesize_functional_evidence
 from intergrax.contracts.runtime_execution_context import WORKSPACE_WRITE_FILE_TOOL_ID
 
 SYNTHESIZE_STEP_ID = "local_synthesizer_step"
@@ -115,6 +115,9 @@ def _resolve_content(
     metadata: dict[str, Any],
     evidence: list[dict[str, object]],
 ) -> str:
+    override = metadata.get("qualification_draft_override")
+    if isinstance(override, str) and override.strip():
+        return override.strip()
     draft = metadata.get("draft")
     if isinstance(draft, str) and draft.strip():
         return draft.strip()
@@ -260,13 +263,26 @@ async def run_synthesize_job(step_ctx: AgentStepContext) -> dict[str, object]:
         )
 
     artifact_path = entry.get("relative_path") or output_name
-    return _output(
+    artifact_ref = _artifact_ref_from_tool_entry(entry) or f"output:{output_name}"
+    fidelity = emit_synthesize_functional_evidence(
+        exec_ctx,
+        metadata=metadata,
+        selected_artifact_ref=metadata.get("qualification_selected_artifact_ref"),
+        output_artifact_ref=str(artifact_ref),
+        synthesize_succeeded=True,
+    )
+    output = _output(
         run_id=step_ctx.run_id,
         used=True,
         reason="write_complete",
         output_name=output_name,
         artifact_path=str(artifact_path),
-        artifact_ref=_artifact_ref_from_tool_entry(entry),
+        artifact_ref=artifact_ref,
         shadow_workspace=True,
         num_evidence_items=num_evidence_items,
     )
+    if fidelity is not None:
+        synth_summary = output.get("synthesize_summary")
+        if isinstance(synth_summary, dict):
+            synth_summary["functional_evidence_fidelity"] = fidelity
+    return output

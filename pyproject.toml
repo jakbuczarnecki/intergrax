@@ -347,6 +347,7 @@ markers = [
   "agent_os: Agent OS acceptance scenarios (Phase L.5); included in gate.",
   "tier3_scenario: Tier-3 UC-A* scenario matrix coverage (APP-CON-7).",
   "vectorstore_soak: RAG vector-store prod SLO soak against real backends (M-RAG.30); skipped when service unreachable.",
+  "qualification: Real integration qualification gates (DIAG-FUNCTIONAL-Q1); requires external services.",
 ]
 
 filterwarnings = [
