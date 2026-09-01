@@ -50,6 +50,6 @@ def build_local_workspace_tool_selection_qualifier_from_context(
 ) -> ToolSelectionQualifierAgent:
     from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 
-    adapter = resolve_llm_adapter(ctx.environment_profile)
+    adapter = resolve_llm_adapter(ctx.environment)
     _ = binding
     return ToolSelectionQualifierAgent(llm_adapter=adapter)

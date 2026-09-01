@@ -25,6 +25,16 @@ class ToolSelectionSummaryDiagnostic(DiagnosticPayload):
     def schema_id(cls) -> str:
         return _TOOL_SELECTION_SUMMARY_V1
 
+    def redact(self) -> ToolSelectionSummaryDiagnostic:
+        return ToolSelectionSummaryDiagnostic(
+            used=self.used,
+            reason=self.reason,
+            selected_tool_id=self.selected_tool_id,
+            selected_artifact_ref=self.selected_artifact_ref,
+            invoke_status=self.invoke_status,
+            available_tool_ids=self.available_tool_ids,
+        )
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "used": self.used,

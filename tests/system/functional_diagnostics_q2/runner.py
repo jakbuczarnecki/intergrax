@@ -378,6 +378,7 @@ def _run_case(
         task_id=pipeline_scope.task_id,
         run_id=pipeline_scope.run_id,
         findings=(),
+        limitations=(),
     )
     operator = DiagnosticAssessmentComposer().compose(
         lifecycle_assessment=lifecycle,

@@ -24,16 +24,33 @@ uv run pytest tests/system/functional_diagnostics_q2/test_q2_evidence_fidelity.p
 
 ## Prerequisites
 
-Start the real C1 stack (Ollama + LKW):
+Materialize runtime context and start the real C1 stack (Ollama + LKW):
 
 ```powershell
-./tests/system/unified_execution/run_c1_proof.ps1
+uv run python scripts/build/build_application_image.py `
+  --application local_workspace_application `
+  --context-dir applications/local_workspace_application/docker/runtime-context `
+  --materialize-only
+docker compose -f tests/system/unified_execution/docker-compose.yml build --no-cache local_workspace
+docker compose -f tests/system/unified_execution/docker-compose.yml up -d
+```
+
+Pull generative model (canonical LKW default):
+
+```bash
+docker compose -f tests/system/unified_execution/docker-compose.yml exec ollama ollama pull llama3.1:latest
 ```
 
 Set:
 
 - `LKW_BASE_URL=http://localhost:8021`
 - `LOCAL_WORKSPACE_BACKEND_BOOTSTRAP_API_KEY=ue-11g-c1-certification-secret`
+
+Compose must provide:
+
+- `INTERGRAX_LLM_PROVIDER=ollama`
+- `INTERGRAX_LLM_MODEL=llama3.1:latest`
+- `INTERGRAX_EMBEDDING_MODEL=nomic-embed-text`
 
 ## REAL / MOCKED
 
@@ -79,6 +96,43 @@ Operator
 | Q2-E | Missing selection evidence → inconclusive |
 | Q2-F | Run isolation (healthy vs wrong tool) |
 | Q2-G | Repeated deterministic wrong-tool case (3×) |
+
+## DIAG-FUNCTIONAL-Q2-ENV-1 run (2026-09-01)
+
+### Environment
+
+| Component | Value |
+| --- | --- |
+| Stack | `tests/system/unified_execution/docker-compose.yml` |
+| LKW image | `local_workspace-application:ue-11g-c1` (`sha256:c9a77b56c9e2…`) |
+| Generative model | `llama3.1:latest` (Ollama, tool-calling verified) |
+| Embedding model | `nomic-embed-text:latest` |
+| Materialization HEAD | `2695a1772358afae913cba412baae52191560355` (local) |
+
+### Static gate
+
+`uv run pytest tests/system/functional_diagnostics_q2/test_q2_evidence_fidelity.py -q` → **4 passed**
+
+### Live qualification verdict
+
+**Q2 = FAILED** (environment unblocked; live matrix executed)
+
+| Case | Match | Notes |
+| --- | --- | --- |
+| Q2-A | PASS | `workspace.search`, functional PASS |
+| Q2-B | FAIL | Wrong tool `workspace.write_file` selected; DIAG selection fail correct; comparator mismatch (validation/operator field) |
+| Q2-C | PASS | Selection pass, invocation fail |
+| Q2-D | PASS | Selection + invocation pass, validation fail |
+| Q2-E | FAIL | `actual_tool=null`; operator inconclusive but functional oracle failed |
+| Q2-F-A | PASS | Isolation healthy |
+| Q2-F-B | FAIL | Same pattern as Q2-B |
+| Q2-G (×3) | FAIL (all 3) | Repeatable wrong-tool selection; comparator mismatch |
+
+Metrics: `matched_cases=4/10`, `stage_accuracy=40%`, `repeatability_pass=true`, `evidence_fidelity_pass=true`.
+
+Machine artifact: `.tmp/session/diag-functional-q2/qualification-report.json`
+
+Recommendation: **Q2-R1 REQUIRED** (diagnostic comparator / Q2-E evidence path; not environment).
 
 ## Artifacts
 
