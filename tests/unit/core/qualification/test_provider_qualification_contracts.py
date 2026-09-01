@@ -20,6 +20,7 @@ from intergrax.core.qualification import (
     QualificationStatus,
     QualificationValidityRecord,
     new_qualification_run_id,
+    new_validity_evaluation_id,
     validate_qualification_run_id,
 )
 from intergrax.core.plugins.platform_qualification import PluginQualificationEvidenceKind
@@ -228,11 +229,13 @@ def test_status_and_validity_separation_without_validity_on_run() -> None:
 
     validity_current = QualificationValidityRecord(
         qualification_run_id=run_id,
+        validity_evaluation_id=new_validity_evaluation_id(),
         validity=QualificationEvidenceValidity.CURRENT,
         evaluated_at=_EVALUATED_AT_T1,
     )
     validity_stale = QualificationValidityRecord(
         qualification_run_id=run_id,
+        validity_evaluation_id=new_validity_evaluation_id(),
         validity=QualificationEvidenceValidity.STALE,
         evaluated_at=_EVALUATED_AT_T2,
         reason="adapter_revision_changed",
@@ -332,6 +335,7 @@ def test_run_rejects_blank_limitation_entries() -> None:
 def test_validity_record_is_immutable() -> None:
     record = QualificationValidityRecord(
         qualification_run_id=new_qualification_run_id(),
+        validity_evaluation_id=new_validity_evaluation_id(),
         validity=QualificationEvidenceValidity.CURRENT,
         evaluated_at=_EVALUATED_AT_T1,
     )
@@ -440,6 +444,7 @@ def test_validity_record_rejects_non_string_reason() -> None:
     with pytest.raises(TypeError, match="reason must be str"):
         QualificationValidityRecord(
             qualification_run_id=new_qualification_run_id(),
+            validity_evaluation_id=new_validity_evaluation_id(),
             validity=QualificationEvidenceValidity.STALE,
             evaluated_at=_EVALUATED_AT_T1,
             reason=123,

@@ -141,7 +141,13 @@ Proof gate: `tests/unit/runtime/execution/test_decision_checkpoint_runtime_integ
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
 | DS-NEXUS-01 | P0 | Canonical Execution work submission for Decision Strategy work (ORCHESTRATION capability via Execution-owned child seam; Nexus remains private) | **Done** |
-| DS-NEXUS-02 | P1 | Orchestration checkpoint participation when ORCHESTRATION is selected | **Planned** |
+| DS-NEXUS-02 | P1 | Orchestration checkpoint participation when ORCHESTRATION is selected | **Done** |
+
+#### DS-NEXUS-02 — Orchestration checkpoint/recovery participation (DONE)
+
+Decision semantic checkpoint and physical orchestration recovery remain independently owned. Decision-triggered `ORCHESTRATION` child work participates in canonical Execution checkpoint/resume without Decision importing Nexus or invoking recovery helpers.
+
+Proof gate: `tests/unit/runtime/execution/test_decision_orchestration_recovery.py`.
 
 #### DS-NEXUS-01 — Decision → Execution work seam (DONE)
 

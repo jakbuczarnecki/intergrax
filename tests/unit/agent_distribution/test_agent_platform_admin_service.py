@@ -64,13 +64,18 @@ from intergrax.agent_distribution.in_memory_stores import (
     InMemoryApplicationEnvironmentServingStore,
     InMemoryDeploymentInstanceStore,
     InMemoryMaterializedRuntimeLockStore,
+    InMemoryRuntimeMaterializationStore,
     InMemoryRuntimeRevisionStore,
 )
 from intergrax.agent_distribution.installation import InstallationState
 from intergrax.agent_distribution.installation_service import InstallationService
 from intergrax.agent_distribution.materialization import MaterializationOutput
-from intergrax.agent_distribution.materialization_service import RuntimeMaterializationService
-from intergrax.agent_distribution.runtime_graph_service import CandidateRuntimeGraphBuilder
+from intergrax.agent_distribution.materialization_service import (
+    RuntimeMaterializationService,
+)
+from intergrax.agent_distribution.runtime_graph_service import (
+    CandidateRuntimeGraphBuilder,
+)
 from intergrax.agent_distribution.runtime_revision import (
     MaterializationTopology,
     RuntimeRevisionState,
@@ -81,7 +86,9 @@ from intergrax.agent_distribution.trust import (
     AgentQualificationEvidenceKind,
     AgentTrustEvidenceRef,
 )
-from testing_support.agent_platform_dependency_resolver import make_identity_dependency_resolver
+from testing_support.agent_platform_dependency_resolver import (
+    make_identity_dependency_resolver,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -156,7 +163,9 @@ class _FakeCatalog:
         del filters
         return list(self._entries)
 
-    def resolve_package(self, entry: AgentCatalogEntry, *, version_selector: str) -> object:
+    def resolve_package(
+        self, entry: AgentCatalogEntry, *, version_selector: str
+    ) -> object:
         del entry, version_selector
         raise NotImplementedError
 
@@ -243,6 +252,7 @@ class AdminStack:
     service: AgentPlatformAdminService
     state: AgentDistributionStoreState
     catalog: _FakeCatalog
+    materialization_store: InMemoryRuntimeMaterializationStore
 
 
 def build_admin_stack(*, with_catalog: bool = True) -> AdminStack:
@@ -253,6 +263,7 @@ def build_admin_stack(*, with_catalog: bool = True) -> AdminStack:
     serving_store = InMemoryApplicationEnvironmentServingStore(state)
     deployment_store = InMemoryDeploymentInstanceStore(state)
     lock_store = InMemoryMaterializedRuntimeLockStore(state)
+    materialization_store = InMemoryRuntimeMaterializationStore(state)
     artifact_store = InMemoryAgentArtifactMetadataStore(state)
     installation_service = InstallationService(installation_store)
     binding_service = BindingService(binding_store, installation_service)
@@ -285,6 +296,7 @@ def build_admin_stack(*, with_catalog: bool = True) -> AdminStack:
         serving_store=serving_store,
         deployment_instance_store=deployment_store,
         lock_store=lock_store,
+        materialization_store=materialization_store,
         artifact_metadata_store=artifact_store,
         installation_service=installation_service,
         binding_service=binding_service,
@@ -307,9 +319,16 @@ def build_admin_stack(*, with_catalog: bool = True) -> AdminStack:
         catalog_provider=catalog if with_catalog else None,
         dependency_resolver=make_identity_dependency_resolver(),
         mutation_authorization_boundary=allow_mutation_boundary(),
-        environment_tenant_resolver=StaticApplicationEnvironmentTenantResolver("tenant-test"),
+        environment_tenant_resolver=StaticApplicationEnvironmentTenantResolver(
+            "tenant-test"
+        ),
     )
-    return AdminStack(service=service, state=state, catalog=catalog)
+    return AdminStack(
+        service=service,
+        state=state,
+        catalog=catalog,
+        materialization_store=materialization_store,
+    )
 
 
 def _activate_request(
@@ -361,10 +380,17 @@ def _install_bind(stack: AdminStack) -> None:
 def test_list_installed_bound_and_desired_state() -> None:
     stack = build_admin_stack()
     _install_bind(stack)
-    installed = stack.service.list_installed(application_id=_APP, application_environment_id=_ENV)
+    installed = stack.service.list_installed(
+        application_id=_APP, application_environment_id=_ENV
+    )
     assert len(installed.installations) == 1
-    assert installed.installations[0].installation_state is InstallationState.INSTALLED_ACTIVE
-    bindings = stack.service.list_bindings(application_id=_APP, application_environment_id=_ENV)
+    assert (
+        installed.installations[0].installation_state
+        is InstallationState.INSTALLED_ACTIVE
+    )
+    bindings = stack.service.list_bindings(
+        application_id=_APP, application_environment_id=_ENV
+    )
     assert bindings.bindings[0].logical_agent_id == "researcher"
     assert bindings.bindings[0].enablement is False
     roster = stack.service.inspect_effective_roster(
@@ -382,7 +408,9 @@ def test_status_read_model_distinguishes_desired_vs_serving() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        request=SetAgentEnablementRequest(
+            mutation_id="mut-enable", expected_revision=0
+        ),
         principal=admin_test_principal(),
     )
     assert enabled.binding.enablement is True
@@ -397,22 +425,30 @@ def test_status_read_model_distinguishes_desired_vs_serving() -> None:
     assert status.enabled_in_desired_state is True
     assert status.included_in_active_revision is False
     assert status.traffic_serving_revision_id is None
-    serving = stack.service.inspect_serving(application_id=_APP, application_environment_id=_ENV)
+    serving = stack.service.inspect_serving(
+        application_id=_APP, application_environment_id=_ENV
+    )
     assert serving.traffic_serving_revision_id is None
 
 
 def test_enable_does_not_change_serving_revision() -> None:
     stack = build_admin_stack()
     _install_bind(stack)
-    before = stack.service.inspect_serving(application_id=_APP, application_environment_id=_ENV)
+    before = stack.service.inspect_serving(
+        application_id=_APP, application_environment_id=_ENV
+    )
     stack.service.enable_binding(
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        request=SetAgentEnablementRequest(
+            mutation_id="mut-enable", expected_revision=0
+        ),
         principal=admin_test_principal(),
     )
-    after = stack.service.inspect_serving(application_id=_APP, application_environment_id=_ENV)
+    after = stack.service.inspect_serving(
+        application_id=_APP, application_environment_id=_ENV
+    )
     assert after.traffic_serving_revision_id == before.traffic_serving_revision_id
     assert after.serving_pointer_revision == before.serving_pointer_revision
 
@@ -424,7 +460,9 @@ def test_disable_does_not_change_serving_revision() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        request=SetAgentEnablementRequest(
+            mutation_id="mut-enable", expected_revision=0
+        ),
         principal=admin_test_principal(),
     )
     built = _build_revision(stack, "rev-17")
@@ -443,10 +481,14 @@ def test_disable_does_not_change_serving_revision() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(mutation_id="mut-disable", expected_revision=1),
+        request=SetAgentEnablementRequest(
+            mutation_id="mut-disable", expected_revision=1
+        ),
         principal=admin_test_principal(),
     )
-    serving = stack.service.inspect_serving(application_id=_APP, application_environment_id=_ENV)
+    serving = stack.service.inspect_serving(
+        application_id=_APP, application_environment_id=_ENV
+    )
     assert serving.traffic_serving_revision_id == serving_id
     status = stack.service.inspect_agent_status(
         application_id=_APP,
@@ -464,7 +506,9 @@ def test_build_creates_candidate_but_does_not_activate() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        request=SetAgentEnablementRequest(
+            mutation_id="mut-enable", expected_revision=0
+        ),
         principal=admin_test_principal(),
     )
     built = _build_revision(stack, "rev-18")
@@ -474,7 +518,9 @@ def test_build_creates_candidate_but_does_not_activate() -> None:
     assert built.materialized_runtime_lock_id
     assert built.runtime_graph_digest
     assert built.materialization_artifact_digest == _ARTIFACT
-    serving = stack.service.inspect_serving(application_id=_APP, application_environment_id=_ENV)
+    serving = stack.service.inspect_serving(
+        application_id=_APP, application_environment_id=_ENV
+    )
     assert serving.traffic_serving_revision_id is None
     candidate = stack.service.inspect_revision(
         application_id=_APP,
@@ -498,7 +544,9 @@ def test_activate_delegates_ap9_and_changes_serving_revision() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        request=SetAgentEnablementRequest(
+            mutation_id="mut-enable", expected_revision=0
+        ),
         principal=admin_test_principal(),
     )
     built = _build_revision(stack, "rev-18")
@@ -514,7 +562,9 @@ def test_activate_delegates_ap9_and_changes_serving_revision() -> None:
     )
     assert activated.traffic_serving_revision_id == "rev-18"
     assert activated.revision_state is RuntimeRevisionState.ACTIVE
-    serving = stack.service.inspect_serving(application_id=_APP, application_environment_id=_ENV)
+    serving = stack.service.inspect_serving(
+        application_id=_APP, application_environment_id=_ENV
+    )
     assert serving.traffic_serving_revision_id == "rev-18"
     status = stack.service.inspect_agent_status(
         application_id=_APP,
@@ -532,7 +582,9 @@ def test_rollback_delegates_immutable_ap9_rollback() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        request=SetAgentEnablementRequest(
+            mutation_id="mut-enable", expected_revision=0
+        ),
         principal=admin_test_principal(),
     )
     first = _build_revision(stack, "rev-17")
@@ -572,7 +624,9 @@ def test_rollback_delegates_immutable_ap9_rollback() -> None:
         ),
     )
     assert rolled.restored_revision_id == "rev-17"
-    serving = stack.service.inspect_serving(application_id=_APP, application_environment_id=_ENV)
+    serving = stack.service.inspect_serving(
+        application_id=_APP, application_environment_id=_ENV
+    )
     assert serving.traffic_serving_revision_id == "rev-17"
 
 
@@ -583,7 +637,9 @@ def test_stale_binding_conflict_propagated() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        request=SetAgentEnablementRequest(
+            mutation_id="mut-enable", expected_revision=0
+        ),
         principal=admin_test_principal(),
     )
     with pytest.raises(BindingRevisionConflict):
@@ -591,8 +647,10 @@ def test_stale_binding_conflict_propagated() -> None:
             application_id=_APP,
             application_environment_id=_ENV,
             application_binding_id="bind-search",
-            request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
-        principal=admin_test_principal(),
+            request=SetAgentEnablementRequest(
+                mutation_id="mut-enable", expected_revision=0
+            ),
+            principal=admin_test_principal(),
         )
 
 
@@ -603,7 +661,9 @@ def test_stale_activation_conflict_propagated() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        request=SetAgentEnablementRequest(
+            mutation_id="mut-enable", expected_revision=0
+        ),
         principal=admin_test_principal(),
     )
     first = _build_revision(stack, "rev-17")
@@ -688,7 +748,9 @@ def test_ap9_activation_service_still_commits_on_shared_stores() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        request=SetAgentEnablementRequest(
+            mutation_id="mut-enable", expected_revision=0
+        ),
         principal=admin_test_principal(),
     )
     built = _build_revision(stack, "rev-ap9")
@@ -714,7 +776,12 @@ def test_ap9_activation_service_still_commits_on_shared_stores() -> None:
 def test_cross_application_resource_isolation() -> None:
     stack = build_admin_stack()
     _install_bind(stack)
-    assert stack.service.list_bindings(application_id=_APP_B, application_environment_id=_ENV).bindings == ()
+    assert (
+        stack.service.list_bindings(
+            application_id=_APP_B, application_environment_id=_ENV
+        ).bindings
+        == ()
+    )
     with pytest.raises(AgentDistributionNotFoundError):
         stack.service.inspect_installation(
             application_id=_APP_B,
@@ -725,7 +792,9 @@ def test_cross_application_resource_isolation() -> None:
         application_id=_APP,
         application_environment_id=_ENV,
         application_binding_id="bind-search",
-        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        request=SetAgentEnablementRequest(
+            mutation_id="mut-enable", expected_revision=0
+        ),
         principal=admin_test_principal(),
     )
     built = _build_revision(stack, "rev-scope")
@@ -751,10 +820,13 @@ def test_cross_application_resource_isolation() -> None:
         application_environment_id=_ENV,
     )
     assert app_b_serving.traffic_serving_revision_id is None
-    assert stack.service.inspect_serving(
-        application_id=_APP,
-        application_environment_id=_ENV,
-    ).traffic_serving_revision_id == "rev-scope"
+    assert (
+        stack.service.inspect_serving(
+            application_id=_APP,
+            application_environment_id=_ENV,
+        ).traffic_serving_revision_id
+        == "rev-scope"
+    )
     app_b_status = stack.service.inspect_agent_status(
         application_id=_APP_B,
         application_environment_id=_ENV,

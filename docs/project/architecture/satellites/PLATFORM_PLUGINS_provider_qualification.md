@@ -766,6 +766,31 @@ PostgreSQL evidence must **not** be persisted before **PROVIDER-QUAL-3B** is ind
 - separate OS process restart is not required for R2 when external database retains state
 
 **Out of scope (3C-R2):** discovery/index, staleness, requalification runner, vendor CI, Oracle qualification, broad E2E, MP-2.
+
+## 20. PROVIDER-QUAL-5 - evidence validity lifecycle
+
+**Status:** **READY_FOR_REVIEW**
+### 20.1 PROVIDER-QUAL-5-R1 - terminal revocation + bounded current view
+
+**Status:** **READY_FOR_REVIEW**
+
+**REVOKED is terminal for one qualification_run_id.** Once any append-only REVOKED evaluation exists for a run, later CURRENT or STALE records do not reactivate it. Trust can only be restored by a new qualification run (new qualification_run_id).
+
+**Current view** uses bounded generic DocumentStore queries: storage-side REVOKED existence check (limit 1), otherwise newest evaluation query (limit 1). **History API** (`list_evaluations`) remains append-only full-history.
+
+
+Historical ProviderQualificationRun records remain immutable. Separate append-only QualificationValidityRecord evaluations determine whether evidence is **CURRENT**, **STALE**, or **REVOKED** today.
+
+- explicit validity evaluation: evaluate_provider_qualification_validity(run, current_context)
+- append-only persistence via existing ProofReceipt / DocumentStore (provider_qualification_validity proof kind)
+- latest validity view derived from evaluation history (evaluated_at, validity_evaluation_id)
+- authoritative identity remains qualification_run_id (not proof_id)
+- fail-closed establishment when evaluations are missing or corrupt
+
+**Staleness rules (exact match):** provider_id, provider_version, capability_id, domain, qualification_suite_id, environment_id, intergrax_revision, qualification_suite_version, source_revision, adapter_identity when present.
+
+**Out of scope (PROVIDER-QUAL-5):** automatic requalification runner, production admission policy engine, version generalization ranges.
+
 ## 19. References
 
 - [`PLATFORM_PLUGINS.md`](../PLATFORM_PLUGINS.md) section 18

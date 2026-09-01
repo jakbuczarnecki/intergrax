@@ -115,9 +115,6 @@ def _resolve_content(
     metadata: dict[str, Any],
     evidence: list[dict[str, object]],
 ) -> str:
-    override = metadata.get("qualification_draft_override")
-    if isinstance(override, str) and override.strip():
-        return override.strip()
     draft = metadata.get("draft")
     if isinstance(draft, str) and draft.strip():
         return draft.strip()
@@ -127,6 +124,18 @@ def _resolve_content(
     if message:
         return f"# Synthesis draft\n\n{message}\n"
     return ""
+
+
+def _resolve_upstream_selected_artifact_ref(metadata: dict[str, Any]) -> str | None:
+    direct = metadata.get("selected_artifact_ref")
+    if isinstance(direct, str) and direct.strip():
+        return direct.strip()
+    search_summary = metadata.get("search_summary")
+    if isinstance(search_summary, dict):
+        nested = search_summary.get("selected_artifact_ref")
+        if isinstance(nested, str) and nested.strip():
+            return nested.strip()
+    return None
 
 
 def _content_type_for_path(path: str) -> str:
@@ -264,14 +273,15 @@ async def run_synthesize_job(step_ctx: AgentStepContext) -> dict[str, object]:
 
     artifact_path = entry.get("relative_path") or output_name
     artifact_ref = _artifact_ref_from_tool_entry(entry) or f"output:{output_name}"
-    fidelity = emit_synthesize_functional_evidence(
+    selected_artifact_ref = _resolve_upstream_selected_artifact_ref(metadata) or "chunk:unknown"
+    emit_synthesize_functional_evidence(
         exec_ctx,
         metadata=metadata,
-        selected_artifact_ref=metadata.get("qualification_selected_artifact_ref"),
+        selected_artifact_ref=selected_artifact_ref,
         output_artifact_ref=str(artifact_ref),
         synthesize_succeeded=True,
     )
-    output = _output(
+    return _output(
         run_id=step_ctx.run_id,
         used=True,
         reason="write_complete",
@@ -281,8 +291,3 @@ async def run_synthesize_job(step_ctx: AgentStepContext) -> dict[str, object]:
         shadow_workspace=True,
         num_evidence_items=num_evidence_items,
     )
-    if fidelity is not None:
-        synth_summary = output.get("synthesize_summary")
-        if isinstance(synth_summary, dict):
-            synth_summary["functional_evidence_fidelity"] = fidelity
-    return output

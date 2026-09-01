@@ -106,6 +106,7 @@ async def test_run_synthesize_job_consumes_prior_search_handoff() -> None:
                                         "chunk_id": "chunk-pipeline-1",
                                     }
                                 ],
+                                "selected_artifact_ref": "chunk:chunk-pipeline-1",
                             }
                         },
                     }
@@ -320,6 +321,7 @@ async def test_run_synthesize_job_writes_draft_to_shadow_workspace() -> None:
                 "shadow_workspace": True,
                 "output_name": "client-email.md",
                 "search_summary": {"query": "project X"},
+                "selected_artifact_ref": "chunk:chunk-1",
                 "evidence": [
                     {
                         "text": "Project X overview",

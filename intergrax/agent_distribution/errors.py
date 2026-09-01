@@ -66,6 +66,10 @@ class CandidateRuntimeGraphError(AgentDistributionError):
     """Candidate runtime graph failed structural validation gates."""
 
 
+class RuntimeMaterializationConflict(AgentDistributionError):
+    """Immutable runtime materialization authority conflict for one revision."""
+
+
 class MaterializationError(AgentDistributionError):
     """Materialization failed or returned invalid output."""
 
@@ -76,6 +80,7 @@ class MaterializationInputConflict(MaterializationError):
 
 class MaterializationUnsupportedTopology(MaterializationError):
     """Requested materialization topology has no production adapter."""
+
 
 class MaterializationLockArtifactLocationBlocked(MaterializationError):
     """Lock lacks physical artifact location required for deterministic wheel install."""

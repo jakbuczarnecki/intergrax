@@ -10,8 +10,12 @@ from pathlib import Path
 
 import pytest
 
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
-from intergrax.applications._shared.harness_registry_authority import HarnessHostRegistryAuthorityError
+from intergrax.applications._shared.harness_host_runtime import (
+    build_harness_host_runtime,
+)
+from intergrax.applications._shared.harness_registry_authority import (
+    HarnessHostRegistryAuthorityError,
+)
 from intergrax.applications._shared.production_agent_platform_runtime import (
     build_production_agent_platform_runtime,
 )
@@ -22,7 +26,9 @@ from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
     create_reference_production_process_composition,
 )
-from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
+from intergrax.applications._shared.registry_projection import (
+    MaterializedRegistryProjection,
+)
 from intergrax.applications._shared.registry_projection_input_bundle import (
     build_reference_activation_request,
     build_reference_registry_projection_input_bundle,
@@ -39,7 +45,9 @@ from research_application.host.main import create_research_process_app
 from research_application.host.settings import ResearchBackendSettings
 from research_application.host.wiring import build_research_environment_profile
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
-from research_application.tests.research_ac3_projection import build_research_test_registry_projection
+from research_application.tests.research_ac3_projection import (
+    build_research_test_registry_projection,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -63,7 +71,11 @@ _PRODUCTION_FACTORY_SOURCES = (
 )
 
 _CANONICAL_RUNTIME_CONSTRUCTOR_SOURCES = (
-    REPO / "intergrax" / "applications" / "_shared" / "production_process_composition.py",
+    REPO
+    / "intergrax"
+    / "applications"
+    / "_shared"
+    / "production_process_composition.py",
 )
 
 _RUNTIME_CONSTRUCTOR_SYMBOLS = frozenset(
@@ -143,7 +155,9 @@ def _research_activation_bundle(
         env,
         builders=RESEARCH_AGENT_BUILDERS,
         runtime_revision_id=revision_id,
-        enabled_contract_stems=frozenset(enabled_contract_ids) if enabled_contract_ids else None,
+        enabled_contract_stems=frozenset(enabled_contract_ids)
+        if enabled_contract_ids
+        else None,
         settings=settings,
     )
 
@@ -152,7 +166,10 @@ def test_production_process_composition_owns_single_runtime_bundle() -> None:
     composition = create_reference_production_process_composition()
     assert isinstance(composition, ProductionProcessComposition)
     assert composition.agent_platform_runtime.stores.serving_store is not None
-    assert composition.agent_platform_runtime.stores.registry_projection_store is not None
+    assert (
+        composition.agent_platform_runtime.stores.registry_projection_store is not None
+    )
+    assert composition.agent_platform_runtime.stores.materialization_store is not None
 
 
 def test_production_store_continuity_resolves_active_projection_and_nexus_registry(
@@ -194,13 +211,17 @@ def test_production_store_continuity_resolves_active_projection_and_nexus_regist
     assert app is not None
 
 
-def test_multi_application_environments_share_process_stores_without_collision() -> None:
+def test_multi_application_environments_share_process_stores_without_collision() -> (
+    None
+):
     settings = ResearchBackendSettings(use_nexus_loop=True)
     composition = create_reference_production_process_composition()
     stores = composition.agent_platform_runtime.stores
 
     research_manifest = RESEARCH_APPLICATION_MANIFEST
-    research_env = research_manifest.environment or build_research_environment_profile(settings)
+    research_env = research_manifest.environment or build_research_environment_profile(
+        settings
+    )
     research_bundle = _research_activation_bundle(
         settings,
         revision_id="rev-app-a",
@@ -214,7 +235,9 @@ def test_multi_application_environments_share_process_stores_without_collision()
         application_environment_id="prod",
     )
 
-    _activate_projection_via_ap_lifecycle(composition=composition, bundle=research_bundle)
+    _activate_projection_via_ap_lifecycle(
+        composition=composition, bundle=research_bundle
+    )
     _activate_projection_via_ap_lifecycle(composition=composition, bundle=legal_bundle)
 
     resolved_a = bootstrap_production_registry_projection(
@@ -250,7 +273,9 @@ def test_fresh_runtime_store_cannot_resolve_seeded_projection() -> None:
         projection=projection,
     )
 
-    with pytest.raises(HarnessHostRegistryAuthorityError, match="no active traffic-serving"):
+    with pytest.raises(
+        HarnessHostRegistryAuthorityError, match="no active traffic-serving"
+    ):
         bootstrap_production_registry_projection(
             application_id=manifest.app_id,
             application_environment_id=env.profile_id,
@@ -260,7 +285,9 @@ def test_fresh_runtime_store_cannot_resolve_seeded_projection() -> None:
 
 def test_fresh_process_composition_fails_closed_for_strict_process_app() -> None:
     composition = create_reference_production_process_composition()
-    with pytest.raises(HarnessHostRegistryAuthorityError, match="no active traffic-serving"):
+    with pytest.raises(
+        HarnessHostRegistryAuthorityError, match="no active traffic-serving"
+    ):
         create_research_process_app(process_composition=composition)
 
 
@@ -282,7 +309,9 @@ def test_multi_app_process_wiring_respects_shared_composition_identities(
         application_id="legal",
         application_environment_id="prod",
     )
-    _activate_projection_via_ap_lifecycle(composition=composition, bundle=research_bundle)
+    _activate_projection_via_ap_lifecycle(
+        composition=composition, bundle=research_bundle
+    )
     _activate_projection_via_ap_lifecycle(composition=composition, bundle=legal_bundle)
 
     research_app = create_research_process_app(process_composition=composition)
@@ -301,7 +330,10 @@ def _bootstrap_calls_missing_stores(tree: ast.AST) -> list[int]:
         if not isinstance(node, ast.Call):
             continue
         func = node.func
-        if isinstance(func, ast.Name) and func.id == "bootstrap_production_registry_projection":
+        if (
+            isinstance(func, ast.Name)
+            and func.id == "bootstrap_production_registry_projection"
+        ):
             if "stores" not in {keyword.arg for keyword in node.keywords}:
                 missing.append(node.lineno)
         if (
@@ -322,13 +354,20 @@ def _runtime_owner_violations(source_path: Path) -> list[int]:
         func = node.func
         if isinstance(func, ast.Name) and func.id in _RUNTIME_CONSTRUCTOR_SYMBOLS:
             violations.append(node.lineno)
-        if isinstance(func, ast.Attribute) and func.attr in _RUNTIME_CONSTRUCTOR_SYMBOLS:
+        if (
+            isinstance(func, ast.Attribute)
+            and func.attr in _RUNTIME_CONSTRUCTOR_SYMBOLS
+        ):
             violations.append(node.lineno)
     return violations
 
 
-@pytest.mark.parametrize("source_path", _PRODUCTION_BOOTSTRAP_SOURCES, ids=lambda p: p.name)
-def test_production_bootstrap_sources_wire_agent_platform_stores(source_path: Path) -> None:
+@pytest.mark.parametrize(
+    "source_path", _PRODUCTION_BOOTSTRAP_SOURCES, ids=lambda p: p.name
+)
+def test_production_bootstrap_sources_wire_agent_platform_stores(
+    source_path: Path,
+) -> None:
     tree = ast.parse(source_path.read_text(encoding="utf-8"), filename=str(source_path))
     missing = _bootstrap_calls_missing_stores(tree)
     assert not missing, (
@@ -337,15 +376,21 @@ def test_production_bootstrap_sources_wire_agent_platform_stores(source_path: Pa
     )
 
 
-@pytest.mark.parametrize("source_path", _PRODUCTION_FACTORY_SOURCES, ids=lambda p: p.name)
-def test_production_factories_do_not_construct_agent_platform_runtime(source_path: Path) -> None:
+@pytest.mark.parametrize(
+    "source_path", _PRODUCTION_FACTORY_SOURCES, ids=lambda p: p.name
+)
+def test_production_factories_do_not_construct_agent_platform_runtime(
+    source_path: Path,
+) -> None:
     violations = _runtime_owner_violations(source_path)
     assert not violations, (
         f"{source_path} must not construct agent platform runtime at lines {violations}"
     )
 
 
-@pytest.mark.parametrize("source_path", _PRODUCTION_BOOTSTRAP_SOURCES, ids=lambda p: p.name)
+@pytest.mark.parametrize(
+    "source_path", _PRODUCTION_BOOTSTRAP_SOURCES, ids=lambda p: p.name
+)
 def test_production_bootstrap_sources_do_not_construct_agent_platform_runtime(
     source_path: Path,
 ) -> None:
@@ -357,9 +402,12 @@ def test_production_bootstrap_sources_do_not_construct_agent_platform_runtime(
 
 def test_canonical_runtime_constructor_sites_are_process_composition_only() -> None:
     allowed_violations = {
-        str(path): _runtime_owner_violations(path) for path in _CANONICAL_RUNTIME_CONSTRUCTOR_SOURCES
+        str(path): _runtime_owner_violations(path)
+        for path in _CANONICAL_RUNTIME_CONSTRUCTOR_SOURCES
     }
-    assert all(allowed_violations.values()), "canonical process composition must construct runtime"
+    assert all(allowed_violations.values()), (
+        "canonical process composition must construct runtime"
+    )
     for source_path in _PRODUCTION_BOOTSTRAP_SOURCES:
         assert not _runtime_owner_violations(source_path), source_path
     for source_path in _PRODUCTION_FACTORY_SOURCES:

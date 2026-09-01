@@ -125,6 +125,7 @@ members = [
   "agents/local_indexer",
   "agents/local_search",
   "agents/local_synthesizer",
+  "agents/tool_selection_qualifier",
   "agents/organization_worker",
   "agents/problem_radar",
   "agents/research",

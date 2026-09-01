@@ -736,7 +736,7 @@ Agents consume **tools** via `ToolRegistry` and **skills** via `SkillResolver` �
 
 ## 9. Memory store plugins (Phase MEM)
 
-**Author guide:** [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) — full developer journey, bootstrap semantics, and runtime paths.
+**Author guide:** [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) — full developer journey, discovery/activation flow, and runtime paths.
 
 Entry point group: `intergrax.memory_stores`
 
@@ -746,7 +746,7 @@ Entry point group: `intergrax.memory_stores`
 | `SessionStoragePlugin` | `create_session_storage(**kwargs)` | Default `InMemorySessionStorage` / sqlite bundle |
 | `SessionTurnIndexStorePlugin` | `create_session_turn_index(**kwargs)` | Default episodic vector adapter over host `VectorstoreManager` |
 
-Bootstrap: `intergrax.core.memory_bootstrap.bootstrap_memory_stores(discover_entry_points=True)` **counts** discovered plugins — it does **not** activate a store. See the memory author guide §9.
+**Discovery and activation:** register under `intergrax.memory_stores` (or pass explicit plugin classes); host wiring calls classified discovery and materializes the store selected by `MemoryProfile` plugin ids. Discovery alone does **not** activate a store. See the memory author guide §9.
 
 **Vector memory:** LTM and session episodic indexes reuse the host integration **vector store** — memory plugins swap index adapters, not vendor SDKs. See [`architecture/MEMORY.md`](../../architecture/MEMORY.md) §5.3.
 

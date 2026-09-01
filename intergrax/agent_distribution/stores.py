@@ -13,8 +13,14 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from intergrax.agent_distribution._digest import normalize_package_digest
 from intergrax.agent_distribution.binding import ApplicationAgentBinding
 from intergrax.agent_distribution.dependency import MaterializedRuntimeLock
-from intergrax.agent_distribution.deployment import DeploymentInstanceRecord, DeploymentInstanceState
+from intergrax.agent_distribution.deployment import (
+    DeploymentInstanceRecord,
+    DeploymentInstanceState,
+)
 from intergrax.agent_distribution.installation import AgentInstallationRecord
+from intergrax.agent_distribution.runtime_materialization_record import (
+    RuntimeMaterializationRecord,
+)
 from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevision,
     RuntimeRevisionState,
@@ -120,6 +126,20 @@ class ApplicationAgentBindingStore(Protocol):
         expected_revision: int | None = None,
     ) -> ApplicationAgentBinding:
         """Persist binding with optimistic revision concurrency."""
+
+
+class RuntimeMaterializationStore(Protocol):
+    """Immutable runtime materialization authority persistence."""
+
+    def get_by_revision(
+        self, runtime_revision_id: str
+    ) -> RuntimeMaterializationRecord | None:
+        """Load canonical materialization record for one runtime revision."""
+
+    def persist(
+        self, record: RuntimeMaterializationRecord
+    ) -> RuntimeMaterializationRecord:
+        """Persist immutable materialization authority (reject authority mismatch)."""
 
 
 class MaterializedRuntimeLockStore(Protocol):
@@ -236,7 +256,9 @@ class DeploymentInstanceStore(Protocol):
     ) -> DeploymentInstanceRecord | None:
         """Load deployment instance for one revision in an application environment."""
 
-    def persist_instance(self, instance: DeploymentInstanceRecord) -> DeploymentInstanceRecord:
+    def persist_instance(
+        self, instance: DeploymentInstanceRecord
+    ) -> DeploymentInstanceRecord:
         """Create or replace deployment instance record."""
 
     def update_instance(

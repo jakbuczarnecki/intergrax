@@ -21,6 +21,10 @@ from intergrax.tools.providers.rag.source_scope_transport import (
 )
 from local_search.diagnostics import SearchSummaryReason
 from local_search.rag_functional_evidence import emit_search_functional_evidence
+from local_search.retrieval_selection import (
+    candidates_from_formatted_evidence,
+    select_top_ranked_candidate,
+)
 
 SEARCH_STEP_ID = "local_search_step"
 
@@ -186,6 +190,7 @@ def _output(
     evidence: list[dict[str, object]] | None = None,
     num_results: int = 0,
     raw_tool_reason: str | None = None,
+    selected_artifact_ref: str | None = None,
 ) -> dict[str, object]:
     num_results = num_results if used else 0
     evidence = evidence or []
@@ -206,6 +211,8 @@ def _output(
     }
     if raw_tool_reason:
         search_summary["raw_tool_reason"] = raw_tool_reason
+    if selected_artifact_ref is not None:
+        search_summary["selected_artifact_ref"] = selected_artifact_ref
     return {
         "summary": answer,
         "answer": answer,
@@ -318,13 +325,16 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
     chunks = list(entry.get("chunks") or [])
     citations = list(entry.get("citations") or [])
     evidence = _format_evidence(chunks, citations, workspace_id=workspace_id)
-    fidelity = emit_search_functional_evidence(
+    candidates = candidates_from_formatted_evidence(evidence)
+    selection = select_top_ranked_candidate(candidates)
+    emit_search_functional_evidence(
         exec_ctx,
         metadata=metadata,
-        evidence=evidence,
+        candidates=candidates,
+        selected_artifact_ref=selection.selected_artifact_ref,
         retrieve_succeeded=True,
     )
-    output = _output(
+    return _output(
         run_id=step_ctx.run_id,
         used=True,
         reason=SearchSummaryReason.RETRIEVE_COMPLETE,
@@ -333,9 +343,5 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
         workspace_id=workspace_id,
         evidence=evidence,
         num_results=len(evidence),
+        selected_artifact_ref=selection.selected_artifact_ref,
     )
-    if fidelity is not None:
-        search_summary = output.get("search_summary")
-        if isinstance(search_summary, dict):
-            search_summary["functional_evidence_fidelity"] = fidelity
-    return output

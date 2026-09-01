@@ -10,11 +10,12 @@ from typing import Optional
 
 from intergrax.core.plugins.admission import DomainPluginLoadReport
 from intergrax.core.plugins.discovery import EP_MEMORY_STORES
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications._shared.memory_vector_wiring import (
     build_session_turn_index_store,
     build_user_profile_manager,
 )
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.providers.document_store.mongodb.bundle import (
@@ -63,6 +64,35 @@ class MemoryPlatformWiring:
     entity_graph_store: object | None = None
     memory_store_plugin_load_report: DomainPluginLoadReport = DomainPluginLoadReport.empty(
         EP_MEMORY_STORES
+    )
+
+
+def memory_plugin_bootstrap_errors(report: DomainPluginLoadReport) -> tuple[str, ...]:
+    errors: list[str] = []
+    for item in report.failed:
+        errors.append(f"memory plugin load failed: {item.spec.name}: {item.error}")
+    for item in report.rejected:
+        if item.fail_closed:
+            errors.append(
+                "memory plugin admission rejected: "
+                f"{item.spec.name}: {item.reason_code.value}",
+            )
+    if not errors:
+        errors.append("memory plugin bootstrap admission is not acceptable")
+    return tuple(errors)
+
+
+def assert_strict_memory_bootstrap_acceptable(
+    env: ApplicationEnvironmentProfile,
+    memory_wiring: MemoryPlatformWiring,
+) -> None:
+    if env.execution_mode is not ExecutionMode.STRICT:
+        return
+    report = memory_wiring.memory_store_plugin_load_report
+    if report.critical_bootstrap_acceptable:
+        return
+    raise MemoryStorePluginResolutionError(
+        "; ".join(memory_plugin_bootstrap_errors(report)),
     )
 
 

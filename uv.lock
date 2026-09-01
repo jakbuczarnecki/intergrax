@@ -40,6 +40,7 @@ members = [
     "intergrax-research-agent",
     "intergrax-research-application",
     "intergrax-signoff-probe-agent",
+    "intergrax-tool-selection-qualifier-agent",
     "intergrax-vendor-discovery-agent",
 ]
 
@@ -2258,6 +2259,7 @@ dependencies = [
     { name = "intergrax-local-indexer-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "intergrax-local-search-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "intergrax-local-synthesizer-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-tool-selection-qualifier-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 
 [package.dev-dependencies]
@@ -2272,6 +2274,7 @@ requires-dist = [
     { name = "intergrax-local-indexer-agent", editable = "agents/local_indexer" },
     { name = "intergrax-local-search-agent", editable = "agents/local_search" },
     { name = "intergrax-local-synthesizer-agent", editable = "agents/local_synthesizer" },
+    { name = "intergrax-tool-selection-qualifier-agent", editable = "agents/tool_selection_qualifier" },
 ]
 
 [package.metadata.requires-dev]
@@ -2347,6 +2350,17 @@ requires-dist = [
 name = "intergrax-signoff-probe-agent"
 version = "0.1.0"
 source = { editable = "agents/signoff_probe" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
+
+[[package]]
+name = "intergrax-tool-selection-qualifier-agent"
+version = "0.1.0"
+source = { editable = "agents/tool_selection_qualifier" }
 dependencies = [
     { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]

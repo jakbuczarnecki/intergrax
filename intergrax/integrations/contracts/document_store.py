@@ -77,7 +77,18 @@ def normalize_document_data_equalities(
                 value=item.value,
             ),
         )
+    normalized.sort(key=lambda item: item.path)
     return tuple(normalized)
+
+
+def query_requires_v2_cursor(
+    *,
+    data_equalities: Sequence[DocumentDataEquality],
+    sort: Sequence[DocumentDataSort],
+    row_key_upper_bound: str | None,
+) -> bool:
+    """Return True when continuation cursors must bind extended query dimensions."""
+    return bool(data_equalities or sort or row_key_upper_bound is not None)
 
 
 def normalize_document_data_sort(

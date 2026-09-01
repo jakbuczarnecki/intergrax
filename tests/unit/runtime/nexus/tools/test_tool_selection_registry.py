@@ -53,6 +53,10 @@ class _PinnedStrategy:
         return ("alpha.tool",)
 
 
+class _NotAStrategy:
+    pass
+
+
 _PINNED_STRATEGY_INSTANCE = _PinnedStrategy()
 
 
@@ -143,3 +147,9 @@ def test_list_tool_selection_strategy_ids_sorted(monkeypatch: pytest.MonkeyPatch
         ],
     )
     assert list_tool_selection_strategy_ids() == ("alpha", "beta")
+
+
+def test_load_invalid_target_raises_type_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    _install_eps(monkeypatch, [_strategy_ep("bad", "_NotAStrategy")])
+    with pytest.raises(TypeError, match="tool selection entry point 'bad' must return ToolSelectionStrategy"):
+        load_tool_selection_strategy("bad")

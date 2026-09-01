@@ -253,39 +253,37 @@ Plugins return store instances; managers (`UserProfileManager`, `SessionManager`
 
 ---
 
-## 9. Registration and discovery — bootstrap semantics (critical)
+## 9. Registration and discovery (critical)
 
-```python
-from intergrax.core.memory_bootstrap import bootstrap_memory_stores
+Memory store plugins follow the standard platform plugin flow. Host wiring performs discovery and activation — authors do not call a separate bootstrap API.
 
-result = bootstrap_memory_stores(
-    discover_entry_points=True,
-    user_profile_plugins=(),
-    session_storage_plugins=(),
-    session_turn_index_plugins=(),
-)
-# result.user_profile_plugins — int count only
-# result.session_storage_plugins — int count only
-# result.session_turn_index_plugins — int count only
+```text
+plugin contract (Protocol + plugin_id)
+    ↓
+entry point (`intergrax.memory_stores`) or explicit plugin class
+    ↓
+classified discovery (`discover_classified_memory_store_plugins`)
+    ↓
+host profile / wiring (`MemoryProfile` plugin ids, `resolve_memory_platform_wiring`)
+    ↓
+materialization / activation (`materialize_user_profile_store`, `materialize_session_storage`, `build_session_turn_index_store`)
 ```
 
-### What `bootstrap_memory_stores` does
+### Discovery semantics
 
-- Scans `intergrax.memory_stores` entry points when `discover_entry_points=True`
-- Classifies each loaded class via typed `MemoryStorePluginKind` classifier (Protocol conformance — no method-shape `hasattr`)
-- Returns **counts** (discovered + explicit sequences)
-- Exposes `discover_classified_memory_store_plugins()` for resolver/registry construction
-- Returns `MemoryStorePluginDiscoveryResult` with canonical `DomainPluginLoadReport` EP evidence (`accepted`, `rejected`, `failed`, `registered_count`)
+- Entry points under `intergrax.memory_stores` are scanned when host wiring enables `discover_entry_points=True`
+- Each loaded class is classified via typed `MemoryStorePluginKind` (Protocol conformance)
+- `discover_classified_memory_store_plugins()` returns `MemoryStorePluginDiscoveryResult` with canonical `DomainPluginLoadReport` EP evidence (`accepted`, `rejected`, `failed`, `registered_count`)
 - Isolated EP import/factory failures are recorded in `failed`; unsupported loaded targets in `rejected`
 - Explicit/local candidates use the same classifier/resolver path with empty EP evidence rows (no fabricated accepted EP metadata)
 
-### What it does NOT do
+### What discovery alone does NOT do
 
 - Does **not** create a universal registered catalog of active stores
 - Does **not** select which plugin backs a running host
 - Does **not** materialize stores — resolver materialization is separate (`resolve_memory_platform_wiring`)
 
-**Calling bootstrap alone does not activate a memory provider.** Use `MemoryProfile` plugin selection or explicit `MemoryPlatformWiring` for materialization.
+**Discovery alone does not activate a memory provider.** Use `MemoryProfile` plugin selection or explicit `MemoryPlatformWiring` for materialization.
 
 ---
 
@@ -380,7 +378,7 @@ If a factory returns a persistent client pool, the host owns closing it on appli
 | Failure | Result |
 |---------|--------|
 | EP not discovered | Baseline integration wiring used when no `plugin_id` selected |
-| Misunderstanding bootstrap counts | Stores not active — bootstrap is diagnostic/counting only |
+| Expecting discovery alone to activate stores | Stores not active until profile `plugin_id` or explicit wiring selects and materializes a plugin |
 | Unknown / wrong-kind `plugin_id` | `MemoryStorePluginResolutionError` (fail-closed) |
 | Duplicate plugin id in resolver | `MemoryStorePluginResolutionError` |
 | Materialization failure | `MemoryStorePluginResolutionError` |
@@ -395,18 +393,21 @@ If a factory returns a persistent client pool, the host owns closing it on appli
 
 | Test | Path |
 |------|------|
-| Bootstrap counting | `tests/unit/core/plugins/test_memory_store_bootstrap.py` |
+| Classified discovery / resolver | `tests/unit/memory/test_memory_store_resolver.py` |
 | Vector episodic wiring | `tests/integration/applications/test_memory_vector_ltm_wiring.py` |
 | Memory platform wiring | `tests/unit/applications/test_memory_wiring.py` |
 
-Author pattern for bootstrap counts:
+Author pattern for explicit plugin wiring:
 
 ```python
-result = bootstrap_memory_stores(
+from intergrax.applications._shared.memory_wiring import resolve_memory_platform_wiring
+
+wiring = resolve_memory_platform_wiring(
+    env,
     discover_entry_points=False,
-    user_profile_plugins=(MyUserProfilePlugin,),
+    explicit_memory_plugins=(MyUserProfilePlugin,),
 )
-assert result.user_profile_plugins == 1
+# env.memory_profile.user_profile_store_plugin_id = MyUserProfilePlugin.plugin_id
 ```
 
 ---
@@ -416,7 +417,7 @@ assert result.user_profile_plugins == 1
 - [ ] Correct protocol for your surface (do not mix factory method names)
 - [ ] Stable `plugin_id` per class
 - [ ] For episodic index: handle `embedding_manager`, `vectorstore_manager`, `tenant_id` kwargs
-- [ ] Do not assume `bootstrap_memory_stores()` activates your store — use profile `plugin_id` or explicit wiring
+- [ ] Do not assume entry-point discovery alone activates your store — use profile `plugin_id` or explicit wiring
 - [ ] For user/session stores: set `user_profile_store_plugin_id` / `session_storage_plugin_id` or pass explicit plugin candidates
 - [ ] Tombstone semantics for vector indexes when primary store deletes entries
 - [ ] Tenant isolation enforced in store implementation
@@ -431,7 +432,7 @@ assert result.user_profile_plugins == 1
 | EP installed but store unchanged | No `plugin_id` on `MemoryProfile`; discovery disabled; check `INTERGRAX_DISCOVER_PLUGINS` |
 | Selected plugin fails to load | Inspect `MemoryPlatformWiring.memory_store_plugin_load_report.failed`; selected id fails closed with precise error |
 | Unsupported EP target | Appears in `memory_store_plugin_load_report.rejected`; materialized stores validated via canonical `UserProfileStore` / `SessionStorage` |
-| Bootstrap count > 0 but no effect | Bootstrap only counts — configure profile `plugin_id` or explicit wiring (§9) |
+| Discovery finds plugin but no effect | Discovery does not select or materialize — configure profile `plugin_id` or explicit wiring (§9) |
 | Episodic index always default | No turn-index EP discovered; pass `session_turn_index_plugins=` explicitly |
 | `tenant_required` | Pass non-empty `tenant_id` to session manager wiring |
 | `vector_backend_unavailable` | Enable integration vector store; resolve `rag_stack` before memory wiring |

@@ -22,6 +22,7 @@ from intergrax.runtime.long_running.execution_tree_checkpoint import (
     ExecutionCheckpointStatus,
     ExecutionPriorOutput,
     ExecutionTreeRecorder,
+    ExecutionTreeResumePlan,
     ExecutionTreeSnapshot,
     build_execution_tree_resume_plan,
 )
@@ -316,34 +317,72 @@ def should_resume_uaep_step(
     return checkpoint.uaep_step_cursor is not None
 
 
+def build_task_checkpoint_resume_plan(
+    task: Task,
+    checkpoint: TaskCheckpoint,
+    *,
+    active_attempt_id: AttemptId,
+    active_root_execution_id: ExecutionId,
+) -> ExecutionTreeResumePlan:
+    runtime = checkpoint.runtime
+    if runtime is None:
+        raise ValueError(
+            f"checkpoint {checkpoint.checkpoint_id!r} missing canonical execution identity"
+        )
+    return build_execution_tree_resume_plan(
+        runtime.execution_tree,
+        task_id=validate_task_id(task.task_id),
+        run_id=runtime.run_id,
+        new_attempt_id=active_attempt_id,
+        new_root_execution_id=active_root_execution_id,
+    )
+
+
+def _prepare_task_for_checkpoint_resume(
+    task: Task,
+    checkpoint: TaskCheckpoint,
+    *,
+    active_attempt_id: AttemptId,
+    active_root_execution_id: ExecutionId,
+    resume_plan: ExecutionTreeResumePlan | None = None,
+) -> tuple[RuntimeCheckpoint, ExecutionTreeResumePlan]:
+    runtime = checkpoint.runtime
+    if runtime is None:
+        raise ValueError(
+            f"checkpoint {checkpoint.checkpoint_id!r} missing canonical execution identity"
+        )
+    plan = resume_plan or build_task_checkpoint_resume_plan(
+        task,
+        checkpoint,
+        active_attempt_id=active_attempt_id,
+        active_root_execution_id=active_root_execution_id,
+    )
+    resumed_runtime = runtime.model_copy(
+        update={
+            "attempt_id": active_attempt_id,
+            "execution_tree": plan.active_snapshot,
+        }
+    )
+    resumed_runtime.validate_canonical()
+    apply_runtime_checkpoint_to_task(task, resumed_runtime)
+    return resumed_runtime, plan
+
+
 def prepare_task_for_checkpoint_resume(
     task: Task,
     checkpoint: TaskCheckpoint,
     *,
     active_attempt_id: AttemptId,
     active_root_execution_id: ExecutionId,
+    resume_plan: ExecutionTreeResumePlan | None = None,
 ) -> RuntimeCheckpoint:
-    runtime = checkpoint.runtime
-    if runtime is None:
-        raise ValueError(
-            f"checkpoint {checkpoint.checkpoint_id!r} missing canonical execution identity"
-        )
-    run_id = runtime.run_id
-    resume_plan = build_execution_tree_resume_plan(
-        runtime.execution_tree,
-        task_id=validate_task_id(task.task_id),
-        run_id=run_id,
-        new_attempt_id=active_attempt_id,
-        new_root_execution_id=active_root_execution_id,
+    resumed_runtime, _ = _prepare_task_for_checkpoint_resume(
+        task,
+        checkpoint,
+        active_attempt_id=active_attempt_id,
+        active_root_execution_id=active_root_execution_id,
+        resume_plan=resume_plan,
     )
-    resumed_runtime = runtime.model_copy(
-        update={
-            "attempt_id": active_attempt_id,
-            "execution_tree": resume_plan.active_snapshot,
-        }
-    )
-    resumed_runtime.validate_canonical()
-    apply_runtime_checkpoint_to_task(task, resumed_runtime)
     return resumed_runtime
 
 

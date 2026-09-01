@@ -33,6 +33,9 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_identity,
     validate_task_id,
 )
+from intergrax.runtime.execution.active_execution_resume import (
+    peek_active_execution_resume_plan,
+)
 from intergrax.runtime.governance.active_execution_authority import (
     peek_active_effective_delegation,
     require_active_execution_authority,
@@ -68,6 +71,7 @@ from intergrax.runtime.long_running.checkpoint_builder import (
     sync_execution_tree_to_task,
 )
 from intergrax.runtime.long_running.execution_tree_checkpoint import (
+    ExecutionCheckpointEntry,
     ExecutionCheckpointStatus,
     ExecutionTreeRecorder,
 )
@@ -255,6 +259,22 @@ class GraphExecutor:
             middleware=self._middleware,
         )
 
+    def _resolve_historical_checkpoint_entry(
+        self,
+        graph_node_id: str,
+        runtime_ckpt: Optional[RuntimeCheckpoint],
+    ) -> ExecutionCheckpointEntry | None:
+        resume_binding = peek_active_execution_resume_plan()
+        if resume_binding is not None:
+            historical_entry = resume_binding.plan.historical_by_graph_node_id.get(
+                graph_node_id,
+            )
+            if historical_entry is not None:
+                return historical_entry
+        if runtime_ckpt is None:
+            return None
+        return runtime_ckpt.execution_tree.entry_by_graph_node_id(graph_node_id)
+
     def apply_validation_engine(self, validation_engine: NexusValidationEngine) -> None:
         """Replace the active graph validation engine."""
         self._validation_engine = validation_engine
@@ -271,6 +291,27 @@ class GraphExecutor:
         return self._critic_graph_hooks
 
     async def execute(
+        self,
+        graph: ExecutionGraph,
+        task: Task,
+        *,
+        plan_criteria: Optional[List[str]] = None,
+        on_retry: Optional[RetryCallback] = None,
+        on_node_start: Optional[Callable[[ExecutionNode], None]] = None,
+        on_node_complete: Optional[Callable[[ExecutionNode], None]] = None,
+        critic_trace_emitter: Optional["CriticTraceEmitter"] = None,
+    ) -> tuple[List[AgentExecutionResult], List[RetryRecord], ExecutionGraph, bool]:
+        return await self._execute_graph(
+            graph,
+            task,
+            plan_criteria=plan_criteria,
+            on_retry=on_retry,
+            on_node_start=on_node_start,
+            on_node_complete=on_node_complete,
+            critic_trace_emitter=critic_trace_emitter,
+        )
+
+    async def _execute_graph(
         self,
         graph: ExecutionGraph,
         task: Task,
@@ -744,9 +785,10 @@ class GraphExecutor:
 
         child_execution_id = require_active_execution_id()
         parent_execution_id = peek_active_parent_execution_id()
-        historical_entry = None
-        if runtime_ckpt is not None:
-            historical_entry = runtime_ckpt.execution_tree.entry_by_graph_node_id(node.node_id)
+        historical_entry = self._resolve_historical_checkpoint_entry(
+            node.node_id,
+            runtime_ckpt,
+        )
         if (
             parent_execution_id is not None
             and self._execution_tree_recorder is not None

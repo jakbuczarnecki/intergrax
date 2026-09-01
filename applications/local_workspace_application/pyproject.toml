@@ -13,6 +13,7 @@ dependencies = [
   "intergrax-local-indexer-agent",
   "intergrax-local-search-agent",
   "intergrax-local-synthesizer-agent",
+  "intergrax-tool-selection-qualifier-agent",
 ]
 
 [dependency-groups]
@@ -30,3 +31,4 @@ Intergrax-ai = { workspace = true }
 intergrax-local-indexer-agent = { workspace = true }
 intergrax-local-search-agent = { workspace = true }
 intergrax-local-synthesizer-agent = { workspace = true }
+intergrax-tool-selection-qualifier-agent = { workspace = true }
