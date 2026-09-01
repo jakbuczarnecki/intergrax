@@ -2,6 +2,14 @@
 
 Offline, streaming builder for `verified_product_identification`.
 
+## Layout
+
+```text
+dataset/
+  raw/         # local WDC source NDJSON (gitignored contents)
+  processed/   # generated Parquet + manifest (gitignored contents)
+```
+
 ## Dependency
 
 Install the scenario-local tooling group once:
@@ -14,15 +22,24 @@ uv sync --group platform-proofs-vpi-dataset
 
 ## Build
 
+Place source file at `raw/nonnormalized_offersV2`, then:
+
+```bash
+uv run --group platform-proofs-vpi-dataset python platform_proofs/scenarios/verified_product_identification/dataset/build_wdc_dataset.py
+```
+
+Defaults:
+
+- input: `dataset/raw/nonnormalized_offersV2`
+- output: `dataset/processed/selected_offers.parquet`
+- manifest: `dataset/processed/selected_offers_manifest.json`
+
+Override paths explicitly when needed:
+
 ```bash
 uv run --group platform-proofs-vpi-dataset python platform_proofs/scenarios/verified_product_identification/dataset/build_wdc_dataset.py \
   --input <path-to-nonnormalized_offersV2> \
-  --output <path-to-output.parquet>
-```
-
-Optional manifest path:
-
-```bash
+  --output <path-to-output.parquet> \
   --manifest <path-to-manifest.json>
 ```
 

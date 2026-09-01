@@ -1,0 +1,5 @@
+# Local WDC corpus artifacts (directory structure only; contents not tracked)
+raw/*
+!raw/.gitkeep
+processed/*
+!processed/.gitkeep

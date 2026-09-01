@@ -17,6 +17,10 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 BUILDER_VERSION = "verified_product_identification_wdc_builder/1.0.0"
+DATASET_DIR = Path(__file__).resolve().parent
+DEFAULT_INPUT_PATH = DATASET_DIR / "raw" / "nonnormalized_offersV2"
+DEFAULT_OUTPUT_PATH = DATASET_DIR / "processed" / "selected_offers.parquet"
+DEFAULT_MANIFEST_PATH = DATASET_DIR / "processed" / "selected_offers_manifest.json"
 SOURCE_DATASET_NAME = "offers_corpus_all_v2_non_norm"
 SELECTION_RULE = (
     "keyValuePairs != null OR specTableContent != null"
@@ -344,21 +348,30 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--input",
-        required=True,
         type=Path,
-        help="Path to source WDC NDJSON file.",
+        default=DEFAULT_INPUT_PATH,
+        help=(
+            "Path to source WDC NDJSON file "
+            f"(default: {DEFAULT_INPUT_PATH.relative_to(DATASET_DIR)})."
+        ),
     )
     parser.add_argument(
         "--output",
-        required=True,
         type=Path,
-        help="Path to output Parquet file.",
+        default=DEFAULT_OUTPUT_PATH,
+        help=(
+            "Path to output Parquet file "
+            f"(default: {DEFAULT_OUTPUT_PATH.relative_to(DATASET_DIR)})."
+        ),
     )
     parser.add_argument(
         "--manifest",
         type=Path,
-        default=None,
-        help="Optional manifest JSON path (defaults to <output_stem>_manifest.json).",
+        default=DEFAULT_MANIFEST_PATH,
+        help=(
+            "Manifest JSON path "
+            f"(default: {DEFAULT_MANIFEST_PATH.relative_to(DATASET_DIR)})."
+        ),
     )
     return parser.parse_args(argv)
 
