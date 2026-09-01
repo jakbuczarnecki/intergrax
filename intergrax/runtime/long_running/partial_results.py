@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from intergrax.runtime.long_running.models import TaskCheckpoint
-from intergrax.runtime.task.task import Task, TaskState
+from intergrax.runtime.task.task_state import TaskState
 
 _PAUSED_STATES = frozenset(
     {
@@ -94,6 +94,8 @@ def build_task_progress_view(
         checkpoint_id = latest_checkpoint.checkpoint_id
         notify_channel = latest_checkpoint.notify_channel
         try:
+            from intergrax.runtime.task.task import Task
+
             task = Task.model_validate(latest_checkpoint.task_snapshot)
             human_request_expires_at = task.runtime.governance.human_request_expires_at
             if not progress_message:

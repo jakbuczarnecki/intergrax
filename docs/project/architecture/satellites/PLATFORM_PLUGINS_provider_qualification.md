@@ -731,18 +731,18 @@ PostgreSQL evidence must **not** be persisted before **PROVIDER-QUAL-3B** is ind
 
 ---
 
-## 16. PROVIDER-QUAL-3C — evidence persistence/integration (deferred)
-
-- qualification run persistence/index integration
-- mapping to existing `ProofReceipt` where appropriate
-- recording the PostgreSQL template as a live `ProofReceipt` (already accepted PostgreSQL 16.6 bounded qualification evidence)
-- query/discovery surface for qualification evidence as already architected
-- **binding:** canonical flow per §15.7 (Integrations resolution › typed domain-provider bridge › CW suite) — **PROVIDER-QUAL-3B** must land first
-
-**Out of scope until 3C:** persisting PostgreSQL 16.6 evidence before **PROVIDER-QUAL-3B** approval.
-
----
-
+## 16. PROVIDER-QUAL-3C � evidence persistence/integration
+
+**Status:** **READY_FOR_REVIEW**
+
+- `ProviderQualificationRun` persists through existing `ProofReceipt` / `DocumentStore` mechanics
+- authoritative lookup by `qualification_run_id`
+- `proof_id` remains a separate persistence locator
+- idempotent persist for semantically identical runs; explicit conflict on divergent history
+- durable read after persistence adapter reconstruction (caller-owned `DocumentStore` lifecycle)
+
+**Out of scope (3C):** broad discovery/index, staleness automation, requalification runner, admission policy, vendor CI execution.
+
 ## 17. References
 
 - [`PLATFORM_PLUGINS.md`](../PLATFORM_PLUGINS.md) section 18

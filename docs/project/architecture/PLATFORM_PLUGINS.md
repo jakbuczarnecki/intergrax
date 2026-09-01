@@ -712,7 +712,7 @@ PLUGIN-8 proves executable E2E for both modes. PLUGIN-7 does not wire gates into
 | **CI** | Contract/schema/harness tests only — not live all-vendor-on-every-PR |
 | **Scale** | 5/20/50+ providers via shared contracts + linear per-vendor adapter/setup/evidence |
 
-**Implementation:** PROVIDER-QUAL-2 (typed contracts only); PROVIDER-QUAL-3 (evidence persistence/integration, including PostgreSQL 16.6 bounded qualification evidence recording).
+**Implementation:** PROVIDER-QUAL-2 (typed contracts only); PROVIDER-QUAL-3C (**READY_FOR_REVIEW**) persists `ProviderQualificationRun` through existing `ProofReceipt` / `DocumentStore` mechanics with lookup by `qualification_run_id`; broader discovery/staleness/runner remain out of scope.
 
 ## 19. Observability expectations
 
