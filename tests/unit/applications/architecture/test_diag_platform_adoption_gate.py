@@ -127,20 +127,23 @@ def test_all_application_host_wiring_uses_environment_wiring_spine() -> None:
     assert violations == []
 
 
-def test_adoption_guard_covers_attestation_demo_without_application_suffix() -> None:
-    """Regression: non-*_application workspace members must be subject to adoption guards."""
-    apps = list_application_projects(REPO_ROOT)
-    assert "attestation_demo" in apps
-    factory_path = REPO_ROOT / "applications" / "attestation_demo" / "host" / "factory.py"
-    wiring_path = REPO_ROOT / "applications" / "attestation_demo" / "host" / "wiring.py"
-    assert factory_path.is_file()
-    assert wiring_path.is_file()
-    factory_text = factory_path.read_text(encoding="utf-8")
-    wiring_text = wiring_path.read_text(encoding="utf-8")
-    assert "build_harness_host_runtime" in factory_text
-    assert "wire_application_environment" in wiring_text
-    assert check_no_ad_hoc_nexus_in_factories() == []
-    assert check_host_wiring_adoption() == []
+def test_adoption_guard_covers_non_suffix_application_names(tmp_path: Path) -> None:
+    """Regression: discovery must not require *_application directory suffix."""
+    app_dir = tmp_path / "applications" / "x7"
+    host_dir = app_dir / "host"
+    host_dir.mkdir(parents=True)
+    (app_dir / "manifest.py").write_text("# contract\n", encoding="utf-8")
+    (host_dir / "factory.py").write_text(
+        "def build_factory():\n    build_harness_host_runtime()\n",
+        encoding="utf-8",
+    )
+    (host_dir / "wiring.py").write_text(
+        "def wire_host():\n    wire_application_environment()\n",
+        encoding="utf-8",
+    )
+    assert list_application_projects(tmp_path) == ["x7"]
+    assert check_no_ad_hoc_nexus_in_factories(repo_root=tmp_path) == []
+    assert check_host_wiring_adoption(repo_root=tmp_path) == []
 
 
 def test_all_initialized_scenarios_pass_architecture_conformance() -> None:

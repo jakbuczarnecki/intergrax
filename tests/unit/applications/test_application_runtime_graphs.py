@@ -457,3 +457,32 @@ def test_direct_also_reachable_transitively_stays_direct(tmp_path: Path) -> None
     assert graph.transitive_agent_dirs == ()
     assert graph.all_agent_dirs == ("agent_a", "agent_b")
     assert graph.all_agent_dirs.count("agent_b") == 1
+
+
+# ---------------------------------------------------------------------------
+# Application discovery contract (artifact-based, name-agnostic)
+# ---------------------------------------------------------------------------
+
+
+def test_list_application_projects_discovers_manifest_contract(tmp_path: Path) -> None:
+    _write(tmp_path / "applications" / "x7" / "manifest.py", "# contract marker\n")
+    assert list_application_projects(tmp_path) == ["x7"]
+
+
+def test_list_application_projects_ignores_non_contract_directories(
+    tmp_path: Path,
+) -> None:
+    for name in ("build", "__pycache__", "helper"):
+        (tmp_path / "applications" / name).mkdir(parents=True)
+    assert list_application_projects(tmp_path) == []
+
+
+def test_list_application_projects_is_name_independent(tmp_path: Path) -> None:
+    _write(tmp_path / "applications" / "anything" / "manifest.py", "# contract marker\n")
+    assert list_application_projects(tmp_path) == ["anything"]
+    (tmp_path / "applications" / "package_only").mkdir(parents=True)
+    _write(
+        tmp_path / "applications" / "package_only" / "pyproject.toml",
+        '[project]\nname = "pkg"\nversion = "0.1.0"\n',
+    )
+    assert list_application_projects(tmp_path) == ["anything"]
