@@ -370,6 +370,19 @@ Nexus appears only when Execution strategy routing selects ORCHESTRATION for sub
 
 Proof gate: DS-NEXUS-01 (`tests/unit/runtime/execution/test_decision_execution_work.py`).
 
+### Orchestration checkpoint/recovery participation (DS-NEXUS-02)
+
+When Decision-aware code requests `ExecutionCapability.ORCHESTRATION`, physical orchestration work checkpoints and resumes through canonical Execution recovery (`RuntimeCheckpoint`, `ExecutionTreeSnapshot`, `prepare_task_for_checkpoint_resume`). Decision semantic checkpoint (`DecisionCheckpointState`) remains Decision-owned and is not mutated by physical resume.
+
+| Invariant | Meaning |
+| --------- | ------- |
+| **Separate checkpoints** | `DecisionCheckpointState` does not embed execution-tree snapshots; `RuntimeCheckpoint` does not embed Decision lifecycle state |
+| **No Decision recovery ownership** | Decision-facing helpers do not call `prepare_task_for_checkpoint_resume` or related recovery planners |
+| **Physical resume ≠ semantic transition** | Restored Decision stage/version unchanged unless explicit lifecycle transition is invoked afterward |
+| **Hosting lineage preserved** | `DecisionIdentity.execution` records the hosting Execution lineage at capture time |
+
+Proof gate: DS-NEXUS-02 (`tests/unit/runtime/execution/test_decision_orchestration_recovery.py`).
+
 ---
 
 ## Decision Resolution
