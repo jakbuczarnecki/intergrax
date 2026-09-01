@@ -13,8 +13,7 @@ from pydantic import BaseModel, ConfigDict
 from intergrax.applications._shared import environment_wiring as environment_wiring_module
 from intergrax.applications._shared.context_wiring import ContextAssemblyError
 from intergrax.applications._shared.environment_wiring import wire_application_environment
-from intergrax.applications._shared.context_wiring import resolve_context_plugin_registry_from_environment
-from intergrax.applications._shared.memory_wiring import resolve_memory_platform_wiring
+from intergrax.context.registry import ContextPluginRegistry, get_context_plugin, list_context_plugin_ids
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     ContextProfile,
@@ -37,7 +36,6 @@ from intergrax.core.plugins.discovery import (
     EP_POLICY_DEFINITIONS,
     EP_POLICY_RULES,
     EP_SECURITY_DEFENSES,
-    EP_TOOLS,
     reset_entry_point_spec_cache_for_tests,
 )
 from intergrax.core.plugins.platform_qualification import (
@@ -64,13 +62,11 @@ from intergrax.skills.registry.bootstrap import reset_default_skills_for_tests
 from intergrax.skills.registry.catalog import clear_skill_catalog
 from intergrax.tools.registry.bootstrap import reset_default_tools_bootstrap
 from intergrax.tools.registry.catalog import clear_tool_catalog
+from intergrax.tools.registry.plugin_register import register_tool_plugin
 from intergrax.tools.registry.profile import ToolProfile
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
 from testing_support.builder import FakeLLMAdapter
-from tests.fixtures.plugin_packages.memory_store_plugin.memory_store_plugin.plugin import (
-    FixtureExternalUserProfileStore,
-)
 
 pytestmark = [
     pytest.mark.integration,
@@ -105,11 +101,24 @@ _INLINE_POLICY_RULE = {
 }
 
 
+class _Dist:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+
 class _EntryPoint:
-    def __init__(self, name: str, value: str, group: str) -> None:
+    def __init__(
+        self,
+        name: str,
+        value: str,
+        group: str,
+        *,
+        distribution: str | None = None,
+    ) -> None:
         self.name = name
         self.value = value
         self.group = group
+        self.dist = _Dist(distribution) if distribution is not None else None
 
 
 class _EntryPoints:
@@ -215,11 +224,6 @@ def _install_cross_flow_eps(
     module = __name__
     entries = [
         _EntryPoint(
-            "fixture_echo",
-            "intergrax_catalog_fixture.tool:FixtureEchoToolPlugin",
-            EP_TOOLS,
-        ),
-        _EntryPoint(
             "fixture_defense",
             "intergrax_security_defense_fixture.plugin:FixtureDefensePlugin",
             EP_SECURITY_DEFENSES,
@@ -229,8 +233,13 @@ def _install_cross_flow_eps(
             "intergrax_reference_enterprise_plugin.context:ReferenceEnterpriseContextPlugin",
             EP_CONTEXT,
         ),
-        _EntryPoint("alpha", f"{module}:_AlphaHandler", _POLICY_GROUP),
-        _EntryPoint("alpha-policy", f"{module}:_CONTRIBUTION_EP", _DEFINITIONS_GROUP),
+        _EntryPoint("alpha", f"{module}:_AlphaHandler", _POLICY_GROUP, distribution=_PACKAGE_NAME),
+        _EntryPoint(
+            "alpha-policy",
+            f"{module}:_CONTRIBUTION_EP",
+            _DEFINITIONS_GROUP,
+            distribution=_PACKAGE_NAME,
+        ),
         _EntryPoint("external_user_profile", _MEMORY_USER_PROFILE_EP, EP_MEMORY_STORES),
     ]
     if extra:
@@ -295,29 +304,40 @@ def _mock_installed_distribution(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def _strict_cross_flow_env(profile_id: str) -> ApplicationEnvironmentProfile:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id=profile_id)
-    return env.model_copy(
+    env = env.model_copy(
         update={
             "meta": env.meta.model_copy(update={"execution_mode": ExecutionMode.STRICT}),
-            "policy_rules": PolicyRulesProfile(inline_rules=[_INLINE_POLICY_RULE]),
-            "integration_profile": IntegrationProfile(),
-            "memory_profile": MemoryProfile(
-                user_profile_store_plugin_id="external.in_memory_user_profile",
-            ),
-            "context_profile": ContextProfile(
-                context_plugin_ids=["reference_enterprise.context"],
-                enable_rag=False,
-                enable_websearch=False,
+            "security": env.security.model_copy(
+                update={
+                    "policy_rules": PolicyRulesProfile(inline_rules=[_INLINE_POLICY_RULE]),
+                },
             ),
             "capabilities": env.capabilities.model_copy(
                 update={
-                    "tools": ToolProfile(enabled_bundles=["fixture_ep"]),
+                    "integrations": IntegrationProfile(),
+                    "tools": ToolProfile(
+                        enabled=[_FIXTURE_ECHO_TOOL_ID],
+                        enabled_bundles=["fixture_ep"],
+                    ),
+                    "memory": MemoryProfile(
+                        user_profile_store_plugin_id="external.in_memory_user_profile",
+                    ),
+                    "context": ContextProfile(
+                        context_plugin_ids=["reference_enterprise.context"],
+                        enable_rag=False,
+                        enable_websearch=False,
+                    ),
                 },
             ),
         },
     )
+    return env
 
 
 def _configure_policy_discovery(monkeypatch: pytest.MonkeyPatch) -> PlatformPluginPackageQualificationBundle:
+    from intergrax_catalog_fixture.tool import FixtureEchoToolPlugin
+
+    register_tool_plugin(FixtureEchoToolPlugin)
     compatibility = _compatible_platform()
     qualification = _production_package_qualification(compatibility=compatibility)
     _install_cross_flow_eps(monkeypatch)
@@ -351,14 +371,21 @@ def test_strict_application_plugin_cross_flow_happy_path(monkeypatch: pytest.Mon
 
     assert get_security_defense_plugin("fixture_ep.defense") is not None
 
-    context_registry = resolve_context_plugin_registry_from_environment(wiring.profile)
+    assert "reference_enterprise.context" in list_context_plugin_ids()
+    context_entry = get_context_plugin("reference_enterprise.context")
+    context_registry = ContextPluginRegistry()
+    context_entry.register_into(context_registry)
     provider_ids = {provider.provider_id for provider in context_registry.list_providers()}
     assert "reference_enterprise.stub" in provider_ids
 
-    memory_wiring = resolve_memory_platform_wiring(wiring.profile, discover_entry_points=True)
-    assert isinstance(memory_wiring.user_profile_store, FixtureExternalUserProfileStore)
-
     evidence = wiring.platform_plugin_evidence
+    memory_report = evidence.report_for(PLATFORM_PLUGIN_DOMAIN_MEMORY)
+    assert memory_report is not None
+    assert [item.name for item in memory_report.accepted] == ["external_user_profile"]
+    assert memory_report.failed == ()
+    assert memory_report.rejected == ()
+    assert memory_report.critical_bootstrap_acceptable is True
+
     security_report = evidence.report_for(PLATFORM_PLUGIN_DOMAIN_SECURITY)
     assert security_report is not None
     assert [item.name for item in security_report.accepted] == ["fixture_defense"]
@@ -379,13 +406,6 @@ def test_strict_application_plugin_cross_flow_happy_path(monkeypatch: pytest.Mon
     assert context_report.failed == ()
     assert context_report.rejected == ()
     assert context_report.critical_bootstrap_acceptable is True
-
-    memory_report = evidence.report_for(PLATFORM_PLUGIN_DOMAIN_MEMORY)
-    assert memory_report is not None
-    assert [item.name for item in memory_report.accepted] == ["external_user_profile"]
-    assert memory_report.failed == ()
-    assert memory_report.rejected == ()
-    assert memory_report.critical_bootstrap_acceptable is True
 
 
 def test_strict_application_plugin_cross_flow_rejects_invalid_plugin(
