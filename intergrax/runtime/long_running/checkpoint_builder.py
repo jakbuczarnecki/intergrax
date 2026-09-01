@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 from uuid import uuid4
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
@@ -22,6 +22,7 @@ from intergrax.runtime.long_running.execution_tree_checkpoint import (
     ExecutionCheckpointStatus,
     ExecutionPriorOutput,
     ExecutionTreeRecorder,
+    ExecutionTreeResumePlan,
     ExecutionTreeSnapshot,
     build_execution_tree_resume_plan,
 )
@@ -41,6 +42,9 @@ from intergrax.runtime.nexus.execution.execution_graph import (
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_contract import HumanApprovalResolution
+
+if TYPE_CHECKING:
+    from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 
 
 def resolve_task_runtime_checkpoint(task: Task) -> RuntimeCheckpoint | None:
@@ -316,13 +320,22 @@ def should_resume_uaep_step(
     return checkpoint.uaep_step_cursor is not None
 
 
+def apply_resume_lineage_to_graph_executor(
+    executor: GraphExecutor,
+    resume_plan: ExecutionTreeResumePlan,
+) -> None:
+    executor.bind_resume_historical_by_graph_node_id(
+        resume_plan.historical_by_graph_node_id,
+    )
+
+
 def prepare_task_for_checkpoint_resume(
     task: Task,
     checkpoint: TaskCheckpoint,
     *,
     active_attempt_id: AttemptId,
     active_root_execution_id: ExecutionId,
-) -> RuntimeCheckpoint:
+) -> tuple[RuntimeCheckpoint, ExecutionTreeResumePlan]:
     runtime = checkpoint.runtime
     if runtime is None:
         raise ValueError(
@@ -344,7 +357,7 @@ def prepare_task_for_checkpoint_resume(
     )
     resumed_runtime.validate_canonical()
     apply_runtime_checkpoint_to_task(task, resumed_runtime)
-    return resumed_runtime
+    return resumed_runtime, resume_plan
 
 
 def snapshot_active_execution_tree(

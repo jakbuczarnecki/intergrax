@@ -27,6 +27,7 @@ from intergrax.runtime.execution.runtime import (
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
 from intergrax.runtime.long_running.checkpoint_builder import (
+    apply_resume_lineage_to_graph_executor,
     apply_runtime_checkpoint_to_task,
     prepare_task_for_checkpoint_resume,
 )
@@ -127,6 +128,7 @@ async def execute_root_task(
         _checkpoint_run_id, checkpoint_attempt_id = execution_identity_from_checkpoint(
             resume_checkpoint
         )
+        resume_checkpoint.runtime.validate_canonical()
         checkpoint_tree = resume_checkpoint.runtime.execution_tree
         checkpoint_root_execution_id = next(
             entry.execution_id
@@ -137,11 +139,15 @@ async def execute_root_task(
             identity.attempt_id != checkpoint_attempt_id
             or identity.execution_id != checkpoint_root_execution_id
         ):
-            prepare_task_for_checkpoint_resume(
+            _, resume_plan = prepare_task_for_checkpoint_resume(
                 task,
                 resume_checkpoint,
                 active_attempt_id=identity.attempt_id,
                 active_root_execution_id=identity.execution_id,
+            )
+            apply_resume_lineage_to_graph_executor(
+                nexus_loop._graph_executor,
+                resume_plan,
             )
         elif task.runtime.orchestration.runtime_checkpoint is None:
             apply_runtime_checkpoint_to_task(task, resume_checkpoint.runtime)

@@ -253,6 +253,39 @@ def test_redelivery_mints_new_active_execution_id() -> None:
     ]
     assert len(resumed) == 0
     assert plan.resume_graph_node_ids == frozenset({"n3"})
+    historical_n3 = plan.historical_by_graph_node_id["n3"]
+    assert historical_n3.execution_id == interrupted
+
+
+def test_resume_plan_retains_historical_lookup_for_failed_child() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_a1 = mint_attempt_id()
+    root_a1 = mint_execution_id()
+    failed_child = mint_execution_id()
+    checkpoint_tree = _tree(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_a1,
+        entries=[
+            _entry(root_a1, status=ExecutionCheckpointStatus.RUNNING),
+            _entry(
+                failed_child,
+                parent=root_a1,
+                graph_node_id="n_c",
+                status=ExecutionCheckpointStatus.FAILED,
+            ),
+        ],
+    )
+    plan = build_execution_tree_resume_plan(
+        checkpoint_tree,
+        task_id=task_id,
+        run_id=run_id,
+        new_attempt_id=attempt_a1,
+        new_root_execution_id=mint_execution_id(),
+    )
+    assert plan.resume_graph_node_ids == frozenset({"n_c"})
+    assert plan.historical_by_graph_node_id["n_c"].execution_id == failed_child
 
 
 def test_resume_plan_reparents_nested_completed_children() -> None:
@@ -381,7 +414,7 @@ def test_old_incomplete_execution_not_reused_as_active() -> None:
     )
     attempt_a2 = mint_attempt_id()
     root_a2 = mint_execution_id()
-    runtime = prepare_task_for_checkpoint_resume(
+    runtime, _resume_plan = prepare_task_for_checkpoint_resume(
         task,
         checkpoint,
         active_attempt_id=attempt_a2,

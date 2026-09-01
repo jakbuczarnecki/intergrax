@@ -68,6 +68,7 @@ from intergrax.runtime.long_running.checkpoint_builder import (
     sync_execution_tree_to_task,
 )
 from intergrax.runtime.long_running.execution_tree_checkpoint import (
+    ExecutionCheckpointEntry,
     ExecutionCheckpointStatus,
     ExecutionTreeRecorder,
 )
@@ -218,6 +219,9 @@ class GraphExecutor:
             budget_policy=budget_allocation_policy,
         )
         self._execution_tree_recorder: ExecutionTreeRecorder | None = None
+        self._resume_historical_by_graph_node_id: (
+            dict[str, ExecutionCheckpointEntry] | None
+        ) = None
         self._graph_node_child_delegate = _GraphNodeChildDelegate(self)
         self._strategy_router = StrategyExecutionRouter(
             agent_executor=AgentExecutor(self._engine),
@@ -255,6 +259,27 @@ class GraphExecutor:
             middleware=self._middleware,
         )
 
+    def bind_resume_historical_by_graph_node_id(
+        self,
+        historical_by_graph_node_id: dict[str, ExecutionCheckpointEntry],
+    ) -> None:
+        self._resume_historical_by_graph_node_id = dict(historical_by_graph_node_id)
+
+    def _resolve_historical_checkpoint_entry(
+        self,
+        graph_node_id: str,
+        runtime_ckpt: Optional[RuntimeCheckpoint],
+    ) -> ExecutionCheckpointEntry | None:
+        if self._resume_historical_by_graph_node_id is not None:
+            historical_entry = self._resume_historical_by_graph_node_id.get(
+                graph_node_id,
+            )
+            if historical_entry is not None:
+                return historical_entry
+        if runtime_ckpt is None:
+            return None
+        return runtime_ckpt.execution_tree.entry_by_graph_node_id(graph_node_id)
+
     def apply_validation_engine(self, validation_engine: NexusValidationEngine) -> None:
         """Replace the active graph validation engine."""
         self._validation_engine = validation_engine
@@ -271,6 +296,30 @@ class GraphExecutor:
         return self._critic_graph_hooks
 
     async def execute(
+        self,
+        graph: ExecutionGraph,
+        task: Task,
+        *,
+        plan_criteria: Optional[List[str]] = None,
+        on_retry: Optional[RetryCallback] = None,
+        on_node_start: Optional[Callable[[ExecutionNode], None]] = None,
+        on_node_complete: Optional[Callable[[ExecutionNode], None]] = None,
+        critic_trace_emitter: Optional["CriticTraceEmitter"] = None,
+    ) -> tuple[List[AgentExecutionResult], List[RetryRecord], ExecutionGraph, bool]:
+        try:
+            return await self._execute_graph(
+                graph,
+                task,
+                plan_criteria=plan_criteria,
+                on_retry=on_retry,
+                on_node_start=on_node_start,
+                on_node_complete=on_node_complete,
+                critic_trace_emitter=critic_trace_emitter,
+            )
+        finally:
+            self._resume_historical_by_graph_node_id = None
+
+    async def _execute_graph(
         self,
         graph: ExecutionGraph,
         task: Task,
@@ -744,9 +793,10 @@ class GraphExecutor:
 
         child_execution_id = require_active_execution_id()
         parent_execution_id = peek_active_parent_execution_id()
-        historical_entry = None
-        if runtime_ckpt is not None:
-            historical_entry = runtime_ckpt.execution_tree.entry_by_graph_node_id(node.node_id)
+        historical_entry = self._resolve_historical_checkpoint_entry(
+            node.node_id,
+            runtime_ckpt,
+        )
         if (
             parent_execution_id is not None
             and self._execution_tree_recorder is not None

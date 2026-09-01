@@ -36,6 +36,7 @@ from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIde
 from intergrax.runtime.execution.budget.consumption import consume_llm_call
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.long_running.checkpoint_builder import (
+    apply_resume_lineage_to_graph_executor,
     apply_runtime_checkpoint_to_task,
     build_runtime_checkpoint,
     prepare_task_for_checkpoint_resume,
@@ -327,7 +328,7 @@ async def test_ue_11e_resume_execution_tree_continuity(tmp_path: Path) -> None:
         message="ue-11e resume continue",
         context=TaskContext(capability=_CAPABILITY),
     )
-    prepare_task_for_checkpoint_resume(
+    _, resume_plan = prepare_task_for_checkpoint_resume(
         task_b,
         loaded,
         active_attempt_id=attempt_id,
@@ -340,6 +341,7 @@ async def test_ue_11e_resume_execution_tree_continuity(tmp_path: Path) -> None:
         engine=engine,
         retry_engine=RetryEngine(registry, policy=RetryPolicy(max_retries=0)),
     )
+    apply_resume_lineage_to_graph_executor(resume_executor, resume_plan)
     resume_graph = _sequential_graph(task_id)
 
     await _run_graph(
@@ -377,16 +379,21 @@ async def test_ue_11e_resume_execution_tree_continuity(tmp_path: Path) -> None:
     assert len(root_entries) == 1
     assert root_entries[0].execution_id == resumed_root
 
+    execution_c_after = _execution_id_for_node(runtime_after, _NODE_C)
+    assert execution_c_after is not None
+    assert execution_c_after != execution_c_before
+    entry_c_after = runtime_after.execution_tree.entry_by_graph_node_id(_NODE_C)
+    assert entry_c_after is not None
+    assert entry_c_after.parent_execution_id == resumed_root
+    assert entry_c_after.resumed_from_execution_id == execution_c_before
+
     execution_d = _execution_id_for_node(runtime_after, _NODE_D)
     assert execution_d is not None
     entry_d = runtime_after.execution_tree.entry_by_graph_node_id(_NODE_D)
     assert entry_d is not None
     assert entry_d.parent_execution_id == resumed_root
+    assert entry_d.resumed_from_execution_id is None
     assert entry_d.status is ExecutionCheckpointStatus.COMPLETED
-
-    execution_c_after = _execution_id_for_node(runtime_after, _NODE_C)
-    assert execution_c_after is not None
-    assert execution_c_after != execution_c_before
 
     assert resume_graph.node_by_id(_NODE_D).status == ExecutionNodeStatus.COMPLETED
     assert peek_active_execution_identity() is None
@@ -488,7 +495,7 @@ async def test_same_attempt_fresh_root_rebases_execution_tree_through_production
     resume_graph = _sequential_graph(task_id)
     captured_resume_roots: list[ExecutionId] = []
 
-    loop = NexusLoop(registry)
+    loop = NexusLoop(registry, graph_executor=resume_executor)
 
     async def _handle_task_via_graph(task: Task) -> TaskResult:
         captured_resume_roots.append(require_active_execution_id())
@@ -541,12 +548,14 @@ async def test_same_attempt_fresh_root_rebases_execution_tree_through_production
     entry_c_after = runtime_after.execution_tree.entry_by_graph_node_id(_NODE_C)
     assert entry_c_after is not None
     assert entry_c_after.parent_execution_id == resumed_root
+    assert entry_c_after.resumed_from_execution_id == execution_c_before
 
     execution_d = _execution_id_for_node(runtime_after, _NODE_D)
     assert execution_d is not None
     entry_d = runtime_after.execution_tree.entry_by_graph_node_id(_NODE_D)
     assert entry_d is not None
     assert entry_d.parent_execution_id == resumed_root
+    assert entry_d.resumed_from_execution_id is None
     assert entry_d.status is ExecutionCheckpointStatus.COMPLETED
 
     assert resume_graph.node_by_id(_NODE_D).status == ExecutionNodeStatus.COMPLETED
