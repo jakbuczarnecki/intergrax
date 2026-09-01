@@ -5,8 +5,10 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.context.bootstrap import (
     ContextCatalogBootstrapResult,
     bootstrap_context_catalog,
@@ -15,6 +17,7 @@ from intergrax.context.bootstrap import (
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
 from intergrax.context.registry import ContextPluginRegistry, UnknownContextPluginError
 from intergrax.core.plugin_env import discover_plugins_enabled
+from intergrax.core.plugins.admission import DomainPluginLoadReport
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -23,6 +26,43 @@ from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.task.task_contract import TaskExecutionOptions
 
 logger = logging.getLogger(__name__)
+
+
+class ContextAssemblyError(ValueError):
+    """Raised when context assembly validation fails."""
+
+    def __init__(self, errors: Sequence[str]) -> None:
+        self.errors: tuple[str, ...] = tuple(errors)
+        message = "; ".join(self.errors)
+        super().__init__(message)
+
+
+def context_plugin_bootstrap_errors(report: DomainPluginLoadReport) -> tuple[str, ...]:
+    errors: list[str] = []
+    for item in report.failed:
+        errors.append(f"context plugin load failed: {item.spec.name}: {item.error}")
+    for item in report.rejected:
+        if item.fail_closed:
+            errors.append(
+                "context plugin admission rejected: "
+                f"{item.spec.name}: {item.reason_code.value}",
+            )
+    if not errors:
+        errors.append("context plugin bootstrap admission is not acceptable")
+    return tuple(errors)
+
+
+def assert_strict_context_bootstrap_acceptable(
+    env: ApplicationEnvironmentProfile,
+    context_bootstrap: ContextCatalogBootstrapResult,
+) -> None:
+    if env.execution_mode is not ExecutionMode.STRICT:
+        return
+    if context_bootstrap.load_report.critical_bootstrap_acceptable:
+        return
+    raise ContextAssemblyError(
+        context_plugin_bootstrap_errors(context_bootstrap.load_report),
+    )
 
 
 def _is_production_environment(env: ApplicationEnvironmentProfile) -> bool:

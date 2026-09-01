@@ -23,6 +23,11 @@ def load_tool_selection_strategy(strategy_id: str) -> ToolSelectionStrategy | No
         return None
     loaded = load_entry_point_value(spec.value)
     instance = instantiate_entry_point_target(loaded)
+    if not isinstance(instance, ToolSelectionStrategy):
+        raise TypeError(
+            f"tool selection entry point {spec.name!r} must return "
+            "ToolSelectionStrategy"
+        )
     return instance
 
 

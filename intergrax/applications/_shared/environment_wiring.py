@@ -16,6 +16,7 @@ from intergrax.applications._shared.integration_health_wiring import (
     probe_integration_profile_health,
 )
 from intergrax.applications._shared.context_wiring import (
+    assert_strict_context_bootstrap_acceptable,
     bootstrap_application_context_catalog,
 )
 from intergrax.applications._shared.integration_wiring import (
@@ -52,7 +53,10 @@ from intergrax.applications._shared.registry_snapshot import (
 from intergrax.applications._shared.integration_tool_profile import (
     extend_tool_profile_for_integration,
 )
-from intergrax.applications._shared.memory_wiring import resolve_memory_platform_wiring
+from intergrax.applications._shared.memory_wiring import (
+    assert_strict_memory_bootstrap_acceptable,
+    resolve_memory_platform_wiring,
+)
 from intergrax.applications._shared.memory_vector_wiring import (
     assert_memory_vector_backend_available,
     build_user_profile_manager,
@@ -220,6 +224,7 @@ def wire_application_environment(
     security_bootstrap = _bootstrap_application_security_providers()
     _assert_strict_security_bootstrap_acceptable(env, security_bootstrap)
     context_bootstrap = bootstrap_application_context_catalog()
+    assert_strict_context_bootstrap_acceptable(env, context_bootstrap)
     resolved_integration = (
         integration_profile or env.integration_profile or manifest.integration_profile
     )
@@ -290,6 +295,7 @@ def wire_application_environment(
     memory_wiring = resolve_memory_platform_wiring(
         env, integration_profile=resolved_integration
     )
+    assert_strict_memory_bootstrap_acceptable(env, memory_wiring)
     from intergrax.applications._shared.memory_wiring import (
         build_session_manager_from_environment,
     )

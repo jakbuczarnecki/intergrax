@@ -9,17 +9,31 @@ import importlib.metadata
 import pytest
 
 from intergrax.applications._shared import environment_wiring as environment_wiring_module
+from intergrax.applications._shared.context_wiring import ContextAssemblyError
 from intergrax.applications._shared.environment_wiring import wire_application_environment
 from intergrax.applications._shared.security_assembly_resolver import SecurityAssemblyError
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+    MemoryProfile,
+)
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.platform_plugin_evidence import (
+    PLATFORM_PLUGIN_DOMAIN_CONTEXT,
     PLATFORM_PLUGIN_DOMAIN_SECURITY,
 )
 from intergrax.core.catalog_bootstrap import bootstrap_catalogs, reset_tier0_catalog_bootstrap_for_tests
 from intergrax.core.plugin_env import INTERGRAX_DISCOVER_PLUGINS_ENV
 from intergrax.core.plugins.admission import PluginAdmissionReasonCode
-from intergrax.core.plugins.discovery import EP_SECURITY_DEFENSES, reset_entry_point_spec_cache_for_tests
+from intergrax.core.plugins.discovery import (
+    EP_CONTEXT,
+    EP_MEMORY_STORES,
+    EP_SECURITY_DEFENSES,
+    reset_entry_point_spec_cache_for_tests,
+)
+from intergrax.context.bootstrap import reset_context_catalog_bootstrap_for_tests
+from intergrax.context.registry import clear_context_plugin_catalog
+from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.memory.resolver.errors import MemoryStorePluginResolutionError
 from intergrax.core.security_bootstrap import bootstrap_security_providers
 from intergrax.integrations.registry.bootstrap import reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog
@@ -83,6 +97,10 @@ class _NotADefense:
     pass
 
 
+class _UnsupportedContextTarget:
+    value = "not-a-plugin"
+
+
 @pytest.fixture(autouse=True)
 def _reset_plugin_state() -> None:
     clear_catalog()
@@ -94,6 +112,8 @@ def _reset_plugin_state() -> None:
     reset_tier0_catalog_bootstrap_for_tests()
     reset_entry_point_spec_cache_for_tests()
     reset_security_defense_registry_for_tests()
+    reset_context_catalog_bootstrap_for_tests()
+    clear_context_plugin_catalog()
     yield
     clear_catalog()
     clear_tool_catalog()
@@ -104,6 +124,8 @@ def _reset_plugin_state() -> None:
     reset_tier0_catalog_bootstrap_for_tests()
     reset_entry_point_spec_cache_for_tests()
     reset_security_defense_registry_for_tests()
+    reset_context_catalog_bootstrap_for_tests()
+    clear_context_plugin_catalog()
 
 
 @pytest.fixture(autouse=True)
@@ -121,6 +143,14 @@ def _install_eps(monkeypatch: pytest.MonkeyPatch, entries: list[_EntryPoint]) ->
 
 def _ep(name: str, attr: str) -> _EntryPoint:
     return _EntryPoint(name, f"{__name__}:{attr}", _GROUP)
+
+
+def _context_ep(name: str, attr: str) -> _EntryPoint:
+    return _EntryPoint(name, f"{__name__}:{attr}", EP_CONTEXT)
+
+
+def _memory_ep(name: str, value: str) -> _EntryPoint:
+    return _EntryPoint(name, value, EP_MEMORY_STORES)
 
 
 def _strict_env(profile_id: str) -> ApplicationEnvironmentProfile:
@@ -274,3 +304,98 @@ def test_wire_application_environment_discovery_disabled_security_evidence_empty
     assert security_report.accepted == ()
     assert security_report.critical_bootstrap_acceptable is True
     assert get_security_defense_plugin("harness.strict_injection") is not None
+
+
+def test_strict_wire_application_environment_fails_on_invalid_context_target(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(INTERGRAX_DISCOVER_PLUGINS_ENV, "1")
+    _install_eps(
+        monkeypatch,
+        [_context_ep("unsupported_ep", "_UnsupportedContextTarget")],
+    )
+    settings = LabApplicationSettings.from_env()
+    env = _strict_env("ctx.adoption.strict-invalid")
+
+    with pytest.raises(ContextAssemblyError, match="invalid_target_type"):
+        wire_application_environment(build_lab_manifest(settings), env, conformance_check=False)
+
+
+def test_non_strict_wire_application_environment_allows_invalid_context_target(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(INTERGRAX_DISCOVER_PLUGINS_ENV, "1")
+    _install_eps(
+        monkeypatch,
+        [_context_ep("unsupported_ep", "_UnsupportedContextTarget")],
+    )
+    settings = LabApplicationSettings.from_env()
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="ctx.adoption.non-strict-invalid")
+
+    wiring = wire_application_environment(build_lab_manifest(settings), env, conformance_check=False)
+
+    context_report = wiring.platform_plugin_evidence.report_for(PLATFORM_PLUGIN_DOMAIN_CONTEXT)
+    assert context_report is not None
+    assert context_report.critical_bootstrap_acceptable is False
+
+
+def test_strict_wire_application_environment_fails_on_failed_memory_plugin_load(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    user_profile_ep = (
+        "tests.fixtures.plugin_packages.memory_store_plugin.memory_store_plugin.plugin:"
+        "ExternalInMemoryUserProfileStorePlugin"
+    )
+    monkeypatch.setenv(INTERGRAX_DISCOVER_PLUGINS_ENV, "1")
+    _install_eps(
+        monkeypatch,
+        [
+            _memory_ep("external_user_profile", user_profile_ep),
+            _memory_ep("broken_sibling", "not-a-valid-target"),
+        ],
+    )
+    settings = LabApplicationSettings.from_env()
+    env = _strict_env("mem.adoption.strict-failed-sibling").model_copy(
+        update={
+            "integration_profile": IntegrationProfile(),
+            "memory_profile": MemoryProfile(
+                user_profile_store_plugin_id="external.in_memory_user_profile",
+            ),
+        },
+    )
+
+    with pytest.raises(MemoryStorePluginResolutionError, match="memory plugin load failed: broken_sibling"):
+        wire_application_environment(build_lab_manifest(settings), env, conformance_check=False)
+
+
+def test_non_strict_wire_application_environment_allows_failed_memory_plugin_load(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    user_profile_ep = (
+        "tests.fixtures.plugin_packages.memory_store_plugin.memory_store_plugin.plugin:"
+        "ExternalInMemoryUserProfileStorePlugin"
+    )
+    monkeypatch.setenv(INTERGRAX_DISCOVER_PLUGINS_ENV, "1")
+    _install_eps(
+        monkeypatch,
+        [
+            _memory_ep("external_user_profile", user_profile_ep),
+            _memory_ep("broken_sibling", "not-a-valid-target"),
+        ],
+    )
+    settings = LabApplicationSettings.from_env()
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="mem.adoption.non-strict-failed").model_copy(
+        update={
+            "integration_profile": IntegrationProfile(),
+            "memory_profile": MemoryProfile(
+                user_profile_store_plugin_id="external.in_memory_user_profile",
+            ),
+        },
+    )
+
+    wiring = wire_application_environment(build_lab_manifest(settings), env, conformance_check=False)
+
+    memory_report = wiring.platform_plugin_evidence.memory_report()
+    assert memory_report is not None
+    assert len(memory_report.failed) == 1
+    assert memory_report.critical_bootstrap_acceptable is False
