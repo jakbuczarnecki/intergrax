@@ -36,12 +36,12 @@
 
 | Phase | Status | Section |
 | ----- | ------ | ------- |
-| DS-DELIB | IN PROGRESS | [below](#phase-ds-delib--strategy-foundation) |
+| DS-DELIB | Done | [below](#phase-ds-delib--strategy-foundation) |
 | DS-COUNCIL | PLANNED | [below](#phase-ds-council--council-strategy) |
 
 ---
 
-## Phase DS-DELIB — Strategy foundation (IN PROGRESS)
+## Phase DS-DELIB — Strategy foundation (Done)
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
@@ -51,7 +51,7 @@
 | DS-DELIB-04 | P1 | Participant role configuration model | **Done** — `intergrax/contracts/decision_participants.py`; `tests/unit/contracts/test_decision_participants.py` |
 | DS-DELIB-05 | P1 | Context visibility policy per role | **Done** — `intergrax/contracts/decision_context_visibility.py`; `tests/unit/contracts/test_decision_context_visibility.py` |
 | DS-DELIB-06 | P2 | Rule-Based strategy | **Done** — `intergrax/contracts/rule_based_strategy.py`; `tests/unit/contracts/test_rule_based_strategy.py` |
-| DS-DELIB-07 | P2 | Hybrid strategy composition | **Planned** |
+| DS-DELIB-07 | P2 | Hybrid strategy composition | **Done** — `intergrax/contracts/hybrid_strategy.py`; `tests/unit/contracts/test_hybrid_strategy.py` |
 
 ---
 

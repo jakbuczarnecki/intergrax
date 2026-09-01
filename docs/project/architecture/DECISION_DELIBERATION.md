@@ -114,8 +114,22 @@ CandidateDecision
        ↓
 Verification
 ```
+
 | **Hybrid** | Composed strategies behind registration |
 | **Future registered** | Plugin-registered strategies — typed contracts |
+
+**Hybrid** is declarative `DecisionStrategy` composition. Phase names are opaque user-defined identifiers (`HybridPhaseId`). Each phase references a `DecisionStrategyKind`; the canonical `DecisionStrategyRegistry` resolves component strategies. Phase order is meaningful and developer-defined — it is not sorted or canonicalized. Hybrid does not execute phases and does not own orchestration. Direct Hybrid → Hybrid nesting is rejected in the current contract.
+
+```text
+HybridStrategy
+      │
+      ├── phase "precheck" → DecisionStrategyKind A
+      ├── phase "proposal" → DecisionStrategyKind B
+      └── phase "review"   → DecisionStrategyKind C
+                                   │
+                                   ↓
+                       DecisionStrategyRegistry
+```
 
 ---
 

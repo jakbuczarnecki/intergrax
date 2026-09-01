@@ -35,7 +35,20 @@ Host-supplied deterministic domain logic via typed RuleBasedEvaluator — not Po
 
 ## 4. Hybrid strategy
 
-Combines rule-based gates with model proposal (or council) under one strategy profile. Orchestration remains Nexus-owned; strategy declares which phases are rule vs model.
+Hybrid composition is declarative `DecisionStrategy` sequencing — not a workflow engine. Each `HybridPhase` binds an opaque `HybridPhaseId` to a registered `DecisionStrategyKind`; the canonical registry resolves component strategies. Phase order is developer-defined and preserved exactly.
+
+Hybrid does not own branching, retry, parallelism, checkpoints, or budget. Execution and orchestration remain canonical platform responsibility (Nexus when graph routing is required). Direct Hybrid → Hybrid nesting is rejected in the current contract.
+
+```text
+HybridStrategy
+      │
+      ├── phase "precheck" → DecisionStrategyKind A
+      ├── phase "proposal" → DecisionStrategyKind B
+      └── phase "review"   → DecisionStrategyKind C
+                                   │
+                                   ↓
+                       DecisionStrategyRegistry
+```
 
 ---
 
