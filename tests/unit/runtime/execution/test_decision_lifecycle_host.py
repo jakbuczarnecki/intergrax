@@ -26,6 +26,9 @@ from intergrax.contracts.decision_lifecycle import (
 )
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
     mint_attempt_id,
     mint_execution_id,
     mint_run_id,
@@ -50,8 +53,19 @@ from intergrax.runtime.execution.runtime import (
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
-_PROBE = object()
-_ProbeCallback = Callable[[object], Awaitable[object]]
+
+@dataclass(frozen=True, slots=True)
+class ProbeRequest:
+    value: str
+
+
+@dataclass(frozen=True, slots=True)
+class ProbeResult:
+    value: str
+
+
+_PROBE = ProbeRequest(value="probe")
+_ProbeCallback = Callable[[ProbeRequest], Awaitable[ProbeResult]]
 
 
 class ProbeDelegate:
@@ -60,8 +74,17 @@ class ProbeDelegate:
     def __init__(self, callback: _ProbeCallback) -> None:
         self._callback = callback
 
-    async def execute(self, request: object) -> object:
+    async def execute(self, request: ProbeRequest) -> ProbeResult:
         return await self._callback(request)
+
+
+@dataclass(slots=True)
+class CapturedDecisionLifecycle:
+    started: DecisionLifecycleState | None = None
+    verified: DecisionLifecycleState | None = None
+    run_id: RunId | None = None
+    attempt_id: AttemptId | None = None
+    execution_id: ExecutionId | None = None
 
 
 @dataclass
@@ -114,16 +137,16 @@ def _root_context() -> RootExecutionContext:
 async def test_ordinary_execution_without_host_has_no_active_binding() -> None:
     observed: list[DecisionLifecycleHost | None] = []
 
-    async def _delegate(_request: object) -> str:
+    async def _delegate(_request: ProbeRequest) -> ProbeResult:
         observed.append(get_active_decision_lifecycle_host())
-        return "ok"
+        return ProbeResult(value="ok")
 
     runtime = ExecutionRuntime(ProbeDelegate(_delegate))
     assert get_active_decision_lifecycle_host() is None
 
     result = await runtime.execute(_PROBE, _root_context())
 
-    assert result == "ok"
+    assert result == ProbeResult(value="ok")
     assert observed == [None]
     assert get_active_decision_lifecycle_host() is None
 
@@ -133,9 +156,9 @@ async def test_configured_host_visible_inside_delegate() -> None:
     host = CanonicalDecisionLifecycleHost()
     observed: list[DecisionLifecycleHost | None] = []
 
-    async def _delegate(_request: object) -> str:
+    async def _delegate(_request: ProbeRequest) -> ProbeResult:
         observed.append(get_active_decision_lifecycle_host())
-        return "ok"
+        return ProbeResult(value="ok")
 
     runtime = ExecutionRuntime(ProbeDelegate(_delegate), decision_lifecycle_host=host)
     await runtime.execute(_PROBE, _root_context())
@@ -148,8 +171,8 @@ async def test_configured_host_visible_inside_delegate() -> None:
 async def test_configured_host_unused_does_not_start_lifecycle() -> None:
     recording_host = MutableRecordingDecisionLifecycleHost()
 
-    async def _delegate(_request: object) -> str:
-        return "unchanged"
+    async def _delegate(_request: ProbeRequest) -> ProbeResult:
+        return ProbeResult(value="unchanged")
 
     runtime = ExecutionRuntime(
         ProbeDelegate(_delegate),
@@ -157,7 +180,7 @@ async def test_configured_host_unused_does_not_start_lifecycle() -> None:
     )
     result = await runtime.execute(_PROBE, _root_context())
 
-    assert result == "unchanged"
+    assert result == ProbeResult(value="unchanged")
     assert recording_host.start_calls == 0
     assert recording_host.transition_calls == 0
 
@@ -165,38 +188,38 @@ async def test_configured_host_unused_does_not_start_lifecycle() -> None:
 @pytest.mark.asyncio
 async def test_decision_aware_delegate_starts_and_transitions_lifecycle() -> None:
     host = CanonicalDecisionLifecycleHost()
-    captured: dict[str, DecisionLifecycleState | object] = {}
+    captured = CapturedDecisionLifecycle()
 
-    async def _delegate(_request: object) -> str:
+    async def _delegate(_request: ProbeRequest) -> ProbeResult:
         active_host = require_active_decision_lifecycle_host()
         identity = _decision_identity_from_active_execution()
         started = active_host.start(identity)
-        captured["started"] = started
-        captured["verified"] = active_host.transition(
+        captured.started = started
+        captured.verified = active_host.transition(
             started,
             DecisionLifecycleStage.VERIFICATION,
         )
-        captured["run_id"] = identity.execution.run_id
-        captured["attempt_id"] = identity.execution.attempt_id
-        captured["execution_id"] = identity.execution.execution_id
-        return "decided"
+        captured.run_id = identity.execution.run_id
+        captured.attempt_id = identity.execution.attempt_id
+        captured.execution_id = identity.execution.execution_id
+        return ProbeResult(value="decided")
 
     runtime = ExecutionRuntime(ProbeDelegate(_delegate), decision_lifecycle_host=host)
     root_context = _root_context()
     await runtime.execute(_PROBE, root_context)
 
-    started = captured["started"]
-    verified = captured["verified"]
-    assert isinstance(started, DecisionLifecycleState)
-    assert isinstance(verified, DecisionLifecycleState)
+    started = captured.started
+    verified = captured.verified
+    assert started is not None
+    assert verified is not None
     assert started.stage is DecisionLifecycleStage.PROPOSAL
     assert started.transition_index == 0
     assert started.identity.execution.run_id == root_context.run_id
     assert started.identity.execution.attempt_id == root_context.attempt_id
     assert started.identity.execution.execution_id == root_context.execution_id
-    assert captured["run_id"] == root_context.run_id
-    assert captured["attempt_id"] == root_context.attempt_id
-    assert captured["execution_id"] == root_context.execution_id
+    assert captured.run_id == root_context.run_id
+    assert captured.attempt_id == root_context.attempt_id
+    assert captured.execution_id == root_context.execution_id
     assert verified.stage is DecisionLifecycleStage.VERIFICATION
     assert verified.transition_index == 1
     assert verified.identity is started.identity
@@ -207,10 +230,10 @@ async def test_active_host_absent_before_during_after_success() -> None:
     host = CanonicalDecisionLifecycleHost()
     phases: list[str] = []
 
-    async def _delegate(_request: object) -> str:
+    async def _delegate(_request: ProbeRequest) -> ProbeResult:
         phases.append("during")
         assert get_active_decision_lifecycle_host() is host
-        return "ok"
+        return ProbeResult(value="ok")
 
     runtime = ExecutionRuntime(ProbeDelegate(_delegate), decision_lifecycle_host=host)
     phases.append("before")
@@ -227,7 +250,7 @@ async def test_active_host_absent_before_during_after_success() -> None:
 async def test_active_host_reset_after_delegate_exception() -> None:
     host = CanonicalDecisionLifecycleHost()
 
-    async def _delegate(_request: object) -> str:
+    async def _delegate(_request: ProbeRequest) -> ProbeResult:
         assert get_active_decision_lifecycle_host() is host
         raise RuntimeError("delegate failed")
 
@@ -247,19 +270,19 @@ async def test_concurrent_executions_isolate_active_hosts() -> None:
     seen_b: list[DecisionLifecycleHost | None] = []
     gate = asyncio.Event()
 
-    async def _delegate_a(_request: object) -> str:
+    async def _delegate_a(_request: ProbeRequest) -> ProbeResult:
         seen_a.append(get_active_decision_lifecycle_host())
         gate.set()
         await asyncio.sleep(0.05)
         seen_a.append(get_active_decision_lifecycle_host())
-        return "a"
+        return ProbeResult(value="a")
 
-    async def _delegate_b(_request: object) -> str:
+    async def _delegate_b(_request: ProbeRequest) -> ProbeResult:
         await gate.wait()
         seen_b.append(get_active_decision_lifecycle_host())
         await asyncio.sleep(0.05)
         seen_b.append(get_active_decision_lifecycle_host())
-        return "b"
+        return ProbeResult(value="b")
 
     runtime_a = ExecutionRuntime(ProbeDelegate(_delegate_a), decision_lifecycle_host=host_a)
     runtime_b = ExecutionRuntime(ProbeDelegate(_delegate_b), decision_lifecycle_host=host_b)
@@ -269,8 +292,8 @@ async def test_concurrent_executions_isolate_active_hosts() -> None:
         runtime_b.execute(_PROBE, _root_context()),
     )
 
-    assert result_a == "a"
-    assert result_b == "b"
+    assert result_a == ProbeResult(value="a")
+    assert result_b == ProbeResult(value="b")
     assert seen_a == [host_a, host_a]
     assert seen_b == [host_b, host_b]
     assert get_active_decision_lifecycle_host() is None
