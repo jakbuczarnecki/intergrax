@@ -18,9 +18,29 @@ T = TypeVar("T")
 
 @dataclass(frozen=True, slots=True)
 class ActiveDecisionCheckpointPersistenceBinding(Generic[T]):
-    """Domain-neutral execution-scoped carrier for one persistence port."""
+    """Typed execution-scoped access token for one checkpoint payload type."""
 
     persistence: DecisionCheckpointPersistence[T]
+
+    @classmethod
+    def for_persistence(
+        cls,
+        persistence: DecisionCheckpointPersistence[T],
+    ) -> ActiveDecisionCheckpointPersistenceBinding[T]:
+        """Anchor checkpoint payload type ``T`` before execution-scoped access."""
+        return cls(persistence)
+
+    def get_active(self) -> DecisionCheckpointPersistence[T] | None:
+        binding = _active_decision_checkpoint_persistence.get()
+        if binding is None:
+            return None
+        return binding.persistence
+
+    def require_active(self) -> DecisionCheckpointPersistence[T]:
+        persistence = self.get_active()
+        if persistence is None:
+            raise RuntimeError("active decision checkpoint persistence required")
+        return persistence
 
 
 _active_decision_checkpoint_persistence: ContextVar[
@@ -43,17 +63,5 @@ def reset_active_decision_checkpoint_persistence(token: Token) -> None:
     _active_decision_checkpoint_persistence.reset(token)
 
 
-def get_active_decision_checkpoint_persistence() -> (
-    DecisionCheckpointPersistence | None
-):
-    binding = _active_decision_checkpoint_persistence.get()
-    if binding is None:
-        return None
-    return binding.persistence
-
-
-def require_active_decision_checkpoint_persistence() -> DecisionCheckpointPersistence:
-    persistence = get_active_decision_checkpoint_persistence()
-    if persistence is None:
-        raise RuntimeError("active decision checkpoint persistence required")
-    return persistence
+def is_decision_checkpoint_persistence_active() -> bool:
+    return _active_decision_checkpoint_persistence.get() is not None

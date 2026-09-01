@@ -44,8 +44,8 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_identity,
 )
 from intergrax.runtime.execution.active_decision_checkpoint_persistence import (
-    get_active_decision_checkpoint_persistence,
-    require_active_decision_checkpoint_persistence,
+    ActiveDecisionCheckpointPersistenceBinding,
+    is_decision_checkpoint_persistence_active,
 )
 from intergrax.runtime.execution.active_decision_lifecycle_host import (
     require_active_decision_lifecycle_host,
@@ -81,6 +81,11 @@ class ProbeResult:
 @dataclass(frozen=True, slots=True)
 class ProbeCheckpointPayload:
     value: str
+
+
+@dataclass(frozen=True, slots=True)
+class AlternateCheckpointPayload:
+    value: int
 
 
 _PROBE = ProbeRequest(value="probe")
@@ -122,6 +127,36 @@ class RecordingDecisionCheckpointPersistence(
         self,
         *,
         checkpoint: DecisionCheckpointState[ProbeCheckpointPayload],
+    ) -> None:
+        self.save_calls += 1
+        self._store[checkpoint.finalization.key] = checkpoint
+
+
+class AlternateRecordingDecisionCheckpointPersistence(
+    DecisionCheckpointPersistence[AlternateCheckpointPayload],
+):
+    __slots__ = ("load_calls", "save_calls", "_store")
+
+    def __init__(self) -> None:
+        self.load_calls = 0
+        self.save_calls = 0
+        self._store: dict[
+            DecisionFinalizationKey,
+            DecisionCheckpointState[AlternateCheckpointPayload],
+        ] = {}
+
+    def load(
+        self,
+        *,
+        key: DecisionFinalizationKey,
+    ) -> DecisionCheckpointState[AlternateCheckpointPayload] | None:
+        self.load_calls += 1
+        return self._store.get(key)
+
+    def save(
+        self,
+        *,
+        checkpoint: DecisionCheckpointState[AlternateCheckpointPayload],
     ) -> None:
         self.save_calls += 1
         self._store[checkpoint.finalization.key] = checkpoint
@@ -182,29 +217,33 @@ def _root_context() -> RootExecutionContext:
 
 @pytest.mark.asyncio
 async def test_ordinary_execution_without_persistence_has_no_active_binding() -> None:
+    probe_access = ActiveDecisionCheckpointPersistenceBinding.for_persistence(
+        RecordingDecisionCheckpointPersistence(),
+    )
     observed: list[DecisionCheckpointPersistence[ProbeCheckpointPayload] | None] = []
 
     async def _delegate(_request: ProbeRequest) -> ProbeResult:
-        observed.append(get_active_decision_checkpoint_persistence())
+        observed.append(probe_access.get_active())
         return ProbeResult(value="ok")
 
     runtime = ExecutionRuntime(ProbeDelegate(_delegate))
-    assert get_active_decision_checkpoint_persistence() is None
+    assert not is_decision_checkpoint_persistence_active()
 
     result = await runtime.execute(_PROBE, _root_context())
 
     assert result == ProbeResult(value="ok")
     assert observed == [None]
-    assert get_active_decision_checkpoint_persistence() is None
+    assert not is_decision_checkpoint_persistence_active()
 
 
 @pytest.mark.asyncio
 async def test_configured_persistence_visible_inside_delegate() -> None:
     store = RecordingDecisionCheckpointPersistence()
+    access = ActiveDecisionCheckpointPersistenceBinding.for_persistence(store)
     observed: list[DecisionCheckpointPersistence[ProbeCheckpointPayload] | None] = []
 
     async def _delegate(_request: ProbeRequest) -> ProbeResult:
-        observed.append(require_active_decision_checkpoint_persistence())
+        observed.append(access.require_active())
         return ProbeResult(value="ok")
 
     runtime = ExecutionRuntime(
@@ -238,6 +277,7 @@ async def test_configured_persistence_unused_does_not_load_or_save() -> None:
 @pytest.mark.asyncio
 async def test_save_and_load_canonical_checkpoint() -> None:
     store = RecordingDecisionCheckpointPersistence()
+    access = ActiveDecisionCheckpointPersistenceBinding.for_persistence(store)
     saved: DecisionCheckpointState[ProbeCheckpointPayload] | None = None
     loaded: DecisionCheckpointState[ProbeCheckpointPayload] | None = None
     checkpoint_key: DecisionFinalizationKey | None = None
@@ -256,7 +296,7 @@ async def test_save_and_load_canonical_checkpoint() -> None:
             finalization=finalization,
         )
         checkpoint_key = decision_finalization_key(identity)
-        persistence = require_active_decision_checkpoint_persistence()
+        persistence = access.require_active()
         save_decision_checkpoint(persistence, checkpoint=checkpoint)
         saved = checkpoint
         loaded = load_decision_checkpoint(persistence, key=checkpoint_key)
@@ -284,12 +324,13 @@ async def test_save_and_load_canonical_checkpoint() -> None:
 @pytest.mark.asyncio
 async def test_load_absent_checkpoint_returns_none() -> None:
     store = RecordingDecisionCheckpointPersistence()
+    access = ActiveDecisionCheckpointPersistenceBinding.for_persistence(store)
     loaded: DecisionCheckpointState[ProbeCheckpointPayload] | None = None
 
     async def _delegate(_request: ProbeRequest) -> ProbeResult:
         nonlocal loaded
         identity = _decision_identity_from_active_execution()
-        persistence = require_active_decision_checkpoint_persistence()
+        persistence = access.require_active()
         loaded = load_decision_checkpoint(
             persistence,
             key=decision_finalization_key(identity),
@@ -310,6 +351,7 @@ async def test_load_absent_checkpoint_returns_none() -> None:
 @pytest.mark.asyncio
 async def test_save_rejects_invalid_checkpoint_before_persist() -> None:
     store = RecordingDecisionCheckpointPersistence()
+    access = ActiveDecisionCheckpointPersistenceBinding.for_persistence(store)
 
     async def _delegate(_request: ProbeRequest) -> ProbeResult:
         identity = _decision_identity_from_active_execution()
@@ -325,7 +367,7 @@ async def test_save_rejects_invalid_checkpoint_before_persist() -> None:
             stage=DecisionLifecycleStage.VERIFICATION,
             transition_index=1,
         )
-        persistence = require_active_decision_checkpoint_persistence()
+        persistence = access.require_active()
         with pytest.raises(ValueError, match="does not match finalization key"):
             save_decision_checkpoint(
                 persistence,
@@ -421,9 +463,10 @@ async def test_load_rejects_invalid_checkpoint_from_storage() -> None:
             return None
 
     store = CorruptingDecisionCheckpointPersistence(corrupt_checkpoint=corrupt_checkpoint)
+    access = ActiveDecisionCheckpointPersistenceBinding.for_persistence(store)
 
     async def _delegate(_request: ProbeRequest) -> ProbeResult:
-        persistence = require_active_decision_checkpoint_persistence()
+        persistence = access.require_active()
         with pytest.raises(TypeError, match="must be DecisionCheckpointState"):
             load_decision_checkpoint(
                 persistence,
@@ -443,11 +486,12 @@ async def test_load_rejects_invalid_checkpoint_from_storage() -> None:
 @pytest.mark.asyncio
 async def test_active_persistence_absent_before_during_after_success() -> None:
     store = RecordingDecisionCheckpointPersistence()
+    access = ActiveDecisionCheckpointPersistenceBinding.for_persistence(store)
     phases: list[str] = []
 
     async def _delegate(_request: ProbeRequest) -> ProbeResult:
         phases.append("during")
-        assert require_active_decision_checkpoint_persistence() is store
+        assert access.require_active() is store
         return ProbeResult(value="ok")
 
     runtime = ExecutionRuntime(
@@ -455,21 +499,22 @@ async def test_active_persistence_absent_before_during_after_success() -> None:
         decision_checkpoint_persistence=store,
     )
     phases.append("before")
-    assert get_active_decision_checkpoint_persistence() is None
+    assert not is_decision_checkpoint_persistence_active()
 
     await runtime.execute(_PROBE, _root_context())
 
     phases.append("after")
     assert phases == ["before", "during", "after"]
-    assert get_active_decision_checkpoint_persistence() is None
+    assert not is_decision_checkpoint_persistence_active()
 
 
 @pytest.mark.asyncio
 async def test_active_persistence_reset_after_delegate_exception() -> None:
     store = RecordingDecisionCheckpointPersistence()
+    access = ActiveDecisionCheckpointPersistenceBinding.for_persistence(store)
 
     async def _delegate(_request: ProbeRequest) -> ProbeResult:
-        assert require_active_decision_checkpoint_persistence() is store
+        assert access.require_active() is store
         raise RuntimeError("delegate failed")
 
     runtime = ExecutionRuntime(
@@ -480,29 +525,31 @@ async def test_active_persistence_reset_after_delegate_exception() -> None:
     with pytest.raises(RuntimeError, match="delegate failed"):
         await runtime.execute(_PROBE, _root_context())
 
-    assert get_active_decision_checkpoint_persistence() is None
+    assert not is_decision_checkpoint_persistence_active()
 
 
 @pytest.mark.asyncio
 async def test_concurrent_executions_isolate_active_persistence() -> None:
     store_a = RecordingDecisionCheckpointPersistence()
     store_b = RecordingDecisionCheckpointPersistence()
+    access_a = ActiveDecisionCheckpointPersistenceBinding.for_persistence(store_a)
+    access_b = ActiveDecisionCheckpointPersistenceBinding.for_persistence(store_b)
     seen_a: list[DecisionCheckpointPersistence[ProbeCheckpointPayload] | None] = []
     seen_b: list[DecisionCheckpointPersistence[ProbeCheckpointPayload] | None] = []
     gate = asyncio.Event()
 
     async def _delegate_a(_request: ProbeRequest) -> ProbeResult:
-        seen_a.append(require_active_decision_checkpoint_persistence())
+        seen_a.append(access_a.require_active())
         gate.set()
         await asyncio.sleep(0.05)
-        seen_a.append(require_active_decision_checkpoint_persistence())
+        seen_a.append(access_a.require_active())
         return ProbeResult(value="a")
 
     async def _delegate_b(_request: ProbeRequest) -> ProbeResult:
         await gate.wait()
-        seen_b.append(require_active_decision_checkpoint_persistence())
+        seen_b.append(access_b.require_active())
         await asyncio.sleep(0.05)
-        seen_b.append(require_active_decision_checkpoint_persistence())
+        seen_b.append(access_b.require_active())
         return ProbeResult(value="b")
 
     runtime_a = ExecutionRuntime(
@@ -523,12 +570,13 @@ async def test_concurrent_executions_isolate_active_persistence() -> None:
     assert result_b == ProbeResult(value="b")
     assert seen_a == [store_a, store_a]
     assert seen_b == [store_b, store_b]
-    assert get_active_decision_checkpoint_persistence() is None
+    assert not is_decision_checkpoint_persistence_active()
 
 
 @pytest.mark.asyncio
 async def test_persistence_without_lifecycle_host() -> None:
     store = RecordingDecisionCheckpointPersistence()
+    access = ActiveDecisionCheckpointPersistenceBinding.for_persistence(store)
     saved: DecisionCheckpointState[ProbeCheckpointPayload] | None = None
     loaded: DecisionCheckpointState[ProbeCheckpointPayload] | None = None
 
@@ -545,7 +593,7 @@ async def test_persistence_without_lifecycle_host() -> None:
             lifecycle=lifecycle,
             finalization=finalization,
         )
-        persistence = require_active_decision_checkpoint_persistence()
+        persistence = access.require_active()
         save_decision_checkpoint(persistence, checkpoint=checkpoint)
         saved = checkpoint
         loaded = load_decision_checkpoint(
@@ -568,6 +616,7 @@ async def test_persistence_without_lifecycle_host() -> None:
 @pytest.mark.asyncio
 async def test_lifecycle_host_and_persistence_together() -> None:
     store = RecordingDecisionCheckpointPersistence()
+    access = ActiveDecisionCheckpointPersistenceBinding.for_persistence(store)
     host = CanonicalDecisionLifecycleHost()
     captured_run_id: RunId | None = None
     captured_execution_id: ExecutionId | None = None
@@ -586,7 +635,7 @@ async def test_lifecycle_host_and_persistence_together() -> None:
             lifecycle=verified,
             finalization=finalization,
         )
-        persistence = require_active_decision_checkpoint_persistence()
+        persistence = access.require_active()
         save_decision_checkpoint(persistence, checkpoint=checkpoint)
         restored = load_decision_checkpoint(
             persistence,
@@ -611,3 +660,83 @@ async def test_lifecycle_host_and_persistence_together() -> None:
     assert restored.lifecycle.identity.execution.run_id == root_context.run_id
     assert restored.lifecycle.identity.execution.execution_id == root_context.execution_id
     assert restored.finalization.authoritative_outcome is None
+
+
+@pytest.mark.asyncio
+async def test_type_preservation_through_active_binding() -> None:
+    store = RecordingDecisionCheckpointPersistence()
+    access = ActiveDecisionCheckpointPersistenceBinding.for_persistence(store)
+    inferred_persistence: DecisionCheckpointPersistence[ProbeCheckpointPayload] | None = None
+    inferred_loaded: DecisionCheckpointState[ProbeCheckpointPayload] | None = None
+    inferred_checkpoint: DecisionCheckpointState[ProbeCheckpointPayload] | None = None
+
+    async def _delegate(_request: ProbeRequest) -> ProbeResult:
+        nonlocal inferred_persistence, inferred_loaded, inferred_checkpoint
+        identity = _decision_identity_from_active_execution()
+        lifecycle = DecisionLifecycleState(
+            identity=identity,
+            stage=DecisionLifecycleStage.PROPOSAL,
+            transition_index=0,
+        )
+        finalization = initial_decision_finalize_guard(decision_finalization_key(identity))
+        checkpoint = decision_checkpoint_state(
+            lifecycle=lifecycle,
+            finalization=finalization,
+        )
+        persistence = access.require_active()
+        inferred_persistence = persistence
+        inferred_checkpoint = checkpoint
+        save_decision_checkpoint(persistence, checkpoint=checkpoint)
+        inferred_loaded = load_decision_checkpoint(
+            persistence,
+            key=decision_finalization_key(identity),
+        )
+        return ProbeResult(value="typed")
+
+    runtime = ExecutionRuntime(
+        ProbeDelegate(_delegate),
+        decision_checkpoint_persistence=store,
+    )
+    await runtime.execute(_PROBE, _root_context())
+
+    assert inferred_persistence is store
+    assert inferred_loaded is not None
+    assert inferred_checkpoint is not None
+    assert inferred_loaded == inferred_checkpoint
+
+
+@pytest.mark.asyncio
+async def test_alternate_payload_type_has_separate_typed_access() -> None:
+    probe_store = RecordingDecisionCheckpointPersistence()
+    probe_access = ActiveDecisionCheckpointPersistenceBinding.for_persistence(probe_store)
+    alternate_store = AlternateRecordingDecisionCheckpointPersistence()
+    alternate_access = ActiveDecisionCheckpointPersistenceBinding.for_persistence(
+        alternate_store,
+    )
+    probe_seen: DecisionCheckpointPersistence[ProbeCheckpointPayload] | None = None
+    alternate_seen: DecisionCheckpointPersistence[AlternateCheckpointPayload] | None = None
+
+    async def _probe_delegate(_request: ProbeRequest) -> ProbeResult:
+        nonlocal probe_seen
+        probe_seen = probe_access.require_active()
+        return ProbeResult(value="probe")
+
+    async def _alternate_delegate(_request: ProbeRequest) -> ProbeResult:
+        nonlocal alternate_seen
+        alternate_seen = alternate_access.require_active()
+        return ProbeResult(value="alternate")
+
+    probe_runtime = ExecutionRuntime(
+        ProbeDelegate(_probe_delegate),
+        decision_checkpoint_persistence=probe_store,
+    )
+    alternate_runtime = ExecutionRuntime(
+        ProbeDelegate(_alternate_delegate),
+        decision_checkpoint_persistence=alternate_store,
+    )
+
+    await probe_runtime.execute(_PROBE, _root_context())
+    await alternate_runtime.execute(_PROBE, _root_context())
+
+    assert probe_seen is probe_store
+    assert alternate_seen is alternate_store
