@@ -42,8 +42,8 @@ Conduct.
 
 ## Scope
 
-This Code of Conduct applies within all community spaces — GitHub issues, pull
-requests, discussions, email, and any other channels — and also applies when an
+This Code of Conduct applies within all community spaces - GitHub issues, pull
+requests, discussions, email, and any other channels - and also applies when an
 individual is officially representing the project in public spaces.
 
 ## Enforcement

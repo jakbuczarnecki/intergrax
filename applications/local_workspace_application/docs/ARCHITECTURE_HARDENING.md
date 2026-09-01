@@ -1,9 +1,9 @@
-# Local Knowledge Workspace (LKW) — harness hardening addendum
+# Local Knowledge Workspace (LKW) - harness hardening addendum
 
 **Status:** Architecture addendum for LKW product proof  
 **Parent architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Derived implementation plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
-**Scope:** LKW-driven harness hardening only — not a separate platform refactor backlog
+**Scope:** LKW-driven harness hardening only - not a separate platform refactor backlog
 
 ---
 
@@ -54,11 +54,11 @@ Broad platform refactors are deferred unless LKW exposes a concrete pain point.
 
 ---
 
-## 4. LKW-H0 — minimal runtime hardening for product proof
+## 4. LKW-H0 - minimal runtime hardening for product proof
 
 LKW-H0 is intentionally small. It must not become a general runtime rewrite.
 
-### LKW-H0.1 — strict/product policy must fail closed
+### LKW-H0.1 - strict/product policy must fail closed
 
 **Problem:** product or strict runtime posture cannot rely on implicit allow behavior when policy wiring is missing.
 
@@ -71,7 +71,7 @@ LKW-H0 is intentionally small. It must not become a general runtime rewrite.
 
 **Acceptance:** a strict/product LKW run cannot proceed through policy-sensitive execution without explicit policy wiring or explicit configuration acknowledgement.
 
-### LKW-H0.2 — `max_steps` boundary test
+### LKW-H0.2 - `max_steps` boundary test
 
 **Problem:** step-limit semantics must be verified before LKW relies on bounded agent sessions.
 
@@ -84,7 +84,7 @@ LKW-H0 is intentionally small. It must not become a general runtime rewrite.
 
 **Acceptance:** regression test proves whether `max_steps=N` permits exactly N steps and rejects step N+1.
 
-### LKW-H0.3 — post-finalization hook diagnostics
+### LKW-H0.3 - post-finalization hook diagnostics
 
 **Problem:** finalization or lifecycle hook errors must be inspectable. A product run may finish successfully, but invisible hook failures make the trace untrustworthy.
 
@@ -99,7 +99,7 @@ LKW-H0 is intentionally small. It must not become a general runtime rewrite.
 
 ---
 
-## 5. LKW.1 — first product proof
+## 5. LKW.1 - first product proof
 
 LKW.1 remains the main active implementation wave. H0 exists only to make LKW.1 safe and inspectable.
 
@@ -126,7 +126,7 @@ POST /v1/local_workspace/run
 
 ---
 
-## 6. LKW-H1 — live trace/evidence inspection
+## 6. LKW-H1 - live trace/evidence inspection
 
 The goal is not a hosted observability product. The goal is one clear, inspectable LKW run.
 
@@ -147,7 +147,7 @@ For every LKW.1 proof run, the operator should be able to inspect:
 
 ---
 
-## 7. LKW-H2 — evidence and maturity wording
+## 7. LKW-H2 - evidence and maturity wording
 
 After LKW.1 produces a real proof path, documentation must distinguish between:
 
@@ -162,7 +162,7 @@ After LKW.1 produces a real proof path, documentation must distinguish between:
 
 ---
 
-## 8. LKW-H3 — packaging and adoption
+## 8. LKW-H3 - packaging and adoption
 
 Packaging work is deferred until LKW proves enough value to run repeatedly.
 

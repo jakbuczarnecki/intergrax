@@ -4,14 +4,14 @@
 
 ## Purpose
 
-**Structured data Q&A**: discover relational schema, run read-oriented SQL queries, export results to shadow workspace. Use for analytics agents connected to Postgres/BigQuery/MotherDuck — not for arbitrary DDL/DML without host policy.
+**Structured data Q&A**: discover relational schema, run read-oriented SQL queries, export results to shadow workspace. Use for analytics agents connected to Postgres/BigQuery/MotherDuck - not for arbitrary DDL/DML without host policy.
 
 ## How it works
 
 1. `database.describe_schema` introspects tables/columns via `RelationalStore` integration.
 2. `database.query` executes SQL (host policy should restrict to read-only connections).
 3. `workspace.write_file` saves result CSV/JSON for downstream steps.
-4. High risk tier — enforce `ToolAccessPolicy` and read-only DB roles at Tier-3.
+4. High risk tier - enforce `ToolAccessPolicy` and read-only DB roles at Tier-3.
 
 ## How to use
 
@@ -41,5 +41,5 @@ Wire `relational_store` slug (`postgres`, `bigquery`, `motherduck`, etc.).
 
 ## Related skills
 
-- `research.citation_synthesis` — narrative report from exported data
-- `workspace.authoring` — further edit exported files
+- `research.citation_synthesis` - narrative report from exported data
+- `workspace.authoring` - further edit exported files

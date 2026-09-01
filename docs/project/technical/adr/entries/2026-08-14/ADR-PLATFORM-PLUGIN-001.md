@@ -10,7 +10,7 @@
 
 ## Context
 
-ENTERPRISE-4 (BLOCK B / CAND-007) wires typed `DeclarativePolicyEnforcer` at `RuntimeToolInvoker.invoke()` for tool invocations. `DENY` and `AUDIT_ONLY` behave correctly. `REQUIRE_HITL` in `ENFORCE` mode raises `DeclarativePolicyHitlRequiredError` before the tool handler executes — correct synchronous block, but **not** canonical HITL.
+ENTERPRISE-4 (BLOCK B / CAND-007) wires typed `DeclarativePolicyEnforcer` at `RuntimeToolInvoker.invoke()` for tool invocations. `DENY` and `AUDIT_ONLY` behave correctly. `REQUIRE_HITL` in `ENFORCE` mode raises `DeclarativePolicyHitlRequiredError` before the tool handler executes - correct synchronous block, but **not** canonical HITL.
 
 Canonical Nexus HITL already exists as a single system:
 
@@ -26,12 +26,12 @@ This ADR freezes how declarative `REQUIRE_HITL` joins that chain without a secon
 
 **REVIEW-FIX-2** closes two remaining contradictions before IMPL-1:
 
-1. grant consumption owned by orchestration resume boundary (`GraphExecutor.execute_fn`) — `RuntimeToolInvoker` must not mutate `Task` or call `DeclarativeHitlGrantCoordinator`,
+1. grant consumption owned by orchestration resume boundary (`GraphExecutor.execute_fn`) - `RuntimeToolInvoker` must not mutate `Task` or call `DeclarativeHitlGrantCoordinator`,
 2. independent current invocation identity (`declarative_hitl_invocation_scope_id` / `PolicyEvaluationContext.invocation_scope_id`) distinct from `approval_grant.invocation_scope_id`.
 
 **REVIEW-FIX-3** closes the final scope-ownership contradiction before IMPL-1:
 
-1. current invocation identity owned by `ToolExecutionRequest` — not `RuntimeRequest` / `RuntimeState` (one runtime request may execute multiple tool invocations, including parallel read-only calls),
+1. current invocation identity owned by `ToolExecutionRequest` - not `RuntimeRequest` / `RuntimeState` (one runtime request may execute multiple tool invocations, including parallel read-only calls),
 2. grant transport (`declarative_hitl_grant`) separated from per-invocation scope assignment,
 3. one-shot scope assignment at exact resumed tool-request reconstruction with dimensional verification,
 4. in-memory grant single-use within the same `RuntimeRequest` execution.
@@ -104,19 +104,19 @@ idempotency_key: Optional[str] = None
 
 ## Invariants
 
-- **One canonical HITL system** — `HumanPauseCoordinator` + existing intake/graph runners only.
-- `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0` — no `getattr`/`setattr`/magic exception-name routing; explicit typed contracts only.
+- **One canonical HITL system** - `HumanPauseCoordinator` + existing intake/graph runners only.
+- `NEW_DYNAMIC_ATTRIBUTE_WIRING = 0` - no `getattr`/`setattr`/magic exception-name routing; explicit typed contracts only.
 - `runtime/policy` and `runtime/tools` **must not** import `Task`, `NexusHitlRunner`, or `HumanPauseCoordinator`.
 - `RuntimeToolInvoker` and `DeclarativePolicyEnforcer` **must not** mutate `Task` / `TaskGovernanceState` or call `DeclarativeHitlGrantCoordinator`.
 - HITL is **not** `TOOL_ERROR` / `ToolExecutionResult.fail`.
 - `AUDIT_ONLY` + `REQUIRE_HITL` must never pause (`enforced=False` → no block, no exception).
 - `DENY` precedence is absolute; human approval never bypasses `DENY`.
-- **`HumanRequest` is presentation/workflow data only** — not the security source of truth for invocation scope.
+- **`HumanRequest` is presentation/workflow data only** - not the security source of truth for invocation scope.
 - **`AgentDecision.payload` / `HumanRequest.context_artifacts` / generic task metadata** may mirror scope for display/audit but **must not** be authoritative authorization state.
 
 ## Considered options
 
-### Option A — Typed exception bridge at tool-invocation aggregate boundary (chosen)
+### Option A - Typed exception bridge at tool-invocation aggregate boundary (chosen)
 
 `RuntimeToolInvoker` keeps raising `DeclarativePolicyHitlRequiredError`. Direct callers catch it and convert via a new Tier-1 bridge module into orchestration-legal signals that terminate in `AgentDecision.REQUEST_HUMAN`.
 
@@ -124,16 +124,16 @@ idempotency_key: Optional[str] = None
 |--------|------------|
 | Ownership | Bridge module in `runtime/nexus/tools/`; governance translation in existing UAEP/`runtime_mapping` |
 | Sync/async | Exception unwinds sync invoke; async Nexus loop unchanged |
-| `ToolExecutionResult` | Unchanged — represents completed execution only |
+| `ToolExecutionResult` | Unchanged - represents completed execution only |
 | DENY symmetry | Matches existing `DeclarativePolicyViolationError` pattern |
-| Risk | Multiple catch sites — mitigated by allowlisted callers + shared bridge function |
+| Risk | Multiple catch sites - mitigated by allowlisted callers + shared bridge function |
 | Migration | Low churn on `ToolInvokerProtocol` |
 
-### Option B — `RuntimeToolInvoker` returns suspended control outcome
+### Option B - `RuntimeToolInvoker` returns suspended control outcome
 
 **Rejected.** Breaks `ToolInvokerProtocol`; suspension mistaken for failure.
 
-### Option C — Move declarative HITL evaluation above `RuntimeToolInvoker`
+### Option C - Move declarative HITL evaluation above `RuntimeToolInvoker`
 
 **Rejected.** Splits enforcement plane; weak handler call-count guarantee.
 
@@ -145,22 +145,22 @@ idempotency_key: Optional[str] = None
 
 | # | Decision |
 |---|----------|
-| 1 | **Canonical bridge owner (translation):** `intergrax/runtime/nexus/tools/declarative_policy_hitl_bridge.py` — sole module converting `DeclarativePolicyHitlRequiredError` + invocation context → `DeclarativePolicyHitlSignal` → `AgentDecision` + optional pre-built `HumanRequest`. |
-| 2 | **Canonical bridge owner (orchestration consumption):** existing `UAEPExecutor` step loop + `runtime_answer_to_agent_result` + `NexusGraphRunner._handle_needs_input` — no new pause owner. |
+| 1 | **Canonical bridge owner (translation):** `intergrax/runtime/nexus/tools/declarative_policy_hitl_bridge.py` - sole module converting `DeclarativePolicyHitlRequiredError` + invocation context → `DeclarativePolicyHitlSignal` → `AgentDecision` + optional pre-built `HumanRequest`. |
+| 2 | **Canonical bridge owner (orchestration consumption):** existing `UAEPExecutor` step loop + `runtime_answer_to_agent_result` + `NexusGraphRunner._handle_needs_input` - no new pause owner. |
 | 3 | **Low-level HITL signal type:** keep `DeclarativePolicyHitlRequiredError` (sync unwind). Add `DeclarativePolicyHitlSignal` (frozen dataclass) as the cross-layer typed payload extracted by the bridge. |
-| 4 | **`DeclarativePolicyHitlRequiredError` remains?** **Yes** — internal synchronous signal inside `RuntimeToolInvoker` only. |
+| 4 | **`DeclarativePolicyHitlRequiredError` remains?** **Yes** - internal synchronous signal inside `RuntimeToolInvoker` only. |
 | 5 | **Translation to governance:** `DeclarativePolicyHitlSignal` → `AgentDecision(type=REQUEST_HUMAN, ...)` → `ExecutionInterruptHandler.resolve_decision()` → `GovernanceResolution` → `runtime_answer_to_agent_result` → `NEEDS_INPUT`. |
 | 6 | **`ExecutionInterrupt` involved?** **No.** |
 | 7 | **`HumanRequest` owner:** bridge builds minimal `HumanRequest` for UI/workflow; `ExecutionInterruptHandler` may enrich defaults. **Not** authoritative scope storage. |
 | 8 | **Pause owner:** `HumanPauseCoordinator` (unchanged). |
-| 9 | **Pending approval owner:** `TaskGovernanceState.declarative_hitl_pending` — authoritative pre-approval scope; persisted by `HumanPauseCoordinator.apply_pause` before checkpoint completion. |
-| 10 | **Grant owner:** `TaskGovernanceState.declarative_hitl_grant` — single-use approval artifact; created on canonical APPROVE; persisted copy consumed at orchestration resume boundary per §Grant consumption. |
+| 9 | **Pending approval owner:** `TaskGovernanceState.declarative_hitl_pending` - authoritative pre-approval scope; persisted by `HumanPauseCoordinator.apply_pause` before checkpoint completion. |
+| 10 | **Grant owner:** `TaskGovernanceState.declarative_hitl_grant` - single-use approval artifact; created on canonical APPROVE; persisted copy consumed at orchestration resume boundary per §Grant consumption. |
 | 11 | **Invocation identity:** mandatory `invocation_scope_id` on pending approval and grant; stable across checkpoint/resume (see §Invocation identity). |
 | 12 | **Resume behavior:** graph node stays `PENDING`; step re-executes from checkpoint; same scoped `ToolExecutionRequest` reconstructed; handler call count 0 before approval, exactly 1 after. |
 | 13 | **Policy re-evaluation:** always on resume; `REQUIRE_HITL` satisfied only when typed `DeclarativeHitlApprovalGrant` matches per §Grant matching. |
 | 14 | **`DENY` after resume:** always blocks; grant never applies to `DENY`. |
-| 15 | **Grant transport:** typed field chain only (see §Typed grant transport) — **no** `request.metadata["declarative_hitl_grant"]`. |
-| 18 | **Current invocation scope owner:** `ToolExecutionRequest.declarative_hitl_invocation_scope_id` — assigned once at exact resumed tool-request reconstruction (§Invocation scope assignment). Grant transport uses `RuntimeRequest` / `RuntimeState.declarative_hitl_grant` only. **Must not** broadcast scope to all tool calls in one runtime request. |
+| 15 | **Grant transport:** typed field chain only (see §Typed grant transport) - **no** `request.metadata["declarative_hitl_grant"]`. |
+| 18 | **Current invocation scope owner:** `ToolExecutionRequest.declarative_hitl_invocation_scope_id` - assigned once at exact resumed tool-request reconstruction (§Invocation scope assignment). Grant transport uses `RuntimeRequest` / `RuntimeState.declarative_hitl_grant` only. **Must not** broadcast scope to all tool calls in one runtime request. |
 | 16 | **Trace IDs:** `invocation_scope_id`, `run_id`, `task_id`, `step_id`, `tool_id`, `human_request_id`, `pause_id`, `matched_rule_ids`, `grant_id` (no tool args/secrets). |
 | 17 | **IMPL-1 file allowlist:** see Implementation scope section. |
 
@@ -208,9 +208,9 @@ Authoritative authorization scope for a paused `REQUIRE_HITL` invocation **befor
 
 **Producer:** `DeclarativePolicyHitlBridge.build_pending_approval(signal, task, pause_record)` builds the DTO.
 
-**Consumer:** `HumanPauseCoordinator.apply_pause` assigns `task.runtime.governance.declarative_hitl_pending` **before** `task.sync_metadata()` and checkpoint. Bridge passes pending via `AgentExecutionResult` typed attachment field `declarative_hitl_pending` (IMPL-1) or equivalent single hop — coordinator **must** copy to `TaskGovernanceState`; payload mirrors only.
+**Consumer:** `HumanPauseCoordinator.apply_pause` assigns `task.runtime.governance.declarative_hitl_pending` **before** `task.sync_metadata()` and checkpoint. Bridge passes pending via `AgentExecutionResult` typed attachment field `declarative_hitl_pending` (IMPL-1) or equivalent single hop - coordinator **must** copy to `TaskGovernanceState`; payload mirrors only.
 
-**Clearing:** On APPROVE (after grant creation), REJECT, ESCALATE (terminal), TIMEOUT, or task terminal failure — `declarative_hitl_pending = None`.
+**Clearing:** On APPROVE (after grant creation), REJECT, ESCALATE (terminal), TIMEOUT, or task terminal failure - `declarative_hitl_pending = None`.
 
 ### `DeclarativeHitlApprovalGrant`
 
@@ -218,7 +218,7 @@ Single-use approval artifact created **only** from persisted `DeclarativeHitlPen
 
 | Field | Type | Notes |
 |-------|------|-------|
-| `grant_id` | `str` | `grant_{uuid4().hex[:16]}` — audit identity |
+| `grant_id` | `str` | `grant_{uuid4().hex[:16]}` - audit identity |
 | `invocation_scope_id` | `str` | Copied from pending |
 | `task_id` | `str` | |
 | `run_id` | `str` | |
@@ -259,13 +259,13 @@ Grant identity (**approval evidence**) and **current invocation identity** are d
 
 | Question | Frozen answer |
 |----------|---------------|
-| Can `idempotency_key` be sole identity? | **No** — optional on `ToolExecutionRequest`. |
+| Can `idempotency_key` be sole identity? | **No** - optional on `ToolExecutionRequest`. |
 | Grant / pending correlation field | `invocation_scope_id: str` on `DeclarativeHitlPendingApproval` and `DeclarativeHitlApprovalGrant`. |
 | Grant transport field | `declarative_hitl_grant` on `TaskGovernanceState` → `RuntimeRequest` → `RuntimeState` (approval evidence copy only). |
-| Current invocation field | `declarative_hitl_invocation_scope_id: str \| None` on **`ToolExecutionRequest`** — authoritative per-invocation identity. |
-| Policy evaluation mirror | `PolicyEvaluationContext.invocation_scope_id` populated from `ToolExecutionRequest.declarative_hitl_invocation_scope_id` at invoke time — **not** from shared `RuntimeState`. |
+| Current invocation field | `declarative_hitl_invocation_scope_id: str \| None` on **`ToolExecutionRequest`** - authoritative per-invocation identity. |
+| Policy evaluation mirror | `PolicyEvaluationContext.invocation_scope_id` populated from `ToolExecutionRequest.declarative_hitl_invocation_scope_id` at invoke time - **not** from shared `RuntimeState`. |
 | When grant scope is generated | Once when bridge converts `DeclarativePolicyHitlRequiredError` → `DeclarativePolicyHitlSignal` (first REQUIRE_HITL raise for this logical invocation). |
-| Format | `dhr_{uuid4().hex}` — new identifier; no existing step/invocation ID guarantees per-invocation uniqueness when `idempotency_key` is absent. |
+| Format | `dhr_{uuid4().hex}` - new identifier; no existing step/invocation ID guarantees per-invocation uniqueness when `idempotency_key` is absent. |
 | Stability | Grant scope copied unchanged: signal → pending approval → grant. Survives checkpoint via `TaskGovernanceState` persistence. |
 | `idempotency_key` role | Additional match dimension when non-null on both request and grant; never assumed present. |
 
@@ -275,7 +275,7 @@ Grant identity (**approval evidence**) and **current invocation identity** are d
 
 | Phase | `ToolExecutionRequest.declarative_hitl_invocation_scope_id` | `approval_grant` | Frozen behavior |
 |-------|--------------------------------------------------------------|------------------|-----------------|
-| **First invocation** | `None` — no current invocation scope yet | `None` | Policy yields `REQUIRE_HITL`; bridge creates new `invocation_scope_id`; persists it in `declarative_hitl_pending`. |
+| **First invocation** | `None` - no current invocation scope yet | `None` | Policy yields `REQUIRE_HITL`; bridge creates new `invocation_scope_id`; persists it in `declarative_hitl_pending`. |
 | **Resume (approved)** | Set on **exactly one** reconstructed `ToolExecutionRequest` by the resumed tool-request builder (§Invocation scope assignment) | Immutable copy on `RuntimeState.declarative_hitl_grant` from orchestration resume boundary | Enforcer compares `request.declarative_hitl_invocation_scope_id == grant.invocation_scope_id` plus remaining dimensions. |
 | **Other tool calls same runtime request** | `None` | Same in-memory grant copy may be visible on `RuntimeState` | Grant **must not** satisfy `REQUIRE_HITL` without matching current scope on that specific request. |
 | **Different logical invocation** | Must be a **different** current scope value (or `None`) | Prior grant must not match | New `REQUIRE_HITL` cycle; no grant reuse. |
@@ -316,7 +316,7 @@ PolicyEvaluationContext(
 | Hop | Owner module | Field |
 |-----|--------------|-------|
 | Persisted grant | `task_contract.py` | `TaskGovernanceState.declarative_hitl_grant` |
-| Resume transfer + consume | `graph_executor.py` | reads grant; sets `RuntimeRequest.declarative_hitl_grant`; clears persisted grant; `sync_metadata()` — **does not** set invocation scope |
+| Resume transfer + consume | `graph_executor.py` | reads grant; sets `RuntimeRequest.declarative_hitl_grant`; clears persisted grant; `sync_metadata()` - **does not** set invocation scope |
 | Runtime grant mirror | `runtime_state.py` | `RuntimeState.declarative_hitl_grant` ← from request at engine init |
 | Invocation scope assignment | resumed tool-request builder (see §Invocation scope assignment) | `ToolExecutionRequest.declarative_hitl_invocation_scope_id` on exactly one matched request |
 | Evaluation input | `evaluation.py` / `invoker.py` | `PolicyEvaluationContext.approval_grant`, `PolicyEvaluationContext.invocation_scope_id` |
@@ -328,7 +328,7 @@ PolicyEvaluationContext(
 
 ## Invocation scope assignment
 
-**Owner:** the module that reconstructs the exact resumed `ToolExecutionRequest` for the governed invocation (IMPL-1: allowlisted tool-request builders on the resume path — e.g. `tool_loop._invoke_planned_call`, `catalog_dispatch`, `execute_declarative_actions` / `DeclarativeToolInvoker` — whichever rebuilds the paused call).
+**Owner:** the module that reconstructs the exact resumed `ToolExecutionRequest` for the governed invocation (IMPL-1: allowlisted tool-request builders on the resume path - e.g. `tool_loop._invoke_planned_call`, `catalog_dispatch`, `execute_declarative_actions` / `DeclarativeToolInvoker` - whichever rebuilds the paused call).
 
 **When:** after `RuntimeState.declarative_hitl_grant` is available and **before** `RuntimeToolInvoker.invoke` for that specific request.
 
@@ -394,7 +394,7 @@ Matching compares **two independent sides**. No self-comparison within grant alo
 | matched rule IDs | `grant.matched_rule_ids` |
 | provenance digest | `grant.policy_provenance_digest` |
 
-**Matching predicate** — grant satisfies `REQUIRE_HITL` only when **all** cross-field equalities pass:
+**Matching predicate** - grant satisfies `REQUIRE_HITL` only when **all** cross-field equalities pass:
 
 | Dimension | Predicate |
 |-----------|-----------|
@@ -410,9 +410,9 @@ Matching compares **two independent sides**. No self-comparison within grant alo
 
 | Policy action | Grant behavior |
 |---------------|----------------|
-| `DENY` | **Never** grant-satisfiable — evaluated first; in-memory grant copy ignored for authorization |
+| `DENY` | **Never** grant-satisfiable - evaluated first; in-memory grant copy ignored for authorization |
 | `REQUIRE_HITL` | Grant may satisfy when predicate passes |
-| `ALLOW` | Unchanged — grant irrelevant |
+| `ALLOW` | Unchanged - grant irrelevant |
 
 Mismatch after resume → `DeclarativePolicyHitlRequiredError` (re-pause) or orchestration failure; persisted grant already consumed at resume boundary and is **not** restored.
 
@@ -464,7 +464,7 @@ IMPL-1 may implement steps 1–5 inline in `graph_executor.py` or via an orchest
 | TIMEOUT | Pending cleared; no grant |
 | ESCALATE (terminal) | Pending cleared; no grant |
 
-**Security balance:** persisted consumption at orchestration resume prevents reusable approval across checkpoints. Handler failure after resume requires re-approval — aligns with handler call-count invariant and existing idempotency ledger when `idempotency_key` is set.
+**Security balance:** persisted consumption at orchestration resume prevents reusable approval across checkpoints. Handler failure after resume requires re-approval - aligns with handler call-count invariant and existing idempotency ledger when `idempotency_key` is set.
 
 ## Grant coordinator ownership
 
@@ -480,11 +480,11 @@ IMPL-1 may implement steps 1–5 inline in `graph_executor.py` or via an orchest
 
 | Artifact | Role |
 |----------|------|
-| `HumanRequest` | Presentation, workflow, timeout, notification — **not** authoritative authorization scope |
+| `HumanRequest` | Presentation, workflow, timeout, notification - **not** authoritative authorization scope |
 | `HumanRequest.context_artifacts` | May reference/display tool, rules, scope for operators |
 | `DeclarativeHitlPendingApproval` | **Authoritative** pre-approval scope on `TaskGovernanceState` |
 | `DeclarativeHitlApprovalGrant` | **Authoritative** post-approval scope for one evaluation |
-| `AgentDecision.payload` | Diagnostic mirror (`DeclarativeHitlDecisionPayload`) — audit/display only |
+| `AgentDecision.payload` | Diagnostic mirror (`DeclarativeHitlDecisionPayload`) - audit/display only |
 
 FU-001 (`HumanRequest` v3 first-class tool/rule fields) remains **non-blocking** for IMPL-1.
 
@@ -552,7 +552,7 @@ RuntimeToolInvoker.invoke (resume, scoped request only)
        ...)
   → DeclarativePolicyEnforcer: DENY still DENY
   → REQUIRE_HITL + matching grant (request.declarative_hitl_invocation_scope_id == grant.invocation_scope_id, ...)
-  → satisfied — no Task mutation; no coordinator call
+  → satisfied - no Task mutation; no coordinator call
   → handler executes once
 ```
 
@@ -576,9 +576,9 @@ TIMEOUT:
 
 | Question | Answer |
 |----------|--------|
-| `ToolExecutionRequest` persisted? | Yes — runtime checkpoint / step cursor + `idempotency_key` when set |
-| `invocation_scope_id` persisted? | Yes — `TaskGovernanceState.declarative_hitl_pending` then grant |
-| Step rerun on resume? | Yes — node `PENDING` + `governance_pause` |
+| `ToolExecutionRequest` persisted? | Yes - runtime checkpoint / step cursor + `idempotency_key` when set |
+| `invocation_scope_id` persisted? | Yes - `TaskGovernanceState.declarative_hitl_pending` then grant |
+| Step rerun on resume? | Yes - node `PENDING` + `governance_pause` |
 | Duplicate execution prevention? | Grant single-use + `idempotency_key` + side-effect ledger |
 | Policy re-evaluated on resume? | **Yes** |
 | Infinite re-pause avoidance? | Grant satisfies scoped `REQUIRE_HITL` once per approval |
@@ -586,7 +586,7 @@ TIMEOUT:
 
 ## Dependency-direction proof
 
-`declarative_enforcer` and `invoker` have no Task/HITL imports and do not mutate `TaskGovernanceState`. Bridge imports contracts + error only. Grant coordinator lives in `runtime/human/` (orchestration tier) and is invoked only from intake/graph orchestration — **not** from `RuntimeToolInvoker`. Persisted grant consumption happens in `GraphExecutor.execute_fn` resume boundary before `RuntimeToolInvoker.invoke`. UAEP/graph runners consume existing `GovernanceResolution` path. No edge from `runtime/policy` or `runtime/tools` to `HumanPauseCoordinator` or `DeclarativeHitlGrantCoordinator`.
+`declarative_enforcer` and `invoker` have no Task/HITL imports and do not mutate `TaskGovernanceState`. Bridge imports contracts + error only. Grant coordinator lives in `runtime/human/` (orchestration tier) and is invoked only from intake/graph orchestration - **not** from `RuntimeToolInvoker`. Persisted grant consumption happens in `GraphExecutor.execute_fn` resume boundary before `RuntimeToolInvoker.invoke`. UAEP/graph runners consume existing `GovernanceResolution` path. No edge from `runtime/policy` or `runtime/tools` to `HumanPauseCoordinator` or `DeclarativeHitlGrantCoordinator`.
 
 ## Security consequences
 
@@ -609,8 +609,8 @@ Keys: `invocation_scope_id`, `grant_id`, `run_id`, `task_id`, `step_id`, `tool_i
 - `ToolInvokerProtocol` unchanged.
 - `catalog_dispatch` must stop mapping HITL to `FAILED`.
 - `AUDIT_ONLY` hosts: no pause behavior change.
-- New typed fields on `RuntimeRequest`, `RuntimeState`, `PolicyEvaluationContext`, `TaskGovernanceState`, `ToolExecutionRequest` — no metadata key addition.
-- `declarative_hitl_invocation_scope_id` on `ToolExecutionRequest` only — **not** on `RuntimeRequest` / `RuntimeState`.
+- New typed fields on `RuntimeRequest`, `RuntimeState`, `PolicyEvaluationContext`, `TaskGovernanceState`, `ToolExecutionRequest` - no metadata key addition.
+- `declarative_hitl_invocation_scope_id` on `ToolExecutionRequest` only - **not** on `RuntimeRequest` / `RuntimeState`.
 
 ## Implementation scope for IMPL-1
 
@@ -693,4 +693,4 @@ Option B, Option C, second pause coordinator, HITL as `TOOL_ERROR`, global `huma
 
 ## Status
 
-**Accepted** — pending approval DTO, grant DTO, grant transport vs per-request invocation identity, orchestration-owned persisted grant consumption, one-shot scope assignment at tool-request reconstruction, multi-tool and parallel semantics, cross-field matching predicate, in-memory grant single-use, and failure/retry semantics frozen for IMPL-1 (REVIEW-FIX-3). IMPL-1 READY. CAND-007 remains PARTIAL until E2E implementation.
+**Accepted** - pending approval DTO, grant DTO, grant transport vs per-request invocation identity, orchestration-owned persisted grant consumption, one-shot scope assignment at tool-request reconstruction, multi-tool and parallel semantics, cross-field matching predicate, in-memory grant single-use, and failure/retry semantics frozen for IMPL-1 (REVIEW-FIX-3). IMPL-1 READY. CAND-007 remains PARTIAL until E2E implementation.

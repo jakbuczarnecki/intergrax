@@ -1,4 +1,4 @@
-﻿# boundary_demo agent — Architecture Decision Records
+﻿# boundary_demo agent - Architecture Decision Records
 
 **Domain:** Tier-2 business agent (`agents/boundary_demo`)
 
@@ -36,7 +36,7 @@ ADR-BOUNDARY_DEMO-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| — | *No agent ADRs yet* | — |
+| - | *No agent ADRs yet* | - |
 
 ---
 

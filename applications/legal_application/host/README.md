@@ -7,9 +7,9 @@ FastAPI application shell that **composes** Intergrax `fastapi_core` with the Ti
 | File | Responsibility |
 |------|----------------|
 | `main.py` | ASGI `app`, loads `.env`, CLI `run()` for uvicorn |
-| `factory.py` | `create_legal_backend_app()` — `create_app`, CORS/OpenAPI overrides, agent build, route mount |
-| `settings.py` | `LegalBackendSettings.from_env()` — prod auth guardrails |
-| `wiring.py` | `build_legal_agent()` — profile + LLM from settings |
+| `factory.py` | `create_legal_backend_app()` - `create_app`, CORS/OpenAPI overrides, agent build, route mount |
+| `settings.py` | `LegalBackendSettings.from_env()` - prod auth guardrails |
+| `wiring.py` | `build_legal_agent()` - profile + LLM from settings |
 
 ## Run
 

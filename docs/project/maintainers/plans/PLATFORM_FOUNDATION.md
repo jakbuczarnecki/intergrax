@@ -1,4 +1,4 @@
-# Platform Foundation — Implementation Plan
+# Platform Foundation - Implementation Plan
 
 **Architecture (1:1):** [`architecture/PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
@@ -14,7 +14,7 @@
 **Do not read this entire file in one session** (PLATFORM_FOUNDATION plan).
 
 - **Implement / audit default:** §6.1 gate maintenance (default) · §4.0a scope split. **On demand:** [`plan/satellites/PLATFORM_FOUNDATION_master_registers.md`](plan/satellites/PLATFORM_FOUNDATION_master_registers.md) · [`plan/satellites/PLATFORM_FOUNDATION_06_closed_queues.md`](plan/satellites/PLATFORM_FOUNDATION_06_closed_queues.md) (re-validate closed only) · [`HARNESS_EVIDENCE_PACK.md`](HARNESS_EVIDENCE_PACK.md) (Band 2ae HEP only)
-- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Use** `Read` with offset/limit - open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md) read-scope block only.
 - **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
@@ -22,7 +22,7 @@
 
 ---
 
-## LCI-7A — LangChain optional extras packaging
+## LCI-7A - LangChain optional extras packaging
 
 **Status:** `APPROVED`
 **Owner:** PLATFORM_FOUNDATION
@@ -34,7 +34,7 @@ The package's direct core dependencies contain no normalized `langchain*` or
 `langgraph-legacy`. The clean-core and compatibility installation gates are
 closed under LCI-7B and LCI-7C; documentation closeout is LCI-7D.
 
-## LCI-7D — LangChain independence documentation closeout
+## LCI-7D - LangChain independence documentation closeout
 
 **Status:** `READY_FOR_REVIEW`
 
@@ -47,17 +47,17 @@ RAG implementation, or packaging declaration changes belong to this closeout.
 
 ## 6. What to implement next
 
-**Default answer (infrastructure):** **[§6.1](.#61-harness-platform-maintenance-default--band-1)** gate green on every PR — CRIT-V and OBS-BUS platform closeouts **Done**. **Open qualification:** **[§6.1ax PF-TIER-ENFORCEMENT](.#61ax-pf-tier-enforcement--production-tier-boundary-qualification)** — tier-boundary enforcement remediation (audit `4c92e0a`, verdict `CONDITIONALLY SOUND — ENFORCEMENT REMEDIATION REQUIRED`).
+**Default answer (infrastructure):** **[§6.1](.#61-harness-platform-maintenance-default--band-1)** gate green on every PR - CRIT-V and OBS-BUS platform closeouts **Done**. **Open qualification:** **[§6.1ax PF-TIER-ENFORCEMENT](.#61ax-pf-tier-enforcement--production-tier-boundary-qualification)** - tier-boundary enforcement remediation (audit `4c92e0a`, verdict `CONDITIONALLY SOUND - ENFORCEMENT REMEDIATION REQUIRED`).
 
-**Maintenance-only mode (qualified):** Feature/platform implementation backlogs remain **closed**; ongoing work = §6.1 gate maintenance. Tier-boundary enforcement remediation is **not** closed — see §6.1ax. If CRIT-V paused by explicit decision, revert to §6.1 gate-only maintenance (enforcement qualification still open).
+**Maintenance-only mode (qualified):** Feature/platform implementation backlogs remain **closed**; ongoing work = §6.1 gate maintenance. Tier-boundary enforcement remediation is **not** closed - see §6.1ax. If CRIT-V paused by explicit decision, revert to §6.1 gate-only maintenance (enforcement qualification still open).
 
-**Out of scope:** product/application implementation work and business backlogs — **[§6.3](.#63-end-of-platform-plan)** · **[§4.0a](.#40a-implementation-scope-split-infrastructure-vs-business)**.
+**Out of scope:** product/application implementation work and business backlogs - **[§6.3](.#63-end-of-platform-plan)** · **[§4.0a](.#40a-implementation-scope-split-infrastructure-vs-business)**.
 
 **Audit basis:** Governance audit (2026-06-05) → GOV-AUDIT **Done**; orchestration audit (2026-06-05) → Phase ORCH + §6.1b; tools/skills audit (2026-06-02) → Phase TS + §6.1c; integration/RAG audit (2026-06-02) → Phase INT + RAG + §6.1d/§6.1e; context engineering audit (2026-06-02) → Phase CTX + §6.1f; prior V-REM/MEM/DX/AA closeouts in [§6.1z](.#61z-harness-implementation-queue-consolidated) / [§6.1aa](.#61aa-harness-implementation-queue-memory-platform).
 
-### 6.1 Harness platform maintenance (default — Band 1)
+### 6.1 Harness platform maintenance (default - Band 1)
 
-§4.1 backlog is **closed** for feature/platform implementation. Ongoing work = keep the harness green. **Exception (open qualification):** tier-boundary enforcement proof is incomplete — **[§6.1ax](.#61ax-pf-tier-enforcement--production-tier-boundary-qualification)** must complete before Foundation may return to unqualified maintenance-only/closed status for this area. **Band 2y W-ADAPT**, **Band 2z M-LLM-R**, **Band 2aa M.6 P4**, and **Band 2ab M.6 P5** are **closed**. **Band 2ac M.6 P6** = **Done** (32/32) — see **[§6.1y](.#61y-harness-implementation-queue--integration-expansion-m6-p6-done)**. **Band 2ay M.12** = **Done** — see **[§6.1an](.#61an-harness-implementation-queue--llm-guardrail-integrations-closed)**. **Optional harness extension (after gate green):** **[Band 2ae Phase HEP](.#61aw-phase-hep--harness-evidence-pack-band-2ae)** — runtime evidence packaging.
+§4.1 backlog is **closed** for feature/platform implementation. Ongoing work = keep the harness green. **Exception (open qualification):** tier-boundary enforcement proof is incomplete - **[§6.1ax](.#61ax-pf-tier-enforcement--production-tier-boundary-qualification)** must complete before Foundation may return to unqualified maintenance-only/closed status for this area. **Band 2y W-ADAPT**, **Band 2z M-LLM-R**, **Band 2aa M.6 P4**, and **Band 2ab M.6 P5** are **closed**. **Band 2ac M.6 P6** = **Done** (32/32) - see **[§6.1y](.#61y-harness-implementation-queue--integration-expansion-m6-p6-done)**. **Band 2ay M.12** = **Done** - see **[§6.1an](.#61an-harness-implementation-queue--llm-guardrail-integrations-closed)**. **Optional harness extension (after gate green):** **[Band 2ae Phase HEP](.#61aw-phase-hep--harness-evidence-pack-band-2ae)** - runtime evidence packaging.
 
 ```text
 Verify (every harness PR):
@@ -94,10 +94,10 @@ Verify (every harness PR):
 
 **Out of scope for §6.1:** product/application implementation work and business backlogs. This document does not track product application roadmaps.
 
-### 6.1av Harness implementation queue — Platform Foundation audit maintenance
+### 6.1av Harness implementation queue - Platform Foundation audit maintenance
 
-**Source:** Interactive layer audit (2026-06-19) — `PLATFORM_FOUNDATION` layers 1, 2, 32 · [`../audit_results/2026-06-19/PLATFORM_FOUNDATION.md`](../../../audit_results/2026-06-19/PLATFORM_FOUNDATION.md) · prior: [`../audit_results/2026-06-18/PLATFORM_FOUNDATION.md`](../../../audit_results/2026-06-18/PLATFORM_FOUNDATION.md)
-**Priority ladder:** **Band 1** (§6.1) — doc hygiene + optional legacy cleanup; runs **in parallel** with gate maintenance
+**Source:** Interactive layer audit (2026-06-19) - `PLATFORM_FOUNDATION` layers 1, 2, 32 · [`../audit_results/2026-06-19/PLATFORM_FOUNDATION.md`](../../../audit_results/2026-06-19/PLATFORM_FOUNDATION.md) · prior: [`../audit_results/2026-06-18/PLATFORM_FOUNDATION.md`](../../../audit_results/2026-06-18/PLATFORM_FOUNDATION.md)
+**Priority ladder:** **Band 1** (§6.1) - doc hygiene + optional legacy cleanup; runs **in parallel** with gate maintenance
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
@@ -109,45 +109,45 @@ Verify (every harness PR):
 | 6 | **PF-MAINT-LEG-02** | Code | P3 | **Done** | Remove legacy `use_rag`/`use_websearch` shims from `ToolInvocationPlan` (`tool_runtime.py`) | Zero DeprecationWarning in gate; `tool_ids` only at runtime bridge |
 | 7 | **PF-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/legacy/2026-06-19` | `PLATFORM_FOUNDATION.md` + `legacy campaign README` present |
 
-**Suggested PR order:** none — §6.1av queue closed (2026-06-19).
+**Suggested PR order:** none - §6.1av queue closed (2026-06-19).
 
-**Explicitly excluded:** §50 marketplace, new Tier-0 mechanisms beyond §6.1 — see [§6.3](.#63-end-of-platform-plan).
+**Explicitly excluded:** §50 marketplace, new Tier-0 mechanisms beyond §6.1 - see [§6.3](.#63-end-of-platform-plan).
 
-### 6.1ax PF-TIER-ENFORCEMENT — Production tier-boundary qualification
+### 6.1ax PF-TIER-ENFORCEMENT - Production tier-boundary qualification
 
 **Status:** `PLANNED`
 **Priority:** P1
 **Type:** Arch / Wire / Proof
-**Source:** PLATFORM_FOUNDATION enforcement audit — snapshot `4c92e0a08f92341f559408c234d213a8ac482d76`
-**Verdict:** `CONDITIONALLY SOUND — ENFORCEMENT REMEDIATION REQUIRED` — conceptual Tier-0..3 architecture is sound; no confirmed current upward Tier-3 import violation was found in the audited scope; enforcement/proof is incomplete and must be strengthened before PLATFORM_FOUNDATION can truthfully be treated as fully closed for tier boundaries.
+**Source:** PLATFORM_FOUNDATION enforcement audit - snapshot `4c92e0a08f92341f559408c234d213a8ac482d76`
+**Verdict:** `CONDITIONALLY SOUND - ENFORCEMENT REMEDIATION REQUIRED` - conceptual Tier-0..3 architecture is sound; no confirmed current upward Tier-3 import violation was found in the audited scope; enforcement/proof is incomplete and must be strengthened before PLATFORM_FOUNDATION can truthfully be treated as fully closed for tier boundaries.
 
 **Audit findings (persisted):**
 
 | ID | Severity | Area | Summary |
 |----|----------|------|---------|
-| FND-01 | HIGH | ARCH / PROOF | Documented “full lower-layer scan” is not full — `check_no_upward_application_imports.py` uses manually enumerated `SCAN_ROOTS` |
+| FND-01 | HIGH | ARCH / PROOF | Documented “full lower-layer scan” is not full - `check_no_upward_application_imports.py` uses manually enumerated `SCAN_ROOTS` |
 | FND-02 | HIGH | ARCH / CONTRACT / PROOF | No single authoritative package→tier classification model; `DeploymentTier` is label/metadata; knowledge duplicated across docs and scanner lists |
 | FND-03 | HIGH | WIRE / DOC / PROOF | Plan requires three tier guards per harness PR; audited CI runs only `check_agents_no_tier3_imports.py` in relevant tier-boundary gate paths |
 | FND-04 | HIGH | ARCH / PROOF | Guards focus on application/Tier-3 imports; no one complete mechanism for full forbidden upward dependency matrix |
 | FND-05 | MEDIUM | IMPL / PROOF | Inspected guards use regex/text matching, not semantic import/dependency analysis |
-| FND-06 | HIGH | REL / WIRE | Main regression workflow is push-triggered for `main`, not shared `development` — integration-branch protection gap |
+| FND-06 | HIGH | REL / WIRE | Main regression workflow is push-triggered for `main`, not shared `development` - integration-branch protection gap |
 | FND-07 | MEDIUM | TEST / PROOF | No dedicated contract tests found in audited scope proving guard fail/pass/completeness behavior |
-| FND-08 | LOW | CONTRACT / LEGACY | `DeploymentTier.PRODUCT` deprecated alias appears unused — optional cleanup subordinate to enforcement |
+| FND-08 | LOW | CONTRACT / LEGACY | `DeploymentTier.PRODUCT` deprecated alias appears unused - optional cleanup subordinate to enforcement |
 | FND-09 | HIGH | DOC / PROOF | “Closed / maintenance-only” language too strong while enforcement gaps remain |
 
 **Scope (one implementation unit):**
 
 | | Deliverable |
 |---|-------------|
-| **A** | **Authoritative package→tier classification** — one canonical source of truth for Tier-0..3 production packages; eliminate duplicated manual `SCAN_ROOTS` knowledge |
-| **B** | **Complete dependency matrix enforcement** — validate every forbidden upward tier dependency, not only Tier-3 application imports |
-| **C** | **Fail-closed package discovery** — newly introduced production packages must not silently escape classification/enforcement |
-| **D** | **Semantic import/dependency analysis** — replace or subsume regex-only proof with structurally reliable analysis (implementation choice left to implementation task; production-grade, dependency-conscious) |
-| **E** | **Tests of the architectural guard** — deterministic tests proving forbidden upward dependency → FAIL; allowed dependency → PASS; unclassified package → FAIL; representative relative/import syntax cannot silently bypass enforcement |
-| **F** | **CI wiring** — canonical tier-boundary enforcement runs in relevant PR/full gate; active shared `development` integration path receives appropriate automated protection |
-| **G** | **Guard consolidation** — after canonical mechanism owns enforcement, remove duplicate/obsolete tier guard scripts or reduce to thin wrappers only with justified compatibility need |
-| **H** | **Legacy cleanup** — assess/remove `DeploymentTier.PRODUCT` if confirmed unused (subordinate to A–G) |
-| **I** | **Documentation/status closeout** — architecture and plan wording match actual enforcement; only then may Foundation return to unqualified maintenance-only/closed status for tier boundaries |
+| **A** | **Authoritative package→tier classification** - one canonical source of truth for Tier-0..3 production packages; eliminate duplicated manual `SCAN_ROOTS` knowledge |
+| **B** | **Complete dependency matrix enforcement** - validate every forbidden upward tier dependency, not only Tier-3 application imports |
+| **C** | **Fail-closed package discovery** - newly introduced production packages must not silently escape classification/enforcement |
+| **D** | **Semantic import/dependency analysis** - replace or subsume regex-only proof with structurally reliable analysis (implementation choice left to implementation task; production-grade, dependency-conscious) |
+| **E** | **Tests of the architectural guard** - deterministic tests proving forbidden upward dependency → FAIL; allowed dependency → PASS; unclassified package → FAIL; representative relative/import syntax cannot silently bypass enforcement |
+| **F** | **CI wiring** - canonical tier-boundary enforcement runs in relevant PR/full gate; active shared `development` integration path receives appropriate automated protection |
+| **G** | **Guard consolidation** - after canonical mechanism owns enforcement, remove duplicate/obsolete tier guard scripts or reduce to thin wrappers only with justified compatibility need |
+| **H** | **Legacy cleanup** - assess/remove `DeploymentTier.PRODUCT` if confirmed unused (subordinate to A–G) |
+| **I** | **Documentation/status closeout** - architecture and plan wording match actual enforcement; only then may Foundation return to unqualified maintenance-only/closed status for tier boundaries |
 
 **Acceptance criteria:**
 
@@ -166,7 +166,7 @@ Verify (every harness PR):
 
 <a id="61ax-tl-fix-a--executable-tier-ownership-protocol-v221-2026-08-18"></a>
 
-### TL-FIX-A — Executable tier ownership (Protocol v2.1 · 2026-08-18)
+### TL-FIX-A - Executable tier ownership (Protocol v2.1 · 2026-08-18)
 
 **Status:** `PLANNED`
 **Priority:** P1
@@ -194,7 +194,7 @@ Verify (every harness PR):
 
 <a id="61ax-pf-proof-integrity--foundation-proof-gate-contract-protocol-v222-2026-08-18"></a>
 
-### PF-PROOF-INTEGRITY — Foundation proof and gate-contract parity (Protocol v2.2 · 2026-08-18)
+### PF-PROOF-INTEGRITY - Foundation proof and gate-contract parity (Protocol v2.2 · 2026-08-18)
 
 **Status:** `PLANNED`
 **Priority:** P1
@@ -205,21 +205,21 @@ Verify (every harness PR):
 **Deliverable intent:**
 
 - foundation proof runners (`intergrax doctor --ci`, umbrella gates such as `check_audit_ideal_gates.py`) resolve scripts through one canonical path registry or equivalent strongly owned mechanism (`scripts/ci/script_paths.py` or successor)
-- required checks fail closed when a declared script cannot be resolved or executed — no PASS-like `skip missing` for required guards
+- required checks fail closed when a declared script cannot be resolved or executed - no PASS-like `skip missing` for required guards
 - umbrella gates execute the complete intended check set and collect failure state without short-circuiting after the first non-zero result
-- documented §6.1 harness PR gate contract and actual CI smoke/full wiring describe the same required enforcement — do not weaken the documented target to match current CI subset
+- documented §6.1 harness PR gate contract and actual CI smoke/full wiring describe the same required enforcement - do not weaken the documented target to match current CI subset
 
 **Remediation rules:**
 
 - Revalidate each finding against then-current `development` HEAD before implementation.
-- PF-02/PF-03 are proof-runner defects — do **not** treat them as tier-model redesign.
-- PF-04 integration-path protection remains owned by **TL-FIX-A** / §6.1ax deliverable **F** — this block does not duplicate that work.
+- PF-02/PF-03 are proof-runner defects - do **not** treat them as tier-model redesign.
+- PF-04 integration-path protection remains owned by **TL-FIX-A** / §6.1ax deliverable **F** - this block does not duplicate that work.
 - PF-06 (`DeploymentTier.PRODUCT`) remains subordinate cleanup under §6.1ax deliverable **H**.
 - **Not implemented** by audit persistence task AUDIT-20260818-PLATFORM_FOUNDATION-PERSIST.
 
 <a id="protocol-v2-pcm-persistence-topology-integrity-2026-08-18"></a>
 
-### PCM-PERSISTENCE-TOPOLOGY-INTEGRITY — Cross-layer persistence topology qualification (Protocol v2 · 2026-08-18)
+### PCM-PERSISTENCE-TOPOLOGY-INTEGRITY - Cross-layer persistence topology qualification (Protocol v2 · 2026-08-18)
 
 **Status:** `ACCEPTED / PLANNED`
 **Priority:** P0
@@ -233,20 +233,20 @@ Verify (every harness PR):
 - each stateful runtime mechanism declares required persistence capability for its deployment topology
 - STRICT/multi-host composition mechanically rejects process-local or otherwise insufficient stores
 - domain persistence ports own concurrency semantics (CAS, lease/claim, transactional commit, required isolation)
-- provider catalog supplies implementations that satisfy domain port guarantees — not merely minimal `RelationalStore` facades
+- provider catalog supplies implementations that satisfy domain port guarantees - not merely minimal `RelationalStore` facades
 - cross-link [`PROVIDER_BACKEND_ABSTRACTION`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md), [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) recovery-side blocks, Agent Distribution CAS target pattern ([`AGENT_DISTRIBUTION.md`](../../architecture/AGENT_DISTRIBUTION.md) §§23–25, §34)
 
 **Remediation rules:**
 
 - Revalidate each finding against then-current `development` HEAD before implementation.
-- Platform Foundation coordinates topology qualification — does **not** become a persistence implementation domain.
-- Redis distributed idempotency and other provider capabilities remain valid when they prove required semantics — stay provider-neutral.
+- Platform Foundation coordinates topology qualification - does **not** become a persistence implementation domain.
+- Redis distributed idempotency and other provider capabilities remain valid when they prove required semantics - stay provider-neutral.
 - Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
 - **Not implemented** by audit persistence task AUDIT-20260818-PERSISTENCE-CONCURRENCY-MULTIHOST-PERSIST.
 
 <a id="cla-canon-topology-integrity-2026-08-18"></a>
 
-### CLA-CANON-TOPOLOGY-INTEGRITY — Authoritative ownership topology and invariant index (Protocol v2 · 2026-08-18)
+### CLA-CANON-TOPOLOGY-INTEGRITY - Authoritative ownership topology and invariant index (Protocol v2 · 2026-08-18)
 
 **Status:** `ACCEPTED / PLANNED`
 **Priority:** P0
@@ -258,7 +258,7 @@ Verify (every harness PR):
 
 - one complete architecture artifact classification register in runtime hub (DOMAIN / FEATURE / META_ARCHITECTURE / SUPPORTING_MODEL)
 - classify omitted canonical pairs (`GOVERNED_EXECUTION`, `AGENT_DISTRIBUTION`, `PLATFORM_PLUGINS`, `PROOF_RECEIPTS`) without auto-promoting every architecture markdown file
-- refresh [`SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md) as compact current cross-layer index — domain documents remain semantic owners
+- refresh [`SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md) as compact current cross-layer index - domain documents remain semantic owners
 
 **Remediation rules:**
 
@@ -268,10 +268,10 @@ Verify (every harness PR):
 
 <a id="cla-remediation-dag-integrity-2026-08-18"></a>
 
-### CLA-REMEDIATION-DAG-INTEGRITY — Cross-layer remediation dependency graph (Protocol v2 · 2026-08-18)
+### CLA-REMEDIATION-DAG-INTEGRITY - Cross-layer remediation dependency graph (Protocol v2 · 2026-08-18)
 
 **Status:** `ACCEPTED / PLANNED`
-**Priority:** P0 — before normal campaign remediation implementation
+**Priority:** P0 - before normal campaign remediation implementation
 **Type:** Campaign coordination / meta-architecture
 **Source:** [`AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-06`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md)
 **Campaign:** [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md)
@@ -280,22 +280,22 @@ Verify (every harness PR):
 
 - campaign rollup produces **one** cross-layer remediation DAG before implementation starts
 - relation vocabulary: `depends_on`, `shares_authority_with`, `merge_into`, `supersedes`, `can_parallelize_with`, `verified_by`
-- prefer one canonical authority fix followed by consumer migrations — not parallel duplicate abstractions
-- **Do not build the final detailed DAG in the CROSS_LAYER_ARCHITECTURE persistence task** — belongs to CAMPAIGN_ROLLUP after this layer is persisted
+- prefer one canonical authority fix followed by consumer migrations - not parallel duplicate abstractions
+- **Do not build the final detailed DAG in the CROSS_LAYER_ARCHITECTURE persistence task** - belongs to CAMPAIGN_ROLLUP after this layer is persisted
 
 **Remediation rules:**
 
 - DAG is planning artifact only until operator authorizes implementation waves.
 - **Not implemented** by audit persistence task AUDIT-20260818-CROSS-LAYER-ARCHITECTURE-PERSIST.
 
-### 6.1aw Phase HEP — Harness Evidence Pack (Band 2ae)
+### 6.1aw Phase HEP - Harness Evidence Pack (Band 2ae)
 
-**Status:** HEP-1 **Done**; HEP-2 Trace Evidence Path **Done**; HEP-3 Evidence Posture / Scoreboard **Done**; EVID-CORE-FU-01 Selected Live Tier-0 Probes **Done** — `certify core` → `trace export` → `evidence live-core` → `evidence posture` / `evidence posture export`. EVID-CORE-FU-01 adds selected local no-network live Tier-0 probes with mock LLM/tools. It does not replace deterministic CORE certification and is not full runtime certification.
-EVID-EVAL Eval Regression Evidence **Done** — `evidence eval` writes deterministic eval evidence artifacts and optionally enriches `evidence posture` via `EVAL_REGRESSION` when the report exists. It is not a new eval framework and does not run real LLM/provider evaluation.
-EVID-COST Cost Evidence **Done** — `evidence cost` writes deterministic local cost evidence artifacts and optionally enriches `evidence posture` via `COST_EVIDENCE` when the report exists. It is not a billing engine, provider pricing system, cloud cost estimator, or real LLM usage meter.
-Evidence platform proof path **Done** — the canonical local proof path is now documented in architecture and README: `certify core` → `trace export` → `evidence live-core` → `evidence eval` → `evidence cost` → `evidence posture` / `posture export`.
-Evidence smoke audit: **Done** — canonical local proof path verified (see `HARNESS_EVIDENCE_PACK.md` § A2 closeout). README / onboarding update after smoke audit: **Done** — operator-facing proof path in README (see `HARNESS_EVIDENCE_PACK.md` § A3 closeout). Evidence artifact sanity checker / docs checker: **Done** — `scripts/maintenance/check_evidence_artifacts.py` validates expected artifacts and README proof-path references (see `HARNESS_EVIDENCE_PACK.md` § A4 closeout). External one-page harness narrative: **Done** — `docs/project/technical/guides/INTERGRAX_HARNESS_NARRATIVE.md` (see `HARNESS_EVIDENCE_PACK.md` § A5 closeout). **Strong ROI and polished/adopter-ready ROI are closed.** No immediate HEP evidence ROI task remains; deferred evidence waves remain deferred until explicitly prioritized. The detailed task count and roadmap live in `HARNESS_EVIDENCE_PACK.md` § Evidence ROI roadmap. **Boundary:** HEP remains §6.1 harness/platform evidence extension — not product/application work.
-**Priority ladder:** **Band 2ae** — §6.1 extension (harness evidence / runtime proof / onboarding); runs **after** gate green; **not** product/application work
+**Status:** HEP-1 **Done**; HEP-2 Trace Evidence Path **Done**; HEP-3 Evidence Posture / Scoreboard **Done**; EVID-CORE-FU-01 Selected Live Tier-0 Probes **Done** - `certify core` → `trace export` → `evidence live-core` → `evidence posture` / `evidence posture export`. EVID-CORE-FU-01 adds selected local no-network live Tier-0 probes with mock LLM/tools. It does not replace deterministic CORE certification and is not full runtime certification.
+EVID-EVAL Eval Regression Evidence **Done** - `evidence eval` writes deterministic eval evidence artifacts and optionally enriches `evidence posture` via `EVAL_REGRESSION` when the report exists. It is not a new eval framework and does not run real LLM/provider evaluation.
+EVID-COST Cost Evidence **Done** - `evidence cost` writes deterministic local cost evidence artifacts and optionally enriches `evidence posture` via `COST_EVIDENCE` when the report exists. It is not a billing engine, provider pricing system, cloud cost estimator, or real LLM usage meter.
+Evidence platform proof path **Done** - the canonical local proof path is now documented in architecture and README: `certify core` → `trace export` → `evidence live-core` → `evidence eval` → `evidence cost` → `evidence posture` / `posture export`.
+Evidence smoke audit: **Done** - canonical local proof path verified (see `HARNESS_EVIDENCE_PACK.md` § A2 closeout). README / onboarding update after smoke audit: **Done** - operator-facing proof path in README (see `HARNESS_EVIDENCE_PACK.md` § A3 closeout). Evidence artifact sanity checker / docs checker: **Done** - `scripts/maintenance/check_evidence_artifacts.py` validates expected artifacts and README proof-path references (see `HARNESS_EVIDENCE_PACK.md` § A4 closeout). External one-page harness narrative: **Done** - `docs/project/technical/guides/INTERGRAX_HARNESS_NARRATIVE.md` (see `HARNESS_EVIDENCE_PACK.md` § A5 closeout). **Strong ROI and polished/adopter-ready ROI are closed.** No immediate HEP evidence ROI task remains; deferred evidence waves remain deferred until explicitly prioritized. The detailed task count and roadmap live in `HARNESS_EVIDENCE_PACK.md` § Evidence ROI roadmap. **Boundary:** HEP remains §6.1 harness/platform evidence extension - not product/application work.
+**Priority ladder:** **Band 2ae** - §6.1 extension (harness evidence / runtime proof / onboarding); runs **after** gate green; **not** product/application work
 **Source:** External infrastructure audit (2026-06) + operator decision B → A → C
 
 | Wave | Scope | IDs | Status |
@@ -305,11 +305,11 @@ Evidence smoke audit: **Done** — canonical local proof path verified (see `HAR
 | HEP-2 | Trace evidence path (`intergrax trace show` · `intergrax trace export`) | EVID-TRACE-01 … EVID-TRACE-04 | **Done** (2026-06-21 C4–C6) |
 | HEP-3 | Evidence posture / scoreboard (`intergrax evidence posture`) | EVID-POSTURE-01 … EVID-POSTURE-04 | **Done** (2026-06-21 C10) |
 
-**Explicitly excluded:** product/application implementation work · W-ADAPT L4 replacement · duplicate doctor CI gates · Band 2ad (M.7 P7 — **Done**).
+**Explicitly excluded:** product/application implementation work · W-ADAPT L4 replacement · duplicate doctor CI gates · Band 2ad (M.7 P7 - **Done**).
 
 **Suggested PR order:** see [`HARNESS_EVIDENCE_PACK.md`](HARNESS_EVIDENCE_PACK.md) § Implementation waves.
 
-### 6.1p Phase P-Ext paydown (Band 2c — optional parallel with §6.1)
+### 6.1p Phase P-Ext paydown (Band 2c - optional parallel with §6.1)
 
 **Status:** **Done** (2026-06-02) · closure complete; extend catalogs via Appendix I + author guide.
 
@@ -330,9 +330,9 @@ Evidence smoke audit: **Done** — canonical local proof path verified (see `HAR
 
 Full task register: [Appendix I](plan/satellites/PLATFORM_FOUNDATION_appendices.md).
 
-**Out of scope for §6.1:** product/application implementation work and business backlogs. This document does not track product application roadmaps. **Feature queues:** Phase W-ADAPT — §6.1t; Phase M-LLM-R — §6.1v; Phase M.6 P4 — §6.1w (closed); Phase M.6 P5 — §6.1x (closed); Phase M.6 P6 — §6.1y (closed).
+**Out of scope for §6.1:** product/application implementation work and business backlogs. This document does not track product application roadmaps. **Feature queues:** Phase W-ADAPT - §6.1t; Phase M-LLM-R - §6.1v; Phase M.6 P4 - §6.1w (closed); Phase M.6 P5 - §6.1x (closed); Phase M.6 P6 - §6.1y (closed).
 
-### 6.2af Phase M.6 P5 execution order (Band 2ab — Planned)
+### 6.2af Phase M.6 P5 execution order (Band 2ab - Planned)
 
 **Status:** **Done** (2026-06-02) · register: [M.6 P5](.#m6-p5--harness-integration-depth-done--3334) · queue: [§6.1x](.#61x-harness-implementation-queue--integration-depth-m6-p5-done)
 

@@ -15,12 +15,12 @@ Authors and auditors flagged these as "dead" enum values (`FLOW-GAP-08`).
 
 ## Decision
 
-Adopt **Option A — retain as reserved v1 lifecycle states**:
+Adopt **Option A - retain as reserved v1 lifecycle states**:
 
 1. **`WAITING_FOR_RESOURCES` and `EXPIRED` remain** in `TaskState` and `TaskLifecycle` for forward compatibility with long-running, scheduler, and HITL timeout flows.
 2. **Harness v1 Nexus graph execution** does not transition into these states; long-running coordinator and partial-result templates may reference them for pause/escalation UX.
 3. **Future work** (outside Phase FLOW): dedicated scheduler or resource-gate runner sets `WAITING_FOR_RESOURCES`; HITL timeout policy sets `EXPIRED`.
-4. **Documentation** in flow reference §8 marks both states as **reserved / future** — not a runtime bug.
+4. **Documentation** in flow reference §8 marks both states as **reserved / future** - not a runtime bug.
 
 **Not chosen (v1):**
 

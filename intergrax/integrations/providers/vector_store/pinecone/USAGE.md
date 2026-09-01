@@ -28,4 +28,4 @@ Category: `vector_store`
 
 ## Removed
 
-- Public `adapter.py` facade — behavior merged into `PineconeVectorStoreIntegration`.
+- Public `adapter.py` facade - behavior merged into `PineconeVectorStoreIntegration`.

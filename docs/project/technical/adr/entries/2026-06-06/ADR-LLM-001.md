@@ -10,7 +10,7 @@ All `LLMAdapter` completion methods return a strongly typed **`LLMAdapterRespons
 
 ## Rationale
 
-- Production observability requires `finish_reason`, per-call token usage, provider correlation ids, and refusal signals at the call site — not only via side-channel usage logs.
+- Production observability requires `finish_reason`, per-call token usage, provider correlation ids, and refusal signals at the call site - not only via side-channel usage logs.
 - Replay and cost attribution need synchronous access to per-call metadata when building traces and `LLMCallInfo`.
 - Tool calls must be typed (`LLMToolCall`) to avoid dict parsing scattered across Nexus and agents.
 - Extensibility uses `LLMProviderExtensions` (tagged optional slices), not open dict bags.
@@ -28,8 +28,8 @@ Primary text field: **`content: str`** (alias **`text`**).
 
 ## Two-layer usage model (unchanged)
 
-1. **Per call:** `LLMAdapterResponse.usage` (`LLMTokenUsage`) — source of truth for the caller.
-2. **Per run:** `LLMAdapter.usage` (`LLMAdapterUsageLog`) + runtime `LLMUsageTracker` — aggregation only; integers must match per-call usage recorded in `end_call`.
+1. **Per call:** `LLMAdapterResponse.usage` (`LLMTokenUsage`) - source of truth for the caller.
+2. **Per run:** `LLMAdapter.usage` (`LLMAdapterUsageLog`) + runtime `LLMUsageTracker` - aggregation only; integers must match per-call usage recorded in `end_call`.
 
 ## Consequences
 

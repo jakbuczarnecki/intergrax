@@ -1,4 +1,4 @@
-# UE-11G-C1 — Real Agentic Production E2E
+# UE-11G-C1 - Real Agentic Production E2E
 
 Platform-native Docker certification for `scenario.real_agentic` using the production
 Local Workspace HTTP application and `local.workspace.search`.

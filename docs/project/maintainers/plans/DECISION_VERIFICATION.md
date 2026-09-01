@@ -1,4 +1,4 @@
-# Decision Verification — Implementation Plan
+# Decision Verification - Implementation Plan
 
 **Architecture (1:1):** [`architecture/DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
@@ -7,18 +7,18 @@
 
 > **DS-DOC-CLEAN (2026-08-30):** Target Verification Pipeline architecture **FROZEN**. Runtime still uses `CriticOrchestrator` until migration.
 
-**Last updated:** 2026-08-30 — DS-DOC-CLEAN plan consolidation.
+**Last updated:** 2026-08-30 - DS-DOC-CLEAN plan consolidation.
 
 ---
 
 ## Cursor read scope (token budget)
 
 - **Default:** hub status + open P0/P1 summary only.
-- **Detail rows:** phase sections below — one phase per session max.
+- **Detail rows:** phase sections below - one phase per session max.
 - **Architecture:** [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md) read-scope block.
 - **Extended depth:** [`architecture/satellites/DECISION_VERIFICATION_extended_depth.md`](../../architecture/satellites/DECISION_VERIFICATION_extended_depth.md) on demand.
-- **Lifecycle context:** [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md) — version binding on demand.
-- **CURRENT code:** `intergrax/runtime/critic/**` — migration audit only; one module per session.
+- **Lifecycle context:** [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md) - version binding on demand.
+- **CURRENT code:** `intergrax/runtime/critic/**` - migration audit only; one module per session.
 
 ---
 
@@ -41,7 +41,7 @@
 
 ---
 
-## Phase DS-VER-PIPE — Pipeline foundation (PLANNED)
+## Phase DS-VER-PIPE - Pipeline foundation (PLANNED)
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
@@ -55,7 +55,7 @@
 
 ---
 
-## Phase DS-VER-STAGES — Stage migration from CVL (PLANNED)
+## Phase DS-VER-STAGES - Stage migration from CVL (PLANNED)
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
@@ -81,9 +81,9 @@
 
 ## Explicit non-goals (this plan)
 
-- L2 Human verification stage — **DELETE** from verification; use HITL via Lifecycle.
-- `policy_bridge` verdict → action mapping — **SPLIT** to Policy + Lifecycle.
-- Offline/shadow eval ownership — remains **OUTSIDE** pipeline ([`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) eval boundary).
+- L2 Human verification stage - **DELETE** from verification; use HITL via Lifecycle.
+- `policy_bridge` verdict → action mapping - **SPLIT** to Policy + Lifecycle.
+- Offline/shadow eval ownership - remains **OUTSIDE** pipeline ([`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) eval boundary).
 
 ---
 

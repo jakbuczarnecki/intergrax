@@ -212,11 +212,11 @@ When generating Intergrax Cursor instructions, pick the rule by task type:
 
 | Task | Rule |
 |------|------|
-| Ordinary small bounded implementation task | `@.cursor/rules/intergrax-micro-implement.mdc` — **new chat** |
+| Ordinary small bounded implementation task | `@.cursor/rules/intergrax-micro-implement.mdc` - **new chat** |
 | HEP / EVID implementation step | `@.cursor/rules/intergrax-hep-step.mdc` |
-| CI / test / checker hotfix | `@.cursor/rules/intergrax-ci-hotfix.mdc` — **new chat** |
+| CI / test / checker hotfix | `@.cursor/rules/intergrax-ci-hotfix.mdc` - **new chat** |
 
-**Default for bounded implementation steps** — start with:
+**Default for bounded implementation steps** - start with:
 
 ```text
 Use:
@@ -232,7 +232,7 @@ Use:
 - Use `@.cursor/rules/intergrax-ci-hotfix.mdc` only for failing CI/tests/checkers.
 - Use `@.cursor/rules/intergrax-micro-implement.mdc` for default bounded micro-implementation tasks.
 
-**CI/test/checker hotfix instructions** — use instead:
+**CI/test/checker hotfix instructions** - use instead:
 
 ```text
 Use:
@@ -264,7 +264,7 @@ Every important instruction must be written explicitly in the Cursor prompt.
 
 ## 7. Documentation-first rule
 
-**Exception — CI/test hotfixes:** when the task is only fixing failing CI, tests, or checkers, use `@.cursor/rules/intergrax-ci-hotfix.mdc` in a **new Cursor chat**. No documentation, journal, roadmap, or architecture updates unless the failing test is docs-specific.
+**Exception - CI/test hotfixes:** when the task is only fixing failing CI, tests, or checkers, use `@.cursor/rules/intergrax-ci-hotfix.mdc` in a **new Cursor chat**. No documentation, journal, roadmap, or architecture updates unless the failing test is docs-specific.
 
 Every other implementation task should update relevant documentation in the same commit when the task changes behavior, architecture, public usage, roadmap, operator workflow, or project status.
 
@@ -452,7 +452,7 @@ When the user asks for a Cursor instruction, generate a complete standalone inst
 Every Cursor instruction should include:
 
 ```text
-# Intergrax — <Task Name>
+# Intergrax - <Task Name>
 
 Use:
 
@@ -520,14 +520,14 @@ For docs-only tasks, include:
 
 Use this structure unless a different structure is better for the task.
 
-**Default — ordinary bounded implementation:** use `@.cursor/rules/intergrax-micro-implement.mdc`. Do **not** use `@.cursor/rules/intergrax-hep-step.mdc` for ordinary small implementation tasks.
+**Default - ordinary bounded implementation:** use `@.cursor/rules/intergrax-micro-implement.mdc`. Do **not** use `@.cursor/rules/intergrax-hep-step.mdc` for ordinary small implementation tasks.
 
-**Exception — HEP/EVID step:** use `@.cursor/rules/intergrax-hep-step.mdc` only when the task is explicitly HEP/EVID.
+**Exception - HEP/EVID step:** use `@.cursor/rules/intergrax-hep-step.mdc` only when the task is explicitly HEP/EVID.
 
-**Exception — CI/test/checker hotfix:** use `@.cursor/rules/intergrax-ci-hotfix.mdc` and `CI HOTFIX = NEW CHAT`. Do **not** use `@.cursor/rules/intergrax-hep-step.mdc` for hotfixes.
+**Exception - CI/test/checker hotfix:** use `@.cursor/rules/intergrax-ci-hotfix.mdc` and `CI HOTFIX = NEW CHAT`. Do **not** use `@.cursor/rules/intergrax-hep-step.mdc` for hotfixes.
 
 ```text
-# Intergrax — <Task Name>
+# Intergrax - <Task Name>
 
 Use:
 
@@ -537,7 +537,7 @@ Use:
 **HEP/EVID variant** (replace the `Use:` block above):
 
 ```text
-# Intergrax — <Task Name>
+# Intergrax - <Task Name>
 
 Use:
 
@@ -547,7 +547,7 @@ Use:
 **CI hotfix variant** (replace the `Use:` block above):
 
 ```text
-# Intergrax — <Task Name>
+# Intergrax - <Task Name>
 
 Use:
 
@@ -559,7 +559,7 @@ CI HOTFIX = NEW CHAT
 **MICRO / bounded implementation skeleton** (continues after `Use:`):
 
 ```text
-# Intergrax — <Task Name>
+# Intergrax - <Task Name>
 
 Use:
 

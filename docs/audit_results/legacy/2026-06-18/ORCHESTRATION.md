@@ -1,4 +1,4 @@
-# Audit result — `ORCHESTRATION`
+# Audit result - `ORCHESTRATION`
 
 **Run:** 2026-06-18 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
@@ -28,7 +28,7 @@
 | ORCH-AUDIT-06 | P4 | Active-active duplicate graph nodes L0 intentional | architecture §52.1 | deferred |
 | ORCH-AUDIT-07 | P4 | FLOW-8 product host deferred §6.3 | plan ORCH-CONFIG.5 | deferred |
 | ORCH-AUDIT-08 | P4 | Windows acceptance flake on test_acceptance_05b teardown | pytest env | open |
-| ORCH-AUDIT-09–24 | — | Core orchestration paths verified (graph, delegation, merge, CFG, retry layers) | graph_executor, CFG sim, tests | closed |
+| ORCH-AUDIT-09–24 | - | Core orchestration paths verified (graph, delegation, merge, CFG, retry layers) | graph_executor, CFG sim, tests | closed |
 
 No open P0/P1.
 
@@ -45,7 +45,7 @@ No open P0/P1.
 
 ## Backlog P2–P4 (planned / deferred)
 
-- ORCH-MAINT-01..04 — §6.1av (P3 harness depth)
+- ORCH-MAINT-01..04 - §6.1av (P3 harness depth)
 - CFG-14 LKW hybrid E2E (P2, §6.3)
 - Active-active L0, FLOW-8 product host (P4)
 
@@ -53,4 +53,4 @@ No open P0/P1.
 
 ## Recommendation
 
-**Architecturally Mature** — Tier-1 orchestration L3–L4 harness; product surface gaps documented.
+**Architecturally Mature** - Tier-1 orchestration L3–L4 harness; product surface gaps documented.

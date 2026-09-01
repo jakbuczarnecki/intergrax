@@ -16,24 +16,24 @@ GEC-1 introduced reusable external-work domain contracts (`MoneyAmount`, `Extern
 - inventing a second orchestration or receipt system,
 - deciding HITL/policy/payment outcomes inside the transport layer.
 
-Existing integration Protocols (`IssueTracker`, `WorkflowOrchestratorBackend`, …) are sync, typed, and DI-friendly via `IntegrationProfile` — but none model quote-first external work, acceptance evidence submission, or provider-evidence vs Intergrax-proof separation.
+Existing integration Protocols (`IssueTracker`, `WorkflowOrchestratorBackend`, …) are sync, typed, and DI-friendly via `IntegrationProfile` - but none model quote-first external work, acceptance evidence submission, or provider-evidence vs Intergrax-proof separation.
 
 ## Decision
 
 1. Name the canonical boundary **`ExternalWorkIntegration`** (not contractor-specific) under `intergrax/integrations/contracts/external_work.py`.
 2. Keep the interaction model (create request, snapshot, timeline, provider evidence refs, capability tokens, error codes) in `intergrax/contracts/external_work.py` so domain types remain reusable beyond the integrations package.
-3. Use a **sync** `@runtime_checkable` `Protocol` — matching existing integration contracts; do not add a parallel async API.
+3. Use a **sync** `@runtime_checkable` `Protocol` - matching existing integration contracts; do not add a parallel async API.
 4. Extend `IntegrationCategory.EXTERNAL_WORK` + `IntegrationProfile.external_work` for DI / instance binding. Defer catalog slug + `PROVIDER_CATEGORY_CONTRACT_REGISTRY` entry until a real provider package exists (GEC-8+).
-5. Errors are `ExternalWorkError(IntegrationError)` with `ExternalWorkErrorCode` — no transport exception leakage.
+5. Errors are `ExternalWorkError(IntegrationError)` with `ExternalWorkErrorCode` - no transport exception leakage.
 6. The boundary **transmits** `QuoteAcceptanceEvidence`; it never decides acceptance (same for cancel/pay/publish).
 7. Provider evidence refs (`ExternalProviderEvidenceRef`) stay distinct from Intergrax ProofReceipt / GEC-6.
 
 Rejected alternatives:
 
-- Putting the Protocol in the Tier-2 adapter or Tier-3 app — violates platform-first ownership.
-- Creating `ExternalWorkRegistry` — duplicates `IntegrationProfile` / catalog binding.
-- Async-only Protocol — inconsistent with current integration style.
-- A2A Agent Card as the discovery model — couples core to one protocol.
+- Putting the Protocol in the Tier-2 adapter or Tier-3 app - violates platform-first ownership.
+- Creating `ExternalWorkRegistry` - duplicates `IntegrationProfile` / catalog binding.
+- Async-only Protocol - inconsistent with current integration style.
+- A2A Agent Card as the discovery model - couples core to one protocol.
 
 ## Consequences
 

@@ -2,7 +2,7 @@
 
 **Intergrax Adaptive Harness Intelligence (AHI)** turns execution evidence into governed, versioned configuration proposals that can be evaluated, promoted through shadow and canary stages, applied within authority boundaries, and rolled back.
 
-AHI is **evidence-driven, governed adaptation of versioned Harness configuration artifacts** — not a self-learning agent, not foundation-model training, and not uncontrolled reinforcement learning.
+AHI is **evidence-driven, governed adaptation of versioned Harness configuration artifacts** - not a self-learning agent, not foundation-model training, and not uncontrolled reinforcement learning.
 
 > [!IMPORTANT]
 > **Adaptation is versioned promotion, not silent mutation.**
@@ -13,7 +13,7 @@ AHI is **evidence-driven, governed adaptation of versioned Harness configuration
 > [!NOTE]
 > **Maturity boundary:** Core adaptive runtime contracts and apply machinery are **implemented** (`SignalCollector`, `AdaptationEngine`, `AdaptationGovernancePipeline`, `AdaptationExecutor`, `VerificationLoop`, profile lifecycle stores). **Production autonomous adaptation is not claimed:** no 30-day real deployment evidence, TOKEN-AHI adaptive loop is **partial**, ADAS is **target/planned**, and production auto-apply remains **disabled by default**. See [Current maturity](#current-maturity).
 
-**Primary audience:** Principal / Staff engineers, harness integrators, and operators evaluating adaptive posture — after the platform overview in the root README.
+**Primary audience:** Principal / Staff engineers, harness integrators, and operators evaluating adaptive posture - after the platform overview in the root README.
 
 ---
 
@@ -48,20 +48,20 @@ AHI supplies a **governed control plane** that closes the loop from execution ev
 | Concern | Summary |
 | -------- | -------- |
 | **Responsibility** | Governed adaptation of versioned harness configuration artifacts from execution evidence |
-| **Evidence input** | Traces, metrics, evaluation, cost, HITL, optional business outcome — normalized to `HarnessOutcomeSignal` |
-| **Proposal engine** | `AdaptationEngine` — ranks sub-engine candidates; does **not** deploy |
+| **Evidence input** | Traces, metrics, evaluation, cost, HITL, optional business outcome - normalized to `HarnessOutcomeSignal` |
+| **Proposal engine** | `AdaptationEngine` - ranks sub-engine candidates; does **not** deploy |
 | **Governance** | `AdaptationGovernancePipeline` + `evaluate_adaptive_governance` envelope rules |
 | **Profile version** | Immutable `ProfileVersionRecord` with lineage; active pointer swap on apply |
 | **Lifecycle** | `DRAFT` → `SHADOW` → `CANARY` → `ACTIVE` → `RETIRED` |
-| **Apply authority** | `AdaptationExecutor` — shadow / canary / apply / rollback; authority bounded per loop |
-| **Verification** | `VerificationLoop` — candidate vs baseline checks; optional orchestrated rollback |
-| **Utility** | Configured `compute_utility` decision function — not objective truth |
-| **Routing / strategy** | `RoutingTuningEngine`, `ExecutionStrategyEngine` — **recommend/propose** by default |
-| **Skills / patterns** | `SkillSelectionEngine`, `ProcessPatternMiner` — proposals and stubs, not install |
-| **Policy learning** | `PolicyLearningEngine` — bounded proposals; human gate at apply when configured |
+| **Apply authority** | `AdaptationExecutor` - shadow / canary / apply / rollback; authority bounded per loop |
+| **Verification** | `VerificationLoop` - candidate vs baseline checks; optional orchestrated rollback |
+| **Utility** | Configured `compute_utility` decision function - not objective truth |
+| **Routing / strategy** | `RoutingTuningEngine`, `ExecutionStrategyEngine` - **recommend/propose** by default |
+| **Skills / patterns** | `SkillSelectionEngine`, `ProcessPatternMiner` - proposals and stubs, not install |
+| **Policy learning** | `PolicyLearningEngine` - bounded proposals; human gate at apply when configured |
 | **Token optimization** | Recommendation helper on Token Optimization side; full AHI loop **partial** |
-| **ADAS** | Agent Design Search — **target/planned** sub-capability (docs/ADR only) |
-| **Maturity** | **A4 / I3 / P2 / E2** — see [Current maturity](#current-maturity) |
+| **ADAS** | Agent Design Search - **target/planned** sub-capability (docs/ADR only) |
+| **Maturity** | **A4 / I3 / P2 / E2** - see [Current maturity](#current-maturity) |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [extended-depth satellite](satellites/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md) · [plan](../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
 
 ---
@@ -109,16 +109,16 @@ Public sequence with current shipped status:
 
 | Step | Action | Shipped status |
 | ---- | ------ | -------------- |
-| 1. **Observe** | Collect post-run evidence from trace, metrics, eval, cost, HITL | **Shipped** — `SignalCollector` |
+| 1. **Observe** | Collect post-run evidence from trace, metrics, eval, cost, HITL | **Shipped** - `SignalCollector` |
 | 2. **Normalize** | Assemble `HarnessOutcomeSignal`; optional `compute_utility` | **Shipped** |
-| 3. **Propose** | Sub-engines emit candidates; `AdaptationEngine` ranks and builds packages | **Shipped** — recommend wave |
-| 4. **Gate** | Envelope, capability graph, golden-scenario gates | **Shipped** — `AdaptationGovernancePipeline` |
+| 3. **Propose** | Sub-engines emit candidates; `AdaptationEngine` ranks and builds packages | **Shipped** - recommend wave |
+| 4. **Gate** | Envelope, capability graph, golden-scenario gates | **Shipped** - `AdaptationGovernancePipeline` |
 | 5. **Materialize version** | `ProfileVersionDraft` → stored `ProfileVersionRecord` | **Shipped** |
-| 6. **Shadow** | Allocate candidate version for shadow evaluation | **Shipped** — `AdaptationExecutor.shadow` |
-| 7. **Canary** | Promote shadow → canary status | **Shipped** — `AdaptationExecutor.canary` |
-| 8. **Apply** | Pointer swap to active version within authority | **Shipped** — conditional on gates + approval |
-| 9. **Verify** | Candidate vs baseline checks over window | **Shipped** — `VerificationLoop` |
-| 10. **Keep or rollback** | Report pass/fail; optional auto-rollback when configured | **Conditional** — rollback not automatic unless orchestration enables it |
+| 6. **Shadow** | Allocate candidate version for shadow evaluation | **Shipped** - `AdaptationExecutor.shadow` |
+| 7. **Canary** | Promote shadow → canary status | **Shipped** - `AdaptationExecutor.canary` |
+| 8. **Apply** | Pointer swap to active version within authority | **Shipped** - conditional on gates + approval |
+| 9. **Verify** | Candidate vs baseline checks over window | **Shipped** - `VerificationLoop` |
+| 10. **Keep or rollback** | Report pass/fail; optional auto-rollback when configured | **Conditional** - rollback not automatic unless orchestration enables it |
 
 `AdaptationEngine.run()` **must not** execute on the Nexus hot path. Adaptation cycles run asynchronously via scheduler jobs.
 
@@ -141,24 +141,24 @@ signal
 | **Candidate** | Raw sub-engine output: loop envelope, optional `ProfileVersionDraft`, rank score |
 | **proposal_id** | Stable package identifier (`prop_*`) for audit and approval stores |
 | **passed_all_gates** | Envelope + capability + golden-scenario gates all passed |
-| **profile draft** | Versioned artifact payload — orchestration, RAG, routing, or policy fragment |
+| **profile draft** | Versioned artifact payload - orchestration, RAG, routing, or policy fragment |
 | **loop_id** | Bounded adaptive loop identity within envelope cooldown scope |
 
 ---
 
 ## Profile lifecycle
 
-Exact status enum: `ProfileVersionStatus` — `draft`, `shadow`, `canary`, `active`, `retired`.
+Exact status enum: `ProfileVersionStatus` - `draft`, `shadow`, `canary`, `active`, `retired`.
 
 | Status | Meaning | Serves live traffic? | Promotion rule |
 | ------ | ------- | -------------------- | -------------- |
 | **DRAFT** | Materialized version, not yet evaluated | No | → `SHADOW` via executor |
 | **SHADOW** | Candidate for shadow-tagged runs | Shadow eval only | → `CANARY` or back to `DRAFT` |
 | **CANARY** | Pre-production promotion stage | Canary scope only (host-qualified) | → `ACTIVE` on apply |
-| **ACTIVE** | Current pointer target | Yes — via `ProfileActivePointerStore` | Previous → `RETIRED` on swap |
+| **ACTIVE** | Current pointer target | Yes - via `ProfileActivePointerStore` | Previous → `RETIRED` on swap |
 | **RETIRED** | Superseded active version | No | May be restored via rollback path |
 
-> Adaptive configuration changes are **versioned artifacts with lineage** — not in-place mutation of the active record.
+> Adaptive configuration changes are **versioned artifacts with lineage** - not in-place mutation of the active record.
 
 Active pointer semantics:
 
@@ -191,7 +191,7 @@ AHI **proposes and evaluates** adaptive change. [Governed Execution](GOVERNED_EX
 | `loop_id` | Bounded loop identity |
 | `kind` | `routing_tuning`, `execution_strategy_tuning`, `policy_learning`, `evaluation_feedback` |
 | `max_iterations` / `max_delta_percent` | Bounded change magnitude |
-| `authority` | `AdaptiveAuthorityLevel` — see below |
+| `authority` | `AdaptiveAuthorityLevel` - see below |
 | `requires_human_approval` | Human gate flag |
 | `audit_trail_required` | Must be true for adaptive loops |
 | `cooldown_seconds` | Per-loop proposal throttle |
@@ -200,8 +200,8 @@ AHI **proposes and evaluates** adaptive change. [Governed Execution](GOVERNED_EX
 
 | Level | Meaning |
 | ----- | ------- |
-| `observe_only` | Collect and report — no apply path |
-| `recommend` | Emit governed proposals — default for routing/strategy/skill engines |
+| `observe_only` | Collect and report - no apply path |
+| `recommend` | Emit governed proposals - default for routing/strategy/skill engines |
 | `auto_with_human_gate` | May proceed toward apply only with explicit human approval recorded |
 
 > Different adaptive loops may carry different authority. **“Adaptive” does not automatically mean “auto-apply”.**
@@ -210,9 +210,9 @@ AHI **proposes and evaluates** adaptive change. [Governed Execution](GOVERNED_EX
 
 `AdaptationGovernancePipeline.evaluate()` runs, in order:
 
-1. **Envelope gate** — `evaluate_bounded_adaptive_loop` (policy-learning delta, approver, audit rules)
-2. **Capability graph gate** — when previous/candidate graphs are supplied
-3. **Golden scenario gate** — when `golden_scenario_pass_rate` is provided vs minimum threshold
+1. **Envelope gate** - `evaluate_bounded_adaptive_loop` (policy-learning delta, approver, audit rules)
+2. **Capability graph gate** - when previous/candidate graphs are supplied
+3. **Golden scenario gate** - when `golden_scenario_pass_rate` is provided vs minimum threshold
 
 Output: `AdaptationProposalPackage` with `passed_all_gates` and `gate_reasons`.
 
@@ -220,18 +220,18 @@ Output: `AdaptationProposalPackage` with `passed_all_gates` and `gate_reasons`.
 
 ## Auto-apply matrix
 
-Current runtime authority by change class (as implemented — host wiring may further restrict):
+Current runtime authority by change class (as implemented - host wiring may further restrict):
 
 | Change class | Default authority | Apply path |
 | ------------ | ----------------- | ---------- |
 | Routing tuning (`RoutingTuningEngine`) | `recommend` | Proposal → governance → executor when operator/host invokes |
 | Execution strategy (`ExecutionStrategyEngine`) | `recommend` | Same |
 | RAG profile draft (routing engine artifact) | `recommend` | Profile promotion path only |
-| Dynamic skill selection (`SkillSelectionEngine`) | `recommend` | **Proposal only** — does not enable/install Skills |
+| Dynamic skill selection (`SkillSelectionEngine`) | `recommend` | **Proposal only** - does not enable/install Skills |
 | Policy learning (`PolicyLearningEngine`) | `auto_with_human_gate` | `apply()` checks `PolicyLearningApprovalStore` **when store is configured**; envelope requires `human_approver_id` |
 | Evaluation feedback (`EvaluationFeedbackEngine`) | `observe_only` | No apply |
 | Cost anomaly bridge | `recommend` | Proposal source only |
-| Token optimization (TOKEN-AHI-1) | **Recommendation-only** | Token Optimization advisory helper — no autonomous compression/budget reduction |
+| Token optimization (TOKEN-AHI-1) | **Recommendation-only** | Token Optimization advisory helper - no autonomous compression/budget reduction |
 | ADAS (AHI-ADAS-10…90) | **Not shipped** | Target architecture only |
 
 **Production auto-apply is disabled by default.** `AdaptationExecutor.apply()` exists, but sub-engines default to `recommend` or `observe_only`. Unrestricted production auto-apply is **not** a current capability claim.
@@ -250,7 +250,7 @@ ACTIVE v1 → promote v2 → regression → restore v1
 - transitions current active → `DRAFT`, restores previous → `ACTIVE`,
 - swaps active pointer back.
 
-Rollback is **available as explicit executor API** — not automatic unless `VerificationLoop` is configured with `auto_rollback_enabled=True` and an executor instance.
+Rollback is **available as explicit executor API** - not automatic unless `VerificationLoop` is configured with `auto_rollback_enabled=True` and an executor instance.
 
 ---
 
@@ -275,7 +275,7 @@ VerificationLoop     → evaluates (reports pass/fail)
 AdaptationExecutor   → mutates active profile pointer (rollback)
 ```
 
-Automatic connection exists **only when** verification orchestration sets `auto_rollback_enabled` and provides an executor — otherwise verification is report-only.
+Automatic connection exists **only when** verification orchestration sets `auto_rollback_enabled` and provides an executor - otherwise verification is report-only.
 
 ---
 
@@ -287,7 +287,7 @@ Automatic connection exists **only when** verification orchestration sets `auto_
 | Execution strategy tightening | **propose** | Step-count / regression-triggered orchestration profile draft |
 | RAG profile draft | **propose** | `ProfileArtifactType.RAG` payload via routing engine |
 | Cost anomaly recommendation | **propose** | Bridge from cost forecast anomalies |
-| Skill bundle recommendation | **propose** | Orchestration profile draft — **≠** Skill install |
+| Skill bundle recommendation | **propose** | Orchestration profile draft - **≠** Skill install |
 | Process pattern | **propose** | `ProcessPatternMiner` → `ProcessPatternProposal`; optional `CREATE_SKILL_DRAFT` action |
 | Policy fragment tightening | **propose** + **conditional apply** | Regression-flag triggered; human approval gate |
 
@@ -309,7 +309,7 @@ Automatic connection exists **only when** verification orchestration sets `auto_
 - `human_approver_id` on the proposal,
 - `max_delta_percent ≤ 25` at envelope gate.
 
-At apply time, `require_policy_learning_approval()` blocks policy-learning packages until the approval store records consent — **when an approval store is injected**. Without a store, apply does not perform that check (envelope gate still applies at proposal time).
+At apply time, `require_policy_learning_approval()` blocks policy-learning packages until the approval store records consent - **when an approval store is injected**. Without a store, apply does not perform that check (envelope gate still applies at proposal time).
 
 ---
 
@@ -322,7 +322,7 @@ Observability → canonical execution evidence (RuntimeEvent / HOS)
 AHI           → consumes derived HarnessOutcomeSignal
 ```
 
-`SignalStore` (in-memory or SQLite under `build/adaptive_harness/`) is adaptive-domain storage — **not** canonical Observability storage.
+`SignalStore` (in-memory or SQLite under `build/adaptive_harness/`) is adaptive-domain storage - **not** canonical Observability storage.
 
 ### AHI vs Critic / OECP
 
@@ -380,22 +380,22 @@ Detail: [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](sate
 
 | Component | Status |
 | --------- | ------ |
-| `SignalCollector` + `SignalStore` | Shipped — in-memory + SQLite; tenant-scoped append/list |
-| `HarnessOutcomeSignal` | Shipped — quality, cost, latency, retry/failure flags, HITL, utility, LLM summary fields |
-| `AdaptationEngine` | Shipped — sub-engine aggregation, bandit reward update, cooldown, package build |
-| `AdaptationGovernancePipeline` | Shipped — envelope, capability, golden-scenario gates |
-| `AdaptationExecutor` | Shipped — shadow, canary, apply, rollback |
-| Profile lifecycle + stores | Shipped — `ProfileVersionStore`, `ProfileActivePointerStore`, `ProfileVersionLifecycleManager` |
-| `VerificationLoop` | Shipped — checks + optional auto-rollback |
-| `compute_utility` / `UtilityWeights` | Shipped — configured decision function |
-| `RoutingTuningEngine` + `BanditStateStore` | Shipped — Thompson sampling infrastructure; proposals not live routing mutation |
-| `ExecutionStrategyEngine` | Shipped — rule-based proposals |
-| `SkillSelectionEngine` | Shipped — bundle proposal bridge |
-| `ProcessPatternMiner` | Shipped — offline pattern proposals |
-| `PolicyLearningEngine` | Shipped — bounded proposals + approval gate at apply |
-| Token adaptive loop | **Partial** — advisory on Token Optimization side |
-| ADAS runtime | **Not shipped** — documentation and ADR only |
-| Host production orchestration | **Host-qualified** — apply machinery exists; continuous closed-loop production evidence **not demonstrated** |
+| `SignalCollector` + `SignalStore` | Shipped - in-memory + SQLite; tenant-scoped append/list |
+| `HarnessOutcomeSignal` | Shipped - quality, cost, latency, retry/failure flags, HITL, utility, LLM summary fields |
+| `AdaptationEngine` | Shipped - sub-engine aggregation, bandit reward update, cooldown, package build |
+| `AdaptationGovernancePipeline` | Shipped - envelope, capability, golden-scenario gates |
+| `AdaptationExecutor` | Shipped - shadow, canary, apply, rollback |
+| Profile lifecycle + stores | Shipped - `ProfileVersionStore`, `ProfileActivePointerStore`, `ProfileVersionLifecycleManager` |
+| `VerificationLoop` | Shipped - checks + optional auto-rollback |
+| `compute_utility` / `UtilityWeights` | Shipped - configured decision function |
+| `RoutingTuningEngine` + `BanditStateStore` | Shipped - Thompson sampling infrastructure; proposals not live routing mutation |
+| `ExecutionStrategyEngine` | Shipped - rule-based proposals |
+| `SkillSelectionEngine` | Shipped - bundle proposal bridge |
+| `ProcessPatternMiner` | Shipped - offline pattern proposals |
+| `PolicyLearningEngine` | Shipped - bounded proposals + approval gate at apply |
+| Token adaptive loop | **Partial** - advisory on Token Optimization side |
+| ADAS runtime | **Not shipped** - documentation and ADR only |
+| Host production orchestration | **Host-qualified** - apply machinery exists; continuous closed-loop production evidence **not demonstrated** |
 
 ---
 
@@ -429,7 +429,7 @@ Evidence maturity:      E2
 | Token AHI | A3 / I1 / P0 / E1 |
 | ADAS | A2 / I0 / P0 / E1 |
 
-Historical **W-ADAPT 70/70 Done** marks implementation-campaign completion — **not** a public production maturity headline.
+Historical **W-ADAPT 70/70 Done** marks implementation-campaign completion - **not** a public production maturity headline.
 
 ---
 
@@ -438,11 +438,11 @@ Historical **W-ADAPT 70/70 Done** marks implementation-campaign completion — *
 | Layer | Artifacts |
 | ----- | --------- |
 | **Architecture** | This hub, satellites, ADR-ADAPT-*, governance canon in `adaptive_governance.py` |
-| **Unit / gate** | `tests/unit/runtime/adaptive/` — signal, engine, governance, profile lifecycle, executor, verification, rollback, routing/policy/pattern engines |
+| **Unit / gate** | `tests/unit/runtime/adaptive/` - signal, engine, governance, profile lifecycle, executor, verification, rollback, routing/policy/pattern engines |
 | **Integration** | Adaptive shadow allocation, proposal→apply lifecycle, rollback paths in wave tests |
 | **Ops report** | `scripts/release/phase_w_adapt_report.py` |
 | **Public proof** | No dedicated AHI row in [`PROOFS.md`](../proofs/PROOFS.md) at time of writing |
-| **Production / customer** | **Not claimed** — AUDIT-IDEAL-AHI.1 (30-day L4 closed-loop on real deploy) remains **Planned** |
+| **Production / customer** | **Not claimed** - AUDIT-IDEAL-AHI.1 (30-day L4 closed-loop on real deploy) remains **Planned** |
 
 ---
 
@@ -473,7 +473,7 @@ Historical **W-ADAPT 70/70 Done** marks implementation-campaign completion — *
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** L4 AHI  
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
-**Last updated:** 2026-08-18 — DOC-3S design-system modernization; AdaptationExecutor reconciliation; A/I/P/E boundary
+**Last updated:** 2026-08-18 - DOC-3S design-system modernization; AdaptationExecutor reconciliation; A/I/P/E boundary
 
 ### L4 Frozen cross-domain index (AHI-MAINT-04)
 
@@ -483,7 +483,7 @@ Historical **W-ADAPT 70/70 Done** marks implementation-campaign completion — *
 | M-RAG.58 / GAP-RAG-15 adaptive retriever selection | AHI (Frozen) | [`RAG-MAINT-04`](../maintainers/plans/RAG.md#61av-harness-implementation-queue--rag-audit-maintenance-planned) | No RAG-owned implementation |
 | CVL L4 adaptive critic thresholds | AHI (Frozen) | CVL-MAINT-02 | Product gate before auto-apply |
 
-**Product gate (AHI-MAINT-01):** L4 threshold auto-apply requires explicit product decision — evidence bundle via `phase_w_adapt_report.py`.
+**Product gate (AHI-MAINT-01):** L4 threshold auto-apply requires explicit product decision - evidence bundle via `phase_w_adapt_report.py`.
 
 ---
 
@@ -492,9 +492,9 @@ Historical **W-ADAPT 70/70 Done** marks implementation-campaign completion — *
 **Do not read this entire file in one session.**
 
 - **Implement / audit default:** Public front + § Engineering canon through governance boundary.
-- **Extended §8+:** [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md`](satellites/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md) — one satellite max per session.
+- **Extended §8+:** [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md`](satellites/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md) - one satellite max per session.
 - **ADAS:** [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md) on demand.
-- **Plan hub:** [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md) — scoped §6 only.
+- **Plan hub:** [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md) - scoped §6 only.
 
 ### Architecture satellites
 
@@ -507,19 +507,19 @@ Historical **W-ADAPT 70/70 Done** marks implementation-campaign completion — *
 
 ## 1. Executive summary
 
-Intergrax is a **Harness AI platform** — the durable product is the runtime, not any single agent. Most industry harnesses optimize for **run → trace → manual tuning**. AHI adds a **governed, auditable path** from production telemetry to bounded runtime improvement.
+Intergrax is a **Harness AI platform** - the durable product is the runtime, not any single agent. Most industry harnesses optimize for **run → trace → manual tuning**. AHI adds a **governed, auditable path** from production telemetry to bounded runtime improvement.
 
 **Adaptive Harness Intelligence (AHI)** is a Tier-1 **Adaptive Control Plane** that:
 
 1. **Observes** execution outcomes from trace, metrics, evaluation, cost, and HITL signals.
 2. **Proposes** bounded configuration changes (routing, orchestration, RAG, policy fragments) as versioned artifacts.
 3. **Validates** proposals through governance envelopes, capability-graph impact analysis, and regression gates.
-4. **Applies** approved changes through shadow → canary → active promotion — never bypassing `PolicyEngine`.
+4. **Applies** approved changes through shadow → canary → active promotion - never bypassing `PolicyEngine`.
 5. **Verifies** measurable improvement over baseline before declaring production readiness.
 
 This is **not classical reinforcement learning**. It is **evidence-driven harness adaptation**: contextual bandits, rule-based tuning, statistical regression gates, and human-governed policy learning.
 
-**Current state (2026-08-18):** Runtime adaptive machinery is **implemented** — including `AdaptationExecutor` with shadow/canary/apply/rollback. **Closed-loop production improvement with measured long-term gains is not yet evidenced** (see AUDIT-IDEAL-AHI.1).
+**Current state (2026-08-18):** Runtime adaptive machinery is **implemented** - including `AdaptationExecutor` with shadow/canary/apply/rollback. **Closed-loop production improvement with measured long-term gains is not yet evidenced** (see AUDIT-IDEAL-AHI.1).
 
 ---
 
@@ -527,7 +527,7 @@ This is **not classical reinforcement learning**. It is **evidence-driven harnes
 
 ### 2.1 Core business question
 
-> Can Intergrax become a harness that **gets measurably better at running agents** — discovering efficient paths, reducing cost, improving quality, surfacing hidden workflow patterns — without sacrificing auditability or human control?
+> Can Intergrax become a harness that **gets measurably better at running agents** - discovering efficient paths, reducing cost, improving quality, surfacing hidden workflow patterns - without sacrificing auditability or human control?
 
 ### 2.2 Value proposition
 
@@ -550,7 +550,7 @@ From [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](../technical/guides/INTERGRAX_DEVELOP
 
 ### 2.4 Roadmap targets (not current evidence claims)
 
-Historical 12-month KPI targets — **engineering roadmap only**:
+Historical 12-month KPI targets - **engineering roadmap only**:
 
 1. ≥ 10% improvement in composite utility `U` on golden scenarios after adaptive routing vs static baseline.
 2. Zero unapproved policy mutations in production (100% envelope compliance).
@@ -586,21 +586,21 @@ Intergrax already invested in prerequisites competitors often lack together:
 | Cost governance | `cost_budget.py`, `cost_optimization.py` |
 | Experiment lab | `ExperimentSession` |
 
-The historical gap — **signal → approved, versioned, verified harness mutation** — is addressed by W-ADAPT runtime components. **Production-scale continuous learning remains host-qualified.**
+The historical gap - **signal → approved, versioned, verified harness mutation** - is addressed by W-ADAPT runtime components. **Production-scale continuous learning remains host-qualified.**
 
 ### 3.3 Three intelligence problems (kept separate)
 
 | # | Problem | Primary owner | AHI component |
 |---|---------|---------------|---------------|
-| P1 | **Operational adaptation** — routing, retry, RAG, cost | Tier-1 Adaptive Control Plane | `AdaptationEngine`, `AdaptationExecutor` |
-| P2 | **Process pattern discovery** — recurring tool/agent/HITL sequences | Tier-1 `ProcessPatternMiner` | Emits proposals; Tier-2 implements |
+| P1 | **Operational adaptation** - routing, retry, RAG, cost | Tier-1 Adaptive Control Plane | `AdaptationEngine`, `AdaptationExecutor` |
+| P2 | **Process pattern discovery** - recurring tool/agent/HITL sequences | Tier-1 `ProcessPatternMiner` | Emits proposals; Tier-2 implements |
 | P3 | **Strategic market intelligence** | Tier-2 agents (e.g. Problem Radar) | Consumes AHI outputs optionally |
 
 **Architectural rule:** Tier-1 MUST remain domain-agnostic. P3 never lives inside Nexus core loops.
 
 ---
 
-## 4. Terminology — Adaptive Harness Intelligence vs classical RL
+## 4. Terminology - Adaptive Harness Intelligence vs classical RL
 
 | Term | Definition |
 |------|------------|
@@ -610,7 +610,7 @@ The historical gap — **signal → approved, versioned, verified harness mutati
 | **Utility function U** | Weighted composite for candidate vs baseline comparison |
 | **Adaptive Loop** | Bounded change category (`AdaptiveLoopKind`) |
 | **Profile Version** | Immutable tunable configuration snapshot with rollback pointer |
-| **Classical RL** | MDP policy-gradient learning — **not the AHI implementation model** |
+| **Classical RL** | MDP policy-gradient learning - **not the AHI implementation model** |
 
 ### Acceptable learning algorithms inside AHI
 
@@ -621,7 +621,7 @@ The historical gap — **signal → approved, versioned, verified harness mutati
 | Statistical process control | Anomaly-triggered recommendations | Cost anomaly bridge |
 | Frequent sequence mining | Process patterns in traces | `ProcessPatternMiner` |
 | LLM-as-judge | Quality signal input only | Existing eval subsystem |
-| Deep RL / neural policy | — | **Rejected for AHI v1** |
+| Deep RL / neural policy | - | **Rejected for AHI v1** |
 
 ---
 
@@ -642,7 +642,7 @@ The historical gap — **signal → approved, versioned, verified harness mutati
 
 `scripts/release/phase_v_closeout_gate.py --enforce-l4` confirms adaptive **proposal envelopes** pass governance rules. It does **not** confirm measurable production improvement or unattended continuous adaptation.
 
-**W-ADAPT 70/70 Done** = historical implementation campaign completion — see plan, not public maturity headline.
+**W-ADAPT 70/70 Done** = historical implementation campaign completion - see plan, not public maturity headline.
 
 ---
 
@@ -654,24 +654,24 @@ The historical gap — **signal → approved, versioned, verified harness mutati
 
 ## 7. Vision and design principles
 
-> **Intergrax harness learns from every governed run — not by mutating opaque models, but by proposing auditable profile improvements that make agents cheaper, safer, and more effective over time.**
+> **Intergrax harness learns from every governed run - not by mutating opaque models, but by proposing auditable profile improvements that make agents cheaper, safer, and more effective over time.**
 
-1. **Policy-first adaptation** — no change bypasses `PolicyEngine`.
-2. **Reuse Tier-0** — one trace system, one eval registry, one policy stack.
-3. **Hot path stays deterministic** — adaptation runs async; per-run reads use precomputed weights only.
-4. **Human-governed autonomy** — authority matrix defaults conservative; policy learning requires approver.
-5. **Evidence over declaration** — measured improvement required for production claims.
-6. **Rollback by default** — every apply creates rollback pointer; verification may trigger rollback when configured.
-7. **Tier-1 domain-agnostic** — business semantics via optional Tier-3 outcome hooks only.
-8. **Capability graph before apply** — blast-radius analysis when graphs supplied.
-9. **Shadow before production** — no skip of shadow/canary except observe mode.
-10. **Extend, don't duplicate** — evolve `adaptive_governance.py`.
+1. **Policy-first adaptation** - no change bypasses `PolicyEngine`.
+2. **Reuse Tier-0** - one trace system, one eval registry, one policy stack.
+3. **Hot path stays deterministic** - adaptation runs async; per-run reads use precomputed weights only.
+4. **Human-governed autonomy** - authority matrix defaults conservative; policy learning requires approver.
+5. **Evidence over declaration** - measured improvement required for production claims.
+6. **Rollback by default** - every apply creates rollback pointer; verification may trigger rollback when configured.
+7. **Tier-1 domain-agnostic** - business semantics via optional Tier-3 outcome hooks only.
+8. **Capability graph before apply** - blast-radius analysis when graphs supplied.
+9. **Shadow before production** - no skip of shadow/canary except observe mode.
+10. **Extend, don't duplicate** - evolve `adaptive_governance.py`.
 
 ---
 
 ## Governance Boundary (engineering detail)
 
-Adaptive Harness Intelligence is a **controlled mechanism for observation, proposal, and evaluation** — not an autonomous self-modifying runtime.
+Adaptive Harness Intelligence is a **controlled mechanism for observation, proposal, and evaluation** - not an autonomous self-modifying runtime.
 
 **Normative rule:** AHI may observe, analyze, recommend, and evaluate changes. It **MUST NOT** silently mutate production prompts, routing, policies, profiles, retrievers, critic thresholds, or tool-selection behavior without explicit governance approval.
 
@@ -727,7 +727,7 @@ execution evidence → normalized HarnessOutcomeSignal → adaptive decision inp
 
 ### Utility function
 
-`compute_utility()` combines weighted quality, cost penalty, latency penalty, HITL penalty, regression penalty, and optional business bonus. **`UtilityWeights` is configuration — not an objective truth score.**
+`compute_utility()` combines weighted quality, cost penalty, latency penalty, HITL penalty, regression penalty, and optional business bonus. **`UtilityWeights` is configuration - not an objective truth score.**
 
 ---
 
@@ -751,15 +751,15 @@ Full module-level specification: extended-depth satellite §8–§9.
 
 ---
 
-## ADAS — Agent Design Search (target sub-capability)
+## ADAS - Agent Design Search (target sub-capability)
 
 **Status:** Documentation + ADR (**AHI-ADAS-00 Done**); runtime phases **Planned** (AHI-ADAS-10…90).
 
-ADAS extends the profile adaptation lifecycle to **agent candidates** — scaffold → static gate → evaluation → archive → governed promotion. It is **inside AHI Tier-1**, not a separate harness layer.
+ADAS extends the profile adaptation lifecycle to **agent candidates** - scaffold → static gate → evaluation → archive → governed promotion. It is **inside AHI Tier-1**, not a separate harness layer.
 
 | Rule | Constraint |
 |------|------------|
-| Placement | Inside AHI — not a top-level layer |
+| Placement | Inside AHI - not a top-level layer |
 | Mutation | No direct production agent mutation |
 | Strategy | MAS is one replaceable `AgentDesignStrategy` |
 
@@ -784,41 +784,41 @@ AHI ≠ foundation-model training.
 
 ## Protocol v2 Adaptive Harness Intelligence target invariants (2026-08-18)
 
-Accepted Protocol v2 audit layer [`ADAPTIVE_HARNESS_INTELLIGENCE`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md) (**FAIL**, 6 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — **not implemented**:
+Accepted Protocol v2 audit layer [`ADAPTIVE_HARNESS_INTELLIGENCE`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md) (**FAIL**, 6 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only - **not implemented**:
 
-**Finding 01 — promotion authority**
+**Finding 01 - promotion authority**
 
 1. Production profile activation consumes one authoritative promotion artifact binding `proposal_id`, exact profile version, tenant, task class, artifact type, governance result, authority level, required approvals, and promotion/verification evidence where required ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-01`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
-2. `AdaptationExecutor.apply()` must enforce `passed_all_gates` and prove `version_id` lineage from the governing package — failed gates or unrelated version fail closed ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-01`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+2. `AdaptationExecutor.apply()` must enforce `passed_all_gates` and prove `version_id` lineage from the governing package - failed gates or unrelated version fail closed ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-01`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
 3. Do **not** create a second governance pipeline ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-01`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
 
-**Finding 02 — tenant/scope ownership**
+**Finding 02 - tenant/scope ownership**
 
-4. Every adaptive lifecycle mutation is scope-bound — resolved record must match exact `tenant_id` + `task_class` + `artifact_type` + `version_id` ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-02`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
-5. Cross-tenant or cross-task profile activation is impossible — cross-scope mismatch fails closed ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-02`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+4. Every adaptive lifecycle mutation is scope-bound - resolved record must match exact `tenant_id` + `task_class` + `artifact_type` + `version_id` ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-02`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+5. Cross-tenant or cross-task profile activation is impossible - cross-scope mismatch fails closed ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-02`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
 6. Prefer a typed `ProfileVersionRef` / promotion identity rather than several independent writable strings ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-02`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
 
-**Finding 03 — human approval**
+**Finding 03 - human approval**
 
 7. Human-required promotion fails closed when approval evidence authority is unavailable ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-03`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
-8. `human_approver_id` declaration ≠ approval evidence — reuse canonical Governance / HITL approval evidence ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-03`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+8. `human_approver_id` declaration ≠ approval evidence - reuse canonical Governance / HITL approval evidence ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-03`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
 9. Approval evidence is scoped to exact proposal/version/tenant/change ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-03`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
 
-**Finding 04 — evidence qualification**
+**Finding 04 - evidence qualification**
 
 10. Distinguish optional recommendation evidence from mandatory production promotion evidence ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-04`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
 11. Missing mandatory production evidence is **NOT QUALIFIED**, not PASS ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-04`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
 12. `passed_all_gates` must mean all gates required for the intended action/stage were actually evaluated and passed ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-04`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
 
-**Finding 05 — activation consistency**
+**Finding 05 - activation consistency**
 
 13. Profile statuses and active pointer are one recoverable logical operation ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-05`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
 14. Activation carries `operation_id`, expected active version, new version, explicit state-transition outcome, idempotency, and reconciliation after partial failure ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-05`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
-15. Provider-neutral atomic/CAS semantic contract — not one physical database transaction across all providers ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-05`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+15. Provider-neutral atomic/CAS semantic contract - not one physical database transaction across all providers ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-05`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
 
-**Finding 06 — concurrency**
+**Finding 06 - concurrency**
 
-16. Active pointer mutation uses expected-version CAS/fencing — `expected_active_version_id` + `new_active_version_id` ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-06`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+16. Active pointer mutation uses expected-version CAS/fencing - `expected_active_version_id` + `new_active_version_id` ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-06`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
 17. Concurrent stale promotion → explicit conflict, not silent last-write-wins ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-06`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
 18. Reuse Intergrax existing CAS/revision-fence patterns where appropriate ([`AUDIT-20260818-ADAPTIVE_HARNESS_INTELLIGENCE-06`](../../audit_results/2026-08-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)).
 

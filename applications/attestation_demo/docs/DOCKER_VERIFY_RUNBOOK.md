@@ -1,4 +1,4 @@
-# Docker build, run & verify — step-by-step
+# Docker build, run & verify - step-by-step
 
 **Audience:** Operators and partners validating the Attestation Demo PoC before handoff.
 
@@ -14,13 +14,13 @@ Related docs: [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) · [`partner_handoff/
 
 | # | Project assumption (ARCHITECTURE §17) | How this runbook checks it |
 |---|--------------------------------------|----------------------------|
-| 1 | `POST /poc/run` works without Intergrax fork | Step 5 — HTTP trigger |
-| 2 | Response has `execution_boundary_event.v1` for `records.put` **and** `harness_step` | Step 6 — two events, `event_sequence` 1 and 2 |
-| 3 | Fields map to BoundaryAttest adapter | Step 6 — mapping table |
-| 4 | Debug journal available for same `run_id` | Step 8 — trace endpoint |
-| 5 | No dishonest `server_attested` claim from Intergrax | Step 6 — `trust_model` uses `host_attested` when signed |
-| 6 | EBE-9 host attestation verifiable per event | Step 6 — `signed: true`, `host_attestation` envelope |
-| 7 | HOS trace reconstructs the run | Step 8 — non-empty `trace_events` |
+| 1 | `POST /poc/run` works without Intergrax fork | Step 5 - HTTP trigger |
+| 2 | Response has `execution_boundary_event.v1` for `records.put` **and** `harness_step` | Step 6 - two events, `event_sequence` 1 and 2 |
+| 3 | Fields map to BoundaryAttest adapter | Step 6 - mapping table |
+| 4 | Debug journal available for same `run_id` | Step 8 - trace endpoint |
+| 5 | No dishonest `server_attested` claim from Intergrax | Step 6 - `trust_model` uses `host_attested` when signed |
+| 6 | EBE-9 host attestation verifiable per event | Step 6 - `signed: true`, `host_attestation` envelope |
+| 7 | HOS trace reconstructs the run | Step 8 - non-empty `trace_events` |
 | 8 | No partner packages in Intergrax | Design invariant (no runtime check) |
 
 ---
@@ -34,11 +34,11 @@ Related docs: [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) · [`partner_handoff/
 | `curl` or PowerShell | For HTTP smoke tests |
 | Optional: [uv](https://docs.astral.sh/uv/) | For automated pytest in Step 10 |
 
-**Build context is always the monorepo root** — not `applications/attestation_demo` alone.
+**Build context is always the monorepo root** - not `applications/attestation_demo` alone.
 
 ---
 
-## Step 1 — Prepare environment file
+## Step 1 - Prepare environment file
 
 From repository root:
 
@@ -56,9 +56,9 @@ Edit `applications/attestation_demo/.env` if needed. Defaults are fine for local
 
 ---
 
-## Step 2 — Build the Docker image
+## Step 2 - Build the Docker image
 
-**Recommended (all platforms):** classic `docker build` from repo root — no BuildKit `--ignorefile` required. This is the path partners should use when `build-docker.sh` fails locally.
+**Recommended (all platforms):** classic `docker build` from repo root - no BuildKit `--ignorefile` required. This is the path partners should use when `build-docker.sh` fails locally.
 
 ```bash
 docker build \
@@ -119,9 +119,9 @@ docker compose -f applications/attestation_demo/docker/docker-compose.yml build
 
 ---
 
-## Step 3 — Run the container
+## Step 3 - Run the container
 
-### Option A — `docker run` (foreground)
+### Option A - `docker run` (foreground)
 
 ```bash
 docker run --rm \
@@ -133,13 +133,13 @@ docker run --rm \
 
 Leave this terminal open. The API is available at `http://127.0.0.1:8097`.
 
-### Option B — `docker compose` (foreground)
+### Option B - `docker compose` (foreground)
 
 ```bash
 docker compose -f applications/attestation_demo/docker/docker-compose.yml up
 ```
 
-### Option C — detached background
+### Option C - detached background
 
 ```bash
 docker run -d \
@@ -155,7 +155,7 @@ Stop later: `docker stop attestation-demo && docker rm attestation-demo`
 
 ---
 
-## Step 4 — Health check (agent roster)
+## Step 4 - Health check (agent roster)
 
 Base URL for all steps below: `http://127.0.0.1:8097`
 
@@ -179,7 +179,7 @@ Invoke-RestMethod -Uri "http://127.0.0.1:8097/v1/attestation_demo/agents"
 
 ---
 
-## Step 5 — Trigger the PoC run (primary endpoint)
+## Step 5 - Trigger the PoC run (primary endpoint)
 
 ### curl
 
@@ -213,7 +213,7 @@ Save `run_id` from the response for Steps 7–8.
 
 ---
 
-## Step 6 — Verify project assumptions (response checklist)
+## Step 6 - Verify project assumptions (response checklist)
 
 Inspect the JSON from Step 5. Every item below must pass.
 
@@ -229,11 +229,11 @@ Inspect the JSON from Step 5. Every item below must pass.
 
 > **Unsigned v2** (`host_signing_enabled=false`): `platform_signed` = `"false"`, `recommended_receipt_role` = `"client_observed"`.
 
-### 6.2 Boundary events (PoC v2 — two claims per run)
+### 6.2 Boundary events (PoC v2 - two claims per run)
 
 Expect **two** events in `boundary_events[]`, ordered by `event_sequence`.
 
-**Event 1 — `tool_execution` (`event_sequence: 1`)**
+**Event 1 - `tool_execution` (`event_sequence: 1`)**
 
 | Field | Expected (EBE-9 default) |
 |-------|--------------------------|
@@ -256,7 +256,7 @@ Expect **two** events in `boundary_events[]`, ordered by `event_sequence`.
 | `output.stored` | `true` |
 | `input_hash` / `output_hash` | start with `sha256:` |
 
-**Event 2 — `harness_step` (`event_sequence: 2`)**
+**Event 2 - `harness_step` (`event_sequence: 2`)**
 
 | Field | Expected |
 |-------|----------|
@@ -286,13 +286,13 @@ After verifying `host_attestation` (see [`partner_handoff/EBE-9_HOST_SIGNING.md`
 | `host_attestation` | host signature verify (pinned pubkey) |
 | *(partner sets)* | `receiptRole: "client_observed"` on separate wrapper |
 
-Create **one receipt per** `boundary_events[]` element — not one composite receipt per run.
+Create **one receipt per** `boundary_events[]` element - not one composite receipt per run.
 
 **Do not** label receipts as `server_attested` based on this PoC alone.
 
 ---
 
-## Step 7 — Debug: buffered boundary events
+## Step 7 - Debug: buffered boundary events
 
 Replace `{run_id}` with the value from Step 5.
 
@@ -308,7 +308,7 @@ curl -s "http://127.0.0.1:8097/v1/attestation_demo/poc/runs/{run_id}/boundary-ev
 
 ---
 
-## Step 8 — Debug: HOS journal comparison
+## Step 8 - Debug: HOS journal comparison
 
 ```bash
 curl -s "http://127.0.0.1:8097/debug/tasks/{run_id}/trace"
@@ -321,13 +321,13 @@ curl -s "http://127.0.0.1:8097/debug/tasks/{run_id}/trace"
 - `"trace_events"` is a non-empty array
 - Trace content references the demo run (`boundary_demo_agent`, `attestation.demo` capability, completed graph node, critic verdict, or task state)
 
-**Scope note:** the HOS journal trace correlates at **run/task level**. It does not expose EBE `event_id`, `step_id`, or `tool_id`. For exact per-event correlation (receipt key, tool claim, harness claim), use `boundary_events[]` from Step 5 or Step 7 — not the trace alone.
+**Scope note:** the HOS journal trace correlates at **run/task level**. It does not expose EBE `event_id`, `step_id`, or `tool_id`. For exact per-event correlation (receipt key, tool claim, harness claim), use `boundary_events[]` from Step 5 or Step 7 - not the trace alone.
 
-This satisfies ARCHITECTURE §17 item 4 — partner can compare run-level journal facts with receipt grouping (`run_id`, `step_id`, `lineage.ref`).
+This satisfies ARCHITECTURE §17 item 4 - partner can compare run-level journal facts with receipt grouping (`run_id`, `step_id`, `lineage.ref`).
 
 ---
 
-## Step 9 — Optional: API key authentication
+## Step 9 - Optional: API key authentication
 
 Skip if `INTERGRAX_HARNESS_API_KEY` is not set in `.env`.
 
@@ -359,9 +359,9 @@ Skip if `INTERGRAX_HARNESS_API_KEY` is not set in `.env`.
 
 ---
 
-## Step 10 — Automated verification (pytest)
+## Step 10 - Automated verification (pytest)
 
-From repository root (host need **not** be running — uses in-process `TestClient`):
+From repository root (host need **not** be running - uses in-process `TestClient`):
 
 ```bash
 uv run pytest applications/attestation_demo/tests -q
@@ -372,7 +372,7 @@ uv run pytest tests/unit/runtime/attestation/ -q
 
 ---
 
-## Step 11 — Cleanup
+## Step 11 - Cleanup
 
 ```bash
 docker stop attestation-demo 2>/dev/null || true
@@ -396,7 +396,7 @@ docker compose -f applications/attestation_demo/docker/docker-compose.yml down
 | `boundary_events` empty | EBE profile not wired | Rebuild image from current `main`; run Step 10 pytest |
 | HTTP 401 on `/poc/run` | API key required | Set `X-Api-Key` header or unset `INTERGRAX_HARNESS_API_KEY` for dev |
 | Build fails on Windows path | Wrong build context | Run `docker build` from **repo root**, not `applications/attestation_demo` |
-| `unknown flag: --ignorefile` or buildx error | Local BuildKit / buildx version | Use classic `docker build` (Step 2 — recommended); or `build-docker.bat` on Windows |
+| `unknown flag: --ignorefile` or buildx error | Local BuildKit / buildx version | Use classic `docker build` (Step 2 - recommended); or `build-docker.bat` on Windows |
 | `jq` not found | Optional formatter | Use `python -m json.tool` or PowerShell `ConvertTo-Json` |
 
 ---
@@ -405,12 +405,12 @@ docker compose -f applications/attestation_demo/docker/docker-compose.yml down
 
 Before sharing with a partner, confirm:
 
-- [ ] Step 4 — agents list returns `boundary_demo_agent`
-- [ ] Step 5 — PoC run returns `state: completed`
-- [ ] Step 6 — both boundary events pass (tool + harness, `event_sequence` 1 and 2, `signed: true`)
-- [ ] Step 6 — `host_attestation` verifies against golden vector pubkey (optional crypto check)
-- [ ] Step 8 — debug trace available for `run_id`
-- [ ] Step 10 — pytest green (recommended)
+- [ ] Step 4 - agents list returns `boundary_demo_agent`
+- [ ] Step 5 - PoC run returns `state: completed`
+- [ ] Step 6 - both boundary events pass (tool + harness, `event_sequence` 1 and 2, `signed: true`)
+- [ ] Step 6 - `host_attestation` verifies against golden vector pubkey (optional crypto check)
+- [ ] Step 8 - debug trace available for `run_id`
+- [ ] Step 10 - pytest green (recommended)
 - [ ] `INTERGRAX_HARNESS_API_KEY` set if exposing publicly (Step 9)
 
 Handoff package: [`partner_handoff/README.md`](../partner_handoff/README.md) · EBE-9 spec: [`partner_handoff/EBE-9_HOST_SIGNING.md`](../partner_handoff/EBE-9_HOST_SIGNING.md)

@@ -28,4 +28,4 @@ Governed access to: `websearch.query`, `rag.retrieve`, `document.parse_preview`.
 
 ## Related skills
 
-- Other `research` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `research` bundle skills - see bundle [USAGE.md](../USAGE.md)

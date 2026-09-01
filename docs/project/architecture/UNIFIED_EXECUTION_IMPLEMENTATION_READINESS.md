@@ -1,7 +1,7 @@
-# Unified Execution — Implementation Readiness Gate
+# Unified Execution - Implementation Readiness Gate
 
 **Status:** Final pre-runtime consistency audit (UE-DOC-0.10)  
-**Classification:** `SUPPORTING_AUDIT` / `GATE` — subordinate to [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md); **not** architecture authority, **not** a domain pair, **not** an implementation map  
+**Classification:** `SUPPORTING_AUDIT` / `GATE` - subordinate to [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md); **not** architecture authority, **not** a domain pair, **not** an implementation map  
 **Owner:** Intergrax Platform Architecture (gate coordination)  
 **Audience:** Principal architects, UE-1+ implementers, audit reviewers  
 **Authority chain:** UEA (`UEA-INV-001`..`021`) → domain architecture hubs → [`UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md`](UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md) → **this gate** → UE-1+ slices
@@ -15,21 +15,21 @@
 | Item | Value |
 |------|-------|
 | **Start pin** | `fc7c76c999e3d49d0532c4bdd07941c688e2553c` |
-| **Pin ancestor check** | **PASS** — pin is ancestor of audited HEAD |
+| **Pin ancestor check** | **PASS** - pin is ancestor of audited HEAD |
 | **Audited baseline (HEAD)** | `fc7c76c999e3d49d0532c4bdd07941c688e2553c` |
 | **Branch** | `development` |
-| **Concurrency between start pin and HEAD** | **None** — start pin equals HEAD |
-| **Concurrent commits reviewed** | `fc7c76c99` — DIAG-6 operator `DiagnosticReadService` read projection (runtime + OBS doc) |
+| **Concurrency between start pin and HEAD** | **None** - start pin equals HEAD |
+| **Concurrent commits reviewed** | `fc7c76c99` - DIAG-6 operator `DiagnosticReadService` read projection (runtime + OBS doc) |
 
 **DIAG-6 concurrency verdict:** DIAG-6 adds a read-only operator projection over persisted `ProblemId` records and bounded DIAG-2→4 reconstruction. It does **not** mint `ExecutionId`, does **not** own execution lifecycle, and does **not** introduce a competing identity hierarchy. Compatible with UEA-INV-015/016 and OBS DIAG-6 non-goals.
 
-**Working tree at audit close:** unrelated local edits outside UE scope (`connected_source_discovery.py`, proof outputs) — not included in gate commit.
+**Working tree at audit close:** unrelated local edits outside UE scope (`connected_source_discovery.py`, proof outputs) - not included in gate commit.
 
 ---
 
 ## 2. Authority hierarchy
 
-Audit posture: skeptical external Principal Architect — disprove readiness where possible.
+Audit posture: skeptical external Principal Architect - disprove readiness where possible.
 
 | Layer | Role | Gate finding |
 |-------|------|--------------|
@@ -57,7 +57,7 @@ Lower layers do not contradict higher authority on frozen semantics.
 | UEA ↔ OBS/DIAG | Record vs interpret | OBS does not mint | DIAG derived only | ProblemId ≠ ExecutionId | **CONSISTENT** |
 | UEA ↔ BG/Distributed | Transport ≠ runtime | Same-work redelivery | Worker re-entry | Envelope preserves ids | **CONSISTENT** (target) |
 
-**Cross-domain verdict:** **PASS** — no unresolved architecture contradictions.
+**Cross-domain verdict:** **PASS** - no unresolved architecture contradictions.
 
 ---
 
@@ -85,12 +85,12 @@ Lower layers do not contradict higher authority on frozen semantics.
 | Check | Result |
 |-------|--------|
 | Every independently schedulable Execution enters canonical boundary | **YES** (target) |
-| Every child Execution re-enters same boundary | **YES** — UEA-INV-021 |
+| Every child Execution re-enters same boundary | **YES** - UEA-INV-021 |
 | Direct inference path avoids Nexus | **YES** |
 | Agentic path: Boundary → AgentExecutor → AgentEngine → UAEP | **YES** |
 | Orchestration: Nexus requests child Executions through boundary | **YES** |
-| `GraphExecutor` → `AgentEngine` direct | **CURRENT debt** — mapped UE-7B; not target |
-| Boundary coordinates; does not own PolicyEngine, budget ledger, OBS store, DIAG, checkpoint backend | **YES** — UEA-INV-018 |
+| `GraphExecutor` → `AgentEngine` direct | **CURRENT debt** - mapped UE-7B; not target |
+| Boundary coordinates; does not own PolicyEngine, budget ledger, OBS store, DIAG, checkpoint backend | **YES** - UEA-INV-018 |
 
 **Anti-god-object verdict:** Implementation map §4 explicitly rejects central mega-runtime; coordination interfaces only.
 
@@ -102,9 +102,9 @@ Lower layers do not contradict higher authority on frozen semantics.
 |-------------|---------|
 | Developer says WHAT; platform resolves HOW | **OK** |
 | Strategies: inference, agentic, orchestration, future | **OK** |
-| StrategyResolver deterministic from capabilities — not LLM router | **OK** (UE-3A scope defined) |
-| Resolver does not invent topology | **OK** — UEA-INV-020 |
-| Dynamic topology → validated OrchestrationDefinition before Nexus | **OK** — ORCHESTRATION + Nexus hubs |
+| StrategyResolver deterministic from capabilities - not LLM router | **OK** (UE-3A scope defined) |
+| Resolver does not invent topology | **OK** - UEA-INV-020 |
+| Dynamic topology → validated OrchestrationDefinition before Nexus | **OK** - ORCHESTRATION + Nexus hubs |
 
 ---
 
@@ -115,7 +115,7 @@ Lower layers do not contradict higher authority on frozen semantics.
 | Iterative tool use under one ExecutionId | **OK** | Ordinary LLM↔tool iterations = internal steps |
 | Nexus not required for tool loop | **OK** | Agentic/inference paths |
 | `bounded_react` under UAEP mechanics | **OK** | Not competing lifecycle owner |
-| Tool selection narrows only | **OK** — TOOLS-INV-02 |
+| Tool selection narrows only | **OK** - TOOLS-INV-02 |
 | ToolResult → CE fragments | **OK** (target wiring UE-6C) |
 | Memory ≠ auto-persist every tool result | **OK** |
 | Streaming orthogonal; PARTIAL ≠ tool trigger | **OK** |
@@ -142,14 +142,14 @@ Stale-language search (§41): no canonical doc states "every execution/task runs
 
 | Area | Verdict |
 |------|---------|
-| Authority inheritance narrow-only | **OK** — UEA-INV-009 |
-| RunBudget single canonical ledger | **OK** — UEA-INV-010 |
+| Authority inheritance narrow-only | **OK** - UEA-INV-009 |
+| RunBudget single canonical ledger | **OK** - UEA-INV-010 |
 | Parallel fan-out must not overcommit parent | **OK** (target UE-8B) |
 | Retry taxonomy A–E aligned across UEA, UER, REL, OBS | **OK** |
 | HITL: Governance owns decision; UER owns pause/resume | **OK** |
 | Cancellation follows Execution tree | **OK** |
 | Side-effectful tools: governed, budgeted, not blindly retried | **OK** |
-| Failure semantics per strategy documented | **OK** — sufficient for implementation |
+| Failure semantics per strategy documented | **OK** - sufficient for implementation |
 
 ---
 
@@ -174,16 +174,16 @@ Stale-language search (§41): no canonical doc states "every execution/task runs
 | Same-work redelivery preserves Task/Run/Attempt/Execution | **OK** (target) |
 | Worker re-enters boundary with same identity | **OK** |
 | Checkpoint does not mint identity | **OK** |
-| Tree-aware checkpoint target defined | **OK** — UE-9C |
+| Tree-aware checkpoint target defined | **OK** - UE-9C |
 | No AgentCheckpoint / NexusCheckpoint competing identity | **OK** |
 
-**CURRENT debt:** `bootstrap_background_execution` mints new Attempt per worker boundary — mapped UE-9A; architecture answer exists.
+**CURRENT debt:** `bootstrap_background_execution` mints new Attempt per worker boundary - mapped UE-9A; architecture answer exists.
 
 ---
 
 ## 12. Implementation-map disposition audit
 
-Challenged components — all dispositions consistent with frozen UEA:
+Challenged components - all dispositions consistent with frozen UEA:
 
 | Component | Disposition | Challenge result |
 |-----------|-------------|------------------|
@@ -192,8 +192,8 @@ Challenged components — all dispositions consistent with frozen UEA:
 | `GraphExecutor` | TRANSFORM | Child Execution admission required |
 | `AgentEngine` / `UAEPExecutor` | KEEP / KEEP_AND_REWIRE | Agent-specific preserved |
 | `ToolInvocationPattern` | KEEP | Mechanics only |
-| `RuntimeExecutionContext` | KEEP | Agent scope — not universal |
-| `RunBudget` | TRANSFORM | Hierarchical — not replaced |
+| `RuntimeExecutionContext` | KEEP | Agent scope - not universal |
+| `RunBudget` | TRANSFORM | Hierarchical - not replaced |
 | `ProblemGroupingEngine` / `ProblemLifecycleEngine` | KEEP / KEEP_AND_REWIRE | Derived DIAG only |
 | `AgentExecutionResult` | DEPRECATE as universal | Neutral result in UE-5B |
 
@@ -225,19 +225,19 @@ ExecutionId → Boundary → strategies → OBS/checkpoint/background/DIAG
 | Slice | Can proceed without new architecture? | Hidden question? | Verdict |
 |-------|--------------------------------------|------------------|---------|
 | **UE-1A** | ExecutionId types in `intergrax/contracts/` | None | **READY** |
-| **UE-1B** | Boundary skeleton + compat shim | None — interfaces only | **READY** |
+| **UE-1B** | Boundary skeleton + compat shim | None - interfaces only | **READY** |
 | **UE-1C** | `execution.execute` facade | None | **READY** |
-| **UE-2A/B** | Neutral request DTO + Task bridge | Names not frozen — implementation choice | **READY** |
+| **UE-2A/B** | Neutral request DTO + Task bridge | Names not frozen - implementation choice | **READY** |
 | **UE-3A/B** | StrategyResolver + runner rewire | Capability signals listed in map §5 | **READY** |
 | **UE-4A/B** | Admission hooks + active binding | None | **READY** |
 | **UE-5A/B** | Structured output + neutral result | None | **READY** |
-| **UE-6A/B/C** | Agentic + tool loop + CE bridge | UAEP/pattern wiring — ownership frozen | **READY** |
+| **UE-6A/B/C** | Agentic + tool loop + CE bridge | UAEP/pattern wiring - ownership frozen | **READY** |
 | **UE-7A/B** | Child Execution API; remove direct engine | None | **READY** |
 | **UE-8A/B** | Authority + budget hierarchy | None | **READY** |
 | **UE-9A/B/C** | Background identity, events, checkpoint tree | None | **READY** |
 | **UE-10** | Scenarios A–J proof harness | Evidence classes defined below | **READY** |
 
-**UE-1..UE-10 verdict:** **READY** — all slices derivable from UEA + domain docs + implementation map.
+**UE-1..UE-10 verdict:** **READY** - all slices derivable from UEA + domain docs + implementation map.
 
 ---
 
@@ -245,13 +245,13 @@ ExecutionId → Boundary → strategies → OBS/checkpoint/background/DIAG
 
 | Requirement | Status |
 |-------------|--------|
-| Add typed `ExecutionId` + validators + minting | **Clear** — mirror `TaskId`/`RunId` pattern in `execution_identity.py` |
+| Add typed `ExecutionId` + validators + minting | **Clear** - mirror `TaskId`/`RunId` pattern in `execution_identity.py` |
 | `parent_execution_id` contract | **Defined** in UEA §4, UER identity section |
-| Structural compatibility | **Additive** — no behavior cutover in UE-1A |
+| Structural compatibility | **Additive** - no behavior cutover in UE-1A |
 | Excludes: boundary layout, strategy, Nexus rewrite, DIAG, budget | **Honored** in map §31 UE-1A exclusions |
 | No dict/getattr discovery | **Explicit** in map §3 anti-patterns |
 
-**UE-1A verdict:** **READY** — safely implementable as first runtime slice.
+**UE-1A verdict:** **READY** - safely implementable as first runtime slice.
 
 ---
 
@@ -276,7 +276,7 @@ Maps UEA §28 scenarios to implementation proof obligations. **Do not implement 
 
 ---
 
-## 17. Skeptic challenge — "one LLM + memory + tools + LangGraph"
+## 17. Skeptic challenge - "one LLM + memory + tools + LangGraph"
 
 A minimal agent stack **cannot** satisfy Intergrax platform guarantees without Unified Execution semantics:
 
@@ -295,7 +295,7 @@ A minimal agent stack **cannot** satisfy Intergrax platform guarantees without U
 | Tool governance + side-effect safety | Ungoverned tool nodes duplicate external effects on retry |
 | Streaming release governance | Raw provider stream to user violates GOV |
 
-**Conclusion:** Unified Execution complexity maps to **concrete platform requirements** — not decorative abstraction. No unjustified complexity flagged for removal.
+**Conclusion:** Unified Execution complexity maps to **concrete platform requirements** - not decorative abstraction. No unjustified complexity flagged for removal.
 
 ---
 
@@ -310,7 +310,7 @@ Searched UEA, implementation map, domain hubs for parallel engines.
 | InferenceRuntime with private lifecycle | **NO** |
 | NexusV2 / second event spine / second checkpoint / second budget / second DIAG | **NO** |
 
-Small typed coordinators/adapters allowed — map uses boundary skeleton, not new framework.
+Small typed coordinators/adapters allowed - map uses boundary skeleton, not new framework.
 
 ---
 
@@ -328,7 +328,7 @@ Docs correctly label **TARGET** vs **CURRENT** vs **MIGRATION GAPS**. Not claime
 - Platform-wide streaming release governance
 - Full ExecutionId OBS/DIAG propagation
 
-Architecture readiness ≠ runtime completeness — **honest**.
+Architecture readiness ≠ runtime completeness - **honest**.
 
 ---
 
@@ -349,7 +349,7 @@ Architecture readiness ≠ runtime completeness — **honest**.
 | R-05 | Streaming governance not platform-wide | UE-5 + LLM path |
 | R-06 | Dual lifecycle during compat shims | Feature flags + caller inventory |
 | R-07 | Partial ExecutionId rollout | Phased optional→required fields |
-| R-08 | UEA §24 follow-up note on OBS/UER tables — superseded by UE-DOC-0.6 alignment | Mechanical note update |
+| R-08 | UEA §24 follow-up note on OBS/UER tables - superseded by UE-DOC-0.6 alignment | Mechanical note update |
 
 **Non-blocking count: 8**
 

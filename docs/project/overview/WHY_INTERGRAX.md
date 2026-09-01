@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Why Intergrax
 
-Intergrax exists for teams building specialized agent applications that would otherwise rebuild controlled knowledge access, policy, tools, evidence, context, approvals, recovery, and observability around every model-driven workflow. It is a reusable governed foundation for those application operating boundaries — source-available, with current evidence and claim boundaries documented in [PROOFS.md](../proofs/PROOFS.md).
+Intergrax exists for teams building specialized agent applications that would otherwise rebuild controlled knowledge access, policy, tools, evidence, context, approvals, recovery, and observability around every model-driven workflow. It is a reusable governed foundation for those application operating boundaries - source-available, with current evidence and claim boundaries documented in [PROOFS.md](../proofs/PROOFS.md).
 
 > [!NOTE]
 > This page explains the problem category and evaluation boundary. See [PROOFS.md](../proofs/PROOFS.md) for detailed evidence and claim limits.
@@ -19,7 +19,7 @@ Intergrax exists for teams building specialized agent applications that would ot
 
 Strong agent frameworks and managed agent platforms already exist and solve many important problems well. Intergrax is **not** claiming differentiation through a larger checklist of tracing, memory, HITL, tools, persistence, approvals, or orchestration.
 
-The differentiation is a different responsibility layer: a **shared application operating model** across multiple specialized AI products. Product teams retain domain meaning, UX, workflow semantics, required permissions, product-specific validation, and business responsibility. Intergrax concentrates reusable operating boundaries — policy, authority, evidence, governed execution, recovery, and structural identity / canonical history — so those semantics can mean the same thing across applications rather than being independently reinvented around each product.
+The differentiation is a different responsibility layer: a **shared application operating model** across multiple specialized AI products. Product teams retain domain meaning, UX, workflow semantics, required permissions, product-specific validation, and business responsibility. Intergrax concentrates reusable operating boundaries - policy, authority, evidence, governed execution, recovery, and structural identity / canonical history - so those semantics can mean the same thing across applications rather than being independently reinvented around each product.
 
 **Product owns meaning; platform owns enforcement.** Semantic reuse across products matters, not just code reuse. Measured cross-product acceleration remains unproven; see [Business and strategic thesis](#business-and-strategic-thesis).
 
@@ -58,15 +58,15 @@ These are recurring engineering responsibilities. Without a reusable operating f
 
 ## What Intergrax is
 
-Intergrax is a shared application operating layer for specialized AI applications — a reusable governed foundation that concentrates repeatable boundaries around knowledge, policy, tools, evidence, context, and execution so product teams can focus on the concrete domain workflow.
+Intergrax is a shared application operating layer for specialized AI applications - a reusable governed foundation that concentrates repeatable boundaries around knowledge, policy, tools, evidence, context, and execution so product teams can focus on the concrete domain workflow.
 
 | Layer | Primary responsibility |
 | ----- | ---------------------- |
-| Model or agent framework / platform | Model access, agent behavior, orchestration primitives, and often adjacent runtime facilities such as tracing, persistence, guardrails, workflows, or HITL — depending on the chosen stack. |
+| Model or agent framework / platform | Model access, agent behavior, orchestration primitives, and often adjacent runtime facilities such as tracing, persistence, guardrails, workflows, or HITL - depending on the chosen stack. |
 | Intergrax | Reusable application operating boundaries around knowledge, policy, tools, evidence, context, and governed execution across specialized products. |
 | Product application | Domain workflow, UX, deployment, required permissions, and product-specific validation. |
 
-Modern agent frameworks and platforms increasingly bundle runtime facilities that teams once assembled separately. The comparison is not whether those facilities exist somewhere in the stack, but **which layer owns primary responsibility** for product semantics, enforcement boundaries, consequential effects, canonical history, recovery posture, and evidence — and how much integration burden remains with the adopting team.
+Modern agent frameworks and platforms increasingly bundle runtime facilities that teams once assembled separately. The comparison is not whether those facilities exist somewhere in the stack, but **which layer owns primary responsibility** for product semantics, enforcement boundaries, consequential effects, canonical history, recovery posture, and evidence - and how much integration burden remains with the adopting team.
 
 <a href="../assets/public/readme/fullsize/intergrax-why.md">
 <picture>
@@ -87,7 +87,7 @@ Modern agent frameworks and platforms increasingly bundle runtime facilities tha
 
 [View full-size diagram](../assets/public/readme/fullsize/intergrax-why.md)
 
-The diagram contrasts rebuilding foundations per product with reusing one governed foundation — how multiple specialized products can share governed mechanisms. It does not imply that every future product is already implemented.
+The diagram contrasts rebuilding foundations per product with reusing one governed foundation - how multiple specialized products can share governed mechanisms. It does not imply that every future product is already implemented.
 
 ---
 
@@ -114,25 +114,25 @@ Intergrax does not remove those responsibilities. It reduces repeated foundation
 
 ## How Intergrax approaches responsibility
 
-This section states the public differentiation spine in plain language — an architectural responsibility model, not a feature scorecard.
+This section states the public differentiation spine in plain language - an architectural responsibility model, not a feature scorecard.
 
 1. **Product owns meaning; platform owns enforcement.** Your application defines what permission means, which actions need approval, and what outcomes are acceptable. Intergrax supplies reusable mechanisms that evaluate and enforce those rules at configured execution boundaries.
 
 2. **Governance spans explicit execution boundaries.** Policy, denial, and human approval attach to named steps in execution rather than living only in scattered application conditionals.
 
-3. **Consequential external effects cross an explicit governed boundary.** Tool calls and meaningful side effects are authorized and recorded through platform mechanisms on wired paths — separate from model reasoning itself.
+3. **Consequential external effects cross an explicit governed boundary.** Tool calls and meaningful side effects are authorized and recorded through platform mechanisms on wired paths - separate from model reasoning itself.
 
 4. **Execution has structural identity and canonical history.** Runs, attempts, and events carry typed identity so operators can reconstruct what happened without treating an external trace UI as the only source of truth.
 
 5. **Recovery distinguishes retry, idempotency, compensation, degradation, and HITL.** Failure handling is classified and bounded. Agents may express recovery intent; the runtime owns budgets, layers, and stop conditions.
 
-6. **Important execution can produce structured evidence, not telemetry alone.** Governance and execution transitions can be correlated with persisted evidence where mechanisms are connected — beyond unstructured log lines.
+6. **Important execution can produce structured evidence, not telemetry alone.** Governance and execution transitions can be correlated with persisted evidence where mechanisms are connected - beyond unstructured log lines.
 
-7. **Agent authors own domain behavior; agents are not private runtimes.** Agents declare contracts and implement domain decisions. The platform owns safe execution, tracing, budgets, and lifecycle — not a second hidden scheduler or policy engine inside each agent.
+7. **Agent authors own domain behavior; agents are not private runtimes.** Agents declare contracts and implement domain decisions. The platform owns safe execution, tracing, budgets, and lifecycle - not a second hidden scheduler or policy engine inside each agent.
 
 Other stacks can implement similar patterns. Intergrax deliberately consolidates these responsibilities into a shared application operating model intended to serve multiple specialized products.
 
-For named modern frameworks and platforms — including cases where another stack may be the better fit — see [Compare modern alternatives and trade-offs](ALTERNATIVES_AND_TRADEOFFS.md).
+For named modern frameworks and platforms - including cases where another stack may be the better fit - see [Compare modern alternatives and trade-offs](ALTERNATIVES_AND_TRADEOFFS.md).
 
 ---
 
@@ -157,7 +157,7 @@ Potential adopter or sponsor profiles include:
 
 LKW is the current product path used to test this thesis. It exercises whether a reusable governed foundation can support a concrete, understandable workflow: approved knowledge → grounded Ask → source and evidence → persistence and reviewability.
 
-LKW also serves as the **reference application** for the bounded **Governed Evidence Decision Proof** — demonstrating governed answer admissibility over controlled live organizational evidence through real runtime and HTTP paths, with policy-derived obligations, execution-time authority, temporal rules, and persisted structural proof. Validation is bounded to Docker-backed organizational services and controlled live providers; it is not external SaaS validation. See the [Governed Evidence Decision Proof](../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) and [PROOFS.md](../proofs/PROOFS.md).
+LKW also serves as the **reference application** for the bounded **Governed Evidence Decision Proof** - demonstrating governed answer admissibility over controlled live organizational evidence through real runtime and HTTP paths, with policy-derived obligations, execution-time authority, temporal rules, and persisted structural proof. Validation is bounded to Docker-backed organizational services and controlled live providers; it is not external SaaS validation. See the [Governed Evidence Decision Proof](../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) and [PROOFS.md](../proofs/PROOFS.md).
 
 ### Compounding value hypothesis
 
@@ -222,14 +222,14 @@ flowchart TD
 
 | Intergrax may fit when | Another approach may fit better when |
 | ---------------------- | ------------------------------------ |
-| You need governed execution, evidence, and knowledge access in a specialized product | Finished SaaS needed immediately — not building your own application |
+| You need governed execution, evidence, and knowledge access in a specialized product | Finished SaaS needed immediately - not building your own application |
 | You want reusable platform foundations instead of a new runtime per product | You want a simple prompt prototype only |
 | You are evaluating infrastructure for multiple agent-backed applications | You expect a no-code workflow builder |
 | You can accept bounded proof while evaluating fit | You require an unrestricted open-source license |
 | Governance, policy, and evidence matter to your reviewers | You have no governance or evidence requirements |
 | You want to own a specialized application while reusing its operating foundation | You do not want to own an application or its product-specific validation |
 
-Other frameworks and tools may suit different needs. This guide does not dismiss them. For named modern alternatives and explicit trade-offs — including when another stack may be the better choice — see [ALTERNATIVES_AND_TRADEOFFS.md](ALTERNATIVES_AND_TRADEOFFS.md).
+Other frameworks and tools may suit different needs. This guide does not dismiss them. For named modern alternatives and explicit trade-offs - including when another stack may be the better choice - see [ALTERNATIVES_AND_TRADEOFFS.md](ALTERNATIVES_AND_TRADEOFFS.md).
 
 Intergrax may coexist with model providers, retrieval systems, integration tools and application-specific components. The category map does not claim that these approaches are mutually exclusive.
 
@@ -239,8 +239,8 @@ Intergrax may coexist with model providers, retrieval systems, integration tools
 
 | Item | Public role | Status | Notes |
 | ---- | ----------- | ------ | ----- |
-| **LKW** | **Active reference product** | **PARTIAL** | **Backend Product Alpha / MVP** — bounded product workflows; see product tour and platform proof paths. |
-| **Token Optimization** | **Featured platform-capability proof** | **PARTIAL** | Implemented deterministic mechanisms; bounded executable offline smoke proof. Manual vLLM prefix-cache evidence is separate — no public_evidence_eligible vLLM proof_id today. |
+| **LKW** | **Active reference product** | **PARTIAL** | **Backend Product Alpha / MVP** - bounded product workflows; see product tour and platform proof paths. |
+| **Token Optimization** | **Featured platform-capability proof** | **PARTIAL** | Implemented deterministic mechanisms; bounded executable offline smoke proof. Manual vLLM prefix-cache evidence is separate - no public_evidence_eligible vLLM proof_id today. |
 
 **Evidence and detail:** [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) · [Token Optimization guide](../capabilities/token_optimization/README.md) · [PROOFS.md](../proofs/PROOFS.md)
 
@@ -258,7 +258,7 @@ If the category appears relevant:
 |-------|------------|
 | [ALTERNATIVES_AND_TRADEOFFS.md](ALTERNATIVES_AND_TRADEOFFS.md) | Comparing Intergrax with named modern agent/platform alternatives and trade-offs |
 | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) | Reviewing current evidence |
-| [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) | Understanding how the platform works — canonical platform deep dive |
+| [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) | Understanding how the platform works - canonical platform deep dive |
 | [docs/project/builders/BUILDER_QUICKSTART.md](../builders/BUILDER_QUICKSTART.md) | Beginning a bounded build |
 | [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) | Planning deeper application composition |
 | [docs/project/community/PARTNERS.md](../community/PARTNERS.md) | Discussing a bounded pilot |

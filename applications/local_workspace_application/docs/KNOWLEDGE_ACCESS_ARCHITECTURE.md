@@ -1,4 +1,4 @@
-# Hybrid Knowledge Access — LKW Architecture
+# Hybrid Knowledge Access - LKW Architecture
 
 **Status:** `ACCEPTED`
 **Task:** `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1`  
@@ -25,7 +25,7 @@ LKW lets a user:
 1. upload files and folder snapshots;
 2. connect local folders;
 3. attach explicit Web URLs;
-4. connect external systems (Microsoft 365, OneDrive, SharePoint, Outlook, Teams-hosted knowledge, Google Workspace — Drive, Docs, Sheets, Calendar and related surfaces when implemented, Jira, Confluence, Databricks, Power BI, Atlan, future native API providers, future curated MCP providers);
+4. connect external systems (Microsoft 365, OneDrive, SharePoint, Outlook, Teams-hosted knowledge, Google Workspace - Drive, Docs, Sheets, Calendar and related surfaces when implemented, Jira, Confluence, Databricks, Power BI, Atlan, future native API providers, future curated MCP providers);
 5. decide which connected resources are **indexed into RAG**;
 6. decide which resources may be **queried live**;
 7. ask one natural-language question through Slack or another frontend;
@@ -38,9 +38,9 @@ LKW lets a user:
 | Category | Examples |
 |----------|----------|
 | **Implemented today** | Managed-file upload; Source Candidate intake; end-to-end `WEB_URL` Knowledge Intake (**ACCEPTED**); HTTP Ask Workspace with indexed RAG; Slack thin client for Ask, workspace ops and source inspection; Conversation Interaction Planner contract (`CONV-1A`) |
-| **In progress / under correction** | Slack connected source discovery/create/sync (`LKW-SLACK-CONNECTED-SOURCE-1` **IN_PROGRESS / CHANGES_REQUIRED** — `REVIEW-FIX-2` **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted; final crash-safe recovery and real indexed Search/Ask proof remain under correction) |
+| **In progress / under correction** | Slack connected source discovery/create/sync (`LKW-SLACK-CONNECTED-SOURCE-1` **IN_PROGRESS / CHANGES_REQUIRED** - `REVIEW-FIX-2` **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted; final crash-safe recovery and real indexed Search/Ask proof remain under correction) |
 | **Architecturally available in Intergrax** | `vendor_knowledge` connection resolution; integration/tool execution; RAG ingest/retrieve; `LLMAdapter` provider neutrality; embedding providers separate from conversation LLM; policy and trace; Slack three-mode knowledge architecture frozen (`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1`) |
-| **Planned for LKW** | Workspace Knowledge Configuration; Live Access Bindings; Hybrid Ask; Knowledge Query Orchestrator; vendor collaboration and data connector packs (Google Workspace runtime **PLANNED** — starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED**; `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` **READY_FOR_REVIEW**); Conversation Context Bindings and audience isolation (`LKW-CONVERSATION-CONTEXT-ARCH-1` **ACCEPTED**, `LKW-CONVERSATION-CONTEXT-1` **PLANNED**); Slack knowledge proof (`LKW-SLACK-KNOWLEDGE-PROOF-1` **PLANNED**); Google Workspace LKW proof (`LKW-GOOGLE-WORKSPACE-PROOF-1` **PLANNED**); live platform proof |
+| **Planned for LKW** | Workspace Knowledge Configuration; Live Access Bindings; Hybrid Ask; Knowledge Query Orchestrator; vendor collaboration and data connector packs (Google Workspace runtime **PLANNED** - starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED**; `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` **READY_FOR_REVIEW**); Conversation Context Bindings and audience isolation (`LKW-CONVERSATION-CONTEXT-ARCH-1` **ACCEPTED**, `LKW-CONVERSATION-CONTEXT-1` **PLANNED**); Slack knowledge proof (`LKW-SLACK-KNOWLEDGE-PROOF-1` **PLANNED**); Google Workspace LKW proof (`LKW-GOOGLE-WORKSPACE-PROOF-1` **PLANNED**); live platform proof |
 | **Future / not committed** | Write-capable provider actions; unrestricted SQL/DAX/JQL; runtime hot swapping; automatic persistence of live results; MCP as domain model |
 
 Target architecture is **not** evidence of implementation. Public proof claims require checked-in evidence.
@@ -53,7 +53,7 @@ Target architecture is **not** evidence of implementation. Public proof claims r
 
 Knowledge already processed into LKW-owned stores.
 
-**Examples:** uploaded files; folder snapshots; local folders; Web URLs; synchronized SharePoint files; synchronized Confluence pages; synchronized Jira issues; synchronized Slack channel or conversation history (`PLANNED` — not implemented); synchronized Google Docs, Sheets, Calendar and Drive files (`PLANNED` — `LKW-GOOGLE-WORKSPACE-PROOF-1`).
+**Examples:** uploaded files; folder snapshots; local folders; Web URLs; synchronized SharePoint files; synchronized Confluence pages; synchronized Jira issues; synchronized Slack channel or conversation history (`PLANNED` - not implemented); synchronized Google Docs, Sheets, Calendar and Drive files (`PLANNED` - `LKW-GOOGLE-WORKSPACE-PROOF-1`).
 
 **Benefits:** cross-source semantic retrieval; lower provider API usage; consistent chunking and embeddings; offline or temporarily disconnected usage; stable workspace-owned retrieval.
 
@@ -77,7 +77,7 @@ Connection or direct input
 
 Read-only access executed when the user asks a question.
 
-**Examples:** current Outlook messages; current Jira issue state; current Power BI metric; current Databricks job status; approved Databricks SQL result; current Atlan lineage; current Confluence page state; bounded current Slack message or thread reads (`PLANNED` — not implemented).
+**Examples:** current Outlook messages; current Jira issue state; current Power BI metric; current Databricks job status; approved Databricks SQL result; current Atlan lineage; current Confluence page state; bounded current Slack message or thread reads (`PLANNED` - not implemented).
 
 **Benefits:** current information; no requirement to copy every dataset; appropriate for dynamic or large systems.
 
@@ -166,7 +166,7 @@ one Connection
    └── live capability execution → ephemeral evidence
 ```
 
-**Slack foundation (`PLANNED` — architecture frozen):**
+**Slack foundation (`PLANNED` - architecture frozen):**
 
 ```text
 Slack Connection
@@ -192,9 +192,9 @@ A tenant-owned configured relationship with an external system.
 
 #### 4.1.1 Durable `TenantConnection` (platform-owned)
 
-A tenant Connection is a **durable platform entity** — not an LKW workspace record and not an in-memory registry entry. The conceptual model is `TenantConnection` (**to be implemented in `LKW-KNOWLEDGE-ACCESS-1C-1`**; not yet present as a Python model).
+A tenant Connection is a **durable platform entity** - not an LKW workspace record and not an in-memory registry entry. The conceptual model is `TenantConnection` (**to be implemented in `LKW-KNOWLEDGE-ACCESS-1C-1`**; not yet present as a Python model).
 
-**Durable identity:** `(tenant_id, connection_ref)` — `connection_ref` is opaque and unique within one tenant.
+**Durable identity:** `(tenant_id, connection_ref)` - `connection_ref` is opaque and unique within one tenant.
 
 **Minimum durable fields:**
 
@@ -219,7 +219,7 @@ connected_principal_ref    # optional, when justified
 
 `credential_ref` points to `SecretsStore`. The Connection record does not contain the secret.
 
-**Current repository gap:** durable `TenantConnection` persistence does not exist yet. Today the repository has only opaque `connection_ref` on bindings, an **instance-local** `KnowledgeConnectionRegistry` (runtime projection / cache — not durable catalog, not administrative source of truth), and application `IntegrationProfile` bootstrap (application-level composition — not a tenant Connection database).
+**Current repository gap:** durable `TenantConnection` persistence does not exist yet. Today the repository has only opaque `connection_ref` on bindings, an **instance-local** `KnowledgeConnectionRegistry` (runtime projection / cache - not durable catalog, not administrative source of truth), and application `IntegrationProfile` bootstrap (application-level composition - not a tenant Connection database).
 
 A Connection must **not** expose credentials to the LLM, Slack, another frontend, workspace configuration responses, prompt context or provenance records. A workspace does not own raw credentials. LKW persists only a reference to the tenant Connection plus safe cached presentation data where already approved.
 
@@ -227,7 +227,7 @@ A Connection must **not** expose credentials to the LLM, Slack, another frontend
 
 A provider-owned resource discoverable through a Connection.
 
-**Examples:** SharePoint site; OneDrive drive; mailbox; Jira project; Confluence space; Databricks catalog; Databricks SQL warehouse; Power BI workspace; Power BI semantic model; Atlan catalog scope; MCP resource or approved tool collection; approved Slack channel or conversation (`PLANNED` — not implemented).
+**Examples:** SharePoint site; OneDrive drive; mailbox; Jira project; Confluence space; Databricks catalog; Databricks SQL warehouse; Power BI workspace; Power BI semantic model; Atlan catalog scope; MCP resource or approved tool collection; approved Slack channel or conversation (`PLANNED` - not implemented).
 
 A Remote Resource is **not** automatically an LKW Source.
 
@@ -235,7 +235,7 @@ A Remote Resource is **not** automatically an LKW Source.
 
 A durable workspace-owned Source whose content is ingested or synchronized into LKW knowledge stores.
 
-**Examples:** uploaded PDF; uploaded XLSX; Slack attachment (managed-file intake — implemented); synchronized Slack channel or conversation (`PLANNED`); local folder; explicit Web URL; SharePoint site synchronized into LKW; Confluence space synchronized into LKW; selected Jira project synchronized into LKW.
+**Examples:** uploaded PDF; uploaded XLSX; Slack attachment (managed-file intake - implemented); synchronized Slack channel or conversation (`PLANNED`); local folder; explicit Web URL; SharePoint site synchronized into LKW; Confluence space synchronized into LKW; selected Jira project synchronized into LKW.
 
 Every persisted Document must remain owned by exactly one durable Source.
 
@@ -257,7 +257,7 @@ allowed capabilities:
 mode: read-only
 ```
 
-**Slack example (`PLANNED` — not implemented):**
+**Slack example (`PLANNED` - not implemented):**
 
 ```text
 workspace: Project Orion
@@ -326,7 +326,7 @@ workspaces or capabilities therefore does not cascade lifecycle changes.
 
 The aggregate configuration that determines what knowledge one workspace can use.
 
-**Diagram A — knowledge configuration:**
+**Diagram A - knowledge configuration:**
 
 ```text
 Workspace
@@ -361,9 +361,9 @@ Conceptual modes:
 | `indexed_only` | Use only persisted workspace knowledge and RAG retrieval |
 | `live_only` | Use only currently authorized live provider capabilities |
 | `hybrid` | Use both indexed and live evidence when requested or required by the plan |
-| `automatic` | Query orchestration may choose indexed, live or hybrid according to question, workspace configuration, policy and available capabilities — **not** unrestricted agent autonomy |
+| `automatic` | Query orchestration may choose indexed, live or hybrid according to question, workspace configuration, policy and available capabilities - **not** unrestricted agent autonomy |
 
-Possible policy controls (target vocabulary — not all implemented):
+Possible policy controls (target vocabulary - not all implemented):
 
 ```text
 prefer_indexed_evidence
@@ -400,7 +400,7 @@ health status
 
 - Constructed `LLMAdapter` objects and provider clients are **runtime-only**.
 - Deployment-wide default runtime (for example `INTERGRAX_LLM_PROVIDER`) may remain **deployment configuration**.
-- A future user-selectable workspace runtime profile must be represented by a **durable profile or durable profile reference** — not by a constructed adapter object in DocumentStore.
+- A future user-selectable workspace runtime profile must be represented by a **durable profile or durable profile reference** - not by a constructed adapter object in DocumentStore.
 - `LKW-MODEL-RUNTIME-1` (**ACCEPTED**) proves Ollama/vLLM portability; it does **not** imply that a multi-profile runtime catalog already exists.
 - This architecture task does not implement or schedule runtime-profile administration unless an existing canonical task already owns it. Do not expand `LKW-KNOWLEDGE-ACCESS-1B` with runtime-profile persistence.
 
@@ -628,7 +628,7 @@ One `SlackConversationChannelIntegration` serves both Slack frontend transport a
 
 ## 6. Query execution architecture
 
-**Diagram B — Hybrid Ask:**
+**Diagram B - Hybrid Ask:**
 
 ```text
 Question
@@ -787,7 +787,7 @@ Future write capabilities require separate policy, confirmation, authorization, 
 
 ## 8. Integration, API and MCP boundary
 
-**Diagram C — provider boundary:**
+**Diagram C - provider boundary:**
 
 ```text
 LKW
@@ -886,7 +886,7 @@ Promotion must use a reviewed application lifecycle. It is **not** a flag on the
 
 ## 10. Natural-language frontend architecture
 
-**Diagram D — frontend flow:**
+**Diagram D - frontend flow:**
 
 ```text
 Slack / HTTP / MCP / Web
@@ -931,13 +931,13 @@ The audience of the outbound answer determines the maximum knowledge scope.
 
 For a **SHARED** conversation, indexed and live evidence must satisfy the bound shared workspace and `SHARED_ALLOWED` eligibility. Caller private permissions, personal workspace selection, personal memory and private connector grants must **never** expand the evidence boundary.
 
-**Before model invocation:** validate active unique binding, audience match, principal rules, activation policy, workspace resolution, thread partition identity, and that every evidence/memory item matches tenant + workspace + audience eligibility — including thread memory, live tool results and planner context, not only citations.
+**Before model invocation:** validate active unique binding, audience match, principal rules, activation policy, workspace resolution, thread partition identity, and that every evidence/memory item matches tenant + workspace + audience eligibility - including thread memory, live tool results and planner context, not only citations.
 
 **Before outbound delivery:** validate response conversation/thread, citation workspace membership, audience unchanged, and absence of personal-memory or personal-workspace evidence. Guard failure suppresses the outbound answer.
 
 V1 shared conversations default to `READ_ONLY_ASK`; ordinary shared messages must not mutate bindings, connections, sources or approvals.
 
-Hybrid Ask and the Knowledge Query Orchestrator must reject mixed personal/shared evidence deterministically — not through prompt instructions alone.
+Hybrid Ask and the Knowledge Query Orchestrator must reject mixed personal/shared evidence deterministically - not through prompt instructions alone.
 
 Connecting a Slack conversation as an Indexed Source does not activate the bot in that channel. Activating the bot in a channel does not automatically index channel history.
 
@@ -978,13 +978,13 @@ Live results must not automatically become durable workspace knowledge. Policy d
 
 ### 12.1 Current accepted proof
 
-**Public proof:** `LKW-MODEL-RUNTIME` — **accepted bounded proof**. See [`docs/project/proofs/PROOFS.md`](../../../docs/project/proofs/PROOFS.md).
+**Public proof:** `LKW-MODEL-RUNTIME` - **accepted bounded proof**. See [`docs/project/proofs/PROOFS.md`](../../../docs/project/proofs/PROOFS.md).
 
 **Demonstrates:** The same workspace workflows run on Ollama and vLLM without reindexing.
 
 **Explicit limitation:** Not complete product parity across all features. Do not infer broader proof coverage from this section.
 
-Implementation task `LKW-MODEL-RUNTIME-1` — **ACCEPTED** (see [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)).
+Implementation task `LKW-MODEL-RUNTIME-1` - **ACCEPTED** (see [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)).
 
 ### 12.2 Current architecture
 
@@ -995,7 +995,7 @@ Provider selection remains through deployment configuration:
 
 Provider endpoint/base URL variables remain a separate connection concern (for example commented vLLM base URL variables in `.env.example`).
 
-LKW product/domain logic remains provider-neutral. LKW receives a ready `LLMAdapter` through application wiring — no product-domain provider branches.
+LKW product/domain logic remains provider-neutral. LKW receives a ready `LLMAdapter` through application wiring - no product-domain provider branches.
 
 **Conversation LLM and embedding provider remain separate concerns.** Switching chat runtime must not silently change embedding model, vector dimensions or indexed collections.
 

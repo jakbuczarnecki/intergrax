@@ -1,9 +1,9 @@
-# Diagnostic Multi-Scenario E2E Matrix — DIAG-PLATFORM-C / R1
+# Diagnostic Multi-Scenario E2E Matrix - DIAG-PLATFORM-C / R1
 
 **Program:** DIAG-PLATFORM-QUALIFICATION  
 **Proof levels:** P1–P4 (aligned with [`DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md`](DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md))  
 **Adoption inventory:** [`DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md`](DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md)
-**R1 audit:** Execution System owns root execution authority; Nexus participates in orchestration/planning/execution coordination — not as canonical root execution authority.
+**R1 audit:** Execution System owns root execution authority; Nexus participates in orchestration/planning/execution coordination - not as canonical root execution authority.
 
 ---
 
@@ -45,7 +45,7 @@ public application/scenario/worker entry
 | **S8** External vendor outage | OTLP collector stop/start (`test_diag_final_external_otel_e2e`) | Execution System via HTTP → `UnifiedTaskRunner` | P4 platform E2E | ✅ |
 | **S10** Tool integration boundary | Scenario reasoning consumes `DiagnosticReadService` projections only (`test_diagnostic_platform_integration`) | Scenario composition read path | P2/P3 | ✅ |
 
-**S9 HITL/long-running:** partial via checkpoint/host wiring tests — not a dedicated diagnostic E2E category.
+**S9 HITL/long-running:** partial via checkpoint/host wiring tests - not a dedicated diagnostic E2E category.
 
 ---
 
@@ -73,8 +73,8 @@ public application/scenario/worker entry
 | Terminal diagnostic integration suite | `UnifiedTaskRunner.run_task` | Execution System / `execute_root_task` | S1 clean / S2 violation | In-memory | ✅ | ✅ | ✅ DiagnosticReadService | P3 | ✅ |
 | Terminal diagnostic integration suite | Background child via `UnifiedTaskRunner` | Execution System / `execute_root_task` | S4 async inheritance | In-memory | ✅ | ✅ | ✅ | P3 | ✅ |
 | `ai_incident_investigation` | `execute_scenario_task` / skeleton | Execution System / `execute_root_task` | S2 platform Problem → reasoning input | Lab baseline composition | ✅ | ✅ | ✅ composition read | P3 | ✅ |
-| Mongo durability worker | Subprocess restart (direct Problem write) | Persistence-only proof | S6/S7 cross-process | Mongo via IntegrationProfile | — | ✅ durable | ✅ after restart | P4 persistence | ✅ |
-| Kafka transport | `create_kafka_integration` | Transport-only (not diagnostic spine) | Transport only | Docker Kafka | — | — | — | P4 transport | ⚠️ N/A diagnostic |
+| Mongo durability worker | Subprocess restart (direct Problem write) | Persistence-only proof | S6/S7 cross-process | Mongo via IntegrationProfile | - | ✅ durable | ✅ after restart | P4 persistence | ✅ |
+| Kafka transport | `create_kafka_integration` | Transport-only (not diagnostic spine) | Transport only | Docker Kafka | - | - | - | P4 transport | ⚠️ N/A diagnostic |
 | Legal application harness | `build_harness_host_runtime` + queue deps | Composition adoption (no execution-path proof) | Queue wiring on PRODUCT runtime | KV cache provider | ✅ when configured | ✅ | Write path | P2 | ✅ wiring |
 
 ---
@@ -104,20 +104,20 @@ public application/scenario/worker entry
 
 ```text
 true P3 application/scenario flows (distinct entry classes): 4
-  — HTTP product host (governed contractor) → Execution System
-  — Scenario baseline task API (ai_incident) → Execution System
-  — UnifiedTaskRunner integration suite (terminal diagnostic production E2E)
-  — Background child execution → UnifiedTaskRunner → Execution System
+  - HTTP product host (governed contractor) → Execution System
+  - Scenario baseline task API (ai_incident) → Execution System
+  - UnifiedTaskRunner integration suite (terminal diagnostic production E2E)
+  - Background child execution → UnifiedTaskRunner → Execution System
 
 true P4 platform E2E (canonical execution entry + external infra): 2
-  — Mongo FI-A (4f): HTTP → Execution System → diagnostics → Mongo
-  — OTLP collector (diag_final): HTTP → Execution System → diagnostics → OTLP
+  - Mongo FI-A (4f): HTTP → Execution System → diagnostics → Mongo
+  - OTLP collector (diag_final): HTTP → Execution System → diagnostics → OTLP
 
 P4 persistence proofs (external infra, no execution entry): 1
-  — Cross-process Mongo restart (1c)
+  - Cross-process Mongo restart (1c)
 
 Distinct runtime/integration classes: 6
-  — HTTP host, scenario baseline, Execution System spine, background async, Mongo durable, OTLP derived observability
+  - HTTP host, scenario baseline, Execution System spine, background async, Mongo durable, OTLP derived observability
 ```
 
 ---
@@ -140,7 +140,7 @@ application/scenario/worker entry
 
 Static gates: `test_one_spine_diagnostic_orchestrator_gate`, `test_one_spine_problem_store_gate`, scenario architecture conformance.
 
-**No private attribute assertions** in new platform qualification tests — public `DiagnosticWiring.readiness`, `has_terminal_diagnostic_trigger`.
+**No private attribute assertions** in new platform qualification tests - public `DiagnosticWiring.readiness`, `has_terminal_diagnostic_trigger`.
 
 ---
 
@@ -160,9 +160,9 @@ HTTP → UnifiedTaskRunner → execute_root_task → Nexus orchestration → Run
 
 | Path | Diagnostic spine? | Root authority | Status |
 | ---- | ----------------- | -------------- | ------ |
-| Background child via `UnifiedTaskRunner` (`S4`) | Yes — shared terminal trigger | `execute_root_task` | **PROVEN P3** |
-| LKW `background_worker_factory` → harness | Yes — same `build_harness_host_runtime` | Composition + worker path | **NATIVE adoption** (unit wiring) |
-| Kafka producer → worker → Nexus → diagnostics | Not composed in one external E2E | — | **LIMITATION** — transport qualified separately (`test_kafka_worker_integration`) |
+| Background child via `UnifiedTaskRunner` (`S4`) | Yes - shared terminal trigger | `execute_root_task` | **PROVEN P3** |
+| LKW `background_worker_factory` → harness | Yes - same `build_harness_host_runtime` | Composition + worker path | **NATIVE adoption** (unit wiring) |
+| Kafka producer → worker → Nexus → diagnostics | Not composed in one external E2E | - | **LIMITATION** - transport qualified separately (`test_kafka_worker_integration`) |
 
 ---
 
@@ -178,7 +178,7 @@ HTTP POST /v1/governed_contractor/run
   → central diagnostics
 ```
 
-**Status: PASS** — no HTTP bypass of canonical root execution.
+**Status: PASS** - no HTTP bypass of canonical root execution.
 
 ## Scenario baseline path (R1)
 
@@ -191,7 +191,7 @@ execute_scenario_task
   → central diagnostics
 ```
 
-**Status: PASS** — no scenario bypass of canonical root execution.
+**Status: PASS** - no scenario bypass of canonical root execution.
 
 ## Background path (R1)
 
@@ -204,7 +204,7 @@ background worker handler
   → central diagnostics
 ```
 
-**Classification: P3** — canonical runner entry; not a separate public HTTP/scenario surface.
+**Classification: P3** - canonical runner entry; not a separate public HTTP/scenario surface.
 
 ---
 

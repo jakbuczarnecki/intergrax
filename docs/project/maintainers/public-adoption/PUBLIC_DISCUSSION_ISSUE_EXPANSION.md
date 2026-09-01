@@ -65,7 +65,7 @@ All waves are stored in [curated_public_issues.yml](curated_public_issues.yml). 
 | Wave 5 | [#226](https://github.com/jakbuczarnecki/intergrax/issues/226) | Observability spine and event journal |
 | Wave 5 | [#227](https://github.com/jakbuczarnecki/intergrax/issues/227) | Developer experience, scaffold and lab workflow |
 
-## Wave 3 — Architecture Discussion
+## Wave 3 - Architecture Discussion
 
 | Issue | Title | Purpose |
 |-------|-------|---------|
@@ -78,7 +78,7 @@ All waves are stored in [curated_public_issues.yml](curated_public_issues.yml). 
 | [#211](https://github.com/jakbuczarnecki/intergrax/issues/211) | Architecture discussion: governed RAG and memory boundaries | Validate RAG / memory / context separation |
 | [#212](https://github.com/jakbuczarnecki/intergrax/issues/212) | Architecture discussion: agent contracts and production readiness | Promote agents as contracted, lifecycle-managed components |
 
-## Wave 4 — Product / Application Validation
+## Wave 4 - Product / Application Validation
 
 | Issue | Title | Purpose |
 |-------|-------|---------|
@@ -89,7 +89,7 @@ All waves are stored in [curated_public_issues.yml](curated_public_issues.yml). 
 | [#217](https://github.com/jakbuczarnecki/intergrax/issues/217) | Product discussion: ProblemRadar and VendorDiscovery agents | Validate problem discovery and vendor discovery workflows |
 | [#218](https://github.com/jakbuczarnecki/intergrax/issues/218) | Product discussion: Lab application as universal proof environment | Validate the lab host as public proof environment |
 
-## Wave 5 — Deep Technical Discussion
+## Wave 5 - Deep Technical Discussion
 
 | Issue | Title | Purpose |
 |-------|-------|---------|
@@ -139,11 +139,11 @@ Curated issues should be grouped by wave milestones:
 
 | Wave | Milestone |
 |------|-----------|
-| Wave 1 | Public Adoption — Wave 1 |
-| Wave 2 | Public Adoption — Wave 2 |
-| Wave 3 | Architecture Discussion — Wave 3 |
-| Wave 4 | Product Validation — Wave 4 |
-| Wave 5 | Deep Technical Review — Wave 5 |
+| Wave 1 | Public Adoption - Wave 1 |
+| Wave 2 | Public Adoption - Wave 2 |
+| Wave 3 | Architecture Discussion - Wave 3 |
+| Wave 4 | Product Validation - Wave 4 |
+| Wave 5 | Deep Technical Review - Wave 5 |
 
 Show milestone creation and assignment plan:
 

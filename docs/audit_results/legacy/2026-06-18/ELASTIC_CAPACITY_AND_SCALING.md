@@ -1,4 +1,4 @@
-# Audit result — `ELASTIC_CAPACITY_AND_SCALING`
+# Audit result - `ELASTIC_CAPACITY_AND_SCALING`
 
 **Run:** 2026-06-18 · **Mode:** audit_only (interactive layer 20)  
 **Auditor:** cursor-agent · **Verdict:** L3 mature_revalidated

@@ -1,4 +1,4 @@
-﻿# dispute_analyst agent — Architecture Decision Records
+﻿# dispute_analyst agent - Architecture Decision Records
 
 **Domain:** Tier-2 business agent (`agents/dispute_analyst`)
 
@@ -36,7 +36,7 @@ ADR-DISPUTE_ANALYST-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| — | *No agent ADRs yet* | — |
+| - | *No agent ADRs yet* | - |
 
 ---
 

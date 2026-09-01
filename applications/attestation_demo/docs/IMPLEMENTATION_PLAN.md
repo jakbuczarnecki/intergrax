@@ -1,8 +1,8 @@
-# attestation_demo — Implementation Plan
+# attestation_demo - Implementation Plan
 
-**The implementation map** for this Tier-3 partner PoC host — phases, status, and verification.
+**The implementation map** for this Tier-3 partner PoC host - phases, status, and verification.
 
-Status: **Done** (PoC v2 + EBE-9 — partner validated on `agent_experiment_runtime`)
+Status: **Done** (PoC v2 + EBE-9 - partner validated on `agent_experiment_runtime`)
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 Application ADRs: [`adr/README.md`](adr/README.md)

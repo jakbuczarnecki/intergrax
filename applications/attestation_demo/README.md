@@ -1,4 +1,4 @@
-# Attestation Demo — Partner PoC Quickstart
+# Attestation Demo - Partner PoC Quickstart
 
 **Audience:** external attestation integrators and internal Intergrax harness reviewers.
 
@@ -6,7 +6,7 @@ This Tier-3 host demonstrates **Execution Boundary Export (EBE)**: Intergrax emi
 
 ## External validation: BoundaryAttest
 
-Public case study: [BoundaryAttest Attestation PoC](../../docs/project/overview/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) — condensed external-facing summary of this integration validation.
+Public case study: [BoundaryAttest Attestation PoC](../../docs/project/overview/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) - condensed external-facing summary of this integration validation.
 
 Acknowledgement: this validation involved external integration work with the [BoundaryAttest](https://github.com/cullenmeyers/BoundaryAttest) project.
 
@@ -31,9 +31,9 @@ This validation does not imply that BoundaryAttest is bundled with Intergrax or 
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Host design, EBE contract, trust model |
 | [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) | Task queue and verification |
 | [`docs/BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md) | Local run, Docker, deploy runbook |
-| [`docs/DOCKER_VERIFY_RUNBOOK.md`](docs/DOCKER_VERIFY_RUNBOOK.md) | **Step-by-step** — build image, run, verify PoC assumptions |
+| [`docs/DOCKER_VERIFY_RUNBOOK.md`](docs/DOCKER_VERIFY_RUNBOOK.md) | **Step-by-step** - build image, run, verify PoC assumptions |
 | [`docs/adr/README.md`](docs/adr/README.md) | Application architecture decisions |
-| [`partner_handoff/README.md`](partner_handoff/README.md) | **Partner integration** — auth, mapping, EBE-9 golden vector |
+| [`partner_handoff/README.md`](partner_handoff/README.md) | **Partner integration** - auth, mapping, EBE-9 golden vector |
 | [`partner_handoff/EBE-9_HOST_SIGNING.md`](partner_handoff/EBE-9_HOST_SIGNING.md) | Host signing verifier spec |
 
 ## Run locally
@@ -71,7 +71,7 @@ curl -s -X POST "http://127.0.0.1:8097/v1/attestation_demo/poc/run" \
   }'
 ```
 
-### Example response (truncated — EBE-9 default)
+### Example response (truncated - EBE-9 default)
 
 Successful runs return **two** signed events (`tool_execution` seq 1, `harness_step` seq 2):
 
@@ -130,13 +130,13 @@ Full shapes: [`partner_handoff/ebe9_golden_vector.v1.json`](partner_handoff/ebe9
 | `input` / `output` | `input` / `output` |
 | `lineage.ref` | `lineage.ref` |
 | `host_attestation` | host verify (pinned pubkey) |
-| — | `receiptRole: "client_observed"` on partner wrapper |
+| - | `receiptRole: "client_observed"` on partner wrapper |
 
 Intergrax does **not** ship the adapter or sign partner receipts.
 
 ## Trust model
 
-**Default (EBE-9):** Intergrax host-signs each boundary event (`host_attested`). BoundaryAttest keeps a **separate** `client_observed` wrapper — two signatures, two claims.
+**Default (EBE-9):** Intergrax host-signs each boundary event (`host_attested`). BoundaryAttest keeps a **separate** `client_observed` wrapper - two signatures, two claims.
 
 **Unsigned mode:** set `host_signing_enabled=false` in manifest → `signed: false`, `client_observed` recommended.
 

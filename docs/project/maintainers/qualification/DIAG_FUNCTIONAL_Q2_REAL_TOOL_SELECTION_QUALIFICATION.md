@@ -1,4 +1,4 @@
-# DIAG-FUNCTIONAL-Q2 — Real Tool Selection Qualification
+# DIAG-FUNCTIONAL-Q2 - Real Tool Selection Qualification
 
 Qualification gate for generic Functional Diagnostics on the real LKW multi-tool LLM selection path.
 
@@ -89,7 +89,7 @@ Operator
 
 | Case | Intent |
 | --- | --- |
-| Q2-A | Healthy — correct tool, no false positive |
+| Q2-A | Healthy - correct tool, no false positive |
 | Q2-B | Wrong tool selected, invocation succeeds |
 | Q2-C | Correct tool selected, invocation fails |
 | Q2-D | Correct tool + invocation, final validation fails |

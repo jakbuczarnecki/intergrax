@@ -21,7 +21,7 @@ registry = build_registry_from_profile(ToolProfile(enabled=["notify.send"]), ctx
 
 ## Side effects
 
-`notify.send` sets `side_effects=True` — outbound messages mutate external channels.
+`notify.send` sets `side_effects=True` - outbound messages mutate external channels.
 
 ## Agent allow-list
 

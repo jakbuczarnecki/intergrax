@@ -40,10 +40,10 @@ Where exact implementation evidence exists, completion summaries alone are insuf
 
 MP-13 outcome (LKW reference baseline at `821eb7f6b2096de142822a29abc4546ee387a158`):
 
-- LKW reference baseline has been ingested — see [LKW control card](products/LKW.md).
+- LKW reference baseline has been ingested - see [LKW control card](products/LKW.md).
 - No retrospective accepted `PI-*` records were created solely from capability consumption.
 - Historical origin remains unclaimed where exact causal evidence was not established.
-- Current candidate pressure (generic durable / indexed eligibility descriptor; LKW reports `UNKNOWN` today) belongs in the LKW control card as a **G4 CANDIDATE — NOT YET CLASSIFIED** finding. It must pass G4 before an `EXTENDED_GENERALLY` classification and ledger acceptance.
+- Current candidate pressure (generic durable / indexed eligibility descriptor; LKW reports `UNKNOWN` today) belongs in the LKW control card as a **G4 CANDIDATE - NOT YET CLASSIFIED** finding. It must pass G4 before an `EXTENDED_GENERALLY` classification and ledger acceptance.
 - Do not fabricate `PI-001` or place the eligibility-descriptor candidate into this ledger as accepted platform evolution.
 
 ---
@@ -83,7 +83,7 @@ Use exact classifications from [PRODUCT_REUSE_PROOF.md](../plans/PRODUCT_REUSE_P
 |----------------|---------|
 | **REUSED_UNCHANGED** | Existing shared mechanism consumed without platform modification |
 | **REUSED_CONFIGURED** | Existing mechanism reused through intended configuration, policy, adapter, or DI contract without changing core platform semantics |
-| **EXTENDED_GENERALLY** | Real product pressure exposed a missing reusable capability; platform extended through a general contract — useful evolution, not pure reuse |
+| **EXTENDED_GENERALLY** | Real product pressure exposed a missing reusable capability; platform extended through a general contract - useful evolution, not pure reuse |
 | **PRODUCT_OWNED** | Behavior correctly belongs to the product (domain workflow, UX, business semantics, product-specific policy meaning) |
 | **PLATFORM_LEAK** | Product-specific branching, private infrastructure duplication, bypass of shared contracts, or product-specific behavior leaking into platform core |
 
@@ -133,7 +133,7 @@ Every future `PI-*` entry must include:
 
 1. Never add speculative impact records merely because a future product might need something.
 2. Never classify platform work as reusable before accepted evidence.
-3. `PLATFORM_LEAK` remains a defect — not a neutral outcome.
+3. `PLATFORM_LEAK` remains a defect - not a neutral outcome.
 4. `EXTENDED_GENERALLY` requires accepted G4 decision before material shared-platform implementation.
 5. Later unchanged/configured reuse by another product outweighs originating-product-only claims.
 6. Failed generalization must remain visible; do not erase inconvenient history.

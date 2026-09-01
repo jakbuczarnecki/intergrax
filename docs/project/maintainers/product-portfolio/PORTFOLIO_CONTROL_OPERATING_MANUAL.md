@@ -75,8 +75,8 @@ Portfolio Control supervises:
 
 **Parallel specialist streams** may exist, including:
 
-- **COMM** — LKW proof work within its authorized roadmap;
-- **VIS** — public visual/documentation presentation.
+- **COMM** - LKW proof work within its authorized roadmap;
+- **VIS** - public visual/documentation presentation.
 
 They are **evidence/content providers** where relevant, not Portfolio Control substitutes.
 
@@ -120,7 +120,7 @@ The canonical audit campaign register in `docs/audit_results/` wins. See [MULTI_
 
 | Stage | Authority |
 |-------|-----------|
-| Pre-G0 | Frozen selection record — [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) |
+| Pre-G0 | Frozen selection record - [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) |
 | After G0 | Accepted G0 |
 | After G1 | Accepted architecture for architecture semantics |
 
@@ -129,7 +129,7 @@ The canonical audit campaign register in `docs/audit_results/` wins. See [MULTI_
 | Question | Authority |
 |----------|-----------|
 | T0/T1 methodology | [PRODUCT_REUSE_PROOF.md](../plans/PRODUCT_REUSE_PROOF.md) |
-| Implementation conformance | Canonical audit engine — `docs/audit_results/` |
+| Implementation conformance | Canonical audit engine - `docs/audit_results/` |
 | Portfolio decisions | Portfolio Control consumes both |
 
 **Explicit rule:**
@@ -222,7 +222,7 @@ Gate meanings remain defined in [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM
 
 ---
 
-### G0 — Product baseline
+### G0 - Product baseline
 
 **Entry:** Product Session declares product baseline ready (four new products) or baseline-ingestion review due (LKW).
 
@@ -258,7 +258,7 @@ If **NO** → reject G0.
 
 ---
 
-### G1 — Product architecture
+### G1 - Product architecture
 
 **Entry:** Product Session declares architecture ready.
 
@@ -292,7 +292,7 @@ Invoke canonical audit **conditionally** per [MULTI_PRODUCT_AUDIT_INTEGRATION.md
 
 ---
 
-### G2 — T0 reuse baseline
+### G2 - T0 reuse baseline
 
 **Entry:** Product Session declares T0 ready. **Four new products only.**
 
@@ -322,7 +322,7 @@ Reject retroactive or score-optimizing T0 edits.
 
 ---
 
-### G3 — First real vertical slice
+### G3 - First real vertical slice
 
 **Entry:** Product Session declares first meaningful end-to-end outcome ready.
 
@@ -350,7 +350,7 @@ Check platform boundary pressure exposed by slice. If material shared change app
 
 ---
 
-### G4 — Material platform pressure
+### G4 - Material platform pressure
 
 **Entry:** Product Session escalates before implementing material shared-platform change.
 
@@ -389,13 +389,13 @@ Program canonical classifications (`REUSED_UNCHANGED`, `REUSED_CONFIGURED`, `EXT
 
 **Acceptance output:** G4 disposition recorded; implementation path authorized or blocked.
 
-**Next allowed action:** product-owned work, platform work, audit, or redesign — per disposition.
+**Next allowed action:** product-owned work, platform work, audit, or redesign - per disposition.
 
 A G4 decision must occur **BEFORE** material shared-platform modification.
 
 ---
 
-### G5 — MVP / major proof
+### G5 - MVP / major proof
 
 **Entry:** Product Session declares major proof or MVP milestone ready.
 
@@ -416,7 +416,7 @@ Invoke canonical audit **conditionally** when material claims require adversaria
 
 ---
 
-### G6 — T1 reuse audit
+### G6 - T1 reuse audit
 
 **Entry:** Product Session requests T1 / reuse evaluation. **Preregistered new products.**
 
@@ -452,7 +452,7 @@ Portfolio Control gate decision
 
 ---
 
-### G7 — Market validation
+### G7 - Market validation
 
 **Entry:** Product Session submits external or pilot evidence.
 
@@ -470,7 +470,7 @@ Portfolio Control gate decision
 
 ---
 
-### G8 — Continue / accelerate / reduce / pause / stop
+### G8 - Continue / accelerate / reduce / pause / stop
 
 **Entry:** Portfolio Control periodic review or material trigger.
 
@@ -480,7 +480,7 @@ Portfolio Control gate decision
 
 **Acceptance output:** Recommendation and/or program state change recorded in central artifacts.
 
-**Next allowed action:** per disposition — including PAUSE, STOP, or ACCELERATE.
+**Next allowed action:** per disposition - including PAUSE, STOP, or ACCELERATE.
 
 ---
 
@@ -733,7 +733,7 @@ Keep those conclusions **separate**.
 
 **Canonical audit engine owns:**
 
-- audit campaign lifecycle / findings / remediation state — `docs/audit_results/`
+- audit campaign lifecycle / findings / remediation state - `docs/audit_results/`
 
 **Public documentation / VIS owns:**
 
@@ -833,7 +833,7 @@ This is an **operating checklist**. Do **not** create a new persistent review da
 ## 22. Daily / periodic operating loop
 
 ```text
-A. Synchronize          — HEAD, PORTFOLIO_STATUS, delta since last checkpoint
+A. Synchronize          - HEAD, PORTFOLIO_STATUS, delta since last checkpoint
 B. Detect material changes
 C. Verify product evidence
 D. Process pending gates

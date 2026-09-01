@@ -16,9 +16,9 @@ The required PROD-13 ancestor
 `592ec39b791a5a55474544de9c053b107ad412c5` is present in the current
 development history. The commits after it were reviewed as follows:
 
-- `205bd1d2611b9aa86d0deca36e56f61b45291f8c` — category B: workspace
+- `205bd1d2611b9aa86d0deca36e56f61b45291f8c` - category B: workspace
   application consumption of the canonical scoped vector cleanup contract;
-- `31d3e0a5330ab0b4814a1168a4a867ab93500cb4` — category A: optional provider
+- `31d3e0a5330ab0b4814a1168a4a867ab93500cb4` - category A: optional provider
   dependency loading and registry protection, without changing canonical RAG
   identity, scope, ownership, replacement or generation semantics.
 
@@ -172,8 +172,8 @@ See [`RAG.md`](../../architecture/RAG.md) for the detailed capability matrix.
 | Chroma | `STABLE` | Qualified | Live-qualified by RAG-LIVE-15B-R2 in the repository-owned environment |
 | Neo4j GraphRAG baseline | `STABLE` | Canonical harness qualified | `LIVE_QUALIFIED_BASELINE` by RAG-LIVE-15C-R2 in the repository-owned environment |
 | Neo4j generation fencing | `STABLE` | Canonical harness + offline contract | `LIVE_QUALIFIED` by RAG-LIVE-15D-R2 in the repository-owned environment |
-| Weaviate / LanceDB / Typesense | `BETA` | — | Source replacement unsupported |
-| Pinecone / Milvus / Vespa | `BETA` | — | No live qualification claim |
+| Weaviate / LanceDB / Typesense | `BETA` | - | Source replacement unsupported |
+| Pinecone / Milvus / Vespa | `BETA` | - | No live qualification claim |
 | InMemory | Harness/test taxonomy | Canonical harness use | Use for harness/tests according to current taxonomy |
 
 ## GraphRAG handoff
@@ -225,25 +225,25 @@ optional implementation behind native contracts.
 
 ## Evidence index
 
-1. [`RAG.md`](../../architecture/RAG.md) — canonical architecture and provider
+1. [`RAG.md`](../../architecture/RAG.md) - canonical architecture and provider
    taxonomy.
-2. [`RAG_PRODUCTION_QUALIFICATION.md`](RAG_PRODUCTION_QUALIFICATION.md) —
+2. [`RAG_PRODUCTION_QUALIFICATION.md`](RAG_PRODUCTION_QUALIFICATION.md) -
    detailed RAG-PROD-13 evidence ledger.
-3. [`RAG_PGVECTOR_LIVE_QUALIFICATION.md`](RAG_PGVECTOR_LIVE_QUALIFICATION.md) —
+3. [`RAG_PGVECTOR_LIVE_QUALIFICATION.md`](RAG_PGVECTOR_LIVE_QUALIFICATION.md) -
    RAG-LIVE-15A-R2 PgVector live evidence.
-4. [`RAG_CHROMA_LIVE_QUALIFICATION.md`](RAG_CHROMA_LIVE_QUALIFICATION.md) —
+4. [`RAG_CHROMA_LIVE_QUALIFICATION.md`](RAG_CHROMA_LIVE_QUALIFICATION.md) -
    RAG-LIVE-15B-R2 Chroma live evidence.
-5. [`RAG_NEO4J_LIVE_BASELINE_QUALIFICATION.md`](RAG_NEO4J_LIVE_BASELINE_QUALIFICATION.md) —
+5. [`RAG_NEO4J_LIVE_BASELINE_QUALIFICATION.md`](RAG_NEO4J_LIVE_BASELINE_QUALIFICATION.md) -
   RAG-LIVE-15C-R2 Neo4j GraphRAG live baseline evidence.
-6. [`RAG_NEO4J_GENERATION_FENCING_QUALIFICATION.md`](RAG_NEO4J_GENERATION_FENCING_QUALIFICATION.md) —
+6. [`RAG_NEO4J_GENERATION_FENCING_QUALIFICATION.md`](RAG_NEO4J_GENERATION_FENCING_QUALIFICATION.md) -
   RAG-LIVE-15D-R2 Neo4j generation fencing live evidence.
-7. [`RAG_LIVE_BACKEND_CLOSEOUT.md`](RAG_LIVE_BACKEND_CLOSEOUT.md) —
+7. [`RAG_LIVE_BACKEND_CLOSEOUT.md`](RAG_LIVE_BACKEND_CLOSEOUT.md) -
   RAG-LIVE-15E multi-backend live qualification closeout.
-8. [`RAG_EXTENSION_GUIDE.md`](../../technical/guides/RAG_EXTENSION_GUIDE.md) —
+8. [`RAG_EXTENSION_GUIDE.md`](../../technical/guides/RAG_EXTENSION_GUIDE.md) -
    extension and plugin contracts.
 9. [`LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md)
-   — `KnowledgeDocument` ABI detail.
-10. [`RAG.md` historical plan](../plans/RAG.md) — implementation history only.
+   - `KnowledgeDocument` ABI detail.
+10. [`RAG.md` historical plan](../plans/RAG.md) - implementation history only.
 
 Accepted PROD-13 evidence commits are
 `a93c68c138fea4a8758df9e3aca43fd454f521c0` and

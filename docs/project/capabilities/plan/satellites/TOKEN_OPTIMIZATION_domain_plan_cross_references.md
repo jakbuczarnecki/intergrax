@@ -4,7 +4,7 @@ Intergrax framework – proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
 -->
 
-# TOKEN_OPTIMIZATION — domain plan cross-references
+# TOKEN_OPTIMIZATION - domain plan cross-references
 
 **Parent hub:** [`TOKEN_OPTIMIZATION.md`](../TOKEN_OPTIMIZATION.md)  
 **Feature architecture (1:1):** [`../../architecture/TOKEN_OPTIMIZATION.md`](../../architecture/TOKEN_OPTIMIZATION.md)  
@@ -27,7 +27,7 @@ This satellite is the canonical checklist for domain plan cross-reference sync a
 Each participating domain plan should contain a concise line near the header/read-scope block:
 
 ```markdown
-**Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). <DOMAIN-SPECIFIC OWNERSHIP SENTENCE>
+**Cross-feature - Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). <DOMAIN-SPECIFIC OWNERSHIP SENTENCE>
 ```
 
 Use relative links appropriate to `docs/project/maintainers/plans/<DOMAIN>.md`:
@@ -106,7 +106,7 @@ Source documents:
 
 Edit only the domain plan files listed in the domain plan row checklist above.
 
-In each file, add one concise `Cross-feature — Token Optimization` entry in the header/read-scope area.
+In each file, add one concise `Cross-feature - Token Optimization` entry in the header/read-scope area.
 Add or verify TOKEN-* phase rows cited in this satellite.
 
 Run:

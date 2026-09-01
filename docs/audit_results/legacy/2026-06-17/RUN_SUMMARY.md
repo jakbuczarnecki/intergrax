@@ -1,4 +1,4 @@
-# Architecture audit run — 2026-06-17
+# Architecture audit run - 2026-06-17
 
 **Mode:** audit_only · **Scope:** all 22 domain pairs  
 **Orchestrator:** [`ORCHESTRATOR.md`](../../ORCHESTRATOR.md)
@@ -8,7 +8,7 @@
 | Outcome | Count |
 |---------|-------|
 | Completed (mature_revalidated) | 20 |
-| Completed (drift_detected — open P1) | 2 |
+| Completed (drift_detected - open P1) | 2 |
 | Blocked | 0 |
 
 **Total open P0:** 0 · **Total open P1:** 2
@@ -31,7 +31,7 @@
 
 ## Plan sync
 
-- `docs/plan/UNIFIED_EXECUTION_RUNTIME.md` — added P2 row **UAEP-AUDIT-01**
+- `docs/plan/UNIFIED_EXECUTION_RUNTIME.md` - added P2 row **UAEP-AUDIT-01**
 
 ## Verification
 

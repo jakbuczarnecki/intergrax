@@ -1,4 +1,4 @@
-# MEMORY — §8+ extended architecture
+# MEMORY - §8+ extended architecture
 
 **Parent hub:** [`MEMORY.md`](../MEMORY.md)
 
@@ -28,7 +28,7 @@ Apply in order until invariant §1.3 is satisfied:
 4. SUMMARIZE_OLDEST on session history
 5. TRUNCATE_OLDEST on session history
 6. Drop lowest-scored context fragments (relevance order)
-7. Tokenizer-aware hard trim (last resort — never silent char-cut)
+7. Tokenizer-aware hard trim (last resort - never silent char-cut)
 ```
 
 Each step MUST emit diagnostics with `degradation_step` and bytes/tokens removed.
@@ -91,7 +91,7 @@ max_memory_entries_in_context: int = 8
 
 ## 10. Delegation and explore pattern
 
-### 10.1 Delegation memory (Done — R-Delegate)
+### 10.1 Delegation memory (Done - R-Delegate)
 
 Child agents read/write under:
 
@@ -99,9 +99,9 @@ Child agents read/write under:
 task_id/delegation/{node_id}/
 ```
 
-via `PolicyScopedMemoryView`. Parent receives bounded context via `ContextManager` — not raw child history.
+via `PolicyScopedMemoryView`. Parent receives bounded context via `ContextManager` - not raw child history.
 
-### 10.2 Explore pattern (Done — MEM-DEPTH-4.2 + MEM-LC-8)
+### 10.2 Explore pattern (Done - MEM-DEPTH-4.2 + MEM-LC-8)
 
 For wide codebase or corpus search:
 
@@ -126,7 +126,7 @@ Properties:
 - Parallel searches do not bloat parent history
 - Return payload is **structured findings**, not raw file dumps
 
-Target: MEM-DEPTH-4.1, MEM-DEPTH-4.2 — **wired** via `explore_integration.py` in `graph_executor`.
+Target: MEM-DEPTH-4.1, MEM-DEPTH-4.2 - **wired** via `explore_integration.py` in `graph_executor`.
 
 ---
 
@@ -139,7 +139,7 @@ enable_user_memory: bool
 enable_org_memory: bool
 enable_long_term_memory: bool
 enable_task_memory: bool
-enable_session_vector_index: bool = False          # MEM-VEC-2 — episodic turn indexing (Done)
+enable_session_vector_index: bool = False          # MEM-VEC-2 - episodic turn indexing (Done)
 include_cross_session_episodic: bool = False       # episodic search across sessions for same user
 session_index_top_k: int = 8
 session_index_score_threshold: float | None = None
@@ -150,7 +150,7 @@ scope_boundary: str = "tenant"
 consolidation_mode: Literal["manual", "scheduled", "auto"]
 ```
 
-Mapped to `RuntimeConfig` via `memory_runtime_bridge.py` / `materialize_runtime_config`. Vector-index flags require a resolved integration vector store — hosts without vector backend MUST fail closed (`reason=vector_backend_unavailable`) rather than silently disabling semantic recall while flags are true (MEM-VEC-1.4 gate).
+Mapped to `RuntimeConfig` via `memory_runtime_bridge.py` / `materialize_runtime_config`. Vector-index flags require a resolved integration vector store - hosts without vector backend MUST fail closed (`reason=vector_backend_unavailable`) rather than silently disabling semantic recall while flags are true (MEM-VEC-1.4 gate).
 
 ### 11.2 `ContextProfile`
 
@@ -176,10 +176,10 @@ enable_websearch: bool
 | Function | Role |
 |----------|------|
 | `resolve_memory_platform_wiring()` | Session + profile stores from integration profile |
-| `build_session_manager_from_environment()` | SessionManager + profile managers — **MUST accept optional `rag_stack` for vector-enabled `UserProfileManager`** (MEM-VEC-1.1) |
+| `build_session_manager_from_environment()` | SessionManager + profile managers - **MUST accept optional `rag_stack` for vector-enabled `UserProfileManager`** (MEM-VEC-1.1) |
 | `wire_task_memory_from_profile()` | Task KV database path |
 | `materialize_runtime_config()` | Profile → RuntimeConfig bridge |
-| `build_runtime_context_from_environment()` | Single entry — MUST pass shared RAG stack into memory + tool wiring (MEM-VEC-1.2) |
+| `build_runtime_context_from_environment()` | Single entry - MUST pass shared RAG stack into memory + tool wiring (MEM-VEC-1.2) |
 
 ### 11.5 Memory store and vector index plugins
 
@@ -189,7 +189,7 @@ enable_websearch: bool
 | `SessionStoragePlugin` | `intergrax.memory_stores` | `create_session_storage(**kwargs)` | Default session persistence |
 | `SessionTurnIndexStore` (MEM-VEC-2.1; plugin EP MEM-VEC-3.1 **Done**) | `intergrax.memory_stores` | `create_session_turn_index(**kwargs)` | Default: `VectorSessionTurnIndexStore` over `VectorstoreManager` |
 
-Vector **integration** providers (Chroma, pgvector, Qdrant, …) remain in the integrations catalog — memory plugins select **how** indexes are written, not which vendor SDK is used. Custom Tier-3 hosts register EP plugins; Tier-2 agents still use Nexus APIs and tools only.
+Vector **integration** providers (Chroma, pgvector, Qdrant, …) remain in the integrations catalog - memory plugins select **how** indexes are written, not which vendor SDK is used. Custom Tier-3 hosts register EP plugins; Tier-2 agents still use Nexus APIs and tools only.
 
 ---
 
@@ -197,13 +197,13 @@ Vector **integration** providers (Chroma, pgvector, Qdrant, …) remain in the i
 
 | Layer | In-memory | SQLite (lab) | MongoDB | Postgres | Redis |
 |-------|-----------|--------------|---------|----------|-------|
-| Task KV | tests | `INTERGRAX_TASK_MEMORY_DB` | — | — | — |
+| Task KV | tests | `INTERGRAX_TASK_MEMORY_DB` | - | - | - |
 | Session | fallback | sqlite bundle | `DocumentStoreSessionStorage` (MEM-DEPTH-2.1) | spike P3 | **not memory layer** |
-| User LTM | tests | sqlite bundle | `DocumentStoreUserProfileStore` | spike P3 | — |
-| Org profile | tests | sqlite bundle | — | — | — |
-| Trace / events | tests | yes | — | — | — |
+| User LTM | tests | sqlite bundle | `DocumentStoreUserProfileStore` | spike P3 | - |
+| Org profile | tests | sqlite bundle | - | - | - |
+| Trace / events | tests | yes | - | - | - |
 
-**Lab default:** `create_sqlite_integration()` bundles session + user LTM + org + task_memory + trace — coherent dev recovery.
+**Lab default:** `create_sqlite_integration()` bundles session + user LTM + org + task_memory + trace - coherent dev recovery.
 
 ---
 
@@ -228,17 +228,17 @@ See [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) §3.
 
 | Capability | LangGraph | Mem0 / Zep | Intergrax as-built | Backlog |
 |------------|-----------|------------|-------------------|--------|
-| Thread persistence | Checkpointer | Session | Session + checkpoint + Mongo document_store ✅ | — |
-| Scoped KV | Store API | — | TaskMemory ✅ | — |
-| Auto fact extraction | — | Core | Consolidation + `consolidation_mode=auto` ✅ | — |
-| Entity graph memory | — | Zep ✅ | `EntityGraphMemoryStore` ✅ (≠ Graph RAG) | — |
-| Vector semantic LTM | Optional | ✅ | Tier-3 wired via `memory_vector_wiring.py` ✅ | — |
-| Vector semantic session recall | Optional | ✅ | Episodic index + CE provider ✅ | — |
-| Subagent isolation | Subgraph | — | Delegation namespace ✅ | Explore pattern MEM-DEPTH-4.* |
-| Unified context budget | Partial | — | `ContextCompiler` ✅; per-step caps remain | CE ranker tuning |
-| Temporal fact validity | — | Zep ✅ | ❌ | MEM-DEPTH-5.2 |
-| Plugin episodic index EP | — | — | Default adapter only | MEM-VEC-3.1 |
-| Unified semantic search skill | — | ✅ | `ltm.search` tool only | MEM-VEC-3.2 |
+| Thread persistence | Checkpointer | Session | Session + checkpoint + Mongo document_store ✅ | - |
+| Scoped KV | Store API | - | TaskMemory ✅ | - |
+| Auto fact extraction | - | Core | Consolidation + `consolidation_mode=auto` ✅ | - |
+| Entity graph memory | - | Zep ✅ | `EntityGraphMemoryStore` ✅ (≠ Graph RAG) | - |
+| Vector semantic LTM | Optional | ✅ | Tier-3 wired via `memory_vector_wiring.py` ✅ | - |
+| Vector semantic session recall | Optional | ✅ | Episodic index + CE provider ✅ | - |
+| Subagent isolation | Subgraph | - | Delegation namespace ✅ | Explore pattern MEM-DEPTH-4.* |
+| Unified context budget | Partial | - | `ContextCompiler` ✅; per-step caps remain | CE ranker tuning |
+| Temporal fact validity | - | Zep ✅ | ❌ | MEM-DEPTH-5.2 |
+| Plugin episodic index EP | - | - | Default adapter only | MEM-VEC-3.1 |
+| Unified semantic search skill | - | ✅ | `ltm.search` tool only | MEM-VEC-3.2 |
 
 ---
 
@@ -280,30 +280,30 @@ See [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) §3.
 
 | Area | Score (1–5) | Phase MEM | Phase MEM-DEPTH | Phase MEM-VEC |
 |------|-------------|-----------|-----------------|---------------|
-| Task KV | 4 | Done | 4 (maintain) | — |
-| Context / LLM window | 4.5 | Partial | Done — Context Compiler | CE owns ranker |
-| STM session | 4 | Partial | Done — Mongo + SQLite parity | — |
-| User LTM | 4 | Partial | Done — store + vector wiring | Done — MEM-VEC-1 |
-| LTM / session vector recall | 4 | N/A | N/A | Done — MEM-VEC-1/2 |
-| Org memory | 3.5 | Partial | Done — org LTM entries + Mongo fallback store | — |
-| Consolidation | 4 | Partial | Done — job + modes | — |
-| Graph agent memory | 3.5 | RFC only | Done — `EntityGraphMemoryStore` + consolidation indexing | — |
+| Task KV | 4 | Done | 4 (maintain) | - |
+| Context / LLM window | 4.5 | Partial | Done - Context Compiler | CE owns ranker |
+| STM session | 4 | Partial | Done - Mongo + SQLite parity | - |
+| User LTM | 4 | Partial | Done - store + vector wiring | Done - MEM-VEC-1 |
+| LTM / session vector recall | 4 | N/A | N/A | Done - MEM-VEC-1/2 |
+| Org memory | 3.5 | Partial | Done - org LTM entries + Mongo fallback store | - |
+| Consolidation | 4 | Partial | Done - job + modes | - |
+| Graph agent memory | 3.5 | RFC only | Done - `EntityGraphMemoryStore` + consolidation indexing | - |
 | Context compiler (unified) | 4.5 | N/A | Done | CE canon |
 | **Overall** | **~4.5** | Platform wiring Done | Closed | MEM-VEC **Done** |
 
 **FAUDIT-32:** Memory Layer **L4** for vector recall and layer-completion hardening (2026-06-17).
 
-### Audit register (open / partial — re-validate)
+### Audit register (open / partial - re-validate)
 
 | ID | Gap | Severity | Phase | Status |
 |----|-----|----------|-------|--------|
-| MEM-AUDIT-1 | No versioned procedural memory store (Prompt Registry only) | P2 | — | **Open** (by design minimal) |
-| MEM-AUDIT-2 | Org memory maturity vs user LTM | P2 | — | **Partial** — org `memory_entries` + manager search shipped |
+| MEM-AUDIT-1 | No versioned procedural memory store (Prompt Registry only) | P2 | - | **Open** (by design minimal) |
+| MEM-AUDIT-2 | Org memory maturity vs user LTM | P2 | - | **Partial** - org `memory_entries` + manager search shipped |
 | MEM-AUDIT-3 | Temporal fact validity on LTM entries | P2 | MEM-DEPTH-5.2 | **Done** |
 | MEM-AUDIT-4 | `SessionTurnIndexStore` plugin EP not shipped | P2 | MEM-VEC-3.1 | **Done** |
 | MEM-AUDIT-5 | `memory.semantic_search` skill runtime (unified LTM + episodic) | P2 | MEM-VEC-3.2 | **Done** |
-| MEM-AUDIT-6 | Explore delegation pattern (Cursor-class) | P2 | MEM-DEPTH-4.* | **Done** — graph executor wiring |
-| MEM-AUDIT-7 | Per-step budget caps before CE collect | P2 | CE + ADR-MEM-001 | **Partial** — global allocator Done |
+| MEM-AUDIT-6 | Explore delegation pattern (Cursor-class) | P2 | MEM-DEPTH-4.* | **Done** - graph executor wiring |
+| MEM-AUDIT-7 | Per-step budget caps before CE collect | P2 | CE + ADR-MEM-001 | **Partial** - global allocator Done |
 
 **Closed baselines:** MEM (48/48), MEM-DEPTH, AUDIT-IDEAL-15.1–15.3, AUDIT-IDEAL-16.1–16.2 (CE owner).
 
@@ -315,7 +315,7 @@ Implementation tasks: [Phase MEM-VEC](../plan/MEMORY.md#phase-mem-vec--vector-me
 
 | Document | Relationship |
 |----------|--------------|
-| [intergrax_runtime_architecture.md §27–§28](architecture/MEMORY.md#27-memory-model) | Canon summary — links here for depth |
+| [intergrax_runtime_architecture.md §27–§28](architecture/MEMORY.md#27-memory-model) | Canon summary - links here for depth |
 | [architecture/CONTEXT_ENGINEERING.md](CONTEXT_ENGINEERING.md) | Context engineering engine (Layer C); AUDIT-IDEAL-16.1–16.2 owner |
 | [guides/AGENT_CREATION_GUIDE.md Appendix G](guides/AGENT_CREATION_GUIDE.md#appendix-g--memory--rag-naming-phase-q) | Author control plane |
 | [guides/AGENT_CREATION_GUIDE.md Appendix L](guides/AGENT_CREATION_GUIDE.md#appendix-l--context-engineering-control-plane) | Author control plane (links CE canon) |
@@ -352,6 +352,6 @@ Graph-native knowledge evolves from optional enhancement to first-class capabili
 | `hybrid_retrieval.py` | Hybrid strategy |
 | `graph_provenance.py` | Lineage for graph edges |
 
-**Distinction:** Graph RAG indexes **document knowledge** — not user episodic memory (§4). Integration backends (Neo4j, etc.) are catalog providers in [`INTEGRATIONS.md`](INTEGRATIONS.md).
+**Distinction:** Graph RAG indexes **document knowledge** - not user episodic memory (§4). Integration backends (Neo4j, etc.) are catalog providers in [`INTEGRATIONS.md`](INTEGRATIONS.md).
 
 ---

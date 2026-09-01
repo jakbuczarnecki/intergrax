@@ -1,10 +1,10 @@
-﻿# legal_application — architecture
+﻿# legal_application - architecture
 
 Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
 ## Purpose
 
-Product-style Tier-3 host for scaffold `LegalAgent` — auth, FastAPI core, MCP, deploy triad.
+Product-style Tier-3 host for scaffold `LegalAgent` - auth, FastAPI core, MCP, deploy triad.
 
 ## Manifest
 
@@ -37,7 +37,7 @@ Product-style Tier-3 host for scaffold `LegalAgent` — auth, FastAPI core, MCP,
 
 ## Next steps (Band 3)
 
-Port UAEP steps from `agents/legal/docs/SPEC_FROM_LEGACY.md` — out of Phase AA platform scope.
+Port UAEP steps from `agents/legal/docs/SPEC_FROM_LEGACY.md` - out of Phase AA platform scope.
 
 ## Runtime recovery (APP-EVOL-5)
 

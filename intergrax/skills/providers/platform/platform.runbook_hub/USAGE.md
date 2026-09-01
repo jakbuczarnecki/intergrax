@@ -28,4 +28,4 @@ Governed access to: `skill.resolve`, `agent.list_agents`, `rag.retrieve`.
 
 ## Related skills
 
-- Other `platform` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `platform` bundle skills - see bundle [USAGE.md](../USAGE.md)

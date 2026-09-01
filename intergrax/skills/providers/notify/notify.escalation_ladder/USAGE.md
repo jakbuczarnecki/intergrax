@@ -28,4 +28,4 @@ Governed access to: `notify.schedule`, `notify.send`, `pagerduty.trigger_inciden
 
 ## Related skills
 
-- Other `notify` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `notify` bundle skills - see bundle [USAGE.md](../USAGE.md)

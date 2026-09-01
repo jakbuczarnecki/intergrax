@@ -2,13 +2,13 @@
 
 Thank you for your interest in Intergrax. This document explains how to contribute effectively to the **Agent OS and Harness AI** platform.
 
-**Canonical documentation:** [`docs/`](docs/) — navigation and update rules in [DOCUMENTATION_MAP.md](docs/project/technical/DOCUMENTATION_MAP.md).
+**Canonical documentation:** [`docs/`](docs/) - navigation and update rules in [DOCUMENTATION_MAP.md](docs/project/technical/DOCUMENTATION_MAP.md).
 
 ---
 
 ## Project status
 
-Intergrax is **source-available**, **proprietary**, and under **active R&D**. Platform maturity is **capability-specific** — see current public evidence in [docs/project/proofs/PROOFS.md](docs/project/proofs/PROOFS.md). The default harness implementation queue is [§6.1 maintenance](docs/project/architecture/intergrax_runtime_architecture.md#61-harness-platform-maintenance-default--band-1) only. Business agents (Phase K) are [end of plan](docs/project/architecture/intergrax_runtime_architecture.md#63-end-of-plan--deferred-product-work-only) until explicit product prioritization.
+Intergrax is **source-available**, **proprietary**, and under **active R&D**. Platform maturity is **capability-specific** - see current public evidence in [docs/project/proofs/PROOFS.md](docs/project/proofs/PROOFS.md). The default harness implementation queue is [§6.1 maintenance](docs/project/architecture/intergrax_runtime_architecture.md#61-harness-platform-maintenance-default--band-1) only. Business agents (Phase K) are [end of plan](docs/project/architecture/intergrax_runtime_architecture.md#63-end-of-plan--deferred-product-work-only) until explicit product prioritization.
 
 Intergrax is **public and source-available proprietary** under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE). You may clone, install locally, make evaluation modifications, create forks, submit patches, and open pull requests as described in [docs/project/community/COLLABORATION.md](docs/project/community/COLLABORATION.md). This is **not** an open-source license grant. Production use and commercial use require **explicit written permission**.
 
@@ -24,8 +24,8 @@ You may clone the Official Repository, install dependencies, run evaluation path
 
 | Document | When |
 |----------|------|
-| [docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) | Always — strategic goal and work cycle |
-| [docs/project/technical/guides/SYSTEM_INVARIANTS.md](docs/project/technical/guides/SYSTEM_INVARIANTS.md) | Always — cross-domain rules you must not break |
+| [docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) | Always - strategic goal and work cycle |
+| [docs/project/technical/guides/SYSTEM_INVARIANTS.md](docs/project/technical/guides/SYSTEM_INVARIANTS.md) | Always - cross-domain rules you must not break |
 | [docs/project/technical/guides/LAYER_COMPLETION_MODE.md](docs/project/technical/guides/LAYER_COMPLETION_MODE.md) | Full harness layer closeout sessions |
 | [docs/project/architecture/intergrax_runtime_architecture.md](docs/project/architecture/intergrax_runtime_architecture.md) | Architecture changes |
 | [docs/project/architecture/intergrax_runtime_architecture.md](docs/project/architecture/intergrax_runtime_architecture.md) | Status, phases, gates |
@@ -104,12 +104,12 @@ See [infra/README.md](infra/README.md) and [docs/project/technical/guides/HARNES
 
 ### Welcome contributions
 
-- **Harness maintenance** — bug fixes, regression tests, CI improvements (§6.1)
-- **Documentation** — corrections and clarifications in `docs/` (one source of truth per topic)
-- **Tier-2 agents** — new specialized agents following [AGENT_CREATION_GUIDE](docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
-- **Tier-0 plugins** — integrations, tools, skills via [EXTENSION_AUTHOR_GUIDE](docs/project/technical/guides/EXTENSION_AUTHOR_GUIDE.md)
-- **Tier-3 applications** — deployable environments following `applications/USAGE.md`
-- **Test coverage** — meaningful tests for real behavior (not trivial assertions)
+- **Harness maintenance** - bug fixes, regression tests, CI improvements (§6.1)
+- **Documentation** - corrections and clarifications in `docs/` (one source of truth per topic)
+- **Tier-2 agents** - new specialized agents following [AGENT_CREATION_GUIDE](docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
+- **Tier-0 plugins** - integrations, tools, skills via [EXTENSION_AUTHOR_GUIDE](docs/project/technical/guides/EXTENSION_AUTHOR_GUIDE.md)
+- **Tier-3 applications** - deployable environments following `applications/USAGE.md`
+- **Test coverage** - meaningful tests for real behavior (not trivial assertions)
 
 ### Requires prior discussion
 
@@ -135,7 +135,7 @@ applications/    MAY import from agents/ and intergrax/
 
 ### Reuse rule
 
-Tier-1/2/3 work is **composition and wiring** of existing Tier-0 modules — not parallel universal mechanisms. See [architecture §5.2](docs/project/architecture/PLATFORM_FOUNDATION.md#52-platform-reuse-and-no-redundancy-principle).
+Tier-1/2/3 work is **composition and wiring** of existing Tier-0 modules - not parallel universal mechanisms. See [architecture §5.2](docs/project/architecture/PLATFORM_FOUNDATION.md#52-platform-reuse-and-no-redundancy-principle).
 
 ### Agent creation
 
@@ -212,11 +212,11 @@ Use the [pull request template](.github/PULL_REQUEST_TEMPLATE.md). Include:
 
 | Marker | Purpose | CI |
 |--------|---------|-----|
-| `gate` | Deterministic regression gate | Yes — always |
+| `gate` | Deterministic regression gate | Yes - always |
 | `unit` | Fast unit tests | Yes |
 | `integration` | Component wiring | Selective |
 | `agent_os` | Agent OS acceptance | Yes (gate) |
-| `network` | Real external APIs | No — local only |
+| `network` | Real external APIs | No - local only |
 | `e2e` | End-to-end flows | Rare |
 
 ```bash
@@ -246,9 +246,9 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 Use [GitHub Issues](https://github.com/jakbuczarnecki/intergrax/issues) and pick the matching issue template (bug report, proof path feedback, integration proposal, design partner interest, documentation feedback). Do not include secrets or credentials in public issues.
 
-For security vulnerabilities, see [SECURITY.md](SECURITY.md) — **do not** open public issues.
+For security vulnerabilities, see [SECURITY.md](SECURITY.md) - **do not** open public issues.
 
-For commercial licensing, production use, or partnership requests, contact the maintainer directly (see [docs/project/community/COLLABORATION.md](docs/project/community/COLLABORATION.md)) — do not use public issues for those topics.
+For commercial licensing, production use, or partnership requests, contact the maintainer directly (see [docs/project/community/COLLABORATION.md](docs/project/community/COLLABORATION.md)) - do not use public issues for those topics.
 
 ---
 

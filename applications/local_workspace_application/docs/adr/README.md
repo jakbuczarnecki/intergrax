@@ -1,4 +1,4 @@
-# Local Workspace — Architecture Decision Records
+# Local Workspace - Architecture Decision Records
 
 **Domain:** Tier-3 application host (`applications/local_workspace_application`)
 
@@ -36,7 +36,7 @@ ADR-LOCAL_WORKSPACE-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| — | *No application ADRs yet* | — |
+| - | *No application ADRs yet* | - |
 
 ---
 

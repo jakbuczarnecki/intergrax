@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-# Integrations catalog — usage notes
+# Integrations catalog - usage notes
 
 ## Lab stack honesty (INT-MAINT-03)
 
@@ -11,7 +11,7 @@ rows. Use it when wiring Tier-3 hosts:
 
 | Value | Meaning |
 |-------|---------|
-| ``False`` (default) | In-process, SaaS API, or embedded backend — no local Docker required |
+| ``False`` (default) | In-process, SaaS API, or embedded backend - no local Docker required |
 | ``True`` | Realistic lab testing expects a local container or compose stack |
 
 **SaaS-only slugs** (no local substitute) are indexed in
@@ -19,7 +19,7 @@ rows. Use it when wiring Tier-3 hosts:
 providers require vendor credentials; do not treat them as offline lab defaults.
 
 **Local container slugs** (Postgres extensions, Kafka, MinIO, Vault, Kubernetes)
-are listed in ``LOCAL_CONTAINER_SLUGS`` — pair with compose profiles or
+are listed in ``LOCAL_CONTAINER_SLUGS`` - pair with compose profiles or
 ``intergrax doctor`` integration health checks before enabling on a host.
 
 Per-provider notes live beside each bundle under

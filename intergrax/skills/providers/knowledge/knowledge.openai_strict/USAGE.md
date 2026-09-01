@@ -4,14 +4,14 @@
 
 ## Purpose
 
-**Strict grounded Q&A via OpenAI hosted vector store** (`file_search`) — vendor-managed retrieval separate from harness `rag.retrieve`. Use when Tier-3 hosts target OpenAI Responses API with managed vector stores instead of self-hosted RAG stack.
+**Strict grounded Q&A via OpenAI hosted vector store** (`file_search`) - vendor-managed retrieval separate from harness `rag.retrieve`. Use when Tier-3 hosts target OpenAI Responses API with managed vector stores instead of self-hosted RAG stack.
 
 ## How it works
 
 1. Resolves single tool `openai.file_search.query`.
-2. Does **not** use harness `RetrievalService` / `vectorstore_manager` — OpenAI backend only.
+2. Does **not** use harness `RetrievalService` / `vectorstore_manager` - OpenAI backend only.
 3. Prompt ref: `knowledge.openai_strict.system` enforces citation-only answers.
-4. Bundle marked STABLE — pair with integration OpenAI credentials on host.
+4. Bundle marked STABLE - pair with integration OpenAI credentials on host.
 
 ## How to use
 
@@ -41,5 +41,5 @@ Wire OpenAI LLM adapter + vector store tools on `tool_profile`; enable `openai.*
 
 ## Related skills
 
-- `knowledge.wiki_navigator` — internal wiki path (harness tools)
-- `rag.hybrid_qa` — self-hosted index Q&A
+- `knowledge.wiki_navigator` - internal wiki path (harness tools)
+- `rag.hybrid_qa` - self-hosted index Q&A

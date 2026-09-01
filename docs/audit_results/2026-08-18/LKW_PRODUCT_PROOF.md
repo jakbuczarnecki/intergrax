@@ -1,4 +1,4 @@
-# LKW_PRODUCT_PROOF — Platform Audit
+# LKW_PRODUCT_PROOF - Platform Audit
 
 ## Metadata
 
@@ -46,8 +46,8 @@
 | Canonical proof manifest / suite runner | `scripts/proof/intergrax_proof_manifest.py`, `scripts/proof/intergrax_proof_runner.py`, `scripts/proof/run-intergrax-proof-suite.py` |
 | ProofReceipt contract / store | `intergrax/proofs/receipts/contracts.py`, `store.py`, `document_store.py` |
 | Per-layer report | `docs/audit_results/2026-08-18/LKW_PRODUCT_PROOF.md` |
-| LKW arch target invariants | `applications/local_workspace_application/docs/ARCHITECTURE.md` — [Protocol v2 LKW product proof target invariants (2026-08-18)](#protocol-v2-lkw-product-proof-target-invariants-2026-08-18) |
-| Receipt arch target invariants | `docs/project/architecture/PROOF_RECEIPTS.md` — [Protocol v2 proof receipt target invariants (2026-08-18)](#protocol-v2-proof-receipt-target-invariants-2026-08-18) |
+| LKW arch target invariants | `applications/local_workspace_application/docs/ARCHITECTURE.md` - [Protocol v2 LKW product proof target invariants (2026-08-18)](#protocol-v2-lkw-product-proof-target-invariants-2026-08-18) |
+| Receipt arch target invariants | `docs/project/architecture/PROOF_RECEIPTS.md` - [Protocol v2 proof receipt target invariants (2026-08-18)](#protocol-v2-proof-receipt-target-invariants-2026-08-18) |
 
 ## Executive summary
 
@@ -55,7 +55,7 @@
 
 ## Verdict
 
-**FAIL** — 0 CRITICAL / 5 HIGH / 1 MEDIUM / 0 LOW
+**FAIL** - 0 CRITICAL / 5 HIGH / 1 MEDIUM / 0 LOW
 
 ## Findings
 
@@ -68,8 +68,8 @@
 - **Claim falsified:** Public-evidence-eligible proof requires exact source identity; dirty worktree disqualifies public evidence promotion.
 - **Observation:** Master proof runner reads HEAD and git dirty status. `SuiteReceipt` records both `git_commit_sha` and `git_dirty`. But dirty worktree does not disqualify PASS or public-evidence eligibility. `suite_exit_code` returns success for PASS regardless of `git_dirty`. A proof can therefore execute modified/uncommitted code while still displaying the current HEAD SHA as the apparent source commit.
 - **Location:**
-  - `scripts/proof/intergrax_proof_runner.py` — HEAD/dirty capture; `suite_exit_code`; public-evidence eligibility
-  - `scripts/proof/run-intergrax-proof-suite.py` — suite orchestration
+  - `scripts/proof/intergrax_proof_runner.py` - HEAD/dirty capture; `suite_exit_code`; public-evidence eligibility
+  - `scripts/proof/run-intergrax-proof-suite.py` - suite orchestration
 - **Impact:** Public proof evidence can misrepresent the exact code tree executed.
 - **Confidence:** CONFIRMED
 
@@ -80,11 +80,11 @@
 - **Status at publication:** ACCEPTED
 - **Remediation block:** LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY
 - **Claim falsified:** Canonical `ProofReceipt` includes mandatory execution provenance: source revision/tree identity, dirty/exact-source posture, proof contract/version, application/build identity, environment/profile fingerprint.
-- **Observation:** LKW platform proof declares persisted `ProofReceipt` documents authoritative. Canonical `ProofReceipt` has `proof_id`, `proof_kind`, `application_id`, `result`, `recorded_at`, `run_id`, `correlation_id`, `task_id`, `provider_evidence`, `domain_evidence`, `guardrails`, `metadata` — but no mandatory source revision, source tree digest, dirty state, application/build identity, image digest, proof contract version beyond receipt schema, or environment/profile fingerprint. `ProofReceiptStore` lookup is `application + proof_kind + run_id`.
+- **Observation:** LKW platform proof declares persisted `ProofReceipt` documents authoritative. Canonical `ProofReceipt` has `proof_id`, `proof_kind`, `application_id`, `result`, `recorded_at`, `run_id`, `correlation_id`, `task_id`, `provider_evidence`, `domain_evidence`, `guardrails`, `metadata` - but no mandatory source revision, source tree digest, dirty state, application/build identity, image digest, proof contract version beyond receipt schema, or environment/profile fingerprint. `ProofReceiptStore` lookup is `application + proof_kind + run_id`.
 - **Location:**
-  - `intergrax/proofs/receipts/contracts.py` — `ProofReceipt` model
-  - `intergrax/proofs/receipts/store.py` — `ProofReceiptStore` lookup key
-  - `applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md` — receipt authority claims
+  - `intergrax/proofs/receipts/contracts.py` - `ProofReceipt` model
+  - `intergrax/proofs/receipts/store.py` - `ProofReceiptStore` lookup key
+  - `applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md` - receipt authority claims
 - **Impact:** Receipts cannot mechanically bind recorded outcomes to the code/build/environment actually executed.
 - **Confidence:** CONFIRMED
 
@@ -99,7 +99,7 @@
 - **Location:**
   - `applications/local_workspace_application/docs/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json`
   - `applications/local_workspace_application/docs/proof/LKW_PLATFORM_CERTIFICATION_MATRIX.md`
-  - `applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md` — certification presentation
+  - `applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md` - certification presentation
 - **Impact:** Historical certification can be read as silently current after relevant code changes.
 - **Confidence:** CONFIRMED
 
@@ -112,9 +112,9 @@
 - **Claim falsified:** For `--profile live`, missing required live proof yields non-success/incomplete exit; optional proofs skip only when manifest marks them optional.
 - **Observation:** Proof runner maps unsatisfied requirements to `BLOCKED_ENVIRONMENT`. `aggregate_overall_status` maps blocked environment in LIVE profile to `PASS_WITH_BLOCKED`. `suite_exit_code` maps `PASS_WITH_BLOCKED` to `0`. An explicitly requested live suite can return shell success while one or more selected live proofs did not execute because required provider/env requirements were missing.
 - **Location:**
-  - `scripts/proof/intergrax_proof_runner.py` — `aggregate_overall_status`, `suite_exit_code`, `BLOCKED_ENVIRONMENT`
+  - `scripts/proof/intergrax_proof_runner.py` - `aggregate_overall_status`, `suite_exit_code`, `BLOCKED_ENVIRONMENT`
   - `scripts/proof/run-intergrax-proof-suite.py`
-  - `scripts/proof/intergrax_proof_manifest.py` — required vs optional membership
+  - `scripts/proof/intergrax_proof_manifest.py` - required vs optional membership
 - **Impact:** Process exit 0 can be inferred as complete live certification when required proofs were blocked.
 - **Confidence:** CONFIRMED
 
@@ -127,10 +127,10 @@
 - **Claim falsified:** Every publicly executable proof has one canonical `ProofManifestEntry` with canonical `proof_id`, command, profile, safety class, requirements, timeout, and `public_evidence_eligible`.
 - **Observation:** `PROOFS.md` states canonical proof membership lives in `scripts/proof/intergrax_proof_manifest.py`. Public LKW proof exposes Governed Evidence Decision Proof with execution identity `advanced_flagship_proof` and direct module command. That proof is not registered in the canonical manifest. Public proof-reference checker scans `**Proof:**` / `**Proofs:**` lines and accepts only uppercase-hyphen IDs matching `[A-Z][A-Z0-9-]*`. Lowercase underscore `advanced_flagship_proof` sits outside canonical public-proof reference validation.
 - **Location:**
-  - `docs/project/proofs/PROOFS.md` — Governed Evidence Decision Proof entry
-  - `applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md` — `advanced_flagship_proof` command
-  - `scripts/proof/intergrax_proof_manifest.py` — manifest membership
-  - `scripts/proof/public_proof_references.py` — reference validation pattern
+  - `docs/project/proofs/PROOFS.md` - Governed Evidence Decision Proof entry
+  - `applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md` - `advanced_flagship_proof` command
+  - `scripts/proof/intergrax_proof_manifest.py` - manifest membership
+  - `scripts/proof/public_proof_references.py` - reference validation pattern
 - **Impact:** Second public flagship proof path bypasses manifest governance and reference checking.
 - **Confidence:** CONFIRMED
 
@@ -143,9 +143,9 @@
 - **Claim falsified:** Proof profile semantics are explicit: `QUICK` either includes bounded flagship LKW product smoke or cannot be interpreted as Product Quick Start coverage.
 - **Observation:** Public Product Quick Start is the primary supported product-evaluation proof. Manifest registers all three `LKW-PRODUCT-QUICKSTART-*` entries only for FULL/LIVE. `--profile quick` therefore does not execute the primary LKW product quickstart. Public proof dashboard separately advertises the repository quick suite.
 - **Location:**
-  - `scripts/proof/intergrax_proof_manifest.py` — `LKW-PRODUCT-QUICKSTART-*` profile membership
-  - `docs/project/proofs/PROOFS.md` — quick suite advertisement
-  - `applications/local_workspace_application/scripts/run-lkw-product-quickstart.py` — Product Quick Start entry
+  - `scripts/proof/intergrax_proof_manifest.py` - `LKW-PRODUCT-QUICKSTART-*` profile membership
+  - `docs/project/proofs/PROOFS.md` - quick suite advertisement
+  - `applications/local_workspace_application/scripts/run-lkw-product-quickstart.py` - Product Quick Start entry
 - **Impact:** Reviewers can infer Product Quick Start coverage from `--profile quick` when it is not executed.
 - **Confidence:** CONFIRMED
 
@@ -168,19 +168,19 @@
 
 ## Historical vs current evidence distinction
 
-Historical PASS receipts, certification JSON artifacts, and reviewer evidence from earlier source revisions remain **valid historical evidence**. Protocol v2 findings require explicit **current vs historical** semantics: a historical PASS does not automatically qualify as **current** certification or public-evidence eligibility until a validity envelope (source revision/tree, dependency closure, proof contract version, environment profile) matches the present tree. Remediation must preserve historical truth — never rewrite old evidence as false.
+Historical PASS receipts, certification JSON artifacts, and reviewer evidence from earlier source revisions remain **valid historical evidence**. Protocol v2 findings require explicit **current vs historical** semantics: a historical PASS does not automatically qualify as **current** certification or public-evidence eligibility until a validity envelope (source revision/tree, dependency closure, proof contract version, environment profile) matches the present tree. Remediation must preserve historical truth - never rewrite old evidence as false.
 
 ## Duplicate ownership / cross-links
 
 | Existing finding / domain | Relationship |
 |---------------------------|--------------|
-| **PLATFORM_FOUNDATION / PF-PROOF-INTEGRITY** | Tier-boundary and foundation proof integrity — coordinate; LKW-PROOF owns product/public proof claim honesty |
-| **PROOF_RECEIPTS closed wave** | Provider-neutral receipt storage — extend with provenance invariants; LKW must not invent private receipt contract |
-| **OBSERVABILITY_EVIDENCE** | Evidence durability — coordinate on public-evidence promotion semantics |
+| **PLATFORM_FOUNDATION / PF-PROOF-INTEGRITY** | Tier-boundary and foundation proof integrity - coordinate; LKW-PROOF owns product/public proof claim honesty |
+| **PROOF_RECEIPTS closed wave** | Provider-neutral receipt storage - extend with provenance invariants; LKW must not invent private receipt contract |
+| **OBSERVABILITY_EVIDENCE** | Evidence durability - coordinate on public-evidence promotion semantics |
 
 ## Root-cause remediation grouping
 
-### LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY — exact source/build/environment binding
+### LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY - exact source/build/environment binding
 
 **Priority:** P0  
 **Findings:** LKW-PROOF-01, LKW-PROOF-02, LKW-PROOF-03  
@@ -188,7 +188,7 @@ Historical PASS receipts, certification JSON artifacts, and reviewer evidence fr
 
 Every promoted/current product proof must be mechanically tied to the code/build/environment it actually executed. Historical evidence becomes stale rather than silently current when relevant code changes. Primary owner: `docs/project/architecture/PROOF_RECEIPTS.md` and `docs/project/maintainers/plans/PROOF_RECEIPTS.md`.
 
-### LKW-PROOF-EXECUTION-QUALIFICATION-INTEGRITY — manifest-owned suite success
+### LKW-PROOF-EXECUTION-QUALIFICATION-INTEGRITY - manifest-owned suite success
 
 **Priority:** P0/P1  
 **Findings:** LKW-PROOF-04, LKW-PROOF-05  
@@ -196,7 +196,7 @@ Every promoted/current product proof must be mechanically tied to the code/build
 
 Canonical proof manifest owns every public executable proof. Suite success means all required requested evidence actually executed. No second flagship proof path. Fold Governed Evidence Decision Proof into existing manifest/reference governance.
 
-### LKW-PROOF-REVIEWER-SEMANTICS-INTEGRITY — profile naming honesty
+### LKW-PROOF-REVIEWER-SEMANTICS-INTEGRITY - profile naming honesty
 
 **Priority:** P2  
 **Findings:** LKW-PROOF-06  

@@ -1,11 +1,11 @@
-﻿# LocalSearchAgent — architecture
+﻿# LocalSearchAgent - architecture
 
 Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
 **Capability:** `local.workspace.search`  
 **Host:** [`applications/local_workspace_application`](../../../applications/local_workspace_application/)
 **Default agent** on LKW host roster.  
-**Status:** Scaffold — domain steps pending Wave LKW.1
+**Status:** Scaffold - domain steps pending Wave LKW.1
 
 ---
 
@@ -57,17 +57,17 @@ Answer user questions by retrieving relevant document fragments from the local R
   4. format_evidence     → StepOutput for synthesizer or user
 ```
 
-Implement domain logic in `steps` — no Tier-3 imports.
+Implement domain logic in `steps` - no Tier-3 imports.
 
 ---
 
-## Pattern anchor (Cursor — read instead of runtime grep)
+## Pattern anchor (Cursor - read instead of runtime grep)
 
 | Item | Location |
 |------|----------|
 | Generic `invoke_tool` helpers | [`intergrax/agents/authoring/runtime_tool_helpers.py`(../../../intergrax/agents/authoring/runtime_tool_helpers.py) |
 | RAG retrieve tool id | [`intergrax/tools/unified/constants.py`(../../../intergrax/tools/unified/constants.py) |
-| **Implementation point** | [`steps/search_job.py`](../steps/search_job.py) — `run_search_job` |
+| **Implementation point** | [`steps/search_job.py`](../steps/search_job.py) - `run_search_job` |
 
 Do **not** read `uaep.py` or `boundary_demo` to discover tool invocation for this agent.
 
@@ -87,7 +87,7 @@ Do **not** read `uaep.py` or `boundary_demo` to discover tool invocation for thi
 
 | tool_id | Role |
 |---------|------|
-| `rag.retrieve` | Primary — semantic retrieval + citations |
+| `rag.retrieve` | Primary - semantic retrieval + citations |
 | `rag.list_collections` | Diagnostics / collection scope |
 | `memory.read` / `memory.write` | Session evidence cache |
 | `cache.get` / `cache.set` | Query-result dedup |

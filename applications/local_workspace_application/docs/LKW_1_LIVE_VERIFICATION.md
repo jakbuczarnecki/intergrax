@@ -1,17 +1,17 @@
-# LKW.1 live verification status — 2026-06-27
+# LKW.1 live verification status - 2026-06-27
 
 ## Current status
 
 ```text
-LKW.1 — CLOSED IN SCOPE / PRODUCT PROOF PASSED
-LKW.1.11 — runtime tool registry parity: PASSED
-LKW.1.12 — decision_emitted event phase mismatch: PASSED
-LKW.1.13 — local_indexer RAG ingest live path: PASSED
-LKW.1.14 — final live product smoke attempt: PARTIAL (tenant-scoped search retrieve_failed)
-LKW.1.15 — tenant-scoped rag.retrieve + local_search allowlist + final product closeout: PASSED
-LKW-H1.1 — live index tool-call accounting: PASSED
-LKW-H1.2 — trace/evidence contract and inspection surface: PASSED WITH PLATFORM FOLLOW-UPS
-LKW-H1.3 — PASSED WITH PLATFORM FOLLOW-UPS
+LKW.1 - CLOSED IN SCOPE / PRODUCT PROOF PASSED
+LKW.1.11 - runtime tool registry parity: PASSED
+LKW.1.12 - decision_emitted event phase mismatch: PASSED
+LKW.1.13 - local_indexer RAG ingest live path: PASSED
+LKW.1.14 - final live product smoke attempt: PARTIAL (tenant-scoped search retrieve_failed)
+LKW.1.15 - tenant-scoped rag.retrieve + local_search allowlist + final product closeout: PASSED
+LKW-H1.1 - live index tool-call accounting: PASSED
+LKW-H1.2 - trace/evidence contract and inspection surface: PASSED WITH PLATFORM FOLLOW-UPS
+LKW-H1.3 - PASSED WITH PLATFORM FOLLOW-UPS
 ```
 
 ## Verified LKW.1 product path
@@ -35,7 +35,7 @@ logs=no RuntimeEventSchemaError, unknown_capability_tool, tool_gateway_not_avail
 qdrant=local_workspace__tenant__lkw-smoke, tenant_id=lkw-smoke, workspace_id=lkw-final-20260627103000
 ```
 
-## LKW-H1.1 — live index tool-call accounting
+## LKW-H1.1 - live index tool-call accounting
 
 Status:
 
@@ -46,8 +46,8 @@ PASSED
 Commits reported by operator:
 
 ```text
-62621bc1 — fix(runtime): account for catalog tool calls in LKW runs
-a22222e0 — fix(runtime): propagate live catalog tool calls into app summary
+62621bc1 - fix(runtime): account for catalog tool calls in LKW runs
+a22222e0 - fix(runtime): propagate live catalog tool calls into app summary
 ```
 
 Root cause:
@@ -124,7 +124,7 @@ are not part of H1.1 tool-call accounting and should be tracked separately as
 runtime-events/observability cleanup if they remain reproducible.
 ```
 
-## LKW-H1.2 — trace/evidence contract and inspection surface
+## LKW-H1.2 - trace/evidence contract and inspection surface
 
 Status:
 
@@ -136,7 +136,7 @@ Delivered:
 
 ```text
 POST /v1/local_workspace/run attaches metadata["lkw_evidence.v1"] alongside application_run_summary.v1.
-Curated read model from AgentRunTrace step diagnostics — no full_trace on HTTP response.
+Curated read model from AgentRunTrace step diagnostics - no full_trace on HTTP response.
 Typed diagnostics: lkw.index_summary.v1, lkw.search_summary.v1, lkw.synthesize_summary.v1.
 Unsafe fields redacted (query_text, content, raw_chunks, documents, …).
 Index smoke verifies total_tool_calls>0; synthesize smoke verifies shadow artifact path/ref.
@@ -166,7 +166,7 @@ uv run pytest applications/local_workspace_application/tests/test_lkw_evidence_l
 Result: 9 passed, 12 warnings
 ```
 
-Platform follow-ups at H1.2 closeout *(historical — superseded)*:
+Platform follow-ups at H1.2 closeout *(historical - superseded)*:
 
 ```text
 RuntimeEvent TOOL_* -> closed LKW-PF1 / LKW-PF1A (runtime_event_summary.v1)
@@ -176,13 +176,13 @@ search/synthesize per-tool accounting + smoke assertions -> closed LKW-H1.3
 Still deferred: optional RAG ingest observability contract; policy/raw tool reason at RuntimeEvent layer; async runtime plugin coroutine warnings
 ```
 
-**LKW-PF1:** immediate `TOOL_*` RuntimeEvents — PASSED WITH FOLLOW-UP (see §LKW-PF1).
+**LKW-PF1:** immediate `TOOL_*` RuntimeEvents - PASSED WITH FOLLOW-UP (see §LKW-PF1).
 
-**LKW-PF2:** RunArtifactBundle / WorkspaceArtifactRef — PASSED WITH FOLLOW-UP (see §LKW-PF2).
+**LKW-PF2:** RunArtifactBundle / WorkspaceArtifactRef - PASSED WITH FOLLOW-UP (see §LKW-PF2).
 
-**LKW-PF2A:** ACP shadow_workspace_id propagation — CLOSED (see §LKW-PF2A).
+**LKW-PF2A:** ACP shadow_workspace_id propagation - CLOSED (see §LKW-PF2A).
 
-## LKW.1.15 — tenant-scoped retrieve for live search
+## LKW.1.15 - tenant-scoped retrieve for live search
 
 Status:
 
@@ -193,15 +193,15 @@ PASSED
 Commits reported by operator:
 
 ```text
-58740470 — fix(rag): restore tenant-scoped retrieve for LKW search
-1af2fd26 — docs(lkw): record final live product smoke
+58740470 - fix(rag): restore tenant-scoped retrieve for LKW search
+1af2fd26 - docs(lkw): record final live product smoke
 ```
 
 Root cause:
 
 ```text
 1. RAG: wired retriever_manager targeted the default vectorstore while tenant-scoped
-   resolve_tenant_scoped_vectorstore selected the lkw-smoke collection — filter mismatch
+   resolve_tenant_scoped_vectorstore selected the lkw-smoke collection - filter mismatch
    surfaced as retriever_failed.
 2. LKW: local_search contract had empty extra_tools/allowed_tools, so rag.retrieve was
    denied at the UAEP tool gateway (local_indexer already declared rag.ingest_document).
@@ -245,7 +245,7 @@ retrieve wrong tenant: regression test preserves isolation
 retrieve wrong workspace: regression test preserves isolation
 ```
 
-## LKW.1.14 — partial smoke that exposed the retrieve blocker
+## LKW.1.14 - partial smoke that exposed the retrieve blocker
 
 Status:
 
@@ -259,7 +259,7 @@ Result:
 health=ok
 agents=local_indexer, local_search, local_synthesizer
 index=accepted=1, rejected=0, ingested=1, chunks=1
-search=local_search: search failed — retrieve_failed
+search=local_search: search failed - retrieve_failed
 synthesize=shadow_workspace_required / no shadow write because evidence was missing
 source immutability=OK
 logs=no RuntimeEventSchemaError, unknown_capability_tool, tool_gateway_not_available, ingest_failed
@@ -285,7 +285,7 @@ Those blockers were fixed in LKW.1.15.
 | LKW.1.15 | Tenant-scoped retrieve and local_search allowlist fixed; product proof closed. |
 | LKW-H1.1 | UAEP live bridge tool-call accounting fixed for index/app summary. |
 
-## LKW-PF1 — immediate tool RuntimeEvents
+## LKW-PF1 - immediate tool RuntimeEvents
 
 Status:
 
@@ -313,7 +313,7 @@ Result: 10 passed
 Follow-up (visibility gap):
 
 ```text
-CLOSED in LKW-PF1A — POST /v1/local_workspace/run attaches metadata["runtime_event_summary.v1"]
+CLOSED in LKW-PF1A - POST /v1/local_workspace/run attaches metadata["runtime_event_summary.v1"]
 with redacted TOOL_* counts by tool_id (no raw args/content). Existing lkw_evidence.v1,
 application_run_summary.v1, and run_artifact_bundle.v1 remain unchanged.
 ```
@@ -324,7 +324,7 @@ Queue:
 NEXT: LKW.2
 ```
 
-## LKW-PF1A — runtime event HTTP summary
+## LKW-PF1A - runtime event HTTP summary
 
 Status:
 
@@ -346,7 +346,7 @@ Focused tests:
 uv run pytest applications/local_workspace_application/tests/test_runtime_event_metadata.py applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py -q
 ```
 
-## LKW-CI1 — live smoke circular import cleanup
+## LKW-CI1 - live smoke circular import cleanup
 
 Status:
 
@@ -367,7 +367,7 @@ Focused tests:
 uv run pytest applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py -q
 ```
 
-## LKW-PF2 — RunArtifactBundle / WorkspaceArtifactRef for synthesize
+## LKW-PF2 - RunArtifactBundle / WorkspaceArtifactRef for synthesize
 
 Status:
 
@@ -379,7 +379,7 @@ Decision:
 
 ```text
 Reuse existing platform contracts (no LKW-specific artifact layer):
-- intergrax/contracts/task_artifacts.py — RunArtifactBundle, WorkspaceArtifactRef
+- intergrax/contracts/task_artifacts.py - RunArtifactBundle, WorkspaceArtifactRef
 - run_artifact_bundle.v1 metadata key (nexus task finisher rollup)
 LKW application promotes bundle on HTTP metadata and correlates synthesize diagnostics
 to workspace refs by artifact_path / artifact_ref.
@@ -423,7 +423,7 @@ Queue:
 NEXT: LKW.2
 ```
 
-## LKW-PF2A — ACP shadow_workspace_id propagation
+## LKW-PF2A - ACP shadow_workspace_id propagation
 
 Status:
 
@@ -434,7 +434,7 @@ CLOSED
 Commit:
 
 ```text
-10e40bf7 — LKW-PF2A-ACP-SHADOW-WORKSPACE-ID-PROPAGATION
+10e40bf7 - LKW-PF2A-ACP-SHADOW-WORKSPACE-ID-PROPAGATION
 ```
 
 Propagation path verified:
@@ -471,7 +471,7 @@ Queue:
 NEXT: LKW.2
 ```
 
-## Known follow-ups after LKW.1 / H1.1 / H1.2 *(historical — superseded)*
+## Known follow-ups after LKW.1 / H1.1 / H1.2 *(historical - superseded)*
 
 Closed since this snapshot:
 
@@ -508,5 +508,5 @@ index -> search with tenant-scoped evidence -> synthesize with evidence -> shado
 Next queue item:
 
 ```text
-LKW.2 — graph pipeline local.workspace.pipeline + local workspace skills
+LKW.2 - graph pipeline local.workspace.pipeline + local workspace skills
 ```

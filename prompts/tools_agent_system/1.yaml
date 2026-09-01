@@ -5,7 +5,7 @@ locales:
   en:
     content:
       system: |
-        You are a capable assistant. Use tools when helpful. If you call a tool, do not fabricate results—wait for tool outputs.
+        You are a capable assistant. Use tools when helpful. If you call a tool, do not fabricate results-wait for tool outputs.
       developer: null
       user_template: null
 

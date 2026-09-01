@@ -23,8 +23,8 @@ It applies to:
 
 | Position | Product |
 |----------|---------|
-| Challenger | **Autonomous Agent Governance Operator** — not an active product unless formally promoted later |
-| Future / wildcard | **Prior Authorization Operator** — not part of the first portfolio |
+| Challenger | **Autonomous Agent Governance Operator** - not an active product unless formally promoted later |
+| Future / wildcard | **Prior Authorization Operator** - not part of the first portfolio |
 
 **LKW inclusion rule:** LKW is **not** retroactively treated as selected by MP-1→MP-8. It joins the program because Portfolio Control must evaluate the effects of **all active Intergrax applications** together. See [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) §9.
 
@@ -178,15 +178,15 @@ G0–G8 are **logical checkpoints**, not synchronized project phases. Products e
 
 | Gate | What is verified | Prepared by | Independently reviewed by | Decision produced |
 |------|------------------|-------------|---------------------------|-------------------|
-| **G0 — Product / Reference Baseline** | Product identity, problem, scope, and baseline artifacts exist and are internally consistent | Product Session | Portfolio Control | Baseline accepted or correction required |
-| **G1 — Architecture** | Product architecture is product-first, boundary-respecting, and feasible relative to shared platform | Product Session | Portfolio Control | Architecture accepted, revised, or blocked |
-| **G2 — T0 Reuse Baseline** | Frozen T0 record per [PRODUCT_REUSE_PROOF.md](../plans/PRODUCT_REUSE_PROOF.md): hypothesis, responsibility matrix, Critical Reuse Set, starting commit SHA | Product Session | Portfolio Control | T0 accepted or returned for correction |
-| **G3 — First Real Vertical Slice** | First end-to-end slice delivers observable user value; not scaffold-only | Product Session | Portfolio Control | Slice accepted or correction required |
-| **G4 — Material Platform Pressure** | Proposed shared-platform change is classified before implementation proceeds | Product Session (escalation) | Portfolio Control | Classification accepted; implementation may proceed, stay product-owned, or await platform work |
-| **G5 — MVP / Major Proof** | Major product proof milestone against roadmap and product brief | Product Session | Portfolio Control | Proof accepted, partial, or failed relative to product goals |
-| **G6 — T1 Reuse Audit** | Final responsibility classifications, M1–M6, PASS/PARTIAL/FAIL per reuse contract | Product Session (evidence) | Portfolio Control | Reuse outcome recorded; no aggregate claim without Portfolio Control acceptance |
-| **G7 — Market Validation** | External or pilot evidence for commercial hypothesis | Product Session | Portfolio Control | Validation recorded; portfolio action informed |
-| **G8 — Continue / Accelerate / Pause / Stop** | Whether the product should continue in the program | Portfolio Control (recommendation) | Program decision | Portfolio action recorded |
+| **G0 - Product / Reference Baseline** | Product identity, problem, scope, and baseline artifacts exist and are internally consistent | Product Session | Portfolio Control | Baseline accepted or correction required |
+| **G1 - Architecture** | Product architecture is product-first, boundary-respecting, and feasible relative to shared platform | Product Session | Portfolio Control | Architecture accepted, revised, or blocked |
+| **G2 - T0 Reuse Baseline** | Frozen T0 record per [PRODUCT_REUSE_PROOF.md](../plans/PRODUCT_REUSE_PROOF.md): hypothesis, responsibility matrix, Critical Reuse Set, starting commit SHA | Product Session | Portfolio Control | T0 accepted or returned for correction |
+| **G3 - First Real Vertical Slice** | First end-to-end slice delivers observable user value; not scaffold-only | Product Session | Portfolio Control | Slice accepted or correction required |
+| **G4 - Material Platform Pressure** | Proposed shared-platform change is classified before implementation proceeds | Product Session (escalation) | Portfolio Control | Classification accepted; implementation may proceed, stay product-owned, or await platform work |
+| **G5 - MVP / Major Proof** | Major product proof milestone against roadmap and product brief | Product Session | Portfolio Control | Proof accepted, partial, or failed relative to product goals |
+| **G6 - T1 Reuse Audit** | Final responsibility classifications, M1–M6, PASS/PARTIAL/FAIL per reuse contract | Product Session (evidence) | Portfolio Control | Reuse outcome recorded; no aggregate claim without Portfolio Control acceptance |
+| **G7 - Market Validation** | External or pilot evidence for commercial hypothesis | Product Session | Portfolio Control | Validation recorded; portfolio action informed |
+| **G8 - Continue / Accelerate / Pause / Stop** | Whether the product should continue in the program | Portfolio Control (recommendation) | Program decision | Portfolio action recorded |
 
 ### LKW handling
 
@@ -197,16 +197,16 @@ Instead:
 1. **Baseline-ingestion review** of current architecture, roadmap, proofs, platform usage, and open work (G0-equivalent for reference product).
 2. From that point onward, LKW participates in relevant **future gates** and **platform-impact reviews** at its actual pace.
 
-LKW current role (summary only — authoritative detail in LKW docs):
+LKW current role (summary only - authoritative detail in LKW docs):
 
 - Tier-3 application (`local_workspace_application`) with Tier-2 agents (`local_indexer`, `local_search`, `local_synthesizer`).
 - Knowledge-centric, primarily Ask/read workflow; hybrid indexed + live knowledge access.
 - First business product environment after harness platform maturity; exercises RAG ingest/retrieve, governed live access, multi-agent orchestration, memory, policy, trace, and Tier-3 composition.
-- Dual role: real product **and** harness validation reference — not a template that other products must clone.
+- Dual role: real product **and** harness validation reference - not a template that other products must clone.
 
 ---
 
-## 7. G4 — Material Platform Pressure Gate
+## 7. G4 - Material Platform Pressure Gate
 
 G4 is the **mandatory escalation gate** before implementing any change that may affect shared Intergrax platform boundaries.
 
@@ -413,7 +413,7 @@ product-specific runtime forks
 
 inside shared Intergrax core merely to satisfy one application.
 
-If product-specific behavior is genuinely required, it belongs in product-owned configuration, composition, or domain logic — unless a truly general platform abstraction is accepted through G4.
+If product-specific behavior is genuinely required, it belongs in product-owned configuration, composition, or domain logic - unless a truly general platform abstraction is accepted through G4.
 
 ---
 
@@ -443,11 +443,11 @@ Later MP tasks will create the following. **Do not create them in MP-11.**
 
 | Artifact | Intended ownership |
 |----------|-------------------|
-| `PORTFOLIO_STATUS.md` | Portfolio Control — live portfolio state |
-| `PLATFORM_IMPACT_LEDGER.md` | Portfolio Control — origin and reuse of platform changes |
-| `DECISION_LOG.md` | Portfolio Control — accepted program decisions |
+| `PORTFOLIO_STATUS.md` | Portfolio Control - live portfolio state |
+| `PLATFORM_IMPACT_LEDGER.md` | Portfolio Control - origin and reuse of platform changes |
+| `DECISION_LOG.md` | Portfolio Control - accepted program decisions |
 | `products/*` | Per-product control cards |
-| Portfolio Control checkpoint / gate evidence | `PORTFOLIO_STATUS.md`, control cards, operating manuals, and canonical audits in `docs/audit_results/` — **not** a separate `reviews/*` workspace or parallel review engine |
+| Portfolio Control checkpoint / gate evidence | `PORTFOLIO_STATUS.md`, control cards, operating manuals, and canonical audits in `docs/audit_results/` - **not** a separate `reviews/*` workspace or parallel review engine |
 
 ---
 
@@ -467,7 +467,7 @@ Later MP tasks will create the following. **Do not create them in MP-11.**
 
 ## 19. Next step
 
-**MP-12** — create:
+**MP-12** - create:
 
 - `PORTFOLIO_STATUS.md`
 - `PLATFORM_IMPACT_LEDGER.md`

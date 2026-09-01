@@ -1,5 +1,5 @@
 # © Artur Czarnecki. All rights reserved.
-# Trusted Ask Workspace live proof overlay — mounts proof sample_docs read-only.
+# Trusted Ask Workspace live proof overlay - mounts proof sample_docs read-only.
 # Used only by run-lkw-ask-workspace-live-proof.py with project lkw-trusted-ask-workspace-proof.
 # Run from repository root:
 # docker compose \

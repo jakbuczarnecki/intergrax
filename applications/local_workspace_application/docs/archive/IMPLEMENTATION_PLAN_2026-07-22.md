@@ -1,4 +1,4 @@
-# Local Workspace Application — Implementation Plan
+# Local Workspace Application - Implementation Plan
 
 **Status:** Product-first MVP roadmap (2026-07-22)  
 **Governing product rule:** [`PRODUCT_FIRST_MVP.md`](../../../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md)
@@ -11,12 +11,12 @@
 ```text
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
-Current roadmap stage: Stage 1 — Trusted Ask Workspace
-Current documentation gate: PLATFORM-CAPABILITY-AUDIT-GATE-1 — DOCUMENTED / READY_FOR_REVIEW
-Next exact activity: LKW-WORKSPACE-CONTENTS-1B-1-A1 — architecture review of the existing LKW source-sync execution path
-LKW-WORKSPACE-CONTENTS-1B-1-A — architecture-led bounded audit (not a Cursor implementation task)
-LKW-WORKSPACE-CONTENTS-1B-1-B — BLOCKED UNTIL AUDIT ACCEPTED
-Current implementation focus: MVP-4 — Slack conversational MVP (1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; LKW-WORKSPACE-CONTENTS-1A OPERATOR_VERIFIED; LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW; PLATFORM-CAPABILITY-AUDIT-GATE-1 DOCUMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1B-1-A1)
+Current roadmap stage: Stage 1 - Trusted Ask Workspace
+Current documentation gate: PLATFORM-CAPABILITY-AUDIT-GATE-1 - DOCUMENTED / READY_FOR_REVIEW
+Next exact activity: LKW-WORKSPACE-CONTENTS-1B-1-A1 - architecture review of the existing LKW source-sync execution path
+LKW-WORKSPACE-CONTENTS-1B-1-A - architecture-led bounded audit (not a Cursor implementation task)
+LKW-WORKSPACE-CONTENTS-1B-1-B - BLOCKED UNTIL AUDIT ACCEPTED
+Current implementation focus: MVP-4 - Slack conversational MVP (1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; LKW-WORKSPACE-CONTENTS-1A OPERATOR_VERIFIED; LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW; PLATFORM-CAPABILITY-AUDIT-GATE-1 DOCUMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1B-1-A1)
 
 Immediate goal:
 Deliver the smallest complete LKW experience that a real user can try and value:
@@ -37,7 +37,7 @@ Deliver an installable, daily-usable, auditable and operationally safe LKW 1.0.
 | Document | Role |
 |----------|------|
 | [`PRODUCT_FIRST_MVP.md`](../../../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md) | Governing product-development rule for every Intergrax application and agent |
-| [`ARCHITECTURE.md`](ARCHITECTURE.md) | How LKW is built — ownership, boundaries and runtime shape |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | How LKW is built - ownership, boundaries and runtime shape |
 | **This file (`IMPLEMENTATION_PLAN.md`)** | LKW product brief, MVP execution order, post-MVP direction and current task |
 | [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md) | Frozen Ask Workspace contract and exact MVP-2 implementation scope |
 | [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md) | Frozen Slack Socket Mode conversational adapter contract and exact MVP-4 implementation scope |
@@ -76,7 +76,7 @@ until its existence, maturity and ownership have been reviewed
 by the architecture/review workflow.
 ```
 
-Governing global gate: [`PRODUCT_FIRST_MVP.md` — Mandatory platform capability audit and architecture decision gate](../../../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md#mandatory-platform-capability-audit-and-architecture-decision-gate). Binding LKW intake detail: [`KNOWLEDGE_INTAKE_DISCOVERY.md` — Platform capability audit gate for implementation slices](KNOWLEDGE_INTAKE_DISCOVERY.md#platform-capability-audit-gate-for-implementation-slices).
+Governing global gate: [`PRODUCT_FIRST_MVP.md` - Mandatory platform capability audit and architecture decision gate](../../../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md#mandatory-platform-capability-audit-and-architecture-decision-gate). Binding LKW intake detail: [`KNOWLEDGE_INTAKE_DISCOVERY.md` - Platform capability audit gate for implementation slices](KNOWLEDGE_INTAKE_DISCOVERY.md#platform-capability-audit-gate-for-implementation-slices).
 
 For LKW this means:
 
@@ -99,7 +99,7 @@ Platform mechanisms, provider ports, observability vendors, portability matrices
 
 LKW (Local Knowledge Workspace) is a **private-by-default, tenant-scoped, deployment-neutral knowledge workspace** that lets a user work with documents through natural-language questions and verifiable answers.
 
-**“Local” in the name** means user-controlled deployment and configuration, first-class self-hosted / fully local topology, and no forced central SaaS — not “all data always on one device.” Storage location is selected by configuration and provider wiring. Canonical contract: [`ARCHITECTURE.md` — Deployment, storage and tenancy model](ARCHITECTURE.md#deployment-storage-and-tenancy-model).
+**“Local” in the name** means user-controlled deployment and configuration, first-class self-hosted / fully local topology, and no forced central SaaS - not “all data always on one device.” Storage location is selected by configuration and provider wiring. Canonical contract: [`ARCHITECTURE.md` - Deployment, storage and tenancy model](ARCHITECTURE.md#deployment-storage-and-tenancy-model).
 
 The first supported source provider is **local-folder**. The user designates a folder; LKW indexes through the source connector path, keeps source originals read-only under product policy, retrieves relevant evidence and returns an answer with sources. Source is not synonymous with “local folder.”
 
@@ -109,7 +109,7 @@ People working with document-heavy matters lose time searching folders, opening 
 
 General-purpose assistants often require manual uploads or do not provide durable provenance, clear ownership boundaries or inspectable execution.
 
-LKW should make this workflow faster while keeping source material under the user's control and privacy under a logical tenant/workspace access model — not only under physical “database on this machine” isolation.
+LKW should make this workflow faster while keeping source material under the user's control and privacy under a logical tenant/workspace access model - not only under physical “database on this machine” isolation.
 
 ### 2.3 First target user
 
@@ -308,11 +308,11 @@ faster or easier than the previous manual workflow.
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current active slice: Slack conversational MVP
-Current documentation gate: PLATFORM-CAPABILITY-AUDIT-GATE-1 — DOCUMENTED / READY_FOR_REVIEW
-Next exact activity: LKW-WORKSPACE-CONTENTS-1B-1-A1 — architecture review of the existing LKW source-sync execution path
-LKW-WORKSPACE-CONTENTS-1B-1-A — architecture-led bounded audit (not a Cursor implementation task)
-LKW-WORKSPACE-CONTENTS-1B-1-B — BLOCKED UNTIL AUDIT ACCEPTED
-Current implementation focus: MVP-4 — Slack conversational MVP (1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; LKW-WORKSPACE-CONTENTS-1A OPERATOR_VERIFIED; LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW; PLATFORM-CAPABILITY-AUDIT-GATE-1 DOCUMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1B-1-A1)
+Current documentation gate: PLATFORM-CAPABILITY-AUDIT-GATE-1 - DOCUMENTED / READY_FOR_REVIEW
+Next exact activity: LKW-WORKSPACE-CONTENTS-1B-1-A1 - architecture review of the existing LKW source-sync execution path
+LKW-WORKSPACE-CONTENTS-1B-1-A - architecture-led bounded audit (not a Cursor implementation task)
+LKW-WORKSPACE-CONTENTS-1B-1-B - BLOCKED UNTIL AUDIT ACCEPTED
+Current implementation focus: MVP-4 - Slack conversational MVP (1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; LKW-WORKSPACE-CONTENTS-1A OPERATOR_VERIFIED; LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW; PLATFORM-CAPABILITY-AUDIT-GATE-1 DOCUMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1B-1-A1)
 Discovery: ASK_WORKSPACE_DISCOVERY.md (MVP-1 complete); SLACK_MVP_DISCOVERY.md (MVP-3 complete); KNOWLEDGE_INTAKE_DISCOVERY.md (1B-0 DOCUMENTED / READY_FOR_REVIEW)
 Ask Workspace HTTP: MVP-2 complete (Qdrant-backed live-verified)
 Slack conversational adapter: MVP-4 current (product slices in progress; see MVP-4 below)
@@ -346,11 +346,11 @@ Slack conversational adapter: MVP-4 current (product slices in progress; see MVP
 
 | Capability | State |
 |------------|-------|
-| Minimal Slack identity and workspace mapping | planned — MVP |
-| Slack Socket Mode DM flow | planned — MVP |
-| Basic outbound-data warning/policy | planned — MVP |
-| Minimal repeatable design-partner setup | planned — MVP |
-| Real-user MVP validation | planned — MVP gate |
+| Minimal Slack identity and workspace mapping | planned - MVP |
+| Slack Socket Mode DM flow | planned - MVP |
+| Basic outbound-data warning/policy | planned - MVP |
+| Minimal repeatable design-partner setup | planned - MVP |
+| Real-user MVP validation | planned - MVP gate |
 
 ### Post-MVP gaps
 
@@ -582,7 +582,7 @@ Do not continue an open-ended fix loop beyond the review threshold.
 
 This is the active task order. The later 1.0 roadmap does not override it.
 
-### MVP-0 — Product brief alignment
+### MVP-0 - Product brief alignment
 
 **Status:** done
 
@@ -600,7 +600,7 @@ Canonical references:
 - this document,
 - [`PRODUCT_FIRST_MVP.md`](../../../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md).
 
-### MVP-1 — Trusted Ask Workspace discovery
+### MVP-1 - Trusted Ask Workspace discovery
 
 **Status:** done
 
@@ -613,9 +613,9 @@ Key findings:
 - reuse managed `POST .../workspaces/{workspace_id}/search` evidence path (`local.workspace.search` → `search_summary.evidence` → `WorkspaceSearchHitV1`);
 - do **not** use `local.workspace.synthesize` as the Ask answer engine (shadow-draft writer; ungrounded message fallback);
 - LKW must own Ask orchestration, citation projection, Ask-run persistence and completed-run read;
-- major blocker: `PRODUCT_BLOCKING` — missing product Ask orchestration/persistence (resolution stays in LKW; not a platform framework).
+- major blocker: `PRODUCT_BLOCKING` - missing product Ask orchestration/persistence (resolution stays in LKW; not a platform framework).
 
-### MVP-2 — Trusted Ask Workspace
+### MVP-2 - Trusted Ask Workspace
 
 **Status:** done (Qdrant-backed live-verified)
 
@@ -640,12 +640,12 @@ POST /v1/local_workspace/workspaces/{workspace_id}/ask
 
 Key modules:
 
-- `workspaces/ask_service.py` — `WorkspaceAskService`
-- `workspaces/ask_answer_assembler.py` — `AskAnswerAssembler` + citation projection
-- `workspaces/ask_repository.py` — DocumentStore Ask-run persistence
-- `workspaces/ask_models.py` — domain run/citation/assembly types
-- `serving/workspace_schemas.py` — public Ask request/response schemas
-- `serving/workspace_routes.py` — Ask POST/GET routes
+- `workspaces/ask_service.py` - `WorkspaceAskService`
+- `workspaces/ask_answer_assembler.py` - `AskAnswerAssembler` + citation projection
+- `workspaces/ask_repository.py` - DocumentStore Ask-run persistence
+- `workspaces/ask_models.py` - domain run/citation/assembly types
+- `serving/workspace_schemas.py` - public Ask request/response schemas
+- `serving/workspace_routes.py` - Ask POST/GET routes
 
 Controlled live proof (authoritative; Qdrant + MongoDB Compose stack):
 
@@ -653,11 +653,11 @@ Controlled live proof (authoritative; Qdrant + MongoDB Compose stack):
 uv run --extra integrations-mongodb python applications/local_workspace_application/scripts/run-lkw-ask-workspace-live-proof.py
 ```
 
-Proof kind: `trusted_ask_qdrant_durability` — first Ask → non-destructive restart of `local_workspace` + `qdrant` → second Ask without resync → GET first run unchanged.
+Proof kind: `trusted_ask_qdrant_durability` - first Ask → non-destructive restart of `local_workspace` + `qdrant` → second Ask without resync → GET first run unchanged.
 
 Rules preserved: model never creates citation objects; raw question never used as answer fallback; `local.workspace.synthesize` unused by Ask; no Slack fields.
 
-### MVP-3 — Slack MVP discovery
+### MVP-3 - Slack MVP discovery
 
 **Status:** done
 
@@ -669,56 +669,56 @@ Slack event identity and minimum Slack app permission contract are frozen:
 
 Canonical reference: [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md)
 
-### MVP-4 — Slack conversational MVP
+### MVP-4 - Slack conversational MVP
 
-**Status:** `CURRENT` — platform runtime **`DONE / LIVE_VERIFIED`**; product slice **1A DONE / LIVE_VERIFIED**; storage/tenancy contract **DOCUMENTED / READY_FOR_REVIEW**; **LKW-WORKSPACE-CONTENTS-1A OPERATOR_VERIFIED**; Knowledge Intake contract **`LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW`**; gate **`PLATFORM-CAPABILITY-AUDIT-GATE-1 DOCUMENTED / READY_FOR_REVIEW`**; next **`LKW-WORKSPACE-CONTENTS-1B-1-A1`** (architecture review); **`1B-1-A` architecture-led audit phase**; **`1B-1-B` BLOCKED UNTIL AUDIT ACCEPTED**
+**Status:** `CURRENT` - platform runtime **`DONE / LIVE_VERIFIED`**; product slice **1A DONE / LIVE_VERIFIED**; storage/tenancy contract **DOCUMENTED / READY_FOR_REVIEW**; **LKW-WORKSPACE-CONTENTS-1A OPERATOR_VERIFIED**; Knowledge Intake contract **`LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW`**; gate **`PLATFORM-CAPABILITY-AUDIT-GATE-1 DOCUMENTED / READY_FOR_REVIEW`**; next **`LKW-WORKSPACE-CONTENTS-1B-1-A1`** (architecture review); **`1B-1-A` architecture-led audit phase**; **`1B-1-B` BLOCKED UNTIL AUDIT ACCEPTED**
 
 ```text
-SLACK-CONVERSATION-RUNTIME-1 — DONE / LIVE_VERIFIED
+SLACK-CONVERSATION-RUNTIME-1 - DONE / LIVE_VERIFIED
 
 Slack conversation-channel runtime verified against real Slack Socket Mode
 (DM MESSAGE → reply → single-choice → ACTION → confirmation → clean stop).
 Evidence: [proof/SLACK_CONVERSATION_RUNTIME_LIVE_PROOF.md](proof/SLACK_CONVERSATION_RUNTIME_LIVE_PROOF.md)
 
-LKW-SLACK-WORKFLOW-1A — DONE / LIVE_VERIFIED
+LKW-SLACK-WORKFLOW-1A - DONE / LIVE_VERIFIED
 approved DM → configured active workspace → Ask HTTP → threaded answer
 Evidence: [proof/LKW_SLACK_ASK_WORKFLOW_1A_LIVE_PROOF.md](proof/LKW_SLACK_ASK_WORKFLOW_1A_LIVE_PROOF.md)
 Dedupe classification: DETERMINISTIC_CONCURRENCY_VERIFIED
 (artificial same-event live redelivery not required for 1A completion)
 
-LKW-SLACK-WORKFLOW-1B-1 — IMPLEMENTED / OPERATOR_VERIFIED
+LKW-SLACK-WORKFLOW-1B-1 - IMPLEMENTED / OPERATOR_VERIFIED
 exact DM ``workspaces`` → tenant-scoped numbered active listing → same-thread safe reply
 (Ask call count = 0; no buttons / pending)
 
-LKW-SLACK-WORKFLOW-1B-2 — OPERATOR_VERIFIED
+LKW-SLACK-WORKFLOW-1B-2 - OPERATOR_VERIFIED
 exact DM ``workspace <positive integer>`` → fresh tenant-scoped list → 1-based in-memory selection
 (configured workspace = default fallback; selected = effective active workspace;
  ``workspaces`` always marks effective active; restart clears selection;
  Ask count = 0 on selection; no pending question / ACTION / persistence)
 
-LKW-WORKSPACE-MANAGEMENT-1 — IMPLEMENTED / READY_FOR_REVIEW
+LKW-WORKSPACE-MANAGEMENT-1 - IMPLEMENTED / READY_FOR_REVIEW
 Slack lifecycle: ``workspace create <name>`` / ``workspace delete <n>`` +
 ``workspace delete confirm`` / ``workspace delete cancel``
 (+ DELETE /v1/local_workspace/workspaces/{workspace_id}; Ask history policy A = remove
  workspace-owned Ask runs; local source files never deleted; pending deletion TTL 5m;
  created workspace becomes effective active; no source attachment in this task)
 
-LKW-SLACK-COMMAND-CATALOG-1 — IMPLEMENTED / READY_FOR_REVIEW
+LKW-SLACK-COMMAND-CATALOG-1 - IMPLEMENTED / READY_FOR_REVIEW
 declarative ``@slack_command`` handlers + opt-in discovery on workflow instance;
 registry drives match/parse/dispatch and dynamic ``help`` (no manual help list;
 no OpenAPI/endpoint auto-exposure; no global command framework);
 non-command DM still invokes Ask
 
-LKW-STORAGE-TENANCY-CONTRACT-1 — DOCUMENTED / READY_FOR_REVIEW
+LKW-STORAGE-TENANCY-CONTRACT-1 - DOCUMENTED / READY_FOR_REVIEW
 deployment-neutral LKW; storage location selected by configuration/provider wiring;
 no local/cloud branching in domain; private-by-default tenant isolation;
 tenant not permanently equivalent to user; future organization workspace and
 controlled sharing remain possible; source is a durable logical origin
 (local-folder is first implemented provider); original file storage separated
 conceptually from Document Store and Vector Store.
-Canonical: ARCHITECTURE.md — Deployment, storage and tenancy model
+Canonical: ARCHITECTURE.md - Deployment, storage and tenancy model
 
-LKW-WORKSPACE-CONTENTS-1A — OPERATOR_VERIFIED
+LKW-WORKSPACE-CONTENTS-1A - OPERATOR_VERIFIED
 exact DM ``sources`` → effective active workspace → public tenant-scoped HTTP
 source list → safe provider-neutral source summaries → same-thread Slack reply
 (Ask call count = 0; no source mutations; no full source path disclosure;
@@ -728,35 +728,35 @@ source list → safe provider-neutral source summaries → same-thread Slack rep
  other providers remain architectural direction, not implemented behavior)
 (not LIVE_VERIFIED; no separate proof file for this slice)
 
-LKW-WORKSPACE-CONTENTS-1B-0 — DOCUMENTED / READY_FOR_REVIEW
+LKW-WORKSPACE-CONTENTS-1B-0 - DOCUMENTED / READY_FOR_REVIEW
 channel-neutral Knowledge Intake and asynchronous ingestion contract
-Canonical: KNOWLEDGE_INTAKE_DISCOVERY.md · ARCHITECTURE.md — Knowledge Intake section
+Canonical: KNOWLEDGE_INTAKE_DISCOVERY.md · ARCHITECTURE.md - Knowledge Intake section
 
-LKW-SLACK-WORKFLOW-1B — IN PROGRESS (substeps)
-1B-1 workspace listing — IMPLEMENTED / OPERATOR_VERIFIED
-1B-2 workspace selection — OPERATOR_VERIFIED
-LKW-WORKSPACE-MANAGEMENT-1 — IMPLEMENTED / READY_FOR_REVIEW
-LKW-SLACK-COMMAND-CATALOG-1 — IMPLEMENTED / READY_FOR_REVIEW
-LKW-STORAGE-TENANCY-CONTRACT-1 — DOCUMENTED / READY_FOR_REVIEW
-LKW-WORKSPACE-CONTENTS-1A — OPERATOR_VERIFIED
-LKW-WORKSPACE-CONTENTS-1B-0 — DOCUMENTED / READY_FOR_REVIEW
-PLATFORM-CAPABILITY-AUDIT-GATE-1 — DOCUMENTED / READY_FOR_REVIEW
-→ LKW-WORKSPACE-CONTENTS-1B-1-A — architecture-led bounded audit (not a Cursor implementation task)
-→ LKW-WORKSPACE-CONTENTS-1B-1-A1 — architecture review of the existing LKW source-sync execution path — NEXT
-→ LKW-WORKSPACE-CONTENTS-1B-1-B — implement the frozen result of the accepted capability audit — BLOCKED UNTIL AUDIT ACCEPTED
-→ LKW-WORKSPACE-CONTENTS-1B-2 — managed file upload capability — planned
-→ LKW-WORKSPACE-CONTENTS-1B-3 — Slack attachment and multi-attachment adapter — planned
-→ LKW-WORKSPACE-CONTENTS-1B-4 — preconfigured source candidate registration — planned
-→ LKW-WORKSPACE-CONTENTS-1B-5 — explicit web URL intake — planned
-→ LKW-WORKSPACE-CONTENTS-1C — synchronization, operation inspection and channel-neutral completion notification — planned
-→ LKW-WORKSPACE-CONTENTS-1D — inspect indexed documents — planned
-→ LKW-WORKSPACE-CONTENTS-1E — safely remove source-owned knowledge — planned
+LKW-SLACK-WORKFLOW-1B - IN PROGRESS (substeps)
+1B-1 workspace listing - IMPLEMENTED / OPERATOR_VERIFIED
+1B-2 workspace selection - OPERATOR_VERIFIED
+LKW-WORKSPACE-MANAGEMENT-1 - IMPLEMENTED / READY_FOR_REVIEW
+LKW-SLACK-COMMAND-CATALOG-1 - IMPLEMENTED / READY_FOR_REVIEW
+LKW-STORAGE-TENANCY-CONTRACT-1 - DOCUMENTED / READY_FOR_REVIEW
+LKW-WORKSPACE-CONTENTS-1A - OPERATOR_VERIFIED
+LKW-WORKSPACE-CONTENTS-1B-0 - DOCUMENTED / READY_FOR_REVIEW
+PLATFORM-CAPABILITY-AUDIT-GATE-1 - DOCUMENTED / READY_FOR_REVIEW
+→ LKW-WORKSPACE-CONTENTS-1B-1-A - architecture-led bounded audit (not a Cursor implementation task)
+→ LKW-WORKSPACE-CONTENTS-1B-1-A1 - architecture review of the existing LKW source-sync execution path - NEXT
+→ LKW-WORKSPACE-CONTENTS-1B-1-B - implement the frozen result of the accepted capability audit - BLOCKED UNTIL AUDIT ACCEPTED
+→ LKW-WORKSPACE-CONTENTS-1B-2 - managed file upload capability - planned
+→ LKW-WORKSPACE-CONTENTS-1B-3 - Slack attachment and multi-attachment adapter - planned
+→ LKW-WORKSPACE-CONTENTS-1B-4 - preconfigured source candidate registration - planned
+→ LKW-WORKSPACE-CONTENTS-1B-5 - explicit web URL intake - planned
+→ LKW-WORKSPACE-CONTENTS-1C - synchronization, operation inspection and channel-neutral completion notification - planned
+→ LKW-WORKSPACE-CONTENTS-1D - inspect indexed documents - planned
+→ LKW-WORKSPACE-CONTENTS-1E - safely remove source-owned knowledge - planned
 → pending question
 → ACTION resume
 → active workspace persistence
 ```
 
-**LKW-WORKSPACE-CONTENTS-1A — OPERATOR_VERIFIED**:
+**LKW-WORKSPACE-CONTENTS-1A - OPERATOR_VERIFIED**:
 
 ```text
 sources
@@ -773,7 +773,7 @@ other providers remain architectural direction, not implemented behavior.
 (not LIVE_VERIFIED)
 ```
 
-**LKW-WORKSPACE-CONTENTS-1B-0 — DOCUMENTED / READY_FOR_REVIEW**:
+**LKW-WORKSPACE-CONTENTS-1B-0 - DOCUMENTED / READY_FOR_REVIEW**:
 
 ```text
 channel-neutral Knowledge Intake
@@ -838,20 +838,20 @@ Cursor does not own Phase A.
 Preferred workflow:
 
 ```text
-A1 — inspect current source-sync execution path
+A1 - inspect current source-sync execution path
 → architecture decision
 
-A2 — inspect Source / Operation / Repository extension boundary
+A2 - inspect Source / Operation / Repository extension boundary
 → architecture decision
 
-A3 — inspect one concrete platform gap
+A3 - inspect one concrete platform gap
 → only when A1 or A2 proves it exists
 
 then:
 1B-1-B precise implementation
 ```
 
-#### `1B-1-A1` — current narrow architecture review
+#### `1B-1-A1` - current narrow architecture review
 
 **Owner:** architecture/review workflow (outside Cursor).
 
@@ -890,7 +890,7 @@ all providers
 
 This is an architecture/review activity performed outside Cursor.
 
-Canonical audit report template: [`KNOWLEDGE_INTAKE_DISCOVERY.md` — Canonical audit report template](KNOWLEDGE_INTAKE_DISCOVERY.md#canonical-audit-report-template).
+Canonical audit report template: [`KNOWLEDGE_INTAKE_DISCOVERY.md` - Canonical audit report template](KNOWLEDGE_INTAKE_DISCOVERY.md#canonical-audit-report-template).
 
 **Statuses after this documentation gate:**
 
@@ -903,7 +903,7 @@ architecture-led bounded audit phase
 (not a Cursor implementation task)
 
 LKW-WORKSPACE-CONTENTS-1B-1-A1
-NEXT — architecture review of existing LKW source-sync execution path
+NEXT - architecture review of existing LKW source-sync execution path
 
 LKW-WORKSPACE-CONTENTS-1B-1-B
 BLOCKED UNTIL AUDIT ACCEPTED
@@ -911,7 +911,7 @@ BLOCKED UNTIL AUDIT ACCEPTED
 
 **Explicit exclusions for the next code task (`1B-1-B`):** does not automatically mean Slack file support, URL fetching, folder picker, connector marketplace, Kafka, Google Pub/Sub, production Blob Store, all ingestion providers, or background notification UI. Implementation is forbidden until the architecture-led audit (`1B-1-A` / progressive reviews including `1B-1-A1`) is accepted with no unresolved `ARCHITECTURE_DECISION_REQUIRED` row.
 
-Current documentation gate: `PLATFORM-CAPABILITY-AUDIT-GATE-1 — DOCUMENTED / READY_FOR_REVIEW`
+Current documentation gate: `PLATFORM-CAPABILITY-AUDIT-GATE-1 - DOCUMENTED / READY_FOR_REVIEW`
 
 ```text
 NEXT:
@@ -1008,7 +1008,7 @@ Not required in this slice:
 - multiple users,
 - enterprise administration.
 
-### MVP-5 — Minimal design-partner package
+### MVP-5 - Minimal design-partner package
 
 **Status:** planned
 
@@ -1029,7 +1029,7 @@ Minimum scope:
 
 This is not the full Stage 5 local companion.
 
-### MVP-6 — Real-user validation
+### MVP-6 - Real-user validation
 
 **Status:** planned
 
@@ -1076,7 +1076,7 @@ Possible next priorities include:
 
 The following six stages describe product maturity toward LKW 1.0. They are not an automatic task queue before MVP validation.
 
-### Stage 1 — Trusted Ask Workspace
+### Stage 1 - Trusted Ask Workspace
 
 **MVP-critical**
 
@@ -1093,7 +1093,7 @@ Capabilities:
 - timeout/failure states,
 - surface-neutral result contract.
 
-### Stage 2 — Familiar conversational access
+### Stage 2 - Familiar conversational access
 
 **Slack MVP-critical; broader portability post-MVP**
 
@@ -1117,7 +1117,7 @@ Post-MVP expansion may include:
 - Microsoft Teams or another surface selected by real demand,
 - broader surface-portability proof.
 
-### Stage 3 — Reliable document lifecycle
+### Stage 3 - Reliable document lifecycle
 
 **Post-MVP candidate**
 
@@ -1134,7 +1134,7 @@ Capabilities may include:
 
 Pull this work forward only when stale or changing documents block the intended MVP user.
 
-### Stage 4 — Workspace outputs and history
+### Stage 4 - Workspace outputs and history
 
 **Post-MVP candidate**
 
@@ -1154,7 +1154,7 @@ Capabilities may include:
 
 The first output type should be selected from observed user value, not from a completeness checklist.
 
-### Stage 5 — Installable local companion
+### Stage 5 - Installable local companion
 
 **1.0 direction; minimal packaging occurs before MVP validation**
 
@@ -1176,7 +1176,7 @@ Capabilities may include:
 
 The companion does not need to duplicate Slack as a full chat client.
 
-### Stage 6 — Operational, security, quality and release readiness
+### Stage 6 - Operational, security, quality and release readiness
 
 **Post-MVP / 1.0 gate**
 
@@ -1307,7 +1307,7 @@ Deferred until MVP validation or a documented blocker:
 - macOS installer,
 - mobile client,
 - hosted multi-tenant SaaS product packaging,
-- multi-organization support (see Future below — architectural direction only),
+- multi-organization support (see Future below - architectural direction only),
 - enterprise RBAC / ACL / membership / invitations / share links,
 - Kubernetes,
 - PostgreSQL migration without a product need,
@@ -1328,7 +1328,7 @@ Deferred work enters the active plan only when it blocks the MVP,
 protects the intended user, or is selected from real validation feedback.
 ```
 
-### Future — Shared and organizational knowledge spaces
+### Future - Shared and organizational knowledge spaces
 
 **Status:** `FUTURE / NOT IN CURRENT MVP`
 
@@ -1361,9 +1361,9 @@ Sharing and organization work must **not** be scheduled ahead of source lifecycl
 | **LKW-PRODUCT-1** | Managed workspaces and folder sources | Done | [`LKW_PLATFORM_PROOF.md`](../../proof/LKW_PLATFORM_PROOF.md) |
 | **LKW-PRODUCT-1-HARDENING** | Durable sync and structured search evidence | Done | [`LKW_PLATFORM_PROOF.md`](../../proof/LKW_PLATFORM_PROOF.md) |
 | **LKW-MVP-BRIEF** | Product purpose, first user, MVP workflow, value and gate defined | Done | This document · [`PRODUCT_FIRST_MVP.md`](../../../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md) |
-| **MVP-1** | Trusted Ask Workspace discovery — frozen contract | Done | [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md) |
+| **MVP-1** | Trusted Ask Workspace discovery - frozen contract | Done | [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md) |
 | **MVP-2** | Trusted Ask Workspace HTTP implementation | Done | This document · [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md) · [`LKW_PLATFORM_PROOF.md`](../../proof/LKW_PLATFORM_PROOF.md) |
-| **MVP-3** | Slack conversational MVP discovery — frozen contract | Done | [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md) |
+| **MVP-3** | Slack conversational MVP discovery - frozen contract | Done | [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md) |
 
 Slack conversational MVP implementation, design-partner packaging, user validation, Microsoft Teams, full document lifecycle, outputs/history, companion and LKW 1.0 are not completed.
 
@@ -1373,7 +1373,7 @@ Slack conversational MVP implementation, design-partner packaging, user validati
 
 Platform proof launchers and certification status for LKW as reference host.
 
-### PROOF-PORTABILITY-1A — Shared core proof runner
+### PROOF-PORTABILITY-1A - Shared core proof runner
 
 **Status:** **Done**
 
@@ -1387,7 +1387,7 @@ Delivered:
 - macOS shell launcher;
 - launchers contain no proof workload or acceptance logic.
 
-### PROOF-PORTABILITY-1B — Shared optional OS interaction runner
+### PROOF-PORTABILITY-1B - Shared optional OS interaction runner
 
 **Status:** **Done**
 
@@ -1401,7 +1401,7 @@ Delivered:
 - Linux wrapper;
 - macOS wrapper.
 
-### PROOF-PORTABILITY-1C — Runtime-specific certification
+### PROOF-PORTABILITY-1C - Runtime-specific certification
 
 **Status:** **Done**
 
@@ -1424,7 +1424,7 @@ Runtime identifiers:
 - `linux_docker_runtime`
 - `macos_native_runtime`
 
-### PROOF-PORTABILITY-1D — Cross-runtime certification completion
+### PROOF-PORTABILITY-1D - Cross-runtime certification completion
 
 **Status:** **Partial**
 
@@ -1438,7 +1438,7 @@ Current status:
 - Linux full multi-phase Core Platform Proof: not separately certified;
 - macOS: implemented, not live-certified.
 
-### PROOF-PORTABILITY-1D-MATRIX — Certification matrix
+### PROOF-PORTABILITY-1D-MATRIX - Certification matrix
 
 Canonical matrix:
 - [`LKW_PLATFORM_CERTIFICATION_MATRIX.md`](../../../proof/LKW_PLATFORM_CERTIFICATION_MATRIX.md)
@@ -1461,29 +1461,29 @@ Former proof-first queues, standalone Token Optimization sequences, vendor obser
 
 ---
 
-## Appendix A — Current task summary
+## Appendix A - Current task summary
 
 ```text
 Current milestone: LKW MVP
-Current documentation gate: PLATFORM-CAPABILITY-AUDIT-GATE-1 — DOCUMENTED / READY_FOR_REVIEW
-Next exact activity: LKW-WORKSPACE-CONTENTS-1B-1-A1 — architecture review of the existing LKW source-sync execution path
-LKW-WORKSPACE-CONTENTS-1B-1-A — architecture-led bounded audit (not a Cursor implementation task)
-LKW-WORKSPACE-CONTENTS-1B-1-B — BLOCKED UNTIL AUDIT ACCEPTED
-Current task: MVP-4 — Slack conversational MVP (CURRENT; 1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; LKW-WORKSPACE-CONTENTS-1A OPERATOR_VERIFIED; LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW; PLATFORM-CAPABILITY-AUDIT-GATE-1 DOCUMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1B-1-A1)
+Current documentation gate: PLATFORM-CAPABILITY-AUDIT-GATE-1 - DOCUMENTED / READY_FOR_REVIEW
+Next exact activity: LKW-WORKSPACE-CONTENTS-1B-1-A1 - architecture review of the existing LKW source-sync execution path
+LKW-WORKSPACE-CONTENTS-1B-1-A - architecture-led bounded audit (not a Cursor implementation task)
+LKW-WORKSPACE-CONTENTS-1B-1-B - BLOCKED UNTIL AUDIT ACCEPTED
+Current task: MVP-4 - Slack conversational MVP (CURRENT; 1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; LKW-WORKSPACE-CONTENTS-1A OPERATOR_VERIFIED; LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW; PLATFORM-CAPABILITY-AUDIT-GATE-1 DOCUMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1B-1-A1)
 Platform gate: Slack conversation runtime LIVE_VERIFIED
 Product slice: LKW-SLACK-WORKFLOW-1A DONE / LIVE_VERIFIED
 Architecture contract: LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW
 Knowledge Intake contract: LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW (KNOWLEDGE_INTAKE_DISCOVERY.md)
 Platform capability audit gate: PLATFORM-CAPABILITY-AUDIT-GATE-1 DOCUMENTED / READY_FOR_REVIEW
-Next product activity: LKW-WORKSPACE-CONTENTS-1B-1-A1 — architecture review of source-sync path (1B-1-B blocked until audit acceptance)
+Next product activity: LKW-WORKSPACE-CONTENTS-1B-1-A1 - architecture review of source-sync path (1B-1-B blocked until audit acceptance)
 Completed: MVP-1 discovery, MVP-2 Trusted Ask Workspace (HTTP), MVP-3 Slack discovery, CONVERSATION-CHANNEL-1, Slack runtime implementation + live proof, LKW-SLACK-WORKFLOW-1A (+ configuration closure + live proof)
 Frozen Ask contract: ASK_WORKSPACE_DISCOVERY.md
 Frozen Slack contract: SLACK_MVP_DISCOVERY.md
-Frozen storage/tenancy contract: ARCHITECTURE.md — Deployment, storage and tenancy model
+Frozen storage/tenancy contract: ARCHITECTURE.md - Deployment, storage and tenancy model
 Frozen Knowledge Intake contract: KNOWLEDGE_INTAKE_DISCOVERY.md
 MVP gate follows minimal packaging and real-user validation.
 ```
-## Appendix B — Status vocabulary
+## Appendix B - Status vocabulary
 
 | Label | Meaning |
 |-------|---------|

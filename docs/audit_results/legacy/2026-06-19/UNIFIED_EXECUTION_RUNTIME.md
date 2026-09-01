@@ -1,4 +1,4 @@
-# Audit result — `UNIFIED_EXECUTION_RUNTIME`
+# Audit result - `UNIFIED_EXECUTION_RUNTIME`
 
 **Run:** 2026-06-19 · **Mode:** audit_only + implement (UAEP-MAINT-04)  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated (L3)
@@ -58,4 +58,4 @@ check_harness_cost_wiring.py         → OK
 
 ## Recommendation
 
-**Architecturally Mature (L3)** — UAEP substrate revalidated; §6.1av closed. Next domain: `ORCHESTRATION`.
+**Architecturally Mature (L3)** - UAEP substrate revalidated; §6.1av closed. Next domain: `ORCHESTRATION`.

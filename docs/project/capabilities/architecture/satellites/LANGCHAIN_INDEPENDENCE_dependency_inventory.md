@@ -4,7 +4,7 @@ Intergrax framework – proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
 -->
 
-# LANGCHAIN_INDEPENDENCE — dependency inventory
+# LANGCHAIN_INDEPENDENCE - dependency inventory
 
 **Parent hub:** [`../LANGCHAIN_INDEPENDENCE.md`](../LANGCHAIN_INDEPENDENCE.md)
 **Feature plan:** [`../../plan/LANGCHAIN_INDEPENDENCE.md`](../../plan/LANGCHAIN_INDEPENDENCE.md)
@@ -132,11 +132,11 @@ Reranker candidate/result contracts and reranker provider adapters now use nativ
 | LCI-INV-0182 | `langchain-ollama` | `pyproject.toml` | 213 | `langchain-ollama>=0.2,<2.0` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].llm-langchain-ollama | PACKAGING_DEPENDENCY | optional compatibility extra | `llm-langchain-ollama` | LCI-7A | LCI-6E optionalization; declaration in [project.optional-dependencies].llm-langchain-ollama |
 | LCI-INV-0183 | `langchain-core` | `pyproject.toml` | 213 | `langchain-core>=0.3,<2.0` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].llm-langchain-ollama | PACKAGING_DEPENDENCY | optional compatibility extra | `llm-langchain-ollama` | LCI-7A | declaration in [project.optional-dependencies].llm-langchain-ollama |
 | LCI-INV-0184 | `langchain-ollama` | `pyproject.toml` | 208 | (removed) | PLATFORM_FOUNDATION / packaging | removed from [project.optional-dependencies].llm-all | PACKAGING_DEPENDENCY | removed in LCI-7A | `llm-langchain-ollama` is explicit compatibility owner | LCI-7A | no default all-provider inclusion |
-| LCI-INV-0185 | `uv.lock` | `uv.lock` | — | `langchain-core`, `langchain-community`, `langchain-openai`, `langchain-ollama`, `langchain-text-splitters`, `langgraph` | PLATFORM_FOUNDATION / lockfile | generated resolver output | GENERATED_LOCK_ENTRY | installed when core/extras resolve | lock regenerated on packaging change | LCI-7A | aggregate row; transitive entries not inventoried individually |
+| LCI-INV-0185 | `uv.lock` | `uv.lock` | - | `langchain-core`, `langchain-community`, `langchain-openai`, `langchain-ollama`, `langchain-text-splitters`, `langgraph` | PLATFORM_FOUNDATION / lockfile | generated resolver output | GENERATED_LOCK_ENTRY | installed when core/extras resolve | lock regenerated on packaging change | LCI-7A | aggregate row; transitive entries not inventoried individually |
 
 ## D. Public contract leak register
 
-Historical contract-leak rows retained for traceability; current audit reports 0 core contract leaks. No current leaks through public or shared core contracts (LangChain types in Intergrax ABI). Provider-local LangChain messages inside `LangChainOllamaAdapter` are **not** public contract leaks — see §E.
+Historical contract-leak rows retained for traceability; current audit reports 0 core contract leaks. No current leaks through public or shared core contracts (LangChain types in Intergrax ABI). Provider-local LangChain messages inside `LangChainOllamaAdapter` are **not** public contract leaks - see §E.
 
 | Leaked type | Contract signature / location | Producers | Consumers | Future native contract | Architecture prerequisite | Implementation migration | Migration risk |
 |-------------|------------------------------|-----------|-----------|------------------------|----------------|----------------|

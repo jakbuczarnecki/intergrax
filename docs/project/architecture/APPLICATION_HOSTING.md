@@ -24,24 +24,24 @@ Without Application Hosting:
 > [!NOTE]
 > **Maturity boundary:** Core hosting contracts, engine lifecycle, instance guard, graceful shutdown, in-process supervisor, foreground signal bridge, `run_hosted_application(profile)`, and LKW live proof (APP-HOST-8C–8E) are **implemented and closed** on the canonical path. **Not** claimed as complete stable public release: dedicated hosting metrics (APP-HOST-3D), `InteractionProfile` (APP-HOST-6), hosting plugins (APP-HOST-9E), OS adapter suite and service-manager integration (APP-HOST-7), generic supervisor digest-preservation contract (APP-HOST-5D), stable API declaration (APP-HOST-9F), and cross-platform service posture remain **planned or partial**.
 
-**Primary audience:** Principal / Staff engineers and Tier-3 application authors wrapping a product for continuous foreground or local single-instance operation — after [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md).
+**Primary audience:** Principal / Staff engineers and Tier-3 application authors wrapping a product for continuous foreground or local single-instance operation - after [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md).
 
 ## At a glance
 
 | Concern | Summary |
 | -------- | -------- |
-| **Responsibility** | Application-instance lifecycle — not task execution, orchestration, or cluster scaling |
-| **Composition root** | `HostedApplicationProfile` — shipped fields only; no plugin or interaction fields yet |
-| **One lifecycle** | `HostedApplicationEngine` — startup, READY, shutdown, diagnostics for one instance |
-| **Lifecycle repetition** | `HostedApplicationSupervisor` — in-process; new engine instance per supervised attempt |
+| **Responsibility** | Application-instance lifecycle - not task execution, orchestration, or cluster scaling |
+| **Composition root** | `HostedApplicationProfile` - shipped fields only; no plugin or interaction fields yet |
+| **One lifecycle** | `HostedApplicationEngine` - startup, READY, shutdown, diagnostics for one instance |
+| **Lifecycle repetition** | `HostedApplicationSupervisor` - in-process; new engine instance per supervised attempt |
 | **Readiness** | `accepting_new_work` only in `READY` when runtime, lease, and required components allow |
-| **Instance ownership** | `FileHostedApplicationInstanceGuard` — local file lock under `~/.intergrax/hosting/run` |
-| **Author facade** | `run_hosted_application(profile)` — foreground runner with signal bridge |
-| **Events** | Typed `hosting.*` envelopes via existing Observability export path — no private bus |
+| **Instance ownership** | `FileHostedApplicationInstanceGuard` - local file lock under `~/.intergrax/hosting/run` |
+| **Author facade** | `run_hosted_application(profile)` - foreground runner with signal bridge |
+| **Events** | Typed `hosting.*` envelopes via existing Observability export path - no private bus |
 | **Metrics** | Lifecycle events and diagnostics **shipped**; dedicated hosting metrics row **planned** |
 | **LKW proof** | Real engine + supervisor; READY, duplicate rejection, stop, restart, work after restart |
 | **Planned** | `InteractionProfile`, plugins, OS adapters, systemd/Windows Service/launchd registration |
-| **Maturity** | A4 · I4 · P3 · E4 — see [Current maturity](#current-maturity) |
+| **Maturity** | A4 · I4 · P3 · E4 - see [Current maturity](#current-maturity) |
 
 ## Flagship architecture visual
 
@@ -132,7 +132,7 @@ flowchart TB
 
 > **Engine owns one lifecycle. Supervisor owns lifecycle repetition.**
 
-**Process semantics:** The reference supervisor is an **in-process lifecycle supervisor**. It does **not** spawn OS child processes. Each restart creates a new `HostedApplicationEngine` (and new hosted context) inside the same foreground process via `HostedApplicationEngineFactory`. Duplicate-instance protection for LKW uses a **second OS process** attempting the same file lock — that is instance-guard behavior, not supervisor subprocess spawning.
+**Process semantics:** The reference supervisor is an **in-process lifecycle supervisor**. It does **not** spawn OS child processes. Each restart creates a new `HostedApplicationEngine` (and new hosted context) inside the same foreground process via `HostedApplicationEngineFactory`. Duplicate-instance protection for LKW uses a **second OS process** attempting the same file lock - that is instance-guard behavior, not supervisor subprocess spawning.
 
 Application Hosting is **not** systemd, Windows Service Manager, launchd, or Kubernetes. Those manage machine/process deployment; Hosting manages **application-aware** lifecycle inside an already-running host process (or a product-owned outer launcher).
 
@@ -217,7 +217,7 @@ Hosting → emits lifecycle/component/instance evidence
 Observability → owns evidence spine, persistence, export semantics
 ```
 
-Hosting publishes through `ObservabilityHostedApplicationEventPublisher` as platform observability signals — **no private hosting event bus**.
+Hosting publishes through `ObservabilityHostedApplicationEventPublisher` as platform observability signals - **no private hosting event bus**.
 
 ### Central diagnostics boundary
 
@@ -226,7 +226,7 @@ HostedApplicationEvent     → platform observability signal (PLATFORM_SIGNAL ex
 Task/Run execution truth   → RuntimeEvent + Nexus terminal diagnostics (separate path)
 ```
 
-Hosting lifecycle is **not** Task/Run execution. It has no canonical `TaskId`/`RunId`/`AttemptId` and **must not** synthesize them for diagnostics. `DiagnosticsRecorder` owns bounded local failure snapshots only — not cross-run `ProblemId`, grouping, or root-cause lifecycle.
+Hosting lifecycle is **not** Task/Run execution. It has no canonical `TaskId`/`RunId`/`AttemptId` and **must not** synthesize them for diagnostics. `DiagnosticsRecorder` owns bounded local failure snapshots only - not cross-run `ProblemId`, grouping, or root-cause lifecycle.
 
 `TerminalExecutionDiagnosticTrigger` / `DiagnosticOrchestrator` apply to terminal **execution** scopes (`tenant_id` + `TaskId` + `RunId`) wired through Nexus. Work executed inside a hosted application already uses that path.
 
@@ -244,9 +244,9 @@ terminal RuntimeEvent persisted
 
 **Failure isolation:** diagnostic persistence or post-processing failure **must not** change an already-established correct business execution result. Problem Store outage surfaces subsystem failure evidence; RuntimeEvents remain canonical. Failed Problem writes are **not** automatically replayed. See [`DIAGNOSTICS.md`](DIAGNOSTICS.md) § Failure isolation. Platform adoption inventory: [`DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md`](../maintainers/qualification/DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md).
 
-**Observability wiring:** hosting events export through HOS (`ObservabilityHostedApplicationEventPublisher`) before any optional diagnostic projection. Exporter health is process-local operator state — not execution truth. See [`OBSERVABILITY.md`](OBSERVABILITY.md).
+**Observability wiring:** hosting events export through HOS (`ObservabilityHostedApplicationEventPublisher`) before any optional diagnostic projection. Exporter health is process-local operator state - not execution truth. See [`OBSERVABILITY.md`](OBSERVABILITY.md).
 
-**HOST-DIAG-3 (shipped):** `APPLICATION_FAILED` remains canonical hosting lifecycle truth and continues through `PLATFORM_SIGNAL` observability export. When product composition supplies an explicit tenant binding (`HostedDiagnosticTenantBinding` / environment `profile_id`), a composed `HostedApplicationDiagnosticEventPublisher` may additionally project bounded failure facts into central non-execution diagnostics with subject `tenant_id` + `application_id` + `instance_id`. Product composition owns tenant binding — hosting core remains tenant-neutral. Application-instance subjects do **not** receive full execution-style reconstruction unless canonical evidence contract provides it.
+**HOST-DIAG-3 (shipped):** `APPLICATION_FAILED` remains canonical hosting lifecycle truth and continues through `PLATFORM_SIGNAL` observability export. When product composition supplies an explicit tenant binding (`HostedDiagnosticTenantBinding` / environment `profile_id`), a composed `HostedApplicationDiagnosticEventPublisher` may additionally project bounded failure facts into central non-execution diagnostics with subject `tenant_id` + `application_id` + `instance_id`. Product composition owns tenant binding - hosting core remains tenant-neutral. Application-instance subjects do **not** receive full execution-style reconstruction unless canonical evidence contract provides it.
 
 ### ECP boundary
 
@@ -269,7 +269,7 @@ Restarting a failed instance ≠ adding replicas.
 | [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) | Lab qualification before production hosting posture |
 | [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) | Platform ownership; LKW as first-adopter proof |
 
-## Extensibility — shipped vs planned
+## Extensibility - shipped vs planned
 
 ### Shipped public surface
 
@@ -302,20 +302,20 @@ run_hosted_application(profile)
 
 **Policies on profile (shipped):** `ShutdownPolicy`, `RestartPolicy` (`RestartMode`: `never`, `on_failure`, `always`), `InstancePolicy` (`single_instance` / `multi_instance`, `allow_stale_recovery`).
 
-### Planned — do not treat as shipped
+### Planned - do not treat as shipped
 
 | Surface | Plan row | Status |
 | ------- | -------- | ------ |
-| `InteractionProfile` / HTTP/MCP intake facade | APP-HOST-6 | **Planned** — LKW uses application runtime adapter |
-| `plugins` profile field + conformance kit | APP-HOST-9E | **Planned** — event types `hosting.plugin.*` exist; no profile wiring |
-| `intergrax.hosting.os.*` adapters | APP-HOST-7 | **Planned** — no OS namespace shipped |
+| `InteractionProfile` / HTTP/MCP intake facade | APP-HOST-6 | **Planned** - LKW uses application runtime adapter |
+| `plugins` profile field + conformance kit | APP-HOST-9E | **Planned** - event types `hosting.plugin.*` exist; no profile wiring |
+| `intergrax.hosting.os.*` adapters | APP-HOST-7 | **Planned** - no OS namespace shipped |
 | systemd / Windows Service / launchd registration | APP-HOST-7E–7F | **Planned** |
 | `HarnessApplication.hosting(...)` | APP-HOST-9B | **Planned** |
 | Dedicated hosting metrics suite | APP-HOST-3D | **Planned** |
-| Generic supervisor digest-preservation contract | APP-HOST-5D | **Planned** — LKW proof verifies digests on its path |
+| Generic supervisor digest-preservation contract | APP-HOST-5D | **Planned** - LKW proof verifies digests on its path |
 | Stable public API declaration | APP-HOST-9F | **Planned** |
 
-> **Foreground signal bridge ≠ OS service-manager integration.** `PortableForegroundSignalAdapter` maps Ctrl+C / SIGINT to typed shutdown on the main thread — not daemon registration.
+> **Foreground signal bridge ≠ OS service-manager integration.** `PortableForegroundSignalAdapter` maps Ctrl+C / SIGINT to typed shutdown on the main thread - not daemon registration.
 
 ## Current implementation state
 
@@ -326,7 +326,7 @@ run_hosted_application(profile)
 | Typed events + Observability export | **Shipped** (APP-HOST-3A–3C) |
 | Hosting metrics integration | **Planned** (APP-HOST-3D) |
 | File-lock `InstanceGuard`, stale recovery | **Shipped** (APP-HOST-4A–4B) |
-| Control coordinator, drain/cancel/flush executor | **Shipped** (APP-HOST-4C–4D) — drain via optional `HostedApplicationActiveWorkController` |
+| Control coordinator, drain/cancel/flush executor | **Shipped** (APP-HOST-4C–4D) - drain via optional `HostedApplicationActiveWorkController` |
 | Foreground signal bridge | **Shipped** (APP-HOST-4E) |
 | Exit classification + restart evaluator | **Shipped** (APP-HOST-5A–5B) |
 | In-process supervisor | **Shipped** (APP-HOST-5C) |
@@ -336,7 +336,7 @@ run_hosted_application(profile)
 
 **Shutdown path (wired in engine):** `STOPPING` → reject new intake → `before_stop` → bounded drain (if controller wired) → cancel → flush services (if wired) → stop components (reverse) → runtime stop → lease release → `STOPPED`.
 
-**Instance guard:** `FileHostedApplicationInstanceGuard` uses exclusive file lock + JSON metadata (PID, timestamps, `ownership_token`). Scope is **local single-machine** `run_directory` — **not** distributed leader election. Stale recovery uses PID liveness probe when `allow_stale_recovery` is true.
+**Instance guard:** `FileHostedApplicationInstanceGuard` uses exclusive file lock + JSON metadata (PID, timestamps, `ownership_token`). Scope is **local single-machine** `run_directory` - **not** distributed leader election. Stale recovery uses PID liveness probe when `allow_stale_recovery` is true.
 
 **LKW proof boundary:** LKW is a **real first-adopter proof**, not owner of generic hosting contracts and not universal cross-platform service proof. Proof uses real `HostedApplicationEngine`, supervisor, READY, `local.workspace.index`, duplicate `INSTANCE_CONFLICT`, graceful `CLEAN_STOP`, lock release, restart with new `instance_id`, work after restart, and structured `ProofReceipt` via platform `DocumentStore`.
 
@@ -356,9 +356,9 @@ Evidence maturity:         E4
 | **A** | **A4** | Ownership, Engine/Supervisor split, and lifecycle invariants are stable; major planned public surfaces (interaction, plugins, OS adapters) remain documented targets |
 | **I** | **I4** | Profile → engine → readiness → shutdown → supervisor integrated; LKW adopts canonical path without product-owned generic bypass |
 | **P** | **P3** | Controlled live first-adopter proof; missing service-manager posture, stable API, and operational limits for P4 |
-| **E** | **E4** | LKW 8C–8E live proof on canonical engine/supervisor path with persisted `ProofReceipt` — not external customer deployment evidence |
+| **E** | **E4** | LKW 8C–8E live proof on canonical engine/supervisor path with persisted `ProofReceipt` - not external customer deployment evidence |
 
-**Sub-axes (informative):** engine lifecycle I4 · instance ownership I4 · shutdown I4 · supervisor I4 · LKW adoption I4 · interaction facade — · OS integration — · DX/stable API I3.
+**Sub-axes (informative):** engine lifecycle I4 · instance ownership I4 · shutdown I4 · supervisor I4 · LKW adoption I4 · interaction facade - · OS integration - · DX/stable API I3.
 
 ## Evidence / proof
 
@@ -368,10 +368,10 @@ Evidence maturity:         E4
 | Unit / contract | Lifecycle transitions, hooks, components, readiness, instance guard, shutdown, restart policy tests under `tests/unit/intergrax/hosting/` |
 | Integration | Engine startup/shutdown, event export, supervisor loops |
 | First adopter live | LKW APP-HOST-8C (single instance), 8D (stop/restart/work), 8E (`ProofReceipt` + reviewer runner) |
-| Public proof route | [`PROOFS.md`](../proofs/PROOFS.md) — `LKW-HOSTING` under Core Platform Proof |
+| Public proof route | [`PROOFS.md`](../proofs/PROOFS.md) - `LKW-HOSTING` under Core Platform Proof |
 | External / customer | **Not claimed** from LKW alone |
 
-`ProofReceipt` (`intergrax.proofs.receipts.contracts.ProofReceipt`) is a **platform** structured receipt (`intergrax.proof_receipt.v1`) persisted through `DocumentStore` — product evidence container, not production audit certification.
+`ProofReceipt` (`intergrax.proofs.receipts.contracts.ProofReceipt`) is a **platform** structured receipt (`intergrax.proof_receipt.v1`) persisted through `DocumentStore` - product evidence container, not production audit certification.
 
 ## Go deeper
 
@@ -389,7 +389,7 @@ Evidence maturity:         E4
 
 ## Engineering canon
 
-**Status:** Canonical architecture — core implementation **shipped** on canonical path; stable public release and planned extension surfaces **not** complete.
+**Status:** Canonical architecture - core implementation **shipped** on canonical path; stable public release and planned extension surfaces **not** complete.
 
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
 
@@ -403,7 +403,7 @@ Evidence maturity:         E4
 
 **First adopter / proof:** `applications/local_workspace_application`
 
-**Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) — platform ownership, architecture before adoption, first-adopter proof through LKW (`PLATFORM-INV-001`, `PLATFORM-INV-002`, `PLATFORM-INV-004`, `PLATFORM-INV-006`, `PLATFORM-INV-007`).
+**Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) - platform ownership, architecture before adoption, first-adopter proof through LKW (`PLATFORM-INV-001`, `PLATFORM-INV-002`, `PLATFORM-INV-004`, `PLATFORM-INV-006`, `PLATFORM-INV-007`).
 
 ### Cursor read scope
 
@@ -434,11 +434,11 @@ Do not read the full Tier-3 canon unless the task changes Tier-3 public composit
 - **HOST-INV-11:** `ApplicationHost.on_hook` and `HostedApplicationHooks` are distinct and MUST NOT be merged.
 - **HOST-INV-12:** Restart creates a new application-instance lifecycle; the hosted application does not `exec` itself.
 
-**`HOST-INV-*` vs `PLATFORM-INV-*`:** domain-local `HOST-INV-*` rules remain authoritative for hosting contracts. Platform `PLATFORM-INV-*` in [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) govern why this domain exists — do not replace `HOST-INV-*` with `PLATFORM-INV-*` here.
+**`HOST-INV-*` vs `PLATFORM-INV-*`:** domain-local `HOST-INV-*` rules remain authoritative for hosting contracts. Platform `PLATFORM-INV-*` in [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) govern why this domain exists - do not replace `HOST-INV-*` with `PLATFORM-INV-*` here.
 
 ### Developer mental model (levels)
 
-**Level 1 — profile + run**
+**Level 1 - profile + run**
 
 ```python
 from intergrax.hosting import HostedApplicationProfile, run_hosted_application
@@ -452,7 +452,7 @@ run_hosted_application(profile)
 
 Defaults: single-instance file guard (unless `InstancePolicy` multi-instance), lifecycle machine, hosting events, liveness/readiness, foreground signals, graceful shutdown.
 
-**Level 2 — hooks and components**
+**Level 2 - hooks and components**
 
 ```python
 profile = HostedApplicationProfile(
@@ -466,7 +466,7 @@ profile = HostedApplicationProfile(
 )
 ```
 
-**Level 3 — policies (shipped)**
+**Level 3 - policies (shipped)**
 
 ```python
 profile = HostedApplicationProfile(
@@ -477,10 +477,10 @@ profile = HostedApplicationProfile(
 )
 ```
 
-**Target (not shipped)** — interaction facade, plugins, OS adapters:
+**Target (not shipped)** - interaction facade, plugins, OS adapters:
 
 ```python
-# APP-HOST-6 / APP-HOST-9E / APP-HOST-7 — planned, not current public API
+# APP-HOST-6 / APP-HOST-9E / APP-HOST-7 - planned, not current public API
 # interaction=InteractionProfile(http=True, mcp=True)
 # plugins=[CustomDesktopBridgePlugin()]
 ```
@@ -513,7 +513,7 @@ On startup failure after partial progress:
 - started components stopped in reverse dependency order
 - `on_failure` observer hooks scheduled
 - lease released when acquired
-- engine may set `reuse_blocked` after fatal startup — further `start()` on same engine instance blocked
+- engine may set `reuse_blocked` after fatal startup - further `start()` on same engine instance blocked
 
 Rollback is **best-effort bounded cleanup**, not a transactional distributed rollback.
 
@@ -546,7 +546,7 @@ hosting.component.starting | started | health_changed | stopping | stopped | fai
 hosting.instance.acquired | rejected | stale_recovered | released
 hosting.restart.requested | scheduled | started | exhausted
 hosting.hook.started | completed | failed
-hosting.plugin.loaded | failed   (plugin loading planned — types reserved)
+hosting.plugin.loaded | failed   (plugin loading planned - types reserved)
 ```
 
 Envelopes carry `schema_id`, `schema_version`, `event_id`, `occurred_at`, `application_id`, `instance_id`, `lifecycle_state`, `severity`, safe `payload`, optional correlation fields. Secrets and raw exception internals are redacted on export surfaces.
@@ -595,14 +595,14 @@ Generic contracts and engine code **MUST NOT** live under `applications/local_wo
 
 ### Protocol v2 application hosting target invariants (2026-08-18)
 
-Accepted [`APPLICATION_HOSTING`](../../audit_results/2026-08-18/APPLICATION_HOSTING.md) findings **01–06** (2026-08-21). Remediation **ACCEPTED / PLANNED** — **not implemented** by audit persistence.
+Accepted [`APPLICATION_HOSTING`](../../audit_results/2026-08-18/APPLICATION_HOSTING.md) findings **01–06** (2026-08-21). Remediation **ACCEPTED / PLANNED** - **not implemented** by audit persistence.
 
-1. **Observability authority** — public production hosting uses a configured canonical Observability exporter. Default public foreground hosting must not silently retain lifecycle evidence only in a NoOp exporter. Explicit lab/no-observability mode or fail-closed when evidence is required. Cross-link [`OBSERVABILITY_EVIDENCE`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md); do not create a hosting-specific event bus/store.
-2. **Runtime component failure semantics** — `ComponentFailureAction` applies after READY, not startup only. Every health transition after READY maps through the effective registered action: `IGNORE_WITH_DIAGNOSTIC` / `MARK_DEGRADED` / `MARK_NOT_READY` / `FAIL_HOST`. `FAIL_HOST` triggers the canonical hosted failure/control path eligible for supervisor classification/restart. Do not build a second health subsystem.
-3. **Shutdown outcome truthfulness** — component stop failures propagate into aggregate phase outcome. Failed component stop cannot masquerade as COMPLETED. Aggregate exposes COMPLETED when all applicable stops succeed, FAILED when any fail, TIMED_OUT when bounded stop does not complete. Per-component diagnostics preserved; do not emit semantic success for failed stops unless event vocabulary explicitly distinguishes attempted vs successful.
-4. **Durability flush semantics** — flush services declare durability criticality. Required durability flush failure must make terminal outcome non-clean and remain visible in exit evidence/restart policy. Best-effort telemetry flush may remain non-fatal only through explicit policy. `CLEAN_STOP` requires required shutdown durability obligations to succeed. Cross-link [`OBSERVABILITY_EVIDENCE`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md) where event/journal durability overlaps.
-5. **Instance recovery** — native file lock remains authoritative for local mutual exclusion. Process metadata used for stale recovery must distinguish process incarnation, not PID alone, if used as an additional ownership fence. Avoid false ownership conflicts caused by PID reuse.
-6. **Plan/current-state truth** — architecture and implementation plan agree on shipped W1/W2/W3 (public foundation, engine, process control/supervision, LKW proof) vs remaining backlog (APP-HOST-3D, 5D/5E, 6, 7, 9B–9F). Historical Done rows preserved.
+1. **Observability authority** - public production hosting uses a configured canonical Observability exporter. Default public foreground hosting must not silently retain lifecycle evidence only in a NoOp exporter. Explicit lab/no-observability mode or fail-closed when evidence is required. Cross-link [`OBSERVABILITY_EVIDENCE`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md); do not create a hosting-specific event bus/store.
+2. **Runtime component failure semantics** - `ComponentFailureAction` applies after READY, not startup only. Every health transition after READY maps through the effective registered action: `IGNORE_WITH_DIAGNOSTIC` / `MARK_DEGRADED` / `MARK_NOT_READY` / `FAIL_HOST`. `FAIL_HOST` triggers the canonical hosted failure/control path eligible for supervisor classification/restart. Do not build a second health subsystem.
+3. **Shutdown outcome truthfulness** - component stop failures propagate into aggregate phase outcome. Failed component stop cannot masquerade as COMPLETED. Aggregate exposes COMPLETED when all applicable stops succeed, FAILED when any fail, TIMED_OUT when bounded stop does not complete. Per-component diagnostics preserved; do not emit semantic success for failed stops unless event vocabulary explicitly distinguishes attempted vs successful.
+4. **Durability flush semantics** - flush services declare durability criticality. Required durability flush failure must make terminal outcome non-clean and remain visible in exit evidence/restart policy. Best-effort telemetry flush may remain non-fatal only through explicit policy. `CLEAN_STOP` requires required shutdown durability obligations to succeed. Cross-link [`OBSERVABILITY_EVIDENCE`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md) where event/journal durability overlaps.
+5. **Instance recovery** - native file lock remains authoritative for local mutual exclusion. Process metadata used for stale recovery must distinguish process incarnation, not PID alone, if used as an additional ownership fence. Avoid false ownership conflicts caused by PID reuse.
+6. **Plan/current-state truth** - architecture and implementation plan agree on shipped W1/W2/W3 (public foundation, engine, process control/supervision, LKW proof) vs remaining backlog (APP-HOST-3D, 5D/5E, 6, 7, 9B–9F). Historical Done rows preserved.
 
 Preserve: Engine/Supervisor separation; restart ≠ task retry; hosting ≠ ECP; local instance guard scope; LKW first-adopter proof; InteractionProfile/plugins/OS adapters **PLANNED**; APP-HOST-5D/5E **PLANNED** unless independently changed; **A4/I4/P3/E4** honest posture; no remediation implementation claim.
 

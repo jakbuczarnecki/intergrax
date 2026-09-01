@@ -1,4 +1,4 @@
-# PLATFORM-PLUGIN-1 — Global Extension Surface Inventory & Architecture Audit
+# PLATFORM-PLUGIN-1 - Global Extension Surface Inventory & Architecture Audit
 
 **Task:** `PLATFORM-PLUGIN-1`  
 **Status:** `READY_FOR_REVIEW`  
@@ -18,7 +18,7 @@
 
 **INFERENCE:** Accidental duplication exists at the **discovery/loader** layer (`core/plugins/discovery.py` vs bespoke loaders) and **documentation** layer (Context EP implemented but guide marks "Planned").
 
-**PROPOSAL:** A **canonical Platform Plugin Contract** is **conditionally justified** — as a **coordination and packaging layer** for third-party authors, not as a replacement for domain contracts. Final decision belongs to PLATFORM-PLUGIN-2.
+**PROPOSAL:** A **canonical Platform Plugin Contract** is **conditionally justified** - as a **coordination and packaging layer** for third-party authors, not as a replacement for domain contracts. Final decision belongs to PLATFORM-PLUGIN-2.
 
 **FACT:** Third-party code is **trusted installed Python**; no executable evidence of sandboxing or isolation for any extension surface.
 
@@ -59,7 +59,7 @@ Surfaces are numbered for reference. Taxonomy codes: `PEP` = PUBLIC_EXTERNAL_PLU
 
 ### Per-surface detail (condensed)
 
-#### 1 — Integration catalog (`intergrax.integrations`)
+#### 1 - Integration catalog (`intergrax.integrations`)
 
 | Attribute | Value |
 |-----------|-------|
@@ -68,31 +68,31 @@ Surfaces are numbered for reference. Taxonomy codes: `PEP` = PUBLIC_EXTERNAL_PLU
 | Config | `IntegrationManifest.env_prefix`; resolved via `IntegrationProfile` |
 | DI | Factory `create_integration(**kwargs)`; host passes bindings |
 | Lifecycle | Process-scoped catalog; no unload |
-| Duplicate ID | `ConflictPolicy` + `catalog_registration_override` — error/override/skip |
+| Duplicate ID | `ConflictPolicy` + `catalog_registration_override` - error/override/skip |
 | Trust | Trusted pip package; runs in process |
-| Third-party | Yes — examples: `integrations/examples/custom_memory_kv`; tests: `test_external_integration_entry_point.py` |
+| Third-party | Yes - examples: `integrations/examples/custom_memory_kv`; tests: `test_external_integration_entry_point.py` |
 | Docs | `EXTENSION_AUTHOR_GUIDE.md` §2 |
 
-#### 2 — Shipped integration manifests
+#### 2 - Shipped integration manifests
 
 | Attribute | Value |
 |-----------|-------|
 | Discovery | `register_default_integrations` preset bundles |
 | Registration | `register_from_manifest(manifest, factory)` |
-| Third-party | No — first-party tree only |
+| Third-party | No - first-party tree only |
 | Docs | `EXTENSION_AUTHOR_GUIDE.md` dual-model note |
 
-#### 3–4 — Tools & Skills (`intergrax.tools`, `intergrax.skills`)
+#### 3–4 - Tools & Skills (`intergrax.tools`, `intergrax.skills`)
 
 | Attribute | Value |
 |-----------|-------|
 | Discovery | EP via `core/plugins/discovery.py` |
 | Materialization | `build_registry_from_profile(ToolProfile/SkillProfile, ctx)` |
 | Duplicate ID | bundle_id / tool_id / skill_id catalog policies |
-| Third-party | Yes — `tools/examples/custom_echo`, `skills/examples/custom_pack` |
+| Third-party | Yes - `tools/examples/custom_echo`, `skills/examples/custom_pack` |
 | Docs | `EXTENSION_AUTHOR_GUIDE.md` §3–4 |
 
-#### 5 — Context (`intergrax.context`)
+#### 5 - Context (`intergrax.context`)
 
 | Attribute | Value |
 |-----------|-------|
@@ -101,7 +101,7 @@ Surfaces are numbered for reference. Taxonomy codes: `PEP` = PUBLIC_EXTERNAL_PLU
 | Opt-in | `INTERGRAX_DISCOVER_PLUGINS` |
 | Docs gap | Guide table marks "Planned"; code ships `BuiltinContextPlugin` EP in root `pyproject.toml` |
 
-#### 6 — Memory stores (`intergrax.memory_stores`)
+#### 6 - Memory stores (`intergrax.memory_stores`)
 
 | Attribute | Value |
 |-----------|-------|
@@ -109,7 +109,7 @@ Surfaces are numbered for reference. Taxonomy codes: `PEP` = PUBLIC_EXTERNAL_PLU
 | Bootstrap | `bootstrap_memory_stores` counts plugins; host selects implementation |
 | Docs | `EXTENSION_AUTHOR_GUIDE.md` §9 |
 
-#### 7–9 — RAG components (chunkers, retrievers, rerankers)
+#### 7–9 - RAG components (chunkers, retrievers, rerankers)
 
 | Attribute | Value |
 |-----------|-------|
@@ -119,28 +119,28 @@ Surfaces are numbered for reference. Taxonomy codes: `PEP` = PUBLIC_EXTERNAL_PLU
 | Tests | `tests/unit/rag/test_rag_plugin_discovery.py` |
 | Docs | `EXTENSION_AUTHOR_GUIDE.md`; `architecture/RAG.md` |
 
-#### 10 — Vendor Knowledge (`intergrax.vendor_knowledge.providers`)
+#### 10 - Vendor Knowledge (`intergrax.vendor_knowledge.providers`)
 
 | Attribute | Value |
 |-----------|-------|
 | Discovery | Separate loader in `contribution_catalog.py` |
-| Composition | `VendorKnowledgeContributionCatalog` — instance-local, publication snapshot |
+| Composition | `VendorKnowledgeContributionCatalog` - instance-local, publication snapshot |
 | Opt-in | `discover_entry_points` on composition builders; not global env alone |
 | Conflict | `VendorKnowledgePluginConflict` on duplicate EP names |
 | Reference | `tests/reference_plugins/vendor_knowledge/acme_reference/` |
 | Docs | `VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md` |
 
-#### 11 — Security defenses (`intergrax.security_defenses`)
+#### 11 - Security defenses (`intergrax.security_defenses`)
 
 | Attribute | Value |
 |-----------|-------|
-| Loader | `defense_plugin_loader.py` — always attempts EP when enabled |
+| Loader | `defense_plugin_loader.py` - always attempts EP when enabled |
 | Registration | `register_security_defense_plugin(..., override=True)` |
 | Integration | UAEP `HookPoint`s; `SecurityDefensePlugin` protocol |
 | Trust | Fail-open/closed per plugin; no isolation |
 | Docs | `EXTENSION_AUTHOR_GUIDE.md` (security section via SEC phases) |
 
-#### 12 — Policy rules (`intergrax.policy_rules`)
+#### 12 - Policy rules (`intergrax.policy_rules`)
 
 | Attribute | Value |
 |-----------|-------|
@@ -148,15 +148,15 @@ Surfaces are numbered for reference. Taxonomy codes: `PEP` = PUBLIC_EXTERNAL_PLU
 | Composition | Merges with YAML via `policy_wiring.py` |
 | Docs | `EXTENSION_AUTHOR_GUIDE.md` §10 |
 
-#### 13 — Tool invocation patterns (`intergrax.tool_invocation_patterns`)
+#### 13 - Tool invocation patterns (`intergrax.tool_invocation_patterns`)
 
 | Attribute | Value |
 |-----------|-------|
-| Loader | `tool_invocation_registry.py` — load-by-id |
+| Loader | `tool_invocation_registry.py` - load-by-id |
 | Scope | Nexus tool execution modes |
-| Docs | Limited — code + tests |
+| Docs | Limited - code + tests |
 
-#### 14 — RuntimePlugin
+#### 14 - RuntimePlugin
 
 | Attribute | Value |
 |-----------|-------|
@@ -165,16 +165,16 @@ Surfaces are numbered for reference. Taxonomy codes: `PEP` = PUBLIC_EXTERNAL_PLU
 | Boundary | Must not import Tier-2 agents |
 | Docs | `EXTENSION_AUTHOR_GUIDE.md` §8 |
 
-#### 15 — AgentRegistry
+#### 15 - AgentRegistry
 
 | Attribute | Value |
 |-----------|-------|
 | Registration | `AgentRegistry.register(agent, contract=…)` |
 | Validation | `assert_agent_assembly_valid`; skill/tool resolution |
-| Third-party | Agents as packages in `agents/`; host wires — no EP |
+| Third-party | Agents as packages in `agents/`; host wires - no EP |
 | Docs | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` |
 
-#### 16 — Application environment wiring
+#### 16 - Application environment wiring
 
 | Attribute | Value |
 |-----------|-------|
@@ -182,53 +182,53 @@ Surfaces are numbered for reference. Taxonomy codes: `PEP` = PUBLIC_EXTERNAL_PLU
 | Extension | Host selects presets, bundles, discover flags |
 | Docs | `APPLICATION_HOSTING.md`, `EXTENSION_AUTHOR_GUIDE.md` §0–1 |
 
-#### 17–18 — RAG embedding & document handlers
+#### 17–18 - RAG embedding & document handlers
 
 | Attribute | Value |
 |-----------|-------|
 | Registration | `EmbeddingProviderRegistry.register`; `DocumentHandlerRegistry.register` |
-| Third-party | No EP — host or code modification |
+| Third-party | No EP - host or code modification |
 | Taxonomy | IEP |
 
-#### 19 — Integration registry v2
+#### 19 - Integration registry v2
 
 | Attribute | Value |
 |-----------|-------|
-| Purpose | Metadata for `(provider_id, category)` — INTEGRATIONS-3A |
-| Runtime binding | **Not** performed — FACT per `registry_v2.py` docstring |
+| Purpose | Metadata for `(provider_id, category)` - INTEGRATIONS-3A |
+| Runtime binding | **Not** performed - FACT per `registry_v2.py` docstring |
 | Third-party | No |
 
-#### 20 — LLM model catalog
+#### 20 - LLM model catalog
 
 | Attribute | Value |
 |-----------|-------|
 | Source | Bundled YAML + `INTERGRAX_LLM_MODEL_CATALOG_PATH` overlay |
 | Third-party | Config file only |
 
-#### 21 — Observability extension SDK
+#### 21 - Observability extension SDK
 
 | Attribute | Value |
 |-----------|-------|
-| API | `extension_sdk.py` — schema_id namespaces for agents/applications |
+| API | `extension_sdk.py` - schema_id namespaces for agents/applications |
 | Registration | `register_payload_schema` |
 | Not | A plugin loader |
 
-#### 22 — Token optimization descriptor
+#### 22 - Token optimization descriptor
 
 | Attribute | Value |
 |-----------|-------|
 | Contract | `TokenOptimizationPluginDescriptor` in `contracts.py` |
-| Loader | **None found** — fixture only in tests |
+| Loader | **None found** - fixture only in tests |
 | Status | Descriptor-only / planned |
 
-#### 23 — Task execution registry
+#### 23 - Task execution registry
 
 | Attribute | Value |
 |-----------|-------|
 | API | `TaskExecutionRegistry.register(task_name, handler)` |
-| Scope | Background workers — host composed |
+| Scope | Background workers - host composed |
 
-#### 24 — Hook registry
+#### 24 - Hook registry
 
 | Attribute | Value |
 |-----------|-------|
@@ -289,7 +289,7 @@ Surfaces are numbered for reference. Taxonomy codes: `PEP` = PUBLIC_EXTERNAL_PLU
 
 **FACT:** Root `pyproject.toml` ships only `intergrax.context` builtin EP. Other groups are documented for third-party packages.
 
-**FACT:** Opt-in gate: `INTERGRAX_DISCOVER_PLUGINS` (`intergrax/core/plugin_env.py`) — default **off** for Tier-0 wiring helpers.
+**FACT:** Opt-in gate: `INTERGRAX_DISCOVER_PLUGINS` (`intergrax/core/plugin_env.py`) - default **off** for Tier-0 wiring helpers.
 
 ---
 
@@ -315,23 +315,23 @@ Surfaces are numbered for reference. Taxonomy codes: `PEP` = PUBLIC_EXTERNAL_PLU
 
 | Duplication | Type | Assessment |
 |-------------|------|------------|
-| EP loading: `discovery.py` vs bespoke loaders | Loader code | **INFERENCE:** Accidental — harmonization candidate for PLUGIN-4 if PLUGIN-2 approves |
+| EP loading: `discovery.py` vs bespoke loaders | Loader code | **INFERENCE:** Accidental - harmonization candidate for PLUGIN-4 if PLUGIN-2 approves |
 | Integration manifest vs `IntegrationPlugin` | Registration API | **INFERENCE:** Intentional dual model for shipped vs external |
 | Multiple catalog registries (integration/tool/skill/context) | Data structure | **INFERENCE:** Intentional domain separation |
-| Integration catalog vs registry v2 | Metadata | **INFERENCE:** Transitional — v2 additive until INTEGRATIONS-3B |
-| `RuntimePlugin` vs Tier-0 plugins | Concept name "plugin" | **INFERENCE:** Intentional — different tier and lifecycle |
-| RAG per-type EP groups vs single RAG plugin group | Packaging | **INFERENCE:** Intentional — component injection differs |
+| Integration catalog vs registry v2 | Metadata | **INFERENCE:** Transitional - v2 additive until INTEGRATIONS-3B |
+| `RuntimePlugin` vs Tier-0 plugins | Concept name "plugin" | **INFERENCE:** Intentional - different tier and lifecycle |
+| RAG per-type EP groups vs single RAG plugin group | Packaging | **INFERENCE:** Intentional - component injection differs |
 
 ---
 
 ## H. Architectural inconsistencies
 
-1. **FACT:** Context EP implemented; author guide status "Planned" — documentation drift.
+1. **FACT:** Context EP implemented; author guide status "Planned" - documentation drift.
 2. **FACT:** Security defense loader uses `override=True` always; Tier-0 catalogs use configurable conflict policy.
 3. **FACT:** VK discovery requires explicit `discover_entry_points` on composition; Tier-0 uses env flag via wiring helpers.
-4. **INFERENCE:** "Plugin" term overload — Tier-0 catalog, RuntimePlugin, VK contribution, security defense, policy handler.
-5. **FACT:** Memory bootstrap counts EP plugins but does not auto-register into a global catalog — selection is host responsibility.
-6. **FACT:** Token optimization descriptor without loader — contract ahead of mechanism.
+4. **INFERENCE:** "Plugin" term overload - Tier-0 catalog, RuntimePlugin, VK contribution, security defense, policy handler.
+5. **FACT:** Memory bootstrap counts EP plugins but does not auto-register into a global catalog - selection is host responsibility.
+6. **FACT:** Token optimization descriptor without loader - contract ahead of mechanism.
 
 ---
 
@@ -354,10 +354,10 @@ Surfaces are numbered for reference. Taxonomy codes: `PEP` = PUBLIC_EXTERNAL_PLU
 |-----|--------|
 | No sandbox | No evidence of isolation for any surface |
 | No code signing | EP trust = package install trust |
-| Qualification split | discoverable ≠ production-qualified — qualification scattered per domain |
+| Qualification split | discoverable ≠ production-qualified - qualification scattered per domain |
 | Secret access | Integrations use env_prefix; no platform-wide secret scope model |
 | Network/FS | Provider implementations have full process privileges |
-| Defense plugins | fail_open/fail_closed per plugin — not centrally governed |
+| Defense plugins | fail_open/fail_closed per plugin - not centrally governed |
 
 ---
 
@@ -365,7 +365,7 @@ Surfaces are numbered for reference. Taxonomy codes: `PEP` = PUBLIC_EXTERNAL_PLU
 
 - No `architecture/PLATFORM_PLUGINS.md` (deferred).
 - `EXTENSION_AUTHOR_GUIDE` Context status stale.
-- Historical paths (`docs/guides/`, `docs/architecture/`) may appear in GitHub search — **not** current canonical layout under `docs/project/`.
+- Historical paths (`docs/guides/`, `docs/architecture/`) may appear in GitHub search - **not** current canonical layout under `docs/project/`.
 - No PLATFORM_PLUGIN audit slice in `audit_slices/` (optional future).
 - Registry v2 not reflected in extension author guide.
 
@@ -375,8 +375,8 @@ Surfaces are numbered for reference. Taxonomy codes: `PEP` = PUBLIC_EXTERNAL_PLU
 
 - Must know which EP group(s) to use per capability.
 - Multi-capability package possible (fixture: `intergrax_catalog_fixture`) but no canonical guidance.
-- Scaffold exists for integration/tool/skill — not for VK, security, policy, RAG components.
-- Default discovery off — easy to believe EP "does not work".
+- Scaffold exists for integration/tool/skill - not for VK, security, policy, RAG components.
+- Default discovery off - easy to believe EP "does not work".
 - No reference "platform plugin" package demonstrating cross-surface authoring.
 
 ---
@@ -402,23 +402,23 @@ Surfaces are numbered for reference. Taxonomy codes: `PEP` = PUBLIC_EXTERNAL_PLU
 3. Should `core/plugins/discovery.py` become the only EP loader?
 4. Unified `ConflictPolicy` defaults across all surfaces?
 5. Single env flag vs per-domain opt-in for discovery?
-6. Where does qualification gate sit — platform or per domain?
+6. Where does qualification gate sit - platform or per domain?
 7. Should `RuntimePlugin` gain EP discovery or stay host-only?
 8. Status of token optimization plugin loader?
 9. Final role of integration registry v2 in extension story?
 10. Should Context be promoted to fully public (doc + qualification)?
-11. Agent registration — remain host-only forever?
-12. Document handler / embedding registries — open EP or stay internal?
+11. Agent registration - remain host-only forever?
+12. Document handler / embedding registries - open EP or stay internal?
 
 ---
 
 ## O. Proposed target-direction options
 
-**Option A — Coordination only (minimal):** Document EP groups, shared author guide, unified conflict/env flags; **no** new runtime.
+**Option A - Coordination only (minimal):** Document EP groups, shared author guide, unified conflict/env flags; **no** new runtime.
 
-**Option B — Packaging manifest (moderate):** Optional `pyproject` metadata or sidecar manifest listing capabilities; loaders unchanged.
+**Option B - Packaging manifest (moderate):** Optional `pyproject` metadata or sidecar manifest listing capabilities; loaders unchanged.
 
-**Option C — Platform Plugin Contract (broad):** New wrapper type registering multiple domain contributions with shared lifecycle — **only if** PLUGIN-2 proves domain loaders cannot stay separate.
+**Option C - Platform Plugin Contract (broad):** New wrapper type registering multiple domain contributions with shared lifecycle - **only if** PLUGIN-2 proves domain loaders cannot stay separate.
 
 **PROPOSAL:** Start from **Option A**; evaluate B if multi-surface packages become common; reject C unless evidence shows domain loaders cannot interoperate.
 
@@ -428,16 +428,16 @@ Surfaces are numbered for reference. Taxonomy codes: `PEP` = PUBLIC_EXTERNAL_PLU
 
 | Mechanism | Reason |
 |-----------|--------|
-| Vendor Knowledge contribution catalog | Publication snapshot, LKW qualification, tenant semantics — domain-specific |
+| Vendor Knowledge contribution catalog | Publication snapshot, LKW qualification, tenant semantics - domain-specific |
 | Security defense plugins | Hook-point security model; override policy; fail modes |
-| RuntimePlugin | Tier-3 lifecycle; event bus — not catalog discovery |
+| RuntimePlugin | Tier-3 lifecycle; event bus - not catalog discovery |
 | AgentRegistry | Tier-2 assembly; contracts; no third-party EP by design |
 | RAG component registries | Different DI (vector store, embeddings) per component type |
-| Integration registry v2 | Metadata-only transitional layer — not author surface |
-| Policy YAML + EP handlers | Declarative + imperative merge — policy domain owns |
+| Integration registry v2 | Metadata-only transitional layer - not author surface |
+| Policy YAML + EP handlers | Declarative + imperative merge - policy domain owns |
 | Observability extension SDK | Schema registration ≠ plugin loading |
 | Task execution registry | Worker-local handlers |
-| Shipped integration manifest path | First-party scale (167 slugs) — performance and ownership |
+| Shipped integration manifest path | First-party scale (167 slugs) - performance and ownership |
 
 ---
 
@@ -484,7 +484,7 @@ See [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md). **PLATFORM-PLUGIN-2** should d
 
 | Uncertainty | Minimal additional evidence |
 |-------------|----------------------------|
-| Runtime signals EP group — if any beyond extension SDK | Grep `intergrax.runtime_signals` in `development` |
+| Runtime signals EP group - if any beyond extension SDK | Grep `intergrax.runtime_signals` in `development` |
 | Full list of shipped integration slugs count | Run `check_plugin_catalog.py` or catalog snapshot test |
 | Whether any production host enables `INTERGRAX_DISCOVER_PLUGINS` by default | Inspect application host factories |
 | MCP as extension surface vs tool export | Read `applications/local_workspace_application/mcp/server.py` host wiring only if PLUGIN-2 scopes MCP |
@@ -498,30 +498,30 @@ See [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md). **PLATFORM-PLUGIN-2** should d
 | # | Answer |
 |---|--------|
 | 1 | **22+** materially distinct extension models (table §B) |
-| 2 | VK, security, policy, RAG components, agents, runtime plugins — **intentionally domain-specific** |
-| 3 | EP loader duplication, doc drift — **accidental** |
+| 2 | VK, security, policy, RAG components, agents, runtime plugins - **intentionally domain-specific** |
+| 3 | EP loader duplication, doc drift - **accidental** |
 | 4 | PEP surfaces: Tier-0 groups 1–13 |
 | 5 | HCE: RuntimePlugin, AgentRegistry, app wiring, observability SDK |
-| 6 | Embedding, document handlers, registry v2 — still require core/host code or internal register |
-| 7 | Yes — 12 setuptools groups evidenced |
-| 8 | Yes — shipped bootstrap, manual register, profiles |
+| 6 | Embedding, document handlers, registry v2 - still require core/host code or internal register |
+| 7 | Yes - 12 setuptools groups evidenced |
+| 8 | Yes - shipped bootstrap, manual register, profiles |
 | 9 | Integration Library = Tier-0 integration catalog + profiles |
 | 10 | VK contribution catalog; embedding/registry v2 internal registries |
 | 11 | **INFERENCE:** Shared discovery **helper** yes; shared **catalog** no |
-| 12 | **PROPOSAL:** Optional manifest — not proven required |
-| 13 | **FACT:** Yes — fixture `intergrax_catalog_fixture` |
+| 12 | **PROPOSAL:** Optional manifest - not proven required |
+| 13 | **FACT:** Yes - fixture `intergrax_catalog_fixture` |
 | 14 | Per-domain: env_prefix, profiles, YAML, inline on `ApplicationEnvironmentProfile` |
 | 15 | Integration env_prefix; host secret stores; no platform-wide model |
 | 16 | Host injects vector stores, wiring contexts, event bus, policy engine |
 | 17 | **INFERENCE:** Some globals (catalog snapshots, shipped bootstrap flags) |
 | 18 | Process-scoped register; shutdown on RuntimePlugin only |
-| 19 | VK lifecycle, qualification — stay domain-specific |
+| 19 | VK lifecycle, qualification - stay domain-specific |
 | 20 | `compatible_runtime` on RuntimePlugin only; otherwise ad hoc |
 | 21 | Trusted pip install / host code |
 | 22 | Varies: error, override, skip per `ConflictPolicy`; security always override |
 | 23 | Per-domain qualification (VK live, RAG qual tests, harness checks) |
 | 24 | See §P |
-| 25 | **Conditional yes** — coordination/packaging layer only |
+| 25 | **Conditional yes** - coordination/packaging layer only |
 
 ---
 
@@ -530,4 +530,4 @@ See [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md). **PLATFORM-PLUGIN-2** should d
 - Claims verified against executable code and cited tests on `development`.
 - No `docs/project/architecture/PLATFORM_PLUGINS.md` created (intentional).
 - Historical doc paths distinguished from current `docs/project/` layout.
-- **Evidence location:** retained under `maintainers/plans/` as program-specific audit evidence. [`docs/audit_results/`](../../audit_results/README.md) holds canonical platform audit campaigns per [AUDIT_PROTOCOL.md](../../audit_results/AUDIT_PROTOCOL.md); legacy v1 campaigns under [`docs/audit_results/legacy/`](../../audit_results/legacy/README.md) — a different workflow from this cross-cutting PLATFORM-PLUGIN inventory.
+- **Evidence location:** retained under `maintainers/plans/` as program-specific audit evidence. [`docs/audit_results/`](../../audit_results/README.md) holds canonical platform audit campaigns per [AUDIT_PROTOCOL.md](../../audit_results/AUDIT_PROTOCOL.md); legacy v1 campaigns under [`docs/audit_results/legacy/`](../../audit_results/legacy/README.md) - a different workflow from this cross-cutting PLATFORM-PLUGIN inventory.

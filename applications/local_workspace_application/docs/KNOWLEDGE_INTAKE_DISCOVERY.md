@@ -14,10 +14,10 @@
 
 | Decision | Classification | Binding statement |
 |----------|----------------|-------------------|
-| LKW / Intergrax owns the complete knowledge intake and ingestion lifecycle | `FROZEN` | Upload acceptance, registration, durable operation state, queue dispatch, extract/parse/chunk/embed, Document/Vector/Blob persistence, retry classification, status events, idempotency, tenant/workspace isolation belong to the platform product boundary — not to any chat client. |
+| LKW / Intergrax owns the complete knowledge intake and ingestion lifecycle | `FROZEN` | Upload acceptance, registration, durable operation state, queue dispatch, extract/parse/chunk/embed, Document/Vector/Blob persistence, retry classification, status events, idempotency, tenant/workspace isolation belong to the platform product boundary - not to any chat client. |
 | Slack (and other channels) are replaceable frontends only | `FROZEN` | Frontends collect channel-native input, invoke the same public LKW capabilities, and display accepted/progress/completion states. They contain no ingestion, RAG, storage or provider logic. |
 | Every persisted Document belongs to exactly one durable Source | `FROZEN` | No persisted Document exists without Source ownership. Every accepted Knowledge Input that produces knowledge must resolve or create a durable Source before Document persistence. |
-| Intake Batch groups item-level Knowledge Inputs | `FROZEN` | A multi-item submission is one Intake Batch of N independent Knowledge Inputs — not one aggregate Knowledge Input. Each accepted item has its own Source and Ingestion Operation. |
+| Intake Batch groups item-level Knowledge Inputs | `FROZEN` | A multi-item submission is one Intake Batch of N independent Knowledge Inputs - not one aggregate Knowledge Input. Each accepted item has its own Source and Ingestion Operation. |
 | Operation-based asynchronous contract for every ingestion | `FROZEN` | Every Knowledge Input yields a durable item-level Ingestion Operation over a Source created or resolved from that input (or a later sync of an existing Source). Small files may finish quickly internally; the observable product contract remains operation-based. No sync-for-small / async-for-large product split. |
 | Durable Ingestion Operation is the source of truth | `FROZEN` | Operation state must not rest solely on a Slack thread, in-memory future, pub/sub event, or open HTTP connection. |
 | Queue / worker boundary required for ingestion execution | `FROZEN` | Acceptance creates durable state and queues work; a worker performs parse → documents → chunks → embeddings → persistence. |
@@ -64,12 +64,12 @@ One-sentence result: every accepted knowledge item resolves or creates a durable
 
 | Concept | Role | Becomes Documents? |
 |---------|------|-------------------|
-| **Knowledge Intake** | Introduces or synchronizes **durable indexed knowledge** into LKW-owned stores | Yes — through Source → Document → Chunks → Vectors |
-| **Live Access Binding** | Authorizes **bounded query-time read-only** capabilities against a Connection or Remote Resource | No — live results are ephemeral evidence unless explicitly promoted through ingestion workflow |
+| **Knowledge Intake** | Introduces or synchronizes **durable indexed knowledge** into LKW-owned stores | Yes - through Source → Document → Chunks → Vectors |
+| **Live Access Binding** | Authorizes **bounded query-time read-only** capabilities against a Connection or Remote Resource | No - live results are ephemeral evidence unless explicitly promoted through ingestion workflow |
 
 A provider resource may support **indexed only**, **live only**, or **both**. Live provider queries are **not** another `KnowledgeInput` kind. Do not route live reads through the ingestion pipeline.
 
-Example: a Confluence space may be synchronized into RAG (Indexed Source) and/or searched live at Ask time (Live Access Binding) — independently configured per workspace.
+Example: a Confluence space may be synchronized into RAG (Indexed Source) and/or searched live at Ask time (Live Access Binding) - independently configured per workspace.
 
 Binding detail: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md).
 
@@ -200,7 +200,7 @@ Contract vocabulary only. Exact enum/class names are **not** implementation clai
 
 `managed_file_batch` as a Knowledge Input kind is **REJECTED**. Multi-file submissions use **Intake Batch** (submission grouping), not an aggregate input kind.
 
-### 5.1 Submission grouping — Intake Batch
+### 5.1 Submission grouping - Intake Batch
 
 | Concept | Role |
 |---------|------|
@@ -271,7 +271,7 @@ intake (1B) → sources (1A) → ingestion / synchronization (1C)
 
 ## 6. File, batch, folder and URL semantics
 
-### 6.1 File attachment (Slack direction — PLANNED after core)
+### 6.1 File attachment (Slack direction - PLANNED after core)
 
 ```text
 Slack adapter
@@ -325,7 +325,7 @@ A folder dragged or uploaded through a conversation interface is a snapshot only
 
 Connected local folders are registered via local-capable surfaces (desktop/tray picker, local CLI, local MCP, local authenticated HTTP, host configuration). Slack may later select `candidate_id` + safe label only.
 
-### 6.4 Raw local path in remote chat — REJECTED
+### 6.4 Raw local path in remote chat - REJECTED
 
 Explicitly prohibited:
 
@@ -338,7 +338,7 @@ Reasons: path disclosure in channel history; ambiguous target host; no guarantee
 
 A local path may be accepted only by a trusted local-capable interface and converted behind the LKW boundary into a safe candidate/reference.
 
-### 6.5 URL intake (`ACCEPTED` — `1B-5-2`)
+### 6.5 URL intake (`ACCEPTED` - `1B-5-2`)
 
 - `WEB_URL` is accepted by the public LKW capability `POST /v1/local_workspace/workspaces/{workspace_id}/knowledge/web-urls`.
 - Resolves to a durable `WEB_RESOURCE` Source (`path=""`, `recursive=false`).
@@ -482,7 +482,7 @@ notification/correlation adapter
         +--> Teams conversation
 ```
 
-The LKW core must **not** call Slack directly. Slack thread is only a response destination — not a queue, operation store, retry mechanism, or ingestion state.
+The LKW core must **not** call Slack directly. Slack thread is only a response destination - not a queue, operation store, retry mechanism, or ingestion state.
 
 ---
 
@@ -499,9 +499,9 @@ The LKW core must **not** call Slack directly. Slack thread is only a response d
 | Folder / ZIP / channel-exposed collection | `uploaded_folder_snapshot` | Snapshot only; no live sync; one snapshot Source → many Documents |
 | Safe numbered candidate selection | `source_candidate` | Opaque id + safe label; never full path; LKW resolves/creates connector-backed Source |
 | Explicit URL intake action | `web_url` | Not automatic from ordinary Ask text; LKW resolves/creates web-resource-backed Source |
-| Raw filesystem path command | — | `REJECTED` |
+| Raw filesystem path command | - | `REJECTED` |
 
-Slack acknowledges transport immediately; long transfer/ingestion does not keep the Slack request open. Slack creates neither Source nor batch state itself — it maps attachments into public LKW intake requests, displays a safe aggregate summary, and does not control retry or partial-success state. Slack adapter does not parse/embed/store. Completion returns through channel-neutral lifecycle event + Conversation Correlation.
+Slack acknowledges transport immediately; long transfer/ingestion does not keep the Slack request open. Slack creates neither Source nor batch state itself - it maps attachments into public LKW intake requests, displays a safe aggregate summary, and does not control retry or partial-success state. Slack adapter does not parse/embed/store. Completion returns through channel-neutral lifecycle event + Conversation Correlation.
 
 ---
 
@@ -534,7 +534,7 @@ Every durable Knowledge Input, Source, Document, Ingestion Operation, batch rela
 
 Repeated delivery of one Slack event, one Slack attachment, one upload-finalize request, one queue message, or one completion event must not create duplicate sources, documents or embeddings unintentionally. Exact key formats are **DEFERRED**.
 
-### Sensitive data — never expose through frontend responses or generic events
+### Sensitive data - never expose through frontend responses or generic events
 
 - full local path;
 - provider credentials;
@@ -553,7 +553,7 @@ Accepted media types; file-size limits; batch limits; decompression/archive limi
 
 ## Platform capability audit gate for implementation slices
 
-**Status:** binding process gate from `PLATFORM-CAPABILITY-AUDIT-GATE-1`. Governing rule: [`PRODUCT_FIRST_MVP.md` — Mandatory platform capability audit and architecture decision gate](../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md#mandatory-platform-capability-audit-and-architecture-decision-gate).
+**Status:** binding process gate from `PLATFORM-CAPABILITY-AUDIT-GATE-1`. Governing rule: [`PRODUCT_FIRST_MVP.md` - Mandatory platform capability audit and architecture decision gate](../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md#mandatory-platform-capability-audit-and-architecture-decision-gate).
 
 Every `1B-*` and `1C` implementation scope must be preceded by an evidence-based platform capability audit performed by the architecture/review workflow.
 
@@ -627,7 +627,7 @@ DEFER_NON_BLOCKING_GAP
 
 Any row assigned `ARCHITECTURE_DECISION_REQUIRED` blocks coding.
 
-### Candidates to audit — not automatically approved
+### Candidates to audit - not automatically approved
 
 The following names are **CANDIDATES TO AUDIT** / **NOT AUTOMATICALLY APPROVED FOR REUSE**. Their sufficiency must not be claimed without the focused `1B-1` architecture-led audit:
 
@@ -798,7 +798,7 @@ the complete candidate list is one Cursor audit instruction.
 | Slice | Status | Concern |
 |-------|--------|---------|
 | `LKW-WORKSPACE-CONTENTS-1A` | `OPERATOR_VERIFIED` | Inspect active workspace sources (safe summaries; no full path). Not `LIVE_VERIFIED`. |
-| `LKW-WORKSPACE-CONTENTS-1B-0` | `DOCUMENTED / READY_FOR_REVIEW` | This document — freeze channel-neutral Knowledge Intake and async ingestion contract. |
+| `LKW-WORKSPACE-CONTENTS-1B-0` | `DOCUMENTED / READY_FOR_REVIEW` | This document - freeze channel-neutral Knowledge Intake and async ingestion contract. |
 | `PLATFORM-CAPABILITY-AUDIT-GATE-1` | `DOCUMENTED / READY_FOR_REVIEW` | Mandatory platform capability audit and architecture stop rule (global + LKW). |
 | `LKW-WORKSPACE-CONTENTS-1B-1` | process-split | Durable Knowledge Intake and Ingestion Operation foundation (product concern unchanged). |
 | `LKW-WORKSPACE-CONTENTS-1B-1-A` | architecture-led audit phase | Architecture-led bounded audit; not a Cursor implementation task. |
@@ -860,7 +860,7 @@ The following remain **DEFERRED** (do not invent details in later docs as if fro
 | Every folder upload becomes a live connector | Snapshot ≠ connected folder |
 | Every source is a filesystem path | Source is a durable logical origin |
 | Persisted Document directly owned by Knowledge Input | Source is the ownership boundary; Knowledge Input is submission intent |
-| One aggregate `managed_file_batch` Knowledge Input containing many independent files | **REJECTED** — Intake Batch groups N item-level `managed_file` Knowledge Inputs |
+| One aggregate `managed_file_batch` Knowledge Input containing many independent files | **REJECTED** - Intake Batch groups N item-level `managed_file` Knowledge Inputs |
 | Parent Ingestion Operation required for a batch | Item-level operations only; aggregate batch status may be derived later (**DEFERRED**) |
 | Pub/sub is the operation source of truth | Durable operation record is |
 | Slack thread stores job state | Correlation destination only |
@@ -875,14 +875,14 @@ Google NotebookLM is **not** a formal architectural dependency or compatibility 
 
 ---
 
-## Illustrative API shape — NOT FROZEN / NOT IMPLEMENTED
+## Illustrative API shape - NOT FROZEN / NOT IMPLEMENTED
 
 The examples below are **conceptual only**. Route names, schemas, class names and event payloads are **not** frozen and **do not** exist as product endpoints today.
 
 Illustrative acceptance result (NOT IMPLEMENTED):
 
 ```text
-# ILLUSTRATIVE ONLY — routes/schemas not frozen
+# ILLUSTRATIVE ONLY - routes/schemas not frozen
 KnowledgeIntakeAcceptance:
   operation_id: <opaque>
   status: accepted
@@ -893,7 +893,7 @@ KnowledgeIntakeAcceptance:
 Illustrative upload session flow (NOT IMPLEMENTED):
 
 ```text
-# ILLUSTRATIVE ONLY — not existing endpoints
+# ILLUSTRATIVE ONLY - not existing endpoints
 create upload session → transfer bytes → finalize → submit Knowledge Input
 ```
 

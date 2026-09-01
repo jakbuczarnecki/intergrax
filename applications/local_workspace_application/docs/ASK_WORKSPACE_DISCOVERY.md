@@ -48,11 +48,11 @@ Discovery does not implement this path.
 
 | Logical name | Actual location |
 |--------------|-----------------|
-| Ask orchestration | `workspaces/ask_service.py` — `WorkspaceAskService` |
+| Ask orchestration | `workspaces/ask_service.py` - `WorkspaceAskService` |
 | AskAnswerAssembler | `workspaces/ask_answer_assembler.py` |
 | Citation projection | `project_ask_citations` in `ask_answer_assembler.py` |
-| Ask-run persistence | `workspaces/ask_repository.py` — DocumentStore |
-| Verified hit mapping (shared with Search) | `workspaces/search_evidence.py` — `map_search_hits` |
+| Ask-run persistence | `workspaces/ask_repository.py` - DocumentStore |
+| Verified hit mapping (shared with Search) | `workspaces/search_evidence.py` - `map_search_hits` |
 | Public schemas | `WorkspaceAskRequestV1` / `WorkspaceAskResponseV1` / `WorkspaceAskCitationV1` in `serving/workspace_schemas.py` |
 | HTTP routes | `POST .../workspaces/{workspace_id}/ask`, `GET .../asks/{run_id}` in `serving/workspace_routes.py` |
 | Controlled live proof | `scripts/run-lkw-ask-workspace-live-proof.py` |
@@ -81,12 +81,12 @@ No Slack fields. HTTP is the canonical surface for MVP-2. MCP remains untouched.
 
 | Item | Existing |
 |------|----------|
-| Managed search route | `POST /v1/local_workspace/workspaces/{workspace_id}/search` — `search_workspace` in `serving/workspace_routes.py` |
-| Request model | `WorkspaceSearchRequestV1` (`query`, `limit`) — `serving/workspace_schemas.py` |
+| Managed search route | `POST /v1/local_workspace/workspaces/{workspace_id}/search` - `search_workspace` in `serving/workspace_routes.py` |
+| Request model | `WorkspaceSearchRequestV1` (`query`, `limit`) - `serving/workspace_schemas.py` |
 | Response model | `WorkspaceSearchResponseV1` → `list[WorkspaceSearchHitV1]` |
-| Tenant resolution | `resolve_tenant_id` — request context → `X-Tenant-Id` → body → `"default"` |
+| Tenant resolution | `resolve_tenant_id` - request context → `X-Tenant-Id` → body → `"default"` |
 | Workspace auth | `ManagedWorkspaceService.get_workspace(tenant_id, workspace_id)`; missing → HTTP 404 |
-| Generic run route | `POST /v1/local_workspace/run` — `LocalWorkspaceRunService.run_task` in `serving/fastapi_router.py` |
+| Generic run route | `POST /v1/local_workspace/run` - `LocalWorkspaceRunService.run_task` in `serving/fastapi_router.py` |
 | Execution boundary | `LocalWorkspaceTaskExecutor.execute` → `UnifiedTaskRunner` → Nexus (`host/task_executor.py`) |
 | Run ID creation | `new_run_id()` from `intergrax.runtime.task.task_run_bridge`; set as `Task.task_id` |
 
@@ -114,7 +114,7 @@ Trace `local.workspace.search`:
 |------|----------|
 | Capability | `agents/local_search/capabilities.py` |
 | Agent | `LocalSearchAgent.act` → `run_search_job` (`agents/local_search/local_search_agent.py`) |
-| Skill | `local.workspace.search` — `intergrax/skills/providers/local/manifests.py` |
+| Skill | `local.workspace.search` - `intergrax/skills/providers/local/manifests.py` |
 | Tool | `rag.retrieve` (`RAG_RETRIEVE_TOOL_ID`) |
 | Output | `search_summary` dict exported to `AgentRunResult.structured_data` in `LocalSearchAgent.on_run_end` |
 | Vector/document boundary | Catalog tool `rag.retrieve`; LKW verifies hits against `ManagedWorkspaceRepository.get_document_ref` |
@@ -155,7 +155,7 @@ WorkspaceSearchHitV1
 | page/line/offset | only if present inside `metadata` (not first-class) |
 | tenant_id | on Task/metadata/diagnostics, not per evidence item |
 
-Stability: **yes for synthesis/handoff consumption as dict evidence** — already consumed by synthesizer and pipeline handoff tests. Not a dedicated Pydantic domain class at agent layer; product HTTP promotes verified fields to `WorkspaceSearchHitV1`.
+Stability: **yes for synthesis/handoff consumption as dict evidence** - already consumed by synthesizer and pipeline handoff tests. Not a dedicated Pydantic domain class at agent layer; product HTTP promotes verified fields to `WorkspaceSearchHitV1`.
 
 Verdict:
 
@@ -174,9 +174,9 @@ Closest capability: `local.workspace.synthesize` → `LocalSynthesizerAgent` →
 |---------|-----------------|
 | Expected evidence | `metadata.evidence` or `metadata.search_summary.evidence`, or prior-output handoff from `local_search` |
 | Model-provider boundary | Job does **not** call an LLM; it builds markdown from evidence/message and writes a file |
-| Output | `synthesize_summary` (`used`, `reason`, artifact path/ref, `num_evidence_items`) — not a Q&A answer with citations |
+| Output | `synthesize_summary` (`used`, `reason`, artifact path/ref, `num_evidence_items`) - not a Q&A answer with citations |
 | Shadow requirement | Fails with `shadow_workspace_required` unless `shadow_workspace=True` |
-| Empty evidence | If no evidence but `message` present, `_resolve_content` writes a draft from the message alone — **ungrounded content path** |
+| Empty evidence | If no evidence but `message` present, `_resolve_content` writes a draft from the message alone - **ungrounded content path** |
 | Compatibility with search | Dict evidence from `search_summary` **can** be consumed (see acceptance/handoff tests) |
 
 **Mismatch for Ask Workspace:** search produces verified retrieval evidence; synthesizer produces shadow **draft artifacts**, not a grounded answer with stable citations. Architecture prose in `ARCHITECTURE.md` §10.3 mentioning LLM synthesis is ahead of the implemented job.
@@ -190,7 +190,7 @@ Closest capability: `local.workspace.synthesize` → `LocalSynthesizerAgent` →
 | RAG engine | `intergrax.rag.retrieval.citation.Citation` | Retrieval provenance (`chunk_id`, `source_id`, `source_label`, `page`, `score`, `excerpt`, `metadata`) |
 | Nexus response | `intergrax.runtime.nexus.responses.response_schema.Citation` | Generic runtime citation (`source_id`, `source_type`, `source_label`, …) |
 | Search job | dict citations from `rag.retrieve`, folded into evidence | Intermediate |
-| Product HTTP search | no citation type — hits are `WorkspaceSearchHitV1` | Closest product source reference |
+| Product HTTP search | no citation type - hits are `WorkspaceSearchHitV1` | Closest product source reference |
 | Ask Workspace | **absent** | Must be projected in MVP-2 |
 
 No Slack-specific citation fields exist. MVP-2 should define a surface-neutral Ask citation schema projected from verified evidence (`document_id`, `source_id`, `workspace_id`, `source_path`/`file_name`, optional `chunk_id`/`score`, `snippet`/`excerpt`). Prefer extending product schemas over inventing a platform-wide citation rewrite.
@@ -199,7 +199,7 @@ No Slack-specific citation fields exist. MVP-2 should define a surface-neutral A
 
 | Kind | Existing | Suitable for Ask? |
 |------|----------|-------------------|
-| Trace persistence | Nexus/runtime diagnostics, evidence metadata on `TaskResult.metadata` | No — observability, not product Ask history |
+| Trace persistence | Nexus/runtime diagnostics, evidence metadata on `TaskResult.metadata` | No - observability, not product Ask history |
 | Task lifecycle | In-process `Task`/`TaskResult` via `UnifiedTaskRunner`; `run_id` == task id for sync execute | Ephemeral for LKW HTTP `/run` and managed search |
 | Operation persistence | `WorkspaceOperation` via `ManagedWorkspaceRepository` + `GET /operations/{operation_id}` | Sync lifecycle only |
 | Platform `RunService` | `intergrax/fastapi_core/runs` | **Not mounted** by LKW sync execute path |
@@ -212,7 +212,7 @@ Managed search creates a `run_id` but returns only `WorkspaceSearchResponseV1` (
 | Path | Exists? |
 |------|---------|
 | `GET` Ask / completed product run for question/answer/citations | **No** |
-| `GET /v1/local_workspace/operations/{operation_id}` | Yes — sync operations only |
+| `GET /v1/local_workspace/operations/{operation_id}` | Yes - sync operations only |
 | `POST /v1/local_workspace/run` | Returns result once; no GET by `run_id` |
 
 **Concrete gap:** no suitable completed Ask-run read path.
@@ -377,7 +377,7 @@ Slack-specific data does not appear.
 
 #### Insufficient-evidence boundary
 
-**Before model invocation** — if verified evidence is empty:
+**Before model invocation** - if verified evidence is empty:
 
 ```text
 status = insufficient_evidence
@@ -386,7 +386,7 @@ citations = []
 model invocation = skipped
 ```
 
-**After model invocation** — if the model reports insufficient support or returns
+**After model invocation** - if the model reports insufficient support or returns
 no valid used evidence indexes:
 
 ```text
@@ -395,7 +395,7 @@ answer = null
 citations = []
 ```
 
-**Completed answer** — a result may have `status = completed` only when:
+**Completed answer** - a result may have `status = completed` only when:
 
 * answer is non-empty;
 * at least one valid evidence index is returned;
@@ -527,11 +527,11 @@ Slack must not own Ask orchestration, search, synthesis, citations or persistenc
 | Search-to-synthesis compatibility | `tests/test_lkw_acceptance_index_search_synthesize.py` | acceptance flow | Search evidence consumed by synthesize job as draft input | Grounded Q&A; citation projection; no message fallback |
 | Prior-output handoff | `agents/local_search/tests/test_search_handoff.py` | `test_local_search_exports_search_summary_for_graph_handoff` | `search_summary` exported for graph | Product Ask |
 | Synthesize consumes handoff | `agents/local_synthesizer/tests/test_synthesize_job.py` | `test_run_synthesize_job_consumes_prior_search_handoff` | Evidence → shadow draft | Insufficient-evidence gate for Ask |
-| Citation serialization (product Ask) | — | — | — | **Missing** |
-| Run persistence (Ask) | — | — | — | **Missing** |
-| Completed-run read (Ask) | — | — | — | **Missing** |
+| Citation serialization (product Ask) | - | - | - | **Missing** |
+| Run persistence (Ask) | - | - | - | **Missing** |
+| Completed-run read (Ask) | - | - | - | **Missing** |
 | Restart persistence (vectors/ops) | LKW.5 / product sync proofs | various | Vectors/ops survive restart | Ask runs |
-| Insufficient evidence (Ask) | — | — | Empty search results only | No invented grounded answer for Ask |
+| Insufficient evidence (Ask) | - | - | Empty search results only | No invented grounded answer for Ask |
 
 Live proofs are not substitutes for the focused Ask contract tests listed in §11.
 
@@ -588,7 +588,7 @@ NO second major platform gap opened during discovery.
 
 ## 9. Exact MVP-2 implementation scope
 
-**One-sentence summary:** Implement surface-neutral HTTP Ask Workspace that reuses managed search evidence, applies an insufficient-evidence gate, produces a grounded answer via `AskAnswerAssembler` with projected citations, persists the run, and supports completed-run read after restart — validated by focused tests plus one controlled live proof.
+**One-sentence summary:** Implement surface-neutral HTTP Ask Workspace that reuses managed search evidence, applies an insufficient-evidence gate, produces a grounded answer via `AskAnswerAssembler` with projected citations, persists the run, and supports completed-run read after restart - validated by focused tests plus one controlled live proof.
 
 **Allowed:**
 
@@ -681,20 +681,20 @@ contract test
 
 ### Assembler and grounding tests (exact names)
 
-1. `test_ask_answer_assembler_uses_only_verified_evidence` — assembler input is verified `WorkspaceSearchHitV1`; deterministic context contains only approved fields; raw provider metadata absent; one model call; model receives indexed evidence; typed result contains answer and valid `used_evidence_ids`.
-2. `test_ask_answer_assembler_skips_model_when_evidence_is_empty` — no model call; `insufficient_evidence`; answer null; citations empty.
-3. `test_ask_answer_assembler_rejects_unknown_evidence_reference` — model returns unknown evidence ID; result is not `completed`; no fabricated citation; failure persisted or propagated per MVP-2 contract.
-4. `test_completed_answer_requires_at_least_one_verified_citation` — `completed` cannot be returned without at least one valid projected citation.
+1. `test_ask_answer_assembler_uses_only_verified_evidence` - assembler input is verified `WorkspaceSearchHitV1`; deterministic context contains only approved fields; raw provider metadata absent; one model call; model receives indexed evidence; typed result contains answer and valid `used_evidence_ids`.
+2. `test_ask_answer_assembler_skips_model_when_evidence_is_empty` - no model call; `insufficient_evidence`; answer null; citations empty.
+3. `test_ask_answer_assembler_rejects_unknown_evidence_reference` - model returns unknown evidence ID; result is not `completed`; no fabricated citation; failure persisted or propagated per MVP-2 contract.
+4. `test_completed_answer_requires_at_least_one_verified_citation` - `completed` cannot be returned without at least one valid projected citation.
 
 ### Minimum additional tests
 
-1. Happy-path contract — real question → answer + citations + `run_id`.
-2. Insufficient evidence — no invented answer.
-3. Tenant isolation — foreign tenant cannot read Ask run / workspace.
-4. Workspace isolation — evidence from other workspace never grounds answer.
-5. Persisted completed-run read — GET returns stored payload.
-6. Restart persistence — reload repository/store; GET still succeeds.
-7. Answer assembly failure — `failed` persisted; GET shows error.
+1. Happy-path contract - real question → answer + citations + `run_id`.
+2. Insufficient evidence - no invented answer.
+3. Tenant isolation - foreign tenant cannot read Ask run / workspace.
+4. Workspace isolation - evidence from other workspace never grounds answer.
+5. Persisted completed-run read - GET returns stored payload.
+6. Restart persistence - reload repository/store; GET still succeeds.
+7. Answer assembly failure - `failed` persisted; GET shows error.
 8. Provider-specific payload does not leak into Ask response.
 9. No Slack-specific fields in schemas (`extra="forbid"` / explicit asserts).
 10. One controlled end-to-end live proof (mandatory; after focused tests; not the main debugging loop).

@@ -1,4 +1,4 @@
-# PROVIDER_BACKEND_ABSTRACTION — Platform Audit
+# PROVIDER_BACKEND_ABSTRACTION - Platform Audit
 
 ## Metadata
 
@@ -7,7 +7,7 @@
 - **Tier(s):** cross-domain Tier-0 / Tier-1 / Tier-2 / Tier-3 provider/backend boundary audit
 - **audited_sha:** `7570e9b4508554a42bdf5cce2c987c56c6f2b80e`
 - **Status:** COMPLETE
-- **Auditor:** OpenAI ChatGPT / GPT-5.6 Sol — independent auditor
+- **Auditor:** OpenAI ChatGPT / GPT-5.6 Sol - independent auditor
 - **Verdict:** FAIL
 - **Architecture doc(s):**
   - `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md`
@@ -38,7 +38,7 @@
 
 ## Executive summary
 
-**Verdict: FAIL.** Intergrax has multiple genuine provider-neutral persistence and behavior ports, but five accepted findings (2 HIGH, 3 MEDIUM) show paper abstractions, canonical observability bypass, provider-specific configuration leakage into generic contracts, governance that blesses a known vendor bypass, and a missing experiment persistence port on a reusable workflow. Production-critical long-running checkpoint semantics depend on `SQLiteTaskCheckpointStore` in generic Nexus/coordinator paths despite an existing `TaskCheckpointPersistence` port. RAG parser telemetry reaches Sentry/Langfuse without the canonical sanitized observability export boundary. Generic guardrail profiles carry Bedrock-specific fields. Vendor-import governance explicitly allows the parser-trace exporter file containing direct `sentry_sdk` usage. `ExperimentSession` and debug HTTP consumers type against `SQLiteExperimentStore` with no stable experiment persistence port. FAIL means provider/backend discipline is not structurally universal — not that every SQLite implementation or provider-owned SDK use is invalid.
+**Verdict: FAIL.** Intergrax has multiple genuine provider-neutral persistence and behavior ports, but five accepted findings (2 HIGH, 3 MEDIUM) show paper abstractions, canonical observability bypass, provider-specific configuration leakage into generic contracts, governance that blesses a known vendor bypass, and a missing experiment persistence port on a reusable workflow. Production-critical long-running checkpoint semantics depend on `SQLiteTaskCheckpointStore` in generic Nexus/coordinator paths despite an existing `TaskCheckpointPersistence` port. RAG parser telemetry reaches Sentry/Langfuse without the canonical sanitized observability export boundary. Generic guardrail profiles carry Bedrock-specific fields. Vendor-import governance explicitly allows the parser-trace exporter file containing direct `sentry_sdk` usage. `ExperimentSession` and debug HTTP consumers type against `SQLiteExperimentStore` with no stable experiment persistence port. FAIL means provider/backend discipline is not structurally universal - not that every SQLite implementation or provider-owned SDK use is invalid.
 
 ## Verdict
 
@@ -64,10 +64,10 @@
   - `intergrax/runtime/long_running/coordinator.py:L23,L54-L55,L102,L120` @ `7570e9b4508554a42bdf5cce2c987c56c6f2b80e`
   - `intergrax/runtime/long_running/store.py:L59,L338-L357` @ `7570e9b4508554a42bdf5cce2c987c56c6f2b80e`
 - **Reproduction:**
-  1. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/runtime/long_running/persistence_contract.py` — `TaskCheckpointPersistence` / `TaskCheckpointReader` port definitions (L18-L48).
-  2. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/runtime/nexus/nexus_loop.py` — import of `SQLiteTaskCheckpointStore` (L58); constructor parameter typed as concrete store (L134-L135).
-  3. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/runtime/long_running/coordinator.py` — `store: SQLiteTaskCheckpointStore` parameters (L54-L55, L102); `SQLiteTaskCheckpointStore.build_checkpoint(...)` call (L120).
-  4. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/runtime/long_running/store.py` — `SQLiteTaskCheckpointStore` implementation (L59); `build_checkpoint` classmethod on SQLite store (L338-L357).
+  1. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/runtime/long_running/persistence_contract.py` - `TaskCheckpointPersistence` / `TaskCheckpointReader` port definitions (L18-L48).
+  2. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/runtime/nexus/nexus_loop.py` - import of `SQLiteTaskCheckpointStore` (L58); constructor parameter typed as concrete store (L134-L135).
+  3. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/runtime/long_running/coordinator.py` - `store: SQLiteTaskCheckpointStore` parameters (L54-L55, L102); `SQLiteTaskCheckpointStore.build_checkpoint(...)` call (L120).
+  4. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/runtime/long_running/store.py` - `SQLiteTaskCheckpointStore` implementation (L59); `build_checkpoint` classmethod on SQLite store (L338-L357).
 - **Impact:** Production-critical pause/resume/checkpoint semantics are coupled to SQLite; backend substitution requires changes in generic runtime and provider-neutral logic is partly owned by the SQLite implementation.
 - **Confidence:** CONFIRMED
 
@@ -90,11 +90,11 @@
   - `intergrax/runtime/nexus/tracing/parser_trace_flush.py:L18-L29` @ `7570e9b4508554a42bdf5cce2c987c56c6f2b80e`
   - `intergrax/runtime/observability/export_bridge.py:L20,L70` @ `7570e9b4508554a42bdf5cce2c987c56c6f2b80e`
 - **Reproduction:**
-  1. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/runtime/integrations/observability.py` — canonical `ObservabilityVendorIntegrationContract` and envelope mapping (L198-L267).
-  2. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/rag/document_loaders/observability/parser_trace_exporter.py` — `export_parser_trace` branches to `_export_sentry` / `_export_langfuse` (L63-L66); direct `sentry_sdk` (L69-L77); direct `httpx.post` to Langfuse (L82-L105).
-  3. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/rag/document_loaders/pipeline/parser_pipeline.py` — trace includes `"error": str(exc)` (L67-L69); calls `export_parser_trace` (L96-L98).
-  4. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/runtime/nexus/tracing/parser_trace_flush.py` — replay path calls same exporter (L18-L29).
-  5. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/runtime/observability/export_bridge.py` — journal replay invokes `export_parser_traces_from_events` (L20, L70).
+  1. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/runtime/integrations/observability.py` - canonical `ObservabilityVendorIntegrationContract` and envelope mapping (L198-L267).
+  2. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/rag/document_loaders/observability/parser_trace_exporter.py` - `export_parser_trace` branches to `_export_sentry` / `_export_langfuse` (L63-L66); direct `sentry_sdk` (L69-L77); direct `httpx.post` to Langfuse (L82-L105).
+  3. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/rag/document_loaders/pipeline/parser_pipeline.py` - trace includes `"error": str(exc)` (L67-L69); calls `export_parser_trace` (L96-L98).
+  4. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/runtime/nexus/tracing/parser_trace_flush.py` - replay path calls same exporter (L18-L29).
+  5. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/runtime/observability/export_bridge.py` - journal replay invokes `export_parser_traces_from_events` (L20, L70).
 - **Impact:** Canonical provider abstraction and observability safety/export guarantees are not structurally universal on the parser-trace path. The required sanitization/provider boundary is bypassed and `source`/`error` metadata can reach an external vendor without that canonical boundary. No secret exfiltration was proven.
 - **Confidence:** CONFIRMED
 
@@ -115,10 +115,10 @@
   - `intergrax/integrations/contracts/llm_guardrail.py:L20-L27,L66` @ `7570e9b4508554a42bdf5cce2c987c56c6f2b80e`
   - `intergrax/integrations/providers/llm_guardrail/bundles/bedrock_guardrails.py:L18-L20,L77-L78` @ `7570e9b4508554a42bdf5cce2c987c56c6f2b80e`
 - **Reproduction:**
-  1. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/contracts/host_profile_slices.py` — `GuardrailProfile.bedrock_guardrail_policy_id` on generic profile (L43-L54).
-  2. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/applications/_shared/guardrail_runtime_bridge.py` — copies Bedrock field into `GuardrailBackendOptions` (L24-L29).
-  3. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/integrations/contracts/llm_guardrail.py` — vendor-specific `GuardrailBackendOptions` field (L20-L27); `LlmGuardrailBackend` behavior port (L66).
-  4. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/integrations/providers/llm_guardrail/bundles/bedrock_guardrails.py` — Bedrock backend consumes policy id (L18-L20, L77-L78).
+  1. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/contracts/host_profile_slices.py` - `GuardrailProfile.bedrock_guardrail_policy_id` on generic profile (L43-L54).
+  2. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/applications/_shared/guardrail_runtime_bridge.py` - copies Bedrock field into `GuardrailBackendOptions` (L24-L29).
+  3. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/integrations/contracts/llm_guardrail.py` - vendor-specific `GuardrailBackendOptions` field (L20-L27); `LlmGuardrailBackend` behavior port (L66).
+  4. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/integrations/providers/llm_guardrail/bundles/bedrock_guardrails.py` - Bedrock backend consumes policy id (L18-L20, L77-L78).
 - **Impact:** Generic shared configuration can accumulate provider-specific fields and forces platform contracts to evolve when providers add unique settings.
 - **Confidence:** CONFIRMED
 
@@ -137,10 +137,10 @@
   - `tests/unit/integrations/test_vendor_import_governance.py:L12,L15-L17` @ `7570e9b4508554a42bdf5cce2c987c56c6f2b80e`
   - `.github/workflows/unit-tests.yml:L166,L196-L207` @ `7570e9b4508554a42bdf5cce2c987c56c6f2b80e`
 - **Reproduction:**
-  1. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:scripts/maintenance/check_integration_vendor_imports.py` — finite `VENDOR_MODULES` including `sentry_sdk` (L16-L31); `RAG_ALLOWED_SUFFIXES` includes `/parser_trace_exporter.py` (L44-L48).
-  2. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/rag/document_loaders/observability/parser_trace_exporter.py` — direct `sentry_sdk` import in allowed file (L69-L77).
-  3. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:tests/unit/integrations/test_vendor_import_governance.py` — `pytest.mark.no_ci` (L12).
-  4. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:.github/workflows/unit-tests.yml` — governance workflow invokes `check_integration_vendor_imports.py` (L207); PR smoke excludes `no_ci` (L166).
+  1. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:scripts/maintenance/check_integration_vendor_imports.py` - finite `VENDOR_MODULES` including `sentry_sdk` (L16-L31); `RAG_ALLOWED_SUFFIXES` includes `/parser_trace_exporter.py` (L44-L48).
+  2. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/rag/document_loaders/observability/parser_trace_exporter.py` - direct `sentry_sdk` import in allowed file (L69-L77).
+  3. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:tests/unit/integrations/test_vendor_import_governance.py` - `pytest.mark.no_ci` (L12).
+  4. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:.github/workflows/unit-tests.yml` - governance workflow invokes `check_integration_vendor_imports.py` (L207); PR smoke excludes `no_ci` (L166).
 - **Impact:** Existing governance can certify a known direct vendor path as acceptable, weakening provider-independence proof and allowing regressions of the same class.
 - **Confidence:** CONFIRMED
 
@@ -161,9 +161,9 @@
   - `intergrax/experiments/workflow.py:L20-L21,L28,L109-L112,L119` @ `7570e9b4508554a42bdf5cce2c987c56c6f2b80e`
   - `intergrax/debug/router.py:L76,L110-L115,L393-L440` @ `7570e9b4508554a42bdf5cce2c987c56c6f2b80e`
 - **Reproduction:**
-  1. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/experiments/store.py` — public `SQLiteExperimentStore` only (L27, L33-L41).
-  2. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/experiments/workflow.py` — imports and constructs SQLite stores; field typed as `SQLiteExperimentStore` (L20-L21, L28, L109-L112, L119).
-  3. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/debug/router.py` — factory and HTTP dependencies typed as `SQLiteExperimentStore` (L76, L110-L115, L393-L440); contrast with `RunTraceReader` abstraction (L83, L89-L99).
+  1. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/experiments/store.py` - public `SQLiteExperimentStore` only (L27, L33-L41).
+  2. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/experiments/workflow.py` - imports and constructs SQLite stores; field typed as `SQLiteExperimentStore` (L20-L21, L28, L109-L112, L119).
+  3. `git show 7570e9b4508554a42bdf5cce2c987c56c6f2b80e:intergrax/debug/router.py` - factory and HTTP dependencies typed as `SQLiteExperimentStore` (L76, L110-L115, L393-L440); contrast with `RunTraceReader` abstraction (L83, L89-L99).
 - **Impact:** The reusable experiment workflow and debug surface are tied to SQLite; backend substitution or reuse outside the current lab persistence model requires editing workflow code rather than composition.
 - **Confidence:** CONFIRMED
 
@@ -195,17 +195,17 @@ This audit did **not** conclude that "SQLite everywhere is bad" or that provider
 6. **Adaptive core `AdaptationExecutor`** depends on `ProfileVersionStore` / `ProfileActivePointerStore`, not SQLite (`intergrax/runtime/adaptive/adaptation_executor.py:L21-L22,L76-L77` @ `7570e9b4508554a42bdf5cce2c987c56c6f2b80e`).
 7. **Provider-owned SDK/dialect use** below a valid port or inside provider-owned packages is not itself a finding when consumers depend on the port.
 
-**FAIL qualification:** verdict means provider/backend discipline is not structurally universal — **not** that all abstractions are absent or every SQLite backend is invalid.
+**FAIL qualification:** verdict means provider/backend discipline is not structurally universal - **not** that all abstractions are absent or every SQLite backend is invalid.
 
 ## Falsification log
 
 Targets examined but **not** promoted to findings:
 
-1. **SQLite implementation existing below a valid port** — not automatically a defect; consumers using the port (human decisions, runtime events, task memory, agent checkpoints, idempotency) were inspected and not promoted.
-2. **Adaptive persistence** — core `AdaptationExecutor` depends on `ProfileVersionStore` / `ProfileActivePointerStore` ports; not promoted.
-3. **Agent checkpoint / idempotency SQLite implementations** — concrete stores exist but high-level consumers use ports; not promoted.
-4. **Parser-trace secret exfiltration** — bypass of canonical observability boundary confirmed; no proven secret leak claim for finding 02.
-5. **Multiple production providers per category** — no claim that every provider must have multiple production implementations to satisfy abstraction discipline.
+1. **SQLite implementation existing below a valid port** - not automatically a defect; consumers using the port (human decisions, runtime events, task memory, agent checkpoints, idempotency) were inspected and not promoted.
+2. **Adaptive persistence** - core `AdaptationExecutor` depends on `ProfileVersionStore` / `ProfileActivePointerStore` ports; not promoted.
+3. **Agent checkpoint / idempotency SQLite implementations** - concrete stores exist but high-level consumers use ports; not promoted.
+4. **Parser-trace secret exfiltration** - bypass of canonical observability boundary confirmed; no proven secret leak claim for finding 02.
+5. **Multiple production providers per category** - no claim that every provider must have multiple production implementations to satisfy abstraction discipline.
 
 ## Prior-audit comparison
 
@@ -213,8 +213,8 @@ Legacy provider/integrations audit material remains **historical evidence only**
 
 ## Open questions / blocked items
 
-- Whether long-running checkpoint `build_checkpoint` domain logic should live in runtime-neutral code or a dedicated factory — planning only; not resolved by this audit.
-- Whether experiment persistence should share relational-store provider wiring patterns used by other lab stores — deferred to **PBA-FIX-D** planning.
+- Whether long-running checkpoint `build_checkpoint` domain logic should live in runtime-neutral code or a dedicated factory - planning only; not resolved by this audit.
+- Whether experiment persistence should share relational-store provider wiring patterns used by other lab stores - deferred to **PBA-FIX-D** planning.
 - No operator-disputed findings; no blocked evidence collection.
 
 ## Operator acceptance

@@ -4,7 +4,7 @@ Intergrax framework – proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
 -->
 
-# Observability & Evaluation Control Plane — Architecture Audit
+# Observability & Evaluation Control Plane - Architecture Audit
 
 **Status:** Audit source document for architecture and implementation-plan updates  
 **Domain:** `OBSERVABILITY` with cross-domain impact on `CRITIC_VERIFICATION`, `ADAPTIVE_HARNESS_INTELLIGENCE`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`, and `TIER3_APPLICATION_ENVIRONMENT`  
@@ -56,7 +56,7 @@ Can the developer add custom telemetry and custom evals without bypassing the ca
 
 ---
 
-## 3. Current foundation — confirmed strengths
+## 3. Current foundation - confirmed strengths
 
 ### 3.1 Canonical Harness Observability Spine
 
@@ -925,7 +925,7 @@ OBS-UX-1 Debug/workbench surfaces
 
 ## 18. Proposed first implementation register
 
-### Phase OBS-ECP-0 — Architecture canon
+### Phase OBS-ECP-0 - Architecture canon
 
 | ID | Type | Deliverable | Acceptance |
 |----|------|-------------|------------|
@@ -935,7 +935,7 @@ OBS-UX-1 Debug/workbench surfaces
 | OBS-ECP-0.4 | Docs | Add Tier-3 profile notes | App-level opt-in surfaces are described |
 | OBS-ECP-0.5 | Docs | Add plan satellite | New implementation register exists |
 
-### Phase OBS-ECP-1 — Trace Completeness Contract
+### Phase OBS-ECP-1 - Trace Completeness Contract
 
 | ID | Type | Deliverable | Acceptance |
 |----|------|-------------|------------|
@@ -944,7 +944,7 @@ OBS-UX-1 Debug/workbench surfaces
 | OBS-ECP-1.3 | Code | `TraceCompletenessReport` | Produces findings with evidence refs |
 | OBS-ECP-1.4 | Tests | Completeness tests | Missing tool/RAG/prompt evidence detected |
 
-### Phase OBS-ECP-2 — Evidence Ledger
+### Phase OBS-ECP-2 - Evidence Ledger
 
 | ID | Type | Deliverable | Acceptance |
 |----|------|-------------|------------|
@@ -955,7 +955,7 @@ OBS-UX-1 Debug/workbench surfaces
 | OBS-ECP-2.5 | Code | Critic/custom telemetry evidence | Critic verdicts and custom telemetry link to evals |
 | OBS-ECP-2.6 | Tests | Evidence extraction tests | Evidence can be derived from HOS/unified journal |
 
-### Phase OBS-ECP-3 — Eval Registry v2
+### Phase OBS-ECP-3 - Eval Registry v2
 
 | ID | Type | Deliverable | Acceptance |
 |----|------|-------------|------------|
@@ -965,7 +965,7 @@ OBS-UX-1 Debug/workbench surfaces
 | OBS-ECP-3.4 | Code | Regression result model | Baseline comparison is represented |
 | OBS-ECP-3.5 | Tests | Registry v2 persistence tests | Observations persist and reload |
 
-### Phase OBS-ECP-4 — Metric and Eval Plugin SDK
+### Phase OBS-ECP-4 - Metric and Eval Plugin SDK
 
 | ID | Type | Deliverable | Acceptance |
 |----|------|-------------|------------|
@@ -975,7 +975,7 @@ OBS-UX-1 Debug/workbench surfaces
 | OBS-ECP-4.4 | Code | Built-in trajectory/ops metrics | cost/latency/tool error metrics available |
 | OBS-ECP-4.5 | Tests | Plugin SDK tests | Custom plugin can score and emit observation |
 
-### Phase OBS-CTP-1 — Custom Telemetry Extension Plane
+### Phase OBS-CTP-1 - Custom Telemetry Extension Plane
 
 | ID | Type | Deliverable | Acceptance |
 |----|------|-------------|------------|
@@ -985,7 +985,7 @@ OBS-UX-1 Debug/workbench surfaces
 | OBS-CTP-1.4 | Code | Custom telemetry profile concept | Tier-3 can select providers |
 | OBS-CTP-1.5 | Tests | Redaction and namespace tests | Raw unsafe payloads rejected or redacted |
 
-### Phase OBS-CTP-2 — Telemetry enrichment and reaction
+### Phase OBS-CTP-2 - Telemetry enrichment and reaction
 
 | ID | Type | Deliverable | Acceptance |
 |----|------|-------------|------------|
@@ -994,7 +994,7 @@ OBS-UX-1 Debug/workbench surfaces
 | OBS-CTP-2.3 | Code | Memory/cost/anomaly sample handlers | Handlers emit typed follow-up events |
 | OBS-CTP-2.4 | Tests | Handler tests | Handler cannot bypass HOS |
 
-### Phase OBS-PERT-1 — Counterfactual Engine
+### Phase OBS-PERT-1 - Counterfactual Engine
 
 | ID | Type | Deliverable | Acceptance |
 |----|------|-------------|------------|
@@ -1002,7 +1002,7 @@ OBS-UX-1 Debug/workbench surfaces
 | OBS-PERT-1.2 | Code | replace/swap/negate/remove mutations | Generated cases contain parent refs |
 | OBS-PERT-1.3 | Tests | Mutation tests | Mutations are deterministic and traceable |
 
-### Phase OBS-PERT-2 — Interpolation Engine
+### Phase OBS-PERT-2 - Interpolation Engine
 
 | ID | Type | Deliverable | Acceptance |
 |----|------|-------------|------------|
@@ -1010,7 +1010,7 @@ OBS-UX-1 Debug/workbench surfaces
 | OBS-PERT-2.2 | Code | Expected behavior delta model | Generated case states expected difference |
 | OBS-PERT-2.3 | Tests | Interpolation tests | Parent case lineage preserved |
 
-### Phase OBS-EXT-1 — External export sync
+### Phase OBS-EXT-1 - External export sync
 
 | ID | Type | Deliverable | Acceptance |
 |----|------|-------------|------------|
@@ -1020,7 +1020,7 @@ OBS-UX-1 Debug/workbench surfaces
 | OBS-EXT-1.4 | Code | Export retry and DLQ | Export failure does not block runtime |
 | OBS-EXT-1.5 | Tests | Export tests | Redaction and retry behavior verified |
 
-### Phase OBS-GATE-1 — CI and release gates
+### Phase OBS-GATE-1 - CI and release gates
 
 | ID | Type | Deliverable | Acceptance |
 |----|------|-------------|------------|
@@ -1028,7 +1028,7 @@ OBS-UX-1 Debug/workbench surfaces
 | OBS-GATE-1.2 | Code/CI | Eval regression gate | Baseline regression detected |
 | OBS-GATE-1.3 | Code/CI | Plugin registry gate | Invalid custom schema/plugin rejected |
 
-### Phase OBS-UX-1 — Debug/workbench surfaces
+### Phase OBS-UX-1 - Debug/workbench surfaces
 
 | ID | Type | Deliverable | Acceptance |
 |----|------|-------------|------------|

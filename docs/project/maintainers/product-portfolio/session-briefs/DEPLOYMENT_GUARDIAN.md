@@ -1,9 +1,9 @@
-# Deployment Guardian — Product Session Brief
+# Deployment Guardian - Product Session Brief
 
 **Document type:** Durable product-specific session mission artifact  
 **Owner:** Deployment Guardian Product Session (future launch)  
 **Audience:** Future session operator / MP-22 Session Launch Pack assembler  
-**Status:** **SELECTED** — Pre-bootstrap; G0 **PENDING**
+**Status:** **SELECTED** - Pre-bootstrap; G0 **PENDING**
 
 > **This is NOT the final session launch prompt.**  
 > It is a durable product-specific mission and context artifact consumed later by **MP-22 Session Launch Pack**.  
@@ -37,7 +37,7 @@
 
 ## 2. Mission
 
-Determine whether a **software change** is **safe and authorized** to reach production — and **progressively enforce** that decision using **independent cross-system evidence**, without replacing CI/CD orchestrators.
+Determine whether a **software change** is **safe and authorized** to reach production - and **progressively enforce** that decision using **independent cross-system evidence**, without replacing CI/CD orchestrators.
 
 **Product-first rule:**
 
@@ -50,7 +50,7 @@ Intergrax reuse is observed as a consequence of building the product.
 
 ## 3. Why this product exists independently of Intergrax
 
-Release decisions often depend on signals scattered across CI, tests, security scans, change tickets, and policy systems — yet native pipeline tools optimize for **their own** stack. Engineering leaders need a **vendor-neutral** decision layer that can say GO/NO-GO with evidence independent of the pipeline requesting approval.
+Release decisions often depend on signals scattered across CI, tests, security scans, change tickets, and policy systems - yet native pipeline tools optimize for **their own** stack. Engineering leaders need a **vendor-neutral** decision layer that can say GO/NO-GO with evidence independent of the pipeline requesting approval.
 
 GitHub, GitLab, Harness, and cloud vendors have strong distribution. The product must prove value **alongside** them, not as another dashboard inside one vendor.
 
@@ -84,7 +84,7 @@ Determine whether a software change is safe and authorized to reach production
 and progressively enforce that decision.
 ```
 
-Vendor-neutral cross-system decision/enforcement wedge must be validated in G0. Native CI/CD controls alone may be sufficient for many buyers — the product must prove incremental value.
+Vendor-neutral cross-system decision/enforcement wedge must be validated in G0. Native CI/CD controls alone may be sufficient for many buyers - the product must prove incremental value.
 
 ---
 
@@ -95,10 +95,10 @@ Vendor-neutral cross-system decision/enforcement wedge must be validated in G0. 
 | Primary buyer | CTO / VP Engineering / Platform Engineering / SRE |
 | Core job | Cross-system release/change decision with independent evidence and controlled enforcement |
 | Economic consequence | Incidents, rollback cost, compliance breach, change-window failure |
-| Success horizon | Per-change / per-release gate — continuous delivery tempo |
+| Success horizon | Per-change / per-release gate - continuous delivery tempo |
 | Value unit | GO/NO-GO with traceable evidence and optional enforcement action |
 
-Selection noted strong **shadow-mode pilot** feasibility — value may be provable before consequential control.
+Selection noted strong **shadow-mode pilot** feasibility - value may be provable before consequential control.
 
 ---
 
@@ -123,10 +123,10 @@ G0 must sharpen: **change → independent evidence → policy/authorization cont
 
 | Contrast | Deployment Guardian |
 |----------|---------------------|
-| LKW | Knowledge workspace — not release authorization |
-| Contract Recovery | Financial contract/spend — not deployment safety |
-| Supplier Disruption | Supply crisis mitigation — not software change gate |
-| Third-Party Risk | Vendor onboarding decision — not production release |
+| LKW | Knowledge workspace - not release authorization |
+| Contract Recovery | Financial contract/spend - not deployment safety |
+| Supplier Disruption | Supply crisis mitigation - not software change gate |
+| Third-Party Risk | Vendor onboarding decision - not production release |
 
 Evidence must be **independent of the requesting pipeline**. Time horizon matches **release cadence**, not audit quarters or supply crises.
 
@@ -145,11 +145,11 @@ Evidence must be **independent of the requesting pipeline**. Time horizon matche
 
 ## 10. Major failure modes / category traps
 
-- **Another CI dashboard** — aggregating status without independent decision logic.
-- **Test-result summarizer** — LLM recap of failing builds.
+- **Another CI dashboard** - aggregating status without independent decision logic.
+- **Test-result summarizer** - LLM recap of failing builds.
 - **GitHub-specific bot** pretending to be platform-neutral.
-- **Replacing deployment orchestrator** — competing with Harness/Spinnaker instead of guarding.
-- **GO/NO-GO from one system's own status only** — circular trust.
+- **Replacing deployment orchestrator** - competing with Harness/Spinnaker instead of guarding.
+- **GO/NO-GO from one system's own status only** - circular trust.
 - **Architecture shaped around LKW patterns** unrelated to release evidence.
 
 ---
@@ -166,13 +166,13 @@ Evidence must be **independent of the requesting pipeline**. Time horizon matche
 
 Product Session cannot self-approve `EXTENDED_GENERALLY`, `GENUINE_PLATFORM_GAP`, or shared core product-specific behavior.
 
-VIS-3A owns public presentation — not gate status. COMM does not own Portfolio Control authority.
+VIS-3A owns public presentation - not gate status. COMM does not own Portfolio Control authority.
 
 ---
 
 ## 12. Current gate / first allowed action
 
-**G0 Product Baseline** — preparation and acceptance per [PRODUCT_BOOTSTRAP_RULES.md](../PRODUCT_BOOTSTRAP_RULES.md).
+**G0 Product Baseline** - preparation and acceptance per [PRODUCT_BOOTSTRAP_RULES.md](../PRODUCT_BOOTSTRAP_RULES.md).
 
 G0 sharpens change-to-enforcement chain before architecture. Do **not** start G1, T0, scaffold, or implementation until G0 is accepted.
 

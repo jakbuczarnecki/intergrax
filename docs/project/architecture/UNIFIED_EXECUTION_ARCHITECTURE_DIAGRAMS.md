@@ -1,11 +1,11 @@
-# Unified Execution Architecture — Diagram Pack Specification
+# Unified Execution Architecture - Diagram Pack Specification
 
-**Status:** Canonical diagram-pack specification (asset contract only — no production graphics in-repo yet)  
-**Classification:** `SUPPORTING_MODEL / SATELLITE` — subordinate to [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) (`META_ARCHITECTURE`); **not** a new DOMAIN and **not** paired with an implementation plan  
+**Status:** Canonical diagram-pack specification (asset contract only - no production graphics in-repo yet)  
+**Classification:** `SUPPORTING_MODEL / SATELLITE` - subordinate to [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) (`META_ARCHITECTURE`); **not** a new DOMAIN and **not** paired with an implementation plan  
 **Owner:** Intergrax Platform Architecture (visual semantics coordination)  
 **Audience:** Principal architects, technical writers, graphic producers, Cursor documentation/integration sessions  
 **Registered in:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md#architecture-artifact-classification-register)
-**Reconciliation:** UE-DOC-0.3B1 — asset strategy aligned with established `docs/project/architecture/assets/` visual system (supersedes speculative `docs/assets/architecture/unified_execution/` root from UE-DOC-0.3A)
+**Reconciliation:** UE-DOC-0.3B1 - asset strategy aligned with established `docs/project/architecture/assets/` visual system (supersedes speculative `docs/assets/architecture/unified_execution/` root from UE-DOC-0.3A)
 
 ---
 
@@ -56,14 +56,14 @@ Do **not** create a nested `unified_execution/` asset directory unless a future 
 
 **Basename pattern:** kebab-case slug matching the diagram view, e.g. `unified-execution-full-architecture`, where the slug corresponds to the diagram ID in [§5](#5-required-architecture-views).
 
-**Per-view file set (contract — files are created by graphic production outside Cursor, not by documentation slices):**
+**Per-view file set (contract - files are created by graphic production outside Cursor, not by documentation slices):**
 
 | Variant | Filename pattern | Required |
 |---------|------------------|----------|
 | SVG (light) | `<basename>-light.svg` | Yes (canonical engineering source) |
 | SVG (dark) | `<basename>-dark.svg` | Yes (when theme support is needed) |
-| PNG (light) | `<basename>-light.png` | No — only when an explicit consumer needs raster |
-| PNG (dark) | `<basename>-dark.png` | No — only when an explicit consumer needs raster |
+| PNG (light) | `<basename>-light.png` | No - only when an explicit consumer needs raster |
+| PNG (dark) | `<basename>-dark.png` | No - only when an explicit consumer needs raster |
 
 **Example (diagram A):**
 
@@ -82,7 +82,7 @@ docs/project/architecture/assets/fullsize/unified-execution-full-architecture.md
 | **SVG is canonical** | SVG is the canonical engineering source format for all architecture diagrams. |
 | **Theme pairs** | Every canonical architecture diagram that needs theme support has both `<basename>-light.svg` and `<basename>-dark.svg`. |
 | **PNG is optional** | PNG is **not** mandatory for every engineering diagram. |
-| **PNG derivatives** | PNGs are generated only for an explicit consumer that needs them — especially README promotion and external presentation/publication where SVG rendering is unsuitable. |
+| **PNG derivatives** | PNGs are generated only for an explicit consumer that needs them - especially README promotion and external presentation/publication where SVG rendering is unsuitable. |
 | **Derivative authorship** | PNGs are derived from the accepted SVG source; they are **not** separately authored semantic diagrams. |
 | **Tooling** | This specification does not prescribe raster generation tooling. |
 
@@ -165,12 +165,12 @@ This section is **normative** for how existing architecture assets relate to the
 | Diagram ID | Closest existing asset | Decision | Notes |
 |------------|------------------------|----------|-------|
 | **UEA-DIAG-A** | none | **NEW** | No current asset shows the complete frozen model: Task → Run → Attempt → Execution, strategy split, AgentEngine/UAEP, Nexus → child Executions, and cross-cutting subsystem boundaries. |
-| **UEA-DIAG-B** | `unified-execution-simple-execute-flow` | **INTEGRATED** | Canonical asset embedded in UEA §3; derived from frozen UEA semantics — not the retired UER lifecycle graphic. |
+| **UEA-DIAG-B** | `unified-execution-simple-execute-flow` | **INTEGRATED** | Canonical asset embedded in UEA §3; derived from frozen UEA semantics - not the retired UER lifecycle graphic. |
 | **UEA-DIAG-C** | `unified-execution-orchestration-nexus-flow` | **INTEGRATED** | Canonical asset embedded in UEA §6–§7, NEXUS_EXECUTION_FLOW flagship, ORCHESTRATION; legacy `nexus-execution-flow` asset **removed**. |
 | **UEA-DIAG-D** | `unified-execution-topology-vs-execution-tree` | **INTEGRATED** | Embedded in UEA §5 and ORCHESTRATION. |
 | **UEA-DIAG-E** | `unified-execution-identity-lifecycle` | **INTEGRATED** | Canonical asset embedded in UEA §3 and UER flagship; legacy `unified-execution-runtime-lifecycle` asset **removed**. |
 | **UEA-DIAG-F** | `reliability-recovery-loop` | **COMPANION** + **NEW** cross-domain view | Reliability asset is valuable as domain view of failure → policy → retry/degrade/HITL and ownership boundaries. It does not explain canonical identity preservation, whole-Run retry, subtree cancellation, or pause/resume identity semantics. Do not delete the reliability asset. |
-| **UEA-DIAG-G** | none | **NEW** | — |
+| **UEA-DIAG-G** | none | **NEW** | - |
 | **UEA-DIAG-H** | none in architecture asset root | **NEW** | No suitable canonical equivalent found in the inspected architecture asset set. This does not claim no distributed diagrams exist elsewhere in the repository. |
 | **UEA-DIAG-I** | none (exact) | **NEW** | Existing governance visuals may remain domain companions. This slice does not reconcile all governance artwork. |
 | **UEA-DIAG-J** | `observability-evidence-spine` | **COMPANION** + **UPDATE** to OBS domain view later | Existing asset correctly represents RuntimeEvent → HOS → canonical persistence → Unified Run Journal → projections/as-of reconstruction. Current identity spine omits ExecutionId/Execution Tree and does not show DIAG as interpretation over canonical evidence. UEA-DIAG-J remains a separate cross-domain view. OBS asset should be updated in a future OBS documentation slice. |
@@ -193,7 +193,7 @@ This section is **normative** for how existing architecture assets relate to the
 
 ## 5. Required architecture views
 
-### UEA-DIAG-A — Full Unified Execution Architecture
+### UEA-DIAG-A - Full Unified Execution Architecture
 
 | Field | Specification |
 |-------|---------------|
@@ -205,49 +205,49 @@ This section is **normative** for how existing architecture assets relate to the
 | **Level of detail** | Hub-level: all major boxes, no UAEP step internals, no broker implementation detail |
 | **Target embedding** | [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) (near §1–§2); link from [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) Unified Execution subsection |
 | **Asset basename** | `unified-execution-full-architecture` |
-| **Reconciliation** | **NEW** — see [§4.2](#42-uea-diagram-reconciliation-matrix) |
+| **Reconciliation** | **NEW** - see [§4.2](#42-uea-diagram-reconciliation-matrix) |
 | **Caption guidance** | *"Unified Execution Architecture: Task through Event identity, three execution strategies, Execution Tree composition, and cross-cutting governance, budget, observability, DIAG, checkpoint, and distributed execution planes. Nexus orchestrates Executions only when strategy is orchestration."* |
-| **README-eligible** | **No** (source for README derivative — see [§7](#7-readme-promotion-candidate)) |
+| **README-eligible** | **No** (source for README derivative - see [§7](#7-readme-promotion-candidate)) |
 
 ---
 
-### UEA-DIAG-B — Simple `execute()` Flow
+### UEA-DIAG-B - Simple `execute()` Flow
 
 | Field | Specification |
 |-------|---------------|
 | **Audience** | Application developers, UER implementers |
 | **Purpose** | Show the direct execution path that does **not** require Nexus |
-| **Required concepts** | Caller/Application; `execution.execute(...)` entry; Task; Run; Attempt; single root Execution; one lightweight strategy path (inference or simple agentic — pick one canonical example, label the other as alternate dashed branch) |
+| **Required concepts** | Caller/Application; `execution.execute(...)` entry; Task; Run; Attempt; single root Execution; one lightweight strategy path (inference or simple agentic - pick one canonical example, label the other as alternate dashed branch) |
 | **Mandatory relationships/arrows** | Linear: caller → execute API → Task → Run → Attempt → root Execution → strategy executor → result; explicit **absence** of Nexus on this path (optional muted "not used" indicator) |
 | **Ambiguity to eliminate** | Every request becomes orchestration; Nexus required for observability/governance |
 | **Level of detail** | Minimal boxes; no child Executions |
 | **Target embedding** | UEA §3; UEA §27 view #2 cross-reference |
 | **Asset basename** | `unified-execution-simple-execute-flow` |
-| **Reconciliation** | **INTEGRATED** — canonical asset in UEA §3 ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
+| **Reconciliation** | **INTEGRATED** - canonical asset in UEA §3 ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
 | **Caption guidance** | *"Direct execute() path: even the simplest call materializes Task → Run → Attempt → root Execution without Nexus (UEA-INV-008)."* |
 | **README-eligible** | No |
 
 ---
 
-### UEA-DIAG-C — Orchestration / Nexus Flow
+### UEA-DIAG-C - Orchestration / Nexus Flow
 
 | Field | Specification |
 |-------|---------------|
 | **Audience** | Orchestration and Nexus owners, implementers |
 | **Purpose** | Show how an orchestration-strategy Execution is realized via Nexus and child Executions |
 | **Required concepts** | Parent Execution (`strategy = orchestration`); `OrchestrationDefinition` input; Nexus (readiness, scheduling, fan-out/merge); child Execution instantiation; result flow/merge back to parent Execution |
-| **Mandatory relationships/arrows** | OrchestrationDefinition → Nexus (configuration); parent Execution → Nexus; Nexus → child Executions (one or many); child results → merge → parent completion; boundary label: Nexus stops at Execution boundary — does not enter AgentEngine |
+| **Mandatory relationships/arrows** | OrchestrationDefinition → Nexus (configuration); parent Execution → Nexus; Nexus → child Executions (one or many); child results → merge → parent completion; boundary label: Nexus stops at Execution boundary - does not enter AgentEngine |
 | **Ambiguity to eliminate** | Nexus directly runs agent internals; Node graph equals Execution Tree |
 | **Level of detail** | Show 2–3 child Executions; one child may be agentic (icon only below boundary) |
 | **Target embedding** | UEA §6–§7; [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md); [`ORCHESTRATION.md`](ORCHESTRATION.md) |
 | **Asset basename** | `unified-execution-orchestration-nexus-flow` |
-| **Reconciliation** | **INTEGRATED** — legacy `nexus-execution-flow` removed ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
+| **Reconciliation** | **INTEGRATED** - legacy `nexus-execution-flow` removed ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
 | **Caption guidance** | *"Orchestration strategy: Nexus schedules child Executions from a validated OrchestrationDefinition; it does not execute Agent internals directly (UEA-INV-007)."* |
 | **README-eligible** | No |
 
 ---
 
-### UEA-DIAG-D — Orchestration Topology vs Runtime Execution Tree
+### UEA-DIAG-D - Orchestration Topology vs Runtime Execution Tree
 
 | Field | Specification |
 |-------|---------------|
@@ -265,7 +265,7 @@ This section is **normative** for how existing architecture assets relate to the
 
 ---
 
-### UEA-DIAG-E — Identity & Lifecycle
+### UEA-DIAG-E - Identity & Lifecycle
 
 | Field | Specification |
 |-------|---------------|
@@ -274,16 +274,16 @@ This section is **normative** for how existing architecture assets relate to the
 | **Required concepts** | TaskId → RunId → AttemptId → ExecutionId → EventId; root Execution; `parent_execution_id` on child Executions; Attempt boundary marker |
 | **Mandatory relationships/arrows** | Vertical spine for one root Execution; branch for child Executions under same Attempt; labels for what mints what (Run retry → new AttemptId + new Execution instances) |
 | **Ambiguity to eliminate** | Local retry mints new AttemptId; EventId interchangeable with ExecutionId |
-| **Level of detail** | Identity types only — no retry table (see F) |
+| **Level of detail** | Identity types only - no retry table (see F) |
 | **Target embedding** | UEA §3 |
 | **Asset basename** | `unified-execution-identity-lifecycle` |
-| **Reconciliation** | **INTEGRATED** — legacy `unified-execution-runtime-lifecycle` removed ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
+| **Reconciliation** | **INTEGRATED** - legacy `unified-execution-runtime-lifecycle` removed ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
 | **Caption guidance** | *"Canonical identity hierarchy: five ID layers; every Attempt has at least one root Execution; children link via parent_execution_id (UEA-INV-001, UEA-INV-002)."* |
 | **README-eligible** | No (simplified IDs may appear in §7 derivative) |
 
 ---
 
-### UEA-DIAG-F — Retry / Pause / Resume / Cancellation
+### UEA-DIAG-F - Retry / Pause / Resume / Cancellation
 
 | Field | Specification |
 |-------|---------------|
@@ -295,13 +295,13 @@ This section is **normative** for how existing architecture assets relate to the
 | **Level of detail** | Scenario rows, not policy engine internals |
 | **Target embedding** | UEA §10, §14 |
 | **Asset basename** | `unified-execution-retry-pause-resume-cancel` |
-| **Reconciliation** | **COMPANION** + **NEW** — `reliability-recovery-loop` remains domain view ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
+| **Reconciliation** | **COMPANION** + **NEW** - `reliability-recovery-loop` remains domain view ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
 | **Caption guidance** | *"Recovery semantics: local retries preserve AttemptId; whole-Run retry mints new Attempt and new Execution instances; pause/resume preserves all runtime ids (UEA-INV-012–014)."* |
 | **README-eligible** | No |
 
 ---
 
-### UEA-DIAG-G — Nested Orchestration
+### UEA-DIAG-G - Nested Orchestration
 
 | Field | Specification |
 |-------|---------------|
@@ -319,7 +319,7 @@ This section is **normative** for how existing architecture assets relate to the
 
 ---
 
-### UEA-DIAG-H — Distributed Queue / Worker Execution
+### UEA-DIAG-H - Distributed Queue / Worker Execution
 
 | Field | Specification |
 |-------|---------------|
@@ -331,13 +331,13 @@ This section is **normative** for how existing architecture assets relate to the
 | **Level of detail** | One worker crash/redelivery annotation |
 | **Target embedding** | UEA §11, §19 |
 | **Asset basename** | `unified-execution-distributed-queue-worker` |
-| **Reconciliation** | **NEW** — no suitable equivalent in inspected architecture asset set ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
+| **Reconciliation** | **NEW** - no suitable equivalent in inspected architecture asset set ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
 | **Caption guidance** | *"Distributed execution: transport identity is infrastructure-only; workers receive and continue the same runtime identity (UEA-INV-011, UEA-INV-017)."* |
 | **README-eligible** | No |
 
 ---
 
-### UEA-DIAG-I — Governance + Authority + Budget Inheritance
+### UEA-DIAG-I - Governance + Authority + Budget Inheritance
 
 | Field | Specification |
 |-------|---------------|
@@ -355,7 +355,7 @@ This section is **normative** for how existing architecture assets relate to the
 
 ---
 
-### UEA-DIAG-J — Observability + DIAG Causal Flow
+### UEA-DIAG-J - Observability + DIAG Causal Flow
 
 | Field | Specification |
 |-------|---------------|
@@ -367,13 +367,13 @@ This section is **normative** for how existing architecture assets relate to the
 | **Level of detail** | One branch of Execution Tree in causal walk-back |
 | **Target embedding** | UEA §17–§18 |
 | **Asset basename** | `unified-execution-observability-diag-causal-flow` |
-| **Reconciliation** | **COMPANION** + **UPDATE** to OBS domain view later — `observability-evidence-spine` ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
+| **Reconciliation** | **COMPANION** + **UPDATE** to OBS domain view later - `observability-evidence-spine` ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
 | **Caption guidance** | *"Observability records execution truth; DIAG interprets canonical evidence along Event → Execution → … → Task without minting identity (UEA-INV-015, UEA-INV-016)."* |
 | **README-eligible** | No |
 
 ---
 
-### UEA-DIAG-K — Checkpoint / Recovery
+### UEA-DIAG-K - Checkpoint / Recovery
 
 | Field | Specification |
 |-------|---------------|
@@ -385,13 +385,13 @@ This section is **normative** for how existing architecture assets relate to the
 | **Level of detail** | State categories as labeled compartments, not storage schema |
 | **Target embedding** | UEA §16 |
 | **Asset basename** | `unified-execution-checkpoint-recovery` |
-| **Reconciliation** | **NEW** + domain **COMPANION** — `reliability-recovery-loop` ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
+| **Reconciliation** | **NEW** + domain **COMPANION** - `reliability-recovery-loop` ([§4.2](#42-uea-diagram-reconciliation-matrix)) |
 | **Caption guidance** | *"Run-scoped checkpoint captures Execution Tree and pending work for resume; checkpoint does not mint ExecutionId (UEA-INV-002, migration gap aware)."* |
 | **README-eligible** | No |
 
 ---
 
-### UEA-DIAG-L — Component Ownership / Dependency View
+### UEA-DIAG-L - Component Ownership / Dependency View
 
 | Field | Specification |
 |-------|---------------|
@@ -435,17 +435,17 @@ Compact index: which diagram(s) best explain each reference scenario from UEA §
 | Field | Specification |
 |-------|---------------|
 | **Derivative of** | UEA-DIAG-A (`unified-execution-full-architecture`), simplified |
-| **Working title** | *Unified Execution — platform core* |
+| **Working title** | *Unified Execution - platform core* |
 | **Future asset basename** | `unified-execution-platform-core` |
 | **Canonical source (SVG)** | `unified-execution-platform-core-light.svg`, `unified-execution-platform-core-dark.svg` under `docs/project/architecture/assets/` |
-| **Optional README raster derivatives** | `unified-execution-platform-core-light.png`, `unified-execution-platform-core-dark.png` — only if README or another consumer requires PNG |
+| **Optional README raster derivatives** | `unified-execution-platform-core-light.png`, `unified-execution-platform-core-dark.png` - only if README or another consumer requires PNG |
 | **Must show (simplified)** | Task → Run → Attempt → Execution; three strategy branches (inference, agentic, orchestration) with Nexus only on orchestration branch; AgentEngine/UAEP under agentic; child Executions under orchestration; muted cross-cutting bands for governance, budget, observability |
 | **Must omit / simplify** | DIAG internals, checkpoint detail, queue wire protocol, per-domain API names, migration gaps |
 | **Semantic truth** | All simplifications must remain consistent with UEA-INV-*; no implication that Nexus always runs or that Agent equals Execution |
 | **Visual alignment** | Derived from accepted architecture semantics and existing SVG visual language; not independently designed. Match platform README `<picture>` pattern when PNG derivatives are produced. |
 | **Accompanying blurb (draft)** | *"Intergrax executes work through a governed identity spine (Task → Run → Attempt → Execution). Simple calls, agentic sessions, and multi-step orchestration share one model; Nexus appears only when an Execution's strategy requires coordinating child Executions."* |
 | **Normative link** | [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) |
-| **Embedding target (future)** | Root [`README.md`](../../../README.md) — execution/platform section only, after asset production slice |
+| **Embedding target (future)** | Root [`README.md`](../../../README.md) - execution/platform section only, after asset production slice |
 
 ---
 
@@ -456,7 +456,7 @@ Compact index: which diagram(s) best explain each reference scenario from UEA §
 3. **Integration session** embeds assets per [§3.5](#35-embedding-contract) into UEA and (optionally) domain docs via link-only updates.
 4. **README promotion** uses [§7](#7-readme-promotion-candidate) candidate in a dedicated slice after architect review.
 
-**Documentation slices (UE-DOC-0.3A, UE-DOC-0.3B1) stop at specification and reconciliation contract — no graphic production in Cursor.**
+**Documentation slices (UE-DOC-0.3A, UE-DOC-0.3B1) stop at specification and reconciliation contract - no graphic production in Cursor.**
 
 ---
 
@@ -466,5 +466,5 @@ Compact index: which diagram(s) best explain each reference scenario from UEA §
 |----------|--------------|
 | [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) | Normative meta-architecture (parent) |
 | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) | Hub index; registers this file as supporting artifact |
-| [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) | UER domain owner — detailed contracts |
+| [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) | UER domain owner - detailed contracts |
 | UEA §27 / §28 | View checklist and reference scenarios (semantic source for §5–§6) |

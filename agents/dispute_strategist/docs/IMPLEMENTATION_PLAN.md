@@ -1,8 +1,8 @@
-﻿# dispute_strategist agent — Implementation Plan
+﻿# dispute_strategist agent - Implementation Plan
 
-**The implementation map** for this Tier-2 agent — phases, status, gaps, and verification.
+**The implementation map** for this Tier-2 agent - phases, status, gaps, and verification.
 
-Status: Working draft (2026-06-07) — **Scaffold baseline**
+Status: Working draft (2026-06-07) - **Scaffold baseline**
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../docs/project/architecture/intergrax_runtime_architecture.md)
@@ -20,7 +20,7 @@ Do not maintain separate status/readiness files under this agent. Use:
 |-------|--------|
 | Purpose, contracts, I/O, runtime layout | **ARCHITECTURE.md** (this directory) |
 | Task status, phases, next steps | **This file** |
-| Significant agent architecture decisions | **`adr`** — [`adr/README.md`](adr/README.md) |
+| Significant agent architecture decisions | **`adr`** - [`adr/README.md`](adr/README.md) |
 | Platform harness work | `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` (gate maintenance) |
 | UAEP / Nexus workflow | `docs/project/technical/guides/AGENT_CREATION_GUIDE.md` |
 
@@ -67,5 +67,5 @@ uv run pytest applications/<app>_application/tests -q
 
 ## 3. Platform alignment
 
-Business agents and product-only work remain **end of plan** unless explicitly reprioritized —
+Business agents and product-only work remain **end of plan** unless explicitly reprioritized -
 see platform [`§6.3`](../../../docs/project/maintainers/plans/PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only).

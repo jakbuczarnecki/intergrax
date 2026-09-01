@@ -13,7 +13,7 @@ application_vs_proof_ownership: COMPLETED
 **Scenario:** Verified Product Identification at Catalog Scale  
 **Slug:** `verified_product_identification`  
 **Proof class:** SCENARIO  
-**Status:** IMPLEMENTATION INITIALIZED — gated skeleton generated; domain implementation in progress; no executable proof, evidence, or report yet.
+**Status:** IMPLEMENTATION INITIALIZED - gated skeleton generated; domain implementation in progress; no executable proof, evidence, or report yet.
 
 [← Back to public Scenario page](README.md)
 
@@ -25,7 +25,7 @@ application_vs_proof_ownership: COMPLETED
 
 Large distributors, manufacturers, parts catalogs, and ecommerce operators maintain catalogs with **millions of product offers**. Offers arrive from heterogeneous retailers with inconsistent structure: GTINs, MPNs, retailer SKUs, key-value attributes, HTML spec tables, partial descriptions, and noisy metadata.
 
-Users — technicians, buyers, support agents, procurement staff — describe products imperfectly:
+Users - technicians, buyers, support agents, procurement staff - describe products imperfectly:
 
 - natural-language descriptions without identifiers;
 - partial or mistyped model/part numbers;
@@ -35,7 +35,7 @@ Users — technicians, buyers, support agents, procurement staff — describe pr
 
 The catalog contains **near-identical variants** that differ by parameters that matter operationally: voltage, interface, ECC vs non-ECC, capacity tier, regional SKU, generation suffix.
 
-The business task is **verified product identification**: determine whether a specific product identity is supported by catalog evidence — or honestly refuse when evidence is insufficient, contradictory, or ambiguous.
+The business task is **verified product identification**: determine whether a specific product identity is supported by catalog evidence - or honestly refuse when evidence is insufficient, contradictory, or ambiguous.
 
 This is **not** semantic search over 3.77M records. It is **not** RAG over a product database. It is identity establishment under ambiguity at catalog scale.
 
@@ -89,7 +89,7 @@ The canonical catalog is real and adversarial by nature:
 **Evaluation difficulty**
 
 - `cluster_id` is useful reference signal from WDC, not infallible ground truth;
-- full-catalog search at 3.77M scale is required for credible proof — tiny fixtures alone are insufficient.
+- full-catalog search at 3.77M scale is required for credible proof - tiny fixtures alone are insufficient.
 
 ### Naive / simple failure mode
 
@@ -140,19 +140,19 @@ WOW is **not** embedding 3.77M products, hybrid search plumbing, or agent count.
 WOW is the visible separation:
 
 ```text
-USER REQUEST — incomplete / imprecise product description
+USER REQUEST - incomplete / imprecise product description
 ↓
-CATALOG — 3.77M noisy offers; several convincing candidates
+CATALOG - 3.77M noisy offers; several convincing candidates
 ↓
-MULTI-CHANNEL RETRIEVAL — recall-oriented candidate generation
+MULTI-CHANNEL RETRIEVAL - recall-oriented candidate generation
 ↓
-RERANKING — better ordering, still not identity proof
+RERANKING - better ordering, still not identity proof
 ↓
-EVIDENCE VERIFICATION — material constraints checked against source fields
+EVIDENCE VERIFICATION - material constraints checked against source fields
 ↓
-VERIFIED — only when evidence supports identity
+VERIFIED - only when evidence supports identity
    or
-BOUNDED REFUSAL — AMBIGUOUS / INSUFFICIENT_INFORMATION / NO_MATCH
+BOUNDED REFUSAL - AMBIGUOUS / INSUFFICIENT_INFORMATION / NO_MATCH
 ```
 
 A skeptical reviewer should see: **the top-ranked candidate is not automatically the verified product**, and the system can refuse rather than fabricate certainty.
@@ -176,11 +176,11 @@ The proof must demonstrate that **retrieval quality** and **verification safety*
 
 > "Why not just exact identifier lookup?"
 
-Because the scenario includes cases where users provide natural language only, partial identifiers, typos, model names mixed with compatibility constraints, and close variants that share identifiers or family names. Identifier channels are first-class — but not sufficient alone.
+Because the scenario includes cases where users provide natural language only, partial identifiers, typos, model names mixed with compatibility constraints, and close variants that share identifiers or family names. Identifier channels are first-class - but not sufficient alone.
 
 ### Adversarial conditions
 
-Future benchmark case classes (design — fixtures not yet created):
+Future benchmark case classes (design - fixtures not yet created):
 
 | # | Case class | What it tests |
 | --- | --- | --- |
@@ -191,14 +191,14 @@ Future benchmark case classes (design — fixtures not yet created):
 | 5 | Close product variant | Near-identical titles; hard spec distinguishes (ECC vs non-ECC, SATA vs NVMe) |
 | 6 | Correct product not rank-1 on one channel | Fusion/recall must surface true candidate before verification |
 | 7 | Semantic near-match with conflicting hard spec | High similarity; verification rejects |
-| 8 | Missing critical distinguishing constraint | `INSUFFICIENT_INFORMATION` — user or catalog lacks distinguishing fact |
+| 8 | Missing critical distinguishing constraint | `INSUFFICIENT_INFORMATION` - user or catalog lacks distinguishing fact |
 | 9 | Two indistinguishable candidates | `AMBIGUOUS` abstention |
 | 10 | Incorrect/missing category | Retrieval must not rely solely on category metadata |
 | 11 | Missing brand | Identification from specs/description/identifiers |
 | 12 | Noisy `specTableContent` / boilerplate | Evidence extraction ignores boilerplate; uses source fields |
 | 13 | Multilingual query vs catalog content | Recall across language mismatch where feasible |
 | 14 | Identifier conflict | Typed identifiers disagree; verification does not silently override |
-| 15 | No valid product exists | `NO_MATCH` — not retrieval failure |
+| 15 | No valid product exists | `NO_MATCH` - not retrieval failure |
 
 ### Scenario Quality Gate
 
@@ -215,7 +215,7 @@ This scenario is a **candidate** for human Scenario Quality Gate because:
 - a skeptical engineer can challenge the design before any code exists;
 - a real 3.77M-offer dataset foundation is validated with measured statistics.
 
-**Gate decision:** ACCEPTED — independent human Scenario Quality Gate completed (2026-09-01).
+**Gate decision:** ACCEPTED - independent human Scenario Quality Gate completed (2026-09-01).
 
 ### Application Survival Test
 
@@ -253,7 +253,7 @@ Proof must consume production-path structured observations. Proof must not recon
 6. Verification verdict per finalist and terminal outcome selection.
 7. Abstention/clarification reason when not `VERIFIED`.
 
-**Observability coverage** — production-path trace must expose at minimum:
+**Observability coverage** - production-path trace must expose at minimum:
 
 | Stage | Observable fields |
 | --- | --- |
@@ -270,7 +270,7 @@ Proof must consume production-path structured observations. Proof must not recon
 
 **Explainability:** Each verification decision must cite **catalog evidence references** (offer ID + source field path + extracted value). Confidence scores alone cannot override explicit contradiction.
 
-**Evidence linkage:** Evidence items reference immutable source `record_json` fields — not derived-only search text without provenance.
+**Evidence linkage:** Evidence items reference immutable source `record_json` fields - not derived-only search text without provenance.
 
 **Action correlation:** Tool/search invocations link to retrieval channel traces.
 
@@ -280,19 +280,19 @@ Proof must consume production-path structured observations. Proof must not recon
 
 **Operator visibility:** Terminal outcome, finalist offer IDs, constraint support/contradiction summary, abstention reason.
 
-**Proof consumption:** Proof report projects from canonical structured trace artifacts. Proof evaluator compares terminal outcome and evidence citations against hidden benchmark expectations — it does not re-run verification.
+**Proof consumption:** Proof report projects from canonical structured trace artifacts. Proof evaluator compares terminal outcome and evidence citations against hidden benchmark expectations - it does not re-run verification.
 
-**Machine-readable artifact:** Expected projection includes query constraints, channel metrics, finalist evidence graph, terminal outcome — design-stage; exact schema deferred to implementation.
+**Machine-readable artifact:** Expected projection includes query constraints, channel metrics, finalist evidence graph, terminal outcome - design-stage; exact schema deferred to implementation.
 
-**Application Observability Test result:** **YES** (by design — required before implementation acceptance).
+**Application Observability Test result:** **YES** (by design - required before implementation acceptance).
 
 ### Conditional authoring prompts
 
-**Hidden truth / evaluator leakage:** Benchmark cases carry hidden expected outcome and expected identity (offer ID and/or cluster reference). Hidden expectations are available to the **proof evaluator only** — never to the application runtime, query prompts, retrieval indexes exposed to the model, or verification prompts. Proof must **never** inject the correct product into the candidate set.
+**Hidden truth / evaluator leakage:** Benchmark cases carry hidden expected outcome and expected identity (offer ID and/or cluster reference). Hidden expectations are available to the **proof evaluator only** - never to the application runtime, query prompts, retrieval indexes exposed to the model, or verification prompts. Proof must **never** inject the correct product into the candidate set.
 
-**Evidence boundary:** Legitimately observable evidence is whatever the application retrieves from the canonical catalog through declared channels — `record_json` source fields, derived search indexes with provenance back to source, and parsed query constraints from the user request. Evaluator ground truth is not runtime evidence.
+**Evidence boundary:** Legitimately observable evidence is whatever the application retrieves from the canonical catalog through declared channels - `record_json` source fields, derived search indexes with provenance back to source, and parsed query constraints from the user request. Evaluator ground truth is not runtime evidence.
 
-**Alternative hypotheses / failure alternatives:** For each case, plausible wrong candidates must remain in the search space — semantically similar variants, identifier collisions, category neighbors. The system must distinguish verified identity from plausible alternatives using material constraints.
+**Alternative hypotheses / failure alternatives:** For each case, plausible wrong candidates must remain in the search space - semantically similar variants, identifier collisions, category neighbors. The system must distinguish verified identity from plausible alternatives using material constraints.
 
 **Independence:** Verification evaluates candidates against extracted constraints and source evidence. It does not receive hidden benchmark labels, expected offer IDs, or proof-evaluator verdicts during execution.
 
@@ -328,9 +328,9 @@ The identification system behaves like a disciplined catalog engineer:
 
 1. **Parse** the user request into typed identifiers, brand/model hints, hard constraints, soft preferences, negative constraints, and missing distinguishing facts.
 2. **Generate candidates** through independent retrieval channels optimized for recall.
-3. **Fuse and rerank** to improve ordering — without treating rank as identity.
+3. **Fuse and rerank** to improve ordering - without treating rank as identity.
 4. **Extract evidence** from immutable source catalog fields for each finalist.
-5. **Verify** material identity constraints — supporting, contradicting, and missing evidence explicit.
+5. **Verify** material identity constraints - supporting, contradicting, and missing evidence explicit.
 6. Return **`VERIFIED`** only when constraints are supported and no disqualifying contradiction remains.
 7. Return **`AMBIGUOUS`** when multiple candidates remain materially indistinguishable.
 8. Return **`INSUFFICIENT_INFORMATION`** when required distinguishing facts are missing.
@@ -342,9 +342,9 @@ The identification system behaves like a disciplined catalog engineer:
 #### VERIFIED path (intended success story)
 
 ```text
-USER — "Samsung 990 PRO 2TB M.2 2280 NVMe PCIe 4.0"
+USER - "Samsung 990 PRO 2TB M.2 2280 NVMe PCIe 4.0"
 ↓
-QUERY UNDERSTANDING — brand=Samsung; model family=990 PRO; capacity=2TB (hard);
+QUERY UNDERSTANDING - brand=Samsung; model family=990 PRO; capacity=2TB (hard);
   form=M.2 2280 (hard); interface=NVMe PCIe 4.0 (hard/likely); no GTIN provided
 ↓
 CANDIDATE GENERATION
@@ -353,18 +353,18 @@ CANDIDATE GENERATION
   structured: capacity=2TB, form factor candidates
   vector: semantic recall from natural-language query
 ↓
-FUSION — merged pool includes correct 2TB 990 PRO and near variants (1TB, SATA, etc.)
+FUSION - merged pool includes correct 2TB 990 PRO and near variants (1TB, SATA, etc.)
 ↓
-RERANKER — promotes likely Samsung 990 PRO variants; rank-1 may still be wrong variant
+RERANKER - promotes likely Samsung 990 PRO variants; rank-1 may still be wrong variant
 ↓
-EVIDENCE EXTRACTION — for top finalists, read source KVP/spec fields with provenance
+EVIDENCE EXTRACTION - for top finalists, read source KVP/spec fields with provenance
 ↓
 VERIFICATION
   finalist A (990 PRO 2TB NVMe): capacity ✓ interface ✓ form ✓ brand ✓ → supports
   finalist B (990 PRO 1TB NVMe): capacity ✗ → contradicts
   finalist C (870 EVO 2TB SATA): interface ✗ → contradicts
 ↓
-VERIFIED — finalist A; evidence trail cites source fields
+VERIFIED - finalist A; evidence trail cites source fields
 ↓
 RESOLVED envelope
 ```
@@ -372,13 +372,13 @@ RESOLVED envelope
 #### AMBIGUOUS path
 
 ```text
-USER — partial description matches two offers with identical material specs in catalog
+USER - partial description matches two offers with identical material specs in catalog
 ↓
 retrieval surfaces both finalists with equivalent supporting evidence
 ↓
 verification cannot find material distinguishing constraint
 ↓
-AMBIGUOUS — abstain; do not force top-1
+AMBIGUOUS - abstain; do not force top-1
 ↓
 UNRESOLVED envelope
 ```
@@ -386,13 +386,13 @@ UNRESOLVED envelope
 #### INSUFFICIENT_INFORMATION path
 
 ```text
-USER — "Lenze motor for line 4" (voltage/coupling not specified)
+USER - "Lenze motor for line 4" (voltage/coupling not specified)
 ↓
 retrieval surfaces multiple Lenze motors with different voltage ratings
 ↓
 verification: missing critical distinguishing constraint in query and not inferable from catalog alone
 ↓
-INSUFFICIENT_INFORMATION — surface what fact is needed (e.g., voltage, mounting, part number)
+INSUFFICIENT_INFORMATION - surface what fact is needed (e.g., voltage, mounting, part number)
 ↓
 UNRESOLVED envelope
 ```
@@ -400,20 +400,20 @@ UNRESOLVED envelope
 #### NO_MATCH path
 
 ```text
-USER — "ABC-9999 widget 48V" (product does not exist in catalog)
+USER - "ABC-9999 widget 48V" (product does not exist in catalog)
 ↓
 retrieval may surface near matches (ABC-9998, 24V variant)
 ↓
 verification: identifier and voltage constraints contradict all finalists
 ↓
-NO_MATCH — conclusive rejection; no fabricated product
+NO_MATCH - conclusive rejection; no fabricated product
 ↓
 RESOLVED envelope
 ```
 
 ### Ideal architecture
 
-Design from first principles — not constrained by current Intergrax implementation.
+Design from first principles - not constrained by current Intergrax implementation.
 
 ```mermaid
 flowchart TD
@@ -488,18 +488,18 @@ flowchart TD
 
 **Layer roles:**
 
-- **Exact retrieval** — for strong typed identifiers (GTIN, MPN, SKU, productID).
-- **BM25 / lexical** — for model numbers, part numbers, and exact technical tokens.
-- **Structured retrieval** — for hard constraints such as voltage, capacity, dimensions, and interface.
-- **Vector retrieval** — for natural-language and semantic recall.
-- **Hybrid fusion** — merges independent candidate-generation signals without treating any single channel as identity proof.
-- **Reranker** — improves ordering; it does **not** verify identity.
-- **Evidence extraction** — binds each finalist to source-truth catalog fields with provenance.
-- **Verification** — decides whether identity is actually supported by evidence.
+- **Exact retrieval** - for strong typed identifiers (GTIN, MPN, SKU, productID).
+- **BM25 / lexical** - for model numbers, part numbers, and exact technical tokens.
+- **Structured retrieval** - for hard constraints such as voltage, capacity, dimensions, and interface.
+- **Vector retrieval** - for natural-language and semantic recall.
+- **Hybrid fusion** - merges independent candidate-generation signals without treating any single channel as identity proof.
+- **Reranker** - improves ordering; it does **not** verify identity.
+- **Evidence extraction** - binds each finalist to source-truth catalog fields with provenance.
+- **Verification** - decides whether identity is actually supported by evidence.
 
 **TOP-RANKED CANDIDATE IS NOT A VERIFIED PRODUCT.**
 
-**Scenario architecture invariant (provider neutrality):** Scenario implementation **MUST NOT** be PostgreSQL-centric. Business/application code **MUST** depend on platform/application search and storage **contracts**, not PostgreSQL-specific APIs. Query understanding, product verification, outcome semantics, and the proof evaluator **MUST NOT** require rewriting when operators choose a different qualified storage/retrieval configuration. Provider-specific capabilities belong behind integration/storage/retrieval boundaries — not in scenario application logic.
+**Scenario architecture invariant (provider neutrality):** Scenario implementation **MUST NOT** be PostgreSQL-centric. Business/application code **MUST** depend on platform/application search and storage **contracts**, not PostgreSQL-specific APIs. Query understanding, product verification, outcome semantics, and the proof evaluator **MUST NOT** require rewriting when operators choose a different qualified storage/retrieval configuration. Provider-specific capabilities belong behind integration/storage/retrieval boundaries - not in scenario application logic.
 
 **Canonical reference configuration:** For reproduction convenience, a later reference deployment **MAY** choose PostgreSQL + pgvector (relational/catalog store + vector backend in one deployable unit). That is an operator/provider **choice**, not a scenario architecture dependency. The scenario architecture remains **provider-neutral** and must also allow configurations such as:
 
@@ -507,13 +507,13 @@ flowchart TD
 - MySQL + Qdrant
 - another relational/catalog store + another qualified vector backend
 
-Illustrative trade-offs (provider choice — not mandatory scenario architecture):
+Illustrative trade-offs (provider choice - not mandatory scenario architecture):
 
 | Configuration | Benefit | Cost / risk |
 | --- | --- | --- |
 | PostgreSQL + pgvector | Single ops surface; structured + lexical + vector co-location | Index tuning at 3.77M scale; attribute heterogeneity |
 | MySQL (or other relational/catalog) + Qdrant | Mix relational catalog with specialized ANN/hybrid vector backend | Two systems; provenance/join complexity |
-| Separate lexical engine (e.g., Elasticsearch/OpenSearch) + vector backend | Strong lexical | Additional infrastructure — only if measured lexical gap |
+| Separate lexical engine (e.g., Elasticsearch/OpenSearch) + vector backend | Strong lexical | Additional infrastructure - only if measured lexical gap |
 
 ### Data preparation model
 
@@ -530,7 +530,7 @@ Two representations coexist:
 
 - normalized identifier forms (zero-stripped GTIN, case-folded MPN)
 - lexical index text (title, description, model tokens)
-- structured/search fields for high-value attributes (capacity, voltage, interface — normalized subset, not all 337k raw names as columns)
+- structured/search fields for high-value attributes (capacity, voltage, interface - normalized subset, not all 337k raw names as columns)
 - embedding vectors for semantic recall
 - optional cluster_id for benchmark stratification
 
@@ -542,17 +542,17 @@ Preprocessing is deterministic, reproducible, and versioned. Not implemented in 
 
 Independent channels with distinct failure modes:
 
-**A. Exact identifier retrieval** — GTIN / MPN / SKU / productID as typed lookups, not embedding text. Retailer-local SKU/productID are weak global identity signals — typed, not automatically authoritative across retailers.
+**A. Exact identifier retrieval** - GTIN / MPN / SKU / productID as typed lookups, not embedding text. Retailer-local SKU/productID are weak global identity signals - typed, not automatically authoritative across retailers.
 
-**B. Lexical retrieval** — model numbers, part numbers, fragmented names, technical tokens, exact phrases.
+**B. Lexical retrieval** - model numbers, part numbers, fragmented names, technical tokens, exact phrases.
 
-**C. Structured attribute retrieval** — hard requirements on normalized fields (voltage, dimensions, capacity, interface, size). Not all 337k raw attribute names become relational columns; normalization targets high-value constraint families.
+**C. Structured attribute retrieval** - hard requirements on normalized fields (voltage, dimensions, capacity, interface, size). Not all 337k raw attribute names become relational columns; normalization targets high-value constraint families.
 
-**D. Dense vector retrieval** — semantic/natural-language recall. Vector score is **never** sufficient evidence of identity.
+**D. Dense vector retrieval** - semantic/natural-language recall. Vector score is **never** sufficient evidence of identity.
 
 ### Fusion
 
-Combine independent channel results into a recall-oriented candidate pool. Exact algorithm not frozen — must preserve channel attribution per candidate for observability. Goal: if the correct offer is findable by any channel, it enters the pool before reranking.
+Combine independent channel results into a recall-oriented candidate pool. Exact algorithm not frozen - must preserve channel attribution per candidate for observability. Goal: if the correct offer is findable by any channel, it enters the pool before reranking.
 
 ### Reranking
 
@@ -567,7 +567,7 @@ For each finalist, compare material constraints from query understanding against
 | Evidence class | Treatment |
 | --- | --- |
 | Supporting | Constraint satisfied by source field with provenance |
-| Contradicting | Source field conflicts with hard constraint — disqualifies finalist |
+| Contradicting | Source field conflicts with hard constraint - disqualifies finalist |
 | Missing | Required constraint cannot be confirmed or denied from available evidence |
 
 **Examples of contradiction (must NOT verify):**
@@ -590,7 +590,7 @@ Confidence alone cannot override contradiction.
 
 ### Guarantees
 
-Candidate system-level guarantees (design stage — not yet demonstrated):
+Candidate system-level guarantees (design stage - not yet demonstrated):
 
 - Retrieval and verification are **separate stages** with separate metrics.
 - Exact identifiers are a **first-class typed channel**.
@@ -604,7 +604,7 @@ Candidate system-level guarantees (design stage — not yet demonstrated):
 
 ### Claim
 
-Candidate bounded falsifiable claim (design — **not** a proven public claim):
+Candidate bounded falsifiable claim (design - **not** a proven public claim):
 
 > **Given the declared canonical multi-million-offer catalog and adversarial product-identification cases, the system can generate candidate products through independent retrieval channels and accept an identification only when material identity constraints are supported by traceable catalog evidence; when decisive evidence is contradictory or insufficient, it returns a bounded non-verified outcome instead of presenting the highest-ranked candidate as fact.**
 
@@ -612,7 +612,7 @@ Avoid: "always," "all products," "zero hallucinations," "perfect compatibility,"
 
 ### PASS
 
-Candidate PASS semantics — thresholds **TO BE FROZEN DURING PROOF DESIGN / BENCHMARK CALIBRATION**:
+Candidate PASS semantics - thresholds **TO BE FROZEN DURING PROOF DESIGN / BENCHMARK CALIBRATION**:
 
 **Retrieval quality**
 
@@ -625,14 +625,14 @@ Candidate PASS semantics — thresholds **TO BE FROZEN DURING PROOF DESIGN / BEN
 - Hard negative with high semantic similarity is **rejected** by verification.
 - Identifier contradictions are not silently overridden.
 - Verifier cites source evidence used (field provenance).
-- `AMBIGUOUS` case abstains — no forced single product.
+- `AMBIGUOUS` case abstains - no forced single product.
 - `INSUFFICIENT_INFORMATION` surfaces missing distinguishing fact.
 - `NO_MATCH` does not fabricate a product.
 
 **Proof integrity**
 
 - Canonical evaluation operates against full 3.77M-offer search corpus.
-- Target architecture measured against simpler baseline(s) — improvement is numeric, not narrated.
+- Target architecture measured against simpler baseline(s) - improvement is numeric, not narrated.
 - Hidden benchmark labels do not leak into runtime.
 - Proof harness does not inject correct candidate or run application verification.
 
@@ -694,22 +694,22 @@ See § Adversarial conditions (15 case classes). Proof stratifies cases across i
 
 - Single bounded domain: **product identification from catalog evidence** at measured WDC scale.
 - Dataset distribution / public artifact hosting **not finalized** (`DATASET_DISTRIBUTION = OPEN`).
-- `cluster_id` useful for benchmark construction — requires quality filters and human/deterministic validation for hard gold sets.
+- `cluster_id` useful for benchmark construction - requires quality filters and human/deterministic validation for hard gold sets.
 - Implementation initialized (gated skeleton only); no executable proof or verified run yet.
 - Benchmark thresholds not yet calibrated on gold set.
-- Attribute normalization scope deliberately bounded — not all raw KVP names modeled relationally.
+- Attribute normalization scope deliberately bounded - not all raw KVP names modeled relationally.
 
 ### Dataset provenance / reproducibility
 
 | Item | Value |
 | --- | --- |
-| Source | Web Data Commons Large Scale Product Corpus V2 — `offers_corpus_all_v2_non_norm` |
+| Source | Web Data Commons Large Scale Product Corpus V2 - `offers_corpus_all_v2_non_norm` |
 | Original source size | 26,507,210 offers |
 | Selection rule | `keyValuePairs != null` OR `specTableContent != null` |
 | Canonical count | 3,770,377 product offers |
 | Canonical artifact | `selected_offers.parquet` (~1.71 GiB, ZSTD, `record_json` column) |
-| Builder | `dataset/build_wdc_dataset.py` — deterministic, streaming, lossless at JSON-value semantic level |
-| Profiler | `dataset/profile_selected_dataset.py` — measured statistics on full canonical set |
+| Builder | `dataset/build_wdc_dataset.py` - deterministic, streaming, lossless at JSON-value semantic level |
+| Profiler | `dataset/profile_selected_dataset.py` - measured statistics on full canonical set |
 
 **DATASET_DISTRIBUTION = OPEN / MUST RESOLVE BEFORE PUBLIC REPRODUCTION.**
 
@@ -734,47 +734,47 @@ clone repo
 
 Audit date: 2026-09-01 · repository HEAD `768c1d6f5bc55194d6e0bb7d2d8642a3caeceb68` · branch `development`.
 
-Participating domains (discovered during fit): **RAG** (retrieval, vectorstore, reranker, ingest, routing), **Integrations** (PgVector provider), **Execution / Observability** (trace, functional diagnostics), **Decision System** (generic lifecycle only — not product identity), **Platform Proofs** (evidence / evaluator framework).
+Participating domains (discovered during fit): **RAG** (retrieval, vectorstore, reranker, ingest, routing), **Integrations** (PgVector provider), **Execution / Observability** (trace, functional diagnostics), **Decision System** (generic lifecycle only - not product identity), **Platform Proofs** (evidence / evaluator framework).
 
-**TEST-ONLY SUBSTITUTE on canonical scenario path:** **NO** (implementation initialized — gated skeleton only; audit confirms no prohibited harness shortcuts are required for fit classification).
+**TEST-ONLY SUBSTITUTE on canonical scenario path:** **NO** (implementation initialized - gated skeleton only; audit confirms no prohibited harness shortcuts are required for fit classification).
 
 ### Fit matrix
 
 | Scenario need | Ideal role | Intergrax mechanism | Current owner | Evidence | Status | Decision |
 | --- | --- | --- | --- | --- | --- | --- |
-| **A. Query understanding** — identifier extraction (GTIN/MPN/SKU/productID), brand/model, product class, hard/soft/negative constraints, missing facts | Parse user request into typed product constraints before retrieval | `QueryRouter` (`intergrax/rag/routing/query_router.py`) — RAG **cost/complexity tier** routing (`fast`/`standard`/`deep`); optional LLM tier classifier | Tier-0 RAG | `QueryRouter.route()` word-count / `?` heuristics; `classify_route_tier_with_llm` — no product field extraction | **MISSING** (product semantics) | **BUILD** |
-| **A. Query understanding** — product constraint parsing | Domain-specific NL → typed constraints | None shipped | — | Grep: no GTIN/MPN/brand/capacity parser in `intergrax/` | **MISSING** | **BUILD** (application) |
-| **B. Exact identifier retrieval** — typed GTIN/MPN/SKU/productID lookup at catalog scale | Independent recall channel; not embedding similarity | `MetadataFilter` equality on vector `payload` JSONB (`payload @> %s::jsonb` in `PgVectorRagStore._where_clause`) | Tier-0 RAG / PgVector provider | `test_pgvector_live_qualification.py` — `MetadataFilter(conditions={"group": 1})`; per-record `INSERT` not identifier index | **PARTIAL** — equality filter only; not a dedicated exact-identity channel | **BUILD** (application catalog indexes + lookup SQL) |
-| **B. Exact identifier retrieval** — platform generic exact lookup channel | Reusable exact-match retriever | No `exact` / `identifier` retriever in `RetrieverRegistry`; only `vector_similarity`, `hybrid`, `graph_rag`, etc. | Tier-0 RAG retrievers | `retriever_bootstrap.py`, `retriever_registry.py` | **MISSING** | **BUILD** (application); platform reuse limited to `MetadataFilter` if app normalizes identifiers into payload |
-| **C. Lexical / BM25 retrieval** — model/part numbers, technical tokens | Independent lexical recall channel | `LexicalIndex` BM25 (`intergrax/rag/vectorstore/sparse/lexical_index.py`); `LexicalHybridSupport.query_hybrid` RRF fusion (`lexical_hybrid.py`); `HybridRetriever` fallback token-overlap lexical (`hybrid_retriever.py`) | Tier-0 RAG | Unit/integration via InMemory/Qdrant stores; **not** PgVector | **SHIPPED** (InMemory/Qdrant/Weaviate hybrid path) | **REUSE** (non-PgVector backends) / **EXTEND** (PgVector — see M) |
-| **C. Lexical / BM25** — PostgreSQL full-text at 3.77M scale | Durable lexical index co-located with vectors (design hypothesis) | PgVector provider: **no** `query_hybrid`, **no** FTS/BM25 | Integrations / PgVector | `pgvector/rag_store.py` — dense `query()` only; no `LexicalHybridSupport` mixin | **MISSING** on PgVector | **EXTEND** (platform PgVector) or **BUILD** (application PostgreSQL FTS tables) |
-| **D. Structured attribute retrieval** — voltage, capacity, interface, dimensions, compatibility | Hard-constraint recall on normalized attributes | `MetadataFilter`: exact `field == value` + optional `IN` membership (`native_vectorstore.py`); PgVector rejects membership (`require_membership_support`) | Tier-0 RAG contracts | `MetadataFilter.matches_payload`; pgvector `_where_clause` JSON containment only | **PARTIAL** — equality/IN only; no ranges, no heterogeneous 337k-name normalization | **BUILD** (application normalization + indexes); **REUSE** equality filters where normalized |
-| **E. Dense vector retrieval** | Semantic / NL recall channel | `PgVectorRagStore.query()` — cosine distance `embedding <=> %s::vector`, score `1 - distance` | Integrations / PgVector | `pgvector/rag_store.py`; `test_pgvector_live_qualification.py` (live gate) | **SHIPPED** / **QUALIFIED WITH LIMITATIONS** (50-doc soak, not 3.77M) | **REUSE** + **CONFIGURE** (DSN, dimension) |
-| **E. Dense vector retrieval** — ANN index at millions scale | Approximate nearest-neighbor performance | Schema creates scope/source B-tree indexes only; **no HNSW / IVFFlat** on `embedding` | PgVector provider | `_ensure_schema()` — `idx_*_scope`, `idx_*_source`; no `CREATE INDEX ... USING hnsw/ivfflat` | **MISSING** | **EXTEND** (platform PgVector schema) |
-| **F. Hybrid fusion** — merge exact + lexical + structured + vector with channel attribution | Recall-oriented pool; per-candidate channel provenance | `reciprocal_rank_fusion` + `LexicalHybridSupport.query_hybrid` (dense+lexical RRF); `fuse_graph_channels` score-sum (vector+keyword+graph); `HybridRetriever` single retriever orchestration; `RetrievalTrace.channel_contributions` | Tier-0 RAG | `lexical_hybrid.py`, `graph_channel_fusion.py`, `graph_rag_retriever.py`, `retrieval_service.py` `_apply_retriever_execution_trace` | **PARTIAL** — 2–3 channel fusion patterns exist; **no** generic 4-channel product fusion orchestrator | **BUILD** (application multi-channel orchestration); **REUSE** RRF/score-sum primitives |
-| **G. Reranker** — cross-encoder / API rerank; score ≠ verification | Improve finalist ordering post-fusion | `BaseReranker`, `RerankerCandidate`, `RerankerManager`, providers: `cross_encoder`, `cohere`, `jina`, `semantic`, `embedding_cosine`, `rrf_reranker`; `RetrievalService.retrieve_single_pass` rerank stage | Tier-0 RAG rerankers | `reranker_types.py` (full `KnowledgeDocument` on candidate); `retrieval_service.py` L150–184; provider tests | **SHIPPED** | **REUSE** + **CONFIGURE** (`RagProfile.enable_rerank`, `reranker_id`) |
-| **H. Top-K / candidate ABI** | Stable finalist handoff to verification | `RetrievalHit`, `RetrievalChunk`, `RerankerCandidate` — `channel`, `rank`, `vector_id`, `KnowledgeDocument` provenance/metadata | Tier-0 RAG | `base_retriever.py`, `retrieval_result.py`, `reranker_types.py` | **SHIPPED** | **REUSE** |
-| **I. Evidence extraction** — source provenance, supporting/contradicting/missing per constraint | Bind finalists to immutable `record_json` fields | `KnowledgeDocument` provenance (`source_id`, field paths via metadata); RAG returns chunks — **no** constraint-level evidence graph | Tier-0 knowledge contracts | `KnowledgeDocument` schema; no product evidence extractor in platform | **MISSING** (product semantics) | **BUILD** (application) |
-| **J. Identity verification** — material constraint check vs catalog evidence | Separate stage from retrieval ranking | Decision System — generic proposal→verification→resolution lifecycle (`DECISION_SYSTEM.md`); `VerificationLoop` in `runtime/adaptive/` is **critic/tool** verification, not product identity | Execution / Decision (generic) | `decision_strategy.py` protocol; no product constraint verifier implementation | **PARTIAL** — lifecycle contracts reusable; **no** semantic product verifier | **BUILD** (application verifier); **REUSE** Decision lifecycle **optionally** for terminal authority envelope |
-| **K. Outcome semantics** — `VERIFIED`, `AMBIGUOUS`, `INSUFFICIENT_INFORMATION`, `NO_MATCH`, clarification loop | Bounded terminal business outcomes | Decision System uses `ACCEPTED`/`UNRESOLVED`/etc. — **not** 1:1 product identification outcomes | Application (per § B ownership) | Scenario spec § B; platform has no `VERIFIED` product outcome type | **MISSING** (scenario-specific) | **BUILD** (application); **NOT REQUIRED** in platform core |
-| **L. Dataset ingest / indexing** — 3.77M offers, derived search representations | Deterministic preprocessing + index publication | `IngestPipeline` (loader→splitter→embed→vectorstore); `IndexingManager`; `add_records` upsert `ON CONFLICT DO UPDATE` | Tier-0 RAG ingest | `ingest_pipeline.py`; pgvector per-record insert loop; `async_job_recommended` flag for large sources | **PARTIAL** — document-chunk ingest path exists; **not** catalog-scale bulk product ingest | **BUILD** (application catalog pipeline); **EXTEND** (PgVector bulk ingest) |
-| **M. PostgreSQL / PgVector** — operational store (design hypothesis) | Single deployable unit for relational + search | `PgVectorRagStore`, `create_pgvector_vector_store`, `VectorstoreManager` | Integrations | See **PgVector findings** below | **QUALIFIED WITH LIMITATIONS** | **REUSE** (dense) + **EXTEND** (scale features) |
-| **N. Observability / diagnostics** — per-stage trace per observability contract § A | Production-path structured observability | `RetrievalTrace` (route, retriever, rerank, latencies, `hybrid_used`, `channel_contributions`); `rag_span`; C1 functional diagnostic spec (retrieval op + candidates) | Runtime diagnostics / RAG | `retrieval_result.py`; `c1_rag_functional_diagnostic_specification.py` — **generic RAG**, not product-identification stages | **PARTIAL** — RAG trace shipped; product stages (query constraints, per-channel counts, evidence graph) **not** pre-defined | **BUILD** (application trace schema); **REUSE** trace/diagnostic infrastructure |
-| **O. Proof evidence / evaluator** — PASS/FAIL vs hidden benchmark; no runtime leakage | Proof consumes production artifacts | `PlatformProofEvidence` v3 (`scripts/proof/intergrax_platform_proof_evidence*.py`); evaluator pattern (`ai_incident_investigation/proof/evaluator.py`) | Platform proofs | `PLATFORM_PROOF_PROTOCOL.md`; existing scenario proof packages | **SHIPPED** (framework); scenario wiring **not** built | **REUSE** (framework) + **BUILD** (scenario evaluator) |
+| **A. Query understanding** - identifier extraction (GTIN/MPN/SKU/productID), brand/model, product class, hard/soft/negative constraints, missing facts | Parse user request into typed product constraints before retrieval | `QueryRouter` (`intergrax/rag/routing/query_router.py`) - RAG **cost/complexity tier** routing (`fast`/`standard`/`deep`); optional LLM tier classifier | Tier-0 RAG | `QueryRouter.route()` word-count / `?` heuristics; `classify_route_tier_with_llm` - no product field extraction | **MISSING** (product semantics) | **BUILD** |
+| **A. Query understanding** - product constraint parsing | Domain-specific NL → typed constraints | None shipped | - | Grep: no GTIN/MPN/brand/capacity parser in `intergrax/` | **MISSING** | **BUILD** (application) |
+| **B. Exact identifier retrieval** - typed GTIN/MPN/SKU/productID lookup at catalog scale | Independent recall channel; not embedding similarity | `MetadataFilter` equality on vector `payload` JSONB (`payload @> %s::jsonb` in `PgVectorRagStore._where_clause`) | Tier-0 RAG / PgVector provider | `test_pgvector_live_qualification.py` - `MetadataFilter(conditions={"group": 1})`; per-record `INSERT` not identifier index | **PARTIAL** - equality filter only; not a dedicated exact-identity channel | **BUILD** (application catalog indexes + lookup SQL) |
+| **B. Exact identifier retrieval** - platform generic exact lookup channel | Reusable exact-match retriever | No `exact` / `identifier` retriever in `RetrieverRegistry`; only `vector_similarity`, `hybrid`, `graph_rag`, etc. | Tier-0 RAG retrievers | `retriever_bootstrap.py`, `retriever_registry.py` | **MISSING** | **BUILD** (application); platform reuse limited to `MetadataFilter` if app normalizes identifiers into payload |
+| **C. Lexical / BM25 retrieval** - model/part numbers, technical tokens | Independent lexical recall channel | `LexicalIndex` BM25 (`intergrax/rag/vectorstore/sparse/lexical_index.py`); `LexicalHybridSupport.query_hybrid` RRF fusion (`lexical_hybrid.py`); `HybridRetriever` fallback token-overlap lexical (`hybrid_retriever.py`) | Tier-0 RAG | Unit/integration via InMemory/Qdrant stores; **not** PgVector | **SHIPPED** (InMemory/Qdrant/Weaviate hybrid path) | **REUSE** (non-PgVector backends) / **EXTEND** (PgVector - see M) |
+| **C. Lexical / BM25** - PostgreSQL full-text at 3.77M scale | Durable lexical index co-located with vectors (design hypothesis) | PgVector provider: **no** `query_hybrid`, **no** FTS/BM25 | Integrations / PgVector | `pgvector/rag_store.py` - dense `query()` only; no `LexicalHybridSupport` mixin | **MISSING** on PgVector | **EXTEND** (platform PgVector) or **BUILD** (application PostgreSQL FTS tables) |
+| **D. Structured attribute retrieval** - voltage, capacity, interface, dimensions, compatibility | Hard-constraint recall on normalized attributes | `MetadataFilter`: exact `field == value` + optional `IN` membership (`native_vectorstore.py`); PgVector rejects membership (`require_membership_support`) | Tier-0 RAG contracts | `MetadataFilter.matches_payload`; pgvector `_where_clause` JSON containment only | **PARTIAL** - equality/IN only; no ranges, no heterogeneous 337k-name normalization | **BUILD** (application normalization + indexes); **REUSE** equality filters where normalized |
+| **E. Dense vector retrieval** | Semantic / NL recall channel | `PgVectorRagStore.query()` - cosine distance `embedding <=> %s::vector`, score `1 - distance` | Integrations / PgVector | `pgvector/rag_store.py`; `test_pgvector_live_qualification.py` (live gate) | **SHIPPED** / **QUALIFIED WITH LIMITATIONS** (50-doc soak, not 3.77M) | **REUSE** + **CONFIGURE** (DSN, dimension) |
+| **E. Dense vector retrieval** - ANN index at millions scale | Approximate nearest-neighbor performance | Schema creates scope/source B-tree indexes only; **no HNSW / IVFFlat** on `embedding` | PgVector provider | `_ensure_schema()` - `idx_*_scope`, `idx_*_source`; no `CREATE INDEX ... USING hnsw/ivfflat` | **MISSING** | **EXTEND** (platform PgVector schema) |
+| **F. Hybrid fusion** - merge exact + lexical + structured + vector with channel attribution | Recall-oriented pool; per-candidate channel provenance | `reciprocal_rank_fusion` + `LexicalHybridSupport.query_hybrid` (dense+lexical RRF); `fuse_graph_channels` score-sum (vector+keyword+graph); `HybridRetriever` single retriever orchestration; `RetrievalTrace.channel_contributions` | Tier-0 RAG | `lexical_hybrid.py`, `graph_channel_fusion.py`, `graph_rag_retriever.py`, `retrieval_service.py` `_apply_retriever_execution_trace` | **PARTIAL** - 2–3 channel fusion patterns exist; **no** generic 4-channel product fusion orchestrator | **BUILD** (application multi-channel orchestration); **REUSE** RRF/score-sum primitives |
+| **G. Reranker** - cross-encoder / API rerank; score ≠ verification | Improve finalist ordering post-fusion | `BaseReranker`, `RerankerCandidate`, `RerankerManager`, providers: `cross_encoder`, `cohere`, `jina`, `semantic`, `embedding_cosine`, `rrf_reranker`; `RetrievalService.retrieve_single_pass` rerank stage | Tier-0 RAG rerankers | `reranker_types.py` (full `KnowledgeDocument` on candidate); `retrieval_service.py` L150–184; provider tests | **SHIPPED** | **REUSE** + **CONFIGURE** (`RagProfile.enable_rerank`, `reranker_id`) |
+| **H. Top-K / candidate ABI** | Stable finalist handoff to verification | `RetrievalHit`, `RetrievalChunk`, `RerankerCandidate` - `channel`, `rank`, `vector_id`, `KnowledgeDocument` provenance/metadata | Tier-0 RAG | `base_retriever.py`, `retrieval_result.py`, `reranker_types.py` | **SHIPPED** | **REUSE** |
+| **I. Evidence extraction** - source provenance, supporting/contradicting/missing per constraint | Bind finalists to immutable `record_json` fields | `KnowledgeDocument` provenance (`source_id`, field paths via metadata); RAG returns chunks - **no** constraint-level evidence graph | Tier-0 knowledge contracts | `KnowledgeDocument` schema; no product evidence extractor in platform | **MISSING** (product semantics) | **BUILD** (application) |
+| **J. Identity verification** - material constraint check vs catalog evidence | Separate stage from retrieval ranking | Decision System - generic proposal→verification→resolution lifecycle (`DECISION_SYSTEM.md`); `VerificationLoop` in `runtime/adaptive/` is **critic/tool** verification, not product identity | Execution / Decision (generic) | `decision_strategy.py` protocol; no product constraint verifier implementation | **PARTIAL** - lifecycle contracts reusable; **no** semantic product verifier | **BUILD** (application verifier); **REUSE** Decision lifecycle **optionally** for terminal authority envelope |
+| **K. Outcome semantics** - `VERIFIED`, `AMBIGUOUS`, `INSUFFICIENT_INFORMATION`, `NO_MATCH`, clarification loop | Bounded terminal business outcomes | Decision System uses `ACCEPTED`/`UNRESOLVED`/etc. - **not** 1:1 product identification outcomes | Application (per § B ownership) | Scenario spec § B; platform has no `VERIFIED` product outcome type | **MISSING** (scenario-specific) | **BUILD** (application); **NOT REQUIRED** in platform core |
+| **L. Dataset ingest / indexing** - 3.77M offers, derived search representations | Deterministic preprocessing + index publication | `IngestPipeline` (loader→splitter→embed→vectorstore); `IndexingManager`; `add_records` upsert `ON CONFLICT DO UPDATE` | Tier-0 RAG ingest | `ingest_pipeline.py`; pgvector per-record insert loop; `async_job_recommended` flag for large sources | **PARTIAL** - document-chunk ingest path exists; **not** catalog-scale bulk product ingest | **BUILD** (application catalog pipeline); **EXTEND** (PgVector bulk ingest) |
+| **M. PostgreSQL / PgVector** - operational store (design hypothesis) | Single deployable unit for relational + search | `PgVectorRagStore`, `create_pgvector_vector_store`, `VectorstoreManager` | Integrations | See **PgVector findings** below | **QUALIFIED WITH LIMITATIONS** | **REUSE** (dense) + **EXTEND** (scale features) |
+| **N. Observability / diagnostics** - per-stage trace per observability contract § A | Production-path structured observability | `RetrievalTrace` (route, retriever, rerank, latencies, `hybrid_used`, `channel_contributions`); `rag_span`; C1 functional diagnostic spec (retrieval op + candidates) | Runtime diagnostics / RAG | `retrieval_result.py`; `c1_rag_functional_diagnostic_specification.py` - **generic RAG**, not product-identification stages | **PARTIAL** - RAG trace shipped; product stages (query constraints, per-channel counts, evidence graph) **not** pre-defined | **BUILD** (application trace schema); **REUSE** trace/diagnostic infrastructure |
+| **O. Proof evidence / evaluator** - PASS/FAIL vs hidden benchmark; no runtime leakage | Proof consumes production artifacts | `PlatformProofEvidence` v3 (`scripts/proof/intergrax_platform_proof_evidence*.py`); evaluator pattern (`ai_incident_investigation/proof/evaluator.py`) | Platform proofs | `PLATFORM_PROOF_PROTOCOL.md`; existing scenario proof packages | **SHIPPED** (framework); scenario wiring **not** built | **REUSE** (framework) + **BUILD** (scenario evaluator) |
 
 ### PgVector findings (code-evidenced)
 
 | Question | Finding | Evidence |
 | --- | --- | --- |
-| Dense retrieval? | **Yes** — cosine via pgvector `<=>` operator | `PgVectorRagStore.query()` L143–162 |
-| Metadata filters? | **Yes** — JSONB containment `payload @> %s::jsonb`; scope keys enforced | `_where_clause()` L477–500; live qual test L463–478 |
-| HNSW / IVFFlat / ANN index? | **No** — sequential scan ordering by distance; only B-tree on `(tenant_id, namespace, workspace_id)` and `source_id` | `_ensure_schema()` L406–418 |
-| Behavior at millions of vectors? | **Not qualified** — live qualification soak = 50 documents, p95 threshold 5s; brute-force distance sort | `test_pgvector_live_qualification.py` L617–637 |
-| Bulk ingest path? | **No** — row-by-row `INSERT` in Python loop | `add_records()` L92–119 |
+| Dense retrieval? | **Yes** - cosine via pgvector `<=>` operator | `PgVectorRagStore.query()` L143–162 |
+| Metadata filters? | **Yes** - JSONB containment `payload @> %s::jsonb`; scope keys enforced | `_where_clause()` L477–500; live qual test L463–478 |
+| HNSW / IVFFlat / ANN index? | **No** - sequential scan ordering by distance; only B-tree on `(tenant_id, namespace, workspace_id)` and `source_id` | `_ensure_schema()` L406–418 |
+| Behavior at millions of vectors? | **Not qualified** - live qualification soak = 50 documents, p95 threshold 5s; brute-force distance sort | `test_pgvector_live_qualification.py` L617–637 |
+| Bulk ingest path? | **No** - row-by-row `INSERT` in Python loop | `add_records()` L92–119 |
 | Batching? | **No** dedicated batch API | same |
-| Replacement semantics? | **Yes** — `ON CONFLICT (tenant_id, namespace, workspace_id, logical_id) DO UPDATE` | L102–107; live qual replacement tests L529–572 |
+| Replacement semantics? | **Yes** - `ON CONFLICT (tenant_id, namespace, workspace_id, logical_id) DO UPDATE` | L102–107; live qual replacement tests L529–572 |
 | PostgreSQL FTS / BM25? | **No** on PgVector provider | No FTS SQL; no `query_hybrid` on `PgVectorRagStore` |
-| `query_hybrid` / RRF on PgVector? | **No** — `VectorstoreManager.query_hybrid` requires `NativeHybridSearchProvider`; PgVector does not implement it | `hybrid_search.py`; `vectorstore_manager.py` L312–316 |
+| `query_hybrid` / RRF on PgVector? | **No** - `VectorstoreManager.query_hybrid` requires `NativeHybridSearchProvider`; PgVector does not implement it | `hybrid_search.py`; `vectorstore_manager.py` L312–316 |
 
 ### Hybrid findings
 
@@ -782,7 +782,7 @@ Participating domains (discovered during fit): **RAG** (retrieval, vectorstore, 
 | --- | --- |
 | Where fusion lives | `LexicalHybridSupport.query_hybrid` (RRF dense+BM25); `fuse_graph_channels` (score-sum vector+keyword+graph); `HybridRetriever` (native hybrid or dense+token-overlap blend) |
 | Algorithms | RRF (`k=60` default), weighted alpha blend, graph score-sum |
-| Independent channels | GraphRAG demonstrates multi-channel with `channel_contributions`; **no** platform orchestrator for exact+lexical+structured+vector as **four independent inputs** — scenario must compose above `RetrievalService` or custom retriever |
+| Independent channels | GraphRAG demonstrates multi-channel with `channel_contributions`; **no** platform orchestrator for exact+lexical+structured+vector as **four independent inputs** - scenario must compose above `RetrievalService` or custom retriever |
 | PgVector | Hybrid/BM25 **not** available; InMemory/Qdrant (sparse-enabled)/Weaviate **are** |
 | Scenario without duplicating platform | Application can call multiple retrievers / SQL lookups and fuse using platform RRF helper or own orchestration; should **not** reimplement vector-store contracts |
 
@@ -793,11 +793,11 @@ Participating domains (discovered during fit): **RAG** (retrieval, vectorstore, 
 | Contract | `BaseReranker.rerank(query, candidates, limit)` → `RerankerResult` |
 | Implementations | `cross_encoder`, `cohere`, `jina`, `semantic`, `embedding_cosine`, `rrf_reranker`, `ensemble_reranker` |
 | Wiring | `RetrievalService` → `RerankerManager.rerank` after retriever prefetch; gated by `RagProfile.enable_rerank` |
-| Metadata survival | `RerankerCandidate` carries full `KnowledgeDocument` — product metadata in document metadata survives reranking; reranker does not add evidence fields |
+| Metadata survival | `RerankerCandidate` carries full `KnowledgeDocument` - product metadata in document metadata survives reranking; reranker does not add evidence fields |
 
 ### Query understanding findings
 
-`QueryRouter` ≠ product query understanding. It selects RAG retrieval **tier** for cost/latency, not typed product constraints. Product parsing (identifiers, brand, hard specs, missing facts) is **absent** from platform — correctly classified as **application BUILD**, not platform defect.
+`QueryRouter` ≠ product query understanding. It selects RAG retrieval **tier** for cost/latency, not typed product constraints. Product parsing (identifiers, brand, hard specs, missing facts) is **absent** from platform - correctly classified as **application BUILD**, not platform defect.
 
 ### Structured search findings
 
@@ -805,7 +805,7 @@ Participating domains (discovered during fit): **RAG** (retrieval, vectorstore, 
 
 ### Verification findings
 
-Decision System provides **generic** decision lifecycle and verification composition — not product identity verification. No shipped verifier consumes `{candidate, typed_constraints, catalog_evidence}` for product specs. Application must own constraint comparison logic; may optionally map terminal outcomes onto Decision System resolution envelopes for audit consistency.
+Decision System provides **generic** decision lifecycle and verification composition - not product identity verification. No shipped verifier consumes `{candidate, typed_constraints, catalog_evidence}` for product specs. Application must own constraint comparison logic; may optionally map terminal outcomes onto Decision System resolution envelopes for audit consistency.
 
 ### Observability findings
 
@@ -813,7 +813,7 @@ Decision System provides **generic** decision lifecycle and verification composi
 
 ### Proof integration findings
 
-`PlatformProofEvidence` v3 and proof runner patterns exist (`PLATFORM_PROOF_PROTOCOL.md`, `ai_incident_investigation`). Scenario evaluator, benchmark fixtures, and evidence projection are **not** built — framework **REUSE**, scenario **BUILD**.
+`PlatformProofEvidence` v3 and proof runner patterns exist (`PLATFORM_PROOF_PROTOCOL.md`, `ai_incident_investigation`). Scenario evaluator, benchmark fixtures, and evidence projection are **not** built - framework **REUSE**, scenario **BUILD**.
 
 ### Fit summary counts
 
@@ -827,12 +827,12 @@ Decision System provides **generic** decision lifecycle and verification composi
 
 **Confirmed hypotheses (A–F from audit brief):**
 
-- **A. PgVector dense-only** — **CONFIRMED**
-- **B. Native hybrid/BM25 not on PgVector** — **CONFIRMED** (present on InMemory/Qdrant/Weaviate)
-- **C. No HNSW/IVFFlat in PgVector schema** — **CONFIRMED**
-- **D. Metadata filtering = JSON equality containment** — **CONFIRMED** (membership unsupported on pgvector)
-- **E. Product query understanding absent** — **CONFIRMED**
-- **F. Product identity verification = application responsibility** — **CONFIRMED**
+- **A. PgVector dense-only** - **CONFIRMED**
+- **B. Native hybrid/BM25 not on PgVector** - **CONFIRMED** (present on InMemory/Qdrant/Weaviate)
+- **C. No HNSW/IVFFlat in PgVector schema** - **CONFIRMED**
+- **D. Metadata filtering = JSON equality containment** - **CONFIRMED** (membership unsupported on pgvector)
+- **E. Product query understanding absent** - **CONFIRMED**
+- **F. Product identity verification = application responsibility** - **CONFIRMED**
 
 ---
 
@@ -846,30 +846,30 @@ Frontmatter `gap_decision: RESOLVED`.
 
 | Gap / need | Owner | Why | Blocks implementation? |
 | --- | --- | --- | --- |
-| Dense vector retrieval (qualified vector backend) | Platform (provider contracts) + application (configure) | e.g. `PgVectorRagStore`, Qdrant, InMemory — via platform vectorstore contracts; not a PostgreSQL-only requirement | No — configure provider per deployment |
+| Dense vector retrieval (qualified vector backend) | Platform (provider contracts) + application (configure) | e.g. `PgVectorRagStore`, Qdrant, InMemory - via platform vectorstore contracts; not a PostgreSQL-only requirement | No - configure provider per deployment |
 | Reranker pipeline | Platform RAG | `RetrievalService` + `RerankerManager` shipped with metadata-preserving ABI | No |
 | Candidate / chunk ABI | Platform RAG | `RetrievalHit` / `RerankerCandidate` / `RetrievalChunk` | No |
-| Hybrid retrieval (lexical + dense) | Platform RAG | BM25+RRF via `LexicalHybridSupport` / `HybridRetriever` on backends that support it | No — provider choice; application uses contracts, not a fixed backend |
-| Proof evidence framework | Platform proofs | `PlatformProofEvidence` v3, proof protocol | No — evaluator is separate build |
-| RAG trace primitives | Platform RAG + runtime | `RetrievalTrace`, `rag_span` | No — extend with app fields |
+| Hybrid retrieval (lexical + dense) | Platform RAG | BM25+RRF via `LexicalHybridSupport` / `HybridRetriever` on backends that support it | No - provider choice; application uses contracts, not a fixed backend |
+| Proof evidence framework | Platform proofs | `PlatformProofEvidence` v3, proof protocol | No - evaluator is separate build |
+| RAG trace primitives | Platform RAG + runtime | `RetrievalTrace`, `rag_span` | No - extend with app fields |
 
 ### 2. SCENARIO CONFIGURATION
 
 | Gap / need | Owner | Minimum change | Blocks? |
 | --- | --- | --- | --- |
-| Vector / catalog provider wiring | Application / ops | Provider-specific env and scope (e.g. `INTERGRAX_PGVECTOR_DSN` for canonical PostgreSQL+pgvector reference only) | Yes for vector channel — via chosen provider config |
+| Vector / catalog provider wiring | Application / ops | Provider-specific env and scope (e.g. `INTERGRAX_PGVECTOR_DSN` for canonical PostgreSQL+pgvector reference only) | Yes for vector channel - via chosen provider config |
 | Reranker selection | Application | `RagProfile(enable_rerank=True, reranker_id=...)` | No |
-| Retriever profile | Application | Choose `hybrid` vs `vector_similarity` per qualified backend capabilities | Partial — lexical channel may need separate path on some providers |
+| Retriever profile | Application | Choose `hybrid` vs `vector_similarity` per qualified backend capabilities | Partial - lexical channel may need separate path on some providers |
 
 ### 3. PLATFORM EXTENSION
 
 | Gap | Why it exists | Owner | Minimum change | Blocks? | Public arch change? |
 | --- | --- | --- | --- | --- | --- |
-| PgVector ANN index (HNSW/IVFFlat) | Schema lacks vector index; 3.77M brute-force not credible | Platform / Integrations | Add optional index DDL + migration policy in `PgVectorRagStore._ensure_schema` | **Yes** for pgvector-at-scale proof | Yes — provider schema |
-| PgVector bulk/batch ingest | Row-by-row insert inadequate for 3.77M | Platform / Integrations | `COPY`/batch insert API or ingest optimization | **Yes** for indexing SLA | Minor — provider API |
+| PgVector ANN index (HNSW/IVFFlat) | Schema lacks vector index; 3.77M brute-force not credible | Platform / Integrations | Add optional index DDL + migration policy in `PgVectorRagStore._ensure_schema` | **Yes** for pgvector-at-scale proof | Yes - provider schema |
+| PgVector bulk/batch ingest | Row-by-row insert inadequate for 3.77M | Platform / Integrations | `COPY`/batch insert API or ingest optimization | **Yes** for indexing SLA | Minor - provider API |
 | Provider hybrid / FTS gaps | Some providers are dense-only or lack co-located lexical search | Platform / Integrations **or** application catalog indexes | Extend provider or compose separate lexical + vector backends per deployment | **Yes** only for chosen canonical reference configuration | Yes if platform-owned |
-| Generic multi-channel fusion orchestrator | Today fusion is 2-channel (hybrid) or graph-specific | Platform RAG (optional) | Reusable fusion service accepting N channel result lists + attribution | No — application can fuse locally using `reciprocal_rank_fusion` | Only if promoted to generic platform capability |
-| `MetadataFilter` range / rich queries | Equality-only insufficient for capacity/voltage ranges | Platform RAG contracts (optional) | Extend filter contract + provider SQL | No — application can use SQL outside vector ABI | Yes if added to portable contract |
+| Generic multi-channel fusion orchestrator | Today fusion is 2-channel (hybrid) or graph-specific | Platform RAG (optional) | Reusable fusion service accepting N channel result lists + attribution | No - application can fuse locally using `reciprocal_rank_fusion` | Only if promoted to generic platform capability |
+| `MetadataFilter` range / rich queries | Equality-only insufficient for capacity/voltage ranges | Platform RAG contracts (optional) | Extend filter contract + provider SQL | No - application can use SQL outside vector ABI | Yes if added to portable contract |
 
 ### 4. SCENARIO / APPLICATION BUILD
 
@@ -877,7 +877,7 @@ Frontmatter `gap_decision: RESOLVED`.
 | --- | --- | --- | --- | --- |
 | Product query understanding | Domain-specific NL + identifier semantics | Application | Parser/LLM structured extraction → typed constraint model | **Yes** |
 | Exact identifier catalog indexes | GTIN/MPN/SKU tables are catalog schema, not generic RAG | Application | Normalized identifier tables + lookup queries | **Yes** |
-| Structured attribute normalization | 337k WDC attribute names — product domain | Application | Bounded normalization for high-value constraint families | **Yes** |
+| Structured attribute normalization | 337k WDC attribute names - product domain | Application | Bounded normalization for high-value constraint families | **Yes** |
 | Multi-channel candidate orchestration | Four channels with product-specific queries | Application | Invoke exact/lexical/structured/vector paths; fuse with attribution | **Yes** |
 | Evidence extraction per finalist | Provenance to `record_json` paths | Application | Field-level evidence graph from source catalog | **Yes** |
 | Identity verification engine | Material constraint logic is product-domain | Application | Support/contradict/missing per constraint; disqualify on contradiction | **Yes** |
@@ -890,39 +890,39 @@ Frontmatter `gap_decision: RESOLVED`.
 
 | Item | Rationale |
 | --- | --- |
-| Map product outcomes into Decision System core types | Optional; generic Decision lifecycle can wrap application verdicts — not required for MVP |
+| Map product outcomes into Decision System core types | Optional; generic Decision lifecycle can wrap application verdicts - not required for MVP |
 | GraphRAG channel | Product catalog identification does not require knowledge graph traversal in ideal architecture |
 | Perfect normalization of all 337k attribute names | Explicitly out of scope per § B limitations |
 | Million-scale provider qualification before implementation | Live qual proves correctness at small scale; million-scale is benchmark calibration, not platform gate blocker |
 
 ### Implementation roadmap (proposed order)
 
-Provider-neutral application stages — storage/retrieval backends are configured per deployment, not hard-coded:
+Provider-neutral application stages - storage/retrieval backends are configured per deployment, not hard-coded:
 
 **Implementation note (VPI-IMPLEMENTATION-1):** Provider-neutral catalog/search contracts and immutable scenario-owned domain models established under `application/domain`, `application/contracts`, `application/ports`, and `application/catalog`. No real storage provider implemented yet.
 
-1. **Catalog runtime / storage** — immutable `record_json`, identifier tables, configuration via catalog/search **contracts**; wire qualified vector and lexical backends behind platform integration boundaries.
-2. **Preprocessing / search representation** — deterministic ingest from `selected_offers.parquet`; normalized identifiers, lexical text, structured attribute subset, embeddings.
-3. **Candidate channels** — application query understanding; exact identifier lookup; lexical retrieval; structured filters; dense vector via configured vector backend.
-4. **Hybrid fusion + reranker** — fuse channel results with attribution (`reciprocal_rank_fusion` or score-sum); wire `RetrievalService` reranker stage on finalists.
-5. **Verification** — evidence extraction from source fields; constraint support/contradiction/missing; terminal outcome selection.
-6. **Clarification / outcomes** — `INSUFFICIENT_INFORMATION` loop; `AMBIGUOUS` abstention; `NO_MATCH` vs retrieval-empty distinction.
-7. **Observability** — application trace schema covering § A contract; hook into `RetrievalTrace` + custom diagnostics.
-8. **Benchmark / proof** — gold cases, hidden evaluator, full-corpus runs, baseline variants A–C from § B.
-9. **Public reproduction** — resolve `DATASET_DISTRIBUTION`; checksum auto-resolve; documented reproduction path.
+1. **Catalog runtime / storage** - immutable `record_json`, identifier tables, configuration via catalog/search **contracts**; wire qualified vector and lexical backends behind platform integration boundaries.
+2. **Preprocessing / search representation** - deterministic ingest from `selected_offers.parquet`; normalized identifiers, lexical text, structured attribute subset, embeddings.
+3. **Candidate channels** - application query understanding; exact identifier lookup; lexical retrieval; structured filters; dense vector via configured vector backend.
+4. **Hybrid fusion + reranker** - fuse channel results with attribution (`reciprocal_rank_fusion` or score-sum); wire `RetrievalService` reranker stage on finalists.
+5. **Verification** - evidence extraction from source fields; constraint support/contradiction/missing; terminal outcome selection.
+6. **Clarification / outcomes** - `INSUFFICIENT_INFORMATION` loop; `AMBIGUOUS` abstention; `NO_MATCH` vs retrieval-empty distinction.
+7. **Observability** - application trace schema covering § A contract; hook into `RetrievalTrace` + custom diagnostics.
+8. **Benchmark / proof** - gold cases, hidden evaluator, full-corpus runs, baseline variants A–C from § B.
+9. **Public reproduction** - resolve `DATASET_DISTRIBUTION`; checksum auto-resolve; documented reproduction path.
 
 ### Platform gap priority (canonical reference configuration only)
 
 If the canonical reference deployment chooses PostgreSQL + pgvector:
 
-1. PgVector ANN index (HNSW) — blocks credible 3.77M vector search performance on that provider.
-2. Bulk ingest — blocks practical indexing time on that provider.
-3. PgVector lexical/FTS hybrid — blocks co-located lexical+vector on that single-database reference path.
+1. PgVector ANN index (HNSW) - blocks credible 3.77M vector search performance on that provider.
+2. Bulk ingest - blocks practical indexing time on that provider.
+3. PgVector lexical/FTS hybrid - blocks co-located lexical+vector on that single-database reference path.
 
-**Alternative reference configuration:** MySQL + Qdrant (or similar) may satisfy hybrid BM25+dense via existing `LexicalHybridSupport` without rewriting scenario application logic — operator choice, not scenario architecture.
+**Alternative reference configuration:** MySQL + Qdrant (or similar) may satisfy hybrid BM25+dense via existing `LexicalHybridSupport` without rewriting scenario application logic - operator choice, not scenario architecture.
 
 ## E. PROOF BUILD
 
-NOT STARTED — implementation initialized (gated skeleton); domain implementation and proof wiring in progress; dataset distribution resolution pending (scenario acceptance, Intergrax Fit, and Gap Decision are complete).
+NOT STARTED - implementation initialized (gated skeleton); domain implementation and proof wiring in progress; dataset distribution resolution pending (scenario acceptance, Intergrax Fit, and Gap Decision are complete).
 
 Before implementation confirm: production-capable application exists; canonical path has no prohibited fake/test shortcuts; controlled providers use normal application contracts; real model boundary configured if AI behavior is material; full 3.77M catalog loaded in search infrastructure.

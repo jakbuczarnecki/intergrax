@@ -9,14 +9,14 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 This is the canonical public product roadmap for Intergrax. It describes what user and product outcomes must become true next, how those outcomes are evidenced, and when broader claims or expansion are justified.
 
 > [!WARNING]
-> Outcome-gated roadmap — not a release-date commitment. LKW is the **Active reference product**, **Backend Product Alpha / MVP**, **PARTIAL**. Real-user and commercial validation remain open; see [PROOFS.md](../proofs/PROOFS.md).
+> Outcome-gated roadmap - not a release-date commitment. LKW is the **Active reference product**, **Backend Product Alpha / MVP**, **PARTIAL**. Real-user and commercial validation remain open; see [PROOFS.md](../proofs/PROOFS.md).
 
 ## At a glance
 
 | Question | Answer |
 |----------|--------|
 | Primary product focus | Local Knowledge Workspace (LKW) |
-| Current maturity | Backend Product Alpha / MVP — PARTIAL |
+| Current maturity | Backend Product Alpha / MVP - PARTIAL |
 | What is being established now | A repeatable supported LKW workflow **and** parallel problem/customer discovery |
 | Roadmap model | Outcome gates, not an implementation queue |
 | Discovery status | Problem/customer discovery in progress; not yet completed |
@@ -26,7 +26,7 @@ This is the canonical public product roadmap for Intergrax. It describes what us
 
 This document describes **user and validation outcomes**, not internal implementation queues. Detailed technical and module sequencing belongs to the [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) and the owning module sources of truth.
 
-[PROOFS.md](../proofs/PROOFS.md) owns what is currently demonstrated and the related claim boundaries. Moving to a later phase requires evidence — bounded verification, repeated use, or real-user feedback — not only implementation completion.
+[PROOFS.md](../proofs/PROOFS.md) owns what is currently demonstrated and the related claim boundaries. Moving to a later phase requires evidence - bounded verification, repeated use, or real-user feedback - not only implementation completion.
 
 If you need to decide whether Intergrax fits your problem today, start with [USE_CASES.md](USE_CASES.md).
 
@@ -60,7 +60,7 @@ problem discovery
 → evidence-driven expansion
 ```
 
-This loop supports rapid evidence-driven product decisions — not endless research or process overhead.
+This loop supports rapid evidence-driven product decisions - not endless research or process overhead.
 
 ## Three evidence classes
 
@@ -68,13 +68,13 @@ Intergrax distinguishes three evidence classes. They must not be conflated.
 
 | Class | What it establishes | When it applies |
 |-------|---------------------|-----------------|
-| **Problem / customer discovery** | Target people experience a recurring problem; current alternatives have meaningful friction; the workflow is worth investigating | **Now** — in parallel with product development |
-| **Solution / real-user validation** | Users can complete the workflow; results are useful and trusted; users reuse it; Intergrax improves the target workflow | **Later** — after a usable end-to-end workflow exists (VALIDATE gate) |
-| **Commercial validation** | Genuine commercial commitment, buying behavior, or authorized commercial engagement | **Separate later boundary** — not established by problem interviews |
+| **Problem / customer discovery** | Target people experience a recurring problem; current alternatives have meaningful friction; the workflow is worth investigating | **Now** - in parallel with product development |
+| **Solution / real-user validation** | Users can complete the workflow; results are useful and trusted; users reuse it; Intergrax improves the target workflow | **Later** - after a usable end-to-end workflow exists (VALIDATE gate) |
+| **Commercial validation** | Genuine commercial commitment, buying behavior, or authorized commercial engagement | **Separate later boundary** - not established by problem interviews |
 
 Problem interviews and discovery conversations are **not** commercial validation. None of these classes is complete today; problem/customer discovery is in progress, not finished.
 
-## NOW — Make the primary workflow repeatable (and learn from users in parallel)
+## NOW - Make the primary workflow repeatable (and learn from users in parallel)
 
 **User / product outcome:** LKW becomes a dependable supported workflow that an evaluator can run, repeat, restart, and recover without ad hoc developer reconstruction.
 
@@ -92,7 +92,7 @@ Discovery does **not** require a complete LKW workflow. It informs product hypot
 
 The stage is achieved only when the documented workflow is repeatable as a user-facing proof, not merely when its implementation exists. See [PROOFS.md](../proofs/PROOFS.md) for current evidence.
 
-## NEXT — Prove the complete intended knowledge outcome
+## NEXT - Prove the complete intended knowledge outcome
 
 **User / product outcome:** a user can combine indexed knowledge with authorized live evidence and receive a grounded answer with coherent, reviewable provenance.
 
@@ -107,7 +107,7 @@ The stage is achieved only when the documented workflow is repeatable as a user-
 
 The next stage is a product outcome, not a commitment to a particular provider, interaction surface, or engineering order.
 
-## VALIDATE — Establish real-user value and repeat use
+## VALIDATE - Establish real-user value and repeat use
 
 **Solution / real-user validation** is a distinct gate from problem/customer discovery and from commercial validation. Internal tests, maintainers, and technical evaluators do not by themselves constitute external validation.
 
@@ -127,9 +127,9 @@ The next stage is a product outcome, not a commitment to a particular provider, 
 | Repeat use is meaningful | Evidence shows whether users return and what they would continue using |
 | Friction and trust failures are understood | Observed blockers and trust breaks are recorded well enough to choose the next product decision |
 
-The **formal solution-validation gate** begins only after the intended workflow is usable end-to-end. That boundary applies to **solution validation**, not to problem/customer discovery — discovery starts earlier and runs in parallel. No internal testing result or discovery interview is presented as real-user validation or commercial validation.
+The **formal solution-validation gate** begins only after the intended workflow is usable end-to-end. That boundary applies to **solution validation**, not to problem/customer discovery - discovery starts earlier and runs in parallel. No internal testing result or discovery interview is presented as real-user validation or commercial validation.
 
-## EXPAND — Evidence-driven expansion
+## EXPAND - Evidence-driven expansion
 
 Expansion follows this decision path:
 
@@ -149,7 +149,7 @@ Potential expansion outcomes are deliberately generic:
 
 No provider, surface, or breadth item is promised in advance.
 
-## HARDEN / PACKAGE — Improve operations after validated use
+## HARDEN / PACKAGE - Improve operations after validated use
 
 **User / product outcome:** recurring validated use justifies improvements to operational reliability, deployment, diagnostics, permissions, supportability, or product packaging.
 
@@ -161,17 +161,17 @@ Product need drives platform work. **Token Optimization** remains a **Featured p
 
 See the [Token Optimization guide](../capabilities/token_optimization/README.md) for its bounded proof and limitations.
 
-**Multiplayer AI** is a separate **strategic platform capability** at **architecture / roadmap stage**. A canonical architecture and implementation roadmap exists; runtime proof is **not yet established**. The capability is intended to support governed multi-principal collaboration — shared work, durable artifacts, decisions, delegated authority, principal-scoped context, and provenance — among humans, agents, services, and eventually external agents. Future promotion into public proof follows accepted implementation and evidence, not architecture alone.
+**Multiplayer AI** is a separate **strategic platform capability** at **architecture / roadmap stage**. A canonical architecture and implementation roadmap exists; runtime proof is **not yet established**. The capability is intended to support governed multi-principal collaboration - shared work, durable artifacts, decisions, delegated authority, principal-scoped context, and provenance - among humans, agents, services, and eventually external agents. Future promotion into public proof follows accepted implementation and evidence, not architecture alone.
 
 See the [Multiplayer AI architecture](../capabilities/architecture/MULTIPLAYER_AI.md) for the strategic direction and current boundaries.
 
-**Platform Extensibility / Plugins** is another **strategic platform capability**. Extension mechanisms already exist across multiple domains; the canonical cross-cutting architecture is **frozen**. Multiple extension-platform implementation slices exist and the core program is **closed**; residual Protocol v2 and breadth work remain **planned**. Public proof promotion requires accepted executable third-party E2E evidence — a complete install-to-runtime path without modifying Intergrax core is **not yet established**.
+**Platform Extensibility / Plugins** is another **strategic platform capability**. Extension mechanisms already exist across multiple domains; the canonical cross-cutting architecture is **frozen**. Multiple extension-platform implementation slices exist and the core program is **closed**; residual Protocol v2 and breadth work remain **planned**. Public proof promotion requires accepted executable third-party E2E evidence - a complete install-to-runtime path without modifying Intergrax core is **not yet established**.
 
 See the [Platform Plugins architecture](../architecture/PLATFORM_PLUGINS.md) for the strategic direction and current boundaries.
 
 ## Discovery signals and decision discipline
 
-Use discovery to inform product decisions — not to substitute for building or for later solution validation.
+Use discovery to inform product decisions - not to substitute for building or for later solution validation.
 
 **Strong signals** may include:
 
@@ -207,11 +207,11 @@ No category is claimed as a proven buyer or ICP. See [Partners](../community/PAR
 
 ## Decision principles
 
-- **Application first** — product workflow drives platform work.
-- **Discovery informs build** — problem/customer discovery runs in parallel; it does not wait for product completion.
-- **Evidence before promotion** — bounded proof and claim boundaries precede broader wording.
-- **Demand before integration breadth** — breadth follows a validated workflow.
-- **Explicit permission and responsibility boundaries** — see [LICENSE](../../../LICENSE) and [COLLABORATION.md](../community/COLLABORATION.md).
+- **Application first** - product workflow drives platform work.
+- **Discovery informs build** - problem/customer discovery runs in parallel; it does not wait for product completion.
+- **Evidence before promotion** - bounded proof and claim boundaries precede broader wording.
+- **Demand before integration breadth** - breadth follows a validated workflow.
+- **Explicit permission and responsibility boundaries** - see [LICENSE](../../../LICENSE) and [COLLABORATION.md](../community/COLLABORATION.md).
 - **No expansion without a concrete user workflow.**
 - **No release-date promises without a validated basis.**
 

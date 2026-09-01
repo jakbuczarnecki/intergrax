@@ -1,4 +1,4 @@
-# Elastic Capacity and Scaling — Implementation Plan
+# Elastic Capacity and Scaling - Implementation Plan
 
 **Architecture (1:1):** [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../../architecture/ELASTIC_CAPACITY_AND_SCALING.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
@@ -7,7 +7,7 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
 
-**Last updated:** 2026-06-20 — **P2-ARCH-11** ECP production boundary.
+**Last updated:** 2026-06-20 - **P2-ARCH-11** ECP production boundary.
 
 ---
 
@@ -16,7 +16,7 @@
 **Do not read this entire file in one session** (ELASTIC_CAPACITY_AND_SCALING plan).
 
 - **Implement / audit default:** ECP phase registers · open P0/P1 capacity rows · skip closed scaling history unless cited
-- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Use** `Read` with offset/limit - open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../../architecture/ELASTIC_CAPACITY_AND_SCALING.md) read-scope block only.
 - **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
@@ -39,16 +39,16 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
+## Phase AUDIT-IDEAL - Ideal architecture gap register (2026-06-09)
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §24.7 · baseline **32/32 L3**
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
-**Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
+**Status:** **Planned** - incremental after IDEAL-L3 W2 closeout
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
 | AUDIT-IDEAL-24.3 | §24 Cost | CPU/memory/concurrency quotas with tenant fairness (shared UAEP) | P2 | **Done** |
-| AUDIT-IDEAL-30.1 | §30 Ops | Honest §22 maturity — ECP is architecture, not production autoscaling | **P0** | **Done** (2026-06-12) |
+| AUDIT-IDEAL-30.1 | §30 Ops | Honest §22 maturity - ECP is architecture, not production autoscaling | **P0** | **Done** (2026-06-12) |
 | AUDIT-IDEAL-30.4 | §30 Ops | Celery/K8s production-scale adapters (beyond stub/beta) | P2 | **Done** |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
@@ -57,101 +57,101 @@ Load **only** the satellite matching your task or cited gap ID.
 
 (Global)
 
-1. **Contract** — Pydantic / Protocol public API for signals, policies, actions
-2. **Trace** — capacity transitions emit `RuntimeEvent` (`ops:capacity`, `ops:backpressure`)
-3. **Test** — unit + integration, deterministic; mock integrations (no live K8s in gate)
-4. **Documentation** — update this plan + architecture pair when contracts change
-5. **No regression** — `pytest -m gate` green
-6. **Reuse Tier-0** — extend `integrations`, `queueing`; no parallel cloud SDK stacks in Nexus
-7. **Async control plane** — ECP MUST NOT block `NexusLoop` hot path
-8. **Tier discipline** — provision via Integration Library; deploy YAML stays Tier-3
-9. **No product scope creep** — harness phases MUST NOT implicitly include K.1/K.2
+1. **Contract** - Pydantic / Protocol public API for signals, policies, actions
+2. **Trace** - capacity transitions emit `RuntimeEvent` (`ops:capacity`, `ops:backpressure`)
+3. **Test** - unit + integration, deterministic; mock integrations (no live K8s in gate)
+4. **Documentation** - update this plan + architecture pair when contracts change
+5. **No regression** - `pytest -m gate` green
+6. **Reuse Tier-0** - extend `integrations`, `queueing`; no parallel cloud SDK stacks in Nexus
+7. **Async control plane** - ECP MUST NOT block `NexusLoop` hot path
+8. **Tier discipline** - provision via Integration Library; deploy YAML stays Tier-3
+9. **No product scope creep** - harness phases MUST NOT implicitly include K.1/K.2
 
 ---
 
-## ECP-DEPTH — Master deliverables register (all 28 tasks)
+## ECP-DEPTH - Master deliverables register (all 28 tasks)
 
-### Wave ECP0 — Package scaffold
+### Wave ECP0 - Package scaffold
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| ECP-0.1 | **`intergrax/runtime/capacity`** package — `contracts.py`, `__init__.py` | **Done** | **Critical** | Importable; no side effects |
-| ECP-0.2 | **Gate import test** — `tests/unit/runtime/capacity/test_ecp_depth_gate.py` | **Done** | Medium | `-m gate` green |
-| ECP-0.3 | **Architecture ↔ plan sync** — paydown log row | **Done** | Low | §22 updated |
+| ECP-0.1 | **`intergrax/runtime/capacity`** package - `contracts.py`, `__init__.py` | **Done** | **Critical** | Importable; no side effects |
+| ECP-0.2 | **Gate import test** - `tests/unit/runtime/capacity/test_ecp_depth_gate.py` | **Done** | Medium | `-m gate` green |
+| ECP-0.3 | **Architecture ↔ plan sync** - paydown log row | **Done** | Low | §22 updated |
 | ECP-0.4 | **Extend `runtime/architecture/__init__.py`** re-exports if needed | **Done** | Low | `capacity` package import gate |
 
-### Wave ECP1 — Contracts and ScalingProfile (P0)
+### Wave ECP1 - Contracts and ScalingProfile (P0)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
 | ECP-1.1 | **`ScalingProfile`** on `ApplicationEnvironmentProfile` | **Done** | **Critical** | `environment_profile.py` | Round-trip on lab defaults |
 | ECP-1.2 | **`CapacitySignal`**, **`ScalingPolicy`**, **`ScalingAction`** Pydantic models | **Done** | **Critical** | `capacity/contracts.py` | `test_ecp_depth_gate.py` |
-| ECP-1.3 | **`ScalingTarget`** enum — `NEXUS_HOST`, `CELERY_POOL`, `MODALITY_POOL`, `ORCHESTRATION_CEILING` | **Done** | High | same | Exhaustive match |
-| ECP-1.4 | **`scaling_wiring.py`** — host bootstrap hook (no-op when disabled) | **Done** | High | `applications/_shared/scaling_wiring.py` | Lab host lifespan when enabled |
-| ECP-1.5 | **Reference YAML** — lab scaling policy stub in docs only | **Done** | Low | `HARNESS_ENVIRONMENT.md` | Example policy JSON |
+| ECP-1.3 | **`ScalingTarget`** enum - `NEXUS_HOST`, `CELERY_POOL`, `MODALITY_POOL`, `ORCHESTRATION_CEILING` | **Done** | High | same | Exhaustive match |
+| ECP-1.4 | **`scaling_wiring.py`** - host bootstrap hook (no-op when disabled) | **Done** | High | `applications/_shared/scaling_wiring.py` | Lab host lifespan when enabled |
+| ECP-1.5 | **Reference YAML** - lab scaling policy stub in docs only | **Done** | Low | `HARNESS_ENVIRONMENT.md` | Example policy JSON |
 
-### Wave ECP2 — Signal collector (P0)
+### Wave ECP2 - Signal collector (P0)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| ECP-2.1 | **`CapacitySignalCollector`** — aggregate `GRAPH_BACKPRESSURE` rate | **Done** | **Critical** | `capacity/collector.py` | `test_ecp_depth_gate.py` |
-| ECP-2.2 | **Queue depth signal** — from `task_index` | **Done** | High | same | `queue_depth_provider` hook |
+| ECP-2.1 | **`CapacitySignalCollector`** - aggregate `GRAPH_BACKPRESSURE` rate | **Done** | **Critical** | `capacity/collector.py` | `test_ecp_depth_gate.py` |
+| ECP-2.2 | **Queue depth signal** - from `task_index` | **Done** | High | same | `queue_depth_provider` hook |
 | ECP-2.3 | **Prometheus SLI bridge** (optional profile) | **Done** | Medium | `capacity/prometheus_bridge.py` | Stub PromQL bridge |
 | ECP-2.4 | **Emit `CAPACITY_SIGNAL_COLLECTED`** events | **Done** | High | `capacity/events.py`, collector | `RuntimeEventType.CAPACITY_SIGNAL_COLLECTED` |
 
-### Wave ECP3 — Evaluator (P0)
+### Wave ECP3 - Evaluator (P0)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| ECP-3.1 | **`ScalingEvaluator`** — rule matching + cooldown | **Done** | **Critical** | `capacity/evaluator.py` | `test_ecp_depth_gate.py` |
-| ECP-3.2 | **Hysteresis** — separate up/down thresholds | **Done** | High | same | Flap scenario test |
-| ECP-3.3 | **`ScalingActionPlan`** output — ordered actions | **Done** | High | same | Immutable plan |
+| ECP-3.1 | **`ScalingEvaluator`** - rule matching + cooldown | **Done** | **Critical** | `capacity/evaluator.py` | `test_ecp_depth_gate.py` |
+| ECP-3.2 | **Hysteresis** - separate up/down thresholds | **Done** | High | same | Flap scenario test |
+| ECP-3.3 | **`ScalingActionPlan`** output - ordered actions | **Done** | High | same | Immutable plan |
 | ECP-3.4 | **Emit `SCALE_EVALUATED`** | **Done** | Medium | evaluator | `RuntimeEventType.SCALE_EVALUATED` |
 
-### Wave ECP4 — Kubernetes provisioner (P1)
+### Wave ECP4 - Kubernetes provisioner (P1)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| ECP-4.1 | **Extend `kubernetes` contract** — `scale_workload`, `get_replicas` | **Done** | **Critical** | `integrations/_shared/p5/clients.py` | `test_ecp_depth_gate.py` |
-| ECP-4.2 | **`ScalingProvisioner`** — K8s backend | **Done** | **Critical** | `capacity/provisioner.py` | Integration with mock |
+| ECP-4.1 | **Extend `kubernetes` contract** - `scale_workload`, `get_replicas` | **Done** | **Critical** | `integrations/_shared/p5/clients.py` | `test_ecp_depth_gate.py` |
+| ECP-4.2 | **`ScalingProvisioner`** - K8s backend | **Done** | **Critical** | `capacity/provisioner.py` | Integration with mock |
 | ECP-4.3 | **Emit `SCALE_APPLIED` / `SCALE_FAILED`** | **Done** | High | provisioner | Dedicated runtime event types |
-| ECP-4.4 | **INTEGRATIONS plan row** — cross-ref ECP-4 | **Done** | Low | `plan/INTEGRATIONS.md` M-P4.20 | Link resolves |
+| ECP-4.4 | **INTEGRATIONS plan row** - cross-ref ECP-4 | **Done** | Low | `plan/INTEGRATIONS.md` M-P4.20 | Link resolves |
 
-### Wave ECP5 — Celery / queue worker scale (P1)
+### Wave ECP5 - Celery / queue worker scale (P1)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| ECP-5.1 | **Celery worker scale action** — document + stub executor | **Done** | High | `capacity/provisioner.py` | Stub pass-through action |
-| ECP-5.2 | **Generalize W-OPS.12 pattern** — beyond modality only | **Done** | High | `scaling_wiring.py` | Lab host wiring |
-| ECP-5.3 | **Queue depth → worker scale rule** — reference policy | **Done** | Medium | `HARNESS_ENVIRONMENT.md`, `test_capacity_events_gate.py` | Reference JSON policy |
+| ECP-5.1 | **Celery worker scale action** - document + stub executor | **Done** | High | `capacity/provisioner.py` | Stub pass-through action |
+| ECP-5.2 | **Generalize W-OPS.12 pattern** - beyond modality only | **Done** | High | `scaling_wiring.py` | Lab host wiring |
+| ECP-5.3 | **Queue depth → worker scale rule** - reference policy | **Done** | Medium | `HARNESS_ENVIRONMENT.md`, `test_capacity_events_gate.py` | Reference JSON policy |
 
-### Wave ECP6 — nginx / ingress (P2)
+### Wave ECP6 - nginx / ingress (P2)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
 | ECP-6.1 | **RFC: nginx vs ingress_controller slug** | **Done** | Medium | ADR-SCALE-002 | Defer slug; K8s deployment path canonical |
-| ECP-6.2 | **Integration scaffold** (if accepted) | **Cancelled** | Low | — | Superseded by ADR-SCALE-002 deferral |
+| ECP-6.2 | **Integration scaffold** (if accepted) | **Cancelled** | Low | - | Superseded by ADR-SCALE-002 deferral |
 
-### Wave ECP7 — Policy and HITL (P1)
+### Wave ECP7 - Policy and HITL (P1)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
 | ECP-7.1 | **`BEFORE_CAPACITY_ACTION` hook** | **Done** | High | `capacity/action_gate.py`, provisioner | `test_capacity_events_gate.py` deny path |
 | ECP-7.2 | **HITL gate for scale-up** when `require_hitl_for_scale_up` | **Done** | High | `capacity/governance.py`, evaluator | `hitl_required` plan status |
-| ECP-7.3 | **Anti-flapping guard** — max actions/hour | **Done** | High | evaluator | `max_actions_per_hour` |
+| ECP-7.3 | **Anti-flapping guard** - max actions/hour | **Done** | High | evaluator | `max_actions_per_hour` |
 
-### Wave ECP8 — AHI bridge (P2, optional)
+### Wave ECP8 - AHI bridge (P2, optional)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
 | ECP-8.1 | **Consume approved AHI proposal** → ceiling raise action | **Done** | Low | `capacity/ahi_bridge.py` | `test_ecp_depth_gate.py` |
 
-### Wave ECP-OBS — Observability (P1)
+### Wave ECP-OBS - Observability (P1)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| ECP-OBS.1 | **Capacity metrics** — `harness_scale_actions_total`, replica gauge | **Done** | High | `capacity/metrics.py` | `test_ecp_depth_gate.py` |
-| ECP-OBS.2 | **`CapacityScheduler`** — async cron driver | **Done** | **Critical** | `capacity/scheduler.py` | Async lifespan on lab host when enabled |
+| ECP-OBS.1 | **Capacity metrics** - `harness_scale_actions_total`, replica gauge | **Done** | High | `capacity/metrics.py` | `test_ecp_depth_gate.py` |
+| ECP-OBS.2 | **`CapacityScheduler`** - async cron driver | **Done** | **Critical** | `capacity/scheduler.py` | Async lifespan on lab host when enabled |
 
 ---
 
@@ -163,13 +163,13 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Protocol v2 remediation (2026-08-18) — ACCEPTED / PLANNED
+## Protocol v2 remediation (2026-08-18) - ACCEPTED / PLANNED
 
 **Source:** [`docs/audit_results/2026-08-18/ELASTIC_CAPACITY_AND_SCALING.md`](../../audit_results/2026-08-18/ELASTIC_CAPACITY_AND_SCALING.md) · audited_sha `d2b65885ad1b472bf48254a1e7314dc6a53ca677` · verdict **FAIL** · 0 CRITICAL / 6 HIGH / 0 MEDIUM / 0 LOW · operator accepted 2026-08-20
 
 **Status rule:** all rows below are **ACCEPTED / PLANNED** only. Nothing **IMPLEMENTED**, **VERIFIED**, or **CLOSED** in this persistence task. Historical ECP wave **Done** rows above are **not** rewritten.
 
-### ECP-SIGNAL-ACTION-INTEGRITY — signal identity and action contract integrity
+### ECP-SIGNAL-ACTION-INTEGRITY - signal identity and action contract integrity
 
 | Field | Value |
 |-------|-------|
@@ -177,7 +177,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | **Owns findings** | AUDIT-20260818-ELASTIC_CAPACITY_AND_SCALING-01, AUDIT-20260818-ELASTIC_CAPACITY_AND_SCALING-02 |
 | **Intent** | Capacity signals and actions carry exact target semantics; impossible or no-op actions cannot masquerade as successful capacity changes; applied evidence reflects actual backend effect |
 | **Primary modules** | `capacity/contracts.py`, `capacity/evaluator.py`, `capacity/provisioner.py`, `capacity/ceiling_patcher.py` |
-| **Architecture ref** | [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../../architecture/ELASTIC_CAPACITY_AND_SCALING.md) — [Protocol v2 elastic capacity and scaling target invariants (2026-08-18)](../../architecture/ELASTIC_CAPACITY_AND_SCALING.md#protocol-v2-elastic-capacity-and-scaling-target-invariants-2026-08-18) §1–§2 |
+| **Architecture ref** | [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../../architecture/ELASTIC_CAPACITY_AND_SCALING.md) - [Protocol v2 elastic capacity and scaling target invariants (2026-08-18)](../../architecture/ELASTIC_CAPACITY_AND_SCALING.md#protocol-v2-elastic-capacity-and-scaling-target-invariants-2026-08-18) §1–§2 |
 | **Status** | **ACCEPTED / PLANNED** |
 
 Deliverables (planned):
@@ -188,14 +188,14 @@ Deliverables (planned):
 | ECP-PV2-02 | Fail-fast `ScalingRule` validation for thresholds, delta, action_kind/target compatibility, scale-down support | **Planned** | P0 |
 | ECP-PV2-03 | Provisioner outcome taxonomy APPLIED / NO_CHANGE / FAILED wired to events and metrics | **Planned** | P1 |
 
-### ECP-GOVERNED-ACTION-INTEGRITY — governed mutation and HITL authority
+### ECP-GOVERNED-ACTION-INTEGRITY - governed mutation and HITL authority
 
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 |
 | **Owns findings** | AUDIT-20260818-ELASTIC_CAPACITY_AND_SCALING-03, AUDIT-20260818-ELASTIC_CAPACITY_AND_SCALING-04 |
 | **Intent** | Capacity mutation and HITL use canonical Governed Execution / approval evidence; fail-closed where production policy requires authority |
-| **Cross-links** | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) — PG-FIX-C; [`IDENTITY_TRUST`](../../architecture/IDENTITY_TRUST.md) — IDT-FIX-C |
+| **Cross-links** | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) - PG-FIX-C; [`IDENTITY_TRUST`](../../architecture/IDENTITY_TRUST.md) - IDT-FIX-C |
 | **Primary modules** | `capacity/action_gate.py`, `capacity/approval_queue.py`, `applications/_shared/scaling_wiring.py` |
 | **Architecture ref** | same Protocol v2 section §3–§4 |
 | **Status** | **ACCEPTED / PLANNED** |
@@ -204,17 +204,17 @@ Deliverables (planned):
 
 | ID | Deliverable | Status | Priority |
 |----|-------------|--------|----------|
-| ECP-PV2-04 | Production posture binds `CapacityActionGate` to Governed Execution — missing required authority fails closed | **Planned** | P0 |
+| ECP-PV2-04 | Production posture binds `CapacityActionGate` to Governed Execution - missing required authority fails closed | **Planned** | P0 |
 | ECP-PV2-05 | HITL approval consumes canonical evidence (approver, scope, plan/actions, policy/version, decision time) | **Planned** | P0 |
 
-### ECP-DISTRIBUTED-EXECUTION-INTEGRITY — distributed limits and plan outcomes
+### ECP-DISTRIBUTED-EXECUTION-INTEGRITY - distributed limits and plan outcomes
 
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 / P1 |
 | **Owns findings** | AUDIT-20260818-ELASTIC_CAPACITY_AND_SCALING-05, AUDIT-20260818-ELASTIC_CAPACITY_AND_SCALING-06 |
 | **Intent** | Cooldown/rate limits remain correct across restart/multi-host execution; multi-action plans expose deterministic COMPLETE/PARTIAL/FAILED outcomes with reconciliation |
-| **Cross-links** | [`OBSERVABILITY.md`](OBSERVABILITY.md) evidence spine; platform distributed coordination / CAS patterns — reuse, do not duplicate |
+| **Cross-links** | [`OBSERVABILITY.md`](OBSERVABILITY.md) evidence spine; platform distributed coordination / CAS patterns - reuse, do not duplicate |
 | **Primary modules** | `capacity/evaluator.py`, `capacity/scheduler.py`, `capacity/provisioner.py` |
 | **Architecture ref** | same Protocol v2 section §5–§6 |
 | **Status** | **ACCEPTED / PLANNED** |

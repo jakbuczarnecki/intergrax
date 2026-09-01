@@ -1,4 +1,4 @@
-# END_TO_END_SYSTEM — Platform Audit
+# END_TO_END_SYSTEM - Platform Audit
 
 ## Metadata
 
@@ -40,7 +40,7 @@
   - duplicating T3 EnvironmentSnapshot provenance (T3-SNAPSHOT-PROVENANCE-INTEGRITY)
   - duplicating SECURITY API-key/admin defects
   - inventing a second end-to-end runtime subsystem
-- **Prior audit reference(s):** [`INTERFACE_TASK_INTAKE`](INTERFACE_TASK_INTAKE.md) (ITI-FIX-C direct-Nexus bypass — distinct from runner enricher parity); [`IDENTITY_TRUST`](IDENTITY_TRUST.md); [`POLICY_GOVERNANCE`](POLICY_GOVERNANCE.md); [`SECURITY_BOUNDARIES`](SECURITY_BOUNDARIES.md); [`OBSERVABILITY_EVIDENCE`](OBSERVABILITY_EVIDENCE.md)
+- **Prior audit reference(s):** [`INTERFACE_TASK_INTAKE`](INTERFACE_TASK_INTAKE.md) (ITI-FIX-C direct-Nexus bypass - distinct from runner enricher parity); [`IDENTITY_TRUST`](IDENTITY_TRUST.md); [`POLICY_GOVERNANCE`](POLICY_GOVERNANCE.md); [`SECURITY_BOUNDARIES`](SECURITY_BOUNDARIES.md); [`OBSERVABILITY_EVIDENCE`](OBSERVABILITY_EVIDENCE.md)
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
 - **post_sync_sha:** `d4e3ec2398261e791deb946f26c52b336ed58371`
@@ -53,12 +53,12 @@
 | Canonical task execution service / runner convergence | **NEXUS_EXECUTION_FLOW** |
 | Host composition / tenant-aware LLM wiring / one configured runner | **TIER3_APPLICATION_ENVIRONMENT** |
 | Durable async terminal outcome / safe external errors / control identity | **RELIABILITY_FAILURE_AND_HITL** |
-| Autonomy authorization / governance transitions | **POLICY_GOVERNANCE** — cross-link; do not duplicate |
-| Safe error mapping / redaction policy | **SECURITY_BOUNDARIES** · **OBSERVABILITY_EVIDENCE** — cross-link |
+| Autonomy authorization / governance transitions | **POLICY_GOVERNANCE** - cross-link; do not duplicate |
+| Safe error mapping / redaction policy | **SECURITY_BOUNDARIES** · **OBSERVABILITY_EVIDENCE** - cross-link |
 | Per-layer report | `docs/audit_results/2026-08-18/END_TO_END_SYSTEM.md` |
-| Target invariants (Nexus flow) | `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` — [Protocol v2 END_TO_END_SYSTEM target invariants (2026-08-18)](#protocol-v2-end-to-end-system-target-invariants-2026-08-18) |
-| Target invariants (Tier-3 host) | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — [Protocol v2 END_TO_END_SYSTEM Tier-3 composition target invariants (2026-08-18)](#protocol-v2-end-to-end-system-tier3-composition-target-invariants-2026-08-18) |
-| Target invariants (reliability) | `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` — [Protocol v2 END_TO_END_SYSTEM async/control target invariants (2026-08-18)](#protocol-v2-end-to-end-system-asynccontrol-target-invariants-2026-08-18) |
+| Target invariants (Nexus flow) | `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` - [Protocol v2 END_TO_END_SYSTEM target invariants (2026-08-18)](#protocol-v2-end-to-end-system-target-invariants-2026-08-18) |
+| Target invariants (Tier-3 host) | `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` - [Protocol v2 END_TO_END_SYSTEM Tier-3 composition target invariants (2026-08-18)](#protocol-v2-end-to-end-system-tier3-composition-target-invariants-2026-08-18) |
+| Target invariants (reliability) | `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` - [Protocol v2 END_TO_END_SYSTEM async/control target invariants (2026-08-18)](#protocol-v2-end-to-end-system-asynccontrol-target-invariants-2026-08-18) |
 
 ## Canonical flow under test
 
@@ -75,11 +75,11 @@ Cross-layer falsification asked whether every supported surface receives the **s
 
 ## Executive summary
 
-**Verdict: FAIL.** Four accepted HIGH and two accepted MEDIUM findings show that host runtime can pass tenant context to environment composition yet wire Nexus LLM resolution with literal `tenant_id="default"`; MCP can construct `UnifiedTaskRunner(nexus_loop)` without the canonical reliability task enricher while HTTP uses `build_reliability_task_enricher()`; harness autonomy route mutates live task governance without canonical Governance authorization; SQLite async index persists terminal status but not `TaskResult` so restart yields status-only completion; `ActiveTaskRegistry` silently overwrites colliding `TaskId` keys; and async failure strings expose raw `ExceptionClass: message` to callers. Positive controls: the canonical architectural spine remains sound; `UnifiedTaskRunner` correctly owns registry lifecycle and `llm_tenant_scope`; resume checkpoint identity conflict checks exist; Nexus vs UER responsibility split remains appropriate; remediation is composition and contract convergence — not a new runtime. Remediation is **ACCEPTED / PLANNED**, not implemented.
+**Verdict: FAIL.** Four accepted HIGH and two accepted MEDIUM findings show that host runtime can pass tenant context to environment composition yet wire Nexus LLM resolution with literal `tenant_id="default"`; MCP can construct `UnifiedTaskRunner(nexus_loop)` without the canonical reliability task enricher while HTTP uses `build_reliability_task_enricher()`; harness autonomy route mutates live task governance without canonical Governance authorization; SQLite async index persists terminal status but not `TaskResult` so restart yields status-only completion; `ActiveTaskRegistry` silently overwrites colliding `TaskId` keys; and async failure strings expose raw `ExceptionClass: message` to callers. Positive controls: the canonical architectural spine remains sound; `UnifiedTaskRunner` correctly owns registry lifecycle and `llm_tenant_scope`; resume checkpoint identity conflict checks exist; Nexus vs UER responsibility split remains appropriate; remediation is composition and contract convergence - not a new runtime. Remediation is **ACCEPTED / PLANNED**, not implemented.
 
 ## Verdict
 
-**FAIL** — 0 CRITICAL / 4 HIGH / 2 MEDIUM / 0 LOW
+**FAIL** - 0 CRITICAL / 4 HIGH / 2 MEDIUM / 0 LOW
 
 ## Findings
 
@@ -89,11 +89,11 @@ Cross-layer falsification asked whether every supported surface receives the **s
 - **Category:** CROSS-LAYER IDENTITY / MODEL ROUTING
 - **Status at publication:** ACCEPTED
 - **Remediation block:** E2E-EXECUTION-CONTEXT-INTEGRITY
-- **Claim falsified:** LLM routing context for product execution derives from the current canonical Task/Run execution identity — not a hard-coded default tenant.
+- **Claim falsified:** LLM routing context for product execution derives from the current canonical Task/Run execution identity - not a hard-coded default tenant.
 - **Observation:** `build_harness_host_runtime` accepts `tenant_id` and uses it in environment composition, but passes literal `tenant_id="default"` to `resolve_environment_llm_adapter()` when constructing Nexus. `resolve_environment_llm_adapter` / LLM resolver builds `RoutingContext` from `tenant_id`; routing context participates in environment/model routing. A tenant-specific Task may therefore execute through an adapter/routing context materialized as tenant `"default"`.
 - **Location:**
-  - `intergrax/applications/_shared/harness_host_runtime.py` — `build_harness_host_runtime`, Nexus LLM wiring
-  - `intergrax/applications/_shared/llm_resolver.py` — `resolve_environment_llm_adapter`, `RoutingContext`
+  - `intergrax/applications/_shared/harness_host_runtime.py` - `build_harness_host_runtime`, Nexus LLM wiring
+  - `intergrax/applications/_shared/llm_resolver.py` - `resolve_environment_llm_adapter`, `RoutingContext`
 - **Impact:** Tenant-specific tasks may route models/environments under wrong tenant authority.
 - **Confidence:** CONFIRMED
 
@@ -103,12 +103,12 @@ Cross-layer falsification asked whether every supported surface receives the **s
 - **Category:** SURFACE PARITY / RUNTIME SEMANTICS
 - **Status at publication:** ACCEPTED
 - **Remediation block:** E2E-EXECUTION-CONTEXT-INTEGRITY
-- **Claim falsified:** Every supported surface consumes one Tier-3–materialized configured task execution service with all mandatory host-owned enrichment — not independent `UnifiedTaskRunner(nexus_loop)` reconstruction.
+- **Claim falsified:** Every supported surface consumes one Tier-3–materialized configured task execution service with all mandatory host-owned enrichment - not independent `UnifiedTaskRunner(nexus_loop)` reconstruction.
 - **Observation:** `build_nexus_mcp_server` constructs `UnifiedTaskRunner(nexus_loop)` directly. Canonical task-control/Tier-3 wiring uses `build_reliability_task_enricher()`, which applies reliability defaults and optional checkpoint, compensation, and idempotency-store enrichment. `UnifiedTaskRunner` applies those semantics only when configured with a `task_enricher`. MCP can therefore use the nominal canonical runner/Nexus path while executing a different effective task configuration from a host surface supplied with the canonical enricher.
 - **Location:**
-  - `intergrax/applications/_shared/mcp_nexus_server.py` — `build_nexus_mcp_server`, `UnifiedTaskRunner(nexus_loop)`
-  - `intergrax/applications/_shared/task_control_wiring.py` — `build_reliability_task_enricher()`
-  - `intergrax/runtime/task/unified_task_runner.py` — `task_enricher` application
+  - `intergrax/applications/_shared/mcp_nexus_server.py` - `build_nexus_mcp_server`, `UnifiedTaskRunner(nexus_loop)`
+  - `intergrax/applications/_shared/task_control_wiring.py` - `build_reliability_task_enricher()`
+  - `intergrax/runtime/task/unified_task_runner.py` - `task_enricher` application
 - **Impact:** Surface-dependent execution semantics (reliability enrichment, checkpoint/compensation/idempotency) without operator-visible divergence.
 - **Confidence:** CONFIRMED
 
@@ -121,8 +121,8 @@ Cross-layer falsification asked whether every supported surface receives the **s
 - **Claim falsified:** Autonomy change is a governed control-plane operation: authenticated principal + Task/Run + requested transition → canonical Governance authorization → authorized transition evidence → runtime state application.
 - **Observation:** Harness task route `POST /{task_id}/autonomy` is protected only by the generic harness API-key dependency and calls `set_task_autonomy()`. `set_task_autonomy` directly mutates `task.options.governance.autonomy_level` and metadata on the live active Task. No canonical Governance authorization/evaluation, actor-bound decision, tenant/resource authorization, allowed-transition policy, or durable authority event is proven at this operation boundary.
 - **Location:**
-  - `intergrax/applications/_shared/harness_task_routes.py` — `POST /{task_id}/autonomy`
-  - `intergrax/applications/_shared/task_control.py` — `set_task_autonomy()`
+  - `intergrax/applications/_shared/harness_task_routes.py` - `POST /{task_id}/autonomy`
+  - `intergrax/applications/_shared/task_control.py` - `set_task_autonomy()`
 - **Impact:** Security-sensitive autonomy transitions without governed authorization evidence.
 - **Confidence:** CONFIRMED
 
@@ -135,9 +135,9 @@ Cross-layer falsification asked whether every supported surface receives the **s
 - **Claim falsified:** Durable async execution retains a canonical terminal-result relation: TaskId + RunId → durable `TaskResult` / result reference / execution-journal projection recoverable after process restart.
 - **Observation:** PRODUCT/STRICT async task resolver defaults to `SqliteAsyncTaskIndex`. During the live process `AsyncTaskHandle` retains `TaskResult` and `get_async_status()` can expose terminal state + answer. `SqliteAsyncTaskIndex` persists only `task_id`, `status`, `error`, `state`. On `get()` after restart it reconstructs `AsyncTaskHandle` without `TaskResult`. Terminal task status survives restart but the user-visible terminal answer/result does not.
 - **Location:**
-  - `intergrax/applications/_shared/async_task_dispatch.py` — in-memory handle + status exposure
-  - `intergrax/applications/_shared/async_task_index_resolver.py` — PRODUCT/STRICT default index
-  - `intergrax/applications/_shared/sqlite_async_task_index.py` — persisted fields, `get()` reconstruction
+  - `intergrax/applications/_shared/async_task_dispatch.py` - in-memory handle + status exposure
+  - `intergrax/applications/_shared/async_task_index_resolver.py` - PRODUCT/STRICT default index
+  - `intergrax/applications/_shared/sqlite_async_task_index.py` - persisted fields, `get()` reconstruction
 - **Impact:** Completed async tasks appear status-complete without retrievable user outcome after restart.
 - **Confidence:** CONFIRMED
 
@@ -150,8 +150,8 @@ Cross-layer falsification asked whether every supported surface receives the **s
 - **Claim falsified:** Registry registration is ownership-aware: duplicate `TaskId` is an explicit conflict or registration binds `TaskId` + `RunId`/attempt/registration token; unregister removes only the owned registration.
 - **Observation:** `ActiveTaskRegistry` is a global dict keyed only by `task_id`. `register()` silently overwrites an existing task with the same `TaskId`. `unregister(task_id)` unconditionally removes whatever currently owns that key. Concurrent/delayed executions with colliding `TaskId` can replace each other's control-plane registration, cause an older run to unregister a newer active run, and make cancel/autonomy controls target or lose the wrong execution.
 - **Location:**
-  - `intergrax/runtime/task/active_task_registry.py` — `register()`, `unregister()`
-  - `intergrax/runtime/task/unified_task_runner.py` — registry lifecycle integration
+  - `intergrax/runtime/task/active_task_registry.py` - `register()`, `unregister()`
+  - `intergrax/runtime/task/unified_task_runner.py` - registry lifecycle integration
 - **Impact:** Wrong-task control targeting under concurrent or delayed colliding identities.
 - **Confidence:** CONFIRMED
 
@@ -161,11 +161,11 @@ Cross-layer falsification asked whether every supported surface receives the **s
 - **Category:** ERROR BOUNDARY / INFORMATION LEAKAGE
 - **Status at publication:** ACCEPTED
 - **Remediation block:** E2E-ASYNC-OUTCOME-INTEGRITY
-- **Claim falsified:** External async failure contract exposes stable `reason_code`, safe message, and correlation/run identifier — not raw internal exception strings.
+- **Claim falsified:** External async failure contract exposes stable `reason_code`, safe message, and correlation/run identifier - not raw internal exception strings.
 - **Observation:** Both in-memory and SQLite async dispatch store failures as `f"{exc.__class__.__name__}: {exc}"`. `get_async_status()` returns that raw error string to the caller. No user-safe error mapping is applied at the external boundary.
 - **Location:**
-  - `intergrax/applications/_shared/async_task_dispatch.py` — failure capture and status return
-  - `intergrax/applications/_shared/sqlite_async_task_index.py` — persisted error field
+  - `intergrax/applications/_shared/async_task_dispatch.py` - failure capture and status return
+  - `intergrax/applications/_shared/sqlite_async_task_index.py` - persisted error field
 - **Impact:** Internal diagnostic detail may leak to external callers.
 - **Confidence:** CONFIRMED
 
@@ -184,19 +184,19 @@ Cross-layer falsification asked whether every supported surface receives the **s
 
 | Existing finding / domain | Relationship |
 |-----------------------------|--------------|
-| **INTERFACE_TASK_INTAKE / ITI-FIX-C** | Direct Nexus bypass and runner convergence — E2E-02 is **equal runner enricher semantics**, not the already-recorded bypass |
-| **IDENTITY_TRUST** | Principal→Task tenant binding — cross-link; E2E-01 is runtime routing-context materialization at Nexus wiring |
-| **LLM_ADAPTERS** | Inference/routing plane — cross-link; do not duplicate LLM-FIX blocks |
-| **POLICY_GOVERNANCE** | Canonical authorization for autonomy transitions — E2E-03 requires reuse, not a second policy engine |
-| **SECURITY_BOUNDARIES / SEC-AUTHORITY-BOUNDARY-INTEGRITY** | API-key/admin boundary — cross-link; E2E-03 is governance on live task control |
-| **OBSERVABILITY_EVIDENCE / journal** | Durable canonical result projection where it already exists — E2E-04 may reference, not duplicate |
-| **PCM / checkpoint CAS** | Multi-host checkpoint defects — explicitly not duplicated |
-| **T3-SNAPSHOT-PROVENANCE-INTEGRITY** | EnvironmentSnapshot provenance — explicitly not duplicated |
+| **INTERFACE_TASK_INTAKE / ITI-FIX-C** | Direct Nexus bypass and runner convergence - E2E-02 is **equal runner enricher semantics**, not the already-recorded bypass |
+| **IDENTITY_TRUST** | Principal→Task tenant binding - cross-link; E2E-01 is runtime routing-context materialization at Nexus wiring |
+| **LLM_ADAPTERS** | Inference/routing plane - cross-link; do not duplicate LLM-FIX blocks |
+| **POLICY_GOVERNANCE** | Canonical authorization for autonomy transitions - E2E-03 requires reuse, not a second policy engine |
+| **SECURITY_BOUNDARIES / SEC-AUTHORITY-BOUNDARY-INTEGRITY** | API-key/admin boundary - cross-link; E2E-03 is governance on live task control |
+| **OBSERVABILITY_EVIDENCE / journal** | Durable canonical result projection where it already exists - E2E-04 may reference, not duplicate |
+| **PCM / checkpoint CAS** | Multi-host checkpoint defects - explicitly not duplicated |
+| **T3-SNAPSHOT-PROVENANCE-INTEGRITY** | EnvironmentSnapshot provenance - explicitly not duplicated |
 | **OBS observability durability** | Explicitly not duplicated |
 
 ## Root-cause remediation grouping
 
-### E2E-EXECUTION-CONTEXT-INTEGRITY — configured runner + routing identity
+### E2E-EXECUTION-CONTEXT-INTEGRITY - configured runner + routing identity
 
 **Priority:** P0  
 **Findings:** E2E-01, E2E-02  
@@ -204,7 +204,7 @@ Cross-layer falsification asked whether every supported surface receives the **s
 
 Every supported surface receives the same configured execution service; runtime identity/routing context derives from the concrete Task/Run. Cross-link **ITI-FIX-C**, **IDENTITY_TRUST**, **LLM_ADAPTERS**.
 
-### E2E-CONTROL-AUTHORITY-INTEGRITY — governed control + registry ownership
+### E2E-CONTROL-AUTHORITY-INTEGRITY - governed control + registry ownership
 
 **Priority:** P0  
 **Findings:** E2E-03, E2E-05  
@@ -212,7 +212,7 @@ Every supported surface receives the same configured execution service; runtime 
 
 Live task control operates on exact execution identity; security-sensitive transitions require canonical Governance authorization. Cross-link **POLICY_GOVERNANCE**, **SECURITY_BOUNDARIES**.
 
-### E2E-ASYNC-OUTCOME-INTEGRITY — durable terminal outcome + safe errors
+### E2E-ASYNC-OUTCOME-INTEGRITY - durable terminal outcome + safe errors
 
 **Priority:** P0/P1  
 **Findings:** E2E-04, E2E-06  

@@ -15,11 +15,11 @@ This document is the canonical maintainer-facing contract for Intergrax public d
 - relationship between the public map and technical map;
 - placement rules for LKW and Token Optimization;
 - migration rules for the new root README and future public documents;
-- **product documentation contract** — roles, promotion levels, reader routing, and anti-duplication rules for application/product public docs.
+- **product documentation contract** - roles, promotion levels, reader routing, and anti-duplication rules for application/product public docs.
 
 It does **not** replace:
 
-- `INTERGRAX_PUBLIC_POSITIONING.md` — exact first-contact message, product hierarchy, audience value, CTA language, and placement of Harness AI terminology;
+- `INTERGRAX_PUBLIC_POSITIONING.md` - exact first-contact message, product hierarchy, audience value, CTA language, and placement of Harness AI terminology;
 - implementation plans;
 - detailed proof claims;
 - architecture canon;
@@ -246,7 +246,7 @@ statuses. The second claim-to-proof lifecycle diagram remains unchanged.
 ### PX-9 closeout
 
 ```text
-PX-9 — ACCEPTED / CLOSED
+PX-9 - ACCEPTED / CLOSED
 
 Acceptance evidence:
 c9521fb3edace541e76259147073835c37c37b2e
@@ -255,7 +255,7 @@ c9521fb3edace541e76259147073835c37c37b2e
 ### PX-10 closeout
 
 ```text
-PX-10 — ACCEPTED / CLOSED
+PX-10 - ACCEPTED / CLOSED
 
 Implementation:
 072b409ccd9fc73ea06e7b477d12b6a3fbf0a881
@@ -267,7 +267,7 @@ Review fix:
 ### PX-11 closeout
 
 ```text
-PX-11 — ACCEPTED / CLOSED
+PX-11 - ACCEPTED / CLOSED
 
 Acceptance evidence:
 b942121d0a509d059681d6f1df55ff09d7aaf6a2
@@ -305,7 +305,7 @@ PX-12 does not constitute external validation.
 
 Freeze five layers.
 
-### Layer 1 — Landing
+### Layer 1 - Landing
 
 **Owner:**
 
@@ -313,7 +313,7 @@ Freeze five layers.
 README.md
 ```
 
-**Status:** implemented in PX-2 — ACCEPTED / CLOSED
+**Status:** implemented in PX-2 - ACCEPTED / CLOSED
 
 **Role:**
 
@@ -333,7 +333,7 @@ README.md
 - public issue automation;
 - complete capability catalog.
 
-### Layer 2 — Reader-intent documents
+### Layer 2 - Reader-intent documents
 
 Target document responsibilities:
 
@@ -353,25 +353,25 @@ BUILDER_QUICKSTART.md
 
 | Document | Responsibility | Status |
 |----------|----------------|--------|
-| `WHY_INTERGRAX.md` | Problem, value, audience, category fit and fair alternative positioning without tier jargon | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6; category positioning extended in PX-8 |
-| `PROOFS.md` | Consolidated public proof status and claim boundaries | exists — `docs/project/proofs/PROOFS.md` |
-| `ARCHITECTURE_OVERVIEW.md` | High-level Harness AI architecture for external reviewers | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
-| `BUILD_WITH_INTERGRAX.md` | Builder route selection and deeper planning | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
-| `USE_CASES.md` | Public use-case fit and applicability | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
-| `PARTNERS.md` | Partner fit and pilot workflow | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
-| `COLLABORATION.md` | Collaboration and permission-request router | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
-| `FAQ.md` | General external-reader FAQ | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
-| `ROADMAP.md` | Public outcome-gated product-validation roadmap | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
-| `LKW_PRODUCT_TOUR.md` | Non-executable, product-first walkthrough of the supported LKW experience and its boundaries | **PX-5 — ACCEPTED / CLOSED** |
-| `BUILDER_QUICKSTART.md` | First bounded builder onboarding route: choose a workflow, identify the ownership boundary, use an existing setup or verification path and continue through progressive disclosure | **PX-6 — ACCEPTED / CLOSED** |
+| `WHY_INTERGRAX.md` | Problem, value, audience, category fit and fair alternative positioning without tier jargon | **implemented** - PUBLIC-DOCS-COMMERCIALIZATION-6; category positioning extended in PX-8 |
+| `PROOFS.md` | Consolidated public proof status and claim boundaries | exists - `docs/project/proofs/PROOFS.md` |
+| `ARCHITECTURE_OVERVIEW.md` | High-level Harness AI architecture for external reviewers | **implemented** - PUBLIC-DOCS-COMMERCIALIZATION-6 |
+| `BUILD_WITH_INTERGRAX.md` | Builder route selection and deeper planning | **implemented** - PUBLIC-DOCS-COMMERCIALIZATION-6 |
+| `USE_CASES.md` | Public use-case fit and applicability | **implemented / refreshed** - PUBLIC-DOCS-COMMERCIALIZATION-7 |
+| `PARTNERS.md` | Partner fit and pilot workflow | **refreshed** - PUBLIC-DOCS-COMMERCIALIZATION-8 |
+| `COLLABORATION.md` | Collaboration and permission-request router | **refreshed** - PUBLIC-DOCS-COMMERCIALIZATION-8 |
+| `FAQ.md` | General external-reader FAQ | **refreshed** - PUBLIC-DOCS-COMMERCIALIZATION-8 |
+| `ROADMAP.md` | Public outcome-gated product-validation roadmap | **implemented / refreshed** - PUBLIC-DOCS-COMMERCIALIZATION-7 |
+| `LKW_PRODUCT_TOUR.md` | Non-executable, product-first walkthrough of the supported LKW experience and its boundaries | **PX-5 - ACCEPTED / CLOSED** |
+| `BUILDER_QUICKSTART.md` | First bounded builder onboarding route: choose a workflow, identify the ownership boundary, use an existing setup or verification path and continue through progressive disclosure | **PX-6 - ACCEPTED / CLOSED** |
 
 Each document owns one primary responsibility. Do not duplicate ownership across reader-intent documents.
 
-### Layer 3 — Proofs and capability spotlights
+### Layer 3 - Proofs and capability spotlights
 
 | Classification | Role |
 |----------------|------|
-| **LKW (Active reference product)** | Product-first public product entry — Product Tour and Quick Start routes; not a proof classification |
+| **LKW (Active reference product)** | Product-first public product entry - Product Tour and Quick Start routes; not a proof classification |
 | **LKW Platform Proof** | Bounded technical LKW proof / evidence path |
 | **Token Optimization Engine** | Featured platform-capability proof |
 | **Case studies** | Secondary bounded evidence |
@@ -380,7 +380,7 @@ LKW product identity and LKW proof/evidence paths are distinct. LKW Platform Pro
 provides bounded technical evidence; it does not define LKW product identity. Token
 Optimization demonstrates a reusable platform mechanism. Neither replaces the other.
 
-### Layer 4 — Technical due diligence
+### Layer 4 - Technical due diligence
 
 **Owner:**
 
@@ -401,7 +401,7 @@ lives under `agents/<agent>/docs/`. Code-local README files and workflow-adjacen
 artifacts may remain at the application or agent root when required by tooling; these
 are narrow exceptions, not competing canonical documentation roots.
 
-### Layer 5 — Maintainer controls
+### Layer 5 - Maintainer controls
 
 **Owner:**
 
@@ -460,11 +460,11 @@ Freeze one primary route for each intent. Secondary links are allowed; every int
 | Understand LKW without running it | `LKW_PRODUCT_TOUR.md` |
 | Try LKW (supported product quickstart) | `applications/local_workspace_application/docs/product/QUICKSTART.md` |
 | Run or inspect the bounded LKW technical proof | `applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md` |
-| Explore Token Optimization | Token Optimization main guide — `docs/project/capabilities/token_optimization/README.md` |
+| Explore Token Optimization | Token Optimization main guide - `docs/project/capabilities/token_optimization/README.md` |
 | Start building with Intergrax | `BUILDER_QUICKSTART.md` |
 | Plan a deeper application build | `BUILD_WITH_INTERGRAX.md` |
 | Run a bounded evaluation (detailed companion) | `EVALUATION_GUIDE.md` |
-| Check current proof status | `docs/project/proofs/PROOFS.md` — canonical proof dashboard |
+| Check current proof status | `docs/project/proofs/PROOFS.md` - canonical proof dashboard |
 | Contribute or provide technical feedback | `COLLABORATION.md` |
 | Understand practical permission boundaries | `COLLABORATION.md` |
 | Read legally authoritative rights and restrictions | `LICENSE` |
@@ -727,7 +727,7 @@ Do not copy LKW proof visuals into `docs/project/assets/public/readme/`.
 
 The root `README.md` uses **Visual 1** (`lkw-governed-evidence-gate`) in the LKW section. Deeper visuals (2–4) belong in proof and architecture docs. Visuals are not UI screenshots and make no complete Hybrid Ask, production readiness, or commercial validation claim.
 
-**Product Quick Start** remains documented textually (indexed Ask V1, **AURORA-17**) without a dedicated Quick Start diagram — the governed evidence gate visual represents the advanced proof story, not the indexed onboarding path.
+**Product Quick Start** remains documented textually (indexed Ask V1, **AURORA-17**) without a dedicated Quick Start diagram - the governed evidence gate visual represents the advanced proof story, not the indexed onboarding path.
 
 ---
 
@@ -894,7 +894,7 @@ clearly identifiable **flagship product proof** once sufficient implementation
 exists. Pre-bootstrap products do not require a flagship proof.
 
 The proof must derive from the product's strongest business or product thesis.
-Conceptual examples only — do not claim these exist unless already implemented:
+Conceptual examples only - do not claim these exist unless already implemented:
 
 | Product (conceptual) | Flagship thesis |
 |----------------------|-----------------|
@@ -916,7 +916,7 @@ FLAGSHIP PRODUCT PROOF
 └ integration/provider proof
 ```
 
-where applicable. Supporting proof detail stays in proof documents — not in
+where applicable. Supporting proof detail stays in proof documents - not in
 Product Tour prose.
 
 ### Product directory role model
@@ -1059,18 +1059,18 @@ the performance gate.
 
 | Current document | Current role | Target role | Future owner | Migration task |
 |------------------|--------------|-------------|--------------|------------------|
-| `README.md` | Layer 1 product-first landing | Layer 1 product-first landing | `README.md` | **implemented** — PX-2 ACCEPTED / CLOSED |
-| `LKW_PRODUCT_TOUR.md` | New product-first reader route | Layer 2 reader-intent document | `LKW_PRODUCT_TOUR.md` | **PX-5 — ACCEPTED / CLOSED** |
-| `PROOFS.md` | — | Layer 2 proof dashboard | `docs/project/proofs/PROOFS.md` | **implemented** (PUBLIC-DOCS-COMMERCIALIZATION-4) |
-| `WHY_INTERGRAX.md` | — | Layer 2 value and fit guide | `WHY_INTERGRAX.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
-| `ARCHITECTURE_OVERVIEW.md` | — | Layer 2 public architecture overview | `ARCHITECTURE_OVERVIEW.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
-| `BUILD_WITH_INTERGRAX.md` | — | Layer 2 evaluation and building router | `BUILD_WITH_INTERGRAX.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
-| `EVALUATION_GUIDE.md` | Bounded evaluation paths | Detailed bounded execution companion | `EVALUATION_GUIDE.md` | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-9A |
-| `USE_CASES.md` | Public use-case map | Layer 2 public use-case fit map | `USE_CASES.md` | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
-| `PARTNERS.md` | Partner brief | Layer 2 partner-fit and pilot-workflow guide | `PARTNERS.md` | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
-| `FAQ.md` | Mixed general, architecture and legal FAQ | Layer 2 concise first-contact FAQ | `FAQ.md` | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
-| `ROADMAP.md` | Public product-validation roadmap | Layer 2 outcome-gated public roadmap | `ROADMAP.md` | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
-| `COLLABORATION.md` | Mixed collaboration and maintainer-control document | Layer 2 practical collaboration and permission-request router | `COLLABORATION.md` | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
+| `README.md` | Layer 1 product-first landing | Layer 1 product-first landing | `README.md` | **implemented** - PX-2 ACCEPTED / CLOSED |
+| `LKW_PRODUCT_TOUR.md` | New product-first reader route | Layer 2 reader-intent document | `LKW_PRODUCT_TOUR.md` | **PX-5 - ACCEPTED / CLOSED** |
+| `PROOFS.md` | - | Layer 2 proof dashboard | `docs/project/proofs/PROOFS.md` | **implemented** (PUBLIC-DOCS-COMMERCIALIZATION-4) |
+| `WHY_INTERGRAX.md` | - | Layer 2 value and fit guide | `WHY_INTERGRAX.md` | **implemented** - PUBLIC-DOCS-COMMERCIALIZATION-6 |
+| `ARCHITECTURE_OVERVIEW.md` | - | Layer 2 public architecture overview | `ARCHITECTURE_OVERVIEW.md` | **implemented** - PUBLIC-DOCS-COMMERCIALIZATION-6 |
+| `BUILD_WITH_INTERGRAX.md` | - | Layer 2 evaluation and building router | `BUILD_WITH_INTERGRAX.md` | **implemented** - PUBLIC-DOCS-COMMERCIALIZATION-6 |
+| `EVALUATION_GUIDE.md` | Bounded evaluation paths | Detailed bounded execution companion | `EVALUATION_GUIDE.md` | **refreshed** - PUBLIC-DOCS-COMMERCIALIZATION-9A |
+| `USE_CASES.md` | Public use-case map | Layer 2 public use-case fit map | `USE_CASES.md` | **implemented / refreshed** - PUBLIC-DOCS-COMMERCIALIZATION-7 |
+| `PARTNERS.md` | Partner brief | Layer 2 partner-fit and pilot-workflow guide | `PARTNERS.md` | **refreshed** - PUBLIC-DOCS-COMMERCIALIZATION-8 |
+| `FAQ.md` | Mixed general, architecture and legal FAQ | Layer 2 concise first-contact FAQ | `FAQ.md` | **refreshed** - PUBLIC-DOCS-COMMERCIALIZATION-8 |
+| `ROADMAP.md` | Public product-validation roadmap | Layer 2 outcome-gated public roadmap | `ROADMAP.md` | **implemented / refreshed** - PUBLIC-DOCS-COMMERCIALIZATION-7 |
+| `COLLABORATION.md` | Mixed collaboration and maintainer-control document | Layer 2 practical collaboration and permission-request router | `COLLABORATION.md` | **refreshed** - PUBLIC-DOCS-COMMERCIALIZATION-8 |
 | `applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md` | LKW guided proof | Bounded technical LKW proof / evidence | LKW proof docs | stable |
 | `docs/project/capabilities/token_optimization/README.md` | Token Optimization guide | Featured platform-capability proof entry | Token Optimization docs | stable (this task) |
 | `docs/project/technical/DOCUMENTATION_MAP.md` | Technical/developer navigation | Layer 4 technical map | `docs/project/technical/DOCUMENTATION_MAP.md` | stable |
@@ -1246,7 +1246,7 @@ Purpose:
 neutral category-responsibility map
 
 Status:
-PX-8 — ACCEPTED / CLOSED
+PX-8 - ACCEPTED / CLOSED
 
 Acceptance evidence:
 0580270902ec265b6d7523e9b00d50acb074d815
@@ -1290,7 +1290,7 @@ Real product screenshots remain deferred until reviewed source images exist.
 
 | Topic | Owner |
 |-------|-------|
-| Public positioning | `INTERGRAX_PUBLIC_POSITIONING.md` — exact first-contact message, product hierarchy, audience value, CTA language, Harness AI placement |
+| Public positioning | `INTERGRAX_PUBLIC_POSITIONING.md` - exact first-contact message, product hierarchy, audience value, CTA language, Harness AI placement |
 | Public use-case fit | `USE_CASES.md` |
 | Public product-validation direction | `ROADMAP.md` |
 | Public value and fit | `WHY_INTERGRAX.md` |

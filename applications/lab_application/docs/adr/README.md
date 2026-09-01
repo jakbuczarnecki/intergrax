@@ -1,4 +1,4 @@
-# Lab — Architecture Decision Records
+# Lab - Architecture Decision Records
 
 **Domain:** Tier-3 application host (`applications/lab_application`)
 
@@ -36,7 +36,7 @@ ADR-LAB-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| — | *No application ADRs yet* | — |
+| - | *No application ADRs yet* | - |
 
 ---
 

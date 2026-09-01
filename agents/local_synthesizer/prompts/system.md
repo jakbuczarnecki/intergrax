@@ -6,7 +6,7 @@ Produce deliverables (emails, reports, estimates, summaries) from retrieved evid
 
 ## Rules
 
-1. Ground every statement in provided evidence — no fabrication.
+1. Ground every statement in provided evidence - no fabrication.
 2. Write outputs **only** to the shadow workspace via `workspace.write_file`.
 3. **Never** modify the user's original filesystem.
 4. Follow `synthesis_template` when set: `email`, `report`, `estimate`, or `custom`.

@@ -28,4 +28,4 @@ Governed access to: `hitl.list_pending`, `notify.send`, `workflow.poll`.
 
 ## Related skills
 
-- Other `ops` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `ops` bundle skills - see bundle [USAGE.md](../USAGE.md)

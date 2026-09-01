@@ -1,11 +1,11 @@
 # Strategic Decision Deliberation with Independent AI Council
 
-> **_(Public question — qualify before Scenario Quality Gate)_**
+> **_(Public question - qualify before Scenario Quality Gate)_**
 
-> _(One- or two-sentence public explanation — qualify.)_
+> _(One- or two-sentence public explanation - qualify.)_
 
 > [!NOTE]
-> **Scenario status:** DESIGN / NOT YET ACCEPTED — awaiting human Scenario Quality Gate; no executable proof, evidence, or report exists yet.
+> **Scenario status:** DESIGN / NOT YET ACCEPTED - awaiting human Scenario Quality Gate; no executable proof, evidence, or report exists yet.
 
 ## Abstract
 
@@ -29,27 +29,27 @@ _Short problem-story abstract (4–8 sentences). Summarize what happened, who ha
      Use light/dark SVG per docs/project/technical/guides/DOCUMENTATION_DESIGN_SYSTEM.md.
      Do not use decorative imagery or fake execution results. -->
 
-_Visual placeholder — enrich after Scenario Quality Gate._
+_Visual placeholder - enrich after Scenario Quality Gate._
 
 ## The problem
 
-_Brief public summary — expand in [Scenario Specification § A](SCENARIO_SPEC.md#a-scenario)._
+_Brief public summary - expand in [Scenario Specification § A](SCENARIO_SPEC.md#a-scenario)._
 
 ## The risk
 
-_What goes wrong if the diagnosis is wrong — expand in § A._
+_What goes wrong if the diagnosis is wrong - expand in § A._
 
 ## The naive failure / trap
 
-_What the naive answer gets wrong — expand in § A._
+_What the naive answer gets wrong - expand in § A._
 
 ## Adversarial challenge
 
-_Public summary of adversarial conditions and skeptic challenge — normative detail in [Scenario Specification § A](SCENARIO_SPEC.md#a-scenario)._
+_Public summary of adversarial conditions and skeptic challenge - normative detail in [Scenario Specification § A](SCENARIO_SPEC.md#a-scenario)._
 
 ## What the proof claims
 
-_Bounded claim summary — normative detail in [Scenario Specification § B](SCENARIO_SPEC.md#b-solution)._
+_Bounded claim summary - normative detail in [Scenario Specification § B](SCENARIO_SPEC.md#b-solution)._
 
 ## PASS / FAIL (summary)
 
@@ -78,8 +78,8 @@ _Full normative PASS/FAIL contract in [Scenario Specification § B](SCENARIO_SPE
 
 ## Limitations
 
-_Public summary — full limitations in [Scenario Specification § B](SCENARIO_SPEC.md#limitations)._
+_Public summary - full limitations in [Scenario Specification § B](SCENARIO_SPEC.md#limitations)._
 
 ## Go deeper
 
-**[Read the full Scenario Specification](SCENARIO_SPEC.md)** — deep contract for scenario design, solution semantics, Intergrax fit, gap decision, and proof build (A/B/C/D/E).
+**[Read the full Scenario Specification](SCENARIO_SPEC.md)** - deep contract for scenario design, solution semantics, Intergrax fit, gap decision, and proof build (A/B/C/D/E).

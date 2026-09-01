@@ -5,7 +5,7 @@
 Architecture: [ARCHITECTURE.md](docs/ARCHITECTURE.md) · Plan: [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md). Multi-agent research pipeline (Phase C).
 
 Agents:
-- `ResearchAgent` — `research.web_search` (stub findings)
-- `SummaryAgent` — `research.summarize` (summarizes prior graph output)
+- `ResearchAgent` - `research.web_search` (stub findings)
+- `SummaryAgent` - `research.summarize` (summarizes prior graph output)
 
 Workflow capability: `research.pipeline` with intent `research_summarize`.

@@ -1,4 +1,4 @@
-# Legal agent — architecture (scaffold baseline)
+# Legal agent - architecture (scaffold baseline)
 
 **Status:** Hard reset complete (Phase AA-LEG). Legacy pipeline removed; UAEP scaffold is the only implementation path.
 
@@ -21,7 +21,7 @@ Tier-2 contract review capability (`legal.review`) composed into `legal_applicat
 
 - **Capabilities:** `legal.review`
 - **Skills:** `legal.contract_review` (see `intergrax/skills/providers/legal`)
-- **Tools:** Resolved by Tier-3 `ApplicationEnvironmentProfile` — not imported in this package
+- **Tools:** Resolved by Tier-3 `ApplicationEnvironmentProfile` - not imported in this package
 
 ## Runtime
 

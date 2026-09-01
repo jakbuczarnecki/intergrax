@@ -10,7 +10,7 @@
 | `websearch_executor` | 1 (preferred) | Full `WebSearchExecutor` pipeline (search + fetch) |
 | `search_provider` | 2 (fallback) | Integration catalog `SearchProvider` (`google_cse`, `bing`) |
 
-`websearch.read_url` uses the shared page-fetch layer (`fetch_page`) — no extra wiring beyond the default tool registry.
+`websearch.read_url` uses the shared page-fetch layer (`fetch_page`) - no extra wiring beyond the default tool registry.
 
 Tier-3 example:
 

@@ -11,7 +11,7 @@
 1. Resolves `memory.read`, `memory.write`, `memory.list_keys`.
 2. Tools bind to `PolicyScopedMemoryView` on `ToolWiringContext` (MEM platform wiring).
 3. Namespace isolation follows Nexus task_id / delegation rules.
-4. Skill does not store data itself — only declares which memory tools the agent may call.
+4. Skill does not store data itself - only declares which memory tools the agent may call.
 
 ## How to use
 
@@ -43,6 +43,6 @@ Requires `MemoryProfile` with task KV enabled on `ApplicationEnvironmentProfile`
 
 ## Related skills
 
-- `rag.hybrid_qa` — read memory during Q&A
-- `workspace.authoring` — write draft pointers to memory
-- `platform.concierge` — hub chat with session recall
+- `rag.hybrid_qa` - read memory during Q&A
+- `workspace.authoring` - write draft pointers to memory
+- `platform.concierge` - hub chat with session recall

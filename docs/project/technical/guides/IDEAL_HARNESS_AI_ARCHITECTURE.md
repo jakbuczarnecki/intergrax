@@ -82,7 +82,7 @@ An ideal Harness AI system is built from 9 logical layers.
 ### 3.3 Policy & Governance Layer
 
 - Policy engine (ABAC/RBAC, limits, compliance, data boundaries).
-- Guardrails (prompt, output, tools, cost, execution time) — **capability vector** of this layer, not a separate physical tier; Intergrax maps types to UAEP hooks in [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.11.6; vendor engines via [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) §47.
+- Guardrails (prompt, output, tools, cost, execution time) - **capability vector** of this layer, not a separate physical tier; Intergrax maps types to UAEP hooks in [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.11.6; vendor engines via [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) §47.
 - Governance hooks: pre-run, pre-tool, post-tool, post-run.
 - Execution modes: strict, balanced, exploratory.
 
@@ -115,13 +115,13 @@ Three planes keep concerns separable and extensible (Integrax canon §7.1.9):
 
 | Plane | Purpose | Ideal components |
 |-------|---------|------------------|
-| **A — Generative** | Dialog, reasoning, native multimodal LLM APIs | `LLMAdapter` + attachment/content-part mapping |
-| **B — Ingest** | Files/streams → text or embeddings for knowledge | RAG ingest, document parsers, transcription |
-| **C — Dedicated inference** | Deterministic CV/ML, TTS hosts, served models | `VisionInferenceAdapter`, `ModelInferenceAdapter`, `SpeechAdapter` |
+| **A - Generative** | Dialog, reasoning, native multimodal LLM APIs | `LLMAdapter` + attachment/content-part mapping |
+| **B - Ingest** | Files/streams → text or embeddings for knowledge | RAG ingest, document parsers, transcription |
+| **C - Dedicated inference** | Deterministic CV/ML, TTS hosts, served models | `VisionInferenceAdapter`, `ModelInferenceAdapter`, `SpeechAdapter` |
 
 **Vision inference engine (Plane C)** MUST support production market standards through
-pluggable backends — e.g. YOLO/Ultralytics, ONNX Runtime, OpenVINO, TensorRT,
-TorchServe/Triton, and cloud endpoints — without coupling agents to vendor SDKs.
+pluggable backends - e.g. YOLO/Ultralytics, ONNX Runtime, OpenVINO, TensorRT,
+TorchServe/Triton, and cloud endpoints - without coupling agents to vendor SDKs.
 
 **Routing discipline:**
 
@@ -244,10 +244,10 @@ latency constraints, and cost envelope.
 
 - Provider adapters (`LLMAdapter`, `EmbeddingAdapter`, `RerankerAdapter`).
 - **Modality adapters (Plane C):** `VisionInferenceAdapter` (YOLO, ONNX, OpenVINO, TensorRT, remote serving), `ModelInferenceAdapter` (sklearn, ONNX classifiers), `SpeechAdapter` (TTS/STT SaaS via integration hosts).
-- Tool adapters (`ToolSpec`, `ToolRuntime`, `ToolPolicyProfile`) — including `vision.*`, `speech.*`, `ml.*` atomic operations.
-- Skill packs (`SkillManifest`, `SkillDependencies`, `SkillTests`) — bundle tool_ids only; skills are not inference engines.
+- Tool adapters (`ToolSpec`, `ToolRuntime`, `ToolPolicyProfile`) - including `vision.*`, `speech.*`, `ml.*` atomic operations.
+- Skill packs (`SkillManifest`, `SkillDependencies`, `SkillTests`) - bundle tool_ids only; skills are not inference engines.
 - Policy packs (`PolicyBundle`, `PolicyVersion`, `ComplianceProfile`).
-- **ModalityProfile** — allowed planes, vision model allowlist, media byte caps, deterministic-CV policy flag.
+- **ModalityProfile** - allowed planes, vision model allowlist, media byte caps, deterministic-CV policy flag.
 
 ### 7.2 Compatibility contracts
 

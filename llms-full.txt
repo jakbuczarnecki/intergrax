@@ -1,7 +1,7 @@
-# Intergrax — Full LLM Context Map
+# Intergrax - Full LLM Context Map
 
 > Extended project map for LLM agents, crawlers, and automated documentation tools.
-> Canonical source of truth: `docs/` — this file summarizes and routes; it does not replace canon.
+> Canonical source of truth: `docs/` - this file summarizes and routes; it does not replace canon.
 
 ---
 
@@ -16,7 +16,7 @@
 | **Repository** | https://github.com/jakbuczarnecki/intergrax |
 | **Maintainer** | Artur Czarnecki |
 | **Status** | Active private R&D; harness platform complete |
-| **License** | Proprietary — see LICENSE |
+| **License** | Proprietary - see LICENSE |
 
 ### One-line thesis
 
@@ -91,7 +91,7 @@ applications/    MAY import from agents/ and intergrax/
 - Phase detail: docs/project/maintainers/plans/
 - Default queue: §6.1 maintenance (gate green every PR)
 - Active work: Phase MEM-DEPTH (memory intelligence depth)
-- Business agents (Phase K): deferred — §6.3
+- Business agents (Phase K): deferred - §6.3
 
 ---
 
@@ -107,8 +107,8 @@ uv run python scripts/maintenance/check_observability_gates.py
 
 ## For AI coding agents
 
-- AGENTS.md — hard rules and task routing
-- docs/project/technical/guides/SYSTEM_INVARIANTS.md — cross-domain never-violate index (SYS-INV-*, P2-ARCH-01)
-- docs/project/technical/guides/LAYER_COMPLETION_MODE.md — deep harness layer closeout workflow
-- README.md#documentation-index — master navigation
-- llms.txt — concise map
+- AGENTS.md - hard rules and task routing
+- docs/project/technical/guides/SYSTEM_INVARIANTS.md - cross-domain never-violate index (SYS-INV-*, P2-ARCH-01)
+- docs/project/technical/guides/LAYER_COMPLETION_MODE.md - deep harness layer closeout workflow
+- README.md#documentation-index - master navigation
+- llms.txt - concise map

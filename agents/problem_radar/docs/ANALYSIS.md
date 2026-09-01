@@ -229,7 +229,7 @@ The true value is reducing the cost of discovering and validating business oppor
 
 # Proposed Agent Architecture
 
-## Layer 1 — Signal Collection
+## Layer 1 - Signal Collection
 
 Agents monitor:
 
@@ -249,7 +249,7 @@ Agents monitor:
 
 ---
 
-## Layer 2 — Semantic Understanding
+## Layer 2 - Semantic Understanding
 
 Agents extract:
 
@@ -263,7 +263,7 @@ Agents extract:
 
 ---
 
-## Layer 3 — Correlation
+## Layer 3 - Correlation
 
 Agents combine:
 
@@ -276,7 +276,7 @@ Agents combine:
 
 ---
 
-## Layer 4 — Validation
+## Layer 4 - Validation
 
 Validator agents perform:
 

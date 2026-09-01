@@ -28,4 +28,4 @@ Governed access to: `storage.presigned_url`, `storage.exists`, `notify.send`.
 
 ## Related skills
 
-- Other `storage` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `storage` bundle skills - see bundle [USAGE.md](../USAGE.md)

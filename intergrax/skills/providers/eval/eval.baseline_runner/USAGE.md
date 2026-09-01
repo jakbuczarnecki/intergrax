@@ -28,4 +28,4 @@ Governed access to: `eval.record_observation`, `braintrust.log_eval`, `harness.l
 
 ## Related skills
 
-- Other `eval` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `eval` bundle skills - see bundle [USAGE.md](../USAGE.md)

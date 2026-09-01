@@ -7,12 +7,12 @@ Synthetic regression and safety fixtures for token optimization benchmarks.
 1. This dataset supports token optimization regression and safety benchmarks.
 2. Each test case lives in its own folder under `fixtures/regression_synthetic_v1/cases/`.
 3. To add a new case, copy the closest existing case folder, update `fixture.json`, and edit local text files.
-4. Do not add cases via a global manifest — discovery is recursive over `fixture.json` files.
+4. Do not add cases via a global manifest - discovery is recursive over `fixture.json` files.
 5. Text content must live in `.txt` files; JSON holds structure, configuration, and expectations only.
 6. For `tool_schema`, long tool descriptions are in `texts/*.txt`.
 7. For `context_pack`, fragments are in `fragments/*.txt`.
 8. For `memory_summary`, input text is in `input.txt`.
-9. All data must be synthetic or redacted — no private, production, secret, or client payload data.
+9. All data must be synthetic or redacted - no private, production, secret, or client payload data.
 
 ## Layout
 

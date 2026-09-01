@@ -104,7 +104,7 @@ Specify what the model may infer, summarize, classify, or propose, and what must
 
 ### 7. Define evidence and provenance
 
-Define what a user or reviewer must be able to inspect: citations, source identity, provenance, receipts, traces, execution decisions, approval records, or a review surface. Capture enough build evidence to reproduce a behavior—commit, environment, model/provider, configuration, observed result, limitation, and failed or skipped step.
+Define what a user or reviewer must be able to inspect: citations, source identity, provenance, receipts, traces, execution decisions, approval records, or a review surface. Capture enough build evidence to reproduce a behavior-commit, environment, model/provider, configuration, observed result, limitation, and failed or skipped step.
 
 Build evidence supports reproduction and review. It is not automatically public **PROOFS** evidence. Public claim promotion follows the accepted evidence pipeline; [PROOFS](../proofs/PROOFS.md) remains the owner of public evidence status.
 

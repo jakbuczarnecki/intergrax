@@ -1,14 +1,14 @@
 # Decision Verification
 
-**Intergrax Decision Verification** is the compositional **Verification Pipeline** that evaluates a specific **Decision Version** through typed stages — replacing the monolithic Critic model with explicit stage ownership, challenge semantics, and fail-closed rules.
+**Intergrax Decision Verification** is the compositional **Verification Pipeline** that evaluates a specific **Decision Version** through typed stages - replacing the monolithic Critic model with explicit stage ownership, challenge semantics, and fail-closed rules.
 
-Verification answers **„czy ta wersja decyzji spełnia wymagania poprawności?”** — structurally, deterministically, evidentially, and (when configured) semantically. Verification is **not** authorization, **not** HITL, **not** revision, and **not** finalization of an **Authoritative Decision**.
+Verification answers **„czy ta wersja decyzji spełnia wymagania poprawności?”** - structurally, deterministically, evidentially, and (when configured) semantically. Verification is **not** authorization, **not** HITL, **not** revision, and **not** finalization of an **Authoritative Decision**.
 
 > [!IMPORTANT]
 > **Maturity boundary:**
 >
-> - **Architecture:** **TARGET CANON — FROZEN** (paired with [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md)).
-> - **Implementation:** **NOT YET MIGRATED** — production uses CVL / [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md).
+> - **Architecture:** **TARGET CANON - FROZEN** (paired with [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md)).
+> - **Implementation:** **NOT YET MIGRATED** - production uses CVL / [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md).
 > - **Production:** `CriticOrchestrator` L0/L1/L2 stack is **CURRENT** until clean cut.
 
 **Primary audience:** Principal / Staff engineers configuring verification stages, rubric provenance, producer/verifier independence, and challenge → revision handoff.
@@ -37,15 +37,15 @@ Decision Verification provides **ordered stage composition, typed stage contract
 | Concern | Summary |
 | -------- | -------- |
 | **Question** | Does this **Decision Version** pass configured correctness gates? |
-| **Model** | Compositional **Verification Pipeline** — not `CriticOrchestrator` monolith |
+| **Model** | Compositional **Verification Pipeline** - not `CriticOrchestrator` monolith |
 | **Ordering** | Deterministic before probabilistic where both apply |
 | **Stages** | Structural/schema · deterministic validation · evidence · semantic · trajectory · independent/domain · future plugins |
-| **Output** | **Verification Result** — may include **Challenge** / revision request |
+| **Output** | **Verification Result** - may include **Challenge** / revision request |
 | **Does not** | Side effects · authorize · finalize authoritative decision · own global retry · own HITL |
 | **Producer / verifier** | Meaningful independence required; self-judge modes explicit |
 | **Fail-closed** | Missing rubric provenance, unavailable required stage → no synthetic pass |
 | **Evaluation boundary** | Online / shadow / offline eval **outside** pipeline ownership |
-| **Maturity** | **A4 target / I0** — see [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md#current-maturity) |
+| **Maturity** | **A4 target / I0** - see [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md#current-maturity) |
 
 ---
 
@@ -62,7 +62,7 @@ Decision Verification provides **ordered stage composition, typed stage contract
 </picture>
 </a>
 
-> **Deterministic before probabilistic. Verification proposes challenges — Lifecycle mints new versions.**
+> **Deterministic before probabilistic. Verification proposes challenges - Lifecycle mints new versions.**
 
 ```text
 Decision Version (candidate)
@@ -102,7 +102,7 @@ The pipeline orchestrator:
 - aggregates **Verification Result** with per-stage records,
 - emits challenges without mutating the evaluated version.
 
-Stages are **plugins behind typed contracts** — not a giant `if strategy == ...` inside lifecycle code.
+Stages are **plugins behind typed contracts** - not a giant `if strategy == ...` inside lifecycle code.
 
 ### Stage responsibilities
 
@@ -111,7 +111,7 @@ Stages are **plugins behind typed contracts** — not a giant `if strategy == ..
 | **Structural / schema** | Artifact shape, required fields, contract conformance | JSON Schema, Pydantic contracts, agent output schema |
 | **Deterministic validation** | Rules, invariants, executable tests | rule engine, `NexusValidationEngine` patterns |
 | **Evidence verification** | Evidence refs resolve, claims support conclusion | Evidence Claims family, provenance checks |
-| **Semantic verification** | Rubric-scored judgment of content | `eval.judge` via ToolRuntime — independent profile |
+| **Semantic verification** | Rubric-scored judgment of content | `eval.judge` via ToolRuntime - independent profile |
 | **Trajectory verification** | Process / step sequence quality | `eval.trajectory`, future trajectory judge skill |
 | **Independent / domain verification** | Domain authority or third verifier | ValidatorAgent, domain plugin stage |
 | **Future plugins** | Registered stage kinds | platform plugin boundary |
@@ -126,7 +126,7 @@ Evidence-backed **Decision Artifacts** may require:
 - claim provenance and authority,
 - consistency between conclusion and cited evidence.
 
-Evidence Claims remain a reusable typed artifact family — verification consumes them; it does not redefine evidence storage ([`PROOF_RECEIPTS.md`](PROOF_RECEIPTS.md)).
+Evidence Claims remain a reusable typed artifact family - verification consumes them; it does not redefine evidence storage ([`PROOF_RECEIPTS.md`](PROOF_RECEIPTS.md)).
 
 ---
 
@@ -139,13 +139,13 @@ Semantic stages:
 - structurally isolate trusted rubric/instructions from untrusted candidate content,
 - support adversarial verification tests for high-assurance profiles.
 
-Unresolvable configured rubric → **fail closed** (challenge / UNRESOLVED path) — no silent skip.
+Unresolvable configured rubric → **fail closed** (challenge / UNRESOLVED path) - no silent skip.
 
 ---
 
 ## Trajectory verification
 
-Trajectory stages evaluate whether the **process** that produced the decision met domain step expectations. Heuristic trajectory scoring and future LLM trajectory judge skills are **evaluation tools** invoked through ToolRuntime — not a second orchestration runtime.
+Trajectory stages evaluate whether the **process** that produced the decision met domain step expectations. Heuristic trajectory scoring and future LLM trajectory judge skills are **evaluation tools** invoked through ToolRuntime - not a second orchestration runtime.
 
 Relation to **offline / shadow** evaluation: trajectory benchmarks and shadow observations **consume** verification posture; they do **not** gate the active run unless explicitly wired as runtime stages.
 
@@ -158,7 +158,7 @@ Relation to **offline / shadow** evaluation: trajectory benchmarks and shadow ob
 | Mode | Requirement |
 | ---- | ----------- |
 | **Independent verification** | Distinct profiles/providers prove separation at runtime |
-| **Self-judge / shared profile** | Explicitly labeled non-independent — cannot claim independence |
+| **Self-judge / shared profile** | Explicitly labeled non-independent - cannot claim independence |
 
 No vendor hard-coding in platform contracts.
 
@@ -179,10 +179,10 @@ No vendor hard-coding in platform contracts.
 
 | Concept | Owner |
 | ------- | ----- |
-| **Challenge** | Verification — documents what failed and why |
+| **Challenge** | Verification - documents what failed and why |
 | **Revision request** | Verification output artifact bound to **Decision Version** |
-| **Revision** | Decision Lifecycle — mints **new Decision Version** |
-| **Revision loop** | Bounded by lifecycle policy — separate from Reliability retry |
+| **Revision** | Decision Lifecycle - mints **new Decision Version** |
+| **Revision loop** | Bounded by lifecycle policy - separate from Reliability retry |
 
 Verification **never** mutates the challenged version in place.
 
@@ -203,8 +203,8 @@ Verification **never** mutates the challenged version in place.
 
 | Condition | Behavior |
 | --------- | -------- |
-| Required stage unavailable | Fail closed or explicit **UNRESOLVED** — not silent pass |
-| Unresolvable rubric / provenance | Challenge — no synthetic pass |
+| Required stage unavailable | Fail closed or explicit **UNRESOLVED** - not silent pass |
+| Unresolvable rubric / provenance | Challenge - no synthetic pass |
 | High-assurance profile | Deterministic / evidence stages before probabilistic |
 | Tenant-scoped read without authority | Fail closed |
 
@@ -221,7 +221,7 @@ Verification stages extend through **typed stage registration** aligned with [`P
 - Named rubric refs must resolve to actual versioned criteria with provenance evidence before semantic stages run.
 - Judge construction must isolate trusted instructions from untrusted candidate payload.
 - Adversarial semantic verification tests required for high-assurance profiles.
-- Reuse existing prompt/rubric registry authority — **no** second domain rule engine.
+- Reuse existing prompt/rubric registry authority - **no** second domain rule engine.
 
 ---
 
@@ -231,7 +231,7 @@ Verification stages extend through **typed stage registration** aligned with [`P
 | ---- | ---------------------------------- | ----- |
 | **Runtime verification stages** | yes | Decision Verification Pipeline |
 | **Offline eval** | no | `NexusEvalRunner`, datasets, CI |
-| **Shadow eval** | no | observation registry — trend only |
+| **Shadow eval** | no | observation registry - trend only |
 
 Runtime verification ≠ offline benchmark ≠ shadow observation.
 
@@ -246,7 +246,7 @@ Challenge → Lifecycle Revision → new Decision Version → Pipeline (bounded)
 Pass → Lifecycle continues Resolution / Finalization
 ```
 
-Verification does **not** choose `ACCEPTED` / `REJECTED` / `UNRESOLVED` alone — it informs lifecycle resolution under policy.
+Verification does **not** choose `ACCEPTED` / `REJECTED` / `UNRESOLVED` alone - it informs lifecycle resolution under policy.
 
 ---
 
@@ -301,7 +301,7 @@ See disposition matrix in [`maintainers/plans/DECISION_SYSTEM.md`](../maintainer
 
 | Depth | Route |
 | ----- | ----- |
-| **Extended engineering model** | [`satellites/DECISION_VERIFICATION_extended_depth.md`](satellites/DECISION_VERIFICATION_extended_depth.md) — pipeline, stages, security, revision semantics |
+| **Extended engineering model** | [`satellites/DECISION_VERIFICATION_extended_depth.md`](satellites/DECISION_VERIFICATION_extended_depth.md) - pipeline, stages, security, revision semantics |
 | Decision Lifecycle | [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) |
 | Deliberation | [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
 | Implementation plan | [`maintainers/plans/DECISION_VERIFICATION.md`](../maintainers/plans/DECISION_VERIFICATION.md) |
@@ -310,7 +310,7 @@ See disposition matrix in [`maintainers/plans/DECISION_SYSTEM.md`](../maintainer
 
 ---
 
-## Engineering canon — Cursor read scope
+## Engineering canon - Cursor read scope
 
 **Default:** pipeline diagram + stage table + challenge boundary only.
 

@@ -28,4 +28,4 @@ Governed access to: `issues.search`, `workspace.write_file`, `notify.send`.
 
 ## Related skills
 
-- Other `dev` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `dev` bundle skills - see bundle [USAGE.md](../USAGE.md)

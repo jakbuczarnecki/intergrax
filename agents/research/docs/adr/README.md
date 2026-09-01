@@ -1,4 +1,4 @@
-﻿# research agent — Architecture Decision Records
+﻿# research agent - Architecture Decision Records
 
 **Domain:** Tier-2 business agent (`agents/research`)
 
@@ -36,7 +36,7 @@ ADR-RESEARCH-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| — | *No agent ADRs yet* | — |
+| - | *No agent ADRs yet* | - |
 
 ---
 

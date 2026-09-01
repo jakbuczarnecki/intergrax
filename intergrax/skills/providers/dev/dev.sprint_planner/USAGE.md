@@ -28,4 +28,4 @@ Governed access to: `issues.search`, `collaboration.list_calendar`, `memory.writ
 
 ## Related skills
 
-- Other `dev` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `dev` bundle skills - see bundle [USAGE.md](../USAGE.md)

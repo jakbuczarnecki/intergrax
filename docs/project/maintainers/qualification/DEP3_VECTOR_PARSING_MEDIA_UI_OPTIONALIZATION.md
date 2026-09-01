@@ -1,4 +1,4 @@
-# DEP-3 — Vector, parsing, media, UI and MCP optionalization
+# DEP-3 - Vector, parsing, media, UI and MCP optionalization
 
 Status: `READY_FOR_REVIEW`
 
@@ -141,30 +141,30 @@ Pytesseract, PyMuPDF, python-docx, openpyxl, xlrd, Trafilatura and BeautifulSoup
 Fresh `default + one extra` environments, no SaaS calls and no model downloads:
 
 ```text
-vector-chroma   PASS — chromadb; opener import and SDK probe
-vector-qdrant   PASS — qdrant-client; opener import and SDK probe
-vector-pinecone PASS — pinecone; opener import and SDK probe
-parsing-web     PASS — beautifulsoup4/trafilatura; HTML fixture
-parsing-office  PASS — python-docx/openpyxl/xlrd; CSV fixture
-parsing-pdf     PASS — PyMuPDF/langchain-community; generated PDF fixture
-parsing-ocr     PASS — Pillow/pytesseract; runtime probe
-media-youtube   PASS — yt-dlp; availability probe
-media-video     PASS — OpenCV/webvtt; runtime import probe
-media-image     PASS — Pillow; image module probe
-media-ocr       PASS — Pillow/pytesseract; runtime probe
-media-whisper   PASS — openai-whisper/webvtt; provider import probe
-ui-streamlit    PASS — streamlit import
-mcp             PASS — fastmcp and transitive mcp import
+vector-chroma   PASS - chromadb; opener import and SDK probe
+vector-qdrant   PASS - qdrant-client; opener import and SDK probe
+vector-pinecone PASS - pinecone; opener import and SDK probe
+parsing-web     PASS - beautifulsoup4/trafilatura; HTML fixture
+parsing-office  PASS - python-docx/openpyxl/xlrd; CSV fixture
+parsing-pdf     PASS - PyMuPDF/langchain-community; generated PDF fixture
+parsing-ocr     PASS - Pillow/pytesseract; runtime probe
+media-youtube   PASS - yt-dlp; availability probe
+media-video     PASS - OpenCV/webvtt; runtime import probe
+media-image     PASS - Pillow; image module probe
+media-ocr       PASS - Pillow/pytesseract; runtime probe
+media-whisper   PASS - openai-whisper/webvtt; provider import probe
+ui-streamlit    PASS - streamlit import
+mcp             PASS - fastmcp and transitive mcp import
 ```
 
 ## Cross-extra matrix
 
 ```text
-media-whisper + media-youtube   PASS — both availability probes
-parsing-office + parsing-pdf    PASS — both SDK/parser surfaces
-mcp + Harness                   PASS — MCP guard and HarnessApplication
+media-whisper + media-youtube   PASS - both availability probes
+parsing-office + parsing-pdf    PASS - both SDK/parser surfaces
+mcp + Harness                   PASS - MCP guard and HarnessApplication
 vector-qdrant + rag-local-embeddings
-                                PASS — resolver dry-run; no model download
+                                PASS - resolver dry-run; no model download
 ```
 
 Whisper does not pull YouTube or OpenCV. YouTube is selected independently;

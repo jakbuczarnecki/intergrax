@@ -1,4 +1,4 @@
-# Multi-Product Program — Maintainer Workspace
+# Multi-Product Program - Maintainer Workspace
 
 Maintainer control and documentation area for coordinated development and evaluation of multiple Intergrax applications.
 
@@ -59,22 +59,22 @@ Truth flows from accepted product/proof evidence → Portfolio Control → appro
 | Item | Status |
 |------|--------|
 | MP-1 through MP-8 (market/product selection) | **Completed** |
-| Product selection record | **Frozen** — [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) |
-| Program governance contract | **Defined** — [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md) |
-| Operational control artifacts | **Created** (MP-12) — see source-of-truth map below |
-| Product bootstrap contract | **Defined** (MP-14) — [PRODUCT_BOOTSTRAP_RULES.md](PRODUCT_BOOTSTRAP_RULES.md) |
-| Product control cards | **Created** (MP-15) — see control-card table below |
-| Audit engine integration | **Defined** (MP-16) — [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md) |
-| Portfolio Control operating manual | **Defined** (MP-17) — [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md) |
-| Product Session operating manual | **Defined** (MP-18) — [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md) |
-| Product-specific session briefs | **Created** (MP-19) — see [Product Session briefs](#product-session-briefs) |
-| Cross-session coordination contract | **Defined** (MP-20) — [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md) |
-| Workspace consistency audit | **Completed** (MP-21) — [WORKSPACE_CONSISTENCY_AUDIT.md](WORKSPACE_CONSISTENCY_AUDIT.md) — verdict PASS WITH GAPS |
-| Session Launch Pack | **Completed** (MP-22) — [SESSION_LAUNCH_PACK.md](SESSION_LAUNCH_PACK.md) — READY TO LAUNCH |
+| Product selection record | **Frozen** - [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) |
+| Program governance contract | **Defined** - [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md) |
+| Operational control artifacts | **Created** (MP-12) - see source-of-truth map below |
+| Product bootstrap contract | **Defined** (MP-14) - [PRODUCT_BOOTSTRAP_RULES.md](PRODUCT_BOOTSTRAP_RULES.md) |
+| Product control cards | **Created** (MP-15) - see control-card table below |
+| Audit engine integration | **Defined** (MP-16) - [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md) |
+| Portfolio Control operating manual | **Defined** (MP-17) - [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md) |
+| Product Session operating manual | **Defined** (MP-18) - [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md) |
+| Product-specific session briefs | **Created** (MP-19) - see [Product Session briefs](#product-session-briefs) |
+| Cross-session coordination contract | **Defined** (MP-20) - [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md) |
+| Workspace consistency audit | **Completed** (MP-21) - [WORKSPACE_CONSISTENCY_AUDIT.md](WORKSPACE_CONSISTENCY_AUDIT.md) - verdict PASS WITH GAPS |
+| Session Launch Pack | **Completed** (MP-22) - [SESSION_LAUNCH_PACK.md](SESSION_LAUNCH_PACK.md) - READY TO LAUNCH |
 | Product architectures for the four new applications | **Not yet designed** |
 | New product application scaffolding | **Not started** |
 | Cross-product reuse demonstration | **Not demonstrated** |
-| LKW baseline ingestion into portfolio control | **Completed** (MP-13) — [LKW control card](products/LKW.md) |
+| LKW baseline ingestion into portfolio control | **Completed** (MP-13) - [LKW control card](products/LKW.md) |
 
 ---
 
@@ -165,7 +165,7 @@ Do not duplicate brief content in this index.
 | [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md) | Handoffs and authority between sessions and specialist streams |
 | [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md) | Canonical audit integration |
 
-**MP-22** Session Launch Pack — **Completed** — [SESSION_LAUNCH_PACK.md](SESSION_LAUNCH_PACK.md). VIS-3A and COMM remain external specialist streams.
+**MP-22** Session Launch Pack - **Completed** - [SESSION_LAUNCH_PACK.md](SESSION_LAUNCH_PACK.md). VIS-3A and COMM remain external specialist streams.
 
 ## How do I launch the six sessions?
 
@@ -184,12 +184,12 @@ See [SESSION_LAUNCH_PACK.md](SESSION_LAUNCH_PACK.md). Open six independent sessi
 
 Later program tasks (see [PORTFOLIO_STATUS.md](PORTFOLIO_STATUS.md) for current next step):
 
-- ~~MP-16 Multi-Product Audit Integration~~ — **Completed** — [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md)
-- ~~MP-17 Portfolio Control Operating Manual~~ — **Completed** — [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md)
-- ~~MP-18 Product Session Operating Manual~~ — **Completed** — [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md)
-- ~~MP-19 Product-Specific Session Briefs~~ — **Completed** — [session-briefs/](session-briefs/)
-- ~~MP-20 Cross-Session Coordination Rules~~ — **Completed** — [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md)
-- ~~MP-21 Workspace Consistency Audit~~ — **Completed** — [WORKSPACE_CONSISTENCY_AUDIT.md](WORKSPACE_CONSISTENCY_AUDIT.md)
-- ~~MP-22 Session Launch Pack~~ — **Completed** — [SESSION_LAUNCH_PACK.md](SESSION_LAUNCH_PACK.md)
+- ~~MP-16 Multi-Product Audit Integration~~ - **Completed** - [MULTI_PRODUCT_AUDIT_INTEGRATION.md](MULTI_PRODUCT_AUDIT_INTEGRATION.md)
+- ~~MP-17 Portfolio Control Operating Manual~~ - **Completed** - [PORTFOLIO_CONTROL_OPERATING_MANUAL.md](PORTFOLIO_CONTROL_OPERATING_MANUAL.md)
+- ~~MP-18 Product Session Operating Manual~~ - **Completed** - [PRODUCT_SESSION_OPERATING_MANUAL.md](PRODUCT_SESSION_OPERATING_MANUAL.md)
+- ~~MP-19 Product-Specific Session Briefs~~ - **Completed** - [session-briefs/](session-briefs/)
+- ~~MP-20 Cross-Session Coordination Rules~~ - **Completed** - [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md)
+- ~~MP-21 Workspace Consistency Audit~~ - **Completed** - [WORKSPACE_CONSISTENCY_AUDIT.md](WORKSPACE_CONSISTENCY_AUDIT.md)
+- ~~MP-22 Session Launch Pack~~ - **Completed** - [SESSION_LAUNCH_PACK.md](SESSION_LAUNCH_PACK.md)
 
 Portfolio Control uses the canonical `docs/audit_results/` engine for actual audits. It does not create a competing audit workspace (no `reviews/*` audit system).

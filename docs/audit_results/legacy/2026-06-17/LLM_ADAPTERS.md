@@ -1,4 +1,4 @@
-# Audit result — `LLM_ADAPTERS`
+# Audit result - `LLM_ADAPTERS`
 
 **Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
@@ -36,9 +36,9 @@ uv run pytest tests/unit/llm_adapters/ -q
 
 ## Backlog P2–P4 (deferred)
 
-- M-LLM-X.4.5 Tier-3 fallback list — Medium/Planned
-- M-LLM-X.2 dynamic OpenRouter metadata — P2
-- AUDIT-IDEAL-6.7 doctor hook — P2
+- M-LLM-X.4.5 Tier-3 fallback list - Medium/Planned
+- M-LLM-X.2 dynamic OpenRouter metadata - P2
+- AUDIT-IDEAL-6.7 doctor hook - P2
 
 ---
 

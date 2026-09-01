@@ -50,12 +50,12 @@ A minimal Tier-2 agent in this repository typically includes:
 | Agent implementation class/module | Domain logic; step handler (`on_next_step` or cognitive pattern base) |
 | `AgentContract` (or equivalent contract builder) | Identity, capabilities, skills, risk, lifecycle, pattern metadata |
 | Capability declaration | Tokens Nexus uses for routing |
-| Optional prompt references | Via Prompt Registry or approved prompt mechanism — not inline production strings |
+| Optional prompt references | Via Prompt Registry or approved prompt mechanism - not inline production strings |
 | Optional skill/tool declarations | On contract and/or skill resolver |
 | Tests or smoke scenario | When the agent family already has a test pattern in `agents/<name>/tests` |
 | Documentation entry | Only when the agent is part of a reusable family (e.g. `README.md`, `ARCHITECTURE.md`) |
 
-**Patterns (examples — do not copy wholesale):**
+**Patterns (examples - do not copy wholesale):**
 
 - Contract + capabilities: `agents/local_indexer/contract.py`, `agents/local_indexer/capabilities.py`
 - Agent class: `agents/local_indexer/local_indexer_agent.py`
@@ -111,7 +111,7 @@ The agent may **request**:
 
 but the **runtime decides** how these requests are executed.
 
-Primary author surfaces (canon §13): session `run(AgentRunRequest)` and step `on_next_step()` returning `StepOutcome` factories — not a private orchestration loop.
+Primary author surfaces (canon §13): session `run(AgentRunRequest)` and step `on_next_step()` returning `StepOutcome` factories - not a private orchestration loop.
 
 ---
 

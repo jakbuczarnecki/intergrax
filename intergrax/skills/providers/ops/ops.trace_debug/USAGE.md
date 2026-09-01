@@ -4,7 +4,7 @@
 
 ## Purpose
 
-**Agent run debugging** for platform engineers: query LLM/agent traces, search logs, and capture errors. Use in lab harness investigations, post-mortems, and W-OPS reliability exercises — without granting full observability admin tools ad hoc.
+**Agent run debugging** for platform engineers: query LLM/agent traces, search logs, and capture errors. Use in lab harness investigations, post-mortems, and W-OPS reliability exercises - without granting full observability admin tools ad hoc.
 
 ## How it works
 
@@ -40,5 +40,5 @@ Wire `observability_backend` integration slug on host profile.
 
 ## Related skills
 
-- `harness.trace_read` — SQLite harness run traces (local lab)
-- `ops.incident_dispatch` — escalate after debug
+- `harness.trace_read` - SQLite harness run traces (local lab)
+- `ops.incident_dispatch` - escalate after debug

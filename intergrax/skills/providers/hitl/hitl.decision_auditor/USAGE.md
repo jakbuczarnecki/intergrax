@@ -28,4 +28,4 @@ Governed access to: `hitl.get_decision`, `hitl.list_for_task`, `observability.qu
 
 ## Related skills
 
-- Other `hitl` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `hitl` bundle skills - see bundle [USAGE.md](../USAGE.md)

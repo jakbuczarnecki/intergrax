@@ -4,11 +4,11 @@
 
 ## Purpose
 
-**`requires_skills` demonstration** (W-OPS.9): shows transitive skill composition — parent `harness.tool_smoke` tools merge before this pack's `websearch.read_url` is added.
+**`requires_skills` demonstration** (W-OPS.9): shows transitive skill composition - parent `harness.tool_smoke` tools merge before this pack's `websearch.read_url` is added.
 
 ## How it works
 
-1. `requires_skills=("harness.tool_smoke",)` — resolver visits dependency first.
+1. `requires_skills=("harness.tool_smoke",)` - resolver visits dependency first.
 2. Expanded `skill_ids` order: `harness.tool_smoke` → `harness.stack_demo`.
 3. Merged tools: `rag.retrieve`, `websearch.query`, `websearch.read_url`.
 4. Gate: `test_harness_requires_skills_demo.py`.
@@ -36,5 +36,5 @@ Canonical example for skill stacking without duplicating parent `tool_ids` on th
 
 ## Related skills
 
-- `harness.tool_smoke` — required dependency
-- `legal.clause_compare` — production `requires_skills` pattern
+- `harness.tool_smoke` - required dependency
+- `legal.clause_compare` - production `requires_skills` pattern

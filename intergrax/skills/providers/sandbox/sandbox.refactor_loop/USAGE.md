@@ -28,4 +28,4 @@ Governed access to: `sandbox.exec`, `workspace.write_file`, `workspace.search`.
 
 ## Related skills
 
-- Other `sandbox` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `sandbox` bundle skills - see bundle [USAGE.md](../USAGE.md)

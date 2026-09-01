@@ -1,4 +1,4 @@
-# RAG-LIVE-15C-R2 — Neo4j Live GraphRAG Baseline Qualification
+# RAG-LIVE-15C-R2 - Neo4j Live GraphRAG Baseline Qualification
 
 **Status:** `READY_FOR_REVIEW`  
 **Neo4j GraphRAG baseline:** `LIVE_QUALIFIED_BASELINE`  
@@ -49,7 +49,7 @@ Cypher, ownership, traversal and cleanup failures fail the test.
 
 ## Live runs
 
-### Live run 1 — PASS
+### Live run 1 - PASS
 
 - Run identifier: `e3bceeaa7ede4018b0a6d885dcc665fd`.
 - Scope, ownership, shared evidence, replacement, unlink and traversal:
@@ -59,7 +59,7 @@ Cypher, ownership, traversal and cleanup failures fail the test.
   `4.14 ms`; no canonical graph SLO was applied.
 - Cleanup: PASS.
 
-### Live run 2 — PASS
+### Live run 2 - PASS
 
 - Run identifier: `539ca616c59c4114803a15012aeff8cd`.
 - Scope, ownership, shared evidence, replacement, unlink and traversal:
@@ -196,4 +196,4 @@ Generation fencing = NOT LIVE_QUALIFIED
 Global = PRODUCTION_QUALIFIED_WITH_LIMITATIONS
 ```
 
-Next: `RAG-LIVE-15D` — `NOT STARTED`.
+Next: `RAG-LIVE-15D` - `NOT STARTED`.

@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 # LKW.7C1 watcher-triggered persistent search E2E proof overlay.
-# Explicit merge only (not docker-compose.*.yml — excluded from auto-discovery):
+# Explicit merge only (not docker-compose.*.yml - excluded from auto-discovery):
 # docker compose \
 #   -f applications/local_workspace_application/docker/docker-compose.yml \
 #   -f applications/local_workspace_application/docker/docker-compose.kafka.yml \

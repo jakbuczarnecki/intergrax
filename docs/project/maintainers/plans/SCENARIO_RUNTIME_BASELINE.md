@@ -1,9 +1,9 @@
-# SCENARIO-PLATFORM-2 — Scenario Runtime Baseline & Lifecycle Contract
+# SCENARIO-PLATFORM-2 - Scenario Runtime Baseline & Lifecycle Contract
 
 **Contract ID:** SCENARIO-PLATFORM-2  
 **Date:** 2026-08-27  
 **Branch:** `development`  
-**Mode:** architecture / contract only — **no generator implementation**  
+**Mode:** architecture / contract only - **no generator implementation**  
 **Repository:** jakbuczarnecki/intergrax  
 **Supersedes (partial):** SCENARIO-PLATFORM-1 §5 baseline assumptions that implied GraphExecutor + manual identity as default
 
@@ -11,16 +11,16 @@
 
 ## 1. Executive decision
 
-**Recommendation: C — shared Scenario runtime facade (default), delegating to NexusLoop.**
+**Recommendation: C - shared Scenario runtime facade (default), delegating to NexusLoop.**
 
 | Option | Verdict |
 |--------|---------|
 | **A. GraphExecutor direct** | **Not** canonical Scenario application entry |
 | **B. NexusLoop direct** | Correct underlying runtime, but callers must not duplicate `HarnessHostRuntime` wiring |
-| **C. Shared facade over platform primitives** | **Canonical baseline** — thin composition only, no second orchestrator |
+| **C. Shared facade over platform primitives** | **Canonical baseline** - thin composition only, no second orchestrator |
 
 **Default underlying runtime:** `NexusLoop` (which already owns an internal `GraphExecutor`).  
-**GraphExecutor direct** remains a legitimate **lower-level primitive** for unit/integration tests, conformance proofs, and internal Nexus mechanics — not for generated Scenario application entry.
+**GraphExecutor direct** remains a legitimate **lower-level primitive** for unit/integration tests, conformance proofs, and internal Nexus mechanics - not for generated Scenario application entry.
 
 ---
 
@@ -30,14 +30,14 @@ Evidence from current `development` spine:
 
 | Requirement | GraphExecutor direct (`ai_incident` today) | NexusLoop + factory + diagnostic wiring |
 |-------------|-------------------------------------------|----------------------------------------|
-| Canonical terminal `RuntimeEvent` truth | **Absent** — no `NexusRuntimeEventPublisher.publish_terminal` |
-| Persisted execution truth | **Manual** — requires explicit `event_bus` + store wiring |
-| Terminal diagnostic bridge | **Absent** — no `_publish_terminal_runtime_event` → `invoke_terminal_execution_diagnostics` |
-| Execution identity ownership | **Manual** — `mint_run_id`, `mint_attempt_id`, `bind_active_execution_identity` in scenario code |
-| Full task lifecycle | **Absent** — graph execution only |
-| Policy / guardrail / security | **Manual / partial** — not applied via `nexus_factory` |
-| Retry / budget machinery | **Partial** — retry engine present; budget slot absent |
-| ToolRuntime (UAEP path) | **Manual** — scenario builds `ApplicationBuildContext` locally |
+| Canonical terminal `RuntimeEvent` truth | **Absent** - no `NexusRuntimeEventPublisher.publish_terminal` |
+| Persisted execution truth | **Manual** - requires explicit `event_bus` + store wiring |
+| Terminal diagnostic bridge | **Absent** - no `_publish_terminal_runtime_event` → `invoke_terminal_execution_diagnostics` |
+| Execution identity ownership | **Manual** - `mint_run_id`, `mint_attempt_id`, `bind_active_execution_identity` in scenario code |
+| Full task lifecycle | **Absent** - graph execution only |
+| Policy / guardrail / security | **Manual / partial** - not applied via `nexus_factory` |
+| Retry / budget machinery | **Partial** - retry engine present; budget slot absent |
+| ToolRuntime (UAEP path) | **Manual** - scenario builds `ApplicationBuildContext` locally |
 | Observability subscriptions | **Absent** unless explicitly bridged |
 
 `ai_incident_investigation` (`platform_proofs/scenarios/ai_incident_investigation/scenario.py`) is a **behavior reference**, not the desired future baseline. Its manual orchestration boundary work is **legacy composition debt**, not a pattern to cargo-cult.
@@ -87,7 +87,7 @@ When `NexusLoop` completes a task, `_finish_task` calls `_publish_terminal_runti
 1. Publishes a terminal `RuntimeEvent` via `NexusRuntimeEventPublisher.publish_terminal`
 2. If `terminal_diagnostic_trigger` is attached, invokes `invoke_terminal_execution_diagnostics`
 
-**Nexus already guarantees canonical terminal execution truth** — scenario code must **not** manually publish terminal events.
+**Nexus already guarantees canonical terminal execution truth** - scenario code must **not** manually publish terminal events.
 
 ### 4.2 Required factory / composition arguments
 
@@ -142,11 +142,11 @@ Future scenario runtime must call **one generic shared builder** (extracted from
 
 **No scenario-local knowledge** of `DiagnosticOrchestrator` assembly.
 
-When prerequisites are missing (lab without document store), diagnostic write is **skipped gracefully** (`trigger=None`) — execution truth may still persist if runtime event store is configured.
+When prerequisites are missing (lab without document store), diagnostic write is **skipped gracefully** (`trigger=None`) - execution truth may still persist if runtime event store is configured.
 
 ### 5.3 Domain diagnostic payload
 
-Typed `DiagnosticPayload` subclasses remain **scenario-owned**. Runtime baseline exposes emission via standard agent / `RuntimeState.trace_event` path — not generic generated payload classes.
+Typed `DiagnosticPayload` subclasses remain **scenario-owned**. Runtime baseline exposes emission via standard agent / `RuntimeState.trace_event` path - not generic generated payload classes.
 
 ---
 
@@ -159,7 +159,7 @@ Typed `DiagnosticPayload` subclasses remain **scenario-owned**. Runtime baseline
 | `AttemptId` | **Platform** (`NexusLoop.handle_task` mints when omitted) | **Must not** call `mint_attempt_id()` |
 | Active identity binding | **NexusLoop.handle_task** (or `ExecutionBoundary`) | **Must not** call `bind_active_execution_identity()` |
 
-`ai_incident` manual binding (`scenario.py` L315–326) is **legacy** — generator must not reproduce it.
+`ai_incident` manual binding (`scenario.py` L315–326) is **legacy** - generator must not reproduce it.
 
 ---
 
@@ -171,7 +171,7 @@ Typed `DiagnosticPayload` subclasses remain **scenario-owned**. Runtime baseline
 
 ```python
 task = Task(
-    tenant_id=tenant_id,  # required — no ContextVar fallback
+    tenant_id=tenant_id,  # required - no ContextVar fallback
     user_id=...,
     message=...,
     context=TaskContext(capability=...),
@@ -207,7 +207,7 @@ caller tenant_id
   = diagnostic tenant
 ```
 
-- **Standalone synthetic proof:** explicit named constant (e.g. `scenario-tenant-synthetic`) — documented, not implicit.
+- **Standalone synthetic proof:** explicit named constant (e.g. `scenario-tenant-synthetic`) - documented, not implicit.
 - **No** `ContextVar` / global tenant source.
 - Facade validates non-empty `tenant_id` before execution.
 
@@ -217,20 +217,20 @@ caller tenant_id
 
 | Layer | Responsibility |
 |-------|----------------|
-| `intergrax/applications/_shared/nexus_factory.py` | `build_nexus_loop_from_environment` — **reuse directly** |
-| `intergrax/applications/_shared/harness_host_runtime.py` | Full Tier-3 host spine — **reference extraction source** |
+| `intergrax/applications/_shared/nexus_factory.py` | `build_nexus_loop_from_environment` - **reuse directly** |
+| `intergrax/applications/_shared/harness_host_runtime.py` | Full Tier-3 host spine - **reference extraction source** |
 | **New (SCENARIO-PLATFORM-3A):** `intergrax/applications/_shared/scenario_runtime_baseline.py` | Lighter scenario facade: environment → observability → nexus → diagnostic trigger |
-| `platform_proofs/scenarios/<slug>/` | Domain agents, tools, payloads, proof projection — **imports platform shared only** |
+| `platform_proofs/scenarios/<slug>/` | Domain agents, tools, payloads, proof projection - **imports platform shared only** |
 
 **Forbidden dependency:** `intergrax/` → `platform_proofs/`.
 
 **Forbidden:** copying `nexus_factory` / `harness_host_runtime` internals into `platform_proofs/_shared/`.
 
-Scenarios may import `intergrax.applications._shared.*` — same as Tier-3 applications.
+Scenarios may import `intergrax.applications._shared.*` - same as Tier-3 applications.
 
 ---
 
-## 9. Proposed facade surface (contract only — not implemented in -2)
+## 9. Proposed facade surface (contract only - not implemented in -2)
 
 Minimal types for SCENARIO-PLATFORM-3A:
 
@@ -283,7 +283,7 @@ Every production-capable Scenario run **must** provide:
 | B4 | `ApplicationBuildContext` with `RuntimePolicyBundle` slot | Even if empty/default |
 | B5 | Observability store selection per profile | `wire_nexus_observability` / `wire_application_observability` |
 | B6 | Terminal `RuntimeEvent` truth on success/failure | Nexus finalize path |
-| B7 | Standard operational failure semantics | `TaskResult` / `TaskState` — separate from domain outcome |
+| B7 | Standard operational failure semantics | `TaskResult` / `TaskState` - separate from domain outcome |
 | B8 | Tool declaration via `ToolProfile` when tools used | No manual trace reproduction |
 | B9 | Security + guardrail wiring on same path as production | Permissive config in lab, same code path |
 | B10 | No scenario terminal event publisher | Platform only |
@@ -292,7 +292,7 @@ Every production-capable Scenario run **must** provide:
 
 ## 11. Optional capabilities (opt-in via `ApplicationEnvironmentProfile`)
 
-Reuse existing profile bundles — **no `ScenarioCapabilityManifest`:**
+Reuse existing profile bundles - **no `ScenarioCapabilityManifest`:**
 
 | Capability | Profile / wiring hook |
 |------------|----------------------|
@@ -300,11 +300,11 @@ Reuse existing profile bundles — **no `ScenarioCapabilityManifest`:**
 | EvaluatorLoop | Critic hooks + `EvaluatorLoopSpec` on nodes (domain) |
 | HITL | `reliability_profile` / human decision store |
 | Problem read | `DiagnosticReadService` at composition seam (scenario-owned DTO) |
-| `IncidentInvestigationInput` | Domain contract — investigation scenarios only |
+| `IncidentInvestigationInput` | Domain contract - investigation scenarios only |
 | RAG / web / memory | `ContextProfile`, `MemoryProfile` |
 | LLM | `resolve_environment_llm_adapter` / `ApplicationEnvironmentProfile` cognition bundle |
-| Hosting | `HarnessHostRuntime` full path — hosting scenarios only |
-| Root-cause adjudication | Domain + Critic — not baseline |
+| Hosting | `HarnessHostRuntime` full path - hosting scenarios only |
+| Root-cause adjudication | Domain + Critic - not baseline |
 | Causal evidence | Observability persistence + document store |
 | Long-running / checkpoint | `ReliabilityProfile` |
 | Budget claims | `CostProfile` / `RunBudget` |
@@ -318,7 +318,7 @@ Enabling optional capabilities = typed platform composition, not local re-wiring
 | Class | Owner | Automatic in baseline? |
 |-------|-------|------------------------|
 | Execution / tool / runtime lifecycle (`RuntimeEvent`, `TraceEvent`, `ToolCallTrace`) | Platform via Nexus + observability wiring | **Yes** (per profile) |
-| Domain decisions (planner objective, claim proposal, investigation conclusion) | Scenario agents via `RuntimeState.trace_event` + typed `DiagnosticPayload` | **No** — domain-owned |
+| Domain decisions (planner objective, claim proposal, investigation conclusion) | Scenario agents via `RuntimeState.trace_event` + typed `DiagnosticPayload` | **No** - domain-owned |
 | Proof projection (`PlatformProofEvidence`) | `scripts/proof` + scenario `evidence_builder.py` | Proof layer only |
 
 ---
@@ -348,11 +348,11 @@ Do **not** create one universal scenario outcome enum.
 | Tenant | `scenario-tenant-synthetic` (explicit constant) | Caller-supplied real tenant |
 | Security / guardrail | Same wiring, permissive policy config | Strict `ExecutionMode.STRICT` |
 
-Both profiles use **identical contracts** — only configuration differs.
+Both profiles use **identical contracts** - only configuration differs.
 
 ---
 
-## 15. GraphExecutor — legitimate roles
+## 15. GraphExecutor - legitimate roles
 
 | Role | Allowed |
 |------|---------|
@@ -361,19 +361,19 @@ Both profiles use **identical contracts** — only configuration differs.
 | Conformance / low-level proof | Yes, when testing graph semantics in isolation |
 | **Generated Scenario application entry** | **No** |
 
-Fixed-topology scenarios (single-agent proof graphs) still enter via **NexusLoop** with environment profile configuring deterministic classifier/planner — or register capability routing so Nexus produces the intended graph. Bypassing Nexus for convenience forfeits terminal truth and diagnostic spine.
+Fixed-topology scenarios (single-agent proof graphs) still enter via **NexusLoop** with environment profile configuring deterministic classifier/planner - or register capability routing so Nexus produces the intended graph. Bypassing Nexus for convenience forfeits terminal truth and diagnostic spine.
 
 ---
 
-## 16. `ai_incident_investigation` — reusable vs legacy
+## 16. `ai_incident_investigation` - reusable vs legacy
 
 | Artifact | Status |
 |----------|--------|
-| `runtime_composition.py` (`ApplicationEnvironmentProfile` + `ApplicationBuildContext`) | **Reusable pattern** — migrate to shared facade |
-| `build_agent_runtime_context` / `resolve_scenario_llm_adapter` | **Reusable** — LLM opt-in seam |
-| `scenario_composition.py` (diagnostic read) | **Reusable seam pattern** — domain DTO stays investigation-specific |
+| `runtime_composition.py` (`ApplicationEnvironmentProfile` + `ApplicationBuildContext`) | **Reusable pattern** - migrate to shared facade |
+| `build_agent_runtime_context` / `resolve_scenario_llm_adapter` | **Reusable** - LLM opt-in seam |
+| `scenario_composition.py` (diagnostic read) | **Reusable seam pattern** - domain DTO stays investigation-specific |
 | `investigation_observability.py` (`DiagnosticPayload`) | **Domain-owned** |
-| `scenario.py` GraphExecutor + manual identity | **Legacy** — do not generate |
+| `scenario.py` GraphExecutor + manual identity | **Legacy** - do not generate |
 | Incident-specific Critic adapter | **Domain-owned** |
 | `STANDALONE_SCENARIO_TENANT_ID` | **Acceptable** only as named synthetic tenant constant via facade contract |
 
@@ -409,8 +409,8 @@ ScenarioExecutionRequest (tenant_id, message, capability)
 | State | Meaning | Generator |
 |-------|---------|-----------|
 | `DESIGN / NOT YET ACCEPTED` | Design package only | `create_scenario_proof.py` (today) |
-| `ACCEPTED FOR IMPLEMENTATION` | Human quality gate passed | — |
-| `IMPLEMENTATION INITIALIZED` | Skeleton generated | `init_scenario_implementation.py` (**SCENARIO-PLATFORM-3B — implemented**) |
+| `ACCEPTED FOR IMPLEMENTATION` | Human quality gate passed | - |
+| `IMPLEMENTATION INITIALIZED` | Skeleton generated | `init_scenario_implementation.py` (**SCENARIO-PLATFORM-3B - implemented**) |
 | `EXECUTABLE / NOT YET VERIFIED` | Runnable stub + proof descriptor | future |
 | `VERIFIED` | Public Library proof accepted | manual / CI |
 
@@ -431,7 +431,7 @@ Constant `LIFECYCLE_ACCEPTED_FOR_IMPLEMENTATION` exists in `create_scenario_proo
 | Observability / diagnostics contract complete | Section presence + required headings (existing doc contract tests) |
 | APPLICATION vs PROOF section filled | Table in `SCENARIO_SPEC.md` |
 
-**Output:** implementation skeleton only (rails, stubs, gates) — **no domain logic**.
+**Output:** implementation skeleton only (rails, stubs, gates) - **no domain logic**.
 
 Initialized scenario implementations are automatically subject to universal architecture
 conformance via `scripts/proof/scenario_architecture_conformance.py` before lifecycle
@@ -452,7 +452,7 @@ gap_decision: RESOLVED
 ---
 ```
 
-**SCENARIO-PLATFORM-3B — implemented:** minimal YAML frontmatter on `SCENARIO_SPEC.md` (see `scripts/proof/scenario_lifecycle.py`). Legacy specs without frontmatter parse as `LEGACY`; `init_scenario_implementation` fails with `lifecycle metadata required`.
+**SCENARIO-PLATFORM-3B - implemented:** minimal YAML frontmatter on `SCENARIO_SPEC.md` (see `scripts/proof/scenario_lifecycle.py`). Legacy specs without frontmatter parse as `LEGACY`; `init_scenario_implementation` fails with `lifecycle metadata required`.
 
 ---
 
@@ -470,7 +470,7 @@ Before `init_scenario_implementation` runs:
 Generated implementation must include:
 
 - `runtime_composition.py` stub calling shared `build_scenario_runtime_from_environment`
-- `scenario.py` entry using facade `execute_scenario_task` — **not** GraphExecutor direct
+- `scenario.py` entry using facade `execute_scenario_task` - **not** GraphExecutor direct
 - explicit `tenant_id` parameter on public entrypoints
 - `proof.json` stub (v3 schema)
 - architecture gate test module template
@@ -481,9 +481,9 @@ Generated implementation must include:
 
 | Gap | Impact | Target slice |
 |-----|--------|--------------|
-| ~~No `scenario_runtime_baseline.py` shared builder~~ | ~~Every scenario would duplicate `harness_host_runtime` subset~~ | **SCENARIO-PLATFORM-3A — implemented** |
-| `init_scenario_implementation` absent | No gated skeleton generation | **SCENARIO-PLATFORM-3B — implemented** |
-| Lifecycle frontmatter not defined in generator | Fragile promotion gate | **SCENARIO-PLATFORM-3B — implemented** |
+| ~~No `scenario_runtime_baseline.py` shared builder~~ | ~~Every scenario would duplicate `harness_host_runtime` subset~~ | **SCENARIO-PLATFORM-3A - implemented** |
+| `init_scenario_implementation` absent | No gated skeleton generation | **SCENARIO-PLATFORM-3B - implemented** |
+| Lifecycle frontmatter not defined in generator | Fragile promotion gate | **SCENARIO-PLATFORM-3B - implemented** |
 | Lab observability profile not codified for scenarios | Authors may omit runtime event store | **SCENARIO-PLATFORM-4** |
 | `ai_incident` still on GraphExecutor path | Reference diverges from contract | **SCENARIO-PLATFORM-5** (migration) |
 | Universal scenario architecture CI gates | Only ai_incident tested | **SCENARIO-PLATFORM-6** |
@@ -495,7 +495,7 @@ Generated implementation must include:
 
 | Slice | Scope | Status |
 |-------|-------|--------|
-| **SCENARIO-PLATFORM-3A** | `intergrax/applications/_shared/scenario_runtime_baseline.py` — `build_scenario_runtime_from_environment`, `execute_scenario_task` | **Implemented** |
+| **SCENARIO-PLATFORM-3A** | `intergrax/applications/_shared/scenario_runtime_baseline.py` - `build_scenario_runtime_from_environment`, `execute_scenario_task` | **Implemented** |
 | **SCENARIO-PLATFORM-3B** | `init_scenario_implementation.py` + lifecycle frontmatter spec + precondition gates | **Implemented** |
 | **SCENARIO-PLATFORM-4** | Observability + diagnostic baseline profiles (lab temp DB vs production-attached); document store optional lab stub |
 | **SCENARIO-PLATFORM-5** | Migrate `ai_incident` to facade baseline (behavior parity proofs) |
@@ -506,11 +506,11 @@ Generated implementation must include:
 ## 22. P0 findings
 
 1. **GraphExecutor-only scenario path cannot produce canonical execution truth** without reimplementing Nexus terminal publishing.
-2. **`runtime_events_db_path` is not implicit** — Nexus default persistence is `None` without path/env.
-3. **Diagnostic write already exists on harness path** — scenarios must reuse `try_build_terminal_execution_diagnostic_trigger`, not invent bridges.
-4. **Identity minting in scenario code is a bug pattern** — platform executor must own it.
-5. **SCENARIO-PLATFORM-1 §5 incorrectly listed manual identity minting as AUTO baseline** — corrected here.
-6. **No shared scenario composition primitive** — highest delivery risk for -3 generator.
+2. **`runtime_events_db_path` is not implicit** - Nexus default persistence is `None` without path/env.
+3. **Diagnostic write already exists on harness path** - scenarios must reuse `try_build_terminal_execution_diagnostic_trigger`, not invent bridges.
+4. **Identity minting in scenario code is a bug pattern** - platform executor must own it.
+5. **SCENARIO-PLATFORM-1 §5 incorrectly listed manual identity minting as AUTO baseline** - corrected here.
+6. **No shared scenario composition primitive** - highest delivery risk for -3 generator.
 
 ---
 
@@ -540,7 +540,7 @@ Generated implementation must include:
 
 ---
 
-## 25. SCENARIO-PLATFORM-3A — implemented public API
+## 25. SCENARIO-PLATFORM-3A - implemented public API
 
 **Module:** `intergrax/applications/_shared/scenario_runtime_baseline.py`
 
@@ -568,9 +568,9 @@ Generated implementation must include:
 | Storage | Automatic scoped workspace (`runtime_events.db`, `trace.db`) via `build_scenario_lab_runtime` |
 | Tenant | Explicit synthetic tenant constant passed by caller (not hidden global) |
 | Nexus | Same `build_scenario_runtime_from_environment` baseline as production-attached |
-| RuntimeEvent | ON — persistence required |
+| RuntimeEvent | ON - persistence required |
 | Diagnostics | ON when shared `InMemoryDocumentStore` is wired (LAB default); unavailable without document store |
-| API | `build_scenario_lab_runtime(registry=..., tenant_id=...)` — no manual DB paths |
+| API | `build_scenario_lab_runtime(registry=..., tenant_id=...)` - no manual DB paths |
 
 Authors of ordinary generated proofs **do not** configure `runtime_events_db_path`, `trace_db_path`, `use_in_memory_trace`, `require_runtime_event_persistence`, or diagnostic storage rules manually.
 
@@ -584,9 +584,9 @@ Optional `workspace_root` may reuse a proof artifact directory when proof runner
 | Tenant | Real `tenant_id` required (validated, non-empty) |
 | Manifest | Explicit `ApplicationManifest` required |
 | Nexus | Same baseline |
-| RuntimeEvent | Required — fail closed when missing |
+| RuntimeEvent | Required - fail closed when missing |
 | Diagnostics | Fail closed when `diagnostics_required=True` and `document_store` missing |
-| API | `build_scenario_production_runtime(...)` — explicit critical configuration |
+| API | `build_scenario_production_runtime(...)` - explicit critical configuration |
 
 Forbidden without explicit caller decision: temp SQLite fallback, synthetic tenant, in-memory document store, `ApplicationManifest.lab` synthesis.
 
@@ -606,8 +606,8 @@ Forbidden without explicit caller decision: temp SQLite fallback, synthetic tena
 
 ### Tests
 
-- `tests/unit/applications/test_scenario_runtime_baseline.py` — build, execution identity, tenant, RuntimeEvent persistence, diagnostics attachment, LAB without document store, architecture gate
-- `tests/unit/applications/test_scenario_runtime_profiles.py` — LAB zero-config, execution, diagnostics default, storage isolation, production fail-closed, production success
+- `tests/unit/applications/test_scenario_runtime_baseline.py` - build, execution identity, tenant, RuntimeEvent persistence, diagnostics attachment, LAB without document store, architecture gate
+- `tests/unit/applications/test_scenario_runtime_profiles.py` - LAB zero-config, execution, diagnostics default, storage isolation, production fail-closed, production success
 
 ---
 

@@ -26,10 +26,10 @@ See **Step 4** in guides/AGENT_CREATION_GUIDE.md for all registration contexts.
 
 ## Layout
 
-- ``signoff_probe_agent.py`` — Agent class (UAEP)
-- ``contract.py`` / ``capabilities.py`` — AgentContract
-- ``steps/`` — domain execution
-- ``prompts/`` — prompt assets
-- ``schemas/`` — I/O models
-- ``tests/`` — agent smoke tests
-- ``notebooks/`` — interactive experiments
+- ``signoff_probe_agent.py`` - Agent class (UAEP)
+- ``contract.py`` / ``capabilities.py`` - AgentContract
+- ``steps/`` - domain execution
+- ``prompts/`` - prompt assets
+- ``schemas/`` - I/O models
+- ``tests/`` - agent smoke tests
+- ``notebooks/`` - interactive experiments

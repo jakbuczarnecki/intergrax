@@ -115,18 +115,18 @@ in the Token Optimization implementation plan.
 
 | Term | Contract meaning |
 | ---- | ---------------- |
-| **Source type** | `TokenOptimizationSourceType` — what kind of content is optimized (prompt, tool output, RAG pack, etc.). |
-| **Optimization profile** | `TokenOptimizationProfile` — operator-facing intensity (`off`, `measure_only`, `conservative`, `balanced`, `aggressive`, `experimental`). |
-| **Policy** | `TokenOptimizationPolicy` — enablement, profile, lossy allowance, validation, fallback, receipt/telemetry emission. |
+| **Source type** | `TokenOptimizationSourceType` - what kind of content is optimized (prompt, tool output, RAG pack, etc.). |
+| **Optimization profile** | `TokenOptimizationProfile` - operator-facing intensity (`off`, `measure_only`, `conservative`, `balanced`, `aggressive`, `experimental`). |
+| **Policy** | `TokenOptimizationPolicy` - enablement, profile, lossy allowance, validation, fallback, receipt/telemetry emission. |
 | **Lossy vs non-lossy** | `StrategySafetyClass` and per-layer behavior; lossy layers may omit content; lossless layers preserve semantic content subject to validation. |
 | **Protected regions** | `ProtectedRegion` values that must survive optimization (`code_block`, `path`, `url`, `hash`, `exact_error`, etc.). |
 | **Configuration** | `TokenOptimizationPipelineConfig` + ordered `TokenOptimizationLayerRef` entries, or router `configuration_id`. |
-| **Layer reference** | `TokenOptimizationLayerRef` — `layer_id`, optional `plugin_id`/`version`, order, required flag. |
+| **Layer reference** | `TokenOptimizationLayerRef` - `layer_id`, optional `plugin_id`/`version`, order, required flag. |
 | **Pipeline mode** | `TokenOptimizationPipelineMode.DEFAULT` merges with defaults; `REPLACE` uses only explicit layers. |
-| **Receipts** | `CompressionReceiptRef` and pipeline receipt metadata — hashes, savings, strategy attribution without raw content. |
+| **Receipts** | `CompressionReceiptRef` and pipeline receipt metadata - hashes, savings, strategy attribution without raw content. |
 | **Fallback** | On validation failure or required-layer failure, pipeline returns original content with explicit fallback status. |
 | **Validation** | Central `validate_protected_regions` after content-changing layer decisions. |
-| **Cache reuse** | Provider prefix-cache hit metrics — separate from tokens removed by content reduction. |
+| **Cache reuse** | Provider prefix-cache hit metrics - separate from tokens removed by content reduction. |
 | **Content reduction** | Measured removal/compaction of prompt/context bytes or chars by optimization layers. |
 | **Advisory recommendation** | `advisory.py` / evaluation helpers suggest strategies; they do not auto-apply optimization. |
 | **Explicit opt-in** | `TokenOptimizationPolicy.enabled` defaults false; no silent global enablement. |
@@ -208,7 +208,7 @@ Receipts, safe reporting and observability
 8. **Central validation** runs after content-changing decisions (`APPLY`, `OVERRIDE_PREVIOUS`, `FALLBACK`).
 9. **Malformed results** (wrong type, mismatched `layer_id`, uncaught contract violations) are isolated; required layers trigger rollback.
 10. **Required failures** revert to original content when `required=True` on a layer ref.
-11. **Receipts** capture strategy attribution, savings metadata, validation status — no raw content.
+11. **Receipts** capture strategy attribution, savings metadata, validation status - no raw content.
 12. **Reports** (regression, proof, safe summaries) expose only redaction-safe fields.
 13. **Caller** receives `TokenOptimizationPipelineResult` with output, completion state, fallback flags, and receipt metadata.
 
@@ -227,15 +227,15 @@ There is no separate `APPEND` enum; appending in `DEFAULT` mode is achieved by s
 
 **Registry** (`registry.py`): explicit map `layer_id → TokenOptimizationLayer`. Duplicate registration fails. Missing layers at resolve time are skipped or fail when `required=True`.
 
-**Built-in catalog** (`builtin_catalog.py`): factory specs for registered built-in layers. `create_registry(selections)` builds a registry in deterministic catalog order. The catalog is not a runtime discovery mechanism — only listed `layer_id` values can be constructed.
+**Built-in catalog** (`builtin_catalog.py`): factory specs for registered built-in layers. `create_registry(selections)` builds a registry in deterministic catalog order. The catalog is not a runtime discovery mechanism - only listed `layer_id` values can be constructed.
 
 **Identification:**
 
-- `layer_id` — primary pipeline key (e.g. `builtin.exact_deduplication`).
-- `plugin_id` / `version` — required for third-party layers; validated against descriptor on registration.
-- `built_in` — `True` for catalog layers; `False` for plugins.
+- `layer_id` - primary pipeline key (e.g. `builtin.exact_deduplication`).
+- `plugin_id` / `version` - required for third-party layers; validated against descriptor on registration.
+- `built_in` - `True` for catalog layers; `False` for plugins.
 
-**Safety:** Layers not registered in the caller-provided registry cannot execute. Router catalog contains only approved built-in configuration IDs — no arbitrary plugin loading.
+**Safety:** Layers not registered in the caller-provided registry cannot execute. Router catalog contains only approved built-in configuration IDs - no arbitrary plugin loading.
 
 | Source | Path |
 | ------ | ---- |
@@ -314,7 +314,7 @@ result = runner.run(
 2. Publish `TokenOptimizationPluginDescriptor` with capabilities and version.
 3. Register layer instance in a `TokenOptimizationLayerRegistry` at application wiring time.
 4. Reference layer via `TokenOptimizationLayerRef` (`layer_id`, `plugin_id`, `version`).
-5. Run through `TokenOptimizationPipelineRunner` — same path as built-ins.
+5. Run through `TokenOptimizationPipelineRunner` - same path as built-ins.
 6. Respect policy gates (`enabled`, `allow_lossy`, profile).
 7. Honor `supported_source_types` on descriptor.
 8. Return valid `TokenOptimizationLayerResult` with matching `layer_id`.
@@ -390,7 +390,7 @@ Approved router configurations (`llm_router_catalog.py`):
 
 - LLM does **not** define arbitrary layer lists or bypass policy.
 - Native tool transport is preferred where implemented; structured output is a controlled fallback.
-- Router output is advisory until the application applies it — **no auto-apply** in production paths by default.
+- Router output is advisory until the application applies it - **no auto-apply** in production paths by default.
 
 ### D. Reading results
 
@@ -402,7 +402,7 @@ Approved router configurations (`llm_router_catalog.py`):
 | Validation | per-layer `validation.status`, aggregate pipeline validation |
 | Receipts | `receipt_metadata`, `CompressionReceiptRef` builders in `receipts.py` |
 | Strategy attribution | `strategy_id`, `layer_id`, router `configuration_id` |
-| Safe report fields | regression and proof serializers — no raw prompts |
+| Safe report fields | regression and proof serializers - no raw prompts |
 
 ### E. Integration boundary
 
@@ -428,7 +428,7 @@ Supported kinds include: `code_block`, `inline_code`, `path`, `url`, `env_var`, 
 
 ## 11. Receipts and observability
 
-**Receipt:** proof of what changed — content hashes, char/token savings metadata, strategy/layer IDs, validation and fallback status.
+**Receipt:** proof of what changed - content hashes, char/token savings metadata, strategy/layer IDs, validation and fallback status.
 
 **Must not contain:** raw content, secrets, tokens, private customer data, absolute user paths.
 
@@ -442,7 +442,7 @@ Supported kinds include: `code_block`, `inline_code`, `path`, `url`, `env_var`, 
 | ------------- | -------- |
 | Content reduction | `saved_chars`, `dedupe_saved_chars`, strategy breakdown |
 | Provider prefix-cache reuse | `cached_input_tokens`, `prefix_cache_hits` deltas (vLLM proof) |
-| Latency | proof report timings — not standalone proof of cache |
+| Latency | proof report timings - not standalone proof of cache |
 | Quality / regression | `regression_gate.py`, evaluation packs |
 
 ---
@@ -461,11 +461,11 @@ Supported kinds include: `code_block`, `inline_code`, `path`, `url`, `env_var`, 
 
 **Invalidation:** documented reasons in cache-stable contracts when prefix or envelope changes.
 
-**Cache-aware compaction timing:** `decide_cache_aware_compaction_timing()` in `prompt_cache.py` — deterministic policy helper. **TOKEN-10D-1** wires it through `CacheAwareTokenOptimizationOrchestrator` before pipeline execution.
+**Cache-aware compaction timing:** `decide_cache_aware_compaction_timing()` in `prompt_cache.py` - deterministic policy helper. **TOKEN-10D-1** wires it through `CacheAwareTokenOptimizationOrchestrator` before pipeline execution.
 
 **Cache signal normalization (TOKEN-10D-2):** `prompt_cache_usage_snapshot_from_adapter_response()` and `normalize_cache_aware_compaction_signals()` compile typed adapter usage and `PromptCacheAttribution` into `CacheAwareCompactionTimingInput`. Unknown cache state stays `None` (not a miss). Explicit zero requires confirmed provider reporting. Estimated usage is not provider-reported evidence. TTL is never inferred from policy or capability defaults. Char reduction estimates are not converted to tokens. Global KV metrics are not treated as per-request hotness. The normalizer performs no provider I/O and does not execute the pipeline or in-cache compaction.
 
-**Cache-aware runtime composition (TOKEN-10D):** `CacheAwareTokenOptimizationRuntime.run()` is the preferred cache-aware execution entrypoint. It composes typed adapter evidence extraction, reconciliation with `PromptCacheAttribution`, signal normalization, and the existing orchestrator — in that order. Reconciliation and normalization happen before router invocation. Conflicting provider/model cache evidence returns `SIGNALS_REJECTED` without calling the router, LLM, or pipeline. `PARTIAL` normalization still enters the orchestrator; unknown cache values remain unknown. The runtime does not poll providers, ingest global metrics, infer TTL, or perform in-cache compaction. Lower-level APIs (`normalize_cache_aware_compaction_signals()`, `CacheAwareTokenOptimizationOrchestrator.orchestrate()`) remain available for advanced callers.
+**Cache-aware runtime composition (TOKEN-10D):** `CacheAwareTokenOptimizationRuntime.run()` is the preferred cache-aware execution entrypoint. It composes typed adapter evidence extraction, reconciliation with `PromptCacheAttribution`, signal normalization, and the existing orchestrator - in that order. Reconciliation and normalization happen before router invocation. Conflicting provider/model cache evidence returns `SIGNALS_REJECTED` without calling the router, LLM, or pipeline. `PARTIAL` normalization still enters the orchestrator; unknown cache values remain unknown. The runtime does not poll providers, ingest global metrics, infer TTL, or perform in-cache compaction. Lower-level APIs (`normalize_cache_aware_compaction_signals()`, `CacheAwareTokenOptimizationOrchestrator.orchestrate()`) remain available for advanced callers.
 
 ### Cache-aware runtime public contract
 
@@ -496,14 +496,14 @@ Router terminal statuses (`BLOCKED`, `NO_OPTIMIZATION`, `REVIEW_REQUIRED`, etc.)
 
 **Direct `route_and_execute()`:** remains compatible (routes then executes without cache-aware gate). Use `CacheAwareTokenOptimizationRuntime.run()` or `CacheAwareTokenOptimizationOrchestrator.orchestrate()` for cache-aware entry.
 
-**TOKEN-10D-1 does not perform in-cache compaction** — `RUN` means execute the deterministic pipeline, not rewrite provider cache bytes.
+**TOKEN-10D-1 does not perform in-cache compaction** - `RUN` means execute the deterministic pipeline, not rewrite provider cache bytes.
 
 **Cache hit ≠ content reduction:** prefix-cache reuse reports provider cached tokens; optimization layers report removed chars separately.
 
 **Responsibility split:**
 
-- Token Optimization — assembly, integrity validation, optimization layers, proof gates.
-- Adapter / provider runtime — actual cache behavior, billing, Prometheus metrics.
+- Token Optimization - assembly, integrity validation, optimization layers, proof gates.
+- Adapter / provider runtime - actual cache behavior, billing, Prometheus metrics.
 
 Detail: [TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION.md](../architecture/TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION.md).
 
@@ -526,7 +526,7 @@ Detail: [TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION.md](../architecture/TOKEN
 | vLLM prefix-cache live proof | Cold/warm/changed-prefix provider reuse | live-verified (manual) | [VLLM_PREFIX_CACHE_LIVE_PROOF.md](proofs/VLLM_PREFIX_CACHE_LIVE_PROOF.md), `vllm_prefix_cache_live.py` | live-verified |
 | vLLM proof gates | Evaluation gates without live server | unit/contract | `test_vllm_prefix_cache_proof.py`, `test_vllm_prefix_cache_live.py` | unit/contract proven |
 | Safe Markdown/JSON reporting | Redaction-safe proof reports | unit/contract | `proofs/vllm_prefix_cache_report.py` | unit/contract proven |
-| Viktor / article-derived proof | N/A — architectural inspiration only | — | [cache-prefix architecture](../architecture/TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION.md) cites Viktor research; no separate executable Viktor proof | not applicable |
+| Viktor / article-derived proof | N/A - architectural inspiration only | - | [cache-prefix architecture](../architecture/TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION.md) cites Viktor research; no separate executable Viktor proof | not applicable |
 
 ---
 

@@ -1,4 +1,4 @@
-# Audit result — `ELASTIC_CAPACITY_AND_SCALING`
+# Audit result - `ELASTIC_CAPACITY_AND_SCALING`
 
 **Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
@@ -32,8 +32,8 @@ uv run pytest tests/unit/runtime/capacity/test_ecp_depth_gate.py -q
 
 ## Backlog P2–P4 (deferred)
 
-- test_capacity_approval_queue_flow flake — P2
-- Live K8s soak — P3 ops
+- test_capacity_approval_queue_flow flake - P2
+- Live K8s soak - P3 ops
 
 ---
 

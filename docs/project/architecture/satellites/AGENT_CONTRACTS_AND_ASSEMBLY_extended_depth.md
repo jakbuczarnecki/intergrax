@@ -1,10 +1,10 @@
-# AGENT_CONTRACTS_AND_ASSEMBLY — extended depth
+# AGENT_CONTRACTS_AND_ASSEMBLY - extended depth
 
 **Parent hub:** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](../AGENT_CONTRACTS_AND_ASSEMBLY.md)
 
 # 22. Tier and Terminology Canon
 
-## 22.1 Four tiers — operational definitions
+## 22.1 Four tiers - operational definitions
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -17,14 +17,14 @@
 
 | Term | Tier | One-sentence definition |
 |------|------|-------------------------|
-| **Harness (practical)** | 0+1+3 | Nexus + platform catalogs + application wiring — the governed execution environment |
-| **Nexus** | 1 | Agent Operating System: **`NexusLoop`** — one `Task` lifecycle, multi-agent graphs, governance |
-| **Nexus planning executor** | 1 | `planning/StepExecutor` — runs **ExecutionPlan** steps (orchestration plane); **not** agent cognitive steps §38 |
-| **Harness step kernel** | 0+1 | **`HarnessKernel.execute_step`** — deterministic one agent-runtime cycle (policy, trace, gateways) §38 |
+| **Harness (practical)** | 0+1+3 | Nexus + platform catalogs + application wiring - the governed execution environment |
+| **Nexus** | 1 | Agent Operating System: **`NexusLoop`** - one `Task` lifecycle, multi-agent graphs, governance |
+| **Nexus planning executor** | 1 | `planning/StepExecutor` - runs **ExecutionPlan** steps (orchestration plane); **not** agent cognitive steps §38 |
+| **Harness step kernel** | 0+1 | **`HarnessKernel.execute_step`** - deterministic one agent-runtime cycle (policy, trace, gateways) §38 |
 | **Agent** | 2 | Python class: `AgentContract` + **`on_next_step`** domain logic + optional cognitive pattern |
-| **Agent session loop** | 2 | **`Agent.run()`** — agent decision loop until terminal; **not** NexusLoop |
+| **Agent session loop** | 2 | **`Agent.run()`** - agent decision loop until terminal; **not** NexusLoop |
 | **Application** | 3 | Deployable shell: normalizes user input → `Task` → returns product output |
-| **Product** | — | Business offering built from Tier-3 app + selected Tier-2 agents |
+| **Product** | - | Business offering built from Tier-3 app + selected Tier-2 agents |
 
 ## 22.2 Runnable agent instance
 
@@ -39,25 +39,25 @@ ApplicationEnvironmentProfile (Tier-3)
             → agent.run(AgentRunRequest) → on_next_step loop (§29 · §38)
 ```
 
-The agent **class** is registered at bootstrap; it is **invoked per graph node**, not a long-lived OS process. Internal UAEP shim details: §13.3 — not author vocabulary.
+The agent **class** is registered at bootstrap; it is **invoked per graph node**, not a long-lived OS process. Internal UAEP shim details: §13.3 - not author vocabulary.
 
 ## 22.3 Responsibility matrix (detailed)
 
 | Concern | Tier-0 | Tier-1 Nexus | Tier-2 Agent (ACP) | Tier-3 Application |
 |---------|--------|--------------|--------------------|--------------------|
-| User intake / chat API | adapters | — | — | **owner** |
-| `Task` construction | — | consumes | — | **owner** |
-| Capability routing | — | **owner** (`AgentRouter`) | declares capabilities | roster + hints |
-| Multi-agent topology | — | **owner** (`GraphExecutor`) | — | `ApplicationGraphSpec` |
-| Agent session loop (`acp_run`) | — | **owner** (`AgentEngine` + kernel) | `on_next_step` content | — |
+| User intake / chat API | adapters | - | - | **owner** |
+| `Task` construction | - | consumes | - | **owner** |
+| Capability routing | - | **owner** (`AgentRouter`) | declares capabilities | roster + hints |
+| Multi-agent topology | - | **owner** (`GraphExecutor`) | - | `ApplicationGraphSpec` |
+| Agent session loop (`acp_run`) | - | **owner** (`AgentEngine` + kernel) | `on_next_step` content | - |
 | Tool invocation policy | `ToolRegistry` | `ToolRuntime` | via `step_ctx.invoke_tool` | `ToolProfile` |
 | LLM calls | `LLMAdapter` | tenant scope, budgets | inside `on_next_step` / pattern | `LLMProfile` |
 | Memory read/write | stores | `MemoryView` policy | via `step_ctx.memory_view` | `MemoryProfile` |
 | Prompt assets | `YamlPromptRegistry` | injection | prompt ids in agent | `PromptProfile` |
-| HITL / interrupt | — | **owner** | `StepOutcome.pause_hitl` | flags on profile |
+| HITL / interrupt | - | **owner** | `StepOutcome.pause_hitl` | flags on profile |
 | Trace / metrics | backends | event bus, hooks | emits via runtime | `ObservabilityProfile` |
-| Cognitive pattern (ReAct, etc.) | — | — | **owner** (ACP library) | — |
-| Domain business rules | — | — | **owner** | — |
+| Cognitive pattern (ReAct, etc.) | - | - | **owner** (ACP library) | - |
+| Domain business rules | - | - | **owner** | - |
 
 **Rule:** If a row says Nexus **owner**, Tier-2 agents MUST NOT reimplement it privately.
 
@@ -69,20 +69,20 @@ Intergrax deliberately separates three planning scopes. ACP operates primarily o
 
 ```mermaid
 flowchart TB
-    subgraph P1["Plane 1 — Nexus task cognition"]
+    subgraph P1["Plane 1 - Nexus task cognition"]
         TC[TaskClassifier]
         TP[TaskPlanner / Graph seed]
         NP[NexusPlan]
         TC --> TP --> NP
     end
 
-    subgraph P2["Plane 2 — ACP agent cognition"]
+    subgraph P2["Plane 2 - ACP agent cognition"]
         ONS[on_next_step]
         SO[StepOutcome]
         ONS --> SO
     end
 
-    subgraph P3["Plane 3 — Tool cognition"]
+    subgraph P3["Plane 3 - Tool cognition"]
         CTP[CatalogToolPlanner]
         TPD[ToolPlanDecision]
         TR[ToolRuntime]
@@ -97,15 +97,15 @@ flowchart TB
 
 | Plane | Question | Primary types | ACP role |
 |-------|----------|---------------|----------|
-| **1 — Nexus** | Which agents, what order, parallelism? | `NexusPlan`, `PlanStep` | Agent emits replan/handoff via `StepOutcome` + contract |
-| **2 — ACP** | What does this agent do in one node? | `StepOutcome`, `AcpSessionState`, `AgentRunTrace` | **Primary author surface** (`on_next_step` §29) |
-| **3 — Tool** | Which tools this LLM iteration? | `ToolPlanDecision` | `ReActAgent` triggers via `step_ctx.invoke_tool` or tool loop service |
+| **1 - Nexus** | Which agents, what order, parallelism? | `NexusPlan`, `PlanStep` | Agent emits replan/handoff via `StepOutcome` + contract |
+| **2 - ACP** | What does this agent do in one node? | `StepOutcome`, `AcpSessionState`, `AgentRunTrace` | **Primary author surface** (`on_next_step` §29) |
+| **3 - Tool** | Which tools this LLM iteration? | `ToolPlanDecision` | `ReActAgent` triggers via `step_ctx.invoke_tool` or tool loop service |
 
-**Internal bridge:** `UAEPExecutor` / `get_steps` may still execute under `HarnessKernel` — authors do not implement them (§13.3 · ACP-CLOSE-LEG-4).
+**Internal bridge:** `UAEPExecutor` / `get_steps` may still execute under `HarnessKernel` - authors do not implement them (§13.3 · ACP-CLOSE-LEG-4).
 
-**Anti-pattern ACP-AP-01:** Implementing multi-agent sequential workflows entirely inside one agent's `on_next_step` private graph without Nexus — bypasses merge policy, parallel caps, and per-node trace.
+**Anti-pattern ACP-AP-01:** Implementing multi-agent sequential workflows entirely inside one agent's `on_next_step` private graph without Nexus - bypasses merge policy, parallel caps, and per-node trace.
 
-**Anti-pattern ACP-AP-02:** Nexus micromanaging tool-level ReAct loops inside `GraphExecutor` — belongs to Plane 3 or `ReActAgent` inside Plane 2.
+**Anti-pattern ACP-AP-02:** Nexus micromanaging tool-level ReAct loops inside `GraphExecutor` - belongs to Plane 3 or `ReActAgent` inside Plane 2.
 
 **Canon:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §5.
 
@@ -126,7 +126,7 @@ Agent (ABC)                          intergrax/agents/agent_contract.py
 │       ├── PlanExecuteAgent         patterns/plan_execute.py                   [ACP-4]
 │       ├── DecompositionAgent       patterns/decomposition.py                [ACP-5]
 │       └── ReflectionAgent          patterns/reflection.py                     [ACP-6]
-└── (legacy non-UAEP Agent)          deprecated — AgentEngine fallback        [ACP-LEG]
+└── (legacy non-UAEP Agent)          deprecated - AgentEngine fallback        [ACP-LEG]
 ```
 
 ## 24.2 Class responsibilities
@@ -174,7 +174,7 @@ class CognitiveAgent(HarnessReferenceAgent):
 | `should_request_human(state)` | `evaluate()` → `REQUEST_HUMAN` with `human_request` payload |
 | Incremental state | `ctx.metadata["acp.state.v1"]` (see §25) |
 
-**Decision helpers (ACP-7):** `intergrax/agents/authoring/decisions.py` — primary `finish()`, `continue_with()`, `pause_for_human()`, `request_replan()`, `delegate_handoff()` → `StepOutcome` factories §32.0.4; legacy UAEP `complete()` / `continue_to()` / `delegate_to()` deprecated; `to_step_outcome()` bridges `AgentDecision` for UAEP shim only.
+**Decision helpers (ACP-7):** `intergrax/agents/authoring/decisions.py` - primary `finish()`, `continue_with()`, `pause_for_human()`, `request_replan()`, `delegate_handoff()` → `StepOutcome` factories §32.0.4; legacy UAEP `complete()` / `continue_to()` / `delegate_to()` deprecated; `to_step_outcome()` bridges `AgentDecision` for UAEP shim only.
 
 ## 24.4 Single UAEP step vs internal micro-loop
 
@@ -212,7 +212,7 @@ Canonical type: `intergrax/contracts/runtime_execution_context.py`
 
 ## 25.2 ACP state envelope (`acp.state.v1`)
 
-Stored in `ctx.metadata["acp.state.v1"]` — JSON-serializable dict for checkpoint resume.
+Stored in `ctx.metadata["acp.state.v1"]` - JSON-serializable dict for checkpoint resume.
 
 ```json
 {
@@ -243,9 +243,9 @@ Stored in `ctx.metadata["acp.state.v1"]` — JSON-serializable dict for checkpoi
 
 - Agents MUST NOT store secrets in `acp.state.v1`.
 - Checkpoint resume: `UAEPAgentWithResume` + `RUNTIME_CHECKPOINT_KEY` in metadata ([`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.8).
-- Nexus-owned checkpoint cursor: `UAEP_STEP_CURSOR_KEY` — do not conflate with ACP inner iteration.
-- **Author code (normative — §32.0):** MUST NOT read or write `acp.state.v1` via ad-hoc `dict` keys. Use **`AcpSessionState`** (platform envelope) plus optional **agent-specific Pydantic subclass** with `extra=forbid`. Harness serializes to/from JSON at checkpoint boundaries only.
-- **Budget counters (including tokens):** harness-owned — authors **read** via `load_session_state().budget`; MUST NOT increment counters in `state_delta` (ACP-AP-13).
+- Nexus-owned checkpoint cursor: `UAEP_STEP_CURSOR_KEY` - do not conflate with ACP inner iteration.
+- **Author code (normative - §32.0):** MUST NOT read or write `acp.state.v1` via ad-hoc `dict` keys. Use **`AcpSessionState`** (platform envelope) plus optional **agent-specific Pydantic subclass** with `extra=forbid`. Harness serializes to/from JSON at checkpoint boundaries only.
+- **Budget counters (including tokens):** harness-owned - authors **read** via `load_session_state().budget`; MUST NOT increment counters in `state_delta` (ACP-AP-13).
 
 ## 25.3 Configuration injection path
 
@@ -269,15 +269,15 @@ sequenceDiagram
 |--------------|--------|-------------------|
 | `LLMProfile` | Tier-3 | `build_context` → `RuntimeContext.config` |
 | `ToolProfile` / skills | Tier-3 | contract `allowed_tools` + gateway policy |
-| `OrchestrationProfile` | Tier-3 | Nexus only — agent reads via metadata if needed |
+| `OrchestrationProfile` | Tier-3 | Nexus only - agent reads via metadata if needed |
 | `cognitive_pattern` | Tier-2 class | `AgentContract` extension field (ACP-0) |
 | `max_steps`, `risk_level` | Tier-2 contract | enforced by UAEP + policy |
 
-**Anti-pattern ACP-AP-03:** Hardcoding `tenant_id`, API keys, or model names in agent source — use profile injection.
+**Anti-pattern ACP-AP-03:** Hardcoding `tenant_id`, API keys, or model names in agent source - use profile injection.
 
 ## 25.4 Invocation-time token usage (agent vs environment)
 
-**Goal:** At every `on_next_step`, the agent can see **how many LLM tokens this agent run has consumed** and **how many the whole application environment has consumed** — to drive adaptive decisions (e.g. downgrade `model_hint` to a cheaper model, early-complete, or request HITL before budget exhaustion).
+**Goal:** At every `on_next_step`, the agent can see **how many LLM tokens this agent run has consumed** and **how many the whole application environment has consumed** - to drive adaptive decisions (e.g. downgrade `model_hint` to a cheaper model, early-complete, or request HITL before budget exhaustion).
 
 ### 25.4.1 Scopes
 
@@ -288,7 +288,7 @@ sequenceDiagram
 
 **Single-agent direct `run()`:** when no multi-agent graph is active, `environment.tokens_total >= agent.tokens_total` (environment MAY include non-agent harness overhead; agent MUST NOT assume equality).
 
-**Multi-agent Nexus graph:** environment rollup is **strictly greater or equal** to any single agent's counters — agents use environment scope for **global** budget policy and agent scope for **local** phase decisions.
+**Multi-agent Nexus graph:** environment rollup is **strictly greater or equal** to any single agent's counters - agents use environment scope for **global** budget policy and agent scope for **local** phase decisions.
 
 ### 25.4.2 Contracts
 
@@ -316,17 +316,17 @@ AcpInvocationUsageView:                     # read-only on AgentStepContext
 2. Refresh `step_ctx.invocation_usage` before the **next** `on_next_step` (**both scopes**).
 3. Persist environment rollup under task metadata key **`acp.usage.v1`** for checkpoint/trace correlation (authors do not write this key).
 
-**Cross-domain:** token metering originates in [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) (`LLMUsageTracker`, `LLMMetricsCollector`); budget envelopes in [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) (`cost_budget`, `BudgetEnvelope`). ACP exposes **author-readable rollups** only — Tier-2 MUST NOT import vendor metrics SDKs.
+**Cross-domain:** token metering originates in [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) (`LLMUsageTracker`, `LLMMetricsCollector`); budget envelopes in [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) (`cost_budget`, `BudgetEnvelope`). ACP exposes **author-readable rollups** only - Tier-2 MUST NOT import vendor metrics SDKs.
 
-**Plan:** ACP-TOK-1 (**Done** — `acp_token_metering_bridge.py`, `test_acp_token_usage_metering.py`).
+**Plan:** ACP-TOK-1 (**Done** - `acp_token_metering_bridge.py`, `test_acp_token_usage_metering.py`).
 
 ## 25.5 Token budget limits, enforcement, and application reactions
 
-**Goal:** Tier-3 applications assign **optional** per-agent and environment token limits. When a limit is set, the **engine** enforces it (hard stop before the next LLM call). When no limit is set, usage rollups still flow to agent state so developers implement **soft** reactions (model downgrade, early complete). **How** the environment reacts to threshold breach or hard exceed — abort, HITL, notify user, custom hook — is **fully configurable** on the application host.
+**Goal:** Tier-3 applications assign **optional** per-agent and environment token limits. When a limit is set, the **engine** enforces it (hard stop before the next LLM call). When no limit is set, usage rollups still flow to agent state so developers implement **soft** reactions (model downgrade, early complete). **How** the environment reacts to threshold breach or hard exceed - abort, HITL, notify user, custom hook - is **fully configurable** on the application host.
 
 ### 25.5.1 Limit assignment (application → agent)
 
-Limits are declared in Tier-3; merged into `EffectiveAgentRunEnvironment` at `run()` (§30). **None** means *no hard cap* — not zero.
+Limits are declared in Tier-3; merged into `EffectiveAgentRunEnvironment` at `run()` (§30). **None** means *no hard cap* - not zero.
 
 | Source | Field | Scope | Typical use |
 |--------|-------|-------|-------------|
@@ -353,7 +353,7 @@ AgentBudgetSlice:                           # intergrax/contracts/agent_budget.p
     warn_threshold_ratio: float | null        # overrides env default for this agent
 ```
 
-**`advisory` enforcement:** limit is visible in state (`tokens_limit`, `tokens_remaining`) but harness does **not** block — author must react in `on_next_step`. **`hard` enforcement:** harness blocks the next LLM invocation and applies reaction policy (below).
+**`advisory` enforcement:** limit is visible in state (`tokens_limit`, `tokens_remaining`) but harness does **not** block - author must react in `on_next_step`. **`hard` enforcement:** harness blocks the next LLM invocation and applies reaction policy (below).
 
 ### 25.5.2 Engine enforcement vs author soft control
 
@@ -363,7 +363,7 @@ AgentBudgetSlice:                           # intergrax/contracts/agent_budget.p
 | **Advisory only** | limit set + `enforcement=advisory` | Meters usage; emits warn events at threshold; does not block | Implement downgrade / complete / `pause_hitl` in `on_next_step` |
 | **No limit** | all null | Meters usage only (§25.4) | Optional soft strategy from raw `tokens_total` |
 
-**Invariant:** metering (§25.4) is **always on** when LLM adapters report tokens — independent of whether a limit exists.
+**Invariant:** metering (§25.4) is **always on** when LLM adapters report tokens - independent of whether a limit exists.
 
 **Author-visible limit fields (read-only, harness-maintained):**
 
@@ -373,8 +373,8 @@ AcpBudgetState / AcpTokenUsage:
     tokens_remaining: int | null              # limit - tokens_total when limit set
 
 AcpInvocationUsageView:
-    agent.*     — per-agent scope limits + usage
-    environment.* — environment scope limits + usage
+    agent.*     - per-agent scope limits + usage
+    environment.* - environment scope limits + usage
 ```
 
 ### 25.5.3 Environment reaction policies (Tier-3 configurable)
@@ -395,19 +395,19 @@ BudgetReactionProfile:
 |----------|---------------|---------------------------|
 | **abort** | `StepOutcome.fail` / run `status=failed`, `terminal_reason=budget_exceeded`, `AgentRunError(BUDGET_EXCEEDED)` | Error payload + trace; optional `user_message_template` |
 | **hitl** | `StepOutcome.pause_hitl` / Nexus HITL runner; resume after approval | HITL ticket + governance snapshot §29 |
-| **degrade_model** | Force `StepLLMRouter` to cheapest allowed model for subsequent steps | Trace warning; agent may observe lower `model_id` — **target:** unify with `BudgetExceededDegradeRule` ([`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) M-LLM-X.9.6 · [ADR-LLM-003](../adr/entries/2026-06-19/ADR-LLM-003.md)) |
+| **degrade_model** | Force `StepLLMRouter` to cheapest allowed model for subsequent steps | Trace warning; agent may observe lower `model_id` - **target:** unify with `BudgetExceededDegradeRule` ([`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) M-LLM-X.9.6 · [ADR-LLM-003](../adr/entries/2026-06-19/ADR-LLM-003.md)) |
 | **notify_only** | Run continues (advisory exceed) or soft-stop per binding; notifications fired | Webhook/Slack/email via integration slugs |
 | **custom_hook** | Host invokes registered `BudgetReactionHook` with structured payload | Application-defined (dashboard, billing, paging) |
 | **pause_graph** | Nexus pauses graph execution (environment exceed only) | ApplicationRunSummary + task status |
 
-**Notification wiring:** channels reference **integration slugs** on the host (`notification_channel`, webhook tools) — not vendor SDKs in Tier-2. See `notify_tool_wiring` pattern on Tier-3 hosts.
+**Notification wiring:** channels reference **integration slugs** on the host (`notification_channel`, webhook tools) - not vendor SDKs in Tier-2. See `notify_tool_wiring` pattern on Tier-3 hosts.
 
 **Events (normative):** harness emits `RuntimeEvent` payloads:
 
-- `BUDGET_THRESHOLD` — `tokens_total / tokens_limit >= warn_threshold_ratio`
-- `BUDGET_EXCEEDED` — hard limit crossed (includes scope: `agent` | `environment`, limit source, counters)
+- `BUDGET_THRESHOLD` - `tokens_total / tokens_limit >= warn_threshold_ratio`
+- `BUDGET_EXCEEDED` - hard limit crossed (includes scope: `agent` | `environment`, limit source, counters)
 
-Subscribers: observability spine, application hooks, FastAPI SSE/WebSocket bridges — configured per host.
+Subscribers: observability spine, application hooks, FastAPI SSE/WebSocket bridges - configured per host.
 
 ### 25.5.4 Application configuration example
 
@@ -442,13 +442,13 @@ CostProfile(
 | Layer | Role |
 |-------|------|
 | [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) | `CostProfile`, `AgentBinding.budget_slice`, host hook registration |
-| [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) | `RunBudget`, `BudgetPolicy`, `BudgetEnforcer` (Nexus pipeline — environment scope) |
+| [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) | `RunBudget`, `BudgetPolicy`, `BudgetEnforcer` (Nexus pipeline - environment scope) |
 | [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) | Token metering source |
 | ACP §25.4 / §32.6 / §33.4 | Author read surface + adaptive downgrade |
 
 **Implementation status:** per-agent `AgentBinding.budget_slice` + ACP kernel pre-LLM enforcement + reaction hooks = **Done** (ACP-TOK-2 · ACP-TOK-3 · ACP-TOK-CI). Environment `CostProfile` + host `budget_reaction` wiring = **Done** (Tier-3 §43 · APP-PROD-7). Nexus `RunBudget` graph-level env cap = **Partial** (COST-1).
 
-**Plan:** ACP-TOK-1 · ACP-TOK-2 · ACP-TOK-3 · ACP-TOK-CI — **Done**.
+**Plan:** ACP-TOK-1 · ACP-TOK-2 · ACP-TOK-3 · ACP-TOK-CI - **Done**.
 
 ---
 
@@ -517,7 +517,7 @@ decide_after_step: COMPLETE | FAIL | REQUEST_HUMAN per evaluate
 
 **Integration:** Plane 3 `CatalogToolPlanner` may assist tool selection; `ReActAgent` MAY call `ctx.invoke_tool` directly with schemas from `contract.allowed_tools`.
 
-**Cross-plan:** [`plan/TOOLS.md`](../plan/TOOLS.md) **TOOL-ENG-6** (bounded ReAct tool loop) — `ReActAgent` MUST use shared budget keys in `acp.state.v1.budget`.
+**Cross-plan:** [`plan/TOOLS.md`](../plan/TOOLS.md) **TOOL-ENG-6** (bounded ReAct tool loop) - `ReActAgent` MUST use shared budget keys in `acp.state.v1.budget`.
 
 **Stop conditions:**
 
@@ -528,16 +528,16 @@ decide_after_step: COMPLETE | FAIL | REQUEST_HUMAN per evaluate
 
 ## 26.4 PlanExecuteAgent
 
-**Intent:** Explicit plan phases — either multiple UAEP steps or labeled phases inside one step.
+**Intent:** Explicit plan phases - either multiple UAEP steps or labeled phases inside one step.
 
-**Mode A — multi UAEP step (preferred for trace clarity):**
+**Mode A - multi UAEP step (preferred for trace clarity):**
 
 ```text
 get_steps: [plan, execute_phase_1, execute_phase_2, ..., synthesize]
 decide_after_step: CONTINUE chain until last → COMPLETE
 ```
 
-**Mode B — internal phase machine** (long plans with dynamic branch):
+**Mode B - internal phase machine** (long plans with dynamic branch):
 
 ```text
 get_steps: [AgentStep(id="plan_execute_main")]
@@ -586,7 +586,7 @@ run_step:
     if verdict.escalate: REQUEST_HUMAN / INTERRUPT
 ```
 
-**Integration:** `critic_gateway.verify_reflection_draft` — reads `CriticGraphHooks` from `step_ctx.metadata` (`AcpRunContextKey.CRITIC_HOOKS`). Tier-3 attaches hooks via `build_acp_session_host_from_harness` / `ACPSessionHostContext.critic_graph_hooks`. ReflectionAgent MUST NOT import critic orchestrator SDKs directly.
+**Integration:** `critic_gateway.verify_reflection_draft` - reads `CriticGraphHooks` from `step_ctx.metadata` (`AcpRunContextKey.CRITIC_HOOKS`). Tier-3 attaches hooks via `build_acp_session_host_from_harness` / `ACPSessionHostContext.critic_graph_hooks`. ReflectionAgent MUST NOT import critic orchestrator SDKs directly.
 
 **Use cases:** legal/clinical/financial outputs, contract generation, compliance summaries.
 
@@ -605,7 +605,7 @@ CI script `check_agent_pattern_conformance.py` (ACP-13) validates pattern class 
 
 # 27. End-to-End Execution Flows
 
-## 27.1 Flow A — Single agent chat (S1)
+## 27.1 Flow A - Single agent chat (S1)
 
 ```mermaid
 sequenceDiagram
@@ -632,7 +632,7 @@ sequenceDiagram
     App->>User: reply
 ```
 
-## 27.2 Flow B — Multi-agent sequential (S3)
+## 27.2 Flow B - Multi-agent sequential (S3)
 
 ```mermaid
 sequenceDiagram
@@ -651,7 +651,7 @@ sequenceDiagram
 
 **Rule:** Agents A and B each use own ACP pattern; **topology** is Plane 1 only.
 
-## 27.3 Flow C — Agent requests human (S7)
+## 27.3 Flow C - Agent requests human (S7)
 
 ```text
 on_next_step → StepOutcome.pause_hitl(...)
@@ -662,7 +662,7 @@ Task → WAITING_FOR_HUMAN
 
 Agent MUST NOT block the event loop waiting for operator input.
 
-## 27.4 Flow D — MODIFY_PLAN (cross-plane)
+## 27.4 Flow D - MODIFY_PLAN (cross-plane)
 
 ```text
 DecompositionAgent.evaluate → insufficient capability
@@ -705,7 +705,7 @@ Developer code path:
 | `CognitiveAgent` base | **Done** ACP-1 | `intergrax/agents/authoring/patterns/base.py` |
 | Pattern classes | **Done** ACP-2–6 | `intergrax/agents/authoring/patterns/*.py` |
 | Reference pattern probes | **Done** ACP-9 | `intergrax/agents/authoring/patterns/reference.py` |
-| Legacy pipeline bridge | **Removed** (LEG-3 · LEG-5 Done) | ADR-FLOW-005 — ACP-only execution |
+| Legacy pipeline bridge | **Removed** (LEG-3 · LEG-5 Done) | ADR-FLOW-005 - ACP-only execution |
 | `AgentRunRequest` / `Result` | **Done** ACP-DX-1 | `intergrax/contracts/agent_run.py` |
 | `merge_environment` | **Done** ACP-DX-2 | `intergrax/agents/run_environment.py` |
 | Scaffold `--pattern` | **Done** ACP-8 | `intergrax/scaffold/new_agent.py` |
@@ -717,14 +717,14 @@ Developer code path:
 | UAEP-first authoring | L3 | L3 (bridge internal) | L3 internal-only |
 | Pattern library | L0 (ad hoc) | **L3** | L3 |
 | Mental model clarity | L1–L2 | **L3** (§29 single entry · PAT-3) | L3 |
-| Legacy path removal | L2 (dual path) | **L3** (ACP-CLOSE-LEG-5 — pipeline stack deleted) | L3 |
+| Legacy path removal | L2 (dual path) | **L3** (ACP-CLOSE-LEG-5 - pipeline stack deleted) | L3 |
 | ReAct + tool loop unity | L1 | **L3** (TOOL-ENG-6 · PAT-1 Done) | L3 |
 | Decomposition agent DX | L0 | **L3** | L3 |
 | Reflection + CVL wiring | L2 | **L3** (ACP-CLOSE-PAT-2 Done) | L3 |
 
 ## 28.3 Gap register (ACP)
 
-**Audit sync (2026-06-13 · ACP-LC 2026-06-17):** **37 Closed** · **0 Open** · ACP-FINISH complete; Full Harness LC closeout — no open P0/P1 in domain scope.
+**Audit sync (2026-06-13 · ACP-LC 2026-06-17):** **37 Closed** · **0 Open** · ACP-FINISH complete; Full Harness LC closeout - no open P0/P1 in domain scope.
 
 **Audit revalidation (2026-06-19, ACP-MAINT-DOC-01):** Fleet **17/17** migrated · `check_agent_acp_close_ci.py` green (skill resolution in umbrella · production readiness mean 100%) · AS-3 `boundary_demo` migrated off author-time `allowed_tools`. Deferred cross-domain: COST-1 graph `RunBudget` cap · FAUDIT-REG.1.
 
@@ -786,7 +786,7 @@ Developer code path:
 | ACP-AP-12 | In-place mutation of `step_ctx.state` | Return `StepOutcome.continue_with(state_delta=…)` only §32.0.2 |
 | ACP-AP-13 | Agent-maintained token/cost counters in subclass state | Read `budget` + `invocation_usage` §25.4; harness owns increments |
 | ACP-AP-14 | Hardcoded token limits or exceed handling in agent | `AgentBinding.budget_slice` + `BudgetReactionProfile` §25.5 |
-| ACP-AP-13 | Implicit continue — empty outcome or missing `next_action` | Explicit `StepOutcome.continue_with()` or terminal factory §32.0.3 |
+| ACP-AP-13 | Implicit continue - empty outcome or missing `next_action` | Explicit `StepOutcome.continue_with()` or terminal factory §32.0.3 |
 | ACP-AP-14 | God-method `on_next_step` (> ~40 lines without delegation) | Phase helpers `_step_plan`, `_step_execute` §32.0.4 |
 | ACP-AP-15 | Free-text `terminal_reason` or ad-hoc error strings | `TerminalReason` + `AgentRunError` enums §37.4–§37.5 |
 
@@ -800,11 +800,11 @@ Developer code path:
 | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) | End-to-end narrative S1–S7 |
 | [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §22–§23 · §22.6 | Application shell + profile injection §30 · hierarchical bundles (ADR-APP-003) |
 | [`MEMORY.md`](MEMORY.md) · [`RAG.md`](RAG.md) · [`TOOLS.md`](TOOLS.md) | Per-agent resource planes §30 |
-| [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) | **Appendix AC** — author `run()` + patterns |
+| [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) | **Appendix AC** - author `run()` + patterns |
 | [`plan/TOOLS.md`](../plan/TOOLS.md) TOOL-ENG-6 | Tool loop for ReActAgent |
 | [`plan/CRITIC_VERIFICATION.md`](../plan/CRITIC_VERIFICATION.md) | ReflectionAgent critic hooks |
 
-**Implementation:** Phase **ACP** **Done** (2026-06-11). **ACP-CLOSE** + **ACP-FINISH** **Done** (2026-06-13) — mutating platform gates green (`check_agent_acp_close_ci.py`). ADR-AGENT-001/002/003 accepted.
+**Implementation:** Phase **ACP** **Done** (2026-06-11). **ACP-CLOSE** + **ACP-FINISH** **Done** (2026-06-13) - mutating platform gates green (`check_agent_acp_close_ci.py`). ADR-AGENT-001/002/003 accepted.
 
 ---
 
@@ -813,9 +813,9 @@ Developer code path:
 **ADR:** [ADR-AGENT-002](../adr/entries/2026-06-11/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/entries/2026-06-11/ADR-AGENT-003.md)  
 **Goal:** One obvious session API for Tier-2 authors; **`on_next_step`** for domain iterations; Nexus + UAEP remain implementation details.
 
-## 29.0 Author terminology — single canonical entry (ACP-CLOSE-PAT-3)
+## 29.0 Author terminology - single canonical entry (ACP-CLOSE-PAT-3)
 
-**Normative vocabulary** for Tier-2 session/run/step terms lives **in §29 through §29.6**. [`AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) §1 and Appendix AC **link here** — they MUST NOT redefine terms. Internal runtime names (`UAEPExecutor`, `get_steps`, `AgentEngine`) are for platform engineers only (§13 · §38).
+**Normative vocabulary** for Tier-2 session/run/step terms lives **in §29 through §29.6**. [`AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) §1 and Appendix AC **link here** - they MUST NOT redefine terms. Internal runtime names (`UAEPExecutor`, `get_steps`, `AgentEngine`) are for platform engineers only (§13 · §38).
 
 | Term | Where defined |
 |------|----------------|
@@ -825,7 +825,7 @@ Developer code path:
 | Rejected mental-model alternatives | §29.6 |
 | Tier / plane vocabulary | §22–§23 |
 
-## 29.1 Design principle — one agent, two entries, one engine
+## 29.1 Design principle - one agent, two entries, one engine
 
 ```text
 ┌──────────────────────────────────────────────────────────────────┐
@@ -853,13 +853,13 @@ Developer code path:
 
 ## 29.2 `AgentRunRequest` contract (normative target)
 
-**Shipped** (`intergrax/contracts/agent_run.py` — **ACP-DX-1 Done**). Nexus bridge maps legacy `RuntimeRequest` when needed.
+**Shipped** (`intergrax/contracts/agent_run.py` - **ACP-DX-1 Done**). Nexus bridge maps legacy `RuntimeRequest` when needed.
 
 ```text
 AgentRunRequest:
     schema_version: str = "agent_run.v1"
     input: str | dict                    # user/domain payload
-    identity: RequestIdentity            # §30.9 — tenant + authenticated principal
+    identity: RequestIdentity            # §30.9 - tenant + authenticated principal
     session_id: str | null
     correlation_id: str | null
     agent_id: str | null                 # usually from registry binding
@@ -879,14 +879,14 @@ AgentRunResult:
     status: succeeded | failed | paused | cancelled
     output: str | dict
     state: dict                          # updated incremental state (acp.state.v1)
-    artifacts: list[ArtifactRef]         # §40.6 — typed refs
+    artifacts: list[ArtifactRef]         # §40.6 - typed refs
     structured_data: dict
     confidence: float | null
     errors: list[str]
     warnings: list[str]
     trace_id: str
     run_id: str
-    trace: AgentRunTrace                 # §31 — full agent execution journal
+    trace: AgentRunTrace                 # §31 - full agent execution journal
     used_tools: list[str]                # summary rollup from trace
     cost: dict | null
     duration_ms: int
@@ -896,26 +896,26 @@ AgentRunResult:
 
 **Rules:**
 
-- `metadata` carries **external parameters** from application/intake (Slack thread, job id, locale, feature flags) — agents read via `ctx` / hooks, not global env vars.
-- **`identity` MUST be set by Tier-3 intake** from authenticated context (`IdentityProfile`) — agents MUST NOT invent `user_id` or `tenant_id`.
+- `metadata` carries **external parameters** from application/intake (Slack thread, job id, locale, feature flags) - agents read via `ctx` / hooks, not global env vars.
+- **`identity` MUST be set by Tier-3 intake** from authenticated context (`IdentityProfile`) - agents MUST NOT invent `user_id` or `tenant_id`.
 - When `memory_scope=user` (default §30.9), `user_id` MUST be present or harness returns `VALIDATION_FAILED`.
 - `state` is **authoritative for resume** within one agent run series; Nexus checkpoint holds task-level cursor separately.
 - Secrets MUST NOT appear in `state` or `metadata` without redaction at intake.
-- All result fields MUST be populated per §37.1 — no ad-hoc extra top-level keys on `AgentRunResult`.
+- All result fields MUST be populated per §37.1 - no ad-hoc extra top-level keys on `AgentRunResult`.
 - `errors` entries MUST use **`AgentRunError`** with controlled `code` §37.4.
 - `terminal_reason` MUST be from controlled vocabulary §37.5 when `status` is terminal or paused.
 
-### 29.2.1 Field semantics (hard contract — ACP-DX-1)
+### 29.2.1 Field semantics (hard contract - ACP-DX-1)
 
 | Field | Type | Semantics |
 |-------|------|-----------|
-| `identity` | `RequestIdentity` | **`tenant_id` + optional `user_id`** — from authenticated intake §30.9; propagated to memory namespace |
-| `identity.tenant_id` | `str` | Hard boundary — all memory/RAG/trace labels |
+| `identity` | `RequestIdentity` | **`tenant_id` + optional `user_id`** - from authenticated intake §30.9; propagated to memory namespace |
+| `identity.tenant_id` | `str` | Hard boundary - all memory/RAG/trace labels |
 | `identity.user_id` | `str /| null` | End-user when `principal_type=user`; required for default user-scoped memory |
 | `identity.principal_type` | enum | `user` (interactive), `service` (daemon), `org_system` (org-wide background agent) |
 | `input` | `str /| dict` | Domain payload after application normalization; immutable for session |
 | `metadata` | `dict[str, JSONValue]` | External params; read-only for agent; host-owned schema per product |
-| `state` | `dict /| null` | Wire/checkpoint blob of `acp.state.v1` on resume; authors use `AcpSessionState` §32.0 — not raw dict in Tier-2 |
+| `state` | `dict /| null` | Wire/checkpoint blob of `acp.state.v1` on resume; authors use `AcpSessionState` §32.0 - not raw dict in Tier-2 |
 | `environment_overrides` | `AgentEnvironmentOverrides /| null` | Per-run narrow of tools/memory/RAG/LLM slices §30; policy-bound |
 | `execution_options` | `AgentExecutionOptions /| null` | See below |
 | `trace` | `AgentRunTrace` | Authoritative Plane B journal §31 |
@@ -952,7 +952,7 @@ AgentRunError:
 | **Direct `run`** | Test, notebook, simple 1-agent host | Fast iteration; no graph |
 | **`Task` → Nexus** | Production host, multi-agent, HITL | Same agent class; graph + governance |
 
-**Invariant:** Changing posture MUST NOT require rewriting domain hooks — only wiring in Tier-3.
+**Invariant:** Changing posture MUST NOT require rewriting domain hooks - only wiring in Tier-3.
 
 ## 29.4 What `run()` does internally (author MUST NOT duplicate)
 
@@ -982,7 +982,7 @@ Authors MAY override **only** these for customization without forking harness:
 
 | Hook | Purpose | Default |
 |------|---------|---------|
-| **`on_next_step`** | One domain iteration — primary cognitive hook | pattern base / `@step` driver |
+| **`on_next_step`** | One domain iteration - primary cognitive hook | pattern base / `@step` driver |
 | `perceive` / `reason` / `act` / `evaluate` | Cognitive pattern decomposition | Pattern base → may call `on_next_step` |
 | `@step` methods | Linear pipelines | `IntergraxAgent` sequential `on_next_step` |
 | `configure_run(merged_env) -> dict` | Per-run tweaks (prompt ids, thresholds) | no-op |
@@ -996,34 +996,34 @@ Authors MUST NOT override `run()`, **`AgentRuntime.advance_step`**, or **`Harnes
 
 | User concept | Intergrax mapping |
 |--------------|-------------------|
-| „`run` jak Nexus” | `Agent.run()` — harness inside base |
+| „`run` jak Nexus” | `Agent.run()` - harness inside base |
 | „pipeline agenta” | Many `on_next_step` inside one `run()` |
-| "run after every step" | **`AgentRuntime.advance_step`** inside `run()` — not many external `run()` calls |
-| „Nexus wykonuje plan agenta” | **No** — agent planuje w `on_next_step`; kernel wykonuje jeden cykl §38 |
-| "Nexus removed" | **No** — Nexus orchestrates `Task`; `run` executes one agent node |
+| "run after every step" | **`AgentRuntime.advance_step`** inside `run()` - not many external `run()` calls |
+| „Nexus wykonuje plan agenta” | **No** - agent planuje w `on_next_step`; kernel wykonuje jeden cykl §38 |
+| "Nexus removed" | **No** - Nexus orchestrates `Task`; `run` executes one agent node |
 | „konfiguracja w klasie” | **Defaults on contract** + **runtime merge** from environment §30 |
 | "full trace in run" | `AgentRunResult.trace` §31 |
-| "application logs orchestration" | `ApplicationRunSummary` §31 — separate plane |
+| "application logs orchestration" | `ApplicationRunSummary` §31 - separate plane |
 
 ---
 
 # 30. Per-Agent Environment and Resource Binding
 
-**Goal:** Each agent can have **its own** memory namespaces, tool allowlists, skills, RAG/knowledge backends, and LLM posture — while the **application/environment** injects external parameters per deployment and per request.
+**Goal:** Each agent can have **its own** memory namespaces, tool allowlists, skills, RAG/knowledge backends, and LLM posture - while the **application/environment** injects external parameters per deployment and per request.
 
 ## 30.1 Three configuration layers (merge order)
 
 ```text
-Layer 1 — Platform catalog (Tier-0)
+Layer 1 - Platform catalog (Tier-0)
     ToolRegistry, SkillRegistry, IntegrationRegistry, RAG engines, memory stores
 
-Layer 2 — Application environment (Tier-3)
+Layer 2 - Application environment (Tier-3)
     ApplicationEnvironmentProfile: LLMProfile, ToolProfile, MemoryProfile,
     IntegrationProfile, PromptProfile, OrchestrationProfile,
     PolicyRulesProfile, GuardrailProfile, ExecutionMode,
     OrganizationalPolicyEnvelope (optional) §39, ...
 
-Layer 3 — Agent binding (Tier-3 roster + Tier-2 contract)
+Layer 3 - Agent binding (Tier-3 roster + Tier-2 contract)
     AgentContract + AgentBinding: agent_id, skill_ids, extra_tools,
     cognitive_pattern, memory_namespace, rag_collection_id, risk,
     org_role_id (optional) §39, ...
@@ -1086,7 +1086,7 @@ AgentEnvironmentOverrides:
 **Application responsibilities:**
 
 - Map HTTP/Slack/queue payload → `metadata` + optional `environment_overrides`.
-- Never pass raw credentials — pass **integration slugs** resolved by Tier-3 wiring.
+- Never pass raw credentials - pass **integration slugs** resolved by Tier-3 wiring.
 - Multi-agent apps set **per-node** overrides on `Task` metadata when graph nodes need different RAG scope.
 
 ## 30.3 Per-agent resource binding on contract
@@ -1120,10 +1120,10 @@ AgentBinding (manifest roster entry):
 |-------|------------|-----------|-------------------|
 | Legal | scope **user** + matter: `legal/{tenant}/{user}/{matter_id}` | `rag.retrieve`, `doc.parse` | collection `legal_clauses` |
 | Research | scope **user**: `research/{tenant}/{user}` | `websearch.query`, `rag.retrieve` | collection `web_cache` |
-| Org batch analyst | scope **org**: `org/{tenant}/analytics` — no `user_id` segment | internal tools | org knowledge base |
+| Org batch analyst | scope **org**: `org/{tenant}/analytics` - no `user_id` segment | internal tools | org knowledge base |
 | Echo lab | scope **task** | none | none |
 
-Implementation: at `run()` merge → `RuntimeExecutionContext.memory_view` scoped to namespace; `tool_gateway` filtered to effective allowlist; RAG via **tool** `rag.retrieve` with collection in tool args or metadata — not direct Qdrant client in agent.
+Implementation: at `run()` merge → `RuntimeExecutionContext.memory_view` scoped to namespace; `tool_gateway` filtered to effective allowlist; RAG via **tool** `rag.retrieve` with collection in tool args or metadata - not direct Qdrant client in agent.
 
 ## 30.4 `EffectiveAgentRunEnvironment` (runtime materialized)
 
@@ -1141,15 +1141,15 @@ EffectiveAgentRunEnvironment:
     rag: collection ids, RetrievalService bridge config
     prompts: catalog path + agent prompt ids + org SOP overlays §39
     policy: RuntimePolicyBundle slice for this agent risk tier
-    organizational: OrganizationalPolicyContext | null   # §39 — merged envelope + role
+    organizational: OrganizationalPolicyContext | null   # §39 - merged envelope + role
     observability: trace labels prefix "{agent_id}." + org compliance labels §39.5
 ```
 
-Subclass hooks receive `merged: EffectiveAgentRunEnvironment` (ACP-DX-3). Authors read **`merged.organizational`** for active playbooks and channel rules — never hardcode org policy in agent source.
+Subclass hooks receive `merged: EffectiveAgentRunEnvironment` (ACP-DX-3). Authors read **`merged.organizational`** for active playbooks and channel rules - never hardcode org policy in agent source.
 
 ## 30.5 Flexibility patterns for derived classes
 
-### Pattern A — Environment-driven, zero hardcoding
+### Pattern A - Environment-driven, zero hardcoding
 
 ```text
 # Subclass only implements reasoning; all backends from host:
@@ -1159,7 +1159,7 @@ class AnalystAgent(DecompositionAgent):
     # memory_namespace_template on contract; host wires Qdrant slug
 ```
 
-### Pattern B — Agent defaults + request overrides
+### Pattern B - Agent defaults + request overrides
 
 ```text
 def merge_environment(self, base, request):
@@ -1169,7 +1169,7 @@ def merge_environment(self, base, request):
     return base.model_copy(update={"memory_namespace": ns})
 ```
 
-### Pattern C — Factory injection (Tier-3)
+### Pattern C - Factory injection (Tier-3)
 
 ```text
 # manifest AgentBinding factory receives LabHarnessContext:
@@ -1179,15 +1179,15 @@ def build_analyst(ctx: LabHarnessContext) -> AnalystAgent:
 
 Factory MUST NOT import `applications.*` from `agents` package.
 
-### Pattern D — Multi-database / multi-knowledge
+### Pattern D - Multi-database / multi-knowledge
 
-Agent uses **multiple tools** bound to different integration slugs (`postgres.legal`, `qdrant.research`) — all via `ctx.invoke_tool`; contract declares `required_integration_slugs`; host `IntegrationProfile` maps slugs to backends.
+Agent uses **multiple tools** bound to different integration slugs (`postgres.legal`, `qdrant.research`) - all via `ctx.invoke_tool`; contract declares `required_integration_slugs`; host `IntegrationProfile` maps slugs to backends.
 
 ## 30.6 STRICT vs BALANCED enforcement
 
 | Mode | Tool widening from `configure_run` | Extra tools from request |
 |------|-----------------------------------|--------------------------|
-| **STRICT** | Denied | Intersection with contract only | **Organizational rules mandatory** — agent cannot override §39 |
+| **STRICT** | Denied | Intersection with contract only | **Organizational rules mandatory** - agent cannot override §39 |
 | **BALANCED** | Allowed if in host ToolProfile | Policy engine decides | Org rules enforced; limited agent-local exceptions via policy |
 | **EXPLORATORY** | Lab only | Widest within host profile | Org envelope optional (lab may omit) |
 
@@ -1219,7 +1219,7 @@ Agent uses **multiple tools** bound to different integration slugs (`postgres.le
 2. Set `AgentBinding.budget_slice` per roster entry when roles differ (e.g. cheap triage vs expensive analysis).
 3. Configure `cost_profile.budget_reaction` for exceed/threshold behavior and user notification.
 4. Register `BudgetReactionHook` on `HarnessHostRuntime` when `custom_hook` is used.
-5. Leave limits **unset** for lab agents that should only use advisory metering — authors implement reactions in code.
+5. Leave limits **unset** for lab agents that should only use advisory metering - authors implement reactions in code.
 
 **Cross-plan:** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) COST-1 extension · ACP-TOK-2.
 | ENV-AP-07 | Compliance checked only post-hoc in app code | `PolicyVerdictRecord` on every step §39.5 |
@@ -1251,9 +1251,9 @@ Agent uses **multiple tools** bound to different integration slugs (`postgres.le
 
 ## 30.9 Identity, tenant/user, and memory scope
 
-**Goal:** Every authenticated caller is bound to **`tenant_id`** and, by default, **`user_id`** for memory read/write. **Org-wide agents** (background, not acting on behalf of a single user) MAY use **`memory_scope=org`** when contract, binding, or environment explicitly allows — without per-user partitioning.
+**Goal:** Every authenticated caller is bound to **`tenant_id`** and, by default, **`user_id`** for memory read/write. **Org-wide agents** (background, not acting on behalf of a single user) MAY use **`memory_scope=org`** when contract, binding, or environment explicitly allows - without per-user partitioning.
 
-**Cross-domain:** [`MEMORY.md`](MEMORY.md) — User LTM (`tenant_id` + `user_id`), Org profile (`org_id`), Task KV.
+**Cross-domain:** [`MEMORY.md`](MEMORY.md) - User LTM (`tenant_id` + `user_id`), Org profile (`org_id`), Task KV.
 
 ### 30.9.1 Request identity (normative)
 
@@ -1270,7 +1270,7 @@ Background org job / scheduler / virtual employee (org-wide):
     principal_type = org_system | service
     tenant_id      = org tenant
     user_id        = null
-    memory_scope   = org (from contract/binding — REQUIRED)
+    memory_scope   = org (from contract/binding - REQUIRED)
 
 Service-to-service (no end-user):
     principal_type = service
@@ -1316,17 +1316,17 @@ resolved_memory_namespace = render(template, identity, metadata)
 | **Resume** | Prior state must match same `user_id` | Prior state matched by `tenant_id` + org namespace |
 | **STRICT** | Deny if `user_id` mismatch on resume | Deny cross-tenant always |
 
-Session/STM (chat history): tied to `session_id` **and** `user_id` when interactive — see [`MEMORY.md`](MEMORY.md) Session store.
+Session/STM (chat history): tied to `session_id` **and** `user_id` when interactive - see [`MEMORY.md`](MEMORY.md) Session store.
 
 ### 30.9.4 Examples
 
 ```text
-# Support agent — per authenticated customer
+# Support agent - per authenticated customer
 memory_scope: user
 template: "support/{tenant_id}/{user_id}"
 → User A never sees User B's thread memory
 
-# Nightly compliance scanner — org agent, no end-user
+# Nightly compliance scanner - org agent, no end-user
 memory_scope: org
 principal_type: org_system
 user_id: null
@@ -1356,13 +1356,13 @@ metadata.matter_id from intake
 
 **ADR:** [ADR-AGENT-003](../adr/entries/2026-06-11/ADR-AGENT-003.md)  
 **Observability spine:** [`OBSERVABILITY.md`](OBSERVABILITY.md) §1.2  
-**Goal:** Application logs **orchestration**; agent `run()` returns **execution journal** — complementary, not duplicated.
+**Goal:** Application logs **orchestration**; agent `run()` returns **execution journal** - complementary, not duplicated.
 
 ## 31.1 Two planes (normative)
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ PLANE A — Application orchestration (Tier-3 + Nexus)                     │
+│ PLANE A - Application orchestration (Tier-3 + Nexus)                     │
 │ ApplicationRunSummary / Task trace                                       │
 │  • which agents selected, graph edges, handoffs                          │
 │  • request intake metadata, session/tenant                               │
@@ -1374,7 +1374,7 @@ metadata.matter_id from intake
                     each graph node  │  agent.run(request)
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ PLANE B — Agent execution (Tier-2 session)                               │
+│ PLANE B - Agent execution (Tier-2 session)                               │
 │ AgentRunTrace on AgentRunResult.trace                                    │
 │  • step_index, step_id, cognitive_phase (optional)                       │
 │  • decisions, state deltas (redacted acp.state.v1 snapshot)            │
@@ -1385,7 +1385,7 @@ metadata.matter_id from intake
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-## 31.2 `AgentRunTrace` contract (target — ACP-OBS-1)
+## 31.2 `AgentRunTrace` contract (target - ACP-OBS-1)
 
 **Shipped:** `intergrax/contracts/agent_run_trace.py` (**ACP-OBS-1 Done**).
 
@@ -1417,11 +1417,11 @@ AgentStepRecord:
 **Rules:**
 
 - Harness **`HarnessKernel.execute_step`** MUST append one `AgentStepRecord` per iteration (via `AgentRuntime.advance_step`).
-- Authors MUST NOT write directly to external sinks — use `step_ctx.emit_diagnostic` (policy-bound).
+- Authors MUST NOT write directly to external sinks - use `step_ctx.emit_diagnostic` (policy-bound).
 - Plane A consumes **`AgentRunResult`** summary fields + optional trace pointer; Plane B is authoritative for step detail.
 - Aligns with [`OBSERVABILITY.md`](OBSERVABILITY.md): same `trace_id` links planes when Nexus invokes `run`.
 
-## 31.3 `ApplicationRunSummary` (target — ACP-OBS-2)
+## 31.3 `ApplicationRunSummary` (target - ACP-OBS-2)
 
 Tier-3 host or Nexus `Task` completion emits orchestration journal:
 
@@ -1469,18 +1469,18 @@ AgentInvocationSummary:
 
 ## 32.0 Author readability and typed contracts (normative)
 
-**Foundation:** Agent authoring DX treats **readability at code-review time** as a **first-class requirement**, equal to correctness and policy safety. A reviewer MUST understand what happened in a step — success, continue, pause, policy block, validation failure — **from the author's `on_next_step` (or `@step`) source alone**, without running the application or reading harness internals.
+**Foundation:** Agent authoring DX treats **readability at code-review time** as a **first-class requirement**, equal to correctness and policy safety. A reviewer MUST understand what happened in a step - success, continue, pause, policy block, validation failure - **from the author's `on_next_step` (or `@step`) source alone**, without running the application or reading harness internals.
 
-**Hard rule — typed contracts only:** The **author-facing** step loop API accepts and returns **only strongly typed Pydantic models and enums** (`extra=forbid`). The harness MAY serialize to JSON at persistence/checkpoint boundaries; authors MUST NOT depend on untyped `dict`, `Any`, or stringly-typed control flags in domain code.
+**Hard rule - typed contracts only:** The **author-facing** step loop API accepts and returns **only strongly typed Pydantic models and enums** (`extra=forbid`). The harness MAY serialize to JSON at persistence/checkpoint boundaries; authors MUST NOT depend on untyped `dict`, `Any`, or stringly-typed control flags in domain code.
 
 | Surface | Typed contract | Author `dict` access |
 |---------|----------------|----------------------|
 | Run I/O | `AgentRunRequest`, `AgentRunResult` | **Forbidden** on public fields |
-| Step context | `AgentStepContext` | **Forbidden** for `state` — use `AcpSessionState` |
-| Step decision | `StepOutcome` + factories | **Forbidden** — no bare dict return |
-| Errors / terminal | `AgentRunError`, `AgentRunErrorCode`, `TerminalReason`, `StepNextAction` | **Forbidden** — no free-text reasons |
-| State delta | `StateDelta` (typed merge patch) | Built from model `model_dump` — not hand-rolled keys |
-| Environment | `EffectiveAgentRunEnvironment` | Read-only view — not `metadata` scraping |
+| Step context | `AgentStepContext` | **Forbidden** for `state` - use `AcpSessionState` |
+| Step decision | `StepOutcome` + factories | **Forbidden** - no bare dict return |
+| Errors / terminal | `AgentRunError`, `AgentRunErrorCode`, `TerminalReason`, `StepNextAction` | **Forbidden** - no free-text reasons |
+| State delta | `StateDelta` (typed merge patch) | Built from model `model_dump` - not hand-rolled keys |
+| Environment | `EffectiveAgentRunEnvironment` | Read-only view - not `metadata` scraping |
 
 **Rejected author surfaces (implementation MUST NOT expose):**
 
@@ -1489,7 +1489,7 @@ AgentInvocationSummary:
 - `terminal_reason: str` or `errors: list[str]` on production paths
 - Implicit continue (missing outcome / default empty delta)
 
-Legacy UAEP (`run_step`, `decide_after_step`) bridges to the same typed loop internally (ACP-STEP-3) — authors migrating SHOULD move to `on_next_step` + typed state.
+Legacy UAEP (`run_step`, `decide_after_step`) bridges to the same typed loop internally (ACP-STEP-3) - authors migrating SHOULD move to `on_next_step` + typed state.
 
 ### 32.0.1 Three operations every author performs every step
 
@@ -1497,9 +1497,9 @@ Every `on_next_step` iteration is **exactly three operations**. Authors MUST mak
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ 1. READ   — load current session state (typed)                          │
-│ 2. UPDATE — declare state changes (typed delta only)                    │
-│ 3. DECIDE — tell harness: continue | complete | fail | pause | replan   │
+│ 1. READ   - load current session state (typed)                          │
+│ 2. UPDATE - declare state changes (typed delta only)                    │
+│ 3. DECIDE - tell harness: continue | complete | fail | pause | replan   │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1511,10 +1511,10 @@ Every `on_next_step` iteration is **exactly three operations**. Authors MUST mak
 
 **Invariant:** The **last statement** of `on_next_step` (or each `@step` shim) MUST be `return StepOutcome.<factory>(...)`. Reviewers use that line as the **contract with the environment**.
 
-### 32.0.2 READ — typed session state
+### 32.0.2 READ - typed session state
 
 ```text
-AcpSessionState:                          # platform envelope — ACP-0
+AcpSessionState:                          # platform envelope - ACP-0
     schema_version: Literal["acp.state.v1"]
     _version: int                           # harness-owned; authors read, do not set manually
     pattern: CognitivePattern | null
@@ -1534,11 +1534,11 @@ Agent-specific (recommended):
 **Rules:**
 
 - Authors define **one Pydantic state model per agent** (subclass of `AcpSessionState`) with `extra=forbid`.
-- **READ** via `Agent.load_session_state(step_ctx) -> AcpSessionState` (framework helper — ACP-DX-6) or `ResearchAgentState.model_validate(step_ctx.state_snapshot)`.
-- Authors MUST NOT use `state.get("plan_cursor")` or similar in production agent code — CI: `check_agent_typed_state.py` (ACP-DX-6).
-- Optional `domain_context` on internal bridge types remains agent-local typed object — not a substitute for session state.
+- **READ** via `Agent.load_session_state(step_ctx) -> AcpSessionState` (framework helper - ACP-DX-6) or `ResearchAgentState.model_validate(step_ctx.state_snapshot)`.
+- Authors MUST NOT use `state.get("plan_cursor")` or similar in production agent code - CI: `check_agent_typed_state.py` (ACP-DX-6).
+- Optional `domain_context` on internal bridge types remains agent-local typed object - not a substitute for session state.
 
-### 32.0.3 UPDATE — state_delta only, never in-place
+### 32.0.3 UPDATE - state_delta only, never in-place
 
 Authors MUST NOT mutate `step_ctx.state`, `ctx.metadata`, or loaded Pydantic models in place and pass them back.
 
@@ -1557,14 +1557,14 @@ async def on_next_step(self, step_ctx: AgentStepContext) -> StepOutcome:
 
 ```python
 step_ctx.state["plan_cursor"] += 1          # ACP-AP-12
-state.plan_cursor += 1; return StepOutcome()  # in-place + implicit continue — ACP-AP-12/13
+state.plan_cursor += 1; return StepOutcome()  # in-place + implicit continue - ACP-AP-12/13
 ```
 
 Delta keys MUST correspond to fields on the agent state model. Harness validates unknown keys against registered state schema when `AgentContract.state_schema` is set (ACP-0).
 
-### 32.0.4 DECIDE — StepOutcome factories (control flow vocabulary)
+### 32.0.4 DECIDE - StepOutcome factories (control flow vocabulary)
 
-Authors express **all** control flow through named factories on `StepOutcome` (ACP-DX-6). Each factory sets `is_terminal`, `next_action`, and `terminal_reason` consistently — authors MUST NOT set conflicting combinations manually.
+Authors express **all** control flow through named factories on `StepOutcome` (ACP-DX-6). Each factory sets `is_terminal`, `next_action`, and `terminal_reason` consistently - authors MUST NOT set conflicting combinations manually.
 
 ```text
 StepOutcome.continue_with(state_delta, *, diagnostics=None)
@@ -1588,7 +1588,7 @@ StepOutcome.replan(state_delta, *, diagnostics=None)
     Meaning: "end this agent run; Nexus may schedule new run with updated plan"
 ```
 
-**Reviewer checklist per step:** read the final `return StepOutcome.*` — it MUST answer:
+**Reviewer checklist per step:** read the final `return StepOutcome.*` - it MUST answer:
 
 1. **Continue?** → `continue_with` or non-terminal `pause_hitl`
 2. **Done with answer?** → `complete` + `terminal_reason`
@@ -1596,15 +1596,15 @@ StepOutcome.replan(state_delta, *, diagnostics=None)
 4. **Need human?** → `pause_hitl`
 5. **Need external replan?** → `replan`
 
-### 32.0.5 Code structure — readable `on_next_step`
+### 32.0.5 Code structure - readable `on_next_step`
 
 | Rule | Limit / pattern |
 |------|-----------------|
 | `on_next_step` body | **≤ ~40 lines** of control flow; delegate domain work to `_step_<phase>` or pattern hooks |
-| Phase routing | `match state.phase:` or early guard returns — visible at top of method |
+| Phase routing | `match state.phase:` or early guard returns - visible at top of method |
 | Preconditions | First lines: validation → `return StepOutcome.fail(...)` |
-| Side effects | One mode per step §32.8 — gateways inside helpers, not scattered |
-| `@step` linear agents | Framework maps each method to one `StepOutcome` — same READ/UPDATE/DECIDE rules |
+| Side effects | One mode per step §32.8 - gateways inside helpers, not scattered |
+| `@step` linear agents | Framework maps each method to one `StepOutcome` - same READ/UPDATE/DECIDE rules |
 
 Scaffold (`new-agent`) MUST emit: typed state subclass stub, `on_next_step` skeleton with phase `match`, and `return StepOutcome.*` examples (ACP-8).
 
@@ -1618,7 +1618,7 @@ Scaffold (`new-agent`) MUST emit: typed state subclass stub, `on_next_step` skel
 | `StepOutcome.continue_with(...)` | Next iteration; updated `acp.state.v1` in checkpoint |
 | `StepOutcome.replan(...)` | Session ends `terminal_reason=replanned`; graph may MODIFY_PLAN |
 
-Domain narrative belongs in `diagnostics` (typed `StepDiagnostics` model) — optional, redacted in prod traces.
+Domain narrative belongs in `diagnostics` (typed `StepDiagnostics` model) - optional, redacted in prod traces.
 
 ### 32.0.7 Implementation modules (target)
 
@@ -1643,37 +1643,37 @@ Domain narrative belongs in `diagnostics` (typed `StepDiagnostics` model) — op
 
 **Rejected:** application calling `agent.run()` repeatedly for each internal reasoning iteration.
 
-## 32.2 `AgentStepContext` (target — ACP-STEP-1)
+## 32.2 `AgentStepContext` (target - ACP-STEP-1)
 
 ```text
 AgentStepContext:
     run_id: str
     step_index: int
     input: str | dict                       # original run input + accumulated context
-    state_snapshot: dict                      # internal serialization of acp.state.v1 — authors use load_session_state() §32.0
+    state_snapshot: dict                      # internal serialization of acp.state.v1 - authors use load_session_state() §32.0
     merged_environment: EffectiveAgentRunEnvironment   # §30
     memory_view: AgentMemoryView              # namespace-scoped §30.3
     tool_gateway: ToolGateway                 # policy-bound invoke
     rag_gateway: RagGateway | null
     llm_router: StepLLMRouter                 # §33
-    invocation_usage: AcpInvocationUsageView | null   # §25.4 — read-only agent + environment tokens
-    shared_context: SharedContextView | null  # §34 — multi-agent only
+    invocation_usage: AcpInvocationUsageView | null   # §25.4 - read-only agent + environment tokens
+    shared_context: SharedContextView | null  # §34 - multi-agent only
     metadata: dict                            # request.metadata passthrough
     trace_sink: StepTraceSink                 # harness-only append helpers
 ```
 
-Authors receive **views and gateways** — not raw `RuntimeExecutionContext` in public API (advanced tests may use internal types).
+Authors receive **views and gateways** - not raw `RuntimeExecutionContext` in public API (advanced tests may use internal types).
 
-**Author state access (normative — §32.0):** use `Agent.load_session_state(step_ctx) -> AcpSessionState` (or agent subclass). Do **not** treat `state_snapshot` as the authoring API — it exists for harness checkpoint serialization only.
+**Author state access (normative - §32.0):** use `Agent.load_session_state(step_ctx) -> AcpSessionState` (or agent subclass). Do **not** treat `state_snapshot` as the authoring API - it exists for harness checkpoint serialization only.
 
-## 32.3 `StepOutcome` (target — ACP-STEP-1)
+## 32.3 `StepOutcome` (target - ACP-STEP-1)
 
 ```text
 StepOutcome:
     is_terminal: bool
     terminal_reason: TerminalReason | null    # required when is_terminal §37.5
     output: str | dict | null                 # final when terminal
-    state_delta: StateDelta                   # §37.2 — merge patch into acp.state.v1
+    state_delta: StateDelta                   # §37.2 - merge patch into acp.state.v1
     next_action: continue | pause_hitl | fail | replan
     artifacts: list[ArtifactRef]              # §40.6
     confidence: float | null
@@ -1682,7 +1682,7 @@ StepOutcome:
     requested_actions: list[StepActionRequest] | null   # declarative mode only §32.8
 ```
 
-Remove ambiguous `requested_tools` hint — use **`requested_actions`** in declarative mode or **`tool_gateway.invoke`** in immediate mode.
+Remove ambiguous `requested_tools` hint - use **`requested_actions`** in declarative mode or **`tool_gateway.invoke`** in immediate mode.
 
 **Harness behavior after `on_next_step` returns:**
 
@@ -1694,22 +1694,22 @@ Remove ambiguous `requested_tools` hint — use **`requested_actions`** in decla
 6. If `pause_hitl`: stop loop; `status=paused`; `terminal_reason=human_required`.
 7. Else: increment `step_index`; enforce budgets; continue until terminal or guard §32.6.
 
-## 32.4 `AgentRuntime.advance_step` (framework — not overridable)
+## 32.4 `AgentRuntime.advance_step` (framework - not overridable)
 
-One **agent iteration** — **glue only** between domain hook and harness kernel. Alias: `execute_next_step` (deprecated).
+One **agent iteration** - **glue only** between domain hook and harness kernel. Alias: `execute_next_step` (deprecated).
 
-**Invariant:** `advance_step` MUST NOT contain policy engine calls, trace append, budget accounting, or state-merge logic — those belong to **`HarnessKernel.execute_step`** (§38.1 L1 · §38.3).
+**Invariant:** `advance_step` MUST NOT contain policy engine calls, trace append, budget accounting, or state-merge logic - those belong to **`HarnessKernel.execute_step`** (§38.1 L1 · §38.3).
 
 ```text
 async def AgentRuntime.advance_step(agent, step_ctx) -> StepOutcome:
-    1. outcome = await agent.on_next_step(step_ctx)           # L2 — AGENT DECIDES
-    2. await HarnessKernel.execute_step(outcome, step_ctx)    # L1 — HARNESS EXECUTES (policy, trace, state, budgets)
+    1. outcome = await agent.on_next_step(step_ctx)           # L2 - AGENT DECIDES
+    2. await HarnessKernel.execute_step(outcome, step_ctx)    # L1 - HARNESS EXECUTES (policy, trace, state, budgets)
     3. return outcome
 ```
 
 ## 32.4b `HarnessKernel.execute_step` (deterministic primitive)
 
-**Not** NexusLoop. **Not** agent planning. Single **harness cycle** — central deterministic primitive for one agent step (§38):
+**Not** NexusLoop. **Not** agent planning. Single **harness cycle** - central deterministic primitive for one agent step (§38):
 
 ```text
 async def HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
@@ -1726,13 +1726,13 @@ async def HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
 ```
 
 **Target module:** `intergrax/runtime/kernel/step_kernel.py` (ACP-STEP-2b).  
-**Disambiguation:** `intergrax/runtime/nexus/planning/step_executor.py` runs **ExecutionPlan** steps — different plane (§38).
+**Disambiguation:** `intergrax/runtime/nexus/planning/step_executor.py` runs **ExecutionPlan** steps - different plane (§38).
 
 ## 32.5 Cognitive patterns and `@step`
 
 | Author style | How steps are produced |
 |--------------|------------------------|
-| **`on_next_step` override** | Full control — super-agent, custom loops |
+| **`on_next_step` override** | Full control - super-agent, custom loops |
 | **`CognitiveAgent` pattern** | Base implements `on_next_step` calling perceive→reason→act→evaluate |
 | **`@step` linear** | Framework maps each `@step` to sequential `on_next_step` calls |
 | **Legacy UAEP** | `run_step`/`decide_after_step` bridged to same loop (ACP-STEP-3) |
@@ -1751,20 +1751,20 @@ async def HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
 - **Agent scope:** `load_session_state(step_ctx).budget.tokens_total` (and `cost_usd`)
 - **Environment scope:** `step_ctx.invocation_usage.environment.tokens_total` when present
 
-When `max_total_tokens` is assigned with **hard** enforcement (§25.5), `HarnessKernel` blocks before the next LLM call and applies `BudgetReactionProfile`. When **no** limit is assigned, only metering applies — authors use `tokens_total`, `tokens_remaining`, and `warn_threshold_ratio` for soft strategy (e.g. switch to `local.fast` at 80% of an advisory cap).
+When `max_total_tokens` is assigned with **hard** enforcement (§25.5), `HarnessKernel` blocks before the next LLM call and applies `BudgetReactionProfile`. When **no** limit is assigned, only metering applies - authors use `tokens_total`, `tokens_remaining`, and `warn_threshold_ratio` for soft strategy (e.g. switch to `local.fast` at 80% of an advisory cap).
 
 ## 32.7 Super-agent vs multi-agent graph (risk guard)
 
 | Pattern | When OK | When anti-pattern |
 |---------|---------|-------------------|
 | **Super-agent (UC-3)** | One coherent cognitive process; sub-tasks are phases of same agent contract | Agent replaces graph: hidden planner+critic+executor roles that should be separate capabilities |
-| **Multi-agent graph (UC-2)** | Distinct capabilities, handoffs via `SharedContextView` | — |
+| **Multi-agent graph (UC-2)** | Distinct capabilities, handoffs via `SharedContextView` | - |
 
-**Rule:** if another agent contract would be a better fit for a sub-task, add a Nexus graph node — do not embed a private agent roster in `acp.state.v1`. See ACP-AP-08.
+**Rule:** if another agent contract would be a better fit for a sub-task, add a Nexus graph node - do not embed a private agent roster in `acp.state.v1`. See ACP-AP-08.
 
 ## 32.8 Side-effect execution modes (normative)
 
-Authors MUST use **one mode per step** — never mix for the same tool/RAG/LLM call.
+Authors MUST use **one mode per step** - never mix for the same tool/RAG/LLM call.
 
 | Mode | Author API | Harness timing |
 |------|------------|------------------|
@@ -1793,7 +1793,7 @@ StepActionRequest:
 
 **Goal:** Author picks **model per step** (local vs frontier) within host allowlist; harness enforces policy.
 
-## 33.1 `StepLLMRouter` (target — ACP-LLM-1)
+## 33.1 `StepLLMRouter` (target - ACP-LLM-1)
 
 ```text
 StepLLMRouter:
@@ -1807,7 +1807,7 @@ StepLLMRouter:
 - `model_hint` from author MUST be in merged `LLMProfile.allowed_models` unless BALANCED/EXPLORATORY policy widens.
 - STRICT production hosts: unknown hint → policy deny or default model + warning in trace.
 - All LLM calls recorded in `AgentStepRecord.llm_calls`.
-- No direct `openai` / vendor imports in Tier-2 — router uses Tier-0 adapters via Nexus policy.
+- No direct `openai` / vendor imports in Tier-2 - router uses Tier-0 adapters via Nexus policy.
 
 ## 33.2 Typical author pattern
 
@@ -1830,7 +1830,7 @@ host LLMProfile → AgentBinding.llm_slice → configure_run → StepLLMRouter.s
 
 ## 33.4 Token-aware model selection (adaptive downgrade)
 
-Authors MAY change `model_hint` per step based on §25.4 usage — without importing cost SDKs or reading Nexus internals.
+Authors MAY change `model_hint` per step based on §25.4 usage - without importing cost SDKs or reading Nexus internals.
 
 ```python
 async def on_next_step(self, step_ctx: AgentStepContext) -> StepOutcome:
@@ -1855,8 +1855,8 @@ async def on_next_step(self, step_ctx: AgentStepContext) -> StepOutcome:
 
 **Rules:**
 
-- Downgrade MUST stay within `LLMProfile.allowed_models` — router resolves hints; policy denies unknown models on STRICT hosts.
-- Agents MUST NOT maintain parallel token counters in agent state subclasses — use harness rollups only (ACP-AP-13).
+- Downgrade MUST stay within `LLMProfile.allowed_models` - router resolves hints; policy denies unknown models on STRICT hosts.
+- Agents MUST NOT maintain parallel token counters in agent state subclasses - use harness rollups only (ACP-AP-13).
 - `AgentRunResult.cost` remains the **final** agent-run rollup; `invocation_usage` is the **in-flight** decision surface.
 
 ---
@@ -1869,14 +1869,14 @@ async def on_next_step(self, step_ctx: AgentStepContext) -> StepOutcome:
 
 | Data | Agent private | Shared (graph) | Nexus / application |
 |------|---------------|----------------|---------------------|
-| `acp.state.v1` | **Yes** — per run | No | Checkpoint blob only |
+| `acp.state.v1` | **Yes** - per run | No | Checkpoint blob only |
 | Tool results in step | Yes until published | Optional via `shared_context.publish` | Audit rollup |
 | User intake metadata | Read-only via ctx | Read-only | **Owner** |
 | Agent selection / routing | No | No | **Owner** |
 | Secrets | No direct access | No | Integration profile |
 | Prior agent output | Via `shared_context` handoff | **Yes** | Summarized in Plane A |
 
-## 34.2 `SharedContextView` (target — ACP-STATE-1)
+## 34.2 `SharedContextView` (target - ACP-STATE-1)
 
 Full concurrency rules: §40.5.
 
@@ -1891,7 +1891,7 @@ SharedContextView:
 **Rules:**
 
 - Available when `run()` invoked from Nexus graph node with task shared store.
-- Direct lab `run()`: `shared_context=None` — agent MUST tolerate absence.
+- Direct lab `run()`: `shared_context=None` - agent MUST tolerate absence.
 - Agents MUST NOT import `intergrax/runtime/nexus` for graph state.
 
 ## 34.4 Handoff pattern (multi-agent)
@@ -1906,7 +1906,7 @@ Agent B on_next_step → reads shared_context.get("finding.summary")
 
 # 35. Use-Case Catalog (Agent + Environment)
 
-Canonical scenarios — all supported by **same** agent class + environment merge §30.
+Canonical scenarios - all supported by **same** agent class + environment merge §30.
 
 | ID | Scenario | Entry | Agent pattern | Environment |
 |----|----------|-------|---------------|-------------|
@@ -1922,7 +1922,7 @@ Canonical scenarios — all supported by **same** agent class + environment merg
 | **UC-10** | Eval harness on traces | Batch direct `run()` | Any | Fixture profiles; assert on `result.trace` |
 | **UC-11** | Simulated organization / virtual workforce | `Task` + org profile | Agents as **org roles**; envelope constrains all | `OrganizationalPolicyEnvelope` + role `AgentBinding` §39 |
 
-**Flexibility rule:** UC-2 and UC-3 are **not** mutually exclusive — choose graph vs super-agent per product scale, not per framework fork. **UC-11** stacks on UC-1/2/9 — same agent classes, different org envelopes per deployment.
+**Flexibility rule:** UC-2 and UC-3 are **not** mutually exclusive - choose graph vs super-agent per product scale, not per framework fork. **UC-11** stacks on UC-1/2/9 - same agent classes, different org envelopes per deployment.
 
 ---
 
@@ -1942,12 +1942,12 @@ Canonical scenarios — all supported by **same** agent class + environment merg
 ## 36.2 Author workflow (target DX)
 
 ```text
-1. Scaffold agent (--pattern optional) — emits typed state subclass + StepOutcome skeleton §32.0
+1. Scaffold agent (--pattern optional) - emits typed state subclass + StepOutcome skeleton §32.0
 2. Declare contract: capabilities, tools, memory, RAG, cognitive_pattern, state_schema
 3. Implement on_next_step: READ (typed state) → domain work → UPDATE (state_delta) → DECIDE (StepOutcome factory)
 4. Wire AgentBinding in application manifest
-5. Test: await agent.run(AgentRunRequest(...)) in pytest — assert terminal_reason + trace steps
-6. Prod: same agent class on Nexus graph node — zero rewrite
+5. Test: await agent.run(AgentRunRequest(...)) in pytest - assert terminal_reason + trace steps
+6. Prod: same agent class on Nexus graph node - zero rewrite
 ```
 
 ## 36.3 Speed + flexibility guarantees
@@ -1969,17 +1969,17 @@ Canonical scenarios — all supported by **same** agent class + environment merg
 
 | Component | Status | Remaining |
 |-----------|--------|-----------|
-| Session entry | **Done** — `AgentRunRequest`/`Result` via `acp_run.py` | — |
-| Step loop | **Done** — `on_next_step` → `advance_step` → `HarnessKernel` | — |
-| Trace on result | **Done** — `AgentRunTrace` on `AgentRunResult` | — |
-| App orchestration log | **Done** — `ApplicationRunSummary` | — |
-| Per-step LLM | **Done** — `StepLLMRouter` | — |
-| Environment merge | **Done** — `merge_environment` + binding slices | — |
-| Production reliability | **Done** — ACP-PROD-1..12 + **ACP-CLOSE-PROD-1..8**; §40.12 reference green; mutating checkpoint/idempotency **100%** | Per-roster `production_mode` promotion (§40.15 thresholds) |
-| Legacy paths | **Done** — LEG-1..5; UAEP author surface removed | — |
-| ReAct + tools | **Done** — `tool_loop_step` + `react_budget` | CI-17 ACP-AP-02 gate **Done** |
-| Token usage in invocation state | **Done** — ACP-TOK-1 | — |
-| Per-agent limits + exceed reactions | **Done** — ACP-TOK-2 · ACP-TOK-3 · ACP-TOK-CI | Nexus `RunBudget` env cap **Partial** (COST-1) |
+| Session entry | **Done** - `AgentRunRequest`/`Result` via `acp_run.py` | - |
+| Step loop | **Done** - `on_next_step` → `advance_step` → `HarnessKernel` | - |
+| Trace on result | **Done** - `AgentRunTrace` on `AgentRunResult` | - |
+| App orchestration log | **Done** - `ApplicationRunSummary` | - |
+| Per-step LLM | **Done** - `StepLLMRouter` | - |
+| Environment merge | **Done** - `merge_environment` + binding slices | - |
+| Production reliability | **Done** - ACP-PROD-1..12 + **ACP-CLOSE-PROD-1..8**; §40.12 reference green; mutating checkpoint/idempotency **100%** | Per-roster `production_mode` promotion (§40.15 thresholds) |
+| Legacy paths | **Done** - LEG-1..5; UAEP author surface removed | - |
+| ReAct + tools | **Done** - `tool_loop_step` + `react_budget` | CI-17 ACP-AP-02 gate **Done** |
+| Token usage in invocation state | **Done** - ACP-TOK-1 | - |
+| Per-agent limits + exceed reactions | **Done** - ACP-TOK-2 · ACP-TOK-3 · ACP-TOK-CI | Nexus `RunBudget` env cap **Partial** (COST-1) |
 
 ## 36.5 Related ADRs and plan
 
@@ -2000,10 +2000,10 @@ Canonical scenarios — all supported by **same** agent class + environment merg
 
 Full field matrix: §29.2.1. Implementation MUST use **Pydantic models** with `extra=forbid` on `AgentRunRequest`, `AgentRunResult`, `AgentStepContext`, `StepOutcome`, `AgentRunError`, `AcpSessionState`, and agent-specific state subclasses.
 
-**Typed-only author surface (normative — §32.0):**
+**Typed-only author surface (normative - §32.0):**
 
 - Harness MUST reject (validation error / CI failure) author code paths that return untyped dicts from `on_next_step`, mutate session state in place, or emit free-text `terminal_reason` / `errors: list[str]` on `AgentRunResult`.
-- `AgentRunRequest.state` and `AgentRunResult.state` are **JSON transport** for checkpoint/resume — authors interact via **`AcpSessionState`** helpers, not raw dict keys in Tier-2 agents.
+- `AgentRunRequest.state` and `AgentRunResult.state` are **JSON transport** for checkpoint/resume - authors interact via **`AcpSessionState`** helpers, not raw dict keys in Tier-2 agents.
 - Round-trip tests required (ACP-DX-1). State factory + merge tests (ACP-DX-6, ACP-CON-2).
 
 ## 37.2 `state_delta` semantics
@@ -2014,17 +2014,17 @@ Full field matrix: §29.2.1. Implementation MUST use **Pydantic models** with `e
 |------|-----------|
 | **Merge model** | `state_delta` is a **JSON Merge Patch** (RFC 7396): shallow merge into current `acp.state.v1` |
 | **Delete** | Key present with JSON `null` in delta ⇒ remove key from state |
-| **Replace subtree** | Replace entire sub-object by supplying new object at key (no deep merge below first level unless `state_patch_depth=deep` in options — default **shallow**) |
+| **Replace subtree** | Replace entire sub-object by supplying new object at key (no deep merge below first level unless `state_patch_depth=deep` in options - default **shallow**) |
 | **No full replace via delta** | `state_delta` MUST NOT replace entire state root in one step unless `is_terminal` and explicit migration hook |
 | **Version** | Harness maintains `acp.state.v1._version: int`, incremented after each successful apply |
 | **Checkpoint** | When `checkpoint_every_step=true` (default), persist `{state, step_index, run_id}` after each step for resume |
 | **Resume conflict** | If incoming `request.state._version` < checkpoint version ⇒ `VALIDATION_FAILED` unless `force_resume` governance flag |
-| **Full persistence spec** | Checkpoint transaction boundaries, replay, crash recovery — **§40.1** |
-| **Author read** | `load_session_state(step_ctx)` → typed `AcpSessionState` §32.0 — not ad-hoc dict |
-| **Author write** | `StepOutcome.*(state_delta=…)` only — merge patch keys from typed `model_dump` subset |
+| **Full persistence spec** | Checkpoint transaction boundaries, replay, crash recovery - **§40.1** |
+| **Author read** | `load_session_state(step_ctx)` → typed `AcpSessionState` §32.0 - not ad-hoc dict |
+| **Author write** | `StepOutcome.*(state_delta=…)` only - merge patch keys from typed `model_dump` subset |
 
 ```text
-StateDelta = dict[str, JSONValue]   # wire format for merge engine — authors build via session_state_delta() §32.0
+StateDelta = dict[str, JSONValue]   # wire format for merge engine - authors build via session_state_delta() §32.0
 ```
 
 ## 37.3 Side-effect boundary
@@ -2054,7 +2054,7 @@ Used on `AgentRunResult.terminal_reason`, `StepOutcome.terminal_reason`, and Pla
 
 | Value | When |
 |-------|------|
-| `goal_met` | Success — domain goal satisfied |
+| `goal_met` | Success - domain goal satisfied |
 | `best_effort` | Terminal success with degraded quality (warnings) |
 | `budget_exceeded` | Cost/token budget |
 | `max_steps_exceeded` | Step limit |
@@ -2063,10 +2063,10 @@ Used on `AgentRunResult.terminal_reason`, `StepOutcome.terminal_reason`, and Pla
 | `validation_failed` | Domain or contract validation failed |
 | `cancelled` | Operator/user cancel |
 | `error` | Unrecoverable error (`INTERNAL_ERROR` or exhausted retries) |
-| `replanned` | Agent chose replan — session ends; Nexus may start new run |
+| `replanned` | Agent chose replan - session ends; Nexus may start new run |
 | `delegated` | Agent requests delegation to another capability (Nexus graph edge) |
 
-Free-text reasons MUST NOT appear in production paths — map to enum + put detail in `diagnostics` / `AgentRunError.message`.
+Free-text reasons MUST NOT appear in production paths - map to enum + put detail in `diagnostics` / `AgentRunError.message`.
 
 ## 37.6 Capability-based routing (enforcement)
 
@@ -2076,7 +2076,7 @@ Task.required_capability  →  AgentRegistry.query(capabilities contains token)
                          →  NOT: import agents.foo.BarAgent in NexusLoop
 ```
 
-Acceptance: integration test routes by `research.web_search` with two implementations registered — correct agent selected without class name in task payload (ACP-CON-6).
+Acceptance: integration test routes by `research.web_search` with two implementations registered - correct agent selected without class name in task payload (ACP-CON-6).
 
 ## 37.7 Security model (memory / RAG / tools)
 
@@ -2094,16 +2094,16 @@ Acceptance: integration test routes by `research.web_search` with two implementa
 
 | Dimension | Canon | Code (2026-06-13) |
 |-----------|-------|-------------------|
-| Mental model clarity | 9/10 | **10/10** — typed loop shipped; §32.0 CI green |
-| Agent flexibility | 9/10 | **9.5/10** — patterns + scaffold `--pattern` |
-| Observability spec | 9/10 | **9.5/10** — dual planes on result |
-| Production readiness | 9/10 target | **9.5/10** — mutating **platform gate Done** (ACP-CLOSE-PROD-* + §40.12 + CI-1/3); per-agent `production_mode` via §40.15 scoreboard |
-| DX / readability | 9/10 (§32.0) | **9.5/10** — factories + typed-state CI |
-| Typed author surface | Required §32.0 | **Done** — UAEP internal bridge only (ACP-CLOSE-LEG **Done**) |
+| Mental model clarity | 9/10 | **10/10** - typed loop shipped; §32.0 CI green |
+| Agent flexibility | 9/10 | **9.5/10** - patterns + scaffold `--pattern` |
+| Observability spec | 9/10 | **9.5/10** - dual planes on result |
+| Production readiness | 9/10 target | **9.5/10** - mutating **platform gate Done** (ACP-CLOSE-PROD-* + §40.12 + CI-1/3); per-agent `production_mode` via §40.15 scoreboard |
+| DX / readability | 9/10 (§32.0) | **9.5/10** - factories + typed-state CI |
+| Typed author surface | Required §32.0 | **Done** - UAEP internal bridge only (ACP-CLOSE-LEG **Done**) |
 
-**Audit gate (2026-06-13 — post ACP-FINISH):** conceptual architecture **10/10**; platform implementation **9.5/10**; **mutating agents production-ready (platform)** — §40.12 reference checklist green (ACP-CLOSE-PROD-7); scoreboard mutating checkpoint/idempotency **100%** (ACP-CLOSE-PROD-8); compensation queue + cross-run idempotency **Done** (ACP-CLOSE-PROD-5/6); ACP-CLOSE CI-1/2/3 + ACP-TOK-CI wired in regression gate workflow (`check_agent_acp_close_ci.py` green).
+**Audit gate (2026-06-13 - post ACP-FINISH):** conceptual architecture **10/10**; platform implementation **9.5/10**; **mutating agents production-ready (platform)** - §40.12 reference checklist green (ACP-CLOSE-PROD-7); scoreboard mutating checkpoint/idempotency **100%** (ACP-CLOSE-PROD-8); compensation queue + cross-run idempotency **Done** (ACP-CLOSE-PROD-5/6); ACP-CLOSE CI-1/2/3 + ACP-TOK-CI wired in regression gate workflow (`check_agent_acp_close_ci.py` green).
 
-**Recommended decision (accepted):** keep Nexus as Agent OS; implement `run()` + `on_next_step()` + typed contracts — do **not** merge Nexus into agent class (ADR-AGENT-001..003). **`NexusLoop` MUST NOT become the agent plan brain** — see §38.
+**Recommended decision (accepted):** keep Nexus as Agent OS; implement `run()` + `on_next_step()` + typed contracts - do **not** merge Nexus into agent class (ADR-AGENT-001..003). **`NexusLoop` MUST NOT become the agent plan brain** - see §38.
 
 ---
 
@@ -2123,41 +2123,41 @@ Acceptance: integration test routes by `research.web_search` with two implementa
                                 │ graph node invokes once per agent role
                                 ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ L3  Agent.run()  — agent decision loop                                  │
+│ L3  Agent.run()  - agent decision loop                                  │
 │     • merge environment §30 • loop until terminal                       │
 │     • owns: "do I need a plan?", "is plan stale?", "next move?", "done?" │
 └───────────────────────────────┬─────────────────────────────────────────┘
                                 │ each iteration
                                 ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ L2  Agent.on_next_step()  — author domain hook                          │
+│ L2  Agent.on_next_step()  - author domain hook                          │
 │     • READ typed state • UPDATE state_delta • DECIDE StepOutcome §32.0  │
 │     DOES NOT: bypass policy, mutate state in-place, return untyped dict │
 └───────────────────────────────┬─────────────────────────────────────────┘
                                 │ StepOutcome
                                 ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ L1  HarnessKernel.execute_step()  — deterministic runtime primitive     │
+│ L1  HarnessKernel.execute_step()  - deterministic runtime primitive     │
 │     input: state + effective config + StepOutcome                       │
 │     • policy pre/post • gateways • trace • budgets • state merge §37.2  │
 │     output: StepExecutionRecord + events                                │
 │     DOES NOT: choose next agent • replan domain • analyze full agent plan│
 └─────────────────────────────────────────────────────────────────────────┘
          ▲
-         │ AgentRuntime.advance_step() = L2 call + L1 call (glue only — no harness logic)
+         │ AgentRuntime.advance_step() = L2 call + L1 call (glue only - no harness logic)
 ```
 
 ## 38.2 Canonical names and aliases
 
 | Canonical | Layer | Role | Avoid confusing with |
 |-----------|-------|------|---------------------|
-| **`NexusLoop.handle_task`** | L4 | Multi-agent Task OS | — |
+| **`NexusLoop.handle_task`** | L4 | Multi-agent Task OS | - |
 | **`Agent.run`** | L3 | Agent session decision loop | `nexus.run()`, repeated `run()` per micro-step |
 | **`Agent.on_next_step`** | L2 | Domain decision hook | `run_step` author override |
 | **`AgentRuntime.advance_step`** | L3 glue | One iteration orchestration | Nexus planning |
 | **`HarnessKernel.execute_step`** | L1 | Deterministic harness cycle | **`planning/StepExecutor`** (ExecutionPlan) |
-| `execute_next_step` | — | **Deprecated alias** of `advance_step` | — |
-| `UAEPExecutor` / `run_step` | — | **Legacy implementation** of L1+L2 bridge | — |
+| `execute_next_step` | - | **Deprecated alias** of `advance_step` | - |
+| `UAEPExecutor` / `run_step` | - | **Legacy implementation** of L1+L2 bridge | - |
 
 **Rejected public names:** `nexus.run()`, `NexusRuntime.run()` as author-facing agent session API.
 
@@ -2217,29 +2217,29 @@ NexusLoop merges node output → next graph edge or Task complete
 
 # 39. Organizational Policy Envelope & Virtual Workforce
 
-**Goal:** Tier-3 **environment** can simulate an **organization** with its own procedures, regulations, and channel rules — constraining **virtual employee agents** without forking agent code. Rules must be **easy to configure**, **enforced at harness boundaries**, and **measured** in trace and ops dashboards.
+**Goal:** Tier-3 **environment** can simulate an **organization** with its own procedures, regulations, and channel rules - constraining **virtual employee agents** without forking agent code. Rules must be **easy to configure**, **enforced at harness boundaries**, and **measured** in trace and ops dashboards.
 
 **Cross-domain:** [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §22 · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.11 · [`OBSERVABILITY.md`](OBSERVABILITY.md) §1.2
 
-## 39.1 Concept — organization as environment, agents as roles
+## 39.1 Concept - organization as environment, agents as roles
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  OrganizationalPolicyEnvelope (Tier-3 — one per simulated org / tenant) │
+│  OrganizationalPolicyEnvelope (Tier-3 - one per simulated org / tenant) │
 │  • code of conduct • channel policy • SOP/playbooks • scenario bindings │
 │  • PolicyRulesProfile + GuardrailProfile + PromptProfile overlays       │
 └───────────────────────────────┬─────────────────────────────────────────┘
                                 │ applies to ALL agents in this host
                                 ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  AgentBinding.org_role_id  — virtual employee posture                   │
+│  AgentBinding.org_role_id  - virtual employee posture                   │
 │  "customer_service_rep" | "legal_analyst" | "sales_assistant"         │
 │  narrows: tools, prompts, RAG collections, escalation paths           │
 └───────────────────────────────┬─────────────────────────────────────────┘
                                 ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  Agent (Tier-2) — domain worker                                         │
-│  on_next_step: job logic ONLY — org rules come from merged env §30     │
+│  Agent (Tier-2) - domain worker                                         │
+│  on_next_step: job logic ONLY - org rules come from merged env §30     │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -2249,11 +2249,11 @@ NexusLoop merges node output → next graph edge or Task complete
 |-----------|----------------------|-------------------|
 | Never insult customers | `GuardrailProfile` + org `inline_rules` | pre/post LLM, output scan |
 | Always follow scenario X | `PromptProfile` + RAG playbook collection | prompt overlay + critic eval |
-| Never call — email only | `ToolProfile` deny `phone.*`, allow `email.send` | tool gateway pre-invoke |
+| Never call - email only | `ToolProfile` deny `phone.*`, allow `email.send` | tool gateway pre-invoke |
 | Always log case id in reply | `PolicyRulesProfile` + prompt overlay | validation post-step |
 | Escalate above €10k | org rule → HITL trigger | policy engine → `pause_hitl` |
 
-## 39.2 `OrganizationalPolicyEnvelope` (Tier-3 contract — ACP-ORG-1)
+## 39.2 `OrganizationalPolicyEnvelope` (Tier-3 contract - ACP-ORG-1)
 
 `intergrax/applications/contracts/org_policy.py`. Attached to `ApplicationEnvironmentProfile.organizational_policy`.
 
@@ -2300,9 +2300,9 @@ CommunicationRules:
     locale_default: str | null
 ```
 
-**Flexibility:** swap envelope per deployment — same `CustomerServiceAgent` class runs under **strict bank** or **exploratory lab** envelope via host profile only.
+**Flexibility:** swap envelope per deployment - same `CustomerServiceAgent` class runs under **strict bank** or **exploratory lab** envelope via host profile only.
 
-## 39.3 `OrganizationalPolicyContext` (runtime — ACP-ORG-2)
+## 39.3 `OrganizationalPolicyContext` (runtime - ACP-ORG-2)
 
 Materialized in `merge_environment()` → `EffectiveAgentRunEnvironment.organizational`:
 
@@ -2318,11 +2318,11 @@ OrganizationalPolicyContext:
     policy_bundle_slice: RuntimePolicyBundle    # org + role fragments §42.11.4
 ```
 
-Authors MAY read `step_ctx.merged_environment.organizational` to **select playbook-consistent behavior** — MUST NOT reimplement policy checks that harness already enforces.
+Authors MAY read `step_ctx.merged_environment.organizational` to **select playbook-consistent behavior** - MUST NOT reimplement policy checks that harness already enforces.
 
 ## 39.4 Enforcement stack (where org rules apply)
 
-Org rules MUST NOT live only in documentation — they bind at **harness hook points**:
+Org rules MUST NOT live only in documentation - they bind at **harness hook points**:
 
 ```text
 Intake (Tier-3)
@@ -2334,20 +2334,20 @@ merge_environment (ACP-DX-2)
 Agent.on_next_step (Tier-2)
   → domain intent only; optional playbook-aware reasoning
 
-HarnessKernel.execute_step (Tier-0/1) — §38
-  1. policy pre-check  — tool/channel/scenario allowlist
-  2. prompt compose    — org SOP overlays + communication_rules
-  3. gateway invoke    — tool deny (e.g. phone.*) → POLICY_DENIED
-  4. guardrail scan    — input/output respect rules
-  5. policy post-check — scenario completion, required disclosures
+HarnessKernel.execute_step (Tier-0/1) - §38
+  1. policy pre-check  - tool/channel/scenario allowlist
+  2. prompt compose    - org SOP overlays + communication_rules
+  3. gateway invoke    - tool deny (e.g. phone.*) → POLICY_DENIED
+  4. guardrail scan    - input/output respect rules
+  5. policy post-check - scenario completion, required disclosures
   6. PolicyVerdictRecord → AgentStepRecord §39.5
 ```
 
 | Enforcement mode | Agent can override org rule? |
 |------------------|------------------------------|
-| **STRICT** | **No** — `configure_run` and `environment_overrides` cannot widen denied tools/channels |
+| **STRICT** | **No** - `configure_run` and `environment_overrides` cannot widen denied tools/channels |
 | **BALANCED** | Only where `RuntimePolicyBundle` explicitly allows exception + logs verdict |
-| **EXPLORATORY** | Lab — envelope optional |
+| **EXPLORATORY** | Lab - envelope optional |
 
 **Agent remains decision owner** (what to do next); **organization remains constraint owner** (what is allowed).
 
@@ -2374,13 +2374,13 @@ PolicyVerdictRecord:
 | **AgentRunTrace** (Plane B) | `policy_verdicts[]` per step; denial counts by `rule_id` |
 | **AgentRunResult** | `compliance_summary: {deny_count, warn_count, rules_triggered[]}` |
 | **ApplicationRunSummary** (Plane A) | Org-level compliance score per Task; agent role breakdown |
-| **Eval / CI** | Golden scenarios per `compliance_profile_id` — assert zero `POLICY_DENIED` on happy path |
+| **Eval / CI** | Golden scenarios per `compliance_profile_id` - assert zero `POLICY_DENIED` on happy path |
 
 **Ops dashboards (target):** policy denial rate by org, by role, by rule_id; scenario adherence; channel violation attempts (e.g. blocked `phone.dial`).
 
-See [`OBSERVABILITY.md`](OBSERVABILITY.md) — extend spine with `policy.verdict` event type (ACP-ORG-4).
+See [`OBSERVABILITY.md`](OBSERVABILITY.md) - extend spine with `policy.verdict` event type (ACP-ORG-4).
 
-## 39.6 Authoring workflow — virtual workforce
+## 39.6 Authoring workflow - virtual workforce
 
 ```text
 1. Define OrganizationalPolicyEnvelope on ApplicationEnvironmentProfile
@@ -2388,8 +2388,8 @@ See [`OBSERVABILITY.md`](OBSERVABILITY.md) — extend spine with `policy.verdict
 3. Register playbooks in PromptProfile / RAG collection
 4. Map agents in manifest:
      AgentBinding(agent_id="cs_agent", org_role_id="customer_service_rep")
-5. Agent implements on_next_step — reads merged.organizational for active playbook
-6. Test: pytest with strict envelope fixture — assert trace policy_verdicts
+5. Agent implements on_next_step - reads merged.organizational for active playbook
+6. Test: pytest with strict envelope fixture - assert trace policy_verdicts
 7. Prod: same agent class, different envelope per customer org (multi-tenant)
 ```
 
@@ -2415,7 +2415,7 @@ See [`OBSERVABILITY.md`](OBSERVABILITY.md) — extend spine with `policy.verdict
 
 | Document | Relationship |
 |----------|--------------|
-| [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §39 | **Canonical home** — org envelope, virtual workforce, APP-CON |
+| [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §39 | **Canonical home** - org envelope, virtual workforce, APP-CON |
 | [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §22 · §22.6 | `PolicyRulesProfile`, `GuardrailProfile`, profile wiring · bundle grouping (ADR-APP-003) |
 | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.11 | `RuntimePolicyBundle`, guardrails |
 | [`OBSERVABILITY.md`](OBSERVABILITY.md) | Trace spine + compliance metrics |

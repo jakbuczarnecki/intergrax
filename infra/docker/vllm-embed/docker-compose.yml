@@ -1,5 +1,5 @@
 # vLLM OpenAI-compatible embedding server.
-# Separate from chat vLLM — pooling runner exposes /v1/embeddings (vLLM 0.23+).
+# Separate from chat vLLM - pooling runner exposes /v1/embeddings (vLLM 0.23+).
 # Host port 8101; wire RAG: INTERGRAX_DEFAULT_VLLM_EMBED_BASE_URL=http://127.0.0.1:8101/v1
 
 services:

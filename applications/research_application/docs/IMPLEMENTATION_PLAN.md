@@ -1,8 +1,8 @@
-﻿# research_application — Implementation Plan
+﻿# research_application - Implementation Plan
 
-**The implementation map** for this Tier-3 multi-agent host — phases, status, gaps, and verification.
+**The implementation map** for this Tier-3 multi-agent host - phases, status, gaps, and verification.
 
-Status: **Harness baseline Done** — graph depth optional
+Status: **Harness baseline Done** - graph depth optional
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)
 Agent plan: [`agents/research/docs/IMPLEMENTATION_PLAN.md`](../../../agents/research/docs/IMPLEMENTATION_PLAN.md)

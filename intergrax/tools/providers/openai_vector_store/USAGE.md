@@ -18,7 +18,7 @@ Vendor-specific operations on **OpenAI managed** vector stores. Not interchangea
 
 ## Skill
 
-`knowledge.openai_strict` — allows `openai.file_search.query` with strict citation prompt.
+`knowledge.openai_strict` - allows `openai.file_search.query` with strict citation prompt.
 
 ## Example
 

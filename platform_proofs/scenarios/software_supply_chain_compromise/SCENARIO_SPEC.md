@@ -11,7 +11,7 @@ application_vs_proof_ownership: NOT_COMPLETED
 # Scenario Specification
 
 **Scenario:** Software Supply Chain Compromise Investigation and Release Containment  
-**Status:** DESIGN / NOT YET ACCEPTED — awaiting human Scenario Quality Gate.
+**Status:** DESIGN / NOT YET ACCEPTED - awaiting human Scenario Quality Gate.
 
 [← Back to public Scenario page](README.md)
 
@@ -69,11 +69,11 @@ Required answer: **YES**. If **NO**, redesign or consider CONFORMANCE instead.
 
 > If the proof evaluator, evidence packaging, and HTML report are removed, does the application/runtime still produce enough structured execution information to reconstruct its material decisions, actions, observations, challenges, recoveries, diagnostics, and terminal result?
 
-Required answer: **YES**. If **NO**, the Scenario is not acceptable — Proof cannot be the sole recorder.
+Required answer: **YES**. If **NO**, the Scenario is not acceptable - Proof cannot be the sole recorder.
 
 ### Observability / Explainability / Diagnostics Contract
 
-_Declare before implementation — Scenario MUST NOT be a black box._
+_Declare before implementation - Scenario MUST NOT be a black box._
 
 - **Material decisions:** What material decisions does the model/application make?
 - **Observability coverage:** Which must be observable via production-path `TraceEvent` / `ToolCallTrace` / typed diagnostics?
@@ -85,7 +85,7 @@ _Declare before implementation — Scenario MUST NOT be a black box._
 - **Redaction:** Which data requires redaction (`DiagnosticPayload.redact`)?
 - **Operator visibility:** Which fields are operator-visible in reports?
 - **Proof consumption:** How does Proof/report consume canonical trace without inventing missing explanations?
-- **Machine-readable artifact:** Expected projection (e.g. `PlatformProofEvidence` v3 steps/graph) — not a Proof-only logger.
+- **Machine-readable artifact:** Expected projection (e.g. `PlatformProofEvidence` v3 steps/graph) - not a Proof-only logger.
 - **Application Observability Test result:** Required answer **YES** before implementation acceptance.
 
 ### Conditional authoring prompts _(complete when relevant)_
@@ -174,9 +174,9 @@ APPLICATION NEED
 → STATUS
 ```
 
-Also audit **TEST-ONLY SUBSTITUTE PRESENT?** in canonical Scenario path — **YES** is a **BLOCKER**.
+Also audit **TEST-ONLY SUBSTITUTE PRESENT?** in canonical Scenario path - **YES** is a **BLOCKER**.
 
-Do not prepopulate participating domain(s) — domains are discovered during capability-fit.
+Do not prepopulate participating domain(s) - domains are discovered during capability-fit.
 
 ## D. GAP DECISION
 
@@ -184,6 +184,6 @@ NOT YET PERFORMED
 
 ## E. PROOF BUILD
 
-NOT STARTED — blocked on scenario acceptance, APPLICATION vs PROOF HARNESS separation, and capability-fit.
+NOT STARTED - blocked on scenario acceptance, APPLICATION vs PROOF HARNESS separation, and capability-fit.
 
 Before implementation confirm: production-capable application exists; canonical path has no prohibited fake/test shortcuts; controlled providers use normal application contracts; real model boundary configured if AI behavior is material.

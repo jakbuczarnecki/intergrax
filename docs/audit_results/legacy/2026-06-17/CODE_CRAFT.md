@@ -1,4 +1,4 @@
-# Audit result — `CODE_CRAFT`
+# Audit result - `CODE_CRAFT`
 
 **Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
@@ -32,10 +32,10 @@ uv run pytest tests/unit/codecraft/ tests/unit/tools/providers/codecraft/ tests/
 
 ## Backlog P2–P4 (deferred)
 
-- GAP-ECC-23 Task.metadata.codecraft_mode override — P2
-- GAP-ECC-20 codegen_llm_profile_ref wiring — P3
-- GAP-ECC-21 container isolation tier — P3
-- GAP-ECC-22 metrics dashboards §10.2 — P3
+- GAP-ECC-23 Task.metadata.codecraft_mode override - P2
+- GAP-ECC-20 codegen_llm_profile_ref wiring - P3
+- GAP-ECC-21 container isolation tier - P3
+- GAP-ECC-22 metrics dashboards §10.2 - P3
 
 ---
 

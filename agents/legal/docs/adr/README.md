@@ -1,4 +1,4 @@
-﻿# legal agent — Architecture Decision Records
+﻿# legal agent - Architecture Decision Records
 
 **Domain:** Tier-2 business agent (`agents/legal`)
 
@@ -36,7 +36,7 @@ ADR-LEGAL-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| — | *No agent ADRs yet* | — |
+| - | *No agent ADRs yet* | - |
 
 ---
 

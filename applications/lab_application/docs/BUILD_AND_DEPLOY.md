@@ -1,4 +1,4 @@
-        # Build & deploy — Intergrax Lab
+        # Build & deploy - Intergrax Lab
 
         Tier-3 application package: ``applications/lab_application``. This document is the **operational runbook** for local development, verification, and container deployment.
 
@@ -25,7 +25,7 @@
         cp applications/lab_application/.env.example applications/lab_application/.env
         ```
 
-        Edit ``.env`` (gitignored). Variables use the application prefix **`LAB_`** — do not put app secrets only in the repository-root ``.env``.
+        Edit ``.env`` (gitignored). Variables use the application prefix **`LAB_`** - do not put app secrets only in the repository-root ``.env``.
 
         | Variable | Default | Role |
         |----------|---------|------|
@@ -124,7 +124,7 @@ Mounted on the same process (Phase L.3 + infra paydown):
 
         Override image tag: ``IMAGE_TAG=my-registry/lab:1.0.0`` (sh) or ``build-docker.bat my-registry/lab:1.0.0`` (bat).
 
-        ### Manual — BuildKit
+        ### Manual - BuildKit
 
         ```bash
         docker buildx build -f applications/lab_application/docker/Dockerfile \
@@ -132,7 +132,7 @@ Mounted on the same process (Phase L.3 + infra paydown):
           -t lab-application .
         ```
 
-        ### Manual — classic Docker
+        ### Manual - classic Docker
 
         ```bash
         cp applications/lab_application/docker/.dockerignore .dockerignore

@@ -1,6 +1,6 @@
-# PLATFORM-PLUGIN-9 — Program Closeout Evidence
+# PLATFORM-PLUGIN-9 - Program Closeout Evidence
 
-**Program:** Intergrax Platform Plugin Architecture — Global Audit, Unification & Third-Party Extensibility
+**Program:** Intergrax Platform Plugin Architecture - Global Audit, Unification & Third-Party Extensibility
 **Evaluated commit:** `57c0985b1b3cf4f1bf9f8b8dc47cc0b965dddcc3` (pre-closeout baseline; PLUGIN-9 artifacts added on `development`)
 **Scope:** PLATFORM-PLUGIN-1 through PLATFORM-PLUGIN-9
 **Date:** 2026-08-12
@@ -15,7 +15,7 @@
 | **Evaluated branch** | `development` |
 | **Required ancestors** | All PLUGIN-2..8 stage commits verified as ancestors |
 
-The Platform Plugin program meets all twenty closeout criteria. No material architectural gaps block closure. Residual items are documented intentional limitations or future domain-owned work — not program defects.
+The Platform Plugin program meets all twenty closeout criteria. No material architectural gaps block closure. Residual items are documented intentional limitations or future domain-owned work - not program defects.
 
 ---
 
@@ -60,10 +60,10 @@ The Platform Plugin program meets all twenty closeout criteria. No material arch
 
 | Path | Evidence | Result |
 |------|----------|--------|
-| **External** | wheel → `iter_entry_point_specs` / `load_entry_point_plugins` → compatibility → `evaluate_package_production_admission` → `register_tool_plugin` → `RuntimeToolInvoker` | PASS — `test_plugin8_dual_mode_tool_e2e.py` |
-| **Local** | `.py` module → `build_host_embedded_capability_subject` → `require_production_qualification` → `register_tool_plugin` → same invoker | PASS — E2E + scaffold gate |
+| **External** | wheel → `iter_entry_point_specs` / `load_entry_point_plugins` → compatibility → `evaluate_package_production_admission` → `register_tool_plugin` → `RuntimeToolInvoker` | PASS - `test_plugin8_dual_mode_tool_e2e.py` |
+| **Local** | `.py` module → `build_host_embedded_capability_subject` → `require_production_qualification` → `register_tool_plugin` → same invoker | PASS - E2E + scaffold gate |
 | Same domain runtime | Both use `ToolPlugin`, `ToolWiringContext`, `build_registry_from_profile` | PASS |
-| Qualification before registration | Generated `host/tool_wiring.py` calls `require_production_qualification` first | PASS — scaffold test + contract assertion |
+| Qualification before registration | Generated `host/tool_wiring.py` calls `require_production_qualification` first | PASS - scaffold test + contract assertion |
 
 ---
 
@@ -73,22 +73,22 @@ All twelve canonical surfaces in architecture §20.1 reviewed.
 
 | Surface | Public contract works | EP group accurate | Local registration claim |
 |---------|----------------------|-------------------|--------------------------|
-| Integrations | Yes | `intergrax.integrations` | `register_integration_plugin()` — documented |
-| Tools | Yes | `intergrax.tools` | Scaffold + `register_tool_plugin()` — executable |
-| Skills | Yes | `intergrax.skills` | `register_skill_plugin()` — documented |
-| Context | Yes (EP + registry) | `intergrax.context` | Host composition only — doc gap fixed (author guide) |
-| Memory stores | Yes | `intergrax.memory_stores` | Factory callables — external-EP-first (acceptable) |
-| RAG chunkers | Yes | `intergrax.rag.chunkers` | Bootstrap registry — external-EP-first (acceptable) |
+| Integrations | Yes | `intergrax.integrations` | `register_integration_plugin()` - documented |
+| Tools | Yes | `intergrax.tools` | Scaffold + `register_tool_plugin()` - executable |
+| Skills | Yes | `intergrax.skills` | `register_skill_plugin()` - documented |
+| Context | Yes (EP + registry) | `intergrax.context` | Host composition only - doc gap fixed (author guide) |
+| Memory stores | Yes | `intergrax.memory_stores` | Factory callables - external-EP-first (acceptable) |
+| RAG chunkers | Yes | `intergrax.rag.chunkers` | Bootstrap registry - external-EP-first (acceptable) |
 | RAG retrievers | Yes | `intergrax.rag.retrievers` | Same (acceptable) |
 | RAG rerankers | Yes | `intergrax.rag.rerankers` | Same (acceptable) |
-| Vendor Knowledge | Yes | `intergrax.vendor_knowledge.providers` | Host builder — DO-NOT-UNIFY (acceptable) |
-| Security defenses | Yes | `intergrax.security_defenses` | Profile/bootstrap — external-EP-first (acceptable) |
-| Policy rules | Yes | `intergrax.policy_rules` | Bundle bootstrap — external-EP-first (acceptable) |
-| Tool invocation patterns | Yes | `intergrax.tool_invocation_patterns` | Runtime config — external-EP-first (acceptable) |
+| Vendor Knowledge | Yes | `intergrax.vendor_knowledge.providers` | Host builder - DO-NOT-UNIFY (acceptable) |
+| Security defenses | Yes | `intergrax.security_defenses` | Profile/bootstrap - external-EP-first (acceptable) |
+| Policy rules | Yes | `intergrax.policy_rules` | Bundle bootstrap - external-EP-first (acceptable) |
+| Tool invocation patterns | Yes | `intergrax.tool_invocation_patterns` | Runtime config - external-EP-first (acceptable) |
 
 **False public claims:** none found.
-**Documentation gaps fixed:** Context status in `EXTENSION_AUTHOR_GUIDE.md` (was "Planned", now "Public EP — qualification rollout domain-owned").
-**Material usability gaps:** local-registration helpers not scaffolded for all domains — classified **acceptable external-EP-first** per frozen architecture; not a closeout blocker.
+**Documentation gaps fixed:** Context status in `EXTENSION_AUTHOR_GUIDE.md` (was "Planned", now "Public EP - qualification rollout domain-owned").
+**Material usability gaps:** local-registration helpers not scaffolded for all domains - classified **acceptable external-EP-first** per frozen architecture; not a closeout blocker.
 
 ---
 
@@ -109,10 +109,10 @@ No competing public duplicate registration API was found that requires runtime `
 
 ### C. Internal implementation detail
 
-Integration registry v2, embedding/document handler registries, hook internals — not public API; no user-facing deprecation.
+Integration registry v2, embedding/document handler registries, hook internals - not public API; no user-facing deprecation.
 
 **Breaking removals:** none in PLUGIN-9.
-**Future obligations:** if a future domain program promotes additional local-registration scaffolds, that is domain-owned — not Platform Plugin program scope.
+**Future obligations:** if a future domain program promotes additional local-registration scaffolds, that is domain-owned - not Platform Plugin program scope.
 
 ---
 
@@ -120,13 +120,13 @@ Integration registry v2, embedding/document handler registries, hook internals �
 
 | Gate | Location | Protects |
 |------|----------|----------|
-| PR smoke — contract suite | `tests/contract/core/plugins/test_platform_plugin_contract.py` (via `ci_smoke` + explicit step) | Cross-stage invariants PLUGIN-3..8 |
-| PR smoke — PLUGIN-8 E2E | `tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py` | External wheel + local embedded dual-mode |
-| PR smoke — scaffold qualification | `tests/unit/scaffold/test_scaffold_local_extension_qualification.py` | Qualification before registration |
+| PR smoke - contract suite | `tests/contract/core/plugins/test_platform_plugin_contract.py` (via `ci_smoke` + explicit step) | Cross-stage invariants PLUGIN-3..8 |
+| PR smoke - PLUGIN-8 E2E | `tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py` | External wheel + local embedded dual-mode |
+| PR smoke - scaffold qualification | `tests/unit/scaffold/test_scaffold_local_extension_qualification.py` | Qualification before registration |
 | Nightly gate | `pytest tests/unit -m "gate and not no_ci"` | Includes contract + scaffold gate tests |
 | Existing unit suites | `test_platform_plugin_package_contract.py`, `test_plugin_discovery.py`, `test_platform_plugin_semantics.py`, `test_platform_plugin_qualification.py` | Stage-specific contracts (nightly full unit gate) |
 
-**Workflow modified:** yes — `.github/workflows/unit-tests.yml` (`ci-smoke` job, step `Platform Plugin program gate (PLUGIN-9)`).
+**Workflow modified:** yes - `.github/workflows/unit-tests.yml` (`ci-smoke` job, step `Platform Plugin program gate (PLUGIN-9)`).
 **Wheel E2E protected in PR smoke:** yes (`uv` available in CI via `setup-uv`).
 
 ---
@@ -135,19 +135,19 @@ Integration registry v2, embedding/document handler registries, hook internals �
 
 | Claim | Status |
 |-------|--------|
-| Trusted in-process Python execution | **Yes** — `PlatformPluginTrustModel.TRUSTED_IN_PROCESS` only |
-| Sandbox / process isolation | **Not claimed** — architecture §18, §22 |
+| Trusted in-process Python execution | **Yes** - `PlatformPluginTrustModel.TRUSTED_IN_PROCESS` only |
+| Sandbox / process isolation | **Not claimed** - architecture §18, §22 |
 | Package signing / verification guarantee | **Not claimed** |
-| Host/operator trust decision | **Yes** — qualification gates are explicit host decisions |
+| Host/operator trust decision | **Yes** - qualification gates are explicit host decisions |
 
 ---
 
 ## Remaining risks (non-blocking)
 
-1. **Local-registration scaffolds** exist only for Tools (and documented helpers for Integrations/Skills) — other domains remain external-EP-first by design.
+1. **Local-registration scaffolds** exist only for Tools (and documented helpers for Integrations/Skills) - other domains remain external-EP-first by design.
 2. **Context qualification rollout** remains domain-owned (CE-2); EP is public but production qualification posture varies by host.
-3. **Token optimization plugin** descriptor has no production loader — tracked as future review, not Platform Plugin defect.
-4. **Per-loader import isolation** varies by domain — bounded failure model documented; not a program closeout gap.
+3. **Token optimization plugin** descriptor has no production loader - tracked as future review, not Platform Plugin defect.
+4. **Per-loader import isolation** varies by domain - bounded failure model documented; not a program closeout gap.
 
 ---
 

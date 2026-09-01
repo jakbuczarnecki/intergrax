@@ -1,4 +1,4 @@
-# Audit result — `RAG`
+# Audit result - `RAG`
 
 **Run:** 2026-06-18 · **Mode:** audit_only (interactive layer 12)  
 **Auditor:** cursor-agent · **Verdict:** L3 mature_revalidated
@@ -20,9 +20,9 @@
 
 | ID | Severity | Finding | Evidence | Status |
 |----|----------|---------|----------|--------|
-| RAG-GAP-01 | P2 | Beta→stable manifest promotion — ops honesty | RAG-LC deferred | **planned** (RAG-MAINT-01) |
+| RAG-GAP-01 | P2 | Beta→stable manifest promotion - ops honesty | RAG-LC deferred | **planned** (RAG-MAINT-01) |
 | RAG-GAP-02 | P3 | Production SLO soak depth beyond M-RAG.36 gate | RAG-LC deferred | **planned** (RAG-MAINT-02) |
-| RAG-GAP-03 | P3 | Audit prompt stale — GAP-RAG P0 list vs closed register | LC **Done** | **planned** (RAG-MAINT-03) |
+| RAG-GAP-03 | P3 | Audit prompt stale - GAP-RAG P0 list vs closed register | LC **Done** | **planned** (RAG-MAINT-03) |
 | RAG-GAP-04 | P4 | M-RAG.58 AHI adaptive routing | **Frozen** | **planned** (RAG-MAINT-04 cross-ref) |
 | RAG-GAP-05 | P3 | Windows `pytest tests/unit/rag/` teardown crash | exit `-1073741819` | environment note |
 
@@ -53,11 +53,11 @@ OTel + tenant isolation: **OK**. Unit suite: **crash on Windows teardown** (70+ 
 
 ## Backlog P2–P4 (planned / deferred)
 
-- RAG-MAINT-01..04 — §6.1av
-- INT-MAINT-01 — integration slug maturity
+- RAG-MAINT-01..04 - §6.1av
+- INT-MAINT-01 - integration slug maturity
 
 ---
 
 ## Recommendation
 
-**Architecturally Mature (L3)** — retrieval engine Done; ops/prompt hygiene backlog tracked.
+**Architecturally Mature (L3)** - retrieval engine Done; ops/prompt hygiene backlog tracked.

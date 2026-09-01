@@ -1,8 +1,8 @@
-# Intergrax — Instructions for AI Coding Agents (full reference)
+# Intergrax - Instructions for AI Coding Agents (full reference)
 
 > **Audience:** Cursor, Claude Code, Codex, Gemini, and other LLM agents working in this repository.
 > **Cursor auto-load:** root [`AGENTS.md`](../../../../AGENTS.md) is a **stub** (~400 tokens). Load **this file** with `@docs/project/technical/guides/AGENT_INSTRUCTIONS.md` when you need routing, verification, ADR workflow, or anti-patterns.
-> **Canonical docs:** `docs/project/` — always prefer linking over duplicating.
+> **Canonical docs:** `docs/project/` - always prefer linking over duplicating.
 
 ---
 
@@ -13,7 +13,7 @@
 
 ```text
 Tier-0  intergrax/           Platform (integrations, tools, skills, LLM, RAG, memory)
-Tier-1  intergrax/runtime/   Nexus — Agent Operating System
+Tier-1  intergrax/runtime/   Nexus - Agent Operating System
 Tier-2  agents/              Specialized agent capabilities
 Tier-3  applications/        Deployable product environments
 ```
@@ -21,15 +21,15 @@ Tier-3  applications/        Deployable product environments
 **Strategic goal:** production-grade Harness AI aligned with modern Agent Engineering practice.
 **Source:** [docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-**Documentation boundary:** `docs/project/architecture/intergrax_runtime_architecture.md` is the architecture hub indexing the **primary domain-pair baseline plus additional canonical domain pairs**: `docs/project/architecture/<DOMAIN>.md` ↔ `docs/project/maintainers/plans/<DOMAIN>.md` (1:1 filenames). **Multi-layer feature pairs** live under `docs/project/capabilities/architecture/<FEATURE>.md` ↔ `docs/project/capabilities/plan/<FEATURE>.md` — see [`capabilities/README.md`](../../capabilities/README.md). Feature docs coordinate cross-layer capabilities; domain docs remain authoritative for domain-owned architecture and plan rows. Strategy, ideal model, and audit live in `docs/project/technical/guides/`. Each **business environment** (`applications/<product>/`) and **business agent** (`agents/<name>/`) has its own architecture and implementation plan — do not treat platform canon as the product deployment plan.
+**Documentation boundary:** `docs/project/architecture/intergrax_runtime_architecture.md` is the architecture hub indexing the **primary domain-pair baseline plus additional canonical domain pairs**: `docs/project/architecture/<DOMAIN>.md` ↔ `docs/project/maintainers/plans/<DOMAIN>.md` (1:1 filenames). **Multi-layer feature pairs** live under `docs/project/capabilities/architecture/<FEATURE>.md` ↔ `docs/project/capabilities/plan/<FEATURE>.md` - see [`capabilities/README.md`](../../capabilities/README.md). Feature docs coordinate cross-layer capabilities; domain docs remain authoritative for domain-owned architecture and plan rows. Strategy, ideal model, and audit live in `docs/project/technical/guides/`. Each **business environment** (`applications/<product>/`) and **business agent** (`agents/<name>/`) has its own architecture and implementation plan - do not treat platform canon as the product deployment plan.
 
-**Per-iteration reading rule:** when implementing a harness layer, read **only** the matching architecture + plan pair (e.g. `MEMORY.md` in both folders) plus `docs/project/technical/guides/` as needed — do not load unrelated domain docs.
+**Per-iteration reading rule:** when implementing a harness layer, read **only** the matching architecture + plan pair (e.g. `MEMORY.md` in both folders) plus `docs/project/technical/guides/` as needed - do not load unrelated domain docs.
 
-**Cursor context budget:** respect `.cursorignore`. **I1/O1:** always-on `.cursor/rules/intergrax-token-budget.mdc`. Plan hubs + [`../plan/satellites/`](../../maintainers/plans/satellites) satellites. Platform audits: follow [`docs/audit_results/AUDIT_PROTOCOL.md`](../../../audit_results/AUDIT_PROTOCOL.md). **F2:** root `AGENTS.md` is a stub; full reference is this file — see [`CURSOR_TOKEN_SETUP.md`](CURSOR_TOKEN_SETUP.md). **F3:** one domain = one new chat; HEP → [`../bootstrap/hep_step.txt`](../../maintainers/bootstrap/hep_step.txt). **O1:** terse operator replies by default — see § Operator communication below.
+**Cursor context budget:** respect `.cursorignore`. **I1/O1:** always-on `.cursor/rules/intergrax-token-budget.mdc`. Plan hubs + [`../plan/satellites/`](../../maintainers/plans/satellites) satellites. Platform audits: follow [`docs/audit_results/AUDIT_PROTOCOL.md`](../../../audit_results/AUDIT_PROTOCOL.md). **F2:** root `AGENTS.md` is a stub; full reference is this file - see [`CURSOR_TOKEN_SETUP.md`](CURSOR_TOKEN_SETUP.md). **F3:** one domain = one new chat; HEP → [`../bootstrap/hep_step.txt`](../../maintainers/bootstrap/hep_step.txt). **O1:** terse operator replies by default - see § Operator communication below.
 
 ---
 
-## Operator communication (O1 — output token budget)
+## Operator communication (O1 - output token budget)
 
 **Minimize output tokens.** Do not dump architecture canon, repeat visible diffs, or end with unsolicited long “next steps” lists.
 
@@ -38,7 +38,7 @@ Tier-3  applications/        Deployable product environments
 | Mode | When | Shape |
 |------|------|--------|
 | **Minimal** | Operator: `krótko`, `terse`; trivial yes/no | ≤6 lines |
-| **Terse** | Default — implement, fix, gate, routine audit checkpoint | ≤12 lines (~150 words) |
+| **Terse** | Default - implement, fix, gate, routine audit checkpoint | ≤12 lines (~150 words) |
 | **Standard** | Operator: `wyjaśnij`, `explain`, design review | Short sections; link to docs instead of quoting |
 | **Full** | `pełny raport`, `full report`, `iteration summary`; milestone / LCM / journal entry | 12-point template below |
 
@@ -48,10 +48,10 @@ Language: operator session language for chat; repository artifacts stay English.
 
 Include **only**:
 
-1. **Outcome** — done / blocked / partial (+ one-line why if not obvious)
-2. **Changed** — file paths (or count if >5); never narrate the diff
-3. **Tests** — command + pass/fail, or one line why skipped
-4. **Next** — one line max; omit if nothing needed
+1. **Outcome** - done / blocked / partial (+ one-line why if not obvious)
+2. **Changed** - file paths (or count if >5); never narrate the diff
+3. **Tests** - command + pass/fail, or one line why skipped
+4. **Next** - one line max; omit if nothing needed
 
 **Skip:** preamble, restating the task, code blocks for unchanged context, tables duplicating CI output, Mode I–style long proposals when not in Mode I.
 
@@ -67,7 +67,7 @@ Include **only**:
 8. Remaining risks
 9. Out-of-scope findings
 10. Suggested next step (one line)
-11. One-line commit message (English) — no commit unless operator asks
+11. One-line commit message (English) - no commit unless operator asks
 
 ---
 
@@ -75,11 +75,11 @@ Include **only**:
 
 **CI/test hotfixes:** use `@.cursor/rules/intergrax-ci-hotfix.mdc` in a **new chat**. Do **not** read README, architecture, plan, `SYSTEM_INVARIANTS.md`, or strategy docs. Read only failing test/checker + directly related implementation files.
 
-**Full onboarding** — only for new domain implementation, architecture-changing work, public behavior changes, ADR/milestone work, or full audit/closeout:
+**Full onboarding** - only for new domain implementation, architecture-changing work, public behavior changes, ADR/milestone work, or full audit/closeout:
 
-1. Read [README.md — Start here](../../../../README.md#start-here) for documentation navigation
-2. Read [docs/project/architecture/intergrax_runtime_architecture.md](../../architecture/intergrax_runtime_architecture.md) — pick your domain pair from the table
-3. Skim [docs/project/technical/guides/SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) — cross-domain rules you must not break (P2-ARCH-01)
+1. Read [README.md - Start here](../../../../README.md#start-here) for documentation navigation
+2. Read [docs/project/architecture/intergrax_runtime_architecture.md](../../architecture/intergrax_runtime_architecture.md) - pick your domain pair from the table
+3. Skim [docs/project/technical/guides/SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) - cross-domain rules you must not break (P2-ARCH-01)
 4. Read **both** `docs/project/architecture/<DOMAIN>.md` and `docs/project/maintainers/plans/<DOMAIN>.md` for that domain only
 5. Follow the work cycle in [docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md):
 
@@ -92,7 +92,7 @@ ANALYSIS → ARCHITECTURE REVIEW → PLAN REVIEW → IMPROVEMENT PROPOSAL
 
 ## Hard rules (never violate)
 
-Full cross-domain index: [docs/project/technical/guides/SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) (`SYS-INV-*`, P2-ARCH-01). Summary below — when in doubt, use the index and linked domain canon.
+Full cross-domain index: [docs/project/technical/guides/SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) (`SYS-INV-*`, P2-ARCH-01). Summary below - when in doubt, use the index and linked domain canon.
 
 ### Tier dependency boundaries
 
@@ -105,13 +105,13 @@ applications/    MAY import from agents/ and intergrax/
 ### Agent creation
 
 - **Never modify `../../intergrax/runtime/`** when creating Tier-2 agents
-- Agents consume Tier-0 only through Nexus policy and `ToolRuntime` — no direct vendor SDK imports
+- Agents consume Tier-0 only through Nexus policy and `ToolRuntime` - no direct vendor SDK imports
 - Canonical workflow: [docs/project/technical/guides/AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md)
 - Success metric: idea → first Nexus run in **under one hour**
 
 ### Documentation
 
-- **One source of truth per topic** — `docs/project/` is the canonical human documentation root; no parallel guides
+- **One source of truth per topic** - `docs/project/` is the canonical human documentation root; no parallel guides
 - Strategy / ideal / audit / invariants → `docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`, `IDEAL_HARNESS_AI_ARCHITECTURE.md`, `docs/audit_results/AUDIT_PROTOCOL.md`, `SYSTEM_INVARIANTS.md`
 - Architecture hub → `docs/project/architecture/intergrax_runtime_architecture.md`
 - Domain-layer pairs → `docs/project/architecture/<DOMAIN>.md` ↔ `docs/project/maintainers/plans/<DOMAIN>.md` (**1:1**, same filename)
@@ -124,12 +124,12 @@ applications/    MAY import from agents/ and intergrax/
 ### Harness platform
 
 - Default queue is **gate maintenance** in `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` unless another domain plan item is selected
-- Business agents (Phase K) are **end of plan** — `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` §6.3; do not start without explicit product decision
-- Tier-1/2/3 work is **composition and wiring** of existing Tier-0 modules — no parallel universal mechanisms
+- Business agents (Phase K) are **end of plan** - `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` §6.3; do not start without explicit product decision
+- Tier-1/2/3 work is **composition and wiring** of existing Tier-0 modules - no parallel universal mechanisms
 
 ---
 
-## Task routing — what to read
+## Task routing - what to read
 
 | Task | Read first (architecture + plan pair) |
 |------|---------------------------------------|
@@ -211,9 +211,9 @@ Full local suite: `scripts\ci\test.bat unit` (Windows) or equivalent `uv run pyt
 
 ## Code style & conventions
 
-- Match surrounding code — naming, types, imports, documentation level
-- Minimize scope — smallest correct diff; no unrelated changes
-- Python 3.12, managed by `uv` — see `pyproject.toml`
+- Match surrounding code - naming, types, imports, documentation level
+- Minimize scope - smallest correct diff; no unrelated changes
+- Python 3.12, managed by `uv` - see `pyproject.toml`
 - Copyright header on new files: `© Artur Czarnecki. All rights reserved.`
 - Comments only for non-obvious business logic
 - Do not add tests unless requested or they cover real behavior
@@ -249,8 +249,8 @@ Full local suite: `scripts\ci\test.bat unit` (Windows) or equivalent `uv run pyt
 | `../../intergrax/llm_adapters/` | LLM provider adapters |
 | `../../intergrax/rag/` | RAG engine |
 | `../../intergrax/scaffold/` | Scaffolding CLI |
-| `agents/` | Tier-2 agents — roster: [agents/README.md](../../../../agents/README.md) |
-| `applications/` | Tier-3 application hosts — index: [applications/README.md](../../../../applications/README.md) (LKW, DSW, legal, research, lab) |
+| `agents/` | Tier-2 agents - roster: [agents/README.md](../../../../agents/README.md) |
+| `applications/` | Tier-3 application hosts - index: [applications/README.md](../../../../applications/README.md) (LKW, DSW, legal, research, lab) |
 | `docs/project/` | Canonical human documentation |
 | `tests/` | Unit, integration, acceptance tests |
 | `scripts/` | Harness CI scripts |
@@ -259,14 +259,14 @@ Full local suite: `scripts\ci\test.bat unit` (Windows) or equivalent `uv run pyt
 
 ## LLM context files
 
-- [llms.txt](../../../../llms.txt) — concise project map for LLM crawlers
-- [llms-full.txt](../../../../llms-full.txt) — extended context map
-- [docs/project/technical/guides/AGENT_CREATION_GUIDE.md § Instructions for LLM coding agents](AGENT_CREATION_GUIDE.md) — detailed agent instructions
+- [llms.txt](../../../../llms.txt) - concise project map for LLM crawlers
+- [llms-full.txt](../../../../llms-full.txt) - extended context map
+- [docs/project/technical/guides/AGENT_CREATION_GUIDE.md § Instructions for LLM coding agents](AGENT_CREATION_GUIDE.md) - detailed agent instructions
 
 ---
 
 ## Contact & security
 
-- Maintainer: Artur Czarnecki — jakbu.czarnecki.83@gmail.com
+- Maintainer: Artur Czarnecki - jakbu.czarnecki.83@gmail.com
 - Security issues: see [SECURITY.md](../../../../SECURITY.md)
 - Contributing: see [CONTRIBUTING.md](../../../../CONTRIBUTING.md)

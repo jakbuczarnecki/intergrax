@@ -1,6 +1,6 @@
-# Platform Plugin Documentation Program — Final Closeout
+# Platform Plugin Documentation Program - Final Closeout
 
-**Task:** PLATFORM-PLUGIN-DOCS-7 — FINAL 12-SURFACE DEVELOPER DOCUMENTATION VALIDATION
+**Task:** PLATFORM-PLUGIN-DOCS-7 - FINAL 12-SURFACE DEVELOPER DOCUMENTATION VALIDATION
 
 **Status:** READY_FOR_REVIEW
 
@@ -41,18 +41,18 @@ docs/project/README.md
   → architecture doc (semantics only when needed)
 ```
 
-Runtime source was consulted **only** to verify documentation claims (EP strings, wiring gaps, loader semantics) — not as the primary author journey.
+Runtime source was consulted **only** to verify documentation claims (EP strings, wiring gaps, loader semantics) - not as the primary author journey.
 
 **Checks performed:**
 
 | Check | Result |
 |-------|--------|
-| 12 EP group strings vs `intergrax/core/plugins/discovery.py` + VK catalog | **Pass** — all match |
+| 12 EP group strings vs `intergrax/core/plugins/discovery.py` + VK catalog | **Pass** - all match |
 | Public contract import paths in guides | **Pass** (sampled + contract tests) |
 | Navigation gateway → author guide → domain guide | **Pass** |
 | Decision tree distinctions (8 pairs) | **Pass** |
-| Reference examples — public APIs, no false production claims | **Pass** |
-| Dynamic wiring in task-owned examples | **Pass** — `NEW_DYNAMIC_ATTRIBUTE_WIRING: 0` |
+| Reference examples - public APIs, no false production claims | **Pass** |
+| Dynamic wiring in task-owned examples | **Pass** - `NEW_DYNAMIC_ATTRIBUTE_WIRING: 0` |
 | Focused conformance suite | **67 passed** (see §12) |
 | `git diff --check` on staged docs | **Pass** (at commit) |
 
@@ -66,9 +66,9 @@ All **currently supported** public developer paths are **accurately documented**
 
 Remaining gaps are **runtime capability** items mapped to enterprise candidates (Memory, Policy) or ordinary hardening (Tool invocation EP scan). They are disclosed in domain guides and §8 below.
 
-**Not chosen:** `DOCS_CHANGES_REQUIRED` — no material documentation defects remain after DOCS-2…6 remediation and DOCS-7 small corrections.
+**Not chosen:** `DOCS_CHANGES_REQUIRED` - no material documentation defects remain after DOCS-2…6 remediation and DOCS-7 small corrections.
 
-**Not chosen:** `DOCS_COMPLETE` — Memory and Policy surfaces have documented runtime gaps that prevent full operational closure without ENTERPRISE work.
+**Not chosen:** `DOCS_COMPLETE` - Memory and Policy surfaces have documented runtime gaps that prevent full operational closure without ENTERPRISE work.
 
 ---
 
@@ -112,10 +112,10 @@ Remaining gaps are **runtime capability** items mapped to enterprise candidates 
 |---------|-------------------|--------|
 | **Memory** | D5 local path, D11 runtime | No Tier-3 EP factory resolver for user profile / session storage (CAND-001, CAND-002) |
 | **Policy** | D9 discovery wiring, D11 runtime | `wire_policy_bundle` does not call `load_policy_rule_plugins`; declarative rules not enforced (CAND-006, CAND-007) |
-| **Context** | — (overall COMPLETE) | Scaffold CLI parity absent — DX only (CAND-003); documented, not a doc defect |
+| **Context** | - (overall COMPLETE) | Scaffold CLI parity absent - DX only (CAND-003); documented, not a doc defect |
 | **RAG ×3** | D5 local path | External-EP-first by design; local registry composition documented §0.2 |
-| **Security** | — | `override=True` on EP registration documented (CAND-004 enterprise) |
-| **Tool invocation** | — | O(N) EP scan documented as hardening (CAND-009) |
+| **Security** | - | `override=True` on EP registration documented (CAND-004 enterprise) |
+| **Tool invocation** | - | O(N) EP scan documented as hardening (CAND-009) |
 
 Per-surface D1–D16 tables live in each domain author guide (added DOCS-4…5).
 
@@ -125,11 +125,11 @@ Per-surface D1–D16 tables live in each domain author guide (added DOCS-4…5).
 
 | Entry | Routes to extension author material? | Issues |
 |-------|--------------------------------------|--------|
-| `docs/project/README.md` | **Yes** — Platform Extensibility → PLATFORM_PLUGINS.md | None |
-| `technical/DOCUMENTATION_MAP.md` | **Yes** — row: Extend Intergrax → EXTENSION_AUTHOR_GUIDE | None |
-| `technical/guides/README.md` | **Yes** — EXTENSION_AUTHOR_GUIDE as Platform Plugin start | None |
-| `EXTENSION_AUTHOR_GUIDE.md` | **Yes** — decision tree + 12-surface matrix | None |
-| Maintainer audit plan | Secondary only — explicitly not first stop | Correct |
+| `docs/project/README.md` | **Yes** - Platform Extensibility → PLATFORM_PLUGINS.md | None |
+| `technical/DOCUMENTATION_MAP.md` | **Yes** - row: Extend Intergrax → EXTENSION_AUTHOR_GUIDE | None |
+| `technical/guides/README.md` | **Yes** - EXTENSION_AUTHOR_GUIDE as Platform Plugin start | None |
+| `EXTENSION_AUTHOR_GUIDE.md` | **Yes** - decision tree + 12-surface matrix | None |
+| Maintainer audit plan | Secondary only - explicitly not first stop | Correct |
 
 **Broken / stale links (DOCS-7):** none found on primary author path.
 **Obsolete "planned DOCS-X" text:** none on consumer path.
@@ -149,8 +149,8 @@ Re-tested pairs from EXTENSION_AUTHOR_GUIDE § "What do you want to add or repla
 | Security Defense vs Policy Rule | **Yes** | Both author guides §1 comparison tables |
 | Tool vs Tool Invocation Pattern | **Yes** | TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE §1 |
 | Memory vs RAG | **Yes** | MEMORY_STORE_PLUGIN_AUTHOR_GUIDE §1 |
-| Vendor Knowledge vs Integration | **Yes** | VK guide §1 — host-composed knowledge facade |
-| Vendor Knowledge vs generic RAG | **Yes** | VK guide — not chunker/retriever/reranker EP |
+| Vendor Knowledge vs Integration | **Yes** | VK guide §1 - host-composed knowledge facade |
+| Vendor Knowledge vs generic RAG | **Yes** | VK guide - not chunker/retriever/reranker EP |
 
 **Classification:** no `DOCS_GAP` on decision tree.
 
@@ -162,20 +162,20 @@ Re-tested pairs from EXTENSION_AUTHOR_GUIDE § "What do you want to add or repla
 |----|---------|-----|-------------|
 | CAND-001 | Memory | No shipped Tier-3 resolver for `UserProfileStorePlugin.create_user_profile_store` from EP | Disclosed MEMORY_STORE_PLUGIN_AUTHOR_GUIDE §11 |
 | CAND-002 | Memory | No shipped Tier-3 resolver for `SessionStoragePlugin.create_session_storage` from EP | Same |
-| CAND-003 | Context | Scaffold CLI parity with Tools | Disclosed §5 — DX only |
+| CAND-003 | Context | Scaffold CLI parity with Tools | Disclosed §5 - DX only |
 | CAND-004 | Security | EP defense registration always `override=True` | Disclosed SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE §9, §13 |
-| CAND-005 | Security, Policy | EP loaders fail-fast — one broken plugin blocks group | Disclosed both guides §13 |
+| CAND-005 | Security, Policy | EP loaders fail-fast - one broken plugin blocks group | Disclosed both guides §13 |
 | CAND-006 | Policy | `wire_policy_bundle` does not call `load_policy_rule_plugins` | Disclosed POLICY_RULE_PLUGIN_AUTHOR_GUIDE §9, §11 |
 | CAND-007 | Policy | Declarative `policy_rules` in bundle not evaluated at runtime | Disclosed §11 |
 | CAND-008 | Policy | No governed handler allowlist / bundle provenance | Disclosed §enterprise gaps |
-| CAND-009 | Tool invocation | O(N) EP scan per `load_tool_invocation_pattern` | Disclosed §16 — **hardening, not enterprise** |
+| CAND-009 | Tool invocation | O(N) EP scan per `load_tool_invocation_pattern` | Disclosed §16 - **hardening, not enterprise** |
 
 **Evidence revalidated DOCS-7:**
 
-- `policy_wiring.py` — creates `PolicyRuleRegistry()` in fragments; no `load_policy_rule_plugins` call
-- `defense_plugin_loader.py:29` — `register_security_defense_plugin(plugin, override=True)`
-- `memory_bootstrap.py` — count-only bootstrap; factory dispatch by method shape
-- `tool_invocation_registry.py` — lazy per-id scan
+- `policy_wiring.py` - creates `PolicyRuleRegistry()` in fragments; no `load_policy_rule_plugins` call
+- `defense_plugin_loader.py:29` - `register_security_defense_plugin(plugin, override=True)`
+- `memory_bootstrap.py` - count-only bootstrap; factory dispatch by method shape
+- `tool_invocation_registry.py` - lazy per-id scan
 
 ---
 
@@ -228,7 +228,7 @@ Verified consistent across EXTENSION_AUTHOR_GUIDE, PLATFORM_PLUGINS.md, and doma
 
 EXTENSION_AUTHOR_GUIDE §0 explicitly forbids `getattr`/`setattr` in host wiring. Reference examples under `examples/platform_plugins/` contain no dynamic attribute dispatch.
 
-**Historical / out of scope:** `memory_bootstrap.py` uses `hasattr` for factory method shape dispatch — pre-existing Tier-0 code; not introduced by documentation program.
+**Historical / out of scope:** `memory_bootstrap.py` uses `hasattr` for factory method shape dispatch - pre-existing Tier-0 code; not introduced by documentation program.
 
 ---
 
@@ -251,8 +251,8 @@ EXTENSION_AUTHOR_GUIDE §0 explicitly forbids `getattr`/`setattr` in host wiring
 
 | ID | Status | Notes |
 |----|--------|-------|
-| F004 | **ENTERPRISE** | CAND-005 — unchanged |
-| F005 | **ENTERPRISE** | CAND-004 — unchanged |
+| F004 | **ENTERPRISE** | CAND-005 - unchanged |
+| F005 | **ENTERPRISE** | CAND-004 - unchanged |
 | F008 | **RESOLVED** | `iter_entry_point_specs` cache; Memory bootstrap reuses common layer |
 | F009 | **RESOLVED** | `get_entry_point_spec` indexed lookup; lazy target load preserved |
 | F011 | **RESOLVED** | `PluginConflictError.conflict_kind`, compatibility/qualification `result` typed |
@@ -282,7 +282,7 @@ Validated **YES** candidates only:
 
 | ID | Surface | Category |
 |----|---------|----------|
-| CAND-009 | Tool invocation | SCALABILITY / HARDENING — EP scan cache/index |
+| CAND-009 | Tool invocation | SCALABILITY / HARDENING - EP scan cache/index |
 
 **New candidates (DOCS-7):** none.
 
@@ -292,16 +292,16 @@ Validated **YES** candidates only:
 
 | Surface | External EP | Local / host path |
 |---------|-------------|-------------------|
-| Integrations | **Yes** — primary | `register_integration_plugin()` |
-| Tools | **Yes** — primary | Scaffold `extensions/` + `register_tool_plugin()` |
-| Skills | **Yes** — primary | `register_skill_plugin()` |
-| Context | **Yes** — primary | `register_context_plugin()` — no scaffold |
-| Memory | **Yes** — EP discovery count | Host factory / `MemoryPlatformWiring` — partial Tier-3 |
-| RAG ×3 | **Yes** — primary | Advanced registry composition only |
-| Vendor Knowledge | **Yes** — primary | Host builder — not Tier-0 catalog |
-| Security | **Yes** — primary | `register_security_defense_plugin()` advanced |
-| Policy | **Yes** — EP exists | `PolicyRuleRegistry.register()` + explicit loader call |
-| Tool invocation | **Yes** — primary | `RuntimeConfig.tool_invocation_pattern` instance override |
+| Integrations | **Yes** - primary | `register_integration_plugin()` |
+| Tools | **Yes** - primary | Scaffold `extensions/` + `register_tool_plugin()` |
+| Skills | **Yes** - primary | `register_skill_plugin()` |
+| Context | **Yes** - primary | `register_context_plugin()` - no scaffold |
+| Memory | **Yes** - EP discovery count | Host factory / `MemoryPlatformWiring` - partial Tier-3 |
+| RAG ×3 | **Yes** - primary | Advanced registry composition only |
+| Vendor Knowledge | **Yes** - primary | Host builder - not Tier-0 catalog |
+| Security | **Yes** - primary | `register_security_defense_plugin()` advanced |
+| Policy | **Yes** - EP exists | `PolicyRuleRegistry.register()` + explicit loader call |
+| Tool invocation | **Yes** - primary | `RuntimeConfig.tool_invocation_pattern` instance override |
 
 Docs do **not** imply Tools-level scaffold parity where absent.
 
@@ -311,7 +311,7 @@ Docs do **not** imply Tools-level scaffold parity where absent.
 
 | Track | Items |
 |-------|-------|
-| **ENTERPRISE-1** | **Done** — [`PLATFORM_PLUGIN_ENTERPRISE_ROADMAP.md`](PLATFORM_PLUGIN_ENTERPRISE_ROADMAP.md) (architecture + blocks CAND-001…008) |
+| **ENTERPRISE-1** | **Done** - [`PLATFORM_PLUGIN_ENTERPRISE_ROADMAP.md`](PLATFORM_PLUGIN_ENTERPRISE_ROADMAP.md) (architecture + blocks CAND-001…008) |
 | **ENTERPRISE-2+** | Implementation per roadmap blocks (prioritize BLOCK C → A → B) |
 | **Hardening** | ~~CAND-009, F008, F011, F013, F015~~ **done** (HARDENING-1) |
 | **Documentation maintenance** | Keep EP matrix synced when new surfaces added; link check on author guide edits |

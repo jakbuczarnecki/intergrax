@@ -34,7 +34,7 @@ locales:
 
         3. Validate consistency.  
            Compare fragments from different sources.  
-           If inconsistencies appear, explicitly highlight them and provide interpretations — each supported by references.
+           If inconsistencies appear, explicitly highlight them and provide interpretations - each supported by references.
 
         4. Respond.  
            Provide a short conclusion followed by a detailed explanation based strictly on the retrieved excerpts.

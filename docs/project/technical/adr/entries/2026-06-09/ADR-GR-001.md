@@ -15,8 +15,8 @@ Tier-3 hosts need vendor-agnostic LLM input/output scanning without duplicating 
 
 - Introduce `IntegrationCategory.LLM_GUARDRAIL` and `LlmGuardrailBackend` with `scan_input` / `scan_output` returning `GuardrailScanResult`.
 - Add `IntegrationProfile.llm_guardrail` binding resolved like other category slots.
-- Wire guardrail slug into `RuntimeConfig.metadata` via `security_runtime_bridge` and Tier-3 `guardrail_runtime_bridge` — **no** Nexus fork.
-- Ship catalog adapters for all slugs via `register_all.py` + `_factory.py` — vendor SDK in `_vendor_opens.py` with pattern fallback; HTTP adapters for cloud/gateway slugs.
+- Wire guardrail slug into `RuntimeConfig.metadata` via `security_runtime_bridge` and Tier-3 `guardrail_runtime_bridge` - **no** Nexus fork.
+- Ship catalog adapters for all slugs via `register_all.py` + `_factory.py` - vendor SDK in `_vendor_opens.py` with pattern fallback; HTTP adapters for cloud/gateway slugs.
 - Preset `harness_guardrail_stack(primary, semantic)` for lab/legal strict profiles.
 
 Rejected: per-agent guardrail SDK imports; duplicate scan paths outside security bridge.
@@ -30,12 +30,12 @@ Rejected: per-agent guardrail SDK imports; duplicate scan paths outside security
 
 ### Negative
 
-- Vendor SDKs (`llm-guard`, `guardrails-ai`, `nemoguardrails`) are **manual install** — conflict with pinned docling/torch; harness uses pattern fallback in CI.
+- Vendor SDKs (`llm-guard`, `guardrails-ai`, `nemoguardrails`) are **manual install** - conflict with pinned docling/torch; harness uses pattern fallback in CI.
 - NeMo/Llama/Bedrock full vendor depth remains pattern/HTTP until dedicated bundles ship.
 
 ## Compliance
 
-- Tier boundaries preserved — vendors only under `integrations/providers/llm_guardrail`.
+- Tier boundaries preserved - vendors only under `integrations/providers/llm_guardrail`.
 - Linked architecture §47 and plan register M-P12 updated.
 
 ## Implementation notes

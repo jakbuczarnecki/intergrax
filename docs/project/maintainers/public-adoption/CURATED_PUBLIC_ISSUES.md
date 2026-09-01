@@ -12,10 +12,10 @@ It is **not** the source of truth for active issue definitions.
 
 Canonical sources:
 
-- [curated_public_issues.yml](curated_public_issues.yml) — source of truth for issue IDs, titles, labels, GitHub issue numbers, URLs, and bodies.
-- [Public Issue Index](PUBLIC_ISSUE_INDEX.md) — human-readable active public issue map.
-- [Public Discussion Issue Expansion](PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) — active Wave 1-5 discussion map and maintenance commands.
-- [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) — maintainer handling rules and response templates.
+- [curated_public_issues.yml](curated_public_issues.yml) - source of truth for issue IDs, titles, labels, GitHub issue numbers, URLs, and bodies.
+- [Public Issue Index](PUBLIC_ISSUE_INDEX.md) - human-readable active public issue map.
+- [Public Discussion Issue Expansion](PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) - active Wave 1-5 discussion map and maintenance commands.
+- [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) - maintainer handling rules and response templates.
 
 ## Purpose
 

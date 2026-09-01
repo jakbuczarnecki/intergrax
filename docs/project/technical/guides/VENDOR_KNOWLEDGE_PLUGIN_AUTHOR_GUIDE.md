@@ -30,7 +30,7 @@ design; does not assume Intergrax internals.
 | D6 | Configuration | COMPLETE | §12 `KnowledgeSourceBinding` |
 | D7 | Secrets | COMPLETE | §10 |
 | D8 | DI | COMPLETE | §2 contribution catalog model |
-| D9 | Registration/discovery | COMPLETE | §6 — separate from Tier-0 catalog |
+| D9 | Registration/discovery | COMPLETE | §6 - separate from Tier-0 catalog |
 | D10 | Qualification | COMPLETE | §22 |
 | D11 | Runtime use | COMPLETE | §15 |
 | D12 | Lifecycle | COMPLETE | §17 restart/rehydration |
@@ -39,7 +39,7 @@ design; does not assume Intergrax internals.
 | D15 | Production checklist | COMPLETE | §19 · §25 |
 | D16 | Troubleshooting | COMPLETE | §26 |
 
-**Overall:** **COMPLETE** for the external-EP and host-builder paths supported today. Vendor Knowledge is **not** the Tier-0 plugin catalog — see §1 and §4.2.
+**Overall:** **COMPLETE** for the external-EP and host-builder paths supported today. Vendor Knowledge is **not** the Tier-0 plugin catalog - see §1 and §4.2.
 
 ---
 
@@ -124,7 +124,7 @@ Plugin runtime wrapper.
 
 ## 2. Public extension surfaces
 
-### `VendorKnowledgeProviderContribution` — PUBLIC
+### `VendorKnowledgeProviderContribution` - PUBLIC
 
 **Owns:** one immutable bundle per `(provider_id, integration_category)`:
 adapters, source plugins, connection factories, discovery contributions,
@@ -144,7 +144,7 @@ registry builders.
 
 **Module:** `intergrax.runtime.vendor_knowledge.contribution`
 
-### `VendorKnowledgeSourceIdentity` — PUBLIC
+### `VendorKnowledgeSourceIdentity` - PUBLIC
 
 **Owns:** stable tuple `(provider_id, integration_category, source_kind)`.
 
@@ -160,7 +160,7 @@ registry builders.
 
 **Module:** `intergrax.runtime.vendor_knowledge.plugin`
 
-### `VendorKnowledgeSourcePlugin` — PUBLIC
+### `VendorKnowledgeSourcePlugin` - PUBLIC
 
 **Owns:** declarative mode capabilities (`DURABLE`, `INDEXED`, `LIVE`) per
 source kind: `contract_version`, `operations`, `runtime_ref`, optional
@@ -177,7 +177,7 @@ source kind: `contract_version`, `operations`, `runtime_ref`, optional
 **Security:** metadata forbids credential/tenant keys (see `_FORBIDDEN_METADATA_KEYS`
 in `plugin.py`).
 
-### `VendorKnowledgeAdapter` — PUBLIC (protocol)
+### `VendorKnowledgeAdapter` - PUBLIC (protocol)
 
 **Owns:** mapping vendor integration instances into canonical
 `KnowledgeScopeInfo`, `KnowledgePage`, `KnowledgeContent`, `KnowledgePermissions`.
@@ -195,7 +195,7 @@ invoked by `VendorKnowledgeFacadeService`.
 
 **Module:** `intergrax.runtime.vendor_knowledge.contracts`
 
-### `VendorKnowledgeConnectionFactoryContribution` — PUBLIC
+### `VendorKnowledgeConnectionFactoryContribution` - PUBLIC
 
 **Owns:** `(provider_id, integration_category)` factory hook.
 
@@ -209,7 +209,7 @@ and restart rehydration.
 **Security:** receives `credential` only at factory invocation from
 `SecretsStore`; must not persist it.
 
-### `VendorKnowledgeDiscoveryContribution` — PUBLIC
+### `VendorKnowledgeDiscoveryContribution` - PUBLIC
 
 **Owns:** provider-owned discovery factory for one `VendorKnowledgeSourceIdentity`.
 
@@ -225,7 +225,7 @@ when application composition runs.
 
 **Security:** candidates must use signed opaque refs; safe display labels only.
 
-### `VendorKnowledgeIndexedMaterializerContribution` — PUBLIC
+### `VendorKnowledgeIndexedMaterializerContribution` - PUBLIC
 
 **Owns:** `identity`, `runtime_ref`, zero-argument materializer factory for one
 INDEXED source.
@@ -239,7 +239,7 @@ INDEXED source.
 
 **Security:** provenance on output documents; no secrets in markdown/metadata.
 
-### `LiveRegistrationBundleV1` — PUBLIC (optional)
+### `LiveRegistrationBundleV1` - PUBLIC (optional)
 
 **Owns:** `descriptor`, `handler`, `request_schema`, `result_schema` for one
 Live capability.
@@ -275,9 +275,9 @@ the source plugin.
 Stable identity tuple:
 
 ```text
-provider_id          — identifies the vendor/provider (e.g. acme_reference, slack)
-IntegrationCategory  — generic integration class (e.g. wiki_knowledge, conversation_channel)
-source_kind          — provider-owned source surface within the category (e.g. acme_documents)
+provider_id          - identifies the vendor/provider (e.g. acme_reference, slack)
+IntegrationCategory  - generic integration class (e.g. wiki_knowledge, conversation_channel)
+source_kind          - provider-owned source surface within the category (e.g. acme_documents)
 ```
 
 The same triple must align across:
@@ -286,7 +286,7 @@ The same triple must align across:
 VendorKnowledgeSourceIdentity
 VendorKnowledgeAdapter  (provider_id, integration_kind, source_kind)
 VendorKnowledgeSourcePlugin
-VendorKnowledgeConnectionFactoryContribution  (provider_id, integration_category) — per provider/category, not per source
+VendorKnowledgeConnectionFactoryContribution  (provider_id, integration_category) - per provider/category, not per source
 VendorKnowledgeDiscoveryContribution
 VendorKnowledgeIndexedMaterializerContribution
 LiveRegistrationBundleV1 descriptor  (when LIVE is claimed)
@@ -372,7 +372,7 @@ examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/
 ```
 
 **Optional files:** `discovery.py`, `materializer.py`, `backend.py`, Live
-handlers — include only when the provider genuinely implements those surfaces.
+handlers - include only when the provider genuinely implements those surfaces.
 `Databricks` contributes only `connection_factories` (see §7).
 
 This file split is **recommended**, not mandatory. One module may hold multiple
@@ -545,7 +545,7 @@ def build_my_vendor_contribution() -> VendorKnowledgeProviderContribution:
                 factory=MyVendorMaterializer,
             ),
         ),
-        # live_contributions=()  — omit unless LIVE is genuinely implemented
+        # live_contributions=()  - omit unless LIVE is genuinely implemented
     )
 ```
 
@@ -554,7 +554,7 @@ not faked.
 
 Evidence: Databricks connection-only contribution
 (`intergrax/runtime/vendor_knowledge/databricks_contribution.py`) registers only
-`connection_factories` — no adapters, source plugins, discovery, or materializers.
+`connection_factories` - no adapters, source plugins, discovery, or materializers.
 
 Acme reference full contribution:
 `examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/src/acme_reference_vk_plugin/contribution.py`
@@ -596,7 +596,7 @@ LIVE mode requires non-empty `capability_refs`; each ref must resolve to a
 `LiveRegistrationBundleV1` on the same contribution.
 
 Helper: `build_durable_source_plugin(...)` in
-`intergrax.runtime.vendor_knowledge.contribution_builder` — optional
+`intergrax.runtime.vendor_knowledge.contribution_builder` - optional
 `indexed_runtime_ref` adds INDEXED capability alongside DURABLE.
 
 ---
@@ -634,7 +634,7 @@ Key patterns:
 - `inspect_scope`, `read_page`, `fetch_content`, `fetch_permissions`
 - `KnowledgeAdapterCapabilities` declares what the adapter actually supports
 - `VendorKnowledgeError` with `VendorKnowledgeErrorCode` for fail-closed scope/remote errors
-- Integration type check in `_require_integration` — adapter receives resolved integration, not raw credentials
+- Integration type check in `_require_integration` - adapter receives resolved integration, not raw credentials
 
 ---
 
@@ -730,7 +730,7 @@ safe_display_label
 and schema version; `safe_display_label` for UI.
 
 **Generic LKW deliberately does not interpret:** `scope_type` and `scope_id`
-semantics beyond storing them on `KnowledgeSourceScope` — provider adapter
+semantics beyond storing them on `KnowledgeSourceScope` - provider adapter
 validates scope on read.
 
 Acme discovery:
@@ -815,7 +815,7 @@ Materializer `materialize(...)` returns `MaterializedConnectedSourceDocument`
 containing `KnowledgeDocument` (via `build_materialized_connected_source_document`).
 
 **Provenance requirements:** identity, binding, workspace, revision, permissions
-when available — generic indexing and Search evidence depend on canonical
+when available - generic indexing and Search evidence depend on canonical
 document provenance.
 
 No provider-specific indexing pipeline. LKW generic sync invokes materializer
@@ -847,7 +847,7 @@ Search hit and Ask response (`test_acme_reference_external_provider_proof.py`).
 
 ---
 
-## 16. LIVE — optional
+## 16. LIVE - optional
 
 Live is **optional**. Implement only when the provider claims `LIVE` on the
 source plugin.
@@ -856,10 +856,10 @@ If implemented, contribute `LiveRegistrationBundleV1` entries in
 `live_contributions`:
 
 ```text
-descriptor   — LiveCapabilityDescriptorV1
-handler        — read-only LiveCapabilityHandlerV1
-request_schema — SchemaRegistrationV1
-result_schema  — SchemaRegistrationV1
+descriptor   - LiveCapabilityDescriptorV1
+handler        - read-only LiveCapabilityHandlerV1
+request_schema - SchemaRegistrationV1
+result_schema  - SchemaRegistrationV1
 ```
 
 Validation at contribution construction:
@@ -868,11 +868,11 @@ Validation at contribution construction:
 read-only semantics (CapabilityEffectV1)
 capability identity alignment with plugin capability_refs
 schema identity registration
-collision handling — duplicate capability keys fail closed
+collision handling - duplicate capability keys fail closed
 ```
 
 Built-in Slack Live bundles are reference implementations inside
-`intergrax.runtime.vendor_knowledge.live.*` — external authors follow the same
+`intergrax.runtime.vendor_knowledge.live.*` - external authors follow the same
 bundle contract.
 
 Do not require Live for provider qualification unless the provider claims it.
@@ -933,16 +933,16 @@ or raw secret values in errors or logs surfaced to operators.
 ## 19. Security checklist
 
 ```text
-☐ credential_ref only on TenantConnection — never raw credential persistence
+☐ credential_ref only on TenantConnection - never raw credential persistence
 ☐ SecretsStore is the only credential resolution path
 ☐ plugin metadata and secret_free_config are secret-free
 ☐ tenant isolation on discovery candidates and bindings
 ☐ workspace isolation on discovery candidates and bindings
-☐ connection ownership — connection_ref must match attached connection
+☐ connection ownership - connection_ref must match attached connection
 ☐ signed opaque refs (HMAC codec; wrong key / tamper rejected)
 ☐ bounded reads in adapter (limit, cursor completion)
 ☐ safe metadata on candidates (safe_display_label, no PII leakage in errors)
-☐ safe diagnostics — VendorKnowledgeError.safe_message pattern
+☐ safe diagnostics - VendorKnowledgeError.safe_message pattern
 ☐ Search evidence fail-closed in generic path
 ☐ Ask evidence fail-closed in generic path
 ☐ no import-time global registry side effects
@@ -1042,7 +1042,7 @@ Entry point:
 minimal_vendor = "minimal_vendor_plugin.contribution:build_minimal_vendor_contribution"
 ```
 
-For INDEXED, discovery, and materializers, extend the Acme reference — not
+For INDEXED, discovery, and materializers, extend the Acme reference - not
 this sketch.
 
 ---
@@ -1069,7 +1069,7 @@ generic binding without provider branches in VK core
 Durable sync through generic coordinator
 INDEXED materialization to KnowledgeDocument
 generic Search and Ask with provenance marker (ACME_REFERENCE_MARKER)
-restart rehydration — catalog, factory registry, connection registry, bindings
+restart rehydration - catalog, factory registry, connection registry, bindings
 built-in parity when external discovery disabled
 no acme_reference identifiers in generic Vendor Knowledge core
 ```
@@ -1134,21 +1134,21 @@ coupling discovery to undocumented internal registry APIs
 Operational recipe (ordered):
 
 ```text
- 1. identity / category     — provider_id, IntegrationCategory, source_kind constants
- 2. integration / backend   — vendor client; category integration class
- 3. adapter                 — VendorKnowledgeAdapter; bounded reads; stable IDs
- 4. source plugin modes     — declare only implemented modes; runtime_refs
- 5. connection factory      — TenantConnectionIntegrationFactory; secret-free config
- 6. discovery               — optional; VENDOR_KNOWLEDGE_SCOPED_SOURCE if generic seam fits
- 7. materializer            — optional; INDEXED only; runtime_ref alignment
- 8. contribution            — VendorKnowledgeProviderContribution assembly
- 9. entry point             — pyproject.toml group intergrax.vendor_knowledge.providers
-10. unit qualification      — contribution validation, EP load, conflict cases
-11. application E2E         — connection, discovery, bind, sync (Acme E2E pattern)
-12. restart                 — rehydration proof without manual injection
-13. security / conflict     — opaque ref, ownership fences, unknown provider/source
-14. built-in parity         — discover_entry_points=False unchanged
-15. maintainer review       — reviewer checklist §25
+ 1. identity / category     - provider_id, IntegrationCategory, source_kind constants
+ 2. integration / backend   - vendor client; category integration class
+ 3. adapter                 - VendorKnowledgeAdapter; bounded reads; stable IDs
+ 4. source plugin modes     - declare only implemented modes; runtime_refs
+ 5. connection factory      - TenantConnectionIntegrationFactory; secret-free config
+ 6. discovery               - optional; VENDOR_KNOWLEDGE_SCOPED_SOURCE if generic seam fits
+ 7. materializer            - optional; INDEXED only; runtime_ref alignment
+ 8. contribution            - VendorKnowledgeProviderContribution assembly
+ 9. entry point             - pyproject.toml group intergrax.vendor_knowledge.providers
+10. unit qualification      - contribution validation, EP load, conflict cases
+11. application E2E         - connection, discovery, bind, sync (Acme E2E pattern)
+12. restart                 - rehydration proof without manual injection
+13. security / conflict     - opaque ref, ownership fences, unknown provider/source
+14. built-in parity         - discover_entry_points=False unchanged
+15. maintainer review       - reviewer checklist §25
 ```
 
 ---
@@ -1158,16 +1158,16 @@ Operational recipe (ordered):
 Short maintainer review list:
 
 ```text
-☐ provider-neutral VK core unchanged — no new provider branches
+☐ provider-neutral VK core unchanged - no new provider branches
 ☐ identity alignment across adapter, plugin, factory, discovery, materializer, Live
-☐ secret handling — credential_ref only; factory-only credential access
-☐ restart — catalog + factory registry + connection registry + bindings without manual injection
-☐ failure modes — malformed EP, conflicts, unknown provider/source fail closed
-☐ capability truthfulness — modes match real implementation
-☐ provenance — durable changes and KnowledgeDocument provenance present
-☐ tests — unit, E2E, scoped-source seam as appropriate to claimed surfaces
-☐ entry point — correct group; no filesystem scanning; discovery opt-in documented
-☐ partial contributions — absent surfaces not faked
+☐ secret handling - credential_ref only; factory-only credential access
+☐ restart - catalog + factory registry + connection registry + bindings without manual injection
+☐ failure modes - malformed EP, conflicts, unknown provider/source fail closed
+☐ capability truthfulness - modes match real implementation
+☐ provenance - durable changes and KnowledgeDocument provenance present
+☐ tests - unit, E2E, scoped-source seam as appropriate to claimed surfaces
+☐ entry point - correct group; no filesystem scanning; discovery opt-in documented
+☐ partial contributions - absent surfaces not faked
 ```
 
 ---

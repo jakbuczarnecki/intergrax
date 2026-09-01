@@ -24,7 +24,7 @@ Docstring on the adapter: “Health/model-list surface for local Ollama host
 ## Actual consumers
 
 - Catalog registration / P5 M.6 P4 shell probes
-- Compose / LKW stacks use Ollama as the local LLM host via `INTERGRAX_LLM_PROVIDER=ollama` and `llm_adapters` — **not** via this integration’s InteractionAdapter
+- Compose / LKW stacks use Ollama as the local LLM host via `INTERGRAX_LLM_PROVIDER=ollama` and `llm_adapters` - **not** via this integration’s InteractionAdapter
 - No application product path depended on Ollama as an intake surface
 
 ## Candidate categories evaluated

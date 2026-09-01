@@ -1,6 +1,6 @@
 # Web Content Capture
 
-**Status:** platform capability — `LKW-WORKSPACE-CONTENTS-1B-5-1` **ACCEPTED**
+**Status:** platform capability - `LKW-WORKSPACE-CONTENTS-1B-5-1` **ACCEPTED**
 
 ## Purpose
 
@@ -16,10 +16,10 @@ This capability does **not** implement LKW endpoints, Slack intake, indexing, or
 
 ```text
 intergrax/websearch/capture/
-  contracts.py      — WebContentCapture port, request/result, errors
-  url_policy.py     — WebUrlAccessPolicy (canonicalization, DNS, SSRF)
-  http_transport.py — pinned HTTPS transport
-  service.py        — SecureHttpWebContentCapture
+  contracts.py      - WebContentCapture port, request/result, errors
+  url_policy.py     - WebUrlAccessPolicy (canonicalization, DNS, SSRF)
+  http_transport.py - pinned HTTPS transport
+  service.py        - SecureHttpWebContentCapture
 ```
 
 Public import:
@@ -123,9 +123,9 @@ The socket connects to the approved IP. For HTTPS:
 
 Supported body framing modes:
 
-- `Content-Length` — exact byte count; read stops immediately after declared length
-- `Transfer-Encoding: chunked` — hex chunk sizes, optional chunk extensions, CRLF boundaries, zero chunk, bounded trailer block
-- close-delimited — when neither `Content-Length` nor `Transfer-Encoding` is present, read until connection close under the global size limit
+- `Content-Length` - exact byte count; read stops immediately after declared length
+- `Transfer-Encoding: chunked` - hex chunk sizes, optional chunk extensions, CRLF boundaries, zero chunk, bounded trailer block
+- close-delimited - when neither `Content-Length` nor `Transfer-Encoding` is present, read until connection close under the global size limit
 
 Rejected framing:
 
@@ -150,7 +150,7 @@ One monotonic deadline covers the entire capture operation:
 - connect attempts across approved IPs
 - TLS handshake (remaining time recomputed after connect)
 - request send (remaining time recomputed after handshake)
-- header and body reads (including slowloris protection — partial reads do not reset the full timeout)
+- header and body reads (including slowloris protection - partial reads do not reset the full timeout)
 - redirects (same deadline, not a fresh timeout window)
 - decode, extraction and normalization
 - final result check before returning `CapturedWebContent`
@@ -223,8 +223,8 @@ Errors use stable `WebContentCaptureErrorCode` values; `str(error)` returns only
 
 HTML uses existing `intergrax.websearch.fetcher.extractor`:
 
-- `extract_basic` — title and baseline text
-- `extract_advanced` — trafilatura with BeautifulSoup fallback
+- `extract_basic` - title and baseline text
+- `extract_advanced` - trafilatura with BeautifulSoup fallback
 
 Plain text bypasses the HTML parser.
 
@@ -244,7 +244,7 @@ Browser automation and vendor fetch providers (BrowserAutomation contract, Firec
 
 | Task | Scope |
 |------|-------|
-| `1B-5-1` | Shared secure Web Content Capture contract and HTTPS backend (this document) — **ACCEPTED** |
-| `1B-5-2` | End-to-end LKW `WEB_URL` Knowledge Intake — **ACCEPTED** (including C1 and C2) |
-| `1B-5-3` | Web URL ingestion, indexing and Ask proof — **MERGED INTO 1B-5-2** |
+| `1B-5-1` | Shared secure Web Content Capture contract and HTTPS backend (this document) - **ACCEPTED** |
+| `1B-5-2` | End-to-end LKW `WEB_URL` Knowledge Intake - **ACCEPTED** (including C1 and C2) |
+| `1B-5-3` | Web URL ingestion, indexing and Ask proof - **MERGED INTO 1B-5-2** |
 | `CONV-1C` | Slack natural-language URL execution (not a strict URL command) |

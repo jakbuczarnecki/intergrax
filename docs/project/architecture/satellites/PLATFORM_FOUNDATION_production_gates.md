@@ -1,4 +1,4 @@
-# PLATFORM_FOUNDATION — production gates (§40+)
+# PLATFORM_FOUNDATION - production gates (§40+)
 
 **Parent hub:** [`PLATFORM_FOUNDATION.md`](../PLATFORM_FOUNDATION.md)
 
@@ -82,7 +82,7 @@ Examples of forbidden redundancy:
 - new trace store instead of extending `RunTraceWriter` / existing trace pipeline
 - direct SDK calls (OpenAI, Anthropic, Redis, boto3) in agents when Tier-0 adapter exists
 
-If existing Tier-0 is genuinely insufficient for a **cross-cutting** need, follow §5.2.4 — propose to human, do not implement autonomously.
+If existing Tier-0 is genuinely insufficient for a **cross-cutting** need, follow §5.2.4 - propose to human, do not implement autonomously.
 
 ---
 
@@ -179,7 +179,7 @@ Intergrax is structured as Tier-0 (Platform), Tier-1 (Nexus Agent OS), Tier-2 (A
 
 Reason:
 
-Clear separation enables: reusable infrastructure, stable orchestration, swappable agents, and multiple isolated product environments from the same runtime — analogous to OS → apps → IDE products.
+Clear separation enables: reusable infrastructure, stable orchestration, swappable agents, and multiple isolated product environments from the same runtime - analogous to OS → apps → IDE products.
 
 ---
 
@@ -191,7 +191,7 @@ All agent execution MUST conform to §42 Unified Execution Runtime Specification
 
 Reason:
 
-Intergrax must be a governed Agent OS / Harness environment — not a loose collection of agent implementations. Unified execution enables reproducibility, inspectability, safe orchestration, and Cursor-like / Antigravity-like experimentation at scale.
+Intergrax must be a governed Agent OS / Harness environment - not a loose collection of agent implementations. Unified execution enables reproducibility, inspectability, safe orchestration, and Cursor-like / Antigravity-like experimentation at scale.
 
 Constraint:
 
@@ -199,7 +199,7 @@ Agents provide domain logic only. Runtime owns lifecycle, hooks, interrupts, ret
 
 ---
 
-## 44.9 Decision: Reuse Tier-0 — No Redundant Universal Mechanisms
+## 44.9 Decision: Reuse Tier-0 - No Redundant Universal Mechanisms
 
 Decision:
 
@@ -211,7 +211,7 @@ Intergrax already has canonical LLM, logging, tracing, tools, RAG, memory, and a
 
 Constraint:
 
-§42 orchestration wiring integrates with — does not replace — existing Tier-0. See §5.2, §8.8, §39.8.
+§42 orchestration wiring integrates with - does not replace - existing Tier-0. See §5.2, §8.8, §39.8.
 
 ---
 
@@ -221,11 +221,11 @@ Decision:
 
 All reusable **external infrastructure** adapters (databases, caches, queues, chat, search, issue trackers, observability backends, cloud infrastructure facades) MUST be registered in **`intergrax/integrations`** under category contracts (§7.1).
 
-**Excluded:** LLM providers remain in **`intergrax/llm_adapters`** only — not in the Integration Library (§7.1.2).
+**Excluded:** LLM providers remain in **`intergrax/llm_adapters`** only - not in the Integration Library (§7.1.2).
 
 Reason:
 
-Multiple agent teams need the same building blocks (Redis cache, Jira tasks, Slack HITL). A catalog with universal contracts lets one platform team maintain adapters while product teams compose them in Tier-3 applications — without copying SDK code into `agents`.
+Multiple agent teams need the same building blocks (Redis cache, Jira tasks, Slack HITL). A catalog with universal contracts lets one platform team maintain adapters while product teams compose them in Tier-3 applications - without copying SDK code into `agents`.
 
 Constraint:
 
@@ -306,9 +306,9 @@ But these are future possibilities.
 
 **Near-term platform priority (post Phase R MVP):**
 
-> Prove **production harness** on the certified Agent OS: reference business agents, skill catalog depth, and stable provider paths — while keeping the laboratory fast path for new hypotheses.
+> Prove **production harness** on the certified Agent OS: reference business agents, skill catalog depth, and stable provider paths - while keeping the laboratory fast path for new hypotheses.
 
-**Long-term evolution** (§50) — marketplace, multi-tenant SaaS, visual workflow builder — remains out of scope until harness proof (Phase S) is met.
+**Long-term evolution** (§50) - marketplace, multi-tenant SaaS, visual workflow builder - remains out of scope until harness proof (Phase S) is met.
 
 ---
 
@@ -321,11 +321,11 @@ Intergrax is a **four-tier AI platform**: Platform (Tier-0) → Nexus Agent OS (
 
 Intergrax is a **unified, event-driven Agent OS and Harness AI runtime** governed by §42 Unified Execution Runtime Specification.
 
-Intergrax serves **both** as an internal **agent experimentation laboratory** and as a **Harness AI environment** for production agent work. New capabilities SHOULD start in the lab workflow (§2); capabilities that ship to users MUST consume Integration → Tool → **Skill** → Agent (§5.3, §7.1.8) on the shared Nexus harness — not private runtimes or duplicated instruction packs.
+Intergrax serves **both** as an internal **agent experimentation laboratory** and as a **Harness AI environment** for production agent work. New capabilities SHOULD start in the lab workflow (§2); capabilities that ship to users MUST consume Integration → Tool → **Skill** → Agent (§5.3, §7.1.8) on the shared Nexus harness - not private runtimes or duplicated instruction packs.
 
 Tier-1 Nexus is the global orchestration runtime (Agent OS).
 
-Tier-2 agents are bounded capability modules with shared contracts and **runtime-controlled** local loops — executed exclusively through `AgentEngine`.
+Tier-2 agents are bounded capability modules with shared contracts and **runtime-controlled** local loops - executed exclusively through `AgentEngine`.
 
 Tier-0 adapters are reusable integrations consumed **only** through `ToolRuntime` policy.
 
@@ -372,8 +372,8 @@ Post-U hardening topics are **owned by domain pairs** (architecture + plan), not
 Harness -> Runtime -> Agents -> Applications -> Products
 ```
 
-Business-agent work (K.1/K.2, product apps) remains deferred until explicit product reprioritization — see [`plan/PLATFORM_FOUNDATION.md`](../plan/PLATFORM_FOUNDATION.md) §6.3.
+Business-agent work (K.1/K.2, product apps) remains deferred until explicit product reprioritization - see [`plan/PLATFORM_FOUNDATION.md`](../plan/PLATFORM_FOUNDATION.md) §6.3.
 
-**Phase V implementation baseline** (code modules, not duplicated here): `intergrax/runtime/architecture` — capability graph, lifecycle, eval, security, cost, context/prompt quality, graph RAG helpers. Traceability: [`plan/PLATFORM_FOUNDATION.md`](../plan/PLATFORM_FOUNDATION.md) Phase V / FAUDIT-32.
+**Phase V implementation baseline** (code modules, not duplicated here): `intergrax/runtime/architecture` - capability graph, lifecycle, eval, security, cost, context/prompt quality, graph RAG helpers. Traceability: [`plan/PLATFORM_FOUNDATION.md`](../plan/PLATFORM_FOUNDATION.md) Phase V / FAUDIT-32.
 
 ---

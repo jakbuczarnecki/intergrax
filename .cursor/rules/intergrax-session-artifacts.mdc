@@ -3,7 +3,7 @@ description: Session temp files and diagnostic logs must live under .tmp only
 alwaysApply: true
 ---
 
-# Intergrax — session artifacts (no repo-root clutter)
+# Intergrax - session artifacts (no repo-root clutter)
 
 **Never** create temporary, diagnostic, proof-run, or helper output files in the repository root or in tracked source trees.
 

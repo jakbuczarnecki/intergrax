@@ -1,14 +1,14 @@
 # Decision Deliberation
 
-**Intergrax Decision Deliberation** describes how **Decision Strategies** — including **Council** — produce **Candidate Decisions** through optional multi-participant deliberation, parallel proposals, structured disagreement, and bounded synthesis.
+**Intergrax Decision Deliberation** describes how **Decision Strategies** - including **Council** - produce **Candidate Decisions** through optional multi-participant deliberation, parallel proposals, structured disagreement, and bounded synthesis.
 
-Deliberation answers **„jakie kandydackie propozycje i niezgodności powstały przed weryfikacją?”** Council is **only** a strategy implementation — **not** the Decision System, **not** a Council Runtime, and **not** mandatory for every decision.
+Deliberation answers **„jakie kandydackie propozycje i niezgodności powstały przed weryfikacją?”** Council is **only** a strategy implementation - **not** the Decision System, **not** a Council Runtime, and **not** mandatory for every decision.
 
 > [!IMPORTANT]
 > **Maturity boundary:**
 >
-> - **Architecture:** **TARGET CANON — FROZEN**.
-> - **Implementation:** Council runtime **NOT STARTED** — no separate engine shipped.
+> - **Architecture:** **TARGET CANON - FROZEN**.
+> - **Implementation:** Council runtime **NOT STARTED** - no separate engine shipped.
 > - **Production:** Single-model / graph agent paths are **CURRENT**; Council is target strategy only.
 
 **Primary audience:** Principal / Staff engineers designing multi-model deliberation, participant roles, disagreement artifacts, and strategy registration.
@@ -25,7 +25,7 @@ Without explicit deliberation architecture:
 - parallel proposals collapse to last-write-wins,
 - strategy selection hard-codes giant `if council ...` branches in lifecycle code.
 
-Decision Deliberation defines **strategy contracts, participant independence, disagreement artifacts, bounded rounds, and hosting Execution budget consumption** — Decision Strategy runs inside hosting Execution; ORCHESTRATION may route through Nexus when required.
+Decision Deliberation defines **strategy contracts, participant independence, disagreement artifacts, bounded rounds, and hosting Execution budget consumption** - Decision Strategy runs inside hosting Execution; ORCHESTRATION may route through Nexus when required.
 
 ---
 
@@ -33,17 +33,17 @@ Decision Deliberation defines **strategy contracts, participant independence, di
 
 | Concern | Summary |
 | -------- | -------- |
-| **Role** | `DecisionStrategy` — produces candidate(s) + optional disagreement artifact |
-| **Council** | One strategy — multi-participant deliberation |
+| **Role** | `DecisionStrategy` - produces candidate(s) + optional disagreement artifact |
+| **Council** | One strategy - multi-participant deliberation |
 | **Other strategies** | Single Model · Rule-Based · Hybrid · future registered |
-| **Participants** | Configured roles — not hard-coded persona names in platform core |
-| **Independence** | Meaningful model/provider separation — or explicit non-independent mode |
-| **Parallel proposals** | Supported — branches preserved in lineage |
-| **Disagreement** | First-class structured artifact — not erased by synthesis |
-| **Synthesis** | Produces candidate for verification — not final authority alone |
-| **Rounds** | Bounded — deliberation continuation owned by strategy |
-| **Budget** | Council/deliberation consumes the hosting Execution budget — no separate Council budget engine |
-| **Runtime** | **No** Council Runtime — Council is a Decision Strategy hosted through canonical Execution |
+| **Participants** | Configured roles - not hard-coded persona names in platform core |
+| **Independence** | Meaningful model/provider separation - or explicit non-independent mode |
+| **Parallel proposals** | Supported - branches preserved in lineage |
+| **Disagreement** | First-class structured artifact - not erased by synthesis |
+| **Synthesis** | Produces candidate for verification - not final authority alone |
+| **Rounds** | Bounded - deliberation continuation owned by strategy |
+| **Budget** | Council/deliberation consumes the hosting Execution budget - no separate Council budget engine |
+| **Runtime** | **No** Council Runtime - Council is a Decision Strategy hosted through canonical Execution |
 
 ---
 
@@ -99,7 +99,7 @@ Single Model declares a **logical inference profile** requirement in strategy co
 | **Council** | Multi-participant proposals + disagreement + optional synthesis |
 | **Rule-Based** | Typed deterministic domain evaluator → candidate version |
 
-Rule-Based binds one host-supplied `RuleBasedEvaluator` — no LLM, no provider, no platform-owned rule DSL. Same declared input and evaluator version is expected to produce the same semantic output; nondeterminism is not enforced at runtime. Evaluator output becomes `CandidateDecision` and still passes through Verification and Decision Lifecycle gates — deterministic result is not authoritative acceptance and does not authorize execution.
+Rule-Based binds one host-supplied `RuleBasedEvaluator` - no LLM, no provider, no platform-owned rule DSL. Same declared input and evaluator version is expected to produce the same semantic output; nondeterminism is not enforced at runtime. Evaluator output becomes `CandidateDecision` and still passes through Verification and Decision Lifecycle gates - deterministic result is not authoritative acceptance and does not authorize execution.
 
 ```text
 Typed domain input
@@ -116,9 +116,9 @@ Verification
 ```
 
 | **Hybrid** | Composed strategies behind registration |
-| **Future registered** | Plugin-registered strategies — typed contracts |
+| **Future registered** | Plugin-registered strategies - typed contracts |
 
-**Hybrid** is declarative `DecisionStrategy` composition. Phase names are opaque user-defined identifiers (`HybridPhaseId`). Each phase references a `DecisionStrategyKind`; the canonical `DecisionStrategyRegistry` resolves component strategies. Phase order is meaningful and developer-defined — it is not sorted or canonicalized. Hybrid does not execute phases and does not own orchestration. Direct Hybrid → Hybrid nesting is rejected in the current contract.
+**Hybrid** is declarative `DecisionStrategy` composition. Phase names are opaque user-defined identifiers (`HybridPhaseId`). Each phase references a `DecisionStrategyKind`; the canonical `DecisionStrategyRegistry` resolves component strategies. Phase order is meaningful and developer-defined - it is not sorted or canonicalized. Hybrid does not execute phases and does not own orchestration. Direct Hybrid → Hybrid nesting is rejected in the current contract.
 
 ```text
 HybridStrategy
@@ -135,13 +135,13 @@ HybridStrategy
 
 ## Participant roles
 
-Participant roles are **user-defined opaque string identifiers**. Platform core does **not** define proposer/skeptic/synthesizer role enums — those names appear only as configuration examples. Role semantics come from the host-supplied **instruction** on each `ParticipantRoleDefinition`; `role_id` itself carries no platform meaning.
+Participant roles are **user-defined opaque string identifiers**. Platform core does **not** define proposer/skeptic/synthesizer role enums - those names appear only as configuration examples. Role semantics come from the host-supplied **instruction** on each `ParticipantRoleDefinition`; `role_id` itself carries no platform meaning.
 
 | Concept | Rule |
 | ------- | ---- |
-| **Role definition** | `ParticipantRoleDefinition` — opaque `role_id` + semantic `instruction` |
-| **Participant binding** | `ParticipantBinding` — maps `participant_id` + `role_id` → logical `InferenceProfileId` |
-| **Context visibility** | Per-role policy — what each participant may see (DS-DELIB-05) |
+| **Role definition** | `ParticipantRoleDefinition` - opaque `role_id` + semantic `instruction` |
+| **Participant binding** | `ParticipantBinding` - maps `participant_id` + `role_id` → logical `InferenceProfileId` |
+| **Context visibility** | Per-role policy - what each participant may see (DS-DELIB-05) |
 
 ```text
 RoleDefinition
@@ -165,9 +165,9 @@ InferenceProfileResolver
 LLMAdapter
 ```
 
-One `RoleDefinition` may bind to many `ParticipantBinding` entries (e.g. three skeptics with different profiles). The same `InferenceProfileId` may appear across different roles. Unused role definitions without bindings are allowed — runtime strategy may select a subset later.
+One `RoleDefinition` may bind to many `ParticipantBinding` entries (e.g. three skeptics with different profiles). The same `InferenceProfileId` may appear across different roles. Unused role definitions without bindings are allowed - runtime strategy may select a subset later.
 
-**Model resolution:** Decision System declares only `InferenceProfileId`. **Execution System** resolves `InferenceProfileId` → `LLMAdapter` via host-owned `InferenceProfileResolver` — Decision Strategy does not construct adapters.
+**Model resolution:** Decision System declares only `InferenceProfileId`. **Execution System** resolves `InferenceProfileId` → `LLMAdapter` via host-owned `InferenceProfileResolver` - Decision Strategy does not construct adapters.
 
 <a href="assets/fullsize/decision-deliberation-independence.md">
 <picture>
@@ -186,16 +186,16 @@ One `RoleDefinition` may bind to many `ParticipantBinding` entries (e.g. three s
 
 ## Context visibility
 
-Each participant receives only the context their **role visibility policy** allows. Visibility is **per-role**, auditable configuration — not implicit full transcript sharing. Role names and context channel identifiers remain **opaque user-defined strings**; the platform does not hardcode proposer/skeptic vocabulary or a fixed context catalog.
+Each participant receives only the context their **role visibility policy** allows. Visibility is **per-role**, auditable configuration - not implicit full transcript sharing. Role names and context channel identifiers remain **opaque user-defined strings**; the platform does not hardcode proposer/skeptic vocabulary or a fixed context catalog.
 
 | Rule | Detail |
 | ---- | ------ |
-| **Policy unit** | `ParticipantContextVisibilityPolicy` — one allowlist per `ParticipantRoleId` |
-| **Default** | **Default-deny** — context not explicitly listed is not visible |
+| **Policy unit** | `ParticipantContextVisibilityPolicy` - one allowlist per `ParticipantRoleId` |
+| **Default** | **Default-deny** - context not explicitly listed is not visible |
 | **Active roles** | Every role referenced by a `ParticipantBinding` must have an explicit policy |
 | **Unused roles** | Role definitions without bindings do not require a policy |
-| **Instruction** | Role `instruction` is always supplied separately — not part of `visible_contexts` |
-| **Private CoT** | Not stored — no chain-of-thought / scratchpad context channels |
+| **Instruction** | Role `instruction` is always supplied separately - not part of `visible_contexts` |
+| **Private CoT** | Not stored - no chain-of-thought / scratchpad context channels |
 | **Tool results** | Tool-derived context may appear as a configured channel; **visibility ≠ execution authorization** |
 
 ```text
@@ -215,15 +215,15 @@ ParticipantContextVisibilityPolicy
             participant
 ```
 
-Contract: `intergrax/contracts/decision_context_visibility.py` — `DeliberationContextId`, `ParticipantContextVisibilityPolicy`, `ParticipantContextVisibilityConfiguration`.
+Contract: `intergrax/contracts/decision_context_visibility.py` - `DeliberationContextId`, `ParticipantContextVisibilityPolicy`, `ParticipantContextVisibilityConfiguration`.
 
-**Private chain-of-thought is not stored** — only structured positions, alternatives, evidence refs, and unresolved questions may appear as explicitly configured context surfaces.
+**Private chain-of-thought is not stored** - only structured positions, alternatives, evidence refs, and unresolved questions may appear as explicitly configured context surfaces.
 
 ---
 
 ## Model / provider constraints
 
-Strategies must use Tier-0 ToolRuntime / LLM adapter paths ([`LLM_ADAPTERS.md`](LLM_ADAPTERS.md), [`TOOLS.md`](TOOLS.md)) — no direct vendor SDK bypass on wired platform paths.
+Strategies must use Tier-0 ToolRuntime / LLM adapter paths ([`LLM_ADAPTERS.md`](LLM_ADAPTERS.md), [`TOOLS.md`](TOOLS.md)) - no direct vendor SDK bypass on wired platform paths.
 
 ---
 
@@ -235,7 +235,7 @@ proposal v1
        → candidate v2B
 ```
 
-Both branches enter version lineage. Finalization requires verification, adjudication, or **UNRESOLVED** — never silent overwrite.
+Both branches enter version lineage. Finalization requires verification, adjudication, or **UNRESOLVED** - never silent overwrite.
 
 ---
 
@@ -256,11 +256,11 @@ Council / multi-model deliberation **must not** lose dissent through simple majo
 
 Structured fields include:
 
-- **positions** — participant stance summaries (no private CoT),
-- **alternatives** — competing options,
-- **disagreement** — explicit conflict records,
-- **evidence refs** — shared evidentiary pointers,
-- **unresolved questions** — open items for adjudication or UNRESOLVED.
+- **positions** - participant stance summaries (no private CoT),
+- **alternatives** - competing options,
+- **disagreement** - explicit conflict records,
+- **evidence refs** - shared evidentiary pointers,
+- **unresolved questions** - open items for adjudication or UNRESOLVED.
 
 Disagreement binds exact proposals within one canonical Decision identity boundary;
 proposal references pair `DecisionIdentity` with `DecisionLineageRef` so sibling
@@ -299,7 +299,7 @@ When synthesis cannot reconcile conflict → lifecycle may adjudicate or resolve
 | **Decision revision** | Decision Lifecycle | Verification challenge |
 | **Technical retry** | Execution / Reliability appropriate to failing operation | Provider / tool failure |
 
-Deliberation rounds consume the **hosting Execution budget** with verification and revision — no separate Council scheduler or budget engine. ORCHESTRATION may route through Nexus when required.
+Deliberation rounds consume the **hosting Execution budget** with verification and revision - no separate Council scheduler or budget engine. ORCHESTRATION may route through Nexus when required.
 
 ---
 
@@ -318,7 +318,7 @@ Deliberation rounds consume the **hosting Execution budget** with verification a
 
 ## No majority-vote truth assumption
 
-Majority aggregation may inform synthesis candidates but **cannot** delete disagreement artifacts or bypass verification. A slim majority with unresolved evidence should yield challenge, adjudication, or **UNRESOLVED** — not silent **ACCEPTED**.
+Majority aggregation may inform synthesis candidates but **cannot** delete disagreement artifacts or bypass verification. A slim majority with unresolved evidence should yield challenge, adjudication, or **UNRESOLVED** - not silent **ACCEPTED**.
 
 ---
 
@@ -328,24 +328,24 @@ Majority aggregation may inform synthesis candidates but **cannot** delete disag
 | ----- | ----------------- |
 | **Proposal / Deliberation** | Strategy produces candidates |
 | **Verification** | Independent of strategy internals |
-| **Revision** | May follow verification challenge — not strategy round |
+| **Revision** | May follow verification challenge - not strategy round |
 | **Adjudication** | May resolve deadlocked Council or competing branches |
-| **Resolution** | Lifecycle owns `ACCEPTED` / `REJECTED` / `UNRESOLVED` — separate from execution termination |
+| **Resolution** | Lifecycle owns `ACCEPTED` / `REJECTED` / `UNRESOLVED` - separate from execution termination |
 
 ---
 
 ## Public invariants
 
 ```text
-Council is a Decision Strategy — not the Decision System.
+Council is a Decision Strategy - not the Decision System.
 ```
 
 ```text
-Disagreement is an artifact — not private chain-of-thought.
+Disagreement is an artifact - not private chain-of-thought.
 ```
 
 ```text
-Synthesis produces candidates — not authoritative decisions alone.
+Synthesis produces candidates - not authoritative decisions alone.
 ```
 
 ```text
@@ -359,8 +359,8 @@ No separate Council Runtime.
 | Axis | Level |
 | ---- | ----- |
 | **Architecture** | **A4** frozen target |
-| **Implementation** | **I0** — no Council strategy shipped |
-| **Production** | **P0** for Council — agent/graph paths only |
+| **Implementation** | **I0** - no Council strategy shipped |
+| **Production** | **P0** for Council - agent/graph paths only |
 
 ---
 
@@ -368,7 +368,7 @@ No separate Council Runtime.
 
 | Depth | Route |
 | ----- | ----- |
-| **Extended engineering model** | [`satellites/DECISION_DELIBERATION_extended_depth.md`](satellites/DECISION_DELIBERATION_extended_depth.md) — Council, independence, bounded execution |
+| **Extended engineering model** | [`satellites/DECISION_DELIBERATION_extended_depth.md`](satellites/DECISION_DELIBERATION_extended_depth.md) - Council, independence, bounded execution |
 | Decision Lifecycle | [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) |
 | Verification | [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) |
 | Implementation plan | [`maintainers/plans/DECISION_DELIBERATION.md`](../maintainers/plans/DECISION_DELIBERATION.md) |
@@ -376,7 +376,7 @@ No separate Council Runtime.
 
 ---
 
-## Engineering canon — Cursor read scope
+## Engineering canon - Cursor read scope
 
 **Default:** strategy role + Council diagram + disagreement section.
 

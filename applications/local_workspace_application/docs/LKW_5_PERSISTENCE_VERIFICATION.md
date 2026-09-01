@@ -1,14 +1,14 @@
-# LKW.5 persistence verification — 2026-07-07
+# LKW.5 persistence verification - 2026-07-07
 
 ## Current status
 
 ```text
-LKW.5A — canonical LKW data-home settings contract: CLOSED
-LKW.5B — repo-dev persistence env defaults aligned with data-home layout: CLOSED
-LKW.5C — persistent vector storage contract guardrails: CLOSED
-LKW.5D — persistent storage platform proof helper + public proof step: CLOSED
-LKW.5E — persistent storage live proof: PASSED
-LKW.5 — LKW_DATA_HOME + persistent vector storage: CLOSED IN SCOPE / PERSISTENCE PROOF PASSED
+LKW.5A - canonical LKW data-home settings contract: CLOSED
+LKW.5B - repo-dev persistence env defaults aligned with data-home layout: CLOSED
+LKW.5C - persistent vector storage contract guardrails: CLOSED
+LKW.5D - persistent storage platform proof helper + public proof step: CLOSED
+LKW.5E - persistent storage live proof: PASSED
+LKW.5 - LKW_DATA_HOME + persistent vector storage: CLOSED IN SCOPE / PERSISTENCE PROOF PASSED
 ```
 
 ## Verified proof path

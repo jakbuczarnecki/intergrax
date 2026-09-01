@@ -1,15 +1,15 @@
-# INTEGRATIONS — provider catalog
+# INTEGRATIONS - provider catalog
 
 **Parent hub:** [`INTEGRATIONS.md`](../INTEGRATIONS.md)
 
-**Source of truth (shipped slug count):** `len(SLUG_CATEGORY)` in `intergrax/integrations/providers/layout.py` — **194** as of 2026-06-23. Historical phase closeouts (e.g. M.7 P7 → 185) retain snapshot counts.
+**Source of truth (shipped slug count):** `len(SLUG_CATEGORY)` in `intergrax/integrations/providers/layout.py` - **194** as of 2026-06-23. Historical phase closeouts (e.g. M.7 P7 → 185) retain snapshot counts.
 
 ## Catalog
 
 
-**Last updated:** 2026-06-23 — Phase INT-P8 planned categories (194 shipped unchanged); prior note: 2026-06-17 — **Full Harness LC** (re-validates M.7 P7 closeout); **194** slugs (current) · M.7 P7 closeout was **185** 18/18
+**Last updated:** 2026-06-23 - Phase INT-P8 planned categories (194 shipped unchanged); prior note: 2026-06-17 - **Full Harness LC** (re-validates M.7 P7 closeout); **194** slugs (current) · M.7 P7 closeout was **185** 18/18
 
-The **Integration Library** (`intergrax/integrations`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. See **Integration Layer Contract** above for normative tier boundaries. Applications wire backends **by category** via `IntegrationProfile`; agents consume backends **through catalog tools**, not by importing vendor adapters.
+The **Integration Library** (`intergrax/integrations`) is Intergrax’s modular catalog of external systems - databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. See **Integration Layer Contract** above for normative tier boundaries. Applications wire backends **by category** via `IntegrationProfile`; agents consume backends **through catalog tools**, not by importing vendor adapters.
 
 **Related docs:**
 
@@ -21,12 +21,12 @@ The **Integration Library** (`intergrax/integrations`) is Intergrax’s modular 
 | [`architecture/NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) | Graph / routing / HITL / retries |
 | [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) | UnifiedTaskRunner execution spine |
 | [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) | Application profile and intake wiring |
-| [intergrax_runtime_architecture.md](../intergrax_runtime_architecture.md) §7.1 | Architecture canon — tiers, contracts, registry rules |
+| [intergrax_runtime_architecture.md](../intergrax_runtime_architecture.md) §7.1 | Architecture canon - tiers, contracts, registry rules |
 | [plan/INTEGRATIONS.md](../plan/INTEGRATIONS.md) | Phase status, backlog, delivery workflow |
 | [guides/AGENT_CREATION_GUIDE.md](../guides/AGENT_CREATION_GUIDE.md) Appendix E | How agents vs applications use integrations |
 | [architecture/RAG.md](RAG.md) | RAG retrieval engine (consumes integration slugs) |
 | Per-provider guides | `intergrax/integrations/providers/<category>/<slug>/USAGE.md` |
-| [../infra/README.md](../infra/README.md) | **Local Docker infrastructure** — compose profiles, manage scripts |
+| [../infra/README.md](../infra/README.md) | **Local Docker infrastructure** - compose profiles, manage scripts |
 | [../infra/PORTS.md](../infra/PORTS.md) | Host port matrix for integration tests |
 | [guides/HARNESS_ENVIRONMENT.md](guides/HARNESS_ENVIRONMENT.md) | Lab harness stack, OTLP, verification |
 
@@ -54,26 +54,26 @@ uv run pytest tests/unit/integrations/test_harness_lab_stable_stack.py -m gate -
 
 Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 194 providers stable in one release.
 
-### M.6 P5 — Harness integration depth (Done — 33/34)
+### M.6 P5 - Harness integration depth (Done - 33/34)
 
-**Register:** [intergrax_runtime_architecture.md — M.6 P5](../plan/INTEGRATIONS.md#m6-p5--harness-integration-depth-done--3334) · Band **2ab**
+**Register:** [intergrax_runtime_architecture.md - M.6 P5](../plan/INTEGRATIONS.md#m6-p5--harness-integration-depth-done--3334) · Band **2ab**
 
 | Wave | Focus | Status |
 |------|--------|--------|
 | H-INT-6 | Ops, metrics, multi-CI, local cloud | **Done** (10/10) |
 | H-INT-7 | Eval observability, async bus, artifacts | **Done** (10/10) |
 | H-INT-8 | Data plane lab (graph, document, logs, vectors) | **Done** (8/8) |
-| H-INT-9 | P2 reserve | **Done** (5/6 — `trivy` deferred) |
+| H-INT-9 | P2 reserve | **Done** (5/6 - `trivy` deferred) |
 
 **Delivered:** 25 harden (STABLE + `IntegrationHealthProbe`) · 8 greenfield (`_shared/p6`) · 4 Tier-3 presets · `HARNESS_M6_P5_PROBE_SLUGS` · debug API `GET /debug/integrations/health?stack=m6_p5`.
 
-**Tier-3 presets (P5):** `harness_metrics_stack()`, `harness_eval_stack()`, `harness_async_stack()`, `harness_ci_stack()` — CLI: `intergrax integrations-pick harness_metrics|harness_eval|harness_async|harness_ci`.
+**Tier-3 presets (P5):** `harness_metrics_stack()`, `harness_eval_stack()`, `harness_async_stack()`, `harness_ci_stack()` - CLI: `intergrax integrations-pick harness_metrics|harness_eval|harness_async|harness_ci`.
 
-**Deferred:** `trivy` — absorbed into **M.6 P6** [M-P6.1](../plan/INTEGRATIONS.md#m6-p6--master-register-32-slugs) (`security_scanner` / **M-P6-CAT.1**).
+**Deferred:** `trivy` - absorbed into **M.6 P6** [M-P6.1](../plan/INTEGRATIONS.md#m6-p6--master-register-32-slugs) (`security_scanner` / **M-P6-CAT.1**).
 
-### M.6 P6 — Harness integration expansion (Done — 32/32)
+### M.6 P6 - Harness integration expansion (Done - 32/32)
 
-**Register:** [intergrax_runtime_architecture.md — M.6 P6](../plan/INTEGRATIONS.md#m6-p6--harness-integration-expansion-planned) · Band **2ac** · Queue **[§6.1y](../plan/INTEGRATIONS.md#61y-harness-implementation-queue--integration-expansion-m6-p6-done)**
+**Register:** [intergrax_runtime_architecture.md - M.6 P6](../plan/INTEGRATIONS.md#m6-p6--harness-integration-expansion-planned) · Band **2ac** · Queue **[§6.1y](../plan/INTEGRATIONS.md#61y-harness-implementation-queue--integration-expansion-m6-p6-done)**
 
 | Wave | Focus | Slugs | Status |
 |------|--------|-------|--------|
@@ -88,16 +88,16 @@ Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 194 pr
 
 **New categories (9):** `security_scanner`, `sandbox_host`, `identity_provider`, `speech_provider`, `workflow_orchestrator`, `vision_serving`, `ml_inference_host`, `billing_meter`, `crm`.
 
-**Post-catalog wiring (M-P6-WIRE):** `wire_integration_tool_context()` resolves P6 slots into `ToolWiringContext`; `extend_tool_profile_for_integration()` auto-enables `security.scan`, `workflow.*`, and `sandbox.exec` when matching categories are configured. Speech catalog slugs bridge to Tier-0 speech tools via `IntegrationSpeechAdapter` + `SpeechProviderBackend` ([ADR-MOD-001](../adr/entries/2026-06-19/ADR-MOD-001.md) — slug identity; enum path removed under MOD-SPEECH-ARCH).
+**Post-catalog wiring (M-P6-WIRE):** `wire_integration_tool_context()` resolves P6 slots into `ToolWiringContext`; `extend_tool_profile_for_integration()` auto-enables `security.scan`, `workflow.*`, and `sandbox.exec` when matching categories are configured. Speech catalog slugs bridge to Tier-0 speech tools via `IntegrationSpeechAdapter` + `SpeechProviderBackend` ([ADR-MOD-001](../adr/entries/2026-06-19/ADR-MOD-001.md) - slug identity; enum path removed under MOD-SPEECH-ARCH).
 
-### Speech provider (`speech_provider`) — canonical tool path
+### Speech provider (`speech_provider`) - canonical tool path
 
-Speech SaaS vendors follow the **open catalog** rules (§Open catalog below) — same as all 194 shipped slugs.
+Speech SaaS vendors follow the **open catalog** rules (§Open catalog below) - same as all 194 shipped slugs.
 
 | Step | Mechanism |
 |------|-----------|
 | Register | `providers/speech_provider/<slug>/manifest.py` + `register_from_manifest()` or `IntegrationPlugin` |
-| Contract | `SpeechProviderBackend` — `synthesize()`, `transcribe()`, `health()` |
+| Contract | `SpeechProviderBackend` - `synthesize()`, `transcribe()`, `health()` |
 | Tier-3 | `IntegrationProfile.speech_provider = <manifest /| plugin /| slug /| instance>` |
 | Tools | `wire_integration_tool_context()` → `IntegrationSpeechAdapter(provider_slug=…)` → `speech.synthesize` / `speech.transcribe` |
 
@@ -105,11 +105,11 @@ Speech SaaS vendors follow the **open catalog** rules (§Open catalog below) —
 
 **Delivered:** 32 STABLE slugs (`_shared/p7`) · 9 category contracts · 4 Tier-3 presets · `HARNESS_M6_P6_PROBE_SLUGS` · debug API `GET /debug/integrations/health?stack=m6_p6`.
 
-**Tier-3 presets (P6):** `harness_security_stack()`, `harness_sandbox_stack()`, `harness_identity_stack()`, `harness_gitops_stack()` — CLI: `intergrax integrations-pick harness_security|harness_sandbox|harness_identity|harness_gitops`.
+**Tier-3 presets (P6):** `harness_security_stack()`, `harness_sandbox_stack()`, `harness_identity_stack()`, `harness_gitops_stack()` - CLI: `intergrax integrations-pick harness_security|harness_sandbox|harness_identity|harness_gitops`.
 
-### M.7 P7 — Agent-developer integration expansion (Done — 18/18)
+### M.7 P7 - Agent-developer integration expansion (Done - 18/18)
 
-**Register:** [plan/INTEGRATIONS.md — M.7 P7](../plan/INTEGRATIONS.md#m7-p7--agent-developer-integration-expansion-done--1818) · Band **2ad**
+**Register:** [plan/INTEGRATIONS.md - M.7 P7](../plan/INTEGRATIONS.md#m7-p7--agent-developer-integration-expansion-done--1818) · Band **2ad**
 
 | Wave | Focus | Slugs | Status |
 |------|--------|-------|--------|
@@ -120,7 +120,7 @@ Speech SaaS vendors follow the **open catalog** rules (§Open catalog below) —
 
 **Delivered:** 18 STABLE slugs (`_shared/p8`) · 3 Tier-3 agent presets · `HARNESS_M7_P7_PROBE_SLUGS` · auto-wiring `search_provider` / `document_parser` / `vector_store` → catalog tools.
 
-**Tier-3 presets (P7):** `research_web_stack()`, `document_ingest_stack()`, `chat_bot_stack()` — CLI: `intergrax integrations-pick research_web|document_ingest|chat_bot`.
+**Tier-3 presets (P7):** `research_web_stack()`, `document_ingest_stack()`, `chat_bot_stack()` - CLI: `intergrax integrations-pick research_web|document_ingest|chat_bot`.
 
 **Catalog:** **194** slugs in `layout.py`.
 
@@ -139,13 +139,13 @@ cd infra/integration && ./manage.sh start all      # full stack
 
 See [infra/PORTS.md](../infra/PORTS.md) for host ports (e.g. Redis `6379`, Qdrant `6333`, Neo4j Bolt `7687`, Weaviate `8080`, MinIO `9000`, Vault `8200`, ClickHouse HTTP `8123` / native `9002`).
 
-**SaaS-only slugs** (no local container — use mocks or API keys): `slack`, `jira`, `confluence`, `google_cse`, `pinecone`, `cohere_rerank`, `sentry` (cloud), most `observability_backend` HTTP proxies unless self-hosted image is listed in infra.
+**SaaS-only slugs** (no local container - use mocks or API keys): `slack`, `jira`, `confluence`, `google_cse`, `pinecone`, `cohere_rerank`, `sentry` (cloud), most `observability_backend` HTTP proxies unless self-hosted image is listed in infra.
 
 ---
 
 ## Provider layout (by category)
 
-Integrations are grouped under **contract category** folders — the same grouping used when generating P2/P3 provider stubs:
+Integrations are grouped under **contract category** folders - the same grouping used when generating P2/P3 provider stubs:
 
 ```text
 intergrax/integrations/providers/
@@ -173,7 +173,7 @@ intergrax/integrations/providers/
 
 **Import path:** `from intergrax.integrations.providers.object_storage.s3.bundle import create_s3_object_storage`
 
-Catalog identity is the string **slug** (`"s3"`, `"postgresql"`) registered at runtime — not a central enum.
+Catalog identity is the string **slug** (`"s3"`, `"postgresql"`) registered at runtime - not a central enum.
 
 ---
 
@@ -181,7 +181,7 @@ Catalog identity is the string **slug** (`"s3"`, `"postgresql"`) registered at r
 
 | Mechanism | Role |
 |-----------|------|
-| `providers/<category>/<slug>/manifest.py` | `MANIFEST = IntegrationManifest(slug=…)` — canonical metadata per provider |
+| `providers/<category>/<slug>/manifest.py` | `MANIFEST = IntegrationManifest(slug=…)` - canonical metadata per provider |
 | `register_from_manifest(MANIFEST, factory)` | Registers in runtime catalog (`registry/catalog.py`) |
 | `IntegrationProfile` | Declares slot: manifest, plugin class, slug `str`, or pre-built instance |
 | `profile.resolve(IntegrationCategory.…)` | Instantiates via registered factory |
@@ -197,7 +197,7 @@ Tier-3 hosts should call `bootstrap_application_integration_catalog()` (not bare
 
 ### Named integration presets (Phase DX-4.3)
 
-Typed factories in `intergrax.integrations.registry.presets` — use in `ApplicationManifest` / `host/environment_profile.py`:
+Typed factories in `intergrax.integrations.registry.presets` - use in `ApplicationManifest` / `host/environment_profile.py`:
 
 | Preset function | Returns | Typical use |
 |-----------------|---------|-------------|
@@ -221,7 +221,7 @@ Scaffold a new provider tree: `python -m intergrax.scaffold new-integration <slu
 | Principle | What it means |
 |-----------|---------------|
 | **Universal contracts** | Each category (`relational_store`, `vector_store`, `message_bus`, …) defines a small Protocol. Providers implement the contract; agent logic depends on the contract only. |
-| **Modular providers** | One slug = one package under `providers/<category>/<slug>` (category = contract name). Swap Redis for ElastiCache, SQLite for PostgreSQL, or Chroma for Pinecone by changing `IntegrationProfile` — no agent refactor. |
+| **Modular providers** | One slug = one package under `providers/<category>/<slug>` (category = contract name). Swap Redis for ElastiCache, SQLite for PostgreSQL, or Chroma for Pinecone by changing `IntegrationProfile` - no agent refactor. |
 | **Environment portability** | Tier-3 applications compose integrations at startup (`IntegrationProfile`, env vars). The same Tier-2 agent runs against lab defaults (`sqlite`, `log`, `lab_json`) or production stacks (`postgresql`, `slack`, `s3`, `qdrant`). |
 | **Single entry for SDKs** | Vendor SDKs (boto3, PyMongo, chromadb, redis, …) are imported only in boundary modules: `opens.py`, `rag_store.py`, `web_client.py`, `client.py`, and `_shared/p2|p3|p4/factories.py`. CI enforces this via `scripts/maintenance/check_integration_vendor_imports.py`. Tier-2 agents must **not** import provider slugs or vendor libraries. |
 | **Catalog registration** | `register_default_integrations(preset="full")` or `preset="core"` (lab). Resolution: explicit slug → profile field → env → cloud defaults. |
@@ -248,7 +248,7 @@ IntegrationProfile  ──►  IntegrationRegistry.resolve(category)
 
 Agents consume integrations **through catalog tools** ([architecture/TOOLS.md](architecture/TOOLS.md)), not by importing provider adapters. Tier-3 may also pass resolved contracts into `ToolWiringContext` for tool handlers.
 
-**Example — declarative profile:**
+**Example - declarative profile:**
 
 ```python
 from intergrax.integrations.contracts.base import IntegrationCategory
@@ -270,14 +270,14 @@ profile = IntegrationProfile(
 store = profile.resolve(IntegrationCategory.RELATIONAL_STORE)
 ```
 
-**Example — lab defaults (no external vendors):**
+**Example - lab defaults (no external vendors):**
 
 ```python
 profile = IntegrationProfile.lab()
 # relational_store → sqlite, notification_channel → log, interaction_surface → lab_json
 ```
 
-**Example — product profile with SQLite observability fallback:**
+**Example - product profile with SQLite observability fallback:**
 
 Product profiles such as `IntegrationProfile.legal_product()` may omit `relational_store`. Tier-3 factories pass the profile to `wire_nexus_observability()`; when SQLite is not declared on the profile, trace and runtime-event stores fall back to default `build` SQLite paths (same as pre-profile wiring).
 
@@ -310,7 +310,7 @@ trace_store = open_trace_store_from_profile(profile)
 |----------|----------|-------------|
 | `relational_store` | `RelationalStore` | SQL persistence, analytics warehouses |
 | `document_store` | `DocumentStore` | Flexible JSON / wide-column documents |
-| `key_value_cache` | `KeyValueCache` | Idempotency, rate limits, locks — **not** session or user LTM memory (see Phase MEM / `AGENT_CREATION_GUIDE` Appendix G) |
+| `key_value_cache` | `KeyValueCache` | Idempotency, rate limits, locks - **not** session or user LTM memory (see Phase MEM / `AGENT_CREATION_GUIDE` Appendix G) |
 | `message_bus` | `MessageBus` | Async task queues, worker transport |
 | `object_storage` | `ObjectStorage` | Artifacts, exports, large file handoff |
 | `vector_store` | `VectorStore` | RAG embedding indexes |
@@ -325,9 +325,9 @@ trace_store = open_trace_store_from_profile(profile)
 | `secrets_store` | `SecretsStore` | Tenant API keys, credentials (Vault, …) |
 | `graph_store` | `GraphStore` | Agent memory, tool dependency graphs |
 | `document_parser` | `DocumentParser` | Document/media parsing (Docling, PyMuPDF, Unstructured, python-docx, openpyxl, whisper, yt_dlp) |
-| `rerank_provider` | `RerankProvider` | Vendor reranking APIs (cohere_rerank, jina_rerank) — consumed by RAG `rerankers` |
-| `security_scanner` | `SecurityScannerBackend` | SAST/dependency scans (trivy, snyk, semgrep) — CI and release gates |
-| `llm_guardrail` | `LlmGuardrailBackend` | LLM I/O safety scanners (LLM Guard, Guardrails AI, NeMo, OpenGuardrails) — §47 |
+| `rerank_provider` | `RerankProvider` | Vendor reranking APIs (cohere_rerank, jina_rerank) - consumed by RAG `rerankers` |
+| `security_scanner` | `SecurityScannerBackend` | SAST/dependency scans (trivy, snyk, semgrep) - CI and release gates |
+| `llm_guardrail` | `LlmGuardrailBackend` | LLM I/O safety scanners (LLM Guard, Guardrails AI, NeMo, OpenGuardrails) - §47 |
 | `cloud_platform` | `CloudPlatform` | Multi-service auth + category defaults |
 
 Contract modules: `intergrax/integrations/contracts`.
@@ -341,8 +341,8 @@ Platform providers resolve **default slugs** for infrastructure categories when 
 | Platform | Auth | Default `object_storage` | Default `message_bus` | Default `document_store` | Default `key_value_cache` |
 |----------|------|--------------------------|------------------------|--------------------------|---------------------------|
 | `aws` | IAM keys, profile, STS assume-role | `s3` | `sqs` | `dynamodb` | `elasticache` |
-| `azure` | Managed identity, service principal | `azure_blob` | `service_bus` | — | — |
-| `gcp` | ADC, service account JSON | `gcs` | `pubsub` | — | — |
+| `azure` | Managed identity, service principal | `azure_blob` | `service_bus` | - | - |
+| `gcp` | ADC, service account JSON | `gcs` | `pubsub` | - | - |
 
 Service-level slugs (`s3`, `azure_blob`, `gcs`, …) remain available for explicit or multi-cloud setups.
 
@@ -356,7 +356,7 @@ All providers below are registered in `register_default_integrations()`.
 - **P2** slugs delegate to `intergrax/integrations/_shared/p2/factories.py`
 - **P3 / M.7** harness slugs delegate to `intergrax/integrations/_shared/p3/factories.py`
 - **P5 / M.6 P4** (2026-06-02) delegate to `intergrax/integrations/_shared/p5/factories.py`
-- Thin shells live under `providers/<category>/<slug>` — see `providers/layout.py`
+- Thin shells live under `providers/<category>/<slug>` - see `providers/layout.py`
 
 ### Summary by category
 
@@ -379,7 +379,7 @@ All providers below are registered in `register_default_integrations()`.
 | `rerank_provider` | 2 | `cohere_rerank`, `jina_rerank` |
 | `browser_automation` | 5 | `playwright`, `firecrawl`, `selenium`, `browserbase`, `apify` |
 | `secrets_store` | 5 | `vault`, `aws_secrets_manager`, `azure_key_vault`, `gcp_secret_manager`, `doppler` |
-| `graph_store` | 3 (+3 planned) | **Shipped:** `neo4j`, `memgraph`, `falkordb` · **Planned (M-RAG.49–51 / H-INT-GRAPH):** `neptune`, `orientdb`, `arangodb` — see [`plan/RAG.md`](../plan/RAG.md) Phase M-RAG-GRAPH |
+| `graph_store` | 3 (+3 planned) | **Shipped:** `neo4j`, `memgraph`, `falkordb` · **Planned (M-RAG.49–51 / H-INT-GRAPH):** `neptune`, `orientdb`, `arangodb` - see [`plan/RAG.md`](../plan/RAG.md) Phase M-RAG-GRAPH |
 | `cloud_platform` | 4 | `aws`, `azure`, `gcp`, `kubernetes` |
 | `feature_flag` | 2 | `unleash`, `launchdarkly` |
 | `ci_cd` | 1 | `github_actions` |
@@ -400,11 +400,11 @@ All providers below are registered in `register_default_integrations()`.
 
 **Vector-store bridges** (`pinecone`, `qdrant`, `chroma`): RAG implementation in `intergrax/rag/vectorstore`.
 
-Unit tests: `tests/unit/integrations` — **335+** cases including `test_p2_providers.py` and `test_p3_providers.py`.
+Unit tests: `tests/unit/integrations` - **335+** cases including `test_p2_providers.py` and `test_p3_providers.py`.
 
 ### Reserved slugs (manifest constants) but not registered in catalog
 
-None — all enum slugs in `FIELD_SLUGS` are registered except cloud-platform-only defaults resolved via `IntegrationProfile.with_cloud_platform()`.
+None - all enum slugs in `FIELD_SLUGS` are registered except cloud-platform-only defaults resolved via `IntegrationProfile.with_cloud_platform()`.
 
 ---
 
@@ -506,7 +506,7 @@ None — all enum slugs in `FIELD_SLUGS` are registered except cloud-platform-on
 
 ## RAG engine (cross-reference)
 
-**Canonical domain pair:** [`architecture/RAG.md`](RAG.md) ↔ [`plan/RAG.md`](../plan/RAG.md) — retrieval orchestration, ingest, eval, M-RAG register.
+**Canonical domain pair:** [`architecture/RAG.md`](RAG.md) ↔ [`plan/RAG.md`](../plan/RAG.md) - retrieval orchestration, ingest, eval, M-RAG register.
 
 This catalog doc covers **integration slugs** consumed by RAG (`vector_store`, `document_parser`, `rerank_provider`, `graph_store`). Do not duplicate engine canon here.
 
@@ -514,26 +514,26 @@ This catalog doc covers **integration slugs** consumed by RAG (`vector_store`, `
 
 ### Vector store (RAG)
 
-Vector implementations remain in `intergrax/rag/vectorstore`. Integration providers are **thin catalog bridges** — select backend via `IntegrationProfile.vector_store` or RAG bootstrap.
+Vector implementations remain in `intergrax/rag/vectorstore`. Integration providers are **thin catalog bridges** - select backend via `IntegrationProfile.vector_store` or RAG bootstrap.
 
 | Slug | Status | Catalog factory | Env prefix | Prod SLO soak (M-RAG.30) |
 |------|--------|-----------------|------------|--------------------------|
-| `qdrant` | **stable** | `create_qdrant_vector_store()` | `INTERGRAX_QDRANT` | Required — `test_vectorstore_real_backends.py` |
-| `pgvector` | **stable** | `create_pgvector_vector_store()` | `INTERGRAX_PGVECTOR` | Required — DSN optional (in-memory fallback for harness) |
-| `chroma` | **stable** | `create_chroma_vector_store()` | `INTERGRAX_CHROMA` | Required — HTTP mode default probe `localhost:8000` |
-| `weaviate` | **stable** | `create_weaviate_vector_store()` | `INTERGRAX_WEAVIATE` | Required — probe `INTERGRAX_WEAVIATE_URL` / `localhost:8080` |
+| `qdrant` | **stable** | `create_qdrant_vector_store()` | `INTERGRAX_QDRANT` | Required - `test_vectorstore_real_backends.py` |
+| `pgvector` | **stable** | `create_pgvector_vector_store()` | `INTERGRAX_PGVECTOR` | Required - DSN optional (in-memory fallback for harness) |
+| `chroma` | **stable** | `create_chroma_vector_store()` | `INTERGRAX_CHROMA` | Required - HTTP mode default probe `localhost:8000` |
+| `weaviate` | **stable** | `create_weaviate_vector_store()` | `INTERGRAX_WEAVIATE` | Required - probe `INTERGRAX_WEAVIATE_URL` / `localhost:8080` |
 | `lancedb` | **stable** | `create_lancedb_vector_store()` | `INTERGRAX_LANCEDB` | Harness stable; soak gate optional per deployment |
 | `typesense` | **stable** | `create_typesense_vector_store()` | `INTERGRAX_TYPESENSE` | Harness stable; soak gate optional per deployment |
 | `pinecone` | beta | `create_pinecone_vector_store()` | `INTERGRAX_PINECONE` | Promote to stable after soak passes in ops environment |
 | `milvus` | beta | `create_milvus_vector_store()` | `INTERGRAX_MILVUS` | Promote to stable after soak passes in ops environment |
 | `vespa` | beta | `create_vespa_vector_store()` | `INTERGRAX_VESPA` | Promote to stable after soak passes in ops environment |
-| `inmemory` | beta | `create_inmemory_vector_store()` | `INTERGRAX_INMEMORY` | Harness/tests only — not for production |
+| `inmemory` | beta | `create_inmemory_vector_store()` | `INTERGRAX_INMEMORY` | Harness/tests only - not for production |
 
-**Soak contract:** `intergrax/rag/vectorstore/soak/prod_slo.py` — ingest → query → metadata filter → delete; p95 query latency budget.
+**Soak contract:** `intergrax/rag/vectorstore/soak/prod_slo.py` - ingest → query → metadata filter → delete; p95 query latency budget.
 
 **Gate (CI, no external services):** `uv run pytest tests/unit/rag/vectorstore/test_vectorstore_prod_slo_soak.py -m gate -q`
 
-**Ops / nightly (real backends):** `uv run pytest tests/integration/rag/vectorstore/test_vectorstore_real_backends.py -m vectorstore_soak -q` — tests skip when backend unreachable.
+**Ops / nightly (real backends):** `uv run pytest tests/integration/rag/vectorstore/test_vectorstore_real_backends.py -m vectorstore_soak -q` - tests skip when backend unreachable.
 
 | Provider | Usage guide |
 |----------|-------------|
@@ -621,7 +621,7 @@ RAG bootstrap: `create_default_vectorstore_manager()` in `intergrax/rag/vectorst
 
 | Slug | Status | Catalog factory | Env prefix | Notes |
 |------|--------|-----------------|------------|-------|
-| `jira` | beta | `create_jira_issue_tracker()` | `INTERGRAX_JIRA` | REST v3 — issues, comments, search |
+| `jira` | beta | `create_jira_issue_tracker()` | `INTERGRAX_JIRA` | REST v3 - issues, comments, search |
 | `github` | beta | `create_github_issue_tracker()` | `INTERGRAX_GITHUB` | GitHub Issues REST |
 | `linear` | beta | `create_linear_issue_tracker()` | `INTERGRAX_LINEAR` | Linear issues API |
 | `azure_devops` | beta | `create_azure_devops_issue_tracker()` | `INTERGRAX_AZURE_DEVOPS` | Azure DevOps work items |
@@ -701,7 +701,7 @@ RAG bootstrap: `create_default_vectorstore_manager()` in `intergrax/rag/vectorst
 
 ## Full provider index
 
-Alphabetical reference — all shipped integrations in one table.
+Alphabetical reference - all shipped integrations in one table.
 
 | Slug | Category (categories) | Status | Catalog factory | Usage |
 |------|----------------------|--------|-----------------|-------|
@@ -761,33 +761,33 @@ Alphabetical reference — all shipped integrations in one table.
 
 ---
 
-## Phase M.7 harness backlog — Done (beta)
+## Phase M.7 harness backlog - Done (beta)
 
 All slugs from the 2026-05 harness recommendation (high / medium / low) are registered. Shared implementation: `intergrax/integrations/_shared/p3/factories.py`. New categories: `secrets_store`, `graph_store`.
 
-## Phase M.9 harness depth — Done (beta)
+## Phase M.9 harness depth - Done (beta)
 
-**Full adapters** (replacing thin-p4 shells): `langsmith`, `opensearch`, `vespa`, `gitlab`, `pagerduty`, `braintrust` — dedicated `config/client/adapter/opens/bundle` packages.
+**Full adapters** (replacing thin-p4 shells): `langsmith`, `opensearch`, `vespa`, `gitlab`, `pagerduty`, `braintrust` - dedicated `config/client/adapter/opens/bundle` packages.
 
 **New tools:** `gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`.
 
 **`slash_command`** interaction surface registered (catalog **167**).
 
-**Lab harness:** `IntegrationProfile.harness_lab()` + `wire_lab_integrations(harness=True)` — composite observability (Sentry + LangSmith) + PagerDuty + harness tool bundle.
+**Lab harness:** `IntegrationProfile.harness_lab()` + `wire_lab_integrations(harness=True)` - composite observability (Sentry + LangSmith) + PagerDuty + harness tool bundle.
 
-## Phase M.10 harness Tier A — Done (beta)
+## Phase M.10 harness Tier A - Done (beta)
 
-**Composite observability:** `ToolWiringContext.observability_backends` populated from profile primary + `options` observability slugs. Role-based resolution in `resolve_observability_backend()` — `errors.capture` → Sentry, `observability.query_traces` → LangSmith, `braintrust.log_eval` → Braintrust.
+**Composite observability:** `ToolWiringContext.observability_backends` populated from profile primary + `options` observability slugs. Role-based resolution in `resolve_observability_backend()` - `errors.capture` → Sentry, `observability.query_traces` → LangSmith, `braintrust.log_eval` → Braintrust.
 
 **HITL → PagerDuty (runtime):** `wire_lab_integrations(harness=True)` resolves notification adapter directly from profile (`create_harness_notification_adapter`). Long-running tasks with `notify_channel="pagerduty"` escalate via `LongRunningCoordinator.notify_escalation()`. Factory: `LAB_HARNESS=true`.
 
 **Tests:** `tests/unit/tools/providers/observability/test_composite_observability.py`, `tests/integration/runtime/test_harness_hitl_pagerduty.py`.
 
-## Phase M.11 harness — Done (beta)
+## Phase M.11 harness - Done (beta)
 
 **Default notify channel:** `make_lab_harness_task_enricher()` + `apply_default_long_running_notify_channel()` inject profile default (`pagerduty` in harness) when `long_running.enabled` and `notify_channel` unset. Wired in `create_lab_application()` for `POST /v1/lab/run` (`long_running: true`) and interaction intake.
 
-**Next gaps (M.13+):** full adapters for remaining thin-p4 slugs (Helicone, PostHog, …), network smoke CI for non-guardrail harness integrations. **Guardrails (M.12):** Done — see §47.
+**Next gaps (M.13+):** full adapters for remaining thin-p4 slugs (Helicone, PostHog, …), network smoke CI for non-guardrail harness integrations. **Guardrails (M.12):** Done - see §47.
 
 **CI:** `harness-smoke` job in `.github/workflows/unit-tests.yml` (`integrations-harness` extra).
 
@@ -795,7 +795,7 @@ All slugs from the 2026-05 harness recommendation (high / medium / low) are regi
 
 ---
 
-## Phase M.8 harness gap — Done (beta)
+## Phase M.8 harness gap - Done (beta)
 
 **+14 slugs** via `intergrax/integrations/_shared/p4/factories.py`: `langsmith`, `helicone`, `posthog`, `braintrust`, `signoz`, `honeycomb`, `arize`, `phoenix`, `wandb`, `opensearch`, `pagerduty`, `opsgenie`, `gitlab`, `vespa`. Wire script: `scripts/maintenance/wire_p4_harness_providers.py`.
 
@@ -819,7 +819,7 @@ Audit against typical agent stacks (LangGraph, CrewAI, LlamaIndex, enterprise VP
 | **Low** | `reddit`, `google_places` | search_provider | **Done** | Social/geo search (full packages) |
 | **Future** | `slash_command` | interaction_surface | **Done** (M.9) | Generic slash intake |
 
-**Strong harness coverage today:** **194** integrations — observability (24+), notification (11+), issue trackers (9), vectors (9 incl. typesense), secrets (6 incl. infisical), feature flags (3), CI/CD (8 incl. argocd), security scanners (3), sandbox hosts (3), identity (3), speech (2), workflow (2), CRM (2), plus M.7 stack (Vault, Neo4j, Temporal, …).
+**Strong harness coverage today:** **194** integrations - observability (24+), notification (11+), issue trackers (9), vectors (9 incl. typesense), secrets (6 incl. infisical), feature flags (3), CI/CD (8 incl. argocd), security scanners (3), sandbox hosts (3), identity (3), speech (2), workflow (2), CRM (2), plus M.7 stack (Vault, Neo4j, Temporal, …).
 
 **Tool Library:** `errors.capture`, `gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`. Optional deps: ``uv pip install 'Intergrax-ai[integrations-harness]'``.
 
@@ -837,18 +837,18 @@ uv run python scripts/docs/generate_integration_usage_docs.py
 
 **Canon cross-refs:** UAEP guardrail catalog §42.11.6 · Policy bundle §42.11.4 · Middleware hooks §42.42 · Security defenses §42.45 · CVL [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md).
 
-Third-party **guardrail engines** belong in the **Integration Library** — not in Tier-2 agents and not as parallel Nexus modules. Intergrax composes **native harness defenses** (`prompt_security`, `tool_security`, `PolicyEngine`, CVL L0) with **optional vendor backends** selected per Tier-3 host.
+Third-party **guardrail engines** belong in the **Integration Library** - not in Tier-2 agents and not as parallel Nexus modules. Intergrax composes **native harness defenses** (`prompt_security`, `tool_security`, `PolicyEngine`, CVL L0) with **optional vendor backends** selected per Tier-3 host.
 
 ### 47.1 Design rules
 
 | Rule | Rationale |
 |------|-----------|
-| **Category `llm_guardrail`** | One contract (`LlmGuardrailBackend`) — swap NeMo / Guardrails AI / LLM Guard / OpenGuardrails without agent changes |
-| **Vendor imports only in `opens.py`** | Same boundary as §Design principles — `scripts/maintenance/check_integration_vendor_imports.py` |
-| **Middleware invocation only** | Tier-1 `guardrail_runtime_bridge` (planned M.12) calls integration at §42.42 hooks — agents never import slugs |
-| **Policy consequences unified** | Scanner result → `GuardrailScanResult` → `PolicyEngine` / `ValidationResult` — no ad-hoc `raise` in adapters |
+| **Category `llm_guardrail`** | One contract (`LlmGuardrailBackend`) - swap NeMo / Guardrails AI / LLM Guard / OpenGuardrails without agent changes |
+| **Vendor imports only in `opens.py`** | Same boundary as §Design principles - `scripts/maintenance/check_integration_vendor_imports.py` |
+| **Middleware invocation only** | Tier-1 `guardrail_runtime_bridge` (planned M.12) calls integration at §42.42 hooks - agents never import slugs |
+| **Policy consequences unified** | Scanner result → `GuardrailScanResult` → `PolicyEngine` / `ValidationResult` - no ad-hoc `raise` in adapters |
 | **Defense in depth** | Fast deterministic scanners first (LLM Guard, native `prompt_security`); orchestration frameworks second (NeMo); semantic validators third (Guardrails AI Hub) |
-| **Not LLM adapters** | Guardrail engines are **not** `intergrax/llm_adapters` — they scan or constrain calls, not replace the producer model |
+| **Not LLM adapters** | Guardrail engines are **not** `intergrax/llm_adapters` - they scan or constrain calls, not replace the producer model |
 
 ### 47.2 Category contract (M-P12-CAT.1)
 
@@ -869,7 +869,7 @@ GuardrailScanResult:
     audit_payload: dict
 ```
 
-`IntegrationProfile.llm_guardrail: IntegrationBinding | None` — resolved at Tier-3 startup; wired through `security_runtime_bridge` + `guardrail_wiring` → `LlmGuardrailMiddleware` (M.12). Tier-3 `GuardrailProfile` toggles scan_input / scan_output / scan_tool_calls.
+`IntegrationProfile.llm_guardrail: IntegrationBinding | None` - resolved at Tier-3 startup; wired through `security_runtime_bridge` + `guardrail_wiring` → `LlmGuardrailMiddleware` (M.12). Tier-3 `GuardrailProfile` toggles scan_input / scan_output / scan_tool_calls.
 
 ### 47.3 Recommended vendor libraries (2026)
 
@@ -877,17 +877,17 @@ Use this matrix to **pick engines by problem shape**, then register the matching
 
 | Library | PyPI / package | Primary strength | Typical hook | Latency class | Deploy posture |
 |---------|----------------|------------------|--------------|---------------|----------------|
-| **[LLM Guard](https://github.com/protectai/llm-guard)** | `llm-guard` | Fast I/O scanning — prompt injection, secrets, toxicity, anonymization | pre-LLM, post-LLM | **Low** (~&lt;50ms CPU) | On-prem, no GPU required |
+| **[LLM Guard](https://github.com/protectai/llm-guard)** | `llm-guard` | Fast I/O scanning - prompt injection, secrets, toxicity, anonymization | pre-LLM, post-LLM | **Low** (~&lt;50ms CPU) | On-prem, no GPU required |
 | **[Guardrails AI](https://github.com/guardrails-ai/guardrails)** | `guardrails-ai` | Composable validators, Hub validators, RAIL, structured-output re-ask | post-LLM, completion | Medium (20–200ms+) | On-prem; validators may call models |
 | **[NVIDIA NeMo Guardrails](https://github.com/NVIDIA-NeMo/Guardrails)** | `nemoguardrails` | Colang dialog flows, multi-rail pipelines, tool-call constraints | pre/post-LLM, multi-turn | Medium–high (150–500ms+) | GPU optional; strong for conversational agents |
-| **[OpenGuardrails](https://github.com/openguardrails/openguardrails)** | `openguardrails` | Enterprise gateway — DLP, masking, multi-tenant policy, OpenAI-compatible proxy | gateway or SDK scan | Medium (API / self-hosted) | SaaS, private cloud, or on-prem gateway |
+| **[OpenGuardrails](https://github.com/openguardrails/openguardrails)** | `openguardrails` | Enterprise gateway - DLP, masking, multi-tenant policy, OpenAI-compatible proxy | gateway or SDK scan | Medium (API / self-hosted) | SaaS, private cloud, or on-prem gateway |
 | **[Meta Llama Guard](https://huggingface.co/meta-llama/Llama-Guard-3-8B)** | via inference host / `llm_guardrail` wrapper | Content-safety classifier (input/output) | pre/post-LLM | Medium (model inference) | Self-hosted model; often composed inside NeMo or custom adapter |
 | **[Microsoft Presidio](https://github.com/microsoft/presidio)** | `presidio-analyzer`, `presidio-anonymizer` | PII detect/redact (deterministic + NER) | pre-LLM, post-LLM, logs | Low–medium | On-prem; pairs with LLM Guard |
 | **[Lakera Guard](https://www.lakera.ai/)** | REST API | Prompt injection / jailbreak API | pre-LLM | Low (~&lt;150ms API) | Managed API |
 | **Azure AI Content Safety** | `azure-ai-contentsafety` | Moderation categories, blocklists | pre/post-LLM | Medium (cloud API) | Azure tenants |
 | **AWS Bedrock Guardrails** | boto3 bedrock | Content, prompt attack, PII, contextual grounding | provider-side or pre-call | Variable | AWS Bedrock workloads |
 
-**Also worth tracking:** `open-guardrail` (deterministic multi-language guard pack, edge-friendly), **Rebuff** (prompt injection focus), **Patronus** / **Aporia** (managed eval+safety APIs) — add catalog slugs when a product host requires them; do not fork ad-hoc SDK calls in agents.
+**Also worth tracking:** `open-guardrail` (deterministic multi-language guard pack, edge-friendly), **Rebuff** (prompt injection focus), **Patronus** / **Aporia** (managed eval+safety APIs) - add catalog slugs when a product host requires them; do not fork ad-hoc SDK calls in agents.
 
 ### 47.4 Layering pattern (recommended)
 
@@ -911,7 +911,7 @@ Use this matrix to **pick engines by problem shape**, then register the matching
                     └─────────────────────────────────────┘
 ```
 
-### 47.5 Shipped catalog slugs (Phase M.12 — Done)
+### 47.5 Shipped catalog slugs (Phase M.12 - Done)
 
 | Slug | Backend library | Priority | Notes |
 |------|-----------------|----------|-------|
@@ -925,12 +925,12 @@ Use this matrix to **pick engines by problem shape**, then register the matching
 | `azure_content_safety` | Azure Content Safety | **P2** | Azure profile hosts |
 | `bedrock_guardrails` | AWS Bedrock Guardrails | **P2** | `aws` cloud_platform hosts |
 
-**Tier-3 preset (shipped):** `harness_guardrail_stack(primary="llm_guard", semantic="guardrails_ai")` in `registry/presets.py` — `semantic` becomes chained secondary scanner.
+**Tier-3 preset (shipped):** `harness_guardrail_stack(primary="llm_guard", semantic="guardrails_ai")` in `registry/presets.py` - `semantic` becomes chained secondary scanner.
 
-### 47.6 Wiring sketch (M.12 — Done)
+### 47.6 Wiring sketch (M.12 - Done)
 
 ```python
-# Tier-3 host — applications/<product>/host/integration_wiring.py
+# Tier-3 host - applications/<product>/host/integration_wiring.py
 from intergrax.integrations.registry.presets import harness_guardrail_stack  # M.12
 
 profile = harness_guardrail_stack(
@@ -942,7 +942,7 @@ profile = harness_guardrail_stack(
 ```
 
 ```python
-# Tier-3 — guardrail_runtime_bridge + LlmGuardrailMiddleware (priority 52)
+# Tier-3 - guardrail_runtime_bridge + LlmGuardrailMiddleware (priority 52)
 # Hooks: BEFORE_CONTEXT_BUILD, BEFORE_LLM_INFERENCE, BEFORE_TOOL_CALL,
 #        AFTER_LLM_OUTPUT, AFTER_FINALIZATION
 ```
@@ -965,26 +965,26 @@ python scripts/maintenance/check_harness_guardrail_wiring.py
 The **nginx / ingress controller** catalog slug is **not** owned by Integrations.
 Capacity ingress is documented and implemented under
 [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) (ECP-6.*).
-Decision: [ADR-SCALE-002](../adr/entries/2026-06-09/ADR-SCALE-002.md) — defer
+Decision: [ADR-SCALE-002](../adr/entries/2026-06-09/ADR-SCALE-002.md) - defer
 standalone nginx slug; Kubernetes deployment path remains canonical.
 
 Integrations cross-ref only. Host authors enable ingress via ECP profiles and
-`kubernetes` integration — see [`intergrax/integrations/USAGE.md`](../../../../intergrax/integrations/USAGE.md).
+`kubernetes` integration - see [`intergrax/integrations/USAGE.md`](../../../../intergrax/integrations/USAGE.md).
 
 
 ---
 
-## Phase INT-P8 — Planned categories & slugs (not shipped)
+## Phase INT-P8 - Planned categories & slugs (not shipped)
 
-**Status:** **Planned** — architecture and plan only (2026-06-23)  
+**Status:** **Planned** - architecture and plan only (2026-06-23)  
 **Shipped catalog unchanged:** **194** slugs in `layout.py` / 
 egister_default_integrations()  
 **Plan:** [plan/INTEGRATIONS.md](../../maintainers/plans/INTEGRATIONS.md) Phase INT-P8
 **Architecture:** [INTEGRATIONS.md](../INTEGRATIONS.md) §Phase INT-P8
 
-INT-P8 adds **gateway and workspace mechanisms** for harness/agent-OS value — not catalog padding. Planned entries below are **not** registered, **not** counted in the 185 shipped total, and **must not** appear in runtime bootstrap until their implementation task PR lands.
+INT-P8 adds **gateway and workspace mechanisms** for harness/agent-OS value - not catalog padding. Planned entries below are **not** registered, **not** counted in the 185 shipped total, and **must not** appear in runtime bootstrap until their implementation task PR lands.
 
-### Selection metadata extension (INT-P8.1 — planned)
+### Selection metadata extension (INT-P8.1 - planned)
 
 All INT-P8 providers will declare extended selection metadata (in addition to existing manifest fields):
 
@@ -1022,12 +1022,12 @@ Existing **194** manifests remain valid; metadata backfill is optional per provi
 
 | Category | Planned slug(s) | Status | Distinction from existing |
 |----------|-----------------|--------|---------------------------|
-| 	ool_protocol_gateway | mcp | **Planned** | Tool protocol bridge — not a vendor SaaS slug |
-| api_connector | openapi_http | **Planned** | Generic OpenAPI REST — not per-vendor REST adapters |
-| workspace_store | local_workspace | **Planned** | Agent policy-scoped working dir — **≠** filesystem object storage |
-| code_repository | local_git | **Planned** | Local Git CLI/worktree — **≠** github/gitlab issue/remote hosts |
-| code_intelligence | sourcegraph | **Planned** | Cross-repo code search — **≠** github issue tracker |
-| code_intelligence | github_code | **Planned (optional, post–first wave)** | GitHub code search API — only if product requires |
+| 	ool_protocol_gateway | mcp | **Planned** | Tool protocol bridge - not a vendor SaaS slug |
+| api_connector | openapi_http | **Planned** | Generic OpenAPI REST - not per-vendor REST adapters |
+| workspace_store | local_workspace | **Planned** | Agent policy-scoped working dir - **≠** filesystem object storage |
+| code_repository | local_git | **Planned** | Local Git CLI/worktree - **≠** github/gitlab issue/remote hosts |
+| code_intelligence | sourcegraph | **Planned** | Cross-repo code search - **≠** github issue tracker |
+| code_intelligence | github_code | **Planned (optional, post–first wave)** | GitHub code search API - only if product requires |
 
 ### Planned provider scope (first wave)
 
@@ -1070,7 +1070,7 @@ Existing **194** manifests remain valid; metadata backfill is optional per provi
 - Repo allowlist; read-only contract; health probe
 - Mock GraphQL/API tests; no-token-logging test
 
-### Planned Tier-3 presets (INT-P8.9 — not in presets.py yet)
+### Planned Tier-3 presets (INT-P8.9 - not in presets.py yet)
 
 | Preset | Key slugs |
 |--------|-----------|
@@ -1095,7 +1095,7 @@ Do **not** add under INT-P8: new LLM/vector/observability/browser vendors; PM Sa
 4. Add an entry to `scripts/docs/generate_integration_usage_docs.py` and run the generator (English `USAGE.md`).
 5. Update this catalog and the implementation plan tracker.
 
-Delivery checklist: [plan/INTEGRATIONS.md) — Phase M.4 workflow.
+Delivery checklist: [plan/INTEGRATIONS.md) - Phase M.4 workflow.
 
 ---
 
@@ -1107,7 +1107,7 @@ Integration catalog regression:
 uv run pytest tests/unit/integrations/ -q
 ```
 
-Vendor SDK boundary (CI + local gate — integrations, rag, agents):
+Vendor SDK boundary (CI + local gate - integrations, rag, agents):
 
 ```bash
 uv run python scripts/maintenance/check_integration_vendor_imports.py

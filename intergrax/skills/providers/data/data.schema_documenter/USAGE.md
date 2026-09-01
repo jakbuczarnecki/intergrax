@@ -28,4 +28,4 @@ Governed access to: `database.describe_schema`, `records.describe_collection`, `
 
 ## Related skills
 
-- Other `data` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `data` bundle skills - see bundle [USAGE.md](../USAGE.md)

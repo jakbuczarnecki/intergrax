@@ -1,4 +1,4 @@
-# Audit result — `CONTEXT_ENGINEERING`
+# Audit result - `CONTEXT_ENGINEERING`
 
 **Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
@@ -32,10 +32,10 @@ uv run pytest tests/unit/runtime/nexus/context/ -m gate -q
 
 ## Backlog P2–P4 (deferred)
 
-- OTel SDK wiring — P2
-- CE-9.5 cost attribution — P2
-- CE-10.4 preset baselines — P3
-- GAP-CTX-12 AHI adaptive ranking — P4
+- OTel SDK wiring - P2
+- CE-9.5 cost attribution - P2
+- CE-10.4 preset baselines - P3
+- GAP-CTX-12 AHI adaptive ranking - P4
 
 ---
 

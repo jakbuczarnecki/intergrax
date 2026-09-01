@@ -26,6 +26,6 @@ Governed access to: `rag.ingest_document`.
 
 ## Related skills
 
-- `local.workspace.search` — retrieve indexed evidence
-- `local.workspace.synthesize` — draft from retrieved evidence
-- Other `local` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- `local.workspace.search` - retrieve indexed evidence
+- `local.workspace.synthesize` - draft from retrieved evidence
+- Other `local` bundle skills - see bundle [USAGE.md](../USAGE.md)

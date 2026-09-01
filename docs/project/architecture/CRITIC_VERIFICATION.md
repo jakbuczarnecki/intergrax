@@ -1,19 +1,19 @@
 # Critic & Verification
 
 > [!CAUTION]
-> **CURRENT IMPLEMENTATION SNAPSHOT — NOT TARGET CANON**
+> **CURRENT IMPLEMENTATION SNAPSHOT - NOT TARGET CANON**
 >
 > This document describes the **shipped Critic / CVL production path** (`CriticOrchestrator`, L0/L1/L2). It is **superseded for architecture** by the frozen **Decision System** target:
 >
-> - [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) — lifecycle, authoritative semantics, platform boundaries
-> - [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) — compositional Verification Pipeline
-> - [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) — Decision Strategies / Council
+> - [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) - lifecycle, authoritative semantics, platform boundaries
+> - [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) - compositional Verification Pipeline
+> - [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) - Decision Strategies / Council
 >
 > **Physical DELETE** of this document and `intergrax/runtime/critic/**` is planned in the **Critic clean-cut migration slice** ([`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) §DS-MIG). Do not treat CVL and Decision System as parallel equals.
 
 **Intergrax Critic & Verification** is the governed correctness layer that composes deterministic, semantic, and authoritative checks into a typed verdict before the runtime accepts or recovers from an agent result.
 
-The Critic answers **„czy wynik jest poprawny?”** — structurally, procedurally, and (when configured) semantically. It is **not** a synonym for „drugi LLM”: a critic may be a schema validator, rule engine, semantic judge, trajectory scorer, or human authority.
+The Critic answers **„czy wynik jest poprawny?”** - structurally, procedurally, and (when configured) semantically. It is **not** a synonym for „drugi LLM”: a critic may be a schema validator, rule engine, semantic judge, trajectory scorer, or human authority.
 
 > [!NOTE]
 > **Maturity boundary:** Core CVL contracts, `CriticOrchestrator`, L0/L1/L2 composition, `eval.judge`, heuristic `eval.trajectory`, evaluator-loop routing, and graph wiring are **implemented** on the Nexus harness path. Production-grade semantic-judge calibration, durable L2 operator service, LLM trajectory judge in the default runtime path, and OECP code phases are **not** claimed. See [Current maturity](#current-maturity).
@@ -47,21 +47,21 @@ CVL provides **typed primitives, orchestration, telemetry, and policy gates** so
 | Concern | Summary |
 | -------- | -------- |
 | **Verification question** | Is this partial or final output correct? |
-| **L0** | Deterministic — schema, rules, contracts, tests (`NexusValidationEngine`) |
-| **L1** | Probabilistic semantic — `eval.judge`; heuristic process — `eval.trajectory` (profile-controlled) |
-| **L2** | Authoritative — human/compliance gate via `ESCALATE_HITL` (profile-controlled) |
-| **Orchestrator** | `CriticOrchestrator` — L0 → optional L1 → optional L2 with short-circuit |
-| **Verdict** | `CriticVerdict` — `passed`, per-layer `LayerVerdict`, `recommended_action`, `failure_reasons` |
-| **Producer / critic separation** | Canon requires distinct judge LLM; wired when `critic_llm_profile` is set — not runtime-rejected if unset |
+| **L0** | Deterministic - schema, rules, contracts, tests (`NexusValidationEngine`) |
+| **L1** | Probabilistic semantic - `eval.judge`; heuristic process - `eval.trajectory` (profile-controlled) |
+| **L2** | Authoritative - human/compliance gate via `ESCALATE_HITL` (profile-controlled) |
+| **Orchestrator** | `CriticOrchestrator` - L0 → optional L1 → optional L2 with short-circuit |
+| **Verdict** | `CriticVerdict` - `passed`, per-layer `LayerVerdict`, `recommended_action`, `failure_reasons` |
+| **Producer / critic separation** | Canon requires distinct judge LLM; wired when `critic_llm_profile` is set - not runtime-rejected if unset |
 | **Activation** | `CriticProfile` (per-run) + `EvaluationProfile` (offline/registry/shadow) |
-| **Evaluator loop** | `EvaluatorLoopExecutor` — bounded critique→revise routing, not global retry |
+| **Evaluator loop** | `EvaluatorLoopExecutor` - bounded critique→revise routing, not global retry |
 | **Trajectory** | `eval.trajectory` shipped (heuristic); `eval.trajectory_judge` skill-only / backlog |
 | **Runtime vs offline** | Graph CVL affects active run; `NexusEvalRunner` / shadow / CI gates do not |
 | **OECP boundary** | CVL emits per-run verdicts; OECP cross-run measurement is **target** ([`OBSERVABILITY.md`](OBSERVABILITY.md)) |
 | **Reliability boundary** | Critic emits verdict; Reliability chooses accept / revise / retry / HITL / fail |
 | **Governance boundary** | Authorization ≠ correctness; passing critic does not authorize forbidden side effects |
-| **Observability boundary** | `CriticTraceEmitter` records `critic.*` steps when wired — not every path emits `RuntimeEvent` |
-| **Maturity** | **A4 / I4 / P2 / E3** — see [Current maturity](#current-maturity) |
+| **Observability boundary** | `CriticTraceEmitter` records `critic.*` steps when wired - not every path emits `RuntimeEvent` |
+| **Maturity** | **A4 / I4 / P2 / E3** - see [Current maturity](#current-maturity) |
 
 ---
 
@@ -107,12 +107,12 @@ Reliability
 
 ## How verification works
 
-1. **Candidate produced** — agent node, graph finalization, UAEP step, or offline eval case yields output to verify.
-2. **L0 always first when enabled** — `CriticOrchestrator` runs `L0Gateway` → `NexusValidationEngine` (and optional guardrail merge). Hard fail short-circuits before L1.
-3. **Optional L1** — when `CriticProfile.semantic_judge_enabled` / `trajectory_eval_enabled`, `L1Gateway` invokes `eval.judge` and/or `eval.trajectory` through Tier-0 `ToolRuntime` — never direct vendor SDK bypass on the wired path.
-4. **Optional L2** — when `l2_human_required`, `L2Gateway` returns a pending authoritative verdict mapped to `ESCALATE_HITL` (does not block synchronously on human input).
-5. **Combined verdict** — `CriticVerdict` with per-layer results and `recommended_action` hint.
-6. **Recovery is downstream** — Reliability / graph executor / policy engine respond; CVL does not own unbounded retry.
+1. **Candidate produced** - agent node, graph finalization, UAEP step, or offline eval case yields output to verify.
+2. **L0 always first when enabled** - `CriticOrchestrator` runs `L0Gateway` → `NexusValidationEngine` (and optional guardrail merge). Hard fail short-circuits before L1.
+3. **Optional L1** - when `CriticProfile.semantic_judge_enabled` / `trajectory_eval_enabled`, `L1Gateway` invokes `eval.judge` and/or `eval.trajectory` through Tier-0 `ToolRuntime` - never direct vendor SDK bypass on the wired path.
+4. **Optional L2** - when `l2_human_required`, `L2Gateway` returns a pending authoritative verdict mapped to `ESCALATE_HITL` (does not block synchronously on human input).
+5. **Combined verdict** - `CriticVerdict` with per-layer results and `recommended_action` hint.
+6. **Recovery is downstream** - Reliability / graph executor / policy engine respond; CVL does not own unbounded retry.
 
 ```mermaid
 flowchart TB
@@ -142,7 +142,7 @@ Not every run enables all layers. Default graph wiring includes L0 when critic s
 | Domain | Owns | Does not own |
 | ------ | ---- | ------------ |
 | **Critic / CVL** | Correctness verdict, layer orchestration, critic trace steps | Global retry/recovery, authorization, cross-run regression store |
-| **Reliability** | Response to verdict — retry, revise route, HITL, fail | Whether output is correct |
+| **Reliability** | Response to verdict - retry, revise route, HITL, fail | Whether output is correct |
 | **Governance** | Authorization for consequential actions | Correctness of agent output |
 | **Observability / HOS** | Canonical evidence visibility, trace/journal | Critic rubric content |
 | **OECP** | Cross-run evaluation / regression / release evidence (**target**) | Per-run critic orchestration |
@@ -186,7 +186,7 @@ CVL ≠ OECP.
 | Neighbor | Relationship |
 | -------- | ------------- |
 | [**Reliability**](RELIABILITY_FAILURE_AND_HITL.md) | Consumes critic fail / quality signals; owns bounded recovery |
-| [**Governed Execution**](GOVERNED_EXECUTION.md) | `RuntimePolicyEngine.evaluate_critic_verdict` — DENY when completion critic required and failed |
+| [**Governed Execution**](GOVERNED_EXECUTION.md) | `RuntimePolicyEngine.evaluate_critic_verdict` - DENY when completion critic required and failed |
 | [**Observability**](OBSERVABILITY.md) | `CriticTraceEmitter` → trace steps / optional `RuntimeEvent` bridge; OECP consumes HOS |
 | [**Nexus Execution Flow**](NEXUS_EXECUTION_FLOW.md) | Graph partial/final validation hooks; profile-driven semantic completion |
 | [**Unified Execution Runtime**](UNIFIED_EXECUTION_RUNTIME.md) | Host profiles supply `CriticProfile` / `EvaluationProfile` |
@@ -215,7 +215,7 @@ CVL ≠ OECP.
 | Persistence | Emits through HOS / trace; optional registry observations | Evidence Ledger + Eval Registry v2 (**planned**) |
 | Gating | L0/L1/L2 within a run | Trace completeness, regression gates across runs (**target**) |
 
-CVL **emits** verdicts and observations. OECP **will** store, compare, and gate across runs — it does **not** replace critic orchestration today.
+CVL **emits** verdicts and observations. OECP **will** store, compare, and gate across runs - it does **not** replace critic orchestration today.
 
 ---
 
@@ -249,7 +249,7 @@ Aligned with [MATURITY_TAXONOMY.md](../technical/guides/MATURITY_TAXONOMY.md):
 | **Architecture** | This hub · [`satellites/CRITIC_VERIFICATION_extended_depth.md`](satellites/CRITIC_VERIFICATION_extended_depth.md) |
 | **Unit / gate** | `tests/unit/runtime/critic/` · `tests/unit/tools/providers/eval/` |
 | **Integration** | `tests/unit/runtime/critic/test_critic_graph_wiring.py` · `tests/integration/eval/test_nexus_eval_runner.py` |
-| **Public proof** | No dedicated CVL row in [`PROOFS.md`](../proofs/PROOFS.md) — bounded eval paths only |
+| **Public proof** | No dedicated CVL row in [`PROOFS.md`](../proofs/PROOFS.md) - bounded eval paths only |
 | **Production / customer** | Not claimed |
 
 ---
@@ -272,9 +272,9 @@ Aligned with [MATURITY_TAXONOMY.md](../technical/guides/MATURITY_TAXONOMY.md):
 
 ### 1. Purpose
 
-Define the **Critic & Verification Layer (CVL)** — the Harness AI subsystem that answers:
+Define the **Critic & Verification Layer (CVL)** - the Harness AI subsystem that answers:
 
-> **Is this partial or final agent output actually correct — structurally, procedurally, and (when configured) semantically?**
+> **Is this partial or final agent output actually correct - structurally, procedurally, and (when configured) semantically?**
 
 CVL completes the **Plan → Execute → Verify (PEV)** loop. It **does not** embed domain business rules in Nexus. It provides **typed primitives, orchestration hooks, telemetry, and policy gates** so agents and applications compose domain-specific critics safely.
 
@@ -282,18 +282,18 @@ CVL completes the **Plan → Execute → Verify (PEV)** loop. It **does not** em
 
 ---
 
-### 2. Problem statement (pre-CRIT-V gaps — closed)
+### 2. Problem statement (pre-CRIT-V gaps - closed)
 
 | Gap (pre-CRIT-V) | Status |
 | ------------------ | ------ |
-| No universal semantic judge primitive (`eval.judge`) | **Done** — `tools/providers/eval/judge.py` + `L1Gateway` |
-| No trajectory evaluation contract | **Done** — `eval.trajectory` (heuristic process scoring) |
-| Evaluator-loop catalog only | **Done** — `EvaluatorLoopExecutor` + graph wiring |
-| `NexusEvalRunner` exact-match only | **Done** — optional `semantic_match_enabled` + `eval.judge` |
-| L0→L1→L2 stack not explicit | **Done** — `CriticOrchestrator` |
-| Evaluation layer maturity L2 only | **Done** — CRIT-V uplift |
+| No universal semantic judge primitive (`eval.judge`) | **Done** - `tools/providers/eval/judge.py` + `L1Gateway` |
+| No trajectory evaluation contract | **Done** - `eval.trajectory` (heuristic process scoring) |
+| Evaluator-loop catalog only | **Done** - `EvaluatorLoopExecutor` + graph wiring |
+| `NexusEvalRunner` exact-match only | **Done** - optional `semantic_match_enabled` + `eval.judge` |
+| L0→L1→L2 stack not explicit | **Done** - `CriticOrchestrator` |
+| Evaluation layer maturity L2 only | **Done** - CRIT-V uplift |
 
-**Remaining depth (non-blocking):** L4 adaptive critic thresholds (AHIA), LLM trajectory judge in default runtime path (`eval.trajectory_judge` skill), FLOW-8 product reference host — plan backlog §CVL-Backlog.
+**Remaining depth (non-blocking):** L4 adaptive critic thresholds (AHIA), LLM trajectory judge in default runtime path (`eval.trajectory_judge` skill), FLOW-8 product reference host - plan backlog §CVL-Backlog.
 
 ---
 
@@ -303,27 +303,27 @@ CVL completes the **Plan → Execute → Verify (PEV)** loop. It **does not** em
 | ---- | -------------------- |
 | **Critic** | Any component that produces a scored verdict on output or trajectory |
 | **Verification** | Harness-orchestrated application of critics with policy consequences |
-| **L0 critic** | Deterministic — schema, rules, contract, executable tests |
-| **L1 critic** | Probabilistic semantic — LLM-as-judge, trajectory heuristic, ValidatorAgent |
-| **L2 critic** | Authoritative — human expert, compliance sign-off, audit gate |
+| **L0 critic** | Deterministic - schema, rules, contract, executable tests |
+| **L1 critic** | Probabilistic semantic - LLM-as-judge, trajectory heuristic, ValidatorAgent |
+| **L2 critic** | Authoritative - human expert, compliance sign-off, audit gate |
 | **Partial verification** | After a graph node, subtask, or UAEP step milestone |
 | **Final verification** | Before task terminal state (`COMPLETED`, `PARTIALLY_COMPLETED`) |
 | **Evaluator-loop** | Multi-iteration critique→revise pattern until pass or budget exhausted |
-| **CVL** | Critic & Verification Layer — platform subsystem (this document) |
+| **CVL** | Critic & Verification Layer - platform subsystem (this document) |
 
-**Not CVL:** Adaptive profile promotion (`VerificationLoop` in `runtime/adaptive`) — complementary; consumes CVL/registry signals but serves L4 adaptation, not per-run correctness.
+**Not CVL:** Adaptive profile promotion (`VerificationLoop` in `runtime/adaptive`) - complementary; consumes CVL/registry signals but serves L4 adaptation, not per-run correctness.
 
 ---
 
 ### 4. Design principles
 
-1. **Reuse before create** — extend `NexusValidationEngine`, `ValidationResult`, `OnlineEvaluationRegistry`, `EvaluationProfile`, `ReplayEngine`; no parallel eval store.
-2. **L0 before L1** — when both are enabled, `CriticOrchestrator` runs L0 first and short-circuits on hard failure. Vendor **llm_guardrail** scans compose into L0 via `merge_guardrail_l0` when `guardrail_scan` is present in critic context ([`INTEGRATIONS.md`](INTEGRATIONS.md)).
-3. **Judge separation** — critic LLM profile **should** differ from producer agent profile (`critic_llm_profile` / `critic_llm_profile_ref`). Wired via `resolve_critic_llm_adapter`; falls back to producer adapter when unset.
-4. **Opt-in by policy** — LLM-judge never mandatory on every run; `CriticProfile` + `EvaluationProfile` control activation.
-5. **Trace when wired** — `CriticTraceEmitter` emits `critic.*` steps to trace writer and optionally `RuntimeEventBus`.
-6. **Tier discipline** — Nexus orchestrates; Tier-2 supplies rubrics and ValidatorAgents; Tier-3 selects profiles and datasets.
-7. **Fail closed on high risk** — when `require_critic_on_completion` is set and critic unavailable or failed → validation blocked / policy DENY, not silent pass.
+1. **Reuse before create** - extend `NexusValidationEngine`, `ValidationResult`, `OnlineEvaluationRegistry`, `EvaluationProfile`, `ReplayEngine`; no parallel eval store.
+2. **L0 before L1** - when both are enabled, `CriticOrchestrator` runs L0 first and short-circuits on hard failure. Vendor **llm_guardrail** scans compose into L0 via `merge_guardrail_l0` when `guardrail_scan` is present in critic context ([`INTEGRATIONS.md`](INTEGRATIONS.md)).
+3. **Judge separation** - critic LLM profile **should** differ from producer agent profile (`critic_llm_profile` / `critic_llm_profile_ref`). Wired via `resolve_critic_llm_adapter`; falls back to producer adapter when unset.
+4. **Opt-in by policy** - LLM-judge never mandatory on every run; `CriticProfile` + `EvaluationProfile` control activation.
+5. **Trace when wired** - `CriticTraceEmitter` emits `critic.*` steps to trace writer and optionally `RuntimeEventBus`.
+6. **Tier discipline** - Nexus orchestrates; Tier-2 supplies rubrics and ValidatorAgents; Tier-3 selects profiles and datasets.
+7. **Fail closed on high risk** - when `require_critic_on_completion` is set and critic unavailable or failed → validation blocked / policy DENY, not silent pass.
 
 ---
 
@@ -333,16 +333,16 @@ CVL completes the **Plan → Execute → Verify (PEV)** loop. It **does not** em
 
 | Concern | Tier-0 Platform | Tier-1 Nexus / CVL | Tier-2 Agent | Tier-3 Application |
 | ------- | --------------- | ------------------ | ------------ | ------------------- |
-| `ValidationResult` contract | defines | consumes | extends via `validate()` | — |
+| `ValidationResult` contract | defines | consumes | extends via `validate()` | - |
 | Structural validation (L0) | rules engine | `NexusValidationEngine` via `L0Gateway` | `AgentContract.validation_rules` | `NexusPlan.validation_criteria` |
 | Semantic judge primitive (L1) | `eval.judge` tool, rubric schema | `CriticOrchestrator` / `L1Gateway` | rubric content, ValidatorAgent | enable + thresholds |
 | Trajectory evaluation (L1) | `eval.trajectory` tool | hook after step/graph | domain step expectations | scenario definitions |
 | Evaluator-loop execution | pattern + budget types | `EvaluatorLoopExecutor` | revise logic in worker agent | graph_spec nodes |
-| Registry & trends | `OnlineEvaluationRegistry` | post-run bridge | — | `EvaluationProfile`, CI baselines |
-| Release / adaptive gates | closeout scripts | `VerificationLoop` (L4) | — | `require_baseline_for_release` |
+| Registry & trends | `OnlineEvaluationRegistry` | post-run bridge | - | `EvaluationProfile`, CI baselines |
+| Release / adaptive gates | closeout scripts | `VerificationLoop` (L4) | - | `require_baseline_for_release` |
 | HITL escalation (L2) | policy primitives | `L2Gateway` → `ESCALATE_HITL` | interrupt reasons | approval policy |
 | Golden datasets | runner contracts | `NexusEvalRunner` | eval cases | asset paths |
-| Domain correctness | — | — | **primary owner** | orchestration + policy |
+| Domain correctness | - | - | **primary owner** | orchestration + policy |
 
 #### 5.2 What Harness MUST NOT do
 
@@ -363,14 +363,14 @@ CVL completes the **Plan → Execute → Verify (PEV)** loop. It **does not** em
 
 | Layer | Mechanism | Typical latency | When required |
 | ----- | --------- | --------------- | ------------- |
-| **L0 — Deterministic** | `NexusValidationEngine`, schema, `Agent.validate()`, exec tests, guardrail merge | ms | Default when critic scopes enabled |
-| **L1 — Semantic** | `eval.judge` via `L1Gateway` | seconds | `CriticProfile.semantic_judge_enabled` |
-| **L1 — Trajectory** | `eval.trajectory` (heuristic trace scoring) | seconds | `CriticProfile.trajectory_eval_enabled` (final scope) |
-| **L2 — Authoritative** | `L2Gateway` → `ESCALATE_HITL` | minutes–hours | `l2_human_required` or borderline L1 + policy |
+| **L0 - Deterministic** | `NexusValidationEngine`, schema, `Agent.validate()`, exec tests, guardrail merge | ms | Default when critic scopes enabled |
+| **L1 - Semantic** | `eval.judge` via `L1Gateway` | seconds | `CriticProfile.semantic_judge_enabled` |
+| **L1 - Trajectory** | `eval.trajectory` (heuristic trace scoring) | seconds | `CriticProfile.trajectory_eval_enabled` (final scope) |
+| **L2 - Authoritative** | `L2Gateway` → `ESCALATE_HITL` | minutes–hours | `l2_human_required` or borderline L1 + policy |
 
 **Combined verdict (as implemented):** orchestrator short-circuits on first failing enabled layer; `CriticVerdict.passed` reflects whether all **enabled** layers passed.
 
-**`NexusValidationEngine` relationship:** remains the structural/deterministic validator. CVL **composes** it through `L0Gateway` — CVL does not replace core Nexus validation.
+**`NexusValidationEngine` relationship:** remains the structural/deterministic validator. CVL **composes** it through `L0Gateway` - CVL does not replace core Nexus validation.
 
 ---
 
@@ -388,7 +388,7 @@ CriticRequest
 ```
 
 - Short-circuits on first layer failure.
-- Never calls LLM directly — L1 delegates to Tier-0 tools.
+- Never calls LLM directly - L1 delegates to Tier-0 tools.
 - UAEP and offline-case scopes use the same orchestrator with different `CriticScope`.
 - Standalone `NexusValidationEngine` calls outside CVL may still exist; they compose into L0 when CVL is active.
 
@@ -398,16 +398,16 @@ CriticRequest
 | ----- | --------- |
 | `scope` | `node_partial`, `graph_final`, `uaep_step`, `offline_case` |
 | `passed` | All enabled layers passed |
-| `layers` | Per-layer `LayerVerdict` — `layer`, `passed`, `score`, `errors`, `warnings` |
-| `recommended_action` | `continue`, `retry`, `revise`, `escalate_hitl`, `fail` — hint for downstream routing |
+| `layers` | Per-layer `LayerVerdict` - `layer`, `passed`, `score`, `errors`, `warnings` |
+| `recommended_action` | `continue`, `retry`, `revise`, `escalate_hitl`, `fail` - hint for downstream routing |
 | `failure_reasons` | Aggregated error strings |
 
 #### 7.3 `CriticProfile` vs `EvaluationProfile`
 
 | Profile | Role |
 | ------- | ---- |
-| **`CriticProfile`** | Current-run verification posture — scopes, L1/L2 flags, thresholds, `require_critic_on_completion`, `evaluator_loop_max_iterations`, `critic_llm_profile_ref` |
-| **`EvaluationProfile`** | Offline/registry/shadow posture — `shadow_eval_enabled`, `online_registry_enabled`, `offline_eval_runner_enabled`, `require_baseline_for_release` |
+| **`CriticProfile`** | Current-run verification posture - scopes, L1/L2 flags, thresholds, `require_critic_on_completion`, `evaluator_loop_max_iterations`, `critic_llm_profile_ref` |
+| **`EvaluationProfile`** | Offline/registry/shadow posture - `shadow_eval_enabled`, `online_registry_enabled`, `offline_eval_runner_enabled`, `require_baseline_for_release` |
 
 #### 7.4 `eval.judge`
 
@@ -417,7 +417,7 @@ candidate output + RubricSpec
   → structured score / passed / reasons
 ```
 
-- Input: `EvalJudgeInput` — `output_text`, `rubric_id`, `criteria`, `min_score`, optional `reference_context`.
+- Input: `EvalJudgeInput` - `output_text`, `rubric_id`, `criteria`, `min_score`, optional `reference_context`.
 - Uses `LLMAdapter` from critic tool wiring context (`build_critic_tool_wiring_context`).
 - Optional observation append to `OnlineEvaluationRegistry` via `eval.record_observation`.
 
@@ -428,7 +428,7 @@ producer profile ≠ critic profile   (canon + recommended wiring)
 ```
 
 - `resolve_critic_llm_adapter` prefers `CriticProfile.critic_llm_profile` when set.
-- When unset, judge uses producer adapter — **not** runtime-rejected.
+- When unset, judge uses producer adapter - **not** runtime-rejected.
 - Assembly validation (`validate_critic_wiring`) checks wiring consistency, not model identity inequality.
 
 #### 7.6 `require_critic_on_completion`
@@ -459,14 +459,14 @@ Reliability retry      → recover execution after failure/verdict
 
 | Symbol | State |
 | ------ | ----- |
-| **`eval.trajectory`** | **Shipped** — heuristic scoring from run trace (tool errors, denials, duplicate patterns) |
-| **`eval.trajectory_judge`** | **Skill-only / documented** — `trajectory_judge_skill_id(use_judge=True)`; not default runtime path (CVL-BACKLOG-01) |
+| **`eval.trajectory`** | **Shipped** - heuristic scoring from run trace (tool errors, denials, duplicate patterns) |
+| **`eval.trajectory_judge`** | **Skill-only / documented** - `trajectory_judge_skill_id(use_judge=True)`; not default runtime path (CVL-BACKLOG-01) |
 
 Do not describe `eval.trajectory` as an LLM trajectory judge.
 
 #### 7.9 `ValidatorAgent`
 
-Tier-2 semantic critic option — domain-authored rubric and validation logic. Platform supplies orchestration hooks; it does not embed business-domain rubric content.
+Tier-2 semantic critic option - domain-authored rubric and validation logic. Platform supplies orchestration hooks; it does not embed business-domain rubric content.
 
 ---
 
@@ -476,8 +476,8 @@ Tier-2 semantic critic option — domain-authored rubric and validation logic. P
 
 Append-only store for harness online/shadow observations:
 
-- `InMemoryOnlineEvaluationRegistry` — tests
-- `FileOnlineEvaluationRegistry` — `build/architecture_hardening/online_evaluation_observations.json`
+- `InMemoryOnlineEvaluationRegistry` - tests
+- `FileOnlineEvaluationRegistry` - `build/architecture_hardening/online_evaluation_observations.json`
 
 **Not** the OECP Evidence Ledger. Feeds trend comparison and automated eval reports.
 
@@ -487,11 +487,11 @@ Offline benchmark runner via `NexusLoop` + `UnifiedTaskRunner`. Optional `semant
 
 #### 8.3 Human review sample queue
 
-`HumanReviewSampleQueue` — **in-process FIFO** for evaluation/shadow sampling workflows (`AUDIT-IDEAL-25.2`). **Not** runtime HITL that gates the current run.
+`HumanReviewSampleQueue` - **in-process FIFO** for evaluation/shadow sampling workflows (`AUDIT-IDEAL-25.2`). **Not** runtime HITL that gates the current run.
 
 #### 8.4 Context / RAG release gate
 
-`check_product_release_eval_gate.py` — **CI / release evidence** gate running context golden + eval scenario checks (`AUDIT-IDEAL-25.3`). Classify as offline/release evaluation, not per-run CVL.
+`check_product_release_eval_gate.py` - **CI / release evidence** gate running context golden + eval scenario checks (`AUDIT-IDEAL-25.3`). Classify as offline/release evaluation, not per-run CVL.
 
 ---
 
@@ -535,50 +535,50 @@ Anchor for cross-doc links (e.g. [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLO
 
 ## Protocol v2 Critic verification target invariants (2026-08-18)
 
-Accepted Protocol v2 audit layer [`CRITIC_VERIFICATION`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md) (**FAIL**, 6 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — **not implemented**:
+Accepted Protocol v2 audit layer [`CRITIC_VERIFICATION`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md) (**FAIL**, 6 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only - **not implemented**:
 
-**Finding 01 — rubric authority**
+**Finding 01 - rubric authority**
 
 1. Named rubric references are **executable configuration**, not labels ([`AUDIT-20260818-CRITIC_VERIFICATION-01`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
 2. A configured rubric reference must resolve before L1 to stable/versioned rubric identity, criteria, optional reference context, and provenance/version evidence ([`AUDIT-20260818-CRITIC_VERIFICATION-01`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
-3. Unresolvable configured rubric → **fail closed** — do not substitute generic criteria silently ([`AUDIT-20260818-CRITIC_VERIFICATION-01`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
-4. Reuse existing prompt/rubric registry authority if present — **do not** build a second domain rule engine ([`AUDIT-20260818-CRITIC_VERIFICATION-01`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+3. Unresolvable configured rubric → **fail closed** - do not substitute generic criteria silently ([`AUDIT-20260818-CRITIC_VERIFICATION-01`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+4. Reuse existing prompt/rubric registry authority if present - **do not** build a second domain rule engine ([`AUDIT-20260818-CRITIC_VERIFICATION-01`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
 
-**Finding 02 — judge independence**
+**Finding 02 - judge independence**
 
 5. Distinguish explicitly between **self-judge** (non-independent) and **independent judge** modes ([`AUDIT-20260818-CRITIC_VERIFICATION-02`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
 6. When a verification profile claims independent semantic verification, effective producer and critic execution identities must satisfy a versioned independence policy (dedicated profile, model/model-family, provider, or other qualification) and be **provable** at runtime ([`AUDIT-20260818-CRITIC_VERIFICATION-02`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
-7. Self-judge may be allowed for low-assurance mode but must be labeled non-independent — never presented as independent verification ([`AUDIT-20260818-CRITIC_VERIFICATION-02`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+7. Self-judge may be allowed for low-assurance mode but must be labeled non-independent - never presented as independent verification ([`AUDIT-20260818-CRITIC_VERIFICATION-02`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
 8. Do **not** hard-code one vendor ([`AUDIT-20260818-CRITIC_VERIFICATION-02`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
 
-**Finding 03 — adversarial semantic verification**
+**Finding 03 - adversarial semantic verification**
 
 9. Candidate output is **untrusted evidence**, never judge instruction authority ([`AUDIT-20260818-CRITIC_VERIFICATION-03`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
 10. Judge construction must structurally separate trusted verification instructions/rubric from untrusted candidate material ([`AUDIT-20260818-CRITIC_VERIFICATION-03`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
 11. Adversarial verification tests for instruction-bearing candidate output are required ([`AUDIT-20260818-CRITIC_VERIFICATION-03`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
-12. High-assurance correctness must not depend solely on a manipulable LLM score — compose deterministic/authoritative evidence according to profile ([`AUDIT-20260818-CRITIC_VERIFICATION-03`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+12. High-assurance correctness must not depend solely on a manipulable LLM score - compose deterministic/authoritative evidence according to profile ([`AUDIT-20260818-CRITIC_VERIFICATION-03`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
 13. Do **not** create a second LLM adapter path ([`AUDIT-20260818-CRITIC_VERIFICATION-03`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
 
-**Finding 04 — execution identity**
+**Finding 04 - execution identity**
 
-14. Critic tenant/task/run/attempt scope derives from **trusted canonical execution identity** — not arbitrary `dict[str, Any]` context ([`AUDIT-20260818-CRITIC_VERIFICATION-04`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+14. Critic tenant/task/run/attempt scope derives from **trusted canonical execution identity** - not arbitrary `dict[str, Any]` context ([`AUDIT-20260818-CRITIC_VERIFICATION-04`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
 15. No `"default"` tenant fallback for runtime trajectory verification ([`AUDIT-20260818-CRITIC_VERIFICATION-04`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
 16. Missing tenant authority for tenant-scoped trajectory read → **fail closed** ([`AUDIT-20260818-CRITIC_VERIFICATION-04`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
 17. Reuse existing `TaskId` / `RunId` / `AttemptId` and tenant authority contracts where applicable ([`AUDIT-20260818-CRITIC_VERIFICATION-04`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
 
-**Finding 05 — verdict integrity**
+**Finding 05 - verdict integrity**
 
-18. `CriticVerdict` is **constructionally consistent** — prefer derived state or strict validators ([`AUDIT-20260818-CRITIC_VERIFICATION-05`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
+18. `CriticVerdict` is **constructionally consistent** - prefer derived state or strict validators ([`AUDIT-20260818-CRITIC_VERIFICATION-05`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
 19. Overall pass iff all required executed layers pass ([`AUDIT-20260818-CRITIC_VERIFICATION-05`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
 20. Passing verdict cannot recommend failure/revision/HITL; failure reasons must match failed layers; action semantics coherent with scope/layer failure ([`AUDIT-20260818-CRITIC_VERIFICATION-05`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
 
-**Finding 06 — evaluator loop boundedness**
+**Finding 06 - evaluator loop boundedness**
 
 21. Evaluator-loop boundedness is guaranteed by the **state contract**, not caller discipline ([`AUDIT-20260818-CRITIC_VERIFICATION-06`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
 22. Require non-negative iteration, worker/node identity consistency, no transition past `max_iterations`, explicit exhausted state semantics ([`AUDIT-20260818-CRITIC_VERIFICATION-06`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
 23. Resume/reconstruction cannot reset or expand the iteration budget ([`AUDIT-20260818-CRITIC_VERIFICATION-06`](../../audit_results/2026-08-18/CRITIC_VERIFICATION.md)).
 
-L0 → L1 → L2 model, Critic vs Reliability vs Governance separation, CVL vs OECP separation, historical CRIT-V / CVL-LC delivery facts, conservative A4/I4/P2/E3 honesty, and no claim that remediation is implemented are preserved — remediation of these findings is **PLANNED**, not shipped.
+L0 → L1 → L2 model, Critic vs Reliability vs Governance separation, CVL vs OECP separation, historical CRIT-V / CVL-LC delivery facts, conservative A4/I4/P2/E3 honesty, and no claim that remediation is implemented are preserved - remediation of these findings is **PLANNED**, not shipped.
 
 ---
 
@@ -590,14 +590,14 @@ L0 → L1 → L2 model, Critic vs Reliability vs Governance separation, CVL vs O
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 25 (verify depth)  
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
-**Last updated:** 2026-08-18 — DOC-3R hub modernization; P2-ARCH-08 verification safety boundaries; CRIT-V + CVL-LC slices reconciled
+**Last updated:** 2026-08-18 - DOC-3R hub modernization; P2-ARCH-08 verification safety boundaries; CRIT-V + CVL-LC slices reconciled
 
 ### Cursor read scope (token budget)
 
 **Do not read this entire file in one session.**
 
 - **Implement / audit default:** CVL contracts + orchestrator + wiring (§6–§10). Extended depth: [`satellites/CRITIC_VERIFICATION_extended_depth.md`](satellites/CRITIC_VERIFICATION_extended_depth.md).
-- **Plan hub:** [`maintainers/plans/CRITIC_VERIFICATION.md`](../maintainers/plans/CRITIC_VERIFICATION.md) — scoped §6 / open backlog only.
+- **Plan hub:** [`maintainers/plans/CRITIC_VERIFICATION.md`](../maintainers/plans/CRITIC_VERIFICATION.md) - scoped §6 / open backlog only.
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ### Architecture satellites (read on demand)

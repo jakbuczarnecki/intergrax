@@ -9,9 +9,9 @@ Run the documented OS launcher from the repository root. It performs the
 bounded prerequisite checks, starts or reuses the canonical stack, uploads the
 bundled sample, and proves grounded Ask with a citation.
 
-**Product direction:** provider-neutral frontends (Slack, HTTP, MCP); personal/shared conversation context isolation ([`CONVERSATION_CONTEXT_ARCHITECTURE.md`](docs/CONVERSATION_CONTEXT_ARCHITECTURE.md) — **ACCEPTED**); Ollama/vLLM conversation runtime portability (`LKW-MODEL-RUNTIME-1` — **ACCEPTED**); Google Workspace knowledge architecture frozen (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` — **READY_FOR_REVIEW**, runtime **PLANNED** — starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED**); final live platform proof (`LKW-LIVE-PLATFORM-PROOF-1`). Architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md) (**ACCEPTED**). Last accepted intake: end-to-end `WEB_URL` Knowledge Intake (`1B-5-2`).
+**Product direction:** provider-neutral frontends (Slack, HTTP, MCP); personal/shared conversation context isolation ([`CONVERSATION_CONTEXT_ARCHITECTURE.md`](docs/CONVERSATION_CONTEXT_ARCHITECTURE.md) - **ACCEPTED**); Ollama/vLLM conversation runtime portability (`LKW-MODEL-RUNTIME-1` - **ACCEPTED**); Google Workspace knowledge architecture frozen (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` - **READY_FOR_REVIEW**, runtime **PLANNED** - starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED**); final live platform proof (`LKW-LIVE-PLATFORM-PROOF-1`). Architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md) (**ACCEPTED**). Last accepted intake: end-to-end `WEB_URL` Knowledge Intake (`1B-5-2`).
 
-**“Local”** means user-controlled deployment and configuration (full self-hosted / fully local topology remains first-class). It does **not** mean storage must always reside on a single user device. Storage location is selected by configuration and provider wiring — see [ARCHITECTURE.md — Deployment, storage and tenancy model](docs/ARCHITECTURE.md#deployment-storage-and-tenancy-model).
+**“Local”** means user-controlled deployment and configuration (full self-hosted / fully local topology remains first-class). It does **not** mean storage must always reside on a single user device. Storage location is selected by configuration and provider wiring - see [ARCHITECTURE.md - Deployment, storage and tenancy model](docs/ARCHITECTURE.md#deployment-storage-and-tenancy-model).
 
 **Architecture (canonical):** [ARCHITECTURE.md](docs/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
 **Live verification:** [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md)
@@ -47,7 +47,7 @@ LKW.1 product proof is now passed for the live path:
 index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
 ```
 
-**LKW.2** (graph pipeline + local workspace skills) is **closed — pipeline proof passed**. **LKW.2.1–LKW.2.4C** and closeout smoke verified direct capabilities (`local.workspace.index`, `local.workspace.search`, `local.workspace.synthesize`) and the pipeline capability (`local.workspace.pipeline`: index → search → synthesize → shadow artifact). **Next platform step:** **OBS-EXPORT-5** — remaining vendor adapters (Langfuse/Arize/Phoenix); LKW uses platform observability export wiring only (**INTEGRATIONS-1D**).
+**LKW.2** (graph pipeline + local workspace skills) is **closed - pipeline proof passed**. **LKW.2.1–LKW.2.4C** and closeout smoke verified direct capabilities (`local.workspace.index`, `local.workspace.search`, `local.workspace.synthesize`) and the pipeline capability (`local.workspace.pipeline`: index → search → synthesize → shadow artifact). **Next platform step:** **OBS-EXPORT-5** - remaining vendor adapters (Langfuse/Arize/Phoenix); LKW uses platform observability export wiring only (**INTEGRATIONS-1D**).
 
 A new user should be able to follow [USER_JOURNEY.md](docs/product/USER_JOURNEY.md): clone the repository, configure LKW, start the local backend, index a document, search with evidence, synthesize a draft into the shadow workspace, and inspect the trace/evidence for the run.
 
@@ -70,7 +70,7 @@ In-memory vector storage is only for tests or temporary development. It is not t
 
 ### Supported product quickstart
 
-See [docs/QUICKSTART.md](docs/product/QUICKSTART.md) — one command per OS; managed sample upload; indexed Ask with citation.
+See [docs/QUICKSTART.md](docs/product/QUICKSTART.md) - one command per OS; managed sample upload; indexed Ask with citation.
 
 ### Advanced direct Docker bootstrap
 
@@ -108,7 +108,7 @@ Before indexing real files, set `INTERGRAX_ALLOWED_READ_ROOTS` in `.env` to one 
 Operators may expose safe, preconfigured local-folder Source Candidates without revealing filesystem paths to remote clients:
 
 1. Copy `config/source_candidates.example.json` to `<DATA_HOME>/config/source_candidates.json`.
-2. Set opaque `candidate_id` values (identity only — not derived from path).
+2. Set opaque `candidate_id` values (identity only - not derived from path).
 3. Keep `label` / `description` public-safe; keep `path` host-private and inside the existing read allowlist.
 4. Restart the LKW host after changing the file (configuration is loaded at composition time).
 
@@ -127,10 +127,10 @@ curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
 ## Developer first run (advanced)
 
 This section defines the minimal first-run path for a new developer after LKW.2
-(graph pipeline + local workspace skills are **closed — pipeline proof passed**).
+(graph pipeline + local workspace skills are **closed - pipeline proof passed**).
 
 > **Important:** this is a **local product proof / developer path**, not a production
-> certification. Writes are **shadow writes only** — original source files are
+> certification. Writes are **shadow writes only** - original source files are
 > never modified.
 
 ### Prerequisites
@@ -275,7 +275,7 @@ curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
 | `lkw_evidence.v1` | Search evidence and synthesis diagnostics |
 | `runtime_event_summary.v1` | Redacted runtime events per run |
 | `run_artifact_bundle.v1` | References to shadow artifacts produced |
-| `lkw_proof_summary.v1` | Redacted reviewer-facing proof verdict; built from existing platform/application metadata above — not an observability exporter, not a vendor integration |
+| `lkw_proof_summary.v1` | Redacted reviewer-facing proof verdict; built from existing platform/application metadata above - not an observability exporter, not a vendor integration |
 
 All four platform/application keys plus `lkw_proof_summary.v1` are present in a successful pipeline run.
 
@@ -298,7 +298,7 @@ All four platform/application keys plus `lkw_proof_summary.v1` are present in a 
 
 ## Running the LKW Slack Ask companion
 
-Temporary slice **LKW-SLACK-WORKFLOW-1A**: approved Slack **DM-only** → temporary in-memory personal workspace selection → Ask HTTP → threaded answer. **Slack connected source** (`LKW-SLACK-CONNECTED-SOURCE-1` **IN_PROGRESS / CHANGES_REQUIRED**): HTTP discovery/create/sync scaffold for approved Slack conversations as `PERSONAL_ONLY` indexed sources; `REVIEW-FIX-2` **CHANGES_REQUIRED**, `REVIEW-FIX-3` not accepted — final crash-safe recovery and real indexed Search/Ask proof remain under correction. Durable `PERSONAL_SELECTION`, observed-audience validation, shared-channel Ask, mention activation and Conversation Context Bindings are **not** implemented — see [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](docs/CONVERSATION_CONTEXT_ARCHITECTURE.md).
+Temporary slice **LKW-SLACK-WORKFLOW-1A**: approved Slack **DM-only** → temporary in-memory personal workspace selection → Ask HTTP → threaded answer. **Slack connected source** (`LKW-SLACK-CONNECTED-SOURCE-1` **IN_PROGRESS / CHANGES_REQUIRED**): HTTP discovery/create/sync scaffold for approved Slack conversations as `PERSONAL_ONLY` indexed sources; `REVIEW-FIX-2` **CHANGES_REQUIRED**, `REVIEW-FIX-3` not accepted - final crash-safe recovery and real indexed Search/Ask proof remain under correction. Durable `PERSONAL_SELECTION`, observed-audience validation, shared-channel Ask, mention activation and Conversation Context Bindings are **not** implemented - see [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](docs/CONVERSATION_CONTEXT_ARCHITECTURE.md).
 
 ### Configuration architecture
 
@@ -315,7 +315,7 @@ Both blocks are documented in `applications/local_workspace_application/.env.exa
 |----------|-----------------|
 | `LOCAL_WORKSPACE_SLACK_APPROVED_TEAM_ID` | Slack workspace/team ID (`T…`). Not the workspace display name. Read from a real Slack event or Slack workspace metadata. |
 | `LOCAL_WORKSPACE_SLACK_APPROVED_USER_ID` | Slack human user ID (`U…`). Not email, display name, bot user ID, or channel ID. |
-| `LOCAL_WORKSPACE_SLACK_TENANT_ID` | Same tenant ID used as `X-Tenant-Id` on Managed Workspace HTTP. Must already exist — do not invent it. |
+| `LOCAL_WORKSPACE_SLACK_TENANT_ID` | Same tenant ID used as `X-Tenant-Id` on Managed Workspace HTTP. Must already exist - do not invent it. |
 | `LOCAL_WORKSPACE_SLACK_ACTIVE_WORKSPACE_ID` | Workspace ID returned by Managed Workspace API for that tenant. Must already have synchronized/indexed sources. |
 | `LOCAL_WORKSPACE_SLACK_ASK_BASE_URL` | Base URL of the running LKW host. Canonical local: `http://127.0.0.1:8020/`. |
 
@@ -373,7 +373,7 @@ Next task after this closure: `LKW-SLACK-WORKFLOW-1A-OPERATOR-PREFLIGHT`.
 
 ## MCP
 
-`http://127.0.0.1:8020/mcp` — `list_agents`, `run_agent`, catalog tools.
+`http://127.0.0.1:8020/mcp` - `list_agents`, `run_agent`, catalog tools.
 
 ## Runtime model
 
@@ -381,7 +381,7 @@ Next task after this closure: `LKW-SLACK-WORKFLOW-1A-OPERATOR-PREFLIGHT`.
 
 **Install & data paths:** [ARCHITECTURE.md §7](docs/ARCHITECTURE.md#7-installation-lifecycle-and-on-disk-layout)
 
-**Runtime:** [ARCHITECTURE.md §9](docs/ARCHITECTURE.md#9-local-os-runtime-and-interaction-model) — Slack is **optional** (§9.4).
+**Runtime:** [ARCHITECTURE.md §9](docs/ARCHITECTURE.md#9-local-os-runtime-and-interaction-model) - Slack is **optional** (§9.4).
 
 **Implementation waves:** [ARCHITECTURE.md §15](docs/ARCHITECTURE.md#15-implementation-plan-derivation-canonical) · [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
 
@@ -389,13 +389,13 @@ Next task after this closure: `LKW-SLACK-WORKFLOW-1A-OPERATOR-PREFLIGHT`.
 
 LKW uses the canonical **Integration → Tool → Skill → Agent** model ([ARCHITECTURE.md §8](docs/ARCHITECTURE.md#8-integrations-tools-and-skills)):
 
-- **Integrations:** LKW local product profile — SQLite, Qdrant, Docling, optional Redis, local LLM;
-- **Tools:** `host/tool_wiring.py` — `rag.*`, `document.parse`, `workspace.*`, `memory.*`, `cache.*`;
+- **Integrations:** LKW local product profile - SQLite, Qdrant, Docling, optional Redis, local LLM;
+- **Tools:** `host/tool_wiring.py` - `rag.*`, `document.parse`, `workspace.*`, `memory.*`, `cache.*`;
 - **Skills:** `harness` + `local` bundles (LKW.0, LKW.2.1–LKW.2.3); pipeline capability `local.workspace.pipeline` registered and live proof passed (LKW.2.4A–LKW.2.4C).
 
 ## Observability export (platform opt-in)
 
-LKW uses **platform observability export mechanisms only** — there is no LKW-specific observability exporter, OTLP client, or vendor SDK in the application layer.
+LKW uses **platform observability export mechanisms only** - there is no LKW-specific observability exporter, OTLP client, or vendor SDK in the application layer.
 
 - Export is **disabled by default**; no remote observability export occurs unless explicitly configured.
 - When enabled, pass **`ObservabilityExportOperatorConfig`** to `create_local_workspace_backend_app(observability_export=...)` or compose plugins via **`build_local_workspace_observability_plugins`** at product bootstrap.

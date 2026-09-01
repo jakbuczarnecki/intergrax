@@ -2,7 +2,7 @@
 
 **Status:** `READY_FOR_REVIEW`
 **Task:** `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1`
-**Parent plan:** `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1` — `ACCEPTED / CLOSED`
+**Parent plan:** `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1` - `ACCEPTED / CLOSED`
 **Accepted plan ancestor:** `c21f9a35e1719177b40a1ba33d58baf0e6df41f3`
 **Branch:** `development`
 
@@ -507,7 +507,7 @@ run; item, byte, request, page, and content ceilings constrain each call.
 
 Search/list handlers enforce bounds at the provider boundary. Before invoking
 the provider, the handler must have a finite maximum page count, request count,
-upstream item count, page size, and—where applicable—a fixed validated time
+upstream item count, page size, and-where applicable-a fixed validated time
 window. It must stop on the first bound and mark a valid partial result
 `truncated=True`.
 

@@ -28,4 +28,4 @@ Governed access to: `harness.get_run_cost`, `harness.compare_runs`, `metrics.que
 
 ## Related skills
 
-- Other `harness` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `harness` bundle skills - see bundle [USAGE.md](../USAGE.md)

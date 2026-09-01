@@ -1,4 +1,4 @@
-﻿# Dispute Simulation Workspace (DSW) — Implementation Plan
+﻿# Dispute Simulation Workspace (DSW) - Implementation Plan
 
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15 (do not diverge without updating architecture first)
 
@@ -26,7 +26,7 @@ See architecture §3–§4.
 
 | ID | Title | Depends | Status | Priority |
 |----|-------|---------|--------|----------|
-| DSW.0 | Scaffold + architecture v1 + ADR-001 | — | **Done** | — |
+| DSW.0 | Scaffold + architecture v1 + ADR-001 | - | **Done** | - |
 | DSW.1 | Intake UAEP: validate paths + `rag.ingest_document` per case | DSW.0 | **Active** | Critical |
 | DSW.2 | Graph `dispute.pipeline` (intake→analyze→strategy→scenario) | DSW.1 | Planned | High |
 | DSW.3 | Analyst matrix + strategist brief steps | DSW.1 | Planned | High |
@@ -37,7 +37,7 @@ See architecture §3–§4.
 
 ---
 
-## 2. Active wave — DSW.1
+## 2. Active wave - DSW.1
 
 ### Tasks
 

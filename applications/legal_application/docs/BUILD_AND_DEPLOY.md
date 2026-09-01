@@ -1,4 +1,4 @@
-        # Build & deploy — Intergrax Legal API
+        # Build & deploy - Intergrax Legal API
 
         Tier-3 application package: ``applications/legal_application``. This document is the **operational runbook** for local development, verification, and container deployment.
 
@@ -25,7 +25,7 @@
         cp applications/legal_application/.env.example applications/legal_application/.env
         ```
 
-        Edit ``.env`` (gitignored). Variables use the application prefix **`LEGAL_`** — do not put app secrets only in the repository-root ``.env``.
+        Edit ``.env`` (gitignored). Variables use the application prefix **`LEGAL_`** - do not put app secrets only in the repository-root ``.env``.
 
         | Variable | Default | Role |
         |----------|---------|------|
@@ -42,8 +42,8 @@
         | ``LEGAL_LLM_PROVIDER`` | ``ollama`` | :class:`~intergrax.llm_adapters.contracts.llm_provider.LLMProvider` slug |
         | ``LEGAL_LLM_MODEL`` | (empty) | Optional model/deployment override for :class:`~intergrax.llm_adapters.registry.profile.LLMProfile` |
         | ``INTERGRAX_LLM_METRICS_ENABLED`` | ``false`` | Per-tenant/provider token/latency counters |
-        | ``calls_per_minute`` (in profile options) | — | Optional LLM rate limit per provider |
-        | ``circuit_breaker_threshold`` (in profile options) | — | Optional fail-fast after N errors |
+        | ``calls_per_minute`` (in profile options) | - | Optional LLM rate limit per provider |
+        | ``circuit_breaker_threshold`` (in profile options) | - | Optional fail-fast after N errors |
 
         Metrics HTTP (optional): ``register_llm_metrics_routes(app)`` → ``GET /metrics/llm``. See [architecture/LLM_ADAPTERS.md](../../../docs/project/architecture/LLM_ADAPTERS.md).
 
@@ -123,7 +123,7 @@ Routes are mounted under ``/v1/legal``. See ``serving`` and application README f
 
         Override image tag: ``IMAGE_TAG=my-registry/legal:1.0.0`` (sh) or ``build-docker.bat my-registry/legal:1.0.0`` (bat).
 
-        ### Manual — BuildKit
+        ### Manual - BuildKit
 
         ```bash
         docker buildx build -f applications/legal_application/docker/Dockerfile \
@@ -131,7 +131,7 @@ Routes are mounted under ``/v1/legal``. See ``serving`` and application README f
           -t legal-application .
         ```
 
-        ### Manual — classic Docker
+        ### Manual - classic Docker
 
         ```bash
         cp applications/legal_application/docker/.dockerignore .dockerignore

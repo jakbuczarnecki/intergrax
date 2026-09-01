@@ -25,9 +25,9 @@ Risks without an explicit decision:
 
 ## Decision
 
-1. **Governed Continuation is composition**, not a new runtime — helpers live in `intergrax.contracts.governed_continuation` and map onto existing `ExecutionInterrupt` + `AgentDecision` + HITL evidence refs.
+1. **Governed Continuation is composition**, not a new runtime - helpers live in `intergrax.contracts.governed_continuation` and map onto existing `ExecutionInterrupt` + `AgentDecision` + HITL evidence refs.
 2. Introduce a **generic** `ContinuationReason` (`quote`, `security`, `legal`, `procurement`, `compliance`, `publication`). External Work supplies `QUOTE` only.
-3. Keep **`QuoteAcceptanceEvidence`** as the minimum QUOTE continuation evidence — do not redesign it; expose reason-agnostic `ContinuationEvidenceRefs` that mirror its governance pointers.
+3. Keep **`QuoteAcceptanceEvidence`** as the minimum QUOTE continuation evidence - do not redesign it; expose reason-agnostic `ContinuationEvidenceRefs` that mirror its governance pointers.
 4. Tier-2 may **surface** `GovernedContinuationRequest` and **forward** continuation evidence; it must not decide, authorize, or resume.
 5. Nexus remains the only orchestration runtime; policy and HITL remain the decision owners.
 

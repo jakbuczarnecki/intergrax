@@ -1,4 +1,4 @@
-# Diagnostic Platform Adoption Matrix — DIAG-PLATFORM-A
+# Diagnostic Platform Adoption Matrix - DIAG-PLATFORM-A
 
 **Program:** DIAG-PLATFORM-QUALIFICATION  
 **Branch baseline:** `development` @ `74410b039ab11740abf22003c62e3c0ea9bda829`
@@ -15,7 +15,7 @@
 | ------ | ------- |
 | **NATIVE** | Shared runtime composition; central diagnostics spine wired per profile contract |
 | **CONDITIONAL** | Shared spine; diagnostics or read path depends on runtime prerequisites or profile |
-| **LEGACY** | Manual / local diagnostic composition — migration required |
+| **LEGACY** | Manual / local diagnostic composition - migration required |
 | **BYPASS** | Production-capable surface bypasses shared harness or baseline |
 | **NOT_APPLICABLE** | Lab / synthetic profile with explicit diagnostics-not-required contract |
 | **UNKNOWN** | Not audited |
@@ -97,7 +97,7 @@ Initialized scenario surfaces: NATIVE = 1, LEGACY = 0
 | -------- | ------------- | --------- | ------------ | ---------------- | ------------------ | --------- | ---- | ------ |
 | `ai_incident_investigation` | `build_scenario_runtime_from_environment` via `build_scenario_runtime_composition`; task entry `execute_scenario_task` → `UnifiedTaskRunner` | **Yes** (`ScenarioRuntimeBaseline`) | Yes | Yes (`composition.diagnostic_wiring`) | Yes (shared `DocumentStore`) | `scenario_composition` → `DiagnosticReadService` (composition layer) | `ScenarioRuntimeMode.LAB` | **NATIVE** |
 
-**Design-only scenarios (12):** no `application/` package — adoption **NOT_APPLICABLE** until `IMPLEMENTATION_INITIALIZED`.
+**Design-only scenarios (12):** no `application/` package - adoption **NOT_APPLICABLE** until `IMPLEMENTATION_INITIALIZED`.
 
 **Forbidden-pattern scan (`ai_incident_investigation/application/`):** no local `GraphExecutor`, `DiagnosticOrchestrator`, `ProblemLifecycleEngine`, or manual terminal publishers.
 
@@ -121,10 +121,10 @@ Initialized scenario surfaces: NATIVE = 1, LEGACY = 0
 
 | Question | Answer |
 | -------- | ------ |
-| Can a **production-capable application** start without diagnostics when RuntimeEvent + Problem persistence are part of the production profile? | **NO** — `DiagnosticAssemblyError` fail-closed (`wire_terminal_execution_diagnostics` + `assert_diagnostic_assembly_valid`) |
-| Can a **production-attached scenario** start without diagnostics? | **NO** — `ScenarioRuntimeBuildError` when prerequisites missing |
-| Can a **lab scenario/application** start without diagnostics? | **YES** — explicit `NOT_REQUIRED_UNAVAILABLE` when prerequisites absent and posture not `REQUIRED` |
-| Silent accidental disable in production? | **Blocked** — missing DocumentStore or RuntimeEvents on PRODUCT / `PRODUCTION_ATTACHED` raises |
+| Can a **production-capable application** start without diagnostics when RuntimeEvent + Problem persistence are part of the production profile? | **NO** - `DiagnosticAssemblyError` fail-closed (`wire_terminal_execution_diagnostics` + `assert_diagnostic_assembly_valid`) |
+| Can a **production-attached scenario** start without diagnostics? | **NO** - `ScenarioRuntimeBuildError` when prerequisites missing |
+| Can a **lab scenario/application** start without diagnostics? | **YES** - explicit `NOT_REQUIRED_UNAVAILABLE` when prerequisites absent and posture not `REQUIRED` |
+| Silent accidental disable in production? | **Blocked** - missing DocumentStore or RuntimeEvents on PRODUCT / `PRODUCTION_ATTACHED` raises |
 
 **Semantic split:** production requirement violated → **FAIL CLOSED**; lab capability not requested/unavailable → **allowed** with typed readiness.
 

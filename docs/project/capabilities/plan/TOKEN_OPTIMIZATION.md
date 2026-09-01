@@ -4,7 +4,7 @@ Intergrax framework – proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
 -->
 
-# Token Optimization — Multi-layer Feature Plan
+# Token Optimization - Multi-layer Feature Plan
 
 **Status:** Implemented foundation and execution engine; **TOKEN-10E ACCEPTED / CLOSED**; **TOKEN-10F ACCEPTED / CLOSED**; **TOKEN-10F-EVIDENCE-EXTENSION ACCEPTED / CLOSED**; **TOKEN-10G CLOSED**; **TOKEN-10H CLOSED (NOT QUALIFIED: MODEL_BEHAVIOR_MISMATCH, 14/16, STABLE)**; **TOKEN-10I BLOCKED_HARDWARE_CAPACITY_FINAL**.
 **Feature architecture (1:1):** [`../architecture/TOKEN_OPTIMIZATION.md`](../architecture/TOKEN_OPTIMIZATION.md)  
@@ -63,19 +63,19 @@ This file coordinates cross-layer delivery. Concrete implementation rows must st
 | `TOKEN-6` telemetry and regression gates | `docs/project/maintainers/plans/OBSERVABILITY.md` plus affected domain plans |
 | `TOKEN-7` adaptive optimization | `docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md` |
 
-**LKW proof workload:** LKW is a **later product client and product proof** for Token Optimization — not the owner of Token Optimization mechanisms. The universal platform proof (**TOKEN-10A**–**TOKEN-10G**) must complete before LKW product proof (**LKW-PF6-A**–**C**). Token Optimization is a cross-layer platform capability owned by runtime and domain plans. **LKW-PF6-0** proof design is **Done / Closed** (§LKW-PF6-0 below); **TOKEN-ARCH-0** engine architecture is **Done / Closed**; **TOKEN-1** through **TOKEN-9** are closed per their closeout records. Active roadmap: **TOKEN-10** (§TOKEN-10 below). See [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) for LKW-PF6 scheduling.
+**LKW proof workload:** LKW is a **later product client and product proof** for Token Optimization - not the owner of Token Optimization mechanisms. The universal platform proof (**TOKEN-10A**–**TOKEN-10G**) must complete before LKW product proof (**LKW-PF6-A**–**C**). Token Optimization is a cross-layer platform capability owned by runtime and domain plans. **LKW-PF6-0** proof design is **Done / Closed** (§LKW-PF6-0 below); **TOKEN-ARCH-0** engine architecture is **Done / Closed**; **TOKEN-1** through **TOKEN-9** are closed per their closeout records. Active roadmap: **TOKEN-10** (§TOKEN-10 below). See [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) for LKW-PF6 scheduling.
 
 ---
 
-## LKW-PF6-0 — Token Optimization proof design
+## LKW-PF6-0 - Token Optimization proof design
 
 **Status:** **Done / Closed** (docs-only).
 
-**Maturity level:** proof design only — does not close `LKW-PF6` platform proof.
+**Maturity level:** proof design only - does not close `LKW-PF6` platform proof.
 
 **Purpose:** Define exactly what the LKW Token Optimization proof must demonstrate before **TOKEN-1A** code starts. This section is the canonical source; [`applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md`](../../../applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md) §10 and [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF6-0 closeout mirror it for LKW scheduling.
 
-**Narrative:** Intergrax proves that agent applications can be built as configurable, observable, cost-aware runtime systems — not hand-wired demos.
+**Narrative:** Intergrax proves that agent applications can be built as configurable, observable, cost-aware runtime systems - not hand-wired demos.
 
 **Out of scope for LKW-PF6-0:** contracts, runtime behavior, optimizers, telemetry payloads, validators, benchmarks, fixtures, scripts, and any `TOKEN-*` implementation.
 
@@ -92,7 +92,7 @@ index -> search with tenant-scoped evidence -> synthesize with evidence -> shado
 | **LKW-TOK-W1** | Small workspace indexing + search + synthesis | Minimal tenant-scoped baseline; compact corpus per-step token categories. |
 | **LKW-TOK-W2** | Medium workspace search + synthesis with evidence | RAG/evidence/context-pack attribution under realistic retrieval load. |
 | **LKW-TOK-W3** | Repeated synthesis with similar tool/catalog/context exposure | Recurring tool-catalog and context-pack savings across stable-exposure runs. |
-| **LKW-TOK-W4** | Failure/safety-preserving run — exact regions must not be compressed | Optimization rejection/fallback when protected regions or safety boundaries would be violated. |
+| **LKW-TOK-W4** | Failure/safety-preserving run - exact regions must not be compressed | Optimization rejection/fallback when protected regions or safety boundaries would be violated. |
 
 ### Baseline measurement shape
 
@@ -197,7 +197,7 @@ Later public-grade proof must include:
 - observability attribution
 - known limitations
 
-**Redaction — must not expose:** raw prompts, raw documents, raw RAG chunks, raw synthesized content, tool args, secrets, tokens/secrets, absolute file paths, large raw artifacts.
+**Redaction - must not expose:** raw prompts, raw documents, raw RAG chunks, raw synthesized content, tool args, secrets, tokens/secrets, absolute file paths, large raw artifacts.
 
 ### LKW-PF6-0 closure rule
 
@@ -207,7 +207,7 @@ Done / Closed when:
 - [x] At the time of the LKW-PF6-0 docs-only closeout, TOKEN-1A had not yet started.
 - [x] No code/runtime/test/CI/dependency files changed.
 
-**Historical next step at LKW-PF6-0 closeout:** `TOKEN-1A` — shared contracts and package skeleton.
+**Historical next step at LKW-PF6-0 closeout:** `TOKEN-1A` - shared contracts and package skeleton.
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
@@ -227,15 +227,15 @@ LKW-PF6-C             → LKW baseline-vs-optimized product proof
 
 | Phase | Scope | Depends on |
 |-------|-------|------------|
-| **LKW-PF6-A** | Product baseline — workspace search, evidence/context assembly, synthesis, tool exposure, repeated conversational steps, protected evidence path | **TOKEN-10G** universal proof passes |
-| **LKW-PF6-B** | LKW supplies product policy/profile, source classifications, evidence, tenant/run/step identity, explicit enablement; consumes stable prompt contract, router, cache-aware gate, pipeline, receipts, metrics — **must not duplicate** platform mechanisms | **LKW-PF6-A** + **TOKEN-10D** runtime contract |
+| **LKW-PF6-A** | Product baseline - workspace search, evidence/context assembly, synthesis, tool exposure, repeated conversational steps, protected evidence path | **TOKEN-10G** universal proof passes |
+| **LKW-PF6-B** | LKW supplies product policy/profile, source classifications, evidence, tenant/run/step identity, explicit enablement; consumes stable prompt contract, router, cache-aware gate, pipeline, receipts, metrics - **must not duplicate** platform mechanisms | **LKW-PF6-A** + **TOKEN-10D** runtime contract |
 | **LKW-PF6-C** | Compare baseline vs optimized: input tokens, content-reduction savings, prefix-cache reuse, latency, evidence/citation preservation, tenant isolation, protected regions, answer quality, fallbacks, receipts, observability | **LKW-PF6-B** |
 
 LKW proof closure does not automatically mean production-grade readiness. Preserve maturity distinction: proof design → platform proof → operational proof → production-grade readiness → production hardening backlog.
 
 ---
 
-## TOKEN-ARCH-0 — Token Optimization Engine architecture and mechanism strategy
+## TOKEN-ARCH-0 - Token Optimization Engine architecture and mechanism strategy
 
 **Status:** **Done / Closed** (docs-only).
 
@@ -256,14 +256,14 @@ Done / Closed when:
 - [x] plugin/extensibility model documented
 - [x] benchmark claim model documented
 - [x] first public proof candidate mechanisms documented
-- [x] **TOKEN-1A** shared contracts — Done / Closed (§TOKEN-1A below)
+- [x] **TOKEN-1A** shared contracts - Done / Closed (§TOKEN-1A below)
 - [x] no runtime/code/test/CI/dependency changes (TOKEN-ARCH-0 docs-only scope)
 
 **Next step:** **TOKEN-OBS-1** HOS/domain-signal emission (per plan ordering).
 
 ---
 
-## TOKEN-6B — Deterministic token regression benchmark runner
+## TOKEN-6B - Deterministic token regression benchmark runner
 
 **Status:** **Done / Closed**.
 
@@ -271,8 +271,8 @@ Done / Closed when:
 
 **Deliverables:**
 
-- `intergrax/runtime/token_optimization/regression.py` — fixture contracts, runner, default fixtures, summary/result dataclasses
-- `scripts/check_token_regression_benchmarks.py` — local CI-friendly gate with optional `--json`, `--report`, `--report-json`, `--gate`, and `--gate-json` output
+- `intergrax/runtime/token_optimization/regression.py` - fixture contracts, runner, default fixtures, summary/result dataclasses
+- `scripts/check_token_regression_benchmarks.py` - local CI-friendly gate with optional `--json`, `--report`, `--report-json`, `--gate`, and `--gate-json` output
 - `tests/unit/runtime/token_optimization/test_regression.py`
 
 **Closeout:**
@@ -299,7 +299,7 @@ uv run python scripts/check_token_regression_benchmarks.py --json
 
 **Next step:** **TOKEN-OBS-1A** domain signal model (first cautious slice of **TOKEN-OBS-1**); then full **TOKEN-OBS-1** / **TOKEN-OBS-2** observability emission and regression-gate reporting (per plan ordering).
 
-**TOKEN-6B-R — strict validation expectation handling (refinement):**
+**TOKEN-6B-R - strict validation expectation handling (refinement):**
 
 - benchmark validation expectations now fail closed
 - `expect_validation_pass=True` accepts only `passed` / `not_applicable` validation statuses
@@ -309,15 +309,15 @@ uv run python scripts/check_token_regression_benchmarks.py --json
 
 ---
 
-## TOKEN-OBS-1A — Token optimization domain signal model (helper-only)
+## TOKEN-OBS-1A - Token optimization domain signal model (helper-only)
 
 **Status:** **Done / Closed**.
 
-**Purpose:** Add a helper-only, safe, structured token optimization domain signal layer that turns optimization outcomes and regression benchmark results into redaction-safe observability/domain signals and emits them into in-memory/no-op sinks for tests — without runtime hot-path integration or exporter wiring.
+**Purpose:** Add a helper-only, safe, structured token optimization domain signal layer that turns optimization outcomes and regression benchmark results into redaction-safe observability/domain signals and emits them into in-memory/no-op sinks for tests - without runtime hot-path integration or exporter wiring.
 
 **Deliverables:**
 
-- `intergrax/runtime/token_optimization/signals.py` — signal model, metadata sanitizer, builders, sinks, emission helper
+- `intergrax/runtime/token_optimization/signals.py` - signal model, metadata sanitizer, builders, sinks, emission helper
 - `tests/unit/runtime/token_optimization/test_signals.py`
 
 **Closeout:**
@@ -352,15 +352,15 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 
 ---
 
-## TOKEN-OBS-1B — HOS domain-signal adapter for token optimization signals
+## TOKEN-OBS-1B - HOS domain-signal adapter for token optimization signals
 
 **Status:** **Done / Closed**.
 
-**Purpose:** Bridge the safe `TokenOptimizationSignal` model into the existing HOS/domain-signal path through an explicit helper — without runtime hot-path integration, exporter wiring, or auto-emission from optimizers or regression runners.
+**Purpose:** Bridge the safe `TokenOptimizationSignal` model into the existing HOS/domain-signal path through an explicit helper - without runtime hot-path integration, exporter wiring, or auto-emission from optimizers or regression runners.
 
 **Deliverables:**
 
-- `intergrax/runtime/token_optimization/domain_events.py` — typed payload, registration, conversion, emission helper
+- `intergrax/runtime/token_optimization/domain_events.py` - typed payload, registration, conversion, emission helper
 - `tests/unit/runtime/token_optimization/test_domain_events.py`
 
 **Closeout:**
@@ -392,15 +392,15 @@ uv run python scripts/check_token_regression_benchmarks.py
 
 ---
 
-## TOKEN-OBS-1C — Explicit opt-in token optimization emission helpers
+## TOKEN-OBS-1C - Explicit opt-in token optimization emission helpers
 
 **Status:** **Done / Closed**.
 
-**Purpose:** Combine the safe signal builders with the HOS domain-signal adapter through explicit opt-in helpers — without runtime hot-path integration, exporter wiring, or auto-emission from optimizers or regression runners.
+**Purpose:** Combine the safe signal builders with the HOS domain-signal adapter through explicit opt-in helpers - without runtime hot-path integration, exporter wiring, or auto-emission from optimizers or regression runners.
 
 **Deliverables:**
 
-- `intergrax/runtime/token_optimization/emission.py` — explicit emission helpers and result type
+- `intergrax/runtime/token_optimization/emission.py` - explicit emission helpers and result type
 - `tests/unit/runtime/token_optimization/test_emission.py`
 
 **Closeout:**
@@ -434,15 +434,15 @@ uv run python scripts/check_token_regression_benchmarks.py
 
 ---
 
-## TOKEN-OBS-1D — Policy-gated token optimization runtime emission hook
+## TOKEN-OBS-1D - Policy-gated token optimization runtime emission hook
 
 **Status:** **Done / Closed**.
 
-**Purpose:** Add a small policy-gated runtime emission hook layer that future runtime call sites can use to emit token optimization signals safely — without runtime hot-path integration, exporter wiring, or auto-emission from optimizers or regression runners.
+**Purpose:** Add a small policy-gated runtime emission hook layer that future runtime call sites can use to emit token optimization signals safely - without runtime hot-path integration, exporter wiring, or auto-emission from optimizers or regression runners.
 
 **Deliverables:**
 
-- `intergrax/runtime/token_optimization/emission.py` — policy, status, and `maybe_emit_*` helpers
+- `intergrax/runtime/token_optimization/emission.py` - policy, status, and `maybe_emit_*` helpers
 - `tests/unit/runtime/token_optimization/test_emission.py`
 
 **Closeout:**
@@ -477,15 +477,15 @@ uv run python scripts/check_token_regression_benchmarks.py
 
 ---
 
-## TOKEN-OBS-1E — Policy-gated regression benchmark emission wrapper
+## TOKEN-OBS-1E - Policy-gated regression benchmark emission wrapper
 
 **Status:** **Done / Closed**.
 
-**Purpose:** Add a thin wrapper around the deterministic token regression benchmark runner that optionally emits policy-gated domain signals for per-fixture results and aggregate summary — without modifying the core runner or benchmark script.
+**Purpose:** Add a thin wrapper around the deterministic token regression benchmark runner that optionally emits policy-gated domain signals for per-fixture results and aggregate summary - without modifying the core runner or benchmark script.
 
 **Deliverables:**
 
-- `intergrax/runtime/token_optimization/regression_emission.py` — `TokenRegressionEmissionRunResult`, `run_token_regression_benchmarks_with_emission`
+- `intergrax/runtime/token_optimization/regression_emission.py` - `TokenRegressionEmissionRunResult`, `run_token_regression_benchmarks_with_emission`
 - `tests/unit/runtime/token_optimization/test_regression_emission.py`
 
 **Closeout:**
@@ -502,17 +502,17 @@ uv run python scripts/check_token_regression_benchmarks.py
 
 ---
 
-## TOKEN-OBS-2B — Regression fixture/eval matrix
+## TOKEN-OBS-2B - Regression fixture/eval matrix
 
 **Status:** **Done / Closed**.
 
-**Purpose:** Expand deterministic token regression benchmarks with a minimal eval matrix that proves both savings and safety behavior — without LKW integration or changes to the core benchmark script.
+**Purpose:** Expand deterministic token regression benchmarks with a minimal eval matrix that proves both savings and safety behavior - without LKW integration or changes to the core benchmark script.
 
 **Deliverables:**
 
-- `intergrax/runtime/token_optimization/regression.py` — eval-matrix default fixtures, extended expectation fields, safe eval metadata on results
-- `tests/unit/runtime/token_optimization/test_regression.py` — eval-matrix coverage for compactable, protected, and fallback cases
-- `tests/unit/runtime/token_optimization/test_regression_report.py` — safe eval metadata on report items
+- `intergrax/runtime/token_optimization/regression.py` - eval-matrix default fixtures, extended expectation fields, safe eval metadata on results
+- `tests/unit/runtime/token_optimization/test_regression.py` - eval-matrix coverage for compactable, protected, and fallback cases
+- `tests/unit/runtime/token_optimization/test_regression_report.py` - safe eval metadata on report items
 
 **Closeout:**
 
@@ -526,15 +526,15 @@ uv run python scripts/check_token_regression_benchmarks.py
 
 ---
 
-## TOKEN-OBS-2A — Token regression benchmark report artifact
+## TOKEN-OBS-2A - Token regression benchmark report artifact
 
 **Status:** **Done / Closed**.
 
-**Purpose:** Add a small redaction-safe report builder for existing deterministic token regression benchmark results — without LKW integration, without modifying the core runner, and without changing the benchmark script.
+**Purpose:** Add a small redaction-safe report builder for existing deterministic token regression benchmark results - without LKW integration, without modifying the core runner, and without changing the benchmark script.
 
 **Deliverables:**
 
-- `intergrax/runtime/token_optimization/regression_report.py` — `TokenRegressionReport`, `build_token_regression_report`, `token_regression_report_to_dict`, `format_token_regression_report`
+- `intergrax/runtime/token_optimization/regression_report.py` - `TokenRegressionReport`, `build_token_regression_report`, `token_regression_report_to_dict`, `format_token_regression_report`
 - `tests/unit/runtime/token_optimization/test_regression_report.py`
 
 **Closeout:**
@@ -551,15 +551,15 @@ uv run python scripts/check_token_regression_benchmarks.py
 
 ---
 
-## TOKEN-OBS-2C — Regression gate thresholds
+## TOKEN-OBS-2C - Regression gate thresholds
 
 **Status:** **Done / Closed**.
 
-**Purpose:** Add a formal gate artifact over existing deterministic token regression benchmark results — without LKW integration, without modifying the core runner, and without changing the benchmark script.
+**Purpose:** Add a formal gate artifact over existing deterministic token regression benchmark results - without LKW integration, without modifying the core runner, and without changing the benchmark script.
 
 **Deliverables:**
 
-- `intergrax/runtime/token_optimization/regression_gate.py` — `TokenRegressionGateThresholds`, `evaluate_token_regression_gate`, `token_regression_gate_to_dict`, `format_token_regression_gate`
+- `intergrax/runtime/token_optimization/regression_gate.py` - `TokenRegressionGateThresholds`, `evaluate_token_regression_gate`, `token_regression_gate_to_dict`, `format_token_regression_gate`
 - `tests/unit/runtime/token_optimization/test_regression_gate.py`
 
 **Closeout:**
@@ -576,15 +576,15 @@ uv run python scripts/check_token_regression_benchmarks.py
 
 ---
 
-## TOKEN-OBS-2D — Benchmark CLI report/gate output
+## TOKEN-OBS-2D - Benchmark CLI report/gate output
 
 **Status:** **Done / Closed**.
 
-**Purpose:** Expose existing regression report and gate artifacts through the benchmark CLI — without LKW integration, without modifying core runner/report/gate modules, and without writing files.
+**Purpose:** Expose existing regression report and gate artifacts through the benchmark CLI - without LKW integration, without modifying core runner/report/gate modules, and without writing files.
 
 **Deliverables:**
 
-- `scripts/check_token_regression_benchmarks.py` — `--report`, `--report-json`, `--gate`, `--gate-json`, `--min-total-saved-ratio`, `--min-total-saved-tokens`
+- `scripts/check_token_regression_benchmarks.py` - `--report`, `--report-json`, `--gate`, `--gate-json`, `--min-total-saved-ratio`, `--min-total-saved-tokens`
 - `tests/unit/runtime/token_optimization/test_regression_cli.py`
 
 **Closeout:**
@@ -611,7 +611,7 @@ uv run python scripts/check_token_regression_benchmarks.py --gate
 
 ## Diagnostic benchmark one-command flow
 
-**Purpose:** Regenerate synthetic regression diagnostic artifacts, run the benchmark, and review results in one local step — without LKW integration or optimizer changes.
+**Purpose:** Regenerate synthetic regression diagnostic artifacts, run the benchmark, and review results in one local step - without LKW integration or optimizer changes.
 
 **Windows:**
 
@@ -637,7 +637,7 @@ The wrapper:
 
 ---
 
-## TOKEN-OPT-3A — Stronger optimizer roadmap, algorithm inventory, and measurement sequencing
+## TOKEN-OPT-3A - Stronger optimizer roadmap, algorithm inventory, and measurement sequencing
 
 **Status:** **Done / Closed** (docs-only).
 
@@ -679,25 +679,25 @@ where each algorithm/strategy is introduced as a separate measurable step.
 
 | Order | Task | Scope |
 |-------|------|-------|
-| 1 | **TOKEN-OPT-3A** | Roadmap and sequencing design (this section) — **Done / Closed** |
-| 2 | **TOKEN-OPT-3B** | Priority-tiered context packing **contract** (data model only) — **Done / Closed** |
-| 3 | **TOKEN-OPT-3C-A** | Optimization layer and pipeline composition **contract** — **Done / Closed** |
-| 4 | **TOKEN-OPT-3C-B** | Deterministic exact deduplication layer — **Done / Closed** |
-| 5 | **TOKEN-OPT-3D** | Budget-aware context packing prototype — **Done / Closed** |
-| 6 | **TOKEN-OBS-3E** | Realistic corpus for stronger optimizer — **Done / Closed** (as part of **TOKEN-OBS-3E-F**) |
-| 7 | **TOKEN-OBS-3F** | Baseline vs stronger optimizer comparison — **Done / Closed** (as part of **TOKEN-OBS-3E-F**) |
-| 8 | **TOKEN-OBS-3G** | Safe public wording / proof claims — **Done / Closed** |
-| 9 | **TOKEN-OPT-4A** | Extractive filtering layer — **Done / Closed** |
-| 10 | **TOKEN-OPT-4B** | Extractive filtering evaluation / regression pack — **Done / Closed** |
-| 11 | **TOKEN-OPT-5A** | Cache-prefix stabilization architecture / contract — **Done / Closed** |
-| 12 | **TOKEN-OPT-5B** | Prompt-cache contracts and cache-prefix stability proof — **Done / Closed** (folds former **TOKEN-OPT-5C** / **TOKEN-OPT-5D**) |
+| 1 | **TOKEN-OPT-3A** | Roadmap and sequencing design (this section) - **Done / Closed** |
+| 2 | **TOKEN-OPT-3B** | Priority-tiered context packing **contract** (data model only) - **Done / Closed** |
+| 3 | **TOKEN-OPT-3C-A** | Optimization layer and pipeline composition **contract** - **Done / Closed** |
+| 4 | **TOKEN-OPT-3C-B** | Deterministic exact deduplication layer - **Done / Closed** |
+| 5 | **TOKEN-OPT-3D** | Budget-aware context packing prototype - **Done / Closed** |
+| 6 | **TOKEN-OBS-3E** | Realistic corpus for stronger optimizer - **Done / Closed** (as part of **TOKEN-OBS-3E-F**) |
+| 7 | **TOKEN-OBS-3F** | Baseline vs stronger optimizer comparison - **Done / Closed** (as part of **TOKEN-OBS-3E-F**) |
+| 8 | **TOKEN-OBS-3G** | Safe public wording / proof claims - **Done / Closed** |
+| 9 | **TOKEN-OPT-4A** | Extractive filtering layer - **Done / Closed** |
+| 10 | **TOKEN-OPT-4B** | Extractive filtering evaluation / regression pack - **Done / Closed** |
+| 11 | **TOKEN-OPT-5A** | Cache-prefix stabilization architecture / contract - **Done / Closed** |
+| 12 | **TOKEN-OPT-5B** | Prompt-cache contracts and cache-prefix stability proof - **Done / Closed** (folds former **TOKEN-OPT-5C** / **TOKEN-OPT-5D**) |
 | 13 | **TOKEN-OPT-5C** | Folded into **TOKEN-OPT-5B** functional block |
 | 14 | **TOKEN-OPT-5D** | Folded into **TOKEN-OPT-5B** functional block |
-| 15 | **TOKEN-OPT-5E** | Cache-aware compaction timing policy — **Done / Closed** |
-| 16 | **TOKEN-7A** | Advisory recommendation contract and policy-only recommender — **Done / Closed** |
-| 17 | **TOKEN-7B** | Advisory recommendation evaluation and report pack — **Done / Closed** |
-| 18 | **TOKEN-7C** | Policy-gated advisory integration surface — **Done / Closed** |
-| 19 | **TOKEN-7D** | Advisory policy presets and resolver — **Done / Closed** |
+| 15 | **TOKEN-OPT-5E** | Cache-aware compaction timing policy - **Done / Closed** |
+| 16 | **TOKEN-7A** | Advisory recommendation contract and policy-only recommender - **Done / Closed** |
+| 17 | **TOKEN-7B** | Advisory recommendation evaluation and report pack - **Done / Closed** |
+| 18 | **TOKEN-7C** | Policy-gated advisory integration surface - **Done / Closed** |
+| 19 | **TOKEN-7D** | Advisory policy presets and resolver - **Done / Closed** |
 
 Each algorithm ships as its own task, followed by measurement/review, before the next algorithm is layered in.
 
@@ -723,7 +723,7 @@ Vocabulary aligns with `intergrax/runtime/token_optimization/contracts.py` (`Tok
 | Semantic compression | `memory`, `rag_context_pack`, `conversation_history` | `lossy` / `experimental` | `experimental` | Yes | Yes | Yes | TOKEN-7+ | **Excluded** from next slice |
 | Adaptive strategy recommendation | All (telemetry input) | `policy_only` | `balanced` | No (recommendation only) | N/A | Yes | **TOKEN-7** | Frozen |
 
-### Measurement model — savings attribution by source and strategy
+### Measurement model - savings attribution by source and strategy
 
 Aggregate savings alone are **not** enough. Every optimization task must report savings attributable to a single primary strategy (or explicit multi-strategy breakdown in receipt metadata when composition is unavoidable).
 
@@ -770,19 +770,19 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 ### Next task definitions
 
-#### TOKEN-OPT-3B — priority-tiered context packing contract
+#### TOKEN-OPT-3B - priority-tiered context packing contract
 
 **Purpose:** Define the data contract for priority-tiered context packing **before** implementing packing behavior.
 
 **Contracts added** (`intergrax/runtime/token_optimization/contracts.py`):
 
-- `ContextFragmentPriority` — strongly typed priority tiers (`must_keep`, `high_priority`, `compressible`, `droppable`)
-- `ContextPackingBudget` — token budget envelope with invariant validation
-- `ContextPackingDecisionKind` — per-fragment action vocabulary (`keep`, `compact`, `deduplicate`, `drop`, `truncate`, `bypass`, `fallback`)
-- `ContextPackingDecision` — per-fragment packing decision with token math validation
-- `ContextDeduplicationMetadata` — cross-fragment duplicate linkage (contract only)
-- `ContextFragmentPackingMetadata` — per-fragment packing metadata with fail-fast priority consistency checks
-- `ContextPackingReceiptMetadata` — receipt explanation metadata for future receipt builders
+- `ContextFragmentPriority` - strongly typed priority tiers (`must_keep`, `high_priority`, `compressible`, `droppable`)
+- `ContextPackingBudget` - token budget envelope with invariant validation
+- `ContextPackingDecisionKind` - per-fragment action vocabulary (`keep`, `compact`, `deduplicate`, `drop`, `truncate`, `bypass`, `fallback`)
+- `ContextPackingDecision` - per-fragment packing decision with token math validation
+- `ContextDeduplicationMetadata` - cross-fragment duplicate linkage (contract only)
+- `ContextFragmentPackingMetadata` - per-fragment packing metadata with fail-fast priority consistency checks
+- `ContextPackingReceiptMetadata` - receipt explanation metadata for future receipt builders
 
 **Closeout:**
 
@@ -795,24 +795,24 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 **Status:** **Done / Closed**.
 
-**Next step:** **TOKEN-OPT-3D** — budget-aware context packing prototype.
+**Next step:** **TOKEN-OPT-3D** - budget-aware context packing prototype.
 
-#### TOKEN-OPT-3C-A — optimization layer and pipeline composition contract
+#### TOKEN-OPT-3C-A - optimization layer and pipeline composition contract
 
 **Purpose:** Define strongly typed, extensible, plugin-friendly contracts for optimization layers and pipeline composition before implementing deduplication or a runtime engine.
 
 **Contracts added** (`intergrax/runtime/token_optimization/contracts.py`):
 
-- `TokenOptimizationLayerDecision` — per-layer outcome (`apply`, `bypass`, `fallback`, `override_previous`, `revert_to_original`, `failed`)
-- `TokenOptimizationLayerDescriptor` — built-in/custom/plugin layer metadata
-- `TokenOptimizationLayerContext` — pipeline position and layer lineage
-- `TokenOptimizationLayerRequest` — `original_content` (immutable baseline) + `current_content` (working state after prior layers)
-- `TokenOptimizationLayerResult` — explicit override metadata (`previous_changes_overridden`, `overridden_layer_ids`, `override_reason`)
-- `TokenOptimizationLayer` — optional `Protocol` for layer implementations
-- `TokenOptimizationLayerRef` — ordered layer reference for pipeline config
-- `TokenOptimizationPipelineMode` — `default` (platform order) or `replace` (developer-provided list)
-- `TokenOptimizationPipelineConfig` — composable pipeline of built-in and plugin/custom layers
-- `TokenOptimizationPipelineResult` — aggregate pipeline outcome without execution logic
+- `TokenOptimizationLayerDecision` - per-layer outcome (`apply`, `bypass`, `fallback`, `override_previous`, `revert_to_original`, `failed`)
+- `TokenOptimizationLayerDescriptor` - built-in/custom/plugin layer metadata
+- `TokenOptimizationLayerContext` - pipeline position and layer lineage
+- `TokenOptimizationLayerRequest` - `original_content` (immutable baseline) + `current_content` (working state after prior layers)
+- `TokenOptimizationLayerResult` - explicit override metadata (`previous_changes_overridden`, `overridden_layer_ids`, `override_reason`)
+- `TokenOptimizationLayer` - optional `Protocol` for layer implementations
+- `TokenOptimizationLayerRef` - ordered layer reference for pipeline config
+- `TokenOptimizationPipelineMode` - `default` (platform order) or `replace` (developer-provided list)
+- `TokenOptimizationPipelineConfig` - composable pipeline of built-in and plugin/custom layers
+- `TokenOptimizationPipelineResult` - aggregate pipeline outcome without execution logic
 
 **Closeout:**
 
@@ -824,9 +824,9 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 **Status:** **Done / Closed**.
 
-**Next step:** **TOKEN-OPT-3D** — budget-aware context packing prototype.
+**Next step:** **TOKEN-OPT-3D** - budget-aware context packing prototype.
 
-#### TOKEN-OPT-3C-B — deterministic exact deduplication layer
+#### TOKEN-OPT-3C-B - deterministic exact deduplication layer
 
 **Purpose:** Add the first stronger real reduction mechanism using deterministic exact deduplication.
 
@@ -839,8 +839,8 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 **Deliverables:**
 
-- `intergrax/runtime/token_optimization/layers/exact_deduplication.py` — `ExactDeduplicationLayer`, `ExactDeduplicationLayerConfig`
-- `intergrax/runtime/token_optimization/layers/__init__.py` — layer exports
+- `intergrax/runtime/token_optimization/layers/exact_deduplication.py` - `ExactDeduplicationLayer`, `ExactDeduplicationLayerConfig`
+- `intergrax/runtime/token_optimization/layers/__init__.py` - layer exports
 - `tests/unit/runtime/token_optimization/test_exact_deduplication_layer.py`
 
 **Closeout:**
@@ -855,7 +855,7 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 - dedupe attribution is separated from truncation and structural compaction (`dedupe_saved_chars`, `duplicates_removed` in metadata)
 - metadata exposes `base_config`, `effective_config`, `config_overrides`; `duplicate_groups` uses indices and key hashes only
 
-**TOKEN-OPT-3C-B-R — formatting preservation refinement — Done / Closed**
+**TOKEN-OPT-3C-B-R - formatting preservation refinement - Done / Closed**
 
 - kept line endings are preserved (`splitlines(keepends=True)` + `"".join(kept_raw_lines)`)
 - trailing newline is preserved when the final kept line originally ended with one
@@ -864,9 +864,9 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 **Status:** **Done / Closed**.
 
-**Next step:** **TOKEN-OPT-3D** — budget-aware context packing prototype.
+**Next step:** **TOKEN-OPT-3D** - budget-aware context packing prototype.
 
-#### TOKEN-OPT-3D — budget-aware context packing prototype
+#### TOKEN-OPT-3D - budget-aware context packing prototype
 
 **Purpose:** Pack structured context fragments into an explicit **estimated character budget** while preserving `must_keep` and preferring `high_priority` fragments. This is a **char-budget prototype** packing layer, not provider-aware token-budget optimization.
 
@@ -883,8 +883,8 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 **Deliverables:**
 
-- `intergrax/runtime/token_optimization/layers/budget_aware_packing.py` — `BudgetAwareContextPackingLayer`, `BudgetAwareContextPackingLayerConfig`, layer-local `BudgetAwarePackingInput` / `BudgetAwarePackingFragment`
-- `intergrax/runtime/token_optimization/layers/__init__.py` — layer exports
+- `intergrax/runtime/token_optimization/layers/budget_aware_packing.py` - `BudgetAwareContextPackingLayer`, `BudgetAwareContextPackingLayerConfig`, layer-local `BudgetAwarePackingInput` / `BudgetAwarePackingFragment`
+- `intergrax/runtime/token_optimization/layers/__init__.py` - layer exports
 - `tests/unit/runtime/token_optimization/test_budget_aware_packing_layer.py`
 
 **Closeout:**
@@ -902,9 +902,9 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 **Status:** **Done / Closed**.
 
-**Next step:** public wording follows [`docs/project/capabilities/TOKEN_OPTIMIZATION_CLAIMS.md`](../TOKEN_OPTIMIZATION_CLAIMS.md) (**TOKEN-OBS-3G** — Done / Closed).
+**Next step:** public wording follows [`docs/project/capabilities/TOKEN_OPTIMIZATION_CLAIMS.md`](../TOKEN_OPTIMIZATION_CLAIMS.md) (**TOKEN-OBS-3G** - Done / Closed).
 
-#### TOKEN-OBS-3E-F — stronger optimizer evaluation pack
+#### TOKEN-OBS-3E-F - stronger optimizer evaluation pack
 
 **Purpose:** Combine realistic synthetic corpus and deterministic baseline-vs-stronger comparison for the stronger optimizer mechanisms already implemented (`ExactDeduplicationLayer`, `BudgetAwareContextPackingLayer`).
 
@@ -920,8 +920,8 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 **Deliverables:**
 
-- `tests/fixtures/token_optimization/stronger_optimizer_corpus.py` — synthetic corpus + evaluation-only helper
-- `tests/unit/runtime/token_optimization/test_stronger_optimizer_evaluation_pack.py` — corpus validation and behavior tests
+- `tests/fixtures/token_optimization/stronger_optimizer_corpus.py` - synthetic corpus + evaluation-only helper
+- `tests/unit/runtime/token_optimization/test_stronger_optimizer_evaluation_pack.py` - corpus validation and behavior tests
 
 **Closeout:**
 
@@ -933,7 +933,7 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 **Next step:** follow [`docs/project/capabilities/TOKEN_OPTIMIZATION_CLAIMS.md`](../TOKEN_OPTIMIZATION_CLAIMS.md) for any public wording derived from this proof.
 
-#### TOKEN-OBS-3G — safe public wording / proof claims
+#### TOKEN-OBS-3G - safe public wording / proof claims
 
 **Purpose:** Add safe, bounded, non-marketing public claim guardrails for the stronger optimizer proof (TOKEN-OPT-3C-B, TOKEN-OPT-3D, TOKEN-OBS-3E-F).
 
@@ -947,7 +947,7 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 **Status:** **Done / Closed**.
 
-#### TOKEN-OPT-3D-R — char-budget metadata naming refinement
+#### TOKEN-OPT-3D-R - char-budget metadata naming refinement
 
 **Purpose:** Remove misleading token-named receipt fields from the char-budget prototype metadata.
 
@@ -962,14 +962,14 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 **Status:** **Done / Closed**.
 
-#### TOKEN-OPT-4A — extractive filtering layer for tool / terminal / log output
+#### TOKEN-OPT-4A - extractive filtering layer for tool / terminal / log output
 
 **Purpose:** Add a deterministic extractive filtering layer for noisy tool, terminal, and log output without semantic compression or LLM summarization.
 
 **Deliverables:**
 
-- `intergrax/runtime/token_optimization/layers/extractive_filtering.py` — `ExtractiveFilteringLayer`, `ExtractiveFilteringLayerConfig`
-- `intergrax/runtime/token_optimization/layers/__init__.py` — layer exports
+- `intergrax/runtime/token_optimization/layers/extractive_filtering.py` - `ExtractiveFilteringLayer`, `ExtractiveFilteringLayerConfig`
+- `intergrax/runtime/token_optimization/layers/__init__.py` - layer exports
 - `tests/unit/runtime/token_optimization/test_extractive_filtering_layer.py`
 
 **Closeout:**
@@ -988,9 +988,9 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 **Status:** **Done / Closed**.
 
-**Next step:** **TOKEN-OPT-4B** — extractive filtering evaluation cases / regression pack.
+**Next step:** **TOKEN-OPT-4B** - extractive filtering evaluation cases / regression pack.
 
-#### TOKEN-OPT-4B — extractive filtering evaluation cases / regression pack
+#### TOKEN-OPT-4B - extractive filtering evaluation cases / regression pack
 
 **Purpose:** Add a synthetic, raw-content-safe evaluation / regression pack proving that `ExtractiveFilteringLayer` safely filters noisy tool/terminal/log output while preserving failures, warnings, tracebacks, and protected regions with char-level attribution only.
 
@@ -1016,11 +1016,11 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 - no token-accurate claims added
 - no runtime pipeline engine added
 - no README or public adoption documentation updated
-- next step: TOKEN-OPT-5A — cache-prefix stabilization architecture / contract — **Done / Closed**
+- next step: TOKEN-OPT-5A - cache-prefix stabilization architecture / contract - **Done / Closed**
 
 **Status:** **Done / Closed**.
 
-#### TOKEN-OPT-5A — cache-prefix stabilization architecture / contract
+#### TOKEN-OPT-5A - cache-prefix stabilization architecture / contract
 
 **Status:** **Done / Closed**.
 
@@ -1050,9 +1050,9 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 - no adapter wiring
 - no tests or benchmark runners added
 - no README or public adoption documentation updated
-- next step: TOKEN-OPT-5B — provider cache policy and capability contract
+- next step: TOKEN-OPT-5B - provider cache policy and capability contract
 
-#### TOKEN-OPT-5B — prompt-cache contracts and cache-prefix stability proof
+#### TOKEN-OPT-5B - prompt-cache contracts and cache-prefix stability proof
 
 **Status:** **Done / Closed**.
 
@@ -1090,9 +1090,9 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 - no benchmark runner added
 - no semantic compression or LLM summarization added
 - no README or public adoption documentation updated
-- next step: TOKEN-OPT-5E — cache-aware compaction timing policy
+- next step: TOKEN-OPT-5E - cache-aware compaction timing policy
 
-#### TOKEN-OPT-5E — cache-aware compaction timing policy
+#### TOKEN-OPT-5E - cache-aware compaction timing policy
 
 **Status:** **Done / Closed**.
 
@@ -1135,7 +1135,7 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 - no in-cache compaction added
 - no README or public adoption documentation updated
 
-#### TOKEN-7A — advisory recommendation contract and policy-only recommender
+#### TOKEN-7A - advisory recommendation contract and policy-only recommender
 
 **Status:** **Done / Closed**.
 
@@ -1184,19 +1184,19 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 **Roadmap/order update:**
 
 ```text
-TOKEN-OPT-5A — Done / Closed
-TOKEN-OPT-5B — Done / Closed
-TOKEN-OPT-5C — folded into TOKEN-OPT-5B functional block
-TOKEN-OPT-5D — folded into TOKEN-OPT-5B functional block
-TOKEN-OPT-5E — Done / Closed
-TOKEN-7A — Done / Closed
-TOKEN-7B — Done / Closed
-TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply
+TOKEN-OPT-5A - Done / Closed
+TOKEN-OPT-5B - Done / Closed
+TOKEN-OPT-5C - folded into TOKEN-OPT-5B functional block
+TOKEN-OPT-5D - folded into TOKEN-OPT-5B functional block
+TOKEN-OPT-5E - Done / Closed
+TOKEN-7A - Done / Closed
+TOKEN-7B - Done / Closed
+TOKEN-7 - broader runtime/adaptive integration remains future work; no production auto-apply
 ```
 
 **Next decision:** choose the next Token Optimization-only block; production auto-apply remains forbidden until explicitly designed and reviewed.
 
-#### TOKEN-7D — advisory policy presets and resolver
+#### TOKEN-7D - advisory policy presets and resolver
 
 **Status:** **Done / Closed**.
 
@@ -1254,11 +1254,11 @@ TOKEN-7 — broader runtime/adaptive integration remains future work; no product
 The Token Optimization track has completed the foundation/advisory phase:
 
 ```text
-TOKEN-7A — Done / Closed
-TOKEN-7B — Done / Closed
-TOKEN-7C — Done / Closed
-TOKEN-7D — Done / Closed
-TOKEN-7D-R — Done / Closed
+TOKEN-7A - Done / Closed
+TOKEN-7B - Done / Closed
+TOKEN-7C - Done / Closed
+TOKEN-7D - Done / Closed
+TOKEN-7D-R - Done / Closed
 ```
 
 Foundation/advisory work delivered contracts, safety pieces, receipts, telemetry shapes, helper layers, prompt-cache contracts, and advisory control.
@@ -1274,16 +1274,16 @@ New algorithms such as trim, near-deduplication, schema minimization, and other 
 **Updated next roadmap:**
 
 ```text
-TOKEN-8  — Deterministic execution engine and plugin boundary — Accepted / Closed
-TOKEN-9  — LLM tool-calling router, safe compiler and live engine integration — Accepted / Closed
-TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof — Planned / Active
+TOKEN-8  - Deterministic execution engine and plugin boundary - Accepted / Closed
+TOKEN-9  - LLM tool-calling router, safe compiler and live engine integration - Accepted / Closed
+TOKEN-10 - Cache-Aware Universal Token Optimization Runtime and Proof - Planned / Active
 ```
 
-Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **TOKEN-10H** qualification process is **CLOSED** (`NOT QUALIFIED`). **TOKEN-10I** is `BLOCKED_HARDWARE_CAPACITY_FINAL`. **Current next step:** separately approved local model path. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**; **TOKEN-10E-1** is **ACCEPTED / CLOSED**.
+Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** - see §TOKEN-10. **TOKEN-10H** qualification process is **CLOSED** (`NOT QUALIFIED`). **TOKEN-10I** is `BLOCKED_HARDWARE_CAPACITY_FINAL`. **Current next step:** separately approved local model path. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**; **TOKEN-10E-1** is **ACCEPTED / CLOSED**.
 
 **Superseded:** “runtime/provider integration remains deferred indefinitely”; “TOKEN-9 is the final phase”; “LKW is the first required place to prove the engine.” Universal platform proof precedes LKW product proof.
 
-#### TOKEN-8A — Layer Registry and Pipeline Runner
+#### TOKEN-8A - Layer Registry and Pipeline Runner
 
 **Status:** **Done / Closed**.
 
@@ -1319,7 +1319,7 @@ Target capability:
 - no observability emission
 - no new optimization algorithm
 
-**Next step:** TOKEN-8B — Built-in Layer Catalog Wiring
+**Next step:** TOKEN-8B - Built-in Layer Catalog Wiring
 
 Out of scope for TOKEN-8A:
 
@@ -1330,7 +1330,7 @@ Out of scope for TOKEN-8A:
 - observability emission
 - new optimization algorithm
 
-#### TOKEN-8B — Built-in Layer Catalog Wiring
+#### TOKEN-8B - Built-in Layer Catalog Wiring
 
 **Status:** **Done / Closed**.
 
@@ -1350,9 +1350,9 @@ Wire the three existing built-in optimization layers into an explicit, determini
 - no new algorithm
 - no runtime/application integration
 
-**Next step:** TOKEN-8C — Pipeline Configuration Evals
+**Next step:** TOKEN-8C - Pipeline Configuration Evals
 
-#### TOKEN-8C — Pipeline Configuration Evals
+#### TOKEN-8C - Pipeline Configuration Evals
 
 **Status:** **Done / Closed**.
 
@@ -1408,9 +1408,9 @@ create_builtin_token_optimization_layer_catalog()
 - no production/runtime integration
 - no new optimization algorithm
 
-**Next step:** TOKEN-8D — Third-party Plugin Adapter Contract Proof
+**Next step:** TOKEN-8D - Third-party Plugin Adapter Contract Proof
 
-#### TOKEN-8D — Third-party Plugin Adapter Contract Proof
+#### TOKEN-8D - Third-party Plugin Adapter Contract Proof
 
 **Status:** **Done / Closed**.
 
@@ -1456,17 +1456,17 @@ test-only third-party plugin descriptor
 
 **Not proven:** safe execution of untrusted Python, process isolation, sandboxing, package authenticity, dependency safety.
 
-**Next step:** TOKEN-9 — LLM Tool-Calling Router (done — see below)
+**Next step:** TOKEN-9 - LLM Tool-Calling Router (done - see below)
 
-#### TOKEN-9 — LLM Tool-Calling Router, Safe Compiler, Engine Integration and Live E2E
+#### TOKEN-9 - LLM Tool-Calling Router, Safe Compiler, Engine Integration and Live E2E
 
 **Status:** **Accepted / Closed** (TOKEN-9-R2 catalog-wrapper capability inspection verified).
 
-#### TOKEN-9-R1 — Router Preflight, Capability Failure Semantics and Live E2E Enforcement
+#### TOKEN-9-R1 - Router Preflight, Capability Failure Semantics and Live E2E Enforcement
 
 **Status:** **Accepted / Closed** (TOKEN-9-R2 correction verified).
 
-#### TOKEN-9-R2 — Preserve Ollama Capability State Through Catalog Wrapper
+#### TOKEN-9-R2 - Preserve Ollama Capability State Through Catalog Wrapper
 
 **Status:** **Done / Closed** (live native Ollama E2E verified on `qwen2.5:7b`, `repeats=3`).
 
@@ -1482,15 +1482,15 @@ Hardening delivered in TOKEN-9-R1:
 
 Canonical transport is native tool calling via `token_optimization.select_configuration`. Structured output is fallback only when the adapter **resolved** model capabilities and genuinely lacks native tools, and router policy allows it. Native tool failure never silently switches transport.
 
-The model selects only approved configuration IDs from a closed catalog (`no_optimization`, `exact_only`, `extractive_only`, `packing_only`, `exact_then_packing`, `exact_then_extractive`, `extractive_then_exact`). Layer settings, policy, and pipeline mode are compiled deterministically by the platform. Caller policy and central validation remain authoritative. Route invocation is explicit — no global auto-apply.
+The model selects only approved configuration IDs from a closed catalog (`no_optimization`, `exact_only`, `extractive_only`, `packing_only`, `exact_then_packing`, `exact_then_extractive`, `extractive_then_exact`). Layer settings, policy, and pipeline mode are compiled deterministically by the platform. Caller policy and central validation remain authoritative. Route invocation is explicit - no global auto-apply.
 
 Live E2E: `tests/e2e/token_optimization/test_llm_router_ollama_live.py` with `INTERGRAX_TOKEN_OPTIMIZATION_OLLAMA_E2E=1`, `INTERGRAX_TOKEN_OPTIMIZATION_OLLAMA_MODELS=qwen2.5:7b`, `INTERGRAX_TOKEN_OPTIMIZATION_ROUTER_E2E_REPEATS=3`. Tested model: `qwen2.5:7b` (native `tools` capability). Ollama tool-choice forcing is not claimed. Not every Ollama model declares `tools`.
 
-**Next step:** **TOKEN-10** — Cache-Aware Universal Token Optimization Runtime and Proof (§TOKEN-10 below). TOKEN-9 is not the final Token Optimization phase.
+**Next step:** **TOKEN-10** - Cache-Aware Universal Token Optimization Runtime and Proof (§TOKEN-10 below). TOKEN-9 is not the final Token Optimization phase.
 
 ---
 
-## TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof
+## TOKEN-10 - Cache-Aware Universal Token Optimization Runtime and Proof
 
 **Status:** **Planned / Active roadmap** (TOKEN-10A accepted/closed; TOKEN-10B, TOKEN-10B-R1, TOKEN-10B-R2 accepted/closed; TOKEN-10C, TOKEN-10C-R4, TOKEN-10C-R4-R1 accepted/closed; TOKEN-10D-1, TOKEN-10D-2, TOKEN-10D-3, TOKEN-10D accepted/closed; **TOKEN-10E implementation complete / READY_FOR_REVIEW**, pending independent acceptance).
 
@@ -1504,7 +1504,7 @@ TOKEN-10A → TOKEN-10B → TOKEN-10C → TOKEN-10D → TOKEN-10E → TOKEN-10F 
 
 Do not collapse these into one implementation commit.
 
-### TOKEN-10A — Cache-Aware Universal Runtime and Proof Canon
+### TOKEN-10A - Cache-Aware Universal Runtime and Proof Canon
 
 **Status:** **Accepted / Closed** (docs-only).
 
@@ -1512,20 +1512,20 @@ Do not collapse these into one implementation commit.
 
 **Closeout:** TOKEN-10A documentation scope and architecture acceptance criteria were completed. The repository-wide `check_docs_domain_pairs.py` check remains blocked by the pre-existing missing `docs/project/maintainers/plans/APPLICATION_RUNTIME_GRAPH_MODEL.md` pair. That repository defect was not introduced or modified by TOKEN-10A.
 
-### TOKEN-10B — Cache-Stable Prompt, Thread and Tool-Envelope Runtime
+### TOKEN-10B - Cache-Stable Prompt, Thread and Tool-Envelope Runtime
 
 **Status:** **Accepted / Closed**.
 
 **Scope delivered:**
 
-- `intergrax/runtime/token_optimization/prompt_assembly.py` — provider-neutral cache-stable assembler (`assemble_cache_stable_prompt`, `build_cache_stable_tool_envelope`, redaction-safe state/report contracts).
+- `intergrax/runtime/token_optimization/prompt_assembly.py` - provider-neutral cache-stable assembler (`assemble_cache_stable_prompt`, `build_cache_stable_tool_envelope`, redaction-safe state/report contracts).
 - Append-only thread semantics with explicit `APPEND_ONLY_VIOLATION` invalidation reason.
 - Deterministic tool-planning schema export (`build_tool_planning_schema` in `tool_planning_service.py`) and exact prepared-schema forwarding through `plan_native_round`.
 - `TokenOptimizationLLMRouter` integration: stable system prefix block `token_optimization.router.system`, dynamic tail for request facts and untrusted content, caller-owned `previous_prompt_cache_state` on router request/result.
 
 **Out of scope (TOKEN-10C+):** provider cache capabilities, vLLM startup, cache-hit metrics, cache-aware orchestration gate, in-cache compaction, proof harness.
 
-### TOKEN-10B-R1 — Send-Payload Integrity and Tool-Envelope Transition Corrections
+### TOKEN-10B-R1 - Send-Payload Integrity and Tool-Envelope Transition Corrections
 
 **Status:** **Accepted / Closed**.
 
@@ -1539,7 +1539,7 @@ Do not collapse these into one implementation commit.
 - Shared canonical hashing: `compute_model_facing_messages_hash`, `compute_openai_tools_schema_hash`.
 - Complete `None↔hash` tool-envelope transition reporting (`TOOL_ENVELOPE_CHANGED`).
 
-### TOKEN-10B-R2 — Exact Tool-Schema Order Integrity
+### TOKEN-10B-R2 - Exact Tool-Schema Order Integrity
 
 **Status:** **Accepted / Closed**.
 
@@ -1551,13 +1551,13 @@ Do not collapse these into one implementation commit.
 - `ToolPlanningService.plan_native_round` rejects noncanonical prepared tool order before adapter invocation.
 - Closes exact-schema sequence-integrity gap between recorded fingerprint and adapter payload.
 
-### TOKEN-10C — vLLM Prefix-Cache Provider Integration and Metrics
+### TOKEN-10C - vLLM Prefix-Cache Provider Integration and Metrics
 
 **Status:** **Accepted / Closed**.
 
 **Owner:** `LLM_ADAPTERS` (`TOKEN-LLM-2`, `TOKEN-LLM-3`). Pin vLLM image/version; enable automatic prefix caching; expose health, readiness, cache metrics, and `cached_input_tokens` through existing adapter usage envelope. Distinguish cold, warm, and changed-prefix controls.
 
-### TOKEN-10C-R4 — Canonical Proof Default and Shared-Server Pass Semantics
+### TOKEN-10C-R4 - Canonical Proof Default and Shared-Server Pass Semantics
 
 **Status:** **Accepted / Closed**.
 
@@ -1569,7 +1569,7 @@ Do not collapse these into one implementation commit.
 - Managed server behavior preserved; cold/warm/changed-prefix gates unchanged.
 - Reviewer guide updated ([`docs/project/capabilities/token_optimization/proofs/VLLM_PREFIX_CACHE_LIVE_PROOF.md`](../token_optimization/proofs/VLLM_PREFIX_CACHE_LIVE_PROOF.md)).
 
-### TOKEN-10C-R4-R1 — Proof Test Contract and Managed Cleanup Correction
+### TOKEN-10C-R4-R1 - Proof Test Contract and Managed Cleanup Correction
 
 **Status:** **Accepted / Closed**.
 
@@ -1583,7 +1583,7 @@ Do not collapse these into one implementation commit.
 - Non-live E2E guard verified.
 - No live vLLM run performed.
 
-### TOKEN-DOCS-1 — Token Optimization Documentation Hub and Relocation
+### TOKEN-DOCS-1 - Token Optimization Documentation Hub and Relocation
 
 **Status:** **Implemented / Ready for review**.
 
@@ -1598,13 +1598,13 @@ Do not collapse these into one implementation commit.
 - No runtime behavior changed.
 - No live proof run performed.
 
-### TOKEN-10D — Cache-Aware Router and Pipeline Orchestration
+### TOKEN-10D - Cache-Aware Router and Pipeline Orchestration
 
 **Status:** **Accepted / Closed**.
 
 Place cache-aware compaction gate in production orchestration path after router selection and before pipeline execution. Orchestrate provider cache signals with deterministic pipeline.
 
-#### TOKEN-10D-1 — Cache-Aware Orchestration Gate and Controlled Pipeline Execution
+#### TOKEN-10D-1 - Cache-Aware Orchestration Gate and Controlled Pipeline Execution
 
 **Status:** **Accepted / Closed**.
 
@@ -1615,7 +1615,7 @@ Place cache-aware compaction gate in production orchestration path after router 
 - Existing router and pipeline behavior preserved; `route_and_execute()` remains compatible.
 - No provider calls beyond router; no in-cache mutation; no live runtime proof.
 
-#### TOKEN-10D-2 — Provider Cache Signal Normalization and Timing Input Compiler
+#### TOKEN-10D-2 - Provider Cache Signal Normalization and Timing Input Compiler
 
 **Status:** **Accepted / Closed**.
 
@@ -1632,7 +1632,7 @@ Closeout:
 - no provider I/O
 - no live execution
 
-#### TOKEN-10D-3 — Runtime Cache Signal Wiring and Controlled Orchestration Entrypoint
+#### TOKEN-10D-3 - Runtime Cache Signal Wiring and Controlled Orchestration Entrypoint
 
 **Status:** **Accepted / Closed**.
 
@@ -1649,7 +1649,7 @@ Closeout:
 - no TTL inference
 - no in-cache compaction
 
-#### TOKEN-10D-CLOSEOUT-1 — Public Runtime Contract Freeze and Phase Acceptance
+#### TOKEN-10D-CLOSEOUT-1 - Public Runtime Contract Freeze and Phase Acceptance
 
 **Status:** **Implemented / Ready for review**.
 
@@ -1672,7 +1672,7 @@ Closeout:
 
 **Next step:** Independent audit of **TOKEN-10E-CLOSEOUT-1**. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**; **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, and **TOKEN-10E-4** are **ACCEPTED / CLOSED**. Durable activation is implemented; rollback execution remains outside scope.
 
-#### TOKEN-10D-1-R1 — Public Claim Guardrail Contract and Final Stage Closure
+#### TOKEN-10D-1-R1 - Public Claim Guardrail Contract and Final Stage Closure
 
 **Status:** **Implemented / Ready for review**.
 
@@ -1687,13 +1687,13 @@ Closeout:
 - no runtime logic changed
 - no live execution performed
 
-### TOKEN-10E — Policy-Governed In-Cache Compaction
+### TOKEN-10E - Policy-Governed In-Cache Compaction
 
 **Status:** **TOKEN-10E implementation complete / READY_FOR_REVIEW**, pending independent acceptance. TOKEN-10E-1, TOKEN-10E-2, TOKEN-10E-3, and TOKEN-10E-4 are **ACCEPTED / CLOSED**; the closeout proves the complete policy → candidate → validation → durable storage → CAS activation path. Rollback execution, human-review UX, and production enablement remain out of scope.
 
 **Architecture reference:** [TOKEN_OPTIMIZATION.md §8.10](../architecture/TOKEN_OPTIMIZATION.md#810-policy-governed-in-cache-compaction-token-10e) and [`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) (canonical cross-domain lifecycle; supersedes **TOKEN-10E-ARCH-1**).
 
-**Purpose:** Define and implement provider-neutral, policy-governed in-cache compaction: replace an existing logical context version with a shorter validated version through candidate-first transaction semantics, explicit cache-lineage transition, receipts, and rollback metadata — without mutating provider KV cache or active context in place.
+**Purpose:** Define and implement provider-neutral, policy-governed in-cache compaction: replace an existing logical context version with a shorter validated version through candidate-first transaction semantics, explicit cache-lineage transition, receipts, and rollback metadata - without mutating provider KV cache or active context in place.
 
 **Dependency:** Accepted **TOKEN-10D** (typed cache evidence → reconciliation → signal normalization → timing gate → router → deterministic pipeline on `RUN` only).
 
@@ -1717,16 +1717,16 @@ Closeout:
 15. TOKEN-10E architecture does not mean TOKEN-10E runtime implementation.
 16. Reuse-before-create: durable compaction performs artifact lookup before transformation.
 17. Identical compatible source must not trigger repeated LLM summarization.
-18. No duplicate artifact repository — TOKEN-10E extends UCL artifact, reservation, and revision contracts.
+18. No duplicate artifact repository - TOKEN-10E extends UCL artifact, reservation, and revision contracts.
 19. Internal summarizer uses INTERNAL_OPTIMIZATION_CALL; does not re-enter full UCL for same target.
 20. Same-key concurrent misses produce at most one transformation execution via ArtifactCreationReservation.
 ```
 
 #### Planned substeps
 
-##### TOKEN-10E-1 — Durable contract authority, identity, stability and safety
+##### TOKEN-10E-1 - Durable contract authority, identity, stability and safety
 
-**Goal:** Define the contract-only durable compaction boundary over UCL — not a competing artifact repository or runtime execution path.
+**Goal:** Define the contract-only durable compaction boundary over UCL - not a competing artifact repository or runtime execution path.
 
 **Main contracts:** `ContextOptimizationPolicy` with nested `DurableCompactionPolicy`, `DurableCompactionSourceIdentity`, typed stability evidence, `DurableCompactionEligibilityDecision`, `DurableCompactionActivationRequirements`, and canonical safe serialization aligned with `ArtifactLookupKey` and `ReusableOptimizationArtifact`.
 
@@ -1738,7 +1738,7 @@ Closeout:
 
 **Status:** **ACCEPTED / CLOSED** after **CTX-UCL-CLOSEOUT-1 ACCEPTED / CLOSED**.
 
-##### TOKEN-10E-2 — Candidate construction over MessageSequenceArtifact
+##### TOKEN-10E-2 - Candidate construction over MessageSequenceArtifact
 
 **Goal:** Define the immutable input snapshot, candidate request/result/status contracts and candidate flow. The durable candidate flow first performs artifact lookup by `ArtifactLookupKey`. Existing valid `MessageSequenceArtifact` is reused (`REUSE_ARTIFACT`). New candidate creation only on lookup miss or incompatibility (`CREATE_ARTIFACT`). New `SessionContextRevision` references the selected artifact ID/hash.
 
@@ -1754,7 +1754,7 @@ Closeout:
 
 **Closeout for TOKEN-10E-2:** immutable snapshot/request/candidate/result contracts, reuse-before-create, bounded single-flight coordination, validated repository storage, and fail-closed reservation release are implemented over the existing UCL contracts. No revision activation, rollback/receipt compiler, or new repository is included.
 
-##### TOKEN-10E-3 — Protected-region validation, receipt and rollback-metadata compiler
+##### TOKEN-10E-3 - Protected-region validation, receipt and rollback-metadata compiler
 
 **Status:** **ACCEPTED / CLOSED**.
 
@@ -1768,7 +1768,7 @@ Closeout:
 
 **Acceptance:** unit tests for exact artifact/payload revalidation, per-message protected-region detection, explicit-region extension/deduplication, redaction-safe failure details, receipt field allowlist, rollback metadata presence when policy requires it, token evidence handling, and reuse vs create attribution.
 
-##### TOKEN-10E-4 — Durable production repository adapter and SessionContextRevision activation
+##### TOKEN-10E-4 - Durable production repository adapter and SessionContextRevision activation
 
 **Status:** **ACCEPTED / CLOSED**.
 
@@ -1776,7 +1776,7 @@ Closeout:
 
 **Main contracts:** durable repository adapter; activation request contract; `STALE_CONTEXT_REVISION` on version mismatch; cache-lineage metadata separate from content-reduction metrics.
 
-**Invariants:** no silent retry on CAS conflict; no provider cache deletion claims; no summary regeneration on activation; Memory/Session owns activation — not Application or Token Optimization; TOKEN-10E must not create a second repository or reservation mechanism.
+**Invariants:** no silent retry on CAS conflict; no provider cache deletion claims; no summary regeneration on activation; Memory/Session owns activation - not Application or Token Optimization; TOKEN-10E must not create a second repository or reservation mechanism.
 
 **Out of scope:** rollback UX; reference in-memory repository (owned by CTX-UCL-2).
 
@@ -1784,7 +1784,7 @@ Closeout:
 
 **Dependencies satisfied:** CTX-UCL-2 and TOKEN-10E-3.
 
-##### TOKEN-10E-CLOSEOUT-1 — Public package-root contract freeze and phase acceptance
+##### TOKEN-10E-CLOSEOUT-1 - Public package-root contract freeze and phase acceptance
 
 **Goal:** Export stable public contracts at `intergrax.runtime.token_optimization` package root; document phase acceptance; synchronize claims guardrails.
 
@@ -1794,7 +1794,7 @@ Closeout:
 
 **Acceptance:** public exports frozen; the real end-to-end proof covers candidate reuse/reopen, validation, durable artifact recovery, CAS activation, idempotent replay, and stale revision rejection; claim guardrail tests pass; TOKEN-10E is implementation complete / READY_FOR_REVIEW, pending independent acceptance.
 
-#### Acceptance criteria (architecture — CTX-UCL-ARCH-1-R4; UCL sole lifecycle source)
+#### Acceptance criteria (architecture - CTX-UCL-ARCH-1-R4; UCL sole lifecycle source)
 
 - [x] TOKEN_OPTIMIZATION §8.10 is bounded integration profile linked to UCL (not second lifecycle)
 - [x] Memory/Session owns persistence, CAS activation, rollback execution, artifact catalog
@@ -1811,10 +1811,10 @@ Closeout:
 - [x] Internal-call boundary and single-flight creation defined in UCL
 - [x] CTX-UCL-2 owns InMemoryOptimizationArtifactRepository reference delivery
 - [x] TOKEN-10E-4 owns first durable production repository adapter delivery
-- [x] TOKEN-10E-1 and TOKEN-10E-2 candidate runtime contribution — **ACCEPTED / CLOSED**
-- [x] Receipt/rollback compiler (TOKEN-10E-3) — **ACCEPTED / CLOSED**
-- [x] Durable production repository and activation runtime (TOKEN-10E-4) — **ACCEPTED / CLOSED**
-- [x] Phase closeout — **READY_FOR_REVIEW**
+- [x] TOKEN-10E-1 and TOKEN-10E-2 candidate runtime contribution - **ACCEPTED / CLOSED**
+- [x] Receipt/rollback compiler (TOKEN-10E-3) - **ACCEPTED / CLOSED**
+- [x] Durable production repository and activation runtime (TOKEN-10E-4) - **ACCEPTED / CLOSED**
+- [x] Phase closeout - **READY_FOR_REVIEW**
 
 #### TOKEN-10E-4 delivery
 
@@ -1845,7 +1845,7 @@ automatic production enablement
 
 **TOKEN-10I** closed as `BLOCKED_HARDWARE_CAPACITY_FINAL` for `Qwen/Qwen3-14B-AWQ` on this GPU under the approved no-offload profile; continue with a separately approved local model path. **TOKEN-10H** qualification process is **CLOSED** (`NOT QUALIFIED`: `MODEL_BEHAVIOR_MISMATCH`, `14/16`, `STABLE`; runtime safety PASS; public promotion WITHHELD). Do not wire LKW, Slack, or application storage; public promotion remains withheld until a later model satisfies the full contract.
 
-### TOKEN-10F — Universal TOML Proof Harness and Reproducible Docker Path
+### TOKEN-10F - Universal TOML Proof Harness and Reproducible Docker Path
 
 **Status:** **ACCEPTED / CLOSED** (baseline); **TOKEN-10F-EVIDENCE-EXTENSION ACCEPTED / CLOSED**.
 
@@ -1875,7 +1875,7 @@ claims, and TOKEN-10H public proof or README promotion.
 
 **Current next step:** Separately approved local model path after **TOKEN-10I** `BLOCKED_HARDWARE_CAPACITY_FINAL`; **TOKEN-10H** qualification process is **CLOSED** (`NOT QUALIFIED`).
 
-#### TOKEN-10F-EVIDENCE-EXTENSION — Safe evaluation evidence contract
+#### TOKEN-10F-EVIDENCE-EXTENSION - Safe evaluation evidence contract
 
 The compatible evaluation-evidence extension is **READY_FOR_REVIEW**. It
 preserves typed router decision evidence (`review_required`, confidence, risk,
@@ -1889,7 +1889,7 @@ The extension keeps `token-optimization-proof.v1`: all new JSON fields are
 additive and have safe defaults, so existing fields and old fixtures remain
 compatible. TOKEN-10F-EVIDENCE-EXTENSION is **ACCEPTED / CLOSED**.
 
-### TOKEN-10G — Proof Corpus, Markdown Report, Evals and Hard Gates
+### TOKEN-10G - Proof Corpus, Markdown Report, Evals and Hard Gates
 
 **Status:** **CLOSED**.
 
@@ -1937,9 +1937,9 @@ deterministic review/policy invariants are protected within the existing scope.
 Corpus semantics were not changed. TOKEN-10H remains open, and Qwen
 qualification was not executed.
 
-### TOKEN-10H — Checked-In Negative Proof and Withheld Public Promotion
+### TOKEN-10H - Checked-In Negative Proof and Withheld Public Promotion
 
-**Status:** **CLOSED** — qualification process closed; model **NOT QUALIFIED**
+**Status:** **CLOSED** - qualification process closed; model **NOT QUALIFIED**
 (`MODEL_BEHAVIOR_MISMATCH`, `14/16`, `STABLE`).
 **Runtime safety (post-SAFETY-1):** **PASS**. Public promotion remains **WITHHELD**.
 
@@ -1979,24 +1979,24 @@ integrity failure count `1` (`ROUTER_EVIDENCE_PARTIAL` on high-risk only),
 policy override count `1` per run. Remaining model mismatches:
 
 - `case-high-risk-lossy-content`: expected model `no_optimization` / high /
-  review `true`; actual model decision unavailable/invalid — **MODEL FAIL**.
+  review `true`; actual model decision unavailable/invalid - **MODEL FAIL**.
   Final deterministic runtime: `REVIEW_REQUIRED` / risk `HIGH` /
   `review_required=true` / `policy_override_applied=true`
-  (`security_warning_requires_review`) / `executed=false` —
+  (`security_warning_requires_review`) / `executed=false` -
   **RUNTIME SAFETY PASS**.
 - `case-warm-cache`: expected configuration `no_optimization`; actual
-  `exact_only` — **MODEL FAIL** (unchanged expectation; not reinterpreted).
+  `exact_only` - **MODEL FAIL** (unchanged expectation; not reinterpreted).
 
 Required risk-case outcomes on the correct model:
 
 - `case-protected-values`: expected `exact_only`, low, review `false`; actual
-  `exact_only`, low, review `false` — **PASS**.
+  `exact_only`, low, review `false` - **PASS**.
 - `case-noisy-tool-output`: expected `extractive_only`, medium, review `false`;
-  actual `extractive_only`, medium, review `false` — **PASS**.
+  actual `extractive_only`, medium, review `false` - **PASS**.
 - `case-terminal-log-output`: expected `extractive_only`, medium, review
-  `false`; actual `extractive_only`, medium, review `false` — **PASS**.
-- `case-high-risk-lossy-content`: model unavailable/invalid — **MODEL FAIL**;
-  runtime fail-safe boundary correct — **RUNTIME SAFETY PASS**.
+  `false`; actual `extractive_only`, medium, review `false` - **PASS**.
+- `case-high-risk-lossy-content`: model unavailable/invalid - **MODEL FAIL**;
+  runtime fail-safe boundary correct - **RUNTIME SAFETY PASS**.
 
 No manual override was applied. No post-result tuning. Qwen 3B and larger
 models were not tested. Latest checked-in safe evidence under
@@ -2016,7 +2016,7 @@ Closeout:
 - no model qualification was granted
 - public README promotion remains blocked
 
-### TOKEN-10I — Qwen3 14B AWQ Feasibility and Frozen Qualification Gate
+### TOKEN-10I - Qwen3 14B AWQ Feasibility and Frozen Qualification Gate
 
 **Status:** **BLOCKED_HARDWARE_CAPACITY_FINAL**. Frozen qualification was not
 started. Qwen3 14B AWQ is operationally unsuitable for this GPU under the
@@ -2026,7 +2026,7 @@ approved no-offload profile.
 `Qwen/Qwen2.5-7B-Instruct-AWQ` (`MODEL_BEHAVIOR_MISMATCH`, `14/16`, STABLE,
 technical PASS, runtime safety PASS).
 
-**Attempt A (preserved) — canonical local compose except model selection:**
+**Attempt A (preserved) - canonical local compose except model selection:**
 
 - image/version: `vllm/vllm-openai:v0.23.0`
 - model override: `VLLM_MODEL=Qwen/Qwen3-14B-AWQ`
@@ -2040,7 +2040,7 @@ technical PASS, runtime safety PASS).
 - READY: **FAIL** (`ValueError: No available memory for the cache blocks`)
 - interim result: `BLOCKED_HARDWARE_CAPACITY`
 
-**Attempt B (this continuation) — one controlled capacity profile only:**
+**Attempt B (this continuation) - one controlled capacity profile only:**
 
 - `--max-model-len 8192`
 - `--gpu-memory-utilization 0.95`
@@ -2058,7 +2058,7 @@ technical PASS, runtime safety PASS).
 **Gates not reached:** `/v1/models`, chat/tool/TO smokes, semantic
 prequalification, context-headroom across 16 cases, two frozen runs.
 
-**Comparison to Qwen 7B:** no frozen-contract behavioral delta — Qwen3 never
+**Comparison to Qwen 7B:** no frozen-contract behavioral delta - Qwen3 never
 entered qualification. Qwen 7B historical evidence remains preserved.
 
 **Integrity:** prompt/corpus/risk/threshold/evaluator/runtime-safety deltas =
@@ -2072,7 +2072,7 @@ Safe evidence: [`docs/project/proofs/token_optimization/token-10i-qwen3-14b-awq-
 
 ---
 
-#### TOKEN-9A — LLM Optimization Router Contract (superseded by TOKEN-9)
+#### TOKEN-9A - LLM Optimization Router Contract (superseded by TOKEN-9)
 
 Define the future router that decides how to configure the deterministic engine for a specific input.
 
@@ -2096,7 +2096,7 @@ Out of scope:
 - bypassing deterministic validation
 - production auto-apply
 
-#### TOKEN-9B — LLM Router Evals
+#### TOKEN-9B - LLM Router Evals
 
 Test whether the future router chooses safe engine configurations for representative cases.
 
@@ -2110,7 +2110,7 @@ Example expectations:
 
 Reports must evaluate routing quality and remain redaction-safe.
 
-#### TOKEN-9C — Safe Router → Engine Integration
+#### TOKEN-9C - Safe Router → Engine Integration
 
 Connect the future LLM router to the deterministic engine under strict policy gates.
 
@@ -2153,15 +2153,15 @@ Near-deduplication, trim, schema minimization, and other algorithms remain impor
 Recommended order:
 
 ```text
-TOKEN-8A — engine core first
-TOKEN-8B — built-in catalog wiring
-TOKEN-8C — config evals
+TOKEN-8A - engine core first
+TOKEN-8B - built-in catalog wiring
+TOKEN-8C - config evals
 then add/expand algorithms as layer-specific tasks
 ```
 
-TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply.
+TOKEN-7 - broader runtime/adaptive integration remains future work; no production auto-apply.
 
-#### TOKEN-7C — policy-gated advisory integration surface
+#### TOKEN-7C - policy-gated advisory integration surface
 
 **Status:** **Done / Closed**.
 
@@ -2215,15 +2215,15 @@ TOKEN-7 — broader runtime/adaptive integration remains future work; no product
 **Roadmap/order update:**
 
 ```text
-TOKEN-7A — Done / Closed
-TOKEN-7B — Done / Closed
-TOKEN-7C — Done / Closed
-TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply
+TOKEN-7A - Done / Closed
+TOKEN-7B - Done / Closed
+TOKEN-7C - Done / Closed
+TOKEN-7 - broader runtime/adaptive integration remains future work; no production auto-apply
 ```
 
 **Next decision:** choose the next Token Optimization-only block; production auto-apply remains forbidden until explicitly designed and reviewed.
 
-#### TOKEN-7B — advisory recommendation evaluation and report pack
+#### TOKEN-7B - advisory recommendation evaluation and report pack
 
 **Status:** **Done / Closed**.
 
@@ -2269,9 +2269,9 @@ TOKEN-7 — broader runtime/adaptive integration remains future work; no product
 **Roadmap/order update:**
 
 ```text
-TOKEN-7A — Done / Closed
-TOKEN-7B — Done / Closed
-TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply
+TOKEN-7A - Done / Closed
+TOKEN-7B - Done / Closed
+TOKEN-7 - broader runtime/adaptive integration remains future work; no production auto-apply
 ```
 
 ### TOKEN-OPT-3A acceptance
@@ -2284,11 +2284,11 @@ Done / Closed when:
 - [x] LKW described as proof workload only.
 - [x] No runtime/code/test/benchmark/script/application changes.
 
-**Next step:** **TOKEN-OPT-3D** — budget-aware context packing prototype.
+**Next step:** **TOKEN-OPT-3D** - budget-aware context packing prototype.
 
 ---
 
-## TOKEN-6A — Telemetry payloads/counters for TOKEN-2..4
+## TOKEN-6A - Telemetry payloads/counters for TOKEN-2..4
 
 **Status:** **Done / Closed**.
 
@@ -2296,7 +2296,7 @@ Done / Closed when:
 
 **Deliverables:**
 
-- `intergrax/runtime/token_optimization/telemetry.py` — counter snapshot, summary payload, validation, attribute mapping
+- `intergrax/runtime/token_optimization/telemetry.py` - counter snapshot, summary payload, validation, attribute mapping
 - `tests/unit/runtime/token_optimization/test_telemetry.py`
 
 **Closeout:**
@@ -2324,7 +2324,7 @@ Done / Closed when:
 
 ---
 
-## TOKEN-6A-lite — Token savings telemetry shape
+## TOKEN-6A-lite - Token savings telemetry shape
 
 **Status:** **Done / Closed**.
 
@@ -2344,11 +2344,11 @@ Done / Closed when:
 - no telemetry emission added
 - no HOS/runtime/exporter wiring added
 - no public proof path changed
-- next step: **TOKEN-4** ContextPackOptimizer — Done / Closed (§Phase TOKEN-4 below)
+- next step: **TOKEN-4** ContextPackOptimizer - Done / Closed (§Phase TOKEN-4 below)
 
 ---
 
-## TOKEN-1C — Compression receipts + validation helpers
+## TOKEN-1C - Compression receipts + validation helpers
 
 **Status:** **Done / Closed**.
 
@@ -2371,11 +2371,11 @@ Done / Closed when:
 - no optimization behavior added
 - no token counting added
 - no telemetry wiring added
-- next step: **TOKEN-6A-lite** — **Done / Closed** (§TOKEN-6A-lite above)
+- next step: **TOKEN-6A-lite** - **Done / Closed** (§TOKEN-6A-lite above)
 
 ---
 
-## TOKEN-1B — Protected region parser/validator
+## TOKEN-1B - Protected region parser/validator
 
 **Status:** **Done / Closed**.
 
@@ -2395,11 +2395,11 @@ Done / Closed when:
 - no receipts added
 - no telemetry wiring added
 
-**Next step:** **TOKEN-1C** — compression receipts + validation helpers — **Done / Closed** (§TOKEN-1C above).
+**Next step:** **TOKEN-1C** - compression receipts + validation helpers - **Done / Closed** (§TOKEN-1C above).
 
 ---
 
-## TOKEN-1B-R — Protected terms refinement
+## TOKEN-1B-R - Protected terms refinement
 
 **Status:** **Done / Closed**.
 
@@ -2413,11 +2413,11 @@ Done / Closed when:
 - env extension extends built-ins, does not replace them
 - no runtime optimization behavior added
 - no public proof path changed
-- next step: **TOKEN-1C** — **Done / Closed** (§TOKEN-1C above)
+- next step: **TOKEN-1C** - **Done / Closed** (§TOKEN-1C above)
 
 ---
 
-## TOKEN-1A — Shared contracts + package skeleton
+## TOKEN-1A - Shared contracts + package skeleton
 
 **Status:** **Done / Closed**.
 
@@ -2437,7 +2437,7 @@ Done / Closed when:
 - no runtime optimization behavior added
 - no telemetry wiring added
 
-**Next step:** **TOKEN-1C** — compression receipts + validation helpers — **Done / Closed** (§TOKEN-1C above).
+**Next step:** **TOKEN-1C** - compression receipts + validation helpers - **Done / Closed** (§TOKEN-1C above).
 
 ---
 
@@ -2496,76 +2496,76 @@ Rules:
 ### Implementation order
 
 ```text
-LKW-PF6-0   Token Optimization proof design — Done / Closed
-TOKEN-ARCH-0  Token Optimization Engine architecture and mechanism strategy — Done / Closed
-TOKEN-1A    shared contracts + package skeleton — Done / Closed
-TOKEN-1B    protected region parser/validator — Done / Closed
-TOKEN-1C    compression receipts + validation helpers — Done / Closed
-TOKEN-6A-lite  token savings telemetry payload shape — Done / Closed
-TOKEN-2     OutputPolicy runtime resolver — Done / Closed
-TOKEN-3     ToolSchemaOptimizer compact catalog view — Done / Closed
-TOKEN-4     ContextPackOptimizer light/structural compression only — Done / Closed
-TOKEN-6A    telemetry payloads/counters for TOKEN-2..4 — Done / Closed
-TOKEN-5     MemorySummaryCompressor with staging/rollback — Planned
-TOKEN-5A    MemorySummaryCompressor helper-only first slice — Done / Closed
-TOKEN-6B    token regression benchmark runner + CI scripts — Done / Closed
-TOKEN-OBS-1A domain signal model + safe in-memory emission — Done / Closed
-TOKEN-OBS-1B HOS domain-signal adapter for token optimization signals — Done / Closed
-TOKEN-OBS-1C explicit opt-in token optimization emission helpers — Done / Closed
-TOKEN-OBS-1D policy-gated token optimization runtime emission hook — Done / Closed
-TOKEN-OBS-1E policy-gated regression benchmark emission wrapper — Done / Closed
-TOKEN-OBS-2A token regression benchmark report artifact — Done / Closed
-TOKEN-OBS-2B regression fixture/eval matrix — Done / Closed
-TOKEN-OBS-2C regression gate thresholds — Done / Closed
-TOKEN-OBS-2D benchmark CLI report/gate output — Done / Closed
-TOKEN-OPT-3A stronger optimizer roadmap, algorithm inventory, measurement sequencing — Done / Closed
-TOKEN-OPT-3B priority-tiered context packing contract — Done / Closed
-TOKEN-OPT-3C-A optimization layer and pipeline composition contract — Done / Closed
-TOKEN-OPT-3C-B deterministic exact deduplication layer — Done / Closed
-TOKEN-OPT-3D budget-aware context packing prototype — Done / Closed
-TOKEN-OBS-3E realistic corpus for stronger optimizer — Done / Closed as part of TOKEN-OBS-3E-F
-TOKEN-OBS-3F baseline vs stronger optimizer comparison — Done / Closed as part of TOKEN-OBS-3E-F
-TOKEN-OBS-3G safe public wording / proof claims — Done / Closed
-TOKEN-OPT-4A extractive filtering layer — Done / Closed
-TOKEN-OPT-4B extractive filtering evaluation cases / regression pack — Done / Closed
-TOKEN-OPT-5A cache-prefix stabilization architecture / contract — Done / Closed
-TOKEN-OPT-5B prompt-cache contracts and cache-prefix stability proof — Done / Closed
+LKW-PF6-0   Token Optimization proof design - Done / Closed
+TOKEN-ARCH-0  Token Optimization Engine architecture and mechanism strategy - Done / Closed
+TOKEN-1A    shared contracts + package skeleton - Done / Closed
+TOKEN-1B    protected region parser/validator - Done / Closed
+TOKEN-1C    compression receipts + validation helpers - Done / Closed
+TOKEN-6A-lite  token savings telemetry payload shape - Done / Closed
+TOKEN-2     OutputPolicy runtime resolver - Done / Closed
+TOKEN-3     ToolSchemaOptimizer compact catalog view - Done / Closed
+TOKEN-4     ContextPackOptimizer light/structural compression only - Done / Closed
+TOKEN-6A    telemetry payloads/counters for TOKEN-2..4 - Done / Closed
+TOKEN-5     MemorySummaryCompressor with staging/rollback - Planned
+TOKEN-5A    MemorySummaryCompressor helper-only first slice - Done / Closed
+TOKEN-6B    token regression benchmark runner + CI scripts - Done / Closed
+TOKEN-OBS-1A domain signal model + safe in-memory emission - Done / Closed
+TOKEN-OBS-1B HOS domain-signal adapter for token optimization signals - Done / Closed
+TOKEN-OBS-1C explicit opt-in token optimization emission helpers - Done / Closed
+TOKEN-OBS-1D policy-gated token optimization runtime emission hook - Done / Closed
+TOKEN-OBS-1E policy-gated regression benchmark emission wrapper - Done / Closed
+TOKEN-OBS-2A token regression benchmark report artifact - Done / Closed
+TOKEN-OBS-2B regression fixture/eval matrix - Done / Closed
+TOKEN-OBS-2C regression gate thresholds - Done / Closed
+TOKEN-OBS-2D benchmark CLI report/gate output - Done / Closed
+TOKEN-OPT-3A stronger optimizer roadmap, algorithm inventory, measurement sequencing - Done / Closed
+TOKEN-OPT-3B priority-tiered context packing contract - Done / Closed
+TOKEN-OPT-3C-A optimization layer and pipeline composition contract - Done / Closed
+TOKEN-OPT-3C-B deterministic exact deduplication layer - Done / Closed
+TOKEN-OPT-3D budget-aware context packing prototype - Done / Closed
+TOKEN-OBS-3E realistic corpus for stronger optimizer - Done / Closed as part of TOKEN-OBS-3E-F
+TOKEN-OBS-3F baseline vs stronger optimizer comparison - Done / Closed as part of TOKEN-OBS-3E-F
+TOKEN-OBS-3G safe public wording / proof claims - Done / Closed
+TOKEN-OPT-4A extractive filtering layer - Done / Closed
+TOKEN-OPT-4B extractive filtering evaluation cases / regression pack - Done / Closed
+TOKEN-OPT-5A cache-prefix stabilization architecture / contract - Done / Closed
+TOKEN-OPT-5B prompt-cache contracts and cache-prefix stability proof - Done / Closed
 TOKEN-OPT-5C folded into TOKEN-OPT-5B functional block
 TOKEN-OPT-5D folded into TOKEN-OPT-5B functional block
-TOKEN-OPT-5E cache-aware compaction timing policy — Done / Closed
-TOKEN-7A    advisory recommendation contract and policy-only recommender — Done / Closed
-TOKEN-7B    advisory recommendation evaluation and report pack — Done / Closed
-TOKEN-7C    policy-gated advisory integration surface — Done / Closed
-TOKEN-7D    advisory policy presets and resolver — Done / Closed
+TOKEN-OPT-5E cache-aware compaction timing policy - Done / Closed
+TOKEN-7A    advisory recommendation contract and policy-only recommender - Done / Closed
+TOKEN-7B    advisory recommendation evaluation and report pack - Done / Closed
+TOKEN-7C    policy-gated advisory integration surface - Done / Closed
+TOKEN-7D    advisory policy presets and resolver - Done / Closed
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
-TOKEN-8A..8D layer registry, catalog, evals, plugin proof — Done / Closed
-TOKEN-9     LLM router, compiler, engine integration, live E2E — Accepted / Closed
-TOKEN-10A   cache-aware runtime and proof canon (docs) — Accepted / Closed
-TOKEN-10B   cache-stable prompt, thread and tool-envelope runtime — Accepted / Closed
-TOKEN-10B-R1 send-payload integrity and tool-envelope transition corrections — Accepted / Closed
-TOKEN-10B-R2 exact tool-schema order integrity — Accepted / Closed
-TOKEN-10C   vLLM prefix-cache provider integration and metrics — Accepted / Closed
-TOKEN-10C-R4 canonical proof default and shared-server pass semantics — Accepted / Closed
-TOKEN-10C-R4-R1 proof test contract and managed cleanup correction — Accepted / Closed
-TOKEN-DOCS-1   token optimization documentation hub and relocation — Implemented / Ready for review
-TOKEN-10D-1..10D-3 cache-aware orchestration, normalization, runtime — Accepted / Closed
-TOKEN-10D   cache-aware router and pipeline orchestration — Accepted / Closed
-TOKEN-10E   policy-governed in-cache compaction — TOKEN-10E-3 Ready for Review (activation/rollback runtime not started)
-TOKEN-10F universal proof harness — Accepted / Closed
-TOKEN-10F-EVIDENCE-EXTENSION — Accepted / Closed
-TOKEN-10G corpus, gates and evaluation — Closed
-TOKEN-10H checked-in negative live proof (post-SAFETY-1) — CLOSED / NOT QUALIFIED (MODEL_BEHAVIOR_MISMATCH, 14/16, STABLE); runtime safety PASS; public promotion withheld
+TOKEN-8A..8D layer registry, catalog, evals, plugin proof - Done / Closed
+TOKEN-9     LLM router, compiler, engine integration, live E2E - Accepted / Closed
+TOKEN-10A   cache-aware runtime and proof canon (docs) - Accepted / Closed
+TOKEN-10B   cache-stable prompt, thread and tool-envelope runtime - Accepted / Closed
+TOKEN-10B-R1 send-payload integrity and tool-envelope transition corrections - Accepted / Closed
+TOKEN-10B-R2 exact tool-schema order integrity - Accepted / Closed
+TOKEN-10C   vLLM prefix-cache provider integration and metrics - Accepted / Closed
+TOKEN-10C-R4 canonical proof default and shared-server pass semantics - Accepted / Closed
+TOKEN-10C-R4-R1 proof test contract and managed cleanup correction - Accepted / Closed
+TOKEN-DOCS-1   token optimization documentation hub and relocation - Implemented / Ready for review
+TOKEN-10D-1..10D-3 cache-aware orchestration, normalization, runtime - Accepted / Closed
+TOKEN-10D   cache-aware router and pipeline orchestration - Accepted / Closed
+TOKEN-10E   policy-governed in-cache compaction - TOKEN-10E-3 Ready for Review (activation/rollback runtime not started)
+TOKEN-10F universal proof harness - Accepted / Closed
+TOKEN-10F-EVIDENCE-EXTENSION - Accepted / Closed
+TOKEN-10G corpus, gates and evaluation - Closed
+TOKEN-10H checked-in negative live proof (post-SAFETY-1) - CLOSED / NOT QUALIFIED (MODEL_BEHAVIOR_MISMATCH, 14/16, STABLE); runtime safety PASS; public promotion withheld
 ```
 
-TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply.
+TOKEN-7 - broader runtime/adaptive integration remains future work; no production auto-apply.
 
-**TOKEN-10** is the active implementation roadmap. Runtime/provider cache integration is planned under TOKEN-10B–TOKEN-10D — not deferred indefinitely.
+**TOKEN-10** is the active implementation roadmap. Runtime/provider cache integration is planned under TOKEN-10B–TOKEN-10D - not deferred indefinitely.
 
 Semantic compression is deliberately delayed until protected-region validation, receipts, telemetry, and regression gates exist. **TOKEN-OPT-3A** sequences stronger mechanisms one algorithm per task (§TOKEN-OPT-3A); semantic compression and LLM summarization remain excluded from the next implementation slice.
 
 ---
 
-## Phase TOKEN-1 — Shared contracts, receipts, and protected regions
+## Phase TOKEN-1 - Shared contracts, receipts, and protected regions
 
 **Goal:** Establish the safe foundation used by all later Token Optimization slices.
 
@@ -2603,7 +2603,7 @@ uv run python scripts/check_token_optimization_contracts.py
 
 ---
 
-## Phase TOKEN-2 — OutputPolicy runtime
+## Phase TOKEN-2 - OutputPolicy runtime
 
 **Goal:** Replace prompt-only verbosity control with runtime output policy.
 
@@ -2653,11 +2653,11 @@ uv run python scripts/check_output_policy_wiring.py
 - no content optimization added
 - no telemetry emission added
 - no runtime hot-path wiring added
-- next step: **TOKEN-3** ToolSchemaOptimizer — **Done / Closed** (§TOKEN-3 below)
+- next step: **TOKEN-3** ToolSchemaOptimizer - **Done / Closed** (§TOKEN-3 below)
 
 ---
 
-## Phase TOKEN-3 — ToolSchemaOptimizer
+## Phase TOKEN-3 - ToolSchemaOptimizer
 
 **Goal:** Reduce recurring tool catalog token cost without changing tool schema semantics.
 
@@ -2675,7 +2675,7 @@ uv run python scripts/check_output_policy_wiring.py
 
 **Deliverables (helper-only, TOKEN-3 closeout):**
 
-- `intergrax/runtime/token_optimization/tool_schema.py` — `ToolSchemaOptimizer` and `optimize_tool_schema_catalog`
+- `intergrax/runtime/token_optimization/tool_schema.py` - `ToolSchemaOptimizer` and `optimize_tool_schema_catalog`
 - deterministic LLM-facing compact catalog view
 - description normalization/truncation
 - optional example removal via `allow_example_removal`
@@ -2720,11 +2720,11 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 - no prompt assembly added
 - no telemetry emission added
 - runtime wiring into `ToolPlanningService` / `CatalogToolPlanner` / schema export path deferred to `TOKEN-TOOLS-1B`
-- next step: **TOKEN-4** ContextPackOptimizer light/structural compression — Done / Closed (§Phase TOKEN-4 below)
+- next step: **TOKEN-4** ContextPackOptimizer light/structural compression - Done / Closed (§Phase TOKEN-4 below)
 
 ---
 
-## Phase TOKEN-4 — ContextPackOptimizer
+## Phase TOKEN-4 - ContextPackOptimizer
 
 **Goal:** Optimize selected context fragments using deterministic light/structural compression (helper-only slice).
 
@@ -2734,7 +2734,7 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 
 **Deliverables (helper-only, TOKEN-4 closeout):**
 
-- `intergrax/runtime/token_optimization/context_pack.py` — `ContextPackOptimizer` and `optimize_context_pack`
+- `intergrax/runtime/token_optimization/context_pack.py` - `ContextPackOptimizer` and `optimize_context_pack`
 - deterministic light/structural context pack compaction
 - required fragment preservation
 - fragment order/IDs/source/provenance preservation
@@ -2794,7 +2794,7 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 
 ---
 
-## Phase TOKEN-5 — MemorySummaryCompressor
+## Phase TOKEN-5 - MemorySummaryCompressor
 
 **Goal:** Safely compress persistent natural-language memory summaries and documentation-derived memory blocks.
 
@@ -2802,9 +2802,9 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 
 **Dependencies:** TOKEN-1 contracts/receipts/protected regions; recommended after TOKEN-4 proves runtime receipts.
 
-**Status:** Planned (helper-only first slice **TOKEN-5A** — Done / Closed; see §TOKEN-5A).
+**Status:** Planned (helper-only first slice **TOKEN-5A** - Done / Closed; see §TOKEN-5A).
 
-**First slice:** **TOKEN-5A** — helper-only `MemorySummaryCompressor` with staging, receipts, validation, rollback metadata, and benchmark-ready result shape. See §TOKEN-5A below.
+**First slice:** **TOKEN-5A** - helper-only `MemorySummaryCompressor` with staging, receipts, validation, rollback metadata, and benchmark-ready result shape. See §TOKEN-5A below.
 
 **Later slices (not TOKEN-5A):** live staging write flow, memory receipt storage wiring, CI script `scripts/check_memory_compression_receipts.py`, runtime hot-path integration.
 
@@ -2812,11 +2812,11 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 
 ---
 
-## TOKEN-5A — MemorySummaryCompressor helper-only first slice
+## TOKEN-5A - MemorySummaryCompressor helper-only first slice
 
 **Status:** **Done / Closed**.
 
-**Purpose:** Add a conservative MEMORY-owned `MemorySummaryCompressor` helper that compresses memory-summary candidates deterministically, records receipts and rollback metadata, and returns a benchmark-ready result shape — without live memory-store mutation, LLM-based semantic rewriting, or runtime hot-path wiring.
+**Purpose:** Add a conservative MEMORY-owned `MemorySummaryCompressor` helper that compresses memory-summary candidates deterministically, records receipts and rollback metadata, and returns a benchmark-ready result shape - without live memory-store mutation, LLM-based semantic rewriting, or runtime hot-path wiring.
 
 **Closeout notes:**
 
@@ -2836,7 +2836,7 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 - no LKW proof execution
 - next step: **TOKEN-OBS-1** HOS/domain-signal emission according to plan ordering
 
-**Refinement TOKEN-5A-R — unsafe lossy truncation guard:**
+**Refinement TOKEN-5A-R - unsafe lossy truncation guard:**
 
 - `max_summary_chars` is treated as **lossy** compression, not lossless structural compaction
 - no truncation under default `allow_lossy=False` policy
@@ -2847,7 +2847,7 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 
 **Deliverables (implementation task, not this docs-only slice):**
 
-- `intergrax/memory/summary_compressor.py` — conservative `MemorySummaryCompressor` helper
+- `intergrax/memory/summary_compressor.py` - conservative `MemorySummaryCompressor` helper
 - staged compressed candidate/result model
 - rollback metadata model
 - protected-region validator reuse (TOKEN-1B)
@@ -2916,7 +2916,7 @@ uv run pytest tests/unit/memory/ -q
 
 ---
 
-## Phase TOKEN-6 — Telemetry and regression gates
+## Phase TOKEN-6 - Telemetry and regression gates
 
 **Goal:** Make token savings measurable and safe across runs, steps, models, and sources.
 
@@ -2933,7 +2933,7 @@ uv run pytest tests/unit/memory/ -q
 - savings attribution model,
 - token-vs-quality benchmark fixtures,
 - `scripts/check_compression_receipts.py`,
-- `scripts/check_token_regression_benchmarks.py` — **Done / Closed** (TOKEN-6B helper-only runner; no HOS wiring).
+- `scripts/check_token_regression_benchmarks.py` - **Done / Closed** (TOKEN-6B helper-only runner; no HOS wiring).
 
 **TOKEN-6B closeout (Done / Closed):** `intergrax/runtime/token_optimization/regression.py` provides deterministic fixture-based regression benchmarks for `tool_schema`, `context_pack`, and `memory_summary` with receipt/validation/fallback expectation checks and a local `scripts/check_token_regression_benchmarks.py` gate. No model calls, no external tokenizer, no HOS/exporter wiring, no LKW proof execution.
 
@@ -2960,7 +2960,7 @@ uv run python scripts/check_token_regression_benchmarks.py
 
 ---
 
-## Phase TOKEN-7 — Adaptive optimization
+## Phase TOKEN-7 - Adaptive optimization
 
 **Goal:** Use historical telemetry to recommend budgets and compression strategies.
 
@@ -3021,7 +3021,7 @@ Use this only after the domain plan rows above exist.
 Pracujemy na repozytorium `jakbuczarnecki/intergrax`, branch `development`.
 
 Cel sesji:
-Zaimplementuj TOKEN-1A/TOKEN-1B/TOKEN-1C — shared Token Optimization contracts, protected-region validator, and compression receipts.
+Zaimplementuj TOKEN-1A/TOKEN-1B/TOKEN-1C - shared Token Optimization contracts, protected-region validator, and compression receipts.
 
 Read scope:
 - docs/project/capabilities/architecture/TOKEN_OPTIMIZATION.md
@@ -3074,12 +3074,12 @@ feat: add token optimization contracts and receipts
 
 ---
 
-## Protocol v2 remediation — TOKEN_OPTIMIZATION (2026-08-18)
+## Protocol v2 remediation - TOKEN_OPTIMIZATION (2026-08-18)
 
 **Audit:** [`docs/audit_results/2026-08-18/TOKEN_OPTIMIZATION.md`](../../audit_results/2026-08-18/TOKEN_OPTIMIZATION.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
-**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-TOKEN-OPTIMIZATION-PERSIST.
+**Status:** ACCEPTED findings - **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-TOKEN-OPTIMIZATION-PERSIST.
 
-#### TOKEN-MEASUREMENT-EVIDENCE-INTEGRITY — canonical measurement, receipt identity, observability authority
+#### TOKEN-MEASUREMENT-EVIDENCE-INTEGRITY - canonical measurement, receipt identity, observability authority
 
 **Priority:** P0
 **Status:** `ACCEPTED / PLANNED`
@@ -3092,7 +3092,7 @@ feat: add token optimization contracts and receipts
 - Effective `TokenOptimizationPolicy.emit_observability` binds to canonical HOS emission; no disconnected second emission-policy truth.
 - Cross-link [`LLM_ADAPTERS`](../../maintainers/plans/LLM_ADAPTERS.md) and [`OBSERVABILITY`](../../maintainers/plans/OBSERVABILITY.md) / [`OBSERVABILITY_EVIDENCE`](../../maintainers/plans/OBSERVABILITY_EVIDENCE.md).
 
-#### TOKEN-PROTECTED-TRANSFORMATION-INTEGRITY — occurrence-aware preservation and mandatory validation
+#### TOKEN-PROTECTED-TRANSFORMATION-INTEGRITY - occurrence-aware preservation and mandatory validation
 
 **Priority:** P0
 **Status:** `ACCEPTED / PLANNED`
@@ -3104,7 +3104,7 @@ feat: add token optimization contracts and receipts
 - Platform minimum validation cannot be disabled by lossy plugin/policy configuration.
 - Cross-link [`CONTEXT_ENGINEERING`](../../maintainers/plans/CONTEXT_ENGINEERING.md), [`TOOLS`](../../maintainers/plans/TOOLS.md), [`RAG`](../../maintainers/plans/RAG.md), [`MEMORY`](../../maintainers/plans/MEMORY.md) where source-specific validators are owned.
 
-#### TOKEN-DOCUMENTATION-LIFECYCLE-INTEGRITY — architecture/plan current-state parity
+#### TOKEN-DOCUMENTATION-LIFECYCLE-INTEGRITY - architecture/plan current-state parity
 
 **Priority:** P2
 **Status:** `ACCEPTED / PLANNED`

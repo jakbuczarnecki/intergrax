@@ -1,10 +1,10 @@
-# RAG — Implementation Plan
+# RAG - Implementation Plan
 
 **Architecture (1:1):** [`architecture/RAG.md`](../../architecture/RAG.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> **HISTORICAL / PLAN DOCUMENT — NOT CURRENT RUNTIME TRUTH.** This file
+> **HISTORICAL / PLAN DOCUMENT - NOT CURRENT RUNTIME TRUTH.** This file
 > preserves implementation history and roadmap decisions. Status values in
 > historical rows describe the state at the time of that phase. The current
 > architecture, qualification boundary and provider taxonomy are owned only
@@ -18,8 +18,8 @@
 
 **Do not read this entire file in one session** (RAG plan).
 
-- **Implement / audit default:** Hub §6 · [`satellites`](satellites) satellites on demand. **On demand (one max):** [`satellites/RAG_implementation_history.md`](satellites/RAG_implementation_history.md) · [`satellites/RAG_embedded_detail.md`](satellites/RAG_embedded_detail.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
-- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Implement / audit default:** Hub §6 · [`satellites`](satellites) satellites on demand. **On demand (one max):** [`satellites/RAG_implementation_history.md`](satellites/RAG_implementation_history.md) · [`satellites/RAG_embedded_detail.md`](satellites/RAG_embedded_detail.md). Phase AUDIT-IDEAL - **Planned** / open rows only. §6.1 maintenance queues - open P0/P1 only
+- **Use** `Read` with offset/limit - open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/RAG.md`](../../architecture/RAG.md) read-scope block only.
 - **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
@@ -42,7 +42,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Current roadmap pointer — RAG-DOCS-11
+## Current roadmap pointer - RAG-DOCS-11
 
 Completed roadmap phases: **RAG-FINAL-9**, **RAG-FINAL-10A**,
 **RAG-FINAL-10B**, **RAG-FINAL-10C** and **RAG-FINAL-10D**.
@@ -65,14 +65,14 @@ It is retained as evidence, not as a second current-state matrix.
 
 <a id="protocol-v2-rag-remediation-2026-08-18"></a>
 
-## Protocol v2 — RAG remediation (2026-08-18)
+## Protocol v2 - RAG remediation (2026-08-18)
 
 **Audit:** [`docs/audit_results/2026-08-18/RAG.md`](../../audit_results/2026-08-18/RAG.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
-**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-RAG-PERSIST.
+**Status:** ACCEPTED findings - **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-RAG-PERSIST.
 
 <a id="rag-scope-contract-integrity-2026-08-18"></a>
 
-### RAG-SCOPE-CONTRACT-INTEGRITY — fail-closed scoped retrieval and one native result ABI
+### RAG-SCOPE-CONTRACT-INTEGRITY - fail-closed scoped retrieval and one native result ABI
 
 **Priority:** P0/P1
 **Status:** `ACCEPTED / PLANNED`
@@ -80,15 +80,15 @@ It is retained as evidence, not as a second current-state matrix.
 
 **Outcome (planning only):**
 
-- Canonical production `RetrievalService` requires authoritative `VectorStoreScope` before provider retrieval — unscoped retrieval is not an ambient valid production state.
-- Unscoped lab/evaluation retrieval, if retained, uses an explicitly non-production/test surface or typed execution mode — not absence of scope on the canonical service.
+- Canonical production `RetrievalService` requires authoritative `VectorStoreScope` before provider retrieval - unscoped retrieval is not an ambient valid production state.
+- Unscoped lab/evaluation retrieval, if retained, uses an explicitly non-production/test surface or typed execution mode - not absence of scope on the canonical service.
 - One canonical retriever result ABI: `RetrievalHit` → `RetrievalChunk` with provenance preserved regardless of reranker configuration.
 - Remove or segregate duck-typed `_candidates_to_chunks` legacy adaptation on production retrieval paths.
 - Do not create a second `RetrievalService`.
 
 <a id="rag-configuration-qualification-integrity-2026-08-18"></a>
 
-### RAG-CONFIGURATION-QUALIFICATION-INTEGRITY — bounded resource policy and GraphRAG qualification binding
+### RAG-CONFIGURATION-QUALIFICATION-INTEGRITY - bounded resource policy and GraphRAG qualification binding
 
 **Priority:** P1
 **Status:** `ACCEPTED / PLANNED`
@@ -97,13 +97,13 @@ It is retained as evidence, not as a second current-state matrix.
 **Outcome (planning only):**
 
 - `RagProfile` and `RetrievalRequest` become fail-fast resource-policy contracts with explicit production-safe ranges and cross-field invariants.
-- Invalid explicit env configuration fails startup/config validation — not silent dangerous runtime values.
-- Production-named presets reflect actual security/durability posture — rename or remove misleading `production_rag_profile()` harness preset; durable GraphRAG production posture remains `production_graph_rag_profile()`.
-- GraphRAG production validation binds profile graph-backend intent to actual `IntegrationProfile` graph-store binding and approved provider qualification — coordinate with [`INTEGRATIONS-RUNTIME-BINDING-INTEGRITY`](INTEGRATIONS.md#integrations-runtime-binding-integrity-2026-08-18); no parallel integration resolver.
+- Invalid explicit env configuration fails startup/config validation - not silent dangerous runtime values.
+- Production-named presets reflect actual security/durability posture - rename or remove misleading `production_rag_profile()` harness preset; durable GraphRAG production posture remains `production_graph_rag_profile()`.
+- GraphRAG production validation binds profile graph-backend intent to actual `IntegrationProfile` graph-store binding and approved provider qualification - coordinate with [`INTEGRATIONS-RUNTIME-BINDING-INTEGRITY`](INTEGRATIONS.md#integrations-runtime-binding-integrity-2026-08-18); no parallel integration resolver.
 
 <a id="rag-observability-identity-2026-08-18"></a>
 
-### RAG-OBSERVABILITY-IDENTITY — telemetry from canonical retrieval scope
+### RAG-OBSERVABILITY-IDENTITY - telemetry from canonical retrieval scope
 
 **Priority:** P1/P2
 **Status:** `ACCEPTED / PLANNED`
@@ -111,27 +111,27 @@ It is retained as evidence, not as a second current-state matrix.
 
 **Outcome (planning only):**
 
-- Scoped retrieval telemetry uses `request.scope.tenant_id` — not a duplicate writable `tenant_id` request field.
+- Scoped retrieval telemetry uses `request.scope.tenant_id` - not a duplicate writable `tenant_id` request field.
 - Explicit non-tenant label only for intentionally unscoped lab/evaluation execution.
 
 **Remediation rules:**
 
 - Revalidate each finding against then-current `development` HEAD before implementation.
 - Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
-- Historical **Done** rows in this plan and qualification handoffs remain historical facts — not rewritten as remediation completion.
+- Historical **Done** rows in this plan and qualification handoffs remain historical facts - not rewritten as remediation completion.
 
 **Recommended remediation order (prioritization, not dependency graph):** RAG-SCOPE-CONTRACT-INTEGRITY → RAG-CONFIGURATION-QUALIFICATION-INTEGRITY → RAG-OBSERVABILITY-IDENTITY
 
 ---
 
-## Phase AUDIT-IDEAL — RAG gap register (layer 14)
+## Phase AUDIT-IDEAL - RAG gap register (layer 14)
 
 > Historical phase register. Do not interpret row statuses as current
 > qualification; consult the canonical architecture hub above.
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.6, §7.7
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
-**Engine depth audit:** 2026-06-10 — full register in [`architecture/RAG.md`](../../architecture/RAG.md) §Engine depth audit register
+**Engine depth audit:** 2026-06-10 - full register in [`architecture/RAG.md`](../../architecture/RAG.md) §Engine depth audit register
 
 | ID | AUDIT § | Gap | Priority | Status | M-RAG |
 |----|---------|-----|----------|--------|-------|
@@ -141,17 +141,17 @@ It is retained as evidence, not as a second current-state matrix.
 | AUDIT-IDEAL-14.5 | §14 RAG | Retrieval poisoning defense on `rag.retrieve` catalog path | P1 | **Done** | M-RAG.25 |
 | AUDIT-IDEAL-14.6 | §14 RAG | Large-corpus async ingest (stream / job orchestration) | P1 | **Done** | M-RAG.26 |
 | AUDIT-IDEAL-14.7 | §14 RAG | OpenTelemetry spans on RAG retrieve + ingest hot path | P2 | **Done** | M-RAG.27 |
-| AUDIT-IDEAL-14.8 | §14 RAG · §3.7.1 | Universal GraphRAG platform — backend registry, lifecycle, retrieval hardening | P1 | **Done** (G1–G3; G4 optional) | M-RAG-GRAPH (M-RAG.38–M-RAG.47, M-RAG.48, M-RAG.52) |
+| AUDIT-IDEAL-14.8 | §14 RAG · §3.7.1 | Universal GraphRAG platform - backend registry, lifecycle, retrieval hardening | P1 | **Done** (G1–G3; G4 optional) | M-RAG-GRAPH (M-RAG.38–M-RAG.47, M-RAG.48, M-RAG.52) |
 
-**Note:** AUDIT-IDEAL-14.2 (retrieval poisoning on product hosts) is owned by [`plan/MEMORY.md`](MEMORY.md) + UAEP security wiring — Nexus `rag.retrieve` (catalog) path.
+**Note:** AUDIT-IDEAL-14.2 (retrieval poisoning on product hosts) is owned by [`plan/MEMORY.md`](MEMORY.md) + UAEP security wiring - Nexus `rag.retrieve` (catalog) path.
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR (when applicable) → update this table + master register → gate green. Additional GAP-RAG rows without AUDIT-IDEAL IDs use M-RAG.\* only.
 
-**Engine audit (2026-06-13):** Maturity **L3 implementation / L3 control plane** — **Frozen**. Closeout: [Phase M-RAG-CONVERGE](.#phase-m-rag-converge--doc--diagnostics-closeout-2026-06-13).
+**Engine audit (2026-06-13):** Maturity **L3 implementation / L3 control plane** - **Frozen**. Closeout: [Phase M-RAG-CONVERGE](.#phase-m-rag-converge--doc--diagnostics-closeout-2026-06-13).
 
 ---
 
-## Historical cross-feature work — LangChain Independence
+## Historical cross-feature work - LangChain Independence
 
 > This is the historical RAG-side record of the LangChain Independence
 > program. Current LangChain architecture and optionality are owned by the

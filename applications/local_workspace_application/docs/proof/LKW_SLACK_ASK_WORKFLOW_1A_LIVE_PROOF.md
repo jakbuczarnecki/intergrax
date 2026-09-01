@@ -1,4 +1,4 @@
-# LKW-SLACK-WORKFLOW-1A — live proof
+# LKW-SLACK-WORKFLOW-1A - live proof
 
 ```text
 Status: PASS
@@ -17,14 +17,14 @@ Ask call count: 1 (exact live question)
 Ask run_id: run_8f6824ee9dcd41a1b07e7ba1222d5b14
 Ask typed status: completed
 Final reply count: 1 (operator confirmed final reply + safe Sources label; dedupe mark_completed after send)
-Same-thread result: PASS — operator confirmed ack + final under the same inbound DM thread; platform mapping (thread_id = message ts → chat.postMessage thread_ts)
+Same-thread result: PASS - operator confirmed ack + final under the same inbound DM thread; platform mapping (thread_id = message ts → chat.postMessage thread_ts)
 Answer correctness: PASS (persisted answer matches expected verification code from safe source)
 Citation count: 1
 Safe file names: lkw_persistence_proof_20260720143245.txt
 Unsafe fields observed: none in Slack-rendered path / persisted answer text (no source_path, excerpt, chunk/document IDs, stack traces, or tokens in operator-facing output)
 Persisted run verification: GET /v1/local_workspace/asks/{run_id} → exists; workspace_id matches configured active workspace; status=completed; answer persisted; citation_count=1; file_name matches Slack safe label
-Shutdown/optionality: PASS — controlled stop; restart with companion disabled; HTTP ready; core readiness ready; mcp disabled/healthy; slack_companion enabled=false detail=disabled
-Secrets review: PASS — no tokens/API keys/.env contents/full payloads/answers/questions/excerpts/absolute paths recorded here
+Shutdown/optionality: PASS - controlled stop; restart with companion disabled; HTTP ready; core readiness ready; mcp disabled/healthy; slack_companion enabled=false detail=disabled
+Secrets review: PASS - no tokens/API keys/.env contents/full payloads/answers/questions/excerpts/absolute paths recorded here
 dedupe_classification: DETERMINISTIC_CONCURRENCY_VERIFIED
 dedupe_live_redelivery: NOT_REQUIRED (artificial same event_id redelivery would duplicate deterministic coverage)
 dedupe_code_and_concurrency_tests: VERIFIED (unit/integration suite; accepted same-event claim + concurrent workflow tests)

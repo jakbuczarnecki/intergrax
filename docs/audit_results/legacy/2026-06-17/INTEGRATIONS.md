@@ -1,4 +1,4 @@
-# Audit result — `INTEGRATIONS`
+# Audit result - `INTEGRATIONS`
 
 **Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
@@ -33,10 +33,10 @@ uv run pytest tests/unit/integrations/ -q
 
 ## Backlog P2–P4 (deferred)
 
-- Beta→stable slug promotion honesty — P2
-- Thin P4 provider shells — P3
-- SaaS-only slugs without local container — P3
-- nginx/ingress slug — P4 ECP cross-ref
+- Beta→stable slug promotion honesty - P2
+- Thin P4 provider shells - P3
+- SaaS-only slugs without local container - P3
+- nginx/ingress slug - P4 ECP cross-ref
 
 ---
 

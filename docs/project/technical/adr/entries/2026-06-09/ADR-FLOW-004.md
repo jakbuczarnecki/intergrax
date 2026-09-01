@@ -15,10 +15,10 @@ Product teams need declarative control over **when** topology seeding applies wi
 
 ## Decision
 
-1. Add **`ApplicationGraphSpec.trigger_capabilities: list[str]`** — when non-empty, graph seeding applies **only** when `task.context.capability` matches one of the listed values.
+1. Add **`ApplicationGraphSpec.trigger_capabilities: list[str]`** - when non-empty, graph seeding applies **only** when `task.context.capability` matches one of the listed values.
 2. When **`trigger_capabilities` is empty**, retain backward-compatible convention: seed only when capability ends with **`pipeline_capability_suffix`** (default `".pipeline"`).
 3. **`should_seed_plan_from_graph_spec(task, spec)`** is the single guard; `GraphSpecSeedingPlanner` delegates to it before calling `application_graph_spec_to_nexus_plan`.
-3. Orchestration capabilities (``trigger_capabilities`` / ``*.pipeline`` suffix) are **routing tokens** — agents are selected by ``graph_spec`` node ``agent_id``; registry lookup by orchestration token is not required.
+3. Orchestration capabilities (``trigger_capabilities`` / ``*.pipeline`` suffix) are **routing tokens** - agents are selected by ``graph_spec`` node ``agent_id``; registry lookup by orchestration token is not required.
 
 **Not chosen:**
 

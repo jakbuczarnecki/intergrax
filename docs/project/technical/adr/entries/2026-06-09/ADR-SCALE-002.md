@@ -15,7 +15,7 @@ ECP scaling actions target Kubernetes deployments and Celery pools. Product docs
 
 - **Defer** a dedicated `nginx` / `ingress_controller` integration slug until a Tier-3 product requires edge routing autoscale beyond K8s deployment replicas.
 - **Canonical scale path (harness):** `ScalingProvisioner` + `KubernetesCloudPlatform` for `NEXUS_HOST` and workload deployments.
-- **Edge routing:** document as operational concern outside ECP control plane v1 — operators scale ingress via existing K8s deployment targets using the same provisioner.
+- **Edge routing:** document as operational concern outside ECP control plane v1 - operators scale ingress via existing K8s deployment targets using the same provisioner.
 
 Rejected: parallel nginx-specific scaler duplicating K8s deployment API.
 

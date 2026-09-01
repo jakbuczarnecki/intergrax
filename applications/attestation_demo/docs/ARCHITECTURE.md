@@ -1,4 +1,4 @@
-# attestation_demo — architecture
+# attestation_demo - architecture
 
 **Status:** PoC v2 + EBE-9 (partner validated)  
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
@@ -16,7 +16,7 @@
 
 | Extra | Role |
 |-------|------|
-| *(base)* | `uv sync` from repo root — harness + FastAPI + records tool bundle |
+| *(base)* | `uv sync` from repo root - harness + FastAPI + records tool bundle |
 | `dev-ci` | Gate tests before partner handoff / deploy |
 
 Tier-2 agent: `agents/boundary_demo` (on `PYTHONPATH` with `applications`).
@@ -86,7 +86,7 @@ Build the **smallest end-to-end path** that lets an external consumer (BoundaryA
 
 ---
 
-## 3. Trust model (PoC v1 — agreed)
+## 3. Trust model (PoC v1 - agreed)
 
 ### 3.1 What Intergrax emits
 
@@ -106,8 +106,8 @@ When the partner adapter signs with **its own local key**:
 
 Two acceptable framings documented for PoC v1:
 
-1. **Trusted execution-side deployment** — adapter runs in the same trusted environment as the Intergrax host; document that assumption explicitly.
-2. **Locally observed evidence** — partner sets `receipt_role: "client_observed"` (not `server_attested`) to avoid overstating proof.
+1. **Trusted execution-side deployment** - adapter runs in the same trusted environment as the Intergrax host; document that assumption explicitly.
+2. **Locally observed evidence** - partner sets `receipt_role: "client_observed"` (not `server_attested`) to avoid overstating proof.
 
 **Intergrax documentation must not claim** that PoC receipts are “server attested by Intergrax.”
 
@@ -119,13 +119,13 @@ Host-side signing of boundary events (optional `event_integrity_seal` or platfor
 
 ## 4. Architectural principles
 
-1. **Emit at the boundary** — EBE fires where the harness executes tools, not inside Tier-2 agent code.
-2. **Selective capture** — only `side_effects=true` tools in PoC (configurable later).
-3. **Event-first, receipt-second** — platform emits unsigned facts; partner signs receipts.
-4. **No HOS fork** — boundary events are an optional side channel; unified journal unchanged.
-5. **Tier-3 configures, Tier-1 emits** — profile on the application host; emission in `RuntimeToolInvoker`.
-6. **Vendor-neutral schema** — `execution_boundary_event.v1`, not “BoundaryAttest schema”.
-7. **Honest trust documentation** — never overstate what unsigned events prove.
+1. **Emit at the boundary** - EBE fires where the harness executes tools, not inside Tier-2 agent code.
+2. **Selective capture** - only `side_effects=true` tools in PoC (configurable later).
+3. **Event-first, receipt-second** - platform emits unsigned facts; partner signs receipts.
+4. **No HOS fork** - boundary events are an optional side channel; unified journal unchanged.
+5. **Tier-3 configures, Tier-1 emits** - profile on the application host; emission in `RuntimeToolInvoker`.
+6. **Vendor-neutral schema** - `execution_boundary_event.v1`, not “BoundaryAttest schema”.
+7. **Honest trust documentation** - never overstate what unsigned events prove.
 
 ---
 
@@ -138,24 +138,24 @@ flowchart TB
         AD[intergrax-adapter in partner repo]
     end
 
-    subgraph Tier3["Tier-3 — attestation_demo"]
+    subgraph Tier3["Tier-3 - attestation_demo"]
         API[FastAPI host POST /poc/run]
         MAN[ApplicationManifest]
         PROF[ExecutionBoundaryExportProfile]
     end
 
-    subgraph Tier2["Tier-2 — demo agent"]
+    subgraph Tier2["Tier-2 - demo agent"]
         AG[boundary_demo_agent]
     end
 
-    subgraph Tier1["Tier-1 — Intergrax Harness"]
+    subgraph Tier1["Tier-1 - Intergrax Harness"]
         NX[NexusLoop]
         INV[RuntimeToolInvoker + EBEmitter]
         HOS[Harness Observability Spine]
         MEM[Per-run event buffer]
     end
 
-    subgraph Tier0["Tier-0 — tools"]
+    subgraph Tier0["Tier-0 - tools"]
         RP[records.put]
         DS[(Document store / lab backend)]
     end
@@ -288,7 +288,7 @@ Events are **unsigned**. Field `signed: false` is explicit in PoC v1 payloads.
 }
 ```
 
-### 8.2 Partner mapping (BoundaryAttest adapter — external)
+### 8.2 Partner mapping (BoundaryAttest adapter - external)
 
 | Boundary event | BoundaryAttest `createSignedReceipt` |
 |----------------|-----------------------------------|
@@ -300,8 +300,8 @@ Events are **unsigned**. Field `signed: false` is explicit in PoC v1 payloads.
 | `output` | `output` |
 | `lineage.ref` | `lineage.ref` |
 | `lineage.type` | `lineage.type: "execution_record"` |
-| — | `receiptRole: "client_observed"` **recommended for PoC v1** |
-| — | `previousReceiptHash` (partner local chain) |
+| - | `receiptRole: "client_observed"` **recommended for PoC v1** |
+| - | `previousReceiptHash` (partner local chain) |
 
 **Do not map to `server_attested` in PoC v1** unless the partner explicitly documents a trusted co-located deployment and accepts the trust limits in §3.
 
@@ -447,7 +447,7 @@ Agent **never** calls BoundaryAttest, webhooks, or signing APIs.
 
 ## 11. End-to-end flows
 
-### 11.1 Happy path (PoC v1 — API response only)
+### 11.1 Happy path (PoC v1 - API response only)
 
 ```mermaid
 sequenceDiagram

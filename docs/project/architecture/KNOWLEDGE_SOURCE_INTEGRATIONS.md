@@ -1,43 +1,43 @@
 # Knowledge Source Integrations
 
-**Intergrax Knowledge Source Integrations** defines how external vendor data enters the platform for knowledge use — through existing category-correct integrations, shared provider read primitives, and three separate consumption modes with distinct lifecycle, policy, and persistence semantics.
+**Intergrax Knowledge Source Integrations** defines how external vendor data enters the platform for knowledge use - through existing category-correct integrations, shared provider read primitives, and three separate consumption modes with distinct lifecycle, policy, and persistence semantics.
 
 ## Why it matters
 
-One vendor integration should not be duplicated separately for RAG indexing, durable materialization, and live access. Without a shared provider foundation, each product path reimplements clients, credentials, pagination, and error handling — and lifecycle semantics blur between durable sync, indexed retrieval, and ephemeral reads.
+One vendor integration should not be duplicated separately for RAG indexing, durable materialization, and live access. Without a shared provider foundation, each product path reimplements clients, credentials, pagination, and error handling - and lifecycle semantics blur between durable sync, indexed retrieval, and ephemeral reads.
 
 Intergrax reuses **one provider/category integration** and **one set of typed provider read primitives** while keeping **indexed RAG**, **durable materialization**, and **live access** as separate modes. Hybrid Ask combines indexed and live evidence at the application level; it is not a fourth provider integration.
 
 > [!NOTE]
 > **Maturity boundary:** The canonical integration and Vendor Knowledge boundary in this hub is **defined and binding**. That is **not** universal provider coverage, complete live external validation, or production qualification for every vendor surface. Support remains **provider-specific** and must be declared explicitly per provider and source kind. See [Current reality / maturity boundary](#current-reality--maturity-boundary) and vendor sections below.
 
-**Primary audience:** CTOs, software architects, principal engineers, and AI platform engineers evaluating how Intergrax connects external knowledge without duplicating integrations — after the platform overview in the root README.
+**Primary audience:** CTOs, software architects, principal engineers, and AI platform engineers evaluating how Intergrax connects external knowledge without duplicating integrations - after the platform overview in the root README.
 
 **Related canon:** [`INTEGRATIONS.md`](INTEGRATIONS.md) · LKW intake discovery: [`KNOWLEDGE_INTAKE_DISCOVERY.md`](../../../applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md)
 
 ## Current reality / maturity boundary
 
-- **Canonical architecture boundary is defined** — existing integration categories, Vendor Knowledge Facade, sync/materialization runtime, and live capability paths are specified in this document.
-- **Existing provider/category integrations remain authoritative** — Jira, Confluence, Microsoft Graph, Slack, Google Workspace, Databricks, and peers keep one public integration each; knowledge use reuses them rather than introducing parallel `knowledge_source` integrations.
-- **Three consumption modes are frozen direction** — indexed RAG, durable materialization, and live access retain separate lifecycles; hybrid access is application-level composition only.
-- **Support is provider-specific** — capability matrices, read primitives, adapters, and proofs vary by vendor; a gap in one mode does not imply support in another.
-- **Complete provider coverage and complete live external validation are not implied** — vendor sections document what is implemented, planned, or absent; manifest or shell presence is not operational proof.
-- **Architecture definition ≠ universal implementation / production qualification** — binding decisions govern design; rollout, LKW Connected Sources, and external validation follow separate plan and proof tracks.
+- **Canonical architecture boundary is defined** - existing integration categories, Vendor Knowledge Facade, sync/materialization runtime, and live capability paths are specified in this document.
+- **Existing provider/category integrations remain authoritative** - Jira, Confluence, Microsoft Graph, Slack, Google Workspace, Databricks, and peers keep one public integration each; knowledge use reuses them rather than introducing parallel `knowledge_source` integrations.
+- **Three consumption modes are frozen direction** - indexed RAG, durable materialization, and live access retain separate lifecycles; hybrid access is application-level composition only.
+- **Support is provider-specific** - capability matrices, read primitives, adapters, and proofs vary by vendor; a gap in one mode does not imply support in another.
+- **Complete provider coverage and complete live external validation are not implied** - vendor sections document what is implemented, planned, or absent; manifest or shell presence is not operational proof.
+- **Architecture definition ≠ universal implementation / production qualification** - binding decisions govern design; rollout, LKW Connected Sources, and external validation follow separate plan and proof tracks.
 
 ## At a glance
 
 | Concern | Current rule |
 | -------- | -------- |
-| **Provider integration** | One category-correct public integration per provider/category — reuse client, transport, and credential resolution |
+| **Provider integration** | One category-correct public integration per provider/category - reuse client, transport, and credential resolution |
 | **Indexed RAG** | Durable sync/materialization → shared parsing/chunking/embedding pipeline → vector store → scoped retrieval |
-| **Durable materialization** | Durable sync/materialization → approved DocumentStore / DB / object storage — embeddings optional |
+| **Durable materialization** | Durable sync/materialization → approved DocumentStore / DB / object storage - embeddings optional |
 | **Live access** | Authorized typed capability → provider read at request time → ephemeral evidence; no automatic durable persistence |
-| **Credentials** | Referenced through Connection/credential handles — never embedded in bindings or config records |
-| **Synchronization** | Shared sync/materialization runtime — checkpoints, leases, replay, reconciliation — not per-vendor reimplementation |
-| **ACL** | Enforced before content reaches the model — prompt instructions are not authorization |
-| **Application boundary** | Applications use Vendor Knowledge Facade (durable) and validated live capability paths — not direct vendor SDK/API calls |
-| **Vendor Knowledge Facade** | Platform service above integrations — not an integration category |
-| **MCP** | Complementary live/action surface — does not replace durable synchronization |
+| **Credentials** | Referenced through Connection/credential handles - never embedded in bindings or config records |
+| **Synchronization** | Shared sync/materialization runtime - checkpoints, leases, replay, reconciliation - not per-vendor reimplementation |
+| **ACL** | Enforced before content reaches the model - prompt instructions are not authorization |
+| **Application boundary** | Applications use Vendor Knowledge Facade (durable) and validated live capability paths - not direct vendor SDK/API calls |
+| **Vendor Knowledge Facade** | Platform service above integrations - not an integration category |
+| **MCP** | Complementary live/action surface - does not replace durable synchronization |
 | **Go deeper** | [Binding decisions](#2-binding-architectural-decisions) · [Layered architecture](#3-layered-architecture) · [Vendor direction](#13-vendor-direction) · [plan](../maintainers/plans/KNOWLEDGE_SOURCE_INTEGRATIONS.md) |
 
 ## Core mental model
@@ -45,21 +45,21 @@ Intergrax reuses **one provider/category integration** and **one set of typed pr
 **Frozen architectural principle.** One existing category-correct **Vendor Integration** remains the single owner of provider communication. Shared **provider read primitives** are designed independently of how a caller will later persist, index, or ephemerally use the result.
 
 ```text
-MODE 1 — INDEXED RAG
+MODE 1 - INDEXED RAG
 provider data
 → durable synchronization/materialization
 → parser/chunker/embeddings
 → vector store
 → RAG retrieval
 
-MODE 2 — DURABLE MATERIALIZATION
+MODE 2 - DURABLE MATERIALIZATION
 provider data
 → durable synchronization/materialization
 → DocumentStore / relational DB / NoSQL / object storage /
   application database / analytics store
 → no requirement to create embeddings or a RAG index
 
-MODE 3 — LIVE ACCESS
+MODE 3 - LIVE ACCESS
 user question or application request
 → authorized typed capability
 → provider API at request time
@@ -122,7 +122,7 @@ DocumentStore / DB        LKW Knowledge Intake
                        Embeddings / Vector Store
 ```
 
-RAG is **one consumer** of durable materialization — not the definition of all durable vendor data.
+RAG is **one consumer** of durable materialization - not the definition of all durable vendor data.
 
 ### Binding terminology
 
@@ -181,7 +181,7 @@ A provider task must never claim all three modes merely because one exact-read m
 | Slack remains one `conversation_channel` integration | `FROZEN` | `SlackConversationChannelIntegration` is the only public Slack integration for conversational runtime, shared typed Slack knowledge reads, durable materialization, indexed RAG and bounded live access. Reuse the existing client, transport and credential resolution. Do not create an LKW-owned Slack vendor client. |
 | Slack dual role is independent | `FROZEN` | Slack-as-frontend (LKW companion transport) and Slack-as-knowledge-source (Connection → Remote Resource → bindings) are separate roles. Enabling the Slack chatbot does not authorize indexing or live Slack history access. Conversation transport events do not automatically become durable knowledge. |
 | Google Workspace remains one `collaboration_suite` integration | `FROZEN` | `GoogleWorkspaceCollaborationSuiteIntegration` is the only public Google Workspace integration for collaboration operations, shared typed Google knowledge reads, durable materialization, indexed RAG and bounded live access. Reuse one credential-resolution boundary and one provider client/transport family. Do not create parallel public integrations per Drive, Docs, Sheets, Calendar, Slides, Mail or Chat surface. |
-| Google provider integration ≠ Vendor Knowledge Adapter ≠ Live Capability ≠ LKW Connected Source | `FROZEN` | Google Workspace knowledge use follows the same separation as other vendors: provider integration owns transport; thin Vendor Knowledge adapters map canonical contracts; Live Capability adapters own ephemeral reads; LKW Connected Source owns workspace binding and indexing — without duplicating Google clients or credentials. |
+| Google provider integration ≠ Vendor Knowledge Adapter ≠ Live Capability ≠ LKW Connected Source | `FROZEN` | Google Workspace knowledge use follows the same separation as other vendors: provider integration owns transport; thin Vendor Knowledge adapters map canonical contracts; Live Capability adapters own ephemeral reads; LKW Connected Source owns workspace binding and indexing - without duplicating Google clients or credentials. |
 | Vendor integration remains low-level | `FROZEN` | It owns provider transport, auth handoff, vendor request/response mapping, provider errors and category operations. It does not know LKW, workspaces, RAG or product workflows. |
 | Unified knowledge behavior is exposed by platform boundaries | `FROZEN DIRECTION` | Durable knowledge behavior uses Vendor Knowledge Facade; live knowledge behavior uses the validated live capability boundary. Both resolve the same existing integration through separate adapter paths. |
 | Facade is not an integration category | `FROZEN` | It is a platform service/facade and may use a registry of source adapters. It is not registered as another vendor integration. |
@@ -234,7 +234,7 @@ Live Capability Adapter
 
 The exact future Python contracts remain deferred, but the ownership boundary is frozen. `VendorKnowledgeFacade` is **not** an already implemented generic live-query service; it currently covers the durable synchronization/materialization path.
 
-### 3.1 Layer 1 — platform integration base
+### 3.1 Layer 1 - platform integration base
 
 The existing platform integration base remains unchanged in purpose.
 
@@ -257,7 +257,7 @@ This layer answers:
 
 It does not define an application knowledge model.
 
-### 3.2 Layer 2 — category contracts
+### 3.2 Layer 2 - category contracts
 
 Category contracts describe the domain role of an integration.
 
@@ -284,7 +284,7 @@ Examples:
 
 A new domain category may be introduced only when the vendor capability does not fit an existing category. It must not be introduced merely because data will later be indexed by LKW.
 
-### 3.3 Layer 3 — concrete vendor integration
+### 3.3 Layer 3 - concrete vendor integration
 
 Each provider/category pair has one public integration entrypoint.
 
@@ -321,7 +321,7 @@ A concrete vendor integration must not own:
 - Slack commands or frontend delivery;
 - cross-provider normalization policy.
 
-### 3.4 Layer 4 — shared provider read primitives
+### 3.4 Layer 4 - shared provider read primitives
 
 Typed, bounded operations exposed by the vendor integration or an approved provider-specific read facet sharing the same client and credentials.
 
@@ -342,7 +342,7 @@ read bounded query result
 
 A provider read primitive must not know whether its result will later be indexed into RAG, saved into a database or used as ephemeral live evidence.
 
-### 3.5 Layer 5 — vendor knowledge adapters
+### 3.5 Layer 5 - vendor knowledge adapters
 
 The facade may use small adapters that translate category/provider operations into the common knowledge model.
 
@@ -379,7 +379,7 @@ An adapter must not:
 - execute parsing, chunking or embeddings;
 - own committed checkpoints or synchronization schedules.
 
-### 3.6 Layer 6 — Vendor Knowledge Facade
+### 3.6 Layer 6 - Vendor Knowledge Facade
 
 The Vendor Knowledge Facade is the application-facing, vendor-neutral service boundary.
 
@@ -410,7 +410,7 @@ The facade does not own:
 - generated emails, analyses, offers or reports;
 - business decisions about which sources a product should connect.
 
-### 3.7 Layer 7 — shared synchronization and materialization runtime
+### 3.7 Layer 7 - shared synchronization and materialization runtime
 
 Durable synchronization semantics are shared above vendor integrations and below consuming applications.
 
@@ -478,7 +478,7 @@ Source support from provider names, source kinds, discovery-provider presence,
 live capability IDs or adapter class names. The next consumer is
 `LKW-INDEXED-SOURCE-LIFECYCLE-1`.
 
-### 3.8 Layer 8 — live capability adapter and executor
+### 3.8 Layer 8 - live capability adapter and executor
 
 The live capability path is a **sibling** of the durable path, not a branch of the sync runtime.
 
@@ -497,7 +497,7 @@ The live capability layer does **not** own:
 - parsing, chunking or embeddings;
 - a second vendor client when the integration already owns one.
 
-### 3.9 Layer 9 — consuming application
+### 3.9 Layer 9 - consuming application
 
 LKW is the first platform proof consuming both:
 
@@ -584,7 +584,7 @@ read source inventory
 
 Such abilities should be added in one of two forms, selected per provider/category:
 
-### Pattern A — extension of the existing provider integration
+### Pattern A - extension of the existing provider integration
 
 Use when the method is a natural part of the existing category contract and is broadly meaningful for providers in that category.
 
@@ -597,7 +597,7 @@ WikiKnowledge
 └── list_pages / read_page_version
 ```
 
-### Pattern B — provider-specific private read facet
+### Pattern B - provider-specific private read facet
 
 Use when the behavior is provider-specific or not appropriate for every implementation in the category.
 
@@ -696,9 +696,9 @@ The following models belong to the facade/synchronization boundary, not to the v
 
 ### 7.1 Knowledge connection reference
 
-Represents a **durable tenant Connection record / reference** — not an in-memory registry entry or application bootstrap profile.
+Represents a **durable tenant Connection record / reference** - not an in-memory registry entry or application bootstrap profile.
 
-Minimum semantics (conceptual `TenantConnection` — **to be implemented in `LKW-KNOWLEDGE-ACCESS-1C-1`**):
+Minimum semantics (conceptual `TenantConnection` - **to be implemented in `LKW-KNOWLEDGE-ACCESS-1C-1`**):
 
 ```text
 connection_ref          # durable identity component; opaque within tenant
@@ -713,7 +713,7 @@ validated_secret_free_config
 configuration_version
 ```
 
-The durable Connection catalog is **platform-owned**. Raw secrets remain in `SecretsStore`. `connection_ref` remains the correlation identity across bindings, workspace attachments and runtime resolution. The instance-local `KnowledgeConnectionRegistry` is reconstructed from durable state at startup — it is runtime projection only, not the administrative source of truth.
+The durable Connection catalog is **platform-owned**. Raw secrets remain in `SecretsStore`. `connection_ref` remains the correlation identity across bindings, workspace attachments and runtime resolution. The instance-local `KnowledgeConnectionRegistry` is reconstructed from durable state at startup - it is runtime projection only, not the administrative source of truth.
 
 The connection record contains references and safe metadata, never secret values. Knowledge metadata/URL secret-safe detection uses the canonical engine with a Knowledge-owned policy: `credential_ref` is an allowed opaque reference; raw secret keys and credential-bearing URLs are rejected. This is not a secret manager. One provider integration is still reused across indexed RAG, durable materialization and live access (three consumption modes).
 
@@ -1107,9 +1107,9 @@ First audit whether Atlan fits an existing category. If not, introduce a justifi
 
 Above that integration, an adapter may expose assets, glossary, ownership, certification, lineage, quality and governance metadata.
 
-### 13.7 Slack — binding three-mode example (`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1`)
+### 13.7 Slack - binding three-mode example (`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1`)
 
-**Classification:** `ARCHITECTURALLY FROZEN` — not implemented.
+**Classification:** `ARCHITECTURALLY FROZEN` - not implemented.
 
 Slack remains one category-correct public `conversation_channel` integration. The existing `SlackConversationChannelIntegration`, its client, transport and credential resolution are reused for conversational runtime, shared typed Slack knowledge reads, durable materialization, indexed RAG and bounded live access. No application-specific or consumption-mode-specific Slack client or public integration may be introduced.
 
@@ -1187,7 +1187,7 @@ Live Access Binding           → request-time provider reads
 
 None implies another. Enabling a bot in a channel does not index channel history. Indexing channel history does not enable bot responses. Bot responses do not imply live history reads.
 
-**Implemented provider-specific read primitives (`SLACK-KNOWLEDGE-FOUNDATION-1` — DONE):**
+**Implemented provider-specific read primitives (`SLACK-KNOWLEDGE-FOUNDATION-1` - DONE):**
 
 ```text
 list_accessible_conversations_page   # bot-membership users.conversations (all supported kinds)
@@ -1199,11 +1199,11 @@ read_file_info (safe inventory only)
 
 **Credential model (same integration, same `AsyncWebClient`):** one `INTERGRAX_SLACK_BOT_TOKEN` (`xoxb-`) for conversational runtime and all knowledge reads. Inventory uses `users.conversations` with `types=public_channel,private_channel,im,mpim` for conversations where the bot is a member. Public/private channel reads require the bot to be added to the conversation with appropriate `channels:*` / `groups:*` read/history scopes.
 
-**Slack Vendor Knowledge adapter (`slack_conversation`):** `IMPLEMENTED` — `tombstones=false`, `permissions=false`, `slack.conversation.scope.v2` root-window reconciliation (`root_oldest`/`root_latest`, strict ordering), structured schema `slack.conversation.message.knowledge.v1`, history/reply page maximum **15**. Root `message_ts` and reply `message_ts` must lie inside `[root_oldest, root_latest]`; `thread_broadcast` history records are not separately materialized. `full_inventory=true` is complete inventory inside the explicit root-window scope only; replies whose root lies outside the root window are not discovered.
+**Slack Vendor Knowledge adapter (`slack_conversation`):** `IMPLEMENTED` - `tombstones=false`, `permissions=false`, `slack.conversation.scope.v2` root-window reconciliation (`root_oldest`/`root_latest`, strict ordering), structured schema `slack.conversation.message.knowledge.v1`, history/reply page maximum **15**. Root `message_ts` and reply `message_ts` must lie inside `[root_oldest, root_latest]`; `thread_broadcast` history records are not separately materialized. `full_inventory=true` is complete inventory inside the explicit root-window scope only; replies whose root lies outside the root window are not discovered.
 
 **Not implemented:** LKW bridge, live capability, authoritative ACL, durable deletion feed, binary file download.
 
-**Planned provider-specific read primitives (future live/search — not implemented):**
+**Planned provider-specific read primitives (future live/search - not implemented):**
 
 ```text
 read bounded search result where Slack and policy support it
@@ -1217,8 +1217,8 @@ Required Slack scopes for knowledge reads are documented per credential route in
 | Mode | Slack direction |
 |---|---|
 | Indexed RAG | durable Slack synchronization → optional LKW Knowledge Intake → Documents → Chunks → Embeddings → RAG |
-| Durable materialization without RAG | durable Slack synchronization → DocumentStore / DB / object storage / application repository — no LKW, embeddings or vector store required |
-| Live access | authorized request → validated Slack live capability → bounded provider read → normalized ephemeral evidence — no automatic Source, Document, Chunk, Embedding, vector record, database replica or sync checkpoint |
+| Durable materialization without RAG | durable Slack synchronization → DocumentStore / DB / object storage / application repository - no LKW, embeddings or vector store required |
+| Live access | authorized request → validated Slack live capability → bounded provider read → normalized ephemeral evidence - no automatic Source, Document, Chunk, Embedding, vector record, database replica or sync checkpoint |
 
 **Platform versus LKW ownership:**
 
@@ -1228,11 +1228,11 @@ Required Slack scopes for knowledge reads are documented per credential route in
 
 LKW must not construct Slack SDK clients, read Slack API directly, store raw Slack tokens, implement provider paging, own provider cursors, implement Slack-specific synchronization or duplicate Slack response validation.
 
-**LKW application status:** `LKW-SLACK-CONNECTED-SOURCE-1` is **IN_PROGRESS / CHANGES_REQUIRED** (`LKW-SLACK-CONNECTED-SOURCE-1-REVIEW-FIX-2` — **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted; HTTP discovery/create/sync scaffold present; final crash-safe recovery and real indexed Search/Ask proof remain under correction). Next Slack-vertical LKW implementation task: `LKW-CONVERSATION-CONTEXT-1`. Not implemented: shared-channel Ask, Conversation Context Binding, mention activation, `SHARED_ALLOWED` administration, live Slack access, Hybrid Ask.
+**LKW application status:** `LKW-SLACK-CONNECTED-SOURCE-1` is **IN_PROGRESS / CHANGES_REQUIRED** (`LKW-SLACK-CONNECTED-SOURCE-1-REVIEW-FIX-2` - **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted; HTTP discovery/create/sync scaffold present; final crash-safe recovery and real indexed Search/Ask proof remain under correction). Next Slack-vertical LKW implementation task: `LKW-CONVERSATION-CONTEXT-1`. Not implemented: shared-channel Ask, Conversation Context Binding, mention activation, `SHARED_ALLOWED` administration, live Slack access, Hybrid Ask.
 
-### 13.8 Google Workspace — binding three-mode example (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1`)
+### 13.8 Google Workspace - binding three-mode example (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1`)
 
-**Classification:** `READY_FOR_REVIEW` — architecture frozen; no Google knowledge runtime implemented.
+**Classification:** `READY_FOR_REVIEW` - architecture frozen; no Google knowledge runtime implemented.
 
 Google Workspace remains one category-correct public `collaboration_suite` integration. The existing `GoogleWorkspaceCollaborationSuiteIntegration`, its client, transport and credential resolution are the single foundation for collaboration operations, shared typed Google knowledge reads, durable materialization, indexed RAG and bounded live access. No application-specific or consumption-mode-specific Google client or public integration may be introduced.
 
@@ -1335,7 +1335,7 @@ Drive inventory / discovery
 
 **Stable Google Workspace resource identity (frozen):**
 
-Conceptual identity namespace — independent from discovery surface:
+Conceptual identity namespace - independent from discovery surface:
 
 ```text
 provider_id = google_workspace
@@ -1350,7 +1350,7 @@ Rules:
 2. A move does not change identity where Google preserves the resource ID.
 3. Drive discovery and Docs/Sheets/Slides exact reads must refer to the same underlying Google resource identity.
 4. Export/download URL is never identity.
-5. Revision, ETag, modified time and content hash are change state — not identity.
+5. Revision, ETag, modified time and content hash are change state - not identity.
 6. The same native Google file must not become unrelated `drive` and `docs`/`sheets`/`slides` durable objects.
 
 Do not freeze an implementation-specific Python type in this architecture document.
@@ -1374,7 +1374,7 @@ broad Drive/folder synchronization deferred unless overlap semantics are proved
 
 Selecting both a native Google Doc and a containing Drive folder in the first proof is out of scope unless overlap semantics are explicitly implemented. Broad folder scopes remain deferred.
 
-**Future broad Drive scopes (required direction — not yet chosen):**
+**Future broad Drive scopes (required direction - not yet chosen):**
 
 When broad Drive/folder synchronization is implemented, one of:
 
@@ -1408,7 +1408,7 @@ Additional rules:
 6. Uploaded PDF, DOCX, XLSX, PPTX and other binary files may follow the shared binary-content path when supported.
 7. Exact API calls and export formats remain implementation-task decisions after an official API audit.
 
-**Thin Vendor Knowledge adapters (planned — not implemented):**
+**Thin Vendor Knowledge adapters (planned - not implemented):**
 
 ```text
 GoogleWorkspaceDriveKnowledgeAdapter
@@ -1430,19 +1430,19 @@ Each adapter:
 - keeps independent source scope, cursor and deletion semantics;
 - remains reusable by applications other than LKW.
 
-**Three-mode support (per source kind — planned independently):**
+**Three-mode support (per source kind - planned independently):**
 
 | Mode | Google direction |
 |---|---|
 | Indexed RAG | durable Google synchronization → optional LKW Knowledge Intake → Documents → Chunks → Embeddings → RAG |
-| Durable materialization without RAG | durable Google synchronization → DocumentStore / DB / object storage / application repository — no LKW, embeddings or vector store required |
-| Live access | authorized request → validated Google live capability → bounded provider read → normalized ephemeral evidence — no automatic Source, Document, Chunk, Embedding, vector record, database replica or sync checkpoint |
+| Durable materialization without RAG | durable Google synchronization → DocumentStore / DB / object storage / application repository - no LKW, embeddings or vector store required |
+| Live access | authorized request → validated Google live capability → bounded provider read → normalized ephemeral evidence - no automatic Source, Document, Chunk, Embedding, vector record, database replica or sync checkpoint |
 
 Binding rules (same as §2.1): one provider integration is reused by all modes; durable and live access have separate adapters; live results are ephemeral by default; durable synchronization does not imply RAG; adding an Indexed Source does not create Live Access; adding Live Access does not index the resource; no second credential/client path for live access.
 
-**Foundation task (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` — PLANNED):** typed Google Workspace integration configuration; credential-reference resolution; least-privilege credential modes; one shared provider client family; provider request execution boundary; pagination token normalization; provider error normalization; rate-limit and retry classification; stable provider resource references; safe timestamps and revisions; safe display labels; bounded request limits; capability declaration; no LKW imports; no RAG imports; no application workspace concepts.
+**Foundation task (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` - PLANNED):** typed Google Workspace integration configuration; credential-reference resolution; least-privilege credential modes; one shared provider client family; provider request execution boundary; pagination token normalization; provider error normalization; rate-limit and retry classification; stable provider resource references; safe timestamps and revisions; safe display labels; bounded request limits; capability declaration; no LKW imports; no RAG imports; no application workspace concepts.
 
-**Foundation prerequisites (activation gates — not satisfied):**
+**Foundation prerequisites (activation gates - not satisfied):**
 
 ```text
 GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1 becomes ACCEPTED (currently READY_FOR_REVIEW)
@@ -1452,11 +1452,11 @@ runtime integration rehydration/resolution boundary available
 Vendor Knowledge binding, registry and synchronization contracts available
 ```
 
-Canonical owners: durable tenant Connection Catalog and runtime integration rehydration/resolution are owned by `LKW-KNOWLEDGE-ACCESS-1` (and its platform prerequisites) — not by Google Foundation. Google Foundation must not introduce another tenant Connection catalog; must not introduce a Google-only credential database; must not put OAuth tokens into provider config records, `KnowledgeSourceBinding` or LKW state. If a required generic boundary remains unfinished, finish or reuse that boundary before production Google OAuth. Do not duplicate LKW application configuration inside the platform integration.
+Canonical owners: durable tenant Connection Catalog and runtime integration rehydration/resolution are owned by `LKW-KNOWLEDGE-ACCESS-1` (and its platform prerequisites) - not by Google Foundation. Google Foundation must not introduce another tenant Connection catalog; must not introduce a Google-only credential database; must not put OAuth tokens into provider config records, `KnowledgeSourceBinding` or LKW state. If a required generic boundary remains unfinished, finish or reuse that boundary before production Google OAuth. Do not duplicate LKW application configuration inside the platform integration.
 
-**Post-Slack implementation gate (exact):** Google Workspace runtime implementation starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED** (join of `LKW-SLACK-CONNECTED-SOURCE-1`, `LKW-CONVERSATION-CONTEXT-1`, `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`, `SLACK-LIVE-CAPABILITY-1` and `LKW-HYBRID-ASK-1`). As of current HEAD: `LKW-SLACK-CONNECTED-SOURCE-1` is **IN_PROGRESS / CHANGES_REQUIRED**; `LKW-SLACK-KNOWLEDGE-PROOF-1` and remaining Slack-vertical tasks are **PLANNED** — Google implementation is not active.
+**Post-Slack implementation gate (exact):** Google Workspace runtime implementation starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED** (join of `LKW-SLACK-CONNECTED-SOURCE-1`, `LKW-CONVERSATION-CONTEXT-1`, `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`, `SLACK-LIVE-CAPABILITY-1` and `LKW-HYBRID-ASK-1`). As of current HEAD: `LKW-SLACK-CONNECTED-SOURCE-1` is **IN_PROGRESS / CHANGES_REQUIRED**; `LKW-SLACK-KNOWLEDGE-PROOF-1` and remaining Slack-vertical tasks are **PLANNED** - Google implementation is not active.
 
-Credential routes (conceptually separated): individual-user OAuth; organization/admin-approved Google Workspace access; service-account or delegated organizational access when justified. For the first testable proof, individual-user authorization is the preferred product route. Exact OAuth scopes and Google SDK signatures are **not** frozen here — implementation tasks must verify against current official Google documentation. Secrets remain owned by the existing Connection/SecretsStore boundary. No access token, refresh token, client secret or service-account private key may enter `KnowledgeSourceBinding`, `WorkspaceIndexedSourceBinding`, Remote Resource response, LKW Source, citation or provider cursor.
+Credential routes (conceptually separated): individual-user OAuth; organization/admin-approved Google Workspace access; service-account or delegated organizational access when justified. For the first testable proof, individual-user authorization is the preferred product route. Exact OAuth scopes and Google SDK signatures are **not** frozen here - implementation tasks must verify against current official Google documentation. Secrets remain owned by the existing Connection/SecretsStore boundary. No access token, refresh token, client secret or service-account private key may enter `KnowledgeSourceBinding`, `WorkspaceIndexedSourceBinding`, Remote Resource response, LKW Source, citation or provider cursor.
 
 **LKW vertical (planned):**
 
@@ -1473,9 +1473,9 @@ workspace Connection
 
 `LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1` reuses the generic Connected Source implementation proved by Slack. Do not plan Google-specific LKW configuration aggregates, mutation engines, indexing pipelines, vector database access or Source tables. First Google LKW sources default to `PERSONAL_ONLY`; future `SHARED_ALLOWED` use remains governed by the accepted Conversation Context architecture.
 
-**First proof (`LKW-GOOGLE-WORKSPACE-PROOF-1` — PLANNED):** user connects one Google account → selects approved Google resources → one Google Doc synchronized → one Google Sheet synchronized → one Google Calendar resource/event set synchronized → optionally one ordinary Drive file synchronized → LKW indexes selected resources → Search retrieves provider-derived evidence → Ask produces one grounded answer → citations identify the correct Google source and resource → no Google API call is made by Ask after durable synchronization. Proof demonstrates mixed source shapes: narrative document, structured spreadsheet, calendar/event data, ordinary stored file. User-oriented proof, not merely adapter unit tests.
+**First proof (`LKW-GOOGLE-WORKSPACE-PROOF-1` - PLANNED):** user connects one Google account → selects approved Google resources → one Google Doc synchronized → one Google Sheet synchronized → one Google Calendar resource/event set synchronized → optionally one ordinary Drive file synchronized → LKW indexes selected resources → Search retrieves provider-derived evidence → Ask produces one grounded answer → citations identify the correct Google source and resource → no Google API call is made by Ask after durable synchronization. Proof demonstrates mixed source shapes: narrative document, structured spreadsheet, calendar/event data, ordinary stored file. User-oriented proof, not merely adapter unit tests.
 
-**Proof-first execution gate (binding — vertically incremental):**
+**Proof-first execution gate (binding - vertically incremental):**
 
 Each read surface and its adapter form one independently reviewable vertical step before the next surface begins. Proof-critical phase:
 
@@ -1512,9 +1512,9 @@ GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1F-MAIL → GOOGLE-WORKSPACE-KNOWLEDGE-A
 GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1G-CHAT → GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1G-CHAT
 ```
 
-Global placement: Google Workspace runtime implementation starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED** (complete Slack Knowledge vertical — currently **PLANNED**) → Google proof-critical path above → remaining Google family surfaces → `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` and other lower-priority provider expansion.
+Global placement: Google Workspace runtime implementation starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED** (complete Slack Knowledge vertical - currently **PLANNED**) → Google proof-critical path above → remaining Google family surfaces → `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` and other lower-priority provider expansion.
 
-**Product rationale:** Microsoft 365 proves enterprise-oriented collaboration and document access. Google Workspace lowers the entry barrier for individual testers, small teams and design partners who can authorize their own account. Supporting both proves that the LKW Connected Source architecture is provider-neutral rather than Microsoft-specific. The goal is not connector count — it is one convincing proof over different real-world source shapes and provider ecosystems. Google Workspace is the second strategic collaboration/document ecosystem, not an open-ended commitment to add every available SaaS provider.
+**Product rationale:** Microsoft 365 proves enterprise-oriented collaboration and document access. Google Workspace lowers the entry barrier for individual testers, small teams and design partners who can authorize their own account. Supporting both proves that the LKW Connected Source architecture is provider-neutral rather than Microsoft-specific. The goal is not connector count - it is one convincing proof over different real-world source shapes and provider ecosystems. Google Workspace is the second strategic collaboration/document ecosystem, not an open-ended commitment to add every available SaaS provider.
 
 **Platform versus LKW ownership:**
 
@@ -1609,7 +1609,7 @@ This architecture does not authorize:
 ### Maintainer note
 
 **Internal architecture workflow status:** `CORRECTED / READY_FOR_REVIEW`
-**Task:** `VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1 — three-mode provider reuse architecture`
+**Task:** `VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1 - three-mode provider reuse architecture`
 **Classification:** docs-only architecture and contract boundary
 
 ### Correction summary
@@ -1664,7 +1664,7 @@ One-sentence result:
 
 ## 16. Implementation sequence
 
-### Step 0 — this correction
+### Step 0 - this correction
 
 `VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1`
 
@@ -1680,7 +1680,7 @@ One-sentence result:
 - retained existing categories and public integrations;
 - defined the facade, adapter and sync-runtime boundaries.
 
-### Step 1 — facade contract discovery against code
+### Step 1 - facade contract discovery against code
 
 `VENDOR-KNOWLEDGE-FACADE-AUDIT-1`
 
@@ -1695,7 +1695,7 @@ Perform a tightly scoped audit of:
 
 Output: exact reuse map and implementation file scope. No broad repository audit.
 
-### Step 2 — minimal facade models and service port
+### Step 2 - minimal facade models and service port
 
 `VENDOR-KNOWLEDGE-FACADE-1A`
 
@@ -1708,7 +1708,7 @@ Implement only:
 - no concrete vendor adapter;
 - no LKW changes.
 
-### Step 3 — first adapter proof
+### Step 3 - first adapter proof
 
 `VENDOR-KNOWLEDGE-FACADE-1B`
 
@@ -1716,13 +1716,13 @@ Use one existing integration as the proof. Preferred choice is selected after th
 
 The proof must reuse the existing public vendor integration and client.
 
-### Step 4 — shared synchronization runtime
+### Step 4 - shared synchronization runtime
 
 `VENDOR-KNOWLEDGE-SYNC-1C`
 
 Add durable checkpoint, replay, item state, tombstone and reconciliation behavior above adapters.
 
-### Step 5 — LKW bridge
+### Step 5 - LKW bridge
 
 `LKW-CONNECTED-SOURCE-BRIDGE-1D`
 

@@ -1,4 +1,4 @@
-# Intergrax Proof Library — Authoring Guide
+# Intergrax Proof Library - Authoring Guide
 
 **Status:** Canonical  
 **Audience:** Independent Scenario Proof and Conformance Proof author sessions
@@ -10,7 +10,7 @@ This is the **single canonical practical instruction** for independent proof-aut
 
 The guide supplies the rest of the context and rules. Do not create a second overlapping authoring guide.
 
-**Normative companion:** [PLATFORM_PROOF_PROTOCOL.md](PLATFORM_PROOF_PROTOCOL.md) — classification, falsification philosophy, evidence contracts. This guide is the operational workflow; the protocol is the governance layer.
+**Normative companion:** [PLATFORM_PROOF_PROTOCOL.md](PLATFORM_PROOF_PROTOCOL.md) - classification, falsification philosophy, evidence contracts. This guide is the operational workflow; the protocol is the governance layer.
 
 **Never:** classify a product (`applications/`) as a platform domain or migrate product proofs into `platform_proofs/`.
 
@@ -18,7 +18,7 @@ The guide supplies the rest of the context and rules. Do not create a second ove
 
 ## Proof Library public model
 
-The Intergrax Proof Library has two public classes. Both are **executable falsification attempts** — not demos. **Platform proof ≠ product proof.** Product proofs stay under `applications/`.
+The Intergrax Proof Library has two public classes. Both are **executable falsification attempts** - not demos. **Platform proof ≠ product proof.** Product proofs stay under `applications/`.
 
 ### SCENARIO
 
@@ -41,7 +41,7 @@ REAL PROBLEM
 → REPRODUCTION
 ```
 
-A Scenario Proof may exercise **multiple** Intergrax mechanisms and domains. The problem owns the Scenario; platform domains participate according to the guarantees required by that problem. Participating domains are anticipated during solution design and verified during implementation preparation — not chosen before the scenario exists. The scenario must **never** be selected merely to demonstrate a feature. **Do not** weaken accepted solution architecture because the current platform lacks a required capability — develop reusable Intergrax capability instead.
+A Scenario Proof may exercise **multiple** Intergrax mechanisms and domains. The problem owns the Scenario; platform domains participate according to the guarantees required by that problem. Participating domains are anticipated during solution design and verified during implementation preparation - not chosen before the scenario exists. The scenario must **never** be selected merely to demonstrate a feature. **Do not** weaken accepted solution architecture because the current platform lacks a required capability - develop reusable Intergrax capability instead.
 
 #### production-capable vs production-validated
 
@@ -77,9 +77,9 @@ Existing domain-oriented paths may remain for Conformance proofs under `platform
 
 ---
 
-## Scenario Proof — production-capable application contract
+## Scenario Proof - production-capable application contract
 
-These rules are **normative** for every Scenario Proof. They apply to **canonical Scenario execution** — the path documented for proof runs and Proof Library acceptance — not to every unit or integration test file.
+These rules are **normative** for every Scenario Proof. They apply to **canonical Scenario execution** - the path documented for proof runs and Proof Library acceptance - not to every unit or integration test file.
 
 ### Application Survival Test
 
@@ -90,7 +90,7 @@ These rules are **normative** for every Scenario Proof. They apply to **canonica
 | Answer | Effect |
 |--------|--------|
 | **YES** | Required to qualify as SCENARIO |
-| **NO** | **Not acceptable** as SCENARIO — may qualify as CONFORMANCE or requires redesign |
+| **NO** | **Not acceptable** as SCENARIO - may qualify as CONFORMANCE or requires redesign |
 
 ### Scenario runtime LAB profile (generated proofs)
 
@@ -105,7 +105,7 @@ Generated scenario application skeletons use `build_scenario_lab_runtime` from `
 | Answer | Effect |
 |--------|--------|
 | **YES** | Required to qualify as SCENARIO |
-| **NO** | **Not acceptable** as SCENARIO — Proof cannot be the sole recorder |
+| **NO** | **Not acceptable** as SCENARIO - Proof cannot be the sole recorder |
 
 **Ownership rule:**
 
@@ -135,13 +135,13 @@ Generated scenario application skeletons use `build_scenario_lab_runtime` from `
 
 > The Proof/report layer **MUST** consume application/platform observability. It **MUST NOT** invent execution explanations that were not emitted by the canonical application path.
 
-The Proof layer may **VERIFY**, **PROJECT**, **PACKAGE**, and **RENDER** — it **MUST NOT** reconstruct or invent missing execution reasoning post hoc.
+The Proof layer may **VERIFY**, **PROJECT**, **PACKAGE**, and **RENDER** - it **MUST NOT** reconstruct or invent missing execution reasoning post hoc.
 
 #### Three mandatory pillars
 
-Every accepted executable **SCENARIO** with material autonomous behavior **MUST** satisfy all three pillars below. Do not require irrelevant event classes for every Scenario — the requirement is that all **material** workflow decisions and actions are reconstructable.
+Every accepted executable **SCENARIO** with material autonomous behavior **MUST** satisfy all three pillars below. Do not require irrelevant event classes for every Scenario - the requirement is that all **material** workflow decisions and actions are reconstructable.
 
-**A. Observability — what happened**
+**A. Observability - what happened**
 
 Material events **MUST** be reconstructable where applicable, including when relevant to the Scenario:
 
@@ -160,13 +160,13 @@ Material events **MUST** be reconstructable where applicable, including when rel
 
 Reuse canonical production observability owners: `RuntimeState.trace_events`, `RuntimeState.trace_event(...)`, `ObservabilityEmitter`, typed `TraceEvent`, typed `DiagnosticPayload` (with schema/version and `redact()`), `ToolCallTrace`, `RuntimeState.tool_traces`, execution identity/sequencing, and runtime/planner/critic components. Do **not** introduce a Proof-only event bus or parallel logging system.
 
-**B. Explainability — why it acted**
+**B. Explainability - why it acted**
 
-Material autonomous decisions **MUST** expose operator-facing rationale — **not** chain-of-thought. Acceptable structured semantics include: decision objective; action purpose; evidence basis; selected action/tool; expected information need; concise decision rationale; challenged claim / reason for revision. Scenario applications may own typed domain-specific `DiagnosticPayload` implementations inside the `TraceEvent` envelope. Do **not** mandate a premature universal decision DTO unless cross-domain invariants justify it.
+Material autonomous decisions **MUST** expose operator-facing rationale - **not** chain-of-thought. Acceptable structured semantics include: decision objective; action purpose; evidence basis; selected action/tool; expected information need; concise decision rationale; challenged claim / reason for revision. Scenario applications may own typed domain-specific `DiagnosticPayload` implementations inside the `TraceEvent` envelope. Do **not** mandate a premature universal decision DTO unless cross-domain invariants justify it.
 
-**C. Diagnostics — why it failed / stopped**
+**C. Diagnostics - why it failed / stopped**
 
-Material failure/stop paths **MUST** emit structured diagnostic evidence, including when applicable: model/provider failure; malformed structured response; invalid action/tool request; scope validation failure; policy denial; tool failure; retry/recovery; budget exhaustion; missing evidence; unsupported claim; Critic rejection; terminal rejection. Distinguish **operational failure** from **epistemic unresolved outcome** — do not narrate operational failure as epistemic uncertainty.
+Material failure/stop paths **MUST** emit structured diagnostic evidence, including when applicable: model/provider failure; malformed structured response; invalid action/tool request; scope validation failure; policy denial; tool failure; retry/recovery; budget exhaustion; missing evidence; unsupported claim; Critic rejection; terminal rejection. Distinguish **operational failure** from **epistemic unresolved outcome** - do not narrate operational failure as epistemic uncertainty.
 
 #### Chain-of-thought hard rule
 
@@ -198,7 +198,7 @@ Observability must be production-safe: no secrets or credentials; no unrestricte
 For an **accepted executable SCENARIO** with material autonomous behavior, a machine-readable observability/decision provenance artifact **MUST** be available to the proof/report pipeline. **Reuse** existing projection where possible:
 
 - runtime `TraceEvent` / `ToolCallTrace` export
-- typed `PlatformProofEvidence` (`intergrax.platform_proof_evidence.v3`) — especially `scenarios[].steps`, `evidence_graph`, evaluator/failure fields
+- typed `PlatformProofEvidence` (`intergrax.platform_proof_evidence.v3`) - especially `scenarios[].steps`, `evidence_graph`, evaluator/failure fields
 - report evidence structure per [PLATFORM_PROOF_REPORT_STANDARD.md](../docs/project/proofs/PLATFORM_PROOF_REPORT_STANDARD.md)
 
 Do **not** require `decision-trace.json` or a new schema unless an audit proves existing contracts cannot serve the role. Design-stage packages do not need runtime artifacts. Do **not** break existing CONFORMANCE packages.
@@ -267,7 +267,7 @@ A future author receiving only this guide and a problem description **MUST NOT**
 
 | Allowed | Forbidden |
 |---------|-----------|
-| synthetic organization; fictional incidents; deterministic datasets; controlled local provider implementation; synthetic telemetry; synthetic documents; synthetic API service — **provided they enter through normal production-capable provider/tool contracts** | returning pre-written final answer instead of exercising application logic; fixture directly deciding outcome; fake model output replacing AI behavior when AI behavior is part of the Scenario claim |
+| synthetic organization; fictional incidents; deterministic datasets; controlled local provider implementation; synthetic telemetry; synthetic documents; synthetic API service - **provided they enter through normal production-capable provider/tool contracts** | returning pre-written final answer instead of exercising application logic; fixture directly deciding outcome; fake model output replacing AI behavior when AI behavior is part of the Scenario claim |
 
 ### Real AI / model boundary
 
@@ -279,19 +279,19 @@ Examples requiring real model/provider in canonical execution:
 - "AI analyzes contract"
 - "AI evaluates vendor risk"
 
-A fake/scripted model **MAY** be used only in tests. If model behavior is irrelevant to the claim, reconsider whether the entry should be **CONFORMANCE** instead of an AI-framed **SCENARIO**. Provider-neutral wording — no specific vendor is required.
+A fake/scripted model **MAY** be used only in tests. If model behavior is irrelevant to the claim, reconsider whether the entry should be **CONFORMANCE** instead of an AI-framed **SCENARIO**. Provider-neutral wording - no specific vendor is required.
 
 ### Bounded autonomy
 
 The application **MUST** autonomously perform the meaningful workflow within its declared scope. For an investigative application this may include: forming candidate hypotheses; deciding what evidence to request; deciding whether evidence is sufficient; revising a conclusion; refusing unsupported completion.
 
-Governance may constrain allowed actions/outcomes. The proof harness **MUST NOT** manually orchestrate business reasoning while claiming the application/AI performed it. Do not demand unlimited autonomy — use **bounded autonomy**.
+Governance may constrain allowed actions/outcomes. The proof harness **MUST NOT** manually orchestrate business reasoning while claiming the application/AI performed it. Do not demand unlimited autonomy - use **bounded autonomy**.
 
 **Design principle:** real autonomous model/application behavior **plus** platform-enforced admissibility/governance/evidence boundaries. The model may propose hypotheses, interpretation, tool requests, and candidate decisions. Platform mechanisms may enforce allowed tools, evidence requirements, policy, challenge, terminal state, approvals, and bounded recovery.
 
 ### Provider abstraction / replaceability
 
-Controlled proof inputs **MUST** be provided through the same typed provider/tool contracts that real deployment can use. Both controlled/synthetic and production implementations **MUST** satisfy the same application-facing contract. The normative requirement is **replaceability without rewriting application core** — not any specific class name.
+Controlled proof inputs **MUST** be provided through the same typed provider/tool contracts that real deployment can use. Both controlled/synthetic and production implementations **MUST** satisfy the same application-facing contract. The normative requirement is **replaceability without rewriting application core** - not any specific class name.
 
 ### Platform reuse (Scenario applications)
 
@@ -342,11 +342,11 @@ A Scenario application **SHOULD** be usable as a component immediately after nor
 
 > **A missing platform capability does not automatically invalidate a strong scenario. If the capability is reusable and architecturally justified, implement it in Intergrax first and then resume the Scenario Proof.**
 
-> **Scenario architecture MUST NOT be weakened merely because the current platform does not yet provide one of the capabilities required by the accepted solution.** If a good solution requires something Intergrax does not yet have, develop Intergrax — do not degrade the scenario to match today's platform.
+> **Scenario architecture MUST NOT be weakened merely because the current platform does not yet provide one of the capabilities required by the accepted solution.** If a good solution requires something Intergrax does not yet have, develop Intergrax - do not degrade the scenario to match today's platform.
 
 > **One independent author session owns one Scenario Proof from qualification through accepted evidence.**
 
-Every Scenario Proof session is a **falsification attempt** against a real problem — not a feature demo, marketing slide, or architecture tour.
+Every Scenario Proof session is a **falsification attempt** against a real problem - not a feature demo, marketing slide, or architecture tour.
 
 ---
 
@@ -366,7 +366,7 @@ A session **may** inspect:
 - existing proofs;
 - tests and contracts;
 
-—but its implementation and publication **ownership** remains **one scenario**.
+-but its implementation and publication **ownership** remains **one scenario**.
 
 A single session **MUST NOT**:
 
@@ -380,22 +380,22 @@ Conformance proof work follows the same shared-development rules but is outside 
 
 ## Canonical Scenario Lifecycle
 
-Scenario Proof authoring is a **two-part lifecycle** — **design the right solution first**, then **build it on Intergrax** — with **two canonical commands**. Do not collapse them.
+Scenario Proof authoring is a **two-part lifecycle** - **design the right solution first**, then **build it on Intergrax** - with **two canonical commands**. Do not collapse them.
 
-### PART A — Design the right solution
+### PART A - Design the right solution
 
 ```text
-STAGE 1 — REAL PROBLEM
+STAGE 1 - REAL PROBLEM
 ↓
-STAGE 2 — BUSINESS / WOW QUALIFICATION
+STAGE 2 - BUSINESS / WOW QUALIFICATION
 ↓
-STAGE 3 — SOLUTION ARCHITECTURE
+STAGE 3 - SOLUTION ARCHITECTURE
 ↓
-STAGE 4 — PROOF DESIGN
+STAGE 4 - PROOF DESIGN
 ↓
-STAGE 5 — SCENARIO QUALITY GATE
+STAGE 5 - SCENARIO QUALITY GATE
 ↓
-STAGE 6 — ACCEPTED FOR IMPLEMENTATION
+STAGE 6 - ACCEPTED FOR IMPLEMENTATION
 ```
 
 At this stage the question is:
@@ -406,18 +406,18 @@ At this stage the question is:
 
 > What does current Intergrax already support?
 
-### PART B — Build it on Intergrax
+### PART B - Build it on Intergrax
 
 ```text
-STAGE 7 — IMPLEMENTATION PREPARATION (verify Intergrax fit; resolve platform gaps; update frontmatter gates)
+STAGE 7 - IMPLEMENTATION PREPARATION (verify Intergrax fit; resolve platform gaps; update frontmatter gates)
 ↓
 init_scenario_implementation.py
 ↓
-STAGE 8 — IMPLEMENT / MAP ACCEPTED ARCHITECTURE TO INTERGRAX
+STAGE 8 - IMPLEMENT / MAP ACCEPTED ARCHITECTURE TO INTERGRAX
 ↓
-STAGE 9 — RESOLVE PLATFORM GAPS IF DISCOVERED (pause scenario → platform capability → verify → resume)
+STAGE 9 - RESOLVE PLATFORM GAPS IF DISCOVERED (pause scenario → platform capability → verify → resume)
 ↓
-STAGE 10 — TEST / EXECUTE / EVIDENCE / PUBLICATION
+STAGE 10 - TEST / EXECUTE / EVIDENCE / PUBLICATION
 ```
 
 ### Combined command flow
@@ -435,7 +435,7 @@ PART A (Stages 1–6)
 ↓
 ACCEPTED FOR IMPLEMENTATION
 ↓
-implementation preparation (Intergrax fit + gap gates — required before init)
+implementation preparation (Intergrax fit + gap gates - required before init)
 ↓
 init_scenario_implementation.py
 ↓
@@ -459,9 +459,9 @@ A future session **MUST NOT** infer:
 - “folder exists, so implementation may start”; or
 - “README + SCENARIO_SPEC exist, so the scaffold is complete.”
 
-Existence of `platform_proofs/scenarios/<slug>/` means only that a design package may exist — not that implementation is authorized or that runtime artifacts are present.
+Existence of `platform_proofs/scenarios/<slug>/` means only that a design package may exist - not that implementation is authorized or that runtime artifacts are present.
 
-### Phase 1 — Create design package
+### Phase 1 - Create design package
 
 **Canonical command:**
 
@@ -496,9 +496,9 @@ It does **not** mean the scenario is:
 
 It **MUST NOT** generate runtime or proof implementation artifacts (`proof.json`, `run_proof.py`, `application/`, `proof/`, `fixtures/`, `.env.example`, evaluator/evidence modules, or other design-stage forbidden artifacts).
 
-`SCENARIO_SPEC.md` includes YAML frontmatter — the **canonical machine-readable lifecycle source**. README keeps human-readable status wording.
+`SCENARIO_SPEC.md` includes YAML frontmatter - the **canonical machine-readable lifecycle source**. README keeps human-readable status wording.
 
-### Phase 2 — Design the scenario
+### Phase 2 - Design the scenario
 
 After the design package exists, complete the deep contract in `README.md` and `SCENARIO_SPEC.md`:
 
@@ -518,21 +518,21 @@ Before the Scenario Quality Gate, the session **MUST** resolve at minimum:
 - observability / explainability / diagnostics contract;
 - APPLICATION vs PROOF HARNESS separation;
 - bounded claim; PASS; FAIL; excluded claims; limitations;
-- anticipated platform capabilities required by the solution (§ C — design intent, not verified audit);
-- proof design plan (§ E — how we will prove the solution; not implementation yet).
+- anticipated platform capabilities required by the solution (§ C - design intent, not verified audit);
+- proof design plan (§ E - how we will prove the solution; not implementation yet).
 
 **Do not** require a full Intergrax capability audit, `CURRENT OWNER` / `AVAILABLE` / `MISSING` verdicts, or platform-gap resolution before design acceptance. Those belong to **implementation preparation** (between acceptance and `init_scenario_implementation.py`) and ongoing implementation.
 
-This phase is documentation and design only — see § Mandatory session conversation format and § Five-stage Scenario Proof session model (Stages 1–4).
+This phase is documentation and design only - see § Mandatory session conversation format and § Five-stage Scenario Proof session model (Stages 1–4).
 
-### Phase 3 — Scenario Quality Gate
+### Phase 3 - Scenario Quality Gate
 
 After honest design work, the session records an explicit gate decision:
 
 | Outcome | Meaning |
 |---------|---------|
-| **REJECT / REDESIGN** | Scenario too weak, dishonest, or incomplete — return to Phase 2 |
-| **ACCEPTED FOR IMPLEMENTATION** | Scenario concept accepted — **implementation stage may begin** |
+| **REJECT / REDESIGN** | Scenario too weak, dishonest, or incomplete - return to Phase 2 |
+| **ACCEPTED FOR IMPLEMENTATION** | Scenario concept accepted - **implementation stage may begin** |
 
 The gate answers primarily:
 
@@ -546,7 +546,7 @@ The gate answers primarily:
 - Can PASS / FAIL be measured?
 - Can the proof falsify the claim?
 
-**The gate MUST NOT reject a scenario because current Intergrax does not yet implement a required capability.** That is not a scenario defect — it may be a future platform development signal.
+**The gate MUST NOT reject a scenario because current Intergrax does not yet implement a required capability.** That is not a scenario defect - it may be a future platform development signal.
 
 **Hard rule:**
 
@@ -575,14 +575,14 @@ application_vs_proof_ownership: COMPLETED
 ---
 ```
 
-`intergrax_fit: NOT_COMPLETED` and `gap_decision: NOT_COMPLETED` are **valid** at acceptance — they mean implementation fit has not yet been verified. Complete them during **implementation preparation** (before `init_scenario_implementation.py`). Example immediately before init:
+`intergrax_fit: NOT_COMPLETED` and `gap_decision: NOT_COMPLETED` are **valid** at acceptance - they mean implementation fit has not yet been verified. Complete them during **implementation preparation** (before `init_scenario_implementation.py`). Example immediately before init:
 
 ```yaml
 intergrax_fit: COMPLETED
 gap_decision: RESOLVED
 ```
 
-### Phase 4 — Initialize implementation scaffold
+### Phase 4 - Initialize implementation scaffold
 
 **Only after** `ACCEPTED FOR IMPLEMENTATION`, completed design gates (`observability_contract`, `application_vs_proof_ownership`), and **implementation preparation** that verifies Intergrax fit and resolves (or documents) platform gaps (`intergrax_fit: COMPLETED`, `gap_decision: RESOLVED` in frontmatter).
 
@@ -599,7 +599,7 @@ The generator is fail-closed: it does not create a design package, does not over
 
 > **The initializer is the source of truth for the exact current generated file set; documentation describes architectural responsibilities and lifecycle.**
 
-**Architectural shape** (representative — see initializer for the authoritative file list):
+**Architectural shape** (representative - see initializer for the authoritative file list):
 
 ```text
 platform_proofs/scenarios/<slug>/
@@ -631,18 +631,18 @@ platform_proofs/scenarios/<slug>/
 
 | Path | Role |
 |------|------|
-| **`application/`** | Production-capable application core — runtime composition, execution entry, domain agent/workflow, platform tool bindings, observability seams. **MUST NOT** import proof evaluator/report code. |
-| **`proof/`** | Proof-owned layer — evaluator, evidence projection, falsification assertions, proof-only packaging. **MUST NOT** own application decision logic. |
+| **`application/`** | Production-capable application core - runtime composition, execution entry, domain agent/workflow, platform tool bindings, observability seams. **MUST NOT** import proof evaluator/report code. |
+| **`proof/`** | Proof-owned layer - evaluator, evidence projection, falsification assertions, proof-only packaging. **MUST NOT** own application decision logic. |
 | **`fixtures/`** | Controlled external data / synthetic providers / scenario-owned fixtures when required. **MUST NOT** replace application business logic with fake decision engines. |
 | **`proof.json`** | Machine-readable proof package descriptor (`intergrax.platform_proof_descriptor.v3`). |
-| **`run_proof.py`** | Thin proof-owned execution entrypoint — configure, invoke application, evaluate, write artifacts. |
+| **`run_proof.py`** | Thin proof-owned execution entrypoint - configure, invoke application, evaluate, write artifacts. |
 | **`.env.example`** | Documented configuration surface (no secrets committed). |
 
 #### Runtime baseline
 
 The generated `application/runtime_composition.py` uses the shared scenario runtime baseline (`build_scenario_lab_runtime` from `intergrax.applications._shared.scenario_runtime_profiles`) so authors do not rediscover standard execution identity, Nexus/runtime composition, storage, and baseline observability wiring. See § Scenario runtime LAB profile (generated proofs).
 
-### Phases 5–10 — Implement through library acceptance
+### Phases 5–10 - Implement through library acceptance
 
 After initialization:
 
@@ -659,7 +659,7 @@ Technical contracts for descriptor, execution, evidence, and report remain in th
 
 Every Scenario Proof session operates in two conceptual layers. **Do not collapse them.**
 
-### LAYER 1 — SCENARIO / PROBLEM
+### LAYER 1 - SCENARIO / PROBLEM
 
 Before discussing Intergrax implementation, determine whether the real-world scenario is strong enough to deserve entry in the Proof Library.
 
@@ -675,13 +675,13 @@ Focus on:
 
 **Do not begin mechanism selection before the scenario itself is understood and accepted.**
 
-### LAYER 2 — SOLUTION / IMPLEMENTATION
+### LAYER 2 - SOLUTION / IMPLEMENTATION
 
 Only after scenario quality is accepted:
 
 1. verify how the accepted architecture maps to Intergrax (implementation preparation);
 2. reuse existing platform capabilities;
-3. if a reusable capability is missing — **STOP** scenario implementation, implement platform capability, verify, resume;
+3. if a reusable capability is missing - **STOP** scenario implementation, implement platform capability, verify, resume;
 4. initialize implementation skeleton (`init_scenario_implementation.py`);
 5. implement the production-capable application component;
 6. package / run / evaluate / report under the canonical Proof Library contract (see § Technical Proof Library lifecycle).
@@ -692,27 +692,27 @@ Only after scenario quality is accepted:
 
 Every Scenario Proof session **MUST** explicitly work through these stages **in order**. Do not skip stages. Do not implement before design stages are honest.
 
-### PART A — Design (Stages 1–4)
+### PART A - Design (Stages 1–4)
 
 ```text
-STAGE 1 — Qualify and strengthen the scenario
-STAGE 2 — Design the scenario solution and proof semantics
-STAGE 3 — Anticipate required platform capabilities (design intent)
-STAGE 4 — Design proof build (how we will prove the solution)
+STAGE 1 - Qualify and strengthen the scenario
+STAGE 2 - Design the scenario solution and proof semantics
+STAGE 3 - Anticipate required platform capabilities (design intent)
+STAGE 4 - Design proof build (how we will prove the solution)
 ```
 
-### PART B — Build on Intergrax (Stage 5+)
+### PART B - Build on Intergrax (Stage 5+)
 
 ```text
-STAGE 5 — Scenario Quality Gate → ACCEPTED FOR IMPLEMENTATION
-STAGE 6 — Implementation preparation (verify Intergrax fit; resolve platform gaps)
-STAGE 7 — Initialize implementation + implement on Intergrax
-STAGE 8 — Apply canonical Proof Library engine (test → execute → evidence → report)
+STAGE 5 - Scenario Quality Gate → ACCEPTED FOR IMPLEMENTATION
+STAGE 6 - Implementation preparation (verify Intergrax fit; resolve platform gaps)
+STAGE 7 - Initialize implementation + implement on Intergrax
+STAGE 8 - Apply canonical Proof Library engine (test → execute → evidence → report)
 ```
 
 Conformance proofs follow the same engineering discipline in implementation stages but may omit problem-first public framing where mechanism verification is the sole purpose.
 
-### Stage 1 — Qualify and strengthen the scenario
+### Stage 1 - Qualify and strengthen the scenario
 
 Discuss the scenario in **plain problem language** before any implementation.
 
@@ -769,7 +769,7 @@ Every Scenario Proof **must** explicitly answer:
 >
 > “I can build the same thing with an LLM + memory + RAG + a few LangGraph nodes in 10 minutes”?
 
-**If YES** — the scenario is currently too weak. **Do not** automatically discard the underlying real problem. First attempt to strengthen it by introducing the actual difficult guarantees naturally required by the real problem, such as:
+**If YES** - the scenario is currently too weak. **Do not** automatically discard the underlying real problem. First attempt to strengthen it by introducing the actual difficult guarantees naturally required by the real problem, such as:
 
 - conflicting evidence;
 - missing evidence;
@@ -791,7 +791,7 @@ Every Scenario Proof **must** explicitly answer:
 
 Do **not** add complexity arbitrarily.
 
-**If NO** — document why the scenario requires guarantees beyond trivial orchestration.
+**If NO** - document why the scenario requires guarantees beyond trivial orchestration.
 
 #### WOW criterion
 
@@ -852,7 +852,7 @@ Also reject proofs whose primary motivation is:
 - hello-world agents
 - arbitrary multi-hop requirements with no real failure risk
 
-### Stage 2 — Design the scenario solution and proof semantics
+### Stage 2 - Design the scenario solution and proof semantics
 
 Once the Scenario Quality Gate passes, design the solution in **plain language** before discussing APIs, classes, or package layout.
 
@@ -915,15 +915,15 @@ Before mechanism selection, define:
 | **Risk** | What harmful / incorrect system behavior is being tested |
 | **Desired outcome** | What correct system behavior looks like |
 | **Claim** | One bounded falsifiable claim |
-| **PASS** | Explicit conditions required for success — prefer machine-checkable invariants |
+| **PASS** | Explicit conditions required for success - prefer machine-checkable invariants |
 | **FAIL** | Explicit conditions that invalidate the claim |
 | **Adversarial cases** | Concrete attempts to break the claim |
 | **Excluded claims** | What the scenario does not prove |
 | **Limitations** | Known boundaries |
 
-### Stage 3 — Anticipate required platform capabilities (design intent)
+### Stage 3 - Anticipate required platform capabilities (design intent)
 
-After the problem and solution story are clear, document **what kinds of platform capabilities** the accepted solution will need — without requiring a verified audit at current HEAD.
+After the problem and solution story are clear, document **what kinds of platform capabilities** the accepted solution will need - without requiring a verified audit at current HEAD.
 
 Create a mapping:
 
@@ -934,7 +934,7 @@ APPLICATION NEED
 
 At **design stage**, `IMPLEMENTATION FIT NOT YET VERIFIED` is the correct posture. Do **not** require `CURRENT OWNER`, `AVAILABLE`, `MISSING`, or `AVAILABLE BUT NEEDS WIRING` as conditions for design acceptance.
 
-Examples of capabilities — **only when naturally required by the solution**:
+Examples of capabilities - **only when naturally required by the solution**:
 
 - bounded execution
 - tool runtime
@@ -965,9 +965,9 @@ Capabilities do not choose the problem.
 
 **Do not** start from platform mechanisms and invent a scenario around them. Never add components solely to make the proof appear sophisticated.
 
-Detailed mapping to current Intergrax owners and availability is verified during **implementation preparation** and implementation — not before Scenario Quality Gate acceptance.
+Detailed mapping to current Intergrax owners and availability is verified during **implementation preparation** and implementation - not before Scenario Quality Gate acceptance.
 
-### Stage 4 — Design proof build
+### Stage 4 - Design proof build
 
 § E at design stage describes **how we will prove the solution**:
 
@@ -988,7 +988,7 @@ NO IMPLEMENTATION-TIME GAP ASSESSMENT PERFORMED YET
 
 Platform gaps are evaluated against the accepted solution architecture during implementation preparation and implementation. A **MISSING** capability at design stage is **not** a scenario defect.
 
-### Stage 5 — Apply canonical Proof Library engine
+### Stage 5 - Apply canonical Proof Library engine
 
 Only after:
 
@@ -1042,7 +1042,7 @@ proof package
 → Proof Library acceptance
 ```
 
-Do not duplicate those technical contracts here — they remain canonical in their existing sections.
+Do not duplicate those technical contracts here - they remain canonical in their existing sections.
 
 ---
 
@@ -1096,7 +1096,7 @@ APPLICATION NEED
 → STATUS
 ```
 
-Also audit **TEST-ONLY SUBSTITUTE PRESENT?** — **YES** in canonical Scenario path is a **BLOCKER** (during implementation preparation and implementation, not design acceptance).
+Also audit **TEST-ONLY SUBSTITUTE PRESENT?** - **YES** in canonical Scenario path is a **BLOCKER** (during implementation preparation and implementation, not design acceptance).
 
 ### D. GAP DECISION
 
@@ -1177,7 +1177,7 @@ After Stages 1–4 are complete, every Scenario Proof session **MUST** follow th
 
 ## Self-contained executable proof package
 
-> A Proof Library entry is a **self-contained executable proof package** inside the cloned Intergrax repository. For **SCENARIO**, the package **MAY** contain application component, provider implementations/config, proof entrypoint, and evaluator/evidence/report code — but **application code MUST remain separable from proof-only code**. A package directory does **not** imply all code is proof harness.
+> A Proof Library entry is a **self-contained executable proof package** inside the cloned Intergrax repository. For **SCENARIO**, the package **MAY** contain application component, provider implementations/config, proof entrypoint, and evaluator/evidence/report code - but **application code MUST remain separable from proof-only code**. A package directory does **not** imply all code is proof harness.
 
 ### Self-contained does NOT mean
 
@@ -1204,7 +1204,7 @@ The **cloned Intergrax repository** is the supported execution boundary. Do **no
 
 ## Package structure
 
-### Scenario proofs — two-stage canonical shape
+### Scenario proofs - two-stage canonical shape
 
 Scenario packages follow the **two-stage lifecycle** (§ Canonical Scenario Lifecycle). Do not use a flat root-level `evaluator.py` / `scenario.py` layout for new Scenario proofs.
 
@@ -1217,14 +1217,14 @@ platform_proofs/scenarios/<scenario_slug>/
 
 ├── README.md              # public gateway (~3–5 min read)
 ├── SCENARIO_SPEC.md       # deep canonical contract (A/B/C/D/E) + lifecycle frontmatter
-└── assets/                # optional — after Scenario Quality Gate
+└── assets/                # optional - after Scenario Quality Gate
 ```
 
 Design stage **MUST NOT** include implementation artifacts (`proof.json`, `run_proof.py`, `application/`, `proof/`, `fixtures/`, `.env.example`, root-level evaluator/evidence modules, or other forbidden design-stage files).
 
 #### Accepted implementation stage
 
-After `ACCEPTED FOR IMPLEMENTATION`, initialize **only** via `init_scenario_implementation.py` (§ Phase 4 — Initialize implementation scaffold). The initializer emits the platform-native layout (`application/`, `proof/`, `fixtures/`, `proof.json`, `run_proof.py`, `.env.example`).
+After `ACCEPTED FOR IMPLEMENTATION`, initialize **only** via `init_scenario_implementation.py` (§ Phase 4 - Initialize implementation scaffold). The initializer emits the platform-native layout (`application/`, `proof/`, `fixtures/`, `proof.json`, `run_proof.py`, `.env.example`).
 
 Post-initialization, authors may add scenario-specific components when genuinely required:
 
@@ -1244,7 +1244,7 @@ platform_proofs/scenarios/<scenario_slug>/
 └── output/                      # canonical published artifacts
 ```
 
-> Authors **MUST NOT** manually recreate the implementation skeleton — use the initializer.
+> Authors **MUST NOT** manually recreate the implementation skeleton - use the initializer.
 
 ### Conformance proofs
 
@@ -1257,7 +1257,7 @@ Existing domain-oriented paths may remain (e.g. `platform_proofs/<domain>/<proof
 - `run_proof.py` is the **canonical proof-owned entrypoint**.
 - `proof.json` is the **machine-readable package contract**.
 - Source and runtime components remain inside the package unless genuine reusable platform code belongs in Intergrax.
-- Platform mechanisms are **imported / reused** — never copied.
+- Platform mechanisms are **imported / reused** - never copied.
 
 ---
 
@@ -1292,7 +1292,7 @@ intergrax.platform_proof_descriptor.v3
 
 **No descriptor v1 or v2.** No loose metadata bags. No compatibility shims. No aliases. No fallback. No legacy proof execution path. No fake placeholder domain values (`MULTI_DOMAIN`, `CROSS_DOMAIN`, `SCENARIO`, etc.).
 
-Discovery is automatic from `proof.json` under `platform_proofs/` — no central manifest registration for descriptor-backed proofs.
+Discovery is automatic from `proof.json` under `platform_proofs/` - no central manifest registration for descriptor-backed proofs.
 
 ### Conformance framing
 
@@ -1312,7 +1312,7 @@ REAL PROBLEM
 → DOMAINS EXERCISED
 ```
 
-Scenario **documentation and design** are **multi-domain by default**: the problem chooses required guarantees; guarantees choose mechanisms and participating domains during Intergrax Fit (§ C). When the executable package ships, declare the truthful `domains_exercised` list — one domain or several, with no ownership semantics.
+Scenario **documentation and design** are **multi-domain by default**: the problem chooses required guarantees; guarantees choose mechanisms and participating domains during Intergrax Fit (§ C). When the executable package ships, declare the truthful `domains_exercised` list - one domain or several, with no ownership semantics.
 
 ---
 
@@ -1374,7 +1374,7 @@ CONFIGURE
 → CLEANUP
 ```
 
-For proofs with infrastructure, expected UX should be simple and explicit. All commands below assume **repository root** as the working directory. For containerized proof infrastructure, use an explicit Compose path — do not document ambiguous bare `docker compose up -d` as the canonical example.
+For proofs with infrastructure, expected UX should be simple and explicit. All commands below assume **repository root** as the working directory. For containerized proof infrastructure, use an explicit Compose path - do not document ambiguous bare `docker compose up -d` as the canonical example.
 
 ```bash
 cp platform_proofs/scenarios/<scenario_slug>/.env.example \
@@ -1422,7 +1422,7 @@ Run: docker compose -f platform_proofs/scenarios/<scenario_slug>/docker-compose.
 
 over raw connection stack traces as the primary UX.
 
-Not every proof needs identical validation internals — but proofs with infra/data prerequisites should expose this path.
+Not every proof needs identical validation internals - but proofs with infra/data prerequisites should expose this path.
 
 ---
 
@@ -1457,7 +1457,7 @@ Every proof requiring configuration **SHOULD** provide a committed `.env.example
 
 ### Precedence
 
-Intergrax reads configuration from the **process environment**. The platform library does **not** load `.env` by itself — see [PLATFORM_CONFIGURATION.md](../docs/project/technical/guides/PLATFORM_CONFIGURATION.md).
+Intergrax reads configuration from the **process environment**. The platform library does **not** load `.env` by itself - see [PLATFORM_CONFIGURATION.md](../docs/project/technical/guides/PLATFORM_CONFIGURATION.md).
 
 The Proof Library defines **one deterministic** configuration contract for proof packages:
 
@@ -1471,7 +1471,7 @@ Where:
 
 - process environment has highest priority
 - `.env` must **never** overwrite an already-set process variable
-- only **one** `.env` file is loaded — the nearest file on the path from the proof package up to (and including) repository root
+- only **one** `.env` file is loaded - the nearest file on the path from the proof package up to (and including) repository root
 - search never continues above repository root; `$HOME` and filesystem paths outside the repository are never scanned
 - `.env.example` is committed when configuration is required
 - `.env` is local / gitignored
@@ -1487,13 +1487,13 @@ Every configured Scenario Proof has `.env.example`. At runtime the canonical pro
 
 Repository-root `.env` can therefore act as shared configuration for every proof that does not provide a nearer `.env`.
 
-Proof implementations must call the shared loader — do **not** implement a proof-local dotenv / config loader.
+Proof implementations must call the shared loader - do **not** implement a proof-local dotenv / config loader.
 
 ---
 
 ## Secrets
 
-Strict rules — secrets must **never**:
+Strict rules - secrets must **never**:
 
 - appear in `proof.json`
 - be committed in `.env`
@@ -1549,7 +1549,7 @@ ports:
   - "${PROOF_POSTGRES_PORT:-5435}:5432"
 ```
 
-The proof README and `.env.example` must expose that variable. If a future canonical dynamic-port allocator is implemented, this guide may evolve — do not invent one now.
+The proof README and `.env.example` must expose that variable. If a future canonical dynamic-port allocator is implemented, this guide may evolve - do not invent one now.
 
 ### Volumes and networks
 
@@ -1585,7 +1585,7 @@ When a proof relies on controlled data:
 - **expected-answer prompting is forbidden**
 - fixture may simulate environment only when the boundary under proof remains real
 
-Ground truth belongs to evaluator / evidence logic — **not** the model prompt.
+Ground truth belongs to evaluator / evidence logic - **not** the model prompt.
 
 ---
 
@@ -1626,7 +1626,7 @@ Use Critic when **independent verification is part of the required guarantee**. 
 - `InvestigationProof`
 - structured claims
 
-Do **not** collect private chain-of-thought as proof evidence. Preferred concept: **observable reasoning trajectory** — not hidden internal reasoning.
+Do **not** collect private chain-of-thought as proof evidence. Preferred concept: **observable reasoning trajectory** - not hidden internal reasoning.
 
 Reuse Intergrax Critic & Verification Layer when applicable. Do not create proof-local critic architecture when a platform mechanism exists.
 
@@ -1636,7 +1636,7 @@ Reuse Intergrax Critic & Verification Layer when applicable. Do not create proof
 
 Every **SCENARIO** must satisfy § Mandatory observability, explainability, and diagnostics and pass the **Application Observability Test**. The Scenario **MUST NOT** be a black box.
 
-Reuse Intergrax observability / HOS where applicable — especially `RuntimeState.trace_events`, `ObservabilityEmitter`, typed `TraceEvent`, typed `DiagnosticPayload`, and `ToolCallTrace`. The proof report should expose useful operational evidence such as:
+Reuse Intergrax observability / HOS where applicable - especially `RuntimeState.trace_events`, `ObservabilityEmitter`, typed `TraceEvent`, typed `DiagnosticPayload`, and `ToolCallTrace`. The proof report should expose useful operational evidence such as:
 
 - execution identity
 - attempts
@@ -1654,7 +1654,7 @@ Do **not** create a private competing observability bus or store. Logs are **not
 
 ## Evidence contract
 
-Reuse existing contracts — no competing model:
+Reuse existing contracts - no competing model:
 
 - `PlatformProofEvidence`
 - `SuiteReceipt`
@@ -1684,7 +1684,7 @@ Do **not** create a private competing observability bus or store. Logs are **not
 
 Every accepted public **SCENARIO** must generate a rich human-readable `report.html`. Reuse the canonical renderer / report standard ([PLATFORM_PROOF_REPORT_STANDARD.md](../docs/project/proofs/PLATFORM_PROOF_REPORT_STANDARD.md)).
 
-**Source-of-truth rule (mandatory):** report prose about execution **MUST** be derived from machine-readable structured artifacts (`PlatformProofEvidence`, runtime trace export, evidence graph) — **not** from expected outcomes or post-hoc narrative invention. No report builder may invent a tool call that was not executed, a model decision that was not emitted, rationale absent from execution output, evidence not present in canonical evidence, or a challenge not present in lifecycle data.
+**Source-of-truth rule (mandatory):** report prose about execution **MUST** be derived from machine-readable structured artifacts (`PlatformProofEvidence`, runtime trace export, evidence graph) - **not** from expected outcomes or post-hoc narrative invention. No report builder may invent a tool call that was not executed, a model decision that was not emitted, rationale absent from execution output, evidence not present in canonical evidence, or a challenge not present in lifecycle data.
 
 SCENARIO reports **MUST** support (via generic renderer and/or evidence-backed domain extensions): decision/investigation timeline; explicit operator-facing rationales; tools/external actions and evidence; claim lifecycle; critic/governance; diagnostics; final decision provenance linked to verified evidence, actions, rationales, challenges, and terminal gate. Do not require empty decorative sections for Conformance proofs.
 
@@ -1708,7 +1708,7 @@ The report must let a skeptical engineer understand, **without reading source fi
 16. exact reproduction instructions
 17. provenance / environment
 
-The report derives from typed evidence — it is **not** a second source of truth. Do not make the report a marketing page.
+The report derives from typed evidence - it is **not** a second source of truth. Do not make the report a marketing page.
 
 ---
 
@@ -1746,7 +1746,7 @@ Every Scenario Proof uses a **two-file documentation model**:
 
 Do **not** maintain identical detailed PASS/FAIL lists, adversarial conditions, ground-truth details, or verifier contracts in both files. README summarizes; SCENARIO_SPEC is normative.
 
-### README.md — public gateway
+### README.md - public gateway
 
 Required presentation order:
 
@@ -1784,7 +1784,7 @@ GO DEEPER → link to SCENARIO_SPEC.md
 
 README must **not** contain the full A/B/C/D/E deep contract.
 
-### SCENARIO_SPEC.md — deep canon
+### SCENARIO_SPEC.md - deep canon
 
 Canonical deep contract for scenario design and implementation:
 
@@ -1827,11 +1827,11 @@ Target: one short paragraph (~4–8 sentences). A reader who spends only a few s
 4. what the naive AI answer is likely to get wrong;
 5. what the Scenario is trying to demonstrate.
 
-No platform internals, Intergrax component names, implementation detail, marketing slogans, or claims beyond current lifecycle state. Readable by a non-Intergrax reader. Summarizes — does not duplicate the full Problem section.
+No platform internals, Intergrax component names, implementation detail, marketing slogans, or claims beyond current lifecycle state. Readable by a non-Intergrax reader. Summarizes - does not duplicate the full Problem section.
 
 ### Lifecycle status wording
 
-Use precise lifecycle language — never bare `ACCEPTED` in a way that could be confused with proof PASS.
+Use precise lifecycle language - never bare `ACCEPTED` in a way that could be confused with proof PASS.
 
 | Status | Meaning |
 | --- | --- |
@@ -1895,14 +1895,14 @@ Scaffold creates placeholders; authors must fill during qualification.
 - Store scenario-owned assets under `platform_proofs/scenarios/<slug>/assets/`.
 - Prefer self-contained **light/dark SVG** pairs per [DOCUMENTATION_DESIGN_SYSTEM.md](../docs/project/technical/guides/DOCUMENTATION_DESIGN_SYSTEM.md).
 - Use `<picture>` with relative paths; wrap in `<a href="...-light.svg">` for full-size navigation on GitHub.
-- **Do not** auto-generate meaningless SVGs in the scaffold — use an authoring HTML comment placeholder until after the quality gate.
+- **Do not** auto-generate meaningless SVGs in the scaffold - use an authoring HTML comment placeholder until after the quality gate.
 - **Do not** create decorative artwork, fake dashboards, or screenshots of nonexistent execution.
 
 Target: one strong proof-story diagram; one supporting diagram when it materially improves understanding; clear tables and callouts.
 
 ### Post-run sections
 
-**Latest verified run** — populated only after real execution and report acceptance:
+**Latest verified run** - populated only after real execution and report acceptance:
 
 - verdict; proof version; Intergrax SHA; model/provider; run timestamp; RESOLVED/UNRESOLVED; key invariant results.
 - CTA links: View report · View evidence · View source · Run locally.
@@ -1942,7 +1942,7 @@ A Scenario Proof is **not accepted** as a Proof Library entry until **all** gene
 - [ ] meaningful failure risk
 - [ ] falsifiable claim
 - [ ] Intergrax mechanisms mapped (verified during implementation preparation)
-- [ ] capability gaps resolved honestly (during implementation — not required at design acceptance)
+- [ ] capability gaps resolved honestly (during implementation - not required at design acceptance)
 - [ ] package independently runnable within cloned repo
 - [ ] configuration documented
 - [ ] infrastructure isolated
@@ -1974,7 +1974,7 @@ Any critical **NO** → Scenario **cannot** be **ACCEPTED**.
 | 9 | Generic capabilities come from Intergrax rather than local clones? | YES |
 | 10 | Application core can swap controlled provider for production provider without redesign? | YES |
 | 11 | Proof layer only falsifies/evaluates/evidences? | YES |
-| 12 | System invariants — not fake deterministic output — provide proof stability? | YES |
+| 12 | System invariants - not fake deterministic output - provide proof stability? | YES |
 | 13 | Existing real-boundary requirements are satisfied? | YES |
 | 14 | Excluded production-validation claims are explicit? | YES |
 
@@ -2008,11 +2008,11 @@ The session **MUST** then:
 2. read this guide
 3. confirm **one session = one Scenario Proof** ownership
 4. work through design Stages 1–4 using the mandatory conversation format (§ Mandatory session conversation format)
-5. pass Scenario Quality Gate (Stage 5) — **without** requiring current Intergrax capability audit
+5. pass Scenario Quality Gate (Stage 5) - **without** requiring current Intergrax capability audit
 6. inspect only architecture / components relevant to the scenario during implementation preparation and implementation
 7. verify Intergrax fit and resolve platform gaps during implementation preparation (before init) and ongoing implementation
 8. **STOP** for architecture decision if a reusable mechanism is **MISSING** during implementation (STOP ≠ abandon scenario)
-9. only after fit/gap gates and approval — initialize and apply Stage 5+ technical lifecycle (implement → test → execute → evidence → report)
+9. only after fit/gap gates and approval - initialize and apply Stage 5+ technical lifecycle (implement → test → execute → evidence → report)
 10. publish only after acceptance gates
 
 Do not assume decisions from another scenario unless encoded in canonical repo documentation. **Current repo wins.**
@@ -2032,7 +2032,7 @@ Mandatory rules for proof sessions:
 | Destructive git | no reset, rebase, stash, clean, amend, force |
 | Unrelated work | never overwrite concurrent changes |
 | Commits | only scoped changes; return SHA |
-| Conflicts | if scoped concurrent conflict occurs — **STOP** |
+| Conflicts | if scoped concurrent conflict occurs - **STOP** |
 
 ---
 
@@ -2061,7 +2061,7 @@ Mandatory rules for proof sessions:
 
 A proof-author session **MUST STOP** and report instead of improvising when:
 
-- required reusable mechanism is **MISSING** (see § Stage 4 — Missing capability decision; STOP ≠ abandon scenario)
+- required reusable mechanism is **MISSING** (see § Stage 4 - Missing capability decision; STOP ≠ abandon scenario)
 - existing architecture ownership is ambiguous
 - proof would need to copy product logic
 - real boundary cannot be exercised
@@ -2070,8 +2070,8 @@ A proof-author session **MUST STOP** and report instead of improvising when:
 - package cannot be made independently reproducible
 - scope begins requiring platform redesign not approved by user
 - concurrent edits conflict in scoped files
-- canonical proof-package configuration / environment loading required by the scenario is not available as reusable proof infrastructure — **STOP** and report the gap; do not implement a proof-local dotenv / config loader
-- Scenario Quality Gate or Skeptic Challenge cannot be satisfied after honest strengthening attempts — reject or redesign; do not proceed to proof build
+- canonical proof-package configuration / environment loading required by the scenario is not available as reusable proof infrastructure - **STOP** and report the gap; do not implement a proof-local dotenv / config loader
+- Scenario Quality Gate or Skeptic Challenge cannot be satisfied after honest strengthening attempts - reject or redesign; do not proceed to proof build
 
 ---
 
@@ -2093,7 +2093,7 @@ Do not manually invent scenario directory shapes, skip the quality gate, or run 
 
 ## Current reference proof
 
-No executable Scenario or Conformance platform proof is designated as the canonical reference example yet. The first Scenario Proof (`ai_incident_investigation`) is **ACCEPTED FOR IMPLEMENTATION** — design qualification passed; implementation and executable evidence have not started. Public presentation reference: [`scenarios/ai_incident_investigation/README.md`](scenarios/ai_incident_investigation/README.md). Deep contract: [`scenarios/ai_incident_investigation/SCENARIO_SPEC.md`](scenarios/ai_incident_investigation/SCENARIO_SPEC.md).
+No executable Scenario or Conformance platform proof is designated as the canonical reference example yet. The first Scenario Proof (`ai_incident_investigation`) is **ACCEPTED FOR IMPLEMENTATION** - design qualification passed; implementation and executable evidence have not started. Public presentation reference: [`scenarios/ai_incident_investigation/README.md`](scenarios/ai_incident_investigation/README.md). Deep contract: [`scenarios/ai_incident_investigation/SCENARIO_SPEC.md`](scenarios/ai_incident_investigation/SCENARIO_SPEC.md).
 
 **Observability contract migration (DOC-PROOF-OBS-1):** the global non-black-box observability standard applies prospectively. Existing in-progress Scenario packages that predate full observability implementation (including `ai_incident_investigation`) are **not** retroactively rejected at design stage, but **MUST** satisfy the new standard before executable acceptance (APP-2A and later). No immediate rewrite of design-stage documentation is required solely because migration is pending; public claims must remain truthful.
 
@@ -2121,7 +2121,7 @@ Scenario package source of truth: [`scenarios/ai_incident_investigation/`](scena
 | Duplicate proof runner or manifest | Fragments execution truth |
 | Undocumented environment assumptions | BLOCKED or false PASS |
 | Claim broader than evidence | Public governance violation |
-| No negative scenario | Not falsification — demo only |
+| No negative scenario | Not falsification - demo only |
 | PASS based only on prose | Not machine-checkable |
 | PASS based only on exit code when `evidence_required=true` | Suite verifies typed `evidence.json` |
 | Chain-of-thought collection as evidence | Not platform invariant; explicitly forbidden for Scenario observability |
@@ -2139,7 +2139,7 @@ Scenario package source of truth: [`scenarios/ai_incident_investigation/`](scena
 
 | Document | Role |
 |----------|------|
-| [PLATFORM_PROOF_PROTOCOL.md](PLATFORM_PROOF_PROTOCOL.md) | Governance — classification, falsification, evidence |
+| [PLATFORM_PROOF_PROTOCOL.md](PLATFORM_PROOF_PROTOCOL.md) | Governance - classification, falsification, evidence |
 | [README.md](README.md) | Proof Library gateway |
 | [PLATFORM_CONFIGURATION.md](../docs/project/technical/guides/PLATFORM_CONFIGURATION.md) | Canonical env / provider names |
 | [PROOFS.md](../docs/project/proofs/PROOFS.md) | Public proof dashboard |

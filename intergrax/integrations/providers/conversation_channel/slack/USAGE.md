@@ -41,10 +41,10 @@ Disabled registry/factory construction performs no SDK init and no network I/O.
 
 ## Shared operations
 
-- `start(handler)` — start Socket Mode; returns after the transport has connected and can receive envelopes
-- `stop()` — stop delivery, cancel in-flight handler tasks, close Socket Mode resources
-- `send(message)` — `chat.postMessage` (text, optional single-choice Block Kit, optional `thread_ts`)
-- `health()` — provider lifecycle readiness only (no network probe on each call)
+- `start(handler)` - start Socket Mode; returns after the transport has connected and can receive envelopes
+- `stop()` - stop delivery, cancel in-flight handler tasks, close Socket Mode resources
+- `send(message)` - `chat.postMessage` (text, optional single-choice Block Kit, optional `thread_ts`)
+- `health()` - provider lifecycle readiness only (no network probe on each call)
 
 ## Construction
 
@@ -133,7 +133,7 @@ single_choice
 
 ---
 
-## Implemented — Slack Knowledge foundation (`SLACK-KNOWLEDGE-FOUNDATION-1`)
+## Implemented - Slack Knowledge foundation (`SLACK-KNOWLEDGE-FOUNDATION-1`)
 
 **Classification:** `IMPLEMENTED` platform foundation · `NOT` LKW bridge · `NOT` live capability.
 
@@ -235,7 +235,7 @@ binary historical file download
 
 ---
 
-## PLANNED — NOT IMPLEMENTED
+## PLANNED - NOT IMPLEMENTED
 
 **Classification:** `PLANNED` implementation only.
 

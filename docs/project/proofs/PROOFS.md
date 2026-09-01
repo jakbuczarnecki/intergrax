@@ -14,7 +14,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 > **This page** is the evidence-and-claims dashboard.
 > The Proof Library is the problem-first scenario catalog.
 
-Intergrax separates **implemented mechanisms**, **bounded verification**, **partial product capability**, **planned work**, and **claims that are not currently supported**. This page is the public proof dashboard — no internal task IDs required.
+Intergrax separates **implemented mechanisms**, **bounded verification**, **partial product capability**, **planned work**, and **claims that are not currently supported**. This page is the public proof dashboard - no internal task IDs required.
 
 > [!NOTE]
 > Intergrax is **source-available** and under **active R&D**. Technical proof does not imply finished SaaS, production readiness, real-user validation, or commercial validation.
@@ -74,13 +74,13 @@ foundations do not inherit a blanket platform-wide **IMPLEMENTED** status.
 
 ---
 
-## LKW — Active reference product evidence
+## LKW - Active reference product evidence
 
 **Role:** Active reference product · **Product status:** Backend Product Alpha / MVP
 
 This section enumerates accepted bounded proof paths for the active reference product.
 
-**Primary executable path:** [Product Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) —
+**Primary executable path:** [Product Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) -
 indexed **Ask V1** product evaluation with one command per supported OS, managed
 sample upload, indexing, grounded Ask, source citation, and persisted Ask-run
 verification.
@@ -97,19 +97,19 @@ incomplete, and complete **external** live-provider access remains incomplete.
 
 | Capability | Status | What it demonstrates | Limitation |
 |------------|--------|----------------------|------------|
-| **Product Quick Start / indexed Ask V1** | 🧪 **BOUNDED PROOF** · supported product-evaluation path | One-command local execution of the canonical LKW application path: managed sample upload → indexing → grounded indexed Ask → source citation → persisted Ask-run verification — [run it](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) | Indexed knowledge only; script-driven; no polished end-user UI; not the Hybrid Ask verification path; not production readiness; no real-user or commercial validation |
+| **Product Quick Start / indexed Ask V1** | 🧪 **BOUNDED PROOF** · supported product-evaluation path | One-command local execution of the canonical LKW application path: managed sample upload → indexing → grounded indexed Ask → source citation → persisted Ask-run verification - [run it](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) | Indexed knowledge only; script-driven; no polished end-user UI; not the Hybrid Ask verification path; not production readiness; no real-user or commercial validation |
 | **Indexed Hybrid Ask** | 🧪 **BOUNDED PROOF** | Bounded indexed branch through production Hybrid Ask `indexed_only`; some proofs validate retrieval and boundary behavior even when answer assembly returns insufficient evidence | Not Product Quick Start; not mixed indexed + authorized-live Hybrid Ask; not production readiness or commercial validation |
 | **Trusted Ask / durable indexed workspace Ask** | 🧪 **BOUNDED PROOF** | Current runtime image through Ollama generation and embeddings, workspace source sync, Qdrant indexed retrieval, completed first Ask with evidence, non-destructive restart, completed second Ask without resync/reindex, and unchanged persisted first Ask run | Indexed knowledge only; bounded local runtime; no mixed indexed + authorized-live Hybrid Ask; no universal provider, production, or commercial claims |
-| **Governed Evidence Decision Proof** | 🧪 **BOUNDED PROOF** | Advanced bounded proof inside LKW stack: four policy-derived live obligations, four independent **controlled live providers** (Docker-backed services via real HTTP/runtime paths), execution-time authority, temporal admissibility, typed failure semantics, LLM suppression on unsatisfied admissibility, persisted structural proof, vendor restart without reseed — [canonical proof doc](../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) | **LIVE_ONLY** over **controlled live providers** — not external SaaS validation; not Product Quick Start; not complete indexed + authorized-live Hybrid Ask qualification; not production readiness, commercial validation, or real-user validation |
+| **Governed Evidence Decision Proof** | 🧪 **BOUNDED PROOF** | Advanced bounded proof inside LKW stack: four policy-derived live obligations, four independent **controlled live providers** (Docker-backed services via real HTTP/runtime paths), execution-time authority, temporal admissibility, typed failure semantics, LLM suppression on unsatisfied admissibility, persisted structural proof, vendor restart without reseed - [canonical proof doc](../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) | **LIVE_ONLY** over **controlled live providers** - not external SaaS validation; not Product Quick Start; not complete indexed + authorized-live Hybrid Ask qualification; not production readiness, commercial validation, or real-user validation |
 | **Core Platform Proof** | 🧪 **BOUNDED PROOF** | Real application startup/readiness, durable knowledge and execution, background processing, persisted reviewable evidence, hosting/recovery, and watched-folder indexing (Elasticsearch/Kibana observability, Sentry problem signals, MongoDB ProofReceipts) | Bounded to documented verified proof profiles; not production readiness, commercial validation, or provider-wide qualification |
 
 **Product Quick Start proofs:** `LKW-PRODUCT-QUICKSTART-WINDOWS`, `LKW-PRODUCT-QUICKSTART-LINUX`, `LKW-PRODUCT-QUICKSTART-MACOS`
 
 **Indexed Hybrid Ask proof:** `LKW-HYBRID-ASK-INDEXED`
 
-**Trusted Ask proof:** `LKW-ASK-WORKSPACE-LIVE` — [authoritative live proof section](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md#trusted-ask-workspace-mvp-2)
+**Trusted Ask proof:** `LKW-ASK-WORKSPACE-LIVE` - [authoritative live proof section](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md#trusted-ask-workspace-mvp-2)
 
-**Governed Evidence Decision Proof:** `advanced_flagship_proof` — [canonical proof doc](../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) — **not** in canonical `intergrax_proof_manifest.py` today ([`LKW-PROOF-05`](../../../docs/audit_results/2026-08-18/LKW_PRODUCT_PROOF.md); accepted remediation)
+**Governed Evidence Decision Proof:** `advanced_flagship_proof` - [canonical proof doc](../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) - **not** in canonical `intergrax_proof_manifest.py` today ([`LKW-PROOF-05`](../../../docs/audit_results/2026-08-18/LKW_PRODUCT_PROOF.md); accepted remediation)
 
 **Core platform proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`, `LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`
 
@@ -117,7 +117,7 @@ incomplete, and complete **external** live-provider access remains incomplete.
 
 | Capability | Status | What it demonstrates | Limitation |
 |------------|--------|----------------------|------------|
-| Web URL knowledge intake | 🧪 **BOUNDED PROOF** | Real WEB_URL capture and RAG indexing into the exact tenant/workspace Qdrant scope, verified indexed retrieval, and execution through Hybrid Ask `indexed_only`; a suite **PASS** always requires those indexed-path steps — grounded answer and indexed citation/evidence are verified only when the run completes with `status=completed`; `status=insufficient_evidence` may still **PASS** after successful indexed retrieval without proving completed answer assembly | Controlled `example.com` origin only; not arbitrary external-site verification; mixed indexed + authorized live Hybrid Ask remains incomplete; complete external live-provider access remains incomplete |
+| Web URL knowledge intake | 🧪 **BOUNDED PROOF** | Real WEB_URL capture and RAG indexing into the exact tenant/workspace Qdrant scope, verified indexed retrieval, and execution through Hybrid Ask `indexed_only`; a suite **PASS** always requires those indexed-path steps - grounded answer and indexed citation/evidence are verified only when the run completes with `status=completed`; `status=insufficient_evidence` may still **PASS** after successful indexed retrieval without proving completed answer assembly | Controlled `example.com` origin only; not arbitrary external-site verification; mixed indexed + authorized live Hybrid Ask remains incomplete; complete external live-provider access remains incomplete |
 | Ollama / vLLM model runtime portability | 🧪 **BOUNDED PROOF** | Same workspace workflows on Ollama and vLLM without reindexing | Not complete product parity across all features |
 
 **Proof:** `LKW-WEB-URL-INDEXED-ASK`
@@ -128,7 +128,7 @@ incomplete, and complete **external** live-provider access remains incomplete.
 
 - Mixed indexed + authorized live Hybrid Ask remains incomplete.
 - Complete **external** live-provider access remains incomplete.
-- Productized multi-source live capability across the intended LKW product experience remains incomplete — distinct from the bounded four **controlled live provider** **LIVE_ONLY** Governed Evidence Decision Proof (`advanced_flagship_proof`); that proof is real runtime/HTTP execution, not external SaaS validation.
+- Productized multi-source live capability across the intended LKW product experience remains incomplete - distinct from the bounded four **controlled live provider** **LIVE_ONLY** Governed Evidence Decision Proof (`advanced_flagship_proof`); that proof is real runtime/HTTP execution, not external SaaS validation.
 - Real-user validation is not established.
 - Commercial validation is not established.
 
@@ -140,7 +140,7 @@ Accepted technical proof:
 
 ---
 
-## Token Optimization — Featured platform-capability proof
+## Token Optimization - Featured platform-capability proof
 
 **Role:** Featured platform-capability proof
 
@@ -159,8 +159,8 @@ Accepted technical proof:
 
 **Proof:** `RUNTIME-TOKEN-OPTIMIZATION-OFFLINE`
 
-| Universal token reduction | ⛔ **NOT CLAIMABLE** | — | No universal savings evidence |
-| Production-proven savings | ⛔ **NOT CLAIMABLE** | — | Required proof and promotion gates are incomplete. |
+| Universal token reduction | ⛔ **NOT CLAIMABLE** | - | No universal savings evidence |
+| Production-proven savings | ⛔ **NOT CLAIMABLE** | - | Required proof and promotion gates are incomplete. |
 
 ### Not established by the accepted public proof
 
@@ -242,7 +242,7 @@ Public documentation references `proof_id` values only. Canonical membership,
 commands, profiles, and environment requirements live in
 `scripts/proof/intergrax_proof_manifest.py`.
 
-**Historical vs current evidence:** a recorded PASS or certification artifact at an earlier source revision remains valid **historical** evidence. **Current** public-evidence eligibility requires provenance/freshness qualification per [`PROOF_RECEIPTS`](../architecture/PROOF_RECEIPTS.md) Protocol v2 target invariants and [`LKW_PRODUCT_PROOF`](../../audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) — not implemented yet.
+**Historical vs current evidence:** a recorded PASS or certification artifact at an earlier source revision remains valid **historical** evidence. **Current** public-evidence eligibility requires provenance/freshness qualification per [`PROOF_RECEIPTS`](../architecture/PROOF_RECEIPTS.md) Protocol v2 target invariants and [`LKW_PRODUCT_PROOF`](../../audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) - not implemented yet.
 
 **Profile semantics (honest current state):**
 
@@ -254,7 +254,7 @@ commands, profiles, and environment requirements live in
 
 **`--profile live` / `PASS_WITH_BLOCKED` limitation (accepted remediation):** when required live proofs are blocked by missing environment/provider requirements, the suite may currently aggregate to `PASS_WITH_BLOCKED` with shell exit code `0`. Do **not** infer complete live certification from exit `0` until [`LKW-PROOF-04`](../../audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) is remediated.
 
-**Manifest governance gap:** Governed Evidence Decision Proof (`advanced_flagship_proof`) is publicly documented but not yet a canonical manifest entry — see [`LKW-PROOF-05`](../../audit_results/2026-08-18/LKW_PRODUCT_PROOF.md).
+**Manifest governance gap:** Governed Evidence Decision Proof (`advanced_flagship_proof`) is publicly documented but not yet a canonical manifest entry - see [`LKW-PROOF-05`](../../audit_results/2026-08-18/LKW_PRODUCT_PROOF.md).
 
 Run the repository-wide suite from the repository root:
 

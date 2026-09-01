@@ -1,10 +1,10 @@
-# Interactive layer-by-layer audit run — 2026-06-18
+# Interactive layer-by-layer audit run - 2026-06-18
 
 **Mode:** audit + implement (§6.1av MAINT + §6.1au AUDIT-IDEAL closeout) · **Scope:** all 22 domain pairs
 
 ## Status
 
-**Complete** — §6.1av MAINT **82/82 Done** · AUDIT-IDEAL **90/90 Done** (2026-06-18).
+**Complete** - §6.1av MAINT **82/82 Done** · AUDIT-IDEAL **90/90 Done** (2026-06-18).
 
 ## Rollup
 
@@ -46,4 +46,4 @@ python scripts/maintenance/check_plan_scorecard_sync.py
 
 ## Policy
 
-Phase K / §6.3 product work not started. Band **2az** AUDIT-IDEAL register closed — next default queue returns to **§6.1 gate maintenance** per `PLATFORM_FOUNDATION.md`.
+Phase K / §6.3 product work not started. Band **2az** AUDIT-IDEAL register closed - next default queue returns to **§6.1 gate maintenance** per `PLATFORM_FOUNDATION.md`.

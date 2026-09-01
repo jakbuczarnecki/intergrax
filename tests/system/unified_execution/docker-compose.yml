@@ -1,4 +1,4 @@
-# UE-11G-C1 — real agentic production E2E certification
+# UE-11G-C1 - real agentic production E2E certification
 # Run from repository root:
 #   docker compose -f tests/system/unified_execution/docker-compose.yml up --build --exit-code-from proof-runner
 

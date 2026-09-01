@@ -13,29 +13,29 @@ Canon §42.14.3 describes **graph delegation** as the Harness subagent equivalen
 
 Tier-3 authors can declare topology via `ApplicationGraphSpec`:
 
-- `DEPENDS_ON` — sequential dependency between agents (separate plan steps / graph nodes)
-- `DELEGATES_TO` — attaches `DelegationSpec` with `child_agent_id` on the **source** step
+- `DEPENDS_ON` - sequential dependency between agents (separate plan steps / graph nodes)
+- `DELEGATES_TO` - attaches `DelegationSpec` with `child_agent_id` on the **source** step
 
 **Runtime truth (post FLOW-2/14):** `graph_spec_to_plan.py` expands `DELEGATES_TO` into a child `PlanStep` with `DelegationSpec` on the **child** node; `GraphExecutor` routes execution to `child_agent_id` when delegation is present. `FLOW-GAP-02` is **closed**.
 
 ## Decision
 
-Adopt **Option C — planning sugar with graph expansion**:
+Adopt **Option C - planning sugar with graph expansion**:
 
 1. **`DELEGATES_TO` in `ApplicationGraphSpec`** remains the **author-facing** declarative edge (ergonomic subagent declaration).
 2. **`graph_spec_to_plan` or `plan_to_execution_graph`** MUST **expand** each `DELEGATES_TO` into:
    - a **child `PlanStep` / `ExecutionNode`** for `child_agent_id`
    - `depends_on` from child → parent (child runs after parent completes)
    - `DelegationSpec` on the **child node** (isolated memory, parent trace metadata)
-3. **`AgentDecision.HANDOFF`** remains the **runtime-dynamic** path (unchanged) — `HandoffCoordinator` inserts nodes during execution.
+3. **`AgentDecision.HANDOFF`** remains the **runtime-dynamic** path (unchanged) - `HandoffCoordinator` inserts nodes during execution.
 4. **`DEPENDS_ON` alone** remains the explicit multi-agent sequential path without delegation isolation semantics.
 
 **Not chosen:**
 
 | Option | Why rejected |
 |--------|--------------|
-| **A** — `DELEGATES_TO` executes child inside parent node | Conflicts with subagent isolation; duplicates UAEP vs graph boundaries |
-| **B** — deprecate `DELEGATES_TO`; only `DEPENDS_ON` | Loses ergonomic declarative subagent API; breaks existing graph builder DX |
+| **A** - `DELEGATES_TO` executes child inside parent node | Conflicts with subagent isolation; duplicates UAEP vs graph boundaries |
+| **B** - deprecate `DELEGATES_TO`; only `DEPENDS_ON` | Loses ergonomic declarative subagent API; breaks existing graph builder DX |
 
 ## Consequences
 

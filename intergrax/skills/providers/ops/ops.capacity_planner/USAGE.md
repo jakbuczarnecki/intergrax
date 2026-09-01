@@ -28,4 +28,4 @@ Governed access to: `metrics.query_range`, `cost.forecast_spend`, `harness.list_
 
 ## Related skills
 
-- Other `ops` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `ops` bundle skills - see bundle [USAGE.md](../USAGE.md)

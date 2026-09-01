@@ -1,4 +1,4 @@
-# Diagnostic Hardening — Program Closeout
+# Diagnostic Hardening - Program Closeout
 
 **Status:** COMPLETE (HARDEN-1 through HARDEN-5)  
 **Branch baseline:** `development`  
@@ -12,11 +12,11 @@
 
 | Program slice | Status |
 | ------------- | ------ |
-| HARDEN-1 — durable Problem persistence + failure isolation | ✅ |
-| HARDEN-2 — concurrency / OCC | ✅ |
-| HARDEN-3 — observability export failure + exporter health | ✅ |
-| HARDEN-4 — product-host E2E matrix (M1–M24) | ✅ |
-| HARDEN-5 — documentation truth audit | ✅ |
+| HARDEN-1 - durable Problem persistence + failure isolation | ✅ |
+| HARDEN-2 - concurrency / OCC | ✅ |
+| HARDEN-3 - observability export failure + exporter health | ✅ |
+| HARDEN-4 - product-host E2E matrix (M1–M24) | ✅ |
+| HARDEN-5 - documentation truth audit | ✅ |
 
 ```text
 DIAGNOSTIC HARDENING COMPLETE
@@ -89,19 +89,19 @@ Full inventory: matrix § Existing proof inventory.
 | ----- | -------- |
 | Failed Problem writes | No automatic replay queue |
 | Unsupported diagnostic scope | No typed unsupported outcome (M22 N/A) |
-| Exporter health registry | Process-local operator state — not canonical durable platform state |
-| Vendor telemetry | Visualization only — not execution truth |
-| AI investigation | Interpretation only — not canonical Problem authority |
-| Global deployment | Cross-process proofs are qualified slices — not unlimited multi-region guarantees |
+| Exporter health registry | Process-local operator state - not canonical durable platform state |
+| Vendor telemetry | Visualization only - not execution truth |
+| AI investigation | Interpretation only - not canonical Problem authority |
+| Global deployment | Cross-process proofs are qualified slices - not unlimited multi-region guarantees |
 | Automatic telemetry replay | Failed export during outage is not automatically replayed (M15) |
 
 ---
 
 ## Qualification vs operational gaps
 
-**Closed:** HARDEN qualification matrix (M1–M24) — no open P0/P1/P2.
+**Closed:** HARDEN qualification matrix (M1–M24) - no open P0/P1/P2.
 
-**Open (separate backlog):** DG-001..DG-005 in [`DIAGNOSTIC_GAP_LEDGER.md`](DIAGNOSTIC_GAP_LEDGER.md) — operational/platform improvement candidates discovered during real application qualification. These are **not** HARDEN blockers and do not contradict diagnostic architecture freeze.
+**Open (separate backlog):** DG-001..DG-005 in [`DIAGNOSTIC_GAP_LEDGER.md`](DIAGNOSTIC_GAP_LEDGER.md) - operational/platform improvement candidates discovered during real application qualification. These are **not** HARDEN blockers and do not contradict diagnostic architecture freeze.
 
 ---
 

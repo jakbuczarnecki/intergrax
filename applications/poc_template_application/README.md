@@ -1,6 +1,6 @@
 # POC Template Application (Tier-3)
 
-Living reference for Phase N — generated from `intergrax.scaffold new-application` (lab profile + echo agent).
+Living reference for Phase N - generated from `intergrax.scaffold new-application` (lab profile + echo agent).
 
 **Build & deploy:** [`BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md) · **Architecture:** [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
 
@@ -23,7 +23,7 @@ applications/poc_template_application/docker/build-docker.sh
 
 ## Agents
 
-`EchoAgent` — minimal roster for CI and onboarding.
+`EchoAgent` - minimal roster for CI and onboarding.
 
 ## HTTP
 
@@ -36,9 +36,9 @@ curl -s -X POST http://127.0.0.1:8095/v1/poc_template/run \
 
 ## MCP (FastMCP)
 
-Same process as FastAPI — default `http://127.0.0.1:8095/mcp`. Tools: `list_agents`, `run_agent`.
+Same process as FastAPI - default `http://127.0.0.1:8095/mcp`. Tools: `list_agents`, `run_agent`.
 
 ## Docs
 
-- [`applications/USAGE.md`](../USAGE.md) — Tier-3 layout
-- [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md) — composition engine
+- [`applications/USAGE.md`](../USAGE.md) - Tier-3 layout
+- [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md) - composition engine

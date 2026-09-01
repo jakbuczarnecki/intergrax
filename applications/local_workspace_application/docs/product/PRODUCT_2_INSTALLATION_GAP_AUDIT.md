@@ -3,7 +3,7 @@
 ## 1. Status
 
 **Status:** READY_FOR_REVIEW
-**Task:** LKW-PRODUCT-2A — ZERO-TO-VALUE INSTALLATION GAP AUDIT AND IMPLEMENTATION PLAN
+**Task:** LKW-PRODUCT-2A - ZERO-TO-VALUE INSTALLATION GAP AUDIT AND IMPLEMENTATION PLAN
 **Mode:** discovery / gap analysis only
 
 The accepted contract ancestor is present. The audit was performed on branch

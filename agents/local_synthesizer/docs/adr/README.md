@@ -1,4 +1,4 @@
-﻿# local_synthesizer agent — Architecture Decision Records
+﻿# local_synthesizer agent - Architecture Decision Records
 
 **Domain:** Tier-2 business agent (`agents/local_synthesizer`)
 
@@ -36,7 +36,7 @@ ADR-LOCAL_SYNTHESIZER-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| — | *No agent ADRs yet* | — |
+| - | *No agent ADRs yet* | - |
 
 ---
 

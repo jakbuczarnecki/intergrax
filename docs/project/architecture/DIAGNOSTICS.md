@@ -1,6 +1,6 @@
 # Intergrax Central Diagnostics
 
-**Intergrax Central Diagnostics** is the **one** canonical deterministic diagnostic engine for the platform. It interprets persisted platform facts — primarily `RuntimeEvent` execution evidence — into tenant-scoped `Problem` state, bounded operator read models, and optional investigation inputs. It does **not** mint execution identity, own observability export, or treat vendor telemetry or AI conclusions as truth.
+**Intergrax Central Diagnostics** is the **one** canonical deterministic diagnostic engine for the platform. It interprets persisted platform facts - primarily `RuntimeEvent` execution evidence - into tenant-scoped `Problem` state, bounded operator read models, and optional investigation inputs. It does **not** mint execution identity, own observability export, or treat vendor telemetry or AI conclusions as truth.
 
 **Persisted platform facts are truth. AI is not truth.**
 
@@ -37,7 +37,7 @@ RuntimeEvent = canonical execution evidence
 Central Diagnostics (intergrax.runtime.diagnostics)
         ↓
 Problem Store + DiagnosticReadService
-Observability export = derived (parallel consumer — not authority)
+Observability export = derived (parallel consumer - not authority)
 ```
 
 Deep backbone map: [`diagnostics-platform-backbone.md`](assets/fullsize/diagnostics-platform-backbone.md) · adoption paths: [`diagnostics-platform-adoption.md`](assets/fullsize/diagnostics-platform-adoption.md).
@@ -52,12 +52,12 @@ Central diagnostics answers:
 
 It is implemented under `intergrax/runtime/diagnostics/` as a **single spine**:
 
-- `ExecutionReconstructor` — factual reconstruction from canonical evidence
-- `LifecycleAnomalyAnalyzer` + `DiagnosticAssessmentBuilder` — deterministic assessment
-- `ProblemGroupingEngine` — structural grouping hypotheses
-- `ProblemLifecycleEngine` — stable `Problem` identity and lifecycle
-- `DiagnosticOrchestrator` — canonical write/process entry point
-- `DiagnosticReadService` — canonical read/reconstruction entry point
+- `ExecutionReconstructor` - factual reconstruction from canonical evidence
+- `LifecycleAnomalyAnalyzer` + `DiagnosticAssessmentBuilder` - deterministic assessment
+- `ProblemGroupingEngine` - structural grouping hypotheses
+- `ProblemLifecycleEngine` - stable `Problem` identity and lifecycle
+- `DiagnosticOrchestrator` - canonical write/process entry point
+- `DiagnosticReadService` - canonical read/reconstruction entry point
 
 There is **no** scenario-local, proof-local, or AI-incident-specific canonical diagnostic authority.
 
@@ -73,7 +73,7 @@ CANONICAL
 DERIVED
   ExecutionReconstruction / DiagnosticAssessment
   Observability export envelopes
-  Fine-grained OTel spans (RAG / context only — see OBSERVABILITY)
+  Fine-grained OTel spans (RAG / context only - see OBSERVABILITY)
 
 NON-CANONICAL
   AI investigation conclusions
@@ -122,7 +122,7 @@ business result != diagnostic state
 diagnostic failure must not destroy a correct business result
 ```
 
-A successful governed execution remains successful even when Problem persistence fails, diagnostic post-processing throws, or observability export is degraded. Diagnostic subsystem failures may themselves be recorded as canonical runtime failure evidence — without recursive observability dependency loops.
+A successful governed execution remains successful even when Problem persistence fails, diagnostic post-processing throws, or observability export is degraded. Diagnostic subsystem failures may themselves be recorded as canonical runtime failure evidence - without recursive observability dependency loops.
 
 ---
 
@@ -169,7 +169,7 @@ flowchart TB
 
 1. Terminal execution (or explicit orchestration) supplies bounded scope: `tenant_id` + `TaskId` + `RunId` (execution subjects) and/or `application_id` + `instance_id` (application-instance subjects).
 2. `ExecutionReconstructor` rebuilds factual execution evidence from `RuntimeEventPersistence` (+ optional causal evidence).
-3. `LifecycleAnomalyAnalyzer` and `DiagnosticAssessmentBuilder` produce deterministic findings — or **no findings** on clean paths (M1).
+3. `LifecycleAnomalyAnalyzer` and `DiagnosticAssessmentBuilder` produce deterministic findings - or **no findings** on clean paths (M1).
 4. `ProblemGroupingEngine` proposes grouping candidates (deterministic strategy in production).
 5. `ProblemLifecycleEngine.reconcile` mints or updates a stable `ProblemId` from reconciliation key + subject refs.
 
@@ -182,11 +182,11 @@ flowchart TB
 | Concept | Contract |
 | ------- | -------- |
 | **Deterministic signature** | `DeterministicProblemSignature` + strategy id/version |
-| **Reconciliation key** | `tenant_id` + strategy metadata + signature — finds same logical Problem |
-| **Stable `problem_id`** | Opaque minted id — same Problem across occurrences |
+| **Reconciliation key** | `tenant_id` + strategy metadata + signature - finds same logical Problem |
+| **Stable `problem_id`** | Opaque minted id - same Problem across occurrences |
 | **Occurrences** | Distinct accepted execution (or signal) attachments |
 | **`first_seen_at` / `last_seen_at`** | Min/max of accepted occurrence `observed_at` |
-| **Tenant scope** | Problem identity is **tenant-scoped** — same logical issue in tenant A and B are separate Problems |
+| **Tenant scope** | Problem identity is **tenant-scoped** - same logical issue in tenant A and B are separate Problems |
 
 Cross-tenant direct `problem_id` read **must not** reveal another tenant's Problem.
 
@@ -247,12 +247,12 @@ Mongo is a **provider**, not part of the central diagnostics contract:
 IntegrationProfile
   → DocumentStore abstraction
   → ConditionalDocumentStore capability
-  → PartitionAtomicDocumentStore capability (E2-R6 — required for occurrence persistence)
+  → PartitionAtomicDocumentStore capability (E2-R6 - required for occurrence persistence)
   → DocumentStoreProblemPersistence + DocumentStoreProblemOccurrencePersistence
   → ProblemLifecycleEngine
 ```
 
-Do **not** document `Diagnostics → MongoDB` as production architecture. The engine is **vendor-neutral** — no Mongo-specific API, OTel API, or Datadog dependency in central semantics.
+Do **not** document `Diagnostics → MongoDB` as production architecture. The engine is **vendor-neutral** - no Mongo-specific API, OTel API, or Datadog dependency in central semantics.
 
 ---
 
@@ -303,19 +303,19 @@ missing evidence ≠ fabricated diagnosis
 | Kind | Scope | Reconstruction |
 | ---- | ----- | -------------- |
 | `EXECUTION` | `tenant_id` + `TaskId` + `RunId` | Full execution-style reconstruction when evidence exists |
-| `APPLICATION_INSTANCE` | `tenant_id` + `application_id` + `instance_id` | Bounded signal assessment — **not** full execution-style reconstruction unless evidence contract provides it |
+| `APPLICATION_INSTANCE` | `tenant_id` + `application_id` + `instance_id` | Bounded signal assessment - **not** full execution-style reconstruction unless evidence contract provides it |
 
 HOST-DIAG-3 may project hosting failures into central non-execution diagnostics when product composition supplies tenant binding. Hosting lifecycle does **not** synthesize `TaskId`/`RunId`.
 
 ---
 
-## M22 — no typed unsupported scope outcome
+## M22 - no typed unsupported scope outcome
 
 Central diagnostics does **not** expose a typed valid-but-unsupported scope result.
 
 | Input | Outcome |
 | ----- | ------- |
-| Supported scope, no violations | `has_findings=False` — clean semantics (M1) |
+| Supported scope, no violations | `has_findings=False` - clean semantics (M1) |
 | Supported scope, violations | Findings → Problem reconciliation |
 | Invalid orchestration input | Rejected before analysis (e.g. empty request) |
 
@@ -323,7 +323,7 @@ There is **no** separate `unsupported scope` typed outcome. Qualification status
 
 ---
 
-## M21 — AI not canonical authority
+## M21 - AI not canonical authority
 
 AI-assisted investigation (e.g. scenario conclusions, `InvestigationConclusion`) may interpret canonical facts but **cannot** create, override, or prove canonical `Problem` truth. Qualification status: **M21 = NOT_APPLICABLE**.
 
@@ -385,10 +385,10 @@ Problem Store failure **cannot** change execution truth.
 | Field | Role |
 | ----- | ---- |
 | `tenant_id` | Isolation boundary for Problems and reads |
-| `task_id` (`TaskId`) | Work intent — authoritative from Execution Runtime |
-| `run_id` (`RunId`) | One governed lifecycle — authoritative from Execution Runtime |
-| `attempt_id` (`AttemptId`) | Global try of the run — on `RuntimeEvent`; do not conflate with `RunId` |
-| `execution_id` (`ExecutionId`) | **TARGET** schedulable unit — not yet on all `RuntimeEvent` paths |
+| `task_id` (`TaskId`) | Work intent - authoritative from Execution Runtime |
+| `run_id` (`RunId`) | One governed lifecycle - authoritative from Execution Runtime |
+| `attempt_id` (`AttemptId`) | Global try of the run - on `RuntimeEvent`; do not conflate with `RunId` |
+| `execution_id` (`ExecutionId`) | **TARGET** schedulable unit - not yet on all `RuntimeEvent` paths |
 
 Do not mix `RunId`, `ExecutionId`, or `AttemptId` in diagnostic contracts.
 
@@ -451,7 +451,7 @@ Crash recovery: incomplete create/update leaves skippable projections; subsequen
 
 ### Projection reconciliation (DIAG-ENTERPRISE-1-R2 / R3)
 
-Derived `list:{scope}:…` rows can become **proven stale** or **proven orphan** only via explicit bounded maintenance — never in the hot read path.
+Derived `list:{scope}:…` rows can become **proven stale** or **proven orphan** only via explicit bounded maintenance - never in the hot read path.
 
 | Classification | Meaning | Hot read | Maintenance (`reconcile_list_indexes`) |
 |---|---|---|---|
@@ -463,7 +463,7 @@ Derived `list:{scope}:…` rows can become **proven stale** or **proven orphan**
 
 List-index schema v2 adds `projection_written_at` (UTC, writer clock). v1 rows remain readable; reconciliation upgrades consistent v1 rows to v2. Writers emit v2 only.
 
-**Safety-age contract (R3):** `MIN_SAFE_PROJECTION_AGE = 5 minutes` (aligned with platform 300s lease convention). Callers pass `minimum_projection_age` (relative); the reconciler computes `safe_cutoff = now - effective_age` using its injected clock. Callers cannot request an age below the platform minimum (`ProblemListIndexReconciliationError`). Future-dated `projection_written_at` (clock skew) is always `TRANSIENT_OR_UNCERTAIN` — never destructive.
+**Safety-age contract (R3):** `MIN_SAFE_PROJECTION_AGE = 5 minutes` (aligned with platform 300s lease convention). Callers pass `minimum_projection_age` (relative); the reconciler computes `safe_cutoff = now - effective_age` using its injected clock. Callers cannot request an age below the platform minimum (`ProblemListIndexReconciliationError`). Future-dated `projection_written_at` (clock skew) is always `TRANSIENT_OR_UNCERTAIN` - never destructive.
 
 Maintenance contract:
 
@@ -473,7 +473,7 @@ DocumentStoreProblemPersistence.reconcile_list_indexes(
 ) → ProblemListIndexReconciliationPage
 ```
 
-Bounded by `limit` index rows per call; continuation via document-store cursor. No scheduler/daemon — callable maintenance seam for admin/tests/future lifecycle.
+Bounded by `limit` index rows per call; continuation via document-store cursor. No scheduler/daemon - callable maintenance seam for admin/tests/future lifecycle.
 
 **Projection health (R3/R4/R5/R6):** cumulative telemetry counters (`repaired_projection`, `deleted_orphan_projection`, skip counters) remain historical and are not reset to recover health. Current health is **process-local** and resets on host restart. It reflects per-identity maintenance cycle state keyed by `(tenant_id, scope)`, read skip threshold, and unresolved same-version corruption (`same_version_integrity_failure > 0`).
 
@@ -486,9 +486,9 @@ ProblemListMaintenanceCycleState = in_progress, had_issues, current_cycle_found_
 
 Rules:
 
-- `cursor=None` starts a new cycle only when no cycle for the same key is `in_progress`; otherwise `ProblemListIndexReconciliationError` (continuation required — no silent reset).
-- **Single-flight (R5):** maintenance reconciliation is single-flight per `(tenant_id, scope)` — at most one active page processor per cycle key. Parallel continuation on the same key is rejected with `ProblemListIndexReconciliationError` (`maintenance cycle page already in progress`); the rejected caller mutates nothing. Different tenants or scopes may reconcile concurrently. Ownership is process-local (`page_in_flight`) and always released in `finally`, including on DocumentStore/query/repair exceptions.
-- **First-page failure recovery (R6):** when a newly started maintenance cycle (`cursor=None`) fails before the page completes successfully, only process-local cycle state is rolled back — restoring a prior degraded snapshot when one existed, removing a fresh registry entry when no issues were found, or retaining `had_issues` when partial repairs/deletes occurred before the exception. Retry with `cursor=None` is allowed. Continuation-page failures (`cursor != None`) retain the existing in-progress cycle; retry uses the same cursor. Persistence writes and cumulative telemetry are not rolled back; convergence remains idempotent.
+- `cursor=None` starts a new cycle only when no cycle for the same key is `in_progress`; otherwise `ProblemListIndexReconciliationError` (continuation required - no silent reset).
+- **Single-flight (R5):** maintenance reconciliation is single-flight per `(tenant_id, scope)` - at most one active page processor per cycle key. Parallel continuation on the same key is rejected with `ProblemListIndexReconciliationError` (`maintenance cycle page already in progress`); the rejected caller mutates nothing. Different tenants or scopes may reconcile concurrently. Ownership is process-local (`page_in_flight`) and always released in `finally`, including on DocumentStore/query/repair exceptions.
+- **First-page failure recovery (R6):** when a newly started maintenance cycle (`cursor=None`) fails before the page completes successfully, only process-local cycle state is rolled back - restoring a prior degraded snapshot when one existed, removing a fresh registry entry when no issues were found, or retaining `had_issues` when partial repairs/deletes occurred before the exception. Retry with `cursor=None` is allowed. Continuation-page failures (`cursor != None`) retain the existing in-progress cycle; retry uses the same cursor. Persistence writes and cumulative telemetry are not rolled back; convergence remains idempotent.
 - A cycle with issues (`repaired`/`deleted`/`corrupt`) sets `had_issues` for that key until a **full** clean traversal (`has_more=False`) with zero issues on that same key.
 - An abandoned cycle (`has_more=True` after issues) keeps health `DEGRADED`; a clean complete cycle on another tenant or scope does not mask it.
 - Completed clean cycles prune registry entries; degraded/incomplete entries are retained.
@@ -498,7 +498,7 @@ Rules:
 
 Production hosts authenticate continuation cursors with HMAC-SHA256 over a tenant- and status-filter-bound payload. Secret enters only through composition (`INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET` via `resolve_problem_list_cursor_secret()`). **Minimum 32 UTF-8 bytes** (random 256-bit recommended). **No static default secret in production.** Restart with a new secret invalidates previously issued cursors (documented limitation; no transparent rotation in this slice).
 
-### Bounded occurrence history (DIAG-ENTERPRISE-2 / E2-R4 / E2-R5 / E2-R6 — IN_PROGRESS)
+### Bounded occurrence history (DIAG-ENTERPRISE-2 / E2-R4 / E2-R5 / E2-R6 - IN_PROGRESS)
 
 Source-of-truth hierarchy:
 
@@ -510,18 +510,18 @@ accepted durable ProblemOccurrence history (occurrence rows)
 bounded Problem aggregate (+ typed occurrence_aggregate_health)
 ```
 
-Occurrence rows are authoritative. Problem `occurrence_count` / `first_seen_at` / `last_seen_at` are a bounded derived projection — not a central mutable stats counter.
+Occurrence rows are authoritative. Problem `occurrence_count` / `first_seen_at` / `last_seen_at` are a bounded derived projection - not a central mutable stats counter.
 
-**Write protocol (idempotent, bounded O(1) per append — E2-R6 atomic):**
+**Write protocol (idempotent, bounded O(1) per append - E2-R6 atomic):**
 
 1. `execute_partition_atomic_batch`: atomically `put_if_absent` occurrence row **and**, only when created, advance partition fingerprint (`meta:occurrence_partition_fingerprint`: monotonic `write_generation` + `min_row_key` / `max_row_key`).
-2. Either both commit or neither — no partial success window between occurrence row and fingerprint metadata.
+2. Either both commit or neither - no partial success window between occurrence row and fingerprint metadata.
 3. Hot path (lifecycle): when append returns `CREATED`, apply bounded delta to Problem aggregate and persist via optimistic CAS with `occurrence_aggregate_health=CONSISTENT`.
 4. On aggregate CAS failure, mark `RECONCILIATION_REQUIRED` best-effort and reconcile via bounded repair.
 5. `ProblemOccurrenceAggregateHealth`: `CONSISTENT` (count exact for a closed snapshot) vs `RECONCILIATION_REQUIRED` (count may be stale until repair completes).
 6. Duplicate retry (`ALREADY_EXISTS`) never blind-increments fingerprint; when health is `CONSISTENT`, no unconditional full-history scan.
 
-**Storage capability (E2-R6):** `ProblemOccurrencePersistence` wiring requires `PartitionAtomicDocumentStore` — fail closed when absent. Mongo adapter implements the batch via replica-set transactions; InMemory via process lock. Standalone Mongo without replica set does **not** satisfy the contract.
+**Storage capability (E2-R6):** `ProblemOccurrencePersistence` wiring requires `PartitionAtomicDocumentStore` - fail closed when absent. Mongo adapter implements the batch via replica-set transactions; InMemory via process lock. Standalone Mongo without replica set does **not** satisfy the contract.
 
 **Repair snapshot (E2-R5/R6):** capture partition fingerprint boundary `H` (bounded O(1)); paginated scan only rows with `min_row_key <= row_key <= terminal_row_key`; `CONSISTENT` only when start/end fingerprint stable (no concurrent writes during scan) and aggregate matches scan. Late/out-of-order inserts bump `write_generation` and force another round. Legacy bootstrap merges scanned bounds with any concurrent fingerprint via bounded CAS.
 
@@ -531,7 +531,7 @@ Occurrence rows are authoritative. Problem `occurrence_count` / `first_seen_at` 
 
 **Occurrence cursor secret:** same minimum 32 UTF-8 bytes as E1 list cursors (`resolve_problem_list_cursor_secret()` at composition boundary).
 
-**Repair:** paginated `query_occurrences` with optional repair boundary — no full-history hot-path scan. Bounded rounds; unstable fingerprint → remain `RECONCILIATION_REQUIRED`.
+**Repair:** paginated `query_occurrences` with optional repair boundary - no full-history hot-path scan. Bounded rounds; unstable fingerprint → remain `RECONCILIATION_REQUIRED`.
 
 ### Production persistence contract
 
@@ -621,7 +621,7 @@ Functional evidence history (canonical persistence)
 bounded reconstruction accumulator
         │
         ├─ completeness status (NOT_EVALUATED | COMPLETE | INCOMPLETE)
-        ├─ per-kind counts (closed enum — bounded)
+        ├─ per-kind counts (closed enum - bounded)
         ├─ bounded supporting refs (≤ MAX_SUPPORTING_EVIDENCE_REFS)
         └─ limitations (late-arrival semantics)
         │
@@ -677,9 +677,9 @@ functional analysis ───────────────┤
 
 | Contract | Role |
 | -------- | ---- |
-| `FunctionalDiagnosticSpecification` | Versioned, bounded diagnostic plan — checks, dependencies, typed requirements |
+| `FunctionalDiagnosticSpecification` | Versioned, bounded diagnostic plan - checks, dependencies, typed requirements |
 | `FunctionalDiagnosticRequirement` | Generic predicates: operation outcome status, candidate/selection/output presence, selection artifact match, validation outcome |
-| `FunctionalDiagnosticAnalyzer` | One deterministic analyzer for all workload profiles — no domain-specific engines |
+| `FunctionalDiagnosticAnalyzer` | One deterministic analyzer for all workload profiles - no domain-specific engines |
 | `FunctionalDiagnosticAnalysis` | Bounded per-scope result: check results, optional `first_proven_failure`, limitations |
 
 **Check statuses (exact semantics):**
@@ -688,15 +688,15 @@ functional analysis ───────────────┤
 | ------ | ------- |
 | `PROVEN_PASS` | Direct evidence proves the check condition was met |
 | `PROVEN_FAIL` | Direct evidence proves the check condition was not met |
-| `INSUFFICIENT_EVIDENCE` | Not enough facts to prove PASS or FAIL — absence is **not** failure |
+| `INSUFFICIENT_EVIDENCE` | Not enough facts to prove PASS or FAIL - absence is **not** failure |
 | `NOT_EVALUATED` | Check not reached in this analysis cycle |
 | `BLOCKED_BY_UPSTREAM` | A dependency did not reach `PROVEN_PASS`; downstream check is not inferred as FAIL |
 
-**Contradiction:** when the same check receives both PASS- and FAIL-supporting evidence, the result is `INSUFFICIENT_EVIDENCE` with an explicit contradiction limitation — never arbitrary winner selection.
+**Contradiction:** when the same check receives both PASS- and FAIL-supporting evidence, the result is `INSUFFICIENT_EVIDENCE` with an explicit contradiction limitation - never arbitrary winner selection.
 
 **Dependency semantics:** DAG dependencies are evaluated in topological order (not specification tuple order). Independent branches continue evaluation after a `PROVEN_FAIL` elsewhere. `first_proven_failure` is the first check in **specification order** with `PROVEN_FAIL` (presentation order, not causal root-cause).
 
-**Validation scope:** `FunctionalValidationEvidenceLookup` is analysis-scoped (`tenant`, `task`, `run`, optional `attempt`). DIAG enforces scope — callers are not trusted. Wrong-scope validations fail closed (`FunctionalDiagnosticAnalysisIntegrityError`). Missing validations yield `INSUFFICIENT_EVIDENCE`. Run-level validations (`attempt_id=None`) do not prove attempt-scoped checks.
+**Validation scope:** `FunctionalValidationEvidenceLookup` is analysis-scoped (`tenant`, `task`, `run`, optional `attempt`). DIAG enforces scope - callers are not trusted. Wrong-scope validations fail closed (`FunctionalDiagnosticAnalysisIntegrityError`). Missing validations yield `INSUFFICIENT_EVIDENCE`. Run-level validations (`attempt_id=None`) do not prove attempt-scoped checks.
 
 **Evaluation vs presentation order:** Checks are evaluated topologically; `check_results` are returned in original specification tuple order for readability and compatibility.
 
@@ -732,11 +732,11 @@ F4 does **not** perform new diagnosis. It composes ready lifecycle and functiona
 | `PROVEN_FUNCTIONAL_SUCCESS` | Every check is `PROVEN_PASS` |
 | `INCONCLUSIVE` | No proven failure, but insufficient/blocked/not-evaluated checks remain |
 
-Absence of proven failure is **not** proven success. `first_proven_failed_check` is presentation order from analysis — **not** causal root cause.
+Absence of proven failure is **not** proven success. `first_proven_failed_check` is presentation order from analysis - **not** causal root cause.
 
 **Status mapping:** `PROVEN_FAIL` → operator failure finding; `INSUFFICIENT_EVIDENCE` / `BLOCKED_BY_UPSTREAM` / `NOT_EVALUATED` → limitations; `PROVEN_PASS` → separate bounded `pass_results` (not problem findings).
 
-**Composition invariants:** scope mismatch (`tenant`/`task`/`run`) fails closed; execution terminal state is **not** duplicated — owned by Execution System contracts; existing lifecycle findings (`MULTIPLE_TERMINAL_OUTCOMES`, `EVENT_AFTER_TERMINAL`, …) remain unchanged.
+**Composition invariants:** scope mismatch (`tenant`/`task`/`run`) fails closed; execution terminal state is **not** duplicated - owned by Execution System contracts; existing lifecycle findings (`MULTIPLE_TERMINAL_OUTCOMES`, `EVENT_AFTER_TERMINAL`, …) remain unchanged.
 
 **Boundedness (operator projection):**
 
@@ -761,7 +761,7 @@ REAL WORKLOAD QUALIFICATION = NOT YET COMPLETE
 
 Recommendation after F4: **READY_FOR_REAL_WORKLOAD_QUALIFICATION** (durable persistence and production scale remain separate gates).
 
-**H1 remains open:** DIAG test-suite health cleanup (slow 100k occurrence test · flaky problem-list health test) — separate roadmap task.
+**H1 remains open:** DIAG test-suite health cleanup (slow 100k occurrence test · flaky problem-list health test) - separate roadmap task.
 
 **Prior F2 status block (superseded by F4 operator projection):**
 
@@ -773,16 +773,16 @@ Recommendation after F4: **READY_FOR_REAL_WORKLOAD_QUALIFICATION** (durable pers
 - Late insert **after** cursor: visible in subsequent pages of the same traversal.
 - Late insert **before** already-consumed cursor: not visible in the current traversal; requires a new reconstruction cycle. No offset duplicates/skips.
 - **Contract semantics:** keyset pagination correctness is provider-independent; offset pagination is forbidden.
-- **InMemory provider complexity (F1-R2 — honest, provider-specific):**
-  - `append`: O(N) worst-case per execution scope — `bisect.insort` on a Python `list` shifts elements after O(log N) position lookup.
+- **InMemory provider complexity (F1-R2 - honest, provider-specific):**
+  - `append`: O(N) worst-case per execution scope - `bisect.insort` on a Python `list` shifts elements after O(log N) position lookup.
   - Unfiltered page: O(log N + page_size) for cursor positioning plus bounded record materialization; no full-history resort per page.
   - Filtered page (`attempt_id`, `kind`): O(log N + scanned_records); worst-case O(N) when filters are sparse relative to scope cardinality.
   - Reconstruction CPU: O(N) streamed over paginated history; reconstruction memory: O(1) relative to history cardinality (bounded accumulator).
-- The generic `FunctionalEvidencePersistence` contract does **not** promise asymptotic bounds — scale SLOs belong to per-provider qualification.
+- The generic `FunctionalEvidencePersistence` contract does **not** promise asymptotic bounds - scale SLOs belong to per-provider qualification.
 
 ### Completeness vs diagnostic certainty (F1-R1)
 
-- `FunctionalEvidenceCompletenessStatus.NOT_EVALUATED` when `required_kinds` is empty — **not** `PROVEN`.
+- `FunctionalEvidenceCompletenessStatus.NOT_EVALUATED` when `required_kinds` is empty - **not** `PROVEN`.
 - `DiagnosticCertainty.PROVEN` belongs to specific findings/claims, not “scan completed”.
 
 ### Identity, correlation, idempotency
@@ -845,10 +845,10 @@ FunctionalEvidencePersistence (contract semantics)
 
 | Level | F1-R2 status |
 | ----- | ------------ |
-| Architecture qualified | YES — generic typed evidence + bounded reconstruction + keyset semantics |
-| Correctness qualified | YES — pagination, boundedness, correlation, late-arrival semantics |
-| Production durability qualified | NO — durable functional-evidence backend not implemented |
-| Production scale qualified | NO — no bounded-index durable provider or high-cardinality proof |
+| Architecture qualified | YES - generic typed evidence + bounded reconstruction + keyset semantics |
+| Correctness qualified | YES - pagination, boundedness, correlation, late-arrival semantics |
+| Production durability qualified | NO - durable functional-evidence backend not implemented |
+| Production scale qualified | NO - no bounded-index durable provider or high-cardinality proof |
 
 Functional Diagnostics must **not** be labelled **PRODUCTION SCALE QUALIFIED** until a durable provider exists with a bounded query index strategy and passes real high-cardinality qualification.
 
@@ -860,13 +860,13 @@ Functional Diagnostics must **not** be labelled **PRODUCTION SCALE QUALIFIED** u
 
 ## Qualification summary
 
-**Engine qualification** — HARDEN-1 through HARDEN-5 **complete**.
+**Engine qualification** - HARDEN-1 through HARDEN-5 **complete**.
 
 ```text
 Engine HARDEN: M1–M24 PROVEN=22 NOT_APPLICABLE=2
 ```
 
-**Platform adoption qualification** — DIAG-PLATFORM **complete** (see [`DIAGNOSTIC_PLATFORM_QUALIFICATION_CLOSEOUT.md`](../maintainers/qualification/DIAGNOSTIC_PLATFORM_QUALIFICATION_CLOSEOUT.md)).
+**Platform adoption qualification** - DIAG-PLATFORM **complete** (see [`DIAGNOSTIC_PLATFORM_QUALIFICATION_CLOSEOUT.md`](../maintainers/qualification/DIAGNOSTIC_PLATFORM_QUALIFICATION_CLOSEOUT.md)).
 
 ```text
 Platform adoption: NATIVE production surfaces = 4 PRODUCT hosts + 1 initialized scenario
@@ -888,4 +888,4 @@ Evidence indexes:
 
 Detailed DIAG-1..7 slice semantics, causal evidence, grouping, and orchestration contracts remain in [`OBSERVABILITY.md`](OBSERVABILITY.md) § DIAG subsystem. This document is the **primary entry point** for diagnostics architecture; OBSERVABILITY owns observability-specific export, HOS, and journal semantics.
 
-**Decision System boundary:** Diagnostics may observe Decision System failures and feed investigation flows — it does **not** resolve Decision Resolution, execute Revision, or own verification rubrics. See [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md).
+**Decision System boundary:** Diagnostics may observe Decision System failures and feed investigation flows - it does **not** resolve Decision Resolution, execute Revision, or own verification rubrics. See [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md).

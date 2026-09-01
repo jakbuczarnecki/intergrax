@@ -4,7 +4,7 @@
 
 ## Purpose
 
-End-to-end **document ingestion into the vector index**: parse source files, chunk + embed + index, and verify collection status. Use for indexer agents (LKW `local_indexer`), legal corpus onboarding, or research corpora — instead of declaring parse/ingest tools manually.
+End-to-end **document ingestion into the vector index**: parse source files, chunk + embed + index, and verify collection status. Use for indexer agents (LKW `local_indexer`), legal corpus onboarding, or research corpora - instead of declaring parse/ingest tools manually.
 
 ## How it works
 
@@ -63,5 +63,5 @@ skills=[RAG_DOCUMENT_INGEST, RAG_HYBRID_QA]  # ingest then query
 
 ## Related skills
 
-- `rag.hybrid_qa` — query after ingest
-- `workspace.authoring` — draft artifacts alongside indexed sources
+- `rag.hybrid_qa` - query after ingest
+- `workspace.authoring` - draft artifacts alongside indexed sources

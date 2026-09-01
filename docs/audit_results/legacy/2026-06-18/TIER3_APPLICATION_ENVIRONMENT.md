@@ -1,6 +1,6 @@
-# Audit result — `TIER3_APPLICATION_ENVIRONMENT`
+# Audit result - `TIER3_APPLICATION_ENVIRONMENT`
 
-**Run:** 2026-06-18 · **Mode:** audit_only (interactive layer 22 — final)  
+**Run:** 2026-06-18 · **Mode:** audit_only (interactive layer 22 - final)  
 **Auditor:** cursor-agent · **Verdict:** L3 mature_revalidated
 
 ---
@@ -50,4 +50,4 @@ uv run python scripts/maintenance/check_environment_profile_bundle_schema.py
 
 ## Recommendation
 
-**Architecturally Mature (L3)** — final layer of Mode A2 batch; all 22 domain pairs audited.
+**Architecturally Mature (L3)** - final layer of Mode A2 batch; all 22 domain pairs audited.

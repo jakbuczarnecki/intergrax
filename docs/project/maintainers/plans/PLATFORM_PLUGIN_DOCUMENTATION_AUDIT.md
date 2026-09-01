@@ -20,9 +20,9 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 
 | Layer | Complete? | Summary |
 |-------|-----------|---------|
-| Level 1 — Platform architecture | **Mostly yes** | [`PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) is current, frozen, and cross-references audit limitations honestly |
-| Level 2 — Cross-platform developer guide | **No** | [`EXTENSION_AUTHOR_GUIDE.md`](../../technical/guides/EXTENSION_AUTHOR_GUIDE.md) is strong for Tools/Integrations/Skills and cross-cutting PLUGIN-3..8 topics but is **not** a complete entry point (no decision tree; 4 surfaces without dedicated sections) |
-| Level 3 — Domain-specific developer docs | **No** | 1 of 12 surfaces fully documented; 7 partial; 4 missing as standalone developer journeys |
+| Level 1 - Platform architecture | **Mostly yes** | [`PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) is current, frozen, and cross-references audit limitations honestly |
+| Level 2 - Cross-platform developer guide | **No** | [`EXTENSION_AUTHOR_GUIDE.md`](../../technical/guides/EXTENSION_AUTHOR_GUIDE.md) is strong for Tools/Integrations/Skills and cross-cutting PLUGIN-3..8 topics but is **not** a complete entry point (no decision tree; 4 surfaces without dedicated sections) |
+| Level 3 - Domain-specific developer docs | **No** | 1 of 12 surfaces fully documented; 7 partial; 4 missing as standalone developer journeys |
 
 ### Surface summary (12 audited)
 
@@ -47,7 +47,7 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 
 ---
 
-## 2. Level 1 — Platform architecture assessment
+## 2. Level 1 - Platform architecture assessment
 
 **Canonical document:** [`docs/project/architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md)
 
@@ -60,16 +60,16 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 | Taxonomy (PEP/IP/HCE/IEP) | **Complete** | §5 |
 | Package/capability model | **Complete** | §8, §21 |
 | Manifest | **Complete** | §11 |
-| Discovery | **Complete** | §9 — includes default-off (F003) |
+| Discovery | **Complete** | §9 - includes default-off (F003) |
 | Registration | **Complete** | §10 |
-| External vs local delivery | **Complete** | §20.3 matrix — gaps acknowledged |
+| External vs local delivery | **Complete** | §20.3 matrix - gaps acknowledged |
 | Configuration / secrets / DI | **Complete** | §12–§13, §12.3 matrix |
-| Lifecycle | **Partial** | §14 vocabulary only — F016 honestly stated |
-| Compatibility | **Complete** | §15 — F001 limitation in §20.4 |
-| Conflict handling | **Complete** | §17 — domain variance documented |
-| Qualification | **Complete** | §18 — F002 semantic vs attestation |
-| Trust/security | **Complete** | §16 — F017 trusted in-process |
-| Failure model | **Complete** | §22 — TARGET vs CURRENT |
+| Lifecycle | **Partial** | §14 vocabulary only - F016 honestly stated |
+| Compatibility | **Complete** | §15 - F001 limitation in §20.4 |
+| Conflict handling | **Complete** | §17 - domain variance documented |
+| Qualification | **Complete** | §18 - F002 semantic vs attestation |
+| Trust/security | **Complete** | §16 - F017 trusted in-process |
+| Failure model | **Complete** | §22 - TARGET vs CURRENT |
 | Observability | **Partial** | §19 TARGET list; F006 no unified inventory |
 | Public APIs | **Complete** | §20.1, §20.3 |
 | DO-NOT-UNIFY | **Complete** | §23 |
@@ -77,16 +77,16 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 
 ### Verdict
 
-**Architecture documentation is complete and current** for platform coordination after PLUGIN-9/AUDIT-1. It correctly does **not** claim domain implementation sufficiency — §20.3 records per-surface author gaps. It is **not** a substitute for domain developer guides.
+**Architecture documentation is complete and current** for platform coordination after PLUGIN-9/AUDIT-1. It correctly does **not** claim domain implementation sufficiency - §20.3 records per-surface author gaps. It is **not** a substitute for domain developer guides.
 
 ### Gaps at Level 1
 
 - No single navigation index from architecture hub to all 12 domain author paths (routes to EXTENSION_AUTHOR_GUIDE + VK guide only).
-- Maintainer roadmap [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md) line 56 still says Context author guide marks "partial rollout" — stale vs PLUGIN-9 fix (INFO).
+- Maintainer roadmap [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md) line 56 still says Context author guide marks "partial rollout" - stale vs PLUGIN-9 fix (INFO).
 
 ---
 
-## 3. Level 2 — Cross-platform developer guide assessment
+## 3. Level 2 - Cross-platform developer guide assessment
 
 **Canonical document:** [`docs/project/technical/guides/EXTENSION_AUTHOR_GUIDE.md`](../../technical/guides/EXTENSION_AUTHOR_GUIDE.md)
 
@@ -99,7 +99,7 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 | Generic package structure | **Partial** | §13 manifest + §5 EP groups; §16.1 Tools package |
 | Manifest | **Complete** | §13 |
 | EP declaration | **Complete** | §5 (integrations/tools/skills/RAG); VK/RAG have own guides |
-| Discovery enablement | **Complete** | §1, §81 — `INTERGRAX_DISCOVER_PLUGINS` |
+| Discovery enablement | **Complete** | §1, §81 - `INTERGRAX_DISCOVER_PLUGINS` |
 | Qualification | **Complete** | §15 |
 | Config/DI | **Complete** | §14 |
 | Testing | **Partial** | §7 validation commands; domain-specific patterns thin |
@@ -114,10 +114,10 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 | Integrations | §2 |
 | Tools | §3, §4b, §16 |
 | Skills | §4 |
-| Context | Table row only — **no §** |
+| Context | Table row only - **no §** |
 | Memory stores | §9 (thin) |
 | RAG | EP rows in §5; canon → RAG_EXTENSION_GUIDE |
-| Vendor Knowledge | Not in guide — separate VK author guide |
+| Vendor Knowledge | Not in guide - separate VK author guide |
 | Security defenses | §12 (checklist) |
 | Policy rules | §10 (thin) |
 | Tool invocation patterns | **Absent** |
@@ -149,7 +149,7 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 | 11 | Policy rules | EXTENSION_AUTHOR_GUIDE §10 | AGENT_CREATION_GUIDE Appendix H |
 | 12 | Tool invocation patterns | TOOLS.md · ADR-TOOL-003 | tool_invocation_pattern.py |
 
-### 1 — Integrations (`intergrax.integrations`)
+### 1 - Integrations (`intergrax.integrations`)
 
 | D | Score | Notes |
 |---|-------|-------|
@@ -172,7 +172,7 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 
 **Overall: PARTIAL**
 
-### 2 — Tools (`intergrax.tools`)
+### 2 - Tools (`intergrax.tools`)
 
 | D | Score | Notes |
 |---|-------|-------|
@@ -195,13 +195,13 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 
 **Overall: COMPLETE** (reference surface)
 
-### 3 — Skills (`intergrax.skills`)
+### 3 - Skills (`intergrax.skills`)
 
 | D | Score | Notes |
 |---|-------|-------|
 | D1 Purpose | COMPLETE | §4 + SKILLS.md |
 | D2 Public contract | COMPLETE | `SkillPlugin` |
-| D3 Minimal implementation | PARTIAL | `skills/examples/custom_pack` — in-repo, not installable package |
+| D3 Minimal implementation | PARTIAL | `skills/examples/custom_pack` - in-repo, not installable package |
 | D4 External package | COMPLETE | §5 EP |
 | D5 Local embedded | COMPLETE | `register_skill_plugin()` §4 |
 | D6 Configuration | PARTIAL | `SkillProfile` in §1 matrix; less detail than Tools |
@@ -218,7 +218,7 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 
 **Overall: PARTIAL**
 
-### 4 — Context (`intergrax.context`)
+### 4 - Context (`intergrax.context`)
 
 | D | Score | Notes |
 |---|-------|-------|
@@ -241,19 +241,19 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 
 **Overall: MISSING** (developer journey)
 
-### 5 — Memory stores (`intergrax.memory_stores`)
+### 5 - Memory stores (`intergrax.memory_stores`)
 
 | D | Score | Notes |
 |---|-------|-------|
 | D1 Purpose | PARTIAL | §9 table only |
 | D2 Public contract | PARTIAL | Duck-typed factories; no formal Protocol doc |
-| D3 Minimal implementation | PARTIAL | Test fixture only — not author-facing |
+| D3 Minimal implementation | PARTIAL | Test fixture only - not author-facing |
 | D4 External package | PARTIAL | EP group named; no pyproject example in guide |
 | D5 Local embedded | MISSING | No documented helper; host factory kwargs only in §20.3 |
 | D6 Configuration | MISSING | `MemoryProfile` not in §9 |
 | D7 Secrets | MISSING | |
 | D8 DI | PARTIAL | "host passes kwargs" architecture §12.3 |
-| D9 Registration/discovery | PARTIAL | `bootstrap_memory_stores` documented but **misleading** (count-only — F010) |
+| D9 Registration/discovery | PARTIAL | `bootstrap_memory_stores` documented but **misleading** (count-only - F010) |
 | D10 Qualification | PARTIAL | §15 generic |
 | D11 Runtime invocation | MISSING | How host selects factory at runtime |
 | D12 Lifecycle | N/A | |
@@ -264,7 +264,7 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 
 **Overall: MISSING**
 
-### 6 — RAG chunkers (`intergrax.rag.chunkers`)
+### 6 - RAG chunkers (`intergrax.rag.chunkers`)
 
 | D | Score | Notes |
 |---|-------|-------|
@@ -287,7 +287,7 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 
 **Overall: PARTIAL** (external-EP path strong; no local parity)
 
-### 7 — RAG retrievers (`intergrax.rag.retrievers`)
+### 7 - RAG retrievers (`intergrax.rag.retrievers`)
 
 | D | Score | Notes |
 |---|-------|-------|
@@ -297,7 +297,7 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 
 **Overall: PARTIAL**
 
-### 8 — RAG rerankers (`intergrax.rag.rerankers`)
+### 8 - RAG rerankers (`intergrax.rag.rerankers`)
 
 | D | Score | Notes |
 |---|-------|-------|
@@ -307,7 +307,7 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 
 **Overall: PARTIAL**
 
-### 9 — Vendor Knowledge (`intergrax.vendor_knowledge.providers`)
+### 9 - Vendor Knowledge (`intergrax.vendor_knowledge.providers`)
 
 | D | Score | Notes |
 |---|-------|-------|
@@ -315,11 +315,11 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 | D2 Public contract | COMPLETE | §2 `VendorKnowledgeProviderContribution` |
 | D3 Minimal implementation | PARTIAL | §20 minimal example; `acme_reference` is test artifact |
 | D4 External package | COMPLETE | §5–§7 |
-| D5 Local embedded | PARTIAL | Host builder composition §1 diagram — not Tier-0 catalog |
+| D5 Local embedded | PARTIAL | Host builder composition §1 diagram - not Tier-0 catalog |
 | D6 Configuration | COMPLETE | `KnowledgeSourceBinding` §12 |
 | D7 Secrets | COMPLETE | §10 connection factory |
 | D8 DI | COMPLETE | Contribution catalog model |
-| D9 Registration/discovery | COMPLETE | §11 — separate from Tier-0 discovery (F018) |
+| D9 Registration/discovery | COMPLETE | §11 - separate from Tier-0 discovery (F018) |
 | D10 Qualification | COMPLETE | §21–§22 |
 | D11 Runtime invocation | COMPLETE | Search/Ask §15 |
 | D12 Lifecycle | PARTIAL | §17 restart/rehydration |
@@ -330,12 +330,12 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 
 **Overall: PARTIAL** (strongest domain guide after Tools/RAG; reference package not installable)
 
-### 10 — Security defenses (`intergrax.security_defenses`)
+### 10 - Security defenses (`intergrax.security_defenses`)
 
 | D | Score | Notes |
 |---|-------|-------|
 | D1 Purpose | PARTIAL | §12 checklist |
-| D2 Public contract | PARTIAL | `SecurityDefensePlugin` — checklist not full protocol |
+| D2 Public contract | PARTIAL | `SecurityDefensePlugin` - checklist not full protocol |
 | D3 Minimal implementation | PARTIAL | CI fixture only |
 | D4 External package | PARTIAL | EP group named; no pyproject walkthrough |
 | D5 Local embedded | MISSING | `bootstrap_security_providers` only |
@@ -353,12 +353,12 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 
 **Overall: PARTIAL**
 
-### 11 — Policy rules (`intergrax.policy_rules`)
+### 11 - Policy rules (`intergrax.policy_rules`)
 
 | D | Score | Notes |
 |---|-------|-------|
 | D1 Purpose | PARTIAL | §10 brief |
-| D2 Public contract | PARTIAL | `PolicyRuleHandler` Protocol — no method semantics in guide |
+| D2 Public contract | PARTIAL | `PolicyRuleHandler` Protocol - no method semantics in guide |
 | D3 Minimal implementation | MISSING | No handler example |
 | D4 External package | PARTIAL | EP group named only |
 | D5 Local embedded | MISSING | Bundle bootstrap only |
@@ -376,7 +376,7 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 
 **Overall: MISSING**
 
-### 12 — Tool invocation patterns (`intergrax.tool_invocation_patterns`)
+### 12 - Tool invocation patterns (`intergrax.tool_invocation_patterns`)
 
 | D | Score | Notes |
 |---|-------|-------|
@@ -453,8 +453,8 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 | [`docs/project/README.md`](../../README.md) | **Yes** §Explore | **No** direct link | Partial (Integrations hub) |
 | [`DOCUMENTATION_MAP.md`](../../technical/DOCUMENTATION_MAP.md) | **No** explicit Platform Plugins row | Via guides/README only | RAG/VK not indexed for plugins |
 | [`guides/README.md`](../../technical/guides/README.md) | **No** | **Yes** | VK/RAG not listed |
-| [`PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) | — | **Yes** header link | §20.3 matrix |
-| [`EXTENSION_AUTHOR_GUIDE.md`](../../technical/guides/EXTENSION_AUTHOR_GUIDE.md) | **Yes** §13 | — | Partial (RAG/VK external) |
+| [`PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) | - | **Yes** header link | §20.3 matrix |
+| [`EXTENSION_AUTHOR_GUIDE.md`](../../technical/guides/EXTENSION_AUTHOR_GUIDE.md) | **Yes** §13 | - | Partial (RAG/VK external) |
 
 ### Issues
 
@@ -465,11 +465,11 @@ After PLATFORM-PLUGIN-1..9 closeout and PLATFORM-PLUGIN-AUDIT-1, the documentati
 | Context/Memory/Policy/Tool-invocation lack links from §20.3 matrix to author procedures | HIGH |
 | Maintainer plan PLATFORM_PLUGINS.md stale Context status | INFO |
 | Fixed in this audit: broken relative links in EXTENSION_AUTHOR_GUIDE §9–12 (`architecture/`, `guides/` prefixes) | LOW (corrected) |
-| MEMORY.md §11.5 reference was invalid — corrected to §5.3 | LOW (corrected) |
+| MEMORY.md §11.5 reference was invalid - corrected to §5.3 | LOW (corrected) |
 
 ### Conflicting docs
 
-- **Resolved:** Context "Planned" vs public EP — PLUGIN-9 fixed table to "Public EP" (closeout §Documentation gaps fixed).
+- **Resolved:** Context "Planned" vs public EP - PLUGIN-9 fixed table to "Public EP" (closeout §Documentation gaps fixed).
 - **Remaining:** Maintainer roadmap still mentions partial Context rollout (stale).
 
 ### Dead / misleading links (pre-fix)
@@ -485,7 +485,7 @@ Cross-check against runtime/API and PLATFORM-PLUGIN-AUDIT-1 findings:
 
 | Audit ID | Documented accurately? | Where | Doc gap? |
 |----------|------------------------|-------|----------|
-| F001 Platform version authority | **Yes** at L1 | PLATFORM_PLUGINS §20.4 | **Yes** — not repeated in domain guides |
+| F001 Platform version authority | **Yes** at L1 | PLATFORM_PLUGINS §20.4 | **Yes** - not repeated in domain guides |
 | F002 Semantic qualification | **Yes** at L1/L2 | §18, EXTENSION_AUTHOR_GUIDE §15 | Partial in domain guides |
 | F003 Discovery default-off | **Yes** | §9, EXTENSION_AUTHOR_GUIDE §1 | Easy to miss in domain-only reads |
 | F004 Fail-fast loaders | **Yes** at L1 | §22 TARGET vs CURRENT | RAG guide mentions PluginLoadError; others thin |
@@ -502,11 +502,11 @@ Cross-check against runtime/API and PLATFORM-PLUGIN-AUDIT-1 findings:
 
 | Claim | Verified |
 |-------|----------|
-| `bootstrap_memory_stores` returns counts only | **Yes** — `memory_bootstrap.py` lines 38–62 |
-| `ContextPlugin` protocol methods | **Yes** — `context/plugin.py` |
-| Tools reference wheel EP `intergrax.tools:reference_prefix_echo` | **Yes** — reference package pyproject |
-| RAG EP groups (3 only) | **Yes** — RAG_EXTENSION_GUIDE §1 matches discovery constants |
-| VK excluded from Tier-0 discovery.py | **Yes** — AUDIT F018 |
+| `bootstrap_memory_stores` returns counts only | **Yes** - `memory_bootstrap.py` lines 38–62 |
+| `ContextPlugin` protocol methods | **Yes** - `context/plugin.py` |
+| Tools reference wheel EP `intergrax.tools:reference_prefix_echo` | **Yes** - reference package pyproject |
+| RAG EP groups (3 only) | **Yes** - RAG_EXTENSION_GUIDE §1 matches discovery constants |
+| VK excluded from Tier-0 discovery.py | **Yes** - AUDIT F018 |
 
 ---
 
@@ -625,7 +625,7 @@ Cross-check against runtime/API and PLATFORM-PLUGIN-AUDIT-1 findings:
 | **Severity** | MEDIUM |
 | **Surface** | All external packages |
 | **Evidence** | AUDIT F001; PLATFORM_PLUGINS §20.4 |
-| **Missing/incorrect content** | Host must supply explicit `platform_version` — not in domain quickstarts |
+| **Missing/incorrect content** | Host must supply explicit `platform_version` - not in domain quickstarts |
 | **Impact** | Inconsistent compatibility checks across hosts |
 | **Required documentation artifact** | Compatibility subsection in each external-package guide |
 | **Production API change required?** | RUNTIME_CAPABILITY_GAP (canonical version API) |
@@ -701,7 +701,7 @@ Cross-check against runtime/API and PLATFORM-PLUGIN-AUDIT-1 findings:
 | **Evidence** | EXTENSION_AUTHOR_GUIDE §9–12 had wrong relative paths |
 | **Missing/incorrect content** | Fixed in this audit (see Changed files) |
 | **Impact** | Broken links from author guide |
-| **Required documentation artifact** | — (fixed) |
+| **Required documentation artifact** | - (fixed) |
 | **Production API change required?** | No |
 
 #### PLUGIN-DOC-F015
@@ -713,7 +713,7 @@ Cross-check against runtime/API and PLATFORM-PLUGIN-AUDIT-1 findings:
 | **Evidence** | §9 cited MEMORY.md §11.5 (section does not exist) |
 | **Missing/incorrect content** | Fixed to §5.3 |
 | **Impact** | Dead anchor |
-| **Required documentation artifact** | — (fixed) |
+| **Required documentation artifact** | - (fixed) |
 | **Production API change required?** | No |
 
 #### PLUGIN-DOC-F016
@@ -762,7 +762,7 @@ Cross-check against runtime/API and PLATFORM-PLUGIN-AUDIT-1 findings:
 | **Surface** | All |
 | **Evidence** | PLATFORM_PLUGINS §16 |
 | **Missing/incorrect content** | Trusted in-process model well documented |
-| **Impact** | Positive — limitations not hidden |
+| **Impact** | Positive - limitations not hidden |
 | **Required documentation artifact** | None |
 | **Production API change required?** | No |
 
@@ -774,13 +774,13 @@ Documentation cannot fully close these without runtime/API work (per AUDIT-1 / e
 
 | Gap | Audit ref | Blocks doc completion? |
 |-----|-----------|------------------------|
-| Canonical platform version authority API | F001 | Partial — docs can require host discipline; API gap remains |
-| Qualification provenance / attestation | F002 | Partial — docs must label semantic qualification |
+| Canonical platform version authority API | F001 | Partial - docs can require host discipline; API gap remains |
+| Qualification provenance / attestation | F002 | Partial - docs must label semantic qualification |
 | Unified plugin inventory / operator surface | F006 | Yes for D16 troubleshooting at platform level |
 | Runtime lifecycle state tracking | F016 | Yes for D12 beyond vocabulary |
-| Local registration scaffold parity (9/12 surfaces) | F012 | Partial — can document manual paths; scaffold gap remains |
-| EP load failure isolation in production loaders | F004 | Partial — document current fail-fast; hardening future |
-| Configurable security defense conflict policy | F005 | Partial — document override=True today |
+| Local registration scaffold parity (9/12 surfaces) | F012 | Partial - can document manual paths; scaffold gap remains |
+| EP load failure isolation in production loaders | F004 | Partial - document current fail-fast; hardening future |
+| Configurable security defense conflict policy | F005 | Partial - document override=True today |
 
 ---
 
@@ -788,37 +788,37 @@ Documentation cannot fully close these without runtime/API work (per AUDIT-1 / e
 
 Coherent implementation blocks derived from evidence (not microtasks):
 
-### DOCS-2 — Platform architecture + navigation
+### DOCS-2 - Platform architecture + navigation
 
 - Add Platform Plugin developer route to `DOCUMENTATION_MAP.md` and `guides/README.md`.
 - Sync stale maintainer plan Context note (F018).
 - Add EXTENSION_AUTHOR_GUIDE **§0.1 extension surface decision tree** (F005).
 - Cross-link §20.3 matrix rows to target domain guides (existing or new).
 
-### DOCS-3 — Integrations / Tools / Skills
+### DOCS-3 - Integrations / Tools / Skills
 
 - **Tools:** maintenance only (reference surface).
 - **Integrations:** add INTEGRATIONS.md third-party author routing; expand secrets/env_prefix in §2.
 - **Skills:** add `SkillResolver` runtime path, external package quickstart mirroring §16 Tools pattern.
 
-### DOCS-4 — Context / Memory / RAG
+### DOCS-4 - Context / Memory / RAG
 
-- **Context:** new `CONTEXT_PLUGIN_AUTHOR_GUIDE.md` — protocol, minimal plugin, EP, `ContextProfile`, bootstrap, tests (MD-01).
-- **Memory:** new `MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md` — factory protocols, host wiring, fix bootstrap semantics (MD-02, F009).
+- **Context:** new `CONTEXT_PLUGIN_AUTHOR_GUIDE.md` - protocol, minimal plugin, EP, `ContextProfile`, bootstrap, tests (MD-01).
+- **Memory:** new `MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md` - factory protocols, host wiring, fix bootstrap semantics (MD-02, F009).
 - **RAG:** optional `examples/platform_plugins/intergrax_reference_rag_plugin/` wheel (MD-07); document external-EP-only for local.
 
-### DOCS-5 — Security / Policy / Tool invocation
+### DOCS-5 - Security / Policy / Tool invocation
 
-- Expand security defense author material — override semantics, pyproject, minimal plugin (MD-06, F010).
+- Expand security defense author material - override semantics, pyproject, minimal plugin (MD-06, F010).
 - New policy rule handler guide with minimal `PolicyRuleHandler` (MD-03).
-- New tool invocation pattern author guide — EP, `ToolInvocationMode`, minimal pattern (MD-04).
+- New tool invocation pattern author guide - EP, `ToolInvocationMode`, minimal pattern (MD-04).
 
-### DOCS-6 — Vendor Knowledge + cross-domain examples
+### DOCS-6 - Vendor Knowledge + cross-domain examples
 
 - Promote or repackage `acme_reference` as installable example under `examples/platform_plugins/` (MD-08).
 - Multi-capability package example building on `intergrax_catalog_fixture` pattern.
 
-### DOCS-7 — Final developer-doc validation
+### DOCS-7 - Final developer-doc validation
 
 - Verify all 12 surfaces: docs-only implementation walkthrough.
 - Link check CI for author guide paths.
@@ -899,8 +899,8 @@ Coherent implementation blocks derived from evidence (not microtasks):
 
 | Surface | DOCS-1 | DOCS-4 | Notes |
 |---------|--------|--------|-------|
-| **Context** | MISSING | **COMPLETE** | New `CONTEXT_PLUGIN_AUTHOR_GUIDE.md` — `ContextPlugin`, EP, `ContextProfile`, bootstrap, runtime, tests, troubleshooting |
-| **Memory stores** | MISSING | **PARTIAL** | New `MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md` — bootstrap count-only corrected; `SessionTurnIndexStorePlugin` wired; user/session EP resolver gap documented |
+| **Context** | MISSING | **COMPLETE** | New `CONTEXT_PLUGIN_AUTHOR_GUIDE.md` - `ContextPlugin`, EP, `ContextProfile`, bootstrap, runtime, tests, troubleshooting |
+| **Memory stores** | MISSING | **PARTIAL** | New `MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md` - bootstrap count-only corrected; `SessionTurnIndexStorePlugin` wired; user/session EP resolver gap documented |
 | **RAG chunker** | PARTIAL | **COMPLETE** | `RAG_EXTENSION_GUIDE.md` §0 journey matrix, local path §0.2, `RagProfile` runtime §0.3 |
 | **RAG retriever** | PARTIAL | **COMPLETE** | Same guide upgrade |
 | **RAG reranker** | PARTIAL | **COMPLETE** | Same guide upgrade |
@@ -917,9 +917,9 @@ Coherent implementation blocks derived from evidence (not microtasks):
 
 | Gap | Surfaces affected |
 |-----|-------------------|
-| No shipped Tier-3 resolver for `UserProfileStorePlugin.create_user_profile_store` from EP discovery | Memory — user profile store |
-| No shipped Tier-3 resolver for `SessionStoragePlugin.create_session_storage` from EP discovery | Memory — session storage |
-| Context scaffold CLI parity with Tools | Context — DX only; external-EP path complete |
+| No shipped Tier-3 resolver for `UserProfileStorePlugin.create_user_profile_store` from EP discovery | Memory - user profile store |
+| No shipped Tier-3 resolver for `SessionStoragePlugin.create_session_storage` from EP discovery | Memory - session storage |
+| Context scaffold CLI parity with Tools | Context - DX only; external-EP path complete |
 
 ### REFERENCE_EXAMPLE_GAPS (deferred to DOCS-6)
 
@@ -950,9 +950,9 @@ Coherent implementation blocks derived from evidence (not microtasks):
 
 | Surface | DOCS-1 | DOCS-5 | Notes |
 |---------|--------|--------|-------|
-| **Security defenses** | PARTIAL | **COMPLETE** | New `SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md` — contract, EP, profile enablement, `override=True` semantics, failure/troubleshooting |
-| **Policy rules** | MISSING | **PARTIAL** | New `POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md` — contract + packaging; runtime EP bootstrap and declarative enforcement gaps documented |
-| **Tool invocation patterns** | MISSING | **COMPLETE** | New `TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md` — contract, EP, mode resolution, local instance override, F009 performance |
+| **Security defenses** | PARTIAL | **COMPLETE** | New `SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md` - contract, EP, profile enablement, `override=True` semantics, failure/troubleshooting |
+| **Policy rules** | MISSING | **PARTIAL** | New `POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md` - contract + packaging; runtime EP bootstrap and declarative enforcement gaps documented |
+| **Tool invocation patterns** | MISSING | **COMPLETE** | New `TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md` - contract, EP, mode resolution, local instance override, F009 performance |
 
 ### Shared blocks aligned
 
@@ -968,7 +968,7 @@ Coherent implementation blocks derived from evidence (not microtasks):
 |-----|-------------------|----------|
 | `wire_policy_bundle` does not call `load_policy_rule_plugins` | Policy | `policy_wiring.py` creates `PolicyRuleRegistry()` only; loader exists but unused in production wiring |
 | Declarative `policy_rules` in `domain_fragments` not evaluated at runtime | Policy | No production caller of `PolicyRuleRegistry.evaluate_rule` |
-| Security/policy EP loaders fail-fast (no isolate) | Security, Policy | `defense_plugin_loader.py`, `plugin_loader.py` — AUDIT F004 |
+| Security/policy EP loaders fail-fast (no isolate) | Security, Policy | `defense_plugin_loader.py`, `plugin_loader.py` - AUDIT F004 |
 
 ### REFERENCE_EXAMPLE_GAPS (deferred to DOCS-6)
 
@@ -982,9 +982,9 @@ Coherent implementation blocks derived from evidence (not microtasks):
 
 | Loader | Bootstrap vs lazy | One broken plugin blocks group? | Isolation |
 |--------|-------------------|----------------------------------|-----------|
-| Security (`load_security_defense_plugins`) | Catalog bootstrap | **Yes** — first `PluginLoadError` / `TypeError` aborts | None |
-| Policy (`load_policy_rule_plugins`) | Host-invoked only | **Yes** — same fail-fast | None |
-| Tool invocation (`load_tool_invocation_pattern`) | Per lookup | **No** — fails only matching id lookup | Unrelated EP names not loaded |
+| Security (`load_security_defense_plugins`) | Catalog bootstrap | **Yes** - first `PluginLoadError` / `TypeError` aborts | None |
+| Policy (`load_policy_rule_plugins`) | Host-invoked only | **Yes** - same fail-fast | None |
+| Tool invocation (`load_tool_invocation_pattern`) | Per lookup | **No** - fails only matching id lookup | Unrelated EP names not loaded |
 
 ### LOCAL_PARITY classification
 
@@ -1001,8 +1001,8 @@ Coherent implementation blocks derived from evidence (not microtasks):
 | PLUGIN-ENT-CAND-001 | Memory | No Tier-3 EP resolver for `UserProfileStorePlugin.create_user_profile_store` | EXTENSIBILITY | DOCS-4 carry-forward | Multi-tenant apps need host-owned store wiring without custom glue | Medium |
 | PLUGIN-ENT-CAND-002 | Memory | No Tier-3 EP resolver for `SessionStoragePlugin.create_session_storage` | EXTENSIBILITY | DOCS-4 carry-forward | Same as CAND-001 for session tier | Medium |
 | PLUGIN-ENT-CAND-003 | Context | Scaffold CLI parity with Tools | DX | DOCS-4 carry-forward | Application-team onboarding; not security-critical | Low |
-| PLUGIN-ENT-CAND-004 | Security | EP defense registration always `override=True` — shipped ids replaceable without policy | GOVERNANCE / SECURITY | `defense_plugin_loader.py:29`, AUDIT F005 | Enterprise needs configurable deny-by-default / audit on defense collision | High |
-| PLUGIN-ENT-CAND-005 | Security, Policy | EP loaders fail-fast — one broken plugin blocks entire group bootstrap | RELIABILITY / OPERATOR_CONTROL | AUDIT F004; bespoke loaders | Noisy neighbor EP should not deny whole security/policy surface | Medium |
+| PLUGIN-ENT-CAND-004 | Security | EP defense registration always `override=True` - shipped ids replaceable without policy | GOVERNANCE / SECURITY | `defense_plugin_loader.py:29`, AUDIT F005 | Enterprise needs configurable deny-by-default / audit on defense collision | High |
+| PLUGIN-ENT-CAND-005 | Security, Policy | EP loaders fail-fast - one broken plugin blocks entire group bootstrap | RELIABILITY / OPERATOR_CONTROL | AUDIT F004; bespoke loaders | Noisy neighbor EP should not deny whole security/policy surface | Medium |
 | PLUGIN-ENT-CAND-006 | Policy | `load_policy_rule_plugins` not wired from `wire_policy_bundle` | EXTENSIBILITY / DX | `policy_wiring.py` vs `plugin_loader.py` | Third-party handlers require undocumented host glue | High |
 | PLUGIN-ENT-CAND-007 | Policy | Declarative YAML rules not enforced via `evaluate_rule` at runtime | GOVERNANCE | `domain_fragments["policy_rules"]` only | Policy-as-code without runtime effect is enterprise governance gap | High |
 | PLUGIN-ENT-CAND-008 | Policy | No centrally governed handler allowlist / signed policy bundles | GOVERNANCE / OPERATOR_CONTROL | No allowlist API in registry | Regulated tenants need approved handler + bundle provenance | Medium |
@@ -1017,7 +1017,7 @@ Coherent implementation blocks derived from evidence (not microtasks):
 | CAND-006 | **YES** | Blocks complete third-party policy handler path without custom host code |
 | CAND-007 | **YES** | Policy without enforcement is enterprise governance gap |
 | CAND-008 | **YES** | Regulated environments need allowlist/provenance |
-| CAND-009 | **NO** | Ordinary hardening — cache/index; not enterprise differentiator alone |
+| CAND-009 | **NO** | Ordinary hardening - cache/index; not enterprise differentiator alone |
 
 ### Changed documentation (DOCS-5 allowlist)
 
@@ -1047,15 +1047,15 @@ Coherent implementation blocks derived from evidence (not microtasks):
 
 **Contract:** `VendorKnowledgeProviderContribution` · **EP:** `intergrax.vendor_knowledge.providers`
 
-### REFERENCE_EXAMPLE_GAPS — decisions
+### REFERENCE_EXAMPLE_GAPS - decisions
 
 | Gap (from DOCS-4/5) | Decision | Rationale |
 |---------------------|----------|-----------|
 | Context external wheel | **IMPLEMENT_REFERENCE_EXAMPLE** | Closed via `intergrax_reference_enterprise_plugin` Context EP |
-| Memory external wheel | **DOCUMENTATION_FIXTURE_SUFFICIENT** | CAND-001/002 — no Tier-3 EP resolver; misleading production wheel deferred |
+| Memory external wheel | **DOCUMENTATION_FIXTURE_SUFFICIENT** | CAND-001/002 - no Tier-3 EP resolver; misleading production wheel deferred |
 | RAG multi-surface wheel | **DOCUMENTATION_FIXTURE_SUFFICIENT** | `RAG_EXTENSION_GUIDE.md` + `test_rag_plugin_discovery.py`; offline multi-backend wheel not justified |
 | Security defense wheel | **DOCUMENTATION_FIXTURE_SUFFICIENT** | `intergrax_security_defense_fixture` + author guide |
-| Policy rule handler wheel | **DOCUMENTATION_FIXTURE_SUFFICIENT** | CAND-006/007 — runtime PARTIAL; unit-test patterns suffice |
+| Policy rule handler wheel | **DOCUMENTATION_FIXTURE_SUFFICIENT** | CAND-006/007 - runtime PARTIAL; unit-test patterns suffice |
 | Tool invocation pattern wheel | **IMPLEMENT_REFERENCE_EXAMPLE** | Closed via `intergrax_reference_enterprise_plugin` invocation EP |
 | Vendor Knowledge installable example | **IMPLEMENT_REFERENCE_EXAMPLE** | Promoted Acme to `examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/` |
 
@@ -1066,7 +1066,7 @@ Coherent implementation blocks derived from evidence (not microtasks):
 | Vendor Knowledge reference | `examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/` | `intergrax.vendor_knowledge.providers:acme_reference` |
 | Multi-capability reference | `examples/platform_plugins/intergrax_reference_enterprise_plugin/` | Tool, Skill, Context, Tool invocation pattern (4 EP groups) |
 
-### RUNTIME_CAPABILITY_GAPS (unchanged — recorded, not implemented)
+### RUNTIME_CAPABILITY_GAPS (unchanged - recorded, not implemented)
 
 | Gap | Surfaces |
 |-----|----------|
@@ -1080,7 +1080,7 @@ Coherent implementation blocks derived from evidence (not microtasks):
 
 **Carry-forward:** CAND-001 … CAND-009 (CAND-009 remains NO / ordinary hardening).
 
-**New:** None — multi-capability package-level inventory is demonstrated via existing `[tool.intergrax.plugin]` manifest; no new enterprise gap beyond documented CAND items.
+**New:** None - multi-capability package-level inventory is demonstrated via existing `[tool.intergrax.plugin]` manifest; no new enterprise gap beyond documented CAND items.
 
 ### Dynamic wiring audit (task-owned Python)
 
@@ -1142,8 +1142,8 @@ All 12 surfaces independently revalidated from consumer navigation. Closeout art
 
 ### DOCS-7 corrections (small)
 
-1. `TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md` — reference example line updated for enterprise plugin (stale DOCS-6 gap text).
-2. `CONTEXT_PLUGIN_AUTHOR_GUIDE.md` — installable reference pointer to `intergrax_reference_enterprise_plugin`.
+1. `TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md` - reference example line updated for enterprise plugin (stale DOCS-6 gap text).
+2. `CONTEXT_PLUGIN_AUTHOR_GUIDE.md` - installable reference pointer to `intergrax_reference_enterprise_plugin`.
 
 ### Dynamic wiring
 
@@ -1151,7 +1151,7 @@ All 12 surfaces independently revalidated from consumer navigation. Closeout art
 
 ### Focused validation
 
-67 tests passed — see closeout §16.
+67 tests passed - see closeout §16.
 
 ### Changed files (DOCS-7 allowlist)
 

@@ -1,6 +1,6 @@
 # Intergrax Observability
 
-**Intergrax Observability** is the canonical execution evidence layer that **records** runtime identity and lifecycle facts on durable evidence, reconstructs runs deterministically from persisted envelopes, and exports policy-safe projections to operators and external telemetry systems. Execution Runtime establishes canonical identity; Observability persists it; central diagnostics ([`DIAGNOSTICS.md`](DIAGNOSTICS.md)) interprets persisted evidence — no layer below may recreate runtime truth.
+**Intergrax Observability** is the canonical execution evidence layer that **records** runtime identity and lifecycle facts on durable evidence, reconstructs runs deterministically from persisted envelopes, and exports policy-safe projections to operators and external telemetry systems. Execution Runtime establishes canonical identity; Observability persists it; central diagnostics ([`DIAGNOSTICS.md`](DIAGNOSTICS.md)) interprets persisted evidence - no layer below may recreate runtime truth.
 
 ## Why it matters
 
@@ -18,9 +18,9 @@ Without the Harness Observability Spine (HOS):
 Observability addresses this through canonical identity **recording** on `RuntimeEvent`, HOS, strict persistence, the Unified Run Journal, deterministic execution positions, as-of projection, canonical knowledge revision ordering, embedded DIAG interpretation, and policy-safe export.
 
 > [!NOTE]
-> **Maturity boundary:** Core execution evidence (TRACE-1A–1C, ASOF-1/2, BITEMP-1/3) is **implemented and closed** on the harness path for the **CURRENT** Task/Run/Attempt/Event spine. Canonical `ExecutionId` and Execution Tree are **TARGET** — not implemented unless HEAD proves otherwise. Canonical revision ordering provider (**TRACE-BITEMP-2**) is an **implemented slice — acceptance in review**. Full **E + K + Valid Time + System Time** query semantics, public as-of query API, OECP code phases, and **OBS-VENDOR** production hardening remain **planned**. External sinks visualize Intergrax evidence — they do **not** define Intergrax execution semantics.
+> **Maturity boundary:** Core execution evidence (TRACE-1A–1C, ASOF-1/2, BITEMP-1/3) is **implemented and closed** on the harness path for the **CURRENT** Task/Run/Attempt/Event spine. Canonical `ExecutionId` and Execution Tree are **TARGET** - not implemented unless HEAD proves otherwise. Canonical revision ordering provider (**TRACE-BITEMP-2**) is an **implemented slice - acceptance in review**. Full **E + K + Valid Time + System Time** query semantics, public as-of query API, OECP code phases, and **OBS-VENDOR** production hardening remain **planned**. External sinks visualize Intergrax evidence - they do **not** define Intergrax execution semantics.
 
-**Meta-architecture (frozen):** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) — semantic authority for execution identity and lifecycle. [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) · [`ORCHESTRATION.md`](ORCHESTRATION.md) are synchronized domain authorities. **Central diagnostics** canonical entry point: [`DIAGNOSTICS.md`](DIAGNOSTICS.md). This document owns HOS, persistence, journal, and export; DIAG slice detail below links to that entry point.
+**Meta-architecture (frozen):** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) - semantic authority for execution identity and lifecycle. [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) · [`ORCHESTRATION.md`](ORCHESTRATION.md) are synchronized domain authorities. **Central diagnostics** canonical entry point: [`DIAGNOSTICS.md`](DIAGNOSTICS.md). This document owns HOS, persistence, journal, and export; DIAG slice detail below links to that entry point.
 
 **Persisted platform facts are truth. AI is not truth.**
 
@@ -44,7 +44,7 @@ DIAG interprets that evidence
 
 **Local identities are not canonical runtime IDs:** `node_id`, `agent_id`, `step_id`, `tool_call_id`, `correlation_id`, `message_id`, broker transport task id, worker id, and provider request id are topology/transport/component identities. They **must not** substitute `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, or `EventId`. `NodeId` ≠ `ExecutionId`. Transport task id ≠ `TaskId` merely because strings match. Forbidden competing run identities: `NodeRunId`, `AgentRunId`, `StepRunId`, `OrchestrationRunId`, `WorkerRunId`.
 
-**Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring observability profiles, export policies, or domain signals — after the platform overview in the root README.
+**Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring observability profiles, export policies, or domain signals - after the platform overview in the root README.
 
 ## Diagnostics ≠ Observability
 
@@ -59,7 +59,7 @@ RuntimeEvent (canonical) → HOS → export boundary → provider adapter → OT
                                central diagnostics (derived Problem state)
 ```
 
-**Not:** `runtime → OTel → diagnostics`. Vendor telemetry is **derived** — never execution truth.
+**Not:** `runtime → OTel → diagnostics`. Vendor telemetry is **derived** - never execution truth.
 
 **Observability failure invariant:** observability outage may cause missing telemetry but **cannot** alter platform truth or a correct business result. Export failure marks exporter health **DEGRADED**; canonical `RuntimeEvent` remains truth.
 
@@ -67,24 +67,24 @@ RuntimeEvent (canonical) → HOS → export boundary → provider adapter → OT
 
 | Concern | Summary |
 | -------- | -------- |
-| **Canonical execution envelope** | `RuntimeEvent` — meaningful execution transition with full typed identity |
+| **Canonical execution envelope** | `RuntimeEvent` - meaningful execution transition with full typed identity |
 | **Identity** | **TARGET:** `TaskId` → `RunId` → `AttemptId` → `ExecutionId` → `EventId`; **CURRENT:** spine stops at `AttemptId` → `EventId` (no canonical `ExecutionId` yet) |
-| **Execution scope** | `RuntimeEvent` is execution-scoped only — **CURRENT:** `TaskId` + `RunId` + `AttemptId` + `EventId` required; **TARGET:** adds `ExecutionId` |
-| **Non-execution signals** | Platform observability signal — lifecycle without synthetic execution identity |
-| **Persistence** | `RuntimeEventPersistence` — canonical persisted evidence authority for accepted `RuntimeEvent`s |
-| **Read model** | Unified Run Journal — derived chronological view, not a second source of truth |
-| **Historical coordinate (E)** | `ExecutionEventPosition` + inclusive `AsOfBoundary` — not timestamp-only ordering |
-| **As-of reconstruction** | `RunExecutionAsOfProjection` via pure reducer at boundary **E** — **Done** (TRACE-ASOF-2) |
-| **Knowledge ordering (K)** | `RevisionOrderingAuthority` + finalized watermark — contracts **Done**; durable provider **in review** |
-| **K-only reconstruction** | `HistoricalKnowledgeProjection` at watermark **K** — **Done**; not full bitemporal |
+| **Execution scope** | `RuntimeEvent` is execution-scoped only - **CURRENT:** `TaskId` + `RunId` + `AttemptId` + `EventId` required; **TARGET:** adds `ExecutionId` |
+| **Non-execution signals** | Platform observability signal - lifecycle without synthetic execution identity |
+| **Persistence** | `RuntimeEventPersistence` - canonical persisted evidence authority for accepted `RuntimeEvent`s |
+| **Read model** | Unified Run Journal - derived chronological view, not a second source of truth |
+| **Historical coordinate (E)** | `ExecutionEventPosition` + inclusive `AsOfBoundary` - not timestamp-only ordering |
+| **As-of reconstruction** | `RunExecutionAsOfProjection` via pure reducer at boundary **E** - **Done** (TRACE-ASOF-2) |
+| **Knowledge ordering (K)** | `RevisionOrderingAuthority` + finalized watermark - contracts **Done**; durable provider **in review** |
+| **K-only reconstruction** | `HistoricalKnowledgeProjection` at watermark **K** - **Done**; not full bitemporal |
 | **Bitemporal scope** | E and K shipped slices; Valid/System Time + combined E+K query **planned** |
-| **Problem plane** | `PlatformProblemSignal` — classified operator attention; not execution history |
-| **Causal evidence** | `PlatformCausalEvidence` — cross-boundary transport→execution relation; not execution history |
-| **Redaction** | `DiagnosticPayload.redact()` + export policy — strongest on canonical/export paths |
+| **Problem plane** | `PlatformProblemSignal` - classified operator attention; not execution history |
+| **Causal evidence** | `PlatformCausalEvidence` - cross-boundary transport→execution relation; not execution history |
+| **Redaction** | `DiagnosticPayload.redact()` + export policy - strongest on canonical/export paths |
 | **Export** | HOS → policy-safe envelope → Integration vendor backend |
-| **External sinks** | OTLP, Langfuse, Sentry, Phoenix, Datadog — destinations, not semantic owners |
-| **Evaluation / OECP** | Consumes HOS evidence — architecture **documented**; code phases **planned** |
-| **Maturity** | A4 · I4 · P2 · E3 — see [Current maturity](#current-maturity) |
+| **External sinks** | OTLP, Langfuse, Sentry, Phoenix, Datadog - destinations, not semantic owners |
+| **Evaluation / OECP** | Consumes HOS evidence - architecture **documented**; code phases **planned** |
+| **Maturity** | A4 · I4 · P2 · E3 - see [Current maturity](#current-maturity) |
 
 ## Flagship architecture visual
 
@@ -121,7 +121,7 @@ Run
  ↓
 Attempt
  ↓
-Execution Tree          # TARGET — parent_execution_id lineage
+Execution Tree          # TARGET - parent_execution_id lineage
  ↓
 RuntimeEvents
  ↓
@@ -156,12 +156,12 @@ External sink → destination (not semantic owner)
 
 ## How it works
 
-1. **Emit** — meaningful execution transitions publish through HOS (`RuntimeEventBus`, approved emit paths).
-2. **Normalize** — `trace_bridge`, payload registry, schema guard align envelopes to contracts.
-3. **Persist** — `RuntimeEventPersistence` stores canonical execution history; `RunTraceWriter` holds Plane B diagnostic detail.
-4. **Read** — `build_unified_run_journal()` reconstructs a strict chronological operator view.
-5. **Reconstruct** — positioned prefix + `AsOfBoundary` **E** or knowledge watermark **K** yield deterministic projections.
-6. **Export** — policy-safe `ObservabilityExportEnvelope` routes to optional vendor Integrations.
+1. **Emit** - meaningful execution transitions publish through HOS (`RuntimeEventBus`, approved emit paths).
+2. **Normalize** - `trace_bridge`, payload registry, schema guard align envelopes to contracts.
+3. **Persist** - `RuntimeEventPersistence` stores canonical execution history; `RunTraceWriter` holds Plane B diagnostic detail.
+4. **Read** - `build_unified_run_journal()` reconstructs a strict chronological operator view.
+5. **Reconstruct** - positioned prefix + `AsOfBoundary` **E** or knowledge watermark **K** yield deterministic projections.
+6. **Export** - policy-safe `ObservabilityExportEnvelope` routes to optional vendor Integrations.
 
 ```mermaid
 flowchart TB
@@ -182,7 +182,7 @@ flowchart TB
     JR --> ASOF
 ```
 
-Platform lifecycle, problem, and diagnostic signals use the **same HOS infrastructure** with their own envelope families — no synthetic `TaskId`/`RunId`/`AttemptId`.
+Platform lifecycle, problem, and diagnostic signals use the **same HOS infrastructure** with their own envelope families - no synthetic `TaskId`/`RunId`/`AttemptId`.
 
 ## Task → Run → Attempt → Execution → Event
 
@@ -196,7 +196,7 @@ TaskId
         → EventId
 ```
 
-**CURRENT persisted event spine (TRACE-1B milestone):** `TaskId` + `RunId` + `AttemptId` + `EventId` — no canonical `ExecutionId` on `RuntimeEvent` yet.
+**CURRENT persisted event spine (TRACE-1B milestone):** `TaskId` + `RunId` + `AttemptId` + `EventId` - no canonical `ExecutionId` on `RuntimeEvent` yet.
 
 ```text
 Task
@@ -214,12 +214,12 @@ Task
 | **Task** | User or system work intent (`TaskId`) |
 | **Run** | One full governed lifecycle of the Task (`RunId`) |
 | **Attempt** | One global try of the Run (`AttemptId`) |
-| **Execution** | One independently schedulable/governable work unit inside the Attempt (`ExecutionId`; root: `parent_execution_id = None`) — **TARGET** |
+| **Execution** | One independently schedulable/governable work unit inside the Attempt (`ExecutionId`; root: `parent_execution_id = None`) - **TARGET** |
 | **Event** | One runtime fact / transition (`EventId`) |
 
-> **One arbitrary signal ≠ one Attempt.** Attempt identity tracks global execution tries — not every log line, tool retry, or diagnostic row.
+> **One arbitrary signal ≠ one Attempt.** Attempt identity tracks global execution tries - not every log line, tool retry, or diagnostic row.
 
-Identity is **structural** on the canonical contract — not best-effort metadata fallback (TRACE-1C strict journal). Execution Runtime establishes and propagates identity; Observability **records** it on evidence; DIAG **consumes** it.
+Identity is **structural** on the canonical contract - not best-effort metadata fallback (TRACE-1C strict journal). Execution Runtime establishes and propagates identity; Observability **records** it on evidence; DIAG **consumes** it.
 
 ## RuntimeEvent ≠ TraceEvent ≠ logs ≠ metrics
 
@@ -239,7 +239,7 @@ HOS is shared platform infrastructure:
 emit → normalize → persist → read → export
 ```
 
-Applications and agents **configure and extend** HOS — they do **not** create private observability buses.
+Applications and agents **configure and extend** HOS - they do **not** create private observability buses.
 
 **Envelope families on one spine:**
 
@@ -273,13 +273,13 @@ strict reconstruction (build_unified_run_journal)
 Unified Run Journal
 ```
 
-The journal is a **derived read model** — chronological operator view, attempt-aware ordering, foundation for Execution Story surfaces. It is **not** a new persistence authority.
+The journal is a **derived read model** - chronological operator view, attempt-aware ordering, foundation for Execution Story surfaces. It is **not** a new persistence authority.
 
 **Source chain:** runtime lifecycle facts → canonical persisted `RuntimeEvent`s/evidence → Unified Run Journal. The journal does **not** mint runtime identity, repair missing lineage by guessing, or become execution lifecycle authority.
 
 ## Historical execution coordinate and as-of projection
 
-**ExecutionEventPosition** assigns deterministic order within a run — **not** timestamp-only ordering.
+**ExecutionEventPosition** assigns deterministic order within a run - **not** timestamp-only ordering.
 
 ```text
 Run history
@@ -288,13 +288,13 @@ Run history
   → RunExecutionAsOfProjection as-of E
 ```
 
-Question: **“What had happened by execution position E?”** — reconstruction/projection, not live replay.
+Question: **“What had happened by execution position E?”** - reconstruction/projection, not live replay.
 
 `project_run_execution_as_of` is a **pure reducer** over a positioned prefix: attempt-aware, provenance to source events, exact boundary must exist; incomplete pagination fails closed (TRACE-ASOF-1/2 **Done**).
 
 ## Knowledge revision ordering and K-only reconstruction
 
-Second historical axis — canonical knowledge corrections:
+Second historical axis - canonical knowledge corrections:
 
 ```text
 KnowledgeRevision
@@ -337,7 +337,7 @@ Four coordinates (do not collapse):
 | ---------- | ----- |
 | Typed bitemporal contracts | **Done** (TRACE-BITEMP-1) |
 | `RevisionOrderingAuthority` contract | **Done** (TRACE-BITEMP-1) |
-| Durable provider (`CanonicalRevisionOrderingProvider` / SQLite) | **Implemented slice — Planned / In Review** (TRACE-BITEMP-2) |
+| Durable provider (`CanonicalRevisionOrderingProvider` / SQLite) | **Implemented slice - Planned / In Review** (TRACE-BITEMP-2) |
 | K-only reconstruction | **Done** (TRACE-BITEMP-3) |
 | E as-of reconstruction | **Done** (TRACE-ASOF-1/2) |
 | Combined E + K query | **Planned** (TRACE-BITEMP-4) |
@@ -359,7 +359,7 @@ SQLite provider            → one first-party implementation (TRACE-BITEMP-2)
 | **`RuntimeEvent`** | What happened in execution |
 | **`PlatformProblemSignal`** | What requires operator attention |
 
-`DiagnosticPayload` supplies typed detail (`payload_schema_id`, `redact()`) on trace or domain-signal envelopes — not an independent lifecycle channel.
+`DiagnosticPayload` supplies typed detail (`payload_schema_id`, `redact()`) on trace or domain-signal envelopes - not an independent lifecycle channel.
 
 ## Redaction and external sinks
 
@@ -369,7 +369,7 @@ diagnostic / event payload
   → persistence / export
 ```
 
-Platform contracts require redaction before persistence and export; enforcement coverage is **strongest** on canonical payload and export paths — not claimed universal across every ad-hoc log path.
+Platform contracts require redaction before persistence and export; enforcement coverage is **strongest** on canonical payload and export paths - not claimed universal across every ad-hoc log path.
 
 ```text
 HOS
@@ -386,12 +386,12 @@ Observability owns observability signal/event semantics, canonical persisted evi
 | Neighbor | Boundary |
 | -------- | -------- |
 | [**UER**](UNIFIED_EXECUTION_RUNTIME.md) | Execution lifecycle; Observability records transitions with typed identity |
-| [**Nexus**](NEXUS_EXECUTION_FLOW.md) | Orchestration emits through HOS — no private trace bus |
+| [**Nexus**](NEXUS_EXECUTION_FLOW.md) | Orchestration emits through HOS - no private trace bus |
 | [**Tools**](TOOLS.md) | Tool invocations emit `TOOL_*` transitions; Tools must not keep private side-effect history |
 | [**Integrations**](INTEGRATIONS.md) | Vendor backends are export sinks; Integrations do not own event semantics |
 | [**Reliability / HITL**](RELIABILITY_FAILURE_AND_HITL.md) | Reliability owns behavior; Observability owns evidence of retries, attempts, handoff, terminal reason |
 | [**Governed Execution**](GOVERNED_EXECUTION.md) | Governance authorizes; Observability records decision and provenance |
-| [**Critic / Decision**](CRITIC_VERIFICATION.md) | **CURRENT:** Critic owns verification verdict; **TARGET:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) lifecycle audit — Decision ID, Decision Version, lifecycle/verification events, resolution, authorization correlation; Observability records, does not own decision semantics |
+| [**Critic / Decision**](CRITIC_VERIFICATION.md) | **CURRENT:** Critic owns verification verdict; **TARGET:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) lifecycle audit - Decision ID, Decision Version, lifecycle/verification events, resolution, authorization correlation; Observability records, does not own decision semantics |
 
 ## Observability & Evaluation Control Plane (OECP)
 
@@ -405,9 +405,9 @@ HOS evidence
 
 | Area | State |
 | ---- | ----- |
-| Architecture canon (OBS-ECP-0) | **Done** — hub + extended satellite + plan |
+| Architecture canon (OBS-ECP-0) | **Done** - hub + extended satellite + plan |
 | Trace Completeness Contract | **Planned** |
-| Evidence Ledger | **Planned** — target eval-ready layer derived from HOS |
+| Evidence Ledger | **Planned** - target eval-ready layer derived from HOS |
 | Eval Registry v2 | **Planned** |
 | Metric / eval plugins, CI gates, workbench UX | **Planned** |
 
@@ -421,7 +421,7 @@ Depth: [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_e
 | -- | --------- |
 | **OBS-INV-001** | Observability records execution truth; it does not invent execution truth. |
 | **OBS-INV-002** | **TARGET:** execution-scoped `RuntimeEvent` carries `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, `EventId`. **CURRENT:** four-ID spine without `ExecutionId`. |
-| **OBS-INV-003** | `parent_execution_id` (execution lineage) and `parent_event_id` (event causality) are distinct relation types — do not collapse or derive one from the other. |
+| **OBS-INV-003** | `parent_execution_id` (execution lineage) and `parent_event_id` (event causality) are distinct relation types - do not collapse or derive one from the other. |
 | **OBS-INV-004** | Observability projections/read models may project the Execution Tree but may not become competing identity/tree authority. |
 | **OBS-INV-005** | Canonical persisted evidence retains structural links to runtime identity; free-text/log heuristics are not identity authority. |
 | **OBS-INV-006** | Required causal/audit evidence and optional telemetry have distinct durability semantics. |
@@ -437,32 +437,32 @@ Depth: [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_e
 | **DIAG-INV-003** | DIAG never maintains a competing canonical Execution Tree. |
 | **DIAG-INV-004** | Diagnostic reconstruction distinguishes execution lineage, event causality, topology association, transport relations, and side-effect evidence. |
 | **DIAG-INV-005** | Free-text logs/correlation strings are not authoritative runtime identity. |
-| **DIAG-INV-006** | Incomplete evidence yields explicit limitations/uncertainty — never invented lineage or certainty. |
+| **DIAG-INV-006** | Incomplete evidence yields explicit limitations/uncertainty - never invented lineage or certainty. |
 | **DIAG-INV-007** | Diagnostic findings/groupings/root-cause hypotheses retain provenance to canonical evidence. |
 | **DIAG-INV-008** | Model-assisted diagnostics consume bounded typed projections; model strategies do not independently query canonical persistence or vendor backends. |
 | **DIAG-INV-009** | Grouping/incident hypotheses do not rewrite canonical facts or prove shared root cause merely because subjects are grouped. |
 | **DIAG-INV-010** | Nested/distributed causality is reconstructed through canonical Execution lineage plus typed transport/external relations. |
 
-Canonical runtime identity invariants remain owned by UEA/UER — not duplicated here as ID-INV-*.
+Canonical runtime identity invariants remain owned by UEA/UER - not duplicated here as ID-INV-*.
 
 ## Target vs current (identity and evidence)
 
 | Area | TARGET | CURRENT (HEAD) |
 | ---- | ------ | -------------- |
 | Identity spine | `TaskId` → `RunId` → `AttemptId` → `ExecutionId` → `EventId` | Typed `TaskId`/`RunId`/`AttemptId`/`EventId` on main harness paths; **no canonical `ExecutionId`** |
-| Execution Tree | `ExecutionId` + `parent_execution_id` — one canonical tree | Not implemented on `RuntimeEvent` or persistence |
+| Execution Tree | `ExecutionId` + `parent_execution_id` - one canonical tree | Not implemented on `RuntimeEvent` or persistence |
 | `RuntimeEvent` IDs | Five-ID envelope + optional `parent_event_id` | Four-ID envelope (`TaskId`, `RunId`, `AttemptId`, `EventId`) |
 | `RuntimeExecutionRef` | `TaskId` + `RunId` + `AttemptId` + `ExecutionId` | `TaskId` + `RunId` + `AttemptId` only |
 | Causal evidence target | Canonical `ExecutionId` on execution side | Joins `TaskId`/`RunId`/`AttemptId` |
 | Journal / projections | Execution Tree projections derived from persisted evidence | Task/Run/Attempt/Event spine |
 | DIAG reconstruction | Event → Execution → parent Executions → Attempt → Run → Task | Run-scoped reconstruction (`task_id`, `run_id`) |
-| Background worker bootstrap | Same `ExecutionId` on transport redelivery of same logical work | `resolve_background_execution` mints **new `AttemptId` on every worker boundary** — **implementation debt** vs frozen UEA redelivery semantics |
+| Background worker bootstrap | Same `ExecutionId` on transport redelivery of same logical work | `resolve_background_execution` mints **new `AttemptId` on every worker boundary** - **implementation debt** vs frozen UEA redelivery semantics |
 
 Do **not** claim a gap is fixed unless repository evidence at HEAD proves it.
 
 ## Implementation readiness
 
-For future implementation sessions — derive slices without making new architecture decisions. Detailed code-file mapping: **UE-DOC-0.9**.
+For future implementation sessions - derive slices without making new architecture decisions. Detailed code-file mapping: **UE-DOC-0.9**.
 
 ### 1. TARGET STATE
 
@@ -518,15 +518,15 @@ See [Target vs current](#target-vs-current-identity-and-evidence). Primary: miss
 | ---- | ----- | --------- |
 | **Architecture (A)** | **A4** | Validated canon: identity, HOS families, source-of-truth boundaries, E/K model coherent; full bitemporal query surface still planned |
 | **Implementation (I)** | **I4** | HOS, strict identity/journal, platform signals, as-of, K reconstruction integrated; BITEMP-2 provider slice in review; OECP code not shipped |
-| **Production (P)** | **P2** | SQLite defaults, export boundary partial, OBS-VENDOR hardening planned — not distributed production qualification |
-| **Evidence (E)** | **E3** | Unit/gate proofs on identity, journal, as-of, revision store, reconstruction, export; bounded LKW platform proof partial — not E4 full-harness E2E |
+| **Production (P)** | **P2** | SQLite defaults, export boundary partial, OBS-VENDOR hardening planned - not distributed production qualification |
+| **Evidence (E)** | **E3** | Unit/gate proofs on identity, journal, as-of, revision store, reconstruction, export; bounded LKW platform proof partial - not E4 full-harness E2E |
 
 | Sub-area | Implementation | Evidence |
 | -------- | -------------- | -------- |
-| Core execution observability | **I4** — closed TRACE-1A–1C | Gate tests + journal proofs |
-| Historical reconstruction (E, K) | **I4** — ASOF-1/2, BITEMP-3 closed; BITEMP-2 in review | Reducer + provider qualification tests |
-| External export / vendors | **I3** — export boundary done; vendor adapters partial | Export policy tests; full vendor hardening open |
-| OECP | **I1** — architecture only | OBS-ECP-0 docs; code phases planned |
+| Core execution observability | **I4** - closed TRACE-1A–1C | Gate tests + journal proofs |
+| Historical reconstruction (E, K) | **I4** - ASOF-1/2, BITEMP-3 closed; BITEMP-2 in review | Reducer + provider qualification tests |
+| External export / vendors | **I3** - export boundary done; vendor adapters partial | Export policy tests; full vendor hardening open |
+| OECP | **I1** - architecture only | OBS-ECP-0 docs; code phases planned |
 
 ## Verify / inspect implementation
 
@@ -537,10 +537,10 @@ See [Target vs current](#target-vs-current-identity-and-evidence). Primary: miss
 | **Architecture** | This hub · [`OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md) · TRACE / bitemporal canon in engineering section |
 | **Unit / gate** | Identity, strict journal, platform signal path, as-of, bitemporal contracts, revision store, K reconstruction, redaction/export tests under `tests/unit/runtime/observability/` and `tests/unit/contracts/` |
 | **Integration** | Representative Task → Run → Attempt → journal paths; tool/HITL visibility in harness proofs |
-| **Public proof** | [`PROOFS.md`](../proofs/PROOFS.md) — LKW Core Platform Proof (**partial** bounded proof; Elasticsearch/Kibana export closed for platform proof, not production hardening) |
+| **Public proof** | [`PROOFS.md`](../proofs/PROOFS.md) - LKW Core Platform Proof (**partial** bounded proof; Elasticsearch/Kibana export closed for platform proof, not production hardening) |
 | **Production / customer** | **Not established** |
 
-Bounded public proof routes: [`PROOFS.md`](../proofs/PROOFS.md) — LKW Core Platform Proof (**partial**; Elasticsearch/Kibana export closed for platform proof, not production hardening or universal observability qualification).
+Bounded public proof routes: [`PROOFS.md`](../proofs/PROOFS.md) - LKW Core Platform Proof (**partial**; Elasticsearch/Kibana export closed for platform proof, not production hardening or universal observability qualification).
 
 ### Core implementation
 
@@ -553,7 +553,7 @@ Bounded public proof routes: [`PROOFS.md`](../proofs/PROOFS.md) — LKW Core Pla
 
 | Depth | Route |
 | ----- | ----- |
-| Engineering canon | [Below — §1–§10](#engineering-canon) in this file |
+| Engineering canon | [Below - §1–§10](#engineering-canon) in this file |
 | Extended depth (OECP target) | [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md) |
 | Implementation plan | [`maintainers/plans/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) |
 | OECP plan | [`maintainers/plans/satellites/OBSERVABILITY_eval_control_plane.md`](../maintainers/plans/satellites/OBSERVABILITY_eval_control_plane.md) |
@@ -571,14 +571,14 @@ Bounded public proof routes: [`PROOFS.md`](../proofs/PROOFS.md) — LKW Core Pla
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 21, 30  
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
-**Last updated:** 2026-08-26 — UE-DOC-0.6 identity/DIAG alignment with frozen UEA · DIAG-5C-A-R1 preserved · TRACE-BITEMP-3 K-only **Done** · TRACE-ASOF-2 **Done** · TRACE-BITEMP-2 provider **Planned / In Review** · TRACE-1C **Done**
+**Last updated:** 2026-08-26 - UE-DOC-0.6 identity/DIAG alignment with frozen UEA · DIAG-5C-A-R1 preserved · TRACE-BITEMP-3 K-only **Done** · TRACE-ASOF-2 **Done** · TRACE-BITEMP-2 provider **Planned / In Review** · TRACE-1C **Done**
 
 ## Cursor read scope (token budget)
 
 **Do not read this entire file in one session** (OBSERVABILITY canon).
 
 - **Implement / audit default:** trace spine + HOS + signal planes (§1–§4); execution identity + journal + as-of + bitemporal state (§5–§10). Extended depth: [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md).
-- **Use** table of contents below — `Read` with offset/limit per §.
+- **Use** table of contents below - `Read` with offset/limit per §.
 - **Plan hub:** [`maintainers/plans/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) (scoped §6 only).
 - **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
@@ -601,11 +601,11 @@ Large § blocks moved out of the architecture hub to reduce Cursor context use. 
 
 ### 1.1 What this document defines
 
-This is the **canonical architecture authority** for how observability and embedded DIAG semantics work across the Intergrax Harness — not the runtime lifecycle owner of execution identity (UEA/UER):
+This is the **canonical architecture authority** for how observability and embedded DIAG semantics work across the Intergrax Harness - not the runtime lifecycle owner of execution identity (UEA/UER):
 
-- **Harness (Tier-0 / Tier-1)** — Nexus, AgentEngine, ToolRuntime, policy, critic, adaptive loops
-- **Applications (Tier-3)** — composition roots that wire stores and profiles; no parallel telemetry stack
-- **Agents (Tier-2)** — domain logic that **extends** platform contracts; never implements a private trace pipeline
+- **Harness (Tier-0 / Tier-1)** - Nexus, AgentEngine, ToolRuntime, policy, critic, adaptive loops
+- **Applications (Tier-3)** - composition roots that wire stores and profiles; no parallel telemetry stack
+- **Agents (Tier-2)** - domain logic that **extends** platform contracts; never implements a private trace pipeline
 
 ### 1.2 What observability must answer
 
@@ -625,7 +625,7 @@ For every user interaction (question → answer), an operator MUST be able to re
 
 ### 1.3 Non-goals
 
-- Replacing external APM (Datadog, Honeycomb) as the **only** store — Intergrax owns the canonical journal; external systems are **optional sinks**
+- Replacing external APM (Datadog, Honeycomb) as the **only** store - Intergrax owns the canonical journal; external systems are **optional sinks**
 - Storing raw prompts/completions in production traces (redaction is mandatory)
 - Per-agent custom SQLite trace databases
 - Raw `dict` payloads without `payload_schema_id` / registry (see §8.2 residual evolution)
@@ -636,15 +636,15 @@ For every user interaction (question → answer), an operator MUST be able to re
 
 | Principle | Meaning |
 |-----------|---------|
-| **Harness-provided spine** | One observability mechanism ships with the platform. Applications and agents **configure and extend** it — they do not rebuild it. |
+| **Harness-provided spine** | One observability mechanism ships with the platform. Applications and agents **configure and extend** it - they do not rebuild it. |
 | **Event-first** | `RuntimeEvent` is the primary audit signal (canon §42.1). Traces and metrics are derived views. |
 | **Typed extension** | Platform steps use `DiagnosticPayload` subclasses with stable `schema_id`. Domain extensions inherit the same contract. |
-| **Emit at the boundary** | Signals are recorded where the Harness enforces policy (ToolRuntime, AgentRouter, GraphExecutor) — not inside ad-hoc agent helpers. |
-| **Correlation by construction** | `TaskId`, `RunId`, `AttemptId`, `EventId` (and **TARGET** `ExecutionId`) are established by Execution Runtime and recorded by the spine — not passed manually in business code. `correlation_id` and `parent_event_id` are operational/causal metadata — not substitutes for execution lineage. |
+| **Emit at the boundary** | Signals are recorded where the Harness enforces policy (ToolRuntime, AgentRouter, GraphExecutor) - not inside ad-hoc agent helpers. |
+| **Correlation by construction** | `TaskId`, `RunId`, `AttemptId`, `EventId` (and **TARGET** `ExecutionId`) are established by Execution Runtime and recorded by the spine - not passed manually in business code. `correlation_id` and `parent_event_id` are operational/causal metadata - not substitutes for execution lineage. |
 | **Redact before persist** | `DiagnosticPayload.redact()` + `production_mode` run before any store append. |
-| **Pluggable persistence** | SQLite default; Cassandra/Elasticsearch/OTLP as integration profiles — same API, different backend. |
-| **Read-model unification** | Operators consume **one chronological journal** per run (`build_unified_run_journal`) — a derived read model, not the persistence source of truth (§6). |
-| **Modular sinks** | Metrics, logs, and external trace UIs subscribe to the bus or journal — they do not fork emission. |
+| **Pluggable persistence** | SQLite default; Cassandra/Elasticsearch/OTLP as integration profiles - same API, different backend. |
+| **Read-model unification** | Operators consume **one chronological journal** per run (`build_unified_run_journal`) - a derived read model, not the persistence source of truth (§6). |
+| **Modular sinks** | Metrics, logs, and external trace UIs subscribe to the bus or journal - they do not fork emission. |
 
 ---
 
@@ -682,7 +682,7 @@ The **Harness Observability Spine** is the universal “bus” through which all
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Key rule:** Harness, applications, and agents all use the **same spine**. Differences are only in **which steps emit** and **which `DiagnosticPayload` schemas** are registered — not in transport or storage mechanics.
+**Key rule:** Harness, applications, and agents all use the **same spine**. Differences are only in **which steps emit** and **which `DiagnosticPayload` schemas** are registered - not in transport or storage mechanics.
 
 ---
 
@@ -701,9 +701,9 @@ The Harness Observability Spine (§3) is the write/read/export path; this sectio
 | **External sinks** | Destinations for normalized events, logs, or metrics (Langfuse, Sentry, Datadog, OTLP export) | Semantic owners of Intergrax event vocabulary |
 | **`DiagnosticPayload`** | Typed payload detail carried by Plane B trace rows or domain-signal envelopes (`payload_schema_id` + `redact()`) | An independent lifecycle channel with its own persistence contract |
 | **`PlatformProblemSignal`** | Vendor-neutral problem/error plane for classified failures requiring operator attention; exported via `ObservabilityExportPolicy` | A substitute for `RuntimeEvent` execution history or a generic lifecycle channel |
-| **Platform observability signal** | Non-execution platform/domain lifecycle signal on HOS (application instance, component, infrastructure) with its own identity and correlation — **no** `TaskId`/`RunId`/`AttemptId` | A `RuntimeEvent` with synthetic execution identity |
+| **Platform observability signal** | Non-execution platform/domain lifecycle signal on HOS (application instance, component, infrastructure) with its own identity and correlation - **no** `TaskId`/`RunId`/`AttemptId` | A `RuntimeEvent` with synthetic execution identity |
 
-**Implementation detail:** Plane A/B/C breakdown, field catalog, and bridge mechanics — §4. Correlation identifiers — §6 and [Required correlation fields](#required-correlation-fields) below. Layered `event_type` / `event_kind` governance — §4.4 and [Event type governance](#event-type-governance) below.
+**Implementation detail:** Plane A/B/C breakdown, field catalog, and bridge mechanics - §4. Correlation identifiers - §6 and [Required correlation fields](#required-correlation-fields) below. Layered `event_type` / `event_kind` governance - §4.4 and [Event type governance](#event-type-governance) below.
 
 **Cross-layer canon:** [`SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md) §7 · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.1 · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §12.2 · [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger) · [`TOOLS.md`](TOOLS.md) · [`INTEGRATIONS.md`](INTEGRATIONS.md) · [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §31 · [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#boundary-with-observability--evaluation-control-plane-oecp) · [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md#governance-boundary) · [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md#scaling-action-governance) · [`CODE_CRAFT.md`](CODE_CRAFT.md#codecraft-safety-boundary)
 
@@ -711,9 +711,9 @@ The Harness Observability Spine (§3) is the write/read/export path; this sectio
 
 ## Observability & Evaluation Control Plane
 
-Intergrax observability is **not** limited to traces and metrics. The **Harness Observability Spine (HOS)** remains the **only** canonical observability spine. **Observability & Evaluation Control Plane (OECP)** operates **above** HOS — it consumes `RuntimeEvent`, `TraceEvent`, unified journal, and evidence refs; it **must not** create a parallel trace system.
+Intergrax observability is **not** limited to traces and metrics. The **Harness Observability Spine (HOS)** remains the **only** canonical observability spine. **Observability & Evaluation Control Plane (OECP)** operates **above** HOS - it consumes `RuntimeEvent`, `TraceEvent`, unified journal, and evidence refs; it **must not** create a parallel trace system.
 
-OECP transforms spine data into eval-grade artifacts: **evidence ledger** records, **eval snapshots**, **metric results**, **regression gates**, and **perturbation suites**. External workbenches (Langfuse, LangSmith, OTLP, Sentry, Phoenix, Braintrust, Datadog, …) are optional sinks — not semantic owners.
+OECP transforms spine data into eval-grade artifacts: **evidence ledger** records, **eval snapshots**, **metric results**, **regression gates**, and **perturbation suites**. External workbenches (Langfuse, LangSmith, OTLP, Sentry, Phoenix, Braintrust, Datadog, …) are optional sinks - not semantic owners.
 
 **Target architecture:** [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md) (OECP sections). **Plan:** [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](../maintainers/plans/satellites/OBSERVABILITY_eval_control_plane.md). **Audit source:** [`audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md`](../../audit_results/legacy/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md).
 
@@ -726,7 +726,7 @@ OECP transforms spine data into eval-grade artifacts: **evidence ledger** record
 | Runtime emission | New runtime components **SHOULD** emit meaningful execution transitions through `RuntimeEventBus` or the approved observability spine (§3). |
 | Agent trace stores | Agents **MUST NOT** create private trace stores. |
 | Agent logging pipelines | Agents **MUST NOT** create private logging pipelines for execution state. |
-| Tool side effects | Tools **MUST NOT** bypass runtime observability for side effects — `TOOL_*` and bridged diagnostics **MUST** be visible through the spine ([`TOOLS.md`](TOOLS.md)). |
+| Tool side effects | Tools **MUST NOT** bypass runtime observability for side effects - `TOOL_*` and bridged diagnostics **MUST** be visible through the spine ([`TOOLS.md`](TOOLS.md)). |
 | Integration diagnostics | Integrations **MAY** log transport/backend diagnostics; they **MUST NOT** own harness execution trace semantics ([`INTEGRATIONS.md`](INTEGRATIONS.md)). |
 | Application summaries | Applications **MAY** add product-level summaries (e.g. `ApplicationRunSummary`); they **MUST NOT** replace runtime event history. |
 | External sinks | External sinks **MUST** receive normalized signals; they **MUST NOT** define canonical Intergrax event semantics. |
@@ -734,15 +734,15 @@ OECP transforms spine data into eval-grade artifacts: **evidence ledger** record
 | Redaction | Redaction **MUST** happen before persistence or external export where required (`DiagnosticPayload.redact()`, `production_mode`). |
 | Domain extension | Domain-specific events **SHOULD** use namespaced `event_kind` / payload schemas instead of expanding platform lifecycle enums unnecessarily (§4.4). |
 
-Audit stores (`RuntimeEventPersistence`, `RunTraceWriter`) persist spine-normalized records — they are **not** alternate semantic owners. Custom `RuntimeEventBus` handlers and journal export plugins are subscribers/sinks, not parallel buses.
+Audit stores (`RuntimeEventPersistence`, `RunTraceWriter`) persist spine-normalized records - they are **not** alternate semantic owners. Custom `RuntimeEventBus` handlers and journal export plugins are subscribers/sinks, not parallel buses.
 
 ---
 
 ## Execution-scoped vs non-execution observability signals
 
-**Normative rule:** `RuntimeEvent` is **execution-scoped only**. Every canonical `RuntimeEvent` **MUST** carry full execution identity: `TaskId`, `RunId`, `AttemptId`, and `EventId` — all required, none optional, no synthetic placeholders to admit unrelated signals.
+**Normative rule:** `RuntimeEvent` is **execution-scoped only**. Every canonical `RuntimeEvent` **MUST** carry full execution identity: `TaskId`, `RunId`, `AttemptId`, and `EventId` - all required, none optional, no synthetic placeholders to admit unrelated signals.
 
-The Harness Observability Spine (HOS) is **broader** than `RuntimeEvent`. HOS is the single approved write/read/export path; it carries **multiple semantic envelope families** through the same spine infrastructure. Semantic contract and transport/storage/export mechanism are separate concerns — **one spine, not two buses**.
+The Harness Observability Spine (HOS) is **broader** than `RuntimeEvent`. HOS is the single approved write/read/export path; it carries **multiple semantic envelope families** through the same spine infrastructure. Semantic contract and transport/storage/export mechanism are separate concerns - **one spine, not two buses**.
 
 ```text
 Harness Observability Spine (HOS)
@@ -759,12 +759,12 @@ Harness Observability Spine (HOS)
 | Property | Requirement |
 |----------|-------------|
 | Scope | Meaningful **execution** transitions inside a Task → Run → Attempt lifecycle |
-| Identity | `event_id`, `task_id`, `run_id`, `attempt_id` — all required (**CURRENT**); **TARGET:** + `execution_id` |
+| Identity | `event_id`, `task_id`, `run_id`, `attempt_id` - all required (**CURRENT**); **TARGET:** + `execution_id` |
 | `AttemptId` semantics | One global try inside a Run; local tool/provider/step retries do **not** mint new `AttemptId` (frozen UEA) |
 | Persisted execution evidence | `RuntimeEventPersistence` is the canonical persisted evidence authority for accepted `RuntimeEvent`s; lifecycle facts originate from execution producers; Unified Run Journal reconstructs from persisted events |
 | Forbidden | Optional execution identity; multiplexed identity modes; synthetic `TaskId`/`RunId`/`AttemptId` for non-execution events |
 
-`emit_domain_signal()` and `RuntimeEventType.DOMAIN_SIGNAL` are **execution-attached** in practice: both require `EmitContext` with validated `TaskId`, `RunId`, and `AttemptId`. A domain signal on the bus is a `RuntimeEvent` carrying a namespaced `event_kind` and typed payload **within an active execution correlation** — not a generic non-execution lifecycle channel. Platform lifecycle facts that occur **during** execution (for example `platform.adaptive.*` on `DOMAIN_SIGNAL`) remain execution-scoped because they are correlated to a real attempt.
+`emit_domain_signal()` and `RuntimeEventType.DOMAIN_SIGNAL` are **execution-attached** in practice: both require `EmitContext` with validated `TaskId`, `RunId`, and `AttemptId`. A domain signal on the bus is a `RuntimeEvent` carrying a namespaced `event_kind` and typed payload **within an active execution correlation** - not a generic non-execution lifecycle channel. Platform lifecycle facts that occur **during** execution (for example `platform.adaptive.*` on `DOMAIN_SIGNAL`) remain execution-scoped because they are correlated to a real attempt.
 
 ### B. Non-execution platform observability signals
 
@@ -775,10 +775,10 @@ Harness Observability Spine (HOS)
 | Scope | Application hosting lifecycle, component health, instance acquisition/release, infrastructure lifecycle, and similar platform facts **outside** execution attempt boundaries |
 | Identity | Signal-local `event_id` (or equivalent), `correlation_id`, `causation_id`, source/component identity (`application_id`, `instance_id`, … as applicable), typed payload, severity/category |
 | Execution identity | **MUST NOT** include `TaskId`, `RunId`, or `AttemptId`; **MUST NOT** mint `AttemptId` per signal |
-| Source of truth | Describes platform/application observability — **not** execution history; does not replace Unified Run Journal reconstruction |
-| Transport | Published through the **existing HOS spine/export path** — not a second bus, not `RuntimeEventBus.record()` with fake execution identity |
+| Source of truth | Describes platform/application observability - **not** execution history; does not replace Unified Run Journal reconstruction |
+| Transport | Published through the **existing HOS spine/export path** - not a second bus, not `RuntimeEventBus.record()` with fake execution identity |
 
-`ObservabilityExportEnvelope` is an **export projection / transport envelope** only (`record_kind`, sanitized fields). It is **not** the semantic owner of platform lifecycle facts — do not promote it to domain semantics.
+`ObservabilityExportEnvelope` is an **export projection / transport envelope** only (`record_kind`, sanitized fields). It is **not** the semantic owner of platform lifecycle facts - do not promote it to domain semantics.
 
 `DiagnosticPayload` is **payload detail** (`schema_id`, `redact()`) carried by Plane B `TraceEvent` rows or execution-attached `DOMAIN_SIGNAL` envelopes. It is **not** an independent non-execution lifecycle channel.
 
@@ -797,7 +797,7 @@ Harness Observability Spine (HOS)
 | Instance guard | `INSTANCE_ACQUIRED`, `INSTANCE_RELEASED`, `INSTANCE_STALE_RECOVERED` |
 | Restart / hooks / plugins | `RESTART_*`, `HOOK_*`, `PLUGIN_*` |
 
-These events describe **hosted application/platform lifecycle** — not Intergrax Task, Run, or Attempt lifecycle. `HostedApplicationEvent` already carries the correct non-execution identity (`event_id`, `correlation_id`, `causation_id`, `application_id`, `instance_id`).
+These events describe **hosted application/platform lifecycle** - not Intergrax Task, Run, or Attempt lifecycle. `HostedApplicationEvent` already carries the correct non-execution identity (`event_id`, `correlation_id`, `causation_id`, `application_id`, `instance_id`).
 
 **Target (canonical):**
 
@@ -807,9 +807,9 @@ HostedApplicationEvent
   → existing HOS spine / export infrastructure
 ```
 
-**Shipped (TRACE-1B-HOS-FIX Done):** `ObservabilityHostedApplicationEventPublisher` (`intergrax/hosting/eventing.py`) routes `HostedApplicationEvent` through the canonical platform observability path on the existing HOS spine/export infrastructure (`ExportRecordKind.PLATFORM_SIGNAL`). The legacy `RuntimeSpineHostedApplicationEventPublisher` adapter that synthesized `TaskId`, `RunId`, and per-event `AttemptId` is **removed** — no compatibility alias or dual path.
+**Shipped (TRACE-1B-HOS-FIX Done):** `ObservabilityHostedApplicationEventPublisher` (`intergrax/hosting/eventing.py`) routes `HostedApplicationEvent` through the canonical platform observability path on the existing HOS spine/export infrastructure (`ExportRecordKind.PLATFORM_SIGNAL`). The legacy `RuntimeSpineHostedApplicationEventPublisher` adapter that synthesized `TaskId`, `RunId`, and per-event `AttemptId` is **removed** - no compatibility alias or dual path.
 
-**HOST-DIAG-3:** `PLATFORM_SIGNAL` export remains the normal path for all hosting lifecycle events. `APPLICATION_FAILED` may additionally project into central non-execution diagnostics when product composition supplies explicit `HostedDiagnosticTenantBinding` and a shared `DiagnosticOrchestrator` via `HostedApplicationDiagnosticEventPublisher` — observability export always runs first.
+**HOST-DIAG-3:** `PLATFORM_SIGNAL` export remains the normal path for all hosting lifecycle events. `APPLICATION_FAILED` may additionally project into central non-execution diagnostics when product composition supplies explicit `HostedDiagnosticTenantBinding` and a shared `DiagnosticOrchestrator` via `HostedApplicationDiagnosticEventPublisher` - observability export always runs first.
 
 ### D. Author decision supplement (see also §4.4.1)
 
@@ -827,7 +827,7 @@ Need a new signal?
 
 ## Problem signal emission boundary
 
-**Normative rule:** `RuntimeEvent` answers **what happened**; `PlatformProblemSignal` answers **what broke and requires attention**. Problem signals are an explicit semantic classification at an **owned emission boundary** — not an automatic conversion from every `RuntimeEvent` or exception.
+**Normative rule:** `RuntimeEvent` answers **what happened**; `PlatformProblemSignal` answers **what broke and requires attention**. Problem signals are an explicit semantic classification at an **owned emission boundary** - not an automatic conversion from every `RuntimeEvent` or exception.
 
 `ProblemReporter` / `report_problem` (`intergrax/runtime/observability/problem_reporter.py`) is the developer-facing helper for building and exporting problems through the existing observability export path (`PlatformProblemSignal` → `ObservabilityExportEnvelope` → `ObservabilityExportPolicy` → `try_export_observability_envelope`). This section defines **where** that helper may be called. It does **not** add automatic runtime emission, routing/fanout, Sentry, Elastic, OTLP, or vendor-specific behavior.
 
@@ -837,7 +837,7 @@ Need a new signal?
 |----------|-------------|
 | Semantic model | `PlatformProblemSignal` is the vendor-neutral problem/error signal model (`problem_signal.py`). |
 | Not a replacement for `RuntimeEvent` | Execution/audit history remains on the spine; problems are a separate explicit plane. |
-| Not a generic log record | Problems require classified taxonomy fields — not unstructured diagnostic text. |
+| Not a generic log record | Problems require classified taxonomy fields - not unstructured diagnostic text. |
 | Not vendor-specific | No Sentry/Elastic/OTLP semantics in the platform model; vendors project sanitized envelopes only. |
 | Attention signal | Represents a classified failure/problem requiring operator or developer attention. |
 
@@ -850,7 +850,7 @@ Problem signals **MAY** be emitted only from boundaries that **own failure class
 | **Application** | Tier-3 endpoint handler, command handler, pipeline boundary, or composition root that owns product-level failure classification. |
 | **Runtime** | Runtime executor, graph boundary, agent run boundary, tool runtime wrapper, or policy-enforced runtime boundary. |
 | **Integration** | Platform integration wrapper that classifies a provider/backend failure into a platform problem without leaking vendor SDK details. |
-| **Explicit tool wrapper** | `ToolRuntime` or an approved wrapper around tool execution — **not** arbitrary tool internals. |
+| **Explicit tool wrapper** | `ToolRuntime` or an approved wrapper around tool execution - **not** arbitrary tool internals. |
 
 The owning boundary **SHOULD** call `report_problem(...)` or `ProblemReporter(...).report(...)` once it has decided the failure is reportable and has stable `problem_kind`, `severity`, `source_layer`, `source_component`, and `error_code` when available.
 
@@ -864,7 +864,7 @@ The owning boundary **SHOULD** call `report_problem(...)` or `ProblemReporter(..
 | LKW-only private logging code | **MUST NOT** define an LKW-only issue model or bypass the platform helper. |
 | Vendor provider internals | **MUST NOT** be semantic owners of platform problems or platform taxonomy. |
 | External sink/provider code | **MUST NOT** define Intergrax problem kinds or severities. |
-| Code without run/task/correlation ownership | **MUST NOT** call `report_problem` — use `ProblemReportContext` with available correlation fields at the owning boundary. |
+| Code without run/task/correlation ownership | **MUST NOT** call `report_problem` - use `ProblemReportContext` with available correlation fields at the owning boundary. |
 
 ### D. Duplicate prevention
 
@@ -873,7 +873,7 @@ The owning boundary **SHOULD** call `report_problem(...)` or `ProblemReporter(..
 | One owner per failure | One failure **SHOULD** have one owning emission boundary. |
 | Lower layers raise, upper layers classify | Lower layers **MAY** raise typed errors or attach typed context; they **SHOULD NOT** double-report if a higher boundary owns classification. |
 | Correlation preservation | The boundary that reports **MUST** populate `run_id`, `task_id`, `correlation_id`, and related fields when available (`ProblemReportContext`). |
-| Export failure isolation | `try_export_observability_envelope` failure isolation **MUST NOT** recursively create an unbounded chain of problem signals — export failures are isolated; optional single observability-plane report is a separate explicit decision at an observability boundary. |
+| Export failure isolation | `try_export_observability_envelope` failure isolation **MUST NOT** recursively create an unbounded chain of problem signals - export failures are isolated; optional single observability-plane report is a separate explicit decision at an observability boundary. |
 
 ### E. RuntimeEvent relationship
 
@@ -881,7 +881,7 @@ The owning boundary **SHOULD** call `report_problem(...)` or `ProblemReporter(..
 |------|--------|
 | No automatic conversion | Not every `RuntimeEvent` becomes a `PlatformProblemSignal`. |
 | No automatic exception mapping | Not every exception automatically becomes a problem signal. |
-| Retries/fallbacks | Not every retry or fallback is a problem — only semantically classified failures. |
+| Retries/fallbacks | Not every retry or fallback is a problem - only semantically classified failures. |
 | Required classification | A problem signal **MUST** include explicit taxonomy: `problem_kind`, `severity`, `source_layer`, `source_component`, and `error_code` when available. |
 | Spine remains canonical | `RuntimeEvent` remains the canonical execution/audit history on `RuntimeEventBus`. |
 | Export plane | `PlatformProblemSignal` is the explicit problem/error plane exported via `ObservabilityExportPolicy` and existing envelope mapping (`problem_export.py`). |
@@ -898,13 +898,13 @@ Problem signals and their export envelopes **MUST** follow the same content-safe
 | Raw prompt/query/content/chunks/tool_args | Typed `ApplicationObservabilityAttributes` with declared safe fields only |
 | Raw local file paths | `ObservabilityArtifactReference` (`artifact_ref`, `sha256`, `safe_relative_path`, `schema_id`) |
 | Raw `dict` payload/context/details/metadata | Typed attributes and reference-only artifacts |
-| Secrets | Never — policy drops or hashes forbidden fields |
+| Secrets | Never - policy drops or hashes forbidden fields |
 
 `ObservabilityExportPolicy` owns redaction/sanitization before export. Vendor providers receive **only** policy-safe envelopes.
 
 ### G. Developer-facing examples
 
-**Application boundary — explicit classification:**
+**Application boundary - explicit classification:**
 
 ```python
 from intergrax.runtime.observability.problem_reporter import ProblemReportContext, report_problem
@@ -929,7 +929,7 @@ await report_problem(
 )
 ```
 
-**Runtime/tool boundary — bound reporter:**
+**Runtime/tool boundary - bound reporter:**
 
 ```python
 from intergrax.runtime.observability.problem_reporter import ProblemReportContext, ProblemReporter
@@ -956,7 +956,7 @@ await reporter.report(
 ### H. Anti-examples (do not)
 
 - Do **not** call `sentry_sdk` (or any vendor SDK) from runtime, application, agent, or tool code.
-- Do **not** map LKW or domain code directly to Sentry, Elastic, or OTLP — use the platform export envelope and policy.
+- Do **not** map LKW or domain code directly to Sentry, Elastic, or OTLP - use the platform export envelope and policy.
 - Do **not** emit the same failure from tool internals, agent helper, **and** endpoint (pick one owning boundary).
 - Do **not** serialize raw exception objects, raw context dicts, or query/content into problem fields.
 - Do **not** turn every `RuntimeEvent` (or every `ObservabilityEmitter.emit_step`) into a `PlatformProblemSignal`.
@@ -966,7 +966,7 @@ await reporter.report(
 
 ### DIAG subsystem (analytical over canonical evidence)
 
-> **Canonical entry point:** [`DIAGNOSTICS.md`](DIAGNOSTICS.md) — authority model, lifecycle, failure isolation, qualification summary. This section retains slice-level implementation detail.
+> **Canonical entry point:** [`DIAGNOSTICS.md`](DIAGNOSTICS.md) - authority model, lifecycle, failure isolation, qualification summary. This section retains slice-level implementation detail.
 
 DIAG is **one** canonical diagnostic engine/subsystem (`intergrax/runtime/diagnostics/`). It consumes canonical evidence and typed derived projections. It does **not** own execution lifecycle, mint Task/Run/Attempt/Execution identity, maintain a competing canonical Execution Tree, infer canonical identity from free-text logs, independently query arbitrary vendor observability stores as runtime truth, or silently repair missing causal lineage.
 
@@ -978,25 +978,25 @@ Event → Execution → parent Execution(s) → Attempt → Run → Task
 
 plus optional typed associations: Execution/Event ↔ `NodeId`; Execution ↔ transport relation; Execution/Event ↔ side-effect/integration evidence.
 
-Diagnostic projections (`ExecutionReconstruction`, `LifecycleAnalysis`, `DiagnosticAssessment`, problem grouping candidates, future incident/root-cause projections) are **derived analytical/read models**. If DIAG needs an investigation graph, it is explicitly a **diagnostic relation/projection graph** — not the canonical Execution Tree. Every diagnostic conclusion retains provenance to canonical evidence.
+Diagnostic projections (`ExecutionReconstruction`, `LifecycleAnalysis`, `DiagnosticAssessment`, problem grouping candidates, future incident/root-cause projections) are **derived analytical/read models**. If DIAG needs an investigation graph, it is explicitly a **diagnostic relation/projection graph** - not the canonical Execution Tree. Every diagnostic conclusion retains provenance to canonical evidence.
 
-**Incomplete evidence:** missing evidence does **not** authorize DIAG to invent lineage — represent truncation/limitation, retain uncertainty, do not guess parent Execution, do not promote `correlation_id` to lineage, do not claim root cause as proven.
+**Incomplete evidence:** missing evidence does **not** authorize DIAG to invent lineage - represent truncation/limitation, retain uncertainty, do not guess parent Execution, do not promote `correlation_id` to lineage, do not claim root cause as proven.
 
-**Functional evidence boundary (DIAG-FUNCTIONAL-1 / R1–R2):** Observability records and exports typed functional/AI pipeline evidence (`PlatformFunctionalEvidence`) and problem signals carrying `FunctionalValidationEvidence`. Observability does **not** own functional diagnosis — it records facts such as `candidate rank=17 selected=False`; central DIAG interprets meaning. Functional evidence is correlated to execution identity but stored outside `RuntimeEvent` payloads. Direct inline `upstream_evidence_ids` are bounded (`MAX_DIRECT_UPSTREAM_EVIDENCE_REFS`); `relation_summary` is a safe bounded summary only. `PlatformProblemSignal` enforces functional-validation correlation invariants at model construction. Observability does **not** emit functional root-cause conclusions (`wrong_tool_selected`, `bad_retrieval`, `bad_model_choice`, etc.) — those belong to central DIAG interpretation. **Persistence qualification (R2):** `InMemoryFunctionalEvidencePersistence` is the conformance/reference provider only (correctness + contract semantics; not durable; not scale-qualified). Production durability and scale remain pending on a future DocumentStore/Mongo functional-evidence backend. See [`DIAGNOSTICS.md`](DIAGNOSTICS.md) § Functional diagnostics.
+**Functional evidence boundary (DIAG-FUNCTIONAL-1 / R1–R2):** Observability records and exports typed functional/AI pipeline evidence (`PlatformFunctionalEvidence`) and problem signals carrying `FunctionalValidationEvidence`. Observability does **not** own functional diagnosis - it records facts such as `candidate rank=17 selected=False`; central DIAG interprets meaning. Functional evidence is correlated to execution identity but stored outside `RuntimeEvent` payloads. Direct inline `upstream_evidence_ids` are bounded (`MAX_DIRECT_UPSTREAM_EVIDENCE_REFS`); `relation_summary` is a safe bounded summary only. `PlatformProblemSignal` enforces functional-validation correlation invariants at model construction. Observability does **not** emit functional root-cause conclusions (`wrong_tool_selected`, `bad_retrieval`, `bad_model_choice`, etc.) - those belong to central DIAG interpretation. **Persistence qualification (R2):** `InMemoryFunctionalEvidencePersistence` is the conformance/reference provider only (correctness + contract semantics; not durable; not scale-qualified). Production durability and scale remain pending on a future DocumentStore/Mongo functional-evidence backend. See [`DIAGNOSTICS.md`](DIAGNOSTICS.md) § Functional diagnostics.
 
 ### Causal evidence plane (DIAG-1)
 
-`PlatformCausalEvidence` records an immutable, tenant-scoped causal fact between existing identity domains — for example a provider-neutral async transport task (`MessageBusTaskRef`) that **triggered** canonical runtime execution (`RuntimeExecutionRef` with `TaskId` / `RunId` / `AttemptId`; **TARGET:** + `ExecutionId`). It does **not** extend `RuntimeEvent`, mint synthetic execution identity, redefine `ExecutionId`, duplicate the Execution Tree, or replace `RuntimeEvent` history.
+`PlatformCausalEvidence` records an immutable, tenant-scoped causal fact between existing identity domains - for example a provider-neutral async transport task (`MessageBusTaskRef`) that **triggered** canonical runtime execution (`RuntimeExecutionRef` with `TaskId` / `RunId` / `AttemptId`; **TARGET:** + `ExecutionId`). It does **not** extend `RuntimeEvent`, mint synthetic execution identity, redefine `ExecutionId`, duplicate the Execution Tree, or replace `RuntimeEvent` history.
 
-`MessageBusTaskRef.task_id` is opaque transport identity (`str`); `RuntimeExecutionRef.task_id` is canonical `TaskId`. Identical text may appear on both sides without collapsing domains — isolation is enforced by typed contracts, not lexical format rules.
+`MessageBusTaskRef.task_id` is opaque transport identity (`str`); `RuntimeExecutionRef.task_id` is canonical `TaskId`. Identical text may appear on both sides without collapsing domains - isolation is enforced by typed contracts, not lexical format rules.
 
-**Canonical persistence (P1):** **contract DONE** — `CausalEvidencePersistence` defines the platform-owned, backend-neutral append/read contract for typed non-execution causal evidence (`append`, `list_for_execution`, `list_for_transport_task`). `InMemoryCausalEvidencePersistence` is the reference implementation for tests and conformance only. **Production durable backend: DONE** — `DocumentStoreCausalEvidencePersistence` (requires `ConditionalDocumentStore`) is wired through `wire_causal_evidence_persistence(document_store=...)`. `DistributedKVStore` is **not** supported for causal evidence persistence (no prefix-query primitives for indexed reads). **Writer integration: DONE** for supported background execution paths (DIAG-1I). Queue-enabled Tier-3 hosts must supply platform `DistributedKVStore` identity persistence and `ConditionalDocumentStore` causal evidence persistence via host composition (`resolve_host_queue_execution_dependencies`); inline-only hosts remain unaffected. `RuntimeEventPersistence` remains execution-scoped only and is unchanged.
+**Canonical persistence (P1):** **contract DONE** - `CausalEvidencePersistence` defines the platform-owned, backend-neutral append/read contract for typed non-execution causal evidence (`append`, `list_for_execution`, `list_for_transport_task`). `InMemoryCausalEvidencePersistence` is the reference implementation for tests and conformance only. **Production durable backend: DONE** - `DocumentStoreCausalEvidencePersistence` (requires `ConditionalDocumentStore`) is wired through `wire_causal_evidence_persistence(document_store=...)`. `DistributedKVStore` is **not** supported for causal evidence persistence (no prefix-query primitives for indexed reads). **Writer integration: DONE** for supported background execution paths (DIAG-1I). Queue-enabled Tier-3 hosts must supply platform `DistributedKVStore` identity persistence and `ConditionalDocumentStore` causal evidence persistence via host composition (`resolve_host_queue_execution_dependencies`); inline-only hosts remain unaffected. `RuntimeEventPersistence` remains execution-scoped only and is unchanged.
 
-**Canonical record vs indexes (DIAG-1D-R1):** `record:<evidence_id>` is the **only** authoritative store for full `PlatformCausalEvidence`. Secondary `exec:` / `transport:` rows are discovery references (`evidence_id` only) and are never authoritative copies. Queries resolve index → canonical record → scope validation and return results deterministically ordered by `(recorded_at, evidence_id)` ascending — independent of physical backend insertion order. `append` succeeds only after the canonical record and both required indexes are present; partial writes fail closed and identical retries repair missing indexes.
+**Canonical record vs indexes (DIAG-1D-R1):** `record:<evidence_id>` is the **only** authoritative store for full `PlatformCausalEvidence`. Secondary `exec:` / `transport:` rows are discovery references (`evidence_id` only) and are never authoritative copies. Queries resolve index → canonical record → scope validation and return results deterministically ordered by `(recorded_at, evidence_id)` ascending - independent of physical backend insertion order. `append` succeeds only after the canonical record and both required indexes are present; partial writes fail closed and identical retries repair missing indexes.
 
 **Required vs optional durability (BG-EXEC-3):** Intergrax distinguishes optional telemetry from required audit evidence. Failure to persist evidence required to establish an execution boundary fails closed before business execution begins. The initial required fact is `TRANSPORT_TASK_TRIGGERED_EXECUTION` (transport ref → canonical execution identity). `RuntimeEventBus` best-effort persistence is not the admission mechanism for this causal evidence; admission is platform-owned via `admit_background_execution_handler` in `required_audit_evidence.py`, invoked at all supported worker boundaries before `execute_logical_task`. Exporter failure does not invalidate already-persisted required evidence.
 
-**Causal admission (frozen UEA):** every independently schedulable child Execution must establish durable causal lineage before meaningful work begins — mint/adopt canonical child `ExecutionId` → persist required parent/causal relation → admit → execute. For distributed work, transport relation → canonical Execution must be durable when classified as required audit evidence.
+**Causal admission (frozen UEA):** every independently schedulable child Execution must establish durable causal lineage before meaningful work begins - mint/adopt canonical child `ExecutionId` → persist required parent/causal relation → admit → execute. For distributed work, transport relation → canonical Execution must be durable when classified as required audit evidence.
 
 **Retry / redelivery identity (frozen UEA taxonomy):**
 
@@ -1010,11 +1010,11 @@ Diagnostic projections (`ExecutionReconstruction`, `LifecycleAnalysis`, `Diagnos
 
 Transport redelivery alone must **not** create new runtime identity.
 
-**CURRENT implementation debt:** `resolve_background_execution` in `background_execution/bootstrap.py` mints a **new `AttemptId` on every worker boundary invocation**, including transport redelivery of the same logical work — this conflicts with row E above and is a migration gap (remediation tracked in UE-DOC-0.7 / distributed slices; not rewritten here). Required causal evidence may still be appended per delivery until admission semantics align.
+**CURRENT implementation debt:** `resolve_background_execution` in `background_execution/bootstrap.py` mints a **new `AttemptId` on every worker boundary invocation**, including transport redelivery of the same logical work - this conflicts with row E above and is a migration gap (remediation tracked in UE-DOC-0.7 / distributed slices; not rewritten here). Required causal evidence may still be appended per delivery until admission semantics align.
 
-**Optional export projection:** `envelope_from_causal_evidence` maps to `ExportRecordKind.DIAGNOSTIC` with typed `CausalEvidenceExportSource` on `ObservabilityExportEnvelope` — a **lossless export projection**, not canonical persistence. Export backends (Sentry, Datadog, OTLP, `InMemoryObservabilityExporter`) are optional sinks; the causal fact must not depend on them.
+**Optional export projection:** `envelope_from_causal_evidence` maps to `ExportRecordKind.DIAGNOSTIC` with typed `CausalEvidenceExportSource` on `ObservabilityExportEnvelope` - a **lossless export projection**, not canonical persistence. Export backends (Sentry, Datadog, OTLP, `InMemoryObservabilityExporter`) are optional sinks; the causal fact must not depend on them.
 
-**Evidence identity:** `PlatformCausalEvidence.evidence_id` currently uses `EventId` (`evt_…`), which may be execution-event scoped — dedicated `CausalEvidenceId` is a deferred decision point if non-execution evidence persistence lands.
+**Evidence identity:** `PlatformCausalEvidence.evidence_id` currently uses `EventId` (`evt_…`), which may be execution-event scoped - dedicated `CausalEvidenceId` is a deferred decision point if non-execution evidence persistence lands.
 
 **Code references:** `causal_evidence.py` · `causal_evidence_persistence.py` · `memory_causal_evidence_persistence.py` · `document_store_causal_evidence_persistence.py` · `causal_evidence_record_codec.py` · `causal_evidence_export.py` · `export_boundary.py`.
 
@@ -1024,30 +1024,30 @@ Transport redelivery alone must **not** create new runtime identity.
 
 | Store | Role |
 |-------|------|
-| `RuntimeEventPersistence` | Canonical persisted evidence authority — accepted `RuntimeEvent` history with persistence-owned `ExecutionEventPosition` |
-| `CausalEvidencePersistence` | Canonical persisted relation evidence authority — immutable `PlatformCausalEvidence` linking transport to execution |
+| `RuntimeEventPersistence` | Canonical persisted evidence authority - accepted `RuntimeEvent` history with persistence-owned `ExecutionEventPosition` |
+| `CausalEvidencePersistence` | Canonical persisted relation evidence authority - immutable `PlatformCausalEvidence` linking transport to execution |
 
-**Derived read model (NOT persisted, NOT a source of truth):** `ExecutionReconstruction` is computed at read time by `ExecutionReconstructor.reconstruct_execution(tenant_id, task_id, run_id)`. It joins causal evidence and positioned runtime events for one canonical execution scope. No diagnosis, anomaly classification, or root-cause semantics — factual reconstruction only (DIAG-3+).
+**Derived read model (NOT persisted, NOT a source of truth):** `ExecutionReconstruction` is computed at read time by `ExecutionReconstructor.reconstruct_execution(tenant_id, task_id, run_id)`. It joins causal evidence and positioned runtime events for one canonical execution scope. No diagnosis, anomaly classification, or root-cause semantics - factual reconstruction only (DIAG-3+).
 
 **Ordering rules (do not mix):**
 
 | Dimension | Canonical order |
 |-----------|-----------------|
-| Runtime events | `ExecutionEventPosition` via `RuntimeEventPersistence.list_positioned_for_run` — **not** `timestamp` |
-| Causal evidence | `(recorded_at, evidence_id)` ascending — persistence contract |
-| Attempts (projection) | First `ExecutionEventPosition` per attempt when runtime events exist; otherwise earliest causal `(recorded_at, evidence_id)` — display order only, not identity |
+| Runtime events | `ExecutionEventPosition` via `RuntimeEventPersistence.list_positioned_for_run` - **not** `timestamp` |
+| Causal evidence | `(recorded_at, evidence_id)` ascending - persistence contract |
+| Attempts (projection) | First `ExecutionEventPosition` per attempt when runtime events exist; otherwise earliest causal `(recorded_at, evidence_id)` - display order only, not identity |
 
 **Attempt set:** union of `AttemptId` values from causal evidence targets **and** from runtime events (no inner join). Evidence-only and event-only attempts are retained without anomaly labeling.
 
 **Completeness:** runtime history pagination doubles `limit` until the batch is smaller than `limit` or `max_limit` is reached with a full batch; `runtime_history_completeness` is `complete` or `truncated`. Reconstruction must not claim complete history when truncated.
 
-**Integrity:** facts returned outside the requested `tenant_id` / `TaskId` / `RunId` scope fail closed with `ExecutionReconstructionIntegrityError` — no silent filtering.
+**Integrity:** facts returned outside the requested `tenant_id` / `TaskId` / `RunId` scope fail closed with `ExecutionReconstructionIntegrityError` - no silent filtering.
 
 **Code references:** `intergrax/runtime/diagnostics/execution_reconstruction.py`.
 
 ### Lifecycle anomaly analysis (DIAG-3)
 
-**Input:** `ExecutionReconstruction` from DIAG-2 — no independent persistence reads.
+**Input:** `ExecutionReconstruction` from DIAG-2 - no independent persistence reads.
 
 **Derived read model (NOT persisted, NOT a source of truth):** `LifecycleAnalysis` is computed at read time by `LifecycleAnomalyAnalyzer.analyze(reconstruction)`. It reports deterministic factual invariant violations on the reconstruction. No diagnosis, root cause, confidence, remediation, LLM, or event emission.
 
@@ -1062,9 +1062,9 @@ Transport redelivery alone must **not** create new runtime identity.
 | `EVENT_AFTER_TERMINAL` | attempt or execution | lifecycle event after final `COMPLETED`/`CANCELLED` per TRACE-ASOF-2 reducer semantics |
 | `DISALLOWED_AFTER_FAILED` | attempt or execution | disallowed lifecycle transition while run is `FAILED` and before a valid `RETRY_STARTED` per TRACE-ASOF-2 reducer semantics |
 
-**Lifecycle semantics source:** reuse `intergrax/runtime/events/asof_projection.py` (`apply_lifecycle_event`) — do not invent parallel state machines. Retry attempts (`A1` failed + `A2` completed) are evaluated on the canonical positioned stream; cross-attempt contradictions are not flagged when retry semantics allow them.
+**Lifecycle semantics source:** reuse `intergrax/runtime/events/asof_projection.py` (`apply_lifecycle_event`) - do not invent parallel state machines. Retry attempts (`A1` failed + `A2` completed) are evaluated on the canonical positioned stream; cross-attempt contradictions are not flagged when retry semantics allow them.
 
-**Typed structural transition:** TRACE-ASOF lifecycle violations retain a typed `LifecycleViolationTransition` on `LifecycleAnomaly` (`violation_kind`, `prior_status`, `violating_event_type`). DIAG-4 `DiagnosticFinding` and DIAG-5A `ProblemGroupingSubjectFinding` normalization pass it through unchanged — enabling defensible structural incident grouping without re-reading raw events.
+**Typed structural transition:** TRACE-ASOF lifecycle violations retain a typed `LifecycleViolationTransition` on `LifecycleAnomaly` (`violation_kind`, `prior_status`, `violating_event_type`). DIAG-4 `DiagnosticFinding` and DIAG-5A `ProblemGroupingSubjectFinding` normalization pass it through unchanged - enabling defensible structural incident grouping without re-reading raw events.
 
 **Truncation safety:** when history is truncated, only violations provable from the visible prefix are reported; missing terminal events beyond truncation are not inferred.
 
@@ -1074,9 +1074,9 @@ Transport redelivery alone must **not** create new runtime identity.
 
 ### Operator diagnostic assessment (DIAG-4)
 
-**Inputs:** `ExecutionReconstruction` (DIAG-2) and `LifecycleAnalysis` (DIAG-3) for the same `tenant_id` / `TaskId` / `RunId` — **no independent persistence reads**.
+**Inputs:** `ExecutionReconstruction` (DIAG-2) and `LifecycleAnalysis` (DIAG-3) for the same `tenant_id` / `TaskId` / `RunId` - **no independent persistence reads**.
 
-**Derived read model (NOT persisted, NOT a source of truth):** `DiagnosticAssessment` is computed at read time by `DiagnosticAssessmentBuilder.assess(reconstruction, lifecycle)`. It answers what the platform can **prove** to an operator from canonical facts — not root-cause guessing.
+**Derived read model (NOT persisted, NOT a source of truth):** `DiagnosticAssessment` is computed at read time by `DiagnosticAssessmentBuilder.assess(reconstruction, lifecycle)`. It answers what the platform can **prove** to an operator from canonical facts - not root-cause guessing.
 
 | Layer | Question answered |
 |-------|-------------------|
@@ -1108,31 +1108,31 @@ Each `DiagnosticFinding` retains `source_anomaly_kind: LifecycleAnomalyKind` for
 
 **Explicit non-goals (v1):** no root-cause inference (worker crash, network, broker loss, etc. unless canonically proven elsewhere); no “healthy execution” positive diagnosis when anomalies are absent; no remediation suggestions; no event emission back to `RuntimeEventBus`; no persistence layer; no LLM/agent interpretation (future DIAG-8 may consume typed `DiagnosticAssessment` output without rewriting canonical evidence).
 
-**Future boundary:** richer root-cause interpretation may consume `DiagnosticAssessment` plus additional typed observability facts — it must never rewrite canonical evidence.
+**Future boundary:** richer root-cause interpretation may consume `DiagnosticAssessment` plus additional typed observability facts - it must never rewrite canonical evidence.
 
 **Code references:** `intergrax/runtime/diagnostics/diagnostic_assessment.py`.
 
 ### Deterministic structural grouping (DIAG-5B)
 
-**First production grouping strategy:** `DeterministicProblemGroupingStrategy` (`strategy_id=intergrax.diagnostics.structural.v1`, `strategy_version=1`) answers *"which executions have exactly the same typed diagnostic structure?"* — conservative, high-precision baseline.
+**First production grouping strategy:** `DeterministicProblemGroupingStrategy` (`strategy_id=intergrax.diagnostics.structural.v1`, `strategy_version=1`) answers *"which executions have exactly the same typed diagnostic structure?"* - conservative, high-precision baseline.
 
 **Exact typed structural equality:** subjects group iff their `DeterministicProblemSignature` (typed `DeterministicFindingSignature` + `DeterministicLimitationSignature` tuples) are equal. No opaque fingerprint string, no fuzzy similarity, no ML, no LLM, no semantic inference.
 
-**`lifecycle_transition` participates:** `LifecycleViolationTransition` (`violation_kind`, `prior_status`, `violating_event_type`) is part of each finding signature — e.g. `COMPLETED → RETRY_SCHEDULED` and `COMPLETED → TASK_FAILED` do **not** group even when other finding fields match.
+**`lifecycle_transition` participates:** `LifecycleViolationTransition` (`violation_kind`, `prior_status`, `violating_event_type`) is part of each finding signature - e.g. `COMPLETED → RETRY_SCHEDULED` and `COMPLETED → TASK_FAILED` do **not** group even when other finding fields match.
 
 **Findings order-independent:** canonical sort by typed enum/descriptor fields before signature construction; presentation order does not change structural class.
 
-**Multiplicity preserved:** sorted tuples, not sets — one `EVENT_AFTER_TERMINAL` vs two produce different signatures.
+**Multiplicity preserved:** sorted tuples, not sets - one `EVENT_AFTER_TERMINAL` vs two produce different signatures.
 
 **Limitations participate:** same positive finding plus `RUNTIME_HISTORY_TRUNCATED` on one subject only → different signatures. Limitation-only subjects (no findings) remain ungrouped.
 
-**Singleton eligibility:** one subject with at least one real finding may emit a grouping candidate. A stable `Problem` therefore represents an operational diagnostic pattern observed once or more — not proof that recurrence was already established in the same batch. `occurrence_count` tracks distinct accepted executions; recurrence means `occurrence_count > 1`. Singleton membership does **not** imply root cause.
+**Singleton eligibility:** one subject with at least one real finding may emit a grouping candidate. A stable `Problem` therefore represents an operational diagnostic pattern observed once or more - not proof that recurrence was already established in the same batch. `occurrence_count` tracks distinct accepted executions; recurrence means `occurrence_count > 1`. Singleton membership does **not** imply root cause.
 
 **Empty subjects remain ungrouped:** no findings → no candidate; DIAG-4 does not prove health.
 
 **Algorithm:** O(n) bucket grouping by signature hash/equality; candidate order = first input appearance of each signature; members preserve input order.
 
-**Strategy semantics versioned:** changing signature field semantics requires `strategy_version` bump — do not silently alter v1 meaning.
+**Strategy semantics versioned:** changing signature field semantics requires `strategy_version` bump - do not silently alter v1 meaning.
 
 **Explicit non-goals (DIAG-5B):** no embeddings, ML, LLM, persistence, `ProblemId`, or default engine strategy selection. Future **DIAG-5C** may discover semantic similarity beyond exact signature.
 
@@ -1140,30 +1140,30 @@ Each `DiagnosticFinding` retains `source_anomaly_kind: LifecycleAnomalyKind` for
 
 ### Model-assisted grouping architecture (DIAG-5C-A)
 
-**Scope:** contracts and architecture only — no live LLM calls, prompts, embeddings execution, vector DB, or persistence.
+**Scope:** contracts and architecture only - no live LLM calls, prompts, embeddings execution, vector DB, or persistence.
 
-**Key decision — current semantic sufficiency:** **NO.** `ProblemGroupingSubject` (DIAG-5A/B) exposes only lifecycle-structural enums (`DiagnosticFindingKind`, `LifecycleAnomalyScope`, `LifecycleAnomalyKind`, optional `LifecycleViolationTransition`, `DiagnosticLimitationKind`). That is sufficient for exact structural equality (DIAG-5B) but **not** for meaningful semantic/root-cause similarity. Missing feature classes that exist elsewhere in the platform but are **not yet projected into the diagnostic grouping spine**:
+**Key decision - current semantic sufficiency:** **NO.** `ProblemGroupingSubject` (DIAG-5A/B) exposes only lifecycle-structural enums (`DiagnosticFindingKind`, `LifecycleAnomalyScope`, `LifecycleAnomalyKind`, optional `LifecycleViolationTransition`, `DiagnosticLimitationKind`). That is sufficient for exact structural equality (DIAG-5B) but **not** for meaningful semantic/root-cause similarity. Missing feature classes that exist elsewhere in the platform but are **not yet projected into the diagnostic grouping spine**:
 
 | Missing semantic dimension | Platform facts exist today? | In DIAG-4 / grouping subject? |
 |----------------------------|------------------------------|--------------------------------|
-| Component / subsystem identity (`source_component`, `source_layer`) | Yes — `PlatformProblemSignal` | **No** — problem signals are a parallel observability plane, not joined in DIAG-2..5 |
-| Integration / provider identity | Yes — runtime trace payloads, problem signals | **No** — not projected into `DiagnosticAssessment` |
-| Tool / operation identity (`tool_id`, `capability`) | Yes — problem signals, runtime events | **No** |
-| Normalized failure / error code (`error_code`, `problem_kind`) | Yes — `PlatformProblemSignal` | **No** |
-| Bounded sanitized diagnostic text | Yes — `DiagnosticFinding.claim`, `DiagnosticLimitation.factual_message` | **Stripped** by `normalize_assessment` — present on assessment, absent from subject |
-| Causal relation type beyond lifecycle enums | Partial — `PlatformCausalEvidence` in reconstruction | **No** — lifecycle analysis consumes reconstruction but grouping subject does not retain causal descriptors |
-| Configuration / policy context | Partial — application observability attributes | **No** — not in diagnostic spine |
-| Raw logs | Upstream ingestion may exist | **Must not** enter grouping subject — bounded derived evidence only |
+| Component / subsystem identity (`source_component`, `source_layer`) | Yes - `PlatformProblemSignal` | **No** - problem signals are a parallel observability plane, not joined in DIAG-2..5 |
+| Integration / provider identity | Yes - runtime trace payloads, problem signals | **No** - not projected into `DiagnosticAssessment` |
+| Tool / operation identity (`tool_id`, `capability`) | Yes - problem signals, runtime events | **No** |
+| Normalized failure / error code (`error_code`, `problem_kind`) | Yes - `PlatformProblemSignal` | **No** |
+| Bounded sanitized diagnostic text | Yes - `DiagnosticFinding.claim`, `DiagnosticLimitation.factual_message` | **Stripped** by `normalize_assessment` - present on assessment, absent from subject |
+| Causal relation type beyond lifecycle enums | Partial - `PlatformCausalEvidence` in reconstruction | **No** - lifecycle analysis consumes reconstruction but grouping subject does not retain causal descriptors |
+| Configuration / policy context | Partial - application observability attributes | **No** - not in diagnostic spine |
+| Raw logs | Upstream ingestion may exist | **Must not** enter grouping subject - bounded derived evidence only |
 
-**Implication:** do **not** implement `LLMProblemGroupingStrategy` that serializes existing enum fields to an LLM — that adds cost and non-determinism without additional signal. First model slice requires upstream feature projection (below) and, for richer similarity, future DIAG work to join typed problem-signal facts into the diagnostic projection boundary.
+**Implication:** do **not** implement `LLMProblemGroupingStrategy` that serializes existing enum fields to an LLM - that adds cost and non-determinism without additional signal. First model slice requires upstream feature projection (below) and, for richer similarity, future DIAG work to join typed problem-signal facts into the diagnostic projection boundary.
 
 #### Facts vs model features vs hypotheses (A / B / C)
 
 | Layer | Role | Mutability |
 |-------|------|------------|
-| **A — canonical facts** | `DiagnosticAssessment`, reconstruction, lifecycle analysis | Immutable source; model output must never rewrite |
-| **B — semantic representation** | `ProblemGroupingFeatureSet` + `ProblemGroupingRepresentationVersion` | Derived, versioned, bounded; disposable for reprojection |
-| **C — grouping hypothesis** | `ProblemGroupingCandidate` + typed `ProblemGroupingBasis` | Analytical output only; not canonical problem identity |
+| **A - canonical facts** | `DiagnosticAssessment`, reconstruction, lifecycle analysis | Immutable source; model output must never rewrite |
+| **B - semantic representation** | `ProblemGroupingFeatureSet` + `ProblemGroupingRepresentationVersion` | Derived, versioned, bounded; disposable for reprojection |
+| **C - grouping hypothesis** | `ProblemGroupingCandidate` + typed `ProblemGroupingBasis` | Analytical output only; not canonical problem identity |
 
 `ProblemGroupingSubject` remains the structural view inside every `ProblemGroupingInput`. Model strategies consume `ProblemGroupingInput` (`subject` + optional `features`) projected by `ProblemGroupingEngine`; deterministic strategies use only `input.subject` and ignore `input.features`.
 
@@ -1185,17 +1185,17 @@ DiagnosticAssessment[]
   → ProblemGroupingStrategyResult → engine validation → ProblemGroupingResult
 ```
 
-**Owner:** `ProblemGroupingFeatureProjector` (or equivalent) — injected into `ProblemGroupingEngine`, not another diagnostic engine. v1 reference projection: `project_assessment_features()` maps assessment + normalized subject → `ProblemGroupingFeatureSet` with `subject_ref`, deterministic `structural_signature` (link to DIAG-5B), and bounded `ProblemGroupingTextEvidence` from `DiagnosticFinding.claim` and `DiagnosticLimitation.factual_message` with typed `ProblemGroupingTextEvidenceSourceKind` and supporting event/evidence ids. v2 (DIAG-5C-B) extends the envelope with typed execution/component/operation/integration/failure/causal tuples — empty until DIAG-5C-C population. No `dict[str, Any]`, no metadata bags, no raw logs. Strategies declaring `requires_features=True` fail closed when no projector is configured.
+**Owner:** `ProblemGroupingFeatureProjector` (or equivalent) - injected into `ProblemGroupingEngine`, not another diagnostic engine. v1 reference projection: `project_assessment_features()` maps assessment + normalized subject → `ProblemGroupingFeatureSet` with `subject_ref`, deterministic `structural_signature` (link to DIAG-5B), and bounded `ProblemGroupingTextEvidence` from `DiagnosticFinding.claim` and `DiagnosticLimitation.factual_message` with typed `ProblemGroupingTextEvidenceSourceKind` and supporting event/evidence ids. v2 (DIAG-5C-B) extends the envelope with typed execution/component/operation/integration/failure/causal tuples - empty until DIAG-5C-C population. No `dict[str, Any]`, no metadata bags, no raw logs. Strategies declaring `requires_features=True` fail closed when no projector is configured.
 
-**Representation versioning:** `ProblemGroupingRepresentationVersion` (v1 = `"1"` structural+text only; v2 = `"2"` full typed envelope). `representation_version` is an **enforced shape/semantics contract**, not informational metadata — v1 instances **must** keep all extended tuples (`execution_context`, `component_context`, `operation_context`, `integration_context`, `failure_context`, `causal_context`) empty; v2 allows them. Supported versions are closed to `{v1, v2}`; unknown values fail closed via `ProblemGroupingFeatureIntegrityError`. Changing projection semantics requires a version bump — model inputs must not change silently.
+**Representation versioning:** `ProblemGroupingRepresentationVersion` (v1 = `"1"` structural+text only; v2 = `"2"` full typed envelope). `representation_version` is an **enforced shape/semantics contract**, not informational metadata - v1 instances **must** keep all extended tuples (`execution_context`, `component_context`, `operation_context`, `integration_context`, `failure_context`, `causal_context`) empty; v2 allows them. Supported versions are closed to `{v1, v2}`; unknown values fail closed via `ProblemGroupingFeatureIntegrityError`. Changing projection semantics requires a version bump - model inputs must not change silently.
 
-**Canonical platform enums:** where upstream contracts exist, grouping features preserve them — `ProblemGroupingExecutionFeature.event_type` is `RuntimeEventType | None`; `ProblemGroupingCausalFeature.relation_kind` is `CausalRelationKind`. Extensible provider/component identifiers (`source_component`, `provider`, `integration_id`, `namespace`, `tool_id`, `capability`, `operation`, `problem_kind`, `error_code`, `exception_type`, `severity`, causal `source_ref_kind` / `target_ref_kind`) remain validated semantic strings because no reusable platform enum is intended for those namespaces.
+**Canonical platform enums:** where upstream contracts exist, grouping features preserve them - `ProblemGroupingExecutionFeature.event_type` is `RuntimeEventType | None`; `ProblemGroupingCausalFeature.relation_kind` is `CausalRelationKind`. Extensible provider/component identifiers (`source_component`, `provider`, `integration_id`, `namespace`, `tool_id`, `capability`, `operation`, `problem_kind`, `error_code`, `exception_type`, `severity`, causal `source_ref_kind` / `target_ref_kind`) remain validated semantic strings because no reusable platform enum is intended for those namespaces.
 
 #### Candidate generation vs adjudication
 
 | Stage | Responsibility | Scale characteristic |
 |-------|----------------|----------------------|
-| **Candidate generation** (`SemanticCandidateGenerator`) | Narrow search space — embedding NN, coarse signature, ML classifier, structural pre-bucket | O(n) or O(n log n); cheap |
+| **Candidate generation** (`SemanticCandidateGenerator`) | Narrow search space - embedding NN, coarse signature, ML classifier, structural pre-bucket | O(n) or O(n log n); cheap |
 | **Adjudication** (`ProblemGroupingAdjudicator`) | Decide whether one neighborhood truly shares a recurring problem pattern | O(k) neighborhoods, not O(n²) pairs |
 
 Architecture **forbids** all-pairs LLM comparison at scale. Flow: N subjects → cheap neighborhoods → bounded expensive adjudication only for candidates.
@@ -1218,11 +1218,11 @@ Future LLM adjudication **must** use existing `LLMAdapter` via `intergrax/llm_ad
 
 **Unsafe** for diagnostics to depend on RAG internals (`EmbeddingEngine`, `EmbeddingProviderRegistry`, vectorstore managers) for incident grouping. `EmbeddingProvider` ABC lives under `intergrax/rag/embedding/` and is RAG-orchestrated even though the interface is small.
 
-**Smallest prerequisite (future platform slice, not DIAG-5C-A):** extract a neutral `TextEmbeddingPort` (or relocate `EmbeddingProvider` to a non-RAG contracts module) that RAG providers implement — diagnostics inject the port, not `intergrax.rag.*` retrieval stack. Vector index remains disposable/rebuildable analytical infrastructure, not canonical truth.
+**Smallest prerequisite (future platform slice, not DIAG-5C-A):** extract a neutral `TextEmbeddingPort` (or relocate `EmbeddingProvider` to a non-RAG contracts module) that RAG providers implement - diagnostics inject the port, not `intergrax.rag.*` retrieval stack. Vector index remains disposable/rebuildable analytical infrastructure, not canonical truth.
 
 #### Model basis and provenance (future)
 
-Reuse existing `ProblemGroupingBasis` / `ProblemGroupingProvenance` — engine validation unchanged. Future typed basis examples (documented, not all implemented):
+Reuse existing `ProblemGroupingBasis` / `ProblemGroupingProvenance` - engine validation unchanged. Future typed basis examples (documented, not all implemented):
 
 | Basis type | Records |
 |------------|---------|
@@ -1230,15 +1230,15 @@ Reuse existing `ProblemGroupingBasis` / `ProblemGroupingProvenance` — engine v
 | `LLMProblemGroupingBasis` | `representation_version`, adapter provider/model, prompt/schema version, bounded evidence refs, adjudication rationale ref |
 | `HybridProblemGroupingBasis` | deterministic signature + semantic/LLM sub-basis |
 
-No universal `confidence: float`. Deterministic match, embedding distance, classifier probability, and LLM judgement are distinct — strategy-specific typed fields only. Model strategies declare `deterministic=False` in `ProblemGroupingStrategyCharacteristics`; provenance must identify strategy version, model identity, config version, candidate-generation mechanism, and input `representation_version`. Byte-identical LLM reproducibility is not promised.
+No universal `confidence: float`. Deterministic match, embedding distance, classifier probability, and LLM judgement are distinct - strategy-specific typed fields only. Model strategies declare `deterministic=False` in `ProblemGroupingStrategyCharacteristics`; provenance must identify strategy version, model identity, config version, candidate-generation mechanism, and input `representation_version`. Byte-identical LLM reproducibility is not promised.
 
 #### Tenant scope and indexing
 
-DIAG-5A single-tenant invocation remains mandatory. Semantic features and any future per-tenant semantic index are tenant-scoped — no cross-tenant ANN by accident. Vector persistence is out of scope for DIAG-5C-A; architecture must not prevent later rebuildable semantic indexes over derived representations.
+DIAG-5A single-tenant invocation remains mandatory. Semantic features and any future per-tenant semantic index are tenant-scoped - no cross-tenant ANN by accident. Vector persistence is out of scope for DIAG-5C-A; architecture must not prevent later rebuildable semantic indexes over derived representations.
 
 #### Root-cause boundary
 
-Grouping proposes **"these incidents are likely related under this method"** — not **"same root cause proven."** Even hybrid semantic + LLM grouping is a recurring-pattern hypothesis. Root-cause investigation (DIAG-8) consumes grouped evidence later; it must not rewrite canonical facts.
+Grouping proposes **"these incidents are likely related under this method"** - not **"same root cause proven."** Even hybrid semantic + LLM grouping is a recurring-pattern hypothesis. Root-cause investigation (DIAG-8) consumes grouped evidence later; it must not rewrite canonical facts.
 
 #### Recommended first model implementation slice
 
@@ -1246,11 +1246,11 @@ Grouping proposes **"these incidents are likely related under this method"** —
 
 | Option | Scale | Cost | Auditability | Readiness |
 |--------|-------|------|--------------|-----------|
-| A — embedding neighborhoods | Good at large N | Low per subject | High (typed basis + refs) | Blocked on neutral embedding port |
-| B — direct LLM | Poor at large N | High | Medium | `LLMAdapter` ready, but O(n²) unacceptable |
-| C — hybrid | Best | Adjudication cost bounded | Highest | Requires A + selective B |
+| A - embedding neighborhoods | Good at large N | Low per subject | High (typed basis + refs) | Blocked on neutral embedding port |
+| B - direct LLM | Poor at large N | High | Medium | `LLMAdapter` ready, but O(n²) unacceptable |
+| C - hybrid | Best | Adjudication cost bounded | Highest | Requires A + selective B |
 
-**Smallest next task:** DIAG-5C-B — implement `AssessmentFeatureProjector` (concrete `ProblemGroupingFeatureProjector`) + unit tests; optionally extend projection with typed problem-signal joins once a diagnostic-side join contract exists.
+**Smallest next task:** DIAG-5C-B - implement `AssessmentFeatureProjector` (concrete `ProblemGroupingFeatureProjector`) + unit tests; optionally extend projection with typed problem-signal joins once a diagnostic-side join contract exists.
 
 **Explicit non-goals (DIAG-5C-A):** live models, prompts, embeddings execution, vector DB, `HybridProblemGroupingStrategy`, problem-signal join, persistence, `ProblemId`. Engine input-contract wiring is DIAG-5C-A-R1.
 
@@ -1258,11 +1258,11 @@ Grouping proposes **"these incidents are likely related under this method"** —
 
 ### Future-proof typed strategy data envelope (DIAG-5C-B)
 
-**Scope:** contracts, validation, and tests only — no second grouping strategy, no model calls, no feature population from `RuntimeEvent` / `PlatformProblemSignal` yet (DIAG-5C-C).
+**Scope:** contracts, validation, and tests only - no second grouping strategy, no model calls, no feature population from `RuntimeEvent` / `PlatformProblemSignal` yet (DIAG-5C-C).
 
-**Production grouping strategies after this slice:** **1** — `DeterministicProblemGroupingStrategy` only. No `SemanticProblemGroupingStrategy`, `MLProblemGroupingStrategy`, `LLMProblemGroupingStrategy`, or `HybridProblemGroupingStrategy`.
+**Production grouping strategies after this slice:** **1** - `DeterministicProblemGroupingStrategy` only. No `SemanticProblemGroupingStrategy`, `MLProblemGroupingStrategy`, `LLMProblemGroupingStrategy`, or `HybridProblemGroupingStrategy`.
 
-`ProblemGroupingEngine` now exposes a complete typed strategy data envelope via `ProblemGroupingFeatureSet` (representation v2 = `"2"`). v1 (`"1"`) is enforced as `structural_signature` + `text_evidence` only — extended tuples are rejected at validation when `representation_version` is v1. v2 adds optional typed tuples; supported versions are `{v1, v2}` only.
+`ProblemGroupingEngine` now exposes a complete typed strategy data envelope via `ProblemGroupingFeatureSet` (representation v2 = `"2"`). v1 (`"1"`) is enforced as `structural_signature` + `text_evidence` only - extended tuples are rejected at validation when `representation_version` is v1. v2 adds optional typed tuples; supported versions are `{v1, v2}` only.
 
 **Enforced representation contract (DIAG-5C-B-R1):** `validate_problem_grouping_feature_set` rejects unknown `representation_version` values and v1 envelopes that carry v2 feature categories. Canonical upstream enums (`RuntimeEventType`, `CausalRelationKind`) are preserved on typed fields; plugin-extensible identifiers remain validated semantic strings.
 
@@ -1279,11 +1279,11 @@ Grouping proposes **"these incidents are likely related under this method"** —
 | `causal_context` | `ProblemGroupingCausalFeature` | `PlatformCausalEvidence` relation_kind + bounded ref-kind shape |
 | `text_evidence` | `ProblemGroupingTextEvidence` | assessment claims/limitations; future `safe_message` |
 
-**Current deterministic strategy:** uses `input.subject` only — ignores all extended feature fields. No strategy version bump.
+**Current deterministic strategy:** uses `input.subject` only - ignores all extended feature fields. No strategy version bump.
 
 **Default projector (`project_assessment_features`):** populates `structural_signature` and `text_evidence` only; extended tuples default to empty. Proves backward deterministic operation while exposing future capability.
 
-**Tuple order:** analytical context in source presentation order — not canonical sequence and not grouping equality semantics.
+**Tuple order:** analytical context in source presentation order - not canonical sequence and not grouping equality semantics.
 
 **Raw data boundary:** strategies never receive `RuntimeEvent` payloads, raw logs, `dict[str, Any]`, or `PlatformProblemSignal` objects. Projectors map platform facts → bounded typed descriptors.
 
@@ -1295,15 +1295,15 @@ Grouping proposes **"these incidents are likely related under this method"** —
 
 ### Typed feature projection from platform facts (DIAG-5C-C)
 
-**Scope:** populate `ProblemGroupingFeatureSet` v2 extended tuples from typed upstream facts already collected by diagnostic orchestration — no persistence queries, no second grouping engine, no problem-signal store.
+**Scope:** populate `ProblemGroupingFeatureSet` v2 extended tuples from typed upstream facts already collected by diagnostic orchestration - no persistence queries, no second grouping engine, no problem-signal store.
 
-**Production grouping strategies after this slice:** **1** — `DeterministicProblemGroupingStrategy` only.
+**Production grouping strategies after this slice:** **1** - `DeterministicProblemGroupingStrategy` only.
 
-**Source-fact delivery:** per-assessment `ProblemGroupingAssessmentInput` carries `DiagnosticAssessment` plus optional `ProblemGroupingFeatureSourceFacts` — an **explicitly tenant/task/run-scoped** bundle (`tenant_id: str`, `task_id: TaskId`, `run_id: RunId`, optional `reconstruction`, optional `problem_signals`). When no source facts exist, `feature_source_facts=None`. `ProblemGroupingEngine.group(assessment_inputs, strategy_id=...)` validates bundle scope against the assessment and nested reconstruction/signal ids fail-closed **before** invoking the projector.
+**Source-fact delivery:** per-assessment `ProblemGroupingAssessmentInput` carries `DiagnosticAssessment` plus optional `ProblemGroupingFeatureSourceFacts` - an **explicitly tenant/task/run-scoped** bundle (`tenant_id: str`, `task_id: TaskId`, `run_id: RunId`, optional `reconstruction`, optional `problem_signals`). When no source facts exist, `feature_source_facts=None`. `ProblemGroupingEngine.group(assessment_inputs, strategy_id=...)` validates bundle scope against the assessment and nested reconstruction/signal ids fail-closed **before** invoking the projector.
 
 **Scope authority:** `PlatformProblemSignal` may omit its own `task_id` / `run_id` when the observability contract permits empty values; diagnostic grouping inherits execution scope from the enclosing validated `ProblemGroupingFeatureSourceFacts` bundle. Populated signal ids must agree with the bundle. No cross-tenant or cross-execution fact mixing.
 
-**Production projector:** `DiagnosticProblemGroupingFeatureProjector` — representation v2, no models, no grouping decisions, no persistence reads.
+**Production projector:** `DiagnosticProblemGroupingFeatureProjector` - representation v2, no models, no grouping decisions, no persistence reads.
 
 **Pipeline:**
 
@@ -1318,11 +1318,11 @@ DiagnosticAssessment + ProblemGroupingFeatureSourceFacts (optional)
 
 **Runtime event selection (deterministic):** from `reconstruction.positioned_events` in source order, include an event when `event_type` is failure/anomaly-relevant (`PLAN_FAILED`, `*_FAILED`, `TOOL_DENIED`, `INTERRUPT_ESCALATED`, `HUMAN_APPROVAL_TIMEOUT`, `GUARDRAIL_BLOCKED`, `BUDGET_EXCEEDED`, …), retry-related (`RETRY_SCHEDULED`, `RETRY_STARTED`), or `event_id` is referenced by `DiagnosticFinding.supporting_event_ids` / `DiagnosticLimitation.supporting_event_ids`. Informational events matching none of the above are excluded.
 
-**Problem signals:** optional supplied observability facts only — no `ProblemSignalPersistence`, no exporter queries. When absent, component/failure/operation/text tuples from signals remain empty.
+**Problem signals:** optional supplied observability facts only - no `ProblemSignalPersistence`, no exporter queries. When absent, component/failure/operation/text tuples from signals remain empty.
 
 **Raw-data boundary:** strategies receive only `ProblemGroupingInput` (`subject` + optional `ProblemGroupingFeatureSet`). No `ExecutionReconstruction`, `RuntimeEvent`, `PlatformProblemSignal`, `PlatformCausalEvidence`, payloads, or raw logs reach strategies. Projector performs no `.payload` access.
 
-**Deterministic strategy:** `DeterministicProblemGroupingStrategy` still consumes `input.subject` only — ignores all feature fields; `strategy_version` remains `"1"`.
+**Deterministic strategy:** `DeterministicProblemGroupingStrategy` still consumes `input.subject` only - ignores all feature fields; `strategy_version` remains `"1"`.
 
 **Explicit non-goals (DIAG-5C-C):** semantic/ML/LLM/hybrid strategies, embeddings, vector DB, problem-signal persistence, payload parsing.
 
@@ -1330,17 +1330,17 @@ DiagnosticAssessment + ProblemGroupingFeatureSourceFacts (optional)
 
 ### Stable Problem identity and lifecycle (DIAG-5D)
 
-**Scope:** reconcile validated grouping hypotheses into tenant-scoped stable `ProblemId` records — without changing grouping algorithms, assessment semantics, or canonical execution truth.
+**Scope:** reconcile validated grouping hypotheses into tenant-scoped stable `ProblemId` records - without changing grouping algorithms, assessment semantics, or canonical execution truth.
 
-**Production grouping strategies after this slice:** **1** — `DeterministicProblemGroupingStrategy` only. Intelligent semantic/ML/LLM/hybrid grouping remains **scenario-stage** (future strategy plugins supply their own typed reconciliation keys).
+**Production grouping strategies after this slice:** **1** - `DeterministicProblemGroupingStrategy` only. Intelligent semantic/ML/LLM/hybrid grouping remains **scenario-stage** (future strategy plugins supply their own typed reconciliation keys).
 
 **Three concepts (never collapse):**
 
 | Concept | Meaning |
 |---------|---------|
-| **A — candidate membership** | Ephemeral `ProblemGroupingCandidate` from one invocation — hypothesis only |
-| **B — stable Problem identity** | Opaque minted `ProblemId` — tracked operational diagnostic pattern observed one or more times |
-| **C — root cause** | Evidence-backed causal conclusion — **not** implied by grouping or Problem persistence |
+| **A - candidate membership** | Ephemeral `ProblemGroupingCandidate` from one invocation - hypothesis only |
+| **B - stable Problem identity** | Opaque minted `ProblemId` - tracked operational diagnostic pattern observed one or more times |
+| **C - root cause** | Evidence-backed causal conclusion - **not** implied by grouping or Problem persistence |
 
 `ProblemId` denotes **B** only. Grouping remains hypothesis-producing; root-cause proof is future DIAG-8 / evidence work.
 
@@ -1356,15 +1356,15 @@ DiagnosticAssessment[]
 
 **`ProblemLifecycleEngine` owns:** reconciliation-key extraction (via registered `ProblemReconciliationPolicy` per `ProblemGroupingBasisKind`), lookup, create/update, occurrence history, conflict detection, and persistence. It does **not** re-run grouping logic or mutate `ProblemGroupingEngine`.
 
-**Deterministic recurrence key (v1):** `DeterministicProblemReconciliationKey` = `tenant_id` + `strategy_id` + `strategy_version` + `DeterministicProblemSignature`. This is **not** `ProblemId` — only conservative auditable evidence to find the same tracked Problem. A different `strategy_version` must not silently attach to Problems established under prior semantics.
+**Deterministic recurrence key (v1):** `DeterministicProblemReconciliationKey` = `tenant_id` + `strategy_id` + `strategy_version` + `DeterministicProblemSignature`. This is **not** `ProblemId` - only conservative auditable evidence to find the same tracked Problem. A different `strategy_version` must not silently attach to Problems established under prior semantics.
 
 **Matching rules (conservative):** attach to an existing Problem when reconciliation key matches **or** a `ProblemGroupingSubjectRef` already belongs to that Problem; fail closed when one subject would attach to incompatible Problems in the same operation or across conflicting keys.
 
-**Problem record:** persisted **derived diagnostic state** — rebuildable in principle from canonical evidence plus validated grouping output. `RuntimeEvent` / causal evidence remain canonical facts.
+**Problem record:** persisted **derived diagnostic state** - rebuildable in principle from canonical evidence plus validated grouping output. `RuntimeEvent` / causal evidence remain canonical facts.
 
 **Status (minimal):** `OPEN` (default), `RESOLVED` (explicit `ProblemLifecycleEngine.resolve` only). New accepted occurrence on a `RESOLVED` Problem returns status to `OPEN`. **No** auto-resolve when a pattern is absent from a later grouping invocation.
 
-**Occurrence timestamps:** `first_seen_at` and `last_seen_at` are derived from accepted `ProblemOccurrence.observed_at` values (min / max). They reflect observation time, not reconciliation or resolution processing time. `occurrence_count` is the number of distinct accepted executions attached to the Problem; recurrence is `occurrence_count > 1` and is separate from candidate membership cardinality. Out-of-order delivery is handled correctly: a later reconciliation with an older `observed_at` on a new subject lowers `first_seen_at`; replaying an already-known `subject_ref` does not change timestamps or `occurrence_count`. `resolve()` changes status and `record_version` only — it does not advance `last_seen_at`.
+**Occurrence timestamps:** `first_seen_at` and `last_seen_at` are derived from accepted `ProblemOccurrence.observed_at` values (min / max). They reflect observation time, not reconciliation or resolution processing time. `occurrence_count` is the number of distinct accepted executions attached to the Problem; recurrence is `occurrence_count > 1` and is separate from candidate membership cardinality. Out-of-order delivery is handled correctly: a later reconciliation with an older `observed_at` on a new subject lowers `first_seen_at`; replaying an already-known `subject_ref` does not change timestamps or `occurrence_count`. `resolve()` changes status and `record_version` only - it does not advance `last_seen_at`.
 
 **Persistence:** `ProblemPersistence` protocol with optimistic `record_version` CAS on update, idempotent create, and subject-ref / reconciliation-key indexes for tenant isolation and concurrency safety. **Durable backend (DIAG-STORAGE):** `DocumentStoreProblemPersistence` (requires `ConditionalDocumentStore`) is wired through `wire_problem_persistence(document_store=...)`. `InMemoryProblemPersistence` is test/local reference only.
 
@@ -1380,21 +1380,21 @@ ConditionalDocumentStore
 vendor adapter (Cassandra / MongoDB / DynamoDB / …)
 ```
 
-Stable Problem state is **derived, durable operational state** — rebuildable from canonical evidence plus validated grouping output. The persistence backend is replaceable; CAS semantics and structural tenant isolation are mandatory. Reconciliation and subject rows are internal persistence indexes (`ProblemReconciliationKey.index_token()` is not public identity). Diagnostic Engine semantics are independent of backend choice.
+Stable Problem state is **derived, durable operational state** - rebuildable from canonical evidence plus validated grouping output. The persistence backend is replaceable; CAS semantics and structural tenant isolation are mandatory. Reconciliation and subject rows are internal persistence indexes (`ProblemReconciliationKey.index_token()` is not public identity). Diagnostic Engine semantics are independent of backend choice.
 
 **Canonical record vs indexes:** `record:<problem_id>` is the only authoritative store for the full `Problem`. `reconcile:` and `subject:` rows hold `problem_id` references only. Reads resolve index → canonical record → scope validation. `create` claims reconciliation and subject indexes before the canonical record; identical retries repair missing indexes after partial writes.
 
 **Explicit non-goals (DIAG-5D):** Problem merge/split, auto-resolve-on-absence, root-cause fields, second production grouping strategy, LLM/embeddings/vector/confidence.
 
-**Roadmap:** **DIAG-5C complete.** **DIAG-5D complete.** **DIAG-6 complete.** **DIAG-7** — cross-run canonical diagnostic orchestration (this slice). **DIAG-8 / scenario** — intelligent grouping + root-cause investigation consuming typed assessments without rewriting canonical evidence (scenario-stage).
+**Roadmap:** **DIAG-5C complete.** **DIAG-5D complete.** **DIAG-6 complete.** **DIAG-7** - cross-run canonical diagnostic orchestration (this slice). **DIAG-8 / scenario** - intelligent grouping + root-cause investigation consuming typed assessments without rewriting canonical evidence (scenario-stage).
 
 **Code references:** `intergrax/runtime/diagnostics/problem_lifecycle.py`, `intergrax/runtime/diagnostics/problem_persistence.py`, `intergrax/runtime/diagnostics/in_memory_problem_persistence.py`, `intergrax/runtime/diagnostics/document_store_problem_persistence.py`, `intergrax/runtime/diagnostics/problem_record_codec.py`, `intergrax/runtime/diagnostics/deterministic_problem_reconciliation.py`.
 
 ### Operator diagnostic read surface (DIAG-6)
 
-**Scope:** one read-only operator-facing composition layer over persisted Problems and the existing DIAG-2→4 reconstruction spine — without HTTP/CLI/UI transport, without new diagnostic truth, and without root-cause inference.
+**Scope:** one read-only operator-facing composition layer over persisted Problems and the existing DIAG-2→4 reconstruction spine - without HTTP/CLI/UI transport, without new diagnostic truth, and without root-cause inference.
 
-**Canonical entry point:** `DiagnosticReadService` — orchestrates Problem reads and bounded occurrence reconstruction. Operators should not query `ProblemPersistence`, `ExecutionReconstructor`, `RuntimeEventPersistence`, or `CausalEvidencePersistence` directly to assemble Problem views.
+**Canonical entry point:** `DiagnosticReadService` - orchestrates Problem reads and bounded occurrence reconstruction. Operators should not query `ProblemPersistence`, `ExecutionReconstructor`, `RuntimeEventPersistence`, or `CausalEvidencePersistence` directly to assemble Problem views.
 
 **Operator read path:**
 
@@ -1402,7 +1402,7 @@ Stable Problem state is **derived, durable operational state** — rebuildable f
 ProblemPersistence
   ↓
 DiagnosticReadService
-  ├── list_problems()          # cheap summaries — Problem records only
+  ├── list_problems()          # cheap summaries - Problem records only
   └── get_problem()            # bounded detail
         ProblemOccurrence
           ↓
@@ -1413,19 +1413,19 @@ DiagnosticReadService
         DiagnosticAssessmentBuilder
 ```
 
-**Read model:** ephemeral operator projection — `DiagnosticProblemSummary`, `DiagnosticProblemDetail`, `DiagnosticProblemOccurrenceView`. `DiagnosticAssessment` is derived at read time for detail; it is **not** persisted by this slice.
+**Read model:** ephemeral operator projection - `DiagnosticProblemSummary`, `DiagnosticProblemDetail`, `DiagnosticProblemOccurrenceView`. `DiagnosticAssessment` is derived at read time for detail; it is **not** persisted by this slice.
 
 **List semantics:** tenant-scoped, optional `ProblemStatus` filter, deterministic order (`last_seen_at` descending, `problem_id` tie-break), explicit `limit` / `is_truncated`. **No** execution reconstruction on list.
 
-**Detail semantics:** snapshot of the Problem record at request start (`record_version`); occurrences ordered newest-first; `occurrence_limit` with explicit `total_occurrence_count` / `is_occurrences_truncated`. Occurrence tenant mismatch fails closed (`DiagnosticReadIntegrityError`). Expected missing canonical execution evidence surfaces as `DiagnosticOccurrenceReadStatus.UNAVAILABLE` — structural corruption fails closed.
+**Detail semantics:** snapshot of the Problem record at request start (`record_version`); occurrences ordered newest-first; `occurrence_limit` with explicit `total_occurrence_count` / `is_occurrences_truncated`. Occurrence tenant mismatch fails closed (`DiagnosticReadIntegrityError`). Expected missing canonical execution evidence surfaces as `DiagnosticOccurrenceReadStatus.UNAVAILABLE` - structural corruption fails closed.
 
-**Explicit non-goals (DIAG-6):** HTTP/REST/GraphQL/CLI/UI, cache/materialized views, semantic search, root-cause fields (`root_cause`, `confidence`, `likely_root_cause`), raw `RuntimeEvent.payload` / logs / tracebacks / prompts / documents, `get_execution_diagnostic` (deferred **DIAG-6B** — full `ExecutionReconstruction` would expose raw event payloads).
+**Explicit non-goals (DIAG-6):** HTTP/REST/GraphQL/CLI/UI, cache/materialized views, semantic search, root-cause fields (`root_cause`, `confidence`, `likely_root_cause`), raw `RuntimeEvent.payload` / logs / tracebacks / prompts / documents, `get_execution_diagnostic` (deferred **DIAG-6B** - full `ExecutionReconstruction` would expose raw event payloads).
 
-**Roadmap:** **DIAG-6B** — execution lookup via the same read surface without raw payload exposure. **DIAG-7 complete** — cross-run canonical diagnostic orchestration. **DIAG-8 / scenario** — intelligent grouping + root-cause investigation.
+**Roadmap:** **DIAG-6B** - execution lookup via the same read surface without raw payload exposure. **DIAG-7 complete** - cross-run canonical diagnostic orchestration. **DIAG-8 / scenario** - intelligent grouping + root-cause investigation.
 
 **Code references:** `intergrax/runtime/diagnostics/diagnostic_read_service.py`, `intergrax/runtime/diagnostics/diagnostic_read_models.py`.
 
-**Product observability dashboard (ONE-SPINE-1 / ONE-SPINE-2):** Tier-3 product hosts expose `ProductObservabilityDashboard` via GOV-PROD.1 wiring. Host composition (`wire_harness_product_observability_dashboard`) resolves the central `DiagnosticReadService` from shared platform persistence on the harness runtime — `wire_problem_persistence`, harness `RuntimeEventPersistence`, and `wire_causal_evidence_persistence` over the same `document_store` — then injects it into `resolve_product_observability_dashboard_wiring`. The `diagnostics` pane (`DiagnosticOperationsPane`) projects tenant-scoped `problem_count` / `open_problem_count`; `ready=True` means the central read service is connected to that shared diagnostic persistence, not a dashboard-local store. No synthetic causal chains, bootstrap run/task identities, or direct `ProblemPersistence` / `CausalEvidencePersistence` reads from dashboard code. `PlatformCausalEvidence` remains canonical relationship truth; the Diagnostic Engine is the only diagnostic interpretation spine.
+**Product observability dashboard (ONE-SPINE-1 / ONE-SPINE-2):** Tier-3 product hosts expose `ProductObservabilityDashboard` via GOV-PROD.1 wiring. Host composition (`wire_harness_product_observability_dashboard`) resolves the central `DiagnosticReadService` from shared platform persistence on the harness runtime - `wire_problem_persistence`, harness `RuntimeEventPersistence`, and `wire_causal_evidence_persistence` over the same `document_store` - then injects it into `resolve_product_observability_dashboard_wiring`. The `diagnostics` pane (`DiagnosticOperationsPane`) projects tenant-scoped `problem_count` / `open_problem_count`; `ready=True` means the central read service is connected to that shared diagnostic persistence, not a dashboard-local store. No synthetic causal chains, bootstrap run/task identities, or direct `ProblemPersistence` / `CausalEvidencePersistence` reads from dashboard code. `PlatformCausalEvidence` remains canonical relationship truth; the Diagnostic Engine is the only diagnostic interpretation spine.
 
 **Production terminal diagnostic trigger (ONE-SPINE-3):** After Nexus terminal execution truth is persisted (`NexusLoop._publish_terminal_runtime_event` → `NexusRuntimeEventPublisher.publish_terminal` → `RuntimeEventBus.publish`), harness hosts with shared `document_store` capabilities wire `TerminalExecutionDiagnosticTrigger` via `try_build_terminal_execution_diagnostic_trigger` / `diagnostic_runtime_wiring.py`. The trigger submits one bounded `DiagnosticOrchestrationRequest` per terminal execution scope to the canonical `DiagnosticOrchestrator` using the deterministic grouping strategy. Diagnostic post-processing failures are logged through `IntergraxLogging` (`component="diagnostics"`) and must not alter already-established business execution outcomes. Background MessageBus workers inherit this path when handlers execute through the same harness `NexusLoop`.
 
@@ -1451,9 +1451,9 @@ DiagnosticReadService / dashboard read path
 
 ### Cross-run diagnostic orchestration (DIAG-7)
 
-**Scope:** one canonical synchronous composition layer that runs the existing DIAG-2→5 spine across multiple execution scopes for a single tenant — without schedulers, daemons, queues, background workers, or new diagnostic truth.
+**Scope:** one canonical synchronous composition layer that runs the existing DIAG-2→5 spine across multiple execution scopes for a single tenant - without schedulers, daemons, queues, background workers, or new diagnostic truth.
 
-**Canonical entry point:** `DiagnosticOrchestrator` — explicit multi-execution diagnostic processing. Operators and applications should not manually compose `ExecutionReconstructor` → `LifecycleAnomalyAnalyzer` → `DiagnosticAssessmentBuilder` → `ProblemGroupingEngine` → `ProblemLifecycleEngine` at call sites.
+**Canonical entry point:** `DiagnosticOrchestrator` - explicit multi-execution diagnostic processing. Operators and applications should not manually compose `ExecutionReconstructor` → `LifecycleAnomalyAnalyzer` → `DiagnosticAssessmentBuilder` → `ProblemGroupingEngine` → `ProblemLifecycleEngine` at call sites.
 
 **Write/process path:**
 
@@ -1480,27 +1480,27 @@ ProblemPersistence
 DiagnosticReadService
 ```
 
-**Request contract:** `DiagnosticOrchestrationRequest` — one `tenant_id`, optional `executions: DiagnosticExecutionScope[]` (canonical `TaskId` / `RunId`, optional `problem_signals`), optional `signal_subjects: DiagnosticSignalSubjectScope[]` (`application_id` + `instance_id` + `problem_signals`; tenant explicit), explicit `grouping_strategy_id`, timezone-aware `observed_at`. At least one execution or signal subject required. One invocation = one tenant; mixed-tenant or duplicate scopes fail closed **before** reconstruction. Batch size per family: `1..MAX` (100).
+**Request contract:** `DiagnosticOrchestrationRequest` - one `tenant_id`, optional `executions: DiagnosticExecutionScope[]` (canonical `TaskId` / `RunId`, optional `problem_signals`), optional `signal_subjects: DiagnosticSignalSubjectScope[]` (`application_id` + `instance_id` + `problem_signals`; tenant explicit), explicit `grouping_strategy_id`, timezone-aware `observed_at`. At least one execution or signal subject required. One invocation = one tenant; mixed-tenant or duplicate scopes fail closed **before** reconstruction. Batch size per family: `1..MAX` (100).
 
-**Result contract:** `DiagnosticOrchestrationResult` — bounded `DiagnosticExecutionAnalysis[]`, `DiagnosticSignalSubjectAnalysis[]`, plus `ProblemGroupingResult` and `ProblemLifecycleResult`. No raw `RuntimeEvent.payload`, causal evidence objects, logs, or root-cause fields.
+**Result contract:** `DiagnosticOrchestrationResult` - bounded `DiagnosticExecutionAnalysis[]`, `DiagnosticSignalSubjectAnalysis[]`, plus `ProblemGroupingResult` and `ProblemLifecycleResult`. No raw `RuntimeEvent.payload`, causal evidence objects, logs, or root-cause fields.
 
 **Mutation boundary:** DIAG-2→4 and grouping remain read/derived. The only persistence mutation is `ProblemLifecycleEngine.reconcile`, and it runs only after **all** execution analyses succeed and grouping validates. No per-execution Problem writes. No auto-resolve.
 
 **Atomic failure model:** either all requested execution assessments complete and grouping/lifecycle run, or the operation fails before grouping/lifecycle (reconstruction integrity errors, assessment errors, grouping errors). No partial success bags in this slice.
 
-**Cost model:** O(N) reconstruction/assessment per execution scope plus grouping strategy cost. Synchronous — no asyncio/thread pools in DIAG-7.
+**Cost model:** O(N) reconstruction/assessment per execution scope plus grouping strategy cost. Synchronous - no asyncio/thread pools in DIAG-7.
 
 **Explicit non-goals (DIAG-7):** scheduler/daemon/queue/cron/event subscriber, `DiagnosticReadService` for analysis, direct `RuntimeEventPersistence` / `CausalEvidencePersistence` reads in orchestrator, root-cause inference (`root_cause`, `confidence`), raw payload output, partial grouping on failed execution analysis, default magic grouping strategy.
 
-**Roadmap:** **DIAG-7 complete.** **DIAG-8 / scenario** — intelligent grouping + root-cause investigation. Real external/vendor E2E remains mandatory after orchestration closure.
+**Roadmap:** **DIAG-7 complete.** **DIAG-8 / scenario** - intelligent grouping + root-cause investigation. Real external/vendor E2E remains mandatory after orchestration closure.
 
 **Code references:** `intergrax/runtime/diagnostics/diagnostic_orchestrator.py`, `intergrax/runtime/diagnostics/diagnostic_orchestration_models.py`, `intergrax/runtime/diagnostics/diagnostic_subject.py`, `intergrax/runtime/diagnostics/signal_diagnostic_assessment.py`.
 
 ### Multi-execution problem grouping (DIAG-5A)
 
-**Inputs:** `ProblemGroupingAssessmentInput[]` (each bundles one `DiagnosticAssessment` plus optional `ProblemGroupingFeatureSourceFacts`) from DIAG-4 + upstream reconstruction/signal collection — **no** re-run of reconstruction, lifecycle analysis, or assessment inside the engine.
+**Inputs:** `ProblemGroupingAssessmentInput[]` (each bundles one `DiagnosticAssessment` plus optional `ProblemGroupingFeatureSourceFacts`) from DIAG-4 + upstream reconstruction/signal collection - **no** re-run of reconstruction, lifecycle analysis, or assessment inside the engine.
 
-**Derived analytical output (NOT persisted, NOT canonical problem identity):** `ProblemGroupingEngine.group(assessments, strategy_id=...)` answers which executions a **selected strategy** proposes as sharing a recurring problem pattern. A candidate means *"strategy says these subjects are related under this grouping method"* — **not** *"platform has proven identical root cause"*.
+**Derived analytical output (NOT persisted, NOT canonical problem identity):** `ProblemGroupingEngine.group(assessments, strategy_id=...)` answers which executions a **selected strategy** proposes as sharing a recurring problem pattern. A candidate means *"strategy says these subjects are related under this grouping method"* - **not** *"platform has proven identical root cause"*.
 
 | Layer | Question answered |
 |-------|-------------------|
@@ -1522,9 +1522,9 @@ ProblemGroupingAssessmentInput[]
   → ProblemGroupingResult               # candidates + ungrouped_subjects
 ```
 
-**Plugin-capable strategy layer:** one `ProblemGroupingStrategy` Protocol, many implementations behind `ProblemGroupingStrategyRegistry` (explicit register/resolve — no reflection, no entry-point discovery in DIAG-5A). Production deterministic structural grouping is DIAG-5B; future strategies may be semantic/embedding, ML clustering, LLM, or hybrid — all behind the same contract.
+**Plugin-capable strategy layer:** one `ProblemGroupingStrategy` Protocol, many implementations behind `ProblemGroupingStrategyRegistry` (explicit register/resolve - no reflection, no entry-point discovery in DIAG-5A). Production deterministic structural grouping is DIAG-5B; future strategies may be semantic/embedding, ML clustering, LLM, or hybrid - all behind the same contract.
 
-**Strategy selection:** explicit — `engine.group(..., strategy_id=ProblemGroupingStrategyId(...))`. No silent default strategy.
+**Strategy selection:** explicit - `engine.group(..., strategy_id=ProblemGroupingStrategyId(...))`. No silent default strategy.
 
 **Tenant isolation:** one invocation must contain subjects with a single `tenant_id`; mixed tenants fail closed with `ProblemGroupingIntegrityError` before strategy invocation.
 
@@ -1534,7 +1534,7 @@ ProblemGroupingAssessmentInput[]
 
 **Provenance:** each `ProblemGroupingCandidate` carries `ProblemGroupingProvenance` with `strategy_id`, `strategy_version`, `method` (`ProblemGroupingMethod`), `supporting_subject_refs`, and optional typed `basis` implementing `ProblemGroupingBasis` (discriminated by `ProblemGroupingBasisKind`; e.g. `DeterministicProblemGroupingBasis` for DIAG-5B). Platform validates `method`, `supporting_subject_refs` (set-equal to `members`, tenant-scoped, input-bound, no duplicates), and basis kind coherence fail-closed. Future ML/LLM strategies attach strategy-specific basis evidence without altering the engine.
 
-**No universal numeric confidence:** deterministic exact match, embedding similarity, classifier probability, and LLM self-report are not semantically equivalent — strategy-specific scores belong in typed basis/evidence, not a platform-wide `confidence: float`.
+**No universal numeric confidence:** deterministic exact match, embedding similarity, classifier probability, and LLM self-report are not semantically equivalent - strategy-specific scores belong in typed basis/evidence, not a platform-wide `confidence: float`.
 
 **Canonical boundary:** no `ProblemId`, no persistence, no `RuntimeEvent` emission, no mutation of `DiagnosticAssessment`. Model output can never rewrite canonical evidence.
 
@@ -1546,13 +1546,13 @@ ProblemGroupingAssessmentInput[]
 
 ## Problem signal routing/fanout boundary
 
-**Normative rule:** routing operates only on **policy-safe** `ObservabilityExportEnvelope` records — typically after `ObservabilityExportPolicy` and `try_export_observability_envelope`. Routing selects logical destinations; it does **not** decide problem semantics, sanitize raw data, or call vendor SDKs.
+**Normative rule:** routing operates only on **policy-safe** `ObservabilityExportEnvelope` records - typically after `ObservabilityExportPolicy` and `try_export_observability_envelope`. Routing selects logical destinations; it does **not** decide problem semantics, sanitize raw data, or call vendor SDKs.
 
 ### A. Routing role
 
 | Property | Requirement |
 |----------|-------------|
-| Input plane | Policy-safe envelopes only — not raw `PlatformProblemSignal`, exceptions, or unsanitized attributes. |
+| Input plane | Policy-safe envelopes only - not raw `PlatformProblemSignal`, exceptions, or unsanitized attributes. |
 | No semantic classification | Routing **MUST NOT** decide `problem_kind`, severity, or error taxonomy. |
 | No sanitization | Routing **MUST NOT** apply redaction or replace `ObservabilityExportPolicy`. |
 | No vendor SDKs | Routing **MUST NOT** import or call Sentry, Elastic, OTLP, or other vendor clients. |
@@ -1562,10 +1562,10 @@ ProblemGroupingAssessmentInput[]
 
 | Owner | Responsibility |
 |-------|----------------|
-| **Producer** | Semantic signal — `problem_kind`, severity, source context, correlation. |
-| **Policy** | Safety/redaction — `ObservabilityExportPolicy`, sanitized attributes, forbidden-field drops. |
-| **Operator routing** | Destination selection — which logical routes receive a policy-safe envelope. |
-| **Vendor provider** | Delivery format/projection — Sentry issue, Elastic document, OTLP span, etc. (future tasks). |
+| **Producer** | Semantic signal - `problem_kind`, severity, source context, correlation. |
+| **Policy** | Safety/redaction - `ObservabilityExportPolicy`, sanitized attributes, forbidden-field drops. |
+| **Operator routing** | Destination selection - which logical routes receive a policy-safe envelope. |
+| **Vendor provider** | Delivery format/projection - Sentry issue, Elastic document, OTLP span, etc. (future tasks). |
 
 ### C. Routing criteria
 
@@ -1580,7 +1580,7 @@ Allowed route filters (empty filter tuple = match all):
 | Source fields | Envelope fields already present (`run_id`, `agent_id`, `capability`, `tool_id`, …). |
 | `source_layer` / `source_component` | Only when present on envelope or a future envelope extension. |
 | `tenant_id` / `workspace_id` | Only after policy allows them. |
-| Operator config flags | Later tasks — not routing module construction. |
+| Operator config flags | Later tasks - not routing module construction. |
 
 ### D. Fanout behavior
 
@@ -1601,7 +1601,7 @@ Sentry is a **provider-owned projection** for `ObservabilityVendorPayload` with 
 
 Elastic, OTLP, Langfuse, and similar backends are operator-selectable projections that receive policy-safe envelopes from configured route exporters. Runtime, application, agent, tool, and LKW code **MUST NOT** choose vendor destinations directly.
 
-Problem/error/issue information flows through the shared `ObservabilityVendorIntegrationContract`: vendors receive policy-safe `ObservabilityVendorPayload` with platform problem metadata (`problem_kind`, `problem_severity`, `problem_error_code`). Sentry projects problems to Sentry issues; Elasticsearch projects problems to indexed error/problem documents. The producer does not choose the backend — operator routing decides whether `problem_signal` goes to Sentry, Elasticsearch, both, or another backend; the vendor provider decides delivery projection.
+Problem/error/issue information flows through the shared `ObservabilityVendorIntegrationContract`: vendors receive policy-safe `ObservabilityVendorPayload` with platform problem metadata (`problem_kind`, `problem_severity`, `problem_error_code`). Sentry projects problems to Sentry issues; Elasticsearch projects problems to indexed error/problem documents. The producer does not choose the backend - operator routing decides whether `problem_signal` goes to Sentry, Elasticsearch, both, or another backend; the vendor provider decides delivery projection.
 
 **Deferred:** LKW endpoint proof, docker compose, live Sentry proof, and operator bootstrap wiring are separate follow-on tasks.
 
@@ -1614,7 +1614,7 @@ Problem/error/issue information flows through the shared `ObservabilityVendorInt
 
 ### G. Exporter health (HARDEN-3 qualified)
 
-Process-local `ObservabilityExporterHealthRegistry` tracks per-exporter / per-route health. This is **operator visibility state** — not canonical durable platform truth.
+Process-local `ObservabilityExporterHealthRegistry` tracks per-exporter / per-route health. This is **operator visibility state** - not canonical durable platform truth.
 
 | Status | Meaning |
 | ------ | ------- |
@@ -1640,7 +1640,7 @@ The **only** approved direct OpenTelemetry instrumentation bypasses HOS for fine
 - `intergrax/runtime/rag/tracking/rag_spans.py`
 - `intergrax/runtime/context/tracking/context_spans.py`
 
-These spans are **derived observability** — not platform truth. No additional direct OTel paths are qualified without explicit architecture approval.
+These spans are **derived observability** - not platform truth. No additional direct OTel paths are qualified without explicit architecture approval.
 
 **Code references:** `export_routing.py` · `export_boundary.py` · `export_policy.py` · `export_health.py`. **Plan:** OBS-ROUTING-0 in [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md).
 
@@ -1654,23 +1654,23 @@ Meaningful runtime events **SHOULD** preserve all correlation identifiers availa
 
 | Field | Purpose |
 |-------|---------|
-| `task_id` (`TaskId`) | Work intent — **WHAT** task |
-| `run_id` (`RunId`) | One full governed lifecycle — **WHICH** run |
-| `attempt_id` (`AttemptId`) | One global try of the run — **WHICH** attempt |
-| `execution_id` (`ExecutionId`) | Independently schedulable work unit — **TARGET** |
-| `parent_execution_id` | Parent Execution in canonical Execution Tree — **TARGET**; `None` for root Execution |
-| `event_id` (`EventId`) | Unique runtime event — **WHICH** event |
-| `parent_event_id` | Causal parent **event** — event causality graph; **not** execution lineage |
+| `task_id` (`TaskId`) | Work intent - **WHAT** task |
+| `run_id` (`RunId`) | One full governed lifecycle - **WHICH** run |
+| `attempt_id` (`AttemptId`) | One global try of the run - **WHICH** attempt |
+| `execution_id` (`ExecutionId`) | Independently schedulable work unit - **TARGET** |
+| `parent_execution_id` | Parent Execution in canonical Execution Tree - **TARGET**; `None` for root Execution |
+| `event_id` (`EventId`) | Unique runtime event - **WHICH** event |
+| `parent_event_id` | Causal parent **event** - event causality graph; **not** execution lineage |
 
 **Local / topology / transport IDs (not canonical runtime identity):**
 
 | Field | Purpose |
 |-------|---------|
-| `node_id` | Graph topology placement — **not** `ExecutionId` |
+| `node_id` | Graph topology placement - **not** `ExecutionId` |
 | `agent_id` | Responsible agent |
 | `step_id` | UAEP / pipeline step |
 | `tool_call_id` | Tool invocation chain (when applicable) |
-| `correlation_id` | Cross-agent/tool operational chain (default: `task_id`) — **not** canonical lineage |
+| `correlation_id` | Cross-agent/tool operational chain (default: `task_id`) - **not** canonical lineage |
 | `timestamp` | UTC ordering |
 | `schema_version` | Envelope version (e.g. `runtime_event.v1`) |
 
@@ -1684,7 +1684,7 @@ Meaningful runtime events **SHOULD** preserve all correlation identifiers availa
 | **TRANSPORT RELATION** | message/broker task → Execution | typed `PlatformCausalEvidence` |
 | **EXTERNAL/SIDE-EFFECT** | execution/event → tool/integration/provider/artifact evidence | typed causal/side-effect evidence where applicable |
 
-**One canonical Execution Tree:** only `ExecutionId` + `parent_execution_id` defines the runtime Execution Tree. Observability may build projections; DIAG may build diagnostic projection graphs — neither may become a second execution-tree authority. Forbidden: diagnostic execution tree as runtime authority; HOS-owned competing tree; journal-owned identity tree; reconstruction-owned runtime identity; log-derived canonical execution tree.
+**One canonical Execution Tree:** only `ExecutionId` + `parent_execution_id` defines the runtime Execution Tree. Observability may build projections; DIAG may build diagnostic projection graphs - neither may become a second execution-tree authority. Forbidden: diagnostic execution tree as runtime authority; HOS-owned competing tree; journal-owned identity tree; reconstruction-owned runtime identity; log-derived canonical execution tree.
 
 `EmitContext` and `TraceScope` (§6.2) populate available fields by construction on approved emit paths. A component that **drops** correlation identifiers **MUST** document **why** and **what observability is lost** (e.g. in PR description or module docstring).
 
@@ -1694,7 +1694,7 @@ Meaningful runtime events **SHOULD** preserve all correlation identifiers availa
 
 | Rule | Detail |
 |------|--------|
-| Spine rarity | New high-level lifecycle `RuntimeEventType` members **SHOULD** be rare — publication budget ~56 (§4.4.13). |
+| Spine rarity | New high-level lifecycle `RuntimeEventType` members **SHOULD** be rare - publication budget ~56 (§4.4.13). |
 | Domain detail | Prefer namespaced `event_kind` or typed payload schemas (`emit_domain_signal`) for domain-specific detail. |
 | Platform changes | Adding a new platform-level spine `event_type` requires updating this document (§4.4), `EventCatalogEntry`, relevant ADR, and observability checks if they exist (`check_event_catalog.py`, `check_observability_gates.py`). |
 | No product-only categories | Do **not** create new event categories only to support one product-specific use case. |
@@ -1725,28 +1725,28 @@ Before adding or modifying observability behavior, Cursor **MUST** verify:
 
 Intergrax observability deliberately separates three planes (pattern: event sourcing + structured logging + metrics).
 
-### 4.1 Plane A — Canonical events (`RuntimeEvent`)
+### 4.1 Plane A - Canonical events (`RuntimeEvent`)
 
 | Field | Role |
 |-------|------|
-| `event_type` | `RuntimeEventType` enum — **spine** lifecycle vocabulary (§4.4) |
-| `event_kind` | Namespaced semantic id — **primary for domain extensions** (defaults to `event_type.value`) |
-| `event_category` | Derived ops grouping (`tool`, `agent`, `plan`, …) — §4.4.2 |
-| `phase` | `ExecutionPhase` — where in the Nexus lifecycle |
-| `severity` | `EventSeverity` — alert routing |
-| `task_id` | Logical work unit (user request scope) — **target:** `TaskId` |
-| `run_id` | Single execution of the task — **target:** `RunId`; whole-Run retry mints new `AttemptId` under same `RunId` (§5.4) |
-| `attempt_id` | Global try within the run — **target:** `AttemptId` on every canonical `RuntimeEvent` (§5) |
-| `execution_id` | Independently schedulable work unit — **TARGET:** on every canonical `RuntimeEvent` |
-| `correlation_id` | Cross-agent/tool operational chain (default: `task_id`) — not canonical lineage |
-| `parent_event_id` | Causal parent event (**target:** populated by `TraceScope`) — distinct from `parent_execution_id` |
+| `event_type` | `RuntimeEventType` enum - **spine** lifecycle vocabulary (§4.4) |
+| `event_kind` | Namespaced semantic id - **primary for domain extensions** (defaults to `event_type.value`) |
+| `event_category` | Derived ops grouping (`tool`, `agent`, `plan`, …) - §4.4.2 |
+| `phase` | `ExecutionPhase` - where in the Nexus lifecycle |
+| `severity` | `EventSeverity` - alert routing |
+| `task_id` | Logical work unit (user request scope) - **target:** `TaskId` |
+| `run_id` | Single execution of the task - **target:** `RunId`; whole-Run retry mints new `AttemptId` under same `RunId` (§5.4) |
+| `attempt_id` | Global try within the run - **target:** `AttemptId` on every canonical `RuntimeEvent` (§5) |
+| `execution_id` | Independently schedulable work unit - **TARGET:** on every canonical `RuntimeEvent` |
+| `correlation_id` | Cross-agent/tool operational chain (default: `task_id`) - not canonical lineage |
+| `parent_event_id` | Causal parent event (**target:** populated by `TraceScope`) - distinct from `parent_execution_id` |
 | `node_id` / `agent_id` / `step_id` | Graph and UAEP placement |
 | `payload` | Structured facts (**today:** `dict`; **target:** typed `RuntimeEventPayload`) |
 | `schema_version` | Envelope version (`runtime_event.v1`) |
 
 **Code:** `intergrax/runtime/events/runtime_event.py`, `phase_coverage.py`, `event_bus.py`
 
-**Catalog:** **56** `RuntimeEventType` spine members (publication budget; OBS-EVOL-9.7). Platform adaptive/capacity/hook/recovery signals emit on `DOMAIN_SIGNAL` + `platform.*` `event_kind` — see §4.4.13.
+**Catalog:** **56** `RuntimeEventType` spine members (publication budget; OBS-EVOL-9.7). Platform adaptive/capacity/hook/recovery signals emit on `DOMAIN_SIGNAL` + `platform.*` `event_kind` - see §4.4.13.
 
 ### 4.4 Layered event identity (P1-ARCH-02 · OBS-EVOL-9)
 
@@ -1756,9 +1756,9 @@ HOS uses **three levels of identity** so the spine scales without forcing develo
 
 ```text
 RuntimeEvent
-├── event_type      RuntimeEventType   # spine — platform lifecycle (~50 at publication)
-├── event_kind      str                # semantic — namespaced domain id (unbounded)
-├── event_category  EventCategory      # derived — ops/metrics/hook grouping
+├── event_type      RuntimeEventType   # spine - platform lifecycle (~50 at publication)
+├── event_kind      str                # semantic - namespaced domain id (unbounded)
+├── event_category  EventCategory      # derived - ops/metrics/hook grouping
 ├── phase           ExecutionPhase     # when in Nexus lifecycle
 ├── ops_hint        str                # trace/alert routing token
 └── payload         envelope           # payload_schema_id + data (registry-backed)
@@ -1787,7 +1787,7 @@ Need a new signal?
 
 #### 4.4.2 `EventCategory` (derived, not a second enum root)
 
-Categories group kinds for subscribers and metrics — **not** a replacement for `event_type`:
+Categories group kinds for subscribers and metrics - **not** a replacement for `event_type`:
 
 | Category | Spine examples | Kind prefix examples |
 |----------|----------------|----------------------|
@@ -1796,7 +1796,7 @@ Categories group kinds for subscribers and metrics — **not** a replacement for
 | `tool` | `TOOL_*` | `agents.*.tool_*` |
 | `agent` | `AGENT_SELECTED`, `STEP_*` | `agents.<slug>.*` |
 | `context` | `CONTEXT_*`, `MEMORY_*` | `platform.context.*` |
-| `human` | `HUMAN_*`, `PAUSE_*` | — |
+| `human` | `HUMAN_*`, `PAUSE_*` | - |
 | `policy` | `POLICY_DECISION`, `GUARDRAIL_BLOCKED` | `platform.policy.*` |
 | `platform` | `DOMAIN_SIGNAL` carrier | `platform.adaptive.*`, `platform.capacity.*` |
 
@@ -1808,28 +1808,28 @@ Before external v1, consolidate **non-lifecycle** enum members into `DOMAIN_SIGN
 
 | Keep on spine | Consolidate to `DOMAIN_SIGNAL` + kind |
 |---------------|---------------------------------------|
-| `TASK_*`, `PLAN_*`, `STEP_*` | — |
-| `TOOL_*`, `VALIDATION_*`, `DECISION_EMITTED` | — |
-| `HUMAN_*`, `INTERRUPT_*`, `PAUSE_*`, `RETRY_*` | — |
-| `CONTEXT_*`, `MEMORY_*`, `SKILL_*`, `INGESTION_FAILED` | — |
-| `HANDOFF_*`, `DELEGATION_GRANTED`, `GRAPH_BACKPRESSURE` | — |
-| `POLICY_DECISION`, `GUARDRAIL_BLOCKED`, `BUDGET_*` | — |
-| `TASK_PROGRESS`, `LLM_CALL`, `TRACE_PERSISTED` | — |
-| `RUNTIME_HANDLER_FAILED`, `CANCELLED`, `CANCELLATION_REQUESTED` | — |
-| — | `ADAPTIVE_*` → `platform.adaptive.*` |
-| — | `SCALE_*`, `CAPACITY_*`, `AUTONOMY_*` → `platform.capacity.*` |
-| — | `HOOK_*` → `platform.hook.*` |
-| — | `RECOVERY_REBOOT` → `platform.recovery.reboot` |
+| `TASK_*`, `PLAN_*`, `STEP_*` | - |
+| `TOOL_*`, `VALIDATION_*`, `DECISION_EMITTED` | - |
+| `HUMAN_*`, `INTERRUPT_*`, `PAUSE_*`, `RETRY_*` | - |
+| `CONTEXT_*`, `MEMORY_*`, `SKILL_*`, `INGESTION_FAILED` | - |
+| `HANDOFF_*`, `DELEGATION_GRANTED`, `GRAPH_BACKPRESSURE` | - |
+| `POLICY_DECISION`, `GUARDRAIL_BLOCKED`, `BUDGET_*` | - |
+| `TASK_PROGRESS`, `LLM_CALL`, `TRACE_PERSISTED` | - |
+| `RUNTIME_HANDLER_FAILED`, `CANCELLED`, `CANCELLATION_REQUESTED` | - |
+| - | `ADAPTIVE_*` → `platform.adaptive.*` |
+| - | `SCALE_*`, `CAPACITY_*`, `AUTONOMY_*` → `platform.capacity.*` |
+| - | `HOOK_*` → `platform.hook.*` |
+| - | `RECOVERY_REBOOT` → `platform.recovery.reboot` |
 
 **Code target:** `intergrax/runtime/events/event_catalog.py` (single registry); `phase_coverage.py` becomes a view until removed.
 
 #### 4.4.4 Public emit APIs (target)
 
 ```python
-# Tier-2/3 — primary extension path
+# Tier-2/3 - primary extension path
 emit_domain_signal(ctx, kind="agents.legal.clause_flagged", payload=LegalClauseFlaggedPayloadV1(...))
 
-# Platform only — lifecycle spine
+# Platform only - lifecycle spine
 emit_platform_event(ctx, event_type=RuntimeEventType.TOOL_COMPLETED, payload=ToolPayloadV1(...))
 ```
 
@@ -1860,23 +1860,23 @@ Each spine type is described by a single **`EventCatalogEntry`** in `event_catal
 
 | Field | Role |
 |-------|------|
-| `phase` | `ExecutionPhase` — Nexus lifecycle placement |
+| `phase` | `ExecutionPhase` - Nexus lifecycle placement |
 | `ops_hint` | Stable ops scrape / alert routing token |
-| `category` | `EventCategory` — subscriber and metrics grouping |
+| `category` | `EventCategory` - subscriber and metrics grouping |
 | `preferred_payload_schema_id` | Merged from payload registry |
-| `sample_rate` | `1.0` default; `<1.0` for high-volume types (`TASK_PROGRESS`) — enforced at bus persist (OBS-EVOL-9.6) |
-| `retention_class` | `operational` \| `audit` \| `debug` — ties to data classification retention (IDEAL-23.5) |
+| `sample_rate` | `1.0` default; `<1.0` for high-volume types (`TASK_PROGRESS`) - enforced at bus persist (OBS-EVOL-9.6) |
+| `retention_class` | `operational` \| `audit` \| `debug` - ties to data classification retention (IDEAL-23.5) |
 | `consolidation_kind` | Target `platform.*` kind when spine member moves to `DOMAIN_SIGNAL` (OBS-EVOL-9.7) |
 
-`phase_coverage.py` is a **deprecated view** — import catalog helpers instead.
+`phase_coverage.py` is a **deprecated view** - import catalog helpers instead.
 
 #### 4.4.8 `EmitContext` (OBS-EVOL-9.3)
 
-All public emit APIs accept a typed **`EmitContext`** carrying `task_id`, `run_id`, `attempt_id` (target), `tenant_id`, `correlation_id`, and active `TraceScope` — correlation by construction (SAR-01). **Target:** `TaskId`/`RunId`/`AttemptId` typed carriers (§5.3).
+All public emit APIs accept a typed **`EmitContext`** carrying `task_id`, `run_id`, `attempt_id` (target), `tenant_id`, `correlation_id`, and active `TraceScope` - correlation by construction (SAR-01). **Target:** `TaskId`/`RunId`/`AttemptId` typed carriers (§5.3).
 
 #### 4.4.9 Domain signal redaction (OBS-EVOL-9.3)
 
-`emit_domain_signal()` **must** call `payload.redact()` and respect `production_mode` before `RuntimeEventBus.record` — same bar as Plane B `DiagnosticPayload` (SAR-09).
+`emit_domain_signal()` **must** call `payload.redact()` and respect `production_mode` before `RuntimeEventBus.record` - same bar as Plane B `DiagnosticPayload` (SAR-09).
 
 #### 4.4.10 `JournalQuery` (OBS-EVOL-9.5)
 
@@ -1890,7 +1890,7 @@ Replaces ad-hoc enum-list filtering in debug tooling (SAR-07).
 
 #### 4.4.11 Declarative profile subscriptions (OBS-EVOL-9.10)
 
-`ObservabilityProfile.event_subscriptions: list[EventSubscriptionSpec]` — Tier-3 declares `kind_prefix`, `categories`, `ops_hints`, and/or `event_types` plus a `handler_id`. Handlers register via `register_event_subscription_handler()`; `wire_observability_event_subscriptions()` attaches them at host bootstrap (`harness_host_runtime`). **Code:** `sub_profiles.py`, `event_subscription_registry.py`, `observability_wiring.py`.
+`ObservabilityProfile.event_subscriptions: list[EventSubscriptionSpec]` - Tier-3 declares `kind_prefix`, `categories`, `ops_hints`, and/or `event_types` plus a `handler_id`. Handlers register via `register_event_subscription_handler()`; `wire_observability_event_subscriptions()` attaches them at host bootstrap (`harness_host_runtime`). **Code:** `sub_profiles.py`, `event_subscription_registry.py`, `observability_wiring.py`.
 
 #### 4.4.12 W3C Trace Context (OBS-EVOL-9.11)
 
@@ -1900,7 +1900,7 @@ Optional `traceparent` / `tracestate` on `RuntimeEvent` for external APM correla
 
 Nineteen legacy flat spine members (adaptive, capacity/scale, autonomy, recovery, hook) were removed from `RuntimeEventType`. Emitters use `build_platform_signal_event()` → `DOMAIN_SIGNAL` + namespaced `platform.*` kind. Persisted journals with legacy `event_type` values are coerced on read via `migrate_legacy_spine_payload()` (payload retains `legacy_spine_type`). Publication gate: `assert_publication_spine_budget()` (max 56). **Code:** `spine_consolidation.py`, `scripts/maintenance/check_event_catalog.py`.
 
-### 4.2 Plane B — Diagnostic trace (`TraceEvent` + `DiagnosticPayload`)
+### 4.2 Plane B - Diagnostic trace (`TraceEvent` + `DiagnosticPayload`)
 
 Fine-grained, append-only timeline optimized for **reconstruction** and **evaluation**.
 
@@ -1916,7 +1916,7 @@ Fine-grained, append-only timeline optimized for **reconstruction** and **evalua
 
 **Guard:** Non-`DiagnosticPayload` payloads are rejected at emission (gate: `test_runtime_state_trace_event_payload_guard.py`).
 
-### 4.3 Plane C — Metrics and aggregates
+### 4.3 Plane C - Metrics and aggregates
 
 | Source | What | When |
 |--------|------|------|
@@ -1933,7 +1933,7 @@ Metrics are **third** in priority (canon §42.24): derived from events/trace, no
 ## 5. Canonical execution identity (TRACE-ARCH-SYNC-1 · UE-DOC-0.6)
 
 **Status:** **TARGET** five-level hierarchy (**accepted** frozen UEA) · **CURRENT** four-ID event spine **Done / Closed** (TRACE-1A–TRACE-1C) · `ExecutionId` **not implemented**
-**Plan:** [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) — Phase TRACE  
+**Plan:** [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) - Phase TRACE  
 **Cross-layer:** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.1.8 (identity ownership)
 
 ### 5.1 Identity hierarchy
@@ -1958,7 +1958,7 @@ TaskId
 
 Root Execution: `parent_execution_id = None`. Only `ExecutionId` + `parent_execution_id` defines the canonical runtime Execution Tree.
 
-**CURRENT (TRACE-1B milestone):** every canonical `RuntimeEvent` carries `TaskId`, `RunId`, `AttemptId`, `EventId` — without `ExecutionId`. Historical TRACE rows that say "all four IDs required" describe this **CURRENT** spine — not proof that `ExecutionId` target exists.
+**CURRENT (TRACE-1B milestone):** every canonical `RuntimeEvent` carries `TaskId`, `RunId`, `AttemptId`, `EventId` - without `ExecutionId`. Historical TRACE rows that say "all four IDs required" describe this **CURRENT** spine - not proof that `ExecutionId` target exists.
 
 ### 5.2 Strong typing (target canon)
 
@@ -1987,21 +1987,21 @@ Canonical identity **MUST NOT** come from metadata. Forbidden patterns include `
 | `EmitContext` | REQUIRED | REQUIRED | REQUIRED | **TARGET** |
 | `RuntimeEvent` | REQUIRED | REQUIRED | REQUIRED | **TARGET** (**CURRENT:** absent) |
 
-**Mint ownership (Execution Runtime — not Observability):**
+**Mint ownership (Execution Runtime - not Observability):**
 
 | Identifier | Minted by |
 |------------|-----------|
 | `TaskId` | Task lifecycle owner (UER) |
 | `RunId` | Run lifecycle owner (UER) |
-| `AttemptId` | Attempt lifecycle owner at defined attempt boundaries (UER) — e.g. whole-Run retry |
-| `ExecutionId` | Execution boundary / child admission (UER) — **TARGET** |
+| `AttemptId` | Attempt lifecycle owner at defined attempt boundaries (UER) - e.g. whole-Run retry |
+| `ExecutionId` | Execution boundary / child admission (UER) - **TARGET** |
 | `EventId` | Runtime event creation owner |
 
-The observability spine **records and propagates** canonical identity on evidence — it does **not** mint `TaskId`, `RunId`, `AttemptId`, or `ExecutionId` as lifecycle owner. Carriers receive identity by construction — not by ad-hoc metadata lookup.
+The observability spine **records and propagates** canonical identity on evidence - it does **not** mint `TaskId`, `RunId`, `AttemptId`, or `ExecutionId` as lifecycle owner. Carriers receive identity by construction - not by ad-hoc metadata lookup.
 
 ### 5.4 Attempt lifecycle, retry, resume, replay (frozen UEA)
 
-**AttemptId** is minted only at defined **whole-Run retry** and similar global attempt boundaries — not on every local tool/provider/step retry, execution-level retry of the same logical Execution, pause/resume, or transport redelivery of the same logical work.
+**AttemptId** is minted only at defined **whole-Run retry** and similar global attempt boundaries - not on every local tool/provider/step retry, execution-level retry of the same logical Execution, pause/resume, or transport redelivery of the same logical work.
 
 | Scenario | `TaskId` | `RunId` | `AttemptId` | `ExecutionId` |
 |----------|----------|---------|-------------|---------------|
@@ -2019,9 +2019,9 @@ Whole-Run retry (C):
   new Execution instances under A2
 ```
 
-Replay semantics are attempt-scoped: reconstruction and as-of projections respect attempt boundaries (§7). TRACE-ASOF-2 `RETRY_STARTED` semantics align with **whole-Run retry** (new Attempt) — not local retries.
+Replay semantics are attempt-scoped: reconstruction and as-of projections respect attempt boundaries (§7). TRACE-ASOF-2 `RETRY_STARTED` semantics align with **whole-Run retry** (new Attempt) - not local retries.
 
-**CURRENT implementation debt:** background worker `resolve_background_execution` mints new `AttemptId` per worker boundary — see [DIAG-1](#causal-evidence-plane-diag-1) and [Target vs current](#target-vs-current-identity-and-evidence).
+**CURRENT implementation debt:** background worker `resolve_background_execution` mints new `AttemptId` per worker boundary - see [DIAG-1](#causal-evidence-plane-diag-1) and [Target vs current](#target-vs-current-identity-and-evidence).
 
 ### 5.5 `TASK_CREATED` semantics
 
@@ -2044,7 +2044,7 @@ Do **not** treat CURRENT runtime behavior as satisfying frozen UEA **TARGET** se
 
 ### 5.7 Pre-production clean-cut policy
 
-Intergrax is **pre-production** — there are no active production platform users. Canonical TRACE delivery therefore uses a **clean cut** to target architecture:
+Intergrax is **pre-production** - there are no active production platform users. Canonical TRACE delivery therefore uses a **clean cut** to target architecture:
 
 ```text
 Unused legacy contracts are removed rather than preserved.
@@ -2062,7 +2062,7 @@ Unused legacy contracts are removed rather than preserved.
 
 If an old capability is still genuinely used by the current repo runtime, tests, or product path: migrate that live code directly to the canonical contract, then **delete** the old path. Do **not** preserve both.
 
-Temporary recognition of legacy shapes is acceptable only during a bounded implementation step when technically unavoidable — it is **not** target architecture.
+Temporary recognition of legacy shapes is acceptable only during a bounded implementation step when technically unavoidable - it is **not** target architecture.
 
 ---
 
@@ -2080,14 +2080,14 @@ query / derived read models
 
 | Property | Requirement |
 |----------|-------------|
-| Role | Chronological derived execution timeline — **WHAT happened** |
-| Source of truth | **NOT** — persistence of `RuntimeEvent` remains authoritative |
+| Role | Chronological derived execution timeline - **WHAT happened** |
+| Source of truth | **NOT** - persistence of `RuntimeEvent` remains authoritative |
 | Replaces event store | **MUST NOT** |
 | Scope | Composes chronological history per run (attempt-aware ordering) |
 | Execution Story | Canonical foundation for Execution Story read surfaces (§10) |
 | Construction | `build_unified_run_journal()` merges spine-normalized events into one timeline |
 
-The journal is a **derived view**. Metrics, external APM, and product summaries subscribe to or export from it — they do not fork a competing timeline.
+The journal is a **derived view**. Metrics, external APM, and product summaries subscribe to or export from it - they do not fork a competing timeline.
 
 ---
 
@@ -2107,9 +2107,9 @@ A **First-Class As-Of Projection** is a typed, deterministic reconstruction of e
 
 | Surface | Question |
 |---------|----------|
-| **Unified Run Journal** | **WHAT happened?** — chronological facts |
-| **As-Of Projection** | **WHAT did this execution see / do by boundary X?** — execution state at a deterministic journal boundary |
-| **Bitemporal State** (§8) | **WHAT was valid, according to knowledge recorded by system time S?** — valid-time + system-time basis only (execution boundary is separate, §7) |
+| **Unified Run Journal** | **WHAT happened?** - chronological facts |
+| **As-Of Projection** | **WHAT did this execution see / do by boundary X?** - execution state at a deterministic journal boundary |
+| **Bitemporal State** (§8) | **WHAT was valid, according to knowledge recorded by system time S?** - valid-time + system-time basis only (execution boundary is separate, §7) |
 
 Conceptual example (Run R1):
 
@@ -2149,26 +2149,26 @@ Validation = FAILED
 | Concept | Type / API | Owner | Semantics |
 |---------|------------|-------|-----------|
 | **Projection result** | `RunExecutionAsOfProjection` | `intergrax.runtime.events.asof_projection` | Immutable run-scoped execution/lifecycle state at inclusive `AsOfBoundary` |
-| **Lifecycle status** | `RunExecutionLifecycleStatus` | same | Closed enum derived from `RuntimeEventType` only — `CREATED`, `RUNNING`, `PAUSE_REQUESTED`, `PAUSED`, `CANCELLATION_REQUESTED`, `COMPLETED`, `FAILED`, `CANCELLED` |
+| **Lifecycle status** | `RunExecutionLifecycleStatus` | same | Closed enum derived from `RuntimeEventType` only - `CREATED`, `RUNNING`, `PAUSE_REQUESTED`, `PAUSED`, `CANCELLATION_REQUESTED`, `COMPLETED`, `FAILED`, `CANCELLED` |
 | **Attempt summary** | `AttemptAsOfSummary` | same | Per-attempt first/last position + event count reconstructed from prefix |
-| **Source provenance** | `HistoricalEventReference` | same | `EventId` + `ExecutionEventPosition` + `AttemptId` + `RuntimeEventType` — no payload copies |
+| **Source provenance** | `HistoricalEventReference` | same | `EventId` + `ExecutionEventPosition` + `AttemptId` + `RuntimeEventType` - no payload copies |
 | **Pure reducer** | `project_run_execution_as_of(...)` | same | Deterministic fold over positioned prefix; no persistence, clock, or live state |
 | **Read orchestration** | `reconstruct_run_execution_as_of(...)` | same | Tenant-scoped load via `load_positioned_run_journal_through` then reducer |
 | **Positioned journal load** | `load_positioned_run_journal_through(...)` | `unified_run_journal` | Single authority for prefix completeness and exact boundary existence; paginates by increasing `limit` until prefix complete |
 
 **Rules (TRACE-ASOF-2):**
 
-1. Canonical input is `list_positioned_through(boundary)` semantics — `position <= boundary.position`, strict increasing positions, same `RunId`.
+1. Canonical input is `list_positioned_through(boundary)` semantics - `position <= boundary.position`, strict increasing positions, same `RunId`.
 2. Reducer **MUST NOT** parse `RuntimeEvent.payload` or use timestamp ordering.
 3. `PAUSE_REQUESTED` ≠ `PAUSED`; `CANCELLATION_REQUESTED` ≠ `CANCELLED`; `HUMAN_APPROVAL_REQUESTED` does not imply run failure.
 4. Attempt history is first-seen execution-position order; `RETRY_STARTED` introduces a new `AttemptId`; `RESUMED` preserves attempt identity.
 5. `AsOfBoundary` is a **stable historical coordinate**: reconstruction is valid only when the boundary position corresponds to an accepted `PositionedRuntimeEvent` in canonical history. A nonexistent future position **MUST** fail (`RunExecutionBoundaryNotFoundError`). On success, `last_included_position == boundary.position`.
-6. Unknown run with no positioned history **MUST** fail (`RunExecutionHistoryNotFoundError`) — not an empty projection.
+6. Unknown run with no positioned history **MUST** fail (`RunExecutionHistoryNotFoundError`) - not an empty projection.
 7. Prefix reads **MUST NOT** silently truncate: incomplete reads fail closed (`RunExecutionHistoryTruncatedError`).
-8. Logical-only — **no** projection persistence, store, or materialized view (TRACE-ASOF-3).
-9. **No** `KnowledgeRevisionPosition` / bitemporal types in the execution reducer — E-only reconstruction.
+8. Logical-only - **no** projection persistence, store, or materialized view (TRACE-ASOF-3).
+9. **No** `KnowledgeRevisionPosition` / bitemporal types in the execution reducer - E-only reconstruction.
 10. `TASK_COMPLETED` and `CANCELLED` are irreversible run-terminal statuses; `TASK_FAILED` / `PLAN_FAILED` represent the current retryable failure state (not canonical finality); `RETRY_SCHEDULED` preserves `FAILED`; `RETRY_STARTED` transitions `FAILED` → `RUNNING`.
-11. `RunExecutionAsOfProjection.is_terminal` is `True` only for `COMPLETED` and `CANCELLED`. `FAILED` is **not** terminal — canonical runtime permits `FAILED` → `RETRY_SCHEDULED` → `RETRY_STARTED` → `RUNNING`. There is currently **no** distinct canonical `RuntimeEventType` for final non-retryable run failure (e.g. retries exhausted); if one is introduced later, projection finality may be extended under a separately reviewed contract change.
+11. `RunExecutionAsOfProjection.is_terminal` is `True` only for `COMPLETED` and `CANCELLED`. `FAILED` is **not** terminal - canonical runtime permits `FAILED` → `RETRY_SCHEDULED` → `RETRY_STARTED` → `RUNNING`. There is currently **no** distinct canonical `RuntimeEventType` for final non-retryable run failure (e.g. retries exhausted); if one is introduced later, projection finality may be extended under a separately reviewed contract change.
 
 **Forbidden:** `dict[str, Any]` projection fields; dynamic projection registry; payload-key lifecycle inference; timestamp-ordered reducer input; second source of truth.
 
@@ -2179,26 +2179,26 @@ Canonical execution-history ordering is **not** timestamp-based. For one accepte
 | Concept | Type | Owner | Semantics |
 |---------|------|-------|-----------|
 | **Execution position** | `ExecutionEventPosition` | `RuntimeEventPersistence.append` | Positive, immutable, tenant + run-scoped, unique among accepted events, strictly monotonic acceptance order, stable after acceptance, gap-tolerant, non-recyclable |
-| **Positioned event** | `PositionedRuntimeEvent` | persistence read APIs | Semantic `RuntimeEvent` + authoritative position — position is **not** stored on `RuntimeEvent` |
+| **Positioned event** | `PositionedRuntimeEvent` | persistence read APIs | Semantic `RuntimeEvent` + authoritative position - position is **not** stored on `RuntimeEvent` |
 | **As-of boundary** | `AsOfBoundary` | query / projection callers | `RunId` + inclusive execution position (`<= position`) |
 
 **Rules (TRACE-ASOF-1):**
 
-1. Scope is **per `RunId`** (tenant-scoped store partition) — not global across runs.
+1. Scope is **per `RunId`** (tenant-scoped store partition) - not global across runs.
 2. Producers own `EventId`, identity fields, and semantic `timestamp`; persistence owns position allocation.
-3. Idempotent append on the same `EventId` returns the **same** position — no duplicate allocation.
+3. Idempotent append on the same `EventId` returns the **same** position - no duplicate allocation.
 4. Concurrent acceptance for the same run yields one total order with distinct positions (store-level transaction/lock semantics).
-5. `AttemptId` does **not** reset position — retries and resumes continue the run-level sequence.
-6. `EventId` is identity only — **not** ordering authority.
-7. `RuntimeEvent.timestamp` remains diagnostic/display — it does **not** define canonical execution order.
-8. Execution position is independent of valid-time and system-time (§8) — do **not** call it bitemporal.
-9. **Monotonic** means strictly increasing for accepted events — it does **not** mean contiguous. Positions **may** contain gaps (for example P1 → accepted event, P2 → unused reservation, P3 → accepted event). An unused position is **never** recycled.
+5. `AttemptId` does **not** reset position - retries and resumes continue the run-level sequence.
+6. `EventId` is identity only - **not** ordering authority.
+7. `RuntimeEvent.timestamp` remains diagnostic/display - it does **not** define canonical execution order.
+8. Execution position is independent of valid-time and system-time (§8) - do **not** call it bitemporal.
+9. **Monotonic** means strictly increasing for accepted events - it does **not** mean contiguous. Positions **may** contain gaps (for example P1 → accepted event, P2 → unused reservation, P3 → accepted event). An unused position is **never** recycled.
 10. Gaps may occur when concurrent duplicate `EventId` acceptance races allocate a candidate position before one writer wins, when candidate acceptance fails after allocation, or when backend retries/reservations consume sequence slots without producing an accepted event.
 
 **Persistence contract (minimum):**
 
 - `append(...) -> PositionedRuntimeEvent`
-- `list_positioned_for_run(..., through: ExecutionEventPosition | None = None)` — oldest position first; `through` selects the inclusive prefix for `AsOfBoundary`
+- `list_positioned_for_run(..., through: ExecutionEventPosition | None = None)` - oldest position first; `through` selects the inclusive prefix for `AsOfBoundary`
 - `list_for_run` derives event order from positioned reads
 
 **Forbidden:** `AsOfBoundary(timestamp=...)`, `ORDER BY RuntimeEvent.timestamp`, `(timestamp, event_id)` tie-break as authoritative order, producer-side position minting, exposing backend row ids as the public position type.
@@ -2234,7 +2234,7 @@ Projection **MUST NOT** be named or classified as proof or evidence. Projection 
 | Kind | Meaning |
 |------|---------|
 | **Logical projection** | Deterministically derived from `RuntimeEvent` history |
-| **Materialized projection** | Optional performance optimization — **MUST NOT** change semantics; **MUST** be rebuildable; **MUST NOT** become a competing source of truth |
+| **Materialized projection** | Optional performance optimization - **MUST NOT** change semantics; **MUST** be rebuildable; **MUST NOT** become a competing source of truth |
 
 Materialization is **not** mandatory for as-of capability (TRACE-ASOF-3 is conditional).
 
@@ -2272,25 +2272,25 @@ As-of projections and bitemporal historical state answer **different questions**
 
 **Bitemporal Historical State** (also: **Bitemporal Knowledge Reconstruction**) is a typed, deterministic, immutable-history-oriented capability for selecting and reconstructing facts using **both** temporal axes. It is correction-preserving, queryable across valid-time and system-time, provenance-linked, compatible with as-of projections (§7), rebuildable where derived, and never dependent on mutable current state alone.
 
-Bitemporality is a **semantic model** — not merely two datetime fields. TRACE-BITEMP-1 freezes the typed bases in `intergrax.contracts.bitemporal_knowledge`: `ValidTimeBasis` and `SystemTimeBasis` (instant or half-open interval; `end is None` = open-ended; timezone-aware instants only). This is **not** a storage schema.
+Bitemporality is a **semantic model** - not merely two datetime fields. TRACE-BITEMP-1 freezes the typed bases in `intergrax.contracts.bitemporal_knowledge`: `ValidTimeBasis` and `SystemTimeBasis` (instant or half-open interval; `end is None` = open-ended; timezone-aware instants only). This is **not** a storage schema.
 
 ### 8.2 Valid time
 
 **Valid time** (`ValidTimeBasis`) answers: **when was a fact actually valid / effective in the modeled domain?**
 
-Domain/effective truth — independent of when Intergrax learned or recorded it. Supports retrospective corrections, backdating, and future-effective changes without collapsing “what was true on date D” into “when we wrote it down.”
+Domain/effective truth - independent of when Intergrax learned or recorded it. Supports retrospective corrections, backdating, and future-effective changes without collapsing “what was true on date D” into “when we wrote it down.”
 
 ### 8.3 System time
 
 **System time** (`SystemTimeBasis`) answers: **when did Intergrax know, record, or accept that version of the fact?**
 
-Recorded/known-by-Intergrax truth — the knowledge history of the platform. A later correction **must not** destroy what Intergrax previously believed; queries must eventually distinguish **history as currently known** from **history as believed at system-time S1**.
+Recorded/known-by-Intergrax truth - the knowledge history of the platform. A later correction **must not** destroy what Intergrax previously believed; queries must eventually distinguish **history as currently known** from **history as believed at system-time S1**.
 
 Conceptual example:
 
 ```text
-Aug 10 — Intergrax records Policy P1 (valid from Aug 1)
-Aug 15 — correction Policy P2 (actually valid from Jul 28)
+Aug 10 - Intergrax records Policy P1 (valid from Aug 1)
+Aug 15 - correction Policy P2 (actually valid from Jul 28)
 
 A) "What did Intergrax believe on Aug 10?"  → system-time historical truth
 B) "What do we now know was valid on Aug 10?" → valid-time truth using current knowledge
@@ -2300,7 +2300,7 @@ Where deterministic knowledge ordering is required, a wall-clock system-time que
 
 ### 8.4 Independent reconstruction coordinates and ordering primitives
 
-Architecture distinguishes **independent reconstruction coordinates and ordering primitives** — do **not** collapse them:
+Architecture distinguishes **independent reconstruction coordinates and ordering primitives** - do **not** collapse them:
 
 | Primitive | Kind | Question |
 |-----------|------|----------|
@@ -2309,7 +2309,7 @@ Architecture distinguishes **independent reconstruction coordinates and ordering
 | **System time** | Bitemporal temporal axis (`SystemTimeBasis`) | **WHEN** did Intergrax know / record / accept this version of the fact? |
 | **KnowledgeRevisionWatermark** | Authoritative **finalized contiguous** knowledge-order upper bound | Reconstruct using accepted knowledge/revisions **up to** finalized watermark K; not highest allocated |
 
-**Bitemporal state** means **only** valid-time + system-time — **two** temporal axes. It does **not** include execution boundary. **KnowledgeRevisionWatermark** / **KnowledgeRevisionPosition** is **not** a third temporal axis. **Execution AsOfBoundary** is **not** part of bitemporality. Ordering positions and watermarks are deterministic reconstruction/order primitives.
+**Bitemporal state** means **only** valid-time + system-time - **two** temporal axes. It does **not** include execution boundary. **KnowledgeRevisionWatermark** / **KnowledgeRevisionPosition** is **not** a third temporal axis. **Execution AsOfBoundary** is **not** part of bitemporality. Ordering positions and watermarks are deterministic reconstruction/order primitives.
 
 Conceptual structure (TRACE-BITEMP-1 frozen types):
 
@@ -2344,10 +2344,10 @@ The combined result is **not** “bitemporal state”. **E** and **K** remain di
 |---|----------|
 | 1 | What happened by execution boundary E42? |
 | 2 | What was valid at domain time V? |
-| 3 | What did Intergrax know at system time S? (wall-clock query input — resolve to watermark K where deterministic knowledge ordering is required) |
+| 3 | What did Intergrax know at system time S? (wall-clock query input - resolve to watermark K where deterministic knowledge ordering is required) |
 | 4 | What did execution E42 operate against, using facts valid at V and known by S (at watermark K)? |
 
-Question 4 is **combined historical execution reconstruction** — not bitemporal state alone.
+Question 4 is **combined historical execution reconstruction** - not bitemporal state alone.
 
 #### Difference from Execution As-Of (§7)
 
@@ -2356,7 +2356,7 @@ Question 4 is **combined historical execution reconstruction** — not bitempora
 | **Execution As-Of** (`AsOfBoundary`) | Execution history | What did this execution see / do by boundary X? |
 | **Valid time** | Domain effectiveness (bitemporal axis) | What was valid / effective at time T? |
 | **System time** | Platform knowledge (bitemporal axis) | What did Intergrax know / record at time S? |
-| **Knowledge/revision watermark** (`KnowledgeRevisionWatermark`) | Authoritative knowledge-order upper bound | Reconstruct using accepted revisions **up to** K — **not** “all records whose producer timestamp ≤ T” |
+| **Knowledge/revision watermark** (`KnowledgeRevisionWatermark`) | Authoritative knowledge-order upper bound | Reconstruct using accepted revisions **up to** K - **not** “all records whose producer timestamp ≤ T” |
 | **Bitemporal state** | Valid time + System time | What was valid, according to knowledge recorded by system time S? |
 | **Historically reproducible execution state** | Execution boundary + knowledge watermark + bitemporal knowledge basis | What did execution E42 operate against, using facts valid at V and known by S at watermark K? |
 
@@ -2441,7 +2441,7 @@ TRACE-BITEMP-1 freezes the exact runtime types in `intergrax.contracts.bitempora
 | 10 | What revisions were accepted up to watermark K, and what was known at K? |
 | 11 | What did execution E operate against using knowledge watermark K? |
 
-Questions 5–6 and 9–10 require knowledge/revision ordering — **not** timestamp replay alone. Questions 7–8 and 11 require combined reconstruction (execution boundary + watermark + bitemporal knowledge basis) without mutating E42's execution history.
+Questions 5–6 and 9–10 require knowledge/revision ordering - **not** timestamp replay alone. Questions 7–8 and 11 require combined reconstruction (execution boundary + watermark + bitemporal knowledge basis) without mutating E42's execution history.
 
 #### Knowledge / revision watermark
 
@@ -2470,7 +2470,7 @@ Revision-order positions have a **provider-independent lifecycle**. Frozen type:
 | **UNRESOLVED / IN_FLIGHT** | The position may still become committed/accepted; readers **cannot** safely advance a stable knowledge watermark past it |
 | **TERMINAL_NON_COMMITTED** | The position can **never** become an accepted revision and has reached a durable terminal outcome (e.g. explicit VOID / ABORTED / RETIRED semantics) |
 
-**Allocated position ≠ accepted revision.** Revision position allocation and revision acceptance **may** be separate internal provider steps. Canonical semantics expose acceptance only after the contract's atomic acceptance requirements are satisfied. An allocated-but-unaccepted position **MUST NOT** appear as accepted knowledge — regardless of whether the canonical implementation later uses one DB transaction, sequencer + durable acceptance, CAS, or another mechanism.
+**Allocated position ≠ accepted revision.** Revision position allocation and revision acceptance **may** be separate internal provider steps. Canonical semantics expose acceptance only after the contract's atomic acceptance requirements are satisfied. An allocated-but-unaccepted position **MUST NOT** appear as accepted knowledge - regardless of whether the canonical implementation later uses one DB transaction, sequencer + durable acceptance, CAS, or another mechanism.
 
 **KnowledgeRevisionWatermark MUST NOT mean highest allocated position.** A provider may allocate **K** before the corresponding revision is durably accepted. Examples: transaction allocates a sequence value then rolls back; external sequencer allocates **K** but the acceptance write fails; process crashes between allocation and durable acceptance; concurrent acceptance remains unresolved. Highest-allocated may therefore expose a boundary that contains unresolved knowledge history. Canonical readers **MUST NOT** infer completeness from allocation alone.
 
@@ -2487,7 +2487,7 @@ Do **not** define the watermark as "highest contiguous committed" if that would 
 FINALIZED = COMMITTED/ACCEPTED  OR  DURABLY TERMINAL-NON-COMMITTED
 ```
 
-Example — watermark **may** advance across a permanent terminal gap:
+Example - watermark **may** advance across a permanent terminal gap:
 
 ```text
 K1 COMMITTED
@@ -2497,7 +2497,7 @@ K4 COMMITTED
 → watermark MAY advance to K4
 ```
 
-Example — unresolved gap **blocks** advancement:
+Example - unresolved gap **blocks** advancement:
 
 ```text
 K1 COMMITTED
@@ -2507,7 +2507,7 @@ K4 COMMITTED
 → watermark MUST NOT advance beyond K1
 ```
 
-**No invisible gaps below watermark.** There **MUST NOT** be an unresolved or semantically unknown gap below a published **KnowledgeRevisionWatermark**. Every position ≤ watermark **MUST** be deterministically classifiable. Readers **MUST** be able to distinguish accepted revision positions from terminal non-committed positions without reconstructing provider-specific allocation behavior. A provider-specific "missing row" is **not** sufficient canonical semantics — absence alone **MUST NOT** ambiguously mean rolled back, still pending, never allocated, lost write, or provider bug. **TRACE-BITEMP-1** **MUST** define how terminal non-committed positions are represented semantically; **TRACE-BITEMP-2** chooses physical persistence representation. Architecture freezes terminal-non-committed **semantics**, not necessarily a physical "void record" implementation — future providers may use tombstone/void revision state, allocator ledger, transactional status row, sequencer finalization metadata, or another provider-specific representation behind the canonical contract.
+**No invisible gaps below watermark.** There **MUST NOT** be an unresolved or semantically unknown gap below a published **KnowledgeRevisionWatermark**. Every position ≤ watermark **MUST** be deterministically classifiable. Readers **MUST** be able to distinguish accepted revision positions from terminal non-committed positions without reconstructing provider-specific allocation behavior. A provider-specific "missing row" is **not** sufficient canonical semantics - absence alone **MUST NOT** ambiguously mean rolled back, still pending, never allocated, lost write, or provider bug. **TRACE-BITEMP-1** **MUST** define how terminal non-committed positions are represented semantically; **TRACE-BITEMP-2** chooses physical persistence representation. Architecture freezes terminal-non-committed **semantics**, not necessarily a physical "void record" implementation - future providers may use tombstone/void revision state, allocator ledger, transactional status row, sequencer finalization metadata, or another provider-specific representation behind the canonical contract.
 
 **Idempotent acceptance / dedup identity.** Every logical revision acceptance **MUST** have a stable idempotency/dedup identity. Conceptually:
 
@@ -2523,9 +2523,9 @@ accept(same acceptance_key A, different revision_id R2)
   → MUST NOT return K for R1
 ```
 
-`KnowledgeRevisionId` (`krev_` + 32 hex) identifies **what** immutable logical revision is being accepted. It is minted by the knowledge revision lifecycle **before** `accept_revision` — the ordering authority **consumes** it and **MUST NOT** mint revision identity during acceptance. `RevisionAcceptanceKey` identifies **which** logical acceptance operation / retry identity. `KnowledgeRevisionPosition` is **where** acceptance sits in authoritative tenant-scoped knowledge order. These roles are distinct from `EventId`, `RunId`, and `supersedes` lineage.
+`KnowledgeRevisionId` (`krev_` + 32 hex) identifies **what** immutable logical revision is being accepted. It is minted by the knowledge revision lifecycle **before** `accept_revision` - the ordering authority **consumes** it and **MUST NOT** mint revision identity during acceptance. `RevisionAcceptanceKey` identifies **which** logical acceptance operation / retry identity. `KnowledgeRevisionPosition` is **where** acceptance sits in authoritative tenant-scoped knowledge order. These roles are distinct from `EventId`, `RunId`, and `supersedes` lineage.
 
-A retry **MUST NOT** create a second accepted revision merely because the original caller did not receive the response. A retry **MUST NOT** consume a semantically different authoritative position for the same already-accepted logical operation. Exact typed key/name and ownership/scope belong to **TRACE-BITEMP-1** — architecture does **not** assume the key is generated by the client.
+A retry **MUST NOT** create a second accepted revision merely because the original caller did not receive the response. A retry **MUST NOT** consume a semantically different authoritative position for the same already-accepted logical operation. Exact typed key/name and ownership/scope belong to **TRACE-BITEMP-1** - architecture does **not** assume the key is generated by the client.
 
 **Failure / crash semantics (contract requirements).** **TRACE-BITEMP-1** **MUST** define behavior for at least:
 
@@ -2535,8 +2535,8 @@ A retry **MUST NOT** create a second accepted revision merely because the origin
 | **B** Position allocated; acceptance rolls back | Terminal non-committed or explicit unresolved until resolved |
 | **C** Position allocated; process crashes before acceptance outcome is known | Remains explicitly unresolved until classified, or becomes accepted/terminal non-committed |
 | **D** Acceptance durably commits; caller times out before response | Accepted at **K**; retry returns same semantic result |
-| **E** Retry occurs after **D** | Same semantic **K** — no duplicate accepted revision |
-| **F** Sequencer/provider issued **K** but durable revision write never commits | Terminal non-committed or explicitly unresolved — watermark cannot advance past unresolved **K** |
+| **E** Retry occurs after **D** | Same semantic **K** - no duplicate accepted revision |
+| **F** Sequencer/provider issued **K** but durable revision write never commits | Terminal non-committed or explicitly unresolved - watermark cannot advance past unresolved **K** |
 | **G** Provider recovers after restart with unresolved positions | Each position eventually becomes accepted/committed **or** terminal non-committed, or remains explicitly unresolved such that watermark cannot advance past it |
 
 No silent ambiguous state.
@@ -2551,7 +2551,7 @@ R5 freezes lifecycle states and finalized-contiguous watermark semantics. R6 fre
 UNRESOLVED → TERMINAL_NON_COMMITTED
 ```
 
-is a **governed lifecycle resolution** owned semantically by the Observability / Bitemporal domain through **`RevisionOrderingAuthority`**. Applications, agents, arbitrary business logic, and generic Platform Plugin wrappers **MUST NOT** independently declare knowledge revision positions void. Resolution is a **sub-capability** of `RevisionOrderingAuthority` — not a second unrelated authority and not application-owned semantics. Exact runtime method/type names belong to **TRACE-BITEMP-2** unless already frozen in TRACE-BITEMP-1.
+is a **governed lifecycle resolution** owned semantically by the Observability / Bitemporal domain through **`RevisionOrderingAuthority`**. Applications, agents, arbitrary business logic, and generic Platform Plugin wrappers **MUST NOT** independently declare knowledge revision positions void. Resolution is a **sub-capability** of `RevisionOrderingAuthority` - not a second unrelated authority and not application-owned semantics. Exact runtime method/type names belong to **TRACE-BITEMP-2** unless already frozen in TRACE-BITEMP-1.
 
 **Semantic authority vs resolution trigger.** Architecture distinguishes:
 
@@ -2584,7 +2584,7 @@ validate ownership + fencing + durable state
 - become `TERMINAL_NON_COMMITTED`, **or**
 - remain explicitly `UNRESOLVED` while an active bounded recovery/resolution process continues.
 
-The system **MUST NOT** rely on indefinite manual intervention as the default production mechanism. Manual/operator/governance action **MAY** exist as exceptional fallback. Exact timeout/SLA duration is **not** frozen here — **TRACE-BITEMP-2** owns concrete timing/configuration.
+The system **MUST NOT** rely on indefinite manual intervention as the default production mechanism. Manual/operator/governance action **MAY** exist as exceptional fallback. Exact timeout/SLA duration is **not** frozen here - **TRACE-BITEMP-2** owns concrete timing/configuration.
 
 **Watermark safety and liveness (both required).**
 
@@ -2679,7 +2679,7 @@ The resolution record:
 
 Do **not** collapse resolution history into revision lineage.
 
-**Late commit after terminalization (fail-closed).** Once **K** is durably `TERMINAL_NON_COMMITTED` under a newer valid resolution/fencing authority, a stale writer **MUST NOT** later transition **K** to `ACCEPTED`. `TERMINAL_NON_COMMITTED` is **terminal**. A late write using stale ownership/fence **MUST** fail canonical acceptance — and if it nevertheless becomes physically durable, it **MUST** be treated as a fenced-out/orphaned durable write (R7), not as resurrection of **K**. **`TERMINAL_NON_COMMITTED → ACCEPTED` is forbidden.** Reconciliation **MUST NOT** rewrite canonical historical meaning toward a stale durable outcome. If product/domain semantics require a later correction, it **MUST** be a new logical acceptance with a new `RevisionAcceptanceKey` and new **K** — do **not** reuse terminal **K**.
+**Late commit after terminalization (fail-closed).** Once **K** is durably `TERMINAL_NON_COMMITTED` under a newer valid resolution/fencing authority, a stale writer **MUST NOT** later transition **K** to `ACCEPTED`. `TERMINAL_NON_COMMITTED` is **terminal**. A late write using stale ownership/fence **MUST** fail canonical acceptance - and if it nevertheless becomes physically durable, it **MUST** be treated as a fenced-out/orphaned durable write (R7), not as resurrection of **K**. **`TERMINAL_NON_COMMITTED → ACCEPTED` is forbidden.** Reconciliation **MUST NOT** rewrite canonical historical meaning toward a stale durable outcome. If product/domain semantics require a later correction, it **MUST** be a new logical acceptance with a new `RevisionAcceptanceKey` and new **K** - do **not** reuse terminal **K**.
 
 **Race: original writer vs recovery.** **TRACE-BITEMP-2** **MUST** handle writer/recovery races on the same **K**. Canonical rule: exactly one valid lifecycle outcome wins under current authoritative fencing/ownership at the authoritative linearization point (R7). **No timestamp-based winner selection.**
 
@@ -2743,8 +2743,8 @@ A provider **MUST NOT** infer `ACCEPTED` solely because bytes/rows/documents exi
 
 | Case | Canonical rule |
 |------|----------------|
-| **A — acceptance-first** | Valid writer acceptance linearizes first → **K** = `ACCEPTED` → later recovery **MUST** observe `ACCEPTED` and **cannot** void **K** |
-| **B — terminalization-first** | Newer fencing authority terminalization linearizes first → **K** = `TERMINAL_NON_COMMITTED` → late stale writer **cannot** canonically accept **K** → any later physical write from stale writer is fenced-out/orphaned |
+| **A - acceptance-first** | Valid writer acceptance linearizes first → **K** = `ACCEPTED` → later recovery **MUST** observe `ACCEPTED` and **cannot** void **K** |
+| **B - terminalization-first** | Newer fencing authority terminalization linearizes first → **K** = `TERMINAL_NON_COMMITTED` → late stale writer **cannot** canonically accept **K** → any later physical write from stale writer is fenced-out/orphaned |
 
 The exact transactional/CAS/storage primitive belongs to **TRACE-BITEMP-2**. Do **not** freeze vendor-specific mechanics here.
 
@@ -2827,7 +2827,7 @@ It **MUST NOT** silently enter canonical projections. Possible implementation ac
 
 Raw knowledge payload is **not** required. The orphan record **MUST NOT** become a knowledge revision. Architecture **MUST NOT** allocate a new **K** merely to record the anomaly.
 
-**Commit-before-finalization vs finalization-before-commit.** Both cases are frozen explicitly. Timestamp ordering **MUST NOT** decide which case occurred — canonical concurrency/fencing/transaction authority decides.
+**Commit-before-finalization vs finalization-before-commit.** Both cases are frozen explicitly. Timestamp ordering **MUST NOT** decide which case occurred - canonical concurrency/fencing/transaction authority decides.
 
 | Case | Sequence | Canonical outcome |
 |------|----------|-------------------|
@@ -2896,11 +2896,11 @@ This resolution is **semantic**. Architecture does **not** claim that materializ
 
 Historical audit queries **SHOULD NOT** require replaying an unbounded complete event/revision history merely because the user supplied wall-clock time.
 
-The query model **MUST** allow bounded, indexable, or materializable resolution strategies **without changing canonical semantics**. Logical reconstruction remains **authoritative and rebuildable**. Materialization, indexes, and checkpoints remain **implementation/performance** concerns — not a competing source of truth, and **not** claimed to exist yet.
+The query model **MUST** allow bounded, indexable, or materializable resolution strategies **without changing canonical semantics**. Logical reconstruction remains **authoritative and rebuildable**. Materialization, indexes, and checkpoints remain **implementation/performance** concerns - not a competing source of truth, and **not** claimed to exist yet.
 
 Architecture does **not** promise O(1), O(log n), database-index complexity, or any other specific performance bound before implementation design exists.
 
-#### Revision ordering authority — domain-owned semantic contract (TRACE-BITEMP-ARCH-SYNC-R4)
+#### Revision ordering authority - domain-owned semantic contract (TRACE-BITEMP-ARCH-SYNC-R4)
 
 Revision-ordering **semantics** are canonical platform/domain invariants. They are **not** configurable per application and **MUST NOT** be delegated to application business logic or to Platform Plugin runtime wrappers.
 
@@ -2910,7 +2910,7 @@ The contract owns semantic guarantees such as:
 
 - allocate / accept an authoritative revision position
 - classify position lifecycle state (allocated, accepted, unresolved, terminal non-committed)
-- **resolve** `UNRESOLVED` positions to `ACCEPTED` or `TERMINAL_NON_COMMITTED` under canonical rules (resolution sub-capability — applications **MUST NOT** void positions independently)
+- **resolve** `UNRESOLVED` positions to `ACCEPTED` or `TERMINAL_NON_COMMITTED` under canonical rules (resolution sub-capability - applications **MUST NOT** void positions independently)
 - enforce bounded ownership/lease and fencing so stale writers cannot commit after supersession; where physical prevention is impossible, stale durable outcomes **MUST NOT** become canonical `ACCEPTED` (R7)
 - emit immutable resolution/audit records for every `TERMINAL_NON_COMMITTED` transition
 - preserve monotonic ordering within the declared scope
@@ -2925,7 +2925,7 @@ The contract owns semantic guarantees such as:
 
 The contract **MUST NOT** delegate semantic ownership to an application, agent/model, or plugin runtime layer.
 
-Concrete serialization **implementation** is provided behind this domain-owned typed provider contract. Provider variation is **implementation** variation — **not** semantic variation.
+Concrete serialization **implementation** is provided behind this domain-owned typed provider contract. Provider variation is **implementation** variation - **not** semantic variation.
 
 ```text
 RevisionOrderingAuthority (domain-owned semantic contract)
@@ -2939,7 +2939,7 @@ RevisionOrderingAuthority (domain-owned semantic contract)
 
 #### Canonical production default provider
 
-Intergrax **MUST** ship one canonical first-party production-grade default provider (conceptually **CanonicalRevisionOrderingProvider** — TRACE-BITEMP-2 implements it). Canonical strategy is frozen in §8.11: tenant-scoped transactional allocation + acceptance.
+Intergrax **MUST** ship one canonical first-party production-grade default provider (conceptually **CanonicalRevisionOrderingProvider** - TRACE-BITEMP-2 implements it). Canonical strategy is frozen in §8.11: tenant-scoped transactional allocation + acceptance.
 
 Architecture **selects the canonical strategy** in §8.11. **TRACE-BITEMP-2** implements the first-party provider behind `RevisionOrderingAuthority` without exposing vendor types on the public contract.
 
@@ -2990,7 +2990,7 @@ Do **not** treat the list above as a selection. Kafka partitions, PostgreSQL seq
 
 #### Host / deployment provider selection
 
-Provider selection is **host/deployment configuration + dependency injection** — **not** per-request behavior and **not** arbitrary application business logic.
+Provider selection is **host/deployment configuration + dependency injection** - **not** per-request behavior and **not** arbitrary application business logic.
 
 ```text
 Application / Deployment Host
@@ -3036,7 +3036,7 @@ same KnowledgeRevisionPosition / KnowledgeRevisionWatermark semantics everywhere
 
 Applications consume the canonical semantic contract. The variation is infrastructural; the contract remains interoperable.
 
-#### Provider vs ordering scope — independent decisions
+#### Provider vs ordering scope - independent decisions
 
 Ordering **scope** and provider **implementation** are separate architecture decisions. TRACE-BITEMP-1 freezes them separately in §8.11: scope = **TENANT**; canonical strategy = transactional allocation + acceptance.
 
@@ -3054,34 +3054,34 @@ Every provider used for production-capable bitemporal ordering **MUST** be quali
 
 TRACE-BITEMP-1 freezes the canonical default mechanism in §8.11 against these invariants. Canonical and alternative providers **MUST** pass the same semantic suite:
 
-1. **Uniqueness** — every accepted bitemporal correction/revision gets one unambiguous authoritative position within its ordering scope.
-2. **Monotonicity** — later accepted revisions cannot appear before earlier accepted revisions within that scope.
-3. **Concurrency determinism** — concurrent accepted corrections resolve to deterministic distinct positions.
-4. **Clock independence** — producer/service wall-clock timestamps cannot define authoritative ordering.
-5. **Atomic acceptance** — a revision must not become "accepted" without its authoritative position being durably associated with that acceptance; allocated-but-unaccepted positions must not appear as accepted knowledge.
-6. **Retry / idempotency** — retrying the same logical acceptance (same stable acceptance/dedup identity) must not create duplicate accepted revisions or consume semantically different positions incorrectly; retry must return the same semantic accepted result and authoritative position.
-7. **Failure semantics** — partial failure between persistence and ordering allocation must not create ambiguous accepted history; no half-accepted revision; each position must eventually become accepted/committed, terminal non-committed, or remain explicitly unresolved blocking watermark advancement.
-8. **Auditability** — auditors can determine the acceptance order without reconstructing it from timestamps.
-9. **Lineage independence** — `supersedes` remains causal lineage and does **not** substitute for total/order position.
-10. **Deterministic watermark resolution** — wall-clock system-time queries resolve deterministically to the correct **finalized contiguous** knowledge boundary; watermark must not mean highest allocated; no unresolved gaps below published watermark; permanent terminal gaps may be crossed.
-11. **Deterministic repeated reconstruction** — same E/K/temporal basis returns deterministic equivalent state.
-12. **Scope definition** — the exact ordering scope is **TENANT** (`KnowledgeOrderingScope`). Cross-scope composition is a `KnowledgeRevisionWatermarkSet`, not a global `K`.
-13. **Selected ordering-scope correctness** — proof matches the scope chosen in TRACE-BITEMP-1.
-14. **Cross-scope semantics** — where ordering is partitioned, composition semantics are deterministic and documented.
-15. **Historical immutability** — accepted corrections are never destructively overwritten.
-16. **Stale writer fencing** — once recovery/resolution authority supersedes an old writer, late commits using stale ownership/fence **MUST** be rejected; where physical prevention is impossible, late durable writes **MUST** be quarantined as orphaned and **MUST NOT** become canonical `ACCEPTED` (R7).
-17. **Bounded unresolved-position resolution** — every `UNRESOLVED` position has an active bounded resolution path; indefinite manual intervention is **not** the default production mechanism.
-18. **Deterministic race resolution** — writer vs recovery races resolve to exactly one valid lifecycle outcome under current authoritative fencing/ownership at the authoritative linearization point; no timestamp-based winner.
-19. **No late commit after terminalization** — `TERMINAL_NON_COMMITTED` is terminal; `TERMINAL_NON_COMMITTED → ACCEPTED` is forbidden; orphaned durable writes **MUST NOT** resurrect terminal **K**.
-20. **Immutable resolution audit trail** — every `TERMINAL_NON_COMMITTED` transition produces an immutable, queryable resolution record distinct from knowledge revision lineage.
-21. **Watermark unpins after safe terminalization** — terminalization of a blocking gap **MAY** allow watermark advancement per finalized-contiguous rules; unresolved positions remain visible until legitimately resolved.
-22. **Lease expiry is not void proof** — lease expiry may trigger recovery but **MUST NOT** alone justify blind `TERMINAL_NON_COMMITTED`.
-23. **Lifecycle voiding does not allocate new K** — resolving `UNRESOLVED → TERMINAL_NON_COMMITTED` finalizes the existing position; it does **not** mint a new knowledge revision position for void semantics.
-24. **Physical durability ≠ canonical acceptance** — storage presence alone **MUST NOT** imply `ACCEPTED`; canonical acceptance requires valid authority, successful transition, position association, and winning lifecycle state (R7).
-25. **Authoritative linearization** — exactly one lifecycle outcome (`ACCEPTED` or `TERMINAL_NON_COMMITTED`) wins per **K**; acceptance-first blocks later void; terminalization-first blocks later canonical acceptance (R7).
-26. **Historical watermark immutability** — orphan discovery **MUST NOT** retroactively change reconstruction at the same finalized watermark **K** (R7).
-27. **Orphan quarantine** — fenced-out/orphaned durable writes **MUST** be isolated from canonical reads and produce immutable integrity evidence; **MUST NOT** affect watermark or allocate new **K** (R7).
-28. **No reconciliation by resurrection** — legitimate later acceptance of orphaned content **MUST** use new `RevisionAcceptanceKey` + new **K** (R7).
+1. **Uniqueness** - every accepted bitemporal correction/revision gets one unambiguous authoritative position within its ordering scope.
+2. **Monotonicity** - later accepted revisions cannot appear before earlier accepted revisions within that scope.
+3. **Concurrency determinism** - concurrent accepted corrections resolve to deterministic distinct positions.
+4. **Clock independence** - producer/service wall-clock timestamps cannot define authoritative ordering.
+5. **Atomic acceptance** - a revision must not become "accepted" without its authoritative position being durably associated with that acceptance; allocated-but-unaccepted positions must not appear as accepted knowledge.
+6. **Retry / idempotency** - retrying the same logical acceptance (same stable acceptance/dedup identity) must not create duplicate accepted revisions or consume semantically different positions incorrectly; retry must return the same semantic accepted result and authoritative position.
+7. **Failure semantics** - partial failure between persistence and ordering allocation must not create ambiguous accepted history; no half-accepted revision; each position must eventually become accepted/committed, terminal non-committed, or remain explicitly unresolved blocking watermark advancement.
+8. **Auditability** - auditors can determine the acceptance order without reconstructing it from timestamps.
+9. **Lineage independence** - `supersedes` remains causal lineage and does **not** substitute for total/order position.
+10. **Deterministic watermark resolution** - wall-clock system-time queries resolve deterministically to the correct **finalized contiguous** knowledge boundary; watermark must not mean highest allocated; no unresolved gaps below published watermark; permanent terminal gaps may be crossed.
+11. **Deterministic repeated reconstruction** - same E/K/temporal basis returns deterministic equivalent state.
+12. **Scope definition** - the exact ordering scope is **TENANT** (`KnowledgeOrderingScope`). Cross-scope composition is a `KnowledgeRevisionWatermarkSet`, not a global `K`.
+13. **Selected ordering-scope correctness** - proof matches the scope chosen in TRACE-BITEMP-1.
+14. **Cross-scope semantics** - where ordering is partitioned, composition semantics are deterministic and documented.
+15. **Historical immutability** - accepted corrections are never destructively overwritten.
+16. **Stale writer fencing** - once recovery/resolution authority supersedes an old writer, late commits using stale ownership/fence **MUST** be rejected; where physical prevention is impossible, late durable writes **MUST** be quarantined as orphaned and **MUST NOT** become canonical `ACCEPTED` (R7).
+17. **Bounded unresolved-position resolution** - every `UNRESOLVED` position has an active bounded resolution path; indefinite manual intervention is **not** the default production mechanism.
+18. **Deterministic race resolution** - writer vs recovery races resolve to exactly one valid lifecycle outcome under current authoritative fencing/ownership at the authoritative linearization point; no timestamp-based winner.
+19. **No late commit after terminalization** - `TERMINAL_NON_COMMITTED` is terminal; `TERMINAL_NON_COMMITTED → ACCEPTED` is forbidden; orphaned durable writes **MUST NOT** resurrect terminal **K**.
+20. **Immutable resolution audit trail** - every `TERMINAL_NON_COMMITTED` transition produces an immutable, queryable resolution record distinct from knowledge revision lineage.
+21. **Watermark unpins after safe terminalization** - terminalization of a blocking gap **MAY** allow watermark advancement per finalized-contiguous rules; unresolved positions remain visible until legitimately resolved.
+22. **Lease expiry is not void proof** - lease expiry may trigger recovery but **MUST NOT** alone justify blind `TERMINAL_NON_COMMITTED`.
+23. **Lifecycle voiding does not allocate new K** - resolving `UNRESOLVED → TERMINAL_NON_COMMITTED` finalizes the existing position; it does **not** mint a new knowledge revision position for void semantics.
+24. **Physical durability ≠ canonical acceptance** - storage presence alone **MUST NOT** imply `ACCEPTED`; canonical acceptance requires valid authority, successful transition, position association, and winning lifecycle state (R7).
+25. **Authoritative linearization** - exactly one lifecycle outcome (`ACCEPTED` or `TERMINAL_NON_COMMITTED`) wins per **K**; acceptance-first blocks later void; terminalization-first blocks later canonical acceptance (R7).
+26. **Historical watermark immutability** - orphan discovery **MUST NOT** retroactively change reconstruction at the same finalized watermark **K** (R7).
+27. **Orphan quarantine** - fenced-out/orphaned durable writes **MUST** be isolated from canonical reads and produce immutable integrity evidence; **MUST NOT** affect watermark or allocate new **K** (R7).
+28. **No reconciliation by resurrection** - legitimate later acceptance of orphaned content **MUST** use new `RevisionAcceptanceKey` + new **K** (R7).
 
 #### Ordering scope / scalability decision boundary
 
@@ -3100,7 +3100,7 @@ TRACE-BITEMP-1 freezes these separately from provider selection (§8.11):
 - authority owner = Observability / bitemporal domain (`RevisionOrderingAuthority`)
 - consistency = unique monotonic positions per tenant; finalized-contiguous watermark
 - one watermark represents one tenant, not the whole platform
-- cross-tenant queries return `KnowledgeRevisionWatermarkSet` — no canonical cross-tenant total order
+- cross-tenant queries return `KnowledgeRevisionWatermarkSet` - no canonical cross-tenant total order
 
 #### Relationship to Platform Plugins
 
@@ -3134,27 +3134,27 @@ host composition / DI
 governed bitemporal runtime
 ```
 
-Runtime execution flows through **domain contracts and host composition** — not through a Platform Plugin runtime wrapper.
+Runtime execution flows through **domain contracts and host composition** - not through a Platform Plugin runtime wrapper.
 
 ### 8.5 Correction semantics
 
 Corrections are **additive** and **immutable-history-preserving**:
 
-- correction history is **immutable** — accepted corrections are never destructively overwritten;
+- correction history is **immutable** - accepted corrections are never destructively overwritten;
 - corrections do **not** destructively overwrite previous belief;
 - every accepted correction is **independently addressable**;
 - every accepted correction has **deterministic authoritative ordering** relative to other accepted revisions/corrections;
 - a revision **MUST NOT** become accepted without its authoritative position being durably associated with that acceptance;
 - ordering does **not** depend solely on wall-clock timestamps;
-- causal lineage (`revision_id`, `supersedes`) and authoritative ordering are **complementary** — `supersedes` alone does **not** define total correction ordering;
-- valid time, system time, and ordering position / watermark are **distinct semantics** — position and watermark are **not** temporal axes.
+- causal lineage (`revision_id`, `supersedes`) and authoritative ordering are **complementary** - `supersedes` alone does **not** define total correction ordering;
+- valid time, system time, and ordering position / watermark are **distinct semantics** - position and watermark are **not** temporal axes.
 
 A later revision that changes valid-time applicability **must preserve** prior system-time belief. Operators and auditors must be able to reconstruct:
 
 - what Intergrax believed at an earlier system time (resolved to an authoritative knowledge/revision watermark where deterministic ordering is required);
 - what is now known to have been valid at an earlier valid time;
 - what Intergrax believed was valid at an earlier system time;
-- in what authoritative order corrections were accepted — without reconstructing that order from timestamps.
+- in what authoritative order corrections were accepted - without reconstructing that order from timestamps.
 
 Destructive overwrite of historical belief is **forbidden** for bitemporal-capable facts.
 
@@ -3165,12 +3165,12 @@ Revision lineage, temporal axes, execution boundary, knowledge/revision ordering
 | Mechanism | Responsibility |
 |-----------|----------------|
 | **`revision_id`** | Immutable revision identity |
-| **`supersedes`** | Causal/version lineage between revisions — **not** total/order position |
+| **`supersedes`** | Causal/version lineage between revisions - **not** total/order position |
 | **Knowledge/revision position** | Deterministic authoritative ordering of accepted revisions/corrections |
 | **KnowledgeRevisionWatermark** | Stable authoritative **finalized contiguous** upper bound in that ordering; not highest allocated; type frozen in TRACE-BITEMP-1 |
 | **Valid time** | Domain effectiveness (bitemporal axis) |
 | **System time** | When the platform knew/recorded the revision (bitemporal axis) |
-| **Execution AsOfBoundary** | Position inside execution history — independent of knowledge ordering |
+| **Execution AsOfBoundary** | Position inside execution history - independent of knowledge ordering |
 
 A revision **may** carry temporal semantics where appropriate. `supersedes` alone is **not** sufficient for bitemporal queries or total correction ordering. Do **not** add `supersedes` to every `RuntimeEvent`.
 
@@ -3181,15 +3181,15 @@ A revision **may** carry temporal semantics where appropriate. `supersedes` alon
 | **Provenance** | Where a fact/revision came from |
 | **Evidence** | Supporting persisted evidence |
 | **Proof / Receipt** | Attested / verifiable claim |
-| **Bitemporal state** | Selected historical truth along valid-time and system-time — **not** proof, **not** evidence |
+| **Bitemporal state** | Selected historical truth along valid-time and system-time - **not** proof, **not** evidence |
 
-### 8.8 Opt-in scope — not every `RuntimeEvent`
+### 8.8 Opt-in scope - not every `RuntimeEvent`
 
 **Critical:** bitemporality does **not** require every `RuntimeEvent` to carry `valid_from` / `valid_to`.
 
 `RuntimeEvent` remains the canonical fact that an **execution transition** happened. System/event ordering of `RuntimeEvent` is separate from whether the **domain fact** referenced by that event has valid-time semantics.
 
-Bitemporality **should** apply — with explicit opt-in ownership — to facts/revisions where both axes are meaningful, for example potentially:
+Bitemporality **should** apply - with explicit opt-in ownership - to facts/revisions where both axes are meaningful, for example potentially:
 
 - policy revisions
 - configuration revisions
@@ -3199,11 +3199,11 @@ Bitemporality **should** apply — with explicit opt-in ownership — to facts/r
 - effective permissions / rules
 - versioned projections where corrections or backdating matter
 
-This list is **not exhaustive**. Do **not** convert every Intergrax persistence model into a temporal table. Do **not** turn `RuntimeEvent` into a bitemporal or revision-sequenced universal row. The capability is reusable with explicit opt-in — not universal.
+This list is **not exhaustive**. Do **not** convert every Intergrax persistence model into a temporal table. Do **not** turn `RuntimeEvent` into a bitemporal or revision-sequenced universal row. The capability is reusable with explicit opt-in - not universal.
 
 ### 8.9 Persistence vendor neutrality
 
-Architecture defines semantics and capability. TRACE-BITEMP-1 **does** freeze ordering scope (**TENANT**) and canonical provider **strategy** (single durable transactional boundary — §8.11). **No** database vendor (XTDB, PostgreSQL temporal extensions, SQL Server temporal tables, Datomic, Redis, Cassandra, etc.) is selected on the public contract. Qualified alternative providers remain allowed behind `RevisionOrderingAuthority`. Physical store implementation belongs to TRACE-BITEMP-2.
+Architecture defines semantics and capability. TRACE-BITEMP-1 **does** freeze ordering scope (**TENANT**) and canonical provider **strategy** (single durable transactional boundary - §8.11). **No** database vendor (XTDB, PostgreSQL temporal extensions, SQL Server temporal tables, Datomic, Redis, Cassandra, etc.) is selected on the public contract. Qualified alternative providers remain allowed behind `RevisionOrderingAuthority`. Physical store implementation belongs to TRACE-BITEMP-2.
 
 ### 8.10 Implementation status
 
@@ -3211,41 +3211,41 @@ Accepted architecture · **TRACE-BITEMP-1** typed contracts **Done / Closed** in
 
 ### 8.11 TRACE-BITEMP-1 frozen contracts
 
-Module: `intergrax.contracts.bitemporal_knowledge`. Opt-in capability — **not** added to `RuntimeEvent`.
+Module: `intergrax.contracts.bitemporal_knowledge`. Opt-in capability - **not** added to `RuntimeEvent`.
 
 | Decision | Frozen type / value |
 |----------|---------------------|
 | Valid time | `ValidTimeBasis` (`ValidTimeBoundKind.INSTANT` \| `INTERVAL`); half-open `[start, end)`; `end is None` = open-ended; timezone-aware only; no sentinel datetime |
 | System time | `SystemTimeBasis` (same instant/interval shape); **not** ordering authority |
-| Bitemporal state | `BitemporalKnowledgeBasis(valid_time, system_time)` only — no `AsOfBoundary`, no `KnowledgeRevisionPosition`, no `KnowledgeRevisionWatermark` |
-| Revision identity | `KnowledgeRevisionId` (`krev_` + 32 hex); owner = knowledge revision lifecycle; minted **before** `accept_revision`; authority **consumes** only — **MUST NOT** mint revision identity during acceptance; distinct from `RevisionAcceptanceKey`, `KnowledgeRevisionPosition`, `EventId`, `RunId`, `supersedes` |
+| Bitemporal state | `BitemporalKnowledgeBasis(valid_time, system_time)` only - no `AsOfBoundary`, no `KnowledgeRevisionPosition`, no `KnowledgeRevisionWatermark` |
+| Revision identity | `KnowledgeRevisionId` (`krev_` + 32 hex); owner = knowledge revision lifecycle; minted **before** `accept_revision`; authority **consumes** only - **MUST NOT** mint revision identity during acceptance; distinct from `RevisionAcceptanceKey`, `KnowledgeRevisionPosition`, `EventId`, `RunId`, `supersedes` |
 | Acceptance identity | `RevisionAcceptanceKey` (`rack_` + 32 hex); owner = logical revision-acceptance operation; unique within `KnowledgeOrderingScope`; same `revision_id` + same key → same `K`; same key + different `revision_id` → `RevisionAcceptanceConflictError` |
-| Position | `KnowledgeRevisionPosition(scope, value)` — `value >= 1`, clock-independent; **not** `ExecutionEventPosition` |
+| Position | `KnowledgeRevisionPosition(scope, value)` - `value >= 1`, clock-independent; **not** `ExecutionEventPosition` |
 | Lifecycle | `KnowledgeRevisionPositionLifecycle`: `ALLOCATED`, `ACCEPTED`, `UNRESOLVED`, `TERMINAL_NON_COMMITTED`. Allocated ≠ accepted. Missing row is **not** a state |
 | Watermark | `KnowledgeRevisionWatermark(scope, finalized_through_value)`; `0` = empty prefix; finalized = `ACCEPTED` **or** `TERMINAL_NON_COMMITTED`; unresolved/allocated below `K` **blocks**; terminal gap does **not** block |
 | Ordering scope | **TENANT** via `KnowledgeOrderingScope.tenant_id` |
 | Cross-scope | No total order across tenants. Cross-scope queries return `KnowledgeRevisionWatermarkSet`. Comparing tenant K12 with tenant K20 as one sequence is forbidden (`CrossScopeKnowledgeOrderError`) |
 | Authority | `RevisionOrderingAuthority` (ABC): `accept_revision`, `position_lifecycle`, `watermark`, `records_through`, `unresolved_positions`, `acquire_resolution_authority`, `resolve_unresolved_position`. Host/DI selects provider via `open_revision_ordering_authority`. Applications **MUST NOT** invent ordering semantics or independently void positions |
-| Resolution audit | `KnowledgeRevisionResolutionRecord` — immutable audit per `TERMINAL_NON_COMMITTED` transition; **not** a knowledge revision |
-| Orphan / integrity evidence | `OrphanedDurableRevisionRecord` — immutable integrity evidence per fenced-out/orphaned durable write; **not** a knowledge revision; **MUST NOT** allocate new **K** (R7) |
+| Resolution audit | `KnowledgeRevisionResolutionRecord` - immutable audit per `TERMINAL_NON_COMMITTED` transition; **not** a knowledge revision |
+| Orphan / integrity evidence | `OrphanedDurableRevisionRecord` - immutable integrity evidence per fenced-out/orphaned durable write; **not** a knowledge revision; **MUST NOT** allocate new **K** (R7) |
 | Canonical provider strategy | **Transactional / storage-native allocation + acceptance**: one durable transactional boundary atomically coordinating `KnowledgeRevisionId`, acceptance key, position allocation, durable acceptance/reference, lifecycle/finality, and fencing/generation validation where feasible. Explicit orphan semantics still required when physical prevention is impossible (R7). Public type remains `RevisionOrderingAuthority` only |
 
 **Scope rationale (TENANT selected).** Intergrax persistence, isolation, deletion, and execution reconstruction are already tenant-partitioned. A tenant-scoped `K` is the natural unit of “what did Intergrax know for this tenant?” Global reconstruction is compositional: a `KnowledgeRevisionWatermarkSet`, **not** one invented global `K`.
 
 | Alternative | Decision |
 |-------------|----------|
-| **GLOBAL** | Rejected — invents a cross-tenant total order the product does not require; couples tenant deletion/isolation; extra coordination without stronger reconstructability than a watermark set |
-| **DOMAIN** | Rejected — splits one tenant’s knowledge history so a tenant-wide system-time question cannot resolve to a single `K` |
-| **AGGREGATE / FACT STREAM** | Rejected — same fragmentation; `supersedes` already covers per-fact causal lineage |
+| **GLOBAL** | Rejected - invents a cross-tenant total order the product does not require; couples tenant deletion/isolation; extra coordination without stronger reconstructability than a watermark set |
+| **DOMAIN** | Rejected - splits one tenant’s knowledge history so a tenant-wide system-time question cannot resolve to a single `K` |
+| **AGGREGATE / FACT STREAM** | Rejected - same fragmentation; `supersedes` already covers per-fact causal lineage |
 
 **Provider strategy rationale (transactional selected).** Strongest production architecture that actually protects required invariants (atomic accept, stable idempotent retry, no half-accepted revision, crash-safe classification, contiguous finalized watermark) **without** an extra sequencer that creates allocation-without-acceptance gaps by default. Vendor-neutral: strategy ≠ PostgreSQL/SQLite type in the public contract.
 
 | Alternative | Decision |
 |-------------|----------|
-| Dedicated sequencer | Rejected as canonical default — extra failure modes (F) without stronger uniqueness/monotonicity than a transactional boundary |
-| Distributed / scoped sequencer | Rejected as default — extra coordination; valid later as a **qualified alternative** behind the same ABC |
-| CAS / optimistic allocation | Rejected as default — weaker atomic accept+allocate; contention and crash windows harder to classify |
-| Reuse `ExecutionEventPosition` / `IdempotencyStore` / `SystemTimeProvider` / context CAS | Rejected — different semantic roles |
+| Dedicated sequencer | Rejected as canonical default - extra failure modes (F) without stronger uniqueness/monotonicity than a transactional boundary |
+| Distributed / scoped sequencer | Rejected as default - extra coordination; valid later as a **qualified alternative** behind the same ABC |
+| CAS / optimistic allocation | Rejected as default - weaker atomic accept+allocate; contention and crash windows harder to classify |
+| Reuse `ExecutionEventPosition` / `IdempotencyStore` / `SystemTimeProvider` / context CAS | Rejected - different semantic roles |
 
 **Failure matrix (canonical semantic outcomes):**
 
@@ -3262,7 +3262,7 @@ Module: `intergrax.contracts.bitemporal_knowledge`. Opt-in capability — **not*
 | **I** Two distinct revisions concurrent | Distinct `K` values, deterministic tenant order | Advances only through finalized prefix | Independent keys | Auditable K1 → K2 order without timestamps |
 | **J** Terminal non-committed gap below later accepted revisions | Lower `K` stays `TERMINAL_NON_COMMITTED`; later `ACCEPTED` | Watermark **may** advance across the gap | n/a | Gap is classifiable, not invisible |
 
-**TRACE-BITEMP-2 boundary:** **Planned / In Review** — implemented slice: `CanonicalRevisionOrderingProvider` + `RevisionOrderingSQLiteStore` + `UnresolvedRevisionRecovery` + `open_revision_ordering_authority`. Atomic linearization via SQLite `BEGIN IMMEDIATE` transactions coordinating acceptance bindings, position lifecycle, and per-tenant `RevisionFencingGeneration`. Canonical acceptance requires `canonical_accepted=1` on `knowledge_position_states` — physical payload rows in `knowledge_physical_payloads` are quarantined and never promoted to `ACCEPTED` by presence alone. Known limitations: alternate providers not qualified (TRACE-BITEMP-5); K-only historical knowledge reconstruction **Done** (TRACE-BITEMP-3); temporal query/audit surface not implemented (TRACE-BITEMP-4); execution-as-of query surface not implemented (TRACE-ASOF-4).
+**TRACE-BITEMP-2 boundary:** **Planned / In Review** - implemented slice: `CanonicalRevisionOrderingProvider` + `RevisionOrderingSQLiteStore` + `UnresolvedRevisionRecovery` + `open_revision_ordering_authority`. Atomic linearization via SQLite `BEGIN IMMEDIATE` transactions coordinating acceptance bindings, position lifecycle, and per-tenant `RevisionFencingGeneration`. Canonical acceptance requires `canonical_accepted=1` on `knowledge_position_states` - physical payload rows in `knowledge_physical_payloads` are quarantined and never promoted to `ACCEPTED` by presence alone. Known limitations: alternate providers not qualified (TRACE-BITEMP-5); K-only historical knowledge reconstruction **Done** (TRACE-BITEMP-3); temporal query/audit surface not implemented (TRACE-BITEMP-4); execution-as-of query surface not implemented (TRACE-ASOF-4).
 
 ### 8.12 TRACE-BITEMP-2 delivered implementation mapping
 
@@ -3274,15 +3274,15 @@ Module: `intergrax.contracts.bitemporal_knowledge`. Opt-in capability — **not*
 | Host DI | `intergrax.runtime.observability.composition.open_revision_ordering_authority` (`INTERGRAX_REVISION_ORDERING_DB`) |
 | Fencing | `RevisionFencingGeneration` per tenant scope; `ResolutionAuthority` from `acquire_resolution_authority`; `writer_fencing_generation` preserves original writer authority; `canonical_fencing_generation` records winning canonical lifecycle authority (acceptance or terminalization) |
 | Resolution API | `resolve_unresolved_position` → `KnowledgeRevisionResolutionRecord`; terminalization persists `canonical_fencing_generation` = recovery authority generation |
-| Orphan evidence | `OrphanedDurableRevisionRecord` + `knowledge_orphan_records` / quarantined `knowledge_physical_payloads`; requires modeled physical durability — stale canonical acceptance rejection alone does **not** create orphan evidence |
+| Orphan evidence | `OrphanedDurableRevisionRecord` + `knowledge_orphan_records` / quarantined `knowledge_physical_payloads`; requires modeled physical durability - stale canonical acceptance rejection alone does **not** create orphan evidence |
 | Watermark | `compute_finalized_watermark` over durable `knowledge_position_states` |
-| Revision reference | `KnowledgeRevisionId` bound in `knowledge_acceptance_bindings` — no untyped knowledge payload bucket |
+| Revision reference | `KnowledgeRevisionId` bound in `knowledge_acceptance_bindings` - no untyped knowledge payload bucket |
 
 **TRACE-BITEMP-2 boundary (requirements):** implement `RevisionOrderingAuthority` with the selected strategy; persist lifecycle; authoritative resolution path (`UNRESOLVED → ACCEPTED` / `TERMINAL_NON_COMMITTED`); lease/ownership and fencing where required; bounded unresolved scanner/recovery; immutable resolution records; authoritative acceptance/finalization linearization primitive; validate current fencing generation at canonical acceptance; detect/quarantine/isolate orphaned durable writes where physical stale-commit prevention is impossible; persist immutable orphan/integrity evidence; advance watermark; recovery of unresolved positions; stale-writer rejection; distinguish committed-and-canonically-accepted vs unresolved vs terminal vs orphaned physical residue; idempotent recovery; manual/governance fallback through same authority; host DI. **MUST NOT** infer `ACCEPTED` from physical storage presence alone; **MUST NOT** resurrect `TERMINAL_NON_COMMITTED`; **MUST NOT** allocate new **K** for lifecycle voiding or orphan detection; **MUST NOT** invent types, change TENANT scope, weaken finalized-contiguous semantics, add valid/system time onto `RuntimeEvent`, or select a vendor type as the public contract.
 
 ### 8.13 TRACE-BITEMP-3 K-only reconstruction (delivered) and downstream ownership
 
-**TRACE-BITEMP-3** — **Done / Closed** (`5c2eedca75fc32101ea7a35e332c2abb3af24985`). Provider-independent deterministic reconstruction of canonical accepted knowledge at finalized **`KnowledgeRevisionWatermark K`**.
+**TRACE-BITEMP-3** - **Done / Closed** (`5c2eedca75fc32101ea7a35e332c2abb3af24985`). Provider-independent deterministic reconstruction of canonical accepted knowledge at finalized **`KnowledgeRevisionWatermark K`**.
 
 ```text
 finalized KnowledgeRevisionWatermark K
@@ -3300,7 +3300,7 @@ immutable HistoricalKnowledgeProjection + typed K → revision provenance
 
 Question answered: **What canonical knowledge state resulted from accepted revisions exactly at K?**
 
-Closure does **not** yet deliver — downstream ownership; **not** unresolved TRACE-BITEMP-3 gaps:
+Closure does **not** yet deliver - downstream ownership; **not** unresolved TRACE-BITEMP-3 gaps:
 
 | Capability | Downstream owner |
 |------------|------------------|
@@ -3312,15 +3312,15 @@ Closure does **not** yet deliver — downstream ownership; **not** unresolved TR
 | public temporal/audit API | TRACE-BITEMP-4 |
 | execution-as-of **query contract** at boundary **E** | TRACE-ASOF-4 |
 
-**TRACE-ASOF-4** (planned) owns the historical **execution-as-of query contract** at boundary **E** — **What was execution state at E?** plus provenance to execution events. It does **not** own full **E + K + Valid Time + System Time** semantics.
+**TRACE-ASOF-4** (planned) owns the historical **execution-as-of query contract** at boundary **E** - **What was execution state at E?** plus provenance to execution events. It does **not** own full **E + K + Valid Time + System Time** semantics.
 
 **TRACE-BITEMP-4** (planned) owns temporal knowledge query/audit:
 
-- **ValidTimeBasis** selection/filtering — when a fact was effective in the modeled domain
-- **SystemTimeBasis** selection/filtering — when Intergrax knew/recorded a version
-- bitemporal selection — **Valid Time + System Time** only (**K** is **not** a third temporal axis)
+- **ValidTimeBasis** selection/filtering - when a fact was effective in the modeled domain
+- **SystemTimeBasis** selection/filtering - when Intergrax knew/recorded a version
+- bitemporal selection - **Valid Time + System Time** only (**K** is **not** a third temporal axis)
 - wall-clock **T → finalized K** before reconstruction/query when deterministic ordering is required (timestamp does **not** replace **K**)
-- combined historical query/audit composition — **E + K + ValidTimeBasis + SystemTimeBasis** → **Historically Reproducible Execution State** where the question requires it
+- combined historical query/audit composition - **E + K + ValidTimeBasis + SystemTimeBasis** → **Historically Reproducible Execution State** where the question requires it
 
 Read-side delivery ownership:
 
@@ -3345,23 +3345,23 @@ Execution ordering **E** ≠ knowledge ordering **K** ≠ Valid Time ≠ System 
 | **Valid time** (`ValidTimeBasis`) | When a fact is effective in the modeled domain |
 | **System time** (`SystemTimeBasis`) | When Intergrax recorded / knew a fact version |
 | **Bitemporal state** (`BitemporalKnowledgeBasis`) | State selected using valid-time + system-time basis only |
-| **Knowledge/revision ordering** | Deterministic authoritative ordering of accepted corrections/revisions — **not** a bitemporal axis; **not** execution ordering |
+| **Knowledge/revision ordering** | Deterministic authoritative ordering of accepted corrections/revisions - **not** a bitemporal axis; **not** execution ordering |
 | **RevisionOrderingAuthority** | Domain-owned semantic contract for authoritative revision ordering; host/DI selects provider; semantics **not** per-application configurable |
 | **CanonicalRevisionOrderingProvider** | Intergrax first-party default implementing `RevisionOrderingAuthority`; strategy = tenant-scoped transactional allocation + acceptance (TRACE-BITEMP-2 implements) |
 | **KnowledgeRevisionWatermark** | Stable authoritative **finalized contiguous** upper bound in knowledge/revision ordering; not highest allocated; **not** a temporal axis |
-| **`HistoricalKnowledgeProjection`** | Immutable K-only knowledge reconstruction output (`reconstruct_knowledge_at_watermark`) — TRACE-BITEMP-3 **Done / Closed** |
-| **Historically reproducible execution state** | Combined reconstruction: execution boundary E + knowledge watermark K + bitemporal knowledge basis — **not** “bitemporal state”; owned by TRACE-BITEMP-4 query/audit composition |
+| **`HistoricalKnowledgeProjection`** | Immutable K-only knowledge reconstruction output (`reconstruct_knowledge_at_watermark`) - TRACE-BITEMP-3 **Done / Closed** |
+| **Historically reproducible execution state** | Combined reconstruction: execution boundary E + knowledge watermark K + bitemporal knowledge basis - **not** “bitemporal state”; owned by TRACE-BITEMP-4 query/audit composition |
 | **Provenance** | Origin / lineage of relevant inputs and references |
 | **Evidence** | Persisted supporting evidence |
 | **Proof / Receipt** | Attested / verifiable claim |
 
-Projection and bitemporal state are read-side historical reconstruction — not proof, not evidence, not a substitute for the event store.
+Projection and bitemporal state are read-side historical reconstruction - not proof, not evidence, not a substitute for the event store.
 
 ---
 
 ## 10. Execution Story relationship
 
-As-of projections and bitemporal historical state are part of the **read side** of Execution Story — not new runtime domains. No new Execution Story domain or event store is introduced by TRACE-ARCH-SYNC-1 or TRACE-BITEMP-ARCH-SYNC.
+As-of projections and bitemporal historical state are part of the **read side** of Execution Story - not new runtime domains. No new Execution Story domain or event store is introduced by TRACE-ARCH-SYNC-1 or TRACE-BITEMP-ARCH-SYNC.
 
 ```text
 RuntimeEvent history
@@ -3402,50 +3402,50 @@ TRACE-BITEMP-4  → temporal knowledge query/audit
                   Valid Time + System Time · T→K · optional E+K composition
 ```
 
-**E** ordering ≠ **K** ordering ≠ Valid Time ≠ System Time. Combined reconstruction is **Historically Reproducible Execution State** — not “bitemporal state” and not “bitemporal execution state”.
+**E** ordering ≠ **K** ordering ≠ Valid Time ≠ System Time. Combined reconstruction is **Historically Reproducible Execution State** - not “bitemporal state” and not “bitemporal execution state”.
 
 ---
 
 ## Protocol v2 Observability evidence target invariants (2026-08-18)
 
-Accepted Protocol v2 audit layer [`OBSERVABILITY_EVIDENCE`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md) (**FAIL**, 6 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — **not implemented**:
+Accepted Protocol v2 audit layer [`OBSERVABILITY_EVIDENCE`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md) (**FAIL**, 6 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only - **not implemented**:
 
-**Finding 01 — evidence durability**
+**Finding 01 - evidence durability**
 
-1. Canonical evidence durability policy is **explicit** — persistence acceptance is distinct from in-memory bus history and subscriber dispatch ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-01`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+1. Canonical evidence durability policy is **explicit** - persistence acceptance is distinct from in-memory bus history and subscriber dispatch ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-01`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
 2. Support authoritative modes such as **evidence-required** / **audit-required** where persistence failure fails the execution or terminal evidence transition ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-01`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
-3. Explicitly **best-effort** mode may allow execution to continue, but run/evidence state **must** be marked incomplete and observable — never silently equivalent to successful canonical acceptance ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-01`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
-4. Harden the existing HOS spine/store path — **do not** create a second event bus or store ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-01`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+3. Explicitly **best-effort** mode may allow execution to continue, but run/evidence state **must** be marked incomplete and observable - never silently equivalent to successful canonical acceptance ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-01`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+4. Harden the existing HOS spine/store path - **do not** create a second event bus or store ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-01`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
 
-**Finding 02 — EventId idempotency**
+**Finding 02 - EventId idempotency**
 
 5. `EventId` replay is idempotent **only** when canonical event identity and content match the originally accepted event ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-02`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
 6. Same `EventId` + different canonical event (tenant, task, run, attempt, type, payload) → explicit conflict / fail closed ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-02`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
-7. Equivalence semantics are part of `RuntimeEventPersistence` conformance — all durable providers remain observationally equivalent ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-02`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+7. Equivalence semantics are part of `RuntimeEventPersistence` conformance - all durable providers remain observationally equivalent ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-02`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
 
-**Finding 03 — export safety**
+**Finding 03 - export safety**
 
 8. Every journal/log/vendor observability projection passes through one canonical content-safety/redaction policy ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-03`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
-9. Journal export may emit references, safe envelopes, counts, and safe attributes — **must not** bypass `ObservabilityExportEnvelope` by serializing arbitrary `RuntimeEvent.payload` ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-03`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+9. Journal export may emit references, safe envelopes, counts, and safe attributes - **must not** bypass `ObservabilityExportEnvelope` by serializing arbitrary `RuntimeEvent.payload` ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-03`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
 10. Do **not** weaken the existing safe export boundary ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-03`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
 
-**Finding 04 — journal completeness**
+**Finding 04 - journal completeness**
 
 11. A canonical full-run journal is either **proven complete**, **explicitly paginated** with continuation semantics, or **explicitly marked / fails** as truncated ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-04`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
-12. Reuse positioned completeness machinery (`load_positioned_run_journal_through` semantics) — do **not** build another journal authority ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-04`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
-13. Retain existing strict as-of prefix authority from TRACE-ASOF-1/2 — completeness gap is distinct from identity delivery already closed by TRACE-1C ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-04`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+12. Reuse positioned completeness machinery (`load_positioned_run_journal_through` semantics) - do **not** build another journal authority ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-04`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
+13. Retain existing strict as-of prefix authority from TRACE-ASOF-1/2 - completeness gap is distinct from identity delivery already closed by TRACE-1C ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-04`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
 
-**Finding 05 — tenant identity**
+**Finding 05 - tenant identity**
 
 14. Canonical persistence has **one tenant truth** ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-05`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
 15. When both explicit persistence scope tenant and event tenant are supplied they **must** match exactly or fail ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-05`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
 16. Prefer eventually deriving persistence scope from one trusted canonical tenant authority rather than independently writable values ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-05`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
 
-**Finding 06 — ordering**
+**Finding 06 - ordering**
 
 17. Run-local `ExecutionEventPosition` is **not** a task-global ordering coordinate ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-06`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
 18. Choose an explicit contract: task query groups runs and preserves canonical run-local order, defines a real task-level position/order, or clearly documents weaker ordering semantics ([`AUDIT-20260818-OBSERVABILITY_EVIDENCE-06`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md)).
 
-HOS single-spine architecture, `RuntimeEvent` / platform signal separation, Unified Run Journal read-model ownership, E/K/bitemporal boundaries, TRACE historical delivery facts, conservative A4/I4/P2/E3 honesty, and no universal distributed claims beyond existing evidence are preserved — remediation of these findings is **PLANNED**, not shipped.
+HOS single-spine architecture, `RuntimeEvent` / platform signal separation, Unified Run Journal read-model ownership, E/K/bitemporal boundaries, TRACE historical delivery facts, conservative A4/I4/P2/E3 honesty, and no universal distributed claims beyond existing evidence are preserved - remediation of these findings is **PLANNED**, not shipped.
 
 ---

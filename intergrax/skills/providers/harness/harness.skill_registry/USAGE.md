@@ -8,7 +8,7 @@
 
 ## How it works
 
-Single `rag.retrieve` tool — name reflects registry testing intent, not registry introspection (use `skill.resolve` tool for that).
+Single `rag.retrieve` tool - name reflects registry testing intent, not registry introspection (use `skill.resolve` tool for that).
 
 ## How to use
 

@@ -28,4 +28,4 @@ Governed access to: `hitl.summarize_queue`, `pagerduty.trigger_incident`, `notif
 
 ## Related skills
 
-- Other `hitl` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `hitl` bundle skills - see bundle [USAGE.md](../USAGE.md)

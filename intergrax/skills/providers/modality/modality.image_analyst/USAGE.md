@@ -28,4 +28,4 @@ Governed access to: `vision.detect`, `vision.ocr_regions`, `rag.ingest_document`
 
 ## Related skills
 
-- Other `modality` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `modality` bundle skills - see bundle [USAGE.md](../USAGE.md)

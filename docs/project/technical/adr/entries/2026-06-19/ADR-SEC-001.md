@@ -13,7 +13,7 @@ Operators requested a modular, provider-backed security layer without introducin
 
 ## Decision
 
-1. Document **Security & Trust Planes** (S1 Trust, S2 Defense, S3 Governance) as a logical index inside UAEP — not a new domain pair or runtime loop.
+1. Document **Security & Trust Planes** (S1 Trust, S2 Defense, S3 Governance) as a logical index inside UAEP - not a new domain pair or runtime loop.
 2. Keep **composition root** at Tier-3 `SecurityEnvelope` + existing UAEP hook timeline.
 3. Add **`intergrax.security_defenses`** entry point group with `SecurityDefensePlugin` protocol wrapping into `MiddlewarePipeline` (S2).
 4. Ship **`harness.strict_injection`** bundled defense and **`SecurityEnvelope.production()`** / `harness_defense_stack()` presets.
@@ -32,12 +32,12 @@ Operators requested a modular, provider-backed security layer without introducin
 ### Negative
 
 - Third-party defense plugins must be loaded before strict assembly validation (bootstrap order matters).
-- Encryption bridge gates on integration profile presence — not field-level KMS encryption yet.
+- Encryption bridge gates on integration profile presence - not field-level KMS encryption yet.
 
 ## Compliance
 
 - Tier boundaries preserved (Tier-2 agents do not register defenses).
-- Policy-first path unchanged — defenses emit trace via middleware BLOCK.
+- Policy-first path unchanged - defenses emit trace via middleware BLOCK.
 - Linked architecture and plan docs updated (SEC-PLANES).
 
 ## Implementation notes

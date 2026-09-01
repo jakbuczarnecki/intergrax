@@ -43,7 +43,7 @@ The product must NOT be invented or distorted merely to make Intergrax reuse loo
 Product-first remains authoritative.
 ```
 
-The [Product-First MVP Development Brief](PRODUCT_FIRST_MVP.md) governs all product development. When a preregistered new product is used to test platform reuse, that product must originate from a real product hypothesis — not from a desire to exercise platform features.
+The [Product-First MVP Development Brief](PRODUCT_FIRST_MVP.md) governs all product development. When a preregistered new product is used to test platform reuse, that product must originate from a real product hypothesis - not from a desire to exercise platform features.
 
 ---
 
@@ -72,7 +72,7 @@ This contract does **not** freeze a specific market product. The concrete produc
 
 ### Preferred stress-test archetype (example / hypothesis only)
 
-A **strong contrasting archetype** — not an approved future Product #2 — would stress different platform boundaries:
+A **strong contrasting archetype** - not an approved future Product #2 - would stress different platform boundaries:
 
 - action / workflow-centric;
 - external consequential effects;
@@ -94,7 +94,7 @@ Before implementation begins, the frozen T0 record must explain **why** the prer
 
 ---
 
-## T0 — Pre-registration baseline
+## T0 - Pre-registration baseline
 
 **Before the first implementation commit for the preregistered product under evaluation**, freeze a T0 baseline. Once implementation begins, measurement rules may **not** be retroactively changed merely to improve the proof result. Any legitimate rule correction must be explicitly versioned, dated, and explained.
 
@@ -149,7 +149,7 @@ M1 remains an exact descriptive percentage for the full responsibility matrix. T
 
 ## Platform-responsibility matrix
 
-For every **platform responsibility** required by the preregistered product's workflow, classify the **final** result as exactly one of the following categories. Report **all** categories — not only successful reuse.
+For every **platform responsibility** required by the preregistered product's workflow, classify the **final** result as exactly one of the following categories. Report **all** categories - not only successful reuse.
 
 ### Categories
 
@@ -177,7 +177,7 @@ Product-specific branching, private infrastructure duplication, bypass of shared
 
 ### Candidate responsibilities (include only what the workflow requires)
 
-At T0, consider — where the preregistered product actually needs them:
+At T0, consider - where the preregistered product actually needs them:
 
 - execution identity;
 - tenant / principal context;
@@ -204,7 +204,7 @@ Do **not** require the preregistered product to use capabilities it does not nee
 
 Report exact numerators, denominators, and derived values. Do **not** invent an arbitrary minimum reuse percentage in this contract.
 
-### M1 — Responsibility Reuse Ratio
+### M1 - Responsibility Reuse Ratio
 
 ```text
 (REUSED_UNCHANGED + REUSED_CONFIGURED)
@@ -216,7 +216,7 @@ all required PLATFORM responsibilities in the frozen T0 matrix
 - **Exclude:** `PRODUCT_OWNED` from the denominator.
 - **Report:** numerator, denominator, and percentage.
 
-### M2 — Platform Expansion Ratio
+### M2 - Platform Expansion Ratio
 
 ```text
 EXTENDED_GENERALLY
@@ -226,7 +226,7 @@ all required platform responsibilities
 
 - **Report:** exact count and percentage.
 
-### M3 — Core Product Hack Count
+### M3 - Core Product Hack Count
 
 Number of product-identity or product-workflow-specific branches or special cases introduced into **shared platform core**.
 
@@ -238,14 +238,14 @@ Conceptual anti-pattern:
 if product == "Product2": ...
 ```
 
-### M4 — Private Platform Duplication Count
+### M4 - Private Platform Duplication Count
 
 Number of required platform responsibilities that were frozen at T0 as **platform** responsibilities and that the preregistered product implements **privately** instead of consuming or generally extending the shared Intergrax mechanism.
 
 - **Hard target:** `0`.
 - **No post-hoc erasure:** T1 may explain a violation but may **not** retroactively make M4 zero through ordinary T1 reasoning.
 
-If a responsibility is frozen at T0 as a platform responsibility and the preregistered product privately implements it instead of using or generally extending the shared platform mechanism, M4 increments — regardless of later narrative justification.
+If a responsibility is frozen at T0 as a platform responsibility and the preregistered product privately implements it instead of using or generally extending the shared platform mechanism, M4 increments - regardless of later narrative justification.
 
 Post-hoc "justified private duplication" is **not** a successful category.
 
@@ -256,11 +256,11 @@ Post-hoc "justified private duplication" is **not** a successful category.
 3. independent review;
 4. an explicit statement that the change was **not** made because the implementation result was unfavorable.
 
-If the responsibility legitimately becomes `PRODUCT_OWNED`, document that versioned change. If it exposes a reusable platform gap, classify the implementation `EXTENDED_GENERALLY` — do not treat private duplication as success.
+If the responsibility legitimately becomes `PRODUCT_OWNED`, document that versioned change. If it exposes a reusable platform gap, classify the implementation `EXTENDED_GENERALLY` - do not treat private duplication as success.
 
 Examples of private duplication that increment M4: a product-local policy engine, identity system, HITL mechanism, retry/recovery framework, evidence journal, execution runtime, or tool gateway when the shared responsibility was frozen at T0 as a platform responsibility.
 
-### M5 — Boundary Integrity
+### M5 - Boundary Integrity
 
 For every new component or meaningful change, record whether it is:
 
@@ -271,9 +271,9 @@ and **why**.
 
 Reject reasoning such as “put it in platform because it may be reusable later.” Placement follows the active product need and the responsibility model in [ARCHITECTURE_OVERVIEW](../../architecture/ARCHITECTURE_OVERVIEW.md).
 
-### M6 — Inherited Capability Set
+### M6 - Inherited Capability Set
 
-Record which operational properties the preregistered product receives through platform reuse — for example, where applicable:
+Record which operational properties the preregistered product receives through platform reuse - for example, where applicable:
 
 - identity;
 - governance;
@@ -294,15 +294,15 @@ This is a **capability inventory** for the proof record, not a public marketing 
 
 Any of the following is an automatic architectural failure:
 
-1. **Product-specific branching in shared platform core** — e.g. product-identity conditionals in platform code paths.
+1. **Product-specific branching in shared platform core** - e.g. product-identity conditionals in platform code paths.
 
-2. **Private rebuild of a platform responsibility** — the preregistered product privately implements a responsibility frozen at T0 as a platform responsibility instead of consuming or generally extending the shared mechanism. T1 narrative cannot retroactively erase this; see M4.
+2. **Private rebuild of a platform responsibility** - the preregistered product privately implements a responsibility frozen at T0 as a platform responsibility instead of consuming or generally extending the shared mechanism. T1 narrative cannot retroactively erase this; see M4.
 
-3. **Contract bypass** — the preregistered product requires violating or bypassing existing platform contracts merely to make the workflow work.
+3. **Contract bypass** - the preregistered product requires violating or bypassing existing platform contracts merely to make the workflow work.
 
-4. **Insufficient diversity** — the preregistered product is essentially a renamed or reshaped LKW workflow and does not provide meaningful cross-product evidence.
+4. **Insufficient diversity** - the preregistered product is essentially a renamed or reshaped LKW workflow and does not provide meaningful cross-product evidence.
 
-5. **Retroactive measurement gaming** — measurement rules are chosen or materially rewritten after implementation results are known to improve the apparent proof.
+5. **Retroactive measurement gaming** - measurement rules are chosen or materially rewritten after implementation results are known to improve the apparent proof.
 
 ---
 
@@ -321,7 +321,7 @@ product need
 
 Legitimate missing reusable capabilities are classified `EXTENDED_GENERALLY`, not `REUSED_UNCHANGED`.
 
-A proof with material platform expansion — including `EXTENDED_GENERALLY` on one or more Critical Reuse Set responsibilities — may be **PARTIAL** rather than **PASS**, even when the resulting architecture is sound. Do **not** treat every new platform change as failure.
+A proof with material platform expansion - including `EXTENDED_GENERALLY` on one or more Critical Reuse Set responsibilities - may be **PARTIAL** rather than **PASS**, even when the resulting architecture is sound. Do **not** treat every new platform change as failure.
 
 ---
 
@@ -354,12 +354,12 @@ A PARTIAL result remains useful and must be reported honestly.
 
 ### FAIL
 
-- any hard fail condition — including `PLATFORM_LEAK` on any responsibility or any Critical Reuse Set item; or
+- any hard fail condition - including `PLATFORM_LEAK` on any responsibility or any Critical Reuse Set item; or
 - a result that cannot credibly test cross-product reuse.
 
 ---
 
-## T1 — Post-implementation evidence record
+## T1 - Post-implementation evidence record
 
 After the preregistered product's vertical-slice completion, publish a T1 evidence record containing:
 
@@ -392,7 +392,7 @@ Until then, [WHY_INTERGRAX](../../overview/WHY_INTERGRAX.md) correctly describes
 | Document | Role |
 | -------- | ---- |
 | [PRODUCT_FIRST_MVP](PRODUCT_FIRST_MVP.md) | Authoritative product-development rule; links to this contract for reuse experiments |
-| [WHY_INTERGRAX](../../overview/WHY_INTERGRAX.md) | Public strategic hypothesis — unchanged by this contract |
+| [WHY_INTERGRAX](../../overview/WHY_INTERGRAX.md) | Public strategic hypothesis - unchanged by this contract |
 | [ARCHITECTURE_OVERVIEW](../../architecture/ARCHITECTURE_OVERVIEW.md) | Responsibility-boundary reference for matrix and M5 classification |
 | Product plan for the preregistered product | Must exist before T0; not created by this contract |
 

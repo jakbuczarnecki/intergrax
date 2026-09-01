@@ -30,7 +30,7 @@ G2A freezes semantics and identity boundaries **before** any runtime catalog imp
 
 ### 1. Policy Catalog responsibility
 
-The **Policy Catalog** is the canonical registry of policy **definitions** available for application selection and configuration. It is an upstream capability-description and selection boundary — **not** the evaluator.
+The **Policy Catalog** is the canonical registry of policy **definitions** available for application selection and configuration. It is an upstream capability-description and selection boundary - **not** the evaluator.
 
 It will eventually answer queries such as:
 
@@ -110,7 +110,7 @@ Do not create architecture ambiguity around the word "catalog".
 
 ### 5. Versioning model
 
-Two versioning concepts — **not interchangeable**:
+Two versioning concepts - **not interchangeable**:
 
 | Version kind | Tracks | Example |
 | ------------ | ------ | ------- |
@@ -204,7 +204,7 @@ This couples **rule instance identity** and **handler lookup identity** on the d
 
 The target remains `policy_id` != `rule_id` != `handler_id`, even when a current path temporarily uses equal string values. G2A does **not** mandate immediate migration; migration belongs to G2B/G2C after typed contracts are designed.
 
-Similarly, `PolicyHandlerProvenance.rule_id` records handler entry-point metadata using `rule_id` field naming — provenance of admitted handlers, not catalog definition identity.
+Similarly, `PolicyHandlerProvenance.rule_id` records handler entry-point metadata using `rule_id` field naming - provenance of admitted handlers, not catalog definition identity.
 
 ## Consequences
 
@@ -238,6 +238,6 @@ Similarly, `PolicyHandlerProvenance.rule_id` records handler entry-point metadat
 
 ## Compliance
 
-- Tier boundaries preserved — catalog semantics only; no runtime code in G2A
+- Tier boundaries preserved - catalog semantics only; no runtime code in G2A
 - Aligns with [ADR-GOVERNED-EXECUTION-001](../2026-08-16/ADR-GOVERNED-EXECUTION-001.md) evaluation-point and typed-context rules
 - [`GOVERNED_EXECUTION.md`](../../../architecture/GOVERNED_EXECUTION.md) updated with Policy Catalog section; public maturity unchanged

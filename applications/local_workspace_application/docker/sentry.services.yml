@@ -1,13 +1,13 @@
 # © Artur Czarnecki. All rights reserved.
 # Local Sentry proof services for LKW (trimmed self-hosted 24.8.0 stack).
-# Included by docker-compose.sentry.yml — not intended for standalone use.
+# Included by docker-compose.sentry.yml - not intended for standalone use.
 # Internal fragment: does NOT match docker-compose.*.yml (see run-local-docker-all.*).
 
 x-sentry-image: &sentry_image
   image: getsentry/sentry:24.8.0
   environment: &sentry_env
     SENTRY_CONF: /etc/sentry
-    # Local proof only — unsafe for production; do not reuse outside this stack.
+    # Local proof only - unsafe for production; do not reuse outside this stack.
     SENTRY_SECRET_KEY: ${INTERGRAX_LOCAL_SENTRY_SECRET_KEY:-intergrax-local-sentry-proof-secret-key-not-for-production}
     SNUBA: http://sentry-snuba-api:1218
     DEFAULT_CA_BUNDLE: /etc/ssl/certs/ca-certificates.crt

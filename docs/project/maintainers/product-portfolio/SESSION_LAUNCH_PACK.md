@@ -1,4 +1,4 @@
-# MP-22 — Session Launch Pack
+# MP-22 - Session Launch Pack
 
 **Status:** READY TO LAUNCH
 
@@ -8,11 +8,11 @@
 
 ## Purpose
 
-This pack contains **six ready-to-paste launch prompts** for the Intergrax multi-product program. Each prompt bootstraps one independent working session into the durable operating system created by MP-10→MP-21. The prompts do **not** recreate that operating system — they instruct the session to load canonical repo contracts and operate from current evidence.
+This pack contains **six ready-to-paste launch prompts** for the Intergrax multi-product program. Each prompt bootstraps one independent working session into the durable operating system created by MP-10→MP-21. The prompts do **not** recreate that operating system - they instruct the session to load canonical repo contracts and operate from current evidence.
 
 **Recommended use:** Open six independent ChatGPT/Cursor-assisted sessions. Paste **exactly one** corresponding prompt into each. Do **not** paste multiple launch prompts into one Product Session.
 
-**Runtime truth:** Prompts dynamically re-read the current repository. The pack assembly SHA above is **historical launch context only** — each session must resolve current `development` HEAD before acting.
+**Runtime truth:** Prompts dynamically re-read the current repository. The pack assembly SHA above is **historical launch context only** - each session must resolve current `development` HEAD before acting.
 
 **Outside this pack:** VIS-3A (public visual/documentation presentation) and COMM (LKW proof development) remain external specialist streams governed by [CROSS_SESSION_COORDINATION.md](CROSS_SESSION_COORDINATION.md).
 
@@ -22,12 +22,12 @@ This pack contains **six ready-to-paste launch prompts** for the Intergrax multi
 
 | # | Session | Prompt file | Initial role |
 |---|---------|-------------|--------------|
-| 1 | Portfolio Control Session | [session-launch/PORTFOLIO_CONTROL.md](session-launch/PORTFOLIO_CONTROL.md) | Central authority — gate acceptance, G4, cross-product impact, status/cards/ledger |
+| 1 | Portfolio Control Session | [session-launch/PORTFOLIO_CONTROL.md](session-launch/PORTFOLIO_CONTROL.md) | Central authority - gate acceptance, G4, cross-product impact, status/cards/ledger |
 | 2 | LKW Product Session | [session-launch/LKW.md](session-launch/LKW.md) | Continue ACTIVE reference product development |
-| 3 | Contract Recovery Product Session | [session-launch/CONTRACT_RECOVERY.md](session-launch/CONTRACT_RECOVERY.md) | New product — economic leakage and recovery |
-| 4 | Supplier Disruption Product Session | [session-launch/SUPPLIER_DISRUPTION.md](session-launch/SUPPLIER_DISRUPTION.md) | New product — disruption → mitigation → controlled action |
-| 5 | Third-Party Risk Product Session | [session-launch/THIRD_PARTY_RISK.md](session-launch/THIRD_PARTY_RISK.md) | New product — vendor request → evidence → defensible decision |
-| 6 | Deployment Guardian Product Session | [session-launch/DEPLOYMENT_GUARDIAN.md](session-launch/DEPLOYMENT_GUARDIAN.md) | New product — change → independent evidence → GO/NO-GO |
+| 3 | Contract Recovery Product Session | [session-launch/CONTRACT_RECOVERY.md](session-launch/CONTRACT_RECOVERY.md) | New product - economic leakage and recovery |
+| 4 | Supplier Disruption Product Session | [session-launch/SUPPLIER_DISRUPTION.md](session-launch/SUPPLIER_DISRUPTION.md) | New product - disruption → mitigation → controlled action |
+| 5 | Third-Party Risk Product Session | [session-launch/THIRD_PARTY_RISK.md](session-launch/THIRD_PARTY_RISK.md) | New product - vendor request → evidence → defensible decision |
+| 6 | Deployment Guardian Product Session | [session-launch/DEPLOYMENT_GUARDIAN.md](session-launch/DEPLOYMENT_GUARDIAN.md) | New product - change → independent evidence → GO/NO-GO |
 
 **Public product set:** five products (LKW + four newly selected). Portfolio Control is **not** a public product.
 
@@ -35,9 +35,9 @@ This pack contains **six ready-to-paste launch prompts** for the Intergrax multi
 
 ## Recommended startup order
 
-1. **Portfolio Control** — central authority should be available before new products reach G0/G4 handoffs
-2. **LKW** — existing ACTIVE reference product
-3. **Four new Product Sessions** — in any order
+1. **Portfolio Control** - central authority should be available before new products reach G0/G4 handoffs
+2. **LKW** - existing ACTIVE reference product
+3. **Four new Product Sessions** - in any order
 
 Sessions are **prepared, not automatically launched**. Opening a prompt file does not start a session until the operator pastes it into a new conversation.
 
@@ -47,7 +47,7 @@ Sessions are **prepared, not automatically launched**. Opening a prompt file doe
 
 | Product | Expected state at pack creation | Notes |
 |---------|--------------------------------|-------|
-| LKW | **ACTIVE** — existing reference product | Current task per IMPLEMENTATION_PLAN; verify at launch |
+| LKW | **ACTIVE** - existing reference product | Current task per IMPLEMENTATION_PLAN; verify at launch |
 | Contract Recovery | **SELECTED** / Pre-bootstrap / G0 pending | No architecture, scaffold, or implementation |
 | Supplier Disruption | **SELECTED** / Pre-bootstrap / G0 pending | No architecture, scaffold, or implementation |
 | Third-Party Risk | **SELECTED** / Pre-bootstrap / G0 pending | Initial wedge requires sharpening |

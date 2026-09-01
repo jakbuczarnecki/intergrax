@@ -1,4 +1,4 @@
-# Audit result — `OBSERVABILITY`
+# Audit result - `OBSERVABILITY`
 
 **Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
@@ -34,8 +34,8 @@ uv run pytest tests/unit/runtime/observability/ tests/unit/runtime/events/ -q
 
 ## Backlog P2–P4 (deferred)
 
-- OBS-EVOL-9.9 runtime_event.v2 — P3 post-publication
-- Product dashboards §6.3a — deferred
+- OBS-EVOL-9.9 runtime_event.v2 - P3 post-publication
+- Product dashboards §6.3a - deferred
 
 ---
 

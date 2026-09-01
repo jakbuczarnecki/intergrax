@@ -1,4 +1,4 @@
-# Audit result — `AGENT_CONTRACTS_AND_ASSEMBLY`
+# Audit result - `AGENT_CONTRACTS_AND_ASSEMBLY`
 
 **Run:** 2026-06-19 · **Mode:** audit_only + implement (ACP-MAINT-DOC-01/02)  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated (L3+)
@@ -67,4 +67,4 @@ pytest agents/authoring slice         → 81 passed
 
 ## Recommendation
 
-**Architecturally Mature (L3+)** — ACP fleet revalidated; §6.1ay closed. Next domain: `LLM_ADAPTERS`.
+**Architecturally Mature (L3+)** - ACP fleet revalidated; §6.1ay closed. Next domain: `LLM_ADAPTERS`.

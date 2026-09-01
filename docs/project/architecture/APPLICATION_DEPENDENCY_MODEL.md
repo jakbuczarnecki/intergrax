@@ -87,7 +87,7 @@ Three isolation levels (do not conflate):
 |-------|------------------|---------------------------|
 | **Declaration** | Each app owns `applications/<app>/pyproject.toml` extras / app-only deps | Yes |
 | **Dependency graph** | Resolver installs only the selected project's tree | Yes (`uv export --project …`, Docker `--project`) |
-| **Physical environment directory** | Separate `.venv` per application | **Not default** — one workspace root `.venv` unless `UV_PROJECT_ENVIRONMENT` points elsewhere |
+| **Physical environment directory** | Separate `.venv` per application | **Not default** - one workspace root `.venv` unless `UV_PROJECT_ENVIRONMENT` points elsewhere |
 
 Verified behavior (`uv` 0.8.x):
 

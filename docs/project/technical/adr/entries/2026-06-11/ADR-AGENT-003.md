@@ -11,10 +11,10 @@
 
 Authors need:
 
-1. A **single session API** — `agent.run(AgentRunRequest)` returning full trace (steps, tools, RAG, LLM, decisions, terminal reason).
-2. A **single step API** — `on_next_step(step_ctx)` overridden in subclasses; harness wraps observability, policy, gateways.
-3. **Per-step configuration deltas** — change tools, skills, RAG scope, LLM model between steps.
-4. **Dual observability** — application orchestration journal (which agents, why, I/O) separate from agent execution journal (internal steps).
+1. A **single session API** - `agent.run(AgentRunRequest)` returning full trace (steps, tools, RAG, LLM, decisions, terminal reason).
+2. A **single step API** - `on_next_step(step_ctx)` overridden in subclasses; harness wraps observability, policy, gateways.
+3. **Per-step configuration deltas** - change tools, skills, RAG scope, LLM model between steps.
+4. **Dual observability** - application orchestration journal (which agents, why, I/O) separate from agent execution journal (internal steps).
 
 UAEP already implements an internal step loop (`run_step`, `decide_after_step`) but exposes it to authors inconsistently. Production requires typed **`StepOutcome`**, **`AgentRunTrace`**, and **`ApplicationRunSummary`**.
 
@@ -22,13 +22,13 @@ UAEP already implements an internal step loop (`run_step`, `decide_after_step`) 
 
 **Adopted:**
 
-1. **Author-facing step hook:** `async def on_next_step(self, step_ctx: AgentStepContext) -> StepOutcome` — primary domain extension point (alongside optional ACP hooks that may delegate to it).
-2. **Harness-only executor:** split into **`AgentRuntime.advance_step`** (iteration glue) and **`HarnessKernel.execute_step`** (deterministic L1 primitive — policy, trace, gateways, state merge); **not overridable** by Tier-2 authors; **MUST NOT plan** agent reasoning (§38).
+1. **Author-facing step hook:** `async def on_next_step(self, step_ctx: AgentStepContext) -> StepOutcome` - primary domain extension point (alongside optional ACP hooks that may delegate to it).
+2. **Harness-only executor:** split into **`AgentRuntime.advance_step`** (iteration glue) and **`HarnessKernel.execute_step`** (deterministic L1 primitive - policy, trace, gateways, state merge); **not overridable** by Tier-2 authors; **MUST NOT plan** agent reasoning (§38).
 3. **`agent.run()`** runs the **agent decision loop**: merge environment → `advance_step` until `StepOutcome.is_terminal`.
-4. **Implementation maps to UAEP** — kernel wraps existing `UAEPExecutor` step path; no second runtime engine. **`NexusLoop`** remains Task/graph orchestration only — not agent plan brain.
-5. **Dual observability planes** — §31: Application (Nexus/graph) + Agent (`AgentRunTrace` on result).
-6. **Per-step LLM routing** via `StepLLMRouter` on `AgentStepContext` — author selects model within host `LLMProfile` allowlist; policy enforced in STRICT mode.
-7. **Shared state** via `SharedContextView` only — agents do not read raw Nexus OS state (§34).
+4. **Implementation maps to UAEP** - kernel wraps existing `UAEPExecutor` step path; no second runtime engine. **`NexusLoop`** remains Task/graph orchestration only - not agent plan brain.
+5. **Dual observability planes** - §31: Application (Nexus/graph) + Agent (`AgentRunTrace` on result).
+6. **Per-step LLM routing** via `StepLLMRouter` on `AgentStepContext` - author selects model within host `LLMProfile` allowlist; policy enforced in STRICT mode.
+7. **Shared state** via `SharedContextView` only - agents do not read raw Nexus OS state (§34).
 
 **Rejected:**
 

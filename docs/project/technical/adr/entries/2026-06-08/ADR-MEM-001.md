@@ -1,4 +1,4 @@
-# ADR-MEM-001: Context Compiler — global budget allocator and degradation ladder
+# ADR-MEM-001: Context Compiler - global budget allocator and degradation ladder
 
 | Field | Value |
 |-------|-------|
@@ -13,9 +13,9 @@ Phase MEM closed platform memory stores (task KV, session, user LTM, wiring, hoo
 
 Alternatives considered:
 
-1. **Per-step budget only** — status quo; cannot guarantee never-overflow invariant.
-2. **LLM-side truncation** — provider-dependent; no Harness audit trail.
-3. **Unified Context Compiler (chosen)** — single compile pass before agent LLM step (`on_next_step`) with degradation ladder and pre-flight invariant.
+1. **Per-step budget only** - status quo; cannot guarantee never-overflow invariant.
+2. **LLM-side truncation** - provider-dependent; no Harness audit trail.
+3. **Unified Context Compiler (chosen)** - single compile pass before agent LLM step (`on_next_step`) with degradation ladder and pre-flight invariant.
 
 ## Decision
 
@@ -30,8 +30,8 @@ Introduce **`ContextCompiler`** in Tier-1 (`runtime/nexus/context`) that:
 
 **Rejected:**
 
-- **Char-cut only** — retained as last-resort step inside ladder, not happy path.
-- **Compiler inside Tier-0** — violates Tier-1 ownership of context assembly.
+- **Char-cut only** - retained as last-resort step inside ladder, not happy path.
+- **Compiler inside Tier-0** - violates Tier-1 ownership of context assembly.
 
 ## Consequences
 
@@ -44,11 +44,11 @@ Introduce **`ContextCompiler`** in Tier-1 (`runtime/nexus/context`) that:
 ### Negative
 
 - Additional pipeline step (`CompileContextStep`) on every chat turn.
-- Token estimates use adapter window + optional tokenizer — not byte-perfect for all providers.
+- Token estimates use adapter window + optional tokenizer - not byte-perfect for all providers.
 
 ## Compliance
 
-- Tier boundaries preserved — compiler in Tier-1; agents unchanged.
+- Tier boundaries preserved - compiler in Tier-1; agents unchanged.
 - Provenance via existing `CONTEXT_*` runtime events.
 - Linked from [`architecture/MEMORY.md`](../../architecture/MEMORY.md) §7–§8 and [`plan/MEMORY.md`](../../plan/MEMORY.md) Phase MEM-DEPTH.
 
@@ -56,5 +56,5 @@ Introduce **`ContextCompiler`** in Tier-1 (`runtime/nexus/context`) that:
 
 - `runtime/nexus/context/context_compiler.py`, `degradation_ladder.py`, `context_preflight.py`
 - Context assembly via CE providers + `context_preflight.py` before LLM calls in `on_next_step`
-- `context_budget.py` — tokenizer-aware trim helper
+- `context_budget.py` - tokenizer-aware trim helper
 - Verification: `pytest -m gate -q`; `tests/unit/runtime/nexus/context/test_context_compiler.py`

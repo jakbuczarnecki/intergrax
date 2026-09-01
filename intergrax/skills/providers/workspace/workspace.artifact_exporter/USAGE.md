@@ -28,4 +28,4 @@ Governed access to: `workspace.export_artifact`, `storage.put`, `workspace.list_
 
 ## Related skills
 
-- Other `workspace` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `workspace` bundle skills - see bundle [USAGE.md](../USAGE.md)

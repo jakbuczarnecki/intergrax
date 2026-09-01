@@ -1,4 +1,4 @@
-# Audit result — `TOOLS`
+# Audit result - `TOOLS`
 
 **Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
@@ -38,9 +38,9 @@ uv run pytest tests/unit/runtime/nexus/tools/ -q
 
 ## Backlog P2–P4 (deferred)
 
-- Hierarchical LLM category pass — P2 ADR-TOOL-005
-- Per-tool L1 critic output — P2 CVL
-- Host EP pattern packages — P3
+- Hierarchical LLM category pass - P2 ADR-TOOL-005
+- Per-tool L1 critic output - P2 CVL
+- Host EP pattern packages - P3
 
 ---
 

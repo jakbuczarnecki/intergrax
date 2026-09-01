@@ -1,4 +1,4 @@
-# Poc Template — Architecture Decision Records
+# Poc Template - Architecture Decision Records
 
 **Domain:** Tier-3 application host (`applications/poc_template_application`)
 
@@ -36,7 +36,7 @@ ADR-POC_TEMPLATE-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| — | *No application ADRs yet* | — |
+| - | *No application ADRs yet* | - |
 
 ---
 

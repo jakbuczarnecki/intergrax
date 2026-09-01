@@ -131,7 +131,7 @@ Platform capabilities MUST have platform ownership.
 
 ---
 
-## 4. PLATFORM-INV-001 — Generic Capability Ownership
+## 4. PLATFORM-INV-001 - Generic Capability Ownership
 
 > Generic capabilities MUST originate as platform-owned architecture domains or as changes to an existing platform domain.
 >
@@ -161,7 +161,7 @@ Applications consume platform capabilities through public contracts.
 
 ---
 
-## 5. PLATFORM-INV-002 — Architecture Before Adoption
+## 5. PLATFORM-INV-002 - Architecture Before Adoption
 
 The required order for a new generic capability is:
 
@@ -185,7 +185,7 @@ Prototype code may be used for discovery, but it MUST NOT become the canonical a
 
 ---
 
-## 6. PLATFORM-INV-003 — Single Architectural Ownership
+## 6. PLATFORM-INV-003 - Single Architectural Ownership
 
 Every reusable capability must have exactly one architectural owner.
 
@@ -225,7 +225,7 @@ Feature documentation may coordinate multiple domains, but it does not replace d
 
 ---
 
-## 7. PLATFORM-INV-004 — Applications Are Platform Adopters
+## 7. PLATFORM-INV-004 - Applications Are Platform Adopters
 
 Tier-3 applications are consumers and composition shells for platform capabilities.
 
@@ -260,7 +260,7 @@ Applications MUST NOT create private alternatives to platform mechanisms.
 
 ---
 
-## 8. PLATFORM-INV-005 — Proof Follows Implementation
+## 8. PLATFORM-INV-005 - Proof Follows Implementation
 
 A live product proof validates an implemented platform capability.
 
@@ -295,7 +295,7 @@ The application providing the proof remains the adopter, not the architectural o
 
 ---
 
-## 9. PLATFORM-INV-006 — Deployment Transparency
+## 9. PLATFORM-INV-006 - Deployment Transparency
 
 Deployment is a platform concern, not an application-semantic concern.
 
@@ -347,7 +347,7 @@ The deployment mechanism wraps the application. It does not redefine it.
 
 ---
 
-## 10. PLATFORM-INV-007 — Simplicity First
+## 10. PLATFORM-INV-007 - Simplicity First
 
 Public platform APIs should minimize the amount of infrastructure knowledge required from application authors.
 
@@ -382,7 +382,7 @@ Application authoring must not expose that complexity without necessity.
 
 ---
 
-## 11. PLATFORM-INV-008 — One Composition Root Per Domain
+## 11. PLATFORM-INV-008 - One Composition Root Per Domain
 
 A platform domain should provide one clear public composition root.
 
@@ -409,7 +409,7 @@ Separate configuration objects are acceptable when nested under or referenced by
 
 ---
 
-## 12. PLATFORM-INV-009 — Stable Core, Explicit Extensions
+## 12. PLATFORM-INV-009 - Stable Core, Explicit Extensions
 
 Every major platform subsystem should distinguish between:
 
@@ -457,7 +457,7 @@ direct vendor SDK use outside the provider boundary
 
 ---
 
-## 13. PLATFORM-INV-010 — Existing Platform Mechanisms Must Be Reused
+## 13. PLATFORM-INV-010 - Existing Platform Mechanisms Must Be Reused
 
 New domains and applications must reuse existing canonical mechanisms where their responsibility already exists.
 
@@ -478,7 +478,7 @@ A new abstraction is justified only when:
 - the new abstraction has clear ownership,
 - the decision is documented.
 
-### PLATFORM-REUSE-1 — No parallel infrastructure
+### PLATFORM-REUSE-1 - No parallel infrastructure
 
 A domain may not create a parallel implementation of an existing platform infrastructure capability.
 
@@ -486,11 +486,11 @@ Existing capability must be reused or extended.
 
 New infrastructure requires an explicit architecture decision proving that reuse or extension is not viable.
 
-### PLATFORM-REUSE-2 — Infrastructure ownership remains platform-level
+### PLATFORM-REUSE-2 - Infrastructure ownership remains platform-level
 
 Generic persistence connectivity, transaction/session lifecycle, observability, messaging, configuration, and similar cross-cutting capabilities belong to platform infrastructure, not feature/domain packages.
 
-### PLATFORM-REUSE-3 — Domain owns semantics, platform owns mechanics
+### PLATFORM-REUSE-3 - Domain owns semantics, platform owns mechanics
 
 Domain adapters own domain-specific persistence semantics and queries.
 
@@ -800,7 +800,7 @@ Parallel engines for the same responsibility are prohibited unless an ADR explic
 
 ---
 
-## 24. PLATFORM-INV-011 — No Hidden Platform Inside Applications
+## 24. PLATFORM-INV-011 - No Hidden Platform Inside Applications
 
 An application must not become the de facto owner of generic infrastructure because the code physically appeared there first.
 
@@ -818,7 +818,7 @@ When such code is identified, it should be classified and moved to the appropria
 
 ---
 
-## 25. PLATFORM-INV-012 — Applications Remain Semantically Portable
+## 25. PLATFORM-INV-012 - Applications Remain Semantically Portable
 
 An application should remain portable across supported platform deployment and integration models.
 
@@ -838,7 +838,7 @@ Platform wrappers may provide additional operational capabilities, but applicati
 
 ---
 
-## 26. PLATFORM-INV-013 — Operational Mechanisms Stay Outside Cognitive Layers
+## 26. PLATFORM-INV-013 - Operational Mechanisms Stay Outside Cognitive Layers
 
 Operational infrastructure must not leak into:
 
@@ -866,7 +866,7 @@ Agents and Nexus should consume stable runtime conditions, not implement them.
 
 ---
 
-## 27. PLATFORM-INV-014 — Events Are Shared Platform Infrastructure
+## 27. PLATFORM-INV-014 - Events Are Shared Platform Infrastructure
 
 Subsystem-specific events should use the canonical Intergrax event model and observability spine.
 
@@ -887,7 +887,7 @@ Domain events may define domain-specific payloads, but transport and lifecycle s
 
 ---
 
-## 28. PLATFORM-INV-015 — Hooks Do Not Become Private Engines
+## 28. PLATFORM-INV-015 - Hooks Do Not Become Private Engines
 
 Hooks allow custom reactions at controlled lifecycle points.
 

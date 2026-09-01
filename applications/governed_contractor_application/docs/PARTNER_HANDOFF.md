@@ -1,7 +1,7 @@
-# Partner handoff — Governed External Contractor (GEC)
+# Partner handoff - Governed External Contractor (GEC)
 
 **Audience:** design-partner adapter authors and Intergrax operators validating the GEC proof path.  
-**Status:** GEC-0 placeholder — API sequences and fixtures arrive with GEC-7 / GEC-8.  
+**Status:** GEC-0 placeholder - API sequences and fixtures arrive with GEC-7 / GEC-8.  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md) · Plan: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
 ---
@@ -57,7 +57,7 @@ Scaffold run (not the final GEC proof API): `POST /v1/governed_contractor/run`
 
 ## Authentication
 
-Product host settings use the `GOVERNED_CONTRACTOR_` prefix (see `.env.example`). When bootstrap API keys are configured, send the key per generated `host/settings.py` conventions. Local unauthenticated mode is for development only — not a production claim.
+Product host settings use the `GOVERNED_CONTRACTOR_` prefix (see `.env.example`). When bootstrap API keys are configured, send the key per generated `host/settings.py` conventions. Local unauthenticated mode is for development only - not a production claim.
 
 ---
 

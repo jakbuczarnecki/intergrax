@@ -1,4 +1,4 @@
-# UNIFIED_EXECUTION_RUNTIME — appendices
+# UNIFIED_EXECUTION_RUNTIME - appendices
 
 **Parent hub:** [`UNIFIED_EXECUTION_RUNTIME.md`](../UNIFIED_EXECUTION_RUNTIME.md)
 
@@ -7,7 +7,7 @@
 
 ---
 
-## Appendix H — Architecture coverage matrix (Intergrax canon + ideal harness)
+## Appendix H - Architecture coverage matrix (Intergrax canon + ideal harness)
 
 **Purpose:** ensure the implementation plan explicitly covers all harness-scope requirements from:
 
@@ -18,18 +18,18 @@
 
 ### H.1 Coverage status legend
 
-- **Done** — capability implemented and verified by existing phases/tests.
-- **Partial closeout** — contracts/governance Done; runtime enforcement gaps scheduled in Phase V-REM.
-- **Planned (Phase V-REM)** — explicitly scheduled in Phase V-REM (`V-REM-*` IDs).
-- **Deferred (product scope)** — intentionally outside harness-only scope (Band 3 / §6.3).
-- **Uncovered** — gap; MUST be added to plan before related implementation proceeds.
+- **Done** - capability implemented and verified by existing phases/tests.
+- **Partial closeout** - contracts/governance Done; runtime enforcement gaps scheduled in Phase V-REM.
+- **Planned (Phase V-REM)** - explicitly scheduled in Phase V-REM (`V-REM-*` IDs).
+- **Deferred (product scope)** - intentionally outside harness-only scope (Band 3 / §6.3).
+- **Uncovered** - gap; MUST be added to plan before related implementation proceeds.
 
-### H.2 Harness architecture domains — required coverage
+### H.2 Harness architecture domains - required coverage
 
 | Domain (harness scope) | Intergrax canon anchor | Ideal harness anchor | Plan coverage | Status |
 |------------------------|------------------------|----------------------|---------------|--------|
 | Strategic objective + harness-first hierarchy | canon §2, §5.1, §51, §53.1 | ideal §0, §1, §26 | §0, §4.0, Phase V governance | **Done** |
-| Tier model and runtime boundaries | canon §5.1, §7.0–§7.4, §42 | ideal §3, §26 | §0.2, §2 map, Phases L/Q+/U, **FAUDIT-TIER.\*** | **Done** — reference manifest catalog in `intergrax/applications/reference` + CI gate |
+| Tier model and runtime boundaries | canon §5.1, §7.0–§7.4, §42 | ideal §3, §26 | §0.2, §2 map, Phases L/Q+/U, **FAUDIT-TIER.\*** | **Done** - reference manifest catalog in `intergrax/applications/reference` + CI gate |
 | Unified execution runtime (UAEP, lifecycle, interrupts, policy) | canon §42.* | ideal §3.3, §3.4, §5, §8 | §2 map, Phase U, gate suites | **Done** |
 | Context engineering core | canon §28.1, §42.35 | ideal §16 | Phase R (Done) + V-CE.* | **Done** |
 | Capability graph dependencies + impact analysis | canon §53.2 | ideal §19 + capability graph expectations | V-CG.* | **Done** |
@@ -41,9 +41,9 @@
 | Cost/resource governance | canon §53.9 | ideal §24 | V-COST.* | **Done** |
 | Multi-agent coordination pattern catalog | canon §42.43, §53.10 | ideal §6 + §25 | V-MA.* | **Done** |
 | Knowledge graph evolution path (Graph-RAG) | canon §53.11 | ideal §3.7.1 + §25 | V-KG.* | **Done** |
-| **Adaptive Harness Intelligence (L4 runtime closed loop)** | canon §54 | ideal §25 | **Phase W-ADAPT** · AHIA | **Done** (Band 2y, 70/70) — L4 runtime closed; observe/recommend/apply/verify per AHIA |
-| Observability and runtime traceability | canon §33, §42.24 · [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) | ideal §11 | Phases OBS + OBS-DEPTH.* + **Phase OBS-BUS** | **L4 Done** — spine, typed payloads, emitter, emission coverage, journal export; gate: `check_observability_gates.py` |
-| Registry-driven extensibility (agent/tool/skill/policy/prompt/eval) | canon §7.1.5.1–§7.1.8, §15, §53.2 | ideal §19 | Phase R/U + V-CG/V-PE/V-EVAL + **P-Ext** | **Done** — plugin catalogs production-ready; marketplace UI out of scope |
+| **Adaptive Harness Intelligence (L4 runtime closed loop)** | canon §54 | ideal §25 | **Phase W-ADAPT** · AHIA | **Done** (Band 2y, 70/70) - L4 runtime closed; observe/recommend/apply/verify per AHIA |
+| Observability and runtime traceability | canon §33, §42.24 · [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) | ideal §11 | Phases OBS + OBS-DEPTH.* + **Phase OBS-BUS** | **L4 Done** - spine, typed payloads, emitter, emission coverage, journal export; gate: `check_observability_gates.py` |
+| Registry-driven extensibility (agent/tool/skill/policy/prompt/eval) | canon §7.1.5.1–§7.1.8, §15, §53.2 | ideal §19 | Phase R/U + V-CG/V-PE/V-EVAL + **P-Ext** | **Done** - plugin catalogs production-ready; marketplace UI out of scope |
 | Product agents and new product apps | canon §7.4, §52 | ideal §26 | §6.3 only | **Deferred (product scope)** |
 
 ### H.3 Completion policy for “architecture-complete harness”
@@ -74,7 +74,7 @@ domain MUST be reflected in:
 
 ---
 
-## Appendix J — Phase V remediation traceability (audit gap → V-REM ID)
+## Appendix J - Phase V remediation traceability (audit gap → V-REM ID)
 
 **Purpose:** 100% mapping from **Partial** audit findings (2026-06-05) to concrete remediation IDs. **Canonical phase narrative:** [Phase V-REM](.#phase-v-rem--phase-v-runtime-remediation-audit-closeout).
 
@@ -92,7 +92,7 @@ domain MUST be reflected in:
 | Plan/code audit 2026-06-05 | Security (AUDIT_MAP §23) | Retrieval poisoning defense not enforced per tenant/app | High | V-SEC.3 | V-REM-SEC.2 | **Done** |
 | Plan/code audit 2026-06-05 | Security (AUDIT_MAP §23) | Tenant isolation + audit trail hooks missing in main path | High | V-SEC.4 | V-REM-SEC.3 | **Done** |
 | Plan/code audit 2026-06-05 | Evaluation (AUDIT_MAP §25) | NexusEvalRunner exists; missing integration tests + gate | Medium | A.4, A.4.1 | V-REM-A.1 | **Done** |
-| Plan sync 2026-06-05 | Plan governance | Appendix J + §6.1z queue + status sync | — | — | V-REM.0.1, V-REM.0.2 | **Done** |
+| Plan sync 2026-06-05 | Plan governance | Appendix J + §6.1z queue + status sync | - | - | V-REM.0.1, V-REM.0.2 | **Done** |
 
 **Coverage target:** 100% **Done** when every **Planned** row is **Done** and parent Partial IDs (V-CG.2–4, V-ALG.3–4, V-PE.1, V-SEC.2–4, A.4) are **Done**.
 

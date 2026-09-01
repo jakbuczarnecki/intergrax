@@ -1,6 +1,6 @@
 # Agent Distribution and Management
 
-**Intergrax Agent Distribution and Management** is the Tier-0 platform plane that governs how agent packages move from catalog discovery through installation, application binding, deterministic dependency closure, immutable materialization, and activation — before Tier-1 **AgentRegistry** projection and Nexus capability routing answer what is actually running and routable.
+**Intergrax Agent Distribution and Management** is the Tier-0 platform plane that governs how agent packages move from catalog discovery through installation, application binding, deterministic dependency closure, immutable materialization, and activation - before Tier-1 **AgentRegistry** projection and Nexus capability routing answer what is actually running and routable.
 
 The domain sits **below** Tier-3 application composition and **above** Tier-1 execution: applications declare defaults and host admin surfaces; Agent Distribution owns durable install/bind/enable state and produces revision-bound runtime artifacts; **AgentRegistry** remains a derived projection; **Nexus** remains capability routing only.
 
@@ -8,31 +8,31 @@ The domain sits **below** Tier-3 application composition and **above** Tier-1 ex
 
 Without a separate distribution layer, operators and product surfaces collapse distinct lifecycle steps:
 
-- **Catalog availability ≠ installation** — a listing or index entry does not mean a digest-pinned artifact is verified on the host.
-- **Installation ≠ application binding** — an installed package is not automatically bound to an application slot with validated config.
-- **Application binding ≠ activation** — durable bindings and enablement do not by themselves swap the active runtime revision.
-- **Catalog listing ≠ trusted runnable agent** — trust, provenance, and revocation gates precede production activation.
-- **Runtime must not guess dependency closure** — every activated revision requires a deterministic lock produced from an effective roster, not floating catalog state.
-- **Marketplace must not become a second runtime** — discovery and publisher onboarding are product/catalog surfaces; execution stays on AgentRegistry + Nexus.
+- **Catalog availability ≠ installation** - a listing or index entry does not mean a digest-pinned artifact is verified on the host.
+- **Installation ≠ application binding** - an installed package is not automatically bound to an application slot with validated config.
+- **Application binding ≠ activation** - durable bindings and enablement do not by themselves swap the active runtime revision.
+- **Catalog listing ≠ trusted runnable agent** - trust, provenance, and revocation gates precede production activation.
+- **Runtime must not guess dependency closure** - every activated revision requires a deterministic lock produced from an effective roster, not floating catalog state.
+- **Marketplace must not become a second runtime** - discovery and publisher onboarding are product/catalog surfaces; execution stays on AgentRegistry + Nexus.
 
 Agent Distribution keeps these steps explicit and authoritative so third-party agents, enterprise catalogs, and future marketplace listings can attach without forking orchestration or hot-loading Python into a live process.
 
 ## Current reality / maturity boundary
 
-Read this hub in four layers — do not merge them into a single “shipped” headline.
+Read this hub in four layers - do not merge them into a single “shipped” headline.
 
 **A. Canonical architecture (frozen).** AGENT-PLATFORM-2 + ARCH-AGENT-ACTIVATION-1 define the full distribution → activation → projection chain, orthogonal lifecycle dimensions, persistence matrix, and marketplace/LKW boundaries. The architecture delivery for AGENT-PLATFORM-2 is **complete**; activation semantics are **frozen**.
 
-**B. Implemented pieces (capability-specific).** Tier-0 modules under `intergrax/agent_distribution/` and reference process-local production semantics (§34) implement parts of the chain — contracts, stores, trust, roster merge, lock production, materialization adapters, activation/projection services — under explicit scope limits. Process-local in-memory stores are **reference single-process semantics**, not general durable multi-instance production.
+**B. Implemented pieces (capability-specific).** Tier-0 modules under `intergrax/agent_distribution/` and reference process-local production semantics (§34) implement parts of the chain - contracts, stores, trust, roster merge, lock production, materialization adapters, activation/projection services - under explicit scope limits. Process-local in-memory stores are **reference single-process semantics**, not general durable multi-instance production.
 
 **C. Planned / not yet publicly proven end-to-end.** Durable cross-process activation, horizontal host scale-out, generic Tier-3 harness admin API productization (AP-11), and LKW consumer proof wiring (AP-12) remain on the AP-3+ track. A complete third-party **discover → install → bind → materialize → activate → route** journey is **not established** as public product or platform proof today. Manifest-only development assembly (migration phase M0) remains valid for lab; STRICT production hosts require an active revision-bound registry projection (§31, §34).
 
-**D. Future marketplace / product surfaces.** [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) is a **future** ecosystem discovery experience — one possible `CatalogSourceProvider` implementation plus publisher onboarding. Billing, reviews, checkout, publisher portal, and marketplace-specific Nexus branches are **not shipped**. Marketplace does not replace Agent Distribution authority, AgentRegistry, or Nexus.
+**D. Future marketplace / product surfaces.** [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) is a **future** ecosystem discovery experience - one possible `CatalogSourceProvider` implementation plus publisher onboarding. Billing, reviews, checkout, publisher portal, and marketplace-specific Nexus branches are **not shipped**. Marketplace does not replace Agent Distribution authority, AgentRegistry, or Nexus.
 
 > [!NOTE]
 > **Maturity boundary:** Canonical distribution architecture is defined. Implementation maturity is capability-specific; complete third-party install-to-activated-runtime proof is not yet established. Frozen architecture documentation is not equivalent to universal production rollout.
 
-**Primary audience:** CTOs, principal/staff engineers, software architects, and AI platform engineers evaluating how Intergrax separates agent packaging from runtime execution — after the platform overview in the root README.
+**Primary audience:** CTOs, principal/staff engineers, software architects, and AI platform engineers evaluating how Intergrax separates agent packaging from runtime execution - after the platform overview in the root README.
 
 **Related canon:** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) · [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md) · [`APPLICATION_RUNTIME_GRAPH_MODEL.md`](APPLICATION_RUNTIME_GRAPH_MODEL.md) · [`Agent Marketplace`](../overview/AGENT_MARKETPLACE.md) (future product surface)
 
@@ -40,18 +40,18 @@ Read this hub in four layers — do not merge them into a single “shipped” h
 
 | Concern | Responsibility / current boundary |
 | -------- | ----------------------------------- |
-| **Catalog availability** | `CatalogSourceProvider` indexes discoverable packages — **AVAILABLE** ≠ installed |
+| **Catalog availability** | `CatalogSourceProvider` indexes discoverable packages - **AVAILABLE** ≠ installed |
 | **Installation** | Tier-0 verifies digest-pinned artifacts → durable `AgentInstallation` on host/environment |
-| **Application binding** | Durable `ApplicationAgentBinding` per app + slot — separate from install records |
+| **Application binding** | Durable `ApplicationAgentBinding` per app + slot - separate from install records |
 | **Dependency closure** | Effective roster → deterministic resolver → immutable `MaterializedRuntimeLock` |
-| **Materialization** | Topology-abstract adapters produce runtime artifacts from lock + graph — Model B immutability |
-| **Activation** | `RuntimeRevision` swap (PREPARE/READY/COMMIT/DRAIN) — enablement alone is insufficient |
-| **AgentRegistry projection** | Tier-1 **derived** population from materialization — not install-state authority |
-| **Nexus routing** | Capability routing over **ROUTABLE** subset — Distribution MUST NOT add routing branches |
-| **Trust / provenance** | `AgentPackageTrust` parallel to Platform Plugins — fail-closed before activation |
-| **Marketplace relation** | Future catalog/discovery surface only — not execution fork, not second Nexus |
-| **LKW relation** | Future **consumer** via generic platform APIs — MUST NOT own stores, catalog, or materializer |
-| **Maturity** | Architecture frozen; implementation partial and topology-specific — see [Current reality](#current-reality--maturity-boundary) and §33–§34 |
+| **Materialization** | Topology-abstract adapters produce runtime artifacts from lock + graph - Model B immutability |
+| **Activation** | `RuntimeRevision` swap (PREPARE/READY/COMMIT/DRAIN) - enablement alone is insufficient |
+| **AgentRegistry projection** | Tier-1 **derived** population from materialization - not install-state authority |
+| **Nexus routing** | Capability routing over **ROUTABLE** subset - Distribution MUST NOT add routing branches |
+| **Trust / provenance** | `AgentPackageTrust` parallel to Platform Plugins - fail-closed before activation |
+| **Marketplace relation** | Future catalog/discovery surface only - not execution fork, not second Nexus |
+| **LKW relation** | Future **consumer** via generic platform APIs - MUST NOT own stores, catalog, or materializer |
+| **Maturity** | Architecture frozen; implementation partial and topology-specific - see [Current reality](#current-reality--maturity-boundary) and §33–§34 |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [§3 invariants](#3-architecture-invariants) · [§27 LKW](#27-lkw-proof-boundary) · [§28 marketplace](#28-marketplace-readiness) · [plan](../maintainers/plans/AGENT_DISTRIBUTION.md) |
 
 ## Core mental model
@@ -80,12 +80,12 @@ Nexus capability routing (ROUTABLE agents)
 
 | Surface | Question answered | Role |
 | -------- | ----------------- | ---- |
-| **Agent Marketplace** (future) | Where do operators discover/list packages? | Product/ecosystem discovery — one catalog provider kind |
+| **Agent Marketplace** (future) | Where do operators discover/list packages? | Product/ecosystem discovery - one catalog provider kind |
 | **Agent Distribution** | What is installed, bound, trusted, locked, materialized, activated? | Tier-0 distribution / activation authority |
-| **AgentRegistry** | What agent instances exist for the active revision? | Tier-1 runtime projection — derived only |
-| **Nexus** | Which agent handles this capability request? | Tier-1 execution / routing — derived only |
+| **AgentRegistry** | What agent instances exist for the active revision? | Tier-1 runtime projection - derived only |
+| **Nexus** | Which agent handles this capability request? | Tier-1 execution / routing - derived only |
 
-Marketplace MUST NOT replace AgentRegistry, replace Nexus, create a second execution runtime, or bypass activation/trust boundaries. Platform Plugins remain the broader extension/package architecture — Agent Distribution is the **agent-specific** distribution canon; reuse trust patterns only (§10, Platform Plugins §16–§18).
+Marketplace MUST NOT replace AgentRegistry, replace Nexus, create a second execution runtime, or bypass activation/trust boundaries. Platform Plugins remain the broader extension/package architecture - Agent Distribution is the **agent-specific** distribution canon; reuse trust patterns only (§10, Platform Plugins §16–§18).
 
 Orthogonal lifecycle dimensions (normative):
 
@@ -96,7 +96,7 @@ AVAILABLE ≠ INSTALLED ≠ BOUND_TO_APPLICATION ≠ CONFIGURED ≠ ENABLED
 
 ## Engineering canon
 
-**Status:** Canonical architecture (AGENT-PLATFORM-2 + ARCH-AGENT-ACTIVATION-1 activation semantics frozen — documentation only)
+**Status:** Canonical architecture (AGENT-PLATFORM-2 + ARCH-AGENT-ACTIVATION-1 activation semantics frozen - documentation only)
 **Plan (1:1):** [`plan/AGENT_DISTRIBUTION.md`](../maintainers/plans/AGENT_DISTRIBUTION.md)
 **ADR:** [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../technical/adr/entries/2026-08-12/ADR-AGENT-004.md) · [`adr/entries/2026-08-17/ADR-AGENT-005.md`](../technical/adr/entries/2026-08-17/ADR-AGENT-005.md) (AC-3 store ownership)
 **Evidence gate:** [`audit_results/legacy/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md`](../../audit_results/legacy/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md) (AGENT-PLATFORM-0)
@@ -157,14 +157,14 @@ AVAILABLE ≠ INSTALLED ≠ BOUND_TO_APPLICATION ≠ CONFIGURED ≠ ENABLED
 
 ## 1. Purpose and scope
 
-This document is the **canonical architecture** for the Intergrax **Agent Distribution and Management** platform — the Tier-0 plane that separates **catalog availability**, **installation**, **application binding**, **deterministic runtime dependency closure**, **immutable materialization**, and **activation** from Tier-1 **execution** (`AgentRegistry`, Nexus capability routing).
+This document is the **canonical architecture** for the Intergrax **Agent Distribution and Management** platform - the Tier-0 plane that separates **catalog availability**, **installation**, **application binding**, **deterministic runtime dependency closure**, **immutable materialization**, and **activation** from Tier-1 **execution** (`AgentRegistry`, Nexus capability routing).
 
 **In scope (architecture only):**
 
 - Platform-neutral chain from catalog discovery through routable agents.
 - Deterministic dependency closure for operator-installed agents not present in application source `pyproject.toml`.
 - Identity, state, trust, merge, persistence, failure, and topology semantics.
-- LKW as future **consumer** proof boundary — not owner.
+- LKW as future **consumer** proof boundary - not owner.
 
 **Out of scope (this task):**
 
@@ -232,10 +232,10 @@ AVAILABLE
 | Tier-1 `AgentRegistry` execution ownership | Population from materialization only; no install state |
 | Tier-2 reusable agent packages | `AgentContract` + `pyproject.toml` metadata in package |
 | Tier-3 application defaults / admin hosting | Manifest defaults; harness admin API surface |
-| Capability-based Nexus routing | Unchanged — [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §16 |
+| Capability-based Nexus routing | Unchanged - [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §16 |
 | Immutable production runtime | Model B materialization + activation swap |
 | Minimal runtime graph | [`APPLICATION_RUNTIME_GRAPH_MODEL.md`](APPLICATION_RUNTIME_GRAPH_MODEL.md) |
-| Deterministic dependency closure | §15–§16 — **every activated runtime revision** |
+| Deterministic dependency closure | §15–§16 - **every activated runtime revision** |
 | Fail-closed trust / certification | §10; production gates before activation |
 | No hot arbitrary Python installation | No runtime `pip install` into live production process |
 
@@ -263,7 +263,7 @@ CatalogSourceProvider
 | Surface | Question answered | Authority |
 |---------|-------------------|-----------|
 | `CatalogSourceProvider` | What packages are discoverable/resolvable? | Catalog/discovery index |
-| `AgentCapabilityMetadataProvider` | What non-executable agent contract/capability metadata is known? | Architecture/discovery projection — **not** activation or routing |
+| `AgentCapabilityMetadataProvider` | What non-executable agent contract/capability metadata is known? | Architecture/discovery projection - **not** activation or routing |
 | `RuntimeRevision` + `AgentRegistry` | What is actually running? | Execution truth |
 
 Capability metadata authority chain:
@@ -278,7 +278,7 @@ Tier-2 package metadata (`[[tool.intergrax.agent.contracts]]` in agent pyproject
 
 Agent Distribution MUST NOT centrally mirror first-party agent contracts. The platform parses and projects package-owned declarations only.
 
-`AgentCapabilityMetadataProvider` MUST NOT become activation, routing, or runtime authority. `build_catalog_capability_graph()` has no default agent inventory and no default package discovery root — callers pass a package-metadata provider, otherwise agent nodes are omitted.
+`AgentCapabilityMetadataProvider` MUST NOT become activation, routing, or runtime authority. `build_catalog_capability_graph()` has no default agent inventory and no default package discovery root - callers pass a package-metadata provider, otherwise agent nodes are omitted.
 
 Runtime execution remains a separate chain:
 
@@ -286,7 +286,7 @@ Runtime execution remains a separate chain:
 AgentInstallation → EffectiveRoster → RuntimeRevision → RegistryProjection → AgentRegistry → Nexus
 ```
 
-**Marketplace** is one **future** `CatalogSourceProvider` implementation only — not a runtime fork.
+**Marketplace** is one **future** `CatalogSourceProvider` implementation only - not a runtime fork.
 
 ---
 
@@ -304,7 +304,7 @@ Tier-3  applications/<app>/                ApplicationManifest defaults, host ad
 |---------|------------|-------|
 | `CatalogSourceProvider` | Tier-0 interface | Implementations: builtin, local, enterprise, official, governed third party |
 | `AgentCatalogEntry`, `AgentPackageIdentity` | Tier-0 contracts | Catalog is index, not execution truth |
-| Installation / binding persistence | Tier-0 store interfaces | Relational impl behind host environment — **not LKW** |
+| Installation / binding persistence | Tier-0 store interfaces | Relational impl behind host environment - **not LKW** |
 | Package verification / trust | Tier-0 | Reuses plugin evidence **patterns** only |
 | Dependency resolution + lock | Tier-0 coordinator | Consumes effective roster + declarations |
 | `CandidateApplicationRuntimeGraph` | Shared util (`application_runtime_graph.py` extended) | Pre-activation simulation |
@@ -312,7 +312,7 @@ Tier-3  applications/<app>/                ApplicationManifest defaults, host ad
 | `AgentRegistry` | Tier-1 | Derived execution index |
 | Nexus routing | Tier-1 | `find_by_capability` unchanged |
 | `ApplicationManifest.agents` | Tier-3 release artifact | Default roster template only |
-| Admin API routes | Tier-3 host | Calls Tier-0 services — shared across apps |
+| Admin API routes | Tier-3 host | Calls Tier-0 services - shared across apps |
 
 **Tier boundary:** `intergrax/` MUST NOT import `agents/` or `applications/`.
 
@@ -324,7 +324,7 @@ Tier-3  applications/<app>/                ApplicationManifest defaults, host ad
 |------|------------|
 | **Logical agent** | Stable product/agent identity (`logical_agent_id` / roster slot) independent of package version |
 | **Agent package** | Tier-2 installable distribution (`intergrax-*-agent` or external equivalent) |
-| **Catalog entry** | Provider-indexed discoverable metadata — not installed |
+| **Catalog entry** | Provider-indexed discoverable metadata - not installed |
 | **Installation** | Host-scoped record that a digest-pinned package artifact is verified and stored |
 | **Installation slot** | Stable logical install identity for one agent package line on an environment |
 | **Binding** | Application-scoped durable link from roster slot to installation target + config |
@@ -344,8 +344,8 @@ Tier-3  applications/<app>/                ApplicationManifest defaults, host ad
 |----------|-------------------|---------|
 | `logical_agent_id` | **Stable** | Roster / product identity; merge key for manifest + bindings |
 | `distribution_package_id` | **Stable** (normalized PyPI name) | Package line identity (`intergrax-local-search-agent`) |
-| `package_version` | **Revision** (PEP 440) | Human-selectable version label — **not** production authority alone |
-| `package_digest` | **Immutable revision** | Content-addressed artifact hash (wheel/sdist/OCI layer) — **production authority** |
+| `package_version` | **Revision** (PEP 440) | Human-selectable version label - **not** production authority alone |
+| `package_digest` | **Immutable revision** | Content-addressed artifact hash (wheel/sdist/OCI layer) - **production authority** |
 | `catalog_entry_id` | **Provider-scoped stable** | Provider's entry key (may map many versions) |
 | `catalog_source_id` | **Stable** | Provider type + instance (`builtin`, `enterprise:acme`, `official`) |
 | `installation_id` | **Immutable revision** | One digest-pinned installation record |
@@ -377,9 +377,9 @@ AgentPackageIdentity:
 AgentCatalogEntry:
   catalog_entry_id
   catalog_source_id
-  display_name, publisher, categories   # metadata only — no secrets
+  display_name, publisher, categories   # metadata only - no secrets
   package_id_line                       # distribution_package_id
-  version_channel_refs[]                # pointers to resolvable versions — not "latest" in prod
+  version_channel_refs[]                # pointers to resolvable versions - not "latest" in prod
   compatibility_summary
   trust_labels                          # display hints only
 ```
@@ -437,7 +437,7 @@ AVAILABLE ──install──► INSTALLED ──bind──► BOUND_TO_APPLICAT
 
 ### 7.4 Runtime revision lifecycle
 
-**Durable `revision_state`** (immutable revision artifact — see §18.3):
+**Durable `revision_state`** (immutable revision artifact - see §18.3):
 
 ```text
 candidate ──validate──► validated ──traffic commit──► active ──supersede──► superseded
@@ -445,7 +445,7 @@ candidate ──validate──► validated ──traffic commit──► active
      └────fail──────────────┴──────────fail─────────────────┴──► failed
 ```
 
-**Ephemeral serving state** (`DeploymentInstanceState` — see §20.4) models instance readiness (`preparing` → `ready` → `serving` → `draining` → `stopped`) separately from durable artifact lifecycle. A revision may be `validated` + `ready` before it becomes traffic authority.
+**Ephemeral serving state** (`DeploymentInstanceState` - see §20.4) models instance readiness (`preparing` → `ready` → `serving` → `draining` → `stopped`) separately from durable artifact lifecycle. A revision may be `validated` + `ready` before it becomes traffic authority.
 
 Only **one** `revision_state = active` (traffic-serving authority) per `application_environment_id` at a time. Prior revision may remain in `draining` deployment state after supersession.
 
@@ -479,11 +479,11 @@ CatalogSourceProvider:
 | Property | Catalog | Installation store |
 |----------|---------|-------------------|
 | Authority for routing | No | No (bindings + revision) |
-| Authority for digests | No — resolves candidates | **Yes** |
-| Survives provider outage | N/A | **Yes** — digest-pinned artifacts local |
-| Optional cache | Yes | No — durable SoT |
+| Authority for digests | No - resolves candidates | **Yes** |
+| Survives provider outage | N/A | **Yes** - digest-pinned artifacts local |
+| Optional cache | Yes | No - durable SoT |
 
-Execution runtime does not branch on provider type after installation — only `installation_ref`, `package_digest`, and trust evidence matter.
+Execution runtime does not branch on provider type after installation - only `installation_ref`, `package_digest`, and trust evidence matter.
 
 ---
 
@@ -506,7 +506,7 @@ Production MUST reject floating `latest` as sole selector. Channel labels may ma
 `builtin` provider resolves workspace members to `AgentPackageIdentity` with:
 
 - `distribution_package_id` from agent `pyproject.toml`
-- `package_digest` from **built artifact** or **workspace content hash policy** (implementation choice in AP-3 — architecture requires *some* immutable digest per activation)
+- `package_digest` from **built artifact** or **workspace content hash policy** (implementation choice in AP-3 - architecture requires *some* immutable digest per activation)
 - `catalog_source_id = builtin`
 
 Built-in agents may skip external fetch but **never** skip trust/compatibility simulation in production profiles.
@@ -517,10 +517,10 @@ Built-in agents may skip external fetch but **never** skip trust/compatibility s
 
 Accepted Protocol v2 audit layer [`TIER_LAYER_BOUNDARIES`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) (**FAIL**, finding 02 ACCEPTED). Target state only:
 
-1. **Single implementation authority** — a production `(contract_id, agent_version)` has one canonical concrete implementation authority ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-02`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
-2. **No silent Tier-1 duplication** — Tier-1 framework/runtime packages may own abstractions, bridges, and runtime mechanisms, but MUST NOT silently duplicate a reusable concrete Tier-2 agent under the same production identity ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-02`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
-3. **No competing authorities** — packaging/materialization/registration MUST NOT allow two independently maintained concrete implementations with the same canonical identity to become competing authorities ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-02`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
-4. **Distinct core reference identity** — if a platform/reference harness agent must live in core, it requires an explicitly distinct identity/lifecycle contract rather than colliding with a reusable Tier-2 package ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-02`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
+1. **Single implementation authority** - a production `(contract_id, agent_version)` has one canonical concrete implementation authority ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-02`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
+2. **No silent Tier-1 duplication** - Tier-1 framework/runtime packages may own abstractions, bridges, and runtime mechanisms, but MUST NOT silently duplicate a reusable concrete Tier-2 agent under the same production identity ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-02`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
+3. **No competing authorities** - packaging/materialization/registration MUST NOT allow two independently maintained concrete implementations with the same canonical identity to become competing authorities ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-02`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
+4. **Distinct core reference identity** - if a platform/reference harness agent must live in core, it requires an explicitly distinct identity/lifecycle contract rather than colliding with a reusable Tier-2 package ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-02`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
 
 Remediation tracked as **TL-FIX-B** in [plan](../maintainers/plans/AGENT_DISTRIBUTION.md). **Not implemented** by audit persistence.
 
@@ -589,7 +589,7 @@ AgentInstallationRecord:
 
 ### 11.2 Installation slot semantics
 
-- **`installation_slot_id`** is the stable anchor for upgrades: one slot per `(environment_id, distribution_package_id)` unless policy allows multiple slots (advanced — default **one**).
+- **`installation_slot_id`** is the stable anchor for upgrades: one slot per `(environment_id, distribution_package_id)` unless policy allows multiple slots (advanced - default **one**).
 - **Upgrade** creates new `installation_id`, sets prior to `installed_previous`, moves `active_for_slot`.
 - **Rollback** reactivates `previous_installation_ref` if still trusted and present.
 
@@ -653,7 +653,7 @@ ApplicationAgentBinding:
 | `secret_refs` (refs, not values) | Factory wiring if import paths change | |
 | Policy overrides (tool lists) | Graph simulation | |
 
-Upgrade MUST NOT delete durable binding rows — only update `active_installation_id` and increment `binding_revision`.
+Upgrade MUST NOT delete durable binding rows - only update `active_installation_id` and increment `binding_revision`.
 
 ### 12.4 Bind flow
 
@@ -699,17 +699,17 @@ logical_agent_id = binding.contract_id
 | `enablement` | Durable `enablement` **overrides** manifest `AgentBinding.enabled` |
 | `config` | Deep merge: manifest defaults **under** durable overrides (durable wins per key) |
 | `policy_overrides` | Durable only (manifest tool lists seed defaults if no durable row) |
-| `default` agent flag | Manifest provides default; durable may override if explicit `default=true` on one binding — **conflict → fail closed** at merge |
-| Version selection | **Never** from manifest — always `active_installation_id` / builtin digest |
+| `default` agent flag | Manifest provides default; durable may override if explicit `default=true` on one binding - **conflict → fail closed** at merge |
+| Version selection | **Never** from manifest - always `active_installation_id` / builtin digest |
 | Factory wiring | Manifest `factory` / `builder_key` / `factory_path` unless durable specifies override |
 
 ### 13.3 Conflict behavior
 
 | Conflict | Behavior |
 |----------|----------|
-| Duplicate `logical_agent_id` in durable store | Reject write — fail closed |
+| Duplicate `logical_agent_id` in durable store | Reject write - fail closed |
 | Two `default=true` after merge | Merge fails; activation blocked |
-| Duplicate capability across enabled agents | Allowed; Nexus routing uses registry + policy — document in capability graph; merge emits **warning** evidence |
+| Duplicate capability across enabled agents | Allowed; Nexus routing uses registry + policy - document in capability graph; merge emits **warning** evidence |
 | Manifest agent + tombstone | Excluded from effective roster |
 | Enabled binding → missing installation | Merge fails closed for activation |
 
@@ -729,11 +729,11 @@ Each `EffectiveRosterEntry` carries resolved `package_digest`, factory wiring, m
 
 ## 14. Effective roster model
 
-The effective roster is **derived only** — never a durable SoT. It is the sole input to:
+The effective roster is **derived only** - never a durable SoT. It is the sole input to:
 
 1. dependency resolution (§15);
 2. `CandidateApplicationRuntimeGraph` (§17);
-3. `build_application_registry` (extended input contract — AP-3).
+3. `build_application_registry` (extended input contract - AP-3).
 
 **Recompute triggers:**
 
@@ -784,20 +784,20 @@ CandidateDependencySpecification:
   application_release_id
   platform_version
   repository_declaration: RepositoryDependencyDeclaration
-  agent_packages[]:           # from EffectiveRoster — each entry:
+  agent_packages[]:           # from EffectiveRoster - each entry:
       distribution_package_id
       package_digest
       agent_project_metadata_ref   # extracted from installed package
   platform_extras[]             # from ApplicationEnvironmentProfile
   policy_constraints[]          # deny packages, pin overrides, Python version
-  repository_lock_hint_ref      # optional — monorepo uv.lock slice for dev only
+  repository_lock_hint_ref      # optional - monorepo uv.lock slice for dev only
 ```
 
 **Normative rules:**
 
-1. Every agent in `EffectiveRoster` with `enablement=true` MUST contribute its **installed** package metadata — not catalog metadata.
-2. Transitive Tier-2 agent deps come from **installed agent** `pyproject.toml` embedded in artifact metadata extraction — same semantic as today, but source is installation store not workspace path.
-3. Third-party closure is produced by the resolver into `MaterializedRuntimeLock` — not by ad hoc union of floating requirements.
+1. Every agent in `EffectiveRoster` with `enablement=true` MUST contribute its **installed** package metadata - not catalog metadata.
+2. Transitive Tier-2 agent deps come from **installed agent** `pyproject.toml` embedded in artifact metadata extraction - same semantic as today, but source is installation store not workspace path.
+3. Third-party closure is produced by the resolver into `MaterializedRuntimeLock` - not by ad hoc union of floating requirements.
 
 ### 15.4 Resolver responsibilities (implementation-agnostic)
 
@@ -806,7 +806,7 @@ The resolver MUST:
 - accept fully pinned **direct** agent digests;
 - resolve transitive Python dependencies deterministically given same input bytes;
 - detect conflicts (`AGENT_DEPENDENCY_CYCLE`, tier violations, incompatible pins) → fail closed;
-- emit reproducible lock bytes (canonical JSON / TOML — exact encoding AP-3);
+- emit reproducible lock bytes (canonical JSON / TOML - exact encoding AP-3);
 - record resolver algorithm version in lock for audit.
 
 **No concrete package-manager implementation is mandated.** The architecture requires **deterministic input → deterministic output** semantics equivalent in evidence to today's `uv export --frozen` behavior.
@@ -840,7 +840,7 @@ MaterializedRuntimeLock:
     python_version
     platform_extras[]
 
-  packages[]:                     # complete closure — direct + transitive
+  packages[]:                     # complete closure - direct + transitive
     distribution_name
     version                       # resolved pin
     package_digest                # when available (wheels)
@@ -851,7 +851,7 @@ MaterializedRuntimeLock:
     package_digest
     role: direct|transitive
 
-  repository_lock_hint_digest     # optional — traceability to monorepo uv.lock slice
+  repository_lock_hint_digest     # optional - traceability to monorepo uv.lock slice
   reproducibility_evidence:
     resolver_log_ref
     input_snapshot_ref
@@ -865,7 +865,7 @@ MaterializedRuntimeLock:
 
 - Once referenced by an **`active`** `RuntimeRevision`, a lock is **immutable**.
 - New installs/upgrades produce **new** `lock_id`; activation swaps pointer.
-- Rollback reactivates prior revision's lock by digest — validates trust + artifact presence.
+- Rollback reactivates prior revision's lock by digest - validates trust + artifact presence.
 
 ### 16.3 Reproducibility evidence
 
@@ -889,7 +889,7 @@ CandidateApplicationRuntimeGraph:
   schema_version
   application_id
   runtime_graph_digest
-  materialized_runtime_lock_id      # required — graph ⊆ lock closure
+  materialized_runtime_lock_id      # required - graph ⊆ lock closure
   direct_agents[]
   transitive_agents[]
   direct_third_party_distributions[]  # app-declared only (unchanged rule)
@@ -903,7 +903,7 @@ CandidateApplicationRuntimeGraph:
 3. Lock closure contains all agent-declared deps.
 4. Certification / compatibility evaluators pass (production).
 
-Output serializes to `.intergrax-runtime-graph.json` (schema v3+ — version bump AP-3) inside materialization context.
+Output serializes to `.intergrax-runtime-graph.json` (schema v3+ - version bump AP-3) inside materialization context.
 
 ---
 
@@ -954,8 +954,8 @@ RuntimeRevision:
 ```text
 candidate
   → validated     (lock + graph + trust + certification + materialization artifact OK)
-  → active        (traffic commit — sole traffic-serving authority for app env)
-  → superseded    (replaced; serving unit may still drain — §20.6)
+  → active        (traffic commit - sole traffic-serving authority for app env)
+  → superseded    (replaced; serving unit may still drain - §20.6)
   → failed        (validation, readiness, or activation failure)
 ```
 
@@ -979,7 +979,7 @@ A logical `RuntimeRevision` is **complete and immutable** once `revision_state` 
 
 Cache reuse MUST NOT alter `materialization_artifact_digest`, `materialized_runtime_lock_digest`, or `runtime_graph_digest`. New agent inclusion produces a **new** revision identity even when most physical bytes are reused.
 
-**Atomicity (application perspective):** routing, registry, and `traffic_serving_revision_id` MUST resolve to **one** exact `RuntimeRevision` — never a mixed agent closure (§20.5).
+**Atomicity (application perspective):** routing, registry, and `traffic_serving_revision_id` MUST resolve to **one** exact `RuntimeRevision` - never a mixed agent closure (§20.5).
 
 ---
 
@@ -1010,7 +1010,7 @@ MaterializationOutput:
 |----------|-----------------|-------|
 | **OCI container image** | Image manifest digest | Current `build_application_image.py` path |
 | **Isolated venv / app bundle** | Directory tree hash | Self-hosted without Docker |
-| **Sandbox / sidecar** (future) | Sidecar unit digest | Model C trust tier — optional |
+| **Sandbox / sidecar** (future) | Sidecar unit digest | Model C trust tier - optional |
 
 **Normative:** Docker is **not** required globally. Every topology MUST produce `materialization_artifact_digest` + embedded runtime graph manifest satisfying the same validation gates.
 
@@ -1080,7 +1080,7 @@ While revision **N** remains the traffic-serving authority, revision **N+1** is 
 
 **Normative:** N continues serving **all** normal production traffic throughout steps 1–6. N+1 receives **no** normal production traffic before readiness unless an explicit shadow/canary policy is added in a future revision. **Canary routing is not required in v1.**
 
-Topology-neutral terms: **serving unit** (process, container, venv host, sidecar), **deployment adapter** (OCI / venv bundle / sandbox), **traffic router** (abstract pointer — not Kubernetes-specific). Kubernetes rolling deployment MAY illustrate an adapter but is **not** architecturally mandatory.
+Topology-neutral terms: **serving unit** (process, container, venv host, sidecar), **deployment adapter** (OCI / venv bundle / sandbox), **traffic router** (abstract pointer - not Kubernetes-specific). Kubernetes rolling deployment MAY illustrate an adapter but is **not** architecturally mandatory.
 
 ### 20.3 Durable state ordering: PREPARE → READY → COMMIT
 
@@ -1090,7 +1090,7 @@ Activation is a **two-phase** protocol when infrastructure must start before tra
 |-------|---------------------------|------------|
 | **PREPARE** | Create `RuntimeRevision` (`candidate` → `validated`); deploy serving unit (`preparing`) | N remains traffic authority; N+1 → `failed` or discarded candidate |
 | **READY** | Health + readiness + certification on candidate instance; `DeploymentInstanceState = ready` | N remains traffic authority; N+1 never receives traffic |
-| **COMMIT (traffic switch)** | Atomic `traffic_serving_revision_id` swap; N+1 `revision_state = active`; registry projection aligned (§21) | See §25 — one exact serving revision MUST remain authoritative |
+| **COMMIT (traffic switch)** | Atomic `traffic_serving_revision_id` swap; N+1 `revision_state = active`; registry projection aligned (§21) | See §25 - one exact serving revision MUST remain authoritative |
 
 **Ordering invariant:** durable control plane MUST NOT claim `revision_state = active` or set `traffic_serving_revision_id = N+1` until N+1 `DeploymentInstanceState = ready`. Failure before COMMIT leaves N active with no user-visible change.
 
@@ -1130,18 +1130,18 @@ ApplicationEnvironmentServingRecord:
   committed_at
 ```
 
-**ACTIVATE (traffic commit)** — atomic logical operation:
+**ACTIVATE (traffic commit)** - atomic logical operation:
 
 ```text
 commit_traffic_switch(application_environment_id, candidate_revision_id):
   1. Assert candidate revision_state == validated
   2. Assert candidate DeploymentInstanceState == ready
-  3. Assert traffic_serving_revision_id == expected_current (CAS — §24)
+  3. Assert traffic_serving_revision_id == expected_current (CAS - §24)
   4. Begin activation transaction
   5. Set traffic_serving_revision_id = candidate_revision_id
   6. Mark candidate revision_state = active
   7. Mark prior revision revision_state = superseded; prior DeploymentInstanceState = draining
-  8. Publish AgentRegistry projection from candidate frozen roster (§21) — same transaction boundary as pointer
+  8. Publish AgentRegistry projection from candidate frozen roster (§21) - same transaction boundary as pointer
   9. Commit durable activation record
  10. Traffic router directs all new requests to N+1 serving unit
 ```
@@ -1180,7 +1180,7 @@ rollback(application_environment_id):
   6. On failure → fail closed; alert; retain last known good traffic pointer where possible
 ```
 
-Rollback **reuses** prior artifact digest, lock, graph, and registry projection — **no rebuild** of N. N+1 becomes `failed` or `draining` as appropriate. If prior revision is unavailable or trust is no longer valid → **fail closed** and alert; do not silently serve a partial closure.
+Rollback **reuses** prior artifact digest, lock, graph, and registry projection - **no rebuild** of N. N+1 becomes `failed` or `draining` as appropriate. If prior revision is unavailable or trust is no longer valid → **fail closed** and alert; do not silently serve a partial closure.
 
 ### 20.8 Normative example: large active user base
 
@@ -1188,10 +1188,10 @@ Rollback **reuses** prior artifact digest, lock, graph, and registry projection 
 
 ```text
 T0  traffic_serving_revision_id = 17; revision 17 serving; users on 17
-T1  Operator ENABLE Agent X (desired state only — 17 unchanged)
+T1  Operator ENABLE Agent X (desired state only - 17 unchanged)
 T2  BUILD/APPLY: revision 18 candidate → validated (frozen roster includes Agent X)
 T3  Deploy serving unit for 18; health + readiness; 18 DeploymentInstanceState = ready
-    (revision 17 continues serving all 1000 users — zero downtime to this point)
+    (revision 17 continues serving all 1000 users - zero downtime to this point)
 T4  ACTIVATE / COMMIT: atomic pointer 17 → 18
     revision 18 active + serving; revision 17 superseded + draining
     registry projection = revision 18 frozen roster (includes Agent X)
@@ -1225,27 +1225,27 @@ T6  revision 17 DeploymentInstanceState = stopped after drain
 |------|--------|
 | Population source | Frozen `EffectiveRoster` snapshot from the **traffic-serving** `RuntimeRevision` (`enablement=true`) |
 | Input contract | `build_application_registry(manifest, env, effective_roster=...)` (AP-3) |
-| Revision binding | Registry MUST reflect exactly `traffic_serving_revision_id` — not desired state, not candidate roster |
+| Revision binding | Registry MUST reflect exactly `traffic_serving_revision_id` - not desired state, not candidate roster |
 | Install state | **Never** stored in registry |
 | Disabled agents | Excluded from register (preferred) or registered not routable |
-| Dynamic register API | **Not required** v1 — population occurs at traffic commit, not as independent post-step |
+| Dynamic register API | **Not required** v1 - population occurs at traffic commit, not as independent post-step |
 
 **Atomic registry rule (ARCH-AGENT-ACTIVATION-1):** `AgentRegistry` is a **projection of the exact traffic-serving `RuntimeRevision`**. Registry publication and traffic switch MUST be coordinated in the same activation boundary (§20.5 step 8) so operators and concurrent users never observe a mixed revision (e.g. registry agents from N+1 while requests still route to N). Registry population is **not** an independent best-effort post-activation step.
 
 AP-10 implements the projection mechanism; AP-9 architecture **requires** this atomic relationship.
 
-Registry snapshots (`registry_snapshot_store`) SHOULD include `effective_roster_revision_id`, `runtime_revision_id`, `traffic_serving_revision_id`, and installation/binding ids for audit — not as install DB.
+Registry snapshots (`registry_snapshot_store`) SHOULD include `effective_roster_revision_id`, `runtime_revision_id`, `traffic_serving_revision_id`, and installation/binding ids for audit - not as install DB.
 
 <a id="protocol-v2-agent-system-identity-projection-invariants-2026-08-18"></a>
 
 ### Protocol v2 agent system identity projection invariants (2026-08-18)
 
-Accepted Protocol v2 audit layer [`AGENT_SYSTEM`](../../audit_results/2026-08-18/AGENT_SYSTEM.md) (**FAIL**, finding 04 ACCEPTED). Target state only — complements §6 identity model; does not create a second identity subsystem.
+Accepted Protocol v2 audit layer [`AGENT_SYSTEM`](../../audit_results/2026-08-18/AGENT_SYSTEM.md) (**FAIL**, finding 04 ACCEPTED). Target state only - complements §6 identity model; does not create a second identity subsystem.
 
-1. **Canonical identity preservation** — registry projection must preserve canonical package/contract identity (`AgentContract.id`, `logical_agent_id`, distribution identity tuple); registry-local dictionary aliases must not silently rewrite `AgentContract.id` ([`AUDIT-20260818-AGENT_SYSTEM-04`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
-2. **Fail-closed mismatch** — identity mismatch between bootstrap key and package-declared contract id must fail closed, or a distinct explicit typed alias/binding contract must own alias semantics ([`AUDIT-20260818-AGENT_SYSTEM-04`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
-3. **Bootstrap vs activated truth** — distinguish any temporary manifest-only/bootstrap compatibility path (e.g. `AgentRegistry.from_agents(dict)`) from canonical activated runtime projection truth populated at traffic commit ([`AUDIT-20260818-AGENT_SYSTEM-04`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
-4. **Ownership cross-link** — reuse §6 identity model and **TL-FIX-B** single-implementation-authority invariants; Tier-1 registry execution remains a projection — Distribution owns identity authority, not a competing registry identity mechanism ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-02`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
+1. **Canonical identity preservation** - registry projection must preserve canonical package/contract identity (`AgentContract.id`, `logical_agent_id`, distribution identity tuple); registry-local dictionary aliases must not silently rewrite `AgentContract.id` ([`AUDIT-20260818-AGENT_SYSTEM-04`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
+2. **Fail-closed mismatch** - identity mismatch between bootstrap key and package-declared contract id must fail closed, or a distinct explicit typed alias/binding contract must own alias semantics ([`AUDIT-20260818-AGENT_SYSTEM-04`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
+3. **Bootstrap vs activated truth** - distinguish any temporary manifest-only/bootstrap compatibility path (e.g. `AgentRegistry.from_agents(dict)`) from canonical activated runtime projection truth populated at traffic commit ([`AUDIT-20260818-AGENT_SYSTEM-04`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
+4. **Ownership cross-link** - reuse §6 identity model and **TL-FIX-B** single-implementation-authority invariants; Tier-1 registry execution remains a projection - Distribution owns identity authority, not a competing registry identity mechanism ([`AUDIT-20260818-TIER_LAYER_BOUNDARIES-02`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md)).
 
 Remediation tracked as **AGSYS-IDENTITY-PROJECTION** in [plan](../maintainers/plans/AGENT_DISTRIBUTION.md) with ACP registry bootstrap cross-reference. **Not implemented** by audit persistence.
 
@@ -1283,7 +1283,7 @@ Install/enable/disable affects routing only after **BUILD/APPLY + ACTIVATE** (tr
 | **Lock artifact store** | Tier-0 | **Yes** | `MaterializedRuntimeLock` blobs |
 | Manifest defaults | Tier-3 release | Versioned with app | `ApplicationManifest.agents` |
 | `AgentRegistry` | Tier-1 | **No** (process) | Execution projection of `traffic_serving_revision_id` |
-| Effective roster | — | **No** | Derived per revision build; frozen at candidate validation |
+| Effective roster | - | **No** | Derived per revision build; frozen at candidate validation |
 | `DeploymentInstanceState` | Tier-0 + host adapter | **Ephemeral** | Instance readiness / drain per revision |
 
 ### Transaction / atomicity boundaries
@@ -1294,8 +1294,8 @@ Install/enable/disable affects routing only after **BUILD/APPLY + ACTIVATE** (tr
 | Binding write + revision bump | **Yes** |
 | Lock persist + graph validation result | **Yes** |
 | Traffic commit: `traffic_serving_revision_id` + `revision_state` + registry projection | **Yes** (§20.5) |
-| Registry population | **Same boundary as traffic commit** — not independent |
-| Catalog cache refresh | **No** — best effort |
+| Registry population | **Same boundary as traffic commit** - not independent |
+| Catalog cache refresh | **No** - best effort |
 
 ---
 
@@ -1331,7 +1331,7 @@ Install/enable/disable affects routing only after **BUILD/APPLY + ACTIVATE** (tr
 | Candidate deploy / start failure | Serving unit `failed`; no READY | **Unchanged** | Closed |
 | Readiness / health check failure | Candidate never reaches `ready`; no COMMIT | **Unchanged** | Closed |
 | Failure before traffic COMMIT | Discard or mark candidate `failed` | **Unchanged** | Closed |
-| Traffic COMMIT partial failure | Abort or complete atomically; one exact serving revision authoritative | Prior OR new — never mixed | Closed |
+| Traffic COMMIT partial failure | Abort or complete atomically; one exact serving revision authoritative | Prior OR new - never mixed | Closed |
 | Post-cutover health failure (N+1) | Automatic rollback to N when rollback-eligible (§20.7) | Revert to N if eligible | Closed |
 | Drain timeout | Apply bounded termination policy; alert; force `stopped` on draining unit | N+1 remains authority | Closed (policy) |
 | Activation failure (generic) | Rollback attempt to `prior_traffic_revision_id` | Revert when eligible | Closed |
@@ -1354,7 +1354,7 @@ Install/enable/disable affects routing only after **BUILD/APPLY + ACTIVATE** (tr
 | **Hosted SaaS** | `official_catalog` + enterprise | Multi-tenant object store | OCI image per revision | Same lock semantics |
 | **Airgap enterprise** | `enterprise_private` bundles | On-prem store | Image/bundle sideload | Pre-signed lock in bundle |
 
-**Uniform logical contract** — topology affects **adapters only**, not state machine or identity model.
+**Uniform logical contract** - topology affects **adapters only**, not state machine or identity model.
 
 ---
 
@@ -1375,7 +1375,7 @@ LKW (`local_workspace_application`) remains **consumer only**.
 discover → install → bind/configure → enable → invoke (Nexus) → disable → upgrade/rollback → uninstall
 ```
 
-All transitions invoke **platform-owned** capabilities — identical API surface for other Tier-3 apps.
+All transitions invoke **platform-owned** capabilities - identical API surface for other Tier-3 apps.
 
 ---
 
@@ -1389,21 +1389,21 @@ All transitions invoke **platform-owned** capabilities — identical API surface
 | Org private catalog provider | LKW-specific store |
 | Neutral installation plane | Marketplace Nexus branch |
 
-Marketplace = **catalog provider + publisher onboarding** — not execution fork.
+Marketplace = **catalog provider + publisher onboarding** - not execution fork.
 
 ---
 
 ## 29. Security implications
 
-- Installation equals **deploying trusted code** — same trust posture as Platform Plugins §16.
+- Installation equals **deploying trusted code** - same trust posture as Platform Plugins §16.
 - Production requires digest + trust evidence on every active revision.
 - Org allow/deny intersects before `INSTALLED`.
 - Revocation re-check at enable and activation.
-- Secrets never in catalog or lock artifacts — binding `secret_refs` only.
-- Binding and manifest config is validated by Agent Distribution policy on the canonical secret-safe engine (`intergrax.core.security`): forbidden keys and secret-like literals are rejected. This is detection/validation only — not a secret manager.
+- Secrets never in catalog or lock artifacts - binding `secret_refs` only.
+- Binding and manifest config is validated by Agent Distribution policy on the canonical secret-safe engine (`intergrax.core.security`): forbidden keys and secret-like literals are rejected. This is detection/validation only - not a secret manager.
 - Materialization fail-closed on secret-like payloads (existing graph builder behavior).
 - No hot arbitrary Python in production process.
-- Audit tombstones retained on uninstall — artifacts removed per policy, records persist.
+- Audit tombstones retained on uninstall - artifacts removed per policy, records persist.
 
 ---
 
@@ -1419,7 +1419,7 @@ Marketplace = **catalog provider + publisher onboarding** — not execution fork
 | `activation.failed` / `rollback.*` | prior/new revision ids, reason |
 | Registry snapshot | `runtime_revision_id`, `effective_roster_revision_id`, agent id set |
 
-Align with observability spine — distribution events on Plane B; routing on Plane A.
+Align with observability spine - distribution events on Plane B; routing on Plane A.
 
 ---
 
@@ -1469,7 +1469,7 @@ AP-3  Tier-0 contracts (identity, catalog provider IF, installation/binding reco
   → AP-12 LKW consumer proof wiring
 ```
 
-**AGENT-PLATFORM-3 may begin** with AP-3 Tier-0 contracts and store interfaces — this architecture document is complete and contains no blocking open questions for implementation start.
+**AGENT-PLATFORM-3 may begin** with AP-3 Tier-0 contracts and store interfaces - this architecture document is complete and contains no blocking open questions for implementation start.
 
 ---
 
@@ -1482,7 +1482,7 @@ AP-3  Tier-0 contracts (identity, catalog provider IF, installation/binding reco
 | Property | Semantics |
 |----------|-----------|
 | Process model | Single OS process |
-| Composition root | `ProductionProcessComposition` — one explicit process-level owner |
+| Composition root | `ProductionProcessComposition` - one explicit process-level owner |
 | Store bundle | `ProductionAgentPlatformRuntime.stores` (`AgentPlatformRuntimeStores`) shared by lifecycle and serving |
 | Adapter tier | Process-local in-memory AP-9/AP-10 adapters **only** under this topology |
 | Durability | Restart loses lifecycle state |
@@ -1513,7 +1513,7 @@ ProductionProcessComposition          ← canonical owner (process lifetime)
 
 **Forbidden owners:** application `main.py`, product factories, per-request bootstrap, per-factory construction.
 
-`build_production_agent_platform_runtime()` means *construct one new process-local lifecycle universe* — not *resolve currently active production state*.
+`build_production_agent_platform_runtime()` means *construct one new process-local lifecycle universe* - not *resolve currently active production state*.
 
 ### 34.4 Lifecycle writers and serving consumer
 
@@ -1560,7 +1560,7 @@ Manifest → development registry → host. No production lifecycle requirement.
 
 ### 34.8 Unresolved blockers
 
-**None** for reference production V1. Durable multi-instance topology is explicitly deferred — not a blocker for AC-3-FIX-3 wiring against process-local adapters.
+**None** for reference production V1. Durable multi-instance topology is explicitly deferred - not a blocker for AC-3-FIX-3 wiring against process-local adapters.
 
 ### Unresolved architecture blockers
 
@@ -1573,7 +1573,7 @@ Manifest → development registry → host. No production lifecycle requirement.
 - [x] Platform-neutral chain documented end-to-end
 - [x] State dimensions remain orthogonal
 - [x] Deterministic dependency closure independent of floating catalog state
-- [x] `uv.lock` relationship explicit — not sole post-release authority
+- [x] `uv.lock` relationship explicit - not sole post-release authority
 - [x] Binding targets `installation_slot_id` with digest resolution
 - [x] `RuntimeRevision` identifies complete materialized runtime
 - [x] Materialization topology-abstract

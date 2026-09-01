@@ -1,4 +1,4 @@
-# 2026-06-26 — LKW.1.11 live verification blocker
+# 2026-06-26 - LKW.1.11 live verification blocker
 
 ## Summary
 
@@ -59,10 +59,10 @@ The issue is in runtime event schema/emission semantics, not in LKW product logi
 ## Queue update
 
 ```text
-LKW.1.11 — implementation/unit scope passed; live not passed
-LKW.1.12 — fix decision_emitted phase mismatch
-LKW.1.13 — final live index/search/synthesize smoke
-LKW-H1 — local trace/evidence inspection after live execution blockers
+LKW.1.11 - implementation/unit scope passed; live not passed
+LKW.1.12 - fix decision_emitted phase mismatch
+LKW.1.13 - final live index/search/synthesize smoke
+LKW-H1 - local trace/evidence inspection after live execution blockers
 ```
 
 ## LKW.1.12 scope guardrails

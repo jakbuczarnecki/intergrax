@@ -28,9 +28,9 @@ Before runtime refactoring (G1B), the platform must freeze: what a Governance Ev
 
 **Rejected alternatives:**
 
-- **Single universal GovernanceEngine** — collapses defense-in-depth, mixes authorization with post-run BLOCK semantics, and contradicts existing specialized owners.
-- **One runtime enum for all decisions** — replay `ALLOW`/`WARN`/`BLOCK` is not equivalent to live pre-execution `DENY`; timing and follow-up differ.
-- **Merge ToolAccessPolicy and ToolScopePolicy** — plan-time filtering and invocation-time authorization are deliberately separate.
+- **Single universal GovernanceEngine** - collapses defense-in-depth, mixes authorization with post-run BLOCK semantics, and contradicts existing specialized owners.
+- **One runtime enum for all decisions** - replay `ALLOW`/`WARN`/`BLOCK` is not equivalent to live pre-execution `DENY`; timing and follow-up differ.
+- **Merge ToolAccessPolicy and ToolScopePolicy** - plan-time filtering and invocation-time authorization are deliberately separate.
 
 ## Decision
 
@@ -66,7 +66,7 @@ A Governance Evaluation Point is **not** one method, one class, one enum, or one
 | **E. Post-run governance** | Evaluate completed execution, regression, historical metrics | `GovernanceService`, `ExecutionGuard`, `ExecutionPolicyEngine` |
 | **F. Evidence / provenance** | Durable, reviewable representation of decisions and execution | Observability spine, execution evidence contracts ([OBSERVABILITY.md](../../../architecture/OBSERVABILITY.md)) |
 
-No new universal owner replaces these categories. Future work unifies through **shared contracts, evaluation-point semantics, and composition** — not a growing god object.
+No new universal owner replaces these categories. Future work unifies through **shared contracts, evaluation-point semantics, and composition** - not a growing god object.
 
 ### 3. Authorization vs policy enforcement vs post-run governance
 
@@ -86,7 +86,7 @@ These concerns **compose sequentially** but are **not interchangeable**:
 
 ### 4. Evaluation-point classes and matrix
 
-Conceptual classes only — **no runtime enum in G1A/G1B architecture freeze**.
+Conceptual classes only - **no runtime enum in G1A/G1B architecture freeze**.
 
 `EXECUTION_INTERRUPT` is **not** a separate top-level class: it shares the live runtime policy owner and `PolicyAction` vocabulary with agent-decision control, but uses the typed `ExecutionInterrupt` request via `evaluate_interrupt`. Document it as a distinct **sub-boundary** under **AGENT_DECISION** / runtime control.
 
@@ -97,12 +97,12 @@ Conceptual classes only — **no runtime enum in G1A/G1B architecture freeze**.
 | **PRE_MODEL** | `RuntimePolicyEngine.evaluate_pre_llm` | tenant / agent / message_count + opaque `context` | `PolicyAction` | Pre-LLM bridge | Empty context → DENY; else largely default allow | Implemented slice; **weak context (G1B)** |
 | **TOOL_PLAN_OR_ACCESS** | `ToolAccessPolicy` | `ToolInvocationPlan`, `allowed_tools` | Plan filter (no PolicyAction enum) | Before `ToolRuntime.invoke` | Fail closed when allowlist configured and tool not listed; `allowed_tools is None` → no filter | Implemented |
 | **TOOL_INVOCATION** (authorization) | `ToolScopePolicy` | `agent_id`, `tool_id` | Boolean allow / deny → exception | `RuntimeToolInvoker` step 0 | Fail closed when policy configured and not allowed | Implemented |
-| **TOOL_INVOCATION** (declarative policy) | `DeclarativePolicyEnforcer` | `PolicyEvaluationContext` | ALLOW, DENY, REQUIRE_HITL + enforcement mode | `RuntimeToolInvoker` before handler | ENFORCE + indeterminate security outcome → block; AUDIT_ONLY may record would-deny | **Reference pattern** — strongest typed contract |
+| **TOOL_INVOCATION** (declarative policy) | `DeclarativePolicyEnforcer` | `PolicyEvaluationContext` | ALLOW, DENY, REQUIRE_HITL + enforcement mode | `RuntimeToolInvoker` before handler | ENFORCE + indeterminate security outcome → block; AUDIT_ONLY may record would-deny | **Reference pattern** - strongest typed contract |
 | **MEANINGFUL_SIDE_EFFECT** | `RuntimePolicyEngine.evaluate_meaningful_side_effect` | `MeaningfulSideEffectRequest` | `PolicyAction` | Side-effect authorization composition | **Fail closed** ([ADR-POLICY-SIDE-EFFECT-001](../2026-07-20/ADR-POLICY-SIDE-EFFECT-001.md)) | Implemented mechanism; extensible `context` fields **G1B** |
 | **PRE_OUTPUT** | `RuntimePolicyEngine.evaluate_pre_output` | tenant / agent / output_chars + opaque `context` | `PolicyAction` | Pre-output bridge | Empty output → DENY; else default allow | Implemented slice |
 | **POST_RUN** | `ExecutionGuard` → `ExecutionPolicyEngine` | `ExecutionMetrics`, `RegressionSignals`, optional `RunDiff` | ALLOW, WARN, BLOCK (`PolicyDecisionType`) | After run completion | Advisory WARN default from config; not pre-execution DENY | Implemented mechanisms |
 
-Critic verdict evaluation (`evaluate_critic_verdict`) maps to **AGENT_DECISION** / runtime control with opaque `critic_governance` context — **G1B typed-context candidate**.
+Critic verdict evaluation (`evaluate_critic_verdict`) maps to **AGENT_DECISION** / runtime control with opaque `critic_governance` context - **G1B typed-context candidate**.
 
 ### 5. Shared decision semantics (conceptual only)
 
@@ -129,7 +129,7 @@ Multiple point-specific vocabularies remain valid. Shared **semantic categories*
 | Declarative `ALLOW` / `DENY` / `REQUIRE_HITL` | PROCEED / BLOCK / REQUIRE_HUMAN |
 | Replay `ALLOW` | PROCEED / ACCEPT (post-run) |
 | Replay `WARN` | OBSERVE_OR_REVIEW |
-| Replay `BLOCK` | Post-run follow-up governance — **not** equivalent to pre-execution BLOCK |
+| Replay `BLOCK` | Post-run follow-up governance - **not** equivalent to pre-execution BLOCK |
 
 Shared semantics do **not** require one enum, one DTO, or one evaluator.
 
@@ -137,16 +137,16 @@ Shared semantics do **not** require one enum, one DTO, or one evaluator.
 
 Failure posture is **evaluation-point-specific**. Platform rules:
 
-**A. Meaningful external side effects — FAIL CLOSED**
+**A. Meaningful external side effects - FAIL CLOSED**
 
 Missing identity, missing principal where required, indeterminate rule, invalid decision, unsupported security-sensitive outcome, or no matching authorization rule must **not** silently execute. Current `evaluate_meaningful_side_effect` behavior is canonical.
 
-**B. Authorization boundaries — FAIL CLOSED when restricted**
+**B. Authorization boundaries - FAIL CLOSED when restricted**
 
 When access is explicitly configured/restricted, denial is mandatory. Distinguish:
 
-- *No policy configured* (e.g. `allowed_tools is None`, no scope policy) — not automatic denial unless existing semantics define it.
-- *Configured policy cannot determine authorization* — treat as denial on restricted paths.
+- *No policy configured* (e.g. `allowed_tools is None`, no scope policy) - not automatic denial unless existing semantics define it.
+- *Configured policy cannot determine authorization* - treat as denial on restricted paths.
 
 **C. Declarative ENFORCE mode**
 
@@ -187,9 +187,9 @@ Extensible policy conditions remain plugin/domain-specific via the existing Plat
 
 Frozen HITL rules (details in [RELIABILITY_FAILURE_AND_HITL.md](../../../architecture/RELIABILITY_FAILURE_AND_HITL.md) and [ADR-PLATFORM-PLUGIN-001](../2026-08-14/ADR-PLATFORM-PLUGIN-001.md)):
 
-- **One** canonical HITL system — no second pause coordinator.
+- **One** canonical HITL system - no second pause coordinator.
 - `REQUIRE_HUMAN` (runtime) and `REQUIRE_HITL` (declarative) map to the same conceptual **REQUIRE_HUMAN** semantic; point-specific names may persist until G1B hardening.
-- Approval must be **scoped** (task, run, step, tool, matched rules, provenance digest where wired — see declarative grant satisfaction).
+- Approval must be **scoped** (task, run, step, tool, matched rules, provenance digest where wired - see declarative grant satisfaction).
 - Approval does **not** generically bypass **DENY**.
 - Policy must be **re-evaluated** after resume where canonical HITL architecture requires it.
 - HITL is **not** `TOOL_ERROR` or a generic retry substitute.
@@ -217,8 +217,8 @@ For security-relevant governance decisions, where applicable, attribute:
 
 It is a **facade** over:
 
-- `RuntimePolicyEngine` — live evaluation
-- `ExecutionPolicyEngine` (optional) — replay / post-run oriented evaluation exposed through the same entry type
+- `RuntimePolicyEngine` - live evaluation
+- `ExecutionPolicyEngine` (optional) - replay / post-run oriented evaluation exposed through the same entry type
 
 It **MUST NOT** silently absorb:
 
@@ -228,7 +228,7 @@ It **MUST NOT** silently absorb:
 - Evidence persistence
 - Every future evaluation point
 
-Docstring "unified" terminology is **documentation debt** — clarify in G1B without renaming the public capability or turning the facade into `GovernanceEngine`.
+Docstring "unified" terminology is **documentation debt** - clarify in G1B without renaming the public capability or turning the facade into `GovernanceEngine`.
 
 ### 11. Reference enforcement pattern
 
@@ -265,14 +265,14 @@ Other evaluation points should converge toward this **contract quality**, not th
 
 ## Compliance
 
-- Tier boundaries preserved — no new Tier-0 universal engine.
+- Tier boundaries preserved - no new Tier-0 universal engine.
 - G0 naming and responsibility boundary unchanged.
 - Platform Plugin architecture reused; no second plugin framework.
 - Linked architecture owner updated: [`GOVERNED_EXECUTION.md`](../../../architecture/GOVERNED_EXECUTION.md).
 
 ## G1B implementation backlog (frozen scope)
 
-G1B performs **contract hardening** only — no architectural rediscovery. Minimum candidates:
+G1B performs **contract hardening** only - no architectural rediscovery. Minimum candidates:
 
 | ID | Concern | G1B action |
 | -- | ------- | ---------- |
@@ -286,5 +286,5 @@ G1B performs **contract hardening** only — no architectural rediscovery. Minim
 
 ## Implementation notes
 
-- **G1A:** documentation only — this ADR and [`GOVERNED_EXECUTION.md`](../../../architecture/GOVERNED_EXECUTION.md) section Governance Evaluation Points and ownership.
+- **G1A:** documentation only - this ADR and [`GOVERNED_EXECUTION.md`](../../../architecture/GOVERNED_EXECUTION.md) section Governance Evaluation Points and ownership.
 - **Verification:** `python scripts/maintenance/check_harness_adr.py`

@@ -1,4 +1,4 @@
-        # Build & deploy — Dispute Sim
+        # Build & deploy - Dispute Sim
 
         Tier-3 application package: ``applications/dispute_sim_application``. This document is the **operational runbook** for local development, verification, and container deployment.
 
@@ -25,7 +25,7 @@
         cp applications/dispute_sim_application/.env.example applications/dispute_sim_application/.env
         ```
 
-        Edit ``.env`` (gitignored). Variables use the application prefix **`DISPUTE_SIM_`** — do not put app secrets only in the repository-root ``.env``.
+        Edit ``.env`` (gitignored). Variables use the application prefix **`DISPUTE_SIM_`** - do not put app secrets only in the repository-root ``.env``.
 
         | Variable | Default | Role |
         |----------|---------|------|
@@ -96,7 +96,7 @@ Routes are mounted under ``/v1/dispute_sim``. See ``serving`` and application RE
 
         Override image tag: ``IMAGE_TAG=my-registry/dispute_sim:1.0.0`` (sh) or ``build-docker.bat my-registry/dispute_sim:1.0.0`` (bat).
 
-        ### Manual — BuildKit
+        ### Manual - BuildKit
 
         ```bash
         docker buildx build -f applications/dispute_sim_application/docker/Dockerfile \
@@ -104,7 +104,7 @@ Routes are mounted under ``/v1/dispute_sim``. See ``serving`` and application RE
           -t dispute_sim-application .
         ```
 
-        ### Manual — classic Docker
+        ### Manual - classic Docker
 
         ```bash
         cp applications/dispute_sim_application/docker/.dockerignore .dockerignore

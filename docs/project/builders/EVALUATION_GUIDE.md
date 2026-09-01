@@ -124,18 +124,18 @@ High-value feedback includes the exact revision, target/path, environment, expec
 
 Classify friction precisely:
 
-- **DOCUMENTATION FRICTION** — unclear instructions, navigation, or setup;
-- **ENVIRONMENT BLOCK** — a prerequisite, hardware, or service is unavailable;
-- **PRODUCT/PROOF FAILURE** — the documented expected result fails under supported conditions;
-- **CLAIM GAP** — implementation may exist, but evidence does not establish the public claim.
+- **DOCUMENTATION FRICTION** - unclear instructions, navigation, or setup;
+- **ENVIRONMENT BLOCK** - a prerequisite, hardware, or service is unavailable;
+- **PRODUCT/PROOF FAILURE** - the documented expected result fails under supported conditions;
+- **CLAIM GAP** - implementation may exist, but evidence does not establish the public claim.
 
 ## 8. DECIDE
 
 These are evaluation decisions, not public module statuses:
 
-- **PROCEED** — selected bounded evidence supports deeper evaluation, build, or pilot discussion;
-- **DEFER** — the workflow may fit, but required evidence/capability is incomplete or the environment cannot fairly evaluate it;
-- **STOP** — the responsibility/use-case class is wrong, evidence contradicts the need, or another approach is more appropriate.
+- **PROCEED** - selected bounded evidence supports deeper evaluation, build, or pilot discussion;
+- **DEFER** - the workflow may fit, but required evidence/capability is incomplete or the environment cannot fairly evaluate it;
+- **STOP** - the responsibility/use-case class is wrong, evidence contradicts the need, or another approach is more appropriate.
 
 Do not use `ACCEPTED`, `READY_FOR_REVIEW`, or `DONE` as reader decisions; lifecycle and production labels are not evaluation decisions.
 

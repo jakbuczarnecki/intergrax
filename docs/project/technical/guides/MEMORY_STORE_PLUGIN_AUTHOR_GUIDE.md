@@ -4,7 +4,7 @@
 **Architecture owner:** [`docs/project/architecture/MEMORY.md`](../../architecture/MEMORY.md)
 **Platform catalog:** [`EXTENSION_AUTHOR_GUIDE.md`](EXTENSION_AUTHOR_GUIDE.md) · [`PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md)
 
-This guide documents **three separate public memory plugin surfaces**. There is no single `MemoryPlugin` protocol — do not collapse factory contracts.
+This guide documents **three separate public memory plugin surfaces**. There is no single `MemoryPlugin` protocol - do not collapse factory contracts.
 
 ---
 
@@ -29,11 +29,11 @@ This guide documents **three separate public memory plugin surfaces**. There is 
 | D15 | Production checklist | COMPLETE | §15 |
 | D16 | Troubleshooting | COMPLETE | §16 |
 
-**Overall:** **COMPLETE** — all three surfaces have shipped Tier-3 resolution paths. User-profile and session-storage materialize via `MemoryProfile` plugin selection + typed resolver; session turn index via shared classifier. Bootstrap counting alone does not activate stores (§9).
+**Overall:** **COMPLETE** - all three surfaces have shipped Tier-3 resolution paths. User-profile and session-storage materialize via `MemoryProfile` plugin selection + typed resolver; session turn index via shared classifier. Bootstrap counting alone does not activate stores (§9).
 
 ---
 
-## 1. Purpose — what is pluggable
+## 1. Purpose - what is pluggable
 
 Memory plugins swap **store backends** behind Tier-1 facades (`SessionManager`, `UserProfileManager`). They are not Context plugins, RAG components, or Integration manifests.
 
@@ -49,7 +49,7 @@ Entry point group (all three share one group; dispatch is by factory method shap
 intergrax.memory_stores
 ```
 
-**Vector memory:** LTM and episodic indexes reuse the host **integration vector store** (`EmbeddingManager`, `VectorstoreManager`). Plugins supply index adapters — not vendor SDK clients owned by the plugin package.
+**Vector memory:** LTM and episodic indexes reuse the host **integration vector store** (`EmbeddingManager`, `VectorstoreManager`). Plugins supply index adapters - not vendor SDK clients owned by the plugin package.
 
 **Shared truths:**
 
@@ -119,7 +119,7 @@ There is **no** `register_memory_store_plugin()` helper.
 
 ### User profile store (test fixture pattern)
 
-Reference: `tests/fixtures/plugin_packages/memory_store_plugin/memory_store_plugin/plugin.py` (**test fixture — packaging reference, not production sample**)
+Reference: `tests/fixtures/plugin_packages/memory_store_plugin/memory_store_plugin/plugin.py` (**test fixture - packaging reference, not production sample**)
 
 ```python
 from typing import Any
@@ -210,7 +210,7 @@ There is **no** `register_memory_store_plugin()` and **no** scaffold CLI.
 
 ---
 
-## 6. Configuration — MemoryProfile
+## 6. Configuration - MemoryProfile
 
 `MemoryProfile` on `ApplicationEnvironmentProfile` toggles memory features:
 
@@ -236,7 +236,7 @@ Vector memory flags require a resolvable RAG stack with vector backends (`assert
 
 Memory plugins should consume **host-resolved dependencies** passed as factory `**kwargs` or constructor arguments. Do not encourage arbitrary `os.environ` lookup in plugin factories unless your domain contract explicitly documents that pattern.
 
-Integration credentials belong in `IntegrationProfile` and provider bundles — the memory plugin receives constructed clients/managers from the host.
+Integration credentials belong in `IntegrationProfile` and provider bundles - the memory plugin receives constructed clients/managers from the host.
 
 ---
 
@@ -255,7 +255,7 @@ Plugins return store instances; managers (`UserProfileManager`, `SessionManager`
 
 ## 9. Registration and discovery (critical)
 
-Memory store plugins follow the standard platform plugin flow. Host wiring performs discovery and activation — authors do not call a separate bootstrap API.
+Memory store plugins follow the standard platform plugin flow. Host wiring performs discovery and activation - authors do not call a separate bootstrap API.
 
 ```text
 plugin contract (Protocol + plugin_id)
@@ -281,7 +281,7 @@ materialization / activation (`materialize_user_profile_store`, `materialize_ses
 
 - Does **not** create a universal registered catalog of active stores
 - Does **not** select which plugin backs a running host
-- Does **not** materialize stores — resolver materialization is separate (`resolve_memory_platform_wiring`)
+- Does **not** materialize stores - resolver materialization is separate (`resolve_memory_platform_wiring`)
 
 **Discovery alone does not activate a memory provider.** Use `MemoryProfile` plugin selection or explicit `MemoryPlatformWiring` for materialization.
 
@@ -291,7 +291,7 @@ materialization / activation (`materialize_user_profile_store`, `materialize_ses
 
 Platform qualification primitives exist (`check_platform_compatibility`, production gates). Memory-specific production qualification is host-owned. Compatible EP metadata ≠ production-qualified.
 
-External memory plugins do not receive automatic live-backend qualification for vector indexes — that evidence is separate (RAG/integration qualification).
+External memory plugins do not receive automatic live-backend qualification for vector indexes - that evidence is separate (RAG/integration qualification).
 
 ---
 
@@ -337,7 +337,7 @@ MemoryProfile.user_profile_store_plugin_id / session_storage_plugin_id (optional
   → build_session_manager_from_environment(env, memory_wiring=wiring, tenant_id=…, rag_stack=…)
 ```
 
-Selection is explicit via `MemoryProfile` plugin ids — registering explicit candidates alone does not choose the store.
+Selection is explicit via `MemoryProfile` plugin ids - registering explicit candidates alone does not choose the store.
 
 Explicit local override (same resolver; EP discovery or explicit candidates):
 
@@ -417,7 +417,7 @@ wiring = resolve_memory_platform_wiring(
 - [ ] Correct protocol for your surface (do not mix factory method names)
 - [ ] Stable `plugin_id` per class
 - [ ] For episodic index: handle `embedding_manager`, `vectorstore_manager`, `tenant_id` kwargs
-- [ ] Do not assume entry-point discovery alone activates your store — use profile `plugin_id` or explicit wiring
+- [ ] Do not assume entry-point discovery alone activates your store - use profile `plugin_id` or explicit wiring
 - [ ] For user/session stores: set `user_profile_store_plugin_id` / `session_storage_plugin_id` or pass explicit plugin candidates
 - [ ] Tombstone semantics for vector indexes when primary store deletes entries
 - [ ] Tenant isolation enforced in store implementation
@@ -432,7 +432,7 @@ wiring = resolve_memory_platform_wiring(
 | EP installed but store unchanged | No `plugin_id` on `MemoryProfile`; discovery disabled; check `INTERGRAX_DISCOVER_PLUGINS` |
 | Selected plugin fails to load | Inspect `MemoryPlatformWiring.memory_store_plugin_load_report.failed`; selected id fails closed with precise error |
 | Unsupported EP target | Appears in `memory_store_plugin_load_report.rejected`; materialized stores validated via canonical `UserProfileStore` / `SessionStorage` |
-| Discovery finds plugin but no effect | Discovery does not select or materialize — configure profile `plugin_id` or explicit wiring (§9) |
+| Discovery finds plugin but no effect | Discovery does not select or materialize - configure profile `plugin_id` or explicit wiring (§9) |
 | Episodic index always default | No turn-index EP discovered; pass `session_turn_index_plugins=` explicitly |
 | `tenant_required` | Pass non-empty `tenant_id` to session manager wiring |
 | `vector_backend_unavailable` | Enable integration vector store; resolve `rag_stack` before memory wiring |

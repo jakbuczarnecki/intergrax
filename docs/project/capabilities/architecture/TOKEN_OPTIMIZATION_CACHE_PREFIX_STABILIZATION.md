@@ -4,7 +4,7 @@ Intergrax framework – proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
 -->
 
-# Token Optimization — Cache-prefix Stabilization Architecture and Contract Addendum
+# Token Optimization - Cache-prefix Stabilization Architecture and Contract Addendum
 
 **Status:** Helper-level contracts and policy **Done / Closed** (`TOKEN-OPT-5A`–`TOKEN-OPT-5E`); runtime wiring and universal proof planned under **TOKEN-10**
 
@@ -26,7 +26,7 @@ This addendum captures the Token Optimization implications from cache-heavy agen
 https://viktor.com/research/how-we-built-viktor-around-prompt-caching
 ```
 
-Use as **architectural inspiration only** — not an external dependency or copied implementation. Do not call the Intergrax implementation “VIKTOR algorithm/cache/runtime.”
+Use as **architectural inspiration only** - not an external dependency or copied implementation. Do not call the Intergrax implementation “VIKTOR algorithm/cache/runtime.”
 
 The key architectural conclusion for Intergrax:
 
@@ -47,7 +47,7 @@ Prompt caching is a **cost and latency optimization**. It is not the same thing 
 |----------|----------|
 | Content reduction | deduplication, budget-aware packing, extractive filtering, structural compaction, output policy |
 | Provider prefix-cache reuse | cached_input_tokens, prefix-cache hits, lower prefill work, latency improvement |
-| Managed-provider billing (Claude-style) | explicit cache breakpoints, billing discounts where offered — **not** identical to vLLM self-hosted semantics |
+| Managed-provider billing (Claude-style) | explicit cache breakpoints, billing discounts where offered - **not** identical to vLLM self-hosted semantics |
 
 Do not mix these families in receipts, telemetry, benchmark summaries, or public claims. Do not add cached tokens to content-saved tokens.
 
@@ -81,7 +81,7 @@ dynamic tool availability data
 current optimization request data
 ```
 
-### Hard invariants (runtime — TOKEN-10B)
+### Hard invariants (runtime - TOKEN-10B)
 
 1. Stable prefix must be byte/token stable for shared-prefix requests.
 2. Stable block order must remain deterministic.
@@ -94,7 +94,7 @@ current optimization request data
 9. Prefix invalidation must produce an explicit reason.
 10. Cache stability is a runtime property, not only a test helper.
 
-Helper-level contracts are extended by the production assembler at `intergrax/runtime/token_optimization/prompt_assembly.py` (**TOKEN-10B** — implemented / ready for review).
+Helper-level contracts are extended by the production assembler at `intergrax/runtime/token_optimization/prompt_assembly.py` (**TOKEN-10B** - implemented / ready for review).
 
 ---
 
@@ -152,9 +152,9 @@ Public contracts:
 
 - **Defensive model-facing snapshots:** assembly deep-copies only `to_dict()` fields (`role`, `content`, `name`, `tool_call_id`, `tool_calls`); caller-owned messages and nested structures are not retained.
 - **Defensive tool-schema snapshots:** `build_cache_stable_tool_envelope` deep-copies, canonicalizes, and fingerprints copied entries only.
-- **Full message integrity hash:** `CacheStablePromptAssembly.messages_hash` — SHA-256 over canonical `to_dict()` sequence; separate from `prefix_hash` (cacheable prefix identity only).
+- **Full message integrity hash:** `CacheStablePromptAssembly.messages_hash` - SHA-256 over canonical `to_dict()` sequence; separate from `prefix_hash` (cacheable prefix identity only).
 - **Send-time validation:** `materialize_cache_stable_send_payload` recomputes and compares `messages_hash`, stable-prefix fingerprints, and tool-envelope hash/ordering before adapter invocation; returns fresh defensive copies; raises `CacheStablePromptIntegrityError` on mismatch (fail closed).
-- **Canonical hashing helpers:** `compute_model_facing_messages_hash` (`intergrax/llm/messages.py`), `compute_openai_tools_schema_hash` (`intergrax/tools/exporters/openai.py`) — shared by assembler and `ToolPlanningService` post-pruning validation.
+- **Canonical hashing helpers:** `compute_model_facing_messages_hash` (`intergrax/llm/messages.py`), `compute_openai_tools_schema_hash` (`intergrax/tools/exporters/openai.py`) - shared by assembler and `ToolPlanningService` post-pruning validation.
 - **Complete tool-envelope transitions:** `None↔hash` and `hash A↔hash B` report `tool_envelope_stable=false` and `TOOL_ENVELOPE_CHANGED` when prefix is otherwise reusable; prompt-safety invalidation retains precedence.
 
 ### TOKEN-10B-R2 exact schema sequence integrity (as-built correction)
@@ -222,7 +222,7 @@ Implementation rows: `TOKEN-LLM-2`, `TOKEN-LLM-3` in [`docs/project/maintainers/
 
 ---
 
-## 7. Cache-aware execution gate (TOKEN-10D — accepted / closed)
+## 7. Cache-aware execution gate (TOKEN-10D - accepted / closed)
 
 `TOKEN-OPT-5E` delivered helper-level timing policy. **TOKEN-10D-1** wired the runtime consumer. **TOKEN-10D-3** adds evidence reconciliation before routing. **Cache-aware runtime composition contract:** accepted / closed under TOKEN-10D.
 
@@ -234,7 +234,7 @@ LLM adapter → typed usage
   → CacheAwareCompactionTimingInput
 TokenOptimizationLLMRouter.route()
   → CacheAwareTokenOptimizationOrchestrator.orchestrate()
-  → decide_cache_aware_compaction_timing()   # prompt_cache.py — policy only
+  → decide_cache_aware_compaction_timing()   # prompt_cache.py - policy only
   → pipeline execution only on RUN
 ```
 
@@ -245,20 +245,20 @@ TokenOptimizationLLMRouter.route()
 - normalization rejection stops before LLM and pipeline;
 - reported zero is not the same as unknown cache state;
 - missing provider cache details must not be coerced into cache miss;
-- TTL remaining is an explicit runtime signal — never inferred from requested/default/max TTL;
+- TTL remaining is an explicit runtime signal - never inferred from requested/default/max TTL;
 - global provider KV metrics do not prove per-request prefix hotness;
 - the normalizer and runtime perform no provider I/O and no provider polling;
 - no TTL inference;
 - no global-metric-to-request mapping;
 - no automatic in-cache mutation.
 
-TOKEN-10E adds in-cache compaction (architecture defined; creates new prefix lineage — does not mutate provider cache).
+TOKEN-10E adds in-cache compaction (architecture defined; creates new prefix lineage - does not mutate provider cache).
 
 Do not claim mixed character/token estimates as measured savings.
 
 ---
 
-## 8. In-cache compaction (TOKEN-10E — architecture defined / ready for review)
+## 8. In-cache compaction (TOKEN-10E - architecture defined / ready for review)
 
 Promoted from future commentary to explicit planned phase. Cross-domain lifecycle architecture frozen under **CTX-UCL-ARCH-1** ([`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)); **TOKEN-10E-ARCH-1** superseded. Runtime implementation has **not** started and is **blocked** pending UCL foundation.
 
@@ -272,13 +272,13 @@ existing logical context version
   → if accepted, new context version and new cache lineage
 ```
 
-Accepted compaction creates a **new prefix lineage** — it does not mutate provider-owned cache entries. The system declares that subsequent requests no longer assume compatibility with the previous stable prefix; it does not claim immediate provider cache deletion.
+Accepted compaction creates a **new prefix lineage** - it does not mutate provider-owned cache entries. The system declares that subsequent requests no longer assume compatibility with the previous stable prefix; it does not claim immediate provider cache deletion.
 
 Canonical detail: [TOKEN_OPTIMIZATION.md §8.10](TOKEN_OPTIMIZATION.md#810-policy-governed-in-cache-compaction-token-10e).
 
 Requires (at implementation): explicit policy opt-in; protected-region preservation; receipts with old/new hashes; cache attribution separate from content reduction; operator-visible fallback; no destructive overwrite before validation; rollback metadata; no automatic production enablement by default.
 
-For vLLM timing, use actual cache-state evidence from TOKEN-10D — not invented Claude-style fixed TTL.
+For vLLM timing, use actual cache-state evidence from TOKEN-10D - not invented Claude-style fixed TTL.
 
 **Historical note:** `TOKEN-OPT-5A` excluded in-cache compaction by design. That scope boundary is superseded by **TOKEN-10E** planning.
 
@@ -296,9 +296,9 @@ For vLLM timing, use actual cache-state evidence from TOKEN-10D — not invented
 
 First canonical self-hosted prefix-cache proof runtime. Reuse: `LLMProvider.VLLM`, `VllmChatAdapter`, `infra/docker/vllm/docker-compose.yml`, `LLMAdapterResponse.usage`, `LLMTokenUsage.cached_input_tokens`.
 
-Proof must distinguish cold, warm, and changed-prefix negative control. Fail when cache evidence unavailable. Model configurable via TOML — no permanently canonical model.
+Proof must distinguish cold, warm, and changed-prefix negative control. Fail when cache evidence unavailable. Model configurable via TOML - no permanently canonical model.
 
-vLLM proves compute reuse and latency/prefill improvement — not Claude billing discounts or guaranteed retention.
+vLLM proves compute reuse and latency/prefill improvement - not Claude billing discounts or guaranteed retention.
 
 ---
 

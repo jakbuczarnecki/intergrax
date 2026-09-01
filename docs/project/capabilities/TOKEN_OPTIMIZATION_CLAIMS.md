@@ -14,7 +14,7 @@ This document defines safe, bounded, non-marketing wording for public-facing ref
 
 **Public proof dashboard:** [`../../PROOFS.md`](../proofs/PROOFS.md)
 
-**README promotion gate:** performance badges, savings numbers, and broad proof-result promotion require accepted cross-provider evidence, checked-in public evidence, final claim review, and explicit limitation approval. Neutral capability discovery remains allowed when it uses qualified, non-numeric wording — see § README discovery and promotion boundary.
+**README promotion gate:** performance badges, savings numbers, and broad proof-result promotion require accepted cross-provider evidence, checked-in public evidence, final claim review, and explicit limitation approval. Neutral capability discovery remains allowed when it uses qualified, non-numeric wording - see § README discovery and promotion boundary.
 
 ---
 

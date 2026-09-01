@@ -1,4 +1,4 @@
-# BoundaryAttest Attestation PoC — External Validation Case Study
+# BoundaryAttest Attestation PoC - External Validation Case Study
 
 ## Summary
 
@@ -8,7 +8,7 @@ This is a technical integration validation, not production certification or comp
 
 ## Problem
 
-Agent and tool systems often lack durable evidence at execution boundaries. When an agent invokes a tool or the harness advances a step, downstream reviewers need to know what happened at those boundaries — not only what the model planned.
+Agent and tool systems often lack durable evidence at execution boundaries. When an agent invokes a tool or the harness advances a step, downstream reviewers need to know what happened at those boundaries - not only what the model planned.
 
 A harness platform should expose boundary events that external systems can verify or preserve without re-implementing the full runtime. Without that surface, attestation, audit, and partner receipt systems must scrape logs or trust opaque application responses.
 
@@ -17,7 +17,7 @@ A harness platform should expose boundary events that external systems can verif
 The [Attestation Demo](../../../../applications/attestation_demo/README.md) implements Execution Boundary Export (EBE):
 
 - Each record uses schema `execution_boundary_event.v1`.
-- **One host-signed boundary event per tool/harness claim** — not one composite run receipt.
+- **One host-signed boundary event per tool/harness claim** - not one composite run receipt.
 - Boundary types include `tool_execution` and `harness_step`.
 - **Default (EBE-9):** each event carries an Ed25519 **host attestation** envelope (`host_attestation_envelope.v1`) that an external verifier can validate against a pinned public key.
 - Tool execution and harness-step claims remain **separate events** with distinct sequence numbers within a run.
@@ -30,7 +30,7 @@ The validated EBE-9 flow confirmed:
 
 - BoundaryAttest **verified the Intergrax host signature** using a pinned public key.
 - BoundaryAttest **preserved boundary evidence** with its own `client_observed` receipt wrapper.
-- Intergrax **host/runtime claim** and BoundaryAttest **partner/client observed claim** remain **separate** — two signatures, two roles.
+- Intergrax **host/runtime claim** and BoundaryAttest **partner/client observed claim** remain **separate** - two signatures, two roles.
 - The mapping pattern for external receipt systems is confirmed (event fields → partner receipt; Intergrax does not ship or sign partner receipts).
 - Unsigned v2 compatibility remains supported for integrators that do not require host signing.
 
@@ -40,7 +40,7 @@ This validation does not imply that BoundaryAttest certifies Intergrax, bundles 
 
 Intergrax is not only agent authoring. It exposes **governed execution surfaces**: policy-bound tool invocation, harness step progression, trace capture, and exportable boundary evidence.
 
-In the Harness AI model, **agents decide**; the **harness executes and records evidence**; **external systems consume those evidence surfaces** on their own terms. When a partner verifies host-signed boundary events and wraps them in a separate client-observed receipt, the durable substrate — not any single agent — is what survives agent churn and external review.
+In the Harness AI model, **agents decide**; the **harness executes and records evidence**; **external systems consume those evidence surfaces** on their own terms. When a partner verifies host-signed boundary events and wraps them in a separate client-observed receipt, the durable substrate - not any single agent - is what survives agent churn and external review.
 
 This supports the Intergrax thesis that **the harness is the durable product; agents are replaceable**. Technical partners evaluate portable execution infrastructure and proof artifacts, not a demo-specific prompt stack.
 
@@ -76,9 +76,9 @@ The diagram is intentionally split into two evidence paths:
 - **BoundaryAttest is not bundled with Intergrax** and is not required to use Intergrax.
 - **BoundaryAttest is not maintained by Intergrax** and is referenced only as an external validation example.
 - **This is not production certification** or a guarantee of production readiness for any deployment.
-- **This is not compliance or legal attestation** — no regulatory, security, or legal approval is implied.
+- **This is not compliance or legal attestation** - no regulatory, security, or legal approval is implied.
 - **This is not a general guarantee** that every Intergrax deployment is secure or correctly configured.
-- **This does not grant production or commercial use rights** — see [LICENSE](../../../../LICENSE) and [docs/project/community/COLLABORATION.md](../../community/COLLABORATION.md).
+- **This does not grant production or commercial use rights** - see [LICENSE](../../../../LICENSE) and [docs/project/community/COLLABORATION.md](../../community/COLLABORATION.md).
 
 ## How to inspect the demo
 
@@ -105,9 +105,9 @@ This acknowledgement does not imply formal certification, bundling, ownership, p
 
 ## Related documents
 
-- [README.md](../../../../README.md) — project overview and proof paths
-- [docs/project/overview/ROADMAP.md](../ROADMAP.md) — public adoption roadmap and collaboration tracks
-- [docs/project/community/COLLABORATION.md](../../community/COLLABORATION.md) — collaboration model and permitted use
-- [LICENSE](../../../../LICENSE) — proprietary terms
-- [INTERGRAX_HARNESS_NARRATIVE.md](../../technical/guides/INTERGRAX_HARNESS_NARRATIVE.md) — harness narrative for external readers
-- [Attestation Demo README](../../../../applications/attestation_demo/README.md) — full PoC documentation and partner mapping
+- [README.md](../../../../README.md) - project overview and proof paths
+- [docs/project/overview/ROADMAP.md](../ROADMAP.md) - public adoption roadmap and collaboration tracks
+- [docs/project/community/COLLABORATION.md](../../community/COLLABORATION.md) - collaboration model and permitted use
+- [LICENSE](../../../../LICENSE) - proprietary terms
+- [INTERGRAX_HARNESS_NARRATIVE.md](../../technical/guides/INTERGRAX_HARNESS_NARRATIVE.md) - harness narrative for external readers
+- [Attestation Demo README](../../../../applications/attestation_demo/README.md) - full PoC documentation and partner mapping

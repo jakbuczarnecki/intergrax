@@ -11,18 +11,18 @@ Intergrax exposes four **core plugin catalogs** plus opt-in RAG component entry 
 | Integration | `intergrax.integrations` | `IntegrationPlugin` | `register_integration_plugin()` | **Done** |
 | Tool | `intergrax.tools` | `ToolPlugin` | `register_tool_plugin()` | **Done** |
 | Skill | `intergrax.skills` | `SkillPlugin` | `register_skill_plugin()` | **Done** |
-| Context | `intergrax.context` | `ContextPlugin` | `register_context_plugin()` | **Public EP** — qualification rollout domain-owned ([CE-2](../../maintainers/plans/CONTEXT_ENGINEERING.md)) |
+| Context | `intergrax.context` | `ContextPlugin` | `register_context_plugin()` | **Public EP** - qualification rollout domain-owned ([CE-2](../../maintainers/plans/CONTEXT_ENGINEERING.md)) |
 | RAG chunker | `intergrax.rag.chunkers` | `BaseChunkingStrategy` | RAG bootstrap registry | **Done** |
 | RAG retriever | `intergrax.rag.retrievers` | `BaseRetriever` | RAG bootstrap registry | **Done** |
 | RAG reranker | `intergrax.rag.rerankers` | `BaseReranker` | RAG bootstrap registry | **Done** |
 
-**Architecture:** Integration → Tool → Skill → Agent; **Context Engineering** assembles LLM windows from all sources — see [`architecture/CONTEXT_ENGINEERING.md`](../../architecture/CONTEXT_ENGINEERING.md) · [plan CE-EXT](../../maintainers/plans/CONTEXT_ENGINEERING.md). **Invariants:** [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) — Tier-0/Tier-2 boundaries (`SYS-INV-*`).
+**Architecture:** Integration → Tool → Skill → Agent; **Context Engineering** assembles LLM windows from all sources - see [`architecture/CONTEXT_ENGINEERING.md`](../../architecture/CONTEXT_ENGINEERING.md) · [plan CE-EXT](../../maintainers/plans/CONTEXT_ENGINEERING.md). **Invariants:** [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) - Tier-0/Tier-2 boundaries (`SYS-INV-*`).
 
-**Platform design (advanced):** [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) — taxonomy, trust model, §20.3 matrix. You do not need PLUGIN program history to pick a surface below.
+**Platform design (advanced):** [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) - taxonomy, trust model, §20.3 matrix. You do not need PLUGIN program history to pick a surface below.
 
 ---
 
-## Start here — choose your extension surface
+## Start here - choose your extension surface
 
 > **I want to extend Intergrax. Where do I start?**
 > 1. Pick what you want to add or replace (below).
@@ -33,22 +33,22 @@ Intergrax exposes four **core plugin catalogs** plus opt-in RAG component entry 
 
 | I need to… | Extension surface | Not this (adjacent concept) |
 |------------|-------------------|-----------------------------|
-| Connect a new database, service, or backend | **Integration** | **Tool** — integrations are infrastructure providers; tools are LLM-callable operations that may *consume* integrations via DI |
-| Expose a new LLM-callable operation | **Tool** | **Integration** — backend wiring, not the agent-facing operation; **Skill** — a reusable capability *bundle*, not a single executable handler |
-| Package reusable tool / prompt / policy capability for agents | **Skill** | **Tool** — skills describe requirements and bundles; tools are invoked at runtime |
-| Contribute information to prompt / context construction | **Context** | **RAG** — context plugins assemble model windows; RAG surfaces customize retrieval-pipeline components |
-| Replace or profile memory / session storage | **Memory store** | **Integration** vector store — memory plugins swap store adapters; host still owns integration backends |
-| Customize document chunking | **RAG chunker** | **Context** — chunking is an indexing-time RAG component |
-| Customize retrieval | **RAG retriever** | **Context** — retrievers fetch ranked candidates; context plugins merge sources into the window |
-| Customize reranking | **RAG reranker** | **RAG retriever** — reranking is a post-retrieval scoring step |
-| Contribute vendor / domain knowledge sources | **Vendor Knowledge provider** | **RAG component** — VK is a host-composed knowledge-source facade, not a chunker/retriever/reranker EP |
-| Inspect or block runtime operations at security hook points | **Security defense** | **Policy rule** — defenses run at `HookPoint`s in the security middleware path |
-| Add declarative or runtime policy rule handling | **Policy rule handler** | **Security defense** — policy rules are evaluated by `PolicyEngine`; they do not replace hook middleware |
-| Define a new tool invocation execution pattern / mode | **Tool invocation pattern** | **Tool** — patterns orchestrate *how* tool batches execute; tools define *what* runs |
+| Connect a new database, service, or backend | **Integration** | **Tool** - integrations are infrastructure providers; tools are LLM-callable operations that may *consume* integrations via DI |
+| Expose a new LLM-callable operation | **Tool** | **Integration** - backend wiring, not the agent-facing operation; **Skill** - a reusable capability *bundle*, not a single executable handler |
+| Package reusable tool / prompt / policy capability for agents | **Skill** | **Tool** - skills describe requirements and bundles; tools are invoked at runtime |
+| Contribute information to prompt / context construction | **Context** | **RAG** - context plugins assemble model windows; RAG surfaces customize retrieval-pipeline components |
+| Replace or profile memory / session storage | **Memory store** | **Integration** vector store - memory plugins swap store adapters; host still owns integration backends |
+| Customize document chunking | **RAG chunker** | **Context** - chunking is an indexing-time RAG component |
+| Customize retrieval | **RAG retriever** | **Context** - retrievers fetch ranked candidates; context plugins merge sources into the window |
+| Customize reranking | **RAG reranker** | **RAG retriever** - reranking is a post-retrieval scoring step |
+| Contribute vendor / domain knowledge sources | **Vendor Knowledge provider** | **RAG component** - VK is a host-composed knowledge-source facade, not a chunker/retriever/reranker EP |
+| Inspect or block runtime operations at security hook points | **Security defense** | **Policy rule** - defenses run at `HookPoint`s in the security middleware path |
+| Add declarative or runtime policy rule handling | **Policy rule handler** | **Security defense** - policy rules are evaluated by `PolicyEngine`; they do not replace hook middleware |
+| Define a new tool invocation execution pattern / mode | **Tool invocation pattern** | **Tool** - patterns orchestrate *how* tool batches execute; tools define *what* runs |
 
 ---
 
-## Choose delivery model — external package vs host-embedded
+## Choose delivery model - external package vs host-embedded
 
 ### Discovery and activation (read before packaging)
 
@@ -56,15 +56,15 @@ Intergrax exposes four **core plugin catalogs** plus opt-in RAG component entry 
 
 `pip install` does **not** activate a plugin. For setuptools entry-point surfaces, discovery is **opt-in**: the host must call `bootstrap_catalogs(discover_entry_points=True)`, enable domain-specific discovery flags, or set `INTERGRAX_DISCOVER_PLUGINS=true` where application wiring supports it (default **off**). See §1 and §16.1.
 
-Qualification is host-owned **semantic** approval — not cryptographic attestation. Compatible metadata ≠ production-qualified.
+Qualification is host-owned **semantic** approval - not cryptographic attestation. Compatible metadata ≠ production-qualified.
 
 ### Trust model
 
 Third-party plugins today run as **trusted in-process Python** in the host process:
 
-- Installing a package is a **trust decision** — there is no sandbox or process isolation.
-- Qualification records semantic evidence approved by the host/domain — not package signing or attestation.
-- Secrets and credentials stay in **host/domain configuration** (`IntegrationProfile`, `ToolWiringContext`, bindings) — never in plugin metadata or entry-point values.
+- Installing a package is a **trust decision** - there is no sandbox or process isolation.
+- Qualification records semantic evidence approved by the host/domain - not package signing or attestation.
+- Secrets and credentials stay in **host/domain configuration** (`IntegrationProfile`, `ToolWiringContext`, bindings) - never in plugin metadata or entry-point values.
 
 Canon: [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) §16 · §15 below.
 
@@ -106,27 +106,27 @@ Working Tools reference: §16.2 · [`examples/platform_plugins/local_embedded_to
 | Local path status | Surfaces |
 |-------------------|----------|
 | **Documented explicit registration** | Integrations (`register_integration_plugin`), Tools (`register_tool_plugin` + scaffold `extensions/`), Skills (`register_skill_plugin`) |
-| **Host composition possible; incomplete developer path** | Context (`register_context_plugin` — no scaffold hook yet), Memory stores (host invokes factory callables / `MemoryPlatformWiring`), Vendor Knowledge (host builder + bindings — not Tier-0 catalog registration) |
-| **External-EP-first / advanced host composition only** | RAG chunker, RAG retriever, RAG reranker (registry `register` APIs — see RAG guide §0.2), Security defense, Policy rule handler, Tool invocation pattern |
+| **Host composition possible; incomplete developer path** | Context (`register_context_plugin` - no scaffold hook yet), Memory stores (host invokes factory callables / `MemoryPlatformWiring`), Vendor Knowledge (host builder + bindings - not Tier-0 catalog registration) |
+| **External-EP-first / advanced host composition only** | RAG chunker, RAG retriever, RAG reranker (registry `register` APIs - see RAG guide §0.2), Security defense, Policy rule handler, Tool invocation pattern |
 
 ---
 
 ## Canonical 12-surface author matrix
 
-All canonical setuptools entry-point surfaces (architecture §20.1). One row per surface — use **Next guide** for step-by-step authoring.
+All canonical setuptools entry-point surfaces (architecture §20.1). One row per surface - use **Next guide** for step-by-step authoring.
 
 | Surface | Use when | Public contract | External EP | Local / host path | Config / DI | Next guide |
 |---------|----------|-----------------|-------------|-------------------|-------------|------------|
 | Integration | New backend / provider category | `IntegrationPlugin` | `intergrax.integrations` | `register_integration_plugin()` | `IntegrationProfile` + `IntegrationManifest.env_prefix` | [§2](#2-external-integration-plugin) · [§16.4–§16.5](#164-external-integration-package-quickstart) · [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) |
 | Tool | New LLM-invokable operation | `ToolPlugin` | `intergrax.tools` | `register_tool_plugin()` + scaffold `extensions/` | `ToolWiringContext` | [§3](#3-external-tool-plugin) · [§16](#16-dual-mode-developer-quickstarts-platform-plugin-8) · [`TOOLS.md`](../../architecture/TOOLS.md) |
 | Skill | Reusable agent capability bundle | `SkillPlugin` | `intergrax.skills` | `register_skill_plugin()` | `SkillProfile` | [§4](#4-external-skill-plugin) · [§16.6–§16.7](#166-external-skill-package-quickstart) · [`SKILLS.md`](../../architecture/SKILLS.md) |
-| Context | Custom context / prompt material | `ContextPlugin` | `intergrax.context` | `register_context_plugin()` — **no scaffold hook yet** | `ContextProfile` | [`CONTEXT_PLUGIN_AUTHOR_GUIDE.md`](CONTEXT_PLUGIN_AUTHOR_GUIDE.md) · multi-capability example: [`intergrax_reference_enterprise_plugin`](../../../../examples/platform_plugins/intergrax_reference_enterprise_plugin/) |
-| Memory store | Swap profile / session / episodic storage | `UserProfileStorePlugin` / `SessionStoragePlugin` / `SessionTurnIndexStorePlugin` | `intergrax.memory_stores` | Host factory / `MemoryPlatformWiring` — **no `register_*` helper** | `MemoryProfile` + host `**kwargs` | [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) · [`MEMORY.md`](../../architecture/MEMORY.md) §5.3 |
-| RAG chunker | Custom chunking strategy | `BaseChunkingStrategy` | `intergrax.rag.chunkers` | Advanced host registry composition — **external-EP-first** | `RagProfile` + bootstrap kwargs | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
-| RAG retriever | Custom retrieval implementation | `BaseRetriever` / `BaseRetrieverPlugin` | `intergrax.rag.retrievers` | Advanced host registry composition — **external-EP-first** | `RagProfile` + vector store bindings | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
-| RAG reranker | Custom reranking | `BaseReranker` / `BaseRerankerPlugin` | `intergrax.rag.rerankers` | Advanced host registry composition — **external-EP-first** | `RagProfile` + bootstrap kwargs | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
-| Vendor Knowledge | External knowledge source contributions | `VendorKnowledgeProviderContribution` | `intergrax.vendor_knowledge.providers` | Host builder composition — **not Tier-0 catalog registration** | `KnowledgeSourceBinding` + tenant scope | [`VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md`](VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md) · [`intergrax_reference_vendor_knowledge_plugin`](../../../../examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/) |
-| Security defense | Runtime inspection at `HookPoint`s | `SecurityDefensePlugin` | `intergrax.security_defenses` | `register_security_defense_plugin()` + profile ids — advanced host composition | `ApplicationSecurityProfile` | [`SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md`](SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) |
+| Context | Custom context / prompt material | `ContextPlugin` | `intergrax.context` | `register_context_plugin()` - **no scaffold hook yet** | `ContextProfile` | [`CONTEXT_PLUGIN_AUTHOR_GUIDE.md`](CONTEXT_PLUGIN_AUTHOR_GUIDE.md) · multi-capability example: [`intergrax_reference_enterprise_plugin`](../../../../examples/platform_plugins/intergrax_reference_enterprise_plugin/) |
+| Memory store | Swap profile / session / episodic storage | `UserProfileStorePlugin` / `SessionStoragePlugin` / `SessionTurnIndexStorePlugin` | `intergrax.memory_stores` | Host factory / `MemoryPlatformWiring` - **no `register_*` helper** | `MemoryProfile` + host `**kwargs` | [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) · [`MEMORY.md`](../../architecture/MEMORY.md) §5.3 |
+| RAG chunker | Custom chunking strategy | `BaseChunkingStrategy` | `intergrax.rag.chunkers` | Advanced host registry composition - **external-EP-first** | `RagProfile` + bootstrap kwargs | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
+| RAG retriever | Custom retrieval implementation | `BaseRetriever` / `BaseRetrieverPlugin` | `intergrax.rag.retrievers` | Advanced host registry composition - **external-EP-first** | `RagProfile` + vector store bindings | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
+| RAG reranker | Custom reranking | `BaseReranker` / `BaseRerankerPlugin` | `intergrax.rag.rerankers` | Advanced host registry composition - **external-EP-first** | `RagProfile` + bootstrap kwargs | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
+| Vendor Knowledge | External knowledge source contributions | `VendorKnowledgeProviderContribution` | `intergrax.vendor_knowledge.providers` | Host builder composition - **not Tier-0 catalog registration** | `KnowledgeSourceBinding` + tenant scope | [`VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md`](VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md) · [`intergrax_reference_vendor_knowledge_plugin`](../../../../examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/) |
+| Security defense | Runtime inspection at `HookPoint`s | `SecurityDefensePlugin` | `intergrax.security_defenses` | `register_security_defense_plugin()` + profile ids - advanced host composition | `ApplicationSecurityProfile` | [`SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md`](SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) |
 | Policy rule handler | Custom policy evaluation handlers | `PolicyRuleHandler` | `intergrax.policy_rules` | `PolicyRuleRegistry.register()` + explicit `load_policy_rule_plugin_report()` | `PolicyRulesProfile` / YAML bundle | [`POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md`](POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md) · [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
 | Tool invocation pattern | Custom tool batch orchestration mode | `ToolInvocationPattern` | `intergrax.tool_invocation_patterns` | `RuntimeConfig.tool_invocation_pattern` instance override | `ToolInvocationMode` | [`TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md`](TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md) · [`TOOLS.md`](../../architecture/TOOLS.md) |
 
@@ -134,7 +134,7 @@ All canonical setuptools entry-point surfaces (architecture §20.1). One row per
 
 ## 0. Tier-3 environment vs Tier-2 agent (H-APP, DX)
 
-**LangGraph is not required.** Intergrax ships its own Nexus loop, `HarnessApplication`, and `AgentGraph`. The table below is a **conceptual mapping** for authors coming from LangGraph — not a runtime dependency. Optional `intergrax.supervisor.build_langgraph_from_plan` needs the extra `pip install 'Intergrax-ai[langgraph-legacy]'`.
+**LangGraph is not required.** Intergrax ships its own Nexus loop, `HarnessApplication`, and `AgentGraph`. The table below is a **conceptual mapping** for authors coming from LangGraph - not a runtime dependency. Optional `intergrax.supervisor.build_langgraph_from_plan` needs the extra `pip install 'Intergrax-ai[langgraph-legacy]'`.
 
 | LangGraph (analogy) | Intergrax |
 |---------------------|-----------|
@@ -151,7 +151,7 @@ All canonical setuptools entry-point surfaces (architecture §20.1). One row per
 | Business logic, UAEP steps | Yes | No |
 | Tool/skill allow-list on contract | Yes | Enables catalogs via profiles |
 | Integration backends (Postgres, S3, …) | No | `IntegrationProfile` / presets |
-| Nexus loop, retry, graph routing | No | `ApplicationEnvironmentProfile` (§22.6 nested bundles — same root) |
+| Nexus loop, retry, graph routing | No | `ApplicationEnvironmentProfile` (§22.6 nested bundles - same root) |
 | HTTP/MCP host, auth, tenant | No | Host factory / `HarnessApplication` |
 
 | Belongs in `applications/<app>` | Belongs in `agents/<name>` |
@@ -186,9 +186,9 @@ bootstrap_catalogs(
 
 Tier-3 wiring helpers call this automatically:
 
-- `bootstrap_application_integration_catalog()` — integrations only (`applications/_shared/integration_wiring.py`)
-- `build_application_tool_wiring()` — passes `tool_bundle_ids` from `ToolProfile` when set
-- `build_application_skill_wiring()` — passes `skill_bundle_ids` from `SkillProfile` when set
+- `bootstrap_application_integration_catalog()` - integrations only (`applications/_shared/integration_wiring.py`)
+- `build_application_tool_wiring()` - passes `tool_bundle_ids` from `ToolProfile` when set
+- `build_application_skill_wiring()` - passes `skill_bundle_ids` from `SkillProfile` when set
 
 Optional env: `INTERGRAX_DISCOVER_PLUGINS=true` enables entry-point discovery when wiring helpers run (default off).
 
@@ -208,11 +208,11 @@ Optional env: `INTERGRAX_DISCOVER_PLUGINS=true` enables entry-point discovery wh
 
 ## 2. External integration plugin
 
-**Domain architecture:** [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) — third-party developer path · **Reference example:** `intergrax/integrations/examples/custom_memory_kv/`
+**Domain architecture:** [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) - third-party developer path · **Reference example:** `intergrax/integrations/examples/custom_memory_kv/`
 
 ### Purpose
 
-An **Integration** is an infrastructure/provider backend — database, cache, storage, vector store, messaging client, observability vendor, and similar. Integrations are **not** LLM-callable operations; tools and platform services consume them via `IntegrationProfile.resolve(...)`.
+An **Integration** is an infrastructure/provider backend - database, cache, storage, vector store, messaging client, observability vendor, and similar. Integrations are **not** LLM-callable operations; tools and platform services consume them via `IntegrationProfile.resolve(...)`.
 
 | Use Integration when… | Do not use Integration when… |
 |-----------------------|------------------------------|
@@ -226,9 +226,9 @@ An **Integration** is an infrastructure/provider backend — database, cache, st
 |------|-------|
 | Protocol | `IntegrationPlugin` |
 | Import | `intergrax.integrations.core.plugin` |
-| Manifest | `IntegrationManifest` — `intergrax.integrations.core.manifest` |
+| Manifest | `IntegrationManifest` - `intergrax.integrations.core.manifest` |
 | Required methods | `integration_manifest() -> IntegrationManifest` · `create_integration(**kwargs) -> <category contract>` |
-| Register | `register_integration_plugin(cls, override=False)` — `intergrax.integrations.registry.plugin_register` |
+| Register | `register_integration_plugin(cls, override=False)` - `intergrax.integrations.registry.plugin_register` |
 | Entry point group | `intergrax.integrations` |
 | Runtime materialization | `IntegrationProfile.resolve(IntegrationCategory.…)` |
 
@@ -237,11 +237,11 @@ An **Integration** is an infrastructure/provider backend — database, cache, st
 | Path | Who | Mechanism |
 |------|-----|-----------|
 | **Third-party external** | Package authors | `IntegrationPlugin` + setuptools EP `intergrax.integrations` |
-| **First-party shipped** | Intergrax maintainers | `manifest.py` + `create_*` factory + `register_from_manifest` — internal bootstrap at scale; **not** the public third-party compatibility contract |
+| **First-party shipped** | Intergrax maintainers | `manifest.py` + `create_*` factory + `register_from_manifest` - internal bootstrap at scale; **not** the public third-party compatibility contract |
 
 ### Minimal implementation (`custom_memory_kv`)
 
-Copyable in-repo example — four files:
+Copyable in-repo example - four files:
 
 | File | Role |
 |------|------|
@@ -281,7 +281,7 @@ class CustomMemoryKvPlugin:
 See [§16.4](#164-external-integration-package-quickstart). Summary:
 
 1. Own `pyproject.toml` with `[project.entry-points."intergrax.integrations"]`.
-2. `pip install` alone does **not** activate — host must enable discovery (`INTERGRAX_DISCOVER_PLUGINS=true` or `bootstrap_catalogs(discover_entry_points=True)`).
+2. `pip install` alone does **not** activate - host must enable discovery (`INTERGRAX_DISCOVER_PLUGINS=true` or `bootstrap_catalogs(discover_entry_points=True)`).
 3. Host selects provider on `IntegrationProfile` and calls `resolve(category)`.
 
 ```toml
@@ -298,7 +298,7 @@ from intergrax.integrations.registry.plugin_register import register_integration
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.integrations.contracts.base import IntegrationCategory
 
-register_integration_plugin(MyIntegrationPlugin)  # explicit — no EP required
+register_integration_plugin(MyIntegrationPlugin)  # explicit - no EP required
 profile = IntegrationProfile(key_value_cache=MyIntegrationPlugin)
 cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)
 ```
@@ -309,8 +309,8 @@ Same `IntegrationPlugin` contract as external packages; host owns qualification 
 
 - **Enablement:** `IntegrationProfile` slots per `IntegrationCategory` (plugin class, manifest, slug string, or pre-built instance).
 - **Options:** `IntegrationProfile.options={slug: {...}}` merged into `create_integration(**kwargs)`.
-- **Secrets:** host-owned — connection strings, API keys, and tokens belong in host/domain config or a secrets integration, **not** in `IntegrationManifest` or entry-point values.
-- **`env_prefix` exception:** integrations may declare `IntegrationManifest.env_prefix`; the factory may read `os.environ` under that prefix. This is **integration-specific** — do not copy to Tool/Skill plugins.
+- **Secrets:** host-owned - connection strings, API keys, and tokens belong in host/domain config or a secrets integration, **not** in `IntegrationManifest` or entry-point values.
+- **`env_prefix` exception:** integrations may declare `IntegrationManifest.env_prefix`; the factory may read `os.environ` under that prefix. This is **integration-specific** - do not copy to Tool/Skill plugins.
 
 ```python
 profile = IntegrationProfile(
@@ -322,7 +322,7 @@ cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)
 
 ### Dependency injection and runtime use
 
-Downstream components receive **resolved provider instances** — not raw plugin classes:
+Downstream components receive **resolved provider instances** - not raw plugin classes:
 
 ```python
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -346,11 +346,11 @@ IntegrationPlugin class
   → profile.resolve(category) → factory(**merged options)
 ```
 
-`installed` ≠ `discovered` ≠ `enabled` ≠ `production-qualified`. Discovery default **off** — see §1.
+`installed` ≠ `discovered` ≠ `enabled` ≠ `production-qualified`. Discovery default **off** - see §1.
 
 ### Qualification
 
-Discovery and catalog registration are prerequisites only. Production hosts require host-owned **semantic** qualification evidence (`require_production_qualification`) — not attestation. Compatible metadata ≠ production-qualified. See §15.
+Discovery and catalog registration are prerequisites only. Production hosts require host-owned **semantic** qualification evidence (`require_production_qualification`) - not attestation. Compatible metadata ≠ production-qualified. See §15.
 
 ### Lifecycle and cleanup
 
@@ -360,7 +360,7 @@ There is **no** generic Platform Plugin unload/shutdown manager for integrations
 |-------|----------------|
 | Integration factory | May return clients with connection pools, sessions, or SDK handles |
 | Host / application | Owns process lifetime; must close pools/sessions when the host shuts down if the provider contract requires it |
-| Category contract | Lifecycle varies — document cleanup in your adapter; do not assume a universal `shutdown()` API |
+| Category contract | Lifecycle varies - document cleanup in your adapter; do not assume a universal `shutdown()` API |
 
 Pre-built instances passed directly on `IntegrationProfile` are owned entirely by the host.
 
@@ -369,7 +369,7 @@ Pre-built instances passed directly on `IntegrationProfile` are owned entirely b
 | Condition | Behavior |
 |-----------|----------|
 | Duplicate slug (`override=False`) | `ValueError: Integration slug '…' is already registered.` |
-| EP discovery disabled | Plugin not in catalog — `UnknownIntegrationError` at resolve |
+| EP discovery disabled | Plugin not in catalog - `UnknownIntegrationError` at resolve |
 | EP import/load failure | `PluginLoadError` from `intergrax.core.plugins` |
 | Invalid manifest / contract | `TypeError` from `integration_manifest_for_plugin` |
 | Unconfigured category | `IntegrationConfigurationError: No integration slug configured for category '…'` |
@@ -377,7 +377,7 @@ Pre-built instances passed directly on `IntegrationProfile` are owned entirely b
 | Missing env/config for provider | `IntegrationConfigurationError` at factory construction (provider-specific) |
 | Qualification insufficient | Host gate rejects activation before production profile use |
 
-Catalog slug conflicts during bootstrap: `on_conflict` policy — see §5.
+Catalog slug conflicts during bootstrap: `on_conflict` policy - see §5.
 
 ### Testing
 
@@ -451,15 +451,15 @@ register_tool_plugin(MyToolPlugin)
 
 Shipped bundles are defined in `intergrax/tools/registry/shipped_plugins.py` (factory: `define_tool_plugin`).
 
-**Standalone LLM use:** build `ToolRegistry` from `ToolProfile` — no skills required. Export MCP/OpenAI schemas via `intergrax.tools.exporters.mcp.to_mcp_tools(registry)`.
+**Standalone LLM use:** build `ToolRegistry` from `ToolProfile` - no skills required. Export MCP/OpenAI schemas via `intergrax.tools.exporters.mcp.to_mcp_tools(registry)`.
 
 ---
 
 ## 4. External skill plugin
 
-**Domain architecture:** [`SKILLS.md`](../../architecture/SKILLS.md) — third-party developer path · **Reference example:** `intergrax/skills/examples/custom_pack/` (in-repo copyable; not an installable wheel package)
+**Domain architecture:** [`SKILLS.md`](../../architecture/SKILLS.md) - third-party developer path · **Reference example:** `intergrax/skills/examples/custom_pack/` (in-repo copyable; not an installable wheel package)
 
-### Purpose — Skill is NOT a Tool
+### Purpose - Skill is NOT a Tool
 
 A **Skill** packages reusable capability requirements for agents:
 
@@ -480,15 +480,15 @@ Skills are **not** invoked by the LLM. At agent bind time, `SkillResolver` expan
 |------|-------|
 | Protocol | `SkillPlugin` |
 | Import | `intergrax.skills.core.plugin` |
-| Bundle manifest | `SkillBundleManifest` — `intergrax.skills.core.manifest` |
-| Skill rows | `SkillManifest` — `intergrax.skills.core.contracts` |
+| Bundle manifest | `SkillBundleManifest` - `intergrax.skills.core.manifest` |
+| Skill rows | `SkillManifest` - `intergrax.skills.core.contracts` |
 | Required methods | `skill_bundle_manifest()` · `skill_manifests()` · `register_skills(registry)` |
-| Register | `register_skill_plugin(cls, override=False)` — `intergrax.skills.registry.plugin_register` |
+| Register | `register_skill_plugin(cls, override=False)` - `intergrax.skills.registry.plugin_register` |
 | Entry point group | `intergrax.skills` |
 | Enablement | `SkillProfile(enabled_bundles=[…])` or `enabled=[skill_id, …]` |
 | Resolution | `SkillResolver(skill_registry, tool_registry).resolve_skills(manifests)` |
 
-There is **no** `SkillWiringContext` — skills declare requirements; tools receive DI via `ToolWiringContext` at invoke time.
+There is **no** `SkillWiringContext` - skills declare requirements; tools receive DI via `ToolWiringContext` at invoke time.
 
 ### Minimal implementation (`custom_pack`)
 
@@ -533,14 +533,14 @@ class CustomPackSkillPlugin:
 
 ### External package quickstart
 
-See [§16.6](#166-external-skill-package-quickstart). The in-repo `custom_pack` is a **copyable reference**, not a distributable wheel — build your own package for pip install.
+See [§16.6](#166-external-skill-package-quickstart). The in-repo `custom_pack` is a **copyable reference**, not a distributable wheel - build your own package for pip install.
 
 ```toml
 [project.entry-points."intergrax.skills"]
 my_skills = "my_pkg.skill_plugin:MySkillPlugin"
 ```
 
-`pip install` alone does **not** activate — enable discovery (§1) and add bundle to `SkillProfile`.
+`pip install` alone does **not** activate - enable discovery (§1) and add bundle to `SkillProfile`.
 
 ### Local / host-embedded registration
 
@@ -570,12 +570,12 @@ SkillProfile (enabled_bundles | enabled | register_all_catalog_bundles)
 from intergrax.skills.resolver import SkillResolver
 
 pack = SkillResolver(skill_registry, tool_registry).resolve_skills(contract.skills)
-# pack.tool_ids — frozenset; pack.skill_ids — expanded order
+# pack.tool_ids - frozenset; pack.skill_ids - expanded order
 ```
 
 Tier-3 hosts also call `extend_tool_profile_for_skills(tool_profile, skill_profile)` so required tools are enabled on `ToolProfile`. See [`SKILLS.md`](../../architecture/SKILLS.md) Tier-3 pipeline.
 
-**Cursor `SKILL.md` import:** `CursorSkillImporter` for one-off markdown packs — not the same as a pip `SkillPlugin`. Prefer `SkillPlugin` for versioned bundles.
+**Cursor `SKILL.md` import:** `CursorSkillImporter` for one-off markdown packs - not the same as a pip `SkillPlugin`. Prefer `SkillPlugin` for versioned bundles.
 
 ### Secrets
 
@@ -587,7 +587,7 @@ Same host-owned semantic model as other surfaces (§15). `SkillProfile` enableme
 
 ### Lifecycle
 
-Skill plugin registration is **catalog/bootstrap-time**. No generic unload/shutdown contract. `SkillRegistry` holds manifest metadata only — no resource handles at the skill layer.
+Skill plugin registration is **catalog/bootstrap-time**. No generic unload/shutdown contract. `SkillRegistry` holds manifest metadata only - no resource handles at the skill layer.
 
 ### Failure behavior
 
@@ -597,7 +597,7 @@ Skill plugin registration is **catalog/bootstrap-time**. No generic unload/shutd
 | Unknown `skill_id` at resolve | `SkillResolutionError: Unknown skill_id: …` |
 | Cyclic `requires_skills` | `SkillResolutionError: Cyclic requires_skills involving: …` |
 | Missing required tool | `SkillResolutionError: Skill references tool_id(s) not in ToolRegistry: …` |
-| EP discovery disabled | Bundle absent — enable `SkillProfile` bundle after registration |
+| EP discovery disabled | Bundle absent - enable `SkillProfile` bundle after registration |
 | Skill not enabled in profile | `build_registry_from_profile` skips bundle |
 | EP import failure | `PluginLoadError` |
 
@@ -632,7 +632,7 @@ Run: `pytest tests/unit/skills/test_external_skill_plugin.py -q`
 | `tool_id(s) not in ToolRegistry` | Tool bundle disabled | `extend_tool_profile_for_skills` or enable tool bundle |
 | Agent has empty `allowed_tools` | `skill_registry` omitted at register | Pass `skill_registry` to `AgentRegistry.register` |
 | Dependent skill missing | `requires_skills` target not in registry | Register dependency bundle first |
-| Qualification rejected | Host gate | Semantic evidence — not attestation |
+| Qualification rejected | Host gate | Semantic evidence - not attestation |
 
 ---
 
@@ -695,9 +695,9 @@ core defaults.
 
 Catalog slug conflicts when a plugin replaces a shipped provider:
 
-- `on_conflict="error"` — raise on duplicate catalog slug (default)
-- `on_conflict="warn_override"` — log warning and replace the catalog row
-- `on_conflict="skip"` — skip the plugin when the slug already exists
+- `on_conflict="error"` - raise on duplicate catalog slug (default)
+- `on_conflict="warn_override"` - log warning and replace the catalog row
+- `on_conflict="skip"` - skip the plugin when the slug already exists
 
 ---
 
@@ -736,7 +736,7 @@ Agents consume **tools** via `ToolRegistry` and **skills** via `SkillResolver` �
 
 ## 9. Memory store plugins (Phase MEM)
 
-**Author guide:** [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) — full developer journey, discovery/activation flow, and runtime paths.
+**Author guide:** [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) - full developer journey, discovery/activation flow, and runtime paths.
 
 Entry point group: `intergrax.memory_stores`
 
@@ -748,14 +748,14 @@ Entry point group: `intergrax.memory_stores`
 
 **Discovery and activation:** register under `intergrax.memory_stores` (or pass explicit plugin classes); host wiring calls classified discovery and materializes the store selected by `MemoryProfile` plugin ids. Discovery alone does **not** activate a store. See the memory author guide §9.
 
-**Vector memory:** LTM and session episodic indexes reuse the host integration **vector store** — memory plugins swap index adapters, not vendor SDKs. See [`architecture/MEMORY.md`](../../architecture/MEMORY.md) §5.3.
+**Vector memory:** LTM and session episodic indexes reuse the host integration **vector store** - memory plugins swap index adapters, not vendor SDKs. See [`architecture/MEMORY.md`](../../architecture/MEMORY.md) §5.3.
 
-Reference fixtures (**test fixture — packaging reference, not production sample**):
+Reference fixtures (**test fixture - packaging reference, not production sample**):
 
 - `tests/fixtures/plugin_packages/memory_store_plugin/`
 - `tests/fixtures/plugin_packages/session_turn_index_plugin/`
 
-Swap backends in Tier-3 by registering an EP plugin (where wired) or composing `MemoryPlatformWiring` — agents still use `UserProfileManager` / `SessionManager`; never import store implementations from Tier-2.
+Swap backends in Tier-3 by registering an EP plugin (where wired) or composing `MemoryPlatformWiring` - agents still use `UserProfileManager` / `SessionManager`; never import store implementations from Tier-2.
 
 ---
 
@@ -765,13 +765,13 @@ Swap backends in Tier-3 by registering an EP plugin (where wired) or composing `
 
 Entry point group: `intergrax.policy_rules` · handler protocol `PolicyRuleHandler` · loader `load_policy_rule_plugin_report(registry)`.
 
-Policy handlers are **not** Security Defense plugins. YAML / `PolicyRulesProfile` and handler packages are separate activation steps — installing a handler wheel does not enable rules.
+Policy handlers are **not** Security Defense plugins. YAML / `PolicyRulesProfile` and handler packages are separate activation steps - installing a handler wheel does not enable rules.
 
 **Author map:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) [Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) (PolicyEngine).
 
 ---
 
-## 11. Runtime signals — spine vs `event_kind` (OBS-EVOL-9)
+## 11. Runtime signals - spine vs `event_kind` (OBS-EVOL-9)
 
 **Canon:** [`architecture/OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) §4.4 · [`ADR-OBS-003`](../adr/entries/2026-06-17/ADR-OBS-003.md)
 
@@ -781,7 +781,7 @@ Extension authors (integrations, tools, skills) and agent authors share one obse
 |-------------|-----|----------|
 | Debug / reconstruction | `DiagnosticPayload` via `AgentEngine` | `register_payload_schema(..., extension=True)` + `agents.<slug>.diag.*` |
 | Operator-visible domain fact | `emit_domain_signal(kind, payload)` | `event_kind` + extension payload schema |
-| Platform lifecycle | `emit_platform_event` | Platform only — `EventCatalog` + ADR |
+| Platform lifecycle | `emit_platform_event` | Platform only - `EventCatalog` + ADR |
 
 ### 11.1 `event_kind` namespace rules
 
@@ -790,7 +790,7 @@ Extension authors (integrations, tools, skills) and agent authors share one obse
 | `agents.<slug>.` | Tier-2 agent | `agents.legal.clause_flagged` |
 | `applications.<slug>.` | Tier-3 product | `applications.dispute_sim.risk_threshold_exceeded` |
 | `platform.<domain>.` | Harness (via `DOMAIN_SIGNAL`) | `platform.adaptive.signal_recorded` |
-| `intergrax.<domain>.` | Reserved — platform spine payloads | `intergrax.graph.checkpoint_persisted` |
+| `intergrax.<domain>.` | Reserved - platform spine payloads | `intergrax.graph.checkpoint_persisted` |
 
 Rules:
 
@@ -820,9 +820,9 @@ register_payload_schema(MyRiskFlaggedPayloadV1, extension=True)
 
 Plugins **do not** publish directly to `RuntimeEventBus`. Emit through:
 
-- **ToolRuntime** — existing `TOOL_*` spine events (audit path).
-- **Agent step** — `emit_domain_signal` when the product must surface a domain fact.
-- **Trace** — `DiagnosticPayload` for implementation detail.
+- **ToolRuntime** - existing `TOOL_*` spine events (audit path).
+- **Agent step** - `emit_domain_signal` when the product must surface a domain fact.
+- **Trace** - `DiagnosticPayload` for implementation detail.
 
 **Author map:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) [Appendix Q §Q.5](AGENT_CREATION_GUIDE.md#q5-domain-runtime-signals-event_kind--obs-evol-9) · [`APPLICATION_CREATION_GUIDE.md`](APPLICATION_CREATION_GUIDE.md) §8 (Tier-3 subscribe / adapters).
 
@@ -834,7 +834,7 @@ Plugins **do not** publish directly to `RuntimeEventBus`. Emit through:
 
 Entry point group: `intergrax.security_defenses` · contract `SecurityDefensePlugin` · bootstrap `bootstrap_security_providers(discover_entry_points=…)`.
 
-Defense plugins inspect `HookPoint`s via middleware — they are **not** `PolicyRuleHandler`s and **not** a sandbox. EP registration uses `override=True` (shipped ids can be replaced). `pip install` alone does not enable defenses — set `ApplicationSecurityProfile.defense_plugin_ids` / `defense_bundle_ids`.
+Defense plugins inspect `HookPoint`s via middleware - they are **not** `PolicyRuleHandler`s and **not** a sandbox. EP registration uses `override=True` (shipped ids can be replaced). `pip install` alone does not enable defenses - set `ApplicationSecurityProfile.defense_plugin_ids` / `defense_bundle_ids`.
 
 **Lab fixture (test only):** `tests/fixtures/plugin_packages/intergrax_security_defense_fixture/`
 
@@ -846,7 +846,7 @@ Defense plugins inspect `HookPoint`s via middleware — they are **not** `Policy
 
 **Canon:** [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md)
 
-A **Platform Plugin** is a **package-level coordination contract** — not a universal runtime wrapper. One installable Python distribution (plugin package) may expose zero or more **capabilities** across domains. Each capability remains governed by its domain contract (`IntegrationPlugin`, `ToolPlugin`, `SkillPlugin`, …).
+A **Platform Plugin** is a **package-level coordination contract** - not a universal runtime wrapper. One installable Python distribution (plugin package) may expose zero or more **capabilities** across domains. Each capability remains governed by its domain contract (`IntegrationPlugin`, `ToolPlugin`, `SkillPlugin`, …).
 
 | Layer | Authoritative for |
 |-------|-------------------|
@@ -855,9 +855,9 @@ A **Platform Plugin** is a **package-level coordination contract** — not a uni
 | Domain manifests | Runtime capability semantics (`IntegrationManifest`, tool/skill bundles, …) |
 | **Optional** `[tool.intergrax.plugin]` | Package coordination metadata only (identity, compatibility, capability pointers) |
 
-For a real `pyproject.toml`, `[project].name` and `[project].version` are **authoritative** distribution identity. Platform Plugin manifest identity fields must match them after Python packaging normalization — contradictory manifest metadata is rejected.
+For a real `pyproject.toml`, `[project].name` and `[project].version` are **authoritative** distribution identity. Platform Plugin manifest identity fields must match them after Python packaging normalization - contradictory manifest metadata is rejected.
 
-**Important:** manifest-valid ≠ discovered ≠ enabled ≠ qualified ≠ production-qualified. Declare `intergrax_version` using Python packaging version specifiers (e.g. `>=1.0,<2`); PLUGIN-6 checks compatibility via `check_platform_compatibility` — **compatible does not mean qualified**. Incompatible metadata must block activation once an approved host gate invokes the checker (PLUGIN-8 reference host). Installation alone does not prove platform compatibility. Secrets must **never** appear in Platform Plugin manifests.
+**Important:** manifest-valid ≠ discovered ≠ enabled ≠ qualified ≠ production-qualified. Declare `intergrax_version` using Python packaging version specifiers (e.g. `>=1.0,<2`); PLUGIN-6 checks compatibility via `check_platform_compatibility` - **compatible does not mean qualified**. Incompatible metadata must block activation once an approved host gate invokes the checker (PLUGIN-8 reference host). Installation alone does not prove platform compatibility. Secrets must **never** appear in Platform Plugin manifests.
 
 ### 13.1 Multi-capability external package example
 
@@ -921,7 +921,7 @@ manifest = build_platform_plugin_manifest(
 )
 ```
 
-Parsing and validation are side-effect free — they do not scan installed packages or register plugins.
+Parsing and validation are side-effect free - they do not scan installed packages or register plugins.
 
 ---
 
@@ -929,7 +929,7 @@ Parsing and validation are side-effect free — they do not scan installed packa
 
 **Canon:** [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) §12–§13 · cross-surface matrix §12.3.
 
-Platform Plugin packages **declare** capabilities; the **host/application** selects and resolves deployment settings; **domain profiles and wiring contexts** materialize runtime objects. Capability code should consume **resolved** configuration — not read arbitrary process globals as the primary path.
+Platform Plugin packages **declare** capabilities; the **host/application** selects and resolves deployment settings; **domain profiles and wiring contexts** materialize runtime objects. Capability code should consume **resolved** configuration - not read arbitrary process globals as the primary path.
 
 ### 14.1 Author rules (all PEP surfaces)
 
@@ -945,24 +945,24 @@ Platform Plugin packages **declare** capabilities; the **host/application** sele
 
 ### 14.2 Domain-specific configuration and DI
 
-Use the **domain-owned** primitive for your surface — the platform does not provide one universal config object.
+Use the **domain-owned** primitive for your surface - the platform does not provide one universal config object.
 
 | Surface | Enablement / config | Credentials | Materialization |
 |---------|---------------------|-------------|-----------------|
 | Integration | `IntegrationProfile` + `ApplicationEnvironmentProfile` | Host resolves; optional `IntegrationManifest.env_prefix` (domain contract) | `profile.resolve(IntegrationCategory.…)` |
 | Tool | `ToolProfile` | `ToolWiringContext` integration slots | `register_tools(registry, ctx)` |
 | Skill | `SkillProfile` | Via tools at invoke time | `register_skills(registry)` |
-| Context | `ContextProfile` | Typically none at plugin boundary | `register(registry)` — see [`CONTEXT_PLUGIN_AUTHOR_GUIDE.md`](CONTEXT_PLUGIN_AUTHOR_GUIDE.md) |
+| Context | `ContextProfile` | Typically none at plugin boundary | `register(registry)` - see [`CONTEXT_PLUGIN_AUTHOR_GUIDE.md`](CONTEXT_PLUGIN_AUTHOR_GUIDE.md) |
 | RAG component | `RagProfile` + bootstrap kwargs | Via integrations passed into bootstrap | `BaseRetrieverPlugin.create(…)` / registry bootstrap |
 | Memory store | `MemoryProfile` | Host `**kwargs` to factory | `create_user_profile_store(**kwargs)` |
-| Security defense | Host security profile | `HookContext` only | Middleware wraps plugin at host — see [`SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md`](SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md) |
-| Policy rule | `PolicyRulesProfile` / YAML | None in EP | `evaluate(rule, context=…)` — see [`POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md`](POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md) |
-| Tool invocation pattern | `ToolInvocationMode` / pattern id | None | `execute(state, invoker, …)` — see [`TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md`](TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md) |
-| Vendor Knowledge | Host builder + bindings | Scoped `credential_ref` per binding | See VK author guide — not Tier-0 catalog |
+| Security defense | Host security profile | `HookContext` only | Middleware wraps plugin at host - see [`SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md`](SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md) |
+| Policy rule | `PolicyRulesProfile` / YAML | None in EP | `evaluate(rule, context=…)` - see [`POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md`](POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md) |
+| Tool invocation pattern | `ToolInvocationMode` / pattern id | None | `execute(state, invoker, …)` - see [`TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md`](TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md) |
+| Vendor Knowledge | Host builder + bindings | Scoped `credential_ref` per binding | See VK author guide - not Tier-0 catalog |
 
 ### 14.3 Integration `env_prefix` (documented exception)
 
-Integrations may declare `env_prefix` on `IntegrationManifest`. The host/profile selects the provider; the integration factory may read environment variables under that prefix. This is **domain-owned** behavior — not a portable pattern for tools, skills, or other surfaces.
+Integrations may declare `env_prefix` on `IntegrationManifest`. The host/profile selects the provider; the integration factory may read environment variables under that prefix. This is **domain-owned** behavior - not a portable pattern for tools, skills, or other surfaces.
 
 ```python
 # Host resolves provider; integration may read INTERGRAX_MY_KV_* when env_prefix is set.
@@ -988,7 +988,7 @@ class MyToolPlugin:
         registry.register(my_contract(), MyHandler(ctx))
 ```
 
-Configuration parsing (`parse_platform_plugin_pyproject_toml`, profile models) is **side-effect free** — it does not discover or register plugins.
+Configuration parsing (`parse_platform_plugin_pyproject_toml`, profile models) is **side-effect free** - it does not discover or register plugins.
 
 ---
 
@@ -996,31 +996,31 @@ Configuration parsing (`parse_platform_plugin_pyproject_toml`, profile models) i
 
 **Canon:** [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) §16, §18.
 
-Qualification is **evidence that a subject meets domain/program thresholds** — not installation, discovery, compatibility, or lifecycle enablement.
+Qualification is **evidence that a subject meets domain/program thresholds** - not installation, discovery, compatibility, or lifecycle enablement.
 
 | State | Meaning |
 |-------|---------|
-| installed / discovered / loadable / contract-valid / enabled | Prerequisite/runtime states (§14) — **not** qualification |
+| installed / discovered / loadable / contract-valid / enabled | Prerequisite/runtime states (§14) - **not** qualification |
 | qualified | Domain/program evidence threshold met |
 | production-qualified | Approved for production host profiles |
 | live-qualified | Optional domain-specific label (e.g. VK, RAG live backends) |
 
 ### 15.1 External package author
 
-- Wheel + setuptools entry points make capabilities **discoverable** — discoverable ≠ qualified.
+- Wheel + setuptools entry points make capabilities **discoverable** - discoverable ≠ qualified.
 - Optional `[tool.intergrax.plugin]` manifest supports package-level coordination only.
 - `check_platform_compatibility` (PLUGIN-6) produces compatibility evidence; **compatible ≠ qualified**.
 - Host/domain collects capability/domain evidence and sets qualification status.
 - Production host profiles must require **production-qualified** evidence via `require_production_qualification` (PLUGIN-8 reference host will invoke before activation).
 
-### 15.2 Application developer — host-embedded extension
+### 15.2 Application developer - host-embedded extension
 
 Local modules (e.g. `applications/my_app/extensions/my_tool.py`) may implement domain contracts (`ToolPlugin`, `IntegrationPlugin`, …) and enter via **explicit host registration** (`register_tool_plugin`, `register_integration_plugin`, …).
 
 - Packaging as a wheel is **not required** for qualification.
 - Entry-point discovery is **not required** when the host registers the class directly.
 - The same capability/domain qualification model applies; use `PluginDeliverySource.HOST_EMBEDDED_EXTENSION` subject identity with `host_registration_path`.
-- Production use still requires production-qualified evidence and host/domain gates — same as external packages.
+- Production use still requires production-qualified evidence and host/domain gates - same as external packages.
 
 ### 15.3 Python contract API
 
@@ -1035,7 +1035,7 @@ from intergrax.core.plugins import (
 from intergrax.core.qualification import QualificationStatus
 ```
 
-Evidence records are immutable and safe to log — never include secrets or raw credential-bearing payloads.
+Evidence records are immutable and safe to log - never include secrets or raw credential-bearing payloads.
 
 ---
 
@@ -1049,86 +1049,86 @@ Both delivery modes converge on the same domain contract and runtime (`ToolPlugi
 
 Working reference: [`examples/platform_plugins/intergrax_reference_tool_plugin/`](../../../../examples/platform_plugins/intergrax_reference_tool_plugin/)
 
-1. **Create package** — own `pyproject.toml`, Python namespace under `src/`, outside the Intergrax repository.
-2. **Implement `ToolPlugin`** — `tool_bundle_manifest()` + `register_tools(registry, ctx: ToolWiringContext)`.
-3. **Declare entry point** — `[project.entry-points."intergrax.tools"]` mapping to your plugin class.
-4. **Optional Platform Plugin metadata** — `[tool.intergrax.plugin]` with package identity, `intergrax_version`, and capability descriptors (must match `[project].name` / `version`).
-5. **Build wheel** — `uv build --wheel` (or equivalent setuptools build) in your package directory.
-6. **Install wheel** — `uv pip install ./dist/*.whl` (or host deployment mechanism); isolated tests use `uv pip install --target <dir> --no-deps`.
-7. **Enable discovery** — host calls `bootstrap_catalogs(discover_entry_points=True)` or sets `INTERGRAX_DISCOVER_PLUGINS=true` where the application wiring supports it.
-8. **Configure host / DI** — build `ToolWiringContext` (integrations, managers, `extras`) before `build_registry_from_profile`.
-9. **Qualification** — collect PLUGIN-6 compatibility evidence (`check_platform_compatibility` with explicit host platform version) and PLUGIN-7 production gates (`evaluate_package_production_admission`, `require_production_qualification`) before production activation.
-10. **Run** — enable bundle/tool ids on `ToolProfile`; invoke tools via `RuntimeToolInvoker`.
+1. **Create package** - own `pyproject.toml`, Python namespace under `src/`, outside the Intergrax repository.
+2. **Implement `ToolPlugin`** - `tool_bundle_manifest()` + `register_tools(registry, ctx: ToolWiringContext)`.
+3. **Declare entry point** - `[project.entry-points."intergrax.tools"]` mapping to your plugin class.
+4. **Optional Platform Plugin metadata** - `[tool.intergrax.plugin]` with package identity, `intergrax_version`, and capability descriptors (must match `[project].name` / `version`).
+5. **Build wheel** - `uv build --wheel` (or equivalent setuptools build) in your package directory.
+6. **Install wheel** - `uv pip install ./dist/*.whl` (or host deployment mechanism); isolated tests use `uv pip install --target <dir> --no-deps`.
+7. **Enable discovery** - host calls `bootstrap_catalogs(discover_entry_points=True)` or sets `INTERGRAX_DISCOVER_PLUGINS=true` where the application wiring supports it.
+8. **Configure host / DI** - build `ToolWiringContext` (integrations, managers, `extras`) before `build_registry_from_profile`.
+9. **Qualification** - collect PLUGIN-6 compatibility evidence (`check_platform_compatibility` with explicit host platform version) and PLUGIN-7 production gates (`evaluate_package_production_admission`, `require_production_qualification`) before production activation.
+10. **Run** - enable bundle/tool ids on `ToolProfile`; invoke tools via `RuntimeToolInvoker`.
 
 ### 16.2 Local application extension quickstart (Tools)
 
 Working reference: [`examples/platform_plugins/local_embedded_tool_extension/`](../../../../examples/platform_plugins/local_embedded_tool_extension/) · scaffold emits `extensions/` automatically.
 
-1. **Create application** — `python -m intergrax.scaffold new-application <name>`.
-2. **Add local module** — implement the same `ToolPlugin` contract under `<app_pkg>/extensions/` (see generated `extensions/README.md`).
-3. **Qualification** — build `PluginQualificationResult` for your capability via `build_host_embedded_capability_subject` (`PluginDeliverySource.HOST_EMBEDDED_EXTENSION`); host owns evidence. Production hosts require `PRODUCTION_QUALIFIED` status — no package manifest or PLUGIN-6 package compatibility required for host-embedded code.
-4. **Explicit registration** — from your composition root, call `require_production_qualification(...)`, then `register_tool_plugin(YourToolPlugin)` (generated `host/tool_wiring.py` exposes `register_<app>_local_tool_extensions(...)` that enforces this order).
-5. **Provide DI** — pass host values via `ToolWiringContext.extras` (reference plugins use `echo_prefix`).
-6. **Enable tools** — add your `tool_id` or bundle id to `ToolProfile.enabled` / `enabled_bundles`, then `build_application_tool_wiring` / runtime invocation.
-7. **No wheel / entry point** — local modules are imported directly; do not fabricate setuptools entry points for host-only code.
+1. **Create application** - `python -m intergrax.scaffold new-application <name>`.
+2. **Add local module** - implement the same `ToolPlugin` contract under `<app_pkg>/extensions/` (see generated `extensions/README.md`).
+3. **Qualification** - build `PluginQualificationResult` for your capability via `build_host_embedded_capability_subject` (`PluginDeliverySource.HOST_EMBEDDED_EXTENSION`); host owns evidence. Production hosts require `PRODUCTION_QUALIFIED` status - no package manifest or PLUGIN-6 package compatibility required for host-embedded code.
+4. **Explicit registration** - from your composition root, call `require_production_qualification(...)`, then `register_tool_plugin(YourToolPlugin)` (generated `host/tool_wiring.py` exposes `register_<app>_local_tool_extensions(...)` that enforces this order).
+5. **Provide DI** - pass host values via `ToolWiringContext.extras` (reference plugins use `echo_prefix`).
+6. **Enable tools** - add your `tool_id` or bundle id to `ToolProfile.enabled` / `enabled_bundles`, then `build_application_tool_wiring` / runtime invocation.
+7. **No wheel / entry point** - local modules are imported directly; do not fabricate setuptools entry points for host-only code.
 
 ### 16.4 External integration package quickstart
 
 Reference example (in-repo, copyable): `intergrax/integrations/examples/custom_memory_kv/`
 
-1. **Create package** — own `pyproject.toml`, implement `IntegrationPlugin` (`manifest.py` + `adapter.py` + `plugin.py`).
-2. **Declare entry point** — `[project.entry-points."intergrax.integrations"]` → your plugin class.
-3. **Build and install wheel** — `uv build --wheel` · `uv pip install ./dist/*.whl`.
-4. **Enable discovery** — `bootstrap_catalogs(discover_entry_points=True)` or `INTERGRAX_DISCOVER_PLUGINS=true`.
-5. **Configure host** — set `IntegrationProfile.<category>` to your slug or plugin class; pass `options` if needed.
-6. **Qualification** — host collects semantic production evidence (§15) before activation.
-7. **Resolve** — `profile.resolve(IntegrationCategory.…)` in composition root or `ToolWiringContext.from_integration_profile(profile)`.
+1. **Create package** - own `pyproject.toml`, implement `IntegrationPlugin` (`manifest.py` + `adapter.py` + `plugin.py`).
+2. **Declare entry point** - `[project.entry-points."intergrax.integrations"]` → your plugin class.
+3. **Build and install wheel** - `uv build --wheel` · `uv pip install ./dist/*.whl`.
+4. **Enable discovery** - `bootstrap_catalogs(discover_entry_points=True)` or `INTERGRAX_DISCOVER_PLUGINS=true`.
+5. **Configure host** - set `IntegrationProfile.<category>` to your slug or plugin class; pass `options` if needed.
+6. **Qualification** - host collects semantic production evidence (§15) before activation.
+7. **Resolve** - `profile.resolve(IntegrationCategory.…)` in composition root or `ToolWiringContext.from_integration_profile(profile)`.
 
 Full walkthrough: [§2](#2-external-integration-plugin) · [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md).
 
 ### 16.5 Local integration extension quickstart
 
 1. **Add module** under application tree implementing the same `IntegrationPlugin` contract.
-2. **Explicit registration** — `register_integration_plugin(MyIntegrationPlugin)` from composition root (no wheel/EP).
-3. **Host qualification** — `build_host_embedded_capability_subject` (§15.2).
-4. **Wire profile** — `IntegrationProfile(key_value_cache=MyIntegrationPlugin)` (or appropriate category slot).
-5. **Resolve** — same `profile.resolve(category)` path as external packages.
+2. **Explicit registration** - `register_integration_plugin(MyIntegrationPlugin)` from composition root (no wheel/EP).
+3. **Host qualification** - `build_host_embedded_capability_subject` (§15.2).
+4. **Wire profile** - `IntegrationProfile(key_value_cache=MyIntegrationPlugin)` (or appropriate category slot).
+5. **Resolve** - same `profile.resolve(category)` path as external packages.
 
 ### 16.6 External skill package quickstart
 
 Reference example (in-repo, **not** installable wheel): `intergrax/skills/examples/custom_pack/`
 
-1. **Create package** — implement `SkillPlugin` (`skill_bundle_manifest`, `skill_manifests`, `register_skills`).
-2. **Declare entry point** — `[project.entry-points."intergrax.skills"]` → your plugin class.
-3. **Build and install wheel** — same as Tools/Integrations.
-4. **Enable discovery** — `bootstrap_catalogs(discover_entry_points=True)`.
-5. **Enable bundle** — `SkillProfile(enabled_bundles=["my_bundle"])`.
-6. **Ensure tools exist** — register and enable every `tool_id` referenced in manifests (`extend_tool_profile_for_skills` on Tier-3 hosts).
-7. **Agent bind** — declare `SkillManifest` objects on `AgentContract.skills`; `SkillResolver` merges at `AgentRegistry.register`.
+1. **Create package** - implement `SkillPlugin` (`skill_bundle_manifest`, `skill_manifests`, `register_skills`).
+2. **Declare entry point** - `[project.entry-points."intergrax.skills"]` → your plugin class.
+3. **Build and install wheel** - same as Tools/Integrations.
+4. **Enable discovery** - `bootstrap_catalogs(discover_entry_points=True)`.
+5. **Enable bundle** - `SkillProfile(enabled_bundles=["my_bundle"])`.
+6. **Ensure tools exist** - register and enable every `tool_id` referenced in manifests (`extend_tool_profile_for_skills` on Tier-3 hosts).
+7. **Agent bind** - declare `SkillManifest` objects on `AgentContract.skills`; `SkillResolver` merges at `AgentRegistry.register`.
 
 Full walkthrough: [§4](#4-external-skill-plugin) · [`SKILLS.md`](../../architecture/SKILLS.md).
 
 ### 16.7 Local skill extension quickstart
 
 1. **Add module** implementing `SkillPlugin` under application tree.
-2. **Explicit registration** — `register_skill_plugin(MySkillPlugin)`.
-3. **Enable bundle** — `SkillProfile(enabled_bundles=["my_bundle"])`.
-4. **Wire tools** — enable referenced tool bundles on `ToolProfile`.
-5. **No wheel / entry point** — import directly from host composition root.
+2. **Explicit registration** - `register_skill_plugin(MySkillPlugin)`.
+3. **Enable bundle** - `SkillProfile(enabled_bundles=["my_bundle"])`.
+4. **Wire tools** - enable referenced tool bundles on `ToolProfile`.
+5. **No wheel / entry point** - import directly from host composition root.
 
 ---
 
-## 17. Tool plugin — lifecycle, failure behavior, troubleshooting
+## 17. Tool plugin - lifecycle, failure behavior, troubleshooting
 
-**Reference surface** — full dual-mode quickstarts remain in §16.1–§16.2. Domain detail: [`TOOLS.md`](../../architecture/TOOLS.md).
+**Reference surface** - full dual-mode quickstarts remain in §16.1–§16.2. Domain detail: [`TOOLS.md`](../../architecture/TOOLS.md).
 
 ### Lifecycle (D12)
 
 | Fact | Detail |
 |------|--------|
-| Registration time | `ToolPlugin` registers `ToolContract` + handlers at catalog/bootstrap — not per agent invocation |
+| Registration time | `ToolPlugin` registers `ToolContract` + handlers at catalog/bootstrap - not per agent invocation |
 | Handler resources | Handlers may hold resources only if their domain design requires it; no generic Platform Plugin unload manager |
-| Integrations in handlers | Injected via `ToolWiringContext` — follow host/domain lifecycle ownership for pools and clients |
+| Integrations in handlers | Injected via `ToolWiringContext` - follow host/domain lifecycle ownership for pools and clients |
 | Process shutdown | Host owns cleanup; document adapter-specific close semantics in your handler if needed |
 
 There is **no** universal `shutdown()` on `ToolPlugin`. Registration is idempotent per process with `override=True` in tests only.
@@ -1143,9 +1143,9 @@ There is **no** universal `shutdown()` on `ToolPlugin`. Registration is idempote
 | EP discovery/import failure | `PluginLoadError` |
 | Invalid `ToolPlugin` contract | `TypeError` from `tool_bundle_manifest_for_plugin` |
 | Qualification failure | Host `require_production_qualification` rejects before registration in generated scaffolds |
-| `ToolWiringContext` missing dependency | Handler receives `None` for optional slot — design handlers to fail clearly or require host wiring |
-| Runtime invocation error | `ToolExecutionResult(success=False, …)` / `TOOL_FAILED` event — schema, timeout, scope deny |
-| Bundle registered but not enabled | Tool absent from runtime `ToolRegistry` — check `ToolProfile.enabled` / `enabled_bundles` |
+| `ToolWiringContext` missing dependency | Handler receives `None` for optional slot - design handlers to fail clearly or require host wiring |
+| Runtime invocation error | `ToolExecutionResult(success=False, …)` / `TOOL_FAILED` event - schema, timeout, scope deny |
+| Bundle registered but not enabled | Tool absent from runtime `ToolRegistry` - check `ToolProfile.enabled` / `enabled_bundles` |
 | Discovery disabled | Installed wheel invisible until `discover_entry_points=True` |
 
 Catalog bootstrap `on_conflict` policy: §5.
@@ -1155,9 +1155,9 @@ Catalog bootstrap `on_conflict` policy: §5.
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
 | Package installed, tool missing | Discovery off | `INTERGRAX_DISCOVER_PLUGINS=true` or `bootstrap_catalogs(discover_entry_points=True)` |
-| EP not discovered | Wrong group name | Must be `intergrax.tools` — verify `pyproject.toml` |
+| EP not discovered | Wrong group name | Must be `intergrax.tools` - verify `pyproject.toml` |
 | Bundle in catalog, tool not invokable | Not on `ToolProfile` | Add `tool_id` or bundle to `enabled` / `enabled_bundles` |
-| Qualification rejected | Host production gate | `PRODUCTION_QUALIFIED` evidence — compatible ≠ qualified |
+| Qualification rejected | Host production gate | `PRODUCTION_QUALIFIED` evidence - compatible ≠ qualified |
 | Handler gets `None` integration | Profile slot unset | Configure `IntegrationProfile` before `ToolWiringContext.from_integration_profile` |
 | `Tool already registered` | Duplicate `tool_id` | Unique namespace (`my_bundle.action`) |
 | Runtime invocation fails | Schema/scope/backend | Check `ToolExecutionResult.error`; verify `ToolWiringContext` and integration resolve |
@@ -1171,7 +1171,7 @@ See [Canonical 12-surface author matrix](#canonical-12-surface-author-matrix) ab
 
 ### 16.4 Multi-capability reference package (DOCS-6)
 
-One Python distribution may expose **multiple independent domain surfaces** through separate setuptools entry-point groups — no universal `PlatformPlugin.execute()` wrapper.
+One Python distribution may expose **multiple independent domain surfaces** through separate setuptools entry-point groups - no universal `PlatformPlugin.execute()` wrapper.
 
 Working reference: [`examples/platform_plugins/intergrax_reference_enterprise_plugin/`](../../../../examples/platform_plugins/intergrax_reference_enterprise_plugin/)
 

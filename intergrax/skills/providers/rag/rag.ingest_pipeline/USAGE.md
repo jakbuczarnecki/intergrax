@@ -28,4 +28,4 @@ Governed access to: `document.parse`, `rag.ingest_document`, `rag.check_index_st
 
 ## Related skills
 
-- Other `rag` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `rag` bundle skills - see bundle [USAGE.md](../USAGE.md)

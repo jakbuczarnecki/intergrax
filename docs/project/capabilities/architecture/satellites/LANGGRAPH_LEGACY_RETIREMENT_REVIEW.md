@@ -4,7 +4,7 @@ Intergrax framework – proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
 -->
 
-# LCI-8A — LangGraph legacy retirement review
+# LCI-8A - LangGraph legacy retirement review
 
 **Review status:** `READY_FOR_REVIEW`  
 **Starting HEAD:** `2de02fcc26a81fcecdb52521f8781abcdfb82049`  

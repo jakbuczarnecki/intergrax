@@ -1,6 +1,6 @@
 # Dispute Simulation Workspace API (Tier-3)
 
-**DSW** — multi-agent product host for dispute material intake, argument analysis, strategy, and court-process simulation.
+**DSW** - multi-agent product host for dispute material intake, argument analysis, strategy, and court-process simulation.
 
 **Architecture:** [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · **Agents:** [`agents/README.md`](../../agents/README.md)
 
@@ -37,7 +37,7 @@ curl -s -X POST http://127.0.0.1:8025/v1/dispute_sim/run \
 
 ## MCP
 
-Default `/mcp` — `list_agents`, `run_agent`. Configure `DISPUTE_SIM_INCLUDE_MCP`, `DISPUTE_SIM_MCP_MOUNT_PATH`.
+Default `/mcp` - `list_agents`, `run_agent`. Configure `DISPUTE_SIM_INCLUDE_MCP`, `DISPUTE_SIM_MCP_MOUNT_PATH`.
 
 ## Docs
 

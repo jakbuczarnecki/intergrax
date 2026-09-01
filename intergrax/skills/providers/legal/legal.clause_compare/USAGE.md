@@ -4,11 +4,11 @@
 
 ## Purpose
 
-**Side-by-side clause comparison**: retrieve variants from index, draft comparison memo in shadow workspace, supplement with web evidence. Use after `legal.contract_review` baseline is active — skill **requires** parent pack tools and policy.
+**Side-by-side clause comparison**: retrieve variants from index, draft comparison memo in shadow workspace, supplement with web evidence. Use after `legal.contract_review` baseline is active - skill **requires** parent pack tools and policy.
 
 ## How it works
 
-1. `requires_skills=("legal.contract_review",)` — resolver expands dependency first; merged tools include parent + `workspace.write_file`.
+1. `requires_skills=("legal.contract_review",)` - resolver expands dependency first; merged tools include parent + `workspace.write_file`.
 2. Inherits `legal.contract_review.policy` policy fragment.
 3. Agent writes diff output via `workspace.write_file` for human review.
 4. Prompt ref: `legal.clause_compare.system`.
@@ -43,5 +43,5 @@ Enable `workspace` bundle on host (`legal_skill_profile` includes workspace).
 
 ## Related skills
 
-- `legal.contract_review` — required dependency
-- `workspace.authoring` — broader workspace editing
+- `legal.contract_review` - required dependency
+- `workspace.authoring` - broader workspace editing

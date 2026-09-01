@@ -1,4 +1,4 @@
-# Partner handoff — BoundaryAttest integration (PoC v2 + EBE-9)
+# Partner handoff - BoundaryAttest integration (PoC v2 + EBE-9)
 
 **Audience:** BoundaryAttest adapter authors and integration operators.
 
@@ -22,12 +22,12 @@ or `Authorization: Bearer <key>`. When the env var is unset (local dev default),
 ## Primary integration flow (default: EBE-9 host signing)
 
 1. `POST /v1/attestation_demo/poc/run` with body from [`poc_run_request.v1.json`](poc_run_request.v1.json)
-2. Read `boundary_events[]` from the JSON response — each element includes `signed`, `host_attestation` (when signing enabled), and full `execution_boundary_event.v1` fields
+2. Read `boundary_events[]` from the JSON response - each element includes `signed`, `host_attestation` (when signing enabled), and full `execution_boundary_event.v1` fields
 3. **Verify Intergrax host signature** per event (see [`EBE-9_HOST_SIGNING.md`](EBE-9_HOST_SIGNING.md) and golden vector [`ebe9_golden_vector.v1.json`](ebe9_golden_vector.v1.json))
 4. **Create one receipt per boundary event** (not one composite receipt per run)
-5. Map each verified event → BoundaryAttest `createSignedReceipt` with a separate `receiptRole: "client_observed"` wrapper (partner key — not the host key)
+5. Map each verified event → BoundaryAttest `createSignedReceipt` with a separate `receiptRole: "client_observed"` wrapper (partner key - not the host key)
 6. Persist via partner `LocalFileReceiptSink`; run `verify` / `chain`
-7. Optional journal compare: `GET /debug/tasks/{run_id}/trace` on the same host (run/task-level correlation only — see below)
+7. Optional journal compare: `GET /debug/tasks/{run_id}/trace` on the same host (run/task-level correlation only - see below)
 
 **Unsigned v2 reference shapes** (when `host_signing_enabled=false`): [`poc_run_response.v2.json`](poc_run_response.v2.json), failure example [`poc_run_response.failed.v2.json`](poc_run_response.failed.v2.json).
 
@@ -65,7 +65,7 @@ When `records.put` fails, Intergrax still returns **two** boundary events:
 
 | `event_sequence` | `boundary_type` | Typical `action_status` | Meaning |
 |------------------|-----------------|-------------------------|---------|
-| 1 | `tool_execution` | `failed` | Tool invoker boundary — side effect did not succeed |
+| 1 | `tool_execution` | `failed` | Tool invoker boundary - side effect did not succeed |
 | 2 | `harness_step` | `completed` | Harness kernel finished policy/merge for the step |
 
 This is **intentional**: tool and harness are separate claims. Sign **one receipt per event**; verify each independently. Do not collapse into one composite run receipt.
@@ -87,22 +87,22 @@ See [`poc_run_response.failed.v2.json`](poc_run_response.failed.v2.json) for the
 | `lineage.ref` | `lineage.ref` |
 | `lineage.type` | `lineage.type` |
 | `host_attestation` | verify with pinned `public_key_ed25519` before partner wrapper |
-| — | `receiptRole: "client_observed"` on partner wrapper (separate from host claim) |
+| - | `receiptRole: "client_observed"` on partner wrapper (separate from host claim) |
 
 ## Trust model
 
 **Default (EBE-9 enabled):**
 
 - Intergrax emits **host-signed** boundary facts (`signed: true`) with `host_attestation` envelope per event.
-- Response `trust_model.recommended_receipt_role` is **`host_attested`** — honest runtime/host claim only.
+- Response `trust_model.recommended_receipt_role` is **`host_attested`** - honest runtime/host claim only.
 - BoundaryAttest verifies the host signature, then may add its own **`client_observed`** wrapper with a separate partner key.
-- Two signatures, two claims — do **not** conflate them.
+- Two signatures, two claims - do **not** conflate them.
 - Do **not** use `server_attested` for Intergrax unless co-located deployment is explicitly documented.
 
 **Unsigned fallback (`host_signing_enabled=false`):**
 
 - Intergrax emits `signed: false`, `host_attestation: null`; `trust_model.recommended_receipt_role` is `client_observed`.
-- Partner signs locally — proves what the adapter recorded, not platform attestation.
+- Partner signs locally - proves what the adapter recorded, not platform attestation.
 
 ## Deferred
 

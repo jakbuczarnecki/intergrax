@@ -1,4 +1,4 @@
-# Audit result — `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
+# Audit result - `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
 
 **Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
@@ -20,7 +20,7 @@
 
 | ID | Severity | Finding | Evidence | Status |
 |----|----------|---------|----------|--------|
-| DX-AUDIT-01 | — | AUDIT-IDEAL-27.2 replay_environment_wiring gate green | `scripts/maintenance/check_replay_environment_wiring.py` | closed |
+| DX-AUDIT-01 | - | AUDIT-IDEAL-27.2 replay_environment_wiring gate green | `scripts/maintenance/check_replay_environment_wiring.py` | closed |
 | DX-AUDIT-02 | P2 | AUDIT-IDEAL-6.7 doctor hook partial | plan cross-ref LLM | open |
 
 No open P0/P1 in DX domain plan register.
@@ -41,8 +41,8 @@ Replay wiring: OK.
 
 ## Backlog P2–P4 (deferred)
 
-- GOV-PROD.1 dashboard — deferred
-- AUDIT-IDEAL-6.7 doctor hook — LLM P2
+- GOV-PROD.1 dashboard - deferred
+- AUDIT-IDEAL-6.7 doctor hook - LLM P2
 
 ---
 

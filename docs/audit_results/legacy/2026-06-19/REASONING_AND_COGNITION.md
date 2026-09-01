@@ -1,4 +1,4 @@
-# Audit result — `REASONING_AND_COGNITION`
+# Audit result - `REASONING_AND_COGNITION`
 
 **Run:** 2026-06-19 · **Mode:** audit_only + implement (COG-MAINT-DOC-01)  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated (L3)
@@ -61,4 +61,4 @@ harness_maturity_report.py            → layer 7 = L3
 
 ## Recommendation
 
-**Architecturally Mature (L3)** — cognition plane revalidated; §6.1aw closed. Next domain: `AGENT_CONTRACTS_AND_ASSEMBLY`.
+**Architecturally Mature (L3)** - cognition plane revalidated; §6.1aw closed. Next domain: `AGENT_CONTRACTS_AND_ASSEMBLY`.

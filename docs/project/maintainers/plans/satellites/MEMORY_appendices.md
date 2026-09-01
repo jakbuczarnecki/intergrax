@@ -1,4 +1,4 @@
-# MEMORY — appendices
+# MEMORY - appendices
 
 **Parent hub:** [`MEMORY.md`](../MEMORY.md)
 
@@ -7,9 +7,9 @@
 
 ---
 
-## Appendix L — LLM completion response envelope traceability (Phase M-LLM-R)
+## Appendix L - LLM completion response envelope traceability (Phase M-LLM-R)
 
-**Source:** Tier-0 LLM adapter audit (2026-06-06) — plain `str` / `Dict[str, Any]` returns insufficient for production observability, replay, cost attribution, and L4 adaptive signals.
+**Source:** Tier-0 LLM adapter audit (2026-06-06) - plain `str` / `Dict[str, Any]` returns insufficient for production observability, replay, cost attribution, and L4 adaptive signals.
 
 **Phase register:** [Phase M-LLM-R](.#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · **Band 2z** · queue [§6.1v](.#61v-harness-implementation-queue--llm-completion-response-envelope-closed)
 
@@ -59,6 +59,6 @@
 |------|------------|---------|
 | 2026-06-06 | M-LLM-R.0.1 | Phase M-LLM-R register + §6.1v + §6.2ad + Appendix L + Band 2z |
 | 2026-06-06 | M-LLM-R.* | Typed `LLMAdapterResponse` envelope; providers + consumers migrated; gate **755** passed |
-| — | — | *(append row per merged PR)* |
+| - | - | *(append row per merged PR)* |
 
 ---

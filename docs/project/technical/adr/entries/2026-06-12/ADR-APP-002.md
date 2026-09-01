@@ -26,7 +26,7 @@ Tier-3 architecture §49 requires immutable **EnvironmentSnapshot** materializat
 ### Positive
 
 - Auditable intake fingerprint for replay, diff, and incident comparison.
-- Single harness path — all reference hosts via `build_harness_host_runtime`.
+- Single harness path - all reference hosts via `build_harness_host_runtime`.
 
 ### Negative
 

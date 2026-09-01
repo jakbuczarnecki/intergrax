@@ -1,7 +1,7 @@
 # Product Portfolio Selection Record
 
 **Document type:** Maintainer-level historical selection record  
-**Evidence class:** A — completed selection pipeline (MP-1→MP-8)  
+**Evidence class:** A - completed selection pipeline (MP-1→MP-8)  
 **Last frozen:** 2026-08-19
 
 ---
@@ -52,7 +52,7 @@ Rules applied throughout MP-1→MP-8:
 
 ## 4. Selection pipeline
 
-### MP-1 — Market Opportunity Landscape
+### MP-1 - Market Opportunity Landscape
 
 Broad landscape scan: approximately **22 problem hypotheses** across enterprise operations, finance, risk, engineering, and emerging AI governance.
 
@@ -60,7 +60,7 @@ Examples (non-exhaustive): contract-to-invoice leakage, supplier disruption resp
 
 **No Intergrax-fit scoring** at this stage.
 
-### MP-2 — Market Evidence
+### MP-2 - Market Evidence
 
 Each hypothesis screened against:
 
@@ -75,7 +75,7 @@ Each hypothesis screened against:
 - time-to-value
 - commercial accessibility
 
-### MP-3 — Shortlist
+### MP-3 - Shortlist
 
 Eight products advanced to competitive and commercial testing:
 
@@ -90,28 +90,28 @@ Eight products advanced to competitive and commercial testing:
 | 7 | Contract Obligation Execution Operator |
 | 8 | AR Dispute Resolution Operator |
 
-### MP-4 — Competitive Kill Test
+### MP-4 - Competitive Kill Test
 
 | Outcome | Detail |
 |---------|--------|
-| AR Dispute Resolution Operator | **Eliminated** — crowded category; weak differentiation path |
-| Contract Obligation Execution Operator | **Reserved** — plausible but execution complexity and incumbent coverage |
+| AR Dispute Resolution Operator | **Eliminated** - crowded category; weak differentiation path |
+| Contract Obligation Execution Operator | **Reserved** - plausible but execution complexity and incumbent coverage |
 | Enterprise AI Governance Operator | **Reframed** toward **Autonomous Agent Governance Operator** (emerging, narrower wedge) |
 | Supply Disruption + TPRM | **Retained** with explicit competitive caveats |
 | General principle | Competition treated as evidence **against** naive differentiation claims |
 
-### MP-5 — Wow / MVP Test
+### MP-5 - Wow / MVP Test
 
 Key “wow” classes identified:
 
 | Product | Wow class |
 |---------|-----------|
-| Contract Recovery | Money wow — direct economic recovery |
-| Supply Disruption | Crisis wow — urgent operational mitigation |
-| Agent Governance | Control wow — governance over autonomous agents |
-| Deployment Guardian | Engineering wow — safe change authorization |
+| Contract Recovery | Money wow - direct economic recovery |
+| Supply Disruption | Crisis wow - urgent operational mitigation |
+| Agent Governance | Control wow - governance over autonomous agents |
+| Deployment Guardian | Engineering wow - safe change authorization |
 
-### MP-6 — Commercial Viability
+### MP-6 - Commercial Viability
 
 Broad tier outcome (no precise market-size or pricing claims):
 
@@ -121,7 +121,7 @@ Broad tier outcome (no precise market-size or pricing claims):
 | **Tier B challenger** | Autonomous Agent Governance |
 | **Wildcard** | Prior Authorization |
 
-### MP-7 — Portfolio Construction
+### MP-7 - Portfolio Construction
 
 The selected four are complementary across:
 
@@ -134,7 +134,7 @@ The selected four are complementary across:
 
 **Explicit constraint:** diversity was applied **only after** each candidate had passed individual market and commercial screening (MP-2→MP-6). Portfolio fit did not rescue weak individual candidates.
 
-### MP-8 — Independence Audit
+### MP-8 - Independence Audit
 
 **Result: PASS**
 
@@ -196,7 +196,7 @@ These counterexamples are intentional anti-bias evidence: neither “best platfo
 |-------|--------|
 | Strategic position | Strategically strong; emerging real problem; excellent demo potential |
 | Not selected into first four | Hyperscalers and infrastructure vendors are aggressively entering identity/runtime-governance layers; buyer maturity is still developing |
-| Status | **Challenger** — not rejected forever |
+| Status | **Challenger** - not rejected forever |
 
 ---
 
@@ -208,7 +208,7 @@ These counterexamples are intentional anti-bias evidence: neither “best platfo
 |-------|--------|
 | Pain | Exceptionally severe real-world pain; strong economic and human value |
 | Not selected for first portfolio | Credible MVP requires healthcare-specific domain, payer/EHR integration, and regulatory/safety investment disproportionate to this first multi-product experiment |
-| Status | **Future wildcard** — not rejected as a business opportunity |
+| Status | **Future wildcard** - not rejected as a business opportunity |
 
 ---
 
@@ -221,7 +221,7 @@ Compact retention of evaluated alternatives (evidence that alternatives existed)
 | Generic contract review | Rejected | Commoditized; weak wedge |
 | Generic customer-service AI | Rejected | Crowded; unclear buyer ROI |
 | Generic IT service AI | Rejected | Incumbent ITSM coverage |
-| AR Dispute Resolution Operator | Eliminated (MP-4) | Competitive kill — weak differentiation |
+| AR Dispute Resolution Operator | Eliminated (MP-4) | Competitive kill - weak differentiation |
 | Contract Obligation Execution Operator | Reserved | Execution complexity; incumbent coverage |
 | Continuous audit | Rejected | Broad category; weak initial wedge |
 | Incident commander | Rejected | Crowded incident-management space |
@@ -262,7 +262,7 @@ LKW is **not** a fifth result of the selection pipeline. It joins the later mult
 
 ## 11. Next step
 
-**MP-11** — define [`MULTI_PRODUCT_PROGRAM.md`](MULTI_PRODUCT_PROGRAM.md), including:
+**MP-11** - define [`MULTI_PRODUCT_PROGRAM.md`](MULTI_PRODUCT_PROGRAM.md), including:
 
 - portfolio control session responsibilities
 - product-session independence

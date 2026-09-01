@@ -1,4 +1,4 @@
-# CONTEXT_ENGINEERING — §8+ extended architecture
+# CONTEXT_ENGINEERING - §8+ extended architecture
 
 **Parent hub:** [`CONTEXT_ENGINEERING.md`](../CONTEXT_ENGINEERING.md)
 
@@ -83,15 +83,15 @@ bootstrap_context_catalog(
 )
 ```
 
-### 8.3 Default engine — as-built (post CE-EXT S12, 2026-06-12)
+### 8.3 Default engine - as-built (post CE-EXT S12, 2026-06-12)
 
 Legacy `runtime_steps` pipeline (`HistoryLayer` → `CompileContextStep`) was **removed** by ACP-CLOSE-LEG.
 
 | Path | Collect | Budget / validate | Format | Events | Engine integration |
 |------|---------|-------------------|--------|--------|-------------------|
-| **Graph** | `compose_agent_message()` + optional provider `collect()` | `ContextEngine.assemble()` when `llm_adapter` wired; else `trim_message_to_budget` | bundle message | `CONTEXT_ASSEMBLED` v2 + `engine_id` | **Hybrid** — CE-3.7 |
-| **UAEP** | `build_context` + optional `assemble_uaep_session_prompt` | engine merge when wired | `ContextCompiler` when engine wired | `CONTEXT_ASSEMBLED` v2 | **Hybrid** — assemble wired (CE-UAEP-ASM); provider collect via legacy bridge handles |
-| **ACP** | catalog tools in `on_next_step` + provider stubs in engine | `compile_prompt_text()` / `ContextCompiler` before each LLM call | step prompt | step trace + assembly v2 when graph-wired | **Hybrid** — CE-3.9 compiler hot path |
+| **Graph** | `compose_agent_message()` + optional provider `collect()` | `ContextEngine.assemble()` when `llm_adapter` wired; else `trim_message_to_budget` | bundle message | `CONTEXT_ASSEMBLED` v2 + `engine_id` | **Hybrid** - CE-3.7 |
+| **UAEP** | `build_context` + optional `assemble_uaep_session_prompt` | engine merge when wired | `ContextCompiler` when engine wired | `CONTEXT_ASSEMBLED` v2 | **Hybrid** - assemble wired (CE-UAEP-ASM); provider collect via legacy bridge handles |
+| **ACP** | catalog tools in `on_next_step` + provider stubs in engine | `compile_prompt_text()` / `ContextCompiler` before each LLM call | step prompt | step trace + assembly v2 when graph-wired | **Hybrid** - CE-3.9 compiler hot path |
 | **Engine unit/integration** | `DefaultNexusContextEngine.assemble()` | collect → dedup → rank → `ContextCompiler` → `verify_context_preflight()` | `ChatMessage[]` | via `ContextManager` when wired | **Reference spine** |
 
 **Unification status:** graph + UAEP use `assemble()` when engine wired (**CE-ALIGN**). **CE-PROV-WIRE** closes §7.1 provider collect for all §8.4 builtins (GAP-CTX-20). ACP step path remains hybrid (catalog tools + compiler) until optional per-step `assemble()` follow-up.
@@ -103,7 +103,7 @@ Legacy `runtime_steps` pipeline (`HistoryLayer` → `CompileContextStep`) was **
 | `builtin.task_message` | TASK_MESSAGE | `builtin.py` + `legacy_bridge.py` | **live** (objective / messages handle) | CE-PROV-01 **Done** |
 | `builtin.system_instructions` | SYSTEM_INSTRUCTIONS | `builtin.py` + `legacy_bridge.py` | **live (handle-gated)** | CE-PROV-02 **Done** |
 | `builtin.session_history` | SESSION_HISTORY | `builtin.py` + `legacy_bridge.py` | **live** (`session_history_messages` handle) | CE-PROV-03 **Done** |
-| `builtin.session_history_semantic` | SESSION_HISTORY_SEMANTIC | `session_semantic_recall.py` | **live** (vector index + hits handle) | — (CE-VEC-1) |
+| `builtin.session_history_semantic` | SESSION_HISTORY_SEMANTIC | `session_semantic_recall.py` | **live** (vector index + hits handle) | - (CE-VEC-1) |
 | `builtin.longterm_memory` | LONGTERM_MEMORY | `builtin.py` + `legacy_bridge.py` | **live (handle-gated)** | CE-PROV-04 **Done** |
 | `builtin.rag` | RAG | `builtin.py` + `legacy_bridge.py` | **live (handle-gated)** | CE-PROV-05 **Done** |
 | `builtin.websearch` | WEBSEARCH | `builtin.py` + `legacy_bridge.py` | **live (handle-gated)** | CE-PROV-06 **Done** |
@@ -112,7 +112,7 @@ Legacy `runtime_steps` pipeline (`HistoryLayer` → `CompileContextStep`) was **
 | `builtin.shared_context` | SHARED_CONTEXT | `builtin.py` + `legacy_bridge.py` | **live (handle-gated)** | CE-PROV-09 **Done** |
 | `builtin.attachments` | ATTACHMENT | `builtin.py` + `legacy_bridge.py` | **live (handle-gated)** | CE-PROV-10 **Done** |
 | `builtin.policy_overlay` | POLICY_OVERLAY | `builtin.py` + `legacy_bridge.py` | **live (handle-gated)** | CE-PROV-11 **Done** |
-| `builtin.workspace` | WORKSPACE | `workspace.py` | **live** (`workspace_files` handle) | — (CE-7.2) |
+| `builtin.workspace` | WORKSPACE | `workspace.py` | **live** (`workspace_files` handle) | - (CE-7.2) |
 
 **Plan:** [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md) phase **CE-PROV-WIRE** · sprints B1–B4. Handle key contract documented in plan §CE-PROV-WIRE (2026-06-14).
 
@@ -127,7 +127,7 @@ Legacy `runtime_steps` pipeline (`HistoryLayer` → `CompileContextStep`) was **
 | `custom` | `ContextProfile.engine_ref` | author-registered `ContextEngine` subclass |
 
 ```python
-# ApplicationEnvironmentProfile — as-built ContextProfile fields (CTX + CE-EXT)
+# ApplicationEnvironmentProfile - as-built ContextProfile fields (CTX + CE-EXT)
 class ContextProfile(BaseModel):
     assembly_options: TaskContextAssemblyOptions
     budget_policy: ContextBudgetPolicy | None
@@ -144,7 +144,7 @@ class ContextProfile(BaseModel):
 
 ## 9. Execution paths
 
-### 9.1 As-built — UAEP session turn
+### 9.1 As-built - UAEP session turn
 
 ```mermaid
 sequenceDiagram
@@ -165,7 +165,7 @@ sequenceDiagram
 
 When `context_engine` + `llm_adapter` are wired on `UAEPExecutor`, **`assemble_uaep_session_prompt`** runs after `build_context` (**CE-UAEP-ASM**). Provider collect uses task/request metadata handles populated by upstream steps (**CE-PROV-WIRE**).
 
-### 9.1.1 Engine assembly spine (CE-3 + CE-3.9 — shipped on ACP/graph)
+### 9.1.1 Engine assembly spine (CE-3 + CE-3.9 - shipped on ACP/graph)
 
 ```mermaid
 sequenceDiagram
@@ -217,7 +217,7 @@ sequenceDiagram
 | Budget | Child `RunBudget` capped; parent receives synthesis only |
 | Namespace | Providers read delegation-scoped memory only |
 | Preset | `explore_child` disables websearch by default |
-| Return | `DelegationResult.context_summary` — not full child window |
+| Return | `DelegationResult.context_summary` - not full child window |
 
 ### 9.4 ACP direct run (Tier-2)
 
@@ -237,7 +237,7 @@ Apply until `assembled_tokens <= budget_tokens` ([`ADR-MEM-001`](../adr/entries/
 5. TRUNCATE_OLDEST (session)
 6. DROP lowest-scored optional fragments (by ranker composite)
 7. DROP optional injection blocks
-8. Tokenizer-aware hard trim (last resort — emit explicit CONTEXT_TRIMMED)
+8. Tokenizer-aware hard trim (last resort - emit explicit CONTEXT_TRIMMED)
 ```
 
 Each step **MUST** emit diagnostics: `degradation_step`, `bytes_removed`, `fragments_dropped[]`.
@@ -248,14 +248,14 @@ Each step **MUST** emit diagnostics: `degradation_step`, `bytes_removed`, `fragm
 
 | Control | Mechanism | Status |
 |---------|-----------|--------|
-| Relevance / freshness / confidence | `ContextChunkSignal` + thresholds | **Done** — `DefaultContextRanker._apply_quality_gate()` (CE-10.1) |
-| Dedup | `content_hash` / `dedup_fragments_by_hash()` | **Done** — engine collect merge (CE-10.2) |
+| Relevance / freshness / confidence | `ContextChunkSignal` + thresholds | **Done** - `DefaultContextRanker._apply_quality_gate()` (CE-10.1) |
+| Dedup | `content_hash` / `dedup_fragments_by_hash()` | **Done** - engine collect merge (CE-10.2) |
 | Drift monitoring | `ContextProfile.drift_monitoring_enabled` | **Done** |
 | Semantic compression | `semantic_compression_enabled` | **Done** (profile flag) |
 | Regression benchmark | `context_regression_benchmark.py` | **Done** |
 | Retrieval effectiveness | `retrieval_effectiveness.py` | **Done** (RAG boundary) |
 
-**CE-10.3** (CE-FMT-1 tag classification in `classify_candidates`) **Done** — legacy string heuristics remain fallback for non-tagged injections.
+**CE-10.3** (CE-FMT-1 tag classification in `classify_candidates`) **Done** - legacy string heuristics remain fallback for non-tagged injections.
 
 ---
 
@@ -265,9 +265,9 @@ Each step **MUST** emit diagnostics: `degradation_step`, `bytes_removed`, `fragm
 
 **Normative rule (new code):** New production code **MUST NOT** introduce a new ad-hoc prompt/context assembly path unless this architecture document explicitly approves it and defines its relationship to `ContextCompiler` / `ContextEngine`.
 
-Parallel ad-hoc paths — agent-local prompt building, UAEP/session prompt assembly without compiler, direct history concatenation, raw messages passed directly to `LLMAdapter`, test/lab shortcuts, tool/agent-specific prompt fragments — create drift risk: production LLM calls may bypass `MemoryView`, RAG provenance, policy, budget and observability.
+Parallel ad-hoc paths - agent-local prompt building, UAEP/session prompt assembly without compiler, direct history concatenation, raw messages passed directly to `LLMAdapter`, test/lab shortcuts, tool/agent-specific prompt fragments - create drift risk: production LLM calls may bypass `MemoryView`, RAG provenance, policy, budget and observability.
 
-**Cross-refs:** [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §5 · [`AGENT_AUTHOR_MINIMAL_PATH.md`](../guides/AGENT_AUTHOR_MINIMAL_PATH.md) · [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §17 · [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) · [`MEMORY.md`](MEMORY.md) · [`RAG.md`](RAG.md) · [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md#governance-boundary) (L4 adaptive ranking — observe/propose only by default)
+**Cross-refs:** [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §5 · [`AGENT_AUTHOR_MINIMAL_PATH.md`](../guides/AGENT_AUTHOR_MINIMAL_PATH.md) · [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §17 · [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) · [`MEMORY.md`](MEMORY.md) · [`RAG.md`](RAG.md) · [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md#governance-boundary) (L4 adaptive ranking - observe/propose only by default)
 
 ### 12.1 Approved context paths
 
@@ -312,7 +312,7 @@ Any such path **SHOULD** have:
 | **Migration target** | Canonical CE path or approved equivalent |
 | **Known risks** | Budget, provenance, policy bypass, etc. |
 
-Do **not** remove legacy paths in this document — register and constrain them until migration completes.
+Do **not** remove legacy paths in this document - register and constrain them until migration completes.
 
 ### 12.4 Cursor review checklist
 
@@ -374,7 +374,7 @@ Registered in `hook_registry.py` parity map · UAEP `run_before` / `run_after`.
 |-------|--------|
 | Pre-context policy gate | `runtime/policy/context_assembly_policy.py` (`run_pre_context_policy_gate`) |
 | Static wiring audit | `pre_context_policy_audit.py` (CI marker scan) |
-| Retrieval poisoning | RAG security profile — fragments filtered before inject |
+| Retrieval poisoning | RAG security profile - fragments filtered before inject |
 | Secret redaction | `ApplicationSecurityProfile` on trace payloads |
 
 ### 12.4 Runtime events
@@ -383,7 +383,7 @@ Registered in `hook_registry.py` parity map · UAEP `run_before` / `run_after`.
 |-------|-------|----------------|---------|------|
 | `CONTEXT_ASSEMBLED` | `CONTEXT_BUILDING` | `context_assembly.v2` (preferred) | TraceStore | Graph + UAEP (CE-3.11, CE-4.5) |
 | `CONTEXT_TRIMMED` | `CONTEXT_BUILDING` | `context_assembly.v2` | TraceStore | Graph |
-| `CONTEXT_BUILT` | `CONTEXT_BUILDING` | `context_assembly.v1` (alias registry) | TraceStore | **Deprecated** — use `CONTEXT_ASSEMBLED` |
+| `CONTEXT_BUILT` | `CONTEXT_BUILDING` | `context_assembly.v1` (alias registry) | TraceStore | **Deprecated** - use `CONTEXT_ASSEMBLED` |
 | `CONTEXT_CANDIDATE_COLLECTED` | `CONTEXT_BUILDING` | `context_candidate.v1` | TraceStore | `DefaultNexusContextEngine` when `event_bus` in provider handles (CE-9.1) |
 | `CONTEXT_CANDIDATE_DROPPED` | `CONTEXT_BUILDING` | `context_candidate.v1` | TraceStore | Dedup phase + counters (`context_counters.py`) |
 | `CONTEXT_VALIDATION_FAILED` | `CONTEXT_BUILDING` | `validation.v1` | TraceStore | Policy/validator failures before `assemble()` raises |
@@ -406,30 +406,30 @@ Structured logger namespace: `intergrax.context.engine`
 | Level | When |
 |-------|------|
 | DEBUG | Per-provider collect counts, timing |
-| INFO | Assembly complete — tokens, degradation |
+| INFO | Assembly complete - tokens, degradation |
 | WARNING | Validation near-limit, quality threshold suppressions |
 | ERROR | Validation failed, provider exception (fail closed or degrade per profile) |
 
-**Never log** raw fragment content at INFO in production profiles — use `trace_id` + `fragment_id` only.
+**Never log** raw fragment content at INFO in production profiles - use `trace_id` + `fragment_id` only.
 
 ### 12.6 Observability / tracing
 
 | Signal | Status |
 |--------|--------|
-| OTel spans | **Shipped (shim)** — `context/tracking/context_spans.py`; gate: `check_context_otel_span_registry.py` |
-| Metrics | **Opt-in** — `runtime/observability/context_counters.py` (`INTERGRAX_CONTEXT_METRICS`) |
+| OTel spans | **Shipped (shim)** - `context/tracking/context_spans.py`; gate: `check_context_otel_span_registry.py` |
+| Metrics | **Opt-in** - `runtime/observability/context_counters.py` (`INTERGRAX_CONTEXT_METRICS`) |
 | Gate scripts | `check_context_otel_span_registry.py`, `check_context_engine_wiring.py`, `intergrax doctor` |
-| Dashboards | Deferred (CE-9.6) — link when OBS product dashboard slice ships |
+| Dashboards | Deferred (CE-9.6) - link when OBS product dashboard slice ships |
 
 ### 12.7 Cost attribution
 
-Context assembly CPU time and optional LLM summarization calls **MUST** attribute to `run_id` / `task_id` via V-COST hooks when semantic compression invokes LLM — **deferred** until semantic compression hot path (CE-9.5).
+Context assembly CPU time and optional LLM summarization calls **MUST** attribute to `run_id` / `task_id` via V-COST hooks when semantic compression invokes LLM - **deferred** until semantic compression hot path (CE-9.5).
 
 ---
 
 ## 13. Interactive / multi-hop assembly (codebase-scale)
 
-For Cursor-class behaviour, CE ships an **optional orchestration loop** (CE-8 — codebase preset):
+For Cursor-class behaviour, CE ships an **optional orchestration loop** (CE-8 - codebase preset):
 
 ```text
 ContextOrchestrator (max_hops=3, latency_budget_ms)
@@ -443,7 +443,7 @@ ContextOrchestrator (max_hops=3, latency_budget_ms)
 | `WorkspaceContextProvider` | Merkle + chunks (`context/providers/workspace_index.py`) |
 | `rag.retrieve` | Semantic fallback |
 | `explore` delegation | Wide search child agent |
-| `ContextOrchestrator` | Bounded loop — not unbounded agent while-true |
+| `ContextOrchestrator` | Bounded loop - not unbounded agent while-true |
 
 **Guardrails:** `max_hops`, `max_collect_latency_ms`, policy on total tool reads per assembly.
 
@@ -459,7 +459,7 @@ ContextOrchestrator (max_hops=3, latency_budget_ms)
 
 ### 14.2 Long session support
 
-- **Episodic semantic recall** (when `MemoryProfile.enable_session_vector_index`) — retrieve relevant past turns from the session turn vector index before assembling chronological history; see [`MEMORY.md`](MEMORY.md) §7.1.1 (MEM-VEC-2.*)
+- **Episodic semantic recall** (when `MemoryProfile.enable_session_vector_index`) - retrieve relevant past turns from the session turn vector index before assembling chronological history; see [`MEMORY.md`](MEMORY.md) §7.1.1 (MEM-VEC-2.*)
 - `HistoryLayer` SUMMARIZE_OLDEST on the **remaining** chronological tail when episodic + budget still overflow
 - CE drops lowest-scored optional fragments (`SESSION_HISTORY_SEMANTIC` before mandatory user turn) per degradation ladder
 
@@ -478,7 +478,7 @@ ContextOrchestrator (max_hops=3, latency_budget_ms)
 - Preset `codebase`
 - Plugins: workspace + graph_prior + tool_output
 - Orchestrator 2–3 hops
-- Budget: 128k window — never full repo dump
+- Budget: 128k window - never full repo dump
 
 ### 14.6 Delegated research child
 
@@ -528,7 +528,7 @@ profile = ApplicationEnvironmentProfile(
 | GAP-CTX-05 | **Closed** | Quality scoring not in hot path | CE-10.1 ranker gate |
 | GAP-CTX-06 | **Closed** | Workspace spike only | CE-7 workspace provider |
 | GAP-CTX-07 | **Closed** | No `ContextOrchestrator` | CE-8 codebase preset |
-| GAP-CTX-08 | **Closed** | `classify_candidates` string heuristics | **CE-10.3** — CE tag prefix + legacy fallback (2026-06-14) |
+| GAP-CTX-08 | **Closed** | `classify_candidates` string heuristics | **CE-10.3** - CE tag prefix + legacy fallback (2026-06-14) |
 | GAP-CTX-09 | **Closed** | No OTel spans on hot path | CE-9.2 span registry + shim |
 | GAP-CTX-10 | **Closed** | No `CONTEXT_CANDIDATE_*` bus events | CE-9.1 engine emission via `context_skill_recording` |
 | GAP-CTX-11 | **Closed** | `ContextBuilder` name collision | CE-3.6 `SessionRagContextBuilder` alias |
@@ -560,7 +560,7 @@ profile = ApplicationEnvironmentProfile(
 | `intergrax/context/orchestrator.py` | 0 | `ContextOrchestrator` (codebase preset) |
 | `intergrax/context/quality.py` | 0 | `evaluate_context_engineering()` |
 | `intergrax/context/providers/builtin.py` | 0 | `BuiltinContextPlugin` (all §8.4 providers live via legacy bridge) |
-| `intergrax/context/providers/legacy_bridge.py` | 0 | Legacy collector adapters (**CE-PROV-BRIDGE** — B1 shipped) |
+| `intergrax/context/providers/legacy_bridge.py` | 0 | Legacy collector adapters (**CE-PROV-BRIDGE** - B1 shipped) |
 | `intergrax/context/providers/workspace.py` | 0 | `WorkspaceContextProvider` |
 | `intergrax/context/providers/workspace_index.py` | 0 | Merkle workspace index |
 | `intergrax/context/providers/session_semantic_recall.py` | 0 | Episodic vector recall provider |
@@ -581,7 +581,7 @@ profile = ApplicationEnvironmentProfile(
 | `intergrax/runtime/nexus/tools/plan_context_invocation.py` | 1 | ACP catalog context injection |
 | `intergrax/runtime/architecture/context_engineering.py` | 1 | Quality scoring shim |
 | `intergrax/runtime/architecture/context_regression_benchmark.py` | 1 | Regression harness |
-| `intergrax/memory/workspace_index_spike.py` | 0 | Legacy RFC — superseded by `context/providers/workspace_index.py` |
+| `intergrax/memory/workspace_index_spike.py` | 0 | Legacy RFC - superseded by `context/providers/workspace_index.py` |
 | `intergrax/contracts/context_assembly.py` | 0 | `TaskContextAssemblyOptions` |
 | `intergrax/contracts/agent_context_hints.py` | 0 | `AgentContextHints` (CE-5.1) |
 | `intergrax/applications/_shared/context_presets.py` | 3 | Tier-3 preset helpers |
@@ -590,9 +590,9 @@ profile = ApplicationEnvironmentProfile(
 | `intergrax/agents/authoring/context_assembly_bridge.py` | 2 | ACP `ContextAssemblyRequest` builder |
 | `intergrax/agents/uaep.py` | 2 bridge | UAEP hooks + `CONTEXT_ASSEMBLED` v2 |
 | `intergrax/runtime/nexus/context/runtime_state_handle_bridge.py` | 1 | RuntimeState → CE provider metadata sync (CE-HANDLE-FILL) |
-| `scripts/maintenance/check_context_engine_wiring.py` | — | CI preset resolution gate |
-| `scripts/maintenance/check_context_builtin_providers.py` | — | CI builtin collect wiring gate (CE-PROV-GATE) |
-| `scripts/maintenance/check_context_otel_span_registry.py` | — | CI span wiring gate |
+| `scripts/maintenance/check_context_engine_wiring.py` | - | CI preset resolution gate |
+| `scripts/maintenance/check_context_builtin_providers.py` | - | CI builtin collect wiring gate (CE-PROV-GATE) |
+| `scripts/maintenance/check_context_otel_span_registry.py` | - | CI span wiring gate |
 
 ---
 
@@ -613,8 +613,8 @@ profile = ApplicationEnvironmentProfile(
 
 | Document | Relationship |
 |----------|--------------|
-| [`architecture/MEMORY.md`](MEMORY.md) | Stores + lifecycle — CE consumes via providers |
-| [`architecture/RAG.md`](RAG.md) | Retrieval — CE consumes chunks |
+| [`architecture/MEMORY.md`](MEMORY.md) | Stores + lifecycle - CE consumes via providers |
+| [`architecture/RAG.md`](RAG.md) | Retrieval - CE consumes chunks |
 | [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md) | Implementation register |
 | [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix L | Author control plane |
 | [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §16 | Target vision |

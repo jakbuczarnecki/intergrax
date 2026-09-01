@@ -1,4 +1,4 @@
-# Organization worker agent — architecture
+# Organization worker agent - architecture
 
 Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 

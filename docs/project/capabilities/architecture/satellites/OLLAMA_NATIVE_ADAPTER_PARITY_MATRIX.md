@@ -4,7 +4,7 @@ Intergrax framework – proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
 -->
 
-# LCI-6A — Native Ollama Adapter Architecture and Parity Matrix
+# LCI-6A - Native Ollama Adapter Architecture and Parity Matrix
 
 **Status:** LCI-6B READY_FOR_REVIEW
 **Task:** `LCI-6A-NATIVE-OLLAMA-ADAPTER-ARCHITECTURE-AND-PARITY-MATRIX`
@@ -37,18 +37,18 @@ LCI-6E then moves LangChainOllamaAdapter to compatibility-only packaging.
 Roadmap state:
 
 ```text
-LCI-5A — APPROVED
-LCI-5B — APPROVED
-LCI-5C — APPROVED
-RAG-REGRESSION-GATE-1 — PASS / CLOSED
+LCI-5A - APPROVED
+LCI-5B - APPROVED
+LCI-5C - APPROVED
+RAG-REGRESSION-GATE-1 - PASS / CLOSED
 
-LCI-6A — APPROVED
-LCI-6B — READY_FOR_REVIEW
-LCI-6C — NEXT AFTER ACCEPTANCE
-LCI-6D — PLANNED
-LCI-6E — PLANNED
-LCI-7 — PLANNED
-LCI-8 — PLANNED
+LCI-6A - APPROVED
+LCI-6B - READY_FOR_REVIEW
+LCI-6C - NEXT AFTER ACCEPTANCE
+LCI-6D - PLANNED
+LCI-6E - PLANNED
+LCI-7 - PLANNED
+LCI-8 - PLANNED
 ```
 
 No claim of production readiness, full parity, or LangChain removal is made here. Live proof remains pending.

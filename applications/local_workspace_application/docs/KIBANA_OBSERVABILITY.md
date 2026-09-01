@@ -1,4 +1,4 @@
-# Kibana observability UI — Local Workspace
+# Kibana observability UI - Local Workspace
 
 This document describes the optional local Kibana UI for inspecting LKW observability documents stored in Elasticsearch.
 

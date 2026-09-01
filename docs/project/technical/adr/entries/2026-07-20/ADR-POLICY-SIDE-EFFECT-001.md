@@ -13,7 +13,7 @@ External actions can create commitments, mutations, disclosures, or irreversible
 
 ## Decision
 
-1. Introduce a minimal platform request contract `MeaningfulSideEffectRequest` (action, coarse `MeaningfulSideEffectKind`s, identity, correlation, context) — **not** a large action taxonomy and **not** quote-/payment-specific fields.
+1. Introduce a minimal platform request contract `MeaningfulSideEffectRequest` (action, coarse `MeaningfulSideEffectKind`s, identity, correlation, context) - **not** a large action taxonomy and **not** quote-/payment-specific fields.
 2. Extend `RuntimePolicyEngine` / `PolicyEngine` with `evaluate_meaningful_side_effect` returning existing `PolicyDecision`. Default is **fail closed** (DENY when identity/principal missing or no matching rule / indeterminate).
 3. Expose injectable `MeaningfulSideEffectEvaluator` Protocol for Tier-3 composition roots.
 4. Map `REQUIRE_HUMAN` / `ESCALATE` to Governed Continuation composition (GEC-4); policy never resumes Nexus.

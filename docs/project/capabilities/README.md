@@ -15,8 +15,8 @@ Use, modification, or distribution without written permission is prohibited.
 
 Intergrax has two kinds of technical work:
 
-1. **Domain-layer work** — belongs to one architecture domain and its matching implementation plan.
-2. **Multi-layer feature work** — delivers one product/runtime capability by coordinating changes across several domains.
+1. **Domain-layer work** - belongs to one architecture domain and its matching implementation plan.
+2. **Multi-layer feature work** - delivers one product/runtime capability by coordinating changes across several domains.
 
 Domain-layer work remains documented in the existing 1:1 structure:
 
@@ -34,7 +34,7 @@ docs/project/capabilities/plan/<FEATURE>.md
 docs/project/capabilities/plan/satellites/
 ```
 
-Feature **hubs** (`architecture/<FEATURE>.md`, `plan/<FEATURE>.md`) are Cursor entry points for analysis and implementation. **Satellites** hold bulky cross-domain sync registers and extended detail — same explicit-load rule as domain-layer `docs/project/architecture/satellites` and `docs/project/maintainers/plans/satellites` (listed in `.cursorignore`).
+Feature **hubs** (`architecture/<FEATURE>.md`, `plan/<FEATURE>.md`) are Cursor entry points for analysis and implementation. **Satellites** hold bulky cross-domain sync registers and extended detail - same explicit-load rule as domain-layer `docs/project/architecture/satellites` and `docs/project/maintainers/plans/satellites` (listed in `.cursorignore`).
 
 Do **not** create `docs/project/capabilities/satellites` at the features root. Satellites belong under each hub tier, not beside `architecture` and `plan`.
 
@@ -58,8 +58,8 @@ Do **not** create `docs/project/capabilities/satellites` at the features root. S
 | Feature | Guide | Architecture | Plan | Status |
 |---------|-------|--------------|------|--------|
 | `TOKEN_OPTIMIZATION` | [`token_optimization/README.md`](token_optimization/README.md) | [`architecture/TOKEN_OPTIMIZATION.md`](architecture/TOKEN_OPTIMIZATION.md) | [`plan/TOKEN_OPTIMIZATION.md`](plan/TOKEN_OPTIMIZATION.md) | Implemented foundation; TOKEN-10 cache-aware runtime and proof planned |
-| `LANGCHAIN_INDEPENDENCE` | — | [`architecture/LANGCHAIN_INDEPENDENCE.md`](architecture/LANGCHAIN_INDEPENDENCE.md) | [`plan/LANGCHAIN_INDEPENDENCE.md`](plan/LANGCHAIN_INDEPENDENCE.md) | Architecture and migration roadmap awaiting review; implementation not started |
-| `MULTIPLAYER_AI` | — | [`architecture/MULTIPLAYER_AI.md`](architecture/MULTIPLAYER_AI.md) | [`plan/MULTIPLAYER_AI.md`](plan/MULTIPLAYER_AI.md) | **MP-0** — canonical architecture and roadmap (documentation only); MP-1…MP-9 planned, not started |
+| `LANGCHAIN_INDEPENDENCE` | - | [`architecture/LANGCHAIN_INDEPENDENCE.md`](architecture/LANGCHAIN_INDEPENDENCE.md) | [`plan/LANGCHAIN_INDEPENDENCE.md`](plan/LANGCHAIN_INDEPENDENCE.md) | Architecture and migration roadmap awaiting review; implementation not started |
+| `MULTIPLAYER_AI` | - | [`architecture/MULTIPLAYER_AI.md`](architecture/MULTIPLAYER_AI.md) | [`plan/MULTIPLAYER_AI.md`](plan/MULTIPLAYER_AI.md) | **MP-0** - canonical architecture and roadmap (documentation only); MP-1…MP-9 planned, not started |
 
 **Satellites (on demand):**
 

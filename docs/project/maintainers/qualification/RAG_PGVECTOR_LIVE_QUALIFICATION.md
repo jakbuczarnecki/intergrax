@@ -1,4 +1,4 @@
-# RAG-LIVE-15A-R2 — PgVector Live Qualification
+# RAG-LIVE-15A-R2 - PgVector Live Qualification
 
 **Status:** `READY_FOR_REVIEW`
 **Provider status:** `QUALIFIED_OFFLINE_CONTRACT + LIVE_QUALIFIED`
@@ -37,7 +37,7 @@ Environment was configured with the repository-local qualification DSN and
 uv run pytest tests/integration/rag/vectorstore/test_pgvector_live_qualification.py -q -s
 ```
 
-### Live run 1 — PASS
+### Live run 1 - PASS
 
 - Run identifier: `3f8fb8cd26ac41a882ec1621b40bbd12`
 - Scope matrix: PASS
@@ -45,7 +45,7 @@ uv run pytest tests/integration/rag/vectorstore/test_pgvector_live_qualification
 - Soak: 50 records, 5 query rounds, p95 `1.11 ms`, threshold `5000.00 ms`
 - Cleanup: PASS
 
-### Live run 2 — PASS
+### Live run 2 - PASS
 
 - Run identifier: `44251fc2e09445cf9554821404d47c00`
 - Scope matrix: PASS

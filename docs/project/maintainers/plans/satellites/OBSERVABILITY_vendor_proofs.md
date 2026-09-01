@@ -2,7 +2,7 @@
 
 This satellite records completed live vendor proof evidence without expanding the main OBSERVABILITY plan hub.
 
-## OBS-VENDOR-7 — Done
+## OBS-VENDOR-7 - Done
 
 **Date:** 2026-06-30  
 **Backend:** Elasticsearch/OpenSearch-compatible local Docker Compose backend  

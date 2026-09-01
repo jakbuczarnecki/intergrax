@@ -1,4 +1,4 @@
-# RAG-LIVE-15E — Multi-Backend Live Qualification Closeout
+# RAG-LIVE-15E - Multi-Backend Live Qualification Closeout
 
 **Status:** `READY_FOR_REVIEW`  
 **Closeout date:** 2026-08-10  
@@ -16,7 +16,7 @@ live records.
 | **Global** | `PRODUCTION_QUALIFIED_WITH_LIMITATIONS` |
 | **Deployment** | `APPROVED WITH EXPLICIT LIMITATIONS` |
 | **RAG-LIVE track** | `CLOSED` |
-| **Post-15D semantic drift** | None (`b4e068c8` — category A only) |
+| **Post-15D semantic drift** | None (`b4e068c8` - category A only) |
 
 All targeted stable live backends have consistent, linked evidence. No further
 RAG-LIVE implementation task is planned.
@@ -33,7 +33,7 @@ RAG-LIVE implementation task is planned.
 | Canonical GraphRAG | `CANONICAL_HARNESS_QUALIFIED` | `LIVE_NEO4J_BASELINE + LIVE_NEO4J_GENERATION_FENCING` | 15C + 15D records above |
 
 **Beta / non-qualified (no live promotion):** Weaviate, LanceDB, Typesense,
-Pinecone, Milvus, Vespa — catalog `BETA`; no stable live qualification claim.
+Pinecone, Milvus, Vespa - catalog `BETA`; no stable live qualification claim.
 
 ## 3. Evidence chain
 
@@ -66,7 +66,7 @@ Architecture: [`../../architecture/RAG.md`](../../architecture/RAG.md).
 
 ## 4. GraphRAG status
 
-- Baseline: `LIVE_QUALIFIED_BASELINE` only — does not independently claim generation fencing.
+- Baseline: `LIVE_QUALIFIED_BASELINE` only - does not independently claim generation fencing.
 - Generation fencing: `LIVE_QUALIFIED` by RAG-LIVE-15D-R2.
 - Combined canonical claim: `CANONICAL_HARNESS_QUALIFIED + LIVE_NEO4J_BASELINE + LIVE_NEO4J_GENERATION_FENCING`.
 

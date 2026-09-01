@@ -1,8 +1,8 @@
-﻿# LocalIndexerAgent — Implementation Plan
+﻿# LocalIndexerAgent - Implementation Plan
 
-**The implementation map** for this Tier-2 agent — phases, status, gaps, and verification.
+**The implementation map** for this Tier-2 agent - phases, status, gaps, and verification.
 
-Status: **Scaffold Done** — Wave **LKW.1** active (ingest + search smoke)
+Status: **Scaffold Done** - Wave **LKW.1** active (ingest + search smoke)
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 Host: [`applications/local_workspace_application`](../../../applications/local_workspace_application/)
@@ -28,7 +28,7 @@ Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](.
 | LKW-IDX-1 | `validate_source_paths` step | **Done** | High | Wave LKW.1.1 |
 | LKW-IDX-2 | `rag.ingest_document` per path | **Done** | High | Wave LKW.1.1 |
 | LKW-IDX-3 | Ingest job summary `StepOutput` | **Done** | High | `ingest_summary` in `steps/index_job.py` |
-| LKW-IDX-4 | Background ingest queue | Deferred | Medium | LKW.4 — after LKW.2 |
+| LKW-IDX-4 | Background ingest queue | Deferred | Medium | LKW.4 - after LKW.2 |
 
 ---
 

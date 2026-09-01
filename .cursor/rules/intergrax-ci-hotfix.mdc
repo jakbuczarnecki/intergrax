@@ -1,13 +1,13 @@
 ---
-description: CI/test hotfix — ultra scoped; no docs, no architecture, no full verification
+description: CI/test hotfix - ultra scoped; no docs, no architecture, no full verification
 alwaysApply: false
 ---
 
-# Intergrax — CI Hotfix Mode
+# Intergrax - CI Hotfix Mode
 
 Use **only** for fixing failing CI, tests, or checker output. Operator must `@`-reference this rule or write `CI HOTFIX`.
 
-**CI HOTFIX = NEW CHAT** — do not continue after audit, all-domain workflow, or large reports.
+**CI HOTFIX = NEW CHAT** - do not continue after audit, all-domain workflow, or large reports.
 
 ## Scope
 

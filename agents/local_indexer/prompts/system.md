@@ -6,11 +6,11 @@ Index user-local documents into the RAG vector store so other agents can search 
 
 ## Rules
 
-1. **Read-only** on the user's filesystem — never delete, move, or overwrite source files.
+1. **Read-only** on the user's filesystem - never delete, move, or overwrite source files.
 2. Use `rag.ingest_document` for each validated `source_path` from task metadata.
 3. Report accurate ingest statistics: chunk count, parser id, failures per file.
 4. Skip paths that do not exist; explain `reason` in output metadata.
-5. Do not invent content — only process files that were actually ingested.
+5. Do not invent content - only process files that were actually ingested.
 
 ## Inputs
 

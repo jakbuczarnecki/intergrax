@@ -1,4 +1,4 @@
-# Audit result — `ORCHESTRATION`
+# Audit result - `ORCHESTRATION`
 
 **Run:** 2026-06-19 · **Mode:** audit_only + implement (ORCH-MAINT-DOC-01)  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated (L3)
@@ -38,7 +38,7 @@
 | ORCH-AUDIT-06 | P4 | Active-active duplicate graph nodes L0 | architecture §52.1 | deferred |
 | ORCH-AUDIT-07 | P4 | FLOW-8 product host | §6.3 | deferred |
 | ORCH-AUDIT-08 | P4 | Windows acceptance flake | `conftest.py` FLOW-MAINT-03 signal store reset | mitigated |
-| ORCH-AUDIT-09–24 | — | Core orchestration paths verified (graph, delegation, merge, CFG, retry layers) | `graph_executor.py`, CFG sim, wiring tests | closed |
+| ORCH-AUDIT-09–24 | - | Core orchestration paths verified (graph, delegation, merge, CFG, retry layers) | `graph_executor.py`, CFG sim, wiring tests | closed |
 
 No open P0/P1 in orchestration scope.
 
@@ -67,4 +67,4 @@ python scripts/audit/check_docs_domain_pairs.py        → OK
 
 ## Recommendation
 
-**Architecturally Mature (L3)** — Tier-1 orchestration revalidated; §6.1aw closed. Next domain: `NEXUS_EXECUTION_FLOW`.
+**Architecturally Mature (L3)** - Tier-1 orchestration revalidated; §6.1aw closed. Next domain: `NEXUS_EXECUTION_FLOW`.

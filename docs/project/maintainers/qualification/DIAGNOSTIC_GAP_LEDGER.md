@@ -2,14 +2,14 @@
 
 > **HARDEN qualification status (2026-08-30):** Diagnostic hardening **closed**. Matrix M1–M24: **22 PROVEN**, **2 NOT_APPLICABLE** (M21, M22), **0** open P0/P1/P2 qualification gaps. See [`DIAGNOSTIC_HARDENING_CLOSEOUT.md`](DIAGNOSTIC_HARDENING_CLOSEOUT.md) and [`DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md`](DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md).
 >
-> **This ledger** remains the **operational** evidence-driven backlog (DG-xxx entries below) for future platform improvements — distinct from the closed HARDEN qualification program.
+> **This ledger** remains the **operational** evidence-driven backlog (DG-xxx entries below) for future platform improvements - distinct from the closed HARDEN qualification program.
 
 **Scope:** platform-wide Diagnostic Engine operational gap backlog
 **Owner:** Observability / DIAG maintainers
 **Architecture:** [`docs/project/architecture/DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md) (canonical) · [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md)
 **Plan:** [`docs/project/maintainers/plans/OBSERVABILITY.md`](../plans/OBSERVABILITY.md)
 
-This ledger records **proven** diagnostic gaps and **qualification candidates** discovered during real application and proof executions. It is evidence-driven backlog for the central Diagnostic Engine — not an application-specific wish list.
+This ledger records **proven** diagnostic gaps and **qualification candidates** discovered during real application and proof executions. It is evidence-driven backlog for the central Diagnostic Engine - not an application-specific wish list.
 
 ## Qualification taxonomy (documentation only)
 
@@ -26,15 +26,15 @@ This ledger records **proven** diagnostic gaps and **qualification candidates** 
 
 Each entry MUST distinguish:
 
-- **PROVEN GAP** — confirmed by real execution evidence
-- **QUALIFICATION CANDIDATE** — requires revalidation after a fix or fresh run
-- **IDEA** — deferred design exploration only
+- **PROVEN GAP** - confirmed by real execution evidence
+- **QUALIFICATION CANDIDATE** - requires revalidation after a fix or fresh run
+- **IDEA** - deferred design exploration only
 
 Required fields per entry: ID, discovered by, failure scenario, terminal symptom, what engine could prove, last proven boundary, first failed/unknown boundary, root cause automatically proven (YES/NO), missing canonical evidence, missing diagnostic capability, manual work required, universal platform improvement, why not application-specific, priority (P0/P1/P2), status (OPEN / FIXED / REVALIDATED / DEFERRED / REQUIRES REVALIDATION / DESIGN REQUIRED / PARTIALLY ADDRESSED / DISPROVEN AS BLOCKER / QUALIFICATION CANDIDATE), related implementation, qualification result after fix.
 
 ---
 
-## DG-001 — PRE-EXECUTION / OPERATOR STARTUP FAILURE VISIBILITY
+## DG-001 - PRE-EXECUTION / OPERATOR STARTUP FAILURE VISIBILITY
 
 | Field | Value |
 |-------|-------|
@@ -42,7 +42,7 @@ Required fields per entry: ID, discovered by, failure scenario, terminal symptom
 | **Discovered by** | LKW File Watcher proof / background worker qualification; LKW public Windows proof bootstrap qualification |
 | **Failure scenario** | Critical host/application/worker or public proof bootstrap fails before canonical Task/Run creation |
 | **Observed terminal symptom** | Worker container exits before TaskId/RunId; **or** official public `.bat` fails with `ModuleNotFoundError: local_workspace_application` before workload starts |
-| **What Diagnostic Engine could prove** | Nothing for execution scope — no TaskId/RunId. Non-execution subject path is structurally available but not emitted by these bootstrap surfaces |
+| **What Diagnostic Engine could prove** | Nothing for execution scope - no TaskId/RunId. Non-execution subject path is structurally available but not emitted by these bootstrap surfaces |
 | **Last proven canonical boundary** | N/A (pre-execution) |
 | **First failed/unknown boundary** | Host/application worker composition root; public proof launcher Python bootstrap |
 | **Root cause automatically proven** | NO |
@@ -58,7 +58,7 @@ Required fields per entry: ID, discovered by, failure scenario, terminal symptom
 
 ---
 
-## DG-002 — DIAGNOSTIC SCOPE DISCOVERY
+## DG-002 - DIAGNOSTIC SCOPE DISCOVERY
 
 | Field | Value |
 |-------|-------|
@@ -77,12 +77,12 @@ Required fields per entry: ID, discovered by, failure scenario, terminal symptom
 | **Why this is not application-specific** | Any async or multi-host workload may surface correlation without explicit scope |
 | **Priority** | P1 |
 | **Status** | OPEN |
-| **Related implementation** | — |
+| **Related implementation** | - |
 | **Qualification result after fix** | Pending |
 
 ---
 
-## DG-003 — OPERATOR DIAGNOSTIC STORY PROJECTION
+## DG-003 - OPERATOR DIAGNOSTIC STORY PROJECTION
 
 | Field | Value |
 |-------|-------|
@@ -101,12 +101,12 @@ Required fields per entry: ID, discovered by, failure scenario, terminal symptom
 | **Why this is not application-specific** | All hosted applications need bounded operator-readable failure stories |
 | **Priority** | P2 |
 | **Status** | OPEN / architecture review |
-| **Related implementation** | — |
+| **Related implementation** | - |
 | **Qualification result after fix** | Pending |
 
 ---
 
-## DG-004 — ASYNC TRANSPORT CAUSAL CONTINUITY IN EXECUTION DIAGNOSIS
+## DG-004 - ASYNC TRANSPORT CAUSAL CONTINUITY IN EXECUTION DIAGNOSIS
 
 | Field | Value |
 |-------|-------|
@@ -131,7 +131,7 @@ Required fields per entry: ID, discovered by, failure scenario, terminal symptom
 
 ---
 
-## DG-005 — RUNTIME EVENT PERSISTENCE TOPOLOGY QUALIFICATION
+## DG-005 - RUNTIME EVENT PERSISTENCE TOPOLOGY QUALIFICATION
 
 | Field | Value |
 |-------|-------|
@@ -150,12 +150,12 @@ Required fields per entry: ID, discovered by, failure scenario, terminal symptom
 | **Why this is not application-specific** | Split host/worker topologies are common across Tier-3 applications |
 | **Priority** | P2 |
 | **Status** | QUALIFICATION CANDIDATE |
-| **Related implementation** | — |
+| **Related implementation** | - |
 | **Qualification result after fix** | Suspected topology mismatch **disproven as blocker** for fresh worker execution diagnosis. Remains a qualification candidate for HTTP-host/worker cross-process cases only. |
 
 ---
 
-## DG-A — BACKGROUND KAFKA WORKER CAUSAL DEPENDENCY WIRING DEFECT
+## DG-A - BACKGROUND KAFKA WORKER CAUSAL DEPENDENCY WIRING DEFECT
 
 | Field | Value |
 |-------|-------|
@@ -163,7 +163,7 @@ Required fields per entry: ID, discovered by, failure scenario, terminal symptom
 | **Discovered by** | LKW File Watcher proof |
 | **Failure scenario** | `background_worker_factory.py` bypassed `resolve_host_queue_execution_dependencies` |
 | **Observed terminal symptom** | `TypeError: create_kafka_worker() missing 1 required keyword-only argument: 'causal_evidence_persistence'` |
-| **What Diagnostic Engine could prove** | N/A — pre-execution composition failure (see DG-001) |
+| **What Diagnostic Engine could prove** | N/A - pre-execution composition failure (see DG-001) |
 | **Last proven canonical boundary** | Worker composition root |
 | **First failed/unknown boundary** | `create_kafka_worker` assembly |
 | **Root cause automatically proven** | YES (static/type surface) |
@@ -174,23 +174,23 @@ Required fields per entry: ID, discovered by, failure scenario, terminal symptom
 | **Why this is not application-specific** | Canonical queue-worker contract applies to all Tier-3 queue hosts |
 | **Priority** | P0 |
 | **Status** | REVALIDATED |
-| **Related implementation** | `24506c3c14e30984d78b7b22c5cd4c42e711d125` — `fix(lkw): use canonical queue execution dependencies` |
+| **Related implementation** | `24506c3c14e30984d78b7b22c5cd4c42e711d125` - `fix(lkw): use canonical queue execution dependencies` |
 | **Qualification result after fix** | Old TypeError gone. Worker starts and remains alive. Kafka task consumed. Fresh runtime Task/Run created. RuntimeEvents exist. DiagnosticOrchestrator reaches DQ-2 on fresh execution. |
 
 ---
 
-## Platform program — APP-DIAG / SCAFFOLD-DIAG baseline (registered)
+## Platform program - APP-DIAG / SCAFFOLD-DIAG baseline (registered)
 
 **Canonical roadmap:** [`docs/project/maintainers/plans/OBSERVABILITY.md`](../plans/OBSERVABILITY.md) § Phase APP-DIAG
 
-**Proven architectural gap:** APPLICATION DIAGNOSTIC BASELINE NOT GUARANTEED — a Tier-3 application composition root (LKW worker factory before DG-A; public proof launcher before bootstrap fix) can bypass mandatory observability/diagnostics/queue spine wiring. Scaffold generates observability extension templates but does **not** enforce universal diagnostic baseline or conformance gate.
+**Proven architectural gap:** APPLICATION DIAGNOSTIC BASELINE NOT GUARANTEED - a Tier-3 application composition root (LKW worker factory before DG-A; public proof launcher before bootstrap fix) can bypass mandatory observability/diagnostics/queue spine wiring. Scaffold generates observability extension templates but does **not** enforce universal diagnostic baseline or conformance gate.
 
 **Target invariant (documentation only):** no Intergrax application is production-valid unless executions are canonically diagnosable; every scaffold-generated application is diagnostics-ready before domain logic is added.
 
-**Implementation:** not in scope of LKW bootstrap / ledger reconciliation task — roadmap slices only.
+**Implementation:** not in scope of LKW bootstrap / ledger reconciliation task - roadmap slices only.
 
 ---
 
 ## DG-006
 
-**NOT CREATED.** Transport causal evidence absence in execution diagnosis is the post-fix proven state of **DG-004** — one canonical entry per capability gap.
+**NOT CREATED.** Transport causal evidence absence in execution diagnosis is the post-fix proven state of **DG-004** - one canonical entry per capability gap.

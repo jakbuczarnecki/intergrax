@@ -1,34 +1,34 @@
-# SKILLS — closed §6 queues
+# SKILLS - closed §6 queues
 
 **Parent hub:** [`SKILLS.md`](../SKILLS.md)
 
-### 6.1ci Harness implementation queue — skill catalog expansion (closed)
+### 6.1ci Harness implementation queue - skill catalog expansion (closed)
 
-**Purpose:** Tier-0 skill packs for agent and Tier-3 authors. **Closed 2026-06-08** — SK-EXP + SK-EXP2 + SK-EXP3 + SK-PRESET.1/2/3 **Done**. Residual: **SK-BRIDGE.*** (prompt/policy runtime merge). **Not** Band 3 business agents (K.1/K.2).
+**Purpose:** Tier-0 skill packs for agent and Tier-3 authors. **Closed 2026-06-08** - SK-EXP + SK-EXP2 + SK-EXP3 + SK-PRESET.1/2/3 **Done**. Residual: **SK-BRIDGE.*** (prompt/policy runtime merge). **Not** Band 3 business agents (K.1/K.2).
 
-**Catalog:** **149** skills · **41** bundles — see [`architecture/SKILLS.md`](../architecture/SKILLS.md#first-party-catalog-149-skills--41-bundles).
+**Catalog:** **149** skills · **41** bundles - see [`architecture/SKILLS.md`](../architecture/SKILLS.md#first-party-catalog-149-skills--41-bundles).
 
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
 | 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
 | 1 | **SK-DOC.1** | Docs | **Done** | Engine pipeline in `architecture/SKILLS.md`; §7.1.8 + Appendix J sync | Arch doc + §7.1.8 |
-| 2 | **SK-BRIDGE.1** | Code | **Done** | `skill_bridge_wiring.py` — `skill_prompt_metadata()` | `test_skill_bridge_wiring.py` |
+| 2 | **SK-BRIDGE.1** | Code | **Done** | `skill_bridge_wiring.py` - `skill_prompt_metadata()` | `test_skill_bridge_wiring.py` |
 | 3 | **SK-BRIDGE.2** | Code | **Done** | `merge_skill_policy_fragments()` → `RuntimePolicyBundle` | `test_skill_bridge_wiring.py` |
-| 4 | **SK-EXP-P0** | Code | **Done** | Wave P0 — 6 universal packs | `test_sk_exp_skill_bundles.py` |
-| 5 | **SK-EXP-P1** | Code | **Done** | Wave P1 — 7 ops/dev/productivity packs | Same |
-| 6 | **SK-EXP-P2** | Code | **Done** | Wave P2 — 5 domain/platform packs | Same |
+| 4 | **SK-EXP-P0** | Code | **Done** | Wave P0 - 6 universal packs | `test_sk_exp_skill_bundles.py` |
+| 5 | **SK-EXP-P1** | Code | **Done** | Wave P1 - 7 ops/dev/productivity packs | Same |
+| 6 | **SK-EXP-P2** | Code | **Done** | Wave P2 - 5 domain/platform packs | Same |
 | 7 | **SK-PRESET.1** | Code | **Done** | Tier-3 presets in `skill_wiring.py` | `lkw_skill_profile`, `dispute_skill_profile`, … |
-| 8 | **SK-EXP2-P0** | Code | **Done** | Wave P0 — 6 platform-governance packs | `test_sk_exp2_skill_bundles.py` |
-| 9 | **SK-EXP2-P1** | Code | **Done** | Wave P1 — 6 async/modality/eval packs | Same |
-| 10 | **SK-EXP2-P2** | Code | **Done** | Wave P2 — 6 domain/platform extension packs | Same |
+| 8 | **SK-EXP2-P0** | Code | **Done** | Wave P0 - 6 platform-governance packs | `test_sk_exp2_skill_bundles.py` |
+| 9 | **SK-EXP2-P1** | Code | **Done** | Wave P1 - 6 async/modality/eval packs | Same |
+| 10 | **SK-EXP2-P2** | Code | **Done** | Wave P2 - 6 domain/platform extension packs | Same |
 | 11 | **SK-PRESET.2** | Code | **Done** | SK-EXP2 presets in `skill_wiring.py` | `sandbox_skill_profile`, `hitl_skill_profile`, … |
-| 12 | **SK-EXP3-P0** | Code | **Done** | Wave P0 — 7 platform governance packs | `test_sk_exp3_skill_bundles.py` |
-| 13 | **SK-EXP3-P1** | Code | **Done** | Wave P1 — 7 eval/RAG/ops extension packs | Same |
-| 14 | **SK-EXP3-P2** | Code | **Done** | Wave P2 — 6 domain/productivity packs | Same |
+| 12 | **SK-EXP3-P0** | Code | **Done** | Wave P0 - 7 platform governance packs | `test_sk_exp3_skill_bundles.py` |
+| 13 | **SK-EXP3-P1** | Code | **Done** | Wave P1 - 7 eval/RAG/ops extension packs | Same |
+| 14 | **SK-EXP3-P2** | Code | **Done** | Wave P2 - 6 domain/productivity packs | Same |
 | 15 | **SK-PRESET.3** | Code | **Done** | SK-EXP3 presets in `skill_wiring.py` | `cost_skill_profile`, `metrics_skill_profile`, … |
-| 16 | **SK-EXP4-P0** | Code | **Done** | Wave P0 — 11 platform/integration packs | `test_sk_exp4_skill_bundles.py` |
-| 17 | **SK-EXP4-P1** | Code | **Done** | Wave P1 — 10 eval/harness/ops extension packs | Same |
-| 18 | **SK-EXP4-P2** | Code | **Done** | Wave P2 — 9 domain/destructive-admin packs | Same |
+| 16 | **SK-EXP4-P0** | Code | **Done** | Wave P0 - 11 platform/integration packs | `test_sk_exp4_skill_bundles.py` |
+| 17 | **SK-EXP4-P1** | Code | **Done** | Wave P1 - 10 eval/harness/ops extension packs | Same |
+| 18 | **SK-EXP4-P2** | Code | **Done** | Wave P2 - 9 domain/destructive-admin packs | Same |
 | 19 | **SK-PRESET.4** | Code | **Done** | SK-EXP4 presets in `skill_wiring.py` | `catalog_skill_profile`, `interaction_skill_profile`, … |
 | 20 | **SK-EXP5** | Code | **Done** | 50 compositional vertical packs (no new bundles) | `test_sk_exp5_skill_bundles.py` |
 | 21 | **SK-PRESET.5** | Code | **Done** | Vertical presets: oncall, legal_ops, research_lab, … | `skill_wiring.py` |
@@ -37,22 +37,22 @@
 
 **Explicitly excluded:** K.1, K.2, new Tier-2 agents, workflow-sized fake tools, unvalidated filesystem skill discovery.
 
-#### SK-EXP — Proposed skill register (18 packs)
+#### SK-EXP - Proposed skill register (18 packs)
 
 Priority for **platform users** (agent authors, Tier-3 hosts, extension authors). Each row = one `SkillManifest` + `SkillPlugin` bundle entry (new bundle or extend existing).
 
-**Wave P0 — Universal reuse (ship first)**
+**Wave P0 - Universal reuse (ship first)**
 
 | ID | skill_id | Bundle | `tool_ids` (core) | Value |
 |----|----------|--------|-------------------|-------|
-| SK-P0.1 | `rag.hybrid_qa` | `rag` | `rag.retrieve`, `rag.get_document`, `memory.read` | Default Q&A over index + session — LKW, Legal, Research, IAA |
+| SK-P0.1 | `rag.hybrid_qa` | `rag` | `rag.retrieve`, `rag.get_document`, `memory.read` | Default Q&A over index + session - LKW, Legal, Research, IAA |
 | SK-P0.2 | `rag.document_ingest` | `rag` | `document.parse`, `rag.ingest_document`, `rag.describe_collection` | Ingestion pipeline without per-agent tool lists |
 | SK-P0.3 | `research.web_evidence` | `research` | `websearch.query`, `websearch.read_url`, `websearch.fetch_batch` | Web-grounded evidence pack (complements `literature_scan`) |
-| SK-P0.4 | `workspace.authoring` | `workspace` | `workspace.read_file`, `workspace.write_file`, `workspace.search`, `memory.write` | Shadow workspace drafts — LKW synthesizer, coding assistants |
-| SK-P0.5 | `memory.task_scratchpad` | `memory` | `memory.read`, `memory.write`, `memory.list_keys` | Cross-step task KV — dispute sim, multi-turn agents |
-| SK-P0.6 | `knowledge.wiki_navigator` | `knowledge` | `knowledge.search`, `knowledge.get_page`, `confluence.search` | Internal docs + wiki — complements `openai_strict` |
+| SK-P0.4 | `workspace.authoring` | `workspace` | `workspace.read_file`, `workspace.write_file`, `workspace.search`, `memory.write` | Shadow workspace drafts - LKW synthesizer, coding assistants |
+| SK-P0.5 | `memory.task_scratchpad` | `memory` | `memory.read`, `memory.write`, `memory.list_keys` | Cross-step task KV - dispute sim, multi-turn agents |
+| SK-P0.6 | `knowledge.wiki_navigator` | `knowledge` | `knowledge.search`, `knowledge.get_page`, `confluence.search` | Internal docs + wiki - complements `openai_strict` |
 
-**Wave P1 — Ops, dev, collaboration**
+**Wave P1 - Ops, dev, collaboration**
 
 | ID | skill_id | Bundle | `tool_ids` (core) | Value |
 |----|----------|--------|-------------------|-------|
@@ -64,7 +64,7 @@ Priority for **platform users** (agent authors, Tier-3 hosts, extension authors)
 | SK-P1.6 | `browser.research_fetch` | `browser` | `browser.fetch_page`, `websearch.read_url`, `document.parse_preview` | JS-heavy pages + extraction |
 | SK-P1.7 | `collaboration.outreach` | `collaboration` | `collaboration.send_mail`, `collaboration.list_messages`, `collaboration.get_message` | Email drafting / thread context |
 
-**Wave P2 — Domain depth + platform hub**
+**Wave P2 - Domain depth + platform hub**
 
 | ID | skill_id | Bundle | `tool_ids` (core) | Value |
 |----|----------|--------|-------------------|-------|
@@ -72,28 +72,28 @@ Priority for **platform users** (agent authors, Tier-3 hosts, extension authors)
 | SK-P2.2 | `legal.case_research` | `legal` | `rag.retrieve`, `knowledge.search`, `websearch.query` | Dispute sim + regulatory lookup |
 | SK-P2.3 | `research.citation_synthesis` | `research` | `rag.retrieve`, `websearch.query`, `workspace.write_file` | SummaryAgent / report pipelines |
 | SK-P2.4 | `data.sql_analyst` | `data` | `database.query`, `database.describe_schema`, `workspace.write_file` | Structured data Q&A |
-| SK-P2.5 | `platform.concierge` | `platform` | `rag.retrieve`, `websearch.query`, `memory.read`, `skill.resolve` | `intergrax_assistant` hub — introspection + retrieval |
+| SK-P2.5 | `platform.concierge` | `platform` | `rag.retrieve`, `websearch.query`, `memory.read`, `skill.resolve` | `intergrax_assistant` hub - introspection + retrieval |
 
-**Deferred to SK-EXP2 (now shipped):** `hitl.approval_gate`, `graph.entity_explorer`, `sandbox.code_exec` — see §6.1cj2 below.
+**Deferred to SK-EXP2 (now shipped):** `hitl.approval_gate`, `graph.entity_explorer`, `sandbox.code_exec` - see §6.1cj2 below.
 
-**ADR:** no ADR for doc-only SK-DOC.1. New bundles follow existing Phase R pattern — **no ADR** unless a skill models a multi-step workflow as one tool (forbidden). SK-BRIDGE.* may need `docs/project/technical/adr` entry if context merge semantics change Nexus contracts.
+**ADR:** no ADR for doc-only SK-DOC.1. New bundles follow existing Phase R pattern - **no ADR** unless a skill models a multi-step workflow as one tool (forbidden). SK-BRIDGE.* may need `docs/project/technical/adr` entry if context merge semantics change Nexus contracts.
 
-#### SK-EXP2 — Proposed skill register (18 packs)
+#### SK-EXP2 - Proposed skill register (18 packs)
 
 Second wave after SK-EXP: platform governance, async/modality, and domain extensions. **9 new bundles** + **7 extended bundles**.
 
-**Wave P0 — Platform governance (ship first)**
+**Wave P0 - Platform governance (ship first)**
 
 | ID | skill_id | Bundle | `tool_ids` (core) | Value |
 |----|----------|--------|-------------------|-------|
 | SK2-P0.1 | `rag.index_admin` | `rag` | `rag.list_collections`, `rag.describe_collection`, `rag.check_index_status`, `rag.list_documents` | Operator index introspection without destructive ops |
-| SK2-P0.2 | `rag.collection_lifecycle` | `rag` | `rag.search_by_metadata`, `rag.delete_documents`, `rag.purge_collection` | HIGH-risk controlled purge — admin hosts only |
+| SK2-P0.2 | `rag.collection_lifecycle` | `rag` | `rag.search_by_metadata`, `rag.delete_documents`, `rag.purge_collection` | HIGH-risk controlled purge - admin hosts only |
 | SK2-P0.3 | `sandbox.code_exec` | `sandbox` | `sandbox.exec`, `workspace.read_file`, `workspace.write_file` | Coding agents with isolated exec |
 | SK2-P0.4 | `hitl.approval_gate` | `hitl` | `hitl.list_pending`, `hitl.submit_response`, `hitl.get_decision`, `notify.send` | Governed HITL without per-agent wiring |
 | SK2-P0.5 | `graph.entity_explorer` | `graph` | `graph.run_query`, `graph.get_node`, `rag.retrieve` | Knowledge graph + RAG grounding |
 | SK2-P0.6 | `storage.artifact_sync` | `storage` | `storage.get`, `storage.put`, `workspace.export_artifact`, `workspace.import_artifact` | Durable artifacts across runs |
 
-**Wave P1 — Async, cache, modality, eval**
+**Wave P1 - Async, cache, modality, eval**
 
 | ID | skill_id | Bundle | `tool_ids` (core) | Value |
 |----|----------|--------|-------------------|-------|
@@ -104,7 +104,7 @@ Second wave after SK-EXP: platform governance, async/modality, and domain extens
 | SK2-P1.5 | `modality.vision_ocr` | `modality` | `vision.ocr_regions`, `vision.detect`, `document.parse_preview` | Multimodal OCR before ingest |
 | SK2-P1.6 | `notify.scheduled_alerts` | `notify` | `notify.schedule`, `notify.list_scheduled`, `notify.cancel_scheduled`, `notify.send` | Deferred alerts for long workflows |
 
-**Wave P2 — Domain and platform extensions**
+**Wave P2 - Domain and platform extensions**
 
 | ID | skill_id | Bundle | `tool_ids` (core) | Value |
 |----|----------|--------|-------------------|-------|
@@ -115,7 +115,7 @@ Second wave after SK-EXP: platform governance, async/modality, and domain extens
 | SK2-P2.5 | `dev.issue_creator` | `dev` | `issues.create_issue`, `issues.search`, `notify.send` | Discovery-to-ticket loop |
 | SK2-P2.6 | `memory.session_cleanup` | `memory` | `memory.list_keys`, `memory.delete_key`, `memory.read` | Session hygiene for long multi-turn runs |
 
-#### SK-EXP2 — Master register (shipped)
+#### SK-EXP2 - Master register (shipped)
 
 | ID | skill_id | Bundle | Status |
 |----|----------|--------|--------|
@@ -138,11 +138,11 @@ Second wave after SK-EXP: platform governance, async/modality, and domain extens
 | SK2-P2.5 | `dev.issue_creator` | `dev` | **Done** |
 | SK2-P2.6 | `memory.session_cleanup` | `memory` | **Done** |
 
-#### SK-EXP3 — Proposed skill register (20 packs)
+#### SK-EXP3 - Proposed skill register (20 packs)
 
 Third wave: platform governance (cost, identity, health, context), eval/RAG depth, and product ops. **9 new bundles** + **9 extended bundles**.
 
-**Wave P0 — Platform governance**
+**Wave P0 - Platform governance**
 
 | ID | skill_id | Bundle | `tool_ids` (core) | Value |
 |----|----------|--------|-------------------|-------|
@@ -154,7 +154,7 @@ Third wave: platform governance (cost, identity, health, context), eval/RAG dept
 | SK3-P0.6 | `agent.roster_introspect` | `agent` | `agent.list_agents`, `agent.get_contract`, `skill.resolve` | Hub agent introspection |
 | SK3-P0.7 | `vector_store.admin` | `vector_store` | `vector_store.list_collections`, `vector_store.count`, `vector_store.health` | Vector backend admin |
 
-**Wave P1 — Eval, RAG, ops extensions**
+**Wave P1 - Eval, RAG, ops extensions**
 
 | ID | skill_id | Bundle | `tool_ids` (core) | Value |
 |----|----------|--------|-------------------|-------|
@@ -166,7 +166,7 @@ Third wave: platform governance (cost, identity, health, context), eval/RAG dept
 | SK3-P1.6 | `ops.workflow_admin` | `ops` | `workflow.list_runs`, `workflow.cancel_run`, `workflow.fetch_logs` | Workflow run admin |
 | SK3-P1.7 | `hitl.queue_manager` | `hitl` | `hitl.list_for_task`, `hitl.summarize_queue`, `hitl.list_pending` | HITL queue visibility |
 
-**Wave P2 — Domain and product ops**
+**Wave P2 - Domain and product ops**
 
 | ID | skill_id | Bundle | `tool_ids` (core) | Value |
 |----|----------|--------|-------------------|-------|
@@ -177,7 +177,7 @@ Third wave: platform governance (cost, identity, health, context), eval/RAG dept
 | SK3-P2.5 | `collaboration.thread_reply` | `collaboration` | `collaboration.reply_message`, `collaboration.get_message`, `collaboration.list_messages` | Email thread follow-up |
 | SK3-P2.6 | `ops.findings_review` | `ops` | `security.summarize_findings`, `security.scan`, `notify.send` | Security findings triage |
 
-#### SK-EXP3 — Master register (shipped)
+#### SK-EXP3 - Master register (shipped)
 
 | ID | skill_id | Bundle | Status |
 |----|----------|--------|--------|
@@ -202,11 +202,11 @@ Third wave: platform governance (cost, identity, health, context), eval/RAG dept
 | SK3-P2.5 | `collaboration.thread_reply` | `collaboration` | **Done** |
 | SK3-P2.6 | `ops.findings_review` | `ops` | **Done** |
 
-#### SK-EXP4 — Proposed skill register (30 packs)
+#### SK-EXP4 - Proposed skill register (30 packs)
 
-Fourth wave: close remaining tool-catalog gaps — catalog introspection, interaction, vendor-specific trackers (Jira/GitLab), harness run ops, destructive admin paths. **10 new bundles** + **15 extended bundles**.
+Fourth wave: close remaining tool-catalog gaps - catalog introspection, interaction, vendor-specific trackers (Jira/GitLab), harness run ops, destructive admin paths. **10 new bundles** + **15 extended bundles**.
 
-**Wave P0 — Platform integration (11 packs)**
+**Wave P0 - Platform integration (11 packs)**
 
 | ID | skill_id | Bundle | Value |
 |----|----------|--------|-------|
@@ -222,7 +222,7 @@ Fourth wave: close remaining tool-catalog gaps — catalog introspection, intera
 | SK4-P0.10 | `ml.explain_predict` | `ml` | ML predict + explain |
 | SK4-P0.11 | `openai.vector_admin` | `openai` | OpenAI vector store lifecycle |
 
-**Wave P1 — Harness, eval, ops depth (10 packs)**
+**Wave P1 - Harness, eval, ops depth (10 packs)**
 
 | ID | skill_id | Bundle | Value |
 |----|----------|--------|-------|
@@ -237,7 +237,7 @@ Fourth wave: close remaining tool-catalog gaps — catalog introspection, intera
 | SK4-P1.9 | `memory.semantic_search` | `memory` | Semantic memory + LTM search |
 | SK4-P1.10 | `notify.batch_dispatch` | `notify` | Batch + due notification dispatch |
 
-**Wave P2 — Destructive admin + domain (9 packs)**
+**Wave P2 - Destructive admin + domain (9 packs)**
 
 | ID | skill_id | Bundle | Value |
 |----|----------|--------|-------|
@@ -251,11 +251,11 @@ Fourth wave: close remaining tool-catalog gaps — catalog introspection, intera
 | SK4-P2.8 | `modality.vision_segment` | `modality` | Vision segmentation pipeline |
 | SK4-P2.9 | `research.web_cache_admin` | `research` | Web search cache invalidation |
 
-#### SK-EXP4 — Master register (shipped)
+#### SK-EXP4 - Master register (shipped)
 
-All 30 rows **Done** — see [`architecture/SKILLS.md`](../architecture/SKILLS.md#first-party-catalog-99-skills--41-bundles).
+All 30 rows **Done** - see [`architecture/SKILLS.md`](../architecture/SKILLS.md#first-party-catalog-99-skills--41-bundles).
 
-#### SK-EXP — Master register (shipped)
+#### SK-EXP - Master register (shipped)
 
 | ID | skill_id | Bundle | Status |
 |----|----------|--------|--------|
@@ -278,7 +278,7 @@ All 30 rows **Done** — see [`architecture/SKILLS.md`](../architecture/SKILLS.m
 | SK-P2.4 | `data.sql_analyst` | `data` | **Done** |
 | SK-P2.5 | `platform.concierge` | `platform` | **Done** |
 
-#### SK-EXP — Paydown log
+#### SK-EXP - Paydown log
 
 | Date | ID | Summary |
 |------|-----|---------|
@@ -294,9 +294,9 @@ All 30 rows **Done** — see [`architecture/SKILLS.md`](../architecture/SKILLS.m
 | 2026-06-08 | SK-EXP5, SK-PRESET.5 | 50 compositional packs; 149 total skills; vertical presets |
 | 2026-06-08 | SK-DOC.6 | Per-skill `USAGE.md` for SK-EXP5 (50 files); gate count 149 |
 
-#### SK-EXP5 — Compositional register (50 packs, shipped)
+#### SK-EXP5 - Compositional register (50 packs, shipped)
 
-Third wave after tool-coverage saturation (185/190 tools). Value = **vertical compositions** and **operator specializations** across 25 extended bundles — no new bundles.
+Third wave after tool-coverage saturation (185/190 tools). Value = **vertical compositions** and **operator specializations** across 25 extended bundles - no new bundles.
 
 | Wave | Count | Examples |
 |------|-------|----------|
@@ -304,13 +304,13 @@ Third wave after tool-coverage saturation (185/190 tools). Value = **vertical co
 | P1 Ops/platform | 16 | `ops.oncall_runbook`, `ops.postmortem_writer`, `platform.deploy_inspector`, `hitl.escalation_router` |
 | P2 Dev/data/sandbox | 16 | `dev.sprint_planner`, `data.pipeline_probe`, `sandbox.refactor_loop`, `agent.capability_mapper` |
 
-All 50 rows **Done** — full skill_id list in `scripts/maintenance/scaffold_sk_exp5.py`.
+All 50 rows **Done** - full skill_id list in `scripts/maintenance/scaffold_sk_exp5.py`.
 
 ---
 
-### 6.1c Harness implementation queue — tools/skills closeout (closed)
+### 6.1c Harness implementation queue - tools/skills closeout (closed)
 
-**Purpose:** Single ordered list for **Phase TS** (Band 2k). **Closed 2026-06-02** — all TS rows **Done**. Ongoing: **§6.1** maintenance only.
+**Purpose:** Single ordered list for **Phase TS** (Band 2k). **Closed 2026-06-02** - all TS rows **Done**. Ongoing: **§6.1** maintenance only.
 
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
@@ -322,9 +322,9 @@ All 50 rows **Done** — full skill_id list in `scripts/maintenance/scaffold_sk_
 
 **Suggested PR order (complete):** TS-1 → TS-2 → TS-3 → TS-DOC.*.
 
-**Explicitly excluded:** K.1, K.2, new product tools/skills, business agent packs — [§6.3a](.#63a-business-backlog-register-consolidated).### 6.1aa Harness implementation queue — memory platform (closed)
+**Explicitly excluded:** K.1, K.2, new product tools/skills, business agent packs - [§6.3a](.#63a-business-backlog-register-consolidated).### 6.1aa Harness implementation queue - memory platform (closed)
 
-**Purpose:** Phase MEM execution queue — **closed 2026-06-02** (48/48 Done). Ongoing: **§6.1** maintenance only.
+**Purpose:** Phase MEM execution queue - **closed 2026-06-02** (48/48 Done). Ongoing: **§6.1** maintenance only.
 
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
@@ -339,7 +339,7 @@ All 50 rows **Done** — full skill_id list in `scripts/maintenance/scaffold_sk_
 | 8 | **MEM-6.*–MEM-7.*** | Code | **Done** | Retention enforcement + memory hooks | P2 after P0/P1 |
 | 9 | **MEM-8.*–MEM-9.*** | RFC | **Done (RFC)** | Product memory layer + entity graph design | §6.3 gate for implementation |
 
-**Suggested PR order:** See [Phase MEM — Suggested PR order](.#mem--paydown-log).
+**Suggested PR order:** See [Phase MEM - Suggested PR order](.#mem--paydown-log).
 
 **Explicitly excluded:** K.1, K.2, Mem0 SaaS product, entity graph ship (RFC only), business agent memory.
 

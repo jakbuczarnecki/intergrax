@@ -4,15 +4,15 @@ Intergrax framework – proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
 -->
 
-# LangChain Independence — Multi-layer Feature Plan
+# LangChain Independence - Multi-layer Feature Plan
 
 **Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **APPROVED**; LCI-3C **APPROVED**; LCI-3D-1 **APPROVED**; LCI-3D-2 **APPROVED**; LCI-3D-3 **APPROVED**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **APPROVED**; LCI-6B **APPROVED**; LCI-6C **APPROVED**; LCI-6D **APPROVED**; Native Ollama regression gate **APPROVED**; LCI-6E **APPROVED**; LCI-7A **APPROVED**; LCI-7B **APPROVED**; LCI-7C **APPROVED / REQUALIFIED**; LCI-7D **APPROVED**; FINAL SYSTEM GATE **APPROVED**; LCI-8A **APPROVED**; LangChain Independence **COMPLETE / APPROVED**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current active task:** NONE — PROGRAM CLOSED
-**LangGraph decision:** KEEP_OPTIONAL — retain the optional legacy boundary; any future deprecation/removal requires a separately approved product/architecture decision
-**Next task after acceptance:** NONE — PROGRAM CLOSED
+**Current active task:** NONE - PROGRAM CLOSED
+**LangGraph decision:** KEEP_OPTIONAL - retain the optional legacy boundary; any future deprecation/removal requires a separately approved product/architecture decision
+**Next task after acceptance:** NONE - PROGRAM CLOSED
 
 **LCI-4C-A1 decision:** `workspace_id` is a canonical system-owned `KnowledgeDocumentScope` field. The canonical identity boundary is `tenant_id + namespace + workspace_id + document_id`; missing `workspace_id` remains backward-compatible and means no explicit workspace partition. User metadata cannot provide or override `workspace_id`. Indexing, vector storage, retrieval, reranking and Graph RAG preserve workspace scope without using metadata as a transport tunnel.
 
@@ -31,8 +31,8 @@ LCI-5C.
 
 ## Cursor read scope (token budget)
 
-1. This file — read-scope block + **active LCI-* task only**.
-2. Feature architecture — strategic decision + invariants only.
+1. This file - read-scope block + **active LCI-* task only**.
+2. Feature architecture - strategic decision + invariants only.
 3. One owning domain plan pair for the active task.
 4. **On demand (one max):** [satellites/LANGCHAIN_INDEPENDENCE_domain_plan_cross_references.md](satellites/LANGCHAIN_INDEPENDENCE_domain_plan_cross_references.md).
 
@@ -51,7 +51,7 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 
 ---
 
-## LCI-0A — Canonical architecture and LangChain dependency inventory
+## LCI-0A - Canonical architecture and LangChain dependency inventory
 
 | Field | Value |
 |-------|-------|
@@ -67,7 +67,7 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 
 ---
 
-## LCI-0B — LangChain architecture boundary guard
+## LCI-0B - LangChain architecture boundary guard
 
 | Field | Value |
 |-------|-------|
@@ -83,7 +83,7 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 
 ---
 
-## LCI-0C — LangChain dependency range hardening
+## LCI-0C - LangChain dependency range hardening
 
 | Field | Value |
 |-------|-------|
@@ -99,7 +99,7 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 
 ---
 
-## LCI-1A — Native knowledge document contract architecture
+## LCI-1A - Native knowledge document contract architecture
 
 | Field | Value |
 |-------|-------|
@@ -116,7 +116,7 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 
 ---
 
-## LCI-1B — Native knowledge document contract implementation
+## LCI-1B - Native knowledge document contract implementation
 
 | Field | Value |
 |-------|-------|
@@ -132,7 +132,7 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 
 ---
 
-## LCI-1C — LangChain document compatibility bridge
+## LCI-1C - LangChain document compatibility bridge
 
 | Field | Value |
 |-------|-------|
@@ -148,7 +148,7 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 
 ---
 
-## LCI-1D — Knowledge document conformance gate
+## LCI-1D - Knowledge document conformance gate
 
 | Field | Value |
 |-------|-------|
@@ -166,7 +166,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 
 ---
 
-## LCI-2A — Document parser contract migration
+## LCI-2A - Document parser contract migration
 
 | Field | Value |
 |-------|-------|
@@ -181,11 +181,11 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | **User-visible outcome** | Parsed output is native at parser boundary |
 | **Canonical parser-stage output** | `ParsedDocumentFragment` |
 | **KnowledgeDocument construction** | deferred to scoped handler/loader boundary in LCI-2B |
-| **Temporary compatibility** | removed in LCI-2B — handler now emits `KnowledgeDocument` |
+| **Temporary compatibility** | removed in LCI-2B - handler now emits `KnowledgeDocument` |
 
 ---
 
-## LCI-2B — Document loader and handler migration
+## LCI-2B - Document loader and handler migration
 
 | Field | Value |
 |-------|-------|
@@ -207,7 +207,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 
 ---
 
-## LCI-2C — Normalization and metadata pipeline migration
+## LCI-2C - Normalization and metadata pipeline migration
 
 | Field | Value |
 |-------|-------|
@@ -229,7 +229,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 
 ---
 
-## LCI-2D — Chunking contract migration
+## LCI-2D - Chunking contract migration
 
 | Field | Value |
 |-------|-------|
@@ -245,7 +245,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 
 ---
 
-## LCI-2E — LangChain splitter optionalization
+## LCI-2E - LangChain splitter optionalization
 
 | Field | Value |
 |-------|-------|
@@ -261,7 +261,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 
 ---
 
-## LCI-2F — Ingest pipeline native document migration
+## LCI-2F - Ingest pipeline native document migration
 
 | Field | Value |
 |-------|-------|
@@ -277,7 +277,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 
 ---
 
-## LCI-3A — Embedding contract migration
+## LCI-3A - Embedding contract migration
 
 | Field | Value |
 |-------|-------|
@@ -293,7 +293,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 
 ---
 
-## LCI-3B — Indexing contract and strategy migration
+## LCI-3B - Indexing contract and strategy migration
 
 | Field | Value |
 |-------|-------|
@@ -311,7 +311,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 
 ---
 
-## LCI-3C — Vector store contract migration
+## LCI-3C - Vector store contract migration
 
 | Field | Value |
 |-------|-------|
@@ -329,7 +329,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 
 ---
 
-## LCI-3D — Vector store provider adapter migration
+## LCI-3D - Vector store provider adapter migration
 
 | Field | Value |
 |-------|-------|
@@ -347,7 +347,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 
 ---
 
-## LCI-4A — Retrieval result contract migration
+## LCI-4A - Retrieval result contract migration
 
 | Field | Value |
 |-------|-------|
@@ -363,7 +363,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 
 ---
 
-## LCI-4B — Reranking contract migration
+## LCI-4B - Reranking contract migration
 
 | Field | Value |
 |-------|-------|
@@ -381,7 +381,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 
 ---
 
-## LCI-4C — Graph RAG document contract migration
+## LCI-4C - Graph RAG document contract migration
 
 | Field | Value |
 |-------|-------|
@@ -399,7 +399,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 
 ---
 
-## LCI-4D — Memory and multimedia document leak cleanup
+## LCI-4D - Memory and multimedia document leak cleanup
 
 | Field | Value |
 |-------|-------|
@@ -415,7 +415,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 
 ---
 
-## LCI-5A — Native text document loader
+## LCI-5A - Native text document loader
 
 | Field | Value |
 |-------|-------|
@@ -431,7 +431,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 
 ---
 
-## LCI-5B — Native OpenAI embedding provider
+## LCI-5B - Native OpenAI embedding provider
 
 | Field | Value |
 |-------|-------|
@@ -447,7 +447,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 
 ---
 
-## LCI-5C — LangChain loaders and embeddings optionalization
+## LCI-5C - LangChain loaders and embeddings optionalization
 
 | Field | Value |
 |-------|-------|
@@ -469,7 +469,7 @@ This task does not optionalize the chat Ollama adapter.
 
 ---
 
-## LCI-6A — Native Ollama adapter architecture and parity matrix
+## LCI-6A - Native Ollama adapter architecture and parity matrix
 
 | Field | Value |
 |-------|-------|
@@ -485,7 +485,7 @@ This task does not optionalize the chat Ollama adapter.
 
 ---
 
-## LCI-6B — Native Ollama adapter implementation
+## LCI-6B - Native Ollama adapter implementation
 
 | Field | Value |
 |-------|-------|
@@ -501,7 +501,7 @@ This task does not optionalize the chat Ollama adapter.
 
 ---
 
-## LCI-6C — Native Ollama live parity proof
+## LCI-6C - Native Ollama live parity proof
 
 | Field | Value |
 |-------|-------|
@@ -517,7 +517,7 @@ This task does not optionalize the chat Ollama adapter.
 
 ---
 
-## LCI-6D — LKW and Token Optimization native Ollama cutover
+## LCI-6D - LKW and Token Optimization native Ollama cutover
 
 | Field | Value |
 |-------|-------|
@@ -533,7 +533,7 @@ This task does not optionalize the chat Ollama adapter.
 
 ---
 
-## LCI-6E — LangChain Ollama compatibility optionalization
+## LCI-6E - LangChain Ollama compatibility optionalization
 
 | Field | Value |
 |-------|-------|
@@ -549,7 +549,7 @@ This task does not optionalize the chat Ollama adapter.
 
 ---
 
-## LCI-7A — LangChain optional extras packaging
+## LCI-7A - LangChain optional extras packaging
 
 | Field | Value |
 |-------|-------|
@@ -565,7 +565,7 @@ This task does not optionalize the chat Ollama adapter.
 
 ---
 
-## LCI-7B — LangChain-free core installation gate
+## LCI-7B - LangChain-free core installation gate
 
 | Field | Value |
 |-------|-------|
@@ -581,7 +581,7 @@ This task does not optionalize the chat Ollama adapter.
 
 ---
 
-## LCI-7C — LangChain compatibility installation gate
+## LCI-7C - LangChain compatibility installation gate
 
 | Field | Value |
 |-------|-------|
@@ -597,7 +597,7 @@ This task does not optionalize the chat Ollama adapter.
 
 ---
 
-## LCI-7D — LangChain independence documentation closeout
+## LCI-7D - LangChain independence documentation closeout
 
 | Field | Value |
 |-------|-------|
@@ -613,7 +613,7 @@ This task does not optionalize the chat Ollama adapter.
 
 ---
 
-## LCI-8A — LangGraph legacy retirement review
+## LCI-8A - LangGraph legacy retirement review
 
 | Field | Value |
 |-------|-------|
@@ -635,12 +635,12 @@ deprecation or removal requires an independent product/architecture decision.
 
 ---
 
-## Protocol v2 remediation — LANGCHAIN_INDEPENDENCE (2026-08-18)
+## Protocol v2 remediation - LANGCHAIN_INDEPENDENCE (2026-08-18)
 
 **Audit:** [`docs/audit_results/2026-08-18/LANGCHAIN_INDEPENDENCE.md`](../../audit_results/2026-08-18/LANGCHAIN_INDEPENDENCE.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
-**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-LANGCHAIN-INDEPENDENCE-PERSIST.
+**Status:** ACCEPTED findings - **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-LANGCHAIN-INDEPENDENCE-PERSIST.
 
-#### LCI-COMPATIBILITY-SCOPE-INTEGRITY — trusted scope injection and provider-hit identity validation
+#### LCI-COMPATIBILITY-SCOPE-INTEGRITY - trusted scope injection and provider-hit identity validation
 
 **Priority:** P0
 **Status:** `ACCEPTED / PLANNED`
@@ -653,7 +653,7 @@ deprecation or removal requires an independent product/architecture decision.
 - Cross-link [`RAG`](../../maintainers/plans/RAG.md) **RAG-SCOPE-CONTRACT-INTEGRITY** and [`IDENTITY_TRUST`](../../maintainers/plans/IDENTITY_TRUST.md) where applicable.
 - Do not create a second document contract.
 
-#### LCI-BOUNDARY-ENFORCEMENT-INTEGRITY — conditional provider exemption and robust static dynamic-import detection
+#### LCI-BOUNDARY-ENFORCEMENT-INTEGRITY - conditional provider exemption and robust static dynamic-import detection
 
 **Priority:** P1
 **Status:** `ACCEPTED / PLANNED`
@@ -665,7 +665,7 @@ deprecation or removal requires an independent product/architecture decision.
 - Equivalent eager/optional-boundary enforcement applies to `llm_adapters/providers` as well as `integrations/providers`.
 - Common statically resolvable `importlib` / `import_module` aliases are detected with adversarial regression fixtures.
 
-#### LCI-PACKAGING-EVIDENCE-INTEGRITY — explicit compatibility packaging semantics and current conformance evidence
+#### LCI-PACKAGING-EVIDENCE-INTEGRITY - explicit compatibility packaging semantics and current conformance evidence
 
 **Priority:** P1/P2
 **Status:** `ACCEPTED / PLANNED`
@@ -680,6 +680,6 @@ deprecation or removal requires an independent product/architecture decision.
 **Remediation rules:**
 
 - Revalidate each finding against then-current `development` HEAD before implementation.
-- Historical LCI-0A..8A closeout rows remain historical delivery facts — do not reopen or rewrite as incomplete.
+- Historical LCI-0A..8A closeout rows remain historical delivery facts - do not reopen or rewrite as incomplete.
 - Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
 

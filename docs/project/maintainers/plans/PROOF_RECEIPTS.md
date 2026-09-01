@@ -1,9 +1,9 @@
-# Proof Receipts — Implementation Plan
+# Proof Receipts - Implementation Plan
 
 **Architecture (1:1):** [`architecture/PROOF_RECEIPTS.md`](../../architecture/PROOF_RECEIPTS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Proof consumer:** LKW-PR ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PR)
-**Last updated:** 2026-07-10 — **PROOF-RECEIPTS-1E closed**
+**Last updated:** 2026-07-10 - **PROOF-RECEIPTS-1E closed**
 
 ---
 
@@ -11,13 +11,13 @@
 
 | Item | Value |
 |------|-------|
-| **Track status** | **Closed** — PROOF-RECEIPTS-1A through **1E** complete |
-| **Architecture** | [`architecture/PROOF_RECEIPTS.md`](../../architecture/PROOF_RECEIPTS.md) — **PROOF-RECEIPTS-1B closed** |
+| **Track status** | **Closed** - PROOF-RECEIPTS-1A through **1E** complete |
+| **Architecture** | [`architecture/PROOF_RECEIPTS.md`](../../architecture/PROOF_RECEIPTS.md) - **PROOF-RECEIPTS-1B closed** |
 | **Current proof consumer** | LKW (structured receipt after live proofs) |
 | **Default live vendor** | MongoDB (`document_store` integration) |
-| **Next step** | — (Proof Receipts wave complete) |
+| **Next step** | - (Proof Receipts wave complete) |
 
-**Note:** LKW.4E (Kafka-backed background task live proof) remains **closed**. Proof receipts are the **next platform proof wave** — not a markdown closeout of LKW.4E.
+**Note:** LKW.4E (Kafka-backed background task live proof) remains **closed**. Proof receipts are the **next platform proof wave** - not a markdown closeout of LKW.4E.
 
 Historical **LKW.5** in the LKW plan refers to the **closed persistence proof** (`LKW_DATA_HOME` + Qdrant). The proof-receipt wave uses **LKW-PR** to avoid renumbering that closed wave.
 
@@ -75,7 +75,7 @@ Historical **LKW.5** in the LKW plan refers to the **closed persistence proof** 
 - [x] `for_provider(...)` builds stable `{provider_id}:document_store` identity
 - [x] Default capabilities: `READ`, `WRITE`, `HEALTH_CHECK`
 - [x] Default operations: `get`, `put`, `delete`, `query`, `close`
-- [x] Safe `public_view()` — no secrets
+- [x] Safe `public_view()` - no secrets
 - [x] Base `as_document_store()` raises `NotImplementedError`
 - [x] No MongoDB live proof implemented
 - [x] `ProofReceiptStore` still depends only on `DocumentStore`
@@ -104,9 +104,9 @@ Historical **LKW.5** in the LKW plan refers to the **closed persistence proof** 
 
 | Deliverable | Detail |
 |-------------|--------|
-| Docker compose overlay | `applications/local_workspace_application/docker/docker-compose.mongodb.yml` — MongoDB (`lkw-mongodb`) + Mongo Express (`lkw-mongo-express`) |
-| Live vendor path | Platform `MongoDBDocumentStoreIntegration` → `as_document_store()` → `DocumentStore.put/get` smoke — **not** a `ProofReceipt` |
-| Reviewer inspection | Mongo Express at `http://localhost:8086` (default) — inspection only; not on LKW runtime path |
+| Docker compose overlay | `applications/local_workspace_application/docker/docker-compose.mongodb.yml` - MongoDB (`lkw-mongodb`) + Mongo Express (`lkw-mongo-express`) |
+| Live vendor path | Platform `MongoDBDocumentStoreIntegration` → `as_document_store()` → `DocumentStore.put/get` smoke - **not** a `ProofReceipt` |
+| Reviewer inspection | Mongo Express at `http://localhost:8086` (default) - inspection only; not on LKW runtime path |
 | Persistent volume | Named volume `lkw_mongodb_data` |
 | Proof runner | `applications/local_workspace_application/scripts/run-lkw-mongodb-proof-stack.bat` |
 | Smoke validator | `applications/local_workspace_application/scripts/verify_lkw_mongodb_stack.py` |
@@ -120,7 +120,7 @@ docker compose \
   up --build
 ```
 
-**Defaults:** database `intergrax_proofs`; collection `proof_receipts`; MongoDB service `lkw-mongodb`; auth source `admin`. Smoke record partition `platform_smoke` / row `mongodb_document_store` is **infrastructure connectivity data only** — not a `ProofReceipt`. **ProofReceipt recording remains PROOF-RECEIPTS-1E.**
+**Defaults:** database `intergrax_proofs`; collection `proof_receipts`; MongoDB service `lkw-mongodb`; auth source `admin`. Smoke record partition `platform_smoke` / row `mongodb_document_store` is **infrastructure connectivity data only** - not a `ProofReceipt`. **ProofReceipt recording remains PROOF-RECEIPTS-1E.**
 
 **Depends on:** PROOF-RECEIPTS-1C  
 **Blocks:** PROOF-RECEIPTS-1E  
@@ -132,11 +132,11 @@ docker compose \
 
 | Deliverable | Detail |
 |-------------|--------|
-| Recording helper | `intergrax/proofs/receipts/recording.py` — `record_and_verify_proof_receipt()` |
+| Recording helper | `intergrax/proofs/receipts/recording.py` - `record_and_verify_proof_receipt()` |
 | LKW proof recording | `run-lkw-background-task-proof.py` persists `ProofReceipt` after live Kafka background-task proof |
 | Combined proof stack | `run-lkw-background-task-proof.bat` composes Kafka + MongoDB overlays |
 | Platform boundary | No pymongo or direct MongoDB access in Tier-3 |
-| Public reviewer docs | Step 9 in `LKW_PLATFORM_PROOF.md` — receipt inspection via Mongo Express |
+| Public reviewer docs | Step 9 in `LKW_PLATFORM_PROOF.md` - receipt inspection via Mongo Express |
 
 **Path:**
 
@@ -173,21 +173,21 @@ LKW background-task workload
 - pymongo imports in Tier-3 applications
 - In-memory DocumentStore as live proof backend
 - Public LKW Step 9 before live proof succeeds (PROOF-RECEIPTS-1E)
-- Standalone IntegrationProfile wiring task — profile/config selection remains an architectural requirement, not a separately scheduled proof-receipt step
+- Standalone IntegrationProfile wiring task - profile/config selection remains an architectural requirement, not a separately scheduled proof-receipt step
 
 ---
 
 ## J. Protocol v2 LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY (2026-08-18)
 
-Accepted [`LKW_PRODUCT_PROOF`](../../audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) findings **01–03** (2026-08-21). **ACCEPTED / PLANNED** — not IMPLEMENTED, VERIFIED, or CLOSED.
+Accepted [`LKW_PRODUCT_PROOF`](../../audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) findings **01–03** (2026-08-21). **ACCEPTED / PLANNED** - not IMPLEMENTED, VERIFIED, or CLOSED.
 
 | Item | Detail |
 |------|--------|
 | **Block** | LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY |
 | **Priority** | P0 |
 | **Findings** | LKW-PROOF-01, LKW-PROOF-02, LKW-PROOF-03 |
-| **Architecture** | [`architecture/PROOF_RECEIPTS.md`](../../architecture/PROOF_RECEIPTS.md) — Protocol v2 proof receipt target invariants |
-| **LKW consumer** | [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) — cross-link only |
+| **Architecture** | [`architecture/PROOF_RECEIPTS.md`](../../architecture/PROOF_RECEIPTS.md) - Protocol v2 proof receipt target invariants |
+| **LKW consumer** | [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) - cross-link only |
 
 **Intent:** every promoted/current product proof can be mechanically tied to the exact code/build/environment it actually executed; historical evidence becomes stale rather than silently current when relevant code changes.
 
@@ -199,7 +199,7 @@ Accepted [`LKW_PRODUCT_PROOF`](../../audit_results/2026-08-18/LKW_PRODUCT_PROOF.
 
 **Cross-links (shared proof system owns runner/manifest obligations):**
 
-- **LKW-PROOF-EXECUTION-QUALIFICATION-INTEGRITY** — LKW-PROOF-04, LKW-PROOF-05 (`scripts/proof/intergrax_proof_manifest.py`, `intergrax_proof_runner.py`, `run-intergrax-proof-suite.py`)
-- **LKW-PROOF-REVIEWER-SEMANTICS-INTEGRITY** — LKW-PROOF-06 (profile semantics; LKW plan + `PROOFS.md`)
+- **LKW-PROOF-EXECUTION-QUALIFICATION-INTEGRITY** - LKW-PROOF-04, LKW-PROOF-05 (`scripts/proof/intergrax_proof_manifest.py`, `intergrax_proof_runner.py`, `run-intergrax-proof-suite.py`)
+- **LKW-PROOF-REVIEWER-SEMANTICS-INTEGRITY** - LKW-PROOF-06 (profile semantics; LKW plan + `PROOFS.md`)
 
 Does **not** reopen closed PROOF-RECEIPTS-1A–1E as complete; extends the next provenance wave only.

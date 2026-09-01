@@ -15,12 +15,12 @@ Operational runbook for investigating shadow-mode adaptive candidates that fail 
 
 ## Triage checklist
 
-1. **Signal coverage** — confirm ≥ 95% completed shadow runs emit `HarnessOutcomeSignal`.
-2. **Utility comparison** — inspect mean U for SHADOW vs OFFLINE/ONLINE signals in `signal_trends.json`.
-3. **Regression flags** — check for `step_explosion`, `llm_cost_spike`, or `tool_usage_drop`.
-4. **Eval registry** — review release comparison delta in evaluation registry trends.
-5. **Cost** — confirm normalized cost stays within budget envelope.
-6. **Security** — re-run V-SEC adversarial baseline if policy or routing changed.
+1. **Signal coverage** - confirm ≥ 95% completed shadow runs emit `HarnessOutcomeSignal`.
+2. **Utility comparison** - inspect mean U for SHADOW vs OFFLINE/ONLINE signals in `signal_trends.json`.
+3. **Regression flags** - check for `step_explosion`, `llm_cost_spike`, or `tool_usage_drop`.
+4. **Eval registry** - review release comparison delta in evaluation registry trends.
+5. **Cost** - confirm normalized cost stays within budget envelope.
+6. **Security** - re-run V-SEC adversarial baseline if policy or routing changed.
 
 ## Resolution paths
 

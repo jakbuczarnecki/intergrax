@@ -1,8 +1,8 @@
-# LCI-7C — LangChain compatibility installation gate
+# LCI-7C - LangChain compatibility installation gate
 
 ## Verdict
 
-**LCI-7C — REQUALIFIED / READY_FOR_REVIEW**
+**LCI-7C - REQUALIFIED / READY_FOR_REVIEW**
 
 Validated checkout SHA: `a61f091e3e2717990a0ee2a24961d5f9d8ed023e`
 Platform: Windows 10 (`win32`)
@@ -32,7 +32,7 @@ No production or RAG files were changed, and LCI-7D was not started.
 - `langchain-core`: `1.2.7`
 - first failing import: none; `torch`, `transformers`,
   `sentence_transformers`, and `langchain_text_splitters` all imported
-- classification: **E — different actual root cause / prior failure
+- classification: **E - different actual root cause / prior failure
   non-reproducible**
 
 The prior defect report named `NameError: name 'torch' is not defined`, but did
@@ -114,9 +114,9 @@ drift. No RAG implementation or RAG test path was modified.
 
 LCI-7A: **APPROVED**
 LCI-7B: **APPROVED**
-LCI-7C: **LCI-7C — REQUALIFIED / READY_FOR_REVIEW**
+LCI-7C: **LCI-7C - REQUALIFIED / READY_FOR_REVIEW**
 LCI-7D: **NOT STARTED**
-## Stability re-opened — 2026-08-09
+## Stability re-opened - 2026-08-09
 
 The subsequent final system gate reproduced the loader and splitter failure in fresh isolated environments. The earlier classification as stale or non-reproducible is superseded. LCI-7C stability qualification is reopened under `LCI-7C-STABILITY-1-REPRODUCIBLE-TORCH-IMPORT-FAILURE-FORENSICS`.
 
@@ -124,7 +124,7 @@ The exact upstream traceback is `transformers/integrations/tensor_parallel.py:46
 
 No packaging or runtime change was made. A dependency constraint decision is required before requalification; LCI-8A remains not started.
 
-## Chronological stability correction — LCI-7C-STABILITY-2
+## Chronological stability correction - LCI-7C-STABILITY-2
 
 The receipt above preserves the initial LCI-7C PASS and its then-current
 resolution. The subsequent stability investigation reopened qualification after
@@ -152,5 +152,5 @@ the failure was reproduced deterministically:
    0 installed `langgraph*` distributions. Targeted regression tests passed
    (`62 passed`); inventory, boundary, and `uv lock --check` passed.
 
-**Current status:** `LCI-7C — REQUALIFIED / READY_FOR_REVIEW`.
+**Current status:** `LCI-7C - REQUALIFIED / READY_FOR_REVIEW`.
 The Final System Gate has not been run, and `LCI-8A` has not started.

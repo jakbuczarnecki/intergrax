@@ -1,4 +1,4 @@
-Intergrax CI preflight — run before push / merge (paste entire file into a new agent session as the first message).
+Intergrax CI preflight - run before push / merge (paste entire file into a new agent session as the first message).
 Canonical workflow: .github/workflows/unit-tests.yml (Regression gate).
 
 Copy this entire file into a new Cursor agent chat before any implementation work.
@@ -12,7 +12,7 @@ Do not substitute shortcuts. These are not equivalent to CI:
 - the shorter verification list from AGENTS.md alone
 - claiming tests passed in a previous session
 
-If you have not run the commands below in this session, answer: UNVERIFIED — CI preflight not run.
+If you have not run the commands below in this session, answer: UNVERIFIED - CI preflight not run.
 
 What GitHub actually runs
 - Pull request, push to main → job ci-smoke only (blocks PR / push; must be green).
@@ -20,20 +20,20 @@ What GitHub actually runs
 
 To avoid green PR then red nightly, run both profiles locally before merge to main.
 
-Required local run (single command — preferred)
+Required local run (single command - preferred)
 From repository root:
 uv run python scripts/ci/run_regression_gate_ci.py --profile all
 
 This executes in order:
-1. ci-smoke — exact PR / push parity
-2. gate-tests — full unit gate
-3. gate-governance-tier — tier / registry governance scripts
-4. gate-governance-wiring — harness wiring + intergrax doctor --ci
-5. gate-closeout — architecture closeout + export scripts
+1. ci-smoke - exact PR / push parity
+2. gate-tests - full unit gate
+3. gate-governance-tier - tier / registry governance scripts
+4. gate-governance-wiring - harness wiring + intergrax doctor --ci
+5. gate-closeout - architecture closeout + export scripts
 
 Success criteria: script exit code 0 and every job line in the summary shows PASS.
 
-Faster option (PR / push only — only if operator explicitly asks for smoke):
+Faster option (PR / push only - only if operator explicitly asks for smoke):
 uv run python scripts/ci/run_regression_gate_ci.py --profile smoke
 
 Manual parity (only if the script fails to start)
@@ -68,7 +68,7 @@ Run every command listed in unit-tests.yml under gate-closeout (6 steps).
 Agent rules (non-negotiable)
 1. Run preflight after any change under intergrax/, agents/, applications/, scripts/, tests/, or docs/ that can affect gates.
 2. Stop on first failure. Fix the root cause, then re-run from the failed job (or re-run --profile all).
-3. Report evidence in the session summary — table: Job | Exit code | Duration for: ci-smoke, gate-tests, gate-governance-tier, gate-governance-wiring, gate-closeout.
+3. Report evidence in the session summary - table: Job | Exit code | Duration for: ci-smoke, gate-tests, gate-governance-tier, gate-governance-wiring, gate-closeout.
 4. On failure, paste the failing command output (pytest --tb=line tail or script stderr).
 5. Never commit unless the operator explicitly asks.
 6. Wording allowed only after --profile all passes in this session: Ready to push / merge; CI smoke will pass; Nightly regression gate should pass.
@@ -77,8 +77,8 @@ Operator checkpoint
 Can I push?
 - --profile smoke → exit 0 → safe for PR / push CI (ci-smoke).
 - --profile all → exit 0 → safe for PR / push CI and nightly full regression.
-- Not run in this session → No — run preflight first.
-- Any job failed → No — fix and re-run.
+- Not run in this session → No - run preflight first.
+- Any job failed → No - fix and re-run.
 
 Optional GitHub confirmation before sleep (manual): Actions → Regression gate → Run workflow → profile full.
 

@@ -1,8 +1,8 @@
-# OBSERVABILITY — §5+ extended architecture
+# OBSERVABILITY - §5+ extended architecture
 
 **Parent hub:** [`OBSERVABILITY.md`](../OBSERVABILITY.md)
 
-## 5. Information flow — end to end
+## 5. Information flow - end to end
 
 ### 5.1 Request lifecycle (single-agent path)
 
@@ -68,7 +68,7 @@ Developers **never** write to SQLite or invent parallel buses.
 
 4. (Optional) Add trace_bridge mapping if step → RuntimeEventType is non-obvious
 
-5. Wire nothing extra in Tier-3 factory — observability stores already injected
+5. Wire nothing extra in Tier-3 factory - observability stores already injected
 ```
 
 **Namespace convention:**
@@ -80,7 +80,7 @@ Developers **never** write to SQLite or invent parallel buses.
 | Tier-2 agent | `agents.<slug>.diag.*` | `agents/<slug>/tracing` |
 | Tier-3 product | `applications.<slug>.diag.*` | `applications/<slug>/tracing` |
 
-Tier-2/3 payloads MUST subclass `DiagnosticPayload` from `trace_models.py` — **no fork of the ABC**.
+Tier-2/3 payloads MUST subclass `DiagnosticPayload` from `trace_models.py` - **no fork of the ABC**.
 
 ---
 
@@ -99,7 +99,7 @@ Tier-2/3 payloads MUST subclass `DiagnosticPayload` from `trace_models.py` — *
 | `node_id` | Graph node | Set during graph execution |
 | `step_id` | UAEP / pipeline step | Middleware + UAEP |
 
-### 6.2 TraceScope (OBS-BUS-2 — shipped)
+### 6.2 TraceScope (OBS-BUS-2 - shipped)
 
 `TraceScope` is a context manager on the spine (`intergrax/runtime/observability/trace_scope.py`):
 
@@ -115,20 +115,20 @@ with TraceScope(emitter, run_id=..., task_id=..., tenant_id=...) as scope:
 
 ## 7. What the platform collects (inventory)
 
-### 7.1 Harness-native steps (automatic — no agent code)
+### 7.1 Harness-native steps (automatic - no agent code)
 
 | Domain | TraceComponent | Example `step` / schema | RuntimeEventType (via bridge or direct) |
 |--------|----------------|-------------------------|----------------------------------------|
 | Run lifecycle | RUNTIME | `runtime_run_start/end` | TASK_* via lifecycle |
 | Session / ingest | PIPELINE | `session_and_ingest_summary` | INGESTION_FAILED |
 | History / context | PIPELINE | `history_summary` | CONTEXT_BUILT |
-| RAG | RAG | `rag_summary` (`intergrax.diag.rag.summary`) | — (trace); CONTEXT_* (bus) |
-| Web search | WEBSEARCH | `websearch_summary` | — |
+| RAG | RAG | `rag_summary` (`intergrax.diag.rag.summary`) | - (trace); CONTEXT_* (bus) |
+| Web search | WEBSEARCH | `websearch_summary` | - |
 | Tools | TOOLS | `tool_invocation_*` | TOOL_* |
 | LLM | ENGINE | `core_llm`, `core_llm_call_recorded`, `llm_catalog_miss` (`resolution_tier`) | LLM_CALL |
 | Plan / replan | PLANNER | `engine_plan_produced`, `plan_source_*` | PLAN_* |
 | Memory | MEMORY | `user_longterm_memory_summary` | MEMORY_* |
-| Budget | POLICY | budget diagnostics | — |
+| Budget | POLICY | budget diagnostics | - |
 | Policy | POLICY | policy enforcer | POLICY_DECISION |
 | Critic | CRITIC | `critic.l0_failed`, `critic.final_verdict` | VALIDATION_* / LLM_CALL |
 | Graph | PLANNER | `graph node start/complete` (string today) | STEP_* |
@@ -140,7 +140,7 @@ with TraceScope(emitter, run_id=..., task_id=..., tenant_id=...) as scope:
 
 | `resolution_tier` | Trace level | Suggested response | SLO posture |
 |-------------------|-------------|-------------------|-------------|
-| `fallback_default` | WARNING | Treat as **incident** for production tenants — wrong context budget | **Zero tolerance** in steady state; page on first sustained occurrence |
+| `fallback_default` | WARNING | Treat as **incident** for production tenants - wrong context budget | **Zero tolerance** in steady state; page on first sustained occurrence |
 | `provider_default` | WARNING | Track rate by provider; common for new OpenRouter ids | **Low rate** acceptable short-term; alert if >5 misses / 30 min / provider (tune per tenant) |
 | `prefix_rule` | WARNING | Informational unless volume high | Monitor weekly; bulk-add exact entries when same prefix repeats |
 
@@ -172,7 +172,7 @@ All rows below were remediated in Phase OBS-BUS. **No open harness spine gaps** 
 
 ## 8. Typing model
 
-### 8.1 Current state (L4 — OBS-BUS Done)
+### 8.1 Current state (L4 - OBS-BUS Done)
 
 ```text
 TraceEvent.payload        → DiagnosticPayload (enforced)
@@ -203,23 +203,23 @@ Canonical payload families (canon §42.23.1):
 | Item | Notes |
 |------|-------|
 | Layered identity (`event_kind`, `EventCatalog`) | **OBS-EVOL-9** · ADR-OBS-003 · pre-release spine consolidation |
-| `runtime_event.v2` preview | **OBS-MAINT-01** — accepted via `PREVIEW_RUNTIME_SCHEMA_VERSIONS`; canonical wire format remains `runtime_event.v1` until migration |
+| `runtime_event.v2` preview | **OBS-MAINT-01** - accepted via `PREVIEW_RUNTIME_SCHEMA_VERSIONS`; canonical wire format remains `runtime_event.v1` until migration |
 
 ### Pre-release spine consolidation checklist (OBS-MAINT-04)
 
 1. `uv run python scripts/maintenance/check_observability_gates.py` green  
 2. Payload registry includes all `RuntimeEventType` mappings  
 3. Tenant propagation on hot-path events (`check_runtime_event_tenant_propagation.py`)  
-4. Product dashboards deferred to [`plan/PLATFORM_FOUNDATION.md`](../plan/PLATFORM_FOUNDATION.md) §6.3a (Phase K) — **OBS-MAINT-02**
+4. Product dashboards deferred to [`plan/PLATFORM_FOUNDATION.md`](../plan/PLATFORM_FOUNDATION.md) §6.3a (Phase K) - **OBS-MAINT-02**
 
 ### 8.3 Extension rules for developers
 
-1. **Subclass `DiagnosticPayload`** — never emit raw dicts through `RuntimeState.trace_event` (Plane B debug).
-2. **Domain bus signals** — use `emit_domain_signal(kind, payload)` with registered extension payload; do **not** add `RuntimeEventType` (§4.4).
-3. **Stable `schema_id`** — never reuse for different semantics; bump `schema_version` on breaking changes.
-4. **Implement `redact()`** — assume production persistence.
+1. **Subclass `DiagnosticPayload`** - never emit raw dicts through `RuntimeState.trace_event` (Plane B debug).
+2. **Domain bus signals** - use `emit_domain_signal(kind, payload)` with registered extension payload; do **not** add `RuntimeEventType` (§4.4).
+3. **Stable `schema_id`** - never reuse for different semantics; bump `schema_version` on breaking changes.
+4. **Implement `redact()`** - assume production persistence.
 5. **Register** new schemas in payload registry (CI gate) and document `event_kind` in agent `ARCHITECTURE.md`.
-6. **Do not** import trace stores in Tier-2 — use `AgentEngine` / Nexus context only.
+6. **Do not** import trace stores in Tier-2 - use `AgentEngine` / Nexus context only.
 
 ---
 
@@ -256,23 +256,23 @@ wiring = wire_application_observability(env_profile)
 | >1M events/day/tenant | Cassandra | `document_store=cassandra` | `DocumentBackedRuntimeEventStore` via `cassandra/runtime_events.py` |
 | Full-text on payloads | Elasticsearch / OpenSearch | `observability_backend=elasticsearch` | Same `RuntimeEventPersistence` protocol; search index via document-backed store |
 | Centralized trace UI | Phoenix, Langfuse | Dual-write from journal export (`export_bridge.py`); parser trace for ingest | `INTERGRAX_EXPORT_JOURNAL` (default on) |
-| Metrics at scale | Prometheus + OTLP | `IntegrationProfile.harness_environment()` | — |
+| Metrics at scale | Prometheus + OTLP | `IntegrationProfile.harness_environment()` | - |
 
-**Profile wiring:** `open_runtime_event_store_from_profile()` resolves SQLite (default), Cassandra document store, or Elasticsearch lab index — all wrapped in `ValidatingRuntimeEventPersistence`.
+**Profile wiring:** `open_runtime_event_store_from_profile()` resolves SQLite (default), Cassandra document store, or Elasticsearch lab index - all wrapped in `ValidatingRuntimeEventPersistence`.
 
-**Conformance:** `assert_runtime_event_persistence_conformance()` in `intergrax/runtime/observability/persistence_conformance.py` — gate: `check_observability_persistence_conformance.py`.
+**Conformance:** `assert_runtime_event_persistence_conformance()` in `intergrax/runtime/observability/persistence_conformance.py` - gate: `check_observability_persistence_conformance.py`.
 
-**Rule (canon §33.1):** Extend `RunTraceWriter` / `RuntimeEventPersistence` — do not fork a parallel trace system.
+**Rule (canon §33.1):** Extend `RunTraceWriter` / `RuntimeEventPersistence` - do not fork a parallel trace system.
 
-**Compute / worker elastic capacity** (Nexus replicas, queue workers, load balancers): [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md#production-boundary) — capacity signals and governed scaling; distinct from datastore scale-out above; not a production autoscaler by default.
+**Compute / worker elastic capacity** (Nexus replicas, queue workers, load balancers): [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md#production-boundary) - capacity signals and governed scaling; distinct from datastore scale-out above; not a production autoscaler by default.
 
 ### 9.4 Custom persistence adapter
 
-Implement `RuntimeEventPersistence` protocol (`append`, `list_for_run`, `list_for_task`) and `RunTraceWriter` / `RunTraceReader`. Register via `IntegrationProfile` factory — same as other integration providers. Run the conformance harness before shipping a new backend.
+Implement `RuntimeEventPersistence` protocol (`append`, `list_for_run`, `list_for_task`) and `RunTraceWriter` / `RunTraceReader`. Register via `IntegrationProfile` factory - same as other integration providers. Run the conformance harness before shipping a new backend.
 
 ---
 
-## 10. Read path — inspection and monitoring
+## 10. Read path - inspection and monitoring
 
 ### 10.1 Unified run journal
 
@@ -280,7 +280,7 @@ Implement `RuntimeEventPersistence` protocol (`append`, `list_for_run`, `list_fo
 from intergrax.runtime.events.unified_run_journal import build_unified_run_journal
 
 journal = build_unified_run_journal(persisted_run, runtime_store=event_store)
-# List[RuntimeEvent] chronological — operator source of truth
+# List[RuntimeEvent] chronological - operator source of truth
 ```
 
 Merge rules: persisted bus events win on `event_id`; dedupe by `trace_event_id`.
@@ -289,8 +289,8 @@ Merge rules: persisted bus events win on `event_id`; dedupe by `trace_event_id`.
 
 On ``TASK_COMPLETED``:
 
-1. **Payload ref** — `journal_ref` on the terminal runtime event (`schema_version`, `run_id`, `tenant_id`, `event_count`, `parser_trace_count`).
-2. **Plugin export** — `runtime.journal_export` builds `build_journal_export_snapshot()`, logs OTLP-style JSON (`render_journal_otlp_json`), and calls `export_parser_traces_from_events()` for ingest parser spans.
+1. **Payload ref** - `journal_ref` on the terminal runtime event (`schema_version`, `run_id`, `tenant_id`, `event_count`, `parser_trace_count`).
+2. **Plugin export** - `runtime.journal_export` builds `build_journal_export_snapshot()`, logs OTLP-style JSON (`render_journal_otlp_json`), and calls `export_parser_traces_from_events()` for ingest parser spans.
 
 ```python
 from intergrax.runtime.observability.journal_export import build_journal_export_snapshot, render_journal_otlp_json
@@ -371,7 +371,7 @@ External: wire `RuntimeEventBus.subscribe()` to PagerDuty/Slack via `notify` too
 | **L1** | Trace file per run, no correlation |
 | **L2** | TraceEvent + SQLite, partial bus |
 | **L3** | Unified journal, DiagnosticPayload guard, wiring CI |
-| **L4** | Typed RuntimeEvent payloads, TraceScope tree, catalog emission, extension SDK, journal export (**current — OBS-BUS Done**) |
+| **L4** | Typed RuntimeEvent payloads, TraceScope tree, catalog emission, extension SDK, journal export (**current - OBS-BUS Done**) |
 
 Audit map §21 score: **L4** (OBS-BUS-7 gate evidence).
 
@@ -424,20 +424,20 @@ uv run python scripts/maintenance/check_observability_gates.py
 
 ## 17. Session closeout
 
-**OBS-BUS (L4):** **Done** (2026-06-08) — unified spine, typed payloads, extension SDK, journal export, CI gates.
+**OBS-BUS (L4):** **Done** (2026-06-08) - unified spine, typed payloads, extension SDK, journal export, CI gates.
 
-**OBS-EVOL-9 (P1-ARCH-02):** **Done** (2026-06-17) — layered identity (`event_kind`, `EventCatalog`, `DOMAIN_SIGNAL`, profile subscriptions, W3C trace context). Publication-ready spine (56 types). See plan OBS-EVOL-9 register and §4.4.7–4.4.13.
+**OBS-EVOL-9 (P1-ARCH-02):** **Done** (2026-06-17) - layered identity (`event_kind`, `EventCatalog`, `DOMAIN_SIGNAL`, profile subscriptions, W3C trace context). Publication-ready spine (56 types). See plan OBS-EVOL-9 register and §4.4.7–4.4.13.
 
 **Not in spine scope:** product dashboards (§6.3a), mandatory external APM, per-agent private trace DBs.
 
 ---
 
-## 18. Execution Boundary Export (EBE) — optional side channel
+## 18. Execution Boundary Export (EBE) - optional side channel
 
 **Status:** PoC v1 **Done** · PoC v2 (EBE-8) **Done** (partner validated) · **EBE-9 host signing Done** (partner validated).  
 **Reference host:** `applications/attestation_demo` · **ADR:** [ADR-OBS-002](../adr/entries/2026-06-13/ADR-OBS-002.md) · [ADR-OBS-004](../adr/entries/2026-06-19/ADR-OBS-004.md)
 
-EBE is an **optional** export path for **unsigned, vendor-neutral** tool-boundary facts. It complements — does not replace — the Harness Observability Spine (HOS).
+EBE is an **optional** export path for **unsigned, vendor-neutral** tool-boundary facts. It complements - does not replace - the Harness Observability Spine (HOS).
 
 | Principle | Rule |
 |-----------|------|
@@ -447,11 +447,11 @@ EBE is an **optional** export path for **unsigned, vendor-neutral** tool-boundar
 | **One event, one receipt** | Partner maps each `boundary_events[]` element to a separate `client_observed` receipt |
 | **Non-blocking** | Buffer/sink failures never fail tool invoke |
 | **Honest trust** | Unsigned when signing off (`signed: false`); host-signed when EBE-9 enabled (`host_attested`); no implied `server_attested` |
-| **HOS unchanged** | Unified journal, trace bridge, middleware — no receipt logic |
+| **HOS unchanged** | Unified journal, trace bridge, middleware - no receipt logic |
 
 ### Schema
 
-`execution_boundary_event.v1` — Pydantic model in `intergrax/runtime/attestation/execution_boundary_event.py`.
+`execution_boundary_event.v1` - Pydantic model in `intergrax/runtime/attestation/execution_boundary_event.py`.
 
 | Field | Role |
 |-------|------|
@@ -478,9 +478,9 @@ When `host_signing_enabled=true`, each event includes `signed: true` and a `host
 
 Unsigned v2 remains available when signing is disabled. Golden vector: `applications/attestation_demo/partner_handoff/ebe9_golden_vector.v1.json`. Spec: `EBE-9_HOST_SIGNING.md`.
 
-**Partner validation — EBE-8 (unsigned v2, 2026-06):** BoundaryAttest adapter confirmed one `client_observed` receipt per event, hash parity, independent verification, and intentional dual claims on the failed-tool fixture. Reference: `agent_experiment_runtime` @ `106aee776fcc6053e8265b9c3656638d107d351d`.
+**Partner validation - EBE-8 (unsigned v2, 2026-06):** BoundaryAttest adapter confirmed one `client_observed` receipt per event, hash parity, independent verification, and intentional dual claims on the failed-tool fixture. Reference: `agent_experiment_runtime` @ `106aee776fcc6053e8265b9c3656638d107d351d`.
 
-**Partner validation — EBE-9 (host signing, 2026-06):** BoundaryAttest verifier @ `61be9918bc8f91fc8f160e0392d2914f38f3d4cb` passed golden vector byte-for-byte, 39/39 tests, live two-event response from Intergrax @ `96b7f997`, unsigned v2 regression, and negative tamper cases. Host signature verified separately; partner receipts remain `client_observed`. Handoff docs: `agent_experiment_runtime` @ `13102cfaff1a7a9d212c16cd16587477cc533dc0`.
+**Partner validation - EBE-9 (host signing, 2026-06):** BoundaryAttest verifier @ `61be9918bc8f91fc8f160e0392d2914f38f3d4cb` passed golden vector byte-for-byte, 39/39 tests, live two-event response from Intergrax @ `96b7f997`, unsigned v2 regression, and negative tamper cases. Host signature verified separately; partner receipts remain `client_observed`. Handoff docs: `agent_experiment_runtime` @ `13102cfaff1a7a9d212c16cd16587477cc533dc0`.
 
 **Trace correlation scope:** `GET /debug/tasks/{run_id}/trace` supports run/task-level journal comparison (agent, capability, graph node, critic, task state). It does **not** expose EBE `event_id`, `step_id`, or `tool_id`; exact per-event correlation uses the live `boundary_events[]` from `POST /poc/run` (or buffered replay endpoint). Enriching HOS trace with EBE identifiers is optional future work, not a PoC v2 requirement.
 
@@ -528,7 +528,7 @@ run -> trace -> evidence ledger -> eval snapshot -> metric results -> regression
 |------|-------------|
 | Single spine | HOS remains the only canonical execution record |
 | Evidence before judgment | No metric/regression result without evidence refs |
-| Typed extension | Custom data via `DiagnosticPayload`, `RuntimeEventPayload`, and OECP contracts — not raw dicts |
+| Typed extension | Custom data via `DiagnosticPayload`, `RuntimeEventPayload`, and OECP contracts - not raw dicts |
 | External tools | Langfuse, LangSmith, OTLP, Sentry, Phoenix, Braintrust, Datadog, … are optional sinks/workbenches |
 | CVL boundary | CVL emits verdicts; OECP stores, compares, gates ([`CRITIC_VERIFICATION.md`](../CRITIC_VERIFICATION.md#boundary-with-observability--evaluation-control-plane-oecp)) |
 
@@ -536,7 +536,7 @@ run -> trace -> evidence ledger -> eval snapshot -> metric results -> regression
 
 ## Evidence Ledger
 
-The Evidence Ledger is the **eval-ready layer derived from HOS**. It stores normalized evidence records required to understand and evaluate a run — **without duplicating the full trace**.
+The Evidence Ledger is the **eval-ready layer derived from HOS**. It stores normalized evidence records required to understand and evaluate a run - **without duplicating the full trace**.
 
 Each record points back to canonical spine data via `source_event_id` and/or `source_trace_event_id`.
 
@@ -552,7 +552,7 @@ Each record points back to canonical spine data via `source_event_id` and/or `so
 | `intergrax.rag.query.built.v1` / `intergrax.rag.retrieval.completed.v1` | RAG path |
 | `intergrax.context.pack.built.v1` / `intergrax.memory.context.used.v1` | Context assembly |
 | `intergrax.policy.decision.recorded.v1` | Policy gate |
-| `intergrax.critic.verdict.recorded.v1` | CVL verdict (reference only — CVL owns semantics) |
+| `intergrax.critic.verdict.recorded.v1` | CVL verdict (reference only - CVL owns semantics) |
 | `intergrax.custom.telemetry.recorded.v1` | Typed custom telemetry |
 
 ### Evidence record contract
@@ -583,7 +583,7 @@ Input captured · prompt assembly · model input/output (or safe redaction) · t
 
 ## Eval Registry v2
 
-Evolution of early evaluation primitives into a versioned registry for **continuous measurement** — not post-mortem-only eval.
+Evolution of early evaluation primitives into a versioned registry for **continuous measurement** - not post-mortem-only eval.
 
 ### Core models (target)
 
@@ -597,7 +597,7 @@ Carries `observation_id`, tenant/run/task/agent/application/scenario/dataset/cas
 
 `manual` · `production_sample` · `incident_harvested` · `critic_failure` · `regression_failure` · `counterfactual_generated` · `interpolation_generated` · `external_benchmark`
 
-Experiments ([`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)) **use** this registry — they do not duplicate ledger storage.
+Experiments ([`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)) **use** this registry - they do not duplicate ledger storage.
 
 ---
 
@@ -627,7 +627,7 @@ Tier-3 selects plugins via `custom_eval_metric_plugins` ([`TIER3_APPLICATION_ENV
 
 ## Custom Telemetry Extension Plane
 
-Custom observability **extends HOS** — it never bypasses it.
+Custom observability **extends HOS** - it never bypasses it.
 
 ```text
 TelemetryProvider -> DiagnosticPayload/RuntimeEventPayload -> HOS -> Journal -> EvidenceLedger -> EvalRegistry
@@ -678,7 +678,7 @@ Declarative wiring via `ObservabilityProfile.event_subscriptions` (existing OBS-
 | `TASK_COMPLETED` + low critic score | Eval case candidate |
 | `GUARDRAIL_BLOCKED` | Optional external sink export |
 
-Handlers **must** emit through HOS typed contracts — not side-channel logs.
+Handlers **must** emit through HOS typed contracts - not side-channel logs.
 
 ---
 
@@ -716,10 +716,10 @@ Complements CVL L0–L2 (per-run verification) and Adaptive L4 (profile promotio
 | **L6** | Continuous measurement | Eval Registry v2 active; metric plugins; baseline comparison; production sampling and nightly regression |
 | **L7** | Robustness and release gates | Counterfactual/interpolation suites; CI/release/canary gates; external workbench sync with platform-owned semantics |
 
-Applications declare target level via profile surfaces (`eval_gate_profiles`, `counterfactual_profiles`, `vendor_export_profiles`) — Tier-3 wires opt-in; Tier-0/1 owns mechanisms.
+Applications declare target level via profile surfaces (`eval_gate_profiles`, `counterfactual_profiles`, `vendor_export_profiles`) - Tier-3 wires opt-in; Tier-0/1 owns mechanisms.
 
 ---
 
 
 
-*This document is the canonical observability architecture. Update it when changing spine contracts, emission rules, or persistence profiles. Implementation status: [Phase OBS-BUS — Done](../plan/OBSERVABILITY.md). EBE PoC v1: [Phase EBE](../plan/OBSERVABILITY.md#phase-ebe--execution-boundary-export-partner-poc). **OECP:** [Phase register](../../maintainers/plans/satellites/OBSERVABILITY_eval_control_plane.md).*
+*This document is the canonical observability architecture. Update it when changing spine contracts, emission rules, or persistence profiles. Implementation status: [Phase OBS-BUS - Done](../plan/OBSERVABILITY.md). EBE PoC v1: [Phase EBE](../plan/OBSERVABILITY.md#phase-ebe--execution-boundary-export-partner-poc). **OECP:** [Phase register](../../maintainers/plans/satellites/OBSERVABILITY_eval_control_plane.md).*

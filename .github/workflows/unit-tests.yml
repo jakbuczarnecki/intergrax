@@ -2,9 +2,9 @@
 # Intergrax framework – proprietary and confidential.
 #
 # CI profiles:
-#   pull_request, push (main) — ci_smoke unit tests + Platform Plugin gates (Linux + Windows wheel E2E)
-#   schedule (nightly 03:00 UTC), workflow_dispatch (full) — full gate + governance + closeout
-#   workflow_dispatch (smoke) — same as PR (debug)
+#   pull_request, push (main) - ci_smoke unit tests + Platform Plugin gates (Linux + Windows wheel E2E)
+#   schedule (nightly 03:00 UTC), workflow_dispatch (full) - full gate + governance + closeout
+#   workflow_dispatch (smoke) - same as PR (debug)
 #
 # Feature-branch pushes do not trigger CI (avoids duplicate runs when a PR is open).
 # Full regression: `uv run pytest tests/unit -m "gate and not no_ci"` locally or nightly CI.
@@ -74,7 +74,7 @@ jobs:
       - name: Application dependency projects resolve
         run: |
           # Dependency-graph isolation (deterministic). Do not use shared-root
-          # `uv pip show` as isolation proof — uv reuses workspace `.venv`.
+          # `uv pip show` as isolation proof - uv reuses workspace `.venv`.
           uv export --frozen --no-dev --project applications/lab_application --no-emit-workspace | tee /tmp/lab-export.txt
           uv export --frozen --no-dev --project applications/local_workspace_application --no-emit-workspace | tee /tmp/lkw-export.txt
           grep -qi 'Intergrax-ai\|intergrax-ai' /tmp/lab-export.txt
@@ -417,7 +417,7 @@ jobs:
           uv run --frozen python -c "import sys, xml.etree.ElementTree as ET;
           root = ET.parse('build/harden-3f-external-otlp-proof.xml').getroot();
           skipped = sum(int(ts.get('skipped', 0)) for ts in root.findall('testsuite'));
-          sys.exit(f'HARDEN-3F external OTLP proof skipped ({skipped}) — infrastructure/proof failure' if skipped else 0)"
+          sys.exit(f'HARDEN-3F external OTLP proof skipped ({skipped}) - infrastructure/proof failure' if skipped else 0)"
 
   durable-diagnostics-external-proof:
     if: >-
@@ -477,7 +477,7 @@ jobs:
           uv run --frozen python -c "import sys, xml.etree.ElementTree as ET;
           root = ET.parse('build/harden-1c-external-proof.xml').getroot();
           skipped = sum(int(ts.get('skipped', 0)) for ts in root.findall('testsuite'));
-          sys.exit(f'HARDEN-1C skipped ({skipped}) — infrastructure/proof failure' if skipped else 0)"
+          sys.exit(f'HARDEN-1C skipped ({skipped}) - infrastructure/proof failure' if skipped else 0)"
 
       - name: Diagnostic concurrency external proof
         run: >-
@@ -491,7 +491,7 @@ jobs:
           uv run --frozen python -c "import sys, xml.etree.ElementTree as ET;
           root = ET.parse('build/harden-2c-external-proof.xml').getroot();
           skipped = sum(int(ts.get('skipped', 0)) for ts in root.findall('testsuite'));
-          sys.exit(f'HARDEN-2C skipped ({skipped}) — infrastructure/proof failure' if skipped else 0)"
+          sys.exit(f'HARDEN-2C skipped ({skipped}) - infrastructure/proof failure' if skipped else 0)"
 
       - name: HARDEN-4F Mongo Problem Store failure external proof
         run: >-
@@ -505,4 +505,4 @@ jobs:
           uv run --frozen python -c "import sys, xml.etree.ElementTree as ET;
           root = ET.parse('build/harden-4f-external-proof.xml').getroot();
           skipped = sum(int(ts.get('skipped', 0)) for ts in root.findall('testsuite'));
-          sys.exit(f'HARDEN-4F skipped ({skipped}) — infrastructure/proof failure' if skipped else 0)"
+          sys.exit(f'HARDEN-4F skipped ({skipped}) - infrastructure/proof failure' if skipped else 0)"

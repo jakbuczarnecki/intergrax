@@ -1,4 +1,4 @@
-# NEXUS_EXECUTION_FLOW — appendices
+# NEXUS_EXECUTION_FLOW - appendices
 
 **Parent hub:** [`NEXUS_EXECUTION_FLOW.md`](../NEXUS_EXECUTION_FLOW.md)
 
@@ -7,7 +7,7 @@
 
 ---
 
-## Appendix N — Nexus execution flow traceability (Phase FLOW)
+## Appendix N - Nexus execution flow traceability (Phase FLOW)
 
 **Source:** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §23–§25 · [ADR-FLOW-001](adr/entries/2026-06-07/ADR-FLOW-001.md)
 
@@ -38,7 +38,7 @@
 | FLOW-GAP-15 | DX | Low | FLOW-16 | `MODIFY_PLAN` reserved semantics ADR | §9 |
 | FLOW-GAP-16 | DX | Low | FLOW-17 | `MULTI_AGENT` deterministic ordering policy | §9 |
 | §24 / FAUDIT-COG-1 | Cognition | Medium | FLOW-12 | `DecisionRecord` regression gate | §7 |
-| — | Docs | Low | FLOW-DOC.* | Flow reference + plan sync | — |
+| - | Docs | Low | FLOW-DOC.* | Flow reference + plan sync | - |
 
 ### N.2 Maturity uplift targets
 
@@ -55,8 +55,8 @@
 
 | Date | FLOW ID | Summary |
 |------|---------|---------|
-| 2026-06-07 | — | Phase FLOW scheduled; Appendix N (FLOW) created; §6.1aj + §6.2aj active |
-| 2026-06-07 | — | FLOW-GAP-12–16 + FLOW-13–17 added; orchestration plan complete vs flow reference |
+| 2026-06-07 | - | Phase FLOW scheduled; Appendix N (FLOW) created; §6.1aj + §6.2aj active |
+| 2026-06-07 | - | FLOW-GAP-12–16 + FLOW-13–17 added; orchestration plan complete vs flow reference |
 | 2026-06-07 | FLOW-1–17, FLOW-DOC.* | Full Phase FLOW closeout; ADR-FLOW-001/002/003 accepted; gate green |
 
 ---

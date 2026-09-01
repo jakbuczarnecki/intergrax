@@ -1,4 +1,4 @@
-# RELIABILITY_FAILURE_AND_HITL — extended depth
+# RELIABILITY_FAILURE_AND_HITL - extended depth
 
 **Parent hub:** [`RELIABILITY_FAILURE_AND_HITL.md`](../RELIABILITY_FAILURE_AND_HITL.md)
 
@@ -53,7 +53,7 @@ Reliability is enforced at **graph**, **run**, and **integration** layers.
 
 # 34. Configurable Resilience Policy Framework
 
-Fault tolerance in Intergrax is **policy-driven and modular** — not hardcoded retry loops in agents or ad-hoc exception handlers in Tier-3 hosts.
+Fault tolerance in Intergrax is **policy-driven and modular** - not hardcoded retry loops in agents or ad-hoc exception handlers in Tier-3 hosts.
 
 ## 34.1 Design goals
 
@@ -67,7 +67,7 @@ Fault tolerance in Intergrax is **policy-driven and modular** — not hardcoded 
 
 ## 34.2 Resilience policy modules
 
-Policies are **orthogonal modules** composed through profiles — authors enable only what the product needs.
+Policies are **orthogonal modules** composed through profiles - authors enable only what the product needs.
 
 | Module | Scope | Key controls | Canon |
 |--------|-------|--------------|-------|
@@ -82,7 +82,7 @@ Policies are **orthogonal modules** composed through profiles — authors enable
 | **Redundancy (infra)** | Host availability | Nexus replicas, queue workers | [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) |
 | **Recovery reboot** | Corrupted / stuck run | `RUNTIME_RECOVERY_REQUIRED` interrupt → policy: retry graph, cold restart node, or escalate | UAEP §42.8, §34.4 |
 
-**Rule:** agents emit **intent** (`AgentDecision.RETRY`, `INTERRUPT`); Nexus + PolicyEngine **execute** policy — no agent-internal unbounded retry against adapters.
+**Rule:** agents emit **intent** (`AgentDecision.RETRY`, `INTERRUPT`); Nexus + PolicyEngine **execute** policy - no agent-internal unbounded retry against adapters.
 
 ## 34.3 ResiliencePolicy contract (target)
 
@@ -102,13 +102,13 @@ ResiliencePolicy:
     reboot_strategy: NONE | RE_EXECUTE_NODE | RE_EXECUTE_GRAPH | COLD_AGENT_RELOAD
 ```
 
-**As-built (2026-06-09):** unified `ResiliencePolicy` on `ReliabilityProfile`; resolved via `policy_resolver` into `RetryEngine` and trace `RECOVERY_REBOOT`. **Tier-3 debt:** `apply_reliability_task_defaults` wired on **lab host only** — other hosts need profile enricher or H-APP-WIRING.1.
+**As-built (2026-06-09):** unified `ResiliencePolicy` on `ReliabilityProfile`; resolved via `policy_resolver` into `RetryEngine` and trace `RECOVERY_REBOOT`. **Tier-3 debt:** `apply_reliability_task_defaults` wired on **lab host only** - other hosts need profile enricher or H-APP-WIRING.1.
 
-**Cross-domain maintenance (§6.1av):** durable async queue opt-in — [`ORCH-MAINT-04`](../plan/ORCHESTRATION.md#61av-harness-implementation-queue--orchestration-audit-maintenance-planned) (REL-MAINT-03); LLM profile failover on retriable provider errors — [`LLM-MAINT-03`](../plan/LLM_ADAPTERS.md#61av-harness-implementation-queue--llm-adapters-audit-maintenance-planned) (REL-MAINT-04). Verification: `scripts/maintenance/check_harness_resilience_policy.py`.
+**Cross-domain maintenance (§6.1av):** durable async queue opt-in - [`ORCH-MAINT-04`](../plan/ORCHESTRATION.md#61av-harness-implementation-queue--orchestration-audit-maintenance-planned) (REL-MAINT-03); LLM profile failover on retriable provider errors - [`LLM-MAINT-03`](../plan/LLM_ADAPTERS.md#61av-harness-implementation-queue--llm-adapters-audit-maintenance-planned) (REL-MAINT-04). Verification: `scripts/maintenance/check_harness_resilience_policy.py`.
 
 ## 34.4 Recovery reboot semantics
 
-**Reboot** means **controlled re-execution** of a bounded unit — not OS process restart unless the host operator chooses infra recycle.
+**Reboot** means **controlled re-execution** of a bounded unit - not OS process restart unless the host operator chooses infra recycle.
 
 | Strategy | When | Effect |
 |----------|------|--------|

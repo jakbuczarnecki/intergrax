@@ -8,7 +8,7 @@
 
 ## How it works
 
-Resolves `rag.retrieve` and `websearch.query`. Minimal two-tool pack — parent of `harness.stack_demo` via `requires_skills`. Emits `SKILL_RESOLVED` on agent register when event bus wired.
+Resolves `rag.retrieve` and `websearch.query`. Minimal two-tool pack - parent of `harness.stack_demo` via `requires_skills`. Emits `SKILL_RESOLVED` on agent register when event bus wired.
 
 ## How to use
 

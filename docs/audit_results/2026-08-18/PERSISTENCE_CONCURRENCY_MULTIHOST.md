@@ -1,4 +1,4 @@
-# PERSISTENCE_CONCURRENCY_MULTIHOST — Platform Audit
+# PERSISTENCE_CONCURRENCY_MULTIHOST - Platform Audit
 
 ## Metadata
 
@@ -18,8 +18,8 @@
 - **Plan doc(s):**
   - `docs/project/maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md`
   - `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md`
-- **Reference architecture (evidence only — not modified):**
-  - `docs/project/architecture/AGENT_DISTRIBUTION.md` — §§23–25, §34
+- **Reference architecture (evidence only - not modified):**
+  - `docs/project/architecture/AGENT_DISTRIBUTION.md` - §§23–25, §34
 - **Scope in:**
   - production topology vs process-local/durable/shared persistence capability qualification
   - idempotency crash consistency and false exactly-once claims
@@ -49,16 +49,16 @@
 | Cross-layer persistence topology capability qualification | **PLATFORM_FOUNDATION** |
 | CAS / serving_pointer_revision target precedent | **AGENT_DISTRIBUTION** (reference only) |
 | Per-layer report | `docs/audit_results/2026-08-18/PERSISTENCE_CONCURRENCY_MULTIHOST.md` |
-| Target invariants (recovery) | `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` — [Protocol v2 persistence/concurrency multihost target invariants (2026-08-18)](#protocol-v2-persistence-concurrency-multihost-target-invariants-2026-08-18) |
-| Target invariants (topology) | `docs/project/architecture/PLATFORM_FOUNDATION.md` — [Protocol v2 persistence topology target invariants (2026-08-18)](#protocol-v2-persistence-topology-target-invariants-2026-08-18) |
+| Target invariants (recovery) | `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` - [Protocol v2 persistence/concurrency multihost target invariants (2026-08-18)](#protocol-v2-persistence-concurrency-multihost-target-invariants-2026-08-18) |
+| Target invariants (topology) | `docs/project/architecture/PLATFORM_FOUNDATION.md` - [Protocol v2 persistence topology target invariants (2026-08-18)](#protocol-v2-persistence-topology-target-invariants-2026-08-18) |
 
 ## Executive summary
 
-**Verdict: FAIL.** Six accepted HIGH and one accepted MEDIUM finding show that production/STRICT composition can rely on process-local idempotency without mechanical topology qualification; idempotency state machine can permanently block after crash between external effect and completion; compensation and scheduler consumption lack atomic claim/lease semantics for multi-worker operation; checkpoint writes can regress newer execution state; minimal `RelationalStore` does not encode domain concurrency guarantees required for provider substitutability; and ad-hoc schema migration can fail open on unexpected errors. Positive controls: `SQLiteRuntimeEventStore` demonstrates sound local atomic sequencing; Agent Distribution documents honest single-process V1 and deferred multi-instance scale-out; LongRunningScheduler self-identifies as lab/single-process-first; Reliability architecture disclaims HA/full durable operator workflow; Redis distributed idempotency capability already exists and remediation stays provider-neutral. Remediation is **PLANNED**, not implemented. Findings define cross-layer persistence invariants — they do not duplicate domain-owned MEMORY, AHI, or ECP remediation.
+**Verdict: FAIL.** Six accepted HIGH and one accepted MEDIUM finding show that production/STRICT composition can rely on process-local idempotency without mechanical topology qualification; idempotency state machine can permanently block after crash between external effect and completion; compensation and scheduler consumption lack atomic claim/lease semantics for multi-worker operation; checkpoint writes can regress newer execution state; minimal `RelationalStore` does not encode domain concurrency guarantees required for provider substitutability; and ad-hoc schema migration can fail open on unexpected errors. Positive controls: `SQLiteRuntimeEventStore` demonstrates sound local atomic sequencing; Agent Distribution documents honest single-process V1 and deferred multi-instance scale-out; LongRunningScheduler self-identifies as lab/single-process-first; Reliability architecture disclaims HA/full durable operator workflow; Redis distributed idempotency capability already exists and remediation stays provider-neutral. Remediation is **PLANNED**, not implemented. Findings define cross-layer persistence invariants - they do not duplicate domain-owned MEMORY, AHI, or ECP remediation.
 
 ## Verdict
 
-**FAIL** — 0 CRITICAL / 6 HIGH / 1 MEDIUM / 0 LOW
+**FAIL** - 0 CRITICAL / 6 HIGH / 1 MEDIUM / 0 LOW
 
 ## Findings
 
@@ -164,7 +164,7 @@
 
 | Control | Result |
 |---------|--------|
-| `SQLiteRuntimeEventStore` — BEGIN IMMEDIATE + atomic sequence allocation + rollback | NOT falsified |
+| `SQLiteRuntimeEventStore` - BEGIN IMMEDIATE + atomic sequence allocation + rollback | NOT falsified |
 | Agent Distribution defines CAS, optimistic revision, atomic traffic activation target semantics | NOT falsified |
 | Agent Distribution reference production V1 honestly states single OS process, process-local lifecycle stores, restart loses state, multi-instance scale-out unsupported | NOT falsified |
 | Durable/multi-instance Agent Distribution explicitly deferred, not falsely claimed shipped | NOT falsified |
@@ -174,7 +174,7 @@
 | Process-local / durable-single-host stores remain valid for their declared topology | NOT falsified |
 | Not every store needs to be globally distributed | NOT falsified |
 | Redis distributed idempotency capability already exists; remediation stays provider-neutral | NOT falsified |
-| MEMORY-04 blind profile overwrite remains owned by MEMORY — cross-link only | NOT falsified |
+| MEMORY-04 blind profile overwrite remains owned by MEMORY - cross-link only | NOT falsified |
 | AHI activation CAS findings remain owned by AHI | NOT falsified |
 | ECP multi-host anti-flapping findings remain owned by ECP | NOT falsified |
 
@@ -182,12 +182,12 @@
 
 | Existing finding / domain | Relationship |
 |---------------------------|--------------|
-| **MEMORY-04** | Profile overwrite — owned by MEMORY; cross-link only |
-| **AHI activation CAS** | Owned by ADAPTIVE_HARNESS_INTELLIGENCE — reuse pattern, do not duplicate |
-| **ECP distributed execution** | Owned by ELASTIC_CAPACITY_AND_SCALING — cross-link only |
-| **PBA-FIX-A / IDT-FIX-C** | Remain PLANNED — checkpoint port consumption and human decision provenance orthogonal |
+| **MEMORY-04** | Profile overwrite - owned by MEMORY; cross-link only |
+| **AHI activation CAS** | Owned by ADAPTIVE_HARNESS_INTELLIGENCE - reuse pattern, do not duplicate |
+| **ECP distributed execution** | Owned by ELASTIC_CAPACITY_AND_SCALING - cross-link only |
+| **PBA-FIX-A / IDT-FIX-C** | Remain PLANNED - checkpoint port consumption and human decision provenance orthogonal |
 | **TOOLS idempotency remediation** | Coordinate PCM-02 side-effect semantics |
-| **AGENT_DISTRIBUTION §§23–25, §34** | Reference CAS/revision/activation boundary precedent — not modified |
+| **AGENT_DISTRIBUTION §§23–25, §34** | Reference CAS/revision/activation boundary precedent - not modified |
 | **PROVIDER_BACKEND_ABSTRACTION** | Cross-link PCM-06 domain port semantics |
 
 ## Single-host vs multi-host distinction
@@ -202,7 +202,7 @@ Process-local and durable-single-host stores remain legitimate for their declare
 
 ## Root-cause remediation grouping
 
-### PCM-PERSISTENCE-TOPOLOGY-INTEGRITY — topology capability qualification and domain port semantics
+### PCM-PERSISTENCE-TOPOLOGY-INTEGRITY - topology capability qualification and domain port semantics
 
 **Priority:** P0  
 **Findings:** PCM-01, PCM-06  
@@ -210,7 +210,7 @@ Process-local and durable-single-host stores remain legitimate for their declare
 
 Every stateful runtime mechanism declares the persistence capability required by its deployment topology. STRICT/multi-host composition mechanically rejects process-local or otherwise insufficient stores. Provider-neutral domain persistence ports own concurrency semantics. Cross-links: PROVIDER_BACKEND_ABSTRACTION, Agent Distribution CAS model.
 
-### PCM-SIDE-EFFECT-COORDINATION-INTEGRITY — uncertain execution and exclusive compensation consumption
+### PCM-SIDE-EFFECT-COORDINATION-INTEGRITY - uncertain execution and exclusive compensation consumption
 
 **Priority:** P0  
 **Findings:** PCM-02, PCM-03  
@@ -218,7 +218,7 @@ Every stateful runtime mechanism declares the persistence capability required by
 
 External side effects and compensations have truthful uncertain-execution and exclusive-consumption semantics across crash/restart/multi-worker operation. Cross-links: TOOLS idempotency remediation, Governance where operator reconciliation is required.
 
-### PCM-CHECKPOINT-SCHEDULER-INTEGRITY — monotonic checkpoints and claimed scheduled resumes
+### PCM-CHECKPOINT-SCHEDULER-INTEGRITY - monotonic checkpoints and claimed scheduled resumes
 
 **Priority:** P0/P1  
 **Findings:** PCM-04, PCM-05  
@@ -226,7 +226,7 @@ External side effects and compensations have truthful uncertain-execution and ex
 
 Checkpoint writes cannot regress execution state; scheduled resumes are claimed exactly once at the scheduler/work-dispatch layer for multi-host topologies. Reuse canonical CAS/lease/worker primitives from Agent Distribution reference pattern.
 
-### PCM-SCHEMA-EVOLUTION-INTEGRITY — fail-closed schema migration
+### PCM-SCHEMA-EVOLUTION-INTEGRITY - fail-closed schema migration
 
 **Priority:** P2  
 **Findings:** PCM-07  
@@ -239,7 +239,7 @@ Store schema evolution distinguishes expected idempotent migration conditions fr
 - Evidence bound exclusively to `audited_sha` `a786e3a2202b105f0d3a38afff8f79ea34255f05`; current `development` HEAD was not re-audited beyond persistence sync.
 - Tests and CI gates are supporting evidence, not standalone proof of multi-host production correctness.
 - Remediation not performed in this task.
-- `AGENT_DISTRIBUTION` used as reference evidence only — not modified.
+- `AGENT_DISTRIBUTION` used as reference evidence only - not modified.
 
 ## Operator acceptance
 

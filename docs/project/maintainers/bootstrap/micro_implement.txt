@@ -1,4 +1,4 @@
-# Intergrax — Micro Implement Bootstrap
+# Intergrax - Micro Implement Bootstrap
 
 Use this bootstrap for one small, bounded implementation task in a fresh Cursor chat.
 

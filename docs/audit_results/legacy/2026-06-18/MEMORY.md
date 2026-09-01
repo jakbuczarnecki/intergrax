@@ -1,4 +1,4 @@
-# Audit result — `MEMORY`
+# Audit result - `MEMORY`
 
 **Run:** 2026-06-18 · **Mode:** audit_only (interactive layer 13)  
 **Auditor:** cursor-agent · **Verdict:** L3 mature_revalidated
@@ -20,8 +20,8 @@
 
 | ID | Severity | Finding | Evidence | Status |
 |----|----------|---------|----------|--------|
-| MEM-GAP-01 | P3 | Procedural memory — minimal cognitive store mapping | MEMORY-LC deferred · plan §MemoryKind | **planned** (MEM-MAINT-01) |
-| MEM-GAP-02 | P3 | Org memory maturity — profile only, not full product | plan score ~2,5/5 | **planned** (MEM-MAINT-02) |
+| MEM-GAP-01 | P3 | Procedural memory - minimal cognitive store mapping | MEMORY-LC deferred · plan §MemoryKind | **planned** (MEM-MAINT-01) |
+| MEM-GAP-02 | P3 | Org memory maturity - profile only, not full product | plan score ~2,5/5 | **planned** (MEM-MAINT-02) |
 | MEM-GAP-03 | P4 | LangMem/Zep entity graph parity gaps | MEMORY-LC deferred | **planned** (MEM-MAINT-03) |
 | MEM-GAP-04 | P3 | MEM-DEPTH-5.2 temporal validity on facts | plan deferred | **planned** (MEM-MAINT-04) |
 
@@ -51,10 +51,10 @@ All green: entity graph wiring **OK** · **38 passed**.
 
 ## Backlog P2–P4 (planned / deferred)
 
-- MEM-MAINT-01..04 — §6.1av
+- MEM-MAINT-01..04 - §6.1av
 
 ---
 
 ## Recommendation
 
-**Architecturally Mature (L3)** — platform memory closed; depth backlog tracked.
+**Architecturally Mature (L3)** - platform memory closed; depth backlog tracked.

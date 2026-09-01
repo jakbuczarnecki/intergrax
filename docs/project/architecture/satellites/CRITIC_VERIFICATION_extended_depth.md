@@ -1,20 +1,20 @@
-# CRITIC_VERIFICATION — §7+ extended architecture
+# CRITIC_VERIFICATION - §7+ extended architecture
 
 **Parent hub:** [`CRITIC_VERIFICATION.md`](../CRITIC_VERIFICATION.md)
 
 > [!CAUTION]
-> **CURRENT IMPLEMENTATION SNAPSHOT — NOT TARGET CANON**
+> **CURRENT IMPLEMENTATION SNAPSHOT - NOT TARGET CANON**
 >
 > This satellite documents the **shipped Critic / CVL runtime**. Target architecture: [`DECISION_VERIFICATION.md`](../DECISION_VERIFICATION.md) · [`DECISION_SYSTEM.md`](../DECISION_SYSTEM.md).
-> Route target readers to Decision Verification satellites — not this file.
+> Route target readers to Decision Verification satellites - not this file.
 
 
 ## 7. Component architecture
 
 ```text
 Tier-3  ApplicationEnvironmentProfile
-           ├── evaluation_profile      (existing — registry, shadow, trends)
-           └── critic_profile          (new — L1/L2 toggles, thresholds, rubric refs)
+           ├── evaluation_profile      (existing - registry, shadow, trends)
+           └── critic_profile          (new - L1/L2 toggles, thresholds, rubric refs)
 
 Tier-1  Critic & Verification Layer (CVL)
            ├── CriticOrchestrator           ← single entry: verify_partial / verify_final
@@ -22,7 +22,7 @@ Tier-1  Critic & Verification Layer (CVL)
            ├── L1Gateway                    ← invokes eval.judge / eval.trajectory via ToolRuntime
            ├── EvaluatorLoopExecutor        ← critique→revise routing in GraphExecutor
            ├── CriticTraceEmitter           ← trace steps + registry observations
-           └── CriticPolicyBridge           ← maps verdict → retry / HITL / fail / continue (**Done** — `policy_bridge.py`)
+           └── CriticPolicyBridge           ← maps verdict → retry / HITL / fail / continue (**Done** - `policy_bridge.py`)
 
 Tier-0  Primitives
            ├── NexusValidationEngine        (existing)
@@ -30,8 +30,8 @@ Tier-0  Primitives
            ├── eval.trajectory                (new tool)
            ├── eval.record_observation        (existing)
            ├── OnlineEvaluationRegistry       (existing)
-           ├── ReplayEngine / metrics         (existing — trajectory input)
-           └── evaluation_automation          (existing — aggregate rule + judge scores)
+           ├── ReplayEngine / metrics         (existing - trajectory input)
+           └── evaluation_automation          (existing - aggregate rule + judge scores)
 
 Tier-2  Domain
            ├── ValidatorAgent / EvaluatorAgent graph nodes
@@ -42,14 +42,14 @@ Tier-2  Domain
 
 ### 7.1 CriticOrchestrator (Tier-1)
 
-**Module:** `intergrax/runtime/critic/critic_orchestrator.py` (**Done** — CRIT-V-3.1)
+**Module:** `intergrax/runtime/critic/critic_orchestrator.py` (**Done** - CRIT-V-3.1)
 
 **Responsibilities:**
 
 - Accept `CriticRequest` (scope, artifact, context, enabled layers).
 - Run L0 → L1 → L2 in order; short-circuit on hard fail.
 - Return `CriticVerdict` with per-layer results and combined action.
-- Never call LLM directly — delegate L1 to Tier-0 tools via `ToolRuntime`.
+- Never call LLM directly - delegate L1 to Tier-0 tools via `ToolRuntime`.
 
 **Non-responsibilities:** Rubric authoring, domain revise logic, graph scheduling.
 
@@ -65,10 +65,10 @@ Wraps existing validation path:
 
 Invokes:
 
-- `eval.judge` — semantic scoring against `RubricSpec` (LLM-as-judge via separate critic profile)
-- `eval.trajectory` — **deterministic** process scoring from replayed trace slice (tool errors, duplicates, denied calls)
+- `eval.judge` - semantic scoring against `RubricSpec` (LLM-as-judge via separate critic profile)
+- `eval.trajectory` - **deterministic** process scoring from replayed trace slice (tool errors, duplicates, denied calls)
 
-For **LLM-based trajectory regression** in offline eval harnesses, compose the `eval.trajectory_judge` skill (`eval.judge` + `eval.trajectory` + `eval.record_observation`) — not a separate Tier-1 gateway path.
+For **LLM-based trajectory regression** in offline eval harnesses, compose the `eval.trajectory_judge` skill (`eval.judge` + `eval.trajectory` + `eval.record_observation`) - not a separate Tier-1 gateway path.
 
 Uses **separate** `LLMProfile` (critic profile) from producer agent for `eval.judge` only.
 
@@ -106,10 +106,10 @@ Wiring mirrors EVAL phase: `wire_application_critic()` → `RuntimeConfig` → p
 
 ## 8. Core contracts
 
-**Package:** `intergrax/runtime/critic/contracts.py` — **Done** (CRIT-V-1)
+**Package:** `intergrax/runtime/critic/contracts.py` - **Done** (CRIT-V-1)
 
 ```python
-# Conceptual — implement in CRIT-V-1
+# Conceptual - implement in CRIT-V-1
 
 class CriticScope(str, Enum):
     NODE_PARTIAL = "node_partial"
@@ -152,7 +152,7 @@ class CriticRequest(BaseModel):
 | Tool ID | Input | Output |
 |---------|-------|--------|
 | `eval.judge` | output text, rubric, reference context, optional golden | score 0–1, reasons, passed |
-| `eval.trajectory` | run_id or trace slice, min_score threshold | score, process anomaly flags, reasons (heuristic — not LLM rubric) |
+| `eval.trajectory` | run_id or trace slice, min_score threshold | score, process anomaly flags, reasons (heuristic - not LLM rubric) |
 
 Both tools append optional `OnlineEvaluationObservation` when registry bound.
 
@@ -238,7 +238,7 @@ sequenceDiagram
     CVL->>Reg: optional observation
 ```
 
-**Selection:** `select_coordination_pattern()` may recommend `EVALUATOR_LOOP` when complexity/risk high and latency budget allows — existing V-MA catalog.
+**Selection:** `select_coordination_pattern()` may recommend `EVALUATOR_LOOP` when complexity/risk high and latency budget allows - existing V-MA catalog.
 
 ---
 
@@ -248,7 +248,7 @@ CVL answers correctness questions; it does **not** silently grant authority for 
 
 **Normative rule:** Verification may block, escalate, request more evidence, request HITL, or mark a result as insufficient. Verification **MUST NOT** silently authorize high-risk irreversible side effects based only on probabilistic or LLM-based judgment.
 
-Verification is a **Harness/runtime concern** — orchestrated through `CriticOrchestrator`, policy bridges, and HITL gates — not a private agent decision buried in narrative output.
+Verification is a **Harness/runtime concern** - orchestrated through `CriticOrchestrator`, policy bridges, and HITL gates - not a private agent decision buried in narrative output.
 
 **Cross-refs:** [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §8 · [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine) · [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) · [`TOOLS.md`](TOOLS.md) · [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md) · [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md#governance-boundary) · [`CODE_CRAFT.md`](CODE_CRAFT.md#codecraft-safety-boundary)
 
@@ -258,7 +258,7 @@ Verification is a **Harness/runtime concern** — orchestrated through `CriticOr
 
 Normative authority model for the L0 / L1 / L2 stack (§6). Layers compose; they do not substitute for one another on high-risk paths.
 
-### L0 — Deterministic verification
+### L0 - Deterministic verification
 
 - schema validation
 - contract validation
@@ -271,7 +271,7 @@ Normative authority model for the L0 / L1 / L2 stack (§6). Layers compose; they
 
 L0 **MAY** block execution. L0 **SHOULD** run before L1 whenever possible.
 
-### L1 — Semantic / probabilistic verification
+### L1 - Semantic / probabilistic verification
 
 - LLM-as-judge
 - rubric-based semantic evaluation
@@ -282,7 +282,7 @@ L0 **MAY** block execution. L0 **SHOULD** run before L1 whenever possible.
 
 L1 **MAY** recommend pass / fail / escalate. L1 **MUST NOT** be the only approval mechanism for irreversible high-risk side effects.
 
-### L2 — Human / authoritative verification
+### L2 - Human / authoritative verification
 
 - human approval
 - business owner approval
@@ -305,7 +305,7 @@ Hard rules for side effects that are irreversible, externally visible, or policy
 - Semantic confidence alone **MUST NOT** override deterministic validation failure.
 - Human approval boundaries must be managed by Nexus / HITL mechanisms, not ad-hoc agent messages.
 - If verification cannot establish sufficient confidence, the runtime should escalate, degrade, request human review, or stop.
-- Verification results must be traceable through the observability spine (`RuntimeEvent` / `CriticTraceEmitter` — [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine)).
+- Verification results must be traceable through the observability spine (`RuntimeEvent` / `CriticTraceEmitter` - [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine)).
 
 ---
 
@@ -369,7 +369,7 @@ Before adding or modifying verification behavior, Cursor must verify:
 | `critic_cost_budget_tokens` | Cap L1 spend per run |
 | `human_review_on_borderline` | Score in [0.6, threshold) → HITL |
 
-Integrates with existing `RuntimePolicyEngine` — no agent-specific branches.
+Integrates with existing `RuntimePolicyEngine` - no agent-specific branches.
 
 ---
 
@@ -390,12 +390,12 @@ Integrates with existing `RuntimePolicyEngine` — no agent-specific branches.
 | Level | CVL capability |
 |-------|----------------|
 | **L0** | Structural validation only (current baseline) |
-| **L1** | L0 + registry wiring (Phase EVAL — Done) |
+| **L1** | L0 + registry wiring (Phase EVAL - Done) |
 | **L2** | L1 + `eval.judge` + `CriticProfile` + partial hooks |
 | **L3** | L2 + trajectory eval + evaluator-loop executor + semantic offline runner |
 | **L4** | L3 + adaptive critic threshold proposals + human-calibrated judge baseline in CI |
 
-**Current:** **L3+** (CRIT-V-0…7 + FOLLOWUP complete, 2026-06-13 layer completion audit). **Next:** L4 adaptive critic thresholds (deferred — AHIA / product gate).
+**Current:** **L3+** (CRIT-V-0…7 + FOLLOWUP complete, 2026-06-13 layer completion audit). **Next:** L4 adaptive critic thresholds (deferred - AHIA / product gate).
 
 ---
 
@@ -405,7 +405,7 @@ Integrates with existing `RuntimePolicyEngine` — no agent-specific branches.
 - Domain rubric library in Tier-0/Tier-1.
 - Replacing human compliance workflows.
 - Second evaluation registry or trace system.
-- FLOW-8 reference product app (remains §6.3 deferred) — CRIT-V may use lab harness only.
+- FLOW-8 reference product app (remains §6.3 deferred) - CRIT-V may use lab harness only.
 
 ---
 
@@ -423,7 +423,7 @@ Integrates with existing `RuntimePolicyEngine` — no agent-specific branches.
 
 ## 16. Implementation tracking
 
-See [`plan/CRITIC_VERIFICATION.md) — **Phase CRIT-V**.
+See [`plan/CRITIC_VERIFICATION.md) - **Phase CRIT-V**.
 
 | Wave | Focus | Status |
 |------|-------|--------|
@@ -441,11 +441,11 @@ See [`plan/CRITIC_VERIFICATION.md) — **Phase CRIT-V**.
 
 ## 17. Forbidden patterns
 
-- **Fat Critic Nexus** — domain rubrics or revise logic in Tier-1.
-- **Self-judge** — same LLM profile for producer and critic without policy override.
-- **L1-only verification** — skipping L0 for speed.
-- **Silent pass** — critic disabled but terminal `COMPLETED` on high-risk tasks when `require_critic_on_completion=true`.
-- **Duplicate registry** — critic scores stored outside `OnlineEvaluationRegistry`.
+- **Fat Critic Nexus** - domain rubrics or revise logic in Tier-1.
+- **Self-judge** - same LLM profile for producer and critic without policy override.
+- **L1-only verification** - skipping L0 for speed.
+- **Silent pass** - critic disabled but terminal `COMPLETED` on high-risk tasks when `require_critic_on_completion=true`.
+- **Duplicate registry** - critic scores stored outside `OnlineEvaluationRegistry`.
 
 ---
 
@@ -454,7 +454,7 @@ See [`plan/CRITIC_VERIFICATION.md) — **Phase CRIT-V**.
 - Canon §29 Validation Model · §42.43 Multi-Agent Flow · §53.10 Coordination patterns
 - [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §18 Evaluation hooks
 - [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) Appendix U (Evaluation) · Appendix W (Critic)
-- [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) — L4 verify loop consumes CVL signals
+- [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) - L4 verify loop consumes CVL signals
 
 ---
 

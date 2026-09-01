@@ -23,7 +23,7 @@ No session may silently absorb another session's authority.
 
 ## 1. Topology
 
-### Core operating topology — six sessions
+### Core operating topology - six sessions
 
 | # | Session |
 |---|---------|
@@ -43,7 +43,7 @@ No session may silently absorb another session's authority.
 
 VIS-3A and COMM are **not** Product Sessions and **not** Portfolio Control.
 
-### Counts — do not confuse them
+### Counts - do not confuse them
 
 | Count | Value | Meaning |
 |-------|-------|---------|
@@ -122,16 +122,16 @@ Public documentation must **never** become upstream source of product truth.
 
 Every material handoff must include:
 
-1. **product / session** — which Product Session submits
-2. **event / gate** — what is being requested
-3. **exact relevant SHA** — commit evidence applies to
-4. **authoritative artifact(s)** — docs, tests, proof outputs
-5. **claim / request** — what Product Session asks Portfolio Control to accept
-6. **evidence** — repo-verifiable support
-7. **known limitations** — explicit gaps or caveats
-8. **platform pressure yes/no** — whether G4 may be required
+1. **product / session** - which Product Session submits
+2. **event / gate** - what is being requested
+3. **exact relevant SHA** - commit evidence applies to
+4. **authoritative artifact(s)** - docs, tests, proof outputs
+5. **claim / request** - what Product Session asks Portfolio Control to accept
+6. **evidence** - repo-verifiable support
+7. **known limitations** - explicit gaps or caveats
+8. **platform pressure yes/no** - whether G4 may be required
 9. **shared files / components touched or proposed**
-10. **requested Portfolio Control action** — accept, classify, defer, etc.
+10. **requested Portfolio Control action** - accept, classify, defer, etc.
 
 This defines **semantic handoff content** only. No transport protocol or tool dependency is required.
 
@@ -163,10 +163,10 @@ Ordinary local implementation within product scope requires **no** Portfolio Con
 1. **reviewed SHA(s)**
 2. **evidence checked**
 3. **decision**
-4. **consequence** — what this means for portfolio / product
+4. **consequence** - what this means for portfolio / product
 5. **next allowed product action**
-6. **central artifacts updated or not** — control card, status, ledger, decision log
-7. **audit / G4 requirement** — if applicable
+6. **central artifacts updated or not** - control card, status, ledger, decision log
+7. **audit / G4 requirement** - if applicable
 
 Product Session must **not** reinterpret a Portfolio Control decision into stronger permission than stated.
 
@@ -264,7 +264,7 @@ After freeze:
 
 Audit engine does **not** own T0. T0 methodology: [PRODUCT_REUSE_PROOF.md](../plans/PRODUCT_REUSE_PROOF.md).
 
-LKW has no retrospective T0 — historical reference baseline differs.
+LKW has no retrospective T0 - historical reference baseline differs.
 
 ---
 
@@ -418,7 +418,7 @@ For a material public claim, VIS-3A should be able to trace:
 
 May come only from:
 
-- frozen selection record — [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md)
+- frozen selection record - [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md)
 - explicit Pre-bootstrap state
 - approved product hypothesis wording
 
@@ -444,7 +444,7 @@ When VIS needs a stronger material claim, VIS requests **fact validation**, not 
 | **ACCEPTED AS WRITTEN** | Claim supported as stated |
 | **ACCEPTED WITH QUALIFIER** | Claim allowed with explicit limitation |
 | **NOT SUPPORTED** | Claim exceeds current evidence |
-| **STALE — REVERIFY** | Underlying evidence may have changed |
+| **STALE - REVERIFY** | Underlying evidence may have changed |
 | **REQUIRES PRODUCT SOURCE** | Product Session artifact needed |
 | **REQUIRES PROOF / AUDIT EVIDENCE** | Additional evidence required |
 
@@ -692,7 +692,7 @@ No sessions are launched by MP-20.
 
 ## 30. Coordination examples
 
-### Example A — Contract Recovery discovers missing shared approval mechanism
+### Example A - Contract Recovery discovers missing shared approval mechanism
 
 ```text
 Contract Recovery Product Session identifies shared-platform pressure
@@ -706,7 +706,7 @@ Contract Recovery Product Session identifies shared-platform pressure
   → cross-product notification if material
 ```
 
-### Example B — COMM strengthens LKW proof
+### Example B - COMM strengthens LKW proof
 
 ```text
 COMM completes authorized proof hardening
@@ -718,7 +718,7 @@ COMM completes authorized proof hardening
 
 COMM proof success does not upgrade LKW commercial validation or platform-wide reuse claims.
 
-### Example C — VIS wants "five production-ready products"
+### Example C - VIS wants "five production-ready products"
 
 ```text
 VIS-3A requests fact validation
@@ -727,7 +727,7 @@ VIS-3A requests fact validation
   → VIS must use truthful current statuses
 ```
 
-### Example D — Deployment Guardian wants direct GitHub-specific logic in shared core
+### Example D - Deployment Guardian wants direct GitHub-specific logic in shared core
 
 ```text
 Deployment Guardian Product Session → G4 escalation
@@ -736,7 +736,7 @@ Deployment Guardian Product Session → G4 escalation
   → product keeps provider logic in product tier
 ```
 
-### Example E — G6 / T1 reuse demonstration
+### Example E - G6 / T1 reuse demonstration
 
 ```text
 Product Session declares G6 ready
@@ -758,8 +758,8 @@ Audit verdict and T1 acceptance remain separate artifacts.
 | Product implementation truth | Product Session / exact repo SHA |
 | Product architecture | Product Session accepted G1 artifact |
 | Product gate acceptance | Portfolio Control |
-| Portfolio status | Portfolio Control — [PORTFOLIO_STATUS.md](PORTFOLIO_STATUS.md) |
-| Platform impact classification | Portfolio Control — [PLATFORM_IMPACT_LEDGER.md](PLATFORM_IMPACT_LEDGER.md) |
+| Portfolio status | Portfolio Control - [PORTFOLIO_STATUS.md](PORTFOLIO_STATUS.md) |
+| Platform impact classification | Portfolio Control - [PLATFORM_IMPACT_LEDGER.md](PLATFORM_IMPACT_LEDGER.md) |
 | Audit findings | `docs/audit_results/` campaign |
 | Audit remediation state | `docs/audit_results/` campaign |
 | T0 / T1 methodology | [PRODUCT_REUSE_PROOF.md](../plans/PRODUCT_REUSE_PROOF.md) |

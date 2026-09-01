@@ -17,7 +17,7 @@ and live/offline evidence remain in [`RAG.md`](../../architecture/RAG.md).
 
 ---
 
-## Developer journey — chunker / retriever / reranker (D1–D16)
+## Developer journey - chunker / retriever / reranker (D1–D16)
 
 The three public RAG entry-point surfaces share discovery semantics but differ in contracts and DI. Scores below apply to the **external-EP author path**.
 
@@ -26,11 +26,11 @@ The three public RAG entry-point surfaces share discovery semantics but differ i
 | D | Topic | Status | Section |
 |---|-------|--------|---------|
 | D1 Purpose | COMPLETE | §0, §4 |
-| D2 Public contract | COMPLETE | §4 — `BaseChunkingStrategy` |
+| D2 Public contract | COMPLETE | §4 - `BaseChunkingStrategy` |
 | D3 Minimal implementation | COMPLETE | §4 |
 | D4 External package | COMPLETE | §15 |
-| D5 Local / host path | COMPLETE | §0.2 — advanced composition only |
-| D6 Configuration | COMPLETE | §0.3 — `RagProfile.chunking_strategy_id` |
+| D5 Local / host path | COMPLETE | §0.2 - advanced composition only |
+| D6 Configuration | COMPLETE | §0.3 - `RagProfile.chunking_strategy_id` |
 | D7 Secrets | N/A | |
 | D8 DI | COMPLETE | No-arg EP constructor; `register_chunking_strategy_plugin` for composition |
 | D9 Registration/discovery | COMPLETE | §1, §0.1 |
@@ -78,26 +78,26 @@ The three public RAG entry-point surfaces share discovery semantics but differ i
 documents
   → chunker (BaseChunkingStrategy)     # index time
   → embed + vector index
-  → retriever (BaseRetriever)          # query time — candidate set
-  → reranker (BaseReranker)            # optional — ranked context
+  → retriever (BaseRetriever)          # query time - candidate set
+  → reranker (BaseReranker)            # optional - ranked context
   → Context Engineering (builtin.rag)  # not a RAG EP surface
 ```
 
-Chunkers transform `KnowledgeDocument` sequences. Retrievers map `RetrieverQuery` → `RetrievalHit`. Rerankers reorder `RerankerCandidate` → `RerankerResult`. Vector backends use Integration Library — not `intergrax.rag.*` EP groups.
+Chunkers transform `KnowledgeDocument` sequences. Retrievers map `RetrieverQuery` → `RetrievalHit`. Rerankers reorder `RerankerCandidate` → `RerankerResult`. Vector backends use Integration Library - not `intergrax.rag.*` EP groups.
 
 ### Discovery and trust (all Platform Plugin surfaces)
 
 - `installed` ≠ `discovered` ≠ `enabled` ≠ `production-qualified`
 - Third-party plugins are **trusted in-process Python**
 - Qualification is **host-owned semantic approval**, not attestation
-- Secrets stay in host/integration configuration — not EP values
+- Secrets stay in host/integration configuration - not EP values
 - No universal Platform Plugin lifecycle/unload manager
 
 ### 0.1 Discovery timing (chunker / retriever / reranker)
 
 RAG discovery is opt-in: `discover_entry_points=True` on bootstrap functions or `INTERGRAX_DISCOVER_PLUGINS=true`. Built-in strategies register first; EP plugins append. Duplicate component IDs fail in native registries (`ValueError`). See §1 for conflict policy details.
 
-### 0.2 Local / host path — classification
+### 0.2 Local / host path - classification
 
 RAG local authoring is **not** equivalent to Tools scaffold + `register_tool_plugin()`. Classify as **external-EP-first** with optional **advanced host composition**:
 
@@ -109,7 +109,7 @@ RAG local authoring is **not** equivalent to Tools scaffold + `register_tool_plu
 
 Do not document these composition APIs as a portable local plugin framework. They require host-owned bootstrap code in the same process.
 
-### 0.3 Runtime path — RagProfile to active component
+### 0.3 Runtime path - RagProfile to active component
 
 ```text
 ApplicationEnvironmentProfile
@@ -140,8 +140,8 @@ Tier-3 hosts wire via `intergrax.applications._shared.rag_runtime_bridge.resolve
 | Layer | Meaning |
 |-------|---------|
 | Contract validity | Plugin implements `BaseChunkingStrategy` / `BaseRetriever` / `BaseReranker` (or plugin bases) |
-| Platform production qualification | Host `require_production_qualification` gates — compatible ≠ qualified |
-| Domain / live backend qualification | Separate evidence for vector stores, live PgVector/Chroma/Neo4j, etc. — see [`RAG.md`](../../architecture/RAG.md) qualification records |
+| Platform production qualification | Host `require_production_qualification` gates - compatible ≠ qualified |
+| Domain / live backend qualification | Separate evidence for vector stores, live PgVector/Chroma/Neo4j, etc. - see [`RAG.md`](../../architecture/RAG.md) qualification records |
 
 External EP registration does not grant `LIVE_QUALIFIED` or `STABLE` provider status.
 
@@ -152,13 +152,13 @@ External EP registration does not grant `LIVE_QUALIFIED` or `STABLE` provider st
 The eight surfaces do not share one registration mechanism. The category in the
 second column is intentional:
 
-- **A — `PUBLIC_EXTERNAL_PLUGIN`**: an installed external package can register
+- **A - `PUBLIC_EXTERNAL_PLUGIN`**: an installed external package can register
   without changing Intergrax core.
-- **B — `INTERNAL_REGISTRY_EXTENSION`**: the contract is pluggable, but the
+- **B - `INTERNAL_REGISTRY_EXTENSION`**: the contract is pluggable, but the
   registration currently happens in composition or Intergrax-owned bootstrap.
-- **C — `INTEGRATION_CATALOG_PROVIDER`**: the provider is resolved by
+- **C - `INTEGRATION_CATALOG_PROVIDER`**: the provider is resolved by
   Integration Library, not by a RAG component entry-point group.
-- **D — `NOT_PUBLICLY_EXTENSIBLE`**: no supported external path was found.
+- **D - `NOT_PUBLICLY_EXTENSIBLE`**: no supported external path was found.
 
 | Surface | Category | Contract | Registration/discovery | Built-ins and selector | Runtime supplied by Intergrax |
 |---|---|---|---|---|---|

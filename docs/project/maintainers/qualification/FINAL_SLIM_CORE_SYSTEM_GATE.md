@@ -1,7 +1,7 @@
 # FINAL-SLIM-CORE-SYSTEM-GATE
 
 Status kwalifikacji: `READY_FOR_REVIEW`  
-Tryb: qualification only — bez zmian produkcyjnych, packaging, testów i skryptów.
+Tryb: qualification only - bez zmian produkcyjnych, packaging, testów i skryptów.
 
 ## Zakres i walidowany stan
 
@@ -142,7 +142,7 @@ core direct dependencies: 15
 optional direct declarations: 102
 ```
 
-Negatywne próby na tymczasowych kopiach `pyproject.toml` — repozytoryjny plik nie był modyfikowany:
+Negatywne próby na tymczasowych kopiach `pyproject.toml` - repozytoryjny plik nie był modyfikowany:
 
 ```text
 forbidden core: FAIL as expected
@@ -238,8 +238,8 @@ Wynik:
 
 Failures zostały sklasyfikowane:
 
-1. `test_negative_proof_new_import_detected` — `KNOWN_UNRELATED`; testowy subprocess checker zwrócił błąd na stderr, a asercja oczekuje znacznika na stdout. Nie jest to regresja dependency modernization.
-2. `test_docling_strategy_uses_private_handle_and_skips_empty_items` — `ENVIRONMENT`; `docling_core` nie jest instalowane w default/test groups.
+1. `test_negative_proof_new_import_detected` - `KNOWN_UNRELATED`; testowy subprocess checker zwrócił błąd na stderr, a asercja oczekuje znacznika na stdout. Nie jest to regresja dependency modernization.
+2. `test_docling_strategy_uses_private_handle_and_skips_empty_items` - `ENVIRONMENT`; `docling_core` nie jest instalowane w default/test groups.
 
 ### Native LLM i Ollama
 

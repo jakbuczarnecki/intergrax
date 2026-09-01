@@ -19,7 +19,7 @@ An existing harness export `ExecutionBoundaryEventV1` (`execution_boundary_event
 2. Do **not** overload or break harness `ExecutionBoundaryEventV1` / BoundaryAttest golden vectors.
 3. Host composes the event only after successful provider execution **and** successful `GovernedProofProfile` composition.
 4. Event never authorizes or resumes execution; it describes a completed boundary.
-5. Reuse existing task/run/correlation/idempotency identities — never mint a replacement `run_id`.
+5. Reuse existing task/run/correlation/idempotency identities - never mint a replacement `run_id`.
 6. Reuse `canonical_json` + host attestation machinery for signing (see ADR-HOST-ATTESTATION-001).
 
 Rejected: stuffing governed facts into harness EBE `input`/`output` dicts (loses typed invariants; conflates observability planes).

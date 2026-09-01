@@ -82,7 +82,7 @@ Rules:
 
 ## Validation tracks
 
-### Track A — first-contact comprehension
+### Track A - first-contact comprehension
 
 Mandatory for every participant.
 
@@ -91,7 +91,7 @@ Mandatory for every participant.
 | Time box | 15 minutes |
 | Starting point | root README at one pinned commit or tag |
 
-### Track B — technical evaluation navigation
+### Track B - technical evaluation navigation
 
 Required for at least two completed sessions before describing the technical evaluation path as externally validated.
 
@@ -100,7 +100,7 @@ Required for at least two completed sessions before describing the technical eva
 | Time box | 30–60 minutes |
 | Scope | participant may inspect or run documented evaluation/proof paths |
 
-### Track C — LKW workflow and pilot fit
+### Track C - LKW workflow and pilot fit
 
 Used for potential LKW or governed-knowledge users.
 
@@ -306,7 +306,7 @@ Current state after protocol creation:
 Copy and complete for each session. Do not populate with fictional results.
 
 ```markdown
-# Session record — <session-id>
+# Session record - <session-id>
 
 | Field | Value |
 |-------|-------|
@@ -318,7 +318,7 @@ Copy and complete for each session. Do not populate with fictional results.
 | Primary cohort | <cohort> |
 | Prior familiarity | <none / brief / detailed> |
 | Tracks attempted | <A / A+B / A+C / A+B+C> |
-| Track B environment | <OS, Python, tools — or N/A> |
+| Track B environment | <OS, Python, tools - or N/A> |
 | Consent for quotation | <yes / no / partial> |
 
 ## Track A tasks
@@ -363,7 +363,7 @@ Copy and complete for each session. Do not populate with fictional results.
 Copy after a validation wave. Do not populate with fictional results.
 
 ```markdown
-# Aggregate summary — wave <wave-id>
+# Aggregate summary - wave <wave-id>
 
 Pinned ref: <pinned-ref> · Dates: <start>–<end> · Sessions: <count>
 
@@ -373,13 +373,13 @@ Gates: ≥5 sessions · cohorts covered · all Track A attempted · ≥80% pass/
 no unresolved CRITICAL · MAJOR fixed/accepted · links OK · ≥2 Track B · ref recorded ·
 aggregate reviewed · rerun after corrections
 
-Task counts (PASS/FRICTION/FAIL/NOT_RUN): tasks 1–8 — fill per task
+Task counts (PASS/FRICTION/FAIL/NOT_RUN): tasks 1–8 - fill per task
 
 Findings: critical unresolved · major unresolved · resolved · rerun results
 
 Decision: NOT_STARTED / IN_PROGRESS / CHANGES_REQUIRED / VALIDATED_FOR_BOUNDED_OUTREACH / BLOCKED
 
-Claim boundary: documentation comprehension only — not product, real-user, commercial,
+Claim boundary: documentation comprehension only - not product, real-user, commercial,
 security, legal or production-readiness validation.
 ```
 

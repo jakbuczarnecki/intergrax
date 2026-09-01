@@ -1,8 +1,8 @@
-# TIER3_APPLICATION_ENVIRONMENT — embedded detail
+# TIER3_APPLICATION_ENVIRONMENT - embedded detail
 
 **Parent hub:** [`TIER3_APPLICATION_ENVIRONMENT.md`](../TIER3_APPLICATION_ENVIRONMENT.md)
 
-## Architecture fidelity matrix — §20–§51
+## Architecture fidelity matrix - §20–§51
 
 Maps each architecture section to **plan phase**, **implementation status**, **code anchor**, and **acceptance test**. **Done** = architecture row is implemented and gated unless marked *doc-only*.
 
@@ -10,7 +10,7 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 |--------|-------|----------|--------|-------------------|
 | §20 | Shadow workspace lifecycle | H-APP.3.4 · APP-CON-8 · APP-PROD-8 | **Done** | `shadow_wiring.py` · `workspace_cleanup_wiring.py` · `check_workspace_cleanup.py` |
 | §21 | Sandbox lifecycle | H-APP.3.5 · APP-CON-8 · APP-PROD-8 | **Done** | `sandbox_wiring.py` · `workspace_cleanup_wiring.py` · `test_workspace_cleanup_wiring.py` |
-| §22 | `ApplicationEnvironmentProfile` | H-APP.1.* · **APP-EVOL-8** | **Done** — flat §22.1 + bundles §22.6 M1–M3 | `environment_profile` · `test_environment_profile_bundles.py` · ADR-APP-003 |
+| §22 | `ApplicationEnvironmentProfile` | H-APP.1.* · **APP-EVOL-8** | **Done** - flat §22.1 + bundles §22.6 M1–M3 | `environment_profile` · `test_environment_profile_bundles.py` · ADR-APP-003 |
 | §23 | Interaction postures | H-APP-DOC.* · H-APP-WIRING.* | **Done** | §23.7 matrix closed on reference hosts |
 | §24 | `ApplicationManifest` / `AgentBinding` | N.1 · H-APP.1.2 | **Done** | `manifest.py` · `test_manifest_conformance.py` |
 | §25 | `run_task` / `HarnessApplication` / `ApplicationHost` | APP-CON-1 · N.* | **Done** | `harness/app.py` · `test_application_host_wiring.py` |
@@ -46,7 +46,7 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 
 Single register for all open architecture rows. **Execution order:** [§6.2y](.#62y-phase-app-backlog-execution-order-post-freeze).
 
-### APP-CON — host contracts (architecture §25–§32 · §42 · §48)
+### APP-CON - host contracts (architecture §25–§32 · §42 · §48)
 
 | ID | Arch § | Deliverable | Status | Acceptance |
 |----|--------|-------------|--------|------------|
@@ -56,12 +56,12 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](.#
 | APP-CON-4 | §48 | Artifact ref models | **Done** | `application_artifacts.py` |
 | APP-CON-5 | §32.6 | Hook timeout · error→BLOCK · audit events | **Done** | `test_hook_runtime_guard.py` · product 250ms timeout |
 | APP-CON-6 | §26 · §48 | `RunArtifactBundle` on `ApplicationRunSummary.metadata` | **Done** | `test_task_finisher_artifact_bundle.py` |
-| APP-CON-7 | §35 · §44 | Scenario matrix gate — UC-A* minimum per posture | **Done** | `tier3_scenario_matrix_wiring.py` · `check_tier3_scenario_matrix.py` · `-m tier3_scenario` |
+| APP-CON-7 | §35 · §44 | Scenario matrix gate - UC-A* minimum per posture | **Done** | `tier3_scenario_matrix_wiring.py` · `check_tier3_scenario_matrix.py` · `-m tier3_scenario` |
 | APP-CON-8 | §20–§21 | Shadow/sandbox refs in env state + lifespan cleanup | **Done** | `workspace_cleanup_wiring.py` · `test_workspace_cleanup_wiring.py` |
 | APP-CON-DX.1 | §31 · §45 · §47 | Author guide APP appendix (mental model + checklist) | **Done** | `APPLICATION_CREATION_GUIDE.md` |
 | APP-CON-DX.2 | §37 | Regenerate domain audit prompt for §24–§51 | **Done** | `check_tier3_audit_prompt.py` |
 
-### APP-PROD — release gates (architecture §40 · §46)
+### APP-PROD - release gates (architecture §40 · §46)
 
 | ID | Arch § | Deliverable | Status | Acceptance |
 |----|--------|-------------|--------|------------|
@@ -75,7 +75,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](.#
 | APP-PROD-8 | §20–§21 | `check_workspace_cleanup` lifespan hooks | **Done** | `check_workspace_cleanup.py` · `test_check_workspace_cleanup.py` |
 | APP-PROD-9 | §40.2 | Wire APP-PROD-1 into `pytest -m gate` / CI | **Done** | `test_check_application_production_gates.py` · CI `gate-governance-tier` |
 
-### APP-EVOL — evolution (architecture §49)
+### APP-EVOL - evolution (architecture §49)
 
 | ID | Deliverable | Status | Acceptance |
 |----|-------------|--------|------------|
@@ -87,25 +87,25 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](.#
 | APP-EVOL-5 | `ApplicationRecoveryContract` on `ReliabilityProfile` | **Done** | `application_recovery_contract.py` · `check_application_recovery_contract.py` |
 | APP-EVOL-6 | `ApplicationEnvironmentDiff` + `doctor diff-app` | **Done** | `check_application_environment_diff.py` |
 | APP-EVOL-7 | `ApplicationPackage` + dependency resolver | **Done** | `check_application_package.py` |
-| APP-EVOL-8 | Hierarchical profile bundles (P1-ARCH-01 · §22.6) | **Done** — M1–M3 | ADR-APP-003 · phases M1–M3 below |
+| APP-EVOL-8 | Hierarchical profile bundles (P1-ARCH-01 · §22.6) | **Done** - M1–M3 | ADR-APP-003 · phases M1–M3 below |
 
-### APP-EVOL-8 — Hierarchical profile bundles (P1-ARCH-01)
+### APP-EVOL-8 - Hierarchical profile bundles (P1-ARCH-01)
 
-**Status:** **Done** (2026-06-18) — architecture §22.6 + ADR-APP-003 **accepted**; **M1–M3 implemented** (nested bundles, flat shims, digest parity, schema gate, `spec_version` 2.0 wire + migration tooling)  
+**Status:** **Done** (2026-06-18) - architecture §22.6 + ADR-APP-003 **accepted**; **M1–M3 implemented** (nested bundles, flat shims, digest parity, schema gate, `spec_version` 2.0 wire + migration tooling)  
 **Goal:** Reduce flat `ApplicationEnvironmentProfile` namespace growth (43+ top-level fields) by nesting existing sub-profiles into seven bundles **without** changing `APP-INV-06`, §41 primitives, or Nexus wiring in M1–M2.
 
 **ADR:** [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md)
 
 | ID | Phase | Deliverable | Status | Priority | Acceptance |
 |----|-------|-------------|--------|----------|------------|
-| APP-EVOL-8-DOC | — | Architecture §22.6 + plan register + cross-doc sync | **Done** | **Critical** | This plan row · `architecture/TIER3_APPLICATION_ENVIRONMENT.md` §22.6 |
+| APP-EVOL-8-DOC | - | Architecture §22.6 + plan register + cross-doc sync | **Done** | **Critical** | This plan row · `architecture/TIER3_APPLICATION_ENVIRONMENT.md` §22.6 |
 | APP-EVOL-8.1 | M1 | Bundle models (`HostMeta`, `SecurityEnvelope`, `CapabilityBundle`, `CognitionBundle`, `GovernanceBundle`, `TopologyBundle`, `IsolationBundle`, `EnvironmentExtensions`) nested on root | **Done** | `environment_profile/bundles.py` · `extra=forbid` on all bundles |
-| APP-EVOL-8.2 | M1 | Flat `@property` shims (`env.tool_profile` → `env.capabilities.tools`) — zero wiring diff | **Done** | `environment_profile/root.py` · existing `*_wiring.py` tests green |
+| APP-EVOL-8.2 | M1 | Flat `@property` shims (`env.tool_profile` → `env.capabilities.tools`) - zero wiring diff | **Done** | `environment_profile/root.py` · existing `*_wiring.py` tests green |
 | APP-EVOL-8.3 | M1 | Flat JSON deserializer + bundle-normalized snapshot/diff digest parity | **Done** | `test_environment_profile_bundles.py` · `normalization.py` · `environment_snapshot_wiring.py` |
 | APP-EVOL-8.4 | M2 | Per-bundle presets (`CapabilityBundle.lab()`, `GovernanceBundle.product()`, …) | **Done** | `bundles.py` · `lab_defaults()` / `product_defaults()` built from bundles |
-| APP-EVOL-8.5 | M2 | Shared capability packs — reusable `CapabilityBundle` across manifests | **Done** | `reference_capability_bundle.py` · reference hosts import shared pack |
-| APP-EVOL-8.6 | M3 | `spec_version: "2.0.0"` — nested JSON canonical; flat top-level deprecated | **Done** | Migration guide · `ProfileMigration` validator extension |
-| APP-EVOL-8.7 | M1 | Gate: `check_environment_profile_bundle_schema.py` — export schema includes bundles | **Done** | `scripts/maintenance/check_environment_profile_bundle_schema.py` |
+| APP-EVOL-8.5 | M2 | Shared capability packs - reusable `CapabilityBundle` across manifests | **Done** | `reference_capability_bundle.py` · reference hosts import shared pack |
+| APP-EVOL-8.6 | M3 | `spec_version: "2.0.0"` - nested JSON canonical; flat top-level deprecated | **Done** | Migration guide · `ProfileMigration` validator extension |
+| APP-EVOL-8.7 | M1 | Gate: `check_environment_profile_bundle_schema.py` - export schema includes bundles | **Done** | `scripts/maintenance/check_environment_profile_bundle_schema.py` |
 
 **Explicitly out of scope:** second composition root; Nexus profile fork; moving `AgentBinding` into bundles; marketplace UI.
 
@@ -118,9 +118,9 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](.#
 3. **Declarative migration:** register `ProfileMigration` with `from_spec_version` `1.0.0`, `to_spec_version` `2.0.0`, `breaking=true`, and `field_transforms` (or use `standard_profile_spec_v2_migration()`).
 4. **Runtime apply:** `apply_profile_migration(profile, migration)` lifts flat JSON, bumps `meta.spec_version`, and validates nested canonical wire.
 5. **Digest parity:** `bundle_normalized_payload()` / snapshot digests remain stable for semantically equal profiles; `spec_version` bump is intentional wire metadata.
-6. **STRICT hosts:** adopt 2.0 only after golden replay / scenario matrix per §44 — reference hosts may remain on 1.x until product cutover.
+6. **STRICT hosts:** adopt 2.0 only after golden replay / scenario matrix per §44 - reference hosts may remain on 1.x until product cutover.
 
-### APP-OPS — platform operations (architecture §50)
+### APP-OPS - platform operations (architecture §50)
 
 | ID | Deliverable | Status | Acceptance |
 |----|-------------|--------|------------|
@@ -131,7 +131,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](.#
 
 ---
 
-## Cross-plan — §43 budget / token governance
+## Cross-plan - §43 budget / token governance
 
 Architecture §43 is **implemented jointly** with ACP §25.4–§25.5. Tier-3 configures; harness enforces; agents read.
 
@@ -145,7 +145,7 @@ Architecture §43 is **implemented jointly** with ACP §25.4–§25.5. Tier-3 co
 | CI gate | ACP | **ACP-TOK-CI** | **Done** |
 | APP-PROD-7 host gate | TIER3 | **APP-PROD-7** | **Done** |
 
-**Fidelity rule:** §43 **Done** — ACP-TOK-* complete, APP-CON-3 seeds `ActiveBudgetState`, APP-PROD-7 gates STRICT product manifests.
+**Fidelity rule:** §43 **Done** - ACP-TOK-* complete, APP-CON-3 seeds `ActiveBudgetState`, APP-PROD-7 gates STRICT product manifests.
 
 ---
 

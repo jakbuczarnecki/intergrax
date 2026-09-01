@@ -13,8 +13,8 @@ Phase O unified `tool_ids` on plans, but `ToolRuntime.invoke` only executed pipe
 
 Agents and engine plans need two equivalent paths to catalog tools:
 
-1. **Plan dispatch** — `ToolInvocationPlan.tool_ids` → `RuntimeToolInvoker` per id.
-2. **Gateway dispatch** — `ToolRequest(tool_name=<registered tool_id>)` → same invoker.
+1. **Plan dispatch** - `ToolInvocationPlan.tool_ids` → `RuntimeToolInvoker` per id.
+2. **Gateway dispatch** - `ToolRequest(tool_name=<registered tool_id>)` → same invoker.
 
 ## Decision
 
@@ -22,7 +22,7 @@ Agents and engine plans need two equivalent paths to catalog tools:
 2. **`ToolRuntime.invoke`** dispatches non-shim `tool_ids` through `RuntimeToolInvoker` after RAG/websearch steps and before/alongside `run_bounded_tool_loop` / `ctx.invoke_tool` when `use_tools=True`.
 3. **`RuntimeToolGateway`** routes any registered `tool_id` (not in the capability alias set) to the invoker when `runtime_state` is bound; runtime-bound and sandbox tools keep existing paths in `BoundToolGateway`.
 4. **`ToolInvocationPlan`** gains optional `tool_inputs: Mapping[str, Mapping[str, Any]]` for per-id payloads (also accepted on `nexus.capability_plan` payloads).
-5. Input coercion uses `contract.input_schema.model_validate(dict(raw or {}))` — same as runtime-bound tools.
+5. Input coercion uses `contract.input_schema.model_validate(dict(raw or {}))` - same as runtime-bound tools.
 
 **Rejected:** Re-planning catalog ids through `run_bounded_tool_loop` / `ctx.invoke_tool` only (loses deterministic plan semantics). Duplicating invoke logic inside the gateway (violates single invoker enforcement).
 
@@ -41,7 +41,7 @@ Agents and engine plans need two equivalent paths to catalog tools:
 
 ## Compliance
 
-- Tier boundaries preserved — dispatch composes existing `RuntimeToolInvoker`; no agent-specific Nexus branches.
+- Tier boundaries preserved - dispatch composes existing `RuntimeToolInvoker`; no agent-specific Nexus branches.
 - `ToolAccessPolicy` and `ToolScopePolicy` apply on both paths.
 - Architecture and plan TOOLS pair updated.
 

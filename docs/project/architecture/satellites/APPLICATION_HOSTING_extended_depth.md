@@ -1,4 +1,4 @@
-# APPLICATION_HOSTING — extended depth
+# APPLICATION_HOSTING - extended depth
 
 **Parent hub:** [`APPLICATION_HOSTING.md`](../APPLICATION_HOSTING.md)  
 **Plan:** [`../../maintainers/plans/APPLICATION_HOSTING.md`](../../maintainers/plans/APPLICATION_HOSTING.md)

@@ -1,6 +1,6 @@
-# Tier-3 application layer — readiness checklist
+# Tier-3 application layer - readiness checklist
 
-**Status:** Ready to generate new deployable applications (Phase N complete). **Platform maturity:** APP-CON · APP-PROD · APP-EVOL · APP-OPS registers **Done** — see [TIER3 plan §Master backlog](../docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md#master-implementation-backlog-app-unified). Enterprise marketplace UI and signed package distribution are **P4** (not required for host authoring).
+**Status:** Ready to generate new deployable applications (Phase N complete). **Platform maturity:** APP-CON · APP-PROD · APP-EVOL · APP-OPS registers **Done** - see [TIER3 plan §Master backlog](../docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md#master-implementation-backlog-app-unified). Enterprise marketplace UI and signed package distribution are **P4** (not required for host authoring).
 
 ## Generate a new application
 
@@ -28,7 +28,7 @@ See [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../docs/project/te
 | Tool catalog (optional) | `host/tool_wiring.py` only with scaffold `--full` |
 | Deploy triad | `docker/`, `BUILD_AND_DEPLOY.md`, `ARCHITECTURE.md` § Dependencies |
 | Doc pair | `ARCHITECTURE.md` + `IMPLEMENTATION_PLAN.md` (cross-linked) |
-| Implementation plan | `IMPLEMENTATION_PLAN.md` — local task queue (scaffold emits on create) |
+| Implementation plan | `IMPLEMENTATION_PLAN.md` - local task queue (scaffold emits on create) |
 | HTTP + MCP | `host/factory.py`, `mcp/server.py` |
 | Env + deploy | `.env.example`, `BUILD_AND_DEPLOY.md`, `docker/build-docker.*` |
 | Smoke tests | `tests/host/` |
@@ -98,9 +98,9 @@ See [guides/EXTENSION_AUTHOR_GUIDE.md](../docs/project/technical/guides/EXTENSIO
 | `lab_application` | lab | 8090 | Echo, SignoffProbe, Legal, Research, … | Debug API + integrations lab profile + `INTERGRAX_DISCOVER_PLUGINS` |
 | `legal_application` | product | 8000 | LegalAgent | Contract review product API |
 | `research_application` | product | 8010 | ResearchAgent, SummaryAgent | Multi-agent pipeline |
-| `local_workspace_application` | product | 8020 | LocalIndexer, LocalSearch, LocalSynthesizer | **LKW** — first business product |
-| `dispute_sim_application` | product | 8025 | DisputeIntake, DisputeAnalyst, DisputeStrategist, DisputeScenario | **DSW** — dispute simulation workspace |
-| `intergrax_assistant_application` | lab | 8096 | IntergraxAssistant (+ optional specialists) | **IAA** — harness chat lab, swappable LLM |
+| `local_workspace_application` | product | 8020 | LocalIndexer, LocalSearch, LocalSynthesizer | **LKW** - first business product |
+| `dispute_sim_application` | product | 8025 | DisputeIntake, DisputeAnalyst, DisputeStrategist, DisputeScenario | **DSW** - dispute simulation workspace |
+| `intergrax_assistant_application` | lab | 8096 | IntergraxAssistant (+ optional specialists) | **IAA** - harness chat lab, swappable LLM |
 
 Full index: [`applications/README.md`](README.md) · [`agents/README.md`](../agents/README.md)
 
@@ -108,4 +108,4 @@ Full index: [`applications/README.md`](README.md) · [`agents/README.md`](../age
 
 Composition API: [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md)
 
-Plan tracker: [`docs/project/architecture/intergrax_runtime_architecture.md`](../docs/project/architecture/intergrax_runtime_architecture.md) — Phase N + Tier-3 readiness table.
+Plan tracker: [`docs/project/architecture/intergrax_runtime_architecture.md`](../docs/project/architecture/intergrax_runtime_architecture.md) - Phase N + Tier-3 readiness table.

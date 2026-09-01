@@ -1,4 +1,4 @@
-# Dispute Sim — Architecture Decision Records
+# Dispute Sim - Architecture Decision Records
 
 **Domain:** Tier-3 application host (`applications/dispute_sim_application`)
 

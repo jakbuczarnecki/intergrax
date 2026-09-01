@@ -1,6 +1,6 @@
-﻿# dispute_intake agent — architecture
+﻿# dispute_intake agent - architecture
 
-**Status:** Scaffold baseline (2026-06-07) — DSW product agent
+**Status:** Scaffold baseline (2026-06-07) - DSW product agent
 
 Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 Product architecture: [`applications/dispute_sim_application/docs/ARCHITECTURE.md`](../../../applications/dispute_sim_application/docs/ARCHITECTURE.md)

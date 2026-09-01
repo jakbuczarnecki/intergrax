@@ -3,8 +3,8 @@
 | File | alwaysApply | Purpose |
 |------|-------------|---------|
 | `intergrax-token-budget.mdc` | **Yes** | I1 input + O1 output budget; mandatory preflight before implementation |
-| `intergrax-hep-step.mdc` | **No** | HEP / EVID scoped steps — `@` on demand |
-| `intergrax-iteration.mdc` | **No** | F3 workflow, domain read scope, tier boundaries — `@` on demand |
+| `intergrax-hep-step.mdc` | **No** | HEP / EVID scoped steps - `@` on demand |
+| `intergrax-iteration.mdc` | **No** | F3 workflow, domain read scope, tier boundaries - `@` on demand |
 
 **Only `intergrax-token-budget.mdc` is always-on.** All other rules load on explicit `@` reference or operator request.
 

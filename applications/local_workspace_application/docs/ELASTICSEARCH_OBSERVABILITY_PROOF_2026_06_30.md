@@ -1,11 +1,11 @@
-# Elasticsearch observability live proof — 2026-06-30
+# Elasticsearch observability live proof - 2026-06-30
 
 ## Scope
 
 This document records the live Docker Compose proof for:
 
 ```text
-OBS-VENDOR-7 — End-to-end vendor proof (Elasticsearch/OpenSearch first)
+OBS-VENDOR-7 - End-to-end vendor proof (Elasticsearch/OpenSearch first)
 ```
 
 The proof validates the path:

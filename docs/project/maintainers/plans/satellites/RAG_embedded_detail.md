@@ -1,4 +1,4 @@
-# RAG — embedded detail
+# RAG - embedded detail
 
 **Parent hub:** [`RAG.md`](../RAG.md)
 
@@ -30,7 +30,7 @@ Every finding in [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth 
 | GAP-RAG-19 | incomplete_wiring | M-RAG.34 **Done** | 3 |
 | GAP-RAG-21 | prod_blocker | M-RAG.36 **Done** | 3 |
 | GAP-RAG-22 | below_prod_bar | M-RAG.37 **Done** | 3 |
-| GAP-RAG-15 | design_boundary | M-RAG.58 **Frozen** (Tier-3 + AHI) | — |
+| GAP-RAG-15 | design_boundary | M-RAG.58 **Frozen** (Tier-3 + AHI) | - |
 | GAP-RAG-24 | incomplete_wiring | M-RAG.38 | G1 |
 | GAP-RAG-25 | incomplete_wiring | M-RAG.39 | G1 |
 | GAP-RAG-26 | prod_blocker | M-RAG.40 | G1 |
@@ -47,38 +47,38 @@ Every finding in [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth 
 | GAP-RAG-39 | incomplete_wiring | M-RAG.60 **Done** | CONVERGE |
 | GAP-RAG-40 | incomplete_wiring | M-RAG.61 **Done** | CONVERGE |
 
-**Coverage (M-RAG-DEPTH):** 22 actionable gaps + 1 architectural boundary — **100% mapped** (complete 2026-06-10).
+**Coverage (M-RAG-DEPTH):** 22 actionable gaps + 1 architectural boundary - **100% mapped** (complete 2026-06-10).
 
-**Coverage (M-RAG-GRAPH):** 13 actionable gaps + 1 boundary (**GAP-RAG-34**) — **100% mapped** (opened 2026-06-12 GraphRAG audit).
+**Coverage (M-RAG-GRAPH):** 13 actionable gaps + 1 boundary (**GAP-RAG-34**) - **100% mapped** (opened 2026-06-12 GraphRAG audit).
 
 ---
 
-## Step-by-step rollout — Phase M-RAG-DEPTH
+## Step-by-step rollout - Phase M-RAG-DEPTH
 
 Execute in order unless operator reprioritizes within the same wave. One M-RAG.\* ID per PR (or one cohesive harden wave ≤3 IDs from the same wave).
 
-### Wave 1 — Profile correctness (P0)
+### Wave 1 - Profile correctness (P0)
 
 | Step | ID | Action | Closes |
 |------|-----|--------|--------|
-| 1.1 | **M-RAG.23** | Wire `RagProfile.query_expansion` to retriever bootstrap and `RetrievalService` deep-tier path; inject `query_expander_from_profile()` into `MultiQueryRetriever`; when `query_expansion != off` and tier is deep, use `multiquery` | GAP-RAG-01, 17, 23; AUDIT-IDEAL-14.3; M-RAG.6 — **Done** (2026-06-10) |
+| 1.1 | **M-RAG.23** | Wire `RagProfile.query_expansion` to retriever bootstrap and `RetrievalService` deep-tier path; inject `query_expander_from_profile()` into `MultiQueryRetriever`; when `query_expansion != off` and tier is deep, use `multiquery` | GAP-RAG-01, 17, 23; AUDIT-IDEAL-14.3; M-RAG.6 - **Done** (2026-06-10) |
 
 **Exit criteria:** `test_rag_profile_query_expansion_wiring.py`; `INTERGRAX_RAG_QUERY_EXPANSION=llm` changes retrieval behaviour in integration test.
 
-### Wave 2 — Production safety and scale (P1)
+### Wave 2 - Production safety and scale (P1)
 
 | Step | ID | Action | Closes |
 |------|-----|--------|--------|
-| 2.1 | **M-RAG.25** | Optional `filter_retrieved_chunks_for_poisoning` in `perform_rag_retrieve` when `security_profile.retrieval_poisoning_defense_enabled` | GAP-RAG-04; AUDIT-IDEAL-14.5 — **Done** (2026-06-10) |
-| 2.2 | **M-RAG.24** | Bootstrap second `toc_vector_store`; wire `HierarchicalRetriever`; route `IngestPipeline` through `DualIndexStrategy` when profile flag `hierarchical_index_enabled` or `hierarchical` retriever selected | GAP-RAG-02, 03; AUDIT-IDEAL-14.4 — **Done** (2026-06-10) |
-| 2.3 | **M-RAG.26** | Async ingest job contract — shard/stream ingest via `workflow_orchestrator`; idempotent job tool; document size threshold rejecting sync path | GAP-RAG-05, 06; AUDIT-IDEAL-14.6 — **Done** (2026-06-10) |
-| 2.4 | **M-RAG.30** | RAG vector-store prod SLO: soak gate in `test_vectorstore_real_backends.py` for stable slugs (`qdrant`, `pgvector`, `chroma`, `weaviate`); promote remaining **beta** slugs (`pinecone`, `milvus`, `vespa`) when soak passes; ops runbook row in [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) — **Done** (2026-06-10) |
-| 2.5 | **M-RAG.33** | Tier-3 GraphRAG prod contract — `production_rag_profile()` documents harness-only; add `production_graph_rag_profile()` requiring `neo4j`; integration test with durable graph | GAP-RAG-18 — **Done** (2026-06-10) |
-| 2.6 | **M-RAG.35** | Cross-backend tenant isolation contract tests (`qdrant`, `weaviate`, `pgvector`, `inmemory`) — mismatch must not leak chunks | GAP-RAG-20 — **Done** (2026-06-10) |
+| 2.1 | **M-RAG.25** | Optional `filter_retrieved_chunks_for_poisoning` in `perform_rag_retrieve` when `security_profile.retrieval_poisoning_defense_enabled` | GAP-RAG-04; AUDIT-IDEAL-14.5 - **Done** (2026-06-10) |
+| 2.2 | **M-RAG.24** | Bootstrap second `toc_vector_store`; wire `HierarchicalRetriever`; route `IngestPipeline` through `DualIndexStrategy` when profile flag `hierarchical_index_enabled` or `hierarchical` retriever selected | GAP-RAG-02, 03; AUDIT-IDEAL-14.4 - **Done** (2026-06-10) |
+| 2.3 | **M-RAG.26** | Async ingest job contract - shard/stream ingest via `workflow_orchestrator`; idempotent job tool; document size threshold rejecting sync path | GAP-RAG-05, 06; AUDIT-IDEAL-14.6 - **Done** (2026-06-10) |
+| 2.4 | **M-RAG.30** | RAG vector-store prod SLO: soak gate in `test_vectorstore_real_backends.py` for stable slugs (`qdrant`, `pgvector`, `chroma`, `weaviate`); promote remaining **beta** slugs (`pinecone`, `milvus`, `vespa`) when soak passes; ops runbook row in [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) - **Done** (2026-06-10) |
+| 2.5 | **M-RAG.33** | Tier-3 GraphRAG prod contract - `production_rag_profile()` documents harness-only; add `production_graph_rag_profile()` requiring `neo4j`; integration test with durable graph | GAP-RAG-18 - **Done** (2026-06-10) |
+| 2.6 | **M-RAG.35** | Cross-backend tenant isolation contract tests (`qdrant`, `weaviate`, `pgvector`, `inmemory`) - mismatch must not leak chunks | GAP-RAG-20 - **Done** (2026-06-10) |
 
 **Exit criteria:** Wave 2 integration tests green; Tier-3 checklist in architecture doc satisfied for reference host.
 
-### Wave 3 — Resilience, observability, completeness (P2)
+### Wave 3 - Resilience, observability, completeness (P2)
 
 | Step | ID | Action | Closes |
 |------|-----|--------|--------|
@@ -87,65 +87,65 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | 3.3 | **M-RAG.29** | Formal `Citation` on `RetrievalResult` + `RagRetrieveOutput`; gate test for citation preservation at engine output | GAP-RAG-13 |
 | 3.4 | **M-RAG.31** | `embedding_model_version` mismatch → warn on ingest, optional filter on retrieve, reindex queue hook | GAP-RAG-14 |
 | 3.5 | **M-RAG.32** | Optional LLM `QueryRouter` tier classifier behind `RagProfile.llm_route_enabled` (default off) | GAP-RAG-16 |
-| 3.6 | **M-RAG.34** | Agentic loop — optional per-iteration `retriever_id` override; trace fields for iteration cost budget | GAP-RAG-19 |
-| 3.7 | **M-RAG.36** | RAG load/soak gate — concurrent retrieve latency + recall regression budget in CI or nightly workflow | GAP-RAG-21 |
-| 3.8 | **M-RAG.37** | Ingest guard for `semantic` chunking — max document token/char threshold with clear `IngestResult.reason` | GAP-RAG-22 |
+| 3.6 | **M-RAG.34** | Agentic loop - optional per-iteration `retriever_id` override; trace fields for iteration cost budget | GAP-RAG-19 |
+| 3.7 | **M-RAG.36** | RAG load/soak gate - concurrent retrieve latency + recall regression budget in CI or nightly workflow | GAP-RAG-21 |
+| 3.8 | **M-RAG.37** | Ingest guard for `semantic` chunking - max document token/char threshold with clear `IngestResult.reason` | GAP-RAG-22 |
 
 **Exit criteria:** M-RAG-DEPTH register all **Done**; architecture maturity target **L3 implementation** for Tier-3 reference hosts.
 
 ---
 
-## Step-by-step rollout — Phase M-RAG-GRAPH
+## Step-by-step rollout - Phase M-RAG-GRAPH
 
-**Purpose:** Universal GraphRAG platform — plugin backend registry, lifecycle sync, retrieval hardening, maintenance jobs, optional advanced indexer modes.  
+**Purpose:** Universal GraphRAG platform - plugin backend registry, lifecycle sync, retrieval hardening, maintenance jobs, optional advanced indexer modes.  
 **Source:** GraphRAG architecture audit 2026-06-12 · [`architecture/RAG.md`](../architecture/RAG.md) §GraphRAG architecture · GAP-RAG-24 … GAP-RAG-36.  
 **Prerequisite:** M-RAG-DEPTH **complete** (M-RAG.23 … M-RAG.37).  
-**Cross-domain:** new `graph_store` vendor slugs (Neptune, OrientDB, ArangoDB) coordinate with [`plan/INTEGRATIONS.md`](INTEGRATIONS.md) H-INT rows — RAG delivers adapters only after integration slug exists.
+**Cross-domain:** new `graph_store` vendor slugs (Neptune, OrientDB, ArangoDB) coordinate with [`plan/INTEGRATIONS.md`](INTEGRATIONS.md) H-INT rows - RAG delivers adapters only after integration slug exists.
 
 Execute in wave order unless operator reprioritizes within the same wave. One M-RAG.\* ID per PR (or one cohesive harden wave ≤3 IDs from the same wave).
 
-### Wave G1 — Backend registry and graph lifecycle (P0–P1)
+### Wave G1 - Backend registry and graph lifecycle (P0–P1)
 
 | Step | ID | Action | Closes |
 |------|-----|--------|--------|
 | G1.1 | **M-RAG.38** | Introduce `RagGraphStoreBackend` registry in `graph/bootstrap` (mirror `vectorstore/bootstrap` bridges). Refactor `create_rag_graph_store` to resolve backend id → factory. Register shipped backends: `inmemory`, `neo4j`. Document author extension: implement ABC or register backend factory. Gate: `test_rag_graph_store_backend_registry.py` | GAP-RAG-24 |
-| G1.2 | **M-RAG.39** | Add RAG adapters `MemgraphRagGraphStore` / `FalkorDbRagGraphStore` (reuse Cypher/Bolt path from integration clients). Register in backend registry. Fix INTEGRATIONS plan drift — `INTERGRAX_RAG_GRAPH_STORE` accepts `memgraph` \| `falkordb` when integration instance provided. Gate: `test_graph_rag_memgraph_adapter.py`, `test_graph_rag_falkordb_adapter.py` | GAP-RAG-25 |
-| G1.3 | **M-RAG.40** | Graph lifecycle sync — on `rag.delete_documents` and `rag.purge_collection`, unlink `HAS_CHUNK` edges and prune orphan `RagEntity` nodes (backend-specific Cypher in adapters). Hook re-ingest to refresh graph for same chunk ids. Gate: `test_graph_lifecycle_delete_sync.py` | GAP-RAG-26 |
-| G1.4 | **M-RAG.41** | Graph tenant isolation — `graph/tenant/graph_isolation_contract.py`; scope `tenant_id` / `workspace_id` on nodes and queries; gate tests for `inmemory` + `neo4j` (and memgraph when M-RAG.39 done). Document ops namespace pattern in architecture §Tenant scope | GAP-RAG-27 |
+| G1.2 | **M-RAG.39** | Add RAG adapters `MemgraphRagGraphStore` / `FalkorDbRagGraphStore` (reuse Cypher/Bolt path from integration clients). Register in backend registry. Fix INTEGRATIONS plan drift - `INTERGRAX_RAG_GRAPH_STORE` accepts `memgraph` \| `falkordb` when integration instance provided. Gate: `test_graph_rag_memgraph_adapter.py`, `test_graph_rag_falkordb_adapter.py` | GAP-RAG-25 |
+| G1.3 | **M-RAG.40** | Graph lifecycle sync - on `rag.delete_documents` and `rag.purge_collection`, unlink `HAS_CHUNK` edges and prune orphan `RagEntity` nodes (backend-specific Cypher in adapters). Hook re-ingest to refresh graph for same chunk ids. Gate: `test_graph_lifecycle_delete_sync.py` | GAP-RAG-26 |
+| G1.4 | **M-RAG.41** | Graph tenant isolation - `graph/tenant/graph_isolation_contract.py`; scope `tenant_id` / `workspace_id` on nodes and queries; gate tests for `inmemory` + `neo4j` (and memgraph when M-RAG.39 done). Document ops namespace pattern in architecture §Tenant scope | GAP-RAG-27 |
 
 **Exit criteria:** Backend registry gate green; delete/purge removes graph artifacts in integration test; tenant mismatch raises or returns empty on graph path.
 
-### Wave G2 — Retrieval hardening and prod validation (P1–P2)
+### Wave G2 - Retrieval hardening and prod validation (P1–P2)
 
 | Step | ID | Action | Closes |
 |------|-----|--------|--------|
-| G2.1 | **M-RAG.42** | Harden `GraphRagRetriever` — entity seed from chunk metadata (not label substring only); respect `graph_rag_hops`; configurable seed `top_k`; promote retriever from **beta** to **stable** in manifests when gate passes. Gate: `test_graph_rag_retriever_hardening.py` + golden `graph_rag` scenario update | GAP-RAG-28 |
-| G2.2 | **M-RAG.43** | Wire `execute_hybrid_retrieval` into graph path — merge graph channel hits with vector/keyword scores in `GraphRagRetriever` or extended `fusion` schedule when `graph_rag_enabled`. Trace field `channel_contributions`. Gate: `test_hybrid_retrieval_graph_channel.py` | GAP-RAG-29 |
+| G2.1 | **M-RAG.42** | Harden `GraphRagRetriever` - entity seed from chunk metadata (not label substring only); respect `graph_rag_hops`; configurable seed `top_k`; promote retriever from **beta** to **stable** in manifests when gate passes. Gate: `test_graph_rag_retriever_hardening.py` + golden `graph_rag` scenario update | GAP-RAG-28 |
+| G2.2 | **M-RAG.43** | Wire `execute_hybrid_retrieval` into graph path - merge graph channel hits with vector/keyword scores in `GraphRagRetriever` or extended `fusion` schedule when `graph_rag_enabled`. Trace field `channel_contributions`. Gate: `test_hybrid_retrieval_graph_channel.py` | GAP-RAG-29 |
 | G2.3 | **M-RAG.44** | Surface `GraphTraceFieldBundle` on `RetrievalTrace` when graph expansion applied (`graph_provenance` + expanded node ids). Gate: `test_graph_provenance_retrieval_trace.py` | GAP-RAG-30 |
 | G2.4 | **M-RAG.48** | Extend `validate_graph_rag_production_wiring` with `APPROVED_PRODUCTION_GRAPH_STORE_SLUGS` (`neo4j` default; add `memgraph` after soak). Update `production_graph_rag_profile` docs + `rag_runtime_bridge` validation. Gate: extend `test_production_graph_rag_profile.py` | GAP-RAG-35 |
-| G2.5 | **M-RAG.52** | Golden harness — add `graph_rag` scenarios: multi-hop, post-delete empty expansion, graph tenant leak negative case. Wire in `rag-guard.yml` | GAP-RAG-36 |
+| G2.5 | **M-RAG.52** | Golden harness - add `graph_rag` scenarios: multi-hop, post-delete empty expansion, graph tenant leak negative case. Wire in `rag-guard.yml` | GAP-RAG-36 |
 
 **Exit criteria:** GraphRAG retriever stable; hybrid channel trace visible; prod validation accepts soaked Bolt backends; golden gate covers lifecycle + isolation.
 
-### Wave G3 — Maintenance, indexer plugins, advanced modes (P2)
+### Wave G3 - Maintenance, indexer plugins, advanced modes (P2)
 
 | Step | ID | Action | Closes |
 |------|-----|--------|--------|
-| G3.1 | **M-RAG.45** | Graph maintenance job — `rag.schedule_graph_maintenance_job` catalog tool + workflow contract (`orphan_prune`, `stale_edge_prune`, optional full reindex). Idempotent like M-RAG.26 ingest jobs. Gate: `test_graph_maintenance_job.py` | GAP-RAG-31 |
-| G3.2 | **M-RAG.46** | `GraphIndexer` plugin registry — `register_graph_indexer_plugin()`; resolve from `RagProfile.graph_indexer_mode` or explicit plugin id; document in [`EXTENSION_AUTHOR_GUIDE.md`](../guides/EXTENSION_AUTHOR_GUIDE.md) §GraphRAG. Example: `integrations/examples` or `rag/graph/examples` | GAP-RAG-32 |
-| G3.3 | **M-RAG.47** | Optional harness-native **community-report** indexer mode (`graph_indexer_mode=community_report`) — LLM entity graph + community summaries stored as graph nodes (not Microsoft GraphRAG vendoring). Behind profile flag; default off. Gate: `test_community_report_graph_indexer.py` | GAP-RAG-34 (optional capability) |
+| G3.1 | **M-RAG.45** | Graph maintenance job - `rag.schedule_graph_maintenance_job` catalog tool + workflow contract (`orphan_prune`, `stale_edge_prune`, optional full reindex). Idempotent like M-RAG.26 ingest jobs. Gate: `test_graph_maintenance_job.py` | GAP-RAG-31 |
+| G3.2 | **M-RAG.46** | `GraphIndexer` plugin registry - `register_graph_indexer_plugin()`; resolve from `RagProfile.graph_indexer_mode` or explicit plugin id; document in [`EXTENSION_AUTHOR_GUIDE.md`](../guides/EXTENSION_AUTHOR_GUIDE.md) §GraphRAG. Example: `integrations/examples` or `rag/graph/examples` | GAP-RAG-32 |
+| G3.3 | **M-RAG.47** | Optional harness-native **community-report** indexer mode (`graph_indexer_mode=community_report`) - LLM entity graph + community summaries stored as graph nodes (not Microsoft GraphRAG vendoring). Behind profile flag; default off. Gate: `test_community_report_graph_indexer.py` | GAP-RAG-34 (optional capability) |
 
 **Exit criteria:** Maintenance job triggers workflow; third-party indexer registers via plugin; community mode opt-in only.
 
-### Wave G4 — Additional graph_store integrations (P3)
+### Wave G4 - Additional graph_store integrations (P3)
 
 Requires new Integration catalog slugs first (H-INT in INTEGRATIONS plan).
 
 | Step | ID | Action | Closes |
 |------|-----|--------|--------|
-| G4.1 | **M-RAG.49** | Amazon Neptune — integration `graph_store` slug + RAG adapter (OpenCypher or configured query dialect). Soak + gate. **Depends:** H-INT Neptune row | GAP-RAG-33 (partial) |
-| G4.2 | **M-RAG.50** | OrientDB — integration slug + RAG adapter. **Depends:** H-INT OrientDB row | GAP-RAG-33 (partial) |
-| G4.3 | **M-RAG.51** | ArangoDB — integration slug + RAG adapter (AQL bridge). **Depends:** H-INT ArangoDB row | GAP-RAG-33 (partial) |
+| G4.1 | **M-RAG.49** | Amazon Neptune - integration `graph_store` slug + RAG adapter (OpenCypher or configured query dialect). Soak + gate. **Depends:** H-INT Neptune row | GAP-RAG-33 (partial) |
+| G4.2 | **M-RAG.50** | OrientDB - integration slug + RAG adapter. **Depends:** H-INT OrientDB row | GAP-RAG-33 (partial) |
+| G4.3 | **M-RAG.51** | ArangoDB - integration slug + RAG adapter (AQL bridge). **Depends:** H-INT ArangoDB row | GAP-RAG-33 (partial) |
 
 **Exit criteria:** Each slug registered in integration catalog + RAG backend registry + at least one gate test per adapter.
 
@@ -155,7 +155,7 @@ Requires new Integration catalog slugs first (H-INT in INTEGRATIONS plan).
 
 ---
 
-### 6.1e Harness implementation queue — RAG closeout (closed)
+### 6.1e Harness implementation queue - RAG closeout (closed)
 
 **Purpose:** Single ordered list for **Phase RAG** (Band 2m). **Closed 2026-06-02**.
 
@@ -171,7 +171,7 @@ Requires new Integration catalog slugs first (H-INT in INTEGRATIONS plan).
 
 Ordered queue for RAG domain work. **Active:** M-RAG-GRAPH (15 items). **Closed:** M-RAG-DEPTH + Phase RAG + M-RAG.1–22.
 
-### Closed — Phase M-RAG-DEPTH (2026-06-10)
+### Closed - Phase M-RAG-DEPTH (2026-06-10)
 
 | Order | ID | Wave | Priority | Deliverable | GAP-RAG | Status |
 |-------|-----|------|----------|-------------|---------|--------|
@@ -191,7 +191,7 @@ Ordered queue for RAG domain work. **Active:** M-RAG-GRAPH (15 items). **Closed:
 | 14 | **M-RAG.36** | 3 | **P2** | RAG load/soak gate (concurrent retrieve SLO) | 21 | **Done** |
 | 15 | **M-RAG.37** | 3 | **P2** | Semantic chunking ingest size guard | 22 | **Done** |
 
-### Closed — Phase M-RAG-GRAPH G1–G4 (2026-06-12)
+### Closed - Phase M-RAG-GRAPH G1–G4 (2026-06-12)
 
 | Order | ID | Wave | Priority | Deliverable | GAP-RAG | Status |
 |-------|-----|------|----------|-------------|---------|--------|
@@ -211,14 +211,14 @@ Ordered queue for RAG domain work. **Active:** M-RAG-GRAPH (15 items). **Closed:
 | 14 | **M-RAG.50** | G4 | **P3** | OrientDB integration + RAG adapter (H-INT dependency) | 33 | **Done** |
 | 15 | **M-RAG.51** | G4 | **P3** | ArangoDB integration + RAG adapter (H-INT dependency) | 33 | **Done** |
 
-### Active — Phase M-RAG-GRAPH G5 — GraphRAG usage hardening (2026-06-13)
+### Active - Phase M-RAG-GRAPH G5 - GraphRAG usage hardening (2026-06-13)
 
 | Order | ID | Wave | Priority | Deliverable | GAP-RAG | Status |
 |-------|-----|------|----------|-------------|---------|--------|
-| 16 | **M-RAG.53** | G5 | **P1** | Full 3-channel fusion in `GraphRagRetriever` — vector + keyword (lexical) + graph | 29 | **Done** |
-| 17 | **M-RAG.54** | G5 | **P1** | Structured graph provenance — `graph_provenance_records` on `RetrievalTrace` | 30 | **Done** |
+| 16 | **M-RAG.53** | G5 | **P1** | Full 3-channel fusion in `GraphRagRetriever` - vector + keyword (lexical) + graph | 29 | **Done** |
+| 17 | **M-RAG.54** | G5 | **P1** | Structured graph provenance - `graph_provenance_records` on `RetrievalTrace` | 30 | **Done** |
 
-### Active — AUDIT-IDEAL (RAG band)
+### Active - AUDIT-IDEAL (RAG band)
 
 | ID | Gap | Priority | M-RAG | Status |
 |----|-----|----------|-------|--------|
@@ -228,7 +228,7 @@ Ordered queue for RAG domain work. **Active:** M-RAG-GRAPH (15 items). **Closed:
 | AUDIT-IDEAL-14.6 | Large-corpus async ingest | P1 | M-RAG.26 | **Done** |
 | AUDIT-IDEAL-14.7 | OTel spans retrieve + ingest | P2 | M-RAG.27 | **Done** |
 
-### Closed — Phase M-RAG (M-RAG.1–22, except M-RAG.6 Partial)
+### Closed - Phase M-RAG (M-RAG.1–22, except M-RAG.6 Partial)
 
 | ID | Deliverable | Status |
 |----|-------------|--------|
@@ -255,7 +255,7 @@ Ordered queue for RAG domain work. **Active:** M-RAG-GRAPH (15 items). **Closed:
 | M-RAG.21 | Extended golden datasets | **Done** |
 | M-RAG.22 | RAG observability metrics | **Done** |
 
-### Closed — Phase RAG (control plane)
+### Closed - Phase RAG (control plane)
 
 | ID | Deliverable | Status |
 |----|-------------|--------|
@@ -270,8 +270,8 @@ Ordered queue for RAG domain work. **Active:** M-RAG-GRAPH (15 items). **Closed:
 
 | ID | Note |
 |----|------|
-| GAP-RAG-15 | No autonomous MIME/size retriever/chunker selection — Tier-3 + AHI |
-| GAP-RAG-34 | No Microsoft GraphRAG library vendoring — optional harness-native community-report mode (M-RAG.47) only |
+| GAP-RAG-15 | No autonomous MIME/size retriever/chunker selection - Tier-3 + AHI |
+| GAP-RAG-34 | No Microsoft GraphRAG library vendoring - optional harness-native community-report mode (M-RAG.47) only |
 
 **Phase M-RAG-DEPTH complete when:** M-RAG.23 … M-RAG.37 all **Done**; zero open GAP-RAG-01 … GAP-RAG-23 rows (except GAP-RAG-15).
 

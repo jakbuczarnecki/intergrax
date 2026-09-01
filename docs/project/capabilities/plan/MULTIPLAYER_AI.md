@@ -4,14 +4,14 @@ Intergrax framework – proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
 -->
 
-# Multiplayer AI — Multi-layer Feature Plan
+# Multiplayer AI - Multi-layer Feature Plan
 
-**Status:** **MP-1 — OWNERSHIP / ARCHITECTURE READY_FOR_REVIEW** — runtime implementation NOT STARTED
+**Status:** **MP-1 - OWNERSHIP / ARCHITECTURE READY_FOR_REVIEW** - runtime implementation NOT STARTED
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
-**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen — ADR-MP-001)
+**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-1** — ownership frozen (MP-1A); awaiting review before runtime implementation
-**Next task after MP-1 review:** **COLLAB-WORK-1A** — MP-1 contract slice implementation
+**Current active task:** **MP-1** - ownership frozen (MP-1A); awaiting review before runtime implementation
+**Next task after MP-1 review:** **COLLAB-WORK-1A** - MP-1 contract slice implementation
 
 ---
 
@@ -21,8 +21,8 @@ Do not read the whole repository.
 
 Default read scope for Multiplayer AI work:
 
-1. [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md) — read-scope block + active `MP-*` phase summary only.
-2. This file — read-scope block + **active MP-* section only**.
+1. [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md) - read-scope block + active `MP-*` phase summary only.
+2. This file - read-scope block + **active MP-* section only**.
 3. For **MP-1+** implementation: the affected domain architecture/plan pair for the current MP slice after bounded ownership check.
 4. The minimal source files required by that domain plan item.
 
@@ -92,14 +92,14 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 
 ---
 
-## MP-0 — Canonical architecture and implementation roadmap
+## MP-0 - Canonical architecture and implementation roadmap
 
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 |
 | **Status** | READY_FOR_REVIEW |
 | **Purpose** | Establish canonical Multiplayer AI architecture, MP-0…MP-9 roadmap, capability classification, anti-substitution rules, and provisional domain ownership map. |
-| **Owning domain plan** | Feature plan + feature architecture hub only — **no domain plan edits in MP-0** |
+| **Owning domain plan** | Feature plan + feature architecture hub only - **no domain plan edits in MP-0** |
 | **Dependencies** | None |
 | **Exact scope** | `docs/project/capabilities/architecture/MULTIPLAYER_AI.md`, `docs/project/capabilities/plan/MULTIPLAYER_AI.md`, `docs/project/capabilities/README.md` index row |
 | **Explicit out of scope** | Satellites (unless genuinely required), domain architecture/plan edits, code, tests, scripts, MP-1+ implementation |
@@ -111,35 +111,35 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 
 ---
 
-## MP-1 — Principal, WorkspaceMembership and Delegation / effective authority
+## MP-1 - Principal, WorkspaceMembership and Delegation / effective authority
 
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 (after MP-0) |
-| **Status** | **OWNERSHIP / ARCHITECTURE READY_FOR_REVIEW** — runtime NOT STARTED |
+| **Status** | **OWNERSHIP / ARCHITECTURE READY_FOR_REVIEW** - runtime NOT STARTED |
 | **Purpose** | Platform collaborative identity, workspace membership, and delegation with effective authority. |
-| **Owning domain plan** | [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) — frozen by ADR-MP-001 / ADR-MP-002 |
+| **Owning domain plan** | [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) - frozen by ADR-MP-001 / ADR-MP-002 |
 | **Dependencies** | MP-0 accepted |
 | **Exact scope** | Principal semantics; WorkspaceMembership; Delegation; effective-authority evaluation and fail-closed enforcement boundary |
 | **REUSED EXISTING CAPABILITY** | Request-context principal propagation; LKW application principal docs (consumer reference only) |
 | **NEW CAPABILITY REQUIRED** | Principal (collaborative), WorkspaceMembership, Delegation / effective authority |
 | **Explicit out of scope** | Using `LKW-CONVERSATION-CONTEXT-*` or `CONVERSATION-CHANNEL-1` as MP-1 anchor |
-| **Architecture/ADR gate** | ADR-MP-001 and ADR-MP-002 **Accepted** (MP-1A); architecture/plan sync **Done** — runtime implementation awaits review |
-| **Pre-implementation domain-sync gate** | **Done** (MP-1A) — see [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) COLLAB-WORK-1A |
+| **Architecture/ADR gate** | ADR-MP-001 and ADR-MP-002 **Accepted** (MP-1A); architecture/plan sync **Done** - runtime implementation awaits review |
+| **Pre-implementation domain-sync gate** | **Done** (MP-1A) - see [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) COLLAB-WORK-1A |
 | **User-visible outcome** | Governed multi-principal identity and authority model |
 | **Acceptance criteria** | Meaningful mutations resolve an effective Principal; membership is explicit where required; delegation cannot amplify authority; tenant/workspace identifiers alone cannot authorize; agent authority remains distinct and failures are closed |
 | **Expected proof/evidence** | Contract tests; isolation/authorization tests; fail-closed tests; delegation non-amplification tests; idempotency tests for membership/invite and delegation mutations |
 
 ---
 
-## MP-2 — Shared Work: WorkItem, Assignment, lifecycle and concurrency
+## MP-2 - Shared Work: WorkItem, Assignment, lifecycle and concurrency
 
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
 | **Status** | PLANNED / NOT STARTED |
 | **Purpose** | Platform-owned shared work primitives with lifecycle and concurrency semantics. |
-| **Likely owning domain plans** | `ORCHESTRATION.md`, `UNIFIED_EXECUTION_RUNTIME.md`, `BACKGROUND_TASKS.md` — **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
+| **Likely owning domain plans** | `ORCHESTRATION.md`, `UNIFIED_EXECUTION_RUNTIME.md`, `BACKGROUND_TASKS.md` - **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
 | **Dependencies** | MP-1 accepted |
 | **Exact scope** | WorkItem; Assignment; collaborative lifecycle; explicit optimistic concurrency and idempotency semantics |
 | **REUSED EXISTING CAPABILITY** | Execution-runtime task/session concepts where they remain runtime-internal |
@@ -153,14 +153,14 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 
 ---
 
-## MP-3 — WorkArtifact and WorkArtifactVersion
+## MP-3 - WorkArtifact and WorkArtifactVersion
 
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
 | **Status** | PLANNED / NOT STARTED |
 | **Purpose** | Durable collaborative outputs with versioning and provenance. |
-| **Likely owning domain plans** | `UNIFIED_CONTEXT_LIFECYCLE.md`, `PROOF_RECEIPTS.md`, `MEMORY.md` — **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
+| **Likely owning domain plans** | `UNIFIED_CONTEXT_LIFECYCLE.md`, `PROOF_RECEIPTS.md`, `MEMORY.md` - **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
 | **Dependencies** | MP-2 accepted (may overlap MP-1 for authority on artifacts) |
 | **Exact scope** | WorkArtifact; authoritative WorkArtifactVersion; publication, version pointer, lineage, and provenance |
 | **REUSED EXISTING CAPABILITY** | UCL artifact lifecycle patterns; receipt/provenance models |
@@ -174,14 +174,14 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 
 ---
 
-## MP-4 — Decision / DecisionResponse or Approval semantics + HITL bridge
+## MP-4 - Decision / DecisionResponse or Approval semantics + HITL bridge
 
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
 | **Status** | PLANNED / NOT STARTED |
 | **Purpose** | Collaborative decision and approval semantics with explicit bridge to Nexus HITL when execution must pause. |
-| **Likely owning domain plans** | `RELIABILITY_FAILURE_AND_HITL.md`, `NEXUS_EXECUTION_FLOW.md`, `UNIFIED_EXECUTION_RUNTIME.md` — **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
+| **Likely owning domain plans** | `RELIABILITY_FAILURE_AND_HITL.md`, `NEXUS_EXECUTION_FLOW.md`, `UNIFIED_EXECUTION_RUNTIME.md` - **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
 | **Dependencies** | MP-1 accepted; MP-2 recommended |
 | **Exact scope** | Decision; DecisionResponse/Approval semantics; policy-gated response; explicit bridge to existing Nexus HITL pause/resume |
 | **REUSED EXISTING CAPABILITY** | Nexus HITL pause/resume; policy evaluation hooks |
@@ -195,14 +195,14 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 
 ---
 
-## MP-5 — Principal-scoped ContextView
+## MP-5 - Principal-scoped ContextView
 
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
 | **Status** | PLANNED / NOT STARTED |
 | **Purpose** | Principal-scoped context view composing UCL, Context Engineering, Memory, and Knowledge. |
-| **Likely owning domain plans** | `UNIFIED_CONTEXT_LIFECYCLE.md`, `CONTEXT_ENGINEERING.md`, `MEMORY.md`, `RAG.md` — **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
+| **Likely owning domain plans** | `UNIFIED_CONTEXT_LIFECYCLE.md`, `CONTEXT_ENGINEERING.md`, `MEMORY.md`, `RAG.md` - **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
 | **Dependencies** | MP-1 accepted |
 | **Exact scope** | Principal-scoped ContextView policy and composition over UCL, Context Engineering, Memory, and Knowledge |
 | **REUSED EXISTING CAPABILITY** | UCL, Context Engineering, Memory, RAG/Knowledge, Token Optimization (`TOKEN-10E-*` etc.) |
@@ -216,14 +216,14 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 
 ---
 
-## MP-6 — Collaborative Activity + provenance / evidence linkage
+## MP-6 - Collaborative Activity + provenance / evidence linkage
 
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
 | **Status** | PLANNED / NOT STARTED |
 | **Purpose** | Collaborative activity stream linked to provenance and evidence. |
-| **Likely owning domain plans** | `OBSERVABILITY.md`, `PROOF_RECEIPTS.md`, `UNIFIED_EXECUTION_RUNTIME.md` — **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
+| **Likely owning domain plans** | `OBSERVABILITY.md`, `PROOF_RECEIPTS.md`, `UNIFIED_EXECUTION_RUNTIME.md` - **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
 | **Dependencies** | MP-2, MP-3, MP-4 recommended |
 | **Exact scope** | Collaborative Activity projection and stable linkage to runtime Trace/Evidence without authority transfer |
 | **REUSED EXISTING CAPABILITY** | Traces, receipts, attempt ledger, existing provenance fields |
@@ -237,14 +237,14 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 
 ---
 
-## MP-7 — LKW reference-product adoption
+## MP-7 - LKW reference-product adoption
 
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
 | **Status** | PLANNED / NOT STARTED |
 | **Purpose** | Adopt platform Multiplayer primitives in LKW as first reference consumer. |
-| **Likely owning plans** | Tier-3 LKW application implementation plan (consumer); platform primitives in Tier-0/Tier-1 domain plans — **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
+| **Likely owning plans** | Tier-3 LKW application implementation plan (consumer); platform primitives in Tier-0/Tier-1 domain plans - **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
 | **Dependencies** | MP-1…MP-6 platform primitives accepted for the adopted subset |
 | **Exact scope** | LKW consumer integration for an explicitly selected subset of platform Multiplayer primitives |
 | **REUSED EXISTING CAPABILITY** | Prior LKW conversation, Ask, channel capabilities until explicitly integrated |
@@ -258,14 +258,14 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 
 ---
 
-## MP-8 — AgentDirectory / external-agent interoperability
+## MP-8 - AgentDirectory / external-agent interoperability
 
 | Field | Value |
 |-------|-------|
 | **Priority** | P3 |
 | **Status** | PLANNED / NOT STARTED |
 | **Purpose** | Agent discovery/registry, ExternalWork reuse, future A2A adapter at integration boundary. |
-| **Likely owning domain plans** | `AGENT_CONTRACTS_AND_ASSEMBLY.md`, `INTEGRATIONS.md`, `UNIFIED_EXECUTION_RUNTIME.md` — **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
+| **Likely owning domain plans** | `AGENT_CONTRACTS_AND_ASSEMBLY.md`, `INTEGRATIONS.md`, `UNIFIED_EXECUTION_RUNTIME.md` - **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
 | **Dependencies** | MP-1, MP-2 recommended |
 | **Exact scope** | AgentDirectory identity, capability/trust/discovery direction, governed external participation, and adapter boundary |
 | **REUSED EXISTING CAPABILITY** | `ExternalWorkIntegration`, governed external work host lifecycle |
@@ -279,14 +279,14 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 
 ---
 
-## MP-9 — Advanced collaborative UX, notifications, subscriptions, optional realtime
+## MP-9 - Advanced collaborative UX, notifications, subscriptions, optional realtime
 
 | Field | Value |
 |-------|-------|
 | **Priority** | P3 |
 | **Status** | PLANNED / NOT STARTED |
 | **Purpose** | Product-facing collaboration UX, notifications/subscriptions, optional realtime or generative UI when justified. |
-| **Likely owning domain plans** | `APPLICATION_HOSTING.md`, `INTEGRATIONS.md` — **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
+| **Likely owning domain plans** | `APPLICATION_HOSTING.md`, `INTEGRATIONS.md` - **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
 | **Dependencies** | MP-1…MP-8 as needed per UX slice |
 | **Exact scope** | Product-facing subscriptions, notifications, and optional realtime/generative UI justified by prior Multiplayer primitives |
 | **REUSED EXISTING CAPABILITY** | `notification_channel`, `conversation_channel`, hosting presentation |
@@ -305,7 +305,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 When adding rows to an owning domain plan after ownership confirmation:
 
 ```text
-MP-<n>-<slice> — <title>
+MP-<n>-<slice> - <title>
   Classification: NEW CAPABILITY REQUIRED | REUSED EXISTING CAPABILITY
   Feature coordination: docs/project/capabilities/plan/MULTIPLAYER_AI.md §MP-<n>
   Owning domain: <DOMAIN>

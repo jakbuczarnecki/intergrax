@@ -1,8 +1,8 @@
-﻿# LocalSearchAgent — Implementation Plan
+﻿# LocalSearchAgent - Implementation Plan
 
-**The implementation map** for this Tier-2 agent — phases, status, gaps, and verification.
+**The implementation map** for this Tier-2 agent - phases, status, gaps, and verification.
 
-Status: **Scaffold Done** — Wave **LKW.1** active
+Status: **Scaffold Done** - Wave **LKW.1** active
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 Host: [`applications/local_workspace_application`](../../../applications/local_workspace_application/)

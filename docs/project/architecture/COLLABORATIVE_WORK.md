@@ -1,6 +1,6 @@
 # Collaborative Work
 
-**Status:** Canonical architecture (domain pair 1:1) — **MP-1 core runtime implemented; final review pending**
+**Status:** Canonical architecture (domain pair 1:1) - **MP-1 core runtime implemented; final review pending**
 **Plan (1:1):** [`plan/COLLABORATIVE_WORK.md`](../maintainers/plans/COLLABORATIVE_WORK.md)
 **Feature coordination:** [`capabilities/architecture/MULTIPLAYER_AI.md`](../capabilities/architecture/MULTIPLAYER_AI.md)
 **Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
@@ -64,7 +64,7 @@ It does not answer:
 ### Policy / runtime enforcement owns (reuse, not storage)
 
 - `PolicyEngine`, `ToolAccessPolicy`, `evaluate_meaningful_side_effect`,
-  `MeaningfulSideEffectRequest` — **enforcement** of resolved authority at execution boundaries.
+  `MeaningfulSideEffectRequest` - **enforcement** of resolved authority at execution boundaries.
 - incidental `principal_id` / `tenant_id` fields on execution/policy contracts.
 
 ### Unified Execution Runtime owns
@@ -75,23 +75,23 @@ It does not answer:
 
 ### Application Hosting owns
 
-- `HostedApplicationProfile`, process lifecycle, supervision, OS adapters — not collaborative identity.
+- `HostedApplicationProfile`, process lifecycle, supervision, OS adapters - not collaborative identity.
 
 ### Nexus / Orchestration owns
 
-- execution orchestration, graph delegation to child agents, task lifecycle — not WorkItem lifecycle.
+- execution orchestration, graph delegation to child agents, task lifecycle - not WorkItem lifecycle.
 
 ### Memory / UCL / Context Engineering own
 
-- context assembly, memory namespaces, optimization artifacts — not membership or delegation source of truth.
+- context assembly, memory namespaces, optimization artifacts - not membership or delegation source of truth.
 
 ### Evidence / Observability own
 
-- proof receipts, trace linkage, event spine — consume resolved principal context; do not define membership.
+- proof receipts, trace linkage, event spine - consume resolved principal context; do not define membership.
 
 ### Tier-3 applications (e.g. LKW) own
 
-- product adoption and consumer integration — **not** platform primitive ownership.
+- product adoption and consumer integration - **not** platform primitive ownership.
 
 ---
 
@@ -111,11 +111,11 @@ It does not answer:
 - **CW-INV-12:** `WorkspaceMembershipRole` is collaborative classification; explicit `PrincipalAuthorityGrant.authority_scopes` own base authority.
 - **CW-INV-13:** Collaborative Work ALLOW satisfies only the collaborative authority slice; workspace, resource, and runtime/tool policy remain required for execution authorization.
 - **CW-INV-14:** Final execution ALLOW requires every applicable mandatory policy layer to return ALLOW; composition is fail closed and never weakens a restrictive decision.
-- **CW-INV-15:** Missing or unavailable mandatory policy evaluation is DENY — never implicit ALLOW.
+- **CW-INV-15:** Missing or unavailable mandatory policy evaluation is DENY - never implicit ALLOW.
 - **CW-INV-16:** Within `tenant_id + workspace_id`, each `principal_id` has at most one authoritative `WorkspaceMembership`; `membership_id` is immutable record identity, not a duplicate-membership selector.
 - **CW-INV-17:** Delegated authority requires both delegate and delegator to hold active workspace membership; revoked/suspended/missing delegator membership fails closed.
 - **CW-INV-18:** Authoritative Collaborative Work production paths must not use dynamic attribute access (`getattr`, `setattr`, `hasattr`, `vars`, `object.__setattr__`, direct `.__dict__`).
-- **CW-INV-19:** Production durable backend — production multi-instance Collaborative Work deployments require a repository backend proven for cross-process transactional concurrency. PostgreSQL is the first production-qualified adapter; SQLite remains a lightweight/local durable adapter. Future production-qualified adapters may implement the same port after equivalent qualification.
+- **CW-INV-19:** Production durable backend - production multi-instance Collaborative Work deployments require a repository backend proven for cross-process transactional concurrency. PostgreSQL is the first production-qualified adapter; SQLite remains a lightweight/local durable adapter. Future production-qualified adapters may implement the same port after equivalent qualification.
 
 ### Policy composition boundary (COLLAB-WORK-1E)
 
@@ -138,13 +138,13 @@ Collaborative Work owns authoritative workspace and resource policy persistence 
 - **Exact policy keys** (at most one canonical rule each):
   - workspace: `tenant_id + workspace_id + authority_scope`
   - resource: `tenant_id + workspace_id + resource_scope + authority_scope`
-- **Matching:** exact normalized strings only — no wildcards, inheritance, or hierarchy.
+- **Matching:** exact normalized strings only - no wildcards, inheritance, or hierarchy.
 - **Fail closed:** missing or inactive (`DISABLED`) rules yield DENY; no implicit ALLOW.
 - **Resource evaluator** does not fall back to workspace rules; composition combines layers.
 - **Output:** existing ``PolicyDecision`` consumable by ``compose_policy_decisions``; no fabricated bundle attestation.
-- **Runtime Policy ownership unchanged** — runtime/tool evaluation remains in ``RuntimePolicyEngine`` / ``PolicyEngine``.
-- **Applicability classification remains separate** — evaluators answer only when explicitly asked; they do not emit ``NOT_APPLICABLE``.
-- **Policy management authorization is out of scope** — creating/updating rules is highly privileged and must itself be authority/policy gated in future administration.
+- **Runtime Policy ownership unchanged** - runtime/tool evaluation remains in ``RuntimePolicyEngine`` / ``PolicyEngine``.
+- **Applicability classification remains separate** - evaluators answer only when explicitly asked; they do not emit ``NOT_APPLICABLE``.
+- **Policy management authorization is out of scope** - creating/updating rules is highly privileged and must itself be authority/policy gated in future administration.
 
 ### Trusted operation classification and enforcement gate (COLLAB-WORK-1G)
 
@@ -152,11 +152,11 @@ Collaborative Work owns authoritative operation → policy-layer classification 
 
     operation_id → ``CollaborativeOperationPolicyProfile`` → authority + workspace + resource + runtime evaluation → ``compose_policy_decisions``
 
-- **Applicability source is authoritative** — operation profiles declare ``REQUIRED`` / ``NOT_APPLICABLE`` per layer; callers must not supply ``PolicyCompositionApplicability`` or skip flags.
-- **Profile binds authority scope** — enforcement uses profile-owned ``authority_scope``; caller cannot substitute a weaker scope.
-- **Meaningful side-effect requirement forces runtime policy** — contradictory profiles are rejected at contract validation.
-- **Gate orchestrates existing owners** — ``CollaborativeWorkAuthorityResolver``, ``CollaborativePolicyEvaluator``, and ``RuntimePolicyEngine`` / ``PolicyEngine`` meaningful-side-effect path; no duplicated composition or runtime evaluator.
-- **Missing or inactive profile fails closed** — classification unresolved yields DENY; no operation executes inside the gate.
+- **Applicability source is authoritative** - operation profiles declare ``REQUIRED`` / ``NOT_APPLICABLE`` per layer; callers must not supply ``PolicyCompositionApplicability`` or skip flags.
+- **Profile binds authority scope** - enforcement uses profile-owned ``authority_scope``; caller cannot substitute a weaker scope.
+- **Meaningful side-effect requirement forces runtime policy** - contradictory profiles are rejected at contract validation.
+- **Gate orchestrates existing owners** - ``CollaborativeWorkAuthorityResolver``, ``CollaborativePolicyEvaluator``, and ``RuntimePolicyEngine`` / ``PolicyEngine`` meaningful-side-effect path; no duplicated composition or runtime evaluator.
+- **Missing or inactive profile fails closed** - classification unresolved yields DENY; no operation executes inside the gate.
 
 ### Durable authoritative state and production adoption (COLLAB-WORK-1H / COLLAB-WORK-1J)
 
@@ -164,19 +164,19 @@ Collaborative Work owns durable persistence for MP-1 authoritative security/conf
 
 ```text
 Repository Ports
-├── InMemory — reference
-├── SQLite — local/dev durable
-└── PostgreSQL — production scalable durable
+├── InMemory - reference
+├── SQLite - local/dev durable
+└── PostgreSQL - production scalable durable
 ```
 
     repository ports → durable adapter → configured database (composition root)
 
-- **Vendor-neutral domain** — contracts and enforcement gate import no database or observability vendor SDKs; concrete storage is selected at composition root (`open_sqlite_collaborative_work_repositories`, `open_postgresql_collaborative_work_repositories`).
-- **Semantic parity** — durable adapters preserve tenant/workspace isolation, revision-0 create, ``expected_revision`` CAS, idempotency replay snapshots, and database-enforced uniqueness for membership (including one membership per principal per workspace), delegation, principal authority, policy exact keys, operation profiles, and idempotency scope/key.
-- **Fail closed** — production must not silently fall back to in-memory authority state when durable storage is configured but unavailable.
-- **Canonical side-effect boundary** — ``MeaningfulSideEffectAuthorizationBoundary`` invokes ``CollaborativeWorkEnforcementGate`` immediately before a meaningful side effect may proceed; only ``ALLOW`` permits continuation; ``REQUIRE_HUMAN`` / ``ESCALATE`` return upstream without execution.
-- **Semantic channel separation** — domain authoritative state ≠ product activity history ≠ audit/evidence ≠ technical logs ≠ error reporting ≠ distributed traces ≠ metrics. None of the observability channels may become authority source-of-truth.
-- **Platform modularity** — Multiplayer capabilities depend on platform-level ports/contracts; concrete vendors (persistence, messaging, logs, errors, traces, metrics, activity, audit) are selected by configuration/adapters outside canonical Collaborative Work contracts.
+- **Vendor-neutral domain** - contracts and enforcement gate import no database or observability vendor SDKs; concrete storage is selected at composition root (`open_sqlite_collaborative_work_repositories`, `open_postgresql_collaborative_work_repositories`).
+- **Semantic parity** - durable adapters preserve tenant/workspace isolation, revision-0 create, ``expected_revision`` CAS, idempotency replay snapshots, and database-enforced uniqueness for membership (including one membership per principal per workspace), delegation, principal authority, policy exact keys, operation profiles, and idempotency scope/key.
+- **Fail closed** - production must not silently fall back to in-memory authority state when durable storage is configured but unavailable.
+- **Canonical side-effect boundary** - ``MeaningfulSideEffectAuthorizationBoundary`` invokes ``CollaborativeWorkEnforcementGate`` immediately before a meaningful side effect may proceed; only ``ALLOW`` permits continuation; ``REQUIRE_HUMAN`` / ``ESCALATE`` return upstream without execution.
+- **Semantic channel separation** - domain authoritative state ≠ product activity history ≠ audit/evidence ≠ technical logs ≠ error reporting ≠ distributed traces ≠ metrics. None of the observability channels may become authority source-of-truth.
+- **Platform modularity** - Multiplayer capabilities depend on platform-level ports/contracts; concrete vendors (persistence, messaging, logs, errors, traces, metrics, activity, audit) are selected by configuration/adapters outside canonical Collaborative Work contracts.
 
 ---
 
@@ -186,8 +186,8 @@ MP-1 freezes semantic contracts only (see ADR-MP-002):
 
 | Contract | Direction |
 |----------|-----------|
-| **Principal** | `HUMAN`, `AGENT`, `SERVICE`, future `EXTERNAL_AGENT` — semantic kinds; implementation enum location remains open until justified |
-| **WorkspaceMembership** | explicit membership in `tenant_id + workspace_id` scope; role is collaborative classification only — not an authority source |
+| **Principal** | `HUMAN`, `AGENT`, `SERVICE`, future `EXTERNAL_AGENT` - semantic kinds; implementation enum location remains open until justified |
+| **WorkspaceMembership** | explicit membership in `tenant_id + workspace_id` scope; role is collaborative classification only - not an authority source |
 | **PrincipalAuthorityGrant** | explicit authoritative base-authority scopes per principal in workspace scope; one grant per principal per workspace |
 | **Delegation** | delegator + delegate principals; scoped authority; optional resource/time bounds; never amplifies delegator base authority |
 | **Effective authority** | base principal authority ∩ membership ∩ delegation ∩ workspace policy ∩ resource policy ∩ runtime/tool policy |

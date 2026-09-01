@@ -44,7 +44,7 @@ Current claim status belongs to [PROOFS](../proofs/PROOFS.md). It separates impl
 
 ## Is Hybrid Ask proven?
 
-Partly, with boundaries. The [Product Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) exercises indexed **Ask V1** — it is not the Hybrid Ask verification path. Separate accepted evidence demonstrates the bounded indexed branch through Hybrid Ask; see [PROOFS](../proofs/PROOFS.md) and [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md). Mixed indexed + authorized-live Hybrid Ask in one answer is **not proven**; this does not imply general production readiness or complete external live-provider access.
+Partly, with boundaries. The [Product Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) exercises indexed **Ask V1** - it is not the Hybrid Ask verification path. Separate accepted evidence demonstrates the bounded indexed branch through Hybrid Ask; see [PROOFS](../proofs/PROOFS.md) and [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md). Mixed indexed + authorized-live Hybrid Ask in one answer is **not proven**; this does not imply general production readiness or complete external live-provider access.
 
 ## Where should I start?
 
@@ -88,6 +88,6 @@ Follow [SECURITY.md](../../../SECURITY.md). **Do not open a public issue for a s
 
 ## Related public routes
 
-- [ROADMAP](ROADMAP.md) — public outcome direction.
-- [USE_CASES](USE_CASES.md) — workflow fit.
-- [PROOFS](../proofs/PROOFS.md) — current evidence status.
+- [ROADMAP](ROADMAP.md) - public outcome direction.
+- [USE_CASES](USE_CASES.md) - workflow fit.
+- [PROOFS](../proofs/PROOFS.md) - current evidence status.

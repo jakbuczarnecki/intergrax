@@ -1,4 +1,4 @@
-# DEP-4 — Dependency version policy and governance
+# DEP-4 - Dependency version policy and governance
 
 Status: `READY_FOR_REVIEW`
 

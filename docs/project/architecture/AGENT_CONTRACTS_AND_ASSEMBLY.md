@@ -1,10 +1,10 @@
 # Agent Contracts & Assembly
 
-**Intergrax Agent Contracts & Assembly** defines how an agent declares its capabilities, inputs, outputs, permissions, limits, and risk — and how the platform binds that domain behavior into a governed execution environment.
+**Intergrax Agent Contracts & Assembly** defines how an agent declares its capabilities, inputs, outputs, permissions, limits, and risk - and how the platform binds that domain behavior into a governed execution environment.
 
 > **Agent authors own domain behavior. The platform owns safe execution.**
 
-An agent in Intergrax is a **contractually defined domain component**, not a private runtime. The author implements domain decisions — mainly through `on_next_step()` — while HarnessKernel, AgentRuntime, and UAEP enforce policy, tracing, budgets, memory/tool gateways, and lifecycle. Nexus decides **when** and **where** the agent runs; Tier-3 hosts select the roster and wire profiles.
+An agent in Intergrax is a **contractually defined domain component**, not a private runtime. The author implements domain decisions - mainly through `on_next_step()` - while HarnessKernel, AgentRuntime, and UAEP enforce policy, tracing, budgets, memory/tool gateways, and lifecycle. Nexus decides **when** and **where** the agent runs; Tier-3 hosts select the roster and wire profiles.
 
 ```text
 Agent contract     → what the agent promises
@@ -32,28 +32,28 @@ ACP solves this through:
 ## Maturity boundary
 
 > [!NOTE]
-> **Phases ACP + ACP-CLOSE + ACP-FINISH + AUDIT-IDEAL (§12–§20) are Done** on the harness path — typed author API, fleet migration, production gates, registry snapshot, capability negotiation, lifecycle governance, prompt approval/diff, cross-host reuse certification, and eval-before-promotion enforcement. That is **platform-ready** architecture and gates, **not** universal **product production qualification**: every concrete agent, host combination, mutating deployment, operational SLO, and customer evidence requires separate qualification. See [Current maturity](#current-maturity) and [Harness-proven vs production-qualified](#harness-proven-vs-not-automatically-production-qualified).
+> **Phases ACP + ACP-CLOSE + ACP-FINISH + AUDIT-IDEAL (§12–§20) are Done** on the harness path - typed author API, fleet migration, production gates, registry snapshot, capability negotiation, lifecycle governance, prompt approval/diff, cross-host reuse certification, and eval-before-promotion enforcement. That is **platform-ready** architecture and gates, **not** universal **product production qualification**: every concrete agent, host combination, mutating deployment, operational SLO, and customer evidence requires separate qualification. See [Current maturity](#current-maturity) and [Harness-proven vs production-qualified](#harness-proven-vs-not-automatically-production-qualified).
 
-**Primary audience:** Tier-2 agent authors and principal engineers defining agent contracts, assembly, and certification — after the platform overview in the root README.
+**Primary audience:** Tier-2 agent authors and principal engineers defining agent contracts, assembly, and certification - after the platform overview in the root README.
 
 ## At a glance
 
 | Concern | Summary |
 | -------- | -------- |
-| **Responsibility** | Agent contract, author surface, registry/capability model, assembly bindings — not private agent runtimes |
-| **Agent contract** | `AgentContract` — identity, capabilities, I/O schemas, permissions, execution envelope |
+| **Responsibility** | Agent contract, author surface, registry/capability model, assembly bindings - not private agent runtimes |
+| **Agent contract** | `AgentContract` - identity, capabilities, I/O schemas, permissions, execution envelope |
 | **Author API** | `Agent.run()` session facade; `on_next_step()` domain hook; typed `AgentStepContext` / `StepOutcome` |
-| **Runtime API** | `AgentRuntime.advance_step()` glue; `HarnessKernel.execute_step()` safe cycle — internal to platform |
+| **Runtime API** | `AgentRuntime.advance_step()` glue; `HarnessKernel.execute_step()` safe cycle - internal to platform |
 | **Capability / registry** | `capabilities[]` → `AgentRegistry` → capability resolve → Nexus routing |
 | **Permissions / resources** | `allowed_tools`, `required_adapters`; profile-driven environment/resource bindings |
 | **Limits / risk** | `max_steps`, `max_duration`, `max_cost`, `risk_level`, `failure_modes` on contract |
 | **Assembly** | Contract + prompt/tool/LLM/memory/modality profiles + environment + governance → configured agent |
 | **Nexus relation** | Nexus routes Task / graph nodes; agent executes domain role inside a node |
-| **UER relation** | UAEP / HarnessKernel govern execution sequence, lifecycle, events — agent supplies behavior |
+| **UER relation** | UAEP / HarnessKernel govern execution sequence, lifecycle, events - agent supplies behavior |
 | **Tier-3 relation** | Host selects roster, binds profiles/environment, exposes product surfaces |
-| **Distribution relation** | Catalog, install, binding, runtime lock, activation — [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) |
+| **Distribution relation** | Catalog, install, binding, runtime lock, activation - [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) |
 | **Production boundary** | Platform gates Done; per-agent / per-host production qualification **not** automatic |
-| **Maturity** | Four-axis statement in [Current maturity](#current-maturity) — no dedicated public ACP proof route |
+| **Maturity** | Four-axis statement in [Current maturity](#current-maturity) - no dedicated public ACP proof route |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [extended depth satellite](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md) · [production gates satellite](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md) · [plan](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) |
 
 ## Flagship architecture visual
@@ -86,21 +86,21 @@ Agent.run()                                    UAEP bridge (run_step → shim)
 AgentRuntime / session loop                             framework execution bridge
         └────────────────────────┬────────────────────────┘
                                  ↓
-                         on_next_step()  — domain decision (author)
+                         on_next_step()  - domain decision (author)
                                  ↓
-                  HarnessKernel.execute_step()  — policy, trace, gateways, budgets
+                  HarnessKernel.execute_step()  - policy, trace, gateways, budgets
                                  ↓
                     AgentRunResult / graph node outcome
 ```
 
-Nexus routes Task / graph nodes by capability when orchestration applies; it does **not** universally call `Agent.run()`. **Target:** every production-certified path reaches equivalent author semantics before platform-governed effects — for the canonical contract, that means `on_next_step()` (or an explicitly typed equivalent contract with the same guarantees). See [Protocol v2 strategic harness target invariants](#protocol-v2-strategic-harness-target-invariants-2026-08-18).
+Nexus routes Task / graph nodes by capability when orchestration applies; it does **not** universally call `Agent.run()`. **Target:** every production-certified path reaches equivalent author semantics before platform-governed effects - for the canonical contract, that means `on_next_step()` (or an explicitly typed equivalent contract with the same guarantees). See [Protocol v2 strategic harness target invariants](#protocol-v2-strategic-harness-target-invariants-2026-08-18).
 
-1. **Declare** — author defines `AgentContract` and registers capabilities.
-2. **Assemble** — Tier-3 profile binds prompt, tool, LLM, memory, modality, and governance profiles.
-3. **Route** — Nexus resolves `required_capability` via `AgentRegistry` (not hardcoded class names).
-4. **Enter** — direct session via `Agent.run()`, **or** Nexus graph node via UAEP bridge (`run_step` → shim) without `Agent.run()` as outer facade.
-5. **Decide** — each iteration: author `on_next_step()` returns intent; kernel executes safely.
-6. **Govern** — lifecycle, certification, and production gates apply before `production_mode` promotion.
+1. **Declare** - author defines `AgentContract` and registers capabilities.
+2. **Assemble** - Tier-3 profile binds prompt, tool, LLM, memory, modality, and governance profiles.
+3. **Route** - Nexus resolves `required_capability` via `AgentRegistry` (not hardcoded class names).
+4. **Enter** - direct session via `Agent.run()`, **or** Nexus graph node via UAEP bridge (`run_step` → shim) without `Agent.run()` as outer facade.
+5. **Decide** - each iteration: author `on_next_step()` returns intent; kernel executes safely.
+6. **Govern** - lifecycle, certification, and production gates apply before `production_mode` promotion.
 
 Minimal author path: [`guides/AGENT_AUTHOR_MINIMAL_PATH.md`](../technical/guides/AGENT_AUTHOR_MINIMAL_PATH.md).
 
@@ -108,8 +108,8 @@ Minimal author path: [`guides/AGENT_AUTHOR_MINIMAL_PATH.md`](../technical/guides
 
 | Entry | Scope | Owner |
 | ----- | ----- | ----- |
-| **`Agent.run()`** | Whole agent session — many iterations until terminal | Author-facing facade for **direct** sessions; base class orchestrates harness services |
-| **`on_next_step()`** | One domain decision / iteration | Author domain logic — plan, tool intent, model choice within profile, terminal/HITL intent |
+| **`Agent.run()`** | Whole agent session - many iterations until terminal | Author-facing facade for **direct** sessions; base class orchestrates harness services |
+| **`on_next_step()`** | One domain decision / iteration | Author domain logic - plan, tool intent, model choice within profile, terminal/HITL intent |
 
 ```text
 Agent.run()           → whole direct agent session (Path A)
@@ -126,13 +126,13 @@ Engineering detail: [§13](#13-agent-interface-run-facade-step-loop-and-uaep) ·
 
 ## Execution stack
 
-Ownership layers — not one mandatory call chain. Direct sessions and Nexus graph nodes take different outer paths; **target:** all certified paths converge on one canonical author contract before HarnessKernel governs effects (see [Protocol v2 strategic harness target invariants](#protocol-v2-strategic-harness-target-invariants-2026-08-18)).
+Ownership layers - not one mandatory call chain. Direct sessions and Nexus graph nodes take different outer paths; **target:** all certified paths converge on one canonical author contract before HarnessKernel governs effects (see [Protocol v2 strategic harness target invariants](#protocol-v2-strategic-harness-target-invariants-2026-08-18)).
 
 ```text
 Path A (direct):     Agent.run() → AgentRuntime.advance_step() → on_next_step() → HarnessKernel
 Path B (Nexus):      Task → NexusLoop → graph node → UAEP bridge → on_next_step() → HarnessKernel
 Shared author hook:  on_next_step()
-Platform cycle:      HarnessKernel.execute_step() — policy, trace, gateways, budgets
+Platform cycle:      HarnessKernel.execute_step() - policy, trace, gateways, budgets
 ```
 
 | Layer | Does | Does not |
@@ -141,7 +141,7 @@ Platform cycle:      HarnessKernel.execute_step() — policy, trace, gateways, b
 | **Agent.run()** | Direct author session facade; orchestrates iterations | Universal Tier-1 graph-node entry; policy, trace, tool gateway, budgets |
 | **AgentRuntime** | Session-loop glue: `on_next_step` + kernel per iteration (Path A) | Domain planning |
 | **UAEP bridge** | Nexus graph-node execution bridge (`run_step` → shim → `on_next_step`) | Author session API; domain planning |
-| **on_next_step** | Domain reasoning, intent, terminal/HITL — **shared author hook** | Private lifecycle or retry engine |
+| **on_next_step** | Domain reasoning, intent, terminal/HITL - **shared author hook** | Private lifecycle or retry engine |
 | **HarnessKernel** | Policy, trace, gateways, state merge, budgets | Choose domain tools/models for author |
 
 Nexus is **not** an agent session API. Agents must not build private multi-agent graphs outside Nexus contracts.
@@ -161,7 +161,7 @@ Nexus is **not** an agent session API. Agents must not build private multi-agent
 
 ## Typed author surface
 
-ACP exposes typed contracts so authors can answer from code alone — without running the app:
+ACP exposes typed contracts so authors can answer from code alone - without running the app:
 
 1. what state was **read**,
 2. what state **changed**,
@@ -169,15 +169,15 @@ ACP exposes typed contracts so authors can answer from code alone — without ru
 
 Key surfaces:
 
-- `AgentStepContext` — step inputs, memory view, tool gateway, session state
-- `StepOutcome` — typed factories for continue, terminal, HITL, tool intent
-- `AcpSessionState` — typed session/state contracts
+- `AgentStepContext` - step inputs, memory view, tool gateway, session state
+- `StepOutcome` - typed factories for continue, terminal, HITL, tool intent
+- `AcpSessionState` - typed session/state contracts
 
 **Normative:** untyped `dict` on the author surface is **not supported**. See §32.0 in the [extended depth satellite](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md).
 
 ## AgentContract (public summary)
 
-Group contract dimensions — full field list in [§12](#12-agent-contract).
+Group contract dimensions - full field list in [§12](#12-agent-contract).
 
 ### Identity
 
@@ -211,7 +211,7 @@ capability resolve / negotiation
 Nexus routing (required_capability → agent)
 ```
 
-**Capability** answers: *what can this agent handle?* It is **not** a skill, tool id, or product feature. Production Nexus selection MUST resolve capability tokens — not Python class names (§16, §37.6 in extended satellite).
+**Capability** answers: *what can this agent handle?* It is **not** a skill, tool id, or product feature. Production Nexus selection MUST resolve capability tokens - not Python class names (§16, §37.6 in extended satellite).
 
 ## Agent Registry
 
@@ -222,7 +222,7 @@ Tier-1 **execution projection** populated from materialized effective roster at 
 - durable snapshot / cross-host behavior (`registry_snapshot_store`),
 - certification and lifecycle metadata when present.
 
-Installation, catalog, binding, and activation are **Agent Distribution** — not duplicated here (§15).
+Installation, catalog, binding, and activation are **Agent Distribution** - not duplicated here (§15).
 
 ## Capability graph (high level)
 
@@ -236,11 +236,11 @@ The capability graph answers operational questions:
 Integration → Tool → Skill → Policy → Agent → Application → Product
 ```
 
-AUDIT-IDEAL-20.1 blast-radius CI is **Done** — graph is analysis/governance, not a runtime scheduler. Detail: [§19](#19-capability-graph-architecture).
+AUDIT-IDEAL-20.1 blast-radius CI is **Done** - graph is analysis/governance, not a runtime scheduler. Detail: [§19](#19-capability-graph-architecture).
 
 ## Assembly
 
-Semantic assembly model — ACP owns **binding surface**, component domains own semantics:
+Semantic assembly model - ACP owns **binding surface**, component domains own semantics:
 
 ```text
 AgentContract
@@ -255,17 +255,17 @@ AgentContract
 configured agent (host-specific instance)
 ```
 
-- **ACP** — contract + author binding surface.
-- **Tools / Memory / LLM / Reasoning** — own tool, memory, model, planner semantics.
-- **Tier-3 host** — selects roster, wires `ApplicationEnvironmentProfile`, exposes product.
+- **ACP** - contract + author binding surface.
+- **Tools / Memory / LLM / Reasoning** - own tool, memory, model, planner semantics.
+- **Tier-3 host** - selects roster, wires `ApplicationEnvironmentProfile`, exposes product.
 
 Do not treat ACP as a super-domain that subsumes Tools or Memory.
 
 ## Environment and resource binding
 
-Agents may have per-agent environment and resource bindings — explicit and profile-driven. Authors should not discover global secrets or clients through ambient globals. Contract + `AgentRunBinding` + environment profile materialize effective resources at run time.
+Agents may have per-agent environment and resource bindings - explicit and profile-driven. Authors should not discover global secrets or clients through ambient globals. Contract + `AgentRunBinding` + environment profile materialize effective resources at run time.
 
-Implementation depth: satellite [§30](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md) — not duplicated here.
+Implementation depth: satellite [§30](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md) - not duplicated here.
 
 ## Prompt registry
 
@@ -276,11 +276,11 @@ Prompts are **governed platform assets**, not uncontrolled embedded strings:
 - approval and diff workflow (AUDIT-IDEAL-17.1, 17.2 **Done**),
 - Tier-3 `PromptProfile` selects catalog path per host.
 
-Context assembly still flows through `ContextCompiler` / `ContextEngine` — Prompt Registry supplies governed fragments only ([`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md)). Canon: [§17](#17-prompt-registry-architecture).
+Context assembly still flows through `ContextCompiler` / `ContextEngine` - Prompt Registry supplies governed fragments only ([`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md)). Canon: [§17](#17-prompt-registry-architecture).
 
 ## Cognitive architecture (ACP)
 
-ACP provides **author-facing patterns** (ReAct, decomposition, reflection) as Tier-2 libraries implementing `on_next_step` — but:
+ACP provides **author-facing patterns** (ReAct, decomposition, reflection) as Tier-2 libraries implementing `on_next_step` - but:
 
 - does **not** replace RCL task cognition ([`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md)),
 - does **not** replace Nexus graph orchestration,
@@ -293,9 +293,9 @@ Canon: [§21](#21-agent-cognitive-architecture-acp).
 | Layer | Owns |
 | ----- | ---- |
 | **Reasoning & Cognition (RCL)** | Platform-wide cognition contracts; planner/classifier semantics; `NexusPlan`, `DecisionRecord` |
-| **ACP** | Cognition **inside** agent author surface — primarily `on_next_step()` and cognitive patterns |
+| **ACP** | Cognition **inside** agent author surface - primarily `on_next_step()` and cognitive patterns |
 
-Do not duplicate the three cognition planes here — see RCL hub.
+Do not duplicate the three cognition planes here - see RCL hub.
 
 ## Agent vs Nexus
 
@@ -328,10 +328,10 @@ Do not duplicate the three cognition planes here — see RCL hub.
 
 ## Agent lifecycle governance
 
-Public summary — gates in [§20](#20-agent-lifecycle-governance) and production satellite §40+:
+Public summary - gates in [§20](#20-agent-lifecycle-governance) and production satellite §40+:
 
 - owner / on-call metadata mandatory on certified agents (AUDIT-IDEAL-31.1 **Done**),
-- evaluation required before production promotion — enforced (AUDIT-IDEAL-31.2 **Done**),
+- evaluation required before production promotion - enforced (AUDIT-IDEAL-31.2 **Done**),
 - certification, promotion, deprecation, retirement semantics,
 - versioning and release posture per agent.
 
@@ -344,7 +344,7 @@ Public summary — gates in [§20](#20-agent-lifecycle-governance) and productio
 | **Platform-ready** | Architecture/runtime contracts, author API, registry, capability model, and CI/production gates **exist and are Done** on harness path |
 | **Product / customer production-qualified** | Concrete agent + host + operational evidence + SLO/runbook + risk/certification + real deployment proof |
 
-`ACP-PROD-*` and `ACP-CLOSE-PROD-*` **Done** mean mutating agents can meet platform gates — **not** that every agent or host is P4.
+`ACP-PROD-*` and `ACP-CLOSE-PROD-*` **Done** mean mutating agents can meet platform gates - **not** that every agent or host is P4.
 
 ## Harness-proven vs not automatically production-qualified
 
@@ -363,38 +363,38 @@ Public summary — gates in [§20](#20-agent-lifecycle-governance) and productio
 - Every mutating agent / customer deployment
 - Universal SLO, runbook, and operational evidence
 
-`production_mode` and platform-ready wording are posture — not taxonomy **P4**.
+`production_mode` and platform-ready wording are posture - not taxonomy **P4**.
 
 <a id="protocol-v2-strategic-harness-target-invariants-2026-08-18"></a>
 
 ## Protocol v2 strategic harness target invariants (2026-08-18)
 
-Accepted Protocol v2 audit layer [`STRATEGIC_HARNESS_MODEL`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) (**FAIL**, 10 ACCEPTED findings). Canonical evidence and lifecycle: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). This section states **target design only** — not bug history.
+Accepted Protocol v2 audit layer [`STRATEGIC_HARNESS_MODEL`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) (**FAIL**, 10 ACCEPTED findings). Canonical evidence and lifecycle: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). This section states **target design only** - not bug history.
 
-1. **Canonical author contract** — production-certified author execution must use one explicit author contract. If `on_next_step()` is canonical, every certified path must reach equivalent semantics by construction ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-04`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-2. **No hidden runtime escape** — author code must not depend on unrestricted hidden runtime escape hatches (e.g. untyped metadata channels) to bypass platform-owned effect boundaries ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-06`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-3. **Typed critical author context** — `AgentStepContext`, `StepOutcome`, and related author surfaces at the critical boundary must be typed capability models, not unbounded `dict[str, Any]` author dependencies ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-06`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-4. **Universal pre-effect governance** — HarnessKernel (or an explicitly proven compositional equivalent) is the boundary before meaningful side effects; author paths must not perform ungoverned effects first ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-01`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-5. **Product-neutral core transport** — product/application vocabulary (e.g. domain-specific summary keys) must not live in core execution result transport ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-07`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-6. **Maturity honesty** — historical ACP/AUDIT-IDEAL **Done** rows remain historical; **current** maturity must acknowledge unresolved accepted Protocol v2 findings until independently verified closed ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-10`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+1. **Canonical author contract** - production-certified author execution must use one explicit author contract. If `on_next_step()` is canonical, every certified path must reach equivalent semantics by construction ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-04`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+2. **No hidden runtime escape** - author code must not depend on unrestricted hidden runtime escape hatches (e.g. untyped metadata channels) to bypass platform-owned effect boundaries ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-06`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+3. **Typed critical author context** - `AgentStepContext`, `StepOutcome`, and related author surfaces at the critical boundary must be typed capability models, not unbounded `dict[str, Any]` author dependencies ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-06`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+4. **Universal pre-effect governance** - HarnessKernel (or an explicitly proven compositional equivalent) is the boundary before meaningful side effects; author paths must not perform ungoverned effects first ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-01`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+5. **Product-neutral core transport** - product/application vocabulary (e.g. domain-specific summary keys) must not live in core execution result transport ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-07`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+6. **Maturity honesty** - historical ACP/AUDIT-IDEAL **Done** rows remain historical; **current** maturity must acknowledge unresolved accepted Protocol v2 findings until independently verified closed ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-10`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
 
 <a id="protocol-v2-agent-system-target-invariants-2026-08-18"></a>
 
 ## Protocol v2 agent system target invariants (2026-08-18)
 
-Accepted Protocol v2 audit layer [`AGENT_SYSTEM`](../../audit_results/2026-08-18/AGENT_SYSTEM.md) (**FAIL**, 6 ACCEPTED findings). Canonical evidence and lifecycle: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — not bug history.
+Accepted Protocol v2 audit layer [`AGENT_SYSTEM`](../../audit_results/2026-08-18/AGENT_SYSTEM.md) (**FAIL**, 6 ACCEPTED findings). Canonical evidence and lifecycle: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only - not bug history.
 
-1. **Positive production eligibility** — production routing must fail closed; `production_eligible` must be positively established before an agent may participate in production routing; lifecycle state and operational metadata are additional gates, not substitutes ([`AUDIT-20260818-AGENT_SYSTEM-01`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
-2. **Immutable registered contract truth** — registry execution truth must use immutable validated contract snapshots or an explicit versioned/validated transition mechanism; no ambient post-registration mutation of canonical routing/security state ([`AUDIT-20260818-AGENT_SYSTEM-02`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
-3. **Canonical tool-permission resolution** — one canonical agent tool-permission declaration/resolution path via `skills` / `extra_tools` → `resolve_contract_tools`; authors must not bypass `SkillManifest` / `ToolContract` resolution by directly injecting resolved `allowed_tools` unless architecture explicitly defines a separate typed trusted binding surface ([`AUDIT-20260818-AGENT_SYSTEM-03`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
-4. **Fail-fast contract schema** — canonical `AgentContract` must reject unknown fields (`extra="forbid"`); critical production/capability/permission/lifecycle metadata cannot silently disappear because of spelling or schema drift ([`AUDIT-20260818-AGENT_SYSTEM-05`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
-5. **Operational metadata parity** — documented certification/lifecycle contract and actual assembly/routing enforcement must agree on required owner/on-call fields; if on-call is mandatory for production certification, enforce it; otherwise narrow the plan claim through an explicit architectural decision — do not silently weaken the target during audit persistence ([`AUDIT-20260818-AGENT_SYSTEM-06`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
+1. **Positive production eligibility** - production routing must fail closed; `production_eligible` must be positively established before an agent may participate in production routing; lifecycle state and operational metadata are additional gates, not substitutes ([`AUDIT-20260818-AGENT_SYSTEM-01`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
+2. **Immutable registered contract truth** - registry execution truth must use immutable validated contract snapshots or an explicit versioned/validated transition mechanism; no ambient post-registration mutation of canonical routing/security state ([`AUDIT-20260818-AGENT_SYSTEM-02`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
+3. **Canonical tool-permission resolution** - one canonical agent tool-permission declaration/resolution path via `skills` / `extra_tools` → `resolve_contract_tools`; authors must not bypass `SkillManifest` / `ToolContract` resolution by directly injecting resolved `allowed_tools` unless architecture explicitly defines a separate typed trusted binding surface ([`AUDIT-20260818-AGENT_SYSTEM-03`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
+4. **Fail-fast contract schema** - canonical `AgentContract` must reject unknown fields (`extra="forbid"`); critical production/capability/permission/lifecycle metadata cannot silently disappear because of spelling or schema drift ([`AUDIT-20260818-AGENT_SYSTEM-05`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
+5. **Operational metadata parity** - documented certification/lifecycle contract and actual assembly/routing enforcement must agree on required owner/on-call fields; if on-call is mandatory for production certification, enforce it; otherwise narrow the plan claim through an explicit architectural decision - do not silently weaken the target during audit persistence ([`AUDIT-20260818-AGENT_SYSTEM-06`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)).
 
 Remediation tracked as **AGSYS-CONTRACT-INTEGRITY** in [plan](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md). Registry identity projection (**AGSYS-IDENTITY-PROJECTION**) owned by [Agent Distribution](AGENT_DISTRIBUTION.md). **Not implemented** by audit persistence.
 
 ## Execution-first agentic model (UE-DOC-0.8)
 
-Frozen alignment with [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) (UEA-INV-003, UEA-INV-008, UEA-INV-018, UEA-INV-021). **Documentation only** — runtime migration deferred to UE-DOC-0.9+.
+Frozen alignment with [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) (UEA-INV-003, UEA-INV-008, UEA-INV-018, UEA-INV-021). **Documentation only** - runtime migration deferred to UE-DOC-0.9+.
 
 ### Canonical agentic Execution path
 
@@ -412,7 +412,7 @@ bounded model ↔ tool iterations
 terminal result
 ```
 
-**Agent** is reusable domain behavior — **not** Execution, Run, lifecycle owner, governance owner, budget ledger, tool runtime, or orchestration engine. **UAEP** is agent-specific execution protocol — **not** universal Execution protocol.
+**Agent** is reusable domain behavior - **not** Execution, Run, lifecycle owner, governance owner, budget ledger, tool runtime, or orchestration engine. **UAEP** is agent-specific execution protocol - **not** universal Execution protocol.
 
 Autonomous multi-iteration `LLM → tool → result → LLM → …` is **agentic Execution** behavior. It does **not** require Nexus. Simple inference remains direct. Nexus appears only when independently schedulable child Executions/topology are needed.
 
@@ -425,16 +425,16 @@ Execution E1
   ↓ LLM #1 → Tool A → LLM #2 → Tool B → LLM #3 → Tool C → LLM #4 → FINAL
 ```
 
-Do **not** create child Execution for every LLM call, tool call, agent step, observation, or reasoning iteration. Promote to child Execution only when work is independently **schedulable, governable, retryable as standalone work, budget-allocatable, cancellable, delegatable, and observable as standalone platform work** — for example delegated financial vs infrastructure investigations under one parent incident.
+Do **not** create child Execution for every LLM call, tool call, agent step, observation, or reasoning iteration. Promote to child Execution only when work is independently **schedulable, governable, retryable as standalone work, budget-allocatable, cancellable, delegatable, and observable as standalone platform work** - for example delegated financial vs infrastructure investigations under one parent incident.
 
-### Loop ownership — UAEP vs ToolInvocationPattern
+### Loop ownership - UAEP vs ToolInvocationPattern
 
 | Owner | Responsibility |
 | ----- | -------------- |
 | **UAEP / AgentEngine** | Agent session iteration lifecycle; continue/terminal/HITL intent; step advancement; Execution-level agent progression |
-| **ToolInvocationPattern** | Reusable mechanics for executing tool interaction patterns **inside** the agent Execution — single/sequential/parallel/bounded tool interaction mechanics |
+| **ToolInvocationPattern** | Reusable mechanics for executing tool interaction patterns **inside** the agent Execution - single/sequential/parallel/bounded tool interaction mechanics |
 
-`ToolInvocationPattern` **must not** own Run lifecycle, Execution lifecycle, agent identity, global retry, HITL lifecycle, or final Execution terminalization. Do **not** create a second agent runtime inside Tools. If `bounded_react` contains LLM↔tool sub-loop behavior, it is a **bounded reusable sub-loop under UAEP/agentic Execution** — not a competing lifecycle owner. See [`TOOLS.md`](TOOLS.md#loop-ownership--toolinvocationpattern-vs-uaep).
+`ToolInvocationPattern` **must not** own Run lifecycle, Execution lifecycle, agent identity, global retry, HITL lifecycle, or final Execution terminalization. Do **not** create a second agent runtime inside Tools. If `bounded_react` contains LLM↔tool sub-loop behavior, it is a **bounded reusable sub-loop under UAEP/agentic Execution** - not a competing lifecycle owner. See [`TOOLS.md`](TOOLS.md#loop-ownership--toolinvocationpattern-vs-uaep).
 
 ### Five orthogonal axes (+ streaming delivery)
 
@@ -447,9 +447,9 @@ Do **not** collapse into one `mode`:
 | **C. Tool selection strategy** | standard / semantic / hierarchical / plugin |
 | **D. Tool invocation strategy** | single / sequential / parallel / parallel semantic / deterministic chain / bounded interaction pattern |
 | **E. Tool interaction loop** | zero tool calls / one-shot / bounded iterative use |
-| **F. Output delivery** | non-stream / stream — orthogonal delivery property, not a strategy axis |
+| **F. Output delivery** | non-stream / stream - orthogonal delivery property, not a strategy axis |
 
-Selection, planning, invocation pattern, and interaction loop are separate — see [`TOOLS.md`](TOOLS.md#five-orthogonal-axes-ue-doc-08).
+Selection, planning, invocation pattern, and interaction loop are separate - see [`TOOLS.md`](TOOLS.md#five-orthogonal-axes-ue-doc-08).
 
 ### Domain invariants (AGENT-INV)
 
@@ -457,13 +457,13 @@ Selection, planning, invocation pattern, and interaction loop are separate — s
 | -- | --------- |
 | **AGENT-INV-01** | Agent does not own Execution lifecycle |
 | **AGENT-INV-02** | Iterative agent work remains under one Execution unless UEA child criterion met |
-| **AGENT-INV-03** | UAEP owns agentic progression; ToolRuntime executes tools — not vice versa |
+| **AGENT-INV-03** | UAEP owns agentic progression; ToolRuntime executes tools - not vice versa |
 | **AGENT-INV-04** | Agent must not implement private `while True` tool loops bypassing UAEP |
-| **AGENT-INV-05** | Each model iteration obtains context through canonical Context Engineering path — not ad-hoc prompt concatenation |
+| **AGENT-INV-05** | Each model iteration obtains context through canonical Context Engineering path - not ad-hoc prompt concatenation |
 
-### Reference scenario — iterative incident investigation
+### Reference scenario - iterative incident investigation
 
-**Positive** — one agentic Execution, no Nexus required:
+**Positive** - one agentic Execution, no Nexus required:
 
 ```text
 Execution E1 (strategy: agentic; catalog: 200 tools)
@@ -480,7 +480,7 @@ Execution E1 (strategy: agentic; catalog: 200 tools)
 
 Properties: **one** `ExecutionId`, **one** authority envelope, **one** budget hierarchy, **one** UAEP lifecycle; selection may rerun; invocation strategy may vary per round; only final authorized output is user-visible.
 
-**Negative — forbidden:**
+**Negative - forbidden:**
 
 - `Execution E1` → model partial tool args → direct handler execution
 - Agent → private `while True` tool loop bypassing UAEP
@@ -490,7 +490,7 @@ Cross-domain negatives (streaming governance, semantic permission expansion): [`
 
 ## Implementation readiness
 
-For future implementation sessions — derive slices without making new architecture decisions. Detailed code mapping: **UE-DOC-0.9**.
+For future implementation sessions - derive slices without making new architecture decisions. Detailed code mapping: **UE-DOC-0.9**.
 
 ### 1. TARGET STATE
 
@@ -549,15 +549,15 @@ Canonical Execution Boundary / `ExecutionId`; `AgentExecutor` behind Execution s
 
 ## Current maturity
 
-Architecture maturity: **A4** *(target)* — **current invariant closure reopened** by Protocol v2 [`STRATEGIC_HARNESS_MODEL`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) and [`AGENT_SYSTEM`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)
-Implementation maturity: **I4** *(target)* — same reopening; prior ACP delivery remains historical
+Architecture maturity: **A4** *(target)* - **current invariant closure reopened** by Protocol v2 [`STRATEGIC_HARNESS_MODEL`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) and [`AGENT_SYSTEM`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)
+Implementation maturity: **I4** *(target)* - same reopening; prior ACP delivery remains historical
 Production readiness: **P2**  
 Evidence maturity: **E3**
 
-- **A4 (target)** — Normative contract, author/runtime ownership split, assembly model, registry/capability architecture, adjacent-domain boundaries (Nexus, UER, Tools, Memory, Reasoning, Distribution, Tier-3); AUDIT-IDEAL §12–§20 **Done** historically ([plan](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md)). **Current:** accepted Protocol v2 findings `AUDIT-20260818-STRATEGIC_HARNESS_MODEL-01`…`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-10` and `AUDIT-20260818-AGENT_SYSTEM-01`…`AUDIT-20260818-AGENT_SYSTEM-06` block architecture-complete claims until remediated and re-verified.
-- **I4 (target)** — ACP + ACP-CLOSE + ACP-FINISH **Done** historically: `run()` / `on_next_step`, HarnessKernel path, fleet migration, registry snapshot, capability negotiation, prompt governance, lifecycle gates, production-gate implementation. Not I5 — uneven per-agent certification and host adoption; Protocol v2 execution-boundary and typing gaps remain open.
-- **P2** — Platform-ready gates and harness host depth (**ACP-CLOSE-PROD-* Done** historically); **no** universal product production handoff or per-customer operational package — `production_mode` ≠ **P4**; production host/profile wiring must become structural ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-05`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
-- **E3** — Unit/gate suite (`check_agent_acp_close_ci.py`, contract/author surface, registry, capability graph, lifecycle metadata), integration paths (Nexus/UAEP execution, cross-host reuse certification). **No dedicated public ACP proof route** in [`PROOFS.md`](../proofs/PROOFS.md) — not E4/E5.
+- **A4 (target)** - Normative contract, author/runtime ownership split, assembly model, registry/capability architecture, adjacent-domain boundaries (Nexus, UER, Tools, Memory, Reasoning, Distribution, Tier-3); AUDIT-IDEAL §12–§20 **Done** historically ([plan](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md)). **Current:** accepted Protocol v2 findings `AUDIT-20260818-STRATEGIC_HARNESS_MODEL-01`…`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-10` and `AUDIT-20260818-AGENT_SYSTEM-01`…`AUDIT-20260818-AGENT_SYSTEM-06` block architecture-complete claims until remediated and re-verified.
+- **I4 (target)** - ACP + ACP-CLOSE + ACP-FINISH **Done** historically: `run()` / `on_next_step`, HarnessKernel path, fleet migration, registry snapshot, capability negotiation, prompt governance, lifecycle gates, production-gate implementation. Not I5 - uneven per-agent certification and host adoption; Protocol v2 execution-boundary and typing gaps remain open.
+- **P2** - Platform-ready gates and harness host depth (**ACP-CLOSE-PROD-* Done** historically); **no** universal product production handoff or per-customer operational package - `production_mode` ≠ **P4**; production host/profile wiring must become structural ([`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-05`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md)).
+- **E3** - Unit/gate suite (`check_agent_acp_close_ci.py`, contract/author surface, registry, capability graph, lifecycle metadata), integration paths (Nexus/UAEP execution, cross-host reuse certification). **No dedicated public ACP proof route** in [`PROOFS.md`](../proofs/PROOFS.md) - not E4/E5.
 
 > **Phase vs maturity:** ACP-FINISH and AUDIT-IDEAL **Done** rows are plan delivery states, not P-axis or public proof claims. Protocol v2 accepted findings reopen **current** maturity until SHM-FIX blocks are implemented and independently verified.
 
@@ -568,7 +568,7 @@ Evidence maturity: **E3**
 | Architecture | This hub, satellites, ADR-AGENT-001..004 | Production operation |
 | Unit / gate | Contract/author surface, registry, capability graph, policy/budget gates, `check_agent_acp_close_ci.py` | Every agent/host matrix |
 | Integration | Agent execution via Nexus/UAEP, cross-host reuse certification, lifecycle/certification tests | Universal product qualification |
-| Public product proof | **None** — no dedicated ACP entry in [`PROOFS.md`](../proofs/PROOFS.md) | Do not infer from other domain proofs |
+| Public product proof | **None** - no dedicated ACP entry in [`PROOFS.md`](../proofs/PROOFS.md) | Do not infer from other domain proofs |
 | Production / customer | **None** cited for ACP domain | Not E5 |
 
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
@@ -577,9 +577,9 @@ Evidence maturity: **E3**
 
 | Depth | Route |
 | ----- | ----- |
-| **Engineering canon** | [Below](#engineering-canon) — §12–§21 |
-| **Extended depth** | [`satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md`](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md) — §22–§39 + §45 |
-| **Production gates** | [`satellites/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md`](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md) — §40+ |
+| **Engineering canon** | [Below](#engineering-canon) - §12–§21 |
+| **Extended depth** | [`satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md`](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md) - §22–§39 + §45 |
+| **Production gates** | [`satellites/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md`](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md) - §40+ |
 | **Implementation plan** | [`maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) |
 | **Minimal author path** | [`guides/AGENT_AUTHOR_MINIMAL_PATH.md`](../technical/guides/AGENT_AUTHOR_MINIMAL_PATH.md) |
 | **Agent Distribution** | [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) |
@@ -595,29 +595,29 @@ Evidence maturity: **E3**
 
 ## Maintainer and Cursor context
 
-**Status:** Canonical architecture (domain pair 1:1) · **Production coding gate:** §40 + ACP-PROD-* + **ACP-CLOSE-PROD-*** **Done** at **platform** level (mutating agents can meet platform gates — not universal product qualification)  
+**Status:** Canonical architecture (domain pair 1:1) · **Production coding gate:** §40 + ACP-PROD-* + **ACP-CLOSE-PROD-*** **Done** at **platform** level (mutating agents can meet platform gates - not universal product qualification)  
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 **Plan (1:1):** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 17–20, 31 (+ ACP cognitive patterns §21)  
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
-**Last updated:** 2026-08-26 — **UE-DOC-0.8** iterative tools/streaming alignment with frozen UEA
-**ADR:** [`adr/entries/2026-06-11/ADR-AGENT-001.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-001.md) · [`adr/entries/2026-06-11/ADR-AGENT-002.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-002.md) · [`adr/entries/2026-06-11/ADR-AGENT-003.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-003.md) · [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../technical/adr/entries/2026-08-12/ADR-AGENT-004.md) — ACP · `run()` · `on_next_step` · dual observability · distribution boundary  
+**Last updated:** 2026-08-26 - **UE-DOC-0.8** iterative tools/streaming alignment with frozen UEA
+**ADR:** [`adr/entries/2026-06-11/ADR-AGENT-001.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-001.md) · [`adr/entries/2026-06-11/ADR-AGENT-002.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-002.md) · [`adr/entries/2026-06-11/ADR-AGENT-003.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-003.md) · [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../technical/adr/entries/2026-08-12/ADR-AGENT-004.md) - ACP · `run()` · `on_next_step` · dual observability · distribution boundary  
 
-**Distribution (execution-adjacent — do not duplicate here):** [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) — catalog · install · binding · runtime lock · activation (AGENT-PLATFORM-2)
+**Distribution (execution-adjacent - do not duplicate here):** [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) - catalog · install · binding · runtime lock · activation (AGENT-PLATFORM-2)
 
 > **Practical minimal authoring path:** [`guides/AGENT_AUTHOR_MINIMAL_PATH.md`](../technical/guides/AGENT_AUTHOR_MINIMAL_PATH.md)
 
-**Observability spine:** [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine) — agents extend Plane B via `DiagnosticPayload`; execution truth lives on `RuntimeEvent` (Plane A). See §31 in [extended depth satellite](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md) and [event ownership rules](OBSERVABILITY.md#event-ownership-rules).
+**Observability spine:** [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine) - agents extend Plane B via `DiagnosticPayload`; execution truth lives on `RuntimeEvent` (Plane A). See §31 in [extended depth satellite](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md) and [event ownership rules](OBSERVABILITY.md#event-ownership-rules).
 
-**Retry / recovery:** agents emit recovery **intent** only — runtime owns retry policy, layers and stop reasons — [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger) · [`SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md) §8.
+**Retry / recovery:** agents emit recovery **intent** only - runtime owns retry policy, layers and stop reasons - [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger) · [`SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md) §8.
 
 ### Cursor read scope (token budget)
 
 **Do not read this entire file in one session** (AGENT_CONTRACTS_AND_ASSEMBLY canon).
 
 - **Implement / audit default:** §12–§21 (contract, registry, capability, ACP). Extended §22–§39 + checklist §45: [`satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md`](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md). §40+: [`satellites/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md`](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md).
-- **Use** table of contents below — `Read` with offset/limit per §.
+- **Use** table of contents below - `Read` with offset/limit per §.
 - **Plan hub:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) (scoped §6 only).
 - **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
@@ -633,7 +633,7 @@ Large § blocks moved out of the architecture hub to reduce Cursor context use. 
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
-### Table of contents (engineering canon — hub §12–§21)
+### Table of contents (engineering canon - hub §12–§21)
 
 | § | Topic |
 |---|--------|
@@ -691,7 +691,7 @@ AgentContract:
 
 **ADR:** [ADR-AGENT-002](../technical/adr/entries/2026-06-11/ADR-AGENT-002.md) · [ADR-AGENT-003](../technical/adr/entries/2026-06-11/ADR-AGENT-003.md)
 
-## 13.1 Primary author API — session `run()` (ADR-AGENT-002)
+## 13.1 Primary author API - session `run()` (ADR-AGENT-002)
 
 **Authors SHOULD use one session entry point:**
 
@@ -703,7 +703,7 @@ result = await my_agent.run(request: AgentRunRequest) -> AgentRunResult
 
 **Internal engine:** `run()` → merge environment §30 → **step loop** (`execute_next_step` → `on_next_step`) → UAEP/policy/trace. Authors MUST NOT reimplement this stack.
 
-## 13.2 Primary author API — step `on_next_step()` (ADR-AGENT-003)
+## 13.2 Primary author API - step `on_next_step()` (ADR-AGENT-003)
 
 **Authors SHOULD override one step hook for non-linear / cognitive agents:**
 
@@ -711,7 +711,7 @@ result = await my_agent.run(request: AgentRunRequest) -> AgentRunResult
 async def on_next_step(self, step_ctx: AgentStepContext) -> StepOutcome
 ```
 
-**Readability rule (normative — §32.0):** every author MUST be able to answer, from code alone and without running the app: (1) what state was read, (2) what state changed, (3) whether the session continues, pauses, or terminates — via **typed** `AcpSessionState` + `StepOutcome` factories only. Untyped `dict` on the author surface is **not supported**.
+**Readability rule (normative - §32.0):** every author MUST be able to answer, from code alone and without running the app: (1) what state was read, (2) what state changed, (3) whether the session continues, pauses, or terminates - via **typed** `AcpSessionState` + `StepOutcome` factories only. Untyped `dict` on the author surface is **not supported**.
 
 | Responsibility | Owner |
 |----------------|-------|
@@ -727,19 +727,19 @@ One **`run()`** invocation executes **many** iterations of **`advance_step`** un
 
 | Surface | Who implements | Author visibility |
 |---------|----------------|-------------------|
-| `run(AgentRunRequest)` | Base `IntergraxAgent` / `CognitiveAgent` | **Public — agent decision loop** |
-| `on_next_step(AgentStepContext)` | Subclass | **Public — domain step** |
-| `AgentRuntime.advance_step` | Framework only | **Internal — one iteration; alias `execute_next_step`** |
-| `HarnessKernel.execute_step` | Tier-0/1 kernel | **Internal — deterministic harness cycle** |
-| `perceive` / `reason` / `act` / `evaluate` | Subclass / pattern base | **Public — may delegate to `on_next_step`** |
-| `@step` methods | Subclass | **Public — linear pipelines** |
-| `get_contract`, `can_handle` | Subclass | **Public — registration** |
-| `configure_run` / `merge_environment` | Subclass optional hooks | **Public — per-agent tuning** §30 |
-| `NexusLoop.handle_task` | Tier-1 | **Internal — application orchestration only** |
-| `get_steps`, `run_step`, `decide_after_step` | Framework (UAEP bridge) | **Internal — legacy map to §32/§38** |
+| `run(AgentRunRequest)` | Base `IntergraxAgent` / `CognitiveAgent` | **Public - agent decision loop** |
+| `on_next_step(AgentStepContext)` | Subclass | **Public - domain step** |
+| `AgentRuntime.advance_step` | Framework only | **Internal - one iteration; alias `execute_next_step`** |
+| `HarnessKernel.execute_step` | Tier-0/1 kernel | **Internal - deterministic harness cycle** |
+| `perceive` / `reason` / `act` / `evaluate` | Subclass / pattern base | **Public - may delegate to `on_next_step`** |
+| `@step` methods | Subclass | **Public - linear pipelines** |
+| `get_contract`, `can_handle` | Subclass | **Public - registration** |
+| `configure_run` / `merge_environment` | Subclass optional hooks | **Public - per-agent tuning** §30 |
+| `NexusLoop.handle_task` | Tier-1 | **Internal - application orchestration only** |
+| `get_steps`, `run_step`, `decide_after_step` | Framework (UAEP bridge) | **Internal - legacy map to §32/§38** |
 | `build_context` | Subclass or harness injection | **Advanced** §30 |
 
-## 13.4 UAEP (internal protocol — implementation of step loop)
+## 13.4 UAEP (internal protocol - implementation of step loop)
 
 Every production agent MUST satisfy **`UAEPAgent`** via the framework base class. Nexus graph nodes invoke the same path whether the caller used `agent.run()` or `Task → NexusLoop`.
 
@@ -750,7 +750,7 @@ UAEPAgent (framework-wired, not author boilerplate):
     decide_after_step(step, output, ctx) -> AgentDecision   # optional; prefer on_next_step
 ```
 
-**Mapping (normative — §38):**
+**Mapping (normative - §38):**
 
 ```text
 Agent.run()                    = agent decision loop (many iterations)
@@ -761,7 +761,7 @@ NexusLoop.handle_task()        = application / multi-agent orchestration ONLY
 
 Legacy UAEP names (implementation today):
   run_step / UAEPExecutor  →  advance_step + execute_step bridge (ACP-STEP-3)
-  planning/StepExecutor    →  ExecutionPlan runner — NOT agent cognitive step
+  planning/StepExecutor    →  ExecutionPlan runner - NOT agent cognitive step
 ```
 
 **Rules:**
@@ -775,13 +775,13 @@ Legacy UAEP names (implementation today):
 
 | Path | Status |
 |------|--------|
-| `RuntimeEngine` / `RuntimePipeline` / `runtime_steps` | **Removed** — [ADR-FLOW-005](../technical/adr/entries/2026-06-12/ADR-FLOW-005.md) |
-| `agents/*/steps/pipeline.py` / `uaep_pipeline_bridge.py` | **Removed** — use `on_next_step` + cognitive patterns |
+| `RuntimeEngine` / `RuntimePipeline` / `runtime_steps` | **Removed** - [ADR-FLOW-005](../technical/adr/entries/2026-06-12/ADR-FLOW-005.md) |
+| `agents/*/steps/pipeline.py` / `uaep_pipeline_bridge.py` | **Removed** - use `on_next_step` + cognitive patterns |
 | `execute()` pseudocode | Replaced by `run()` + `on_next_step` |
-| Override `execute_next_step` / `advance_step` | **Forbidden** — bypasses policy/trace |
-| `nexus.run()` as agent session API | **Forbidden** — use `Agent.run()`; NexusLoop for Task only §38 |
+| Override `execute_next_step` / `advance_step` | **Forbidden** - bypasses policy/trace |
+| `nexus.run()` as agent session API | **Forbidden** - use `Agent.run()`; NexusLoop for Task only §38 |
 
-**Author loop control (normative):** every domain iteration is decided in **`on_next_step`** (or a cognitive pattern delegating to it). The harness runs **`HarnessKernel.execute_step`** — policy, trace, gateways, budgets — without choosing tools, models, or termination.
+**Author loop control (normative):** every domain iteration is decided in **`on_next_step`** (or a cognitive pattern delegating to it). The harness runs **`HarnessKernel.execute_step`** - policy, trace, gateways, budgets - without choosing tools, models, or termination.
 
 **Execution entry (two paths, same author hook):**
 
@@ -790,7 +790,7 @@ Legacy UAEP names (implementation today):
 | **ACP session** | `metadata["acp.session.v1"]` (Tier-3 harness task enricher sets by default) | `run_acp_session` → `AgentRuntime.advance_step` (multi-iteration) | `on_next_step` each iteration |
 | **UAEP bridge (Nexus default)** | `CognitiveAgent` / fleet agents | `UAEPExecutor` over `get_steps()` (typically **one** cognitive step) | `run_step` → `acp_uaep_shim` → **`on_next_step`**; ReAct/plan-execute loop **inside** `on_next_step` |
 
-`UaepPipelineStubAgent` in `testing_support` is **test-only**. Product agents MUST NOT author custom `get_steps`/`run_step` beyond `CognitiveAgent` defaults — implement domain logic in `on_next_step` / pattern hooks.
+`UaepPipelineStubAgent` in `testing_support` is **test-only**. Product agents MUST NOT author custom `get_steps`/`run_step` beyond `CognitiveAgent` defaults - implement domain logic in `on_next_step` / pattern hooks.
 
 ```text
 # ACP session (opt-in via acp.session.v1)
@@ -810,7 +810,7 @@ No Tier-1 code path may inject fixed step order (retired `RuntimePipeline` / `ru
 | Facade | Module | Use when |
 |--------|--------|----------|
 | `IntergraxAgent` | `intergrax/agents/authoring/base.py` | `@step` linear agents; inherits `run()` + default `on_next_step` |
-| `CognitiveAgent` + patterns §26 | `intergrax/agents/authoring/patterns` | ReAct, decomposition, reflection — patterns implement `on_next_step` |
+| `CognitiveAgent` + patterns §26 | `intergrax/agents/authoring/patterns` | ReAct, decomposition, reflection - patterns implement `on_next_step` |
 | `HarnessReferenceAgent` | `harness_reference_agent.py` | Low-level UAEP ABC (framework/tests) |
 
 **Guide:** [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Appendix AC · **Plan:** Phase **ACP** + **ACP-DX** + **ACP-STEP** rows.
@@ -853,7 +853,7 @@ The result must be inspectable by Nexus and by humans.
 
 # 15. Agent Registry
 
-> **Distribution boundary:** installation, binding, effective roster, dependency lock, and activation are owned by [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md). This section covers **Tier-1 execution projection only** — `AgentRegistry` is populated from materialized effective roster at host startup/activation, not from catalog or install stores.
+> **Distribution boundary:** installation, binding, effective roster, dependency lock, and activation are owned by [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md). This section covers **Tier-1 execution projection only** - `AgentRegistry` is populated from materialized effective roster at host startup/activation, not from catalog or install stores.
 
 Nexus discovers agents through the Agent Registry.
 
@@ -902,7 +902,7 @@ Nexus should route tasks to capabilities, not only to specific class names.
 
 This allows agents to be replaced later.
 
-**Routing invariant (normative — §37.6):** production Nexus agent selection MUST resolve **`required_capability`** (or task capability token) → registry entries by **`capabilities[]`** match — **not** by Python class name, module path, or hardcoded agent id. Class name MAY appear only in Tier-3 manifest **`AgentBinding`** for wiring a chosen capability to a concrete implementation. CI: `check_capability_routing.py` (ACP-CON-6).
+**Routing invariant (normative - §37.6):** production Nexus agent selection MUST resolve **`required_capability`** (or task capability token) → registry entries by **`capabilities[]`** match - **not** by Python class name, module path, or hardcoded agent id. Class name MAY appear only in Tier-3 manifest **`AgentBinding`** for wiring a chosen capability to a concrete implementation. CI: `check_capability_routing.py` (ACP-CON-6).
 
 ---
 
@@ -934,13 +934,13 @@ Prompt artifacts are **governed platform assets**, not ad-hoc strings in agents.
 
 **Authoring:** [`guides/AGENT_CREATION_GUIDE.md` Appendix M](../technical/guides/AGENT_CREATION_GUIDE.md) · **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase PE.
 
-**Context assembly boundary:** Prompt Registry supplies governed **fragments** only — not a full LLM window. Production context **MUST** flow through `ContextCompiler` / `ContextEngine` or an explicitly approved equivalent. See [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §12 Context Path Unification.
+**Context assembly boundary:** Prompt Registry supplies governed **fragments** only - not a full LLM window. Production context **MUST** flow through `ContextCompiler` / `ContextEngine` or an explicitly approved equivalent. See [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §12 Context Path Unification.
 
 ---
 
 # 18. Registry Architecture
 
-Registries are versioned, snapshot-capable catalogs — not mutable globals.
+Registries are versioned, snapshot-capable catalogs - not mutable globals.
 
 ## 18.1 Registry types
 
@@ -965,7 +965,7 @@ Snapshots and conformance CI validate registry shape before release (`scripts/ma
 
 # 19. Capability Graph Architecture
 
-> **Tier-3 consumption:** environment-scoped graph view, blast-radius deploy gates, and ops health dimensions — [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §50.1 · §51. **Do not duplicate** graph taxonomy in Tier-3; extend via `EnvironmentCapabilityGraphView` only.
+> **Tier-3 consumption:** environment-scoped graph view, blast-radius deploy gates, and ops health dimensions - [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §50.1 · §51. **Do not duplicate** graph taxonomy in Tier-3; extend via `EnvironmentCapabilityGraphView` only.
 
 Registries and capability layers MUST be represented as a typed dependency graph:
 
@@ -991,7 +991,7 @@ Integration -> Tool -> Skill -> Policy -> Agent -> Application -> Product
 | `scripts/release/phase_v_capability_graph_guard.py` | CI guard + blast-radius impact (AUDIT-IDEAL-20.1) |
 | `scripts/gates/check_capability_graph_strict_deploy.py` | STRICT deploy gate (APP-OPS-1) |
 
-Nexus routes to **capabilities** (§16), not hardcoded class names. Graph edges MUST reflect manifest roster per application — not global cross-product shortcuts.
+Nexus routes to **capabilities** (§16), not hardcoded class names. Graph edges MUST reflect manifest roster per application - not global cross-product shortcuts.
 
 **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase CG.
 
@@ -1017,14 +1017,14 @@ Runtime MUST reject or reroute retired/deprecated agents in production mode (V-R
 
 # 21. Agent Cognitive Architecture (ACP)
 
-**Status:** Canonical architecture — **platform delivered** (Phase ACP + ACP-CLOSE + ACP-FINISH **Done**); AUDIT-IDEAL §12–§20 **Done** (2026-06-13)  
+**Status:** Canonical architecture - **platform delivered** (Phase ACP + ACP-CLOSE + ACP-FINISH **Done**); AUDIT-IDEAL §12–§20 **Done** (2026-06-13)  
 **ADR:** [ADR-AGENT-001](../technical/adr/entries/2026-06-11/ADR-AGENT-001.md)
-**Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) — ACP · ACP-CLOSE · ACP-FINISH · AUDIT-IDEAL **Done**
-**Cross-domain:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) (planes 1–3) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) (narrative) · [`TOOLS.md`](TOOLS.md) TOOL-ENG-6 (tool loop) · [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) (reflection / verification safety) · [`CODE_CRAFT.md`](CODE_CRAFT.md#codecraft-safety-boundary) (ephemeral codegen — no agent-local craft loops)
+**Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) - ACP · ACP-CLOSE · ACP-FINISH · AUDIT-IDEAL **Done**
+**Cross-domain:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) (planes 1–3) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) (narrative) · [`TOOLS.md`](TOOLS.md) TOOL-ENG-6 (tool loop) · [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) (reflection / verification safety) · [`CODE_CRAFT.md`](CODE_CRAFT.md#codecraft-safety-boundary) (ephemeral codegen - no agent-local craft loops)
 
 ## 21.1 Purpose
 
-Define the **Agent Cognitive Architecture (ACP)** — how Tier-2 agents are authored, how they interact with Tier-1 Nexus, and how **cognitive patterns** (reflex, ReAct, plan-execute, decomposition, reflection) are implemented **without** collapsing the Harness into agent classes.
+Define the **Agent Cognitive Architecture (ACP)** - how Tier-2 agents are authored, how they interact with Tier-1 Nexus, and how **cognitive patterns** (reflex, ReAct, plan-execute, decomposition, reflection) are implemented **without** collapsing the Harness into agent classes.
 
 ACP answers:
 
@@ -1036,38 +1036,38 @@ ACP does **not** replace Nexus, redefine tiers, or introduce a second execution 
 
 | ID | Invariant |
 |----|-----------|
-| **ACP-INV-01** | Nexus remains Agent OS — global orchestration, policy, HITL, multi-agent graph |
-| **ACP-INV-02** | All agent runs use UAEP step loop (legacy UAEP authoring retired — ACP-CLOSE-LEG-5) |
-| **ACP-INV-03** | Cognitive patterns are **Tier-2 libraries** — no imports from `applications` or `intergrax.applications` |
+| **ACP-INV-01** | Nexus remains Agent OS - global orchestration, policy, HITL, multi-agent graph |
+| **ACP-INV-02** | All agent runs use UAEP step loop (legacy UAEP authoring retired - ACP-CLOSE-LEG-5) |
+| **ACP-INV-03** | Cognitive patterns are **Tier-2 libraries** - no imports from `applications` or `intergrax.applications` |
 | **ACP-INV-04** | Side effects only through `RuntimeExecutionContext.tool_gateway` → `ToolRuntime` |
-| **ACP-INV-05** | Control flow via `AgentDecision` — never `sleep()` for HITL, never direct Slack/webhooks |
+| **ACP-INV-05** | Control flow via `AgentDecision` - never `sleep()` for HITL, never direct Slack/webhooks |
 | **ACP-INV-06** | Configuration: **contract + pattern in agent**; **governance profile in Tier-3** |
 | **ACP-INV-07** | Three cognition planes MUST NOT be collapsed into one opaque agent loop (§23) |
 | **ACP-INV-08** | Every step emits `STEP_*` and `DECISION_EMITTED` events (§42.1) |
 | **ACP-INV-09** | **`run()` is the author entry**; UAEP is internal; Nexus is application entry for `Task` (ADR-AGENT-002) |
-| **ACP-INV-10** | Per-agent resources (memory, tools, RAG) bound via contract + environment — not hardcoded SDK clients |
-| **ACP-INV-11** | **`NexusLoop` orchestrates tasks/graphs**; **`HarnessKernel.execute_step`** runs one deterministic agent runtime cycle — kernel MUST NOT plan agent reasoning (§38) |
-| **ACP-INV-12** | **Organizational policy** is Tier-3 environment data — agents consume `OrganizationalPolicyContext`; harness enforces; agents MUST NOT embed org-specific regulations in source (§39) |
-| **ACP-INV-13** | **Authenticated runs default to user-scoped memory** (`tenant_id` + `user_id`) — org-wide memory only when contract/binding/env declare `memory_scope=org` §30.9 |
+| **ACP-INV-10** | Per-agent resources (memory, tools, RAG) bound via contract + environment - not hardcoded SDK clients |
+| **ACP-INV-11** | **`NexusLoop` orchestrates tasks/graphs**; **`HarnessKernel.execute_step`** runs one deterministic agent runtime cycle - kernel MUST NOT plan agent reasoning (§38) |
+| **ACP-INV-12** | **Organizational policy** is Tier-3 environment data - agents consume `OrganizationalPolicyContext`; harness enforces; agents MUST NOT embed org-specific regulations in source (§39) |
+| **ACP-INV-13** | **Authenticated runs default to user-scoped memory** (`tenant_id` + `user_id`) - org-wide memory only when contract/binding/env declare `memory_scope=org` §30.9 |
 
 ## 21.3 Rejected architecture (audit outcome)
 
-The following proposals were audited and **rejected** — documented here to prevent regression:
+The following proposals were audited and **rejected** - documented here to prevent regression:
 
 ```text
 REJECTED: Move NexusLoop responsibilities into IntergraxAgent base class
 REJECTED: Agent owns PolicyEngine, GraphExecutor, or AgentRegistry
 REJECTED: All RuntimeConfig / ApplicationEnvironmentProfile fields hardcoded in agent source
 REJECTED: Private while-True agent loops without UAEP step boundaries
-REJECTED: nexus.run() / NexusLoop as agent plan brain — planning lives in Agent.on_next_step (§38)
-REJECTED: Nexus "run" naming for agent session step executor — blurs Agent OS vs step kernel
+REJECTED: nexus.run() / NexusLoop as agent plan brain - planning lives in Agent.on_next_step (§38)
+REJECTED: Nexus "run" naming for agent session step executor - blurs Agent OS vs step kernel
 ```
 
-**Rationale:** Harness-first strategy ([`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §0.2) — the runtime is the durable product; agents are replaceable workers.
+**Rationale:** Harness-first strategy ([`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §0.2) - the runtime is the durable product; agents are replaceable workers.
 
 ## 21.4 Application boundary (agent/runtime merge)
 
-Tier-1 agent merge (`merge_environment`, `ACPSessionHostContext`, ACP run loop) consumes **neutral runtime contracts** only — never `ApplicationManifest`, `ApplicationEnvironmentProfile`, or application-layer `AgentBinding`.
+Tier-1 agent merge (`merge_environment`, `ACPSessionHostContext`, ACP run loop) consumes **neutral runtime contracts** only - never `ApplicationManifest`, `ApplicationEnvironmentProfile`, or application-layer `AgentBinding`.
 
 | Tier-3 (application host) | Neutral contract (agent/runtime) | Adapter |
 |---------------------------|----------------------------------|---------|

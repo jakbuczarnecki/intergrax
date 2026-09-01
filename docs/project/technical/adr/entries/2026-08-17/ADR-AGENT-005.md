@@ -40,10 +40,10 @@ Freeze **reference production V1** topology:
 4. **Writers:**
    - Serving pointer: `ActivationService` (AP-9) via `ApplicationEnvironmentActivationStore.atomic_commit_activation()` on shared distribution state.
    - Projection: `ApplicationRegistryProjectionCoordinator` (AP-10) via `RuntimeRegistryProjectionStore.put()`.
-5. **Consumer:** `resolve_active_registry_projection()` / `bootstrap_production_registry_projection()` — read-only; fail closed without active revision.
+5. **Consumer:** `resolve_active_registry_projection()` / `bootstrap_production_registry_projection()` - read-only; fail closed without active revision.
 6. **Cold start:** fresh reference process without prior activate cannot start STRICT host. Deploy/activate is separate from serve.
 7. **Adapter tier:** process-local in-memory adapters support **reference single-process production semantics** only. They do **not** provide durable multi-instance production readiness.
-8. **Deferred:** durable / multi-instance production (Postgres, Redis, Cassandra, distributed activation, K8s controller topology) — migration when restart survival or horizontal scale is required.
+8. **Deferred:** durable / multi-instance production (Postgres, Redis, Cassandra, distributed activation, K8s controller topology) - migration when restart survival or horizontal scale is required.
 
 `build_production_agent_platform_runtime()` (alias `create_process_local_agent_platform_runtime`) constructs a **new** process-local universe. Only the process composition root may call it once per process.
 
@@ -76,4 +76,4 @@ Application `main.py` and factories remain forbidden as canonical lifecycle owne
 - Code: `production_process_composition.py`, `production_agent_platform_runtime.py`
 - Tests: `tests/unit/applications/test_production_composition_store_continuity.py`
 - Verification: `uv run pytest tests/unit/applications/test_production_composition_store_continuity.py -q`
-- Next: AGENT-CONSOLIDATION-3-FIX-3 — wire reference hosts through `ProductionProcessComposition`
+- Next: AGENT-CONSOLIDATION-3-FIX-3 - wire reference hosts through `ProductionProcessComposition`

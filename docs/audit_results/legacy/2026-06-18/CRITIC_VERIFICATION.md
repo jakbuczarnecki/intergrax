@@ -1,4 +1,4 @@
-# Audit result — `CRITIC_VERIFICATION`
+# Audit result - `CRITIC_VERIFICATION`
 
 **Run:** 2026-06-18 · **Mode:** audit_only (interactive layer 18)  
 **Auditor:** cursor-agent · **Verdict:** L3 mature_revalidated
@@ -20,7 +20,7 @@
 
 | ID | Severity | Finding | Evidence | Status |
 |----|----------|---------|----------|--------|
-| CVL-GAP-01 | P3 | LLM trajectory judge — skill documented, runtime path optional | CVL-BACKLOG-01 | **planned** (CVL-MAINT-01) |
+| CVL-GAP-01 | P3 | LLM trajectory judge - skill documented, runtime path optional | CVL-BACKLOG-01 | **planned** (CVL-MAINT-01) |
 | CVL-GAP-02 | P4 | L4 adaptive critic thresholds | AHI domain | **planned** (CVL-MAINT-02 cross-ref) |
 | CVL-GAP-03 | P4 | FLOW-8 product host | §6.3 deferred | **planned** (CVL-MAINT-03 cross-ref) |
 | CVL-GAP-04 | P2 | Per-tool L1 critic output trace | TOOL-MAINT-02 | **planned** (CVL-MAINT-04 cross-ref) |
@@ -52,10 +52,10 @@ All green: **33 passed**.
 
 ## Backlog P2–P4 (planned / deferred)
 
-- CVL-MAINT-01..04 — §6.1av
+- CVL-MAINT-01..04 - §6.1av
 
 ---
 
 ## Recommendation
 
-**Architecturally Mature (L3)** — CVL harness Done; optional eval depth tracked.
+**Architecturally Mature (L3)** - CVL harness Done; optional eval depth tracked.

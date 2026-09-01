@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Accepted — architecture and implementation planning only |
+| **Status** | Accepted - architecture and implementation planning only |
 | **Date** | 2026-07-13 |
 | **Deciders** | Intergrax platform architecture |
 | **Related** | [`architecture/APPLICATION_HOSTING.md`](../../../../architecture/APPLICATION_HOSTING.md) · [`plan/APPLICATION_HOSTING.md`](../../../../maintainers/plans/APPLICATION_HOSTING.md) · [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../../../../architecture/TIER3_APPLICATION_ENVIRONMENT.md) |

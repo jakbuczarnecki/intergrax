@@ -1,9 +1,9 @@
-# Local Knowledge Workspace — Product Session Brief
+# Local Knowledge Workspace - Product Session Brief
 
 **Document type:** Durable product-specific session mission artifact  
 **Owner:** LKW Product Session (future launch)  
 **Audience:** Future session operator / MP-22 Session Launch Pack assembler  
-**Status:** Reference product — **ACTIVE** existing development
+**Status:** Reference product - **ACTIVE** existing development
 
 > **This is NOT the final session launch prompt.**  
 > It is a durable product-specific mission and context artifact consumed later by **MP-22 Session Launch Pack**.  
@@ -29,7 +29,7 @@ LKW predates the multi-product selection pipeline. It is the strongest current i
 
 ## 2. Mission
 
-Continue developing LKW as a **real knowledge-workspace product** — the program's existing reference product and strongest implemented application/proof surface.
+Continue developing LKW as a **real knowledge-workspace product** - the program's existing reference product and strongest implemented application/proof surface.
 
 The session must prove that LKW solves a coherent knowledge-workspace problem for users, not merely that Intergrax platform mechanics work. Platform proof may emerge as a consequence; it is not the mission.
 
@@ -44,7 +44,7 @@ Intergrax reuse is observed as a consequence of building the product.
 
 ## 3. Why this product exists independently of Intergrax
 
-Organizations accumulate knowledge across indexed repositories and live systems. Users need governed answers with traceable provenance — not generic chat over documents.
+Organizations accumulate knowledge across indexed repositories and live systems. Users need governed answers with traceable provenance - not generic chat over documents.
 
 LKW exists because knowledge workers need a workspace that:
 
@@ -65,13 +65,13 @@ Derive execution status **only** from the authoritative [LKW IMPLEMENTATION_PLAN
 
 | Item | Status |
 |------|--------|
-| Product level | Backend Product Alpha — LKW MVP / Hybrid Knowledge Workspace |
-| Current direct task | `LKW-PLUGIN-CAPABILITY-CONFIGURATION-1` — **READY_FOR_REVIEW** |
-| Next direct task | `LKW-INDEXED-SOURCE-LIFECYCLE-1` — **PLANNED** |
+| Product level | Backend Product Alpha - LKW MVP / Hybrid Knowledge Workspace |
+| Current direct task | `LKW-PLUGIN-CAPABILITY-CONFIGURATION-1` - **READY_FOR_REVIEW** |
+| Next direct task | `LKW-INDEXED-SOURCE-LIFECYCLE-1` - **PLANNED** |
 | Major accepted blocks | Hybrid Ask, Knowledge Access, Conversational Frontend, Conversation Context (see plan for full list) |
 | Reference baseline commit | `821eb7f6b2096de142822a29abc4546ee387a158` |
-| G0 / G1 / T0 | **Not applicable** — no retroactive bootstrap |
-| Implementation | **In progress** — real existing codebase |
+| G0 / G1 / T0 | **Not applicable** - no retroactive bootstrap |
+| Implementation | **In progress** - real existing codebase |
 | Cross-product reuse evidence | **NONE** (LKW is reference, not reuse proof for other products) |
 
 **READY_FOR_REVIEW is not ACCEPTED.** Review-pending work is not closed product evidence.
@@ -82,7 +82,7 @@ Derive execution status **only** from the authoritative [LKW IMPLEMENTATION_PLAN
 
 LKW is a **knowledge-centric hybrid workspace**: indexed evidence plus governed live access, unified under Hybrid Ask with provenance and policy.
 
-Current product truth (accepted or implemented areas — summary; plan is authoritative):
+Current product truth (accepted or implemented areas - summary; plan is authoritative):
 
 - managed / indexed knowledge functionality;
 - Workspace Ask and provider-neutral Hybrid Ask V2;
@@ -100,7 +100,7 @@ Not every architecture target is implemented. LKW remains pre–1.0 with planned
 |-----------|-------|
 | Primary users | Knowledge workers, operators, workspace administrators |
 | Economic / operational job | Reduce time-to-trusted-answer across indexed and live organizational knowledge; govern what may be asked, from where, and with what provenance |
-| Success horizon | Ongoing workspace operations — not a one-shot crisis or financial recovery event |
+| Success horizon | Ongoing workspace operations - not a one-shot crisis or financial recovery event |
 | Value unit | Trustworthy, inspectable answers and manageable knowledge sources |
 
 Commercial and customer validation are **separate** from current implementation and proof trajectory.
@@ -149,12 +149,12 @@ LKW is the only product with substantial existing implementation and reference b
 
 ## 10. Major failure modes / category traps
 
-- **Generic RAG/chat wrapper** — answers without governance, provenance, or workspace semantics.
-- **Architecture showcase** — impressive platform wiring without product usability.
-- **LKW semantics as platform canon** — treating workspace-specific meaning as shared Intergrax abstractions.
-- **COMM proof strength vs commercial validation** — strong technical proof mistaken for market proof.
-- **Platform demo drift** — reducing LKW to "the Intergrax demo app."
-- **Review-pending work treated as done** — READY_FOR_REVIEW counted as accepted product evidence.
+- **Generic RAG/chat wrapper** - answers without governance, provenance, or workspace semantics.
+- **Architecture showcase** - impressive platform wiring without product usability.
+- **LKW semantics as platform canon** - treating workspace-specific meaning as shared Intergrax abstractions.
+- **COMM proof strength vs commercial validation** - strong technical proof mistaken for market proof.
+- **Platform demo drift** - reducing LKW to "the Intergrax demo app."
+- **Review-pending work treated as done** - READY_FOR_REVIEW counted as accepted product evidence.
 
 ---
 
@@ -176,7 +176,7 @@ COMM may produce strong proof artifacts; COMM does **not** own Portfolio Control
 
 ## 12. Current gate / first allowed action
 
-**Continue the authoritative LKW roadmap** — not G0 restart.
+**Continue the authoritative LKW roadmap** - not G0 restart.
 
 First allowed action: advance `LKW-PLUGIN-CAPABILITY-CONFIGURATION-1` through review/acceptance, then proceed to `LKW-INDEXED-SOURCE-LIFECYCLE-1` per [IMPLEMENTATION_PLAN.md](../../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md).
 
@@ -188,9 +188,9 @@ Future material shared-platform pressure → **G4**.
 
 Future targets (not claimed today):
 
-- **Strong product proof** — real workspace knowledge operations end-to-end.
+- **Strong product proof** - real workspace knowledge operations end-to-end.
 - **Consumer/platform conformance evidence** where useful for Intergrax (bounded platform proof, certification matrix scope).
-- **Real usage / market validation** — separately from technical proof; not invented here.
+- **Real usage / market validation** - separately from technical proof; not invented here.
 
 Example proof trajectory already indexed: [LKW_PLATFORM_PROOF.md](../../../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md), [GOVERNED_HYBRID_KNOWLEDGE_PROOF.md](../../../../../applications/local_workspace_application/docs/proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md).
 
@@ -231,6 +231,6 @@ Contact Portfolio Control when:
 - **proof / audit acceptance** requires central recording;
 - **major commercial or market evidence** emerges (separate from COMM proof).
 
-Do not write detailed transport protocol here — detailed cross-session handoffs are governed by [CROSS_SESSION_COORDINATION.md](../CROSS_SESSION_COORDINATION.md).
+Do not write detailed transport protocol here - detailed cross-session handoffs are governed by [CROSS_SESSION_COORDINATION.md](../CROSS_SESSION_COORDINATION.md).
 
 VIS-3A presents approved public facts; Portfolio Control and Product Session remain sources for product state and accepted program truth.

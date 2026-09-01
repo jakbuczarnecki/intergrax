@@ -1,4 +1,4 @@
-# INTEGRATIONS — appendices
+# INTEGRATIONS - appendices
 
 **Parent hub:** [`INTEGRATIONS.md`](../INTEGRATIONS.md)
 
@@ -7,28 +7,28 @@
 
 ---
 
-## Appendix K — Adaptive Harness Intelligence traceability (Phase W-ADAPT)
+## Appendix K - Adaptive Harness Intelligence traceability (Phase W-ADAPT)
 
 **Purpose:** 100% mapping from [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) (AHIA) to concrete **W-ADAPT.\*** IDs. **Canonical phase narrative:** [Phase W-ADAPT](.#phase-w-adapt--adaptive-harness-intelligence-l4-runtime).
 
-**Status:** **70/70 Done** (Band 2y closed 2026-06-05) — Waves W-ADAPT-0 through W-ADAPT-7 complete.
+**Status:** **70/70 Done** (Band 2y closed 2026-06-05) - Waves W-ADAPT-0 through W-ADAPT-7 complete.
 
 ### K.1 AHIA component → W-ADAPT ID matrix
 
 | AHIA component (§9) | Existing module to reuse | W-ADAPT ID |
 |---------------------|--------------------------|------------|
 | SignalCollector | `metrics/export.py`, `execution_guard.py`, `online_evaluation_registry.py` | W-ADAPT-1.4–1.11 |
-| HarnessOutcomeSignal + utility | — (new) | W-ADAPT-1.1, W-ADAPT-1.8 |
-| SignalStore | — (new SQLite) | W-ADAPT-1.3 |
-| BanditStateStore | — (new) | W-ADAPT-2.1 |
+| HarnessOutcomeSignal + utility | - (new) | W-ADAPT-1.1, W-ADAPT-1.8 |
+| SignalStore | - (new SQLite) | W-ADAPT-1.3 |
+| BanditStateStore | - (new) | W-ADAPT-2.1 |
 | RoutingTuningEngine | `rag/routing/query_router.py`, LLM profiles | W-ADAPT-2.2, W-ADAPT-3.7, W-ADAPT-4.10 |
 | ExecutionStrategyEngine | `history_evaluator.py`, `nexus_factory.py` | W-ADAPT-2.3, W-ADAPT-4.10 |
 | PolicyLearningEngine | `adaptive_governance.py`, `tool_security.py` | W-ADAPT-2.4, W-ADAPT-4.6, W-ADAPT-4.9 |
 | EvaluationFeedbackEngine | `evaluation_registry_trends.py` | W-ADAPT-2.5, W-ADAPT-5.3 |
 | ProposalBuilder | `adaptive_governance.py` (`AdaptiveLoopProposal`) | W-ADAPT-2.6 |
-| AdaptationEngine facade | — (new) | W-ADAPT-2.7 |
+| AdaptationEngine facade | - (new) | W-ADAPT-2.7 |
 | Governance gate | `adaptive_governance.py`, `capability_graph_compatibility.py` | W-ADAPT-2.8–2.9 |
-| ProfileVersionStore | — (new; pattern from `agent_promotion.py`) | W-ADAPT-3.1–3.2, W-ADAPT-3.5 |
+| ProfileVersionStore | - (new; pattern from `agent_promotion.py`) | W-ADAPT-3.1–3.2, W-ADAPT-3.5 |
 | AdaptationExecutor | `runtime_governance_bridge.py` (extend) | W-ADAPT-3.3–3.4, W-ADAPT-4.4–4.5, W-ADAPT-4.8 |
 | VerificationLoop | `evaluation_registry_trends.py`, `execution_guard.py` | W-ADAPT-5.1–5.5 |
 | ProcessPatternMiner | trace persistence | W-ADAPT-6.* |

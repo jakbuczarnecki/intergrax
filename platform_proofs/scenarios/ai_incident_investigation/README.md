@@ -2,16 +2,16 @@
 
 > **Can an AI investigate an operational incident without turning correlation into a confident false diagnosis?**
 
-A fictional industrial manufacturer needs a defensible root-cause diagnosis when production target attainment collapses — not a fluent story that sounds right under time pressure.
+A fictional industrial manufacturer needs a defensible root-cause diagnosis when production target attainment collapses - not a fluent story that sounds right under time pressure.
 
 > [!NOTE]
-> **Scenario status:** SCENARIO-1 FULL-1 and FULL-2 — RESOLVED and UNRESOLVED paths implemented (H1/H2/H3); public Scenario Proof not yet accepted; evidence/report not yet accepted for publication.
+> **Scenario status:** SCENARIO-1 FULL-1 and FULL-2 - RESOLVED and UNRESOLVED paths implemented (H1/H2/H3); public Scenario Proof not yet accepted; evidence/report not yet accepted for publication.
 
 > **Synthetic scenario provenance:** This is a fully fictional operational scenario. The organization, facility, incident, datasets, telemetry, staffing records, equipment behavior, and numerical values are synthetic and are not derived from any employer, customer, production environment, confidential source, or proprietary system.
 
 ## Abstract
 
-At a fictional industrial manufacturing plant, production target attainment on a key assembly line falls sharply during a defined operating window while cycle-time degradation concentrates on heavier, more complex product assemblies. The first operational picture points to workload overload: production order volume is up, throughput performance drops in the same period, and the affected line stands out. Acting on that story before an upcoming high-volume production window would mean overtime, line reallocation, and staffing moves — all costly if the diagnosis is wrong. The opening evidence is intentionally misleading; correlation looks like causation. This scenario asks whether an AI investigation system can challenge that first explanation, gather the evidence needed to distinguish competing causes, and either deliver a bounded defensible diagnosis or honestly refuse with UNRESOLVED when certainty is not justified.
+At a fictional industrial manufacturing plant, production target attainment on a key assembly line falls sharply during a defined operating window while cycle-time degradation concentrates on heavier, more complex product assemblies. The first operational picture points to workload overload: production order volume is up, throughput performance drops in the same period, and the affected line stands out. Acting on that story before an upcoming high-volume production window would mean overtime, line reallocation, and staffing moves - all costly if the diagnosis is wrong. The opening evidence is intentionally misleading; correlation looks like causation. This scenario asks whether an AI investigation system can challenge that first explanation, gather the evidence needed to distinguish competing causes, and either deliver a bounded defensible diagnosis or honestly refuse with UNRESOLVED when certainty is not justified.
 
 ## At a glance
 
@@ -19,7 +19,7 @@ At a fictional industrial manufacturing plant, production target attainment on a
 | --- | --- |
 | **Problem** | Production target attainment degradation during a defined operating window |
 | **Observed impact** | Target attainment ~94% → ~78%; cycle-time degradation on complex assemblies |
-| **Trap** | Workload rises while throughput declines — correlation presented as causation |
+| **Trap** | Workload rises while throughput declines - correlation presented as causation |
 | **Decision risk** | Wrong overtime, line reallocation, or capacity action before high-volume production window |
 | **Scenario outcome** | RESOLVED or UNRESOLVED |
 | **Status** | FULL-1 RESOLVED and FULL-2 UNRESOLVED implemented; public proof not yet established |
@@ -40,7 +40,7 @@ At a fictional industrial manufacturing plant, production target attainment on a
 
 ## The problem
 
-At Plant A, production target attainment on **Line 4** drops from roughly **94% to 78%** during a Tuesday–Thursday window while cycle-time degradation concentrates on heavier, more complex product assemblies. Operations leadership needs a **defensible root-cause diagnosis** from fragmented telemetry, staffing, equipment, and production workload records — the same sources a human incident lead would query.
+At Plant A, production target attainment on **Line 4** drops from roughly **94% to 78%** during a Tuesday–Thursday window while cycle-time degradation concentrates on heavier, more complex product assemblies. Operations leadership needs a **defensible root-cause diagnosis** from fragmented telemetry, staffing, equipment, and production workload records - the same sources a human incident lead would query.
 
 ## The risk
 
@@ -62,7 +62,7 @@ Initial facts look like overload: production workload up ~22%, throughput perfor
 
 ## Adversarial challenge
 
-The scenario embeds credible adversarial conditions: a workload–throughput correlation trap, conflicting staffing sources, stale records, missing decisive telemetry, and competing hypotheses that must be distinguished. A skeptical engineer should be able to ask whether a simple investigator-plus-critic graph is sufficient — and the design should show why not.
+The scenario embeds credible adversarial conditions: a workload–throughput correlation trap, conflicting staffing sources, stale records, missing decisive telemetry, and competing hypotheses that must be distinguished. A skeptical engineer should be able to ask whether a simple investigator-plus-critic graph is sufficient - and the design should show why not.
 
 Full adversarial conditions, skeptic challenge, and quality gate rationale: [Scenario Specification § A](SCENARIO_SPEC.md#a-scenario).
 
@@ -91,7 +91,7 @@ Full normative PASS/FAIL contract: [Scenario Specification § B](SCENARIO_SPEC.m
 | Outcome | Meaning |
 | --- | --- |
 | **RESOLVED** | Best-supported bounded operational root-cause diagnosis with auditable evidence trail; competing hypotheses weakened |
-| **UNRESOLVED** | Critical distinguishing evidence unavailable or hypotheses indistinguishable — no confident guessing |
+| **UNRESOLVED** | Critical distinguishing evidence unavailable or hypotheses indistinguishable - no confident guessing |
 
 ## Run the proof
 
@@ -113,8 +113,8 @@ uv run python scripts/proof/run-intergrax-proof-suite.py --profile quick --proof
 
 One canonical parent invocation exercises both evidence paths:
 
-- **RESOLVED** — decisive telemetry exists → bounded H3 diagnosis accepted
-- **UNRESOLVED** — decisive telemetry unavailable → no supported root-cause diagnosis
+- **RESOLVED** - decisive telemetry exists → bounded H3 diagnosis accepted
+- **UNRESOLVED** - decisive telemetry unavailable → no supported root-cause diagnosis
 
 Parent verification requires both canonical evidence artifacts to pass.
 
@@ -157,7 +157,7 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run pytest -p pytest_asyncio.plugin \
 
 ## Limitations
 
-Single bounded manufacturing incident fixture with designed adversarial conditions — not arbitrary enterprise data. FULL-1 (RESOLVED) and FULL-2 (UNRESOLVED) are implemented; public proof publication is still pending. Evaluator semantics are scoped to this scenario's claim.
+Single bounded manufacturing incident fixture with designed adversarial conditions - not arbitrary enterprise data. FULL-1 (RESOLVED) and FULL-2 (UNRESOLVED) are implemented; public proof publication is still pending. Evaluator semantics are scoped to this scenario's claim.
 
 **RESOLVED:** decisive telemetry exists → bounded H3 diagnosis accepted.
 
@@ -167,4 +167,4 @@ Full limitations and excluded claims: [Scenario Specification § B](SCENARIO_SPE
 
 ## Go deeper
 
-**[Read the full Scenario Specification](SCENARIO_SPEC.md)** — deep contract for scenario design, solution semantics, Intergrax fit, gap decision, and proof build (A/B/C/D/E).
+**[Read the full Scenario Specification](SCENARIO_SPEC.md)** - deep contract for scenario design, solution semantics, Intergrax fit, gap decision, and proof build (A/B/C/D/E).

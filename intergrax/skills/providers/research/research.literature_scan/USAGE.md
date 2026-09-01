@@ -4,7 +4,7 @@
 
 ## Purpose
 
-**Literature scan baseline** for `ResearchAgent`: indexed retrieval plus web search for complementary sources. The original research domain skill — used by `research_application` and lab hosts.
+**Literature scan baseline** for `ResearchAgent`: indexed retrieval plus web search for complementary sources. The original research domain skill - used by `research_application` and lab hosts.
 
 ## How it works
 
@@ -41,6 +41,6 @@ Enable `research` bundle via `research_skill_profile()` or `lab_skill_profile()`
 
 ## Related skills
 
-- `research.web_evidence` — URL read + batch fetch
-- `research.citation_synthesis` — report generation
-- `rag.hybrid_qa` — index Q&A with memory read
+- `research.web_evidence` - URL read + batch fetch
+- `research.citation_synthesis` - report generation
+- `rag.hybrid_qa` - index Q&A with memory read

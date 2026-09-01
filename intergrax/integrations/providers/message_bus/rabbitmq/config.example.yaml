@@ -1,4 +1,4 @@
-# RabbitMQ integration — copy to Tier-3 settings or export as env vars.
+# RabbitMQ integration - copy to Tier-3 settings or export as env vars.
 # Env: INTERGRAX_RABBITMQ_HOST, INTERGRAX_RABBITMQ_PORT, INTERGRAX_RABBITMQ_VIRTUAL_HOST,
 #      INTERGRAX_RABBITMQ_USERNAME, INTERGRAX_RABBITMQ_PASSWORD, INTERGRAX_RABBITMQ_QUEUE
 # Requires kv_store (redis) when resolving message_bus.

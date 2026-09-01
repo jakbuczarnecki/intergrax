@@ -1,4 +1,4 @@
-# RAG — pipelines detail
+# RAG - pipelines detail
 
 **Parent hub:** [`RAG.md`](../RAG.md)
 **Authority:** Current architecture, provider status and qualification are
@@ -141,7 +141,7 @@ and live backend reingest are not claimed.
 The parent hub owns the single provider matrix and capability matrix. In
 particular, after RAG-FINAL-10D:
 
-- stable: Qdrant, PgVector, Chroma — `QUALIFIED_OFFLINE_CONTRACT`;
+- stable: Qdrant, PgVector, Chroma - `QUALIFIED_OFFLINE_CONTRACT`;
 - beta: Weaviate, LanceDB, Typesense, Pinecone, Milvus, Vespa and InMemory
   according to catalog taxonomy;
 - `LIVE_QUALIFIED`: none;

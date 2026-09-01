@@ -19,7 +19,7 @@ approved no-offload capacity profile.
 - No CPU offload, swap, KV offload, FP8 KV, alternate quantization, TP, or
   speculative decoding
 
-## Attempt A — canonical default context / 0.85 (preserved)
+## Attempt A - canonical default context / 0.85 (preserved)
 
 - Profile: default `max_model_len` selected by vLLM / `--gpu-memory-utilization 0.85`
 - GPU: NVIDIA GeForce RTX 4080 Laptop GPU, total VRAM `12282 MiB`
@@ -32,7 +32,7 @@ approved no-offload capacity profile.
 - Model READY: FAIL
 - Result recorded as `BLOCKED_HARDWARE_CAPACITY` (not final)
 
-## Attempt B — controlled capacity profile 8192 / 0.95 (this task)
+## Attempt B - controlled capacity profile 8192 / 0.95 (this task)
 
 - Profile: `--max-model-len 8192` / `--gpu-memory-utilization 0.95`
 - Applied via ephemeral local compose override only (tracked production compose

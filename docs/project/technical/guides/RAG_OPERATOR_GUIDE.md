@@ -3,7 +3,7 @@
 **Status:** canonical operator / deployment surface · **RAG-ENT-3 CLOSED**
 **Audience:** platform engineer · SRE · production operator · deployment engineer · incident responder
 **Architecture:** [`docs/project/architecture/RAG.md`](../../architecture/RAG.md)
-**Developer extensions:** [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) — not this document
+**Developer extensions:** [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) - not this document
 **Production handoff:** [`RAG_PRODUCTION_HANDOFF.md`](../../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md)
 
 Intergrax RAG is a **library subsystem** composed into Tier-3 applications and
@@ -19,7 +19,7 @@ embedding providers, scope, coordination and observability at deployment time.
 |---|---|
 | **Global** | `PRODUCTION_QUALIFIED_WITH_LIMITATIONS` |
 | **Deployment** | `APPROVED WITH EXPLICIT LIMITATIONS` |
-| **RAG-LIVE track** | `CLOSED` — not reopened by this guide |
+| **RAG-LIVE track** | `CLOSED` - not reopened by this guide |
 
 `WITH_LIMITATIONS` is the **final production contract**, not an unfinished
 qualification state. Limitations are explicit architectural and deployment
@@ -33,7 +33,7 @@ publication-generation visibility fencing, canonical GraphRAG harness lifecycle,
 and stable vector contracts for Qdrant, PgVector and Chroma.
 
 **Not in scope of this guide:** developer plugin authoring, historical
-qualification ledgers, architecture internals — link to canonical sources.
+qualification ledgers, architecture internals - link to canonical sources.
 
 ---
 
@@ -51,9 +51,9 @@ authoritative source files / upstream systems
 
 **Three coordination controls** (distinct):
 
-1. **Source operation lease** — who owns a replacement lifecycle for one exact source key.
-2. **Publication generation** — which prepared version is active.
-3. **Retrieval visibility** — inactive or superseded generations are filtered before results are exposed.
+1. **Source operation lease** - who owns a replacement lifecycle for one exact source key.
+2. **Publication generation** - which prepared version is active.
+3. **Retrieval visibility** - inactive or superseded generations are filtered before results are exposed.
 
 **Not transactional:** vector, TOC and graph writes are **not** one distributed
 transaction. Partial publication may remain after failure; recovery is operator
@@ -75,7 +75,7 @@ Final stable / live matrix after RAG-LIVE closeout:
 | **Canonical GraphRAG** | `CANONICAL_HARNESS_QUALIFIED` | `LIVE_NEO4J_BASELINE + LIVE_NEO4J_GENERATION_FENCING` | Combined claim only with both live gates |
 
 **Beta providers** (Weaviate, LanceDB, Typesense, Pinecone, Milvus, Vespa):
-catalog `BETA` — **do not promote** to stable live qualification. Changed-source
+catalog `BETA` - **do not promote** to stable live qualification. Changed-source
 replacement is unsupported or fail-closed for beta vector backends.
 
 Detail and capability taxonomy: [`RAG.md`](../../architecture/RAG.md) §6–7.
@@ -87,7 +87,7 @@ Detail and capability taxonomy: [`RAG.md`](../../architecture/RAG.md) §6–7.
 - [ ] Select a **qualified** vector backend (Qdrant, PgVector or Chroma for stable live path).
 - [ ] Configure explicit `tenant_id`, `namespace`, `workspace_id` on every ingest and query.
 - [ ] Match **embedding model and dimension** to provider configuration (PgVector requires explicit dimension).
-- [ ] For **multi-process / multi-worker** ingest or replacement: wire a **durable** `DocumentStoreSourceOperationCoordinator` over a shared `ConditionalDocumentStore` — not the default in-process coordinator.
+- [ ] For **multi-process / multi-worker** ingest or replacement: wire a **durable** `DocumentStoreSourceOperationCoordinator` over a shared `ConditionalDocumentStore` - not the default in-process coordinator.
 - [ ] Confirm provider **health probes** succeed before marking workers ready.
 - [ ] Enable **OTEL RAG spans** and optional retrieval metrics export.
 - [ ] Define deployment-specific **alert thresholds** and SLOs (no universal values in repository evidence).
@@ -126,7 +126,7 @@ current runtime and provider integration code. **Never commit real secrets.**
 | `INTERGRAX_RAG_QDRANT_SPARSE` | Qdrant sparse vectors (optional) |
 
 Application composition also selects vector store, embedding provider and graph
-store through `IntegrationProfile` — see provider sections and
+store through `IntegrationProfile` - see provider sections and
 [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md).
 
 ### 5.2 Provider connectivity
@@ -160,7 +160,7 @@ There is **no environment variable** for coordinator selection. Composition is e
 
 Wire via `IngestPipeline(source_coordinator=…)`, `VectorstoreManager.set_source_operation_coordinator(…)`, and graph store `set_source_operation_coordinator(…)` when applicable. Durable coordinator requires a shared `ConditionalDocumentStore` and a unique `owner_id` per worker.
 
-Default when unset: `InProcessSourceOperationCoordinator()` — **not** safe for multi-process writers.
+Default when unset: `InProcessSourceOperationCoordinator()` - **not** safe for multi-process writers.
 
 ---
 
@@ -228,7 +228,7 @@ Per `(tenant_id, retriever_id, route_tier)` snapshot fields:
 | `recall_at_k_avg` | Average recall@k when ground truth supplied (evaluation/diagnostics) |
 | `agentic_iterations` | Agentic retrieval iterations when enabled |
 
-These are **in-process aggregates** exported via application diagnostics — not
+These are **in-process aggregates** exported via application diagnostics - not
 universal Prometheus metric names unless your host re-exports them.
 
 ### 7.3 Complementing backend health
@@ -274,7 +274,7 @@ The repository does **not** publish universal capacity tables. Size from:
 | Dual-index enabled | Second vector collection / table pressure |
 
 **Qualification soak tests** (e.g. 50 records, 5 query rounds in live gates) are
-**methodology references** for your own benchmarks — not production capacity claims.
+**methodology references** for your own benchmarks - not production capacity claims.
 
 ### Deployment benchmark checklist
 
@@ -311,7 +311,7 @@ restore across vector, TOC, graph and control state is **not globally atomic**.
 - Restoring stores from **inconsistent points in time** can yield derived-index mismatch vs canonical sources.
 - **Safest recovery** when consistency is uncertain: restore authoritative sources and operational control state as appropriate, then run **canonical scoped reingest/rebuild** through `IngestPipeline` / `rag.ingest_document`.
 - **Do not** manually fabricate vector ownership or generation metadata in provider backends.
-- If upstream sources no longer exist, full rebuild may be **impossible** — plan retention accordingly.
+- If upstream sources no longer exist, full rebuild may be **impossible** - plan retention accordingly.
 
 ---
 
@@ -329,7 +329,7 @@ or graph records directly in provider storage.
 | **E. Provider migration** | Moving Qdrant → PgVector etc. | Reindex all sources on new backend; re-run live qualification in target infra |
 | **F. Embedding model / dimension change** | Model swap | Full reindex required; PgVector dimension must match; update `INTERGRAX_PGVECTOR_DIMENSION` |
 
-Tools: `rag.ingest_document`, `rag.delete_documents` (scoped), `rag.list_collections`, `rag.describe_collection` — see [`rag tools USAGE`](../../../../intergrax/tools/providers/rag/USAGE.md).
+Tools: `rag.ingest_document`, `rag.delete_documents` (scoped), `rag.list_collections`, `rag.describe_collection` - see [`rag tools USAGE`](../../../../intergrax/tools/providers/rag/USAGE.md).
 
 ---
 
@@ -418,7 +418,7 @@ Reopening criteria: [`RAG_LIVE_BACKEND_CLOSEOUT.md`](../../maintainers/qualifica
 | Backend | Qualified baseline (repository evidence) | Migration notes |
 |---|---|---|
 | Qdrant | Live-qualified real service (RAG-PROD-13) | Major upgrades → requalify; reindex if storage format changes |
-| PgVector / PostgreSQL | `pgvector/pgvector:0.8.0-pg16`, PG 16 (15A-R2) | Legacy JSONB `intergrax_pgvector` tables **incompatible** — not auto-migrated |
+| PgVector / PostgreSQL | `pgvector/pgvector:0.8.0-pg16`, PG 16 (15A-R2) | Legacy JSONB `intergrax_pgvector` tables **incompatible** - not auto-migrated |
 | Chroma | `chromadb==1.4.1` / `chromadb/chroma:1.4.1` (15B-R2) | Server/client pair must match; HTTP mode for production |
 | Neo4j | `neo4j:5.26-community`, driver `neo4j==5.28.4` (15C/15D) | Legacy graph schema **not** silently migrated |
 
@@ -585,7 +585,7 @@ Compact format for each scenario.
 | | |
 |---|---|
 | **SYMPTOM** | Storage growth; logical queries correct |
-| **IMPACT** | Cost; ops noise — not logical corruption |
+| **IMPACT** | Cost; ops noise - not logical corruption |
 | **CHECK** | Provider record counts; incomplete replacements |
 | **SAFE ACTION** | Retry canonical replacement cleanup |
 | **RECOVERY** | Scoped rebuild if cleanup cannot complete |
@@ -617,17 +617,17 @@ Compact format for each scenario.
 
 | Backend | Diagnostic | Label |
 |---|---|---|
-| PgVector | Provider `health()` — `SELECT 1` + `vector` extension | Production |
+| PgVector | Provider `health()` - `SELECT 1` + `vector` extension | Production |
 | Chroma | Heartbeat at open; HTTP reachability | Production |
 | Qdrant | Integration health / service HTTP | Production |
 | Neo4j | `verify_connectivity`; `health()` on graph store client | Production |
 
 ### REFERENCE / QUALIFICATION DIAGNOSTIC (not universal production commands)
 
-Repository qualification environments — use only to reproduce evidence:
+Repository qualification environments - use only to reproduce evidence:
 
 ```text
-# PgVector (repository compose — not universal production topology)
+# PgVector (repository compose - not universal production topology)
 docker compose -f infra/docker/postgresql/docker-compose.yml up pgvector
 uv run pytest tests/integration/rag/vectorstore/test_pgvector_live_qualification.py -q -s
 
@@ -638,7 +638,7 @@ INTERGRAX_RUN_CHROMA_LIVE=1 uv run pytest tests/integration/rag/vectorstore/test
 INTERGRAX_RUN_NEO4J_LIVE=1 uv run pytest tests/integration/rag/test_neo4j_live_qualification.py -q -s
 ```
 
-Qualification Compose credentials and ports are **reference environments** — see §22.
+Qualification Compose credentials and ports are **reference environments** - see §22.
 
 ---
 
@@ -654,7 +654,7 @@ recommendations.
 | `infra/docker/postgresql/docker-compose.yml` (pgvector) | PgVector live lifecycle, isolation, soak | Pattern for PG+pgvector sizing tests |
 | `infra/docker/chromadb/docker-compose.yml` | Chroma 1.4.1 HTTP lifecycle | Pattern for Chroma server pairing |
 | `infra/docker/neo4j/docker-compose.yml` | Neo4j 5.26 GraphRAG baseline + fencing | Pattern for graph sizing tests |
-| Qdrant (RAG-PROD-13) | Live Qdrant isolation and replacement | Pattern only — endpoint is deployment-specific |
+| Qdrant (RAG-PROD-13) | Live Qdrant isolation and replacement | Pattern only - endpoint is deployment-specific |
 
 **Production deployment decisions** (HA topology, cloud region, credentials,
 encryption, multi-tenant isolation at infra layer) remain **deployment-owned**.
@@ -693,7 +693,7 @@ Explicit non-guarantees (must remain visible to operators):
 | Plugins not sandboxed | Supply-chain and install policy is deployment responsibility |
 | Mixed-version concurrent writers | Not assumed safe across contract changes |
 
-**RAG-LIVE:** `CLOSED` · **RAG enterprise track:** `CLOSED` (RAG-ENT-3) — no next RAG task.
+**RAG-LIVE:** `CLOSED` · **RAG enterprise track:** `CLOSED` (RAG-ENT-3) - no next RAG task.
 
 ---
 

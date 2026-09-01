@@ -12,7 +12,7 @@ Want to understand the experience before running it? See the [LKW Product Tour](
 | Git | Needed to obtain the repository, not for each subsequent rerun |
 | Docker | Docker Desktop or Docker Engine with Compose |
 | `uv` | Installed and available on `PATH` |
-| Disk space | Keep at least **20 GiB free** for the bounded first-bootstrap check — a safety floor, not a download-size prediction |
+| Disk space | Keep at least **20 GiB free** for the bounded first-bootstrap check - a safety floor, not a download-size prediction |
 
 First-run duration depends on image downloads, model download, network speed, and machine performance. A 15-minute target is not yet externally validated.
 
@@ -147,7 +147,7 @@ You did not need to write API JSON, copy operation IDs manually, or configure `I
 
 ## What this proves
 
-This Quick Start exercises the indexed **Ask V1** product path — a bounded real application path over indexed knowledge only. One command starts the canonical local stack (unless you already have it running), uploads a bundled non-sensitive sample document through managed-file Knowledge Intake, waits for indexing, asks a grounded question, shows the answer with a source citation, and verifies the persisted Ask run.
+This Quick Start exercises the indexed **Ask V1** product path - a bounded real application path over indexed knowledge only. One command starts the canonical local stack (unless you already have it running), uploads a bundled non-sensitive sample document through managed-file Knowledge Intake, waits for indexing, asks a grounded question, shows the answer with a source citation, and verifies the persisted Ask run.
 
 The canonical stack includes: `local_workspace`, MongoDB, Qdrant, Ollama, and the OTEL collector. Optional proof overlays are not started by this quickstart.
 
@@ -224,7 +224,7 @@ On Windows, from the repository root, run `cd /d applications\local_workspace_ap
 | Problem | Likely cause | Recommended action |
 |---|---|---|
 | `failed_stage` / `failure_reason` output | Environment or prerequisite issue | Follow `failed_stage`, `failure_reason`, and `recommended_action`. Docker, Compose, and `uv` remain user-managed prerequisites. |
-| Port already in use (for example `8020`) | Another documented LKW stack or process owns the port | Stop the conflicting documented stack non-destructively. Common Compose project names: `intergrax_lkw` (Product Quick Start), `lkw-core-platform-proof` (Core Platform Proof), `lkw-trusted-ask-workspace-proof` (Trusted Ask proof). Do not delete volumes or reset data by default — see [Stop the stack](#stop-the-stack) or the proof document's stop guidance, then rerun the path you want. |
+| Port already in use (for example `8020`) | Another documented LKW stack or process owns the port | Stop the conflicting documented stack non-destructively. Common Compose project names: `intergrax_lkw` (Product Quick Start), `lkw-core-platform-proof` (Core Platform Proof), `lkw-trusted-ask-workspace-proof` (Trusted Ask proof). Do not delete volumes or reset data by default - see [Stop the stack](#stop-the-stack) or the proof document's stop guidance, then rerun the path you want. |
 | Service unhealthy | Container or bootstrap issue | From `applications/local_workspace_application`, inspect service status with `docker compose -p intergrax_lkw -f docker/docker-compose.yml ps`. |
 | Unexpected runtime behavior | Application or dependency failure | From `applications/local_workspace_application`, inspect logs with `docker compose -p intergrax_lkw -f docker/docker-compose.yml logs --tail 200 local_workspace`. |
 | Health check fails | Stack not ready or wrong port | `http://127.0.0.1:8020/health` should return `status: ok`. |
@@ -233,7 +233,7 @@ Advanced troubleshooting commands above may show Docker details; they are not pa
 
 ## Deeper technical routes
 
-The quickstart is **script-driven**: one command uploads, asks, cites, and verifies the persisted Ask run. There is no polished end-user UI on this path. On success the stack stays running for inspection — health check (`http://127.0.0.1:8020/health`), Docker logs, and persisted run read.
+The quickstart is **script-driven**: one command uploads, asks, cites, and verifies the persisted Ask run. There is no polished end-user UI on this path. On success the stack stays running for inspection - health check (`http://127.0.0.1:8020/health`), Docker logs, and persisted run read.
 
 Product Quick Start and Core Platform Proof use separate execution lifecycles. Stop this quickstart stack before starting the isolated Core Platform Proof; see [Stop the stack](#stop-the-stack) and the proof document's [After Product Quick Start](../proof/LKW_PLATFORM_PROOF.md#after-product-quick-start) section.
 

@@ -44,11 +44,11 @@ claim to contain zero LangChain/LangGraph code.
 ## Accepted evidence
 
 - **LCI-7B:** [`LANGCHAIN_FREE_CORE_INSTALLATION_GATE.md`](LANGCHAIN_FREE_CORE_INSTALLATION_GATE.md)
-  — `PASS`; clean default installation had zero `langchain*` and `langgraph*`
+  - `PASS`; clean default installation had zero `langchain*` and `langgraph*`
   distributions, with native/core, minimal native RAG, Nexus, and Harness
   smoke passing.
 - **LCI-7C:** [`LANGCHAIN_COMPATIBILITY_INSTALLATION_GATE.md`](LANGCHAIN_COMPATIBILITY_INSTALLATION_GATE.md)
-  — `PASS` for all five compatibility families; native defaults remained
+  - `PASS` for all five compatibility families; native defaults remained
   native. The earlier Torch/Transformers failure was non-reproducible.
 
 ## Inventory totals
@@ -89,26 +89,26 @@ The closeout makes no RAG implementation or test claim.
 
 ## Documentation status consistency
 
-- LCI-6A — `APPROVED`
-- LCI-6B — `APPROVED`
-- LCI-6C — `APPROVED`
-- LCI-6D — `APPROVED`
-- Native Ollama regression gate — `APPROVED`
-- LCI-6E — `APPROVED`
-- LCI-7A — `APPROVED`
-- LCI-7B — `APPROVED`
-- LCI-7C — `APPROVED`
-- LCI-7D — `READY_FOR_REVIEW`
-- FINAL SYSTEM GATE — `NEXT AFTER ACCEPTANCE`
-- LCI-8A — `PLANNED`
+- LCI-6A - `APPROVED`
+- LCI-6B - `APPROVED`
+- LCI-6C - `APPROVED`
+- LCI-6D - `APPROVED`
+- Native Ollama regression gate - `APPROVED`
+- LCI-6E - `APPROVED`
+- LCI-7A - `APPROVED`
+- LCI-7B - `APPROVED`
+- LCI-7C - `APPROVED`
+- LCI-7D - `READY_FOR_REVIEW`
+- FINAL SYSTEM GATE - `NEXT AFTER ACCEPTANCE`
+- LCI-8A - `PLANNED`
 
 ## Audited verdict
 
-- Inventory audit — `PASS`
-- Boundary audit — `PASS`
-- Packaging declaration check — `PASS`
-- LangGraph guard — `EXPECTED_EXISTING_FINDINGS / NON_BLOCKING_FOR_7D`
-- Documentation diff/staging validation — `PASS`
+- Inventory audit - `PASS`
+- Boundary audit - `PASS`
+- Packaging declaration check - `PASS`
+- LangGraph guard - `EXPECTED_EXISTING_FINDINGS / NON_BLOCKING_FOR_7D`
+- Documentation diff/staging validation - `PASS`
 
 **LCI-7D verdict:** `READY_FOR_REVIEW`
 **Next:** `FINAL SYSTEM GATE`, then `LCI-8A` after acceptance

@@ -1,4 +1,4 @@
-# Audit result — `NEXUS_EXECUTION_FLOW`
+# Audit result - `NEXUS_EXECUTION_FLOW`
 
 **Run:** 2026-06-19 · **Mode:** audit_only + implement (FLOW-MAINT-05)  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated (L3)
@@ -64,4 +64,4 @@ harness_maturity_report.py                           → layers 8, 9, 10 = L3
 
 ## Recommendation
 
-**Architecturally Mature (L3)** — harness execution flow revalidated; §6.1aw closed. Next domain: `REASONING_AND_COGNITION`.
+**Architecturally Mature (L3)** - harness execution flow revalidated; §6.1aw closed. Next domain: `REASONING_AND_COGNITION`.

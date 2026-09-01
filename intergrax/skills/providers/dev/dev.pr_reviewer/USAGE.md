@@ -28,4 +28,4 @@ Governed access to: `issues.search`, `issues.get_issue`, `collaboration.send_mai
 
 ## Related skills
 
-- Other `dev` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `dev` bundle skills - see bundle [USAGE.md](../USAGE.md)

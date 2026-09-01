@@ -1,4 +1,4 @@
-# Requires PostgreSQL with database `temporal` — start infra/integration postgresql first.
+# Requires PostgreSQL with database `temporal` - start infra/integration postgresql first.
 services:
   temporal:
     image: temporalio/auto-setup:1.25.2

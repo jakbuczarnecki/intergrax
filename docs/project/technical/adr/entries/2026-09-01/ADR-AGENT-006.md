@@ -63,7 +63,7 @@ It is **not**:
 - `application_id` + `application_environment_id` are **mandatory scope validators** on the materialization record, not a composite primary key.
 - A revision always belongs to exactly one application environment ([`AGENT_DISTRIBUTION.md`](../../../architecture/AGENT_DISTRIBUTION.md) §18.1).
 
-### Frozen field set — `RuntimeMaterializationRecord`
+### Frozen field set - `RuntimeMaterializationRecord`
 
 Pydantic contract (future implementation): `extra="forbid"`, `frozen=True`.
 
@@ -80,18 +80,18 @@ Pydantic contract (future implementation): `extra="forbid"`, `frozen=True`.
 
 **Explicitly excluded** (already on `RuntimeRevision` or out of scope):
 
-- `build_input_digest` — identity field on `RuntimeRevision`, not locator authority
-- `materialized_at`, materializer identity/version — no existing lifecycle convention requires them; audit events remain the observability path
+- `build_input_digest` - identity field on `RuntimeRevision`, not locator authority
+- `materialized_at`, materializer identity/version - no existing lifecycle convention requires them; audit events remain the observability path
 
-### Immutability — `persist(record)` semantics
+### Immutability - `persist(record)` semantics
 
 For a given `runtime_revision_id`:
 
 | Case | Behavior |
 |------|----------|
-| **1** — no existing record | persist (success) |
-| **2** — existing record, all **authority fields** bitwise-equivalent | idempotent success |
-| **3** — existing record differs in **any** authority field | conflict / fail closed |
+| **1** - no existing record | persist (success) |
+| **2** - existing record, all **authority fields** bitwise-equivalent | idempotent success |
+| **3** - existing record differs in **any** authority field | conflict / fail closed |
 
 **Never permitted:**
 
@@ -103,7 +103,7 @@ For a given `runtime_revision_id`:
 
 **New artifact ⇒ new `RuntimeRevision`.** Physical relocation of bytes for the same revision is forbidden; relocation requires a new materialization event and new revision authority, not mutation of the existing record.
 
-### Store contract — `RuntimeMaterializationStore`
+### Store contract - `RuntimeMaterializationStore`
 
 Minimum Protocol (names follow existing store verbs `get_*` / `persist_*`):
 
@@ -170,7 +170,7 @@ RuntimeMaterializationService.materialize(...)
 
 `artifact_locator` remains **only** on `RuntimeMaterializationRecord`, not on `RuntimeRevision`.
 
-### Relation to `MaterializedRuntimeLock` — three-way trust
+### Relation to `MaterializedRuntimeLock` - three-way trust
 
 ```text
 RuntimeRevision
@@ -243,7 +243,7 @@ RuntimeMaterializationRecord.artifact_locator
 
 `RuntimeRegistryProjectionStore` holds the **derived** materialized projection; it is **not** the source of `artifact_locator` truth.
 
-### Adjacent decision — effective roster (deferred)
+### Adjacent decision - effective roster (deferred)
 
 **Direction (not fully designed here):**
 
@@ -369,7 +369,7 @@ READY on N+1 does not alter N. COMMIT moves serving pointer only. Rollback to N 
 - Aligns with [`AGENT_DISTRIBUTION.md`](../../../architecture/AGENT_DISTRIBUTION.md) §18–§19, §21
 - Extends store ownership from [`ADR-AGENT-005`](../2026-08-17/ADR-AGENT-005.md)
 
-## Implementation plan — next tasks only
+## Implementation plan - next tasks only
 
 | Phase | Scope |
 |-------|-------|

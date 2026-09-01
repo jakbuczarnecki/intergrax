@@ -1,4 +1,4 @@
-# 2026-06-26 — LKW.1.12/LKW.1.13 live ingest unblockers
+# 2026-06-26 - LKW.1.12/LKW.1.13 live ingest unblockers
 
 ## Summary
 
@@ -7,13 +7,13 @@ LKW.1 live execution moved from event/schema and tool-invocation blockers to a s
 Current LKW.1 status after this journal entry:
 
 ```text
-LKW.1.11 — runtime tool registry parity: PASSED
-LKW.1.12 — decision_emitted phase mismatch: PASSED
-LKW.1.13 — local_indexer RAG ingest live path: PASSED
-LKW.1.14 — next: final live product smoke index -> search -> synthesize
+LKW.1.11 - runtime tool registry parity: PASSED
+LKW.1.12 - decision_emitted phase mismatch: PASSED
+LKW.1.13 - local_indexer RAG ingest live path: PASSED
+LKW.1.14 - next: final live product smoke index -> search -> synthesize
 ```
 
-## LKW.1.12 — decision_emitted phase mismatch
+## LKW.1.12 - decision_emitted phase mismatch
 
 Status:
 
@@ -74,7 +74,7 @@ Platform-reusable
 
 Reason: runtime event catalog/schema correctness affects every Tier-3 product host using the same runtime event bus and validating store.
 
-## LKW.1.13 — local_indexer RAG ingest execution
+## LKW.1.13 - local_indexer RAG ingest execution
 
 Status:
 
@@ -152,7 +152,7 @@ It is not a product execution blocker while live behavior is verified through to
 ## Next step
 
 ```text
-LKW.1.14 — final live product smoke
+LKW.1.14 - final live product smoke
 ```
 
 Scope:

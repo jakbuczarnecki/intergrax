@@ -3,7 +3,7 @@
 **Status:** Canonical
 **Version:** 2.2
 **Audience:** Human operators and model executors (any harness, any IDE)
-**Scope:** Full Intergrax platform — Tier-0 `intergrax/`, Tier-1 `intergrax/runtime/`, Tier-2 `agents/`, Tier-3 `applications/`
+**Scope:** Full Intergrax platform - Tier-0 `intergrax/`, Tier-1 `intergrax/runtime/`, Tier-2 `agents/`, Tier-3 `applications/`
 
 ---
 
@@ -32,11 +32,11 @@ This protocol is **model-executable**: an agent following it must produce the sa
 
 An Intergrax platform audit is:
 
-1. **Adversarial** — actively search for ways the system fails, lies, drifts, or only works by accident.
-2. **Independent** — do not inherit optimism from authors, prior chats, or roadmap status (`Done`, `PASS`, milestone claims).
-3. **Unincentivized toward PASS** — no quota, no desire to close quickly, no credit for a clean narrative. A FAIL with strong evidence is a successful audit.
-4. **Defect- and assumption-focused** — primary output is falsified claims, hidden coupling, and false assumptions about behavior under production stress.
-5. **Evidence-bound** — opinions without inspectable proof are hypotheses, not findings.
+1. **Adversarial** - actively search for ways the system fails, lies, drifts, or only works by accident.
+2. **Independent** - do not inherit optimism from authors, prior chats, or roadmap status (`Done`, `PASS`, milestone claims).
+3. **Unincentivized toward PASS** - no quota, no desire to close quickly, no credit for a clean narrative. A FAIL with strong evidence is a successful audit.
+4. **Defect- and assumption-focused** - primary output is falsified claims, hidden coupling, and false assumptions about behavior under production stress.
+5. **Evidence-bound** - opinions without inspectable proof are hypotheses, not findings.
 
 Audits do **not** implement fixes, refactor for style, or "helpfully" patch issues discovered mid-run (see section L).
 
@@ -50,9 +50,9 @@ When sources conflict, resolve in this order (highest wins):
 |------|--------|------|
 | **1** | **Implementation at exact SHA** | What the system actually does at audit time. Pin `git rev-parse HEAD` (or named tag/commit) in every campaign artifact. |
 | **2** | **Tests and CI** | **Evidence, not proof.** Tests show what was exercised; they do not prove completeness, production safety, or architectural compliance. Missing or weak tests are themselves findings. |
-| **3** | **Architecture docs** (`docs/project/architecture/`, capability architecture hubs) | **Target state** — design intent and invariants. Deviations are findings unless explicitly documented as accepted gaps. |
-| **4** | **Plan docs** (`docs/project/maintainers/plans/`, capability plan hubs) | **Work claims** — what maintainers assert is built, deferred, or verified. Treat `Done` as a claim to falsify, not a fact. |
-| **5** | **Prior audit artifacts** (`docs/audit_results/`) | **Historical only** — context for regression and fixed defects. Never authoritative over current implementation. |
+| **3** | **Architecture docs** (`docs/project/architecture/`, capability architecture hubs) | **Target state** - design intent and invariants. Deviations are findings unless explicitly documented as accepted gaps. |
+| **4** | **Plan docs** (`docs/project/maintainers/plans/`, capability plan hubs) | **Work claims** - what maintainers assert is built, deferred, or verified. Treat `Done` as a claim to falsify, not a fact. |
+| **5** | **Prior audit artifacts** (`docs/audit_results/`) | **Historical only** - context for regression and fixed defects. Never authoritative over current implementation. |
 
 **Rule:** If architecture says X and code does Y, record a finding unless a dated, explicit exception exists in architecture or plan with operator acceptance.
 
@@ -120,7 +120,7 @@ Therefore `development` may advance between layer audits. Do **not** model a mul
 - **Campaign date:** `YYYY-MM-DD` (UTC calendar date when the campaign **starts**).
 - **Campaign directory (`<CAMPAIGN_DIR>`):** `YYYY-MM-DD` \| `YYYY-MM-DD_run-2` \| `YYYY-MM-DD_run-3` (see same-day naming below).
 - **Campaign root:** `docs/audit_results/<CAMPAIGN_DIR>/`
-- **Global registry:** `docs/audit_results/README.md` — protocol entry point, global campaign registry, latest-campaign discovery, legacy pointer.
+- **Global registry:** `docs/audit_results/README.md` - protocol entry point, global campaign registry, latest-campaign discovery, legacy pointer.
 
 ### Campaign directory layout
 
@@ -130,7 +130,7 @@ docs/audit_results/
   AUDIT_PROTOCOL.md
   AUDIT_REMEDIATION_PROTOCOL.md
   <CAMPAIGN_DIR>/
-    README.md              # REQUIRED — campaign master register AND rollup
+    README.md              # REQUIRED - campaign master register AND rollup
     <LAYER_CODE>.md        # immutable per-layer audit snapshot
     ...
   legacy/
@@ -149,7 +149,7 @@ Use **one** convention only:
 
 Do **not** use `YYYY-MM-DD-a` / `-b` suffixes.
 
-### Campaign `README.md` — master register contract
+### Campaign `README.md` - master register contract
 
 `docs/audit_results/<CAMPAIGN_DIR>/README.md` is the **mutable master register** for one campaign. It is the single coordination/rollup document. Do **not** create `CAMPAIGN_SUMMARY.md` or any other parallel campaign-status artifact.
 
@@ -160,12 +160,12 @@ Do **not** use `YYYY-MM-DD-a` / `-b` suffixes.
 | `campaign_id` | Dated directory name (e.g. `2026-08-18` or `2026-08-18_run-2`) |
 | `campaign_token` | Immutable token derived from directory name (section H) |
 | `started_at` | UTC timestamp when campaign started |
-| `completed_at` | UTC timestamp when the **scoped audit** closed (or `—` while in progress) |
-| `status` | `IN_PROGRESS` \| `COMPLETE` \| `ABORTED` — tracks **audit lifecycle only** (section C2) |
+| `completed_at` | UTC timestamp when the **scoped audit** closed (or `-` while in progress) |
+| `status` | `IN_PROGRESS` \| `COMPLETE` \| `ABORTED` - tracks **audit lifecycle only** (section C2) |
 | `campaign_start_sha` | Repository SHA at campaign start |
-| `campaign_end_sha` | Final repository state after campaign-owned documentation synchronization (or `—` while in progress) |
+| `campaign_end_sha` | Final repository state after campaign-owned documentation synchronization (or `-` while in progress) |
 | `scope` | Layers/domains in scope |
-| `overall_verdict` | Campaign rollup verdict (section J; or `—` while in progress) |
+| `overall_verdict` | Campaign rollup verdict (section J; or `-` while in progress) |
 
 Legacy material is identified by location under `legacy/`, not by a competing active campaign status.
 
@@ -183,12 +183,12 @@ Legacy material is identified by location under `legacy/`, not by a competing ac
 | `low` | Count of LOW findings |
 | `architecture_sync` | Whether arch sync completed for accepted findings |
 | `plan_sync` | Whether plan sync completed for accepted findings |
-| `post_sync_sha` | Commit SHA after arch/plan sync (when synchronization created a later commit; or `—`) |
+| `post_sync_sha` | Commit SHA after arch/plan sync (when synchronization created a later commit; or `-`) |
 | `report` | Path to immutable per-layer snapshot (e.g. `<LAYER_CODE>.md`) |
 
-#### C. Finding register — current authoritative state (required table)
+#### C. Finding register - current authoritative state (required table)
 
-The finding register in the campaign `README.md` is the **authoritative current state** for finding lifecycle and remediation. Initially unknown fields use `—`.
+The finding register in the campaign `README.md` is the **authoritative current state** for finding lifecycle and remediation. Initially unknown fields use `-`.
 
 | Column | Description |
 |--------|-------------|
@@ -197,17 +197,17 @@ The finding register in the campaign `README.md` is the **authoritative current 
 | `severity` | CRITICAL \| HIGH \| MEDIUM \| LOW |
 | `category` | Primary category (section G) |
 | `status` | Current lifecycle status (section G1) |
-| `remediation_block` | Named remediation block (or `—` until accepted findings are grouped) |
-| `dependencies` | Canonical finding IDs and/or explicitly named remediation blocks (or `—`) |
-| `arch_ref` | Architecture doc path + section anchor (or `—`) |
-| `plan_ref` | Plan doc path + block/phase id (or `—`) |
-| `implementation_commit` | One or more full commit SHAs (or `—` until they exist) |
-| `verification_evidence` | Tests, CI run, reviewer id, date (or `—` until they exist) |
-| `notes` | Operator/executor notes (or `—`) |
+| `remediation_block` | Named remediation block (or `-` until accepted findings are grouped) |
+| `dependencies` | Canonical finding IDs and/or explicitly named remediation blocks (or `-`) |
+| `arch_ref` | Architecture doc path + section anchor (or `-`) |
+| `plan_ref` | Plan doc path + block/phase id (or `-`) |
+| `implementation_commit` | One or more full commit SHAs (or `-` until they exist) |
+| `verification_evidence` | Tests, CI run, reviewer id, date (or `-` until they exist) |
+| `notes` | Operator/executor notes (or `-`) |
 
-`dependencies` reference canonical finding IDs and/or explicitly named remediation blocks. `remediation_block`, `implementation_commit`, and `verification_evidence` remain `—` until they exist.
+`dependencies` reference canonical finding IDs and/or explicitly named remediation blocks. `remediation_block`, `implementation_commit`, and `verification_evidence` remain `-` until they exist.
 
-#### D. Campaign rollup (required sections — one document, two semantic rollups)
+#### D. Campaign rollup (required sections - one document, two semantic rollups)
 
 The campaign `README.md` holds **two** rollup sections with distinct semantics. Do **not** create another file (no `CAMPAIGN_SUMMARY.md`).
 
@@ -237,7 +237,7 @@ At minimum:
 - deferred/rejected residual items
 - remediation completion statement (when applicable)
 
-The remediation rollup does **not** overwrite the audit rollup. Reaching remediation completion does **not** transition campaign status — the campaign was already `COMPLETE` as an audit campaign.
+The remediation rollup does **not** overwrite the audit rollup. Reaching remediation completion does **not** transition campaign status - the campaign was already `COMPLETE` as an audit campaign.
 
 Every per-layer result file MUST record the same `audited_sha`. Evidence in that result refers to **that** SHA only.
 
@@ -252,7 +252,7 @@ If runtime/product code changes concurrently between layer audits:
 - Audit the next layer against the **then-current** exact SHA; record it explicitly.
 - If concurrent changes invalidate already-audited findings, flag the affected layer for **revalidation** rather than pretending the whole campaign used one immutable source tree.
 
-### C2. Campaign status `COMPLETE` — audit completion, not remediation completion
+### C2. Campaign status `COMPLETE` - audit completion, not remediation completion
 
 Campaign status tracks the **audit lifecycle**, not the remediation lifecycle.
 
@@ -298,7 +298,7 @@ Once campaign status becomes `COMPLETE`, the audit baseline is **historical evid
 - `started_at`
 - `completed_at`
 - `campaign_start_sha`
-- `campaign_end_sha` — audit-closeout repository SHA; not a later remediation commit
+- `campaign_end_sha` - audit-closeout repository SHA; not a later remediation commit
 - `scope`
 - `overall_verdict`
 
@@ -325,7 +325,7 @@ After campaign `COMPLETE`, the campaign `README.md` remains mutable **only** for
 - `verification_evidence`
 - `notes`
 
-Do **not** mutate immutable per-layer snapshot text. If audit-baseline metadata itself was factually wrong due to a clerical error, correction requires an explicit correction note preserving the old value/provenance — never silent rewrite.
+Do **not** mutate immutable per-layer snapshot text. If audit-baseline metadata itself was factually wrong due to a clerical error, correction requires an explicit correction note preserving the old value/provenance - never silent rewrite.
 
 #### Periodic audit semantics
 
@@ -342,7 +342,7 @@ This is the mechanism by which audit history shows real architectural progress a
 
 **On campaign initialization** (both steps required; no `IN_PROGRESS` campaign without a registry row):
 
-1. Create `docs/audit_results/<CAMPAIGN_DIR>/` and campaign `README.md` with metadata section A populated: `status` = `IN_PROGRESS`, `campaign_start_sha` set, `completed_at` = `—`, `campaign_end_sha` = `—`, `overall_verdict` = `—`.
+1. Create `docs/audit_results/<CAMPAIGN_DIR>/` and campaign `README.md` with metadata section A populated: `status` = `IN_PROGRESS`, `campaign_start_sha` set, `completed_at` = `-`, `campaign_end_sha` = `-`, `overall_verdict` = `-`.
 2. Immediately add **one** row to the global campaign registry in `docs/audit_results/README.md` with the same values. Never append a duplicate registry row for the same `campaign_id`.
 
 **During campaign:**
@@ -388,14 +388,14 @@ Intergrax is audited **one layer (domain) at a time** unless the operator explic
 
 Per layer:
 
-1. **Declare scope** — layer code, tier, paths, architecture/plan doc pair, in-scope/out-of-scope boundaries.
-2. **Pin SHA** — all evidence references this commit.
-3. **Load hierarchy** — read implementation first; use arch/plan as falsification checklists, not as ground truth.
-4. **Execute falsification pass** — systematically attack section E targets within scope.
-5. **Record findings** — each with ID, severity, category, evidence (sections H–I).
+1. **Declare scope** - layer code, tier, paths, architecture/plan doc pair, in-scope/out-of-scope boundaries.
+2. **Pin SHA** - all evidence references this commit.
+3. **Load hierarchy** - read implementation first; use arch/plan as falsification checklists, not as ground truth.
+4. **Execute falsification pass** - systematically attack section E targets within scope.
+5. **Record findings** - each with ID, severity, category, evidence (sections H–I).
 6. **Assign layer verdict** (section J).
-7. **Present to operator** — no silent persistence of findings (section P).
-8. **After acceptance** — persist artifacts, then arch/plan sync if required (section M).
+7. **Present to operator** - no silent persistence of findings (section P).
+8. **After acceptance** - persist artifacts, then arch/plan sync if required (section M).
 
 Do not begin layer N+1 until layer N is `COMPLETE` or explicitly deferred in the campaign README with operator sign-off.
 
@@ -494,7 +494,7 @@ For every local competing mechanism, classify it conceptually as one of:
 - Thin adapters are desirable when they preserve canonical semantics.
 - Do not force reuse of a platform component that demonstrably does not satisfy the required contract; in that case record an architecture gap rather than pretending reuse is correct.
 
-**Parallel universal mechanism** — a mechanism that independently tries to own a concern already intended to be owned globally by another Intergrax platform component. Unjustified parallel universal mechanisms are architecture findings even if both implementations individually work.
+**Parallel universal mechanism** - a mechanism that independently tries to own a concern already intended to be owned globally by another Intergrax platform component. Unjustified parallel universal mechanisms are architecture findings even if both implementations individually work.
 
 Reuse is about shared **ownership / guarantees / semantics**, not superficial code deduplication. Do not create premature shared abstractions merely because two functions look similar.
 
@@ -697,23 +697,23 @@ if backend == "postgres": ...
 
 Future audits MUST actively look for the following. Presence alone is NOT automatically a finding; the auditor MUST determine whether the import or usage lives inside the canonical provider boundary.
 
-**A. DIRECT VENDOR IMPORTS** — illustrative examples: `sqlite3`, `psycopg` / `asyncpg`, PostgreSQL-specific clients, Cassandra drivers, `pymongo`, Redis clients, Kafka clients, RabbitMQ clients, Elasticsearch/OpenSearch clients, `boto3` / cloud SDKs, Azure/GCP SDKs, Qdrant/Pinecone/Chroma clients, OpenAI/Anthropic/vendor LLM clients, Sentry/vendor telemetry SDKs, vendor-specific OpenTelemetry exporters, filesystem/cloud object-store SDKs.
+**A. DIRECT VENDOR IMPORTS** - illustrative examples: `sqlite3`, `psycopg` / `asyncpg`, PostgreSQL-specific clients, Cassandra drivers, `pymongo`, Redis clients, Kafka clients, RabbitMQ clients, Elasticsearch/OpenSearch clients, `boto3` / cloud SDKs, Azure/GCP SDKs, Qdrant/Pinecone/Chroma clients, OpenAI/Anthropic/vendor LLM clients, Sentry/vendor telemetry SDKs, vendor-specific OpenTelemetry exporters, filesystem/cloud object-store SDKs.
 
-**B. CONCRETE PROVIDER CLASS DEPENDENCIES** — consumers importing or requiring `SqliteX`, `PostgresX`, `RedisX`, `KafkaX`, `MongoX`, `CassandraX`, `VendorX` instead of `XStore`, `XRepository`, `XPort`, `XProvider`, `XProtocol`, or `XAdapter` contract.
+**B. CONCRETE PROVIDER CLASS DEPENDENCIES** - consumers importing or requiring `SqliteX`, `PostgresX`, `RedisX`, `KafkaX`, `MongoX`, `CassandraX`, `VendorX` instead of `XStore`, `XRepository`, `XPort`, `XProvider`, `XProtocol`, or `XAdapter` contract.
 
-**C. VENDOR TYPES LEAKING THROUGH CONTRACTS** — e.g. `def connection() -> psycopg.Connection`, `def client() -> Redis`, `field: MongoClient`, `result: VendorResponse`. A Protocol wrapping a vendor type is NOT vendor-neutral.
+**C. VENDOR TYPES LEAKING THROUGH CONTRACTS** - e.g. `def connection() -> psycopg.Connection`, `def client() -> Redis`, `field: MongoClient`, `result: VendorResponse`. A Protocol wrapping a vendor type is NOT vendor-neutral.
 
-**D. VENDOR EXCEPTION LEAKAGE** — e.g. `except psycopg.OperationalError` inside generic runtime/business code. Provider should translate to Intergrax-owned errors such as `StorageUnavailable`, `ConcurrencyConflict`, `ProviderTimeout`, `ProviderRejected`, `TransientBackendFailure` (exact taxonomy remains domain-owned).
+**D. VENDOR EXCEPTION LEAKAGE** - e.g. `except psycopg.OperationalError` inside generic runtime/business code. Provider should translate to Intergrax-owned errors such as `StorageUnavailable`, `ConcurrencyConflict`, `ProviderTimeout`, `ProviderRejected`, `TransientBackendFailure` (exact taxonomy remains domain-owned).
 
-**E. VENDOR-SPECIFIC CONFIG LEAKAGE** — generic/shared contracts with fields such as `postgres_host`, `sqlite_path`, `cassandra_cluster`, `redis_database`, `kafka_topic` when those concepts belong to one provider. Provider-specific config may exist in provider-owned configuration or explicit composition configuration; generic domain/platform contracts should express provider-neutral semantics or provider references.
+**E. VENDOR-SPECIFIC CONFIG LEAKAGE** - generic/shared contracts with fields such as `postgres_host`, `sqlite_path`, `cassandra_cluster`, `redis_database`, `kafka_topic` when those concepts belong to one provider. Provider-specific config may exist in provider-owned configuration or explicit composition configuration; generic domain/platform contracts should express provider-neutral semantics or provider references.
 
-**F. VENDOR QUERY / DIALECT LEAKAGE** — e.g. `PRAGMA`, `INSERT OR REPLACE`, PostgreSQL JSONB-specific operations, `LISTEN/NOTIFY`, Cassandra CQL details, Redis command semantics, vendor-specific search DSL. Legitimate inside provider implementations, migrations, or explicitly provider-owned operational tooling; audit triggers outside those boundaries.
+**F. VENDOR QUERY / DIALECT LEAKAGE** - e.g. `PRAGMA`, `INSERT OR REPLACE`, PostgreSQL JSONB-specific operations, `LISTEN/NOTIFY`, Cassandra CQL details, Redis command semantics, vendor-specific search DSL. Legitimate inside provider implementations, migrations, or explicitly provider-owned operational tooling; audit triggers outside those boundaries.
 
-**G. VENDOR IDENTITY BRANCHING** — e.g. `if backend == "postgres"`, `if provider == "sqlite"`, `isinstance(store, PostgresStore)` inside domain/runtime/application/agent logic. Provider selection belongs in composition/provider resolution; provider capability differences should be expressed through typed capabilities, not vendor-name conditionals scattered through consumers.
+**G. VENDOR IDENTITY BRANCHING** - e.g. `if backend == "postgres"`, `if provider == "sqlite"`, `isinstance(store, PostgresStore)` inside domain/runtime/application/agent logic. Provider selection belongs in composition/provider resolution; provider capability differences should be expressed through typed capabilities, not vendor-name conditionals scattered through consumers.
 
-**H. CONCRETE DEFAULT CONSTRUCTION** — generic runtime/domain code internally doing `self.store = SqliteStore(...)`, `self.queue = RedisQueue(...)`, `self.exporter = SentryExporter(...)` rather than receiving/resolving the canonical abstraction through approved composition.
+**H. CONCRETE DEFAULT CONSTRUCTION** - generic runtime/domain code internally doing `self.store = SqliteStore(...)`, `self.queue = RedisQueue(...)`, `self.exporter = SentryExporter(...)` rather than receiving/resolving the canonical abstraction through approved composition.
 
-**I. VENDOR CLIENT PASS-THROUGH** — concrete clients stored in runtime contexts, agent contexts, application state, generic metadata, service locators, `dict[str, Any]`, or hidden attributes as an escape hatch around provider abstractions.
+**I. VENDOR CLIENT PASS-THROUGH** - concrete clients stored in runtime contexts, agent contexts, application state, generic metadata, service locators, `dict[str, Any]`, or hidden attributes as an escape hatch around provider abstractions.
 
 #### Paper abstraction rule
 
@@ -762,7 +762,7 @@ domain -> adapter -> vendor
 
 A lower-level implementation must not become the public contract simply because it is currently the only implementation.
 
-#### Abstraction scope — do not overengineer
+#### Abstraction scope - do not overengineer
 
 Do NOT require a Protocol/ABC for every class or function. Mandatory abstraction is primarily for:
 
@@ -870,53 +870,53 @@ For each in-scope component, attempt to disprove stated invariants. At minimum, 
 
 ### Architecture and structure
 
-- **Architecture bypasses** — code paths that skip documented gates, policies, or lifecycle stages.
-- **Alternate paths** — feature flags, env toggles, legacy branches, "admin" or debug entrypoints that change behavior.
-- **Dependency violations** — cross-tier imports, circular deps, runtime plugin loading that breaks boundaries; contract/state/behavior ownership violations beyond import graphs (section D).
-- **Duplicated / bypassed platform mechanisms** — local retry loops, registries, policy evaluators, tool gateways, memory/RAG/context stacks, or observability models that recreate or bypass canonical platform ownership (section D2).
-- **Hidden global state** — module-level singletons, process-wide caches, class variables, thread-locals used as implicit channels.
-- **Product leakage** — application-specific logic in runtime/agents tiers; domain logic in wrong tier.
-- **Host-specific behavior** — paths, shells, OS assumptions, hardcoded developer machine layout.
-- **False portability** — claims of cloud-agnostic or multi-host operation contradicted by local-only locks, paths, or APIs.
-- **Legacy paths** — deprecated modules still reachable; dual implementations where only one is documented.
-- **Doc drift** — architecture/plan describes behavior or APIs that code no longer implements.
-- **Direct vendor SDK/API calls** — outside provider boundary (section D4).
-- **Concrete backend imports** — in high-level domain/runtime/agent/application code.
-- **Provider implementation types in public contracts** — vendor types exposed through ports or APIs.
-- **Vendor-specific exceptions leaking upward** — generic code catching or propagating vendor exceptions.
-- **Vendor-specific configuration in generic contracts** — provider-owned config fields on platform/domain models.
-- **Vendor query/dialect syntax** — outside provider-owned implementation, migrations, or operational tooling.
-- **Provider-name branching** — in domain/runtime/application/agent logic instead of composition.
-- **Concrete backend construction** — outside composition/provider ownership.
-- **Vendor clients in metadata/context/state** — pass-through around abstractions.
-- **Paper abstractions** — port exists but actual dependency/call path uses concrete provider (section D4).
-- **Missing provider-neutral port** — material replaceable concern without stable abstraction.
-- **Duplicate provider abstractions** — multiple competing abstractions for the same platform concern.
+- **Architecture bypasses** - code paths that skip documented gates, policies, or lifecycle stages.
+- **Alternate paths** - feature flags, env toggles, legacy branches, "admin" or debug entrypoints that change behavior.
+- **Dependency violations** - cross-tier imports, circular deps, runtime plugin loading that breaks boundaries; contract/state/behavior ownership violations beyond import graphs (section D).
+- **Duplicated / bypassed platform mechanisms** - local retry loops, registries, policy evaluators, tool gateways, memory/RAG/context stacks, or observability models that recreate or bypass canonical platform ownership (section D2).
+- **Hidden global state** - module-level singletons, process-wide caches, class variables, thread-locals used as implicit channels.
+- **Product leakage** - application-specific logic in runtime/agents tiers; domain logic in wrong tier.
+- **Host-specific behavior** - paths, shells, OS assumptions, hardcoded developer machine layout.
+- **False portability** - claims of cloud-agnostic or multi-host operation contradicted by local-only locks, paths, or APIs.
+- **Legacy paths** - deprecated modules still reachable; dual implementations where only one is documented.
+- **Doc drift** - architecture/plan describes behavior or APIs that code no longer implements.
+- **Direct vendor SDK/API calls** - outside provider boundary (section D4).
+- **Concrete backend imports** - in high-level domain/runtime/agent/application code.
+- **Provider implementation types in public contracts** - vendor types exposed through ports or APIs.
+- **Vendor-specific exceptions leaking upward** - generic code catching or propagating vendor exceptions.
+- **Vendor-specific configuration in generic contracts** - provider-owned config fields on platform/domain models.
+- **Vendor query/dialect syntax** - outside provider-owned implementation, migrations, or operational tooling.
+- **Provider-name branching** - in domain/runtime/application/agent logic instead of composition.
+- **Concrete backend construction** - outside composition/provider ownership.
+- **Vendor clients in metadata/context/state** - pass-through around abstractions.
+- **Paper abstractions** - port exists but actual dependency/call path uses concrete provider (section D4).
+- **Missing provider-neutral port** - material replaceable concern without stable abstraction.
+- **Duplicate provider abstractions** - multiple competing abstractions for the same platform concern.
 
 ### Reliability and correctness
 
-- **Fail-open** — errors swallowed, defaults that grant access, silent fallbacks, "best effort" that hides failure.
-- **Restart / resume** — state after crash, partial writes, checkpoint replay, stale checkpoints.
-- **Retries** — unbounded retry, retry without idempotency, thundering herd, duplicate side effects.
-- **Idempotency** — duplicate delivery, at-least-once semantics without dedup keys.
-- **Concurrency** — races, TOCTOU, missing locks, async boundaries, shared mutable state.
-- **Multi-host** — split brain, non-distributed locks, file-based coordination on shared FS assumptions.
-- **Durability** — fsync, atomic rename, WAL gaps, "write succeeded" before durable.
-- **Failure / recovery** — partial failure leaves system inconsistent; no reconciliation path.
+- **Fail-open** - errors swallowed, defaults that grant access, silent fallbacks, "best effort" that hides failure.
+- **Restart / resume** - state after crash, partial writes, checkpoint replay, stale checkpoints.
+- **Retries** - unbounded retry, retry without idempotency, thundering herd, duplicate side effects.
+- **Idempotency** - duplicate delivery, at-least-once semantics without dedup keys.
+- **Concurrency** - races, TOCTOU, missing locks, async boundaries, shared mutable state.
+- **Multi-host** - split brain, non-distributed locks, file-based coordination on shared FS assumptions.
+- **Durability** - fsync, atomic rename, WAL gaps, "write succeeded" before durable.
+- **Failure / recovery** - partial failure leaves system inconsistent; no reconciliation path.
 
 ### Security and identity
 
-- **Identity** — conflation of user, tenant, session, job, agent instance; missing propagation across layers.
-- **Authorization** — checks only at edge; missing downstream enforcement; trust of caller-supplied IDs.
-- **Security by convention** — "internal only", "not exposed", "trusted network" without enforcement.
-- **Secrets** — logging, env dumps, error messages, test fixtures, committed placeholders treated as real.
+- **Identity** - conflation of user, tenant, session, job, agent instance; missing propagation across layers.
+- **Authorization** - checks only at edge; missing downstream enforcement; trust of caller-supplied IDs.
+- **Security by convention** - "internal only", "not exposed", "trusted network" without enforcement.
+- **Secrets** - logging, env dumps, error messages, test fixtures, committed placeholders treated as real.
 
 ### Operations and scale
 
-- **Observability gaps** — failures without correlation IDs, missing metrics on critical paths, undebuggable async.
-- **Scaling limits** — O(n) scans, unbounded queues, single-process bottlenecks presented as scalable.
-- **Unbounded state** — caches, logs, queues, DB tables, in-memory maps without TTL or cap.
-- **Cost / budget** — unbounded LLM/tool calls, missing limits, retry storms amplifying cost.
+- **Observability gaps** - failures without correlation IDs, missing metrics on critical paths, undebuggable async.
+- **Scaling limits** - O(n) scans, unbounded queues, single-process bottlenecks presented as scalable.
+- **Unbounded state** - caches, logs, queues, DB tables, in-memory maps without TTL or cap.
+- **Cost / budget** - unbounded LLM/tool calls, missing limits, retry storms amplifying cost.
 
 ### Contracts and typing
 
@@ -959,7 +959,7 @@ Strong typing may use Protocols, composition, models, value objects, ABCs, or ba
 
 Risk rises when dynamic structures cross trust boundaries, ownership boundaries, persistence boundaries, execution boundaries, or public author/consumer contracts. Do **not** treat every `dict` as a finding.
 
-**Acceptable exception model** — dynamic structures MAY be appropriate for:
+**Acceptable exception model** - dynamic structures MAY be appropriate for:
 
 - raw external input before validation
 - opaque extension payloads deliberately preserved as opaque
@@ -982,18 +982,18 @@ When used:
 
 If **YES** and no credible reason for dynamism exists, record an appropriate finding.
 
-- **Weak contracts** — undocumented JSON shapes, optional fields that change semantics, version skew.
-- **Hidden dependencies** — import side effects, registry mutation at import time, implicit plugin discovery.
+- **Weak contracts** - undocumented JSON shapes, optional fields that change semantics, version skew.
+- **Hidden dependencies** - import side effects, registry mutation at import time, implicit plugin discovery.
 
 ### Verification quality
 
-- **"Done" without behavior** — plan marks complete but no implementation or no observable effect.
-- **Tests missing invariants** — critical properties never asserted (authz, idempotency, failure modes).
-- **Paper abstractions** — interfaces with single no-op implementation; layers that delegate without adding enforcement; ports bypassed by direct concrete provider dependency on production call paths (section D4).
-- **Missing negative tests** — only happy path; no tests for denial, timeout, malformed input, crash mid-flight.
-- **Cross-layer mismatches** — tier A assumes tier B provides guarantee B does not implement.
+- **"Done" without behavior** - plan marks complete but no implementation or no observable effect.
+- **Tests missing invariants** - critical properties never asserted (authz, idempotency, failure modes).
+- **Paper abstractions** - interfaces with single no-op implementation; layers that delegate without adding enforcement; ports bypassed by direct concrete provider dependency on production call paths (section D4).
+- **Missing negative tests** - only happy path; no tests for denial, timeout, malformed input, crash mid-flight.
+- **Cross-layer mismatches** - tier A assumes tier B provides guarantee B does not implement.
 
-Record **negative results** (target examined, not falsified) briefly in the layer file — they bound confidence but are not findings.
+Record **negative results** (target examined, not falsified) briefly in the layer file - they bound confidence but are not findings.
 
 ---
 
@@ -1005,16 +1005,16 @@ Evaluate as if deployed tomorrow under adversarial conditions. Ask:
 |--------|-----------|
 | **Failures** | What breaks first? Is failure contained? Is it visible? |
 | **Restart** | What is lost, duplicated, or corrupted after process/host restart? |
-| **Duplicate delivery** | Messages, webhooks, tool calls, file events — what happens twice? |
+| **Duplicate delivery** | Messages, webhooks, tool calls, file events - what happens twice? |
 | **Retries** | Who retries, with what backoff, and what if the first attempt partially succeeded? |
-| **Parallel execution** | Same resource mutated concurrently — last write wins? corruption? |
-| **Partial outage** | DB up, queue down; API up, auth down — degrade safe or fail catastrophically? |
+| **Parallel execution** | Same resource mutated concurrently - last write wins? corruption? |
+| **Partial outage** | DB up, queue down; API up, auth down - degrade safe or fail catastrophically? |
 | **Multi-tenant** | Can tenant A read, trigger, or exhaust tenant B's resources? |
-| **Scale** | 10x jobs, 100x files, long-running campaigns — what exhausts memory, FDs, API quotas? |
+| **Scale** | 10x jobs, 100x files, long-running campaigns - what exhausts memory, FDs, API quotas? |
 | **Malicious input** | Oversized payloads, path traversal, injection, prompt injection at tool boundaries. |
 | **Policy denial** | When policy says no, is denial enforced at every layer or only logged? |
 | **Timeouts** | Hung calls, partial results, cancel propagation. |
-| **Drift** | Config, schema, feature flags, dependency versions — runtime vs documented. |
+| **Drift** | Config, schema, feature flags, dependency versions - runtime vs documented. |
 
 Lack of evidence for production-safe behavior under these stresses is a finding when the architecture claims that property.
 
@@ -1033,17 +1033,17 @@ Lack of evidence for production-safe behavior under these stresses is a finding 
 
 ### Categories (use one primary)
 
-- **IMPLEMENTATION DEFECT** — implementation contradicts specified behavior or invariants.
-- **ARCHITECTURE DEFECT** — target design is wrong, incomplete, or not production-grade.
-- **IMPLEMENTATION/ARCHITECTURE DRIFT** — code and architecture disagree; gap ownership must be explicit.
-- **BOUNDARY VIOLATION** — tier/import/product-surface rule broken.
-- **SECURITY** — authn/authz/secrets/trust-boundary issue.
-- **RELIABILITY** — crash, duplication, lost work, non-idempotent side effects.
-- **OPERABILITY** — observability, deployability, config, runbooks inadequate for claimed ops model.
-- **SCALABILITY / COST** — unbounded resource use or economic risk.
-- **TEST GAP** — missing or misleading tests; CI gives false confidence.
-- **DOC DRIFT** — documentation or plan claims falsified by code.
-- **PROCESS / CLAIM** — `Done` or `PASS` unsupported by evidence.
+- **IMPLEMENTATION DEFECT** - implementation contradicts specified behavior or invariants.
+- **ARCHITECTURE DEFECT** - target design is wrong, incomplete, or not production-grade.
+- **IMPLEMENTATION/ARCHITECTURE DRIFT** - code and architecture disagree; gap ownership must be explicit.
+- **BOUNDARY VIOLATION** - tier/import/product-surface rule broken.
+- **SECURITY** - authn/authz/secrets/trust-boundary issue.
+- **RELIABILITY** - crash, duplication, lost work, non-idempotent side effects.
+- **OPERABILITY** - observability, deployability, config, runbooks inadequate for claimed ops model.
+- **SCALABILITY / COST** - unbounded resource use or economic risk.
+- **TEST GAP** - missing or misleading tests; CI gives false confidence.
+- **DOC DRIFT** - documentation or plan claims falsified by code.
+- **PROCESS / CLAIM** - `Done` or `PASS` unsupported by evidence.
 
 ---
 
@@ -1062,12 +1062,12 @@ Lack of evidence for production-safe behavior under these stresses is a finding 
 | `REJECTED` | Invalid or out of scope; requires rationale. |
 | `WITHDRAWN` | Withdrawn; ID is not reused. |
 
-Rules: audit produces `PROPOSED`; operator acceptance → `ACCEPTED`; remediation starts → `IMPLEMENTING`; implementer may reach `IMPLEMENTED`; implementer **must not** self-certify `VERIFIED` or `CLOSED`; independent verifier → `VERIFIED`; `CLOSED` follows `VERIFIED` and recording the finding's final remediation disposition in the remediation rollup (section D.2). Closing a finding does **not** transition campaign status — the campaign was already `COMPLETE` as an audit campaign.
+Rules: audit produces `PROPOSED`; operator acceptance → `ACCEPTED`; remediation starts → `IMPLEMENTING`; implementer may reach `IMPLEMENTED`; implementer **must not** self-certify `VERIFIED` or `CLOSED`; independent verifier → `VERIFIED`; `CLOSED` follows `VERIFIED` and recording the finding's final remediation disposition in the remediation rollup (section D.2). Closing a finding does **not** transition campaign status - the campaign was already `COMPLETE` as an audit campaign.
 
 **State ownership:**
 
-- **Campaign `README.md` finding register** — authoritative **current** lifecycle, remediation, and verification state (`PROPOSED` through `CLOSED`, including `IMPLEMENTING`, `IMPLEMENTED`, `VERIFIED`).
-- **Per-layer snapshot** (`docs/audit_results/<CAMPAIGN_DIR>/<LAYER_CODE>.md`) — immutable historical observation plus **publication-time operator decision** only (section O). Do **not** use per-layer files as the current location for `IMPLEMENTING`, `IMPLEMENTED`, `VERIFIED`, or `CLOSED`.
+- **Campaign `README.md` finding register** - authoritative **current** lifecycle, remediation, and verification state (`PROPOSED` through `CLOSED`, including `IMPLEMENTING`, `IMPLEMENTED`, `VERIFIED`).
+- **Per-layer snapshot** (`docs/audit_results/<CAMPAIGN_DIR>/<LAYER_CODE>.md`) - immutable historical observation plus **publication-time operator decision** only (section O). Do **not** use per-layer files as the current location for `IMPLEMENTING`, `IMPLEMENTED`, `VERIFIED`, or `CLOSED`.
 
 
 ## H. Finding IDs
@@ -1086,9 +1086,9 @@ AUDIT-<CAMPAIGN_TOKEN>-<LAYER_CODE>-NN
 | `YYYY-MM-DD_run-2` | `YYYYMMDD-R2` (e.g. `20260818-R2`) |
 | `YYYY-MM-DD_run-3` | `YYYYMMDD-R3` (e.g. `20260818-R3`) |
 
-- `CAMPAIGN_TOKEN` — immutable after publication; never reused across campaigns.
-- `<LAYER_CODE>` — uppercase domain/layer identifier (e.g. `ORCHESTRATION`, `MEMORY`, `PLATFORM_FOUNDATION`).
-- `NN` — two-digit sequence per layer per campaign (`01`, `02`, ...).
+- `CAMPAIGN_TOKEN` - immutable after publication; never reused across campaigns.
+- `<LAYER_CODE>` - uppercase domain/layer identifier (e.g. `ORCHESTRATION`, `MEMORY`, `PLATFORM_FOUNDATION`).
+- `NN` - two-digit sequence per layer per campaign (`01`, `02`, ...).
 
 **Examples:**
 
@@ -1109,14 +1109,14 @@ AUDIT-<CAMPAIGN_TOKEN>-<LAYER_CODE>-NN
 
 Every finding MUST include:
 
-1. **Claim falsified** — quote or paraphrase the architecture, plan, or implied invariant.
-2. **Observation** — what the implementation actually does (behavior, not intent).
-3. **Location** — file path(s) and line range(s) at audited SHA, or runtime trace/log snippet.
-4. **Reproduction or inspection steps** — commands, call sequence, or static analysis path another auditor can repeat.
-5. **Impact** — who/what is affected under section F stresses.
-6. **Confidence** — `CONFIRMED` (reproduced or directly read) | `PROBABLE` (strong static evidence) | `HYPOTHESIS` (needs operator follow-up; not for CRITICAL without escalation).
+1. **Claim falsified** - quote or paraphrase the architecture, plan, or implied invariant.
+2. **Observation** - what the implementation actually does (behavior, not intent).
+3. **Location** - file path(s) and line range(s) at audited SHA, or runtime trace/log snippet.
+4. **Reproduction or inspection steps** - commands, call sequence, or static analysis path another auditor can repeat.
+5. **Impact** - who/what is affected under section F stresses.
+6. **Confidence** - `CONFIRMED` (reproduced or directly read) | `PROBABLE` (strong static evidence) | `HYPOTHESIS` (needs operator follow-up; not for CRITICAL without escalation).
 
-Findings without item 3 and 4 are **insufficient** — downgrade to notes or block verdict (section J).
+Findings without item 3 and 4 are **insufficient** - downgrade to notes or block verdict (section J).
 
 ---
 
@@ -1129,7 +1129,7 @@ Per-layer and campaign rollup:
 | **PASS** | No CRITICAL/HIGH findings; MEDIUM findings acknowledged or accepted by operator; scope fully executed. |
 | **PASS WITH GAPS** | No CRITICAL; HIGH items have documented mitigation or time-bound acceptance; known MEDIUM/LOW listed. |
 | **FAIL** | One or more CRITICAL findings, or multiple unmitigated HIGH, or core scope claims falsified. |
-| **BLOCKED / INSUFFICIENT EVIDENCE** | Cannot access code, SHA mismatch, scope ambiguity, or missing reproduction — audit cannot complete honestly. |
+| **BLOCKED / INSUFFICIENT EVIDENCE** | Cannot access code, SHA mismatch, scope ambiguity, or missing reproduction - audit cannot complete honestly. |
 
 **Campaign verdict** is the worst layer verdict unless operator documents explicit acceptance of scoped exclusions.
 
@@ -1147,7 +1147,7 @@ When a prior campaign exists for the same layer:
 **Anti-anchoring rules:**
 
 - Do not assume prior PASS implies current PASS.
-- Do not downgrade severity because a prior audit "already knew" — re-verify.
+- Do not downgrade severity because a prior audit "already knew" - re-verify.
 - Do not inherit prior verdict; compute fresh from current SHA.
 - Prior audits are section B rank 5 only.
 
@@ -1157,19 +1157,19 @@ When a prior campaign exists for the same layer:
 
 **During an audit:**
 
-- **No runtime fixes** — do not patch production code, tests, or docs to "clear" findings mid-run.
-- **No scope creep into implementation** — note defects; implementation is a separate change with separate review.
+- **No runtime fixes** - do not patch production code, tests, or docs to "clear" findings mid-run.
+- **No scope creep into implementation** - note defects; implementation is a separate change with separate review.
 
 **Required sequence:**
 
-1. **Inspect** — read code, config, infra as needed at pinned SHA.
-2. **Falsify** — attack section E targets; run tests as evidence gathering, not as goal.
-3. **Evidence** — attach section I proof to each finding.
-4. **Classify** — section G severity and category.
-5. **Present** — deliver findings to operator before treating them as accepted (section P).
-6. **Accept** — operator confirms, disputes, or defers each finding.
-7. **Persist** — write accepted artifacts to `docs/audit_results/<CAMPAIGN_DIR>/`.
-8. **Sync arch/plan** — after acceptance, update docs per section M.
+1. **Inspect** - read code, config, infra as needed at pinned SHA.
+2. **Falsify** - attack section E targets; run tests as evidence gathering, not as goal.
+3. **Evidence** - attach section I proof to each finding.
+4. **Classify** - section G severity and category.
+5. **Present** - deliver findings to operator before treating them as accepted (section P).
+6. **Accept** - operator confirms, disputes, or defers each finding.
+7. **Persist** - write accepted artifacts to `docs/audit_results/<CAMPAIGN_DIR>/`.
+8. **Sync arch/plan** - after acceptance, update docs per section M.
 
 ---
 
@@ -1177,12 +1177,12 @@ When a prior campaign exists for the same layer:
 
 After operator accepts findings:
 
-1. **Architecture** — update target docs when an accepted finding requires target-design change, especially for **ARCHITECTURE DEFECT** or **IMPLEMENTATION/ARCHITECTURE DRIFT**. Implementation-only defects (**IMPLEMENTATION DEFECT** and similar) may require plan updates without changing architecture when the existing target is already correct.
-2. **Plan** — adjust task status, add remediation items, link finding IDs; never mark `Done` without behavior evidence.
-3. **Cross-links** — layer audit file links to arch/plan sections; plan cites `AUDIT-...` IDs; campaign finding register holds current remediation trace.
-4. **No silent rewrite** — doc changes that reverse a finding require a new audit or explicit operator waiver recorded in the campaign `README.md`.
+1. **Architecture** - update target docs when an accepted finding requires target-design change, especially for **ARCHITECTURE DEFECT** or **IMPLEMENTATION/ARCHITECTURE DRIFT**. Implementation-only defects (**IMPLEMENTATION DEFECT** and similar) may require plan updates without changing architecture when the existing target is already correct.
+2. **Plan** - adjust task status, add remediation items, link finding IDs; never mark `Done` without behavior evidence.
+3. **Cross-links** - layer audit file links to arch/plan sections; plan cites `AUDIT-...` IDs; campaign finding register holds current remediation trace.
+4. **No silent rewrite** - doc changes that reverse a finding require a new audit or explicit operator waiver recorded in the campaign `README.md`.
 
-Synchronization is **post-acceptance** only — audits do not edit arch/plan to match broken code without recording the gap as a finding or accepted debt. Never update immutable per-layer report text merely to advance remediation status; update the campaign `README.md` finding register instead.
+Synchronization is **post-acceptance** only - audits do not edit arch/plan to match broken code without recording the gap as a finding or accepted debt. Never update immutable per-layer report text merely to advance remediation status; update the campaign `README.md` finding register instead.
 
 ---
 
@@ -1190,9 +1190,9 @@ Synchronization is **post-acceptance** only — audits do not edit arch/plan to 
 
 When multiple layers complete in one campaign, update the campaign `README.md` **audit rollup** (section D.1):
 
-1. **Scope table** — layer, SHA, verdict, finding counts by severity.
-2. **Cross-layer findings** — mismatches spanning tiers (e.g. orchestration assumes memory guarantee memory does not provide).
-3. **Systemic themes** — explicitly look for repeated:
+1. **Scope table** - layer, SHA, verdict, finding counts by severity.
+2. **Cross-layer findings** - mismatches spanning tiers (e.g. orchestration assumes memory guarantee memory does not provide).
+3. **Systemic themes** - explicitly look for repeated:
    - `dict[str, Any]` / `Any` boundary usage
    - reflection / magic-string dispatch
    - duplicate registries
@@ -1214,8 +1214,8 @@ When multiple layers complete in one campaign, update the campaign `README.md` *
    - vendor-specific observability calls outside exporter providers
 
    Repeated adapters may indicate healthy reuse **or** a missing reusable abstraction. Repeated vendor coupling across layers is a systemic architecture signal. The auditor must distinguish them rather than automatically flag duplication. Also include fail-open patterns and test gaps.
-4. **Campaign verdict** — per section J.
-5. **Recommended remediation order** — operator-facing, not implementation.
+4. **Campaign verdict** - per section J.
+5. **Recommended remediation order** - operator-facing, not implementation.
 
 Cross-layer issues get their own IDs using layer code `CROSS` (e.g. `AUDIT-20260818-CROSS-01`, `AUDIT-20260818-R2-CROSS-01`) in the campaign `README.md` rollup.
 
@@ -1228,7 +1228,7 @@ Each `docs/audit_results/<CAMPAIGN_DIR>/<LAYER_CODE>.md` is an **immutable histo
 Each per-layer file MUST contain:
 
 ```markdown
-# <LAYER_CODE> — Platform Audit
+# <LAYER_CODE> - Platform Audit
 
 ## Metadata
 - Campaign date:
@@ -1264,13 +1264,13 @@ Each per-layer file MUST contain:
 - Confidence:
 
 ## Falsification log (negative results)
-(targets examined, not falsified — brief)
+(targets examined, not falsified - brief)
 
 ## Prior-audit comparison
 (section K, or N/A)
 
 ## Consumer conformance matrix
-(REQUIRED for PLATFORM CONSUMER AUDITS only — omit for DOMAIN / CONCEPTUAL audits)
+(REQUIRED for PLATFORM CONSUMER AUDITS only - omit for DOMAIN / CONCEPTUAL audits)
 
 | concern | canonical platform owner/mechanism | observed consumer mechanism | classification | evidence | finding_id / note |
 |---------|-----------------------------------|-----------------------------|----------------|----------|-------------------|
@@ -1280,7 +1280,7 @@ Each per-layer file MUST contain:
 
 If no material external/infrastructure concern exists in scope:
 
-`NOT APPLICABLE — <brief reason>`
+`NOT APPLICABLE - <brief reason>`
 
 Otherwise include a concise matrix:
 
@@ -1306,15 +1306,15 @@ Do **not** record `IMPLEMENTING`, `IMPLEMENTED`, `VERIFIED`, or `CLOSED` in per-
 
 ## P. Operator workflow
 
-1. **Roadmap before layer** — operator defines campaign date, SHA (or branch to pin), layer order, and tier scope before the auditor starts.
-2. **Scope confirmation** — auditor restates scope; operator confirms or corrects in writing (chat log or campaign README).
-3. **Findings before persist** — present all findings and draft verdict; **no** writing to `docs/audit_results/` until operator reviews (except optional `IN_PROGRESS` stub without findings).
+1. **Roadmap before layer** - operator defines campaign date, SHA (or branch to pin), layer order, and tier scope before the auditor starts.
+2. **Scope confirmation** - auditor restates scope; operator confirms or corrects in writing (chat log or campaign README).
+3. **Findings before persist** - present all findings and draft verdict; **no** writing to `docs/audit_results/` until operator reviews (except optional `IN_PROGRESS` stub without findings).
 4. **Acceptance gates:**
    - Operator accepts, defers, or disputes each finding.
    - CRITICAL/HIGH deferrals require explicit rationale and target date in campaign README.
    - Only then persist final layer files and update register.
-5. **Arch/plan sync** — separate step after acceptance (section M); may be same or follow-up change set.
-6. **Audit campaign close** —
+5. **Arch/plan sync** - separate step after acceptance (section M); may be same or follow-up change set.
+6. **Audit campaign close** -
    1. Finish/update campaign `README.md` audit rollup (section D.1); freeze audit baseline (section C2).
    2. Set campaign status `COMPLETE` or `ABORTED` in campaign `README.md`.
    3. Update the corresponding row in root `docs/audit_results/README.md`.
@@ -1327,9 +1327,9 @@ Do **not** record `IMPLEMENTING`, `IMPLEMENTED`, `VERIFIED`, or `CLOSED` in per-
 
 Protocol v2.2 supports three audit shapes:
 
-1. **DOMAIN / LAYER AUDIT** — one architecture/domain pair (section D).
-2. **CONCEPTUAL / CROSS-DOMAIN AUDIT** — explicit invariant slice spanning domains (below).
-3. **PLATFORM CONSUMER AUDIT** — application, agent, plugin, or integration adapter as platform consumer (section D3).
+1. **DOMAIN / LAYER AUDIT** - one architecture/domain pair (section D).
+2. **CONCEPTUAL / CROSS-DOMAIN AUDIT** - explicit invariant slice spanning domains (below).
+3. **PLATFORM CONSUMER AUDIT** - application, agent, plugin, or integration adapter as platform consumer (section D3).
 
 A **domain / layer audit** normally maps to one architecture/domain pair aligned with `docs/project/architecture/<DOMAIN>.md`, e.g.:
 

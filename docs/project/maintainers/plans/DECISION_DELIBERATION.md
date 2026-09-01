@@ -1,4 +1,4 @@
-# Decision Deliberation — Implementation Plan
+# Decision Deliberation - Implementation Plan
 
 **Architecture (1:1):** [`architecture/DECISION_DELIBERATION.md`](../../architecture/DECISION_DELIBERATION.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
@@ -7,14 +7,14 @@
 
 > **DS-DOC-CLEAN (2026-08-30):** Deliberation / Council strategy architecture **FROZEN**. **Council runtime NOT STARTED.**
 
-**Last updated:** 2026-08-31 — DS-DELIB-04 participant role configuration.
+**Last updated:** 2026-08-31 - DS-DELIB-04 participant role configuration.
 
 ---
 
 ## Cursor read scope (token budget)
 
 - **Default:** hub status + phase index only.
-- **Detail rows:** phase sections below — one phase per session max.
+- **Detail rows:** phase sections below - one phase per session max.
 - **Architecture:** [`DECISION_DELIBERATION.md`](../../architecture/DECISION_DELIBERATION.md) read-scope block.
 - **Extended depth:** [`architecture/satellites/DECISION_DELIBERATION_extended_depth.md`](../../architecture/satellites/DECISION_DELIBERATION_extended_depth.md) on demand.
 - **Skip** Council implementation detail until DS-DELIB-01 lands.
@@ -26,8 +26,8 @@
 | Layer | Status |
 | ----- | ------ |
 | **Target architecture** | **FROZEN** |
-| **DecisionStrategy contract** | **Done** — DS-DELIB-01 |
-| **Council strategy** | **PLANNED** — not started |
+| **DecisionStrategy contract** | **Done** - DS-DELIB-01 |
+| **Council strategy** | **PLANNED** - not started |
 | **CURRENT production** | Single-model agent/graph paths only |
 
 ---
@@ -41,25 +41,25 @@
 
 ---
 
-## Phase DS-DELIB — Strategy foundation (Done)
+## Phase DS-DELIB - Strategy foundation (Done)
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-DELIB-01 | P0 | `DecisionStrategy` protocol + canonical domain registry | **Done** — `intergrax/contracts/decision_strategy.py`; `tests/unit/contracts/test_decision_strategy.py` |
-| DS-DELIB-02 | P0 | Single Model strategy (baseline) | **Done** — profile-bound inference via `intergrax/runtime/execution/inference_profile.py`; `intergrax/contracts/single_model_strategy.py`; `intergrax/runtime/execution/single_model_deliberation.py`; `tests/unit/runtime/execution/test_inference_profile_resolution.py` |
-| DS-DELIB-03 | P1 | Disagreement artifact typed contract | **Done** — identity hardening via `DecisionProposalRef`; `intergrax/contracts/decision_disagreement.py`; `tests/unit/contracts/test_decision_disagreement.py` |
-| DS-DELIB-04 | P1 | Participant role configuration model | **Done** — `intergrax/contracts/decision_participants.py`; `tests/unit/contracts/test_decision_participants.py` |
-| DS-DELIB-05 | P1 | Context visibility policy per role | **Done** — `intergrax/contracts/decision_context_visibility.py`; `tests/unit/contracts/test_decision_context_visibility.py` |
-| DS-DELIB-06 | P2 | Rule-Based strategy | **Done** — `intergrax/contracts/rule_based_strategy.py`; `tests/unit/contracts/test_rule_based_strategy.py` |
-| DS-DELIB-07 | P2 | Hybrid strategy composition | **Done** — `intergrax/contracts/hybrid_strategy.py`; `tests/unit/contracts/test_hybrid_strategy.py` |
+| DS-DELIB-01 | P0 | `DecisionStrategy` protocol + canonical domain registry | **Done** - `intergrax/contracts/decision_strategy.py`; `tests/unit/contracts/test_decision_strategy.py` |
+| DS-DELIB-02 | P0 | Single Model strategy (baseline) | **Done** - profile-bound inference via `intergrax/runtime/execution/inference_profile.py`; `intergrax/contracts/single_model_strategy.py`; `intergrax/runtime/execution/single_model_deliberation.py`; `tests/unit/runtime/execution/test_inference_profile_resolution.py` |
+| DS-DELIB-03 | P1 | Disagreement artifact typed contract | **Done** - identity hardening via `DecisionProposalRef`; `intergrax/contracts/decision_disagreement.py`; `tests/unit/contracts/test_decision_disagreement.py` |
+| DS-DELIB-04 | P1 | Participant role configuration model | **Done** - `intergrax/contracts/decision_participants.py`; `tests/unit/contracts/test_decision_participants.py` |
+| DS-DELIB-05 | P1 | Context visibility policy per role | **Done** - `intergrax/contracts/decision_context_visibility.py`; `tests/unit/contracts/test_decision_context_visibility.py` |
+| DS-DELIB-06 | P2 | Rule-Based strategy | **Done** - `intergrax/contracts/rule_based_strategy.py`; `tests/unit/contracts/test_rule_based_strategy.py` |
+| DS-DELIB-07 | P2 | Hybrid strategy composition | **Done** - `intergrax/contracts/hybrid_strategy.py`; `tests/unit/contracts/test_hybrid_strategy.py` |
 
 ---
 
-## Phase DS-COUNCIL — Council strategy (PLANNED)
+## Phase DS-COUNCIL - Council strategy (PLANNED)
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-COUNCIL-01 | P1 | Council strategy — parallel proposals | **Planned** |
+| DS-COUNCIL-01 | P1 | Council strategy - parallel proposals | **Planned** |
 | DS-COUNCIL-02 | P1 | Structured disagreement capture | **Planned** |
 | DS-COUNCIL-03 | P1 | Synthesis candidate emission | **Planned** |
 | DS-COUNCIL-04 | P1 | Bounded rounds under hosting Execution budget | **Planned** |
@@ -69,10 +69,10 @@
 
 ## Explicit non-goals (this plan)
 
-- Separate Council Runtime — **FORBIDDEN** by architecture.
-- Council-owned verification — candidates feed Verification Pipeline only.
-- Private chain-of-thought persistence — **FORBIDDEN**.
-- Mandatory Council for all decisions — **FORBIDDEN**.
+- Separate Council Runtime - **FORBIDDEN** by architecture.
+- Council-owned verification - candidates feed Verification Pipeline only.
+- Private chain-of-thought persistence - **FORBIDDEN**.
+- Mandatory Council for all decisions - **FORBIDDEN**.
 
 ---
 

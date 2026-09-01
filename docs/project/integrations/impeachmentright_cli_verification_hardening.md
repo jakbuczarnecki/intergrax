@@ -1,4 +1,4 @@
-# ImpeachmentRight — CLI Verification Hardening Audit
+# ImpeachmentRight - CLI Verification Hardening Audit
 
 **Date:** 2026-07-21  
 **Branch:** `development`  
@@ -83,8 +83,8 @@ verifier never signs
 ## Tests executed
 
 ```text
-43 passed — focused partner/platform/CLI suites
-200 passed — execution_evidence + contracts + policy + adapter + host
+43 passed - focused partner/platform/CLI suites
+200 passed - execution_evidence + contracts + policy + adapter + host
 ```
 
 Full `pytest -q` may still hit known Windows native crashes (Chroma/Kafka) unrelated to this stage.
@@ -97,4 +97,4 @@ Full `pytest -q` may still hit known Windows native crashes (Chroma/Kafka) unrel
 READY TO PUBLISH PARTNER RESPONSE
 ```
 
-Do **not** draft the `@impeachmentright` reply in this change set — publish packaging is complete; public wording remains an operator step.
+Do **not** draft the `@impeachmentright` reply in this change set - publish packaging is complete; public wording remains an operator step.

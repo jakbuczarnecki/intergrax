@@ -2,14 +2,14 @@
 
 **Purpose:** Canonical standard for designing and modernizing Intergrax **domain architecture hubs** and **multi-layer feature architecture hubs**.
 
-**Scope:** Structure, visual grammar, maturity/claim rules, navigation, and maintenance — not domain-specific content.
+**Scope:** Structure, visual grammar, maturity/claim rules, navigation, and maintenance - not domain-specific content.
 
 **Applies to:**
 
 - `docs/project/architecture/<DOMAIN>.md`
 - `docs/project/capabilities/architecture/<FEATURE>.md`
 
-**Also applies to (by extension, PDOC-2):** `applications/<product>/docs/product/*_PRODUCT_TOUR.md` — same visual grammar and claim discipline as domain hubs; anatomy in §14.
+**Also applies to (by extension, PDOC-2):** `applications/<product>/docs/product/*_PRODUCT_TOUR.md` - same visual grammar and claim discipline as domain hubs; anatomy in §14.
 
 **Does not apply as a rewrite target in this phase:** satellites, plans, ADRs, root README.
 
@@ -32,7 +32,7 @@ Each hub is simultaneously:
 2. the **main architecture canon** for its topic,
 3. a **router** to satellites, plans, ADRs, guides, and proofs.
 
-Satellites remain **extended technical depth** — not a public first-contact route.
+Satellites remain **extended technical depth** - not a public first-contact route.
 
 ---
 
@@ -59,7 +59,7 @@ One topic → one authoritative role. Do not duplicate whole sections across rol
 | A satellite when opening it alone saves meaningful context cost | Placeholder or symmetry-only satellites with no standalone depth |
 | Sections inside hub or extended depth for coherent subtopics | Arbitrary one-topic-per-file splits |
 
-**No arbitrary byte threshold** — judge by information density and navigation value. When several satellites cover one domain layer, **consolidate** into a single extended-depth document unless a topic is a genuinely independent technical layer.
+**No arbitrary byte threshold** - judge by information density and navigation value. When several satellites cover one domain layer, **consolidate** into a single extended-depth document unless a topic is a genuinely independent technical layer.
 
 **Hard rule:** Human-facing explanation describes stable architecture. Engineering canon holds exact technical semantics. Copy **links**, not paragraphs, across roles.
 
@@ -114,7 +114,7 @@ Short prose: problem solved, why the platform needs it, value to developer / ope
 
 #### 3. Claim / maturity boundary
 
-If the domain is not fully production-qualified, state it **early** — callout or short note near the top.
+If the domain is not fully production-qualified, state it **early** - callout or short note near the top.
 
 - Use vocabulary from [MATURITY_TAXONOMY.md](MATURITY_TAXONOMY.md).
 - Do not bury limitations at the end of the document.
@@ -125,7 +125,7 @@ Include only when it changes how the document should be read (e.g. architects vs
 
 #### 5. At a glance
 
-Compact table — pick rows that fit the domain, typically from:
+Compact table - pick rows that fit the domain, typically from:
 
 | Typical row | Meaning |
 |-------------|---------|
@@ -160,7 +160,7 @@ Explicit split:
 - what belongs to **applications (Tier-3)**,
 - what belongs to **other Intergrax domains**.
 
-Use subheadings or a compact table — not prose buried in a long paragraph.
+Use subheadings or a compact table - not prose buried in a long paragraph.
 
 #### 9. Relationship to Intergrax
 
@@ -170,7 +170,7 @@ Neighbor links in ecosystem terms (e.g. Memory ↔ Context Engineering ↔ RAG).
 
 #### 10. Extensibility
 
-When the subsystem exposes plugin / adapter / provider / host extension surfaces — summarize surfaces and point to extension guides.
+When the subsystem exposes plugin / adapter / provider / host extension surfaces - summarize surfaces and point to extension guides.
 
 Omit section if no extension surface exists.
 
@@ -241,7 +241,7 @@ Place them:
 - after the human-facing front section and a clear `---` divider, **or**
 - in a labeled block such as `## Maintainer and Cursor context` / `## Cursor read scope (token budget)`.
 
-Do not remove this material during DOC-3 — **relocate** it.
+Do not remove this material during DOC-3 - **relocate** it.
 
 ---
 
@@ -253,7 +253,7 @@ Do not remove this material during DOC-3 — **relocate** it.
 | Scope | Single platform domain pair | Cross-layer capability coordinating domain pairs |
 | Front section | Domain responsibility and boundaries | Feature outcome and cross-domain coordination |
 | Plan pair | `maintainers/plans/<DOMAIN>.md` | `capabilities/plan/<FEATURE>.md` |
-| Canon rule | Domain pair remains authoritative for owning domains | Feature hub **coordinates** — does not replace domain canon |
+| Canon rule | Domain pair remains authoritative for owning domains | Feature hub **coordinates** - does not replace domain canon |
 
 Feature hubs use the **same front-section pattern**; "Relationship to Intergrax" emphasizes participating domains.
 
@@ -346,7 +346,7 @@ table / flow
 technical depth
 ```
 
-The document should read like **top-tier engineering platform documentation** — not a marketing landing page, not a raw internal runbook.
+The document should read like **top-tier engineering platform documentation** - not a marketing landing page, not a raw internal runbook.
 
 ---
 
@@ -369,7 +369,7 @@ The document should read like **top-tier engineering platform documentation** �
 
 Convince through **precision and honesty**, not adjectives.
 
-**Engineering canon:** precise MUST/MUST NOT language, stable identifiers, code paths where they clarify contracts — same bar as today, better placement.
+**Engineering canon:** precise MUST/MUST NOT language, stable identifiers, code paths where they clarify contracts - same bar as today, better placement.
 
 ---
 
@@ -383,14 +383,14 @@ During hub modernization, new SVG/graphics are allowed **only when justified**.
 | Reuse | Prefer existing assets when they already match the need |
 | No duplication | Do not create a second diagram for the same idea |
 | Light/dark pairs | Only when GitHub reading in both themes materially benefits |
-| Accuracy | Visual must match architecture — no simplified fiction |
+| Accuracy | Visual must match architecture - no simplified fiction |
 | Claim discipline | Graphics must not inflate maturity or proof status |
 
-DOC-2 defines policy only — **no new assets in DOC-2**.
+DOC-2 defines policy only - **no new assets in DOC-2**.
 
 ---
 
-## 10. Definition of Done — hub quality gates
+## 10. Definition of Done - hub quality gates
 
 A hub is not complete when information is merely correct. It must pass all gates:
 
@@ -484,8 +484,8 @@ canonical; presentation may adapt to the product.
 | 7 | User experience / main scenario | Concrete supported path |
 | 8 | Business or operational value | Outcome without proof inflation |
 | 9 | Why Intergrax / reused platform mechanisms | Reuse as a consequence of product construction (see §14.2) |
-| 10 | Architecture at a glance | High-level components and boundaries — link to Product Architecture |
-| 11 | Flagship product proof | Strongest accepted proof story — outcomes only |
+| 10 | Architecture at a glance | High-level components and boundaries - link to Product Architecture |
+| 11 | Flagship product proof | Strongest accepted proof story - outcomes only |
 | 12 | Supporting proof highlights | Optional; where useful |
 | 13 | What is proven | Bounded positive claims |
 | 14 | What is NOT proven | Explicit limitations |
@@ -495,10 +495,10 @@ canonical; presentation may adapt to the product.
 
 Omit a subsection only when genuinely not applicable; state briefly why.
 
-### 14.2 Why Intergrax section — required concept
+### 14.2 Why Intergrax section - required concept
 
 Product Tour should show what the application **receives from the platform** as a
-consequence of how the product is built — not as a generic platform catalog.
+consequence of how the product is built - not as a generic platform catalog.
 
 Preferred format:
 
@@ -547,4 +547,4 @@ duplicating manifest commands or receipt internals.
 
 None introduced by DOC-2 or PDOC-2. Existing DOC-1 topology (domain pairs, feature pairs, satellites, guides, plans, ADRs, proofs) is preserved. Product Tour anatomy extends the same design system; it does not add a parallel product documentation root.
 
-If a future hub modernization reveals a conflict between this design system and [public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md](../../maintainers/public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md), escalate to maintainers — do not create a third documentation root.
+If a future hub modernization reveals a conflict between this design system and [public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md](../../maintainers/public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md), escalate to maintainers - do not create a third documentation root.

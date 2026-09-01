@@ -28,4 +28,4 @@ Governed access to: `websearch.query`, `knowledge.search`, `rag.retrieve`.
 
 ## Related skills
 
-- Other `legal` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `legal` bundle skills - see bundle [USAGE.md](../USAGE.md)

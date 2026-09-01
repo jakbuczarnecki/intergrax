@@ -1,6 +1,6 @@
-# Dispute Simulation Workspace (DSW) — architecture
+# Dispute Simulation Workspace (DSW) - architecture
 
-**Status:** Architecture baseline v1 (2026-06-07) — scaffold + product design  
+**Status:** Architecture baseline v1 (2026-06-07) - scaffold + product design  
 **Tier:** Tier-3 application (`dispute_sim_application`)  
 **Agents:** Tier-2 `dispute_intake`, `dispute_analyst`, `dispute_strategist`, `dispute_scenario`  
 **Canonical plan row:** [`docs/project/architecture/intergrax_runtime_architecture.md` §6.3a DSW.*](../../../docs/project/architecture/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)
@@ -32,12 +32,12 @@
 DSW does **not** replace counsel. It:
 
 1. **Organizes** dispute materials (contracts, offers, emails, settlements, reports, annexes).
-2. **Maps** factual and legal arguments — strengths, weaknesses, gaps, chronology.
+2. **Maps** factual and legal arguments - strengths, weaknesses, gaps, chronology.
 3. **Proposes** attack/defense lines and emphasis priorities for negotiation or court.
 4. **Reviews** draft correspondence (emails, demand letters, pre-litigation notices) for tone, procedural, and evidentiary pitfalls.
 5. **Simulates** court-process variants (settlement path, injunction, full trial, appeal) with outcome bands and risk notes.
 
-**Strategic frame:** explicit product reprioritization (2026-06-07) — second business environment after LKW; validates RAG on legal corpora, multi-agent graphs, HITL for outbound correspondence, and Phase CRIT-V critic hooks on high-stakes outputs.
+**Strategic frame:** explicit product reprioritization (2026-06-07) - second business environment after LKW; validates RAG on legal corpora, multi-agent graphs, HITL for outbound correspondence, and Phase CRIT-V critic hooks on high-stakes outputs.
 
 ---
 
@@ -49,9 +49,9 @@ Organizations accumulate dispute evidence across silos. Before engaging external
 |----------|---------|
 | **What do we have?** | "Do we have a signed annex with a payment deadline?" |
 | **How strong are we?** | "Which clauses support our position and which are risky?" |
-| **What line to take?** | "Attack on delay vs force majeure defense — which is better in this dispute?" |
+| **What line to take?** | "Attack on delay vs force majeure defense - which is better in this dispute?" |
 | **What not to send?** | "Does this email admit fault or reveal a weak argument?" |
-| **What if we go to court?** | "Scenario A: settlement; B: payment order; C: full proceedings — cost/risk?" |
+| **What if we go to court?** | "Scenario A: settlement; B: payment order; C: full proceedings - cost/risk?" |
 
 DSW answers these through **structured agent pipelines** on a **case-scoped RAG index**, with **human approval** before any outbound legal communication.
 
@@ -62,8 +62,8 @@ DSW answers these through **structured agent pipelines** on a **case-scoped RAG 
 ### 3.1 What DSW is
 
 - A **hosted Agent OS product** (`dispute_sim_application`) wiring four bounded Tier-2 agents.
-- A **case workspace** — each dispute is an isolated corpus (RAG collection + metadata).
-- A **simulation and prep tool** — outputs are labeled *decision support*, not legal advice.
+- A **case workspace** - each dispute is an isolated corpus (RAG collection + metadata).
+- A **simulation and prep tool** - outputs are labeled *decision support*, not legal advice.
 
 ### 3.2 What DSW is not
 
@@ -73,16 +73,16 @@ DSW answers these through **structured agent pipelines** on a **case-scoped RAG 
 | Autonomous sender of legal letters | Outbound drafts require HITL (L2 critic gate) |
 | Replacement for `legal_application` | `legal` = contract review SKU; DSW = dispute lifecycle simulation |
 | Unrestricted document dump | Intake validates types, PII policy, and case binding |
-| Nexus fork | Composition only — reuse Tier-0 RAG, policy, trace, CVL hooks |
+| Nexus fork | Composition only - reuse Tier-0 RAG, policy, trace, CVL hooks |
 
 ### 3.3 Design principles
 
-1. **Case-first** — every task binds to `case_id`; no cross-case retrieval.
-2. **Evidence-linked answers** — analyst/strategist outputs cite ingested chunks.
-3. **Shadow drafts only** — correspondence drafts land in shadow workspace until HITL release.
-4. **Simulation ≠ prediction** — scenario outputs are *bands* (favorable / neutral / adverse) with assumptions explicit.
-5. **Polish procedural context default** — prompts and rubrics target Polish civil/commercial procedure; locale configurable later.
-6. **Harness honesty** — gaps feed §6.1 platform queue, not runtime forks.
+1. **Case-first** - every task binds to `case_id`; no cross-case retrieval.
+2. **Evidence-linked answers** - analyst/strategist outputs cite ingested chunks.
+3. **Shadow drafts only** - correspondence drafts land in shadow workspace until HITL release.
+4. **Simulation ≠ prediction** - scenario outputs are *bands* (favorable / neutral / adverse) with assumptions explicit.
+5. **Polish procedural context default** - prompts and rubrics target Polish civil/commercial procedure; locale configurable later.
+6. **Harness honesty** - gaps feed §6.1 platform queue, not runtime forks.
 
 ---
 
@@ -91,10 +91,10 @@ DSW answers these through **structured agent pipelines** on a **case-scoped RAG 
 | Layer | Requirement |
 |-------|-------------|
 | **UI / API response** | Persistent disclaimer: *"Material is decision support only; it does not constitute legal advice."* |
-| **Correspondence drafts** | HITL mandatory (`dispute.correspondence` skill path — DSW.4) |
+| **Correspondence drafts** | HITL mandatory (`dispute.correspondence` skill path - DSW.4) |
 | **PII / retention** | Case data scoped per tenant; retention policy in host settings (DSW.6) |
 | **Audit** | Full Nexus trace + artifact hash for every strategy/scenario output |
-| **CVL (planned)** | L1 critic on argument maps; L2 critic on outbound drafts — see [`docs/project/architecture/CRITIC_VERIFICATION.md`](../../../docs/project/architecture/CRITIC_VERIFICATION.md) |
+| **CVL (planned)** | L1 critic on argument maps; L2 critic on outbound drafts - see [`docs/project/architecture/CRITIC_VERIFICATION.md`](../../../docs/project/architecture/CRITIC_VERIFICATION.md) |
 
 ---
 
@@ -134,7 +134,7 @@ DSW answers these through **structured agent pipelines** on a **case-scoped RAG 
 
 **Default entry:** `dispute.intake` (new case or new material batch).
 
-**Full pipeline capability (target):** `dispute.pipeline` — graph: intake → analyze → strategy → scenario (DSW.2).
+**Full pipeline capability (target):** `dispute.pipeline` - graph: intake → analyze → strategy → scenario (DSW.2).
 
 ---
 
@@ -170,7 +170,7 @@ DSW answers these through **structured agent pipelines** on a **case-scoped RAG 
 ## 8. Multi-agent pipeline (target graph)
 
 ```text
-User: "New dispute with subcontractor X — attaching contract and emails"
+User: "New dispute with subcontractor X - attaching contract and emails"
   → dispute.intake (ingest + timeline)
   → dispute.analyze (matrix + gaps)
   → dispute.strategy (lines + emphasis)
@@ -179,7 +179,7 @@ User: "New dispute with subcontractor X — attaching contract and emails"
   → COMPLETED + artifact bundle
 ```
 
-Orchestration: Nexus capability graph — **no** custom loop in Tier-2. Graph spec: DSW.2.
+Orchestration: Nexus capability graph - **no** custom loop in Tier-2. Graph spec: DSW.2.
 
 ---
 
@@ -187,7 +187,7 @@ Orchestration: Nexus capability graph — **no** custom loop in Tier-2. Graph sp
 
 | Trigger | Gate |
 |---------|------|
-| Draft email / demand letter / pre-litigation notice | L2 HITL — human approves or edits before export |
+| Draft email / demand letter / pre-litigation notice | L2 HITL - human approves or edits before export |
 | Strategy brief marked `external_share` | L1 + optional L2 |
 | Scenario with `binding_recommendation` flag | L2 mandatory |
 
@@ -203,7 +203,7 @@ Tier-3 host exposes standard Nexus HITL routes; agents emit `hitl_required` on c
 POST /v1/dispute_sim/run
 {
   "capability": "dispute.intake",
-  "input": "Organize dispute materials for ACME — contract and invoices attached",
+  "input": "Organize dispute materials for ACME - contract and invoices attached",
   "metadata": {
     "case_id": "case-2024-acme",
     "source_paths": ["/data/disputes/acme/"]
@@ -241,7 +241,7 @@ POST /v1/dispute_sim/run
 
 ## 12. Host layout
 
-Standard Tier-3 product tree — see [`applications/USAGE.md`](../../USAGE.md).
+Standard Tier-3 product tree - see [`applications/USAGE.md`](../../USAGE.md).
 
 | Path | Role |
 |------|------|
@@ -264,7 +264,7 @@ Standard Tier-3 product tree — see [`applications/USAGE.md`](../../USAGE.md).
 | Agents | 1 × `LegalAgent` | 4 × dispute_* agents |
 | Overlap | Clause-level review skill | May *invoke* legal review as subgraph step (DSW.5) |
 
-No merge — composition via Nexus graph when needed.
+No merge - composition via Nexus graph when needed.
 
 ---
 
@@ -285,7 +285,7 @@ No merge — composition via Nexus graph when needed.
 | ID | Title | Status |
 |----|-------|--------|
 | DSW.0 | Scaffold + architecture baseline | **Done** |
-| DSW.1 | Intake UAEP — path validation + RAG ingest loop | Planned |
+| DSW.1 | Intake UAEP - path validation + RAG ingest loop | Planned |
 | DSW.2 | Nexus graph `dispute.pipeline` | Planned |
 | DSW.3 | Analyst + strategist domain steps | Planned |
 | DSW.4 | Scenario + correspondence review + HITL | Planned |

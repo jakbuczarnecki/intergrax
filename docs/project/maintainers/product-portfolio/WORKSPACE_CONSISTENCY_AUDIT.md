@@ -1,4 +1,4 @@
-# Workspace Consistency Audit — MP-21
+# Workspace Consistency Audit - MP-21
 
 ## 1. Metadata
 
@@ -8,8 +8,8 @@
 | **audited_sha** | `0f6e2d7fe96498346d8ddcc05fe08caa68c00523` |
 | **expected_start_sha** | `e6d2481ecb75244d704b6e30f51a63f77739d3f0` |
 | **start_sha_note** | HEAD moved before audit start; audit executed at then-current `development` without reset |
-| **scope** | Full multi-product Portfolio Control workspace — central normative docs, five control cards, five session briefs, PRODUCT_REUSE_PROOF, LKW implementation plan cross-check, audit-engine authority check |
-| **auditor_posture** | Adversarial falsification — attempt to prove six-session workspace unsafe to launch |
+| **scope** | Full multi-product Portfolio Control workspace - central normative docs, five control cards, five session briefs, PRODUCT_REUSE_PROOF, LKW implementation plan cross-check, audit-engine authority check |
+| **auditor_posture** | Adversarial falsification - attempt to prove six-session workspace unsafe to launch |
 | **verdict** | **PASS WITH GAPS** |
 
 ---
@@ -28,12 +28,12 @@ No BLOCKER was found. No MAJOR contradiction was found that could alter session 
 
 | ID | Severity | Dimension | Affected docs | Concise defect | Launch blocking? |
 |----|----------|-----------|---------------|----------------|------------------|
-| MP21-001 | MINOR | P — Links/paths | `session-briefs/LKW.md` | LKW application doc links use `../../../../applications/` (4 levels); correct depth from `session-briefs/` is 5 levels (`../../../../../`) | NO |
-| MP21-002 | MINOR | N — Roadmap refs | All four new-product session briefs; `PRODUCT_SESSION_OPERATING_MANUAL.md` | Handoff sections cite “MP-20 (future)” / “belongs MP-20” without linking `CROSS_SESSION_COORDINATION.md` though MP-20 is complete | NO |
-| MP21-003 | MINOR | P — Links/paths | `MULTI_PRODUCT_AUDIT_INTEGRATION.md` §13 | “MP-20 owns cross-session handoffs” links to `PORTFOLIO_STATUS.md` instead of `CROSS_SESSION_COORDINATION.md` | NO |
-| MP21-004 | OBSERVATION | E — Source-of-truth | `MULTI_PRODUCT_PROGRAM.md` §17 | Stale future-artifact table lists `reviews/*` for checkpoint records; MP-16/README explicitly forbid `reviews/*` as competing audit workspace | NO |
-| MP21-005 | OBSERVATION | K — Differentiation | `PORTFOLIO_STATUS.md` risks | Uses “Supply Disruption” short name vs canonical “Supplier Disruption” elsewhere | NO |
-| MP21-006 | OBSERVATION | G — Reuse experiment | `PRODUCT_REUSE_PROOF.md` | Retains generic “Product #2” framing; multi-product program now has four preregistered products — semantics align, terminology differs | NO |
+| MP21-001 | MINOR | P - Links/paths | `session-briefs/LKW.md` | LKW application doc links use `../../../../applications/` (4 levels); correct depth from `session-briefs/` is 5 levels (`../../../../../`) | NO |
+| MP21-002 | MINOR | N - Roadmap refs | All four new-product session briefs; `PRODUCT_SESSION_OPERATING_MANUAL.md` | Handoff sections cite “MP-20 (future)” / “belongs MP-20” without linking `CROSS_SESSION_COORDINATION.md` though MP-20 is complete | NO |
+| MP21-003 | MINOR | P - Links/paths | `MULTI_PRODUCT_AUDIT_INTEGRATION.md` §13 | “MP-20 owns cross-session handoffs” links to `PORTFOLIO_STATUS.md` instead of `CROSS_SESSION_COORDINATION.md` | NO |
+| MP21-004 | OBSERVATION | E - Source-of-truth | `MULTI_PRODUCT_PROGRAM.md` §17 | Stale future-artifact table lists `reviews/*` for checkpoint records; MP-16/README explicitly forbid `reviews/*` as competing audit workspace | NO |
+| MP21-005 | OBSERVATION | K - Differentiation | `PORTFOLIO_STATUS.md` risks | Uses “Supply Disruption” short name vs canonical “Supplier Disruption” elsewhere | NO |
+| MP21-006 | OBSERVATION | G - Reuse experiment | `PRODUCT_REUSE_PROOF.md` | Retains generic “Product #2” framing; multi-product program now has four preregistered products - semantics align, terminology differs | NO |
 
 **Counts:** BLOCKER 0 · MAJOR 0 · MINOR 3 · OBSERVATION 3
 
@@ -41,7 +41,7 @@ No BLOCKER was found. No MAJOR contradiction was found that could alter session 
 
 ## 4. Detailed findings
 
-### MP21-001 — Broken LKW application relative links in session brief
+### MP21-001 - Broken LKW application relative links in session brief
 
 **Claim under test:** Session brief LKW links resolve to authoritative `applications/local_workspace_application/docs/*`.
 
@@ -55,7 +55,7 @@ No BLOCKER was found. No MAJOR contradiction was found that could alter session 
 
 ---
 
-### MP21-002 — Stale MP-20 task references post-closeout
+### MP21-002 - Stale MP-20 task references post-closeout
 
 **Claim under test:** Coordination rules are discoverable without inferring MP-20 is still future work.
 
@@ -67,11 +67,11 @@ No BLOCKER was found. No MAJOR contradiction was found that could alter session 
 
 ---
 
-### MP21-003 — Wrong MP-20 link target in audit integration
+### MP21-003 - Wrong MP-20 link target in audit integration
 
 **Claim under test:** MP-20 cross-session handoff authority is linked correctly from audit integration doc.
 
-**Conflicting evidence:** `MULTI_PRODUCT_AUDIT_INTEGRATION.md` §13: `[MP-20](PORTFOLIO_STATUS.md)` — wrong target.
+**Conflicting evidence:** `MULTI_PRODUCT_AUDIT_INTEGRATION.md` §13: `[MP-20](PORTFOLIO_STATUS.md)` - wrong target.
 
 **Why it matters:** Navigation error only; semantics in §13 are correct (VIS handoffs not defined in audit integration).
 
@@ -79,7 +79,7 @@ No BLOCKER was found. No MAJOR contradiction was found that could alter session 
 
 ---
 
-### MP21-004 — `reviews/*` stale future artifact (observation)
+### MP21-004 - `reviews/*` stale future artifact (observation)
 
 **Claim under test:** No document implies a parallel checkpoint/audit workspace under `reviews/*`.
 
@@ -91,7 +91,7 @@ No BLOCKER was found. No MAJOR contradiction was found that could alter session 
 
 ---
 
-### MP21-005 — Supplier naming variant (observation)
+### MP21-005 - Supplier naming variant (observation)
 
 **Claim under test:** Supplier Disruption product naming is consistent across portfolio artifacts.
 
@@ -101,7 +101,7 @@ No BLOCKER was found. No MAJOR contradiction was found that could alter session 
 
 ---
 
-### MP21-006 — Product #2 vs four-product framing (observation)
+### MP21-006 - Product #2 vs four-product framing (observation)
 
 **Claim under test:** Reuse experiment semantics match multi-product bootstrap for all four new products.
 
@@ -128,7 +128,7 @@ No BLOCKER was found. No MAJOR contradiction was found that could alter session 
 | K | Product differentiation | **PASS** | Five briefs distinct in buyer, problem, workflow, tempo, evidence semantics; no collapsed LKW clones |
 | L | Control card ↔ brief | **PASS** | Hypothesis, buyer, stage, gate, caveats, non-claims aligned per product; briefs not stronger than cards |
 | M | LKW special-case | **PASS** | Reference baseline; dynamic-source qualification for execution status; READY_FOR_REVIEW ≠ ACCEPTED stated everywhere material |
-| N | Roadmap consistency | **PASS WITH OBSERVATION** | MP-20 complete; MP-21 audit; MP-22 next — correct in README/PORTFOLIO_STATUS; MP21-002 stale MP-20 refs in briefs |
+| N | Roadmap consistency | **PASS WITH OBSERVATION** | MP-20 complete; MP-21 audit; MP-22 next - correct in README/PORTFOLIO_STATUS; MP21-002 stale MP-20 refs in briefs |
 | O | MP-22 readiness | **PASS** | All six prompts have mission, ownership, operating loop, coordination, status sources without guessing material rules |
 | P | Link/path validation | **PASS WITH GAPS** | MP21-001, MP21-003; central README/PORTFOLIO_STATUS/LKW card paths correct |
 
@@ -163,7 +163,7 @@ No BLOCKER was found. No MAJOR contradiction was found that could alter session 
 | Third-Party Risk | `session-briefs/THIRD_PARTY_RISK.md` | ✓ | `products/third-party-risk.md` | SELECTED / G0 pending | ✓ | **NO** |
 | Deployment Guardian | `session-briefs/DEPLOYMENT_GUARDIAN.md` | ✓ | `products/deployment-guardian.md` | SELECTED / G0 pending | ✓ | **NO** |
 
-VIS-3A and COMM: external streams per `CROSS_SESSION_COORDINATION.md` §29 — not in six launch prompts unless future task adds them.
+VIS-3A and COMM: external streams per `CROSS_SESSION_COORDINATION.md` §29 - not in six launch prompts unless future task adds them.
 
 ---
 
@@ -171,7 +171,7 @@ VIS-3A and COMM: external streams per `CROSS_SESSION_COORDINATION.md` §29 — n
 
 | Product | Program State | Stage | G0 | G1 | T0 | Scaffold | Impl | Reuse evidence | Portfolio claims match? |
 |---------|---------------|-------|----|----|----|----------|------|----------------|-------------------------|
-| LKW | ACTIVE | Advanced existing | N/A (reference) | N/A | N/A | Exists | In progress | None (reference) | **YES** — task IDs match plan |
+| LKW | ACTIVE | Advanced existing | N/A (reference) | N/A | N/A | Exists | In progress | None (reference) | **YES** - task IDs match plan |
 | Contract Recovery | SELECTED | Pre-bootstrap | PENDING | NOT STARTED | NOT CREATED | NOT CREATED | NOT STARTED | None | **YES** |
 | Supplier Disruption | SELECTED | Pre-bootstrap | PENDING | NOT STARTED | NOT CREATED | NOT CREATED | NOT STARTED | None | **YES** |
 | Third-Party Risk | SELECTED | Pre-bootstrap | PENDING | NOT STARTED | NOT CREATED | NOT CREATED | NOT STARTED | None | **YES** |
@@ -186,14 +186,14 @@ No accidental status inflation detected.
 | Gate | Program | Bootstrap | Portfolio manual | Product manual | Coordination | Consistent? |
 |------|---------|-----------|------------------|----------------|--------------|-------------|
 | G0 | Product baseline / LKW ingestion | Required before G1 | Verify independence from Intergrax | Prepare, not self-accept | Handoff payload | **YES** |
-| G1 | Architecture acceptance | After G0 | Product-first verify | Product semantics first | — | **YES** |
+| G1 | Architecture acceptance | After G0 | Product-first verify | Product semantics first | - | **YES** |
 | G2/T0 | Preregistered reuse baseline | Before scaffold/impl | Four new only; LKW N/A | Freeze before commit | T0 coordination §9 | **YES** |
-| G3 | First vertical slice | Real product outcome | Reject scaffold-only | Examples per product | — | **YES** |
+| G3 | First vertical slice | Real product outcome | Reject scaffold-only | Examples per product | - | **YES** |
 | G4 | Material platform pressure | Stop before shared change | Central disposition | Escalation package | G4 handoff §6 | **YES** |
-| G5 | MVP / major proof | — | Conditional audit | Product proof owned | — | **YES** |
-| G6/T1 | Reuse audit | — | Consumer audit → T1 | Prepare, not self-PASS | G6 coordination §10 | **YES** |
-| G7 | Market validation | — | No platform audit | Separate from platform | — | **YES** |
-| G8 | Portfolio decision | — | Recommendation owned | Input only | Pause/stop §26 | **YES** |
+| G5 | MVP / major proof | - | Conditional audit | Product proof owned | - | **YES** |
+| G6/T1 | Reuse audit | - | Consumer audit → T1 | Prepare, not self-PASS | G6 coordination §10 | **YES** |
+| G7 | Market validation | - | No platform audit | Separate from platform | - | **YES** |
+| G8 | Portfolio decision | - | Recommendation owned | Input only | Pause/stop §26 | **YES** |
 
 ---
 
@@ -201,17 +201,17 @@ No accidental status inflation detected.
 
 | Concern | Product Session | Portfolio Control | Audit engine | COMM | VIS-3A | Conflicts? |
 |---------|-----------------|-------------------|--------------|------|--------|------------|
-| Product definition | OWNS / PREPARES | VERIFIES G0+ | — | — | — | None |
-| Architecture | OWNS G1 | VERIFIES G1 | — | — | CONSUMES | None |
-| Implementation | OWNS | VERIFIES gates | — | OWNS proof only | — | None |
-| Gate acceptance | NO | OWNS | — | — | — | None |
-| G4 disposition | PREPARES | OWNS | CONSUMES | — | — | None |
-| Platform impact | PREPARES | OWNS ledger | — | — | — | None |
-| Audit findings | CONSUMES | REQUESTS | OWNS | — | — | None |
-| T0/T1 | PREPARES | OWNS acceptance | — | — | — | None |
-| Recommendation/priority | INPUT | OWNS | — | — | — | None |
-| Public claims | — | OWNS verification | — | — | PRESENTS | None |
-| LKW proof work | — | VERIFIES | — | OWNS | — | None |
+| Product definition | OWNS / PREPARES | VERIFIES G0+ | - | - | - | None |
+| Architecture | OWNS G1 | VERIFIES G1 | - | - | CONSUMES | None |
+| Implementation | OWNS | VERIFIES gates | - | OWNS proof only | - | None |
+| Gate acceptance | NO | OWNS | - | - | - | None |
+| G4 disposition | PREPARES | OWNS | CONSUMES | - | - | None |
+| Platform impact | PREPARES | OWNS ledger | - | - | - | None |
+| Audit findings | CONSUMES | REQUESTS | OWNS | - | - | None |
+| T0/T1 | PREPARES | OWNS acceptance | - | - | - | None |
+| Recommendation/priority | INPUT | OWNS | - | - | - | None |
+| Public claims | - | OWNS verification | - | - | PRESENTS | None |
+| LKW proof work | - | VERIFIES | - | OWNS | - | None |
 
 ---
 
@@ -223,9 +223,9 @@ No accidental status inflation detected.
 | PORTFOLIO_STATUS → LKW plan, cards | **PASS** |
 | LKW control card → application docs | **PASS** (5 levels from `products/`) |
 | Session briefs → `PRODUCT_REUSE_PROOF.md` | **PASS** (`../../plans/`) |
-| Session brief LKW → application docs | **FAIL** — MP21-001 |
-| Audit integration → MP-20 doc | **FAIL** — MP21-003 |
-| PENDING public presentation paths | **PASS** — explicitly PENDING by design |
+| Session brief LKW → application docs | **FAIL** - MP21-001 |
+| Audit integration → MP-20 doc | **FAIL** - MP21-003 |
+| PENDING public presentation paths | **PASS** - explicitly PENDING by design |
 
 ---
 
@@ -259,7 +259,7 @@ The workspace is safe to proceed to Session Launch Pack assembly. Residual MINOR
 
 ## MP-21-R1 remediation / revalidation
 
-**Remediation task:** MP-21-R1 — Close Workspace Consistency Gaps Before Launch Pack
+**Remediation task:** MP-21-R1 - Close Workspace Consistency Gaps Before Launch Pack
 **Remediation start HEAD:** `01f2046bfbb89f5b30545eab075f2d5ce82a857c`
 **Remediation commit:** `dbd0d4a9b`
 

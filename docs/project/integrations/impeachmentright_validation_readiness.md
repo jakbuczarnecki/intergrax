@@ -1,4 +1,4 @@
-# ImpeachmentRight — Governed External Execution validation readiness
+# ImpeachmentRight - Governed External Execution validation readiness
 
 **Date:** 2026-07-20  
 **Scope:** Partner-facing readiness after GEC-0…GEC-6.1 architecture closure  
@@ -13,7 +13,7 @@ This document answers whether Intergrax can honestly demonstrate the maintainer�
 
 **READY_NOW**
 
-Platform + Tier-2 adapter implement the full governed lifecycle through mandatory `GovernedProofProfile`. A single offline demonstration path exists and passes. The host application mounts the agent and DI slots but does **not** yet expose a product HTTP/CLI orchestration of the quote→accept flow — that is a host product / demonstration packaging gap, not a platform capability gap.
+Platform + Tier-2 adapter implement the full governed lifecycle through mandatory `GovernedProofProfile`. A single offline demonstration path exists and passes. The host application mounts the agent and DI slots but does **not** yet expose a product HTTP/CLI orchestration of the quote→accept flow - that is a host product / demonstration packaging gap, not a platform capability gap.
 
 Host Attestation / governed Execution Boundary Events / attested export are implemented as the downstream capability [`execution_evidence_and_host_attestation.md`](../technical/platform/execution_evidence_and_host_attestation.md). Full closure verdict: [`impeachmentright_full_validation.md`](impeachmentright_full_validation.md).
 
@@ -70,11 +70,11 @@ Ownership confirmed: no HITL decisions, no policy rule packs, no signing/persist
 
 | Question | Finding |
 |----------|---------|
-| Can host inject `ExternalWorkIntegration` + evaluator? | **Yes** — `host/agent_builders.py` via `settings.external_work_integration` / `settings.meaningful_side_effect_policy` |
-| Default settings / factory wire a demo fake? | **No** — optional attrs; default run reports missing integration |
-| HTTP `/v1/governed_contractor/run` complete quote→accept→proof flow? | **No** — message/capability only; no external-work metadata orchestration |
+| Can host inject `ExternalWorkIntegration` + evaluator? | **Yes** - `host/agent_builders.py` via `settings.external_work_integration` / `settings.meaningful_side_effect_policy` |
+| Default settings / factory wire a demo fake? | **No** - optional attrs; default run reports missing integration |
+| HTTP `/v1/governed_contractor/run` complete quote→accept→proof flow? | **No** - message/capability only; no external-work metadata orchestration |
 | CLI / deterministic app entry for full flow? | **No** |
-| Existing host tests cover governed proof? | **No** — smoke: health / agents / hello run only |
+| Existing host tests cover governed proof? | **No** - smoke: health / agents / hello run only |
 
 **Host classification:** DI-ready scaffold; **not** a complete product demonstration surface for the five-point flow. Full scenario is executable today via Tier-2 construction (demo test below), not via the default host API.
 
@@ -167,13 +167,13 @@ Supporting gate tests: `test_governed_proof_profile.py`, `test_meaningful_side_e
 
 ## Recommended response strategy
 
-1. **Lead with attested demo** — `test_partner_attested_execution_demo.py` + platform canon for Execution Evidence.
+1. **Lead with attested demo** - `test_partner_attested_execution_demo.py` + platform canon for Execution Evidence.
 2. **Map the five points honestly** using the matrix above; separate descriptive `GovernedProofProfile` from host-signed portable receipt.
-3. **Close their three gaps with precise naming** — governed sibling `governed_execution_boundary_event.v1` (not harness tool/step `execution_boundary_event.v1`); portable `execution_evidence.proof_receipt.v1`; decision bound to `ImmutableRuntimePolicyBundle` identity/digest (not a claim that partner contractor-local packs are already replaced).
+3. **Close their three gaps with precise naming** - governed sibling `governed_execution_boundary_event.v1` (not harness tool/step `execution_boundary_event.v1`); portable `execution_evidence.proof_receipt.v1`; decision bound to `ImmutableRuntimePolicyBundle` identity/digest (not a claim that partner contractor-local packs are already replaced).
 4. **Invite next step:** live provider behind `ExternalWorkIntegration` (partner translation adapter) + wallet/payment evidence.
 5. **Do not oversell** production KMS/HSM, receipt registry, replay, or wallets.
 
-**Platform completion audit:** [`impeachmentright_platform_completion.md`](impeachmentright_platform_completion.md) — verdict `FULLY_PLATFORM_READY`.
+**Platform completion audit:** [`impeachmentright_platform_completion.md`](impeachmentright_platform_completion.md) - verdict `FULLY_PLATFORM_READY`.
 
 ---
 

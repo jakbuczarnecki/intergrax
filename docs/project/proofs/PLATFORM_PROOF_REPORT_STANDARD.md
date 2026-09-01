@@ -7,7 +7,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 # Intergrax Platform Proof Report Standard v1
 
 **Task:** PP-REPORT-1  
-**Status:** Canonical (contract design only — no renderer implementation)  
+**Status:** Canonical (contract design only - no renderer implementation)  
 **Audience:** Proof authors, report renderer implementers, external reviewers  
 **Scope:** All executable Platform Proofs registered in `scripts/proof/intergrax_proof_manifest.py`
 
@@ -15,7 +15,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 ## 1. Purpose
 
-Every Platform Proof execution **must** produce a rich, human-readable, self-contained **Proof Report** artifact — regardless of outcome:
+Every Platform Proof execution **must** produce a rich, human-readable, self-contained **Proof Report** artifact - regardless of outcome:
 
 | Outcome | Report required |
 |---------|-----------------|
@@ -42,7 +42,7 @@ A skeptical external reviewer must be able to open the report offline and unders
 
 | Document | Role |
 |----------|------|
-| [`PROOFS.md`](PROOFS.md) | Public proof dashboard — links **accepted/published** evidence only |
+| [`PROOFS.md`](PROOFS.md) | Public proof dashboard - links **accepted/published** evidence only |
 | [`PUBLIC_PROOF_AND_CLAIMS_MODEL.md`](../maintainers/public-adoption/PUBLIC_PROOF_AND_CLAIMS_MODEL.md) | Public claim qualification and promotion |
 | [`PLATFORM_PROOF_PROTOCOL.md`](../../../platform_proofs/PLATFORM_PROOF_PROTOCOL.md) | Platform proof methodology |
 | [`PLATFORM_PROOF_AUTHORING_GUIDE.md`](../../../platform_proofs/PLATFORM_PROOF_AUTHORING_GUIDE.md) | Author workflow |
@@ -54,16 +54,16 @@ A skeptical external reviewer must be able to open the report offline and unders
 Keep these concepts distinct:
 
 ```text
-SuiteReceipt          — repository/suite execution record (orchestrator)
-ProofReceipt / evidence — machine-readable evidence for one proof execution
-ProofReport           — human-readable presentation derived from evidence
+SuiteReceipt          - repository/suite execution record (orchestrator)
+ProofReceipt / evidence - machine-readable evidence for one proof execution
+ProofReport           - human-readable presentation derived from evidence
 ```
 
 | Layer | Canonical format | Source of truth? |
 |-------|------------------|------------------|
 | **SuiteReceipt** | JSON (`intergrax.proof_suite_receipt.v1`) | Suite orchestration truth |
-| **Proof evidence** | JSON / typed proof evidence contracts | **Yes** — per-proof factual truth |
-| **ProofReport** | Self-contained HTML | **No** — presentation only |
+| **Proof evidence** | JSON / typed proof evidence contracts | **Yes** - per-proof factual truth |
+| **ProofReport** | Self-contained HTML | **No** - presentation only |
 
 **Dependency chain (frozen):**
 
@@ -87,7 +87,7 @@ Rules:
 2. All factual claims in the report **must** be derivable from structured evidence produced by the proof/runtime.
 3. The report **must not invent facts**.
 4. The report **must not** independently promote public status, qualification, or accepted-evidence lifecycle.
-5. **SCENARIO execution narrative** must be projected from `PlatformProofEvidence` steps/graph and runtime trace exports — not synthesized from expected proof outcomes.
+5. **SCENARIO execution narrative** must be projected from `PlatformProofEvidence` steps/graph and runtime trace exports - not synthesized from expected proof outcomes.
 
 Reuse existing **`SuiteReceipt`** from `scripts/proof/intergrax_proof_contracts.py`. Do **not** merge suite receipts with domain `ProofReceipt` or with report presentation models.
 
@@ -209,7 +209,7 @@ Domain extensions (§18) **insert after** the common skeleton section they exten
 | Proof title | Manifest / evidence |
 | Domain | Manifest / evidence |
 | Execution timestamp | Evidence (`started_at` / equivalent) |
-| **Execution status** | Derived verdict — badge: PASS / FAIL / BLOCKED / CRASH |
+| **Execution status** | Derived verdict - badge: PASS / FAIL / BLOCKED / CRASH |
 | Source revision / commit SHA | Evidence |
 | Git dirty flag | Evidence when available |
 | Proof version | Proof-owned semantic version if declared |
@@ -263,7 +263,7 @@ Minimum categories to address when applicable:
 - all workloads or deployment modes
 - product-specific workflows (for platform proofs)
 
-Use concrete bullets — not generic marketing disclaimers alone.
+Use concrete bullets - not generic marketing disclaimers alone.
 
 ---
 
@@ -281,7 +281,7 @@ Show the **real execution path** with participant class on each node:
 
 Include an **inline diagram** (SVG recommended): architecture flow for the proof.
 
-**Reference example — SCENARIO-AI-INCIDENT-INVESTIGATION (design-stage):**
+**Reference example - SCENARIO-AI-INCIDENT-INVESTIGATION (design-stage):**
 
 ```text
 OpenAI model (EXTERNAL vendor, REAL)
@@ -368,7 +368,7 @@ Per scenario:
 | EVIDENCE_CREATED | New evidence IDs |
 | STATUS | ok / fail / skipped |
 
-**Agent / tool proofs — preferred column flow:**
+**Agent / tool proofs - preferred column flow:**
 
 ```text
 PURPOSE → EVIDENCE_BASIS → TOOL ACTION → TOOL ARGUMENTS → TOOL RESULT → NEW EVIDENCE
@@ -405,7 +405,7 @@ No external graph service. Graph nodes reference evidence IDs used elsewhere.
 
 Show the **final public model/system output** used for evaluation.
 
-For LLM proofs: final answer text only — not hidden reasoning.
+For LLM proofs: final answer text only - not hidden reasoning.
 
 ---
 
@@ -455,7 +455,7 @@ Example pattern (TOOLS reference):
 | `BLOCKED_ENVIRONMENT` | Env gate blocked run |
 | `TIMEOUT` | Execution time limit |
 | `CRASH` | Abnormal termination |
-| `UNKNOWN` | Unclassified — use sparingly |
+| `UNKNOWN` | Unclassified - use sparingly |
 
 **Progress checklist example (CRASH / BLOCKED):**
 
@@ -473,7 +473,7 @@ Example pattern (TOOLS reference):
 
 ### §14 Limitations (`limitations`)
 
-Execution-specific limitations — not boilerplate alone.
+Execution-specific limitations - not boilerplate alone.
 
 Examples: single model/provider, single OS run, bounded row cap (`MAX_VISIBLE_ROWS`), named Docker profile.
 
@@ -538,7 +538,7 @@ required: true | false
 
 Extensions **must not** replace common sections. They add typed subsections fed only from evidence fields declared safe for reporting.
 
-### 7.1 Registered extension profiles (v1 — design only)
+### 7.1 Registered extension profiles (v1 - design only)
 
 | Domain | Extension ID | Adds |
 |--------|--------------|------|
@@ -555,7 +555,7 @@ Renderer implementations for domain extensions are **out of scope** for PP-REPOR
 
 Applies when `library_class` is **SCENARIO** and material autonomous behavior exists. Conformance proofs **MUST NOT** be required to render empty SCENARIO-only decorative sections.
 
-**Source-of-truth rule:** all execution narrative in SCENARIO reports **MUST** be derived from machine-readable structured artifacts (`PlatformProofEvidence.scenarios[].steps`, `evidence_graph`, evaluator/failure fields, runtime trace projection) — **not** from expected outcomes or renderer-invented plausible stories. The renderer **MUST NOT** invent tool calls, model decisions, rationales, evidence, or challenges absent from canonical artifacts.
+**Source-of-truth rule:** all execution narrative in SCENARIO reports **MUST** be derived from machine-readable structured artifacts (`PlatformProofEvidence.scenarios[].steps`, `evidence_graph`, evaluator/failure fields, runtime trace projection) - **not** from expected outcomes or renderer-invented plausible stories. The renderer **MUST NOT** invent tool calls, model decisions, rationales, evidence, or challenges absent from canonical artifacts.
 
 **Required presentation semantics** (map to §6 common skeleton and evidence fields):
 
@@ -569,7 +569,7 @@ Applies when `library_class` is **SCENARIO** and material autonomous behavior ex
 | Diagnostics | `failure`, step `error`, bounded diagnostics | §13 `failure-analysis` |
 | Final decision provenance | `final_output`, `conclusion`, evidence graph back-links | §11 + §15 |
 
-**Terminal semantics:** distinguish **successful resolution**, **epistemic unresolved** (insufficient evidence), and **operational failure** — do not narrate operational failure as epistemic uncertainty.
+**Terminal semantics:** distinguish **successful resolution**, **epistemic unresolved** (insufficient evidence), and **operational failure** - do not narrate operational failure as epistemic uncertainty.
 
 **Chain-of-thought:** operational decision trace ≠ chain-of-thought (see §9 frozen rule). Reports **MUST NOT** expose hidden reasoning or require chain-of-thought artifacts.
 
@@ -585,7 +585,7 @@ Common Intergrax report visual language (renderer requirements):
 |-------------|---------------|
 | Layout | Single-column primary flow; max readable width ~960px; printable `@media print` rules |
 | Hierarchy | H1 report title → H2 sections → H3 subsections; consistent numbering matching §6 |
-| Status badges | PASS green, FAIL red, BLOCKED amber, CRASH dark red — with accessible contrast (WCAG AA target) |
+| Status badges | PASS green, FAIL red, BLOCKED amber, CRASH dark red - with accessible contrast (WCAG AA target) |
 | Key facts | Card components for identity, status, claim summary |
 | Tables | Full-width responsive tables; zebra rows optional |
 | Timeline | Vertical timeline with step markers and status icons |
@@ -593,7 +593,7 @@ Common Intergrax report visual language (renderer requirements):
 | Code / SQL | Syntax-highlighted via embedded CSS classes (no external highlighter) |
 | Evidence IDs | Monospace badge style (`evidence-id`, `tool-call-id`) |
 | Expandable detail | `<details>`/summary or JS toggle for raw evidence |
-| Tone | Technical evidence — **not** marketing hero sections |
+| Tone | Technical evidence - **not** marketing hero sections |
 
 Evidence readability **>** decoration.
 
@@ -639,8 +639,8 @@ Prefer **generated inline SVG**. Do **not** require Mermaid or CDN at view time.
 Design requirements (implementation: PP-REPORT-5):
 
 1. Evidence emission should be **incremental** where feasible (setup, env checks, partial traces).
-2. Reporter hooks run on `finally` paths — not only on PASS.
-3. Missing sections render as **not reached** with explicit checklist state — not omitted silently.
+2. Reporter hooks run on `finally` paths - not only on PASS.
+3. Missing sections render as **not reached** with explicit checklist state - not omitted silently.
 4. A failure report is **valuable evidence** for operators and external reviewers.
 
 ---
@@ -668,7 +668,7 @@ Design requirements (implementation: PP-REPORT-5):
 
 ### 12.3 Fail-closed
 
-Evidence fields without explicit **`report_safe: true`** (or domain equivalent) **must not** appear in human report raw sections. Unknown secret-bearing fields: **redact or omit** — never guess.
+Evidence fields without explicit **`report_safe: true`** (or domain equivalent) **must not** appear in human report raw sections. Unknown secret-bearing fields: **redact or omit** - never guess.
 
 Typed evidence contracts (PP-REPORT-2) **must** declare report safety per field or per section.
 
@@ -695,7 +695,7 @@ Rules:
 
 Generated artifacts **must not** be committed to source-controlled docs by default.
 
-### 14.1 Canonical layout (target — PP-REPORT-6)
+### 14.1 Canonical layout (target - PP-REPORT-6)
 
 Align with existing suite receipt directory `.artifacts/proof/` (`intergrax_proof_runner.py`):
 
@@ -706,7 +706,7 @@ Align with existing suite receipt directory `.artifacts/proof/` (`intergrax_proo
     <PROOF_ID>/
       evidence.json
       report.html
-      report.pdf          # optional — PP-REPORT-7
+      report.pdf          # optional - PP-REPORT-7
 ```
 
 | Artifact | Naming |
@@ -738,14 +738,14 @@ Three report classes:
 Rules:
 
 - Do **not** auto-publish every local run.
-- [`PROOFS.md`](PROOFS.md) links **accepted/published** reports only — not all generated artifacts.
+- [`PROOFS.md`](PROOFS.md) links **accepted/published** reports only - not all generated artifacts.
 - Generated HTML does **not** change public claim status.
 
 Promotion workflow remains governed by [`PUBLIC_PROOF_AND_CLAIMS_MODEL.md`](../maintainers/public-adoption/PUBLIC_PROOF_AND_CLAIMS_MODEL.md).
 
 ---
 
-## 16. Reference example — SCENARIO-AI-INCIDENT-INVESTIGATION (design stage)
+## 16. Reference example - SCENARIO-AI-INCIDENT-INVESTIGATION (design stage)
 
 **Proof ID:** `SCENARIO-AI-INCIDENT-INVESTIGATION` (planned; not yet executable)
 **Design package:** `platform_proofs/scenarios/ai_incident_investigation/README.md`
@@ -806,4 +806,4 @@ Do **not** (in PP-REPORT-1 and unless a later task says otherwise):
 
 | Version | Task | Notes |
 |---------|------|-------|
-| v1 | PP-REPORT-1 | Initial canonical standard — contract design only |
+| v1 | PP-REPORT-1 | Initial canonical standard - contract design only |

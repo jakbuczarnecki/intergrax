@@ -1,4 +1,4 @@
-        # Build & deploy — Intergrax Assistant
+        # Build & deploy - Intergrax Assistant
 
         Tier-3 application package: ``applications/intergrax_assistant_application``. This document is the **operational runbook** for local development, verification, and container deployment.
 
@@ -25,7 +25,7 @@
         cp applications/intergrax_assistant_application/.env.example applications/intergrax_assistant_application/.env
         ```
 
-        Edit ``.env`` (gitignored). Variables use the application prefix **`INTERGRAX_ASSISTANT_`** — do not put app secrets only in the repository-root ``.env``.
+        Edit ``.env`` (gitignored). Variables use the application prefix **`INTERGRAX_ASSISTANT_`** - do not put app secrets only in the repository-root ``.env``.
 
         | Variable | Default | Role |
         |----------|---------|------|
@@ -108,7 +108,7 @@ MCP endpoint: ``http://127.0.0.1:8096/mcp`` (streamable HTTP transport).
 
         Override image tag: ``IMAGE_TAG=my-registry/intergrax_assistant:1.0.0`` (sh) or ``build-docker.bat my-registry/intergrax_assistant:1.0.0`` (bat).
 
-        ### Manual — BuildKit
+        ### Manual - BuildKit
 
         ```bash
         docker buildx build -f applications/intergrax_assistant_application/docker/Dockerfile \
@@ -116,7 +116,7 @@ MCP endpoint: ``http://127.0.0.1:8096/mcp`` (streamable HTTP transport).
           -t intergrax_assistant-application .
         ```
 
-        ### Manual — classic Docker
+        ### Manual - classic Docker
 
         ```bash
         cp applications/intergrax_assistant_application/docker/.dockerignore .dockerignore

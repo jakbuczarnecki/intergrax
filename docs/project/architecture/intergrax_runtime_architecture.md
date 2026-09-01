@@ -1,27 +1,27 @@
 # Intergrax Runtime Architecture
 
-> **Technical index** — primary domain-pair index, architecture artifact classification register, and cross-layer feature pairs. The twenty-four-row table below is **not** the complete owner set — see [Architecture artifact classification register](#architecture-artifact-classification-register). For the public project-level mental model, see [Architecture Overview](ARCHITECTURE_OVERVIEW.md). First contact: [README](../../../README.md).
+> **Technical index** - primary domain-pair index, architecture artifact classification register, and cross-layer feature pairs. The twenty-four-row table below is **not** the complete owner set - see [Architecture artifact classification register](#architecture-artifact-classification-register). For the public project-level mental model, see [Architecture Overview](ARCHITECTURE_OVERVIEW.md). First contact: [README](../../../README.md).
 
-**Hub only** — domain architecture and implementation are paired 1:1 under `.` and `../maintainers/plans`; multi-layer features are paired 1:1 under `../capabilities/architecture` and `../capabilities/plan`.
-**Architecture principles:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) — canonical rules for platform capability ownership, domain creation, application adoption, and proof order (meta-architecture governance; not a domain pair).
+**Hub only** - domain architecture and implementation are paired 1:1 under `.` and `../maintainers/plans`; multi-layer features are paired 1:1 under `../capabilities/architecture` and `../capabilities/plan`.
+**Architecture principles:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) - canonical rules for platform capability ownership, domain creation, application adoption, and proof order (meta-architecture governance; not a domain pair).
 **Target:** [`../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Strategy:** [`../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
-**Features:** [`../capabilities/README.md`](../capabilities/README.md) — cross-layer capability docs that coordinate multiple domain pairs without replacing domain ownership.
-**Invariants:** [`../technical/guides/SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md) — cross-layer MUST/MUST NOT rules + `SYS-INV-*` index (P2-ARCH-01)
-**Maturity:** [`../technical/guides/MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md) — four-axis A/I/P/E vocabulary; legacy L3/L4/L5 mapping (P2-ARCH-02). Maturity labels elsewhere in this hub are summaries only; authoritative production readiness claims require four-axis A/I/P/E statements in the owning architecture/plan pair.
-**Layer completion:** [`../technical/guides/LAYER_COMPLETION_MODE.md`](../technical/guides/LAYER_COMPLETION_MODE.md) — deep domain layer closeout workflow
-**Doc boundaries (Experimentation/DX):** [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#architecture-vs-implementation-rules-boundary) — architecture vs Cursor/workflow rules placement (P2-ARCH-13)
+**Features:** [`../capabilities/README.md`](../capabilities/README.md) - cross-layer capability docs that coordinate multiple domain pairs without replacing domain ownership.
+**Invariants:** [`../technical/guides/SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md) - cross-layer MUST/MUST NOT rules + `SYS-INV-*` index (P2-ARCH-01)
+**Maturity:** [`../technical/guides/MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md) - four-axis A/I/P/E vocabulary; legacy L3/L4/L5 mapping (P2-ARCH-02). Maturity labels elsewhere in this hub are summaries only; authoritative production readiness claims require four-axis A/I/P/E statements in the owning architecture/plan pair.
+**Layer completion:** [`../technical/guides/LAYER_COMPLETION_MODE.md`](../technical/guides/LAYER_COMPLETION_MODE.md) - deep domain layer closeout workflow
+**Doc boundaries (Experimentation/DX):** [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#architecture-vs-implementation-rules-boundary) - architecture vs Cursor/workflow rules placement (P2-ARCH-13)
 **Audit:** [`../technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](../../audit_results/legacy/plan-audit-history/README.md) · **Idea intake (Mode I):** [`../maintainers/bootstrap/idea_audit.txt`](../maintainers/bootstrap/README.md) · **Cursor bootstrap:** [`../maintainers/bootstrap`](../maintainers/bootstrap) · **Domain audit prompts:** [`../maintainers/audit`](../../audit_results/README.md) · **Architecture audit results:** [`audit_results/`](../../audit_results/README.md)
 **Authoring:** [`../technical/guides`](../technical/guides)
-**Platform proofs:** [`../../../platform_proofs/README.md`](../../../platform_proofs/README.md) — reusable platform mechanism proof methodology and coverage map (execution via [`scripts/proof/`](../../../scripts/proof/); public dashboard [`../proofs/PROOFS.md`](../proofs/PROOFS.md))
+**Platform proofs:** [`../../../platform_proofs/README.md`](../../../platform_proofs/README.md) - reusable platform mechanism proof methodology and coverage map (execution via [`scripts/proof/`](../../../scripts/proof/); public dashboard [`../proofs/PROOFS.md`](../proofs/PROOFS.md))
 
 ---
 
 ## Documentation topology
 
 ```text
-docs/project/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md   — architecture governance (meta; no plan pair)
-docs/project/architecture/intergrax_runtime_architecture.md                   — runtime architecture hub (this file)
+docs/project/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md   - architecture governance (meta; no plan pair)
+docs/project/architecture/intergrax_runtime_architecture.md                   - runtime architecture hub (this file)
 docs/project/architecture/<DOMAIN>.md       ↔ docs/project/maintainers/plans/<DOMAIN>.md
 docs/project/capabilities/architecture/<FEATURE>.md ↔ docs/project/capabilities/plan/<FEATURE>.md
 ```
@@ -60,13 +60,13 @@ Current feature pairs:
 | 15 | `MODALITY` | [`MODALITY.md`](MODALITY.md) | [`../maintainers/plans/MODALITY.md`](../maintainers/plans/MODALITY.md) |
 | 16 | `OBSERVABILITY` | [`OBSERVABILITY.md`](OBSERVABILITY.md) | [`../maintainers/plans/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) |
 | 17 | `RELIABILITY_FAILURE_AND_HITL` | [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) | [`../maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md`](../maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md) |
-| 18 | `CRITIC_VERIFICATION` *(CURRENT implementation snapshot — not target canonical domain owner)* | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) | [`../maintainers/plans/CRITIC_VERIFICATION.md`](../maintainers/plans/CRITIC_VERIFICATION.md) — pending clean-cut migration to [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) |
+| 18 | `CRITIC_VERIFICATION` *(CURRENT implementation snapshot - not target canonical domain owner)* | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) | [`../maintainers/plans/CRITIC_VERIFICATION.md`](../maintainers/plans/CRITIC_VERIFICATION.md) - pending clean-cut migration to [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) |
 | 19 | `ADAPTIVE_HARNESS_INTELLIGENCE` | [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md) | [`../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
 | 20 | `ELASTIC_CAPACITY_AND_SCALING` | [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) | [`../maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md`](../maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md) |
 | 21 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) | [`../maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
 | 22 | `TIER3_APPLICATION_ENVIRONMENT` | [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) | [`../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md`](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md) |
 | 23 | `APPLICATION_HOSTING` | [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) | [`../maintainers/plans/APPLICATION_HOSTING.md`](../maintainers/plans/APPLICATION_HOSTING.md) |
-| 24 | `UNIFIED_CONTEXT_LIFECYCLE` | [`UNIFIED_CONTEXT_LIFECYCLE.md`](UNIFIED_CONTEXT_LIFECYCLE.md) | [`../maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md`](../maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md) — lifecycle owner for conversation context optimization; [`ADR-UCL-001`](../technical/adr/entries/2026-08-01/ADR-UCL-001.md) |
+| 24 | `UNIFIED_CONTEXT_LIFECYCLE` | [`UNIFIED_CONTEXT_LIFECYCLE.md`](UNIFIED_CONTEXT_LIFECYCLE.md) | [`../maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md`](../maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md) - lifecycle owner for conversation context optimization; [`ADR-UCL-001`](../technical/adr/entries/2026-08-01/ADR-UCL-001.md) |
 
 **Plan-only hubs (no 1:1 architecture basename):** [`../maintainers/plans/HARNESS_EVIDENCE_PACK.md`](../maintainers/plans/HARNESS_EVIDENCE_PACK.md) · [`../maintainers/plans/IDEAL_HARNESS_L3.md`](../maintainers/plans/IDEAL_HARNESS_L3.md) · [`../maintainers/plans/AUDIT_IDEAL_2026.md`](../maintainers/plans/AUDIT_IDEAL_2026.md) · [`../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md) (satellite architecture under `satellites`).
 
@@ -79,12 +79,12 @@ Every canonical architecture artifact is classified **exactly once**. Do not pro
 
 | Class | Meaning | Examples |
 |-------|---------|----------|
-| **META_ARCHITECTURE** | Platform-wide architecture governance, canonical cross-domain semantic models, or architecture hubs/indexes — not a 1:1 domain implementation plan | [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) · [UNIFIED_EXECUTION_ARCHITECTURE.md](UNIFIED_EXECUTION_ARCHITECTURE.md) · this hub |
-| **DOMAIN** | One reusable capability — canonical architecture + implementation plan pair | All rows in [Domain pair index (primary 24)](#domain-pair-index-primary-24) plus additional canonical pairs below |
-| **FEATURE** | Cross-layer coordination — feature architecture/plan pair; domain owners retain runtime semantics | [`../capabilities/README.md`](../capabilities/README.md) · `TOKEN_OPTIMIZATION` · `LANGCHAIN_INDEPENDENCE` |
-| **SUPPORTING_MODEL / SATELLITE** | Typed model, ADR-backed adjunct, or domain satellite — subordinate to a domain owner | [APPLICATION_RUNTIME_GRAPH_MODEL.md](APPLICATION_RUNTIME_GRAPH_MODEL.md) · [APPLICATION_DEPENDENCY_MODEL.md](APPLICATION_DEPENDENCY_MODEL.md) · domain satellites/ |
+| **META_ARCHITECTURE** | Platform-wide architecture governance, canonical cross-domain semantic models, or architecture hubs/indexes - not a 1:1 domain implementation plan | [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) · [UNIFIED_EXECUTION_ARCHITECTURE.md](UNIFIED_EXECUTION_ARCHITECTURE.md) · this hub |
+| **DOMAIN** | One reusable capability - canonical architecture + implementation plan pair | All rows in [Domain pair index (primary 24)](#domain-pair-index-primary-24) plus additional canonical pairs below |
+| **FEATURE** | Cross-layer coordination - feature architecture/plan pair; domain owners retain runtime semantics | [`../capabilities/README.md`](../capabilities/README.md) · `TOKEN_OPTIMIZATION` · `LANGCHAIN_INDEPENDENCE` |
+| **SUPPORTING_MODEL / SATELLITE** | Typed model, ADR-backed adjunct, or domain satellite - subordinate to a domain owner | [APPLICATION_RUNTIME_GRAPH_MODEL.md](APPLICATION_RUNTIME_GRAPH_MODEL.md) · [APPLICATION_DEPENDENCY_MODEL.md](APPLICATION_DEPENDENCY_MODEL.md) · domain satellites/ |
 
-**Additional canonical DOMAIN pairs** (not in the primary twenty-four-row table — [`AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-01`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md)):
+**Additional canonical DOMAIN pairs** (not in the primary twenty-four-row table - [`AUDIT-20260818-CROSS_LAYER_ARCHITECTURE-01`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md)):
 
 | Domain | Architecture | Plan |
 |--------|--------------|------|
@@ -94,16 +94,16 @@ Every canonical architecture artifact is classified **exactly once**. Do not pro
 | `PLATFORM_PLUGINS` | [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md) | [`../maintainers/plans/PLATFORM_PLUGINS.md`](../maintainers/plans/PLATFORM_PLUGINS.md) |
 | `PROOF_RECEIPTS` | [`PROOF_RECEIPTS.md`](PROOF_RECEIPTS.md) | [`../maintainers/plans/PROOF_RECEIPTS.md`](../maintainers/plans/PROOF_RECEIPTS.md) |
 
-**Decision System subordinate architecture hubs** (not separate DOMAIN pairs — subordinate to [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md)):
+**Decision System subordinate architecture hubs** (not separate DOMAIN pairs - subordinate to [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md)):
 
 | Hub | Role |
 |-----|------|
-| [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) | Verification pipeline canon — subordinate verification hub |
-| [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) | Deliberation / council canon — subordinate deliberation hub |
+| [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) | Verification pipeline canon - subordinate verification hub |
+| [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) | Deliberation / council canon - subordinate deliberation hub |
 
-**CURRENT implementation snapshot** (primary-24 row #18 only — not target canonical domain owner): [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) ↔ [`../maintainers/plans/CRITIC_VERIFICATION.md`](../maintainers/plans/CRITIC_VERIFICATION.md).
+**CURRENT implementation snapshot** (primary-24 row #18 only - not target canonical domain owner): [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) ↔ [`../maintainers/plans/CRITIC_VERIFICATION.md`](../maintainers/plans/CRITIC_VERIFICATION.md).
 
-**Cross-layer index:** [`SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md) — compact `SYS-INV-*` authority; domain pairs remain semantic owners. **Remediation:** **CLA-CANON-TOPOLOGY-INTEGRITY** in [`PLATFORM_FOUNDATION` plan](../maintainers/plans/PLATFORM_FOUNDATION.md) — **ACCEPTED / PLANNED** only.
+**Cross-layer index:** [`SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md) - compact `SYS-INV-*` authority; domain pairs remain semantic owners. **Remediation:** **CLA-CANON-TOPOLOGY-INTEGRITY** in [`PLATFORM_FOUNDATION` plan](../maintainers/plans/PLATFORM_FOUNDATION.md) - **ACCEPTED / PLANNED** only.
 
 ---
 
@@ -112,7 +112,7 @@ Every canonical architecture artifact is classified **exactly once**. Do not pro
 
 [UNIFIED_EXECUTION_ARCHITECTURE.md](UNIFIED_EXECUTION_ARCHITECTURE.md) is classified **once** as **META_ARCHITECTURE**. It coordinates platform-wide cross-domain Unified Execution semantics: identity hierarchy (TaskId → RunId → AttemptId → ExecutionId → EventId), Execution Tree, ownership boundaries, and UEA-INV-* invariants. It **does not** create a new platform DOMAIN or 1:1 implementation plan and **does not** compete with domain owners for detailed runtime contracts. DOMAIN architecture/plan pairs remain the owners of detailed contracts and runtime behavior: [UNIFIED_EXECUTION_RUNTIME.md](UNIFIED_EXECUTION_RUNTIME.md), [ORCHESTRATION.md](ORCHESTRATION.md), [NEXUS_EXECUTION_FLOW.md](NEXUS_EXECUTION_FLOW.md), [AGENT_CONTRACTS_AND_ASSEMBLY.md](AGENT_CONTRACTS_AND_ASSEMBLY.md), [GOVERNED_EXECUTION.md](GOVERNED_EXECUTION.md), [DECISION_SYSTEM.md](DECISION_SYSTEM.md), [OBSERVABILITY.md](OBSERVABILITY.md), [RELIABILITY_FAILURE_AND_HITL.md](RELIABILITY_FAILURE_AND_HITL.md).
 
-**Diagram pack (supporting):** [UNIFIED_EXECUTION_ARCHITECTURE_DIAGRAMS.md](UNIFIED_EXECUTION_ARCHITECTURE_DIAGRAMS.md) — SUPPORTING_MODEL / SATELLITE specification for the twelve UEA architecture views (asset contract, embedding targets, README promotion candidate). Subordinate to UEA; not a domain pair.
+**Diagram pack (supporting):** [UNIFIED_EXECUTION_ARCHITECTURE_DIAGRAMS.md](UNIFIED_EXECUTION_ARCHITECTURE_DIAGRAMS.md) - SUPPORTING_MODEL / SATELLITE specification for the twelve UEA architecture views (asset contract, embedding targets, README promotion candidate). Subordinate to UEA; not a domain pair.
 
 ## Four tiers
 
@@ -130,7 +130,7 @@ Execution: [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.
 
 ## Implementer quick start
 
-**Default queue:** [`../maintainers/plans/PLATFORM_FOUNDATION.md`](../maintainers/plans/PLATFORM_FOUNDATION.md) **§4.0** priority ladder — Band 1 gate maintenance on every PR; Band 3 product work is **frozen** unless leadership reprioritizes (§6.3).
+**Default queue:** [`../maintainers/plans/PLATFORM_FOUNDATION.md`](../maintainers/plans/PLATFORM_FOUNDATION.md) **§4.0** priority ladder - Band 1 gate maintenance on every PR; Band 3 product work is **frozen** unless leadership reprioritizes (§6.3).
 
 | Goal | Read first | Command |
 |------|------------|---------|
@@ -147,7 +147,7 @@ Execution: [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.
 
 ## Agent in the harness environment
 
-**Hub summary for architects, researchers, and AI crawlers** — full canon in [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 · plan [Phase ACP](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md).
+**Hub summary for architects, researchers, and AI crawlers** - full canon in [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 · plan [Phase ACP](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md).
 
 Intergrax is **not** “one Python class that is also the OS.” The **agent** is a **domain decision unit** inside a **typed, governed environment**. Responsibility is split by design:
 
@@ -160,16 +160,16 @@ Intergrax is **not** “one Python class that is also the OS.” The **agent** i
 └───────────────────────────────┬─────────────────────────────────────────┘
                                 │ graph node → one Agent.run() per role
 ┌───────────────────────────────▼─────────────────────────────────────────┐
-│ L3  Agent.run() — session decision loop (many steps, one user-facing run) │
+│ L3  Agent.run() - session decision loop (many steps, one user-facing run) │
 └───────────────────────────────┬─────────────────────────────────────────┘
                                 │ each iteration
 ┌───────────────────────────────▼─────────────────────────────────────────┐
-│ L2  Agent.on_next_step() — author domain hook                             │
+│ L2  Agent.on_next_step() - author domain hook                             │
 │     READ typed state · UPDATE state_delta · DECIDE StepOutcome §32.0      │
 └───────────────────────────────┬─────────────────────────────────────────┘
                                 │ StepOutcome
 ┌───────────────────────────────▼─────────────────────────────────────────┐
-│ L1  HarnessKernel.execute_step() — deterministic harness primitive        │
+│ L1  HarnessKernel.execute_step() - deterministic harness primitive        │
 │     policy · gateways · trace · budgets · state merge · checkpoint hook   │
 │     DOES NOT: domain replan · choose next graph agent                     │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -186,9 +186,9 @@ Intergrax is **not** “one Python class that is also the OS.” The **agent** i
 
 **Strategic invariants (ADR-AGENT-001..003):**
 
-- **Nexus is not the agent** — it orchestrates; it does not replace `on_next_step`.
-- **HarnessKernel does not plan** — it executes one harness cycle per step.
-- **AgentRuntime.advance_step is glue only** — `on_next_step` then kernel; no policy logic in runtime.
+- **Nexus is not the agent** - it orchestrates; it does not replace `on_next_step`.
+- **HarnessKernel does not plan** - it executes one harness cycle per step.
+- **AgentRuntime.advance_step is glue only** - `on_next_step` then kernel; no policy logic in runtime.
 - **Agents are replaceable; the harness is the product.**
 
 **Author entry points:** [`../technical/guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Appendix AC · roster [`agents/README.md`](../../../agents/README.md).
@@ -199,9 +199,9 @@ Intergrax is **not** “one Python class that is also the OS.” The **agent** i
 
 ## Application in the harness environment
 
-**Hub summary** — full canon in [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §24–§51 (APP-CON / APP-EVOL / APP-OPS) · **freeze audit:** [`../technical/guides/GOVERNANCE_CONSISTENCY_AUDIT.md`](../../audit_results/legacy/GOVERNANCE_CONSISTENCY_AUDIT.md) · plan [H-APP-CON](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md#phase-h-app-con--application-environment-architecture-canon-app-con) · [H-APP-FREEZE](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md#phase-h-app-freeze--cross-document-governance-consistency-audit).
+**Hub summary** - full canon in [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §24–§51 (APP-CON / APP-EVOL / APP-OPS) · **freeze audit:** [`../technical/guides/GOVERNANCE_CONSISTENCY_AUDIT.md`](../../audit_results/legacy/GOVERNANCE_CONSISTENCY_AUDIT.md) · plan [H-APP-CON](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md#phase-h-app-con--application-environment-architecture-canon-app-con) · [H-APP-FREEZE](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md#phase-h-app-freeze--cross-document-governance-consistency-audit).
 
-The **application** is a **deployable composition shell** — not a cognitive agent. It normalizes intake → `Task`, declares roster and harness profiles, and returns product output. Tier-3 authors control environment through **three modes** (§30): declarative profile, rules envelope, imperative `ApplicationHost` hooks.
+The **application** is a **deployable composition shell** - not a cognitive agent. It normalizes intake → `Task`, declares roster and harness profiles, and returns product output. Tier-3 authors control environment through **three modes** (§30): declarative profile, rules envelope, imperative `ApplicationHost` hooks.
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -212,9 +212,9 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 └───────────────────────────────┬─────────────────────────────────────────┘
                                 │ UnifiedTaskRunner.run_task()
 ┌───────────────────────────────▼─────────────────────────────────────────┐
-│ L3  NexusLoop.handle_task() — Agent OS (Tier-1)                         │
+│ L3  NexusLoop.handle_task() - Agent OS (Tier-1)                         │
 └───────────────────────────────┬─────────────────────────────────────────┘
-                                │ graph node → Agent.run() — see Agent section above
+                                │ graph node → Agent.run() - see Agent section above
 ```
 
 | Question | Owner | Canon |
@@ -230,12 +230,12 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 
 **Strategic invariants (APP-CON §28.1):**
 
-- **Applications compose; they do not cognate** — business logic stays in Tier-2 agents.
-- **One Task lifecycle** — all surfaces converge on `UnifiedTaskRunner` → `NexusLoop`.
-- **Tier-3 defines the application** — manifest, profile, surfaces, and Task/Nexus integration.
-- **Application Hosting provides deployment lifecycle models** around that application — process lifecycle, readiness, instance ownership, signals, graceful shutdown, restart supervision, and OS adapters ([`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md)). Deployment posture does not alter Task semantics, Nexus execution, agent behavior, or product results.
+- **Applications compose; they do not cognate** - business logic stays in Tier-2 agents.
+- **One Task lifecycle** - all surfaces converge on `UnifiedTaskRunner` → `NexusLoop`.
+- **Tier-3 defines the application** - manifest, profile, surfaces, and Task/Nexus integration.
+- **Application Hosting provides deployment lifecycle models** around that application - process lifecycle, readiness, instance ownership, signals, graceful shutdown, restart supervision, and OS adapters ([`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md)). Deployment posture does not alter Task semantics, Nexus execution, agent behavior, or product results.
 
-### Product proof — Local Knowledge Workspace (LKW.6)
+### Product proof - Local Knowledge Workspace (LKW.6)
 
 | ID | Scope | Status |
 |----|-------|--------|
@@ -255,7 +255,7 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 LKW.7 is **Closed**: LKW.7A Done; LKW.7B1 Done; LKW.7B2A Done; LKW.7B2B Done; LKW.7B Closed; LKW.7C Closed; LKW.7C1 Done; LKW.7C2 Done.
 LKW.6 closed narrowly as: unified interaction intake; Application Hosting adoption; first Windows PowerShell product interaction adapter; live reviewer proof. Product docs: [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md).
 
-### LKW Hybrid Knowledge Workspace — active product roadmap
+### LKW Hybrid Knowledge Workspace - active product roadmap
 
 Canonical execution order: [applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md). Architecture: [KNOWLEDGE_ACCESS_ARCHITECTURE.md](../../../applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md).
 

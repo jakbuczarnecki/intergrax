@@ -1,8 +1,8 @@
-# ELASTIC_CAPACITY_AND_SCALING — appendices
+# ELASTIC_CAPACITY_AND_SCALING - appendices
 
 **Parent hub:** [`ELASTIC_CAPACITY_AND_SCALING.md`](../ELASTIC_CAPACITY_AND_SCALING.md)
 
-## Appendix A — Elastic capacity traceability (Phase ECP-DEPTH)
+## Appendix A - Elastic capacity traceability (Phase ECP-DEPTH)
 
 | Architecture § | Topic | Task IDs |
 |----------------|--------|----------|
@@ -28,7 +28,7 @@
 
 ---
 
-## Appendix B — FAUDIT-32 §30 extension scorecard
+## Appendix B - FAUDIT-32 §30 extension scorecard
 
 | Audit question | Pre-ECP | Post ECP-DOC | Post ECP-DEPTH scaffold | Post ECP-PROD target |
 |----------------|---------|--------------|-------------------------|---------------------|
@@ -40,22 +40,22 @@
 
 ---
 
-## Appendix C — Operator reading order
+## Appendix C - Operator reading order
 
-1. [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../architecture/ELASTIC_CAPACITY_AND_SCALING.md) — ECP canon
-2. [`adr/entries/2026-06-08/ADR-SCALE-001.md`](../adr/entries/2026-06-08/ADR-SCALE-001.md) — decision vs K8s HPA
-3. This plan — ECP-DEPTH when implementing
-4. [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §49 — queueing (not duplicate)
-5. [`guides/HARNESS_ENVIRONMENT.md`](../guides/HARNESS_ENVIRONMENT.md) — SLO + Celery env
+1. [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../architecture/ELASTIC_CAPACITY_AND_SCALING.md) - ECP canon
+2. [`adr/entries/2026-06-08/ADR-SCALE-001.md`](../adr/entries/2026-06-08/ADR-SCALE-001.md) - decision vs K8s HPA
+3. This plan - ECP-DEPTH when implementing
+4. [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §49 - queueing (not duplicate)
+5. [`guides/HARNESS_ENVIRONMENT.md`](../guides/HARNESS_ENVIRONMENT.md) - SLO + Celery env
 
 ---
 
-### ECP-DEPTH — Paydown log
+### ECP-DEPTH - Paydown log
 
 | Date | ECP ID | Summary |
 |------|--------|---------|
 | 2026-06-09 | ECP-0.*–ECP-OBS.* | Phase ECP-DEPTH **28/28 scaffold Done** (ECP-6.2 Cancelled) |
 | 2026-06-12 | AUDIT-IDEAL-30.1 | Honest maturity: ECP-DEPTH ≠ production autoscaling; §22 gap register |
-| 2026-06-12 | ECP-PROD.* | Phase ECP-PROD closed — HITL queue, K8s URL-gated adapters, E2E |
+| 2026-06-12 | ECP-PROD.* | Phase ECP-PROD closed - HITL queue, K8s URL-gated adapters, E2E |
 
 ---

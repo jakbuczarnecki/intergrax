@@ -2,7 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-# ADAPTIVE HARNESS INTELLIGENCE — ADAS / Agent Design Search Architecture
+# ADAPTIVE HARNESS INTELLIGENCE - ADAS / Agent Design Search Architecture
 
 **Status:** Canonical architecture satellite (Phase AHI-ADAS-00)  
 **Layer:** `ADAPTIVE_HARNESS_INTELLIGENCE`  
@@ -14,7 +14,7 @@
 
 ## 1. Executive summary
 
-ADAS — **Automated Design of Agentic Systems** — is an enterprise-grade extension of Intergrax `ADAPTIVE_HARNESS_INTELLIGENCE`.
+ADAS - **Automated Design of Agentic Systems** - is an enterprise-grade extension of Intergrax `ADAPTIVE_HARNESS_INTELLIGENCE`.
 
 Its purpose is to let Intergrax systematically design, evaluate, archive, compare, and promote better agent candidates over time.
 
@@ -213,7 +213,7 @@ ADAS is a governed adaptive design control plane that uses agents, scaffold, eva
 
 ## 6. Placement in Intergrax tiers
 
-### 6.1 Tier-0 — platform foundation
+### 6.1 Tier-0 - platform foundation
 
 Tier-0 remains the platform foundation.
 
@@ -233,7 +233,7 @@ cost primitives
 
 ADAS must not duplicate Tier-0 catalogs.
 
-### 6.2 Tier-1 — adaptive control plane
+### 6.2 Tier-1 - adaptive control plane
 
 Tier-1 owns the ADAS control plane.
 
@@ -261,7 +261,7 @@ enterprise audit reports
 
 Tier-1 must remain domain-agnostic.
 
-### 6.3 Tier-2 — design agents and strategy agents
+### 6.3 Tier-2 - design agents and strategy agents
 
 Tier-2 contains optional agents that participate in design search.
 
@@ -282,7 +282,7 @@ They must not directly write runtime code.
 
 They must not directly promote candidates.
 
-### 6.4 Tier-3 — ADAS Lab / operator environment
+### 6.4 Tier-3 - ADAS Lab / operator environment
 
 Tier-3 may contain an optional ADAS Lab application.
 
@@ -374,7 +374,7 @@ ADAS may propose new agent candidates, but never directly mutate existing produc
 
 ## 8. Relationship to MAS
 
-MAS — Meta Agent Search — is not the architecture.
+MAS - Meta Agent Search - is not the architecture.
 
 MAS is one implementation of `AgentDesignStrategy`.
 
@@ -706,9 +706,9 @@ It should reuse existing verification checks where possible.
 
 ## 13. Data contracts
 
-### 13.0 `AdasOperationalEnvelope` (enterprise fields — implementation v1+)
+### 13.0 `AdasOperationalEnvelope` (enterprise fields - implementation v1+)
 
-Base contracts in §13.1–§13.6 define the functional shape for Phase **AHI-ADAS-10**. At enterprise production, persisted and cross-boundary ADAS records **SHOULD** compose or embed this operational envelope (additive — not required in initial stubs):
+Base contracts in §13.1–§13.6 define the functional shape for Phase **AHI-ADAS-10**. At enterprise production, persisted and cross-boundary ADAS records **SHOULD** compose or embed this operational envelope (additive - not required in initial stubs):
 
 ```python
 class AdasOperationalEnvelope(BaseModel):
@@ -901,7 +901,7 @@ class AgentCandidateEvaluationResult(BaseModel):
 
 ### 13.7 `AgentCandidateEvidenceBundle`
 
-Enterprise evidence artifact — **evidence over declaration**. One bundle per promotion decision, verification window, or audit export. Immutable once sealed; references append-only archive rows.
+Enterprise evidence artifact - **evidence over declaration**. One bundle per promotion decision, verification window, or audit export. Immutable once sealed; references append-only archive rows.
 
 ```python
 class AgentCandidateEvidenceBundle(BaseModel):
@@ -1214,7 +1214,7 @@ Append-only semantics (§19) are normative for **logical** history. Enterprise p
 | **Tenant deletion** | Cascade tombstone + async purge per retention policy; bundles on legal hold exempt until released |
 | **Legal hold** | Blocks compaction and purge; extends retention until hold cleared by authorized operator |
 
-Rejected candidates and rollback outcomes remain archived for the retention window — never silent delete.
+Rejected candidates and rollback outcomes remain archived for the retention window - never silent delete.
 
 ---
 
@@ -1304,17 +1304,17 @@ Auto-promotion is allowed only for future low-risk lab profiles and only after e
 
 ### 22.1 Active registration semantics
 
-**Active registration** is the post-approval outcome that makes a promoted candidate routable in production. It is a **composite** — not a single implicit write. Implementers MUST declare which layers apply in `AgentCandidatePromotionRequest.promotion_mode`.
+**Active registration** is the post-approval outcome that makes a promoted candidate routable in production. It is a **composite** - not a single implicit write. Implementers MUST declare which layers apply in `AgentCandidatePromotionRequest.promotion_mode`.
 
 | Mode | Layer | What changes | Default v1 |
 |------|-------|--------------|------------|
 | **A** | Registry pointer | Active agent registry entry points to `candidate_id` / sandbox or canonical package ref | **Required** |
-| **B** | AgentContract version | New immutable `AgentContract` revision bound to candidate | Optional — when `contract_delta` non-empty |
-| **C** | Routing profile | `ApplicationEnvironmentProfile` weight / default agent slug for traffic allocation | Optional — canary / split traffic |
-| **D** | Materialization | Controlled move from sandbox to canonical `agents` package | Optional — explicit product gate only |
+| **B** | AgentContract version | New immutable `AgentContract` revision bound to candidate | Optional - when `contract_delta` non-empty |
+| **C** | Routing profile | `ApplicationEnvironmentProfile` weight / default agent slug for traffic allocation | Optional - canary / split traffic |
+| **D** | Materialization | Controlled move from sandbox to canonical `agents` package | Optional - explicit product gate only |
 | **E** | Tenant / application binding | Binding record links `objective_id` → active agent for tenant/application scope | **Required** |
 
-**Default v1:** **A + E** (registry pointer + tenant/application binding). Modes **B–D** are explicit, gated promotion modes — never implied by "promoted" status alone.
+**Default v1:** **A + E** (registry pointer + tenant/application binding). Modes **B–D** are explicit, gated promotion modes - never implied by "promoted" status alone.
 
 Promotion bridge (§12.8) writes rollback pointer against the **prior** active registration snapshot (A and/or E minimum). Verification loop compares utility against baseline using the same registration view.
 
@@ -1524,7 +1524,7 @@ Forbidden:
 
 ## 30. Implementation plan
 
-### Phase AHI-ADAS-00 — Documentation and ADR
+### Phase AHI-ADAS-00 - Documentation and ADR
 
 Purpose:
 
@@ -1550,7 +1550,7 @@ Existing AHI reuse is explicit.
 No code implemented.
 ```
 
-### Phase AHI-ADAS-10 — Contracts and Archive
+### Phase AHI-ADAS-10 - Contracts and Archive
 
 Purpose:
 
@@ -1581,7 +1581,7 @@ Rejection reason persisted.
 Tenant scoping enforced.
 ```
 
-### Phase AHI-ADAS-20 — Scaffold Bridge and Static Gate
+### Phase AHI-ADAS-20 - Scaffold Bridge and Static Gate
 
 Purpose:
 
@@ -1610,7 +1610,7 @@ Production agents are not overwritten.
 Static gate blocks unsafe candidates.
 ```
 
-### Phase AHI-ADAS-30 — Candidate Evaluation
+### Phase AHI-ADAS-30 - Candidate Evaluation
 
 Purpose:
 
@@ -1641,7 +1641,7 @@ Regression flags are captured.
 Failed candidates are archived.
 ```
 
-### Phase AHI-ADAS-40 — Search Controller and Strategies
+### Phase AHI-ADAS-40 - Search Controller and Strategies
 
 Purpose:
 
@@ -1670,7 +1670,7 @@ Search stops on budget/no improvement.
 Best candidate is reported.
 ```
 
-### Phase AHI-ADAS-50 — Hooks and Events
+### Phase AHI-ADAS-50 - Hooks and Events
 
 Purpose:
 
@@ -1698,7 +1698,7 @@ Hooks cannot bypass gates.
 Events are emitted at every lifecycle step.
 ```
 
-### Phase AHI-ADAS-60 — MAS Tier-2 Agents
+### Phase AHI-ADAS-60 - MAS Tier-2 Agents
 
 Purpose:
 
@@ -1725,7 +1725,7 @@ MAS does not own control plane.
 MAS does not write runtime.
 ```
 
-### Phase AHI-ADAS-70 — Shadow / Canary / Promotion Bridge
+### Phase AHI-ADAS-70 - Shadow / Canary / Promotion Bridge
 
 Purpose:
 
@@ -1753,7 +1753,7 @@ Human approval required by default.
 Rollback path exists.
 ```
 
-### Phase AHI-ADAS-80 — ADAS Lab Application
+### Phase AHI-ADAS-80 - ADAS Lab Application
 
 Purpose:
 
@@ -1779,7 +1779,7 @@ No duplicated core logic in application.
 Operators can approve/reject candidates.
 ```
 
-### Phase AHI-ADAS-90 — Enterprise Hardening
+### Phase AHI-ADAS-90 - Enterprise Hardening
 
 Purpose:
 
@@ -1836,12 +1836,12 @@ tenant-scoped, policy-gated, and archived.
 
 ## 32. Documentation follow-up
 
-Enterprise audit follow-ups (Phase **AHI-ADAS-00**) — **Done** (2026-06-22):
+Enterprise audit follow-ups (Phase **AHI-ADAS-00**) - **Done** (2026-06-22):
 
 | # | Item | Status | Link |
 |---|------|--------|------|
 | 1 | Canonical ADAS section in AHI hub | Done | [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](../ADAPTIVE_HARNESS_INTELLIGENCE.md#adas--agent-design-search-sub-capability) |
 | 2 | Phase AHI-ADAS in plan hub | Done | [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md#phase-ahi-adas--agent-design-search-proposed) |
-| 3 | ADR — ADAS inside AHI | Done | [ADR-ADAPT-002](../../technical/adr/entries/2026-06-22/ADR-ADAPT-002.md) |
+| 3 | ADR - ADAS inside AHI | Done | [ADR-ADAPT-002](../../technical/adr/entries/2026-06-22/ADR-ADAPT-002.md) |
 | 4 | Enterprise contract / evidence / retention / active-registration detail | Done | §13.0, §13.7, §19.1, §22.1 (this document) |
 | 5 | Architecture audit before runtime implementation | **Next** | Run Mode I / slice audit before **AHI-ADAS-10** code |

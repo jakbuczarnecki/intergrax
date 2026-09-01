@@ -1,4 +1,4 @@
-# Bing integration — copy to Tier-3 settings or export as env vars.
+# Bing integration - copy to Tier-3 settings or export as env vars.
 # Env: INTERGRAX_BING_API_KEY
 # Legacy env (still supported): BING_SEARCH_V7_API_KEY
 

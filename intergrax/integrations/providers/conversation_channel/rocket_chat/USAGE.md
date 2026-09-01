@@ -14,10 +14,10 @@ runtime_binding_supported = false
 
 ## Shared operations
 
-- `start(handler)` — begin inbound event delivery
-- `stop()` — stop delivery and release resources
-- `send(message)` — outbound text (+ optional single-choice)
-- `health()` — provider readiness via injected backend
+- `start(handler)` - begin inbound event delivery
+- `stop()` - stop delivery and release resources
+- `send(message)` - outbound text (+ optional single-choice)
+- `health()` - provider readiness via injected backend
 
 ## Declared conversation features (contract intent)
 

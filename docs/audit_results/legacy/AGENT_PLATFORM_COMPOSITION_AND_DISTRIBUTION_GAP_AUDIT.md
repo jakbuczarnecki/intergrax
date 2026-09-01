@@ -1,4 +1,4 @@
-# AGENT-PLATFORM-0 — Enterprise Agent Platform, Application Composition and Distribution Gap Audit
+# AGENT-PLATFORM-0 - Enterprise Agent Platform, Application Composition and Distribution Gap Audit
 
 **Task:** AGENT-PLATFORM-0
 **Status:** Discovery / architecture evidence gate
@@ -24,7 +24,7 @@ Today, **install an agent = declare a Python package dependency and rebuild the 
 
 **LKW proves agent execution and multi-agent orchestration strongly** but **cannot prove** install → configure → enable → disable → upgrade/rollback → uninstall without new platform mechanisms. Its `GET /agents` surface is read-only introspection of the already-wired registry.
 
-**Verdict:** **Architecture decision gate required before implementation.** Extend existing registries, manifests, runtime graph, and Platform Plugin qualification patterns — do **not** add a second Nexus, LKW-specific agent store, or marketplace execution path.
+**Verdict:** **Architecture decision gate required before implementation.** Extend existing registries, manifests, runtime graph, and Platform Plugin qualification patterns - do **not** add a second Nexus, LKW-specific agent store, or marketplace execution path.
 
 ---
 
@@ -108,10 +108,10 @@ Routing path:
 ### 5.1 `ApplicationManifest`
 
 - Stable `app_id`, profile (`LAB` / `PRODUCT`), route/env prefixes, integration profile, optional `ApplicationEnvironmentProfile`, ownership metadata.
-- `agents: list[AgentBinding]` — full roster.
-- `enabled_agents()`, `default_agent()`, `require_enabled_agents()` — static roster helpers.
+- `agents: list[AgentBinding]` - full roster.
+- `enabled_agents()`, `default_agent()`, `require_enabled_agents()` - static roster helpers.
 
-**Evidence:** `intergrax/applications/contracts/manifest.py` — `ApplicationManifest`, `AgentBinding`.
+**Evidence:** `intergrax/applications/contracts/manifest.py` - `ApplicationManifest`, `AgentBinding`.
 
 ### 5.2 `AgentBinding`
 
@@ -151,11 +151,11 @@ Then `AgentRegistry.register` resolves skills/tools into `allowed_tools`.
 
 **Wiring chain:**
 
-1. `LOCAL_WORKSPACE_APPLICATION_MANIFEST` — `applications/local_workspace_application/manifest.py`
-2. `create_local_workspace_backend_app` — `host/factory.py` → `build_harness_host_runtime(manifest, env)`
-3. `build_application_registry` — enabled bindings only
-4. `LocalWorkspaceTaskExecutor` — Nexus-backed runs
-5. `GET /v1/local_workspace/agents` — `nexus_loop.registry.list_agent_ids()` (read-only)
+1. `LOCAL_WORKSPACE_APPLICATION_MANIFEST` - `applications/local_workspace_application/manifest.py`
+2. `create_local_workspace_backend_app` - `host/factory.py` → `build_harness_host_runtime(manifest, env)`
+3. `build_application_registry` - enabled bindings only
+4. `LocalWorkspaceTaskExecutor` - Nexus-backed runs
+5. `GET /v1/local_workspace/agents` - `nexus_loop.registry.list_agent_ids()` (read-only)
 
 **Product architecture:** LKW ARCHITECTURE §5–§6 documents four-layer stack and agent roster; composition is manifest + environment profile, not LKW-local agent registry.
 
@@ -166,12 +166,12 @@ Then `AgentRegistry.register` resolves skills/tools into `allowed_tools`.
 | Concern | Static (build/deploy time) | Dynamic (runtime) |
 |---------|---------------------------|-------------------|
 | Agent package on filesystem / image | `pyproject.toml` + `ApplicationRuntimeGraph` + Docker context | **Not supported** |
-| Transitive agent closure | Graph resolver from lockfile | — |
-| Roster membership | `manifest.agents` Python module | — |
+| Transitive agent closure | Graph resolver from lockfile | - |
+| Roster membership | `manifest.agents` Python module | - |
 | Binding `enabled` | Manifest field (requires redeploy to change) | No hot toggle API |
 | Factory / config | `AgentBinding.config`, env profile | Per-request task context only |
 | `AgentRegistry` contents | Built once at startup | In-memory; no add/remove API |
-| Certification records | `AgentGovernanceProfile` on environment | — |
+| Certification records | `AgentGovernanceProfile` on environment | - |
 | Capability routing | Registry snapshot at startup | Per-task capability on `Task` |
 | Registry snapshot audit | `SqliteRegistrySnapshotStore` | Post-materialization capture |
 
@@ -187,7 +187,7 @@ Then `AgentRegistry.register` resolves skills/tools into `allowed_tools`.
 | Declarative application roster | **EXISTS** | `ApplicationManifest` + `AgentBinding` |
 | Capability-based Nexus routing | **EXISTS** | `find_by_capability`, §16 routing invariant |
 | Agent contract metadata | **EXISTS** | `AgentContract` superset of §12 |
-| Runtime registration | **EXISTS** | `AgentRegistry` — scope is execution index |
+| Runtime registration | **EXISTS** | `AgentRegistry` - scope is execution index |
 | Lifecycle states | **EXISTS** | `AgentLifecycleState` + routing policy |
 | Certification / promotion evaluators | **EXISTS** | Release/CI oriented |
 | Ownership / on-call on contract | **EXISTS** | `owner_team`, `on_call_contact`, runbook |
@@ -243,7 +243,7 @@ Marketplace-specific UI and billing stay **outside** Nexus; only `CatalogSourceP
 
 ---
 
-## 10. Reuse map — extend, do not duplicate
+## 10. Reuse map - extend, do not duplicate
 
 | Mechanism | Extend for agent distribution | Do not duplicate |
 |-----------|------------------------------|------------------|
@@ -286,7 +286,7 @@ Marketplace-specific UI and billing stay **outside** Nexus; only `CatalogSourceP
 | **AD-AP0-4 Enablement authority** | Who toggles enablement? | Operator API → installation store → filtered roster before `build_application_registry` |
 | **AD-AP0-5 Marketplace boundary** | Provider contract | `CatalogSourceProvider` returns entries; install command materializes pyproject/graph change or pre-built image layer |
 | **AD-AP0-6 Trust model for third-party agents** | Extend Platform Plugin qualification or parallel AgentPackageTrust? | Prefer extend with `delivery_source` + evidence kinds for agents |
-| **AD-AP0-7 LKW proof scope** | What LKW should prove | Generic Tier-3 admin routes calling platform install API — not LKW-local store |
+| **AD-AP0-7 LKW proof scope** | What LKW should prove | Generic Tier-3 admin routes calling platform install API - not LKW-local store |
 
 **Gate:** Resolve AD-AP0-1, AD-AP0-2, AD-AP0-4 before implementation waves.
 
@@ -320,27 +320,27 @@ Nexus (unchanged spine)
 
 | Layer | Today | Target |
 |-------|-------|--------|
-| Package/distribution identity | `intergrax-*-agent` pyproject | **EXISTS** — keep |
-| Catalog metadata | Absent | **GAP** — `AgentCatalogEntry` |
-| Installation state | pyproject + image | **GAP** — `AgentInstallationRecord` |
-| Application binding | `AgentBinding` in manifest | **PARTIAL** — persist + merge |
-| Configuration state | `binding.config` + env profile | **PARTIAL** — durable config store |
-| Enablement state | `binding.enabled` static | **GAP** — operator toggle |
-| Runtime registration | `AgentRegistry` | **EXISTS** — derived view |
+| Package/distribution identity | `intergrax-*-agent` pyproject | **EXISTS** - keep |
+| Catalog metadata | Absent | **GAP** - `AgentCatalogEntry` |
+| Installation state | pyproject + image | **GAP** - `AgentInstallationRecord` |
+| Application binding | `AgentBinding` in manifest | **PARTIAL** - persist + merge |
+| Configuration state | `binding.config` + env profile | **PARTIAL** - durable config store |
+| Enablement state | `binding.enabled` static | **GAP** - operator toggle |
+| Runtime registration | `AgentRegistry` | **EXISTS** - derived view |
 
 ---
 
 ## 14. Recommended implementation sequencing
 
 1. **ADRs** for installation plane, build-time vs runtime install, enablement authority (AD-AP0-1/2/4).
-2. **Platform contracts** — `AgentCatalogEntry`, `AgentInstallationRecord`, `CatalogSourceProvider` (no marketplace UI).
-3. **Persistence** — installation + binding store (relational); migration from manifest-only hosts.
-4. **Materialization bridge** — `build_application_registry` accepts merged roster; feature-flag static-only fallback.
-5. **Trust extension** — agent package qualification aligned with `PlatformPluginQualificationSubject`.
-6. **Graph guard extension** — pre-install compatibility via `ApplicationRuntimeGraph` simulation.
-7. **Generic Tier-3 admin surface** — install/enable/configure routes in shared harness (not LKW-specific).
-8. **LKW proof** — consume generic admin API; verify capability routing unchanged.
-9. **Marketplace provider** — optional `CatalogSourceProvider` implementation (out of scope for first wave).
+2. **Platform contracts** - `AgentCatalogEntry`, `AgentInstallationRecord`, `CatalogSourceProvider` (no marketplace UI).
+3. **Persistence** - installation + binding store (relational); migration from manifest-only hosts.
+4. **Materialization bridge** - `build_application_registry` accepts merged roster; feature-flag static-only fallback.
+5. **Trust extension** - agent package qualification aligned with `PlatformPluginQualificationSubject`.
+6. **Graph guard extension** - pre-install compatibility via `ApplicationRuntimeGraph` simulation.
+7. **Generic Tier-3 admin surface** - install/enable/configure routes in shared harness (not LKW-specific).
+8. **LKW proof** - consume generic admin API; verify capability routing unchanged.
+9. **Marketplace provider** - optional `CatalogSourceProvider` implementation (out of scope for first wave).
 
 ---
 
@@ -356,7 +356,7 @@ Nexus (unchanged spine)
 
 ---
 
-## 16. Evidence — file and symbol references
+## 16. Evidence - file and symbol references
 
 | Topic | Path | Symbol / section |
 |-------|------|------------------|
@@ -398,29 +398,29 @@ Nexus (unchanged spine)
 
 ---
 
-## Mandatory questions — consolidated answers
+## Mandatory questions - consolidated answers
 
 1. **Production-grade architecture:** Tier-2 packages + `AgentContract` + Tier-3 `ApplicationManifest` → `build_application_registry` → `AgentRegistry` → Nexus capability routing + ACP step loop (§2–§4).
-2. **AgentContract models:** Full metadata per §12 + skills, memory, cognitive pattern, lifecycle, ownership — `intergrax/contracts/agent_contract_meta.py`.
+2. **AgentContract models:** Full metadata per §12 + skills, memory, cognitive pattern, lifecycle, ownership - `intergrax/contracts/agent_contract_meta.py`.
 3. **AgentRegistry owns:** In-process agent instances and contracts, capability lookup, routability, skill/tool resolution at register. **Does not own:** package install, catalog, binding persistence, cross-host fleet catalog.
 4. **Discovery / register / instantiate / route:** pyproject graph (discovery) → manifest bindings → factories → `register` → Nexus `find_by_capability` / `TaskClassifier`.
 5. **Capabilities for routing:** `contract.capabilities` matched in registry; production filters via lifecycle policy; §16 normative invariant.
-6. **Lifecycle mechanisms:** `AgentLifecycleState`, certification/promotion/deprecation evaluators, STRICT deploy gates, CI metadata scripts — release-oriented, not operator install API.
-7. **Governance:** Contract ownership, binding budgets/memory/tools, skill resolution, dual observability, organizational policy §39 — **EXISTS** for wired agents.
+6. **Lifecycle mechanisms:** `AgentLifecycleState`, certification/promotion/deprecation evaluators, STRICT deploy gates, CI metadata scripts - release-oriented, not operator install API.
+7. **Governance:** Contract ownership, binding budgets/memory/tools, skill resolution, dual observability, organizational policy §39 - **EXISTS** for wired agents.
 8. **Tier-2 packaging:** `agents/<slug>/pyproject.toml`, `intergrax-<slug>-agent` distribution, workspace member.
 9. **Dependencies:** Direct in app pyproject; transitive in agent pyproject; `ApplicationRuntimeGraph` resolves closure.
 10. **Manifest / binding composition:** `AgentBinding.mount` + `ApplicationManifest.agents` list; optional `reference()` for harness.
 11. **Static vs dynamic:** Predominantly static build/deploy; runtime routing only among pre-registered agents (§7).
-12. **Persistence for roster:** Manifest Python modules + optional governance profile; registry snapshots audit ids — **no** install roster DB.
-13. **Generic catalog/plugin reuse:** Platform Plugin system for Tier-0 extensions; scaffold agent catalog for codegen — **not** agent distribution catalog.
-14. **Install/upgrade/uninstall:** uv lock + runtime graph image build — generic Python packaging, not agent-lifecycle API.
-15. **Provenance/trust for third-party agents:** Plugin qualification + capability graph provenance — **not** agent package signing.
+12. **Persistence for roster:** Manifest Python modules + optional governance profile; registry snapshots audit ids - **no** install roster DB.
+13. **Generic catalog/plugin reuse:** Platform Plugin system for Tier-0 extensions; scaffold agent catalog for codegen - **not** agent distribution catalog.
+14. **Install/upgrade/uninstall:** uv lock + runtime graph image build - generic Python packaging, not agent-lifecycle API.
+15. **Provenance/trust for third-party agents:** Plugin qualification + capability graph provenance - **not** agent package signing.
 16. **Runtime graph interaction:** Installed agents must be in resolved graph before image build; runtime add violates minimal isolation model.
 17. **Endangered invariants:** Tier boundaries, acyclic graph, image minimal context, capability graph conformance, single Nexus routing spine.
 18. **LKW consumes LKW trio:** Via manifest mounts + host factories + `build_harness_host_runtime` (§6).
-19. **LKW discovery/config/lifecycle surfaces:** Read-only `GET /agents` only — no install/configure/enable API.
+19. **LKW discovery/config/lifecycle surfaces:** Read-only `GET /agents` only - no install/configure/enable API.
 20. **LKW gaps vs Applications proof:** Applications layer proves runtime graph, image isolation, deploy gates; agents lack install lifecycle proof path (§8, GAP-AP0-07).
 
 ---
 
-**Implementation proceed?** **No — architecture decision gate required first** (§12 AD-AP0-1, AD-AP0-2, AD-AP0-4).
+**Implementation proceed?** **No - architecture decision gate required first** (§12 AD-AP0-1, AD-AP0-2, AD-AP0-4).

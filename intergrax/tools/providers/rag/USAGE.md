@@ -13,7 +13,7 @@
 | `retrieval_service` | No | Pre-built `RetrievalService`; else composed from managers + profile |
 | `retriever_manager` / `reranker_manager` | No | Override Tier-0 registries |
 
-Local backends: `infra/integration` profile `rag` (Qdrant, Chroma, Weaviate, Neo4j, Ollama, Docling) — see [infra/PORTS.md](../../../../infra/PORTS.md).
+Local backends: `infra/integration` profile `rag` (Qdrant, Chroma, Weaviate, Neo4j, Ollama, Docling) - see [infra/PORTS.md](../../../../infra/PORTS.md).
 
 Tier-3 example (full stack):
 
@@ -52,7 +52,7 @@ Env examples:
 | `INTERGRAX_RAG_NATIVE_HYBRID` | BM25+dense `query_hybrid` when store supports it |
 | `INTERGRAX_RAG_AGENTIC_ENABLED` | Budgeted deep-tier query refinement loop |
 | `INTERGRAX_RAG_GRAPH_ENABLED` | Register `graph_rag` retriever + ingest graph indexing |
-| `INTERGRAX_RAG_GRAPH_INDEXER_MODE` | `heuristic` (default), `llm`, `heuristic_then_llm` — requires `llm_adapter` in extras |
+| `INTERGRAX_RAG_GRAPH_INDEXER_MODE` | `heuristic` (default), `llm`, `heuristic_then_llm` - requires `llm_adapter` in extras |
 | `INTERGRAX_RAG_AGENTIC_QUERY_MODE` | `deterministic` or `llm` for deep-tier refinement |
 | `INTERGRAX_RAG_QDRANT_SPARSE` | Qdrant native sparse vectors + RRF hybrid query |
 | `INTERGRAX_RAG_SPARSE_ENCODER` | `bm25_hash` (default) or `splade` (requires `fastembed`) |
@@ -70,7 +70,7 @@ extras={"llm_adapter": runtime_config.llm_adapter, "graph_store": graph_store}
 
 Uses **`IngestPipeline`**: configurable loader/splitter (extras or defaults), chunking strategy from `RagProfile.chunking_strategy_id` or metadata `chunking_strategy_id`, optional contextual enrich when `INTERGRAX_RAG_CONTEXTUAL_ENRICH=on` and `contextual_enricher` is wired with an `LLMAdapter`.
 
-Parsers are **not** fixed to Docling — handlers use smart parsers + `ParserPipeline` catalog fallback; set `INTERGRAX_RAG_DOCUMENT_PARSER_SLUG` to force an integration parser slug.
+Parsers are **not** fixed to Docling - handlers use smart parsers + `ParserPipeline` catalog fallback; set `INTERGRAX_RAG_DOCUMENT_PARSER_SLUG` to force an integration parser slug.
 
 ### `rag.list_collections`
 

@@ -1,4 +1,4 @@
-﻿# dispute_scenario agent — Architecture Decision Records
+﻿# dispute_scenario agent - Architecture Decision Records
 
 **Domain:** Tier-2 business agent (`agents/dispute_scenario`)
 
@@ -36,7 +36,7 @@ ADR-DISPUTE_SCENARIO-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| — | *No agent ADRs yet* | — |
+| - | *No agent ADRs yet* | - |
 
 ---
 

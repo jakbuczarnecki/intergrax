@@ -1,6 +1,6 @@
-﻿# dispute_scenario agent — architecture
+﻿# dispute_scenario agent - architecture
 
-**Status:** Scaffold baseline (2026-06-07) — DSW product agent
+**Status:** Scaffold baseline (2026-06-07) - DSW product agent
 
 Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 Product architecture: [`applications/dispute_sim_application/docs/ARCHITECTURE.md`](../../../applications/dispute_sim_application/docs/ARCHITECTURE.md)
@@ -26,7 +26,7 @@ Simulates court-process variants (settlement, injunction, full trial, appeal) wi
 
 ## Responsibilities
 
-- Never predict certain win/loss — use favorable / neutral / adverse bands
+- Never predict certain win/loss - use favorable / neutral / adverse bands
 - Flag: admissions, missed deadlines, tone escalation, unsupported demands
 - HITL mandatory before any draft marked for external send (DSW.4)
 

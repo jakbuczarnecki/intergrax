@@ -28,4 +28,4 @@ Governed access to: `rag.search_by_metadata`, `rag.list_documents`, `rag.describ
 
 ## Related skills
 
-- Other `rag` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `rag` bundle skills - see bundle [USAGE.md](../USAGE.md)

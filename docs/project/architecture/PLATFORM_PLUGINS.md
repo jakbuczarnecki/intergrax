@@ -1,6 +1,6 @@
 # Platform Plugins
 
-**Platform Plugins** is Intergrax's canonical coordination layer for third-party extension packages: shared packaging, discovery, manifest metadata, configuration, secrets/DI conventions, trust, qualification, compatibility, and lifecycle vocabulary — without replacing domain-owned runtime semantics for Tools, Skills, Integrations, RAG, context, or agents.
+**Platform Plugins** is Intergrax's canonical coordination layer for third-party extension packages: shared packaging, discovery, manifest metadata, configuration, secrets/DI conventions, trust, qualification, compatibility, and lifecycle vocabulary - without replacing domain-owned runtime semantics for Tools, Skills, Integrations, RAG, context, or agents.
 
 ## Why it matters
 
@@ -15,11 +15,11 @@ Platform Plugins coordinates **packaging, discovery, manifest/metadata, configur
 
 ## Current reality / maturity boundary
 
-Read this hub in four layers — do not merge them into a single “shipped” headline.
+Read this hub in four layers - do not merge them into a single “shipped” headline.
 
 **A. Canonical / frozen architecture.** PLATFORM-PLUGIN-2 freezes taxonomy, platform-vs-domain boundaries, DO-NOT-UNIFY decisions, and cross-cutting coordination rules. Domain documents ([`INTEGRATIONS.md`](INTEGRATIONS.md), [`TOOLS.md`](TOOLS.md), [`SKILLS.md`](SKILLS.md), [`RAG.md`](RAG.md), [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md), etc.) remain **authoritative for runtime semantics**.
 
-**B. Implemented slices (capability-specific).** PLATFORM-PLUGIN-3..9 program stages delivered package-level contracts, shared discovery primitives, config/secrets/DI conventions (PLUGIN-5 **Done**), lifecycle/compatibility/trust/qualification vocabulary, reference external and host-embedded examples, and a dual-mode Tools E2E proof (`tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py`). These are **partial, surface-specific** outcomes — not a universal plugin runtime.
+**B. Implemented slices (capability-specific).** PLATFORM-PLUGIN-3..9 program stages delivered package-level contracts, shared discovery primitives, config/secrets/DI conventions (PLUGIN-5 **Done**), lifecycle/compatibility/trust/qualification vocabulary, reference external and host-embedded examples, and a dual-mode Tools E2E proof (`tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py`). These are **partial, surface-specific** outcomes - not a universal plugin runtime.
 
 **C. Program closeout vs ongoing domain work.** The PLATFORM-PLUGIN-1..9 program is **closed** per maintainer plan; residual Protocol v2 audit findings (§Protocol v2 platform extensibility target invariants) remain **planned, not implemented**. Domain programs continue to own capability behavior independently.
 
@@ -30,25 +30,25 @@ Read this hub in four layers — do not merge them into a single “shipped” h
 
 **Primary audience:** CTOs, principal/staff engineers, and extension authors evaluating how Intergrax coordinates packages without collapsing domain contracts.
 
-**Related canon:** [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) · [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) (agent-specific distribution — parallel concern)
+**Related canon:** [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) · [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) (agent-specific distribution - parallel concern)
 
 ## At a glance
 
 | Concern | Boundary |
 | -------- | -------- |
 | **Package model** | Installable Python distribution; may expose multiple capabilities |
-| **Discovery** | Shared setuptools loader (`intergrax/core/plugins/discovery.py`) — partial adoption; opt-in flags |
-| **Registration** | Domain-owned catalogs and host composition — no global registry merge |
+| **Discovery** | Shared setuptools loader (`intergrax/core/plugins/discovery.py`) - partial adoption; opt-in flags |
+| **Registration** | Domain-owned catalogs and host composition - no global registry merge |
 | **Manifest** | Optional `[tool.intergrax.plugin]` metadata; entry points remain required |
 | **Config** | Host/domain resolves before materialization; PLUGIN-5 matrix (§12.3) |
-| **Secrets** | Host/domain credential bindings — no global secret API |
-| **DI** | Domain-owned injection shapes — no global Platform Plugin container |
+| **Secrets** | Host/domain credential bindings - no global secret API |
+| **DI** | Domain-owned injection shapes - no global Platform Plugin container |
 | **Trust** | `platform_qualification.py` vocabulary; trusted in-process model |
 | **Qualification** | Domain- and capability-specific; package ≠ blanket production admission |
 | **Compatibility** | `platform_semantics.py` explicit-version checks |
 | **Lifecycle** | Vocabulary frozen; no global lifecycle engine |
-| **Domain ownership** | Integrations, Tools, Skills, RAG, context, VK, security, agents — domain docs own semantics |
-| **Maturity** | Architecture frozen; slice-specific implementation; universal E2E proof not established — see [Current reality](#current-reality--maturity-boundary) and §26 |
+| **Domain ownership** | Integrations, Tools, Skills, RAG, context, VK, security, agents - domain docs own semantics |
+| **Maturity** | Architecture frozen; slice-specific implementation; universal E2E proof not established - see [Current reality](#current-reality--maturity-boundary) and §26 |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [§6 Platform Plugin definition](#6-platform-plugin-definition) · [§7 responsibility model](#7-platform-vs-domain-responsibility-model) · [plan](../maintainers/plans/PLATFORM_PLUGINS.md) |
 
 ## Core mental model
@@ -157,10 +157,10 @@ Domain documents ([`INTEGRATIONS.md`](INTEGRATIONS.md), [`TOOLS.md`](TOOLS.md), 
 Intergrax is a four-tier Agent OS:
 
 ```text
-Tier-0  intergrax/           — catalogs, contracts, shared loaders
-Tier-1  intergrax/runtime/   — Nexus, policy, hooks, composition
-Tier-2  agents/              — domain agents (host-wired)
-Tier-3  applications/        — product hosts and environment profiles
+Tier-0  intergrax/           - catalogs, contracts, shared loaders
+Tier-1  intergrax/runtime/   - Nexus, policy, hooks, composition
+Tier-2  agents/              - domain agents (host-wired)
+Tier-3  applications/        - product hosts and environment profiles
 ```
 
 Extension today is **not one framework**. It is a **constellation of domain capability contracts** plus host composition. PLATFORM-PLUGIN-2 adopts the audit conclusion:
@@ -202,7 +202,7 @@ Third-party authors install Python packages. Hosts and applications decide which
 
 | Term | Meaning |
 |------|---------|
-| **Platform Plugin** | A **package-level coordination concept** — not a single runtime class. See §6. |
+| **Platform Plugin** | A **package-level coordination concept** - not a single runtime class. See §6. |
 | **Plugin package** | An installable Python distribution that may contribute one or more capabilities. |
 | **Capability** | A domain-typed extension unit governed by a domain contract (e.g. integration provider, tool bundle, skill bundle, RAG retriever). |
 | **Entry-point group** | Setuptools namespace (e.g. `intergrax.tools`) mapping EP names to loadable callables/classes. |
@@ -224,10 +224,10 @@ PLATFORM-PLUGIN-2 **freezes** the PLATFORM-PLUGIN-1 taxonomy. Names are unchange
 
 | Code | Name | Author | Enters system via | Pip install | Host composition required | Production qualification | Public compatibility promise |
 |------|------|--------|-------------------|-------------|---------------------------|--------------------------|------------------------------|
-| **PEP** | `PUBLIC_EXTERNAL_PLUGIN` | Third-party or first-party package authors | Setuptools entry points and/or documented registration APIs | **Yes** (intended) | **Yes** for activation in a host | **Yes** before production reliance | **Yes** — EP groups and domain plugin protocols listed in §20 |
-| **IP** | `INTEGRATION_PROVIDER` | Integration provider authors | `intergrax.integrations` EP or shipped manifest path (first-party only for manifest) | Yes for EP path | Yes — `IntegrationProfile` / wiring | Yes — integration domain gates | Yes for EP model; manifest path is first-party internal |
-| **HCE** | `HOST_COMPOSED_EXTENSION` | Application/host authors | Explicit Python wiring, registries, profile tuples | Optional (library dep) | **Always** | Host/application responsibility | **No** third-party EP promise — host integration contract only |
-| **IEP** | `INTERNAL_EXTENSION_POINT` | Core maintainers or host code | Internal `register(...)` APIs, bootstrap, YAML/config | Not as public EP | Usually yes | Internal/domain CI | **No** — not a supported third-party surface unless promoted to PEP |
+| **PEP** | `PUBLIC_EXTERNAL_PLUGIN` | Third-party or first-party package authors | Setuptools entry points and/or documented registration APIs | **Yes** (intended) | **Yes** for activation in a host | **Yes** before production reliance | **Yes** - EP groups and domain plugin protocols listed in §20 |
+| **IP** | `INTEGRATION_PROVIDER` | Integration provider authors | `intergrax.integrations` EP or shipped manifest path (first-party only for manifest) | Yes for EP path | Yes - `IntegrationProfile` / wiring | Yes - integration domain gates | Yes for EP model; manifest path is first-party internal |
+| **HCE** | `HOST_COMPOSED_EXTENSION` | Application/host authors | Explicit Python wiring, registries, profile tuples | Optional (library dep) | **Always** | Host/application responsibility | **No** third-party EP promise - host integration contract only |
+| **IEP** | `INTERNAL_EXTENSION_POINT` | Core maintainers or host code | Internal `register(...)` APIs, bootstrap, YAML/config | Not as public EP | Usually yes | Internal/domain CI | **No** - not a supported third-party surface unless promoted to PEP |
 | **NE** | `NOT_EXTENSIBLE` | Core only | Source change | N/A | N/A | N/A | N/A |
 
 ### 5.2 Category definitions
@@ -248,7 +248,7 @@ PLATFORM-PLUGIN-2 **freezes** the PLATFORM-PLUGIN-1 taxonomy. Names are unchange
 
 #### `INTEGRATION_PROVIDER` (IP)
 
-**Definition:** A **PEP specialization** for `IntegrationCategory` backends — `IntegrationPlugin` + `IntegrationManifest` via `intergrax.integrations`.
+**Definition:** A **PEP specialization** for `IntegrationCategory` backends - `IntegrationPlugin` + `IntegrationManifest` via `intergrax.integrations`.
 
 **Who authors it:** Integration provider package authors.
 
@@ -256,7 +256,7 @@ PLATFORM-PLUGIN-2 **freezes** the PLATFORM-PLUGIN-1 taxonomy. Names are unchange
 
 **Package installation:** Allowed for EP model.
 
-**Host composition:** Required — integrations are not globally active after discovery; `IntegrationProfile` and application wiring select providers.
+**Host composition:** Required - integrations are not globally active after discovery; `IntegrationProfile` and application wiring select providers.
 
 **Dual model note:** Shipped manifest registration is **IEP/first-party** at scale; it is **not** a third-party compatibility surface.
 
@@ -282,7 +282,7 @@ PLATFORM-PLUGIN-2 **freezes** the PLATFORM-PLUGIN-1 taxonomy. Names are unchange
 
 **Third-party extension:** Not supported or not documented for external authors.
 
-**Promotion path:** An IEP may become PEP only through an explicit architecture + implementation program with compatibility ownership — not by incidental EP addition.
+**Promotion path:** An IEP may become PEP only through an explicit architecture + implementation program with compatibility ownership - not by incidental EP addition.
 
 #### `NOT_EXTENSIBLE` (NE)
 
@@ -294,14 +294,14 @@ PLATFORM-PLUGIN-2 **freezes** the PLATFORM-PLUGIN-1 taxonomy. Names are unchange
 
 ## 6. Platform Plugin definition
 
-**Decision:** “Platform Plugin” means **B + Cₐ** — not A.
+**Decision:** “Platform Plugin” means **B + Cₐ** - not A.
 
 | Option | Description | Decision |
 |--------|-------------|----------|
-| **A** | Executable universal wrapper type | **Rejected** — would absorb domain contracts and duplicate loaders |
-| **B** | Package-level coordination contract | **Adopted** — primary meaning |
-| **Cₐ** | Taxonomy/metadata layer over domain contracts | **Adopted** — shared vocabulary and optional packaging metadata |
-| **Cᵦ** | Broad wrapper registering all domain contributions | **Rejected** — audit Option C |
+| **A** | Executable universal wrapper type | **Rejected** - would absorb domain contracts and duplicate loaders |
+| **B** | Package-level coordination contract | **Adopted** - primary meaning |
+| **Cₐ** | Taxonomy/metadata layer over domain contracts | **Adopted** - shared vocabulary and optional packaging metadata |
+| **Cᵦ** | Broad wrapper registering all domain contributions | **Rejected** - audit Option C |
 
 A Platform Plugin is therefore:
 
@@ -317,7 +317,7 @@ Runtime execution always flows through **domain contracts and host composition**
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│  Platform Plugin layer (coordination — this document)       │
+│  Platform Plugin layer (coordination - this document)       │
 │  identity · EP conventions · trust vocabulary ·           │
 │  optional package manifest · shared discovery utility ·     │
 │  qualification metadata hooks · conflict vocabulary         │
@@ -343,16 +343,16 @@ Runtime execution always flows through **domain contracts and host composition**
 |---------|---------------|-------------|
 | Entry-point group naming for PEP surfaces | Conventions + index | Semantics of loaded type |
 | Catalog slug / bundle_id rules | Shared vocabulary only | Conflict policy defaults and registration |
-| Capability contract validation | — | Full contract |
-| Profile materialization | — | Domain profiles and builders |
+| Capability contract validation | - | Full contract |
+| Profile materialization | - | Domain profiles and builders |
 | Security fail-open/closed | Trust statement | Security defense semantics |
-| VK publication / LKW qualification | — | Vendor Knowledge program |
-| Hook attachment | — | UAEP / hook registry semantics |
+| VK publication / LKW qualification | - | Vendor Knowledge program |
+| Hook attachment | - | UAEP / hook registry semantics |
 | Production qualification evidence | Package-level hooks | Domain test gates and live qual |
 
 **Rule:** The Platform Plugin layer **must not bypass** domain validation, policy, or security gates.
 
-**Tier-3 adoption (APP-ADOPTION-1 / APP-ADOPTION-1A):** `wire_application_environment()` collects per-domain `DomainPluginLoadReport` evidence from the same domain bootstrap pass into `ApplicationPlatformPluginEvidence` on `ApplicationEnvironmentWiring.platform_plugin_evidence` (Memory, Policy when declarative policy participates, Context). Applications consume resolved capabilities and this bootstrap snapshot; they **must not** run duplicate discovery or maintain a global installed-plugin inventory. Evidence is discovery/admission only — not `PRODUCTION_QUALIFIED` (package gate 10 remains separate).
+**Tier-3 adoption (APP-ADOPTION-1 / APP-ADOPTION-1A):** `wire_application_environment()` collects per-domain `DomainPluginLoadReport` evidence from the same domain bootstrap pass into `ApplicationPlatformPluginEvidence` on `ApplicationEnvironmentWiring.platform_plugin_evidence` (Memory, Policy when declarative policy participates, Context). Applications consume resolved capabilities and this bootstrap snapshot; they **must not** run duplicate discovery or maintain a global installed-plugin inventory. Evidence is discovery/admission only - not `PRODUCTION_QUALIFIED` (package gate 10 remains separate).
 
 ---
 
@@ -360,7 +360,7 @@ Runtime execution always flows through **domain contracts and host composition**
 
 - **Plugin package:** One Python distribution (one wheel/sdist name) installed into the runtime environment.
 - **Capability:** A logically separable extension unit typed by a **domain contract** and advertised through a **domain entry-point group** and/or domain manifest type.
-- **Capability identity:** Domain-scoped — e.g. `integration_slug`, `bundle_id`, `tool_id`, `skill_id`, `plugin_id`, VK contribution name, RAG component id. Identity format remains **domain-owned**.
+- **Capability identity:** Domain-scoped - e.g. `integration_slug`, `bundle_id`, `tool_id`, `skill_id`, `plugin_id`, VK contribution name, RAG component id. Identity format remains **domain-owned**.
 - **Package identity:** Distribution name + version (PyPI/normalized name). Used for trust, observability, and compatibility metadata.
 
 A single plugin package **may** expose zero, one, or many capabilities across one or more domains (§21).
@@ -373,25 +373,25 @@ A single plugin package **may** expose zero, one, or many capabilities across on
 
 | Principle | Decision |
 |-----------|----------|
-| Shared low-level EP utility | **Yes** — `intergrax/core/plugins/discovery.py` (or successor) is the canonical setuptools entry-point **scan/load helper** |
-| Single global entry-point group | **Rejected** — domain-specific groups retained |
-| Domain-specific groups | **Retained** — each PEP surface keeps its group (§20) |
-| One loader to rule all domains | **Rejected** — domain orchestration stays separate |
+| Shared low-level EP utility | **Yes** - `intergrax/core/plugins/discovery.py` (or successor) is the canonical setuptools entry-point **scan/load helper** |
+| Single global entry-point group | **Rejected** - domain-specific groups retained |
+| Domain-specific groups | **Retained** - each PEP surface keeps its group (§20) |
+| One loader to rule all domains | **Rejected** - domain orchestration stays separate |
 
 ### 9.2 Who uses the shared utility
 
 **MAY use** shared discovery utility without losing domain semantics:
 
 - Tier-0 catalogs currently using `discovery.py` (integrations, tools, skills, context, memory stores).
-- RAG component bootstraps (chunkers, retrievers, rerankers) — load via shared helper, register into RAG registries.
-- Security defense loader (`intergrax.security_defenses`) — shared scan/load primitives; domain registration and override policy unchanged.
-- Policy rule handler loader (`intergrax.policy_rules`) — shared scan/load primitives; YAML + EP merge remains domain-owned.
-- Tool invocation pattern loader (`intergrax.tool_invocation_patterns`) — shared scan/load primitives; lazy lookup by `pattern_id` unchanged.
-- Future harmonization of bespoke loaders **if** they only need setuptools scan + import — remaining candidates are Vendor Knowledge (composition model retained).
+- RAG component bootstraps (chunkers, retrievers, rerankers) - load via shared helper, register into RAG registries.
+- Security defense loader (`intergrax.security_defenses`) - shared scan/load primitives; domain registration and override policy unchanged.
+- Policy rule handler loader (`intergrax.policy_rules`) - shared scan/load primitives; YAML + EP merge remains domain-owned.
+- Tool invocation pattern loader (`intergrax.tool_invocation_patterns`) - shared scan/load primitives; lazy lookup by `pattern_id` unchanged.
+- Future harmonization of bespoke loaders **if** they only need setuptools scan + import - remaining candidates are Vendor Knowledge (composition model retained).
 
 **MUST remain separate** (orchestration, not just scan):
 
-- Vendor Knowledge `VendorKnowledgeContributionCatalog` composition — instance-local, publication snapshot, explicit `discover_entry_points` on builders.
+- Vendor Knowledge `VendorKnowledgeContributionCatalog` composition - instance-local, publication snapshot, explicit `discover_entry_points` on builders.
 - Host-composed bootstrap (`register_default_*`, explicit plugin tuples).
 - Internal registries (`AgentRegistry`, embedding registry, task execution registry).
 - Shipped first-party integration manifest registration at scale.
@@ -408,7 +408,7 @@ A single plugin package **may** expose zero, one, or many capabilities across on
 
 **Architecture rule:** `installed ≠ discovered ≠ enabled ≠ qualified ≠ active`.
 
-Default discovery for Tier-0 wiring helpers remains **opt-in** (`INTERGRAX_DISCOVER_PLUGINS`) unless a domain document specifies otherwise. Harmonization of flags is allowed in PLATFORM-PLUGIN-4 **only** as additive aliases — not silent behavior change.
+Default discovery for Tier-0 wiring helpers remains **opt-in** (`INTERGRAX_DISCOVER_PLUGINS`) unless a domain document specifies otherwise. Harmonization of flags is allowed in PLATFORM-PLUGIN-4 **only** as additive aliases - not silent behavior change.
 
 ---
 
@@ -419,10 +419,10 @@ PLATFORM-PLUGIN-1 identified five composition models; all remain valid:
 | Model | Role | Platform action |
 |-------|------|-----------------|
 | **R1** Tier-0 catalog slug registration | integrations, tools, skills, context | Terminology alignment only |
-| **R2** Profile-gated materialization | profiles select subsets | Unchanged — domain-owned |
-| **R3** Bootstrap composition pipelines | RAG, VK, policy wiring | Unchanged — domain-owned |
-| **R4** Runtime hook/event attachment | RuntimePlugin, defenses, hooks | Unchanged — HCE / domain |
-| **R5** Instance-local contribution catalog | VK | Unchanged — DO-NOT-UNIFY |
+| **R2** Profile-gated materialization | profiles select subsets | Unchanged - domain-owned |
+| **R3** Bootstrap composition pipelines | RAG, VK, policy wiring | Unchanged - domain-owned |
+| **R4** Runtime hook/event attachment | RuntimePlugin, defenses, hooks | Unchanged - HCE / domain |
+| **R5** Instance-local contribution catalog | VK | Unchanged - DO-NOT-UNIFY |
 
 **Registration rule:** Discovery registers **candidates** into domain catalogs or registries. **Activation** for production paths requires host profiles, wiring, and qualification.
 
@@ -488,18 +488,18 @@ Installation of a plugin package is a **trust decision** (§16). Secret scope li
 
 | Domain surface | PLUGIN-5 class | Configuration owner | Credentials / secrets owner | DI / materialization | Direct `os.environ` in capability code | Host resolves before materialization | Reusable primitive | PLUGIN-5 action |
 |----------------|----------------|---------------------|-----------------------------|----------------------|----------------------------------------|--------------------------------------|--------------------|-----------------|
-| **Integrations** (`IntegrationPlugin`) | **B** — document convention | Application host + `IntegrationProfile`; domain `IntegrationManifest` | Host / `IntegrationProfile` + integration `env_prefix` (domain contract) | `IntegrationProfile.resolve(category)` → `create_integration(**kwargs)` | **Allowed** when manifest declares `env_prefix` (domain-owned compatibility) | Yes — profile selects provider before factory | `IntegrationProfile`, `IntegrationManifest.env_prefix` | Document `env_prefix` as integration exception; no migration |
-| **Tools** (`ToolPlugin`) | **A** — already aligned | Application host + `ToolProfile` | Host via `ToolWiringContext` integration slots (`secrets_store`, …) | `register_tools(registry, ctx: ToolWiringContext)` | Discouraged for portable plugins | Yes | `ToolWiringContext` | Document only |
-| **Skills** (`SkillPlugin`) | **B** — document convention | Application host + `SkillProfile` (enablement) | Runtime credentials stay with tools/host | `register_skills(SkillRegistry)` — declarative manifests | Not applicable (declarative) | Yes — profile gates bundles | `SkillProfile` | Document only; runtime deps via tools |
-| **Context** (`ContextPlugin`) | **B** — document convention | Host / `ContextProfile` in `ApplicationEnvironmentProfile` | Typically none at plugin boundary | `register(registry: ContextPluginRegistry)` | Discouraged for portable plugins | Yes | `ContextPluginRegistry` | Document only |
-| **RAG components** (chunkers / retrievers / rerankers) | **A** — already aligned | Host + `RagProfile`; bootstrap kwargs | Via integration bindings passed into bootstrap | `BaseRetrieverPlugin.create(vector_store=…, profile=…)` etc. | `RagProfile` may use domain env helpers when host passes profile from env | Yes — bootstrap receives resolved managers | `RagProfile`, per-component bootstrap | Document only; no generic RAG context |
-| **Memory stores** (`intergrax.memory_stores`) | **B** — document convention | Host + `MemoryProfile` | Host passes kwargs / integration refs to factories | `create_user_profile_store(**kwargs)` / `create_session_storage(**kwargs)` | Discouraged unless kwargs explicitly document env ownership | Yes — host invokes factories | `UserProfileStorePlugin` / `SessionStoragePlugin` | Document factory kwargs ownership |
-| **Security defenses** (`SecurityDefensePlugin`) | **A** — already aligned | Host security wiring / `ApplicationSecurityProfile` | None via entry point; inspect `HookContext` only | `PluginSecurityDefenseMiddleware(plugin, event_bus=…)` | Discouraged | Yes | `HookContext`, `SecurityFailMode` | Document only |
-| **Policy rules** (`PolicyRuleHandler`) | **A** — already aligned | Host + `PolicyRulesProfile` / YAML bundle | None in handler EP | `evaluate(rule, context=dict[str, str])` via `PolicyRuleRegistry` | Discouraged | Yes | `PolicyRuleRegistry` | Document only |
-| **Tool invocation patterns** (`ToolInvocationPattern`) | **A** — already aligned | Nexus runtime config (`ToolInvocationMode`) | None | `execute(state, invoker, planner, …)` | Not applicable (stateless orchestration) | Yes — mode selects pattern | `ToolInvocationMode` → pattern | Document only |
-| **Vendor Knowledge** (`VendorKnowledgeProviderContribution`) | **D** — defer (DO-NOT-UNIFY) | Host builder + `KnowledgeSourceBinding` | `credential_ref` scoped per binding | Instance-local contribution catalog / builders | Not a portable EP config surface | Yes — tenant-scoped composition | VK builders, `KnowledgeSourceBinding` | Document host/domain boundary only |
+| **Integrations** (`IntegrationPlugin`) | **B** - document convention | Application host + `IntegrationProfile`; domain `IntegrationManifest` | Host / `IntegrationProfile` + integration `env_prefix` (domain contract) | `IntegrationProfile.resolve(category)` → `create_integration(**kwargs)` | **Allowed** when manifest declares `env_prefix` (domain-owned compatibility) | Yes - profile selects provider before factory | `IntegrationProfile`, `IntegrationManifest.env_prefix` | Document `env_prefix` as integration exception; no migration |
+| **Tools** (`ToolPlugin`) | **A** - already aligned | Application host + `ToolProfile` | Host via `ToolWiringContext` integration slots (`secrets_store`, …) | `register_tools(registry, ctx: ToolWiringContext)` | Discouraged for portable plugins | Yes | `ToolWiringContext` | Document only |
+| **Skills** (`SkillPlugin`) | **B** - document convention | Application host + `SkillProfile` (enablement) | Runtime credentials stay with tools/host | `register_skills(SkillRegistry)` - declarative manifests | Not applicable (declarative) | Yes - profile gates bundles | `SkillProfile` | Document only; runtime deps via tools |
+| **Context** (`ContextPlugin`) | **B** - document convention | Host / `ContextProfile` in `ApplicationEnvironmentProfile` | Typically none at plugin boundary | `register(registry: ContextPluginRegistry)` | Discouraged for portable plugins | Yes | `ContextPluginRegistry` | Document only |
+| **RAG components** (chunkers / retrievers / rerankers) | **A** - already aligned | Host + `RagProfile`; bootstrap kwargs | Via integration bindings passed into bootstrap | `BaseRetrieverPlugin.create(vector_store=…, profile=…)` etc. | `RagProfile` may use domain env helpers when host passes profile from env | Yes - bootstrap receives resolved managers | `RagProfile`, per-component bootstrap | Document only; no generic RAG context |
+| **Memory stores** (`intergrax.memory_stores`) | **B** - document convention | Host + `MemoryProfile` | Host passes kwargs / integration refs to factories | `create_user_profile_store(**kwargs)` / `create_session_storage(**kwargs)` | Discouraged unless kwargs explicitly document env ownership | Yes - host invokes factories | `UserProfileStorePlugin` / `SessionStoragePlugin` | Document factory kwargs ownership |
+| **Security defenses** (`SecurityDefensePlugin`) | **A** - already aligned | Host security wiring / `ApplicationSecurityProfile` | None via entry point; inspect `HookContext` only | `PluginSecurityDefenseMiddleware(plugin, event_bus=…)` | Discouraged | Yes | `HookContext`, `SecurityFailMode` | Document only |
+| **Policy rules** (`PolicyRuleHandler`) | **A** - already aligned | Host + `PolicyRulesProfile` / YAML bundle | None in handler EP | `evaluate(rule, context=dict[str, str])` via `PolicyRuleRegistry` | Discouraged | Yes | `PolicyRuleRegistry` | Document only |
+| **Tool invocation patterns** (`ToolInvocationPattern`) | **A** - already aligned | Nexus runtime config (`ToolInvocationMode`) | None | `execute(state, invoker, planner, …)` | Not applicable (stateless orchestration) | Yes - mode selects pattern | `ToolInvocationMode` → pattern | Document only |
+| **Vendor Knowledge** (`VendorKnowledgeProviderContribution`) | **D** - defer (DO-NOT-UNIFY) | Host builder + `KnowledgeSourceBinding` | `credential_ref` scoped per binding | Instance-local contribution catalog / builders | Not a portable EP config surface | Yes - tenant-scoped composition | VK builders, `KnowledgeSourceBinding` | Document host/domain boundary only |
 
-**Classification key:** **A** = already aligned · **B** = documentation/convention only · **C** = small additive wiring contract (none required in PLUGIN-5) · **D** = defer — domain architecture must not change under Platform Plugin banner.
+**Classification key:** **A** = already aligned · **B** = documentation/convention only · **C** = small additive wiring contract (none required in PLUGIN-5) · **D** = defer - domain architecture must not change under Platform Plugin banner.
 
 **Rejected in PLUGIN-5:** global Platform Plugin DI container, global secrets store, universal plugin configuration schema, service locator, global `get_secret()` API, new application configuration framework.
 
@@ -521,7 +521,7 @@ plugin capability (consumes explicit bindings only)
 
 | Layer | Configuration responsibility | Secret responsibility |
 |-------|------------------------------|----------------------|
-| **Platform Plugin package manifest** (`[tool.intergrax.plugin]`) | Coordination metadata only — package id, compatibility, capability pointers | **Prohibited** — `PLATFORM_PLUGIN_MANIFEST_SECRET_POLICY` via `intergrax.core.security` (PLUGIN-3). Detection only; not a secret manager. |
+| **Platform Plugin package manifest** (`[tool.intergrax.plugin]`) | Coordination metadata only - package id, compatibility, capability pointers | **Prohibited** - `PLATFORM_PLUGIN_MANIFEST_SECRET_POLICY` via `intergrax.core.security` (PLUGIN-3). Detection only; not a secret manager. |
 | **Setuptools entry points** | Identify import target only | **Prohibited** in EP values |
 | **Domain manifests** (`IntegrationManifest`, tool/skill bundles, …) | Domain-specific non-secret fields (e.g. `env_prefix` name, not value) | **Prohibited** as manifest field values |
 | **Application / host** | Selects capabilities, environment/profile, feature flags | Resolves credentials into domain bindings |
@@ -536,13 +536,13 @@ plugin capability (consumes explicit bindings only)
 
 ## 13. Dependency injection
 
-**Host-owned DI principles (FROZEN — PLUGIN-5):**
+**Host-owned DI principles (FROZEN - PLUGIN-5):**
 
 1. Plugin package **declares** capability via entry point / domain plugin type.
 2. Host/domain **decides** runtime dependencies (integrations, vector stores, event bus, policy engine, wiring contexts).
 3. Capability implementation **must not** invent hidden global bindings where injection is available for that domain.
 4. Domain-specific injection shapes remain **domain-owned** (e.g. RAG retriever receives vector store + embedding manager; tools receive `ToolWiringContext`; integrations receive profile-resolved factories).
-5. **Least-credential rule:** a capability receives only the credential bindings required for its domain operation — not an application-wide secret dictionary.
+5. **Least-credential rule:** a capability receives only the credential bindings required for its domain operation - not an application-wide secret dictionary.
 6. **No hidden service locator:** plugin implementations must not depend on module-level mutable global dependency registries, generic `get_service(...)`, global platform secret accessors, or implicit application singletons where explicit domain wiring exists.
 
 **Explicit non-goal:** A new global Platform Plugin DI container. Reuse existing wiring contexts and profile builders (see §12.3 matrix).
@@ -571,12 +571,12 @@ plugin capability (consumes explicit bindings only)
 | Scope | Decision |
 |-------|----------|
 | Vocabulary | **Mandatory** for documentation, observability, and PLATFORM-PLUGIN-3+ APIs |
-| Runtime lifecycle interface | **Selectively applicable** — not every domain implements unload/reload |
-| Forced unload/reload | **Not required** — process-scoped catalogs remain valid |
+| Runtime lifecycle interface | **Selectively applicable** - not every domain implements unload/reload |
+| Forced unload/reload | **Not required** - process-scoped catalogs remain valid |
 
 `RuntimePlugin` retains its **domain-specific** `on_shutdown` lifecycle (HCE). Tier-0 catalogs remain predominantly **process-scoped register without unload**.
 
-**CURRENT STATE (PLUGIN-6):** Shared enum `PlatformPluginLifecycleState` in `intergrax/core/plugins/platform_semantics.py` — values `discovered`, `validated`, `enabled`, `materialized`, `active`, `stopping`, `stopped`, `failed`. Vocabulary only; **no** global lifecycle manager or transition engine. Qualification states (`qualified`, `production-qualified`, `live-qualified`) and `installed` remain **outside** this enum (§18).
+**CURRENT STATE (PLUGIN-6):** Shared enum `PlatformPluginLifecycleState` in `intergrax/core/plugins/platform_semantics.py` - values `discovered`, `validated`, `enabled`, `materialized`, `active`, `stopping`, `stopped`, `failed`. Vocabulary only; **no** global lifecycle manager or transition engine. Qualification states (`qualified`, `production-qualified`, `live-qualified`) and `installed` remain **outside** this enum (§18).
 
 ## 15. Compatibility and versioning
 
@@ -592,11 +592,11 @@ plugin capability (consumes explicit bindings only)
 ### 15.2 Rules
 
 - Platform compatibility metadata is **checked** by PLUGIN-6 tooling (`check_platform_compatibility`, `require_platform_compatibility`) using standard Python `packaging` specifier semantics.
-- **Compatible ≠ qualified** — compatibility check does not imply trust or production qualification (§18, PLUGIN-7).
+- **Compatible ≠ qualified** - compatibility check does not imply trust or production qualification (§18, PLUGIN-7).
 - Domain contracts keep **their own** version fields and breaking-change policy.
 - **No** single global semver for all extension surfaces.
 
-**CURRENT STATE (PLUGIN-6):** `intergrax/core/distribution/platform_compatibility.py` exposes deterministic, explicit-version compatibility checking against `PlatformCompatibility.intergrax_version`. Returns immutable `PlatformCompatibilityResult` (`declared_specifier`, `tested_platform_version`, `compatible`, `reason`). Invalid platform version → `InvalidPlatformVersionError` (via `require_platform_compatibility`) or `reason=invalid_platform_version` (via `check_platform_compatibility`). **Activation blocking** at host boundaries is deferred to PLUGIN-8 reference host — callers must pass platform version explicitly; no authoritative runtime Intergrax distribution version helper exists yet (`importlib.metadata` distribution name not standardized for gating).
+**CURRENT STATE (PLUGIN-6):** `intergrax/core/distribution/platform_compatibility.py` exposes deterministic, explicit-version compatibility checking against `PlatformCompatibility.intergrax_version`. Returns immutable `PlatformCompatibilityResult` (`declared_specifier`, `tested_platform_version`, `compatible`, `reason`). Invalid platform version → `InvalidPlatformVersionError` (via `require_platform_compatibility`) or `reason=invalid_platform_version` (via `check_platform_compatibility`). **Activation blocking** at host boundaries is deferred to PLUGIN-8 reference host - callers must pass platform version explicitly; no authoritative runtime Intergrax distribution version helper exists yet (`importlib.metadata` distribution name not standardized for gating).
 
 ---
 
@@ -615,7 +615,7 @@ plugin capability (consumes explicit bindings only)
 | Topic | Decision |
 |-------|----------|
 | Code signing | Not required by platform architecture (future product decision) |
-| Isolated plugin execution | **Optional future architecture** — out of scope for PLATFORM-PLUGIN-2..7 unless explicitly programed |
+| Isolated plugin execution | **Optional future architecture** - out of scope for PLATFORM-PLUGIN-2..7 unless explicitly programed |
 | Network/filesystem access | Full process privileges unless domain/host restricts higher layers |
 | Security defenses | Domain-owned fail-open/fail-closed per plugin |
 
@@ -636,7 +636,7 @@ Future isolated execution (subprocess, WASM, remote worker) would be a **separat
 
 ### 17.2 Platform policy
 
-**TARGET:** Shared **conceptual** conflict vocabulary across domains. **Unified default policy across all surfaces is rejected** — security override semantics and VK publication conflicts must remain domain-owned.
+**TARGET:** Shared **conceptual** conflict vocabulary across domains. **Unified default policy across all surfaces is rejected** - security override semantics and VK publication conflicts must remain domain-owned.
 
 **CURRENT STATE (PLUGIN-6):** Shared enum `PlatformPluginConflictKind` (`package_identity`, `entry_point_name`, `capability_identity`, `domain_resource_id`) in `platform_semantics.py`. Tier-0 duplicate entry-point errors attach `conflict_kind=entry_point_name` to `PluginConflictError` without changing `ConflictPolicy` behavior (`error` / `skip` / `override` / `warn_override`). Package identity conflict helper `package_identities_conflict` lives in `intergrax/core/distribution/package_identity.py`; capability and domain-resource conflicts remain domain-owned.
 
@@ -666,20 +666,20 @@ installed → discovered → loadable → contract-valid → enabled → qualifi
 
 **Decision:** Qualification is **combination**:
 
-- **Package-level** — trust/compatibility metadata, CI install checks, optional platform manifest
-- **Capability-level** — per integration slug, tool bundle, skill bundle, RAG component, etc.
-- **Domain-level** — domain test harness, live qual, security review
+- **Package-level** - trust/compatibility metadata, CI install checks, optional platform manifest
+- **Capability-level** - per integration slug, tool bundle, skill bundle, RAG component, etc.
+- **Domain-level** - domain test harness, live qual, security review
 
 A package may be installed but carry **mixed** qualification across capabilities.
 
 **CURRENT STATE (PLUGIN-7):** Shared contracts in `intergrax/core/plugins/platform_qualification.py`:
 
-- `PluginQualificationLevel` — `package`, `capability`, `domain`
-- `QualificationStatus` (`intergrax/core/qualification/status.py`) — `not_qualified`, `qualified`, `production_qualified`, `rejected` (distinct from lifecycle states in §14)
-- `PluginQualificationSubject` + `PluginQualificationResult` + `PluginQualificationEvidence` — immutable audit records; no persistence or global registry
-- `PluginDeliverySource` — `external_package` vs `host_embedded_extension` (both converge on domain qualification; wheel/entry-point not required for host-embedded path)
-- `require_production_qualification` / `evaluate_package_production_admission` — pure production gates; compatible/enabled alone insufficient
-- `live-qualified` — optional domain label via `domain_qualification_label` / evidence kind `live_qualification`; not a mandatory platform state
+- `PluginQualificationLevel` - `package`, `capability`, `domain`
+- `QualificationStatus` (`intergrax/core/qualification/status.py`) - `not_qualified`, `qualified`, `production_qualified`, `rejected` (distinct from lifecycle states in §14)
+- `PluginQualificationSubject` + `PluginQualificationResult` + `PluginQualificationEvidence` - immutable audit records; no persistence or global registry
+- `PluginDeliverySource` - `external_package` vs `host_embedded_extension` (both converge on domain qualification; wheel/entry-point not required for host-embedded path)
+- `require_production_qualification` / `evaluate_package_production_admission` - pure production gates; compatible/enabled alone insufficient
+- `live-qualified` - optional domain label via `domain_qualification_label` / evidence kind `live_qualification`; not a mandatory platform state
 
 **Delivery modes (FROZEN):**
 
@@ -692,9 +692,9 @@ PLUGIN-8 proves executable E2E for both modes. PLUGIN-7 does not wire gates into
 
 ### 18.3 Provider-scoped qualification (PROVIDER-QUAL-1)
 
-**Status:** Architecture freeze — **READY_FOR_REVIEW** (contract design only; no runtime implementation).
+**Status:** Architecture freeze - **READY_FOR_REVIEW** (contract design only; no runtime implementation).
 
-**Decision (PROVIDER-QUAL-0):** **EXTEND_EXISTING** — reuse `intergrax/core/qualification/`, PLUGIN-7 coordination, `QualificationEvidence`, `ProofReceipt`, and domain-owned suites. **No** parallel `ProviderQualificationEngine`.
+**Decision (PROVIDER-QUAL-0):** **EXTEND_EXISTING** - reuse `intergrax/core/qualification/`, PLUGIN-7 coordination, `QualificationEvidence`, `ProofReceipt`, and domain-owned suites. **No** parallel `ProviderQualificationEngine`.
 
 **Canonical satellite:** [`satellites/PLATFORM_PLUGINS_provider_qualification.md`](satellites/PLATFORM_PLUGINS_provider_qualification.md)
 
@@ -702,17 +702,17 @@ PLUGIN-8 proves executable E2E for both modes. PLUGIN-7 does not wire gates into
 
 | Topic | Freeze |
 |-------|--------|
-| **Subject** | `ProviderQualificationSubject` — `provider_id`, `provider_version`, `capability_id`, `domain`, adapter identity, `intergrax_revision`, `qualification_suite_id` / `version`, `environment_id`; string/data-driven `provider_id` only |
-| **Run** | `ProviderQualificationRun` — immutable executed historical fact; `qualification_run_id` created at execution (persistence preserves identity); outcome, executor-neutral metadata, evidence refs, reproducibility, limitations, `source_revision`; **no** embedded `validity` field |
+| **Subject** | `ProviderQualificationSubject` - `provider_id`, `provider_version`, `capability_id`, `domain`, adapter identity, `intergrax_revision`, `qualification_suite_id` / `version`, `environment_id`; string/data-driven `provider_id` only |
+| **Run** | `ProviderQualificationRun` - immutable executed historical fact; `qualification_run_id` created at execution (persistence preserves identity); outcome, executor-neutral metadata, evidence refs, reproducibility, limitations, `source_revision`; **no** embedded `validity` field |
 | **Outcome vs validity** | `QualificationStatus` = immutable historical outcome (`NOT_QUALIFIED` … `REJECTED` only); `QualificationEvidenceValidity` = separate current admission view/record (append-only or derived latest); compatibility separate |
 | **Admission** | `PRODUCTION_QUALIFIED` + `CURRENT` validity + compatibility + domain policy; no admission policy engine in PROVIDER-QUAL-1 |
-| **Evidence** | `QualificationEvidence` in-run canonical; optional `ProofReceipt` persistence via `ref` mapping — no second vocabulary |
+| **Evidence** | `QualificationEvidence` in-run canonical; optional `ProofReceipt` persistence via `ref` mapping - no second vocabulary |
 | **Capability scope** | Never globally qualified per provider; identity is provider + version + capability + suite + environment |
 | **Suite semantics** | Domain-owned; platform coordinates identity/index only |
-| **CI** | Contract/schema/harness tests only — not live all-vendor-on-every-PR |
+| **CI** | Contract/schema/harness tests only - not live all-vendor-on-every-PR |
 | **Scale** | 5/20/50+ providers via shared contracts + linear per-vendor adapter/setup/evidence |
 
-**Implementation:** PROVIDER-QUAL-2 (typed contracts only); PROVIDER-QUAL-3C (**READY_FOR_REVIEW**) persists `ProviderQualificationRun` through existing `ProofReceipt` / `DocumentStore` mechanics with lookup by `qualification_run_id`; PROVIDER-QUAL-3C-R1 (**READY_FOR_REVIEW**) hardens safe persistence (credential-bearing evidence rejected before write via platform `secret_safety`); PROVIDER-QUAL-3C-R2 (**READY_FOR_REVIEW**) proves real persistent `DocumentStore` reopen durability (real MongoDB integration test — store A close, independent store B recovery); PROVIDER-QUAL-4 (**READY_FOR_REVIEW**) discovers persisted qualification evidence via bounded `DocumentStore` scan of the provider-qualification partition with exact-match filters and `ProviderQualificationRun` results (no parallel index; validity/staleness/runner remain out of scope); PROVIDER-QUAL-4-R1 (**READY_FOR_REVIEW**) makes discovery storage-bounded — generic `DocumentStore` data-path equality queries narrow the candidate set before qualification records are decoded, with storage-backed cursor pagination (no parallel qualification index); PROVIDER-QUAL-4-R2 (**READY_FOR_REVIEW**) hardens the generic `DocumentStore` query contract — consistent asc/desc/mixed-direction keyset pagination, query-bound authenticated cursors, and matching InMemory/MongoDB semantics (storage-side filtering; not physical secondary-index claims); PROVIDER-QUAL-5 (**READY_FOR_REVIEW**) adds append-only evidence validity evaluation and persistence (immutable runs; separate CURRENT/STALE/REVOKED; no automatic requalification or admission policy); PROVIDER-QUAL-5-R1 (**READY_FOR_REVIEW**) makes REVOKED terminal per `qualification_run_id` (later CURRENT/STALE cannot reactivate; trust restored only via new qualification run) and bounds current-view lookup via generic `DocumentStore` queries (revocation existence + latest evaluation) while `list_evaluations` remains full append-only history; PROVIDER-QUAL-5-R2 (**READY_FOR_REVIEW**) canonicalizes validity `evaluated_at` to UTC before persistence so storage ordering matches Python instant comparison, and selects the newest REVOKED record deterministically in bounded current-view queries (pure resolver and persisted resolver remain aligned; no migration — existing PROVIDER-QUAL-5 construction paths already use UTC); PROVIDER-QUAL-6 (**READY_FOR_REVIEW**) adds provider-neutral requalification decisions — STALE or REVOKED evidence requires a new qualification run, but the old `ProviderQualificationRun` is never rewritten; a subsequent qualification always receives a new `qualification_run_id` via `prepare_provider_requalification_run_identity` (decision separate from execution; shared generic execution runner remains PROVIDER-QUAL-7).
+**Implementation:** PROVIDER-QUAL-2 (typed contracts only); PROVIDER-QUAL-3C (**READY_FOR_REVIEW**) persists `ProviderQualificationRun` through existing `ProofReceipt` / `DocumentStore` mechanics with lookup by `qualification_run_id`; PROVIDER-QUAL-3C-R1 (**READY_FOR_REVIEW**) hardens safe persistence (credential-bearing evidence rejected before write via platform `secret_safety`); PROVIDER-QUAL-3C-R2 (**READY_FOR_REVIEW**) proves real persistent `DocumentStore` reopen durability (real MongoDB integration test - store A close, independent store B recovery); PROVIDER-QUAL-4 (**READY_FOR_REVIEW**) discovers persisted qualification evidence via bounded `DocumentStore` scan of the provider-qualification partition with exact-match filters and `ProviderQualificationRun` results (no parallel index; validity/staleness/runner remain out of scope); PROVIDER-QUAL-4-R1 (**READY_FOR_REVIEW**) makes discovery storage-bounded - generic `DocumentStore` data-path equality queries narrow the candidate set before qualification records are decoded, with storage-backed cursor pagination (no parallel qualification index); PROVIDER-QUAL-4-R2 (**READY_FOR_REVIEW**) hardens the generic `DocumentStore` query contract - consistent asc/desc/mixed-direction keyset pagination, query-bound authenticated cursors, and matching InMemory/MongoDB semantics (storage-side filtering; not physical secondary-index claims); PROVIDER-QUAL-5 (**READY_FOR_REVIEW**) adds append-only evidence validity evaluation and persistence (immutable runs; separate CURRENT/STALE/REVOKED; no automatic requalification or admission policy); PROVIDER-QUAL-5-R1 (**READY_FOR_REVIEW**) makes REVOKED terminal per `qualification_run_id` (later CURRENT/STALE cannot reactivate; trust restored only via new qualification run) and bounds current-view lookup via generic `DocumentStore` queries (revocation existence + latest evaluation) while `list_evaluations` remains full append-only history; PROVIDER-QUAL-5-R2 (**READY_FOR_REVIEW**) canonicalizes validity `evaluated_at` to UTC before persistence so storage ordering matches Python instant comparison, and selects the newest REVOKED record deterministically in bounded current-view queries (pure resolver and persisted resolver remain aligned; no migration - existing PROVIDER-QUAL-5 construction paths already use UTC); PROVIDER-QUAL-6 (**READY_FOR_REVIEW**) adds provider-neutral requalification decisions - STALE or REVOKED evidence requires a new qualification run, but the old `ProviderQualificationRun` is never rewritten; a subsequent qualification always receives a new `qualification_run_id` via `prepare_provider_requalification_run_identity` (decision separate from execution; shared generic execution runner remains PROVIDER-QUAL-7).
 
 ## 19. Observability expectations
 
@@ -771,20 +771,20 @@ Platform Plugin program adds **documentation and optional metadata hooks** in PL
 
 ### 20.3 Public extension author matrix (PLUGIN-8)
 
-Author-facing summary of all canonical setuptools entry-point surfaces (§20.1). **Tools** is the executable dual-mode reference (external wheel + host-embedded). Local explicit-registration paths are documented only where repository evidence exists today — gaps are recorded for PLUGIN-9.
+Author-facing summary of all canonical setuptools entry-point surfaces (§20.1). **Tools** is the executable dual-mode reference (external wheel + host-embedded). Local explicit-registration paths are documented only where repository evidence exists today - gaps are recorded for PLUGIN-9.
 
 | Extension surface | Public contract | External EP group | Local explicit registration | Domain doc | Config / DI | Author guide / example |
 |-------------------|-----------------|-------------------|----------------------------|------------|-------------|------------------------|
 | Integrations | `IntegrationPlugin` | `intergrax.integrations` | `register_integration_plugin()` from host composition | [INTEGRATIONS.md](INTEGRATIONS.md) | `IntegrationProfile` + `IntegrationManifest.env_prefix` | [EXTENSION_AUTHOR_GUIDE §2](../technical/guides/EXTENSION_AUTHOR_GUIDE.md#2-external-integration-plugin) · `intergrax/integrations/examples/custom_memory_kv/` |
-| **Tools** | **`ToolPlugin`** | **`intergrax.tools`** | **`register_tool_plugin()`** — scaffold `extensions/` + `host/tool_wiring.py` | [TOOLS.md](TOOLS.md) | **`ToolWiringContext`** | [EXTENSION_AUTHOR_GUIDE §3, §16](../technical/guides/EXTENSION_AUTHOR_GUIDE.md#16-dual-mode-developer-quickstarts-platform-plugin-8) · **External:** `examples/platform_plugins/intergrax_reference_tool_plugin/` · **Local:** `examples/platform_plugins/local_embedded_tool_extension/` |
+| **Tools** | **`ToolPlugin`** | **`intergrax.tools`** | **`register_tool_plugin()`** - scaffold `extensions/` + `host/tool_wiring.py` | [TOOLS.md](TOOLS.md) | **`ToolWiringContext`** | [EXTENSION_AUTHOR_GUIDE §3, §16](../technical/guides/EXTENSION_AUTHOR_GUIDE.md#16-dual-mode-developer-quickstarts-platform-plugin-8) · **External:** `examples/platform_plugins/intergrax_reference_tool_plugin/` · **Local:** `examples/platform_plugins/local_embedded_tool_extension/` |
 | Skills | `SkillPlugin` | `intergrax.skills` | `register_skill_plugin()` from host composition | [SKILLS.md](SKILLS.md) | `SkillProfile`; runtime deps via tools | [EXTENSION_AUTHOR_GUIDE §4](../technical/guides/EXTENSION_AUTHOR_GUIDE.md#4-external-skill-plugin) · `intergrax/skills/examples/custom_pack/` |
-| Context | `ContextPlugin` | `intergrax.context` | `register_context_plugin()` from host — **scaffold hook not yet documented** | [CONTEXT_ENGINEERING.md](CONTEXT_ENGINEERING.md) | `ContextProfile` | [CONTEXT_PLUGIN_AUTHOR_GUIDE.md](../technical/guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md) · **External (multi-cap):** `examples/platform_plugins/intergrax_reference_enterprise_plugin/` |
-| Memory stores | `UserProfileStorePlugin` / `SessionStoragePlugin` factories | `intergrax.memory_stores` | Host invokes factory callables — **no documented local-plugin helper** | [MEMORY.md](MEMORY.md) | Factory kwargs from host | [EXTENSION_AUTHOR_GUIDE §9](../technical/guides/EXTENSION_AUTHOR_GUIDE.md#9-memory-store-plugins-phase-mem) · `tests/fixtures/plugin_packages/` |
-| RAG chunkers | `BaseChunkingStrategy` | `intergrax.rag.chunkers` | RAG bootstrap/registry — **local explicit-registration path not yet documented** | [RAG.md](RAG.md) | `RagProfile` + bootstrap kwargs | [RAG_EXTENSION_GUIDE.md](../technical/guides/RAG_EXTENSION_GUIDE.md) |
+| Context | `ContextPlugin` | `intergrax.context` | `register_context_plugin()` from host - **scaffold hook not yet documented** | [CONTEXT_ENGINEERING.md](CONTEXT_ENGINEERING.md) | `ContextProfile` | [CONTEXT_PLUGIN_AUTHOR_GUIDE.md](../technical/guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md) · **External (multi-cap):** `examples/platform_plugins/intergrax_reference_enterprise_plugin/` |
+| Memory stores | `UserProfileStorePlugin` / `SessionStoragePlugin` factories | `intergrax.memory_stores` | Host invokes factory callables - **no documented local-plugin helper** | [MEMORY.md](MEMORY.md) | Factory kwargs from host | [EXTENSION_AUTHOR_GUIDE §9](../technical/guides/EXTENSION_AUTHOR_GUIDE.md#9-memory-store-plugins-phase-mem) · `tests/fixtures/plugin_packages/` |
+| RAG chunkers | `BaseChunkingStrategy` | `intergrax.rag.chunkers` | RAG bootstrap/registry - **local explicit-registration path not yet documented** | [RAG.md](RAG.md) | `RagProfile` + bootstrap kwargs | [RAG_EXTENSION_GUIDE.md](../technical/guides/RAG_EXTENSION_GUIDE.md) |
 | RAG retrievers | `BaseRetriever` | `intergrax.rag.retrievers` | Same as chunkers | [RAG.md](RAG.md) | `RagProfile` + vector store bindings | [RAG_EXTENSION_GUIDE.md](../technical/guides/RAG_EXTENSION_GUIDE.md) |
 | RAG rerankers | `BaseReranker` | `intergrax.rag.rerankers` | Same as chunkers | [RAG.md](RAG.md) | `RagProfile` + bootstrap kwargs | [RAG_EXTENSION_GUIDE.md](../technical/guides/RAG_EXTENSION_GUIDE.md) |
-| Vendor Knowledge | `VendorKnowledgeProviderContribution` | `intergrax.vendor_knowledge.providers` | Host builder composition — **not Tier-0 catalog registration** | [KNOWLEDGE_SOURCE_INTEGRATIONS.md](KNOWLEDGE_SOURCE_INTEGRATIONS.md) | `KnowledgeSourceBinding` + tenant scope | [VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md](../technical/guides/VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md) · **External:** `examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/` |
-| Security defenses | `SecurityDefensePlugin` | `intergrax.security_defenses` | `register_security_defense_plugin()` + profile ids — advanced host composition | [UNIFIED_EXECUTION_RUNTIME.md](UNIFIED_EXECUTION_RUNTIME.md) | `ApplicationSecurityProfile` | [SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md](../technical/guides/SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md) · `tests/fixtures/plugin_packages/intergrax_security_defense_fixture/` |
+| Vendor Knowledge | `VendorKnowledgeProviderContribution` | `intergrax.vendor_knowledge.providers` | Host builder composition - **not Tier-0 catalog registration** | [KNOWLEDGE_SOURCE_INTEGRATIONS.md](KNOWLEDGE_SOURCE_INTEGRATIONS.md) | `KnowledgeSourceBinding` + tenant scope | [VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md](../technical/guides/VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md) · **External:** `examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/` |
+| Security defenses | `SecurityDefensePlugin` | `intergrax.security_defenses` | `register_security_defense_plugin()` + profile ids - advanced host composition | [UNIFIED_EXECUTION_RUNTIME.md](UNIFIED_EXECUTION_RUNTIME.md) | `ApplicationSecurityProfile` | [SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md](../technical/guides/SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md) · `tests/fixtures/plugin_packages/intergrax_security_defense_fixture/` |
 | Policy rules | `PolicyRuleHandler` | `intergrax.policy_rules` | `PolicyRuleRegistry.register()` + explicit `load_policy_rule_plugin_report()` | [UNIFIED_EXECUTION_RUNTIME.md](UNIFIED_EXECUTION_RUNTIME.md) | `PolicyRulesProfile` / YAML bundle | [POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md](../technical/guides/POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md) |
 | Tool invocation patterns | `ToolInvocationPattern` | `intergrax.tool_invocation_patterns` | `RuntimeConfig.tool_invocation_pattern` instance override | [TOOLS.md](TOOLS.md) | `ToolInvocationMode` | [TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md](../technical/guides/TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md) |
 
@@ -804,7 +804,7 @@ Author-facing summary of all canonical setuptools entry-point surfaces (§20.1).
 | Isolated install | `uv pip install <wheel> --target <tmpdir> --no-deps` |
 | Discovery | `iter_entry_point_specs` / `load_entry_point_plugins` + `bootstrap_catalogs(discover_entry_points=True)` |
 | Qualification | `evaluate_package_production_admission` + `require_production_qualification` |
-| Platform version for compatibility | Explicit host input (`0.1.0` in E2E) — no global runtime version authority |
+| Platform version for compatibility | Explicit host input (`0.1.0` in E2E) - no global runtime version authority |
 | Known gaps | Local explicit-registration documented for Tools/Integrations/Skills only; other surfaces remain external-EP-first (acceptable per PLUGIN-9 closeout) |
 
 ---
@@ -837,7 +837,7 @@ One external Python distribution may expose multiple capabilities across domains
 | Scenario | TARGET behavior |
 |----------|-----------------|
 | Plugin package fails to import | Fail **that package**; other packages/domains continue where loaders isolate imports |
-| One capability in multi-capability package fails validation | **Bounded** — other capabilities from same package may still load if domain loader supports per-EP isolation |
+| One capability in multi-capability package fails validation | **Bounded** - other capabilities from same package may still load if domain loader supports per-EP isolation |
 | Duplicate identity conflict | Domain/policy resolves per §17; startup may fail or skip per `ConflictPolicy` |
 | Process isolation | **Not promised** |
 
@@ -853,30 +853,30 @@ FROZEN from PLATFORM-PLUGIN-1 §P:
 |-----------|----------|-----------|
 | Vendor Knowledge contribution catalog | **KEEP DOMAIN-SPECIFIC** | Publication snapshot, LKW qualification, tenant semantics |
 | Security defense plugins | **KEEP DOMAIN-SPECIFIC** | Hook-point model, override policy, fail modes |
-| `RuntimePlugin` | **KEEP DOMAIN-SPECIFIC** | Tier-3 lifecycle, event bus — HCE not catalog discovery |
+| `RuntimePlugin` | **KEEP DOMAIN-SPECIFIC** | Tier-3 lifecycle, event bus - HCE not catalog discovery |
 | `AgentRegistry` | **KEEP DOMAIN-SPECIFIC** | Tier-2 assembly; no third-party EP by design |
 | RAG component registries | **KEEP DOMAIN-SPECIFIC** | Per-component DI (vector store, embeddings) |
-| Integration registry v2 | **KEEP DOMAIN-SPECIFIC** | Metadata-only transitional layer — not author surface |
-| Policy YAML + EP handlers | **KEEP DOMAIN-SPECIFIC** | Declarative + imperative merge — policy domain owns |
+| Integration registry v2 | **KEEP DOMAIN-SPECIFIC** | Metadata-only transitional layer - not author surface |
+| Policy YAML + EP handlers | **KEEP DOMAIN-SPECIFIC** | Declarative + imperative merge - policy domain owns |
 | Observability extension SDK | **HARMONIZE TERMINOLOGY/METADATA ONLY** | Schema registration ≠ plugin loading |
 | Task execution registry | **KEEP DOMAIN-SPECIFIC** | Worker-local handlers |
 | Shipped integration manifest path | **KEEP DOMAIN-SPECIFIC** | First-party scale (~167+ slugs), performance, ownership |
-| Tier-0 catalog registries (integration/tool/skill/context) | **KEEP DOMAIN-SPECIFIC** | Intentional domain separation — shared loader utility only |
+| Tier-0 catalog registries (integration/tool/skill/context) | **KEEP DOMAIN-SPECIFIC** | Intentional domain separation - shared loader utility only |
 | RAG per-type EP groups vs single RAG group | **KEEP DOMAIN-SPECIFIC** | Component injection differs per type |
 | `core/plugins/discovery.py` vs bespoke loaders | **SHARE LOW-LEVEL UTILITY ONLY** | Harmonize scan/load helper in PLATFORM-PLUGIN-4 where approved |
-| Context EP vs author guide drift | **HARMONIZE TERMINOLOGY/METADATA ONLY** | Doc alignment — CONTEXT_ENGINEERING owns runtime |
+| Context EP vs author guide drift | **HARMONIZE TERMINOLOGY/METADATA ONLY** | Doc alignment - CONTEXT_ENGINEERING owns runtime |
 | Token optimization plugin | **FUTURE REVIEW** | Descriptor exists; loader path not established |
 
 ---
 
 ## 24. Backward compatibility and migration principles
 
-1. **Additive first** — new entry-point groups, metadata fields, and discovery flags must not break existing packages.
-2. **Deprecation over replacement** — supported EP groups remain until explicit deprecation release notes and migration window.
-3. **No silent activation** — harmonized discovery flags must not enable third-party plugins by default in production hosts.
-4. **Domain contracts stable** — platform coordination changes must not require changes to domain plugin class shapes without domain-owned major versions.
-5. **First-party manifest path preserved** — shipped integration manifests remain for core tree scale.
-6. **Tests as evidence** — `intergrax_catalog_fixture`, `intergrax_reference_enterprise_plugin`, external integration EP tests, VK reference plugin remain compatibility witnesses.
+1. **Additive first** - new entry-point groups, metadata fields, and discovery flags must not break existing packages.
+2. **Deprecation over replacement** - supported EP groups remain until explicit deprecation release notes and migration window.
+3. **No silent activation** - harmonized discovery flags must not enable third-party plugins by default in production hosts.
+4. **Domain contracts stable** - platform coordination changes must not require changes to domain plugin class shapes without domain-owned major versions.
+5. **First-party manifest path preserved** - shipped integration manifests remain for core tree scale.
+6. **Tests as evidence** - `intergrax_catalog_fixture`, `intergrax_reference_enterprise_plugin`, external integration EP tests, VK reference plugin remain compatibility witnesses.
 
 Migration **code** belongs to PLATFORM-PLUGIN-4 and PLATFORM-PLUGIN-9, not this stage.
 
@@ -899,7 +899,7 @@ Testable statements for audits and PLATFORM-PLUGIN-9 closeout:
 11. **No single global entry-point group** replaces domain groups.
 12. **Secrets are not plugin metadata** and are resolved by host/domain (§12.3–§12.4).
 13. **Multi-capability packages are allowed**; capabilities are separately discoverable.
-14. **No global Platform Plugin DI container or global secret API** — domain wiring contexts and profiles remain authoritative (§13).
+14. **No global Platform Plugin DI container or global secret API** - domain wiring contexts and profiles remain authoritative (§13).
 
 ---
 
@@ -909,11 +909,11 @@ Testable statements for audits and PLATFORM-PLUGIN-9 closeout:
 |-------|-------------------------------------------|
 | **PLUGIN-3** | Author contract docs; optional package manifest schema; capability descriptor format; packaging rules for multi-capability wheels; **no** new runtime wrapper class |
 | **PLUGIN-4** | Shared discovery utility adoption; additive discovery flags; per-EP import isolation improvements; **no** global catalog merge |
-| **PLUGIN-5** | **Done** — §12.3 cross-surface config/secrets/DI matrix; §12.4 canonical flow; author guide §14; domain DI preserved; no global container |
-| **PLUGIN-6** | **Done** — `platform_semantics.py`: explicit-version compatibility check API; `PlatformPluginLifecycleState` vocabulary; `PlatformPluginConflictKind` vocabulary; `package_identities_conflict` helper; EP conflict classification on `PluginConflictError`; **no** global lifecycle engine, conflict policy, or qualification gates |
-| **PLUGIN-7** | **Done** — `platform_qualification.py`: trust model (`PlatformPluginTrustModel`); qualification level/status/evidence/subject/result contracts; delivery source (`external_package`, `host_embedded_extension`); pure production gates (`require_production_qualification`, `evaluate_package_production_admission`); PLUGIN-6 compatibility consumed as evidence; no sandbox/signing claims; no global registry or persistence |
-| **PLUGIN-8** | **Done** — reference external wheel (`examples/platform_plugins/intergrax_reference_tool_plugin/`); host-embedded example (`examples/platform_plugins/local_embedded_tool_extension/`); application scaffold `extensions/` hook; executable E2E (`tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py`); §20.3 public extension matrix; author guide §16 |
-| **PLUGIN-9** | **Done** — cross-stage conformance suite (`tests/contract/core/plugins/test_platform_plugin_contract.py`); CI gate in `.github/workflows/unit-tests.yml`; deprecation audit; [`PLATFORM_PLUGIN_9_CLOSEOUT.md`](../maintainers/plans/PLATFORM_PLUGIN_9_CLOSEOUT.md) |
+| **PLUGIN-5** | **Done** - §12.3 cross-surface config/secrets/DI matrix; §12.4 canonical flow; author guide §14; domain DI preserved; no global container |
+| **PLUGIN-6** | **Done** - `platform_semantics.py`: explicit-version compatibility check API; `PlatformPluginLifecycleState` vocabulary; `PlatformPluginConflictKind` vocabulary; `package_identities_conflict` helper; EP conflict classification on `PluginConflictError`; **no** global lifecycle engine, conflict policy, or qualification gates |
+| **PLUGIN-7** | **Done** - `platform_qualification.py`: trust model (`PlatformPluginTrustModel`); qualification level/status/evidence/subject/result contracts; delivery source (`external_package`, `host_embedded_extension`); pure production gates (`require_production_qualification`, `evaluate_package_production_admission`); PLUGIN-6 compatibility consumed as evidence; no sandbox/signing claims; no global registry or persistence |
+| **PLUGIN-8** | **Done** - reference external wheel (`examples/platform_plugins/intergrax_reference_tool_plugin/`); host-embedded example (`examples/platform_plugins/local_embedded_tool_extension/`); application scaffold `extensions/` hook; executable E2E (`tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py`); §20.3 public extension matrix; author guide §16 |
+| **PLUGIN-9** | **Done** - cross-stage conformance suite (`tests/contract/core/plugins/test_platform_plugin_contract.py`); CI gate in `.github/workflows/unit-tests.yml`; deprecation audit; [`PLATFORM_PLUGIN_9_CLOSEOUT.md`](../maintainers/plans/PLATFORM_PLUGIN_9_CLOSEOUT.md) |
 
 **Explicitly not authorized before architecture amendment:** monolithic `PlatformPlugin` runtime type, mandatory global manifest replacing EPs, merging VK catalog into Tier-0 integration catalog, AgentRegistry setuptools discovery, sandbox claims without isolation implementation.
 
@@ -935,16 +935,16 @@ Testable statements for audits and PLATFORM-PLUGIN-9 closeout:
 
 ## Protocol v2 platform extensibility target invariants (2026-08-18)
 
-Accepted [`PLATFORM_EXTENSIBILITY`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md) findings **01–06** (audit unit **PLATFORM_EXTENSIBILITY**, owning program **PLATFORM_PLUGINS**, 2026-08-21). Remediation **ACCEPTED / PLANNED** — **not implemented** by audit persistence.
+Accepted [`PLATFORM_EXTENSIBILITY`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md) findings **01–06** (audit unit **PLATFORM_EXTENSIBILITY**, owning program **PLATFORM_PLUGINS**, 2026-08-21). Remediation **ACCEPTED / PLANNED** - **not implemented** by audit persistence.
 
-1. **Evidence-derived qualification authority** — production qualification status is derived/validated against a versioned qualification policy and required evidence set; callers cannot create authoritative production qualification merely by setting `QualificationStatus.PRODUCTION_QUALIFIED`. Reuse `intergrax.core.qualification`; **no** second qualification engine ([`AUDIT-20260818-PLATFORM_EXTENSIBILITY-01`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md)).
-2. **Package vs capability/domain qualification scope** — package qualification may be a prerequisite, but capability/domain admission binds separately where the domain requires it: distribution identity + domain + exact capability/entry point + qualification policy + evidence. Package-level bundle lookup must not blanket-apply one qualification to every entry point in a multi-capability distribution ([`AUDIT-20260818-PLATFORM_EXTENSIBILITY-03`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md)).
-3. **Exact manifest capability ↔ admission binding** — production admission binds exact distribution + manifest identity/hash + exact `CapabilityDescriptor` / entry point + qualification result. Undeclared capabilities cannot inherit production admission from another capability in the same distribution ([`AUDIT-20260818-PLATFORM_EXTENSIBILITY-04`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md)).
-4. **Cross-domain admission coverage** — each supported public PEP domain retains its domain loader/registry but consumes one shared pre-registration production-admission contract in strict/product profiles. Policy Rule/Definition loader is the reference partial implementation today; **no** global runtime plugin loader ([`AUDIT-20260818-PLATFORM_EXTENSIBILITY-02`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md)).
-5. **Typed manifest-resolution evidence** — installed manifest resolution returns a typed result (VALID / ABSENT / INVALID / UNREADABLE) with safe reason codes; absent and invalid manifests must not collapse to indistinguishable `compatibility=None` diagnostics ([`AUDIT-20260818-PLATFORM_EXTENSIBILITY-05`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md)).
-6. **Explicit process-lifetime discovery/cache lifecycle** — freeze policy **A** (installed plugin set immutable for process lifetime; package changes require restart) **or** **B** (controlled versioned rediscovery/cache invalidation). Do not leave lifecycle semantics as incidental `_EP_SPECS_CACHE` behavior ([`AUDIT-20260818-PLATFORM_EXTENSIBILITY-06`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md)).
+1. **Evidence-derived qualification authority** - production qualification status is derived/validated against a versioned qualification policy and required evidence set; callers cannot create authoritative production qualification merely by setting `QualificationStatus.PRODUCTION_QUALIFIED`. Reuse `intergrax.core.qualification`; **no** second qualification engine ([`AUDIT-20260818-PLATFORM_EXTENSIBILITY-01`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md)).
+2. **Package vs capability/domain qualification scope** - package qualification may be a prerequisite, but capability/domain admission binds separately where the domain requires it: distribution identity + domain + exact capability/entry point + qualification policy + evidence. Package-level bundle lookup must not blanket-apply one qualification to every entry point in a multi-capability distribution ([`AUDIT-20260818-PLATFORM_EXTENSIBILITY-03`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md)).
+3. **Exact manifest capability ↔ admission binding** - production admission binds exact distribution + manifest identity/hash + exact `CapabilityDescriptor` / entry point + qualification result. Undeclared capabilities cannot inherit production admission from another capability in the same distribution ([`AUDIT-20260818-PLATFORM_EXTENSIBILITY-04`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md)).
+4. **Cross-domain admission coverage** - each supported public PEP domain retains its domain loader/registry but consumes one shared pre-registration production-admission contract in strict/product profiles. Policy Rule/Definition loader is the reference partial implementation today; **no** global runtime plugin loader ([`AUDIT-20260818-PLATFORM_EXTENSIBILITY-02`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md)).
+5. **Typed manifest-resolution evidence** - installed manifest resolution returns a typed result (VALID / ABSENT / INVALID / UNREADABLE) with safe reason codes; absent and invalid manifests must not collapse to indistinguishable `compatibility=None` diagnostics ([`AUDIT-20260818-PLATFORM_EXTENSIBILITY-05`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md)).
+6. **Explicit process-lifetime discovery/cache lifecycle** - freeze policy **A** (installed plugin set immutable for process lifetime; package changes require restart) **or** **B** (controlled versioned rediscovery/cache invalidation). Do not leave lifecycle semantics as incidental `_EP_SPECS_CACHE` behavior ([`AUDIT-20260818-PLATFORM_EXTENSIBILITY-06`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md)).
 
-**Preserved:** package-level coordination concept; domain contracts as runtime owners; taxonomy PEP/IP/HCE/IEP/NE; **no** universal `PlatformPlugin.execute()`; **no** unified sandbox/DI/registry; trusted-in-process model; DO-NOT-UNIFY list (§23); historical PLATFORM-PLUGIN-1..9 completion facts; current **PROVIDER-QUAL** track state (§18.3) — cross-link for provider-scoped evidence, do not duplicate. Protocol-v2 FAIL documents residual gaps only; it does **not** erase program history or claim remediation is implemented.
+**Preserved:** package-level coordination concept; domain contracts as runtime owners; taxonomy PEP/IP/HCE/IEP/NE; **no** universal `PlatformPlugin.execute()`; **no** unified sandbox/DI/registry; trusted-in-process model; DO-NOT-UNIFY list (§23); historical PLATFORM-PLUGIN-1..9 completion facts; current **PROVIDER-QUAL** track state (§18.3) - cross-link for provider-scoped evidence, do not duplicate. Protocol-v2 FAIL documents residual gaps only; it does **not** erase program history or claim remediation is implemented.
 
 ---
 
@@ -968,20 +968,20 @@ Accepted [`PLATFORM_EXTENSIBILITY`](../../audit_results/2026-08-18/PLATFORM_EXTE
 
 | Question | Status | Notes |
 |----------|--------|-------|
-| Token optimization loader path | **FUTURE REVIEW** | Descriptor exists; no production loader — decide in token optimization program or PLUGIN-3+ |
+| Token optimization loader path | **FUTURE REVIEW** | Descriptor exists; no production loader - decide in token optimization program or PLUGIN-3+ |
 | MCP as extension surface vs tool export | **Out of scope** | Application host wiring; not decided here |
 | Default `INTERGRAX_DISCOVER_PLUGINS` in production hosts | **Operational** | Per-application; platform mandates opt-in, not default-on |
 | Full promotion of Context plugins to public qualified surface | **Domain-owned** | CONTEXT_ENGINEERING + doc alignment; EP already exists |
-| Agent EP discovery | **Closed** | Remains HCE — host registers agents |
+| Agent EP discovery | **Closed** | Remains HCE - host registers agents |
 | Isolated plugin execution | **Optional future** | Not required for program closeout |
 
 No material unresolved issue blocks PLATFORM-PLUGIN-3 from starting author contract work.
 
 ---
 
-## Canonical Platform Plugin Contract — summary
+## Canonical Platform Plugin Contract - summary
 
-**Exists:** **Yes** — as a **package-level coordination contract** (metadata and vocabulary), not an executable wrapper.
+**Exists:** **Yes** - as a **package-level coordination contract** (metadata and vocabulary), not an executable wrapper.
 
 **Scope (FROZEN):**
 

@@ -4,7 +4,7 @@
 
 ## Purpose
 
-Default **question-answering over an indexed knowledge base** with optional session context. Use when an agent must answer from RAG chunks, fetch the full source document, and read prior task memory — without hand-picking three separate tools on every contract.
+Default **question-answering over an indexed knowledge base** with optional session context. Use when an agent must answer from RAG chunks, fetch the full source document, and read prior task memory - without hand-picking three separate tools on every contract.
 
 Typical hosts: LKW (`local_search`), Legal, Research, Intergrax Assistant, any Tier-3 profile with a vector index.
 
@@ -12,7 +12,7 @@ Typical hosts: LKW (`local_search`), Legal, Research, Intergrax Assistant, any T
 
 1. **Registration:** `RagSkillPlugin` registers the manifest in `SkillCatalog` → `SkillRegistry` when bundle `rag` is enabled on `SkillProfile`.
 2. **Resolution:** At `AgentRegistry.register`, `SkillResolver` unions `tool_ids` into `AgentContract.allowed_tools`.
-3. **Runtime:** The LLM invokes atomic catalog tools only (`rag.retrieve`, `rag.get_document`, `memory.read`) through `ToolRuntime` + policy — the skill is never called as a function.
+3. **Runtime:** The LLM invokes atomic catalog tools only (`rag.retrieve`, `rag.get_document`, `memory.read`) through `ToolRuntime` + policy - the skill is never called as a function.
 4. **Prompt ref:** `rag.hybrid_qa.system` is declared for Prompt Registry / future SK-BRIDGE; wire explicitly in agent steps until automatic merge ships.
 
 ## How to use
@@ -56,7 +56,7 @@ assert "rag.retrieve" in pack.tool_ids
 
 | Benefit | Detail |
 |---------|--------|
-| **Reusable allow-list** | Same three tools on every Q&A agent — no copy-paste |
+| **Reusable allow-list** | Same three tools on every Q&A agent - no copy-paste |
 | **Conformance** | `EnvironmentSkillToolConsistencyCheck` validates roster ⊆ environment |
 | **Traceability** | `SKILL_RESOLVED` event lists merged `tool_ids` |
 | **Composable** | Merge with other skills; `requires_skills` not used on this pack |
@@ -75,6 +75,6 @@ Wire via Tier-3 `IntegrationProfile`: `vector_store`, `embedding_provider` (and 
 
 ## Related skills
 
-- `rag.document_ingest` — populate the index before Q&A
-- `memory.task_scratchpad` — write-side task memory
-- `research.literature_scan` — adds web search to retrieval
+- `rag.document_ingest` - populate the index before Q&A
+- `memory.task_scratchpad` - write-side task memory
+- `research.literature_scan` - adds web search to retrieval

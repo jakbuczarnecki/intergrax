@@ -4,7 +4,7 @@
 
 ## Purpose
 
-**Email outreach and thread context** via collaboration suite integrations (Microsoft 365, Google Workspace): list messages, read threads, send mail. Use for agents that draft follow-ups, summarize inbox context, or send notifications — not for bulk spam automation.
+**Email outreach and thread context** via collaboration suite integrations (Microsoft 365, Google Workspace): list messages, read threads, send mail. Use for agents that draft follow-ups, summarize inbox context, or send notifications - not for bulk spam automation.
 
 ## How it works
 
@@ -41,5 +41,5 @@ Wire `collaboration_suite` integration slug; enable collaboration tools on `tool
 
 ## Related skills
 
-- `dev.issue_triage` — tracker comment after email thread
-- `notify.send` — lightweight alerts without full collaboration suite
+- `dev.issue_triage` - tracker comment after email thread
+- `notify.send` - lightweight alerts without full collaboration suite

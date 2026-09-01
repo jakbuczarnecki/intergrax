@@ -1,4 +1,4 @@
-# Redis integration — copy to Tier-3 settings or export as env vars.
+# Redis integration - copy to Tier-3 settings or export as env vars.
 # Env: INTERGRAX_REDIS_URL, INTERGRAX_REDIS_DB, INTERGRAX_REDIS_KEY_PREFIX
 
 url: redis://localhost:6379/0

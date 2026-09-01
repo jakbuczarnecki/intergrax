@@ -33,4 +33,4 @@ Governed access to the ephemeral builder lifecycle plus workspace I/O for promot
 
 ## Related skills
 
-- Other `codecraft` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `codecraft` bundle skills - see bundle [USAGE.md](../USAGE.md)

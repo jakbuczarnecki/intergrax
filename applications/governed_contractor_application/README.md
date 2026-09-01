@@ -1,6 +1,6 @@
 # Governed Contractor API (Tier-3)
 
-Scaffolded **product** profile — FastAPI Core (`/health`, `/v1/*`) + ``POST /v1/governed_contractor/run``.
+Scaffolded **product** profile - FastAPI Core (`/health`, `/v1/*`) + ``POST /v1/governed_contractor/run``.
 
 **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
 
@@ -33,13 +33,13 @@ curl -s -X POST http://127.0.0.1:8000/v1/governed_contractor/run \
 
 ## MCP
 
-Default ``/mcp`` — ``list_agents``, ``run_agent``. Configure ``GOVERNED_CONTRACTOR_INCLUDE_MCP``, ``GOVERNED_CONTRACTOR_MCP_MOUNT_PATH``.
+Default ``/mcp`` - ``list_agents``, ``run_agent``. Configure ``GOVERNED_CONTRACTOR_INCLUDE_MCP``, ``GOVERNED_CONTRACTOR_MCP_MOUNT_PATH``.
 
 ## Extending beyond the generic product skeleton
 
 This host uses ``POST /v1/governed_contractor/run`` and ``/agents``. For chat-style routes,
 API-key auth, and domain-specific serving (like Legal), copy patterns from
-``applications/legal_application/serving/`` after the scaffold — do not put agent logic here.
+``applications/legal_application/serving/`` after the scaffold - do not put agent logic here.
 
 ## Docs
 

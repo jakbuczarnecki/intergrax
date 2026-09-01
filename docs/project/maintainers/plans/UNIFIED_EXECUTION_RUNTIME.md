@@ -1,4 +1,4 @@
-# Unified Execution Runtime — Implementation Plan
+# Unified Execution Runtime - Implementation Plan
 
 **Architecture (1:1):** [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
@@ -6,16 +6,16 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
 
-**Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md). UER owns runtime policy resolution, shared contract placement, output profile resolution, compression-level selection, and safety bypass enforcement.
+**Cross-feature - Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md). UER owns runtime policy resolution, shared contract placement, output profile resolution, compression-level selection, and safety bypass enforcement.
 
-**Meta-architecture (frozen):** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](../../architecture/UNIFIED_EXECUTION_ARCHITECTURE.md) — semantic authority over UER target model. UER plan rows must not contradict Execution-centric identity, neutral Execution Boundary, or strategy resolution semantics.
+**Meta-architecture (frozen):** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](../../architecture/UNIFIED_EXECUTION_ARCHITECTURE.md) - semantic authority over UER target model. UER plan rows must not contradict Execution-centric identity, neutral Execution Boundary, or strategy resolution semantics.
 
-### Architecture sync — UE-DOC-0.4 (2026-08-25)
+### Architecture sync - UE-DOC-0.4 (2026-08-25)
 
 **Target model (from rewritten UER hub):**
 
 - Fundamental unit: **Execution** (`TaskId` → `RunId` → `AttemptId` → `ExecutionId` → `EventId`)
-- Public entry: `execution.execute(request=..., output_type=...)` — no public engine/mode selection
+- Public entry: `execution.execute(request=..., output_type=...)` - no public engine/mode selection
 - Strategies: inference · agentic (AgentEngine → UAEP) · orchestration (Nexus → child Executions)
 - UAEP is **agent-specific**; Nexus is **not** required for direct inference or ordinary agentic execution
 - UER coordinates Governance/Budget/Observability/Checkpoint; does not own their authorities
@@ -24,15 +24,15 @@
 
 **High-level migration order:** see UER hub [Implementation readiness §5](../../architecture/UNIFIED_EXECUTION_RUNTIME.md#5-migration-order-high-level). Detailed code mapping: [`UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md`](../../architecture/UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md) (**UE-DOC-0.9**).
 
-### Architecture sync — UE-DOC-0.9 (2026-08-26)
+### Architecture sync - UE-DOC-0.9 (2026-08-26)
 
-**Status:** canonical implementation map delivered — **no runtime implementation in this slice**. Use map for UE-1+ slice derivation; do not reopen UEA semantics.
+**Status:** canonical implementation map delivered - **no runtime implementation in this slice**. Use map for UE-1+ slice derivation; do not reopen UEA semantics.
 
-**Plan debt:** substantial row restructuring against Execution-centric slices remains in plan rows — align incrementally per map waves §26.
+**Plan debt:** substantial row restructuring against Execution-centric slices remains in plan rows - align incrementally per map waves §26.
 
-### Implementation gate — UE-DOC-0.10 (2026-08-26)
+### Implementation gate - UE-DOC-0.10 (2026-08-26)
 
-**Status:** final pre-runtime consistency audit complete — [`UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md`](../../architecture/UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md). **IMPLEMENTATION GATE: PASS** (baseline `fc7c76c999e3d49d0532c4bdd07941c688e2553c`). UE-1+ runtime work may proceed; first slice UE-1A.
+**Status:** final pre-runtime consistency audit complete - [`UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md`](../../architecture/UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md). **IMPLEMENTATION GATE: PASS** (baseline `fc7c76c999e3d49d0532c4bdd07941c688e2553c`). UE-1+ runtime work may proceed; first slice UE-1A.
 
 ---
 
@@ -42,7 +42,7 @@
 
 - **Implement / audit default:** §6.1 UAEP maintenance · R-Policy / SEC / COST open rows · phase satellites on demand
 - **Token Optimization:** read feature pair + rows `TOKEN-UER-1` / `TOKEN-UER-2`; do not read unrelated closed UAEP queues.
-- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Use** `Read` with offset/limit - open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) read-scope block only.
 - **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
@@ -61,10 +61,10 @@ Load **only** the satellite matching your task or cited gap ID.
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
-### Protocol v2 remediation — STRATEGIC_HARNESS_MODEL (2026-08-18)
+### Protocol v2 remediation - STRATEGIC_HARNESS_MODEL (2026-08-18)
 
 **Audit:** [`docs/audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
-**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-INIT.
+**Status:** ACCEPTED findings - **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-INIT.
 
 | Block | Status | Findings | Scope |
 |-------|--------|----------|-------|
@@ -76,17 +76,17 @@ Load **only** the satellite matching your task or cited gap ID.
 **Remediation rules:**
 
 - Revalidate each finding against then-current `development` HEAD before implementation.
-- If parallel work already fixed a finding, do not duplicate — independently verify before lifecycle advancement.
+- If parallel work already fixed a finding, do not duplicate - independently verify before lifecycle advancement.
 - Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** only after campaign/remediation rollup confirms closure ([`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md)).
 
 ---
 
-### Protocol v2.2 remediation — IDENTITY_TRUST (2026-08-18)
+### Protocol v2.2 remediation - IDENTITY_TRUST (2026-08-18)
 
 **Audit:** [`docs/audit_results/2026-08-18/IDENTITY_TRUST.md`](../../audit_results/2026-08-18/IDENTITY_TRUST.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
-**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-IDENTITY-TRUST-PERSIST.
+**Status:** ACCEPTED findings - **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-IDENTITY-TRUST-PERSIST.
 
-#### IDT-FIX-D — Execution identity closure
+#### IDT-FIX-D - Execution identity closure
 
 **Status:** `ACCEPTED / PLANNED`
 **Source:** [`AUDIT-20260818-IDENTITY_TRUST-05`](../../audit_results/2026-08-18/IDENTITY_TRUST.md)
@@ -103,10 +103,10 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-### Protocol v2.2 remediation — EXECUTION_RUNTIME (2026-08-18)
+### Protocol v2.2 remediation - EXECUTION_RUNTIME (2026-08-18)
 
 **Audit:** [`docs/audit_results/2026-08-18/EXECUTION_RUNTIME.md`](../../audit_results/2026-08-18/EXECUTION_RUNTIME.md)
-**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-BATCH-PERSIST-2.
+**Status:** ACCEPTED findings - **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-BATCH-PERSIST-2.
 
 | Block | Status | Findings | Acceptance intent |
 |-------|--------|----------|-------------------|
@@ -118,12 +118,12 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-### Protocol v2 remediation — SECURITY_BOUNDARIES (2026-08-18)
+### Protocol v2 remediation - SECURITY_BOUNDARIES (2026-08-18)
 
 **Audit:** [`docs/audit_results/2026-08-18/SECURITY_BOUNDARIES.md`](../../audit_results/2026-08-18/SECURITY_BOUNDARIES.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
-**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-SECURITY-BOUNDARIES-PERSIST.
+**Status:** ACCEPTED findings - **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-SECURITY-BOUNDARIES-PERSIST.
 
-#### SEC-DATA-PROTECTION-INTEGRITY — encryption fail-closed and cryptographic honesty
+#### SEC-DATA-PROTECTION-INTEGRITY - encryption fail-closed and cryptographic honesty
 
 **Priority:** P0
 **Status:** `ACCEPTED / PLANNED`
@@ -135,7 +135,7 @@ Load **only** the satellite matching your task or cited gap ID.
 - No silent downgrade to `HarnessEnvelopeEncryptor` / Base64 envelope on product paths.
 - Lab/demo transforms explicitly labeled non-cryptographic; preserve `SecretsStorePayloadEncryptor` provider-neutral shape.
 
-#### SEC-AUDIT-AUTHORITY-INTEGRITY — durable immutable audit authority
+#### SEC-AUDIT-AUTHORITY-INTEGRITY - durable immutable audit authority
 
 **Priority:** P1
 **Status:** `ACCEPTED / PLANNED`
@@ -168,7 +168,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Phase TOKEN-UER — Token Optimization runtime policy foundation (Planned)
+## Phase TOKEN-UER - Token Optimization runtime policy foundation (Planned)
 
 **Feature:** [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md)
 **Architecture:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md)
@@ -186,11 +186,11 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
+## Phase AUDIT-IDEAL - Ideal architecture gap register (2026-06-09)
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.2–3.3, §23–§24 · baseline **32/32 L3**
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
-**Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
+**Status:** **Planned** - incremental after IDEAL-L3 W2 closeout
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
@@ -207,21 +207,21 @@ Load **only** the satellite matching your task or cited gap ID.
 
 **Delivery rule:** One **AUDIT-IDEAL-*** ID per PR → update this table + master register → gate green.
 
-### 6.1av Harness implementation queue — UAEP audit maintenance
+### 6.1av Harness implementation queue - UAEP audit maintenance
 
-**Source:** Interactive layer audit (2026-06-19) — `UNIFIED_EXECUTION_RUNTIME` layers 4, 5, 8, 23–24 · [`../audit_results/2026-06-19/UNIFIED_EXECUTION_RUNTIME.md`](../../../audit_results/2026-06-19/UNIFIED_EXECUTION_RUNTIME.md) · prior: [`../audit_results/2026-06-18/UNIFIED_EXECUTION_RUNTIME.md`](../../../audit_results/2026-06-18/UNIFIED_EXECUTION_RUNTIME.md)
-**Priority ladder:** **Band 1** (§6.1) — incremental after gate maintenance; **one ID per PR**
+**Source:** Interactive layer audit (2026-06-19) - `UNIFIED_EXECUTION_RUNTIME` layers 4, 5, 8, 23–24 · [`../audit_results/2026-06-19/UNIFIED_EXECUTION_RUNTIME.md`](../../../audit_results/2026-06-19/UNIFIED_EXECUTION_RUNTIME.md) · prior: [`../audit_results/2026-06-18/UNIFIED_EXECUTION_RUNTIME.md`](../../../audit_results/2026-06-18/UNIFIED_EXECUTION_RUNTIME.md)
+**Priority ladder:** **Band 1** (§6.1) - incremental after gate maintenance; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **UAEP-AUDIT-01** | Code | P2 | **Done** | `tenant_id` on `RuntimeEvent` in `UAEPExecutor._emit`, `TraceEmittingMiddleware`, and any orphan emitters | §42.44.2; regression gate on event tenant propagation |
-| 2 | **UAEP-MAINT-02** | Code | P3 | **Done** | Dedup `STEP_COMPLETED` — canonical emitter in `HarnessKernel`; adjust `TraceEmittingMiddleware` to avoid duplicate journal entries | Single `STEP_COMPLETED` per step boundary in unified run journal |
+| 2 | **UAEP-MAINT-02** | Code | P3 | **Done** | Dedup `STEP_COMPLETED` - canonical emitter in `HarnessKernel`; adjust `TraceEmittingMiddleware` to avoid duplicate journal entries | Single `STEP_COMPLETED` per step boundary in unified run journal |
 | 3 | **UAEP-MAINT-03** | Docs | P3 | **Done** | Security middleware layout diagram in `AGENT_CREATION_GUIDE.md` Appendix H (`runtime/architecture` + Tier-3 `*_wiring.py` map) | No new mechanisms; author onboarding clarity |
 | 4 | **UAEP-MAINT-04** | Test | P3 | **Done** | Regression gate: at most one `STEP_COMPLETED` per step boundary (`HarnessKernel` canonical; middleware must not duplicate) | `test_kernel_emits_single_step_completed_per_step` + `test_trace_middleware_does_not_emit_step_completed_on_after_step`; gate green |
 
-**Suggested PR order:** none — §6.1av queue closed (2026-06-19).
+**Suggested PR order:** none - §6.1av queue closed (2026-06-19).
 
-**Explicitly excluded:** `EscalationRouter` SUPERVISOR_AGENT target (§42.38 lab-minimal — deferred); FLOW-8 product host; GOV-PROD.1 — [§6.3](PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only).
+**Explicitly excluded:** `EscalationRouter` SUPERVISOR_AGENT target (§42.38 lab-minimal - deferred); FLOW-8 product host; GOV-PROD.1 - [§6.3](PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only).
 
 ---
 

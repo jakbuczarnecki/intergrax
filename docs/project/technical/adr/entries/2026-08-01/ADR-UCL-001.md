@@ -1,4 +1,4 @@
-# ADR-UCL-001 — Unified Context Lifecycle Ownership, Single-Budget Authority and Versioned Context Projections
+# ADR-UCL-001 - Unified Context Lifecycle Ownership, Single-Budget Authority and Versioned Context Projections
 
 | Field | Value |
 |-------|-------|
@@ -19,9 +19,9 @@ Freeze **one canonical Unified Context Lifecycle (UCL)** architecture:
 
 1. **Memory/Session** owns durable conversation ledger, immutable context projections, CAS activation, rollback execution, and the Reusable Optimization Artifact Catalog (`OptimizationArtifactRepository` contracts and `InMemoryOptimizationArtifactRepository` reference implementation in CTX-UCL-2).
 2. **Context Engineering** owns the single global input budget per model invocation, source/target requirements, final compilation, and final model-facing integrity validation orchestration.
-3. **Token Optimization** owns transformation executors, candidate validation contracts, receipts, and cache-lineage calculation — not revision persistence, artifact catalog lookup, or activation. Token Optimization remains artifact creator, not repository owner.
+3. **Token Optimization** owns transformation executors, candidate validation contracts, receipts, and cache-lineage calculation - not revision persistence, artifact catalog lookup, or activation. Token Optimization remains artifact creator, not repository owner.
 4. **Nexus** coordinates ephemeral assembly and durable compaction, including lookup-before-create orchestration and creation reservation coordination, without owning storage or algorithms.
-5. **Application host** owns configuration, authorization, adapter wiring, and review/rollback UX — not a parallel revision model, application-local summary cache, or direct activation bypassing Memory/Session.
+5. **Application host** owns configuration, authorization, adapter wiring, and review/rollback UX - not a parallel revision model, application-local summary cache, or direct activation bypassing Memory/Session.
 
 **TOKEN-10E-1** MUST NOT begin until **CTX-UCL-CLOSEOUT-1** is accepted/closed.
 
@@ -33,15 +33,15 @@ Valid artifacts are content-addressed and looked up before transformation via Ar
 
 Identical compatible source **must not** trigger repeated LLM summarization. A lookup hit produces REUSE_ARTIFACT with llm_transform_invoked = false.
 
-**Decision outcomes:** NO_OP, SELECT_ONLY, REUSE_ARTIFACT, CREATE_ARTIFACT, POLICY_BLOCKED, FAIL_CLOSED — every canonical model call traverses the decision point; Token Optimization execution remains optional.
+**Decision outcomes:** NO_OP, SELECT_ONLY, REUSE_ARTIFACT, CREATE_ARTIFACT, POLICY_BLOCKED, FAIL_CLOSED - every canonical model call traverses the decision point; Token Optimization execution remains optional.
 
 **Ownership:**
 
-- **Memory/Session** — artifact persistence contract, lookup contract, single-flight creation reservation, catalog lifecycle, invalidation persistence; references from SessionContextRevision; `InMemoryOptimizationArtifactRepository` reference implementation (CTX-UCL-2).
-- **Nexus** — orchestrates lookup-before-create and reservation coordination; maps lookup result to REUSE_ARTIFACT or CREATE_ARTIFACT; prevents transform execution on valid reuse hit or when reservation is ALREADY_IN_PROGRESS.
-- **Token Optimization** — creates artifacts only on CREATE_ARTIFACT (or explicit approved refresh) through typed executors; internal summarizer invocations are INTERNAL_OPTIMIZATION_CALL.
-- **Context Engineering** — supplies source ranges and target requirements; compiles final prompt using raw groups or reusable artifacts.
-- **Application host** — tenant policy configuration, authorization, review UX, artifact provenance visibility where required; does not implement its own summary cache.
+- **Memory/Session** - artifact persistence contract, lookup contract, single-flight creation reservation, catalog lifecycle, invalidation persistence; references from SessionContextRevision; `InMemoryOptimizationArtifactRepository` reference implementation (CTX-UCL-2).
+- **Nexus** - orchestrates lookup-before-create and reservation coordination; maps lookup result to REUSE_ARTIFACT or CREATE_ARTIFACT; prevents transform execution on valid reuse hit or when reservation is ALREADY_IN_PROGRESS.
+- **Token Optimization** - creates artifacts only on CREATE_ARTIFACT (or explicit approved refresh) through typed executors; internal summarizer invocations are INTERNAL_OPTIMIZATION_CALL.
+- **Context Engineering** - supplies source ranges and target requirements; compiles final prompt using raw groups or reusable artifacts.
+- **Application host** - tenant policy configuration, authorization, review UX, artifact provenance visibility where required; does not implement its own summary cache.
 
 SessionContextRevision references artifacts by ID or content hash without rewriting the raw ConversationLedger. Activating a new revision or rolling back must not regenerate artifact content.
 
@@ -51,11 +51,11 @@ Ephemeral assembly may persist reusable artifacts to the catalog when policy per
 
 Every **primary model call** (`PRIMARY_MODEL_CALL`) traverses the full UCL optimization decision point.
 
-An **internal optimization call** (`INTERNAL_OPTIMIZATION_CALL`) does not recursively traverse the full UCL optimization lifecycle for the same optimization target. Internal optimization calls use a bounded internal assembly path with explicit budgets, protected inputs, preflight, and telemetry — but without history summarization or artifact creation recursion.
+An **internal optimization call** (`INTERNAL_OPTIMIZATION_CALL`) does not recursively traverse the full UCL optimization lifecycle for the same optimization target. Internal optimization calls use a bounded internal assembly path with explicit budgets, protected inputs, preflight, and telemetry - but without history summarization or artifact creation recursion.
 
 `OptimizationExecutionGuard` enforces: `PRIMARY_MODEL_CALL` at `optimization_depth == 0`; first `INTERNAL_OPTIMIZATION_CALL` at `optimization_depth == 1`; same `ArtifactLookupKey` already active in operation ancestry → fail closed (`OPTIMIZATION_RECURSION_BLOCKED`); depth exceeded → `OPTIMIZATION_DEPTH_EXCEEDED`.
 
-Internal summarization calls receive only explicitly selected source material and summarization instructions — not the complete conversation, unrelated RAG context, or application tool catalog.
+Internal summarization calls receive only explicitly selected source material and summarization instructions - not the complete conversation, unrelated RAG context, or application tool catalog.
 
 ## Single-flight artifact creation
 
@@ -73,7 +73,7 @@ Two concurrent canonical model calls with the same compatible key and no existin
 
 | Task | Delivery |
 |------|----------|
-| **CTX-UCL-1** | Contracts only: `ModelCallExecutionScope`, `OptimizationExecutionGuard`, `ArtifactCreationReservation`, reason codes — no repository implementation |
+| **CTX-UCL-1** | Contracts only: `ModelCallExecutionScope`, `OptimizationExecutionGuard`, `ArtifactCreationReservation`, reason codes - no repository implementation |
 | **CTX-UCL-2** | `OptimizationArtifactRepository` interface + `InMemoryOptimizationArtifactRepository` reference implementation with single-flight reservation and concurrency tests |
 | **TOKEN-10E-4** | First durable production `OptimizationArtifactRepository` adapter and durable `SessionContextRevision` activation integration (implementation may live in Memory/Session packages; delivery coordinated by TOKEN-10E-4) |
 

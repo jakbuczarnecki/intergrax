@@ -1,6 +1,6 @@
 # boundary_demo agent
 
-UAEP demo agent for **Execution Boundary Export** — single step calling `records.put` (`attestation.demo` capability).
+UAEP demo agent for **Execution Boundary Export** - single step calling `records.put` (`attestation.demo` capability).
 
 **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · **ADRs:** [`docs/adr/README.md`](docs/adr/README.md)
 
@@ -38,7 +38,7 @@ Production PoC mounts the agent via `applications/attestation_demo/host/agent_bu
 
 ## Layout
 
-- ``boundary_demo_agent.py`` — UAEP agent (`get_steps` / `run_step`)
-- ``capabilities.py`` — capability ids
-- ``tests/`` — contract smoke tests
-- ``docs`` — architecture, plan, ADRs, journal
+- ``boundary_demo_agent.py`` - UAEP agent (`get_steps` / `run_step`)
+- ``capabilities.py`` - capability ids
+- ``tests/`` - contract smoke tests
+- ``docs`` - architecture, plan, ADRs, journal

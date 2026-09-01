@@ -1,8 +1,8 @@
-# Conversational Interaction — LKW
+# Conversational Interaction - LKW
 
-**Status:** `LKW-CONVERSATIONAL-INTERACTION-1A` — planner contract implemented (`plan_version = "2"`); execution not yet wired.
+**Status:** `LKW-CONVERSATIONAL-INTERACTION-1A` - planner contract implemented (`plan_version = "2"`); execution not yet wired.
 
-LKW ma działać jak inteligentny współpracownik, a nie jak terminal komend. Użytkownik pisze naturalnie — po polsku, z literówkami, w jednej wiadomości mieszając pliki, URL-e, lokalne ścieżki i wskazanie workspace — a system rozumie intencję i przygotowuje bezpieczny plan działań.
+LKW ma działać jak inteligentny współpracownik, a nie jak terminal komend. Użytkownik pisze naturalnie - po polsku, z literówkami, w jednej wiadomości mieszając pliki, URL-e, lokalne ścieżki i wskazanie workspace - a system rozumie intencję i przygotowuje bezpieczny plan działań.
 
 ---
 
@@ -16,7 +16,7 @@ oraz dorzuć moją kopię lokalną cenników z c:\moje dokumenty\cenniki.xls
 a to wszystko do workspace "magazyn"
 ```
 
-System musi zrozumieć **całą** wiadomość i przygotować plan wielu działań ze wspólnym celem workspace — bez wymuszania kolejności słów jako kolejności wykonania.
+System musi zrozumieć **całą** wiadomość i przygotować plan wielu działań ze wspólnym celem workspace - bez wymuszania kolejności słów jako kolejności wykonania.
 
 ---
 
@@ -97,7 +97,7 @@ actions:
     source_object_ids: [obj-url-1, obj-file-1]
 ```
 
-Obie wartości trafiają do tego samego target workspace. **`workspace.activate` nie powstaje** — użytkownik wskazał workspace jako cel operacji, nie jako aktywny kontekst.
+Obie wartości trafiają do tego samego target workspace. **`workspace.activate` nie powstaje** - użytkownik wskazał workspace jako cel operacji, nie jako aktywny kontekst.
 
 URL w zwykłym pytaniu (`co sądzisz o https:/example.com?`) planowany jest jako `workspace.ask`, chyba że użytkownik wyraźnie prosi o dodanie strony do wiedzy.
 
@@ -144,7 +144,7 @@ Każda akcja zależna od workspace ma jawny `WorkspaceReference`:
 | `ordinal` | numer z widocznej listy |
 | `created_by_action` | workspace utworzony wcześniejszą akcją `workspace.create` |
 
-Planner **nie rozwiązuje** nazw do `workspace_id` — to robi przyszły resolver deterministycznie.
+Planner **nie rozwiązuje** nazw do `workspace_id` - to robi przyszły resolver deterministycznie.
 
 ---
 
@@ -176,7 +176,7 @@ Workspace będący celem ingestion lub Ask **nie zmienia** aktywnego workspace u
 
 ## 10. Structured output i walidacja
 
-1. Adapter musi obsługiwać `supports_structured_output()` — w przeciwnym razie fail-closed.
+1. Adapter musi obsługiwać `supports_structured_output()` - w przeciwnym razie fail-closed.
 2. Wynik to `ConversationInteractionPlan` (Pydantic v2, `extra="forbid"`, `plan_version = "2"`).
 3. Deterministyczna walidacja `validate_plan_against_request()` sprawdza m.in.:
    - unikalne `object_id` w planie;
@@ -187,7 +187,7 @@ Workspace będący celem ingestion lub Ask **nie zmienia** aktywnego workspace u
    - attachment IDs tylko z requestu;
    - `evidence_quotes` jako fragmenty rzeczywistej wypowiedzi;
    - graf `depends_on` acykliczny i spójny.
-4. Przy błędnym JSON / schemacie / walidacji — **jedna** kontrolowana próba naprawy; brak trzeciej próby lokalnie.
+4. Przy błędnym JSON / schemacie / walidacji - **jedna** kontrolowana próba naprawy; brak trzeciej próby lokalnie.
 
 ---
 
@@ -225,7 +225,7 @@ planner (v2)
 | **Conversation Interaction Planner** | Interpretacja intencji produktowej użytkownika: utworzenie workspace, dodanie źródła, połączenie zasobu, pytanie Ask, inspekcja operacji. Nie generuje Graph API, JQL, DAX, SQL ani wywołań MCP. |
 | **Knowledge Query Orchestrator** | Pozyskanie dowodów dla autoryzowanego pytania Ask: RAG, live capabilities, hybrid, clarification. Model może zaproponować plan dowodów; runtime deterministycznie waliduje każde wywołanie. |
 
-Natural-language intencje połączenia i źródeł (np. „podłącz projekt Jira i SharePoint Orion”) trafiają do planera jako akcje produktowe; wykonanie przechodzi przez resolver, autoryzację i allowlistowane capabilities — nie przez bezpośrednie wywołania providerów ze Slacka.
+Natural-language intencje połączenia i źródeł (np. „podłącz projekt Jira i SharePoint Orion”) trafiają do planera jako akcje produktowe; wykonanie przechodzi przez resolver, autoryzację i allowlistowane capabilities - nie przez bezpośrednie wywołania providerów ze Slacka.
 
 **Hybrid Ask** łączy indexed RAG evidence z autoryzowanymi live provider results w jeden zestaw **Evidence Items** z ujednoliconą proweniencją.
 
@@ -249,7 +249,7 @@ Powiązana roadmapa: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md).
 
 ## 14. Deterministic context resolution before planner use
 
-Future planner, resolver and executor requests receive a pre-resolved **ConversationExecutionContext** — not discretionary model choices about audience or workspace.
+Future planner, resolver and executor requests receive a pre-resolved **ConversationExecutionContext** - not discretionary model choices about audience or workspace.
 
 **Conceptual envelope:**
 

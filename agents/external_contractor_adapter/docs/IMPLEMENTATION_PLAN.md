@@ -1,8 +1,8 @@
-﻿# external_contractor_adapter — Implementation Plan
+﻿# external_contractor_adapter - Implementation Plan
 
 **The implementation map** for the Tier-2 GEC adapter agent.
 
-**Status:** Working draft (2026-07-20) — **GEC-0…GEC-6 Done** (mapping + continuation + side-effect policy + proof profile composition); HITL UX / product policy packs / receipt persistence deferred  
+**Status:** Working draft (2026-07-20) - **GEC-0…GEC-6 Done** (mapping + continuation + side-effect policy + proof profile composition); HITL UX / product policy packs / receipt persistence deferred  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Host tracker:** [`applications/governed_contractor_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/governed_contractor_application/docs/IMPLEMENTATION_PLAN.md)
 **Agent ADRs:** [`adr/README.md`](adr/README.md)

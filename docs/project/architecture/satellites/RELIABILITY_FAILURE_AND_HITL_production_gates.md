@@ -1,10 +1,10 @@
-# RELIABILITY_FAILURE_AND_HITL — production gates (§40+)
+# RELIABILITY_FAILURE_AND_HITL - production gates (§40+)
 
 **Parent hub:** [`RELIABILITY_FAILURE_AND_HITL.md`](../RELIABILITY_FAILURE_AND_HITL.md)
 
 # 35. Autonomy Control Model (Autonomy Slider)
 
-Users and operators MUST be able to **steer how much the system acts without asking** — at session, task, or step granularity. This is distinct from host **execution posture** (`ExecutionMode`: STRICT | BALANCED | EXPLORATORY) and agent **dispatch mode** (`AgentExecutionMode`: SYNC | ASYNC).
+Users and operators MUST be able to **steer how much the system acts without asking** - at session, task, or step granularity. This is distinct from host **execution posture** (`ExecutionMode`: STRICT | BALANCED | EXPLORATORY) and agent **dispatch mode** (`AgentExecutionMode`: SYNC | ASYNC).
 
 ## 35.1 Autonomy levels
 
@@ -21,7 +21,7 @@ AutonomyLevel:
     AUTONOMOUS
 ```
 
-**Mid-run changes:** autonomy MAY change at any time via `TaskExecutionOptions.autonomy_level` or operator API — PolicyEngine re-evaluates **before the next UAEP step** and before each tool invocation (UAEP §42.11).
+**Mid-run changes:** autonomy MAY change at any time via `TaskExecutionOptions.autonomy_level` or operator API - PolicyEngine re-evaluates **before the next UAEP step** and before each tool invocation (UAEP §42.11).
 
 ## 35.2 Resolution order
 
@@ -48,7 +48,7 @@ effective_autonomy = min(
 | ASK | Risk-scored: auto vs queue | Auto plan; confirm on `risk >= threshold` | Queue for gated tools |
 | AUTONOMOUS | Policy + budget only | Auto plan and execute | On interrupt types only (§42.8) |
 
-**Implementation anchors:** `PolicyEngine.evaluate_tool_call`, `AgentDecision.REQUEST_HUMAN`, `HumanDecisionStore`, `hitl.*` tools — UAEP §42.10.
+**Implementation anchors:** `PolicyEngine.evaluate_tool_call`, `AgentDecision.REQUEST_HUMAN`, `HumanDecisionStore`, `hitl.*` tools - UAEP §42.10.
 
 ## 35.4 UX contract (platform)
 
@@ -56,7 +56,7 @@ effective_autonomy = min(
 - Downgrade (AUTONOMOUS → MANUAL) MUST be **immediate** for new steps; in-flight tool calls follow cancel-or-complete policy per `CancellationCoordinator`.
 - Upgrade (MANUAL → AUTONOMOUS) MUST NOT bypass unresolved HITL items.
 
-**As-built (2026-06-09):** `AutonomyLevel` on `TaskExecutionOptions`; effective level via `autonomy_resolver` + `AutonomyGovernanceMiddleware`; trace events `AUTONOMY_LEVEL_SET` / `AUTONOMY_LEVEL_CHANGED`. **Mid-run HTTP API** (`POST …/tasks/{id}/autonomy`) mounted on **lab host only** — runtime downgrade/upgrade works on all paths when set on task envelope.
+**As-built (2026-06-09):** `AutonomyLevel` on `TaskExecutionOptions`; effective level via `autonomy_resolver` + `AutonomyGovernanceMiddleware`; trace events `AUTONOMY_LEVEL_SET` / `AUTONOMY_LEVEL_CHANGED`. **Mid-run HTTP API** (`POST …/tasks/{id}/autonomy`) mounted on **lab host only** - runtime downgrade/upgrade works on all paths when set on task envelope.
 
 **Tier-3 debt:** product hosts without `mount_harness_task_routes` require client to set `autonomy_level` on task create or resume payload.
 

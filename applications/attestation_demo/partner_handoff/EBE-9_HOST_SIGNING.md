@@ -1,4 +1,4 @@
-# EBE-9 — Host-side boundary event signing (BoundaryAttest handoff)
+# EBE-9 - Host-side boundary event signing (BoundaryAttest handoff)
 
 **Audience:** BoundaryAttest verifier authors · **Golden vector:** [`ebe9_golden_vector.v1.json`](ebe9_golden_vector.v1.json)
 
@@ -77,4 +77,4 @@ Host signature is a **runtime/host attestation** only. It does not prove truth, 
 | Unknown `public_key_id` | partner policy decision; Intergrax still emits stated id |
 | Unsigned (`host_signing_enabled=false`) | `signed: false`, no envelope |
 
-**Partner validation (2026-06):** BoundaryAttest @ `61be9918bc8f91fc8f160e0392d2914f38f3d4cb` — golden vector byte-for-byte, 39/39 tests, live Intergrax two-event response @ `96b7f997`, unsigned v2 regression.
+**Partner validation (2026-06):** BoundaryAttest @ `61be9918bc8f91fc8f160e0392d2914f38f3d4cb` - golden vector byte-for-byte, 39/39 tests, live Intergrax two-event response @ `96b7f997`, unsigned v2 regression.

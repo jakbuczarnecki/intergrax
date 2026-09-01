@@ -1,4 +1,4 @@
-# Attestation Demo — Architecture Decision Records
+# Attestation Demo - Architecture Decision Records
 
 **Domain:** Tier-3 application host (`applications/attestation_demo`)
 
@@ -36,7 +36,7 @@ ADR-ATTESTATION_DEMO-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| [ADR-ATTESTATION_DEMO-001](ADR-ATTESTATION_DEMO-001.md) | Partner PoC — unsigned EBE in API response | Accepted |
+| [ADR-ATTESTATION_DEMO-001](ADR-ATTESTATION_DEMO-001.md) | Partner PoC - unsigned EBE in API response | Accepted |
 
 ---
 
