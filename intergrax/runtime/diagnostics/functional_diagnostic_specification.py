@@ -13,6 +13,7 @@ from intergrax.contracts.functional_diagnostic_bounds import (
     MAX_FUNCTIONAL_DIAGNOSTIC_CHECKS,
     MAX_FUNCTIONAL_DIAGNOSTIC_CLAIM_LENGTH,
     MAX_FUNCTIONAL_DIAGNOSTIC_DEPENDENCIES,
+    MAX_FUNCTIONAL_DIAGNOSTIC_REQUIREMENT_TEXT_LENGTH,
 )
 from intergrax.runtime.diagnostics.functional_diagnostic_identity import (
     FunctionalDiagnosticCheckId,
@@ -184,56 +185,137 @@ def _validate_requirement(requirement: FunctionalDiagnosticRequirement, *, index
         raise FunctionalDiagnosticSpecificationIntegrityError(
             f"checks[{index}].requirement must be FunctionalDiagnosticRequirement",
         )
+    _validate_kind_payload_alignment(requirement, index=index)
+    match requirement.kind:
+        case FunctionalDiagnosticRequirementKind.OPERATION_OUTCOME_STATUS:
+            payload = requirement.operation_outcome_status
+            if payload is None:
+                raise FunctionalDiagnosticSpecificationIntegrityError(
+                    "operation_outcome_status requirement missing payload",
+                )
+            _require_bounded_text(
+                payload.operation_id,
+                field_name="operation_id",
+            )
+        case FunctionalDiagnosticRequirementKind.CANDIDATE_EXISTS:
+            payload = requirement.candidate_exists
+            if payload is None:
+                raise FunctionalDiagnosticSpecificationIntegrityError(
+                    "candidate_exists requirement missing payload",
+                )
+            _require_bounded_text(payload.query_id, field_name="query_id")
+        case FunctionalDiagnosticRequirementKind.SELECTION_EXISTS:
+            payload = requirement.selection_exists
+            if payload is None:
+                raise FunctionalDiagnosticSpecificationIntegrityError(
+                    "selection_exists requirement missing payload",
+                )
+            _require_bounded_text(payload.query_id, field_name="query_id")
+        case FunctionalDiagnosticRequirementKind.SELECTION_ARTIFACT_MATCH:
+            payload = requirement.selection_artifact_match
+            if payload is None:
+                raise FunctionalDiagnosticSpecificationIntegrityError(
+                    "selection_artifact_match requirement missing payload",
+                )
+            _require_bounded_text(payload.query_id, field_name="query_id")
+            _require_bounded_text(
+                payload.expected_artifact_ref,
+                field_name="expected_artifact_ref",
+            )
+        case FunctionalDiagnosticRequirementKind.OUTPUT_RELATION_EXISTS:
+            payload = requirement.output_relation_exists
+            if payload is None:
+                raise FunctionalDiagnosticSpecificationIntegrityError(
+                    "output_relation_exists requirement missing payload",
+                )
+            _require_bounded_text(payload.operation_id, field_name="operation_id")
+        case FunctionalDiagnosticRequirementKind.VALIDATION_OUTCOME:
+            payload = requirement.validation_outcome
+            if payload is None:
+                raise FunctionalDiagnosticSpecificationIntegrityError(
+                    "validation_outcome requirement missing payload",
+                )
+            validate_event_id(payload.validation_id)
+
+
+def _validate_kind_payload_alignment(
+    requirement: FunctionalDiagnosticRequirement,
+    *,
+    index: int,
+) -> None:
     match requirement.kind:
         case FunctionalDiagnosticRequirementKind.OPERATION_OUTCOME_STATUS:
             if requirement.operation_outcome_status is None:
                 raise FunctionalDiagnosticSpecificationIntegrityError(
-                    "operation_outcome_status requirement missing payload",
+                    f"checks[{index}].requirement.operation_outcome_status is required",
                 )
-            _require_non_empty_text(
-                requirement.operation_outcome_status.operation_id,
-                field_name="operation_id",
-            )
         case FunctionalDiagnosticRequirementKind.CANDIDATE_EXISTS:
             if requirement.candidate_exists is None:
                 raise FunctionalDiagnosticSpecificationIntegrityError(
-                    "candidate_exists requirement missing payload",
+                    f"checks[{index}].requirement.candidate_exists is required",
                 )
-            _require_non_empty_text(requirement.candidate_exists.query_id, field_name="query_id")
         case FunctionalDiagnosticRequirementKind.SELECTION_EXISTS:
             if requirement.selection_exists is None:
                 raise FunctionalDiagnosticSpecificationIntegrityError(
-                    "selection_exists requirement missing payload",
+                    f"checks[{index}].requirement.selection_exists is required",
                 )
-            _require_non_empty_text(requirement.selection_exists.query_id, field_name="query_id")
         case FunctionalDiagnosticRequirementKind.SELECTION_ARTIFACT_MATCH:
             if requirement.selection_artifact_match is None:
                 raise FunctionalDiagnosticSpecificationIntegrityError(
-                    "selection_artifact_match requirement missing payload",
+                    f"checks[{index}].requirement.selection_artifact_match is required",
                 )
-            _require_non_empty_text(
-                requirement.selection_artifact_match.query_id,
-                field_name="query_id",
-            )
-            _require_non_empty_text(
-                requirement.selection_artifact_match.expected_artifact_ref,
-                field_name="expected_artifact_ref",
-            )
         case FunctionalDiagnosticRequirementKind.OUTPUT_RELATION_EXISTS:
             if requirement.output_relation_exists is None:
                 raise FunctionalDiagnosticSpecificationIntegrityError(
-                    "output_relation_exists requirement missing payload",
+                    f"checks[{index}].requirement.output_relation_exists is required",
                 )
-            _require_non_empty_text(
-                requirement.output_relation_exists.operation_id,
-                field_name="operation_id",
-            )
         case FunctionalDiagnosticRequirementKind.VALIDATION_OUTCOME:
             if requirement.validation_outcome is None:
                 raise FunctionalDiagnosticSpecificationIntegrityError(
-                    "validation_outcome requirement missing payload",
+                    f"checks[{index}].requirement.validation_outcome is required",
                 )
-            validate_event_id(requirement.validation_outcome.validation_id)
+    if (
+        requirement.kind is not FunctionalDiagnosticRequirementKind.OPERATION_OUTCOME_STATUS
+        and requirement.operation_outcome_status is not None
+    ):
+        raise FunctionalDiagnosticSpecificationIntegrityError(
+            f"checks[{index}].requirement has unexpected operation_outcome_status payload",
+        )
+    if (
+        requirement.kind is not FunctionalDiagnosticRequirementKind.CANDIDATE_EXISTS
+        and requirement.candidate_exists is not None
+    ):
+        raise FunctionalDiagnosticSpecificationIntegrityError(
+            f"checks[{index}].requirement has unexpected candidate_exists payload",
+        )
+    if (
+        requirement.kind is not FunctionalDiagnosticRequirementKind.SELECTION_EXISTS
+        and requirement.selection_exists is not None
+    ):
+        raise FunctionalDiagnosticSpecificationIntegrityError(
+            f"checks[{index}].requirement has unexpected selection_exists payload",
+        )
+    if (
+        requirement.kind is not FunctionalDiagnosticRequirementKind.SELECTION_ARTIFACT_MATCH
+        and requirement.selection_artifact_match is not None
+    ):
+        raise FunctionalDiagnosticSpecificationIntegrityError(
+            f"checks[{index}].requirement has unexpected selection_artifact_match payload",
+        )
+    if (
+        requirement.kind is not FunctionalDiagnosticRequirementKind.OUTPUT_RELATION_EXISTS
+        and requirement.output_relation_exists is not None
+    ):
+        raise FunctionalDiagnosticSpecificationIntegrityError(
+            f"checks[{index}].requirement has unexpected output_relation_exists payload",
+        )
+    if (
+        requirement.kind is not FunctionalDiagnosticRequirementKind.VALIDATION_OUTCOME
+        and requirement.validation_outcome is not None
+    ):
+        raise FunctionalDiagnosticSpecificationIntegrityError(
+            f"checks[{index}].requirement has unexpected validation_outcome payload",
+        )
 
 
 def _validate_dependency_graph(checks: tuple[FunctionalDiagnosticCheck, ...]) -> None:
@@ -269,7 +351,7 @@ def _validate_dependency_graph(checks: tuple[FunctionalDiagnosticCheck, ...]) ->
         visit(check.check_id)
 
 
-def _require_non_empty_text(value: str, *, field_name: str) -> None:
+def _require_bounded_text(value: str, *, field_name: str) -> None:
     if type(value) is not str:
         raise FunctionalDiagnosticSpecificationIntegrityError(f"{field_name} must be str")
     normalized = value.strip()
@@ -279,6 +361,14 @@ def _require_non_empty_text(value: str, *, field_name: str) -> None:
         raise FunctionalDiagnosticSpecificationIntegrityError(
             f"{field_name} must not contain leading or trailing whitespace",
         )
+    if len(value) > MAX_FUNCTIONAL_DIAGNOSTIC_REQUIREMENT_TEXT_LENGTH:
+        raise FunctionalDiagnosticSpecificationIntegrityError(
+            f"{field_name} must be <= {MAX_FUNCTIONAL_DIAGNOSTIC_REQUIREMENT_TEXT_LENGTH} characters",
+        )
+
+
+def _require_non_empty_text(value: str, *, field_name: str) -> None:
+    _require_bounded_text(value, field_name=field_name)
 
 
 __all__ = [

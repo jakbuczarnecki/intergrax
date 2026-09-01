@@ -384,7 +384,13 @@ def test_f3_3_missing_evidence() -> None:
         task_id=scope.task_id,
         run_id=scope.run_id,
         specification=spec,
-        validations=FunctionalValidationEvidenceLookup(validations=(validation,)),
+        validations=FunctionalValidationEvidenceLookup.for_scope(
+            tenant_id=scope.tenant_id,
+            task_id=scope.task_id,
+            run_id=scope.run_id,
+            attempt_id=scope.attempt_id,
+            validations=(validation,),
+        ),
     )
     by_id = {item.check_id: item for item in analysis.check_results}
     assert by_id[_CHECK_OPERATION].status is FunctionalDiagnosticCheckStatus.PROVEN_PASS
@@ -1011,7 +1017,13 @@ def test_f3_14_web_search_scenario() -> None:
             task_id=scope.task_id,
             run_id=scope.run_id,
             specification=spec,
-            validations=FunctionalValidationEvidenceLookup(validations=(validation,)),
+            validations=FunctionalValidationEvidenceLookup.for_scope(
+            tenant_id=scope.tenant_id,
+            task_id=scope.task_id,
+            run_id=scope.run_id,
+            attempt_id=scope.attempt_id,
+            validations=(validation,),
+        ),
         ).check_results
     }
     assert by_id[_CHECK_OPERATION].status is FunctionalDiagnosticCheckStatus.PROVEN_PASS
@@ -1149,7 +1161,13 @@ def test_f3_16_synthesis_failure() -> None:
             task_id=scope.task_id,
             run_id=scope.run_id,
             specification=spec,
-            validations=FunctionalValidationEvidenceLookup(validations=(validation,)),
+            validations=FunctionalValidationEvidenceLookup.for_scope(
+            tenant_id=scope.tenant_id,
+            task_id=scope.task_id,
+            run_id=scope.run_id,
+            attempt_id=scope.attempt_id,
+            validations=(validation,),
+        ),
         ).check_results
     }
     assert by_id[_CHECK_OPERATION].status is FunctionalDiagnosticCheckStatus.PROVEN_PASS

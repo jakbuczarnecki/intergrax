@@ -543,7 +543,7 @@ Full hosting composition: [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md).
 
 ## Functional diagnostics
 
-**Status:** `FUNCTIONAL DIAGNOSTICS FOUNDATION = IMPLEMENTED` · `GENERIC FUNCTIONAL ANALYSIS = IMPLEMENTED` · `OPERATOR-GRADE FUNCTIONAL FINDINGS = NOT YET IMPLEMENTED` · `C1 INSTRUMENTATION = NOT YET IMPLEMENTED`
+**Status:** `FUNCTIONAL DIAGNOSTICS FOUNDATION = IMPLEMENTED` · `GENERIC FUNCTIONAL ANALYSIS = QUALIFIED` · `OPERATOR-GRADE FUNCTIONAL FINDINGS = NOT YET IMPLEMENTED` · `C1 INSTRUMENTATION = NOT YET IMPLEMENTED`
 
 Central diagnostics must represent two independent facts:
 
@@ -677,7 +677,11 @@ future DiagnosticAssessment composition (NOT in F2)
 
 **Contradiction:** when the same check receives both PASS- and FAIL-supporting evidence, the result is `INSUFFICIENT_EVIDENCE` with an explicit contradiction limitation — never arbitrary winner selection.
 
-**Dependency semantics:** DAG dependencies are supported. Independent branches continue evaluation after a `PROVEN_FAIL` elsewhere. `first_proven_failure` is the first check in specification order with `PROVEN_FAIL`.
+**Dependency semantics:** DAG dependencies are evaluated in topological order (not specification tuple order). Independent branches continue evaluation after a `PROVEN_FAIL` elsewhere. `first_proven_failure` is the first check in **specification order** with `PROVEN_FAIL` (presentation order, not causal root-cause).
+
+**Validation scope:** `FunctionalValidationEvidenceLookup` is analysis-scoped (`tenant`, `task`, `run`, optional `attempt`). DIAG enforces scope — callers are not trusted. Wrong-scope validations fail closed (`FunctionalDiagnosticAnalysisIntegrityError`). Missing validations yield `INSUFFICIENT_EVIDENCE`. Run-level validations (`attempt_id=None`) do not prove attempt-scoped checks.
+
+**Evaluation vs presentation order:** Checks are evaluated topologically; `check_results` are returned in original specification tuple order for readability and compatibility.
 
 **Boundedness:**
 
@@ -686,6 +690,7 @@ future DiagnosticAssessment composition (NOT in F2)
 | `MAX_FUNCTIONAL_DIAGNOSTIC_CHECKS` | 64 |
 | `MAX_FUNCTIONAL_DIAGNOSTIC_DEPENDENCIES` | 8 |
 | `MAX_FUNCTIONAL_DIAGNOSTIC_SUPPORTING_REFS` | 8 |
+| `MAX_FUNCTIONAL_DIAGNOSTIC_VALIDATIONS` | 64 |
 | `MAX_FUNCTIONAL_DIAGNOSTIC_LIMITATIONS_PER_RESULT` | 8 |
 
 **OBS boundary:** Observability records evidence. Observability does **not** execute check evaluation. Diagnostics executes evaluation.
@@ -695,7 +700,11 @@ future DiagnosticAssessment composition (NOT in F2)
 ```text
 FUNCTIONAL DIAGNOSTICS ARCHITECTURE = QUALIFIED
 FUNCTIONAL EVIDENCE FOUNDATION = QUALIFIED
-GENERIC FUNCTIONAL ANALYSIS = IMPLEMENTED
+GENERIC FUNCTIONAL ANALYSIS = QUALIFIED
+
+validation isolation = qualified
+DAG dependency evaluation = qualified
+typed requirements = qualified
 
 OPERATOR-GRADE FUNCTIONAL FINDINGS = NOT YET IMPLEMENTED
 DURABLE PERSISTENCE = NOT YET QUALIFIED
@@ -703,7 +712,7 @@ PRODUCTION SCALE = NOT YET QUALIFIED
 REAL WORKLOAD QUALIFICATION = NOT YET COMPLETE
 ```
 
-Recommendation after F2: **READY_FOR_DIAG-FUNCTIONAL-3 / F4** (operator-facing `DiagnosticAssessment` composition; durable persistence and production scale remain separate gates).
+Recommendation after F2-R1: **READY_FOR_F4** (operator-facing `DiagnosticAssessment` composition; durable persistence and production scale remain separate gates).
 
 **H1 remains open:** DIAG test-suite health cleanup (slow 100k occurrence test · flaky problem-list health test) — separate roadmap task.
 
