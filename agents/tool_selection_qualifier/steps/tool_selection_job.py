@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 from intergrax.agents.authoring.runtime_tool_helpers import (
@@ -197,6 +198,18 @@ def _parse_tool_arguments(raw: str) -> dict[str, object]:
     return {}
 
 
+def _qualification_safe_relative_path(raw: object, default: str) -> str:
+    if not isinstance(raw, str) or not raw.strip():
+        return default
+    candidate = raw.strip()
+    if candidate.startswith(("/", "\\")):
+        return default
+    path = Path(candidate)
+    if path.is_absolute() or ".." in path.parts:
+        return default
+    return candidate
+
+
 async def _decide_tool_with_llm(
     *,
     adapter: LLMAdapter,
@@ -249,11 +262,7 @@ def _tool_input_for_selection(
     if selected_tool_id == WORKSPACE_WRITE_FILE_TOOL_ID:
         path = tool_arguments.get("path")
         content = tool_arguments.get("content")
-        resolved_path = (
-            str(path).strip()
-            if isinstance(path, str) and str(path).strip()
-            else "qualification-draft.md"
-        )
+        resolved_path = _qualification_safe_relative_path(path, "qualification-draft.md")
         resolved_content = (
             str(content)
             if isinstance(content, str)

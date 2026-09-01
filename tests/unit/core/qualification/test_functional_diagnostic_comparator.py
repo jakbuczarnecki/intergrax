@@ -116,3 +116,24 @@ def test_comparator_reports_mismatch_on_failed_check() -> None:
     )
     assert result.result is QualificationComparisonResult.MISMATCH
     assert result.check_mismatches
+
+
+def test_comparator_skips_functional_outcome_when_disabled() -> None:
+    expectation = QualificationCaseExpectation(
+        case_id="unit-inconclusive",
+        expected_execution_outcome=QualificationExecutionOutcome.COMPLETED,
+        expected_functional_outcome=QualificationFunctionalOutcome.PASSED,
+        expected_check_results=(
+            QualificationCheckExpectation(_CHECK, FunctionalDiagnosticCheckStatus.PROVEN_PASS),
+        ),
+        compare_functional_outcome=False,
+    )
+    analysis = _analysis(FunctionalDiagnosticCheckStatus.PROVEN_PASS)
+    result = compare_qualification_case(
+        expectation,
+        actual_execution_outcome=QualificationExecutionOutcome.COMPLETED,
+        actual_functional_outcome=QualificationFunctionalOutcome.FAILED,
+        analysis=analysis,
+        operator_assessment=None,
+    )
+    assert result.result is QualificationComparisonResult.MATCH

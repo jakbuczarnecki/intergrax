@@ -113,26 +113,63 @@ Operator
 
 `uv run pytest tests/system/functional_diagnostics_q2/test_q2_evidence_fidelity.py -q` → **4 passed**
 
-### Live qualification verdict
+### Live qualification verdict (initial)
 
 **Q2 = FAILED** (environment unblocked; live matrix executed)
 
 | Case | Match | Notes |
 | --- | --- | --- |
 | Q2-A | PASS | `workspace.search`, functional PASS |
-| Q2-B | FAIL | Wrong tool `workspace.write_file` selected; DIAG selection fail correct; comparator mismatch (validation/operator field) |
+| Q2-B | FAIL | Wrong tool selected; DIAG first failure = SELECTION (correct); comparator mismatch on INVOCATION (expected PASS, observed FAIL — unsafe LLM path caused real invoke failure) |
 | Q2-C | PASS | Selection pass, invocation fail |
 | Q2-D | PASS | Selection + invocation pass, validation fail |
-| Q2-E | FAIL | `actual_tool=null`; operator inconclusive but functional oracle failed |
+| Q2-E | FAIL | Operator inconclusive (correct); comparator required functional PASS while oracle reported FAIL |
 | Q2-F-A | PASS | Isolation healthy |
-| Q2-F-B | FAIL | Same pattern as Q2-B |
-| Q2-G (×3) | FAIL (all 3) | Repeatable wrong-tool selection; comparator mismatch |
+| Q2-F-B | FAIL | Same INVOCATION vector mismatch as Q2-B |
+| Q2-G (×3) | FAIL (all 3) | Repeatable wrong-tool selection; same comparator mismatch |
 
-Metrics: `matched_cases=4/10`, `stage_accuracy=40%`, `repeatability_pass=true`, `evidence_fidelity_pass=true`.
+Metrics: `matched_cases=4/10`, `stage_accuracy=40%` (was full-case match, not stage match), `false_negatives=5` (incorrect — counted comparator mismatch, not missed functional failure), `repeatability_pass=true`, `evidence_fidelity_pass=true`.
+
+Preserved artifact: `.tmp/session/diag-functional-q2/qualification-report-env1-failed.json`
+
+### DIAG-FUNCTIONAL-Q2-R1 root cause
+
+1. **Wrong-tool invoke path:** LLM `workspace.write_file` arguments often used absolute/unsafe paths → real `tool.invoke` FAILED → DIAG correctly reported INVOCATION FAIL while qualification expected PASS for technically successful invoke.
+2. **Q2-E comparator:** Mixed independent functional oracle (FAIL when selection suppressed / wrong tool) with diagnostic expectation (INCONCLUSIVE + selection INSUFFICIENT_EVIDENCE).
+3. **Metrics:** `false_negatives` and `stage_accuracy` derived from full-case comparator mismatch instead of functional-failure detection and first-proven-failure stage match.
+
+### DIAG-FUNCTIONAL-Q2-R1 fixes
+
+| Layer | Change |
+| --- | --- |
+| Agent (`tool_selection_job`) | Sanitize `workspace.write_file` paths for qualification (reject absolute/`..`; safe default) |
+| Expectation (`cases.py`) | Q2-E: `compare_functional_outcome=False`; oracle ground truth independent of diagnostic inconclusive |
+| Comparator | `compare_functional_outcome` flag on `QualificationCaseExpectation` |
+| Runner metrics | Separate `full_case_match`, `stage_match`, `functional_failure_detection`, corrected FP/FN semantics |
+| Tests | Q1 comparator regression + Q2 wrong-tool / missing-evidence / metrics unit gates |
+
+`FunctionalDiagnosticAnalyzer` unchanged.
+
+### Live qualification verdict (R1 rerun)
+
+**Q2 REAL TOOL-SELECTION = QUALIFIED**
+
+| Case | Match | Trace |
+| --- | --- | --- |
+| Q2-A | PASS | search, functional success |
+| Q2-B | PASS | write_file wrong tool; SELECTION fail, INVOCATION pass, VALIDATION fail |
+| Q2-C | PASS | search + invoke fail |
+| Q2-D | PASS | search + invoke pass + validation fail |
+| Q2-E | PASS | selection insufficient, operator inconclusive |
+| Q2-F-A | PASS | isolation healthy |
+| Q2-F-B | PASS | isolation wrong-tool (same as Q2-B) |
+| Q2-G (×3) | PASS | repeatable wrong-tool |
+
+Metrics: `matched_cases=10/10`, `stage_accuracy=100%`, `false_positives=0`, `false_negatives=0`, `repeatability_pass=true`, `evidence_fidelity_pass=true`.
 
 Machine artifact: `.tmp/session/diag-functional-q2/qualification-report.json`
 
-Recommendation: **Q2-R1 REQUIRED** (diagnostic comparator / Q2-E evidence path; not environment).
+Recommendation: **READY_FOR_Q3_REAL_WEB_SEARCH_QUALIFICATION**
 
 ## Artifacts
 

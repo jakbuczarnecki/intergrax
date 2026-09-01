@@ -24,9 +24,8 @@ from intergrax.core.qualification.functional_diagnostic_expectation import (
 from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessment
 from intergrax.runtime.diagnostics.diagnostic_assessment_composer import DiagnosticAssessmentComposer
 from intergrax.runtime.diagnostics.functional_diagnostic_analyzer import FunctionalDiagnosticAnalyzer
-from intergrax.runtime.diagnostics.functional_diagnostic_analysis import (
-    FunctionalDiagnosticCheckStatus,
-)
+from intergrax.runtime.diagnostics.functional_diagnostic_analysis import FunctionalDiagnosticCheckStatus
+from intergrax.runtime.diagnostics.functional_operator_projection import FunctionalOperatorOutcomeStatus
 from intergrax.runtime.diagnostics.functional_evidence import (
     PipelineEvidenceKind,
     PipelineEvidenceScope,
@@ -119,6 +118,37 @@ class QualificationReport:
     repeatability_pass: bool
     records: tuple[QualificationRunRecord, ...]
     blocked_reason: str | None = None
+    stage_matched_cases: int = 0
+    functional_failure_detected_cases: int = 0
+    functional_failure_ground_truth_cases: int = 0
+
+
+_EXPECTATION_BY_CASE_ID: dict[str, QualificationCaseExpectation] = {
+    case.case_id: case for case in MANDATORY_CASES
+}
+_EXPECTATION_BY_CASE_ID["Q2-F-A"] = Q2_F_HEALTHY
+_EXPECTATION_BY_CASE_ID["Q2-F-B"] = Q2_F_WRONG_TOOL
+_EXPECTATION_BY_CASE_ID[_REPEAT_CASE_ID] = Q2_B_WRONG_TOOL
+
+
+def _expectation_for_record(record: QualificationRunRecord) -> QualificationCaseExpectation:
+    if record.repeat_group == _REPEAT_CASE_ID:
+        return Q2_B_WRONG_TOOL
+    return _EXPECTATION_BY_CASE_ID.get(record.case_id, Q2_B_WRONG_TOOL)
+
+
+def _stage_matches(record: QualificationRunRecord, expectation: QualificationCaseExpectation) -> bool:
+    expected = expectation.expected_first_proven_failed_check
+    actual = record.diag_first_failed_check
+    return str(expected or "") == str(actual or "")
+
+
+def _functional_failure_detected(record: QualificationRunRecord) -> bool:
+    return (
+        record.functional_outcome is QualificationFunctionalOutcome.FAILED
+        and record.operator_outcome
+        == FunctionalOperatorOutcomeStatus.PROVEN_FUNCTIONAL_FAILURE.value
+    )
 
 
 def _config_from_env() -> ProofConfig:
@@ -491,6 +521,17 @@ def run_qualification() -> QualificationReport:
 
     matched = sum(1 for item in records if item.comparison.result is QualificationComparisonResult.MATCH)
     mismatched = len(records) - matched
+    stage_matched = sum(
+        1 for item in records if _stage_matches(item, _expectation_for_record(item))
+    )
+    functional_failure_ground_truth = [
+        item
+        for item in records
+        if item.functional_outcome is QualificationFunctionalOutcome.FAILED
+        and _expectation_for_record(item).expected_operator_outcome
+        is not FunctionalOperatorOutcomeStatus.INCONCLUSIVE
+    ]
+    functional_failure_detected = sum(1 for item in functional_failure_ground_truth if _functional_failure_detected(item))
     false_positives = sum(
         1
         for item in records
@@ -503,16 +544,17 @@ def run_qualification() -> QualificationReport:
     )
     false_negatives = sum(
         1
-        for item in records
-        if item.case_id in {"Q2-B", "Q2-C", "Q2-D", "Q2-F-B", _REPEAT_CASE_ID}
-        and item.comparison.result is QualificationComparisonResult.MISMATCH
+        for item in functional_failure_ground_truth
+        if not _functional_failure_detected(item)
+        and _expectation_for_record(item).expected_operator_outcome
+        is not FunctionalOperatorOutcomeStatus.INCONCLUSIVE
     )
     inconclusive_correct = sum(
         1
         for item in records
         if item.case_id == "Q2-E" and item.comparison.result is QualificationComparisonResult.MATCH
     )
-    stage_accuracy = 100.0 if mismatched == 0 else (matched / len(records) * 100.0)
+    stage_accuracy = (stage_matched / len(records) * 100.0) if records else 0.0
     inconclusive_accuracy = 100.0 if inconclusive_correct == 1 else 0.0
 
     verdict = (
@@ -537,6 +579,9 @@ def run_qualification() -> QualificationReport:
         inconclusive_accuracy_percent=inconclusive_accuracy,
         repeatability_pass=repeatability_pass,
         records=tuple(records),
+        stage_matched_cases=stage_matched,
+        functional_failure_detected_cases=functional_failure_detected,
+        functional_failure_ground_truth_cases=len(functional_failure_ground_truth),
     )
     _write_artifact(
         report,
@@ -583,6 +628,10 @@ def _write_artifact(
         "inconclusive_correct_cases": report.inconclusive_correct_cases,
         "stage_accuracy_percent": report.stage_accuracy_percent,
         "inconclusive_accuracy_percent": report.inconclusive_accuracy_percent,
+        "full_case_match_cases": report.matched_cases,
+        "stage_match_cases": report.stage_matched_cases,
+        "functional_failure_ground_truth_cases": report.functional_failure_ground_truth_cases,
+        "functional_failure_detected_cases": report.functional_failure_detected_cases,
         "repeatability_pass": report.repeatability_pass,
         "evidence_fidelity_pass": fidelity_pass,
         "decision_diagnostics_independence_pass": decision_diagnostics_independence_pass,

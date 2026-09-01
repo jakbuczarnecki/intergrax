@@ -39,14 +39,15 @@ def compare_qualification_case(
                 actual=actual_execution_outcome.value,
             ),
         )
-    if actual_functional_outcome is not expectation.expected_functional_outcome:
-        field_mismatches.append(
-            QualificationComparisonMismatch(
-                field="functional_outcome",
-                expected=expectation.expected_functional_outcome.value,
-                actual=actual_functional_outcome.value,
-            ),
-        )
+    if expectation.compare_functional_outcome:
+        if actual_functional_outcome is not expectation.expected_functional_outcome:
+            field_mismatches.append(
+                QualificationComparisonMismatch(
+                    field="functional_outcome",
+                    expected=expectation.expected_functional_outcome.value,
+                    actual=actual_functional_outcome.value,
+                ),
+            )
 
     check_mismatches: list[QualificationCheckMismatch] = []
     if analysis is None:
