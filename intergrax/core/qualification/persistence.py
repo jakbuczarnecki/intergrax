@@ -22,6 +22,11 @@ from intergrax.core.qualification.validity import (
     QualificationRunId,
     validate_qualification_run_id,
 )
+from intergrax.core.security import (
+    SecretSafetyValidationError,
+    SecretSafeValidationPolicy,
+    validate_secret_safe_value,
+)
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
     DocumentStore,
@@ -37,15 +42,30 @@ from intergrax.proofs.receipts.document_store import (
 PROVIDER_QUALIFICATION_PROOF_KIND = "provider_qualification"
 PROVIDER_QUALIFICATION_APPLICATION_ID = "intergrax.provider_qualification"
 _PROVIDER_QUALIFICATION_RUN_SCHEMA = "intergrax.provider_qualification_run.v1"
-_FORBIDDEN_PERSISTENCE_KEYS = frozenset(
-    {
-        "password",
-        "token",
-        "secret",
-        "api_key",
-        "dsn",
-        "credentials",
-    },
+_PROVIDER_QUALIFICATION_PERSISTENCE_SECRET_POLICY = SecretSafeValidationPolicy(
+    forbidden_key_names=frozenset(
+        {
+            "password",
+            "token",
+            "secret",
+            "api_key",
+            "dsn",
+            "credentials",
+            "access_token",
+            "refresh_token",
+            "client_secret",
+            "authorization",
+        },
+    ),
+    forbidden_key_suffixes=(
+        "_password",
+        "_token",
+        "_secret",
+        "_api_key",
+        "_credential",
+        "_authorization",
+    ),
+    scan_embedded_url_credentials=True,
 )
 
 
@@ -55,6 +75,10 @@ class ProviderQualificationPersistenceConflictError(Exception):
 
 class ProviderQualificationPersistenceIntegrityError(Exception):
     """Raised when stored qualification evidence is malformed or inconsistent."""
+
+
+class ProviderQualificationPersistenceSafetyError(Exception):
+    """Raised when qualification evidence contains unsafe credential-bearing data."""
 
 
 def _qualification_status_to_receipt_result(status: QualificationStatus) -> ProofReceiptResult:
@@ -410,16 +434,15 @@ def proof_receipt_to_provider_qualification_run(
 
 
 def _assert_safe_persistence_payload(payload: object) -> None:
-    if isinstance(payload, dict):
-        for key, value in payload.items():
-            if key.lower() in _FORBIDDEN_PERSISTENCE_KEYS:
-                raise ProviderQualificationPersistenceIntegrityError(
-                    f"unsafe persistence key {key!r}",
-                )
-            _assert_safe_persistence_payload(value)
-    elif isinstance(payload, list):
-        for item in payload:
-            _assert_safe_persistence_payload(item)
+    """Reject credential-bearing keys and free-text values before ProofReceipt write."""
+    try:
+        validate_secret_safe_value(
+            payload,
+            policy=_PROVIDER_QUALIFICATION_PERSISTENCE_SECRET_POLICY,
+            context_label="provider qualification evidence",
+        )
+    except SecretSafetyValidationError as exc:
+        raise ProviderQualificationPersistenceSafetyError(str(exc)) from exc
 
 
 class DocumentStoreProviderQualificationPersistence:

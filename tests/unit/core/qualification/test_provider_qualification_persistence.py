@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import inspect
 import json
+from dataclasses import replace
 from datetime import datetime, timezone
 
 import pytest
@@ -26,6 +27,7 @@ from intergrax.core.qualification.persistence import (
     DocumentStoreProviderQualificationPersistence,
     ProviderQualificationPersistenceConflictError,
     ProviderQualificationPersistenceIntegrityError,
+    ProviderQualificationPersistenceSafetyError,
     encode_provider_qualification_run,
     proof_receipt_to_provider_qualification_run,
     provider_qualification_run_to_proof_receipt,
@@ -33,12 +35,19 @@ from intergrax.core.qualification.persistence import (
 )
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import DocumentRecord
+from intergrax.integrations.providers.document_store.mongodb.bundle import (
+    create_mongodb_document_store,
+)
 from intergrax.proofs.receipts.document_store import (
     proof_receipt_lookup_row_key,
     proof_receipt_partition_key,
     proof_receipt_to_document,
 )
 from intergrax.proofs.receipts.store import ProofReceiptStore
+from tests.unit.integrations.providers.document_store.test_mongodb import (
+    _collection_factory,
+    _mongodb_config,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -167,7 +176,7 @@ def test_corrupt_persisted_record_fails_closed() -> None:
         persistence.get_by_qualification_run_id(run.qualification_run_id)
 
 
-def test_restart_survives_new_persistence_adapter_instance() -> None:
+def test_adapter_reconstruction_preserves_caller_owned_storage() -> None:
     store = InMemoryDocumentStore()
     run = _run()
 
@@ -181,6 +190,25 @@ def test_restart_survives_new_persistence_adapter_instance() -> None:
         assert loaded == run
     finally:
         second.close()
+
+
+def test_persistent_document_store_reopen_survives_store_instance_close() -> None:
+    factory, _collection = _collection_factory()
+    config = _mongodb_config().model_dump()
+    run = _run()
+
+    store_a = create_mongodb_document_store(**config, collection_factory=factory)
+    persistence_a = DocumentStoreProviderQualificationPersistence(store_a)
+    persistence_a.persist(run)
+    store_a.close()
+
+    store_b = create_mongodb_document_store(**config, collection_factory=factory)
+    persistence_b = DocumentStoreProviderQualificationPersistence(store_b)
+    try:
+        loaded = persistence_b.get_by_qualification_run_id(run.qualification_run_id)
+        assert loaded == run
+    finally:
+        store_b.close()
 
 
 def test_qualification_run_id_remains_authoritative_and_proof_id_differs() -> None:
@@ -263,3 +291,56 @@ def test_malformed_proof_receipt_schema_fails_closed() -> None:
 
     with pytest.raises(ProviderQualificationPersistenceIntegrityError):
         persistence.get_by_qualification_run_id(_FIXED_RUN_ID)
+
+
+def test_unsafe_credential_bearing_evidence_ref_rejected_before_write() -> None:
+    store = InMemoryDocumentStore()
+    persistence = DocumentStoreProviderQualificationPersistence(store)
+    unsafe_run = replace(
+        _run(),
+        evidence=(
+            QualificationEvidence(
+                kind=ProviderQualificationEvidenceKind.LIVE_BACKEND,
+                code="backend.live",
+                ref="postgresql://demo_user:demo_password@example.invalid/db",
+            ),
+        ),
+    )
+
+    with pytest.raises(
+        ProviderQualificationPersistenceSafetyError,
+        match="credential-bearing URL",
+    ):
+        persistence.persist(unsafe_run)
+
+    assert persistence.get_by_qualification_run_id(unsafe_run.qualification_run_id) is None
+
+
+def test_unsafe_credential_bearing_free_text_rejected_before_write() -> None:
+    store = InMemoryDocumentStore()
+    persistence = DocumentStoreProviderQualificationPersistence(store)
+    unsafe_run = replace(
+        _run(),
+        reproducibility="https://demo_user:demo_password@example.invalid/path",
+    )
+
+    with pytest.raises(
+        ProviderQualificationPersistenceSafetyError,
+        match="credential-bearing URL",
+    ):
+        persistence.persist(unsafe_run)
+
+    assert persistence.get_by_qualification_run_id(unsafe_run.qualification_run_id) is None
+
+
+def test_safe_ordinary_evidence_persists_successfully() -> None:
+    store = InMemoryDocumentStore()
+    persistence = DocumentStoreProviderQualificationPersistence(store)
+    run = _run(
+        status=QualificationStatus.QUALIFIED,
+    )
+
+    persisted = persistence.persist(run)
+
+    assert persisted == run
+    assert persistence.get_by_qualification_run_id(run.qualification_run_id) == run
