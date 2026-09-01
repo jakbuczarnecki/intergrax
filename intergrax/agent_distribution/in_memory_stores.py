@@ -90,6 +90,9 @@ class AgentDistributionStoreState:
     _activation_lock: threading.RLock = field(
         default_factory=threading.RLock, repr=False, compare=False
     )
+    _materialization_lock: threading.RLock = field(
+        default_factory=threading.RLock, repr=False, compare=False
+    )
 
 
 class InMemoryAgentInstallationStore:
@@ -444,7 +447,6 @@ class InMemoryRuntimeMaterializationStore:
 
     def __init__(self, state: AgentDistributionStoreState | None = None) -> None:
         self._state = state or AgentDistributionStoreState()
-        self._lock = threading.RLock()
 
     @property
     def state(self) -> AgentDistributionStoreState:
@@ -453,13 +455,13 @@ class InMemoryRuntimeMaterializationStore:
     def get_by_revision(
         self, runtime_revision_id: str
     ) -> RuntimeMaterializationRecord | None:
-        with self._lock:
+        with self._state._materialization_lock:
             return self._state.materializations.get(runtime_revision_id)
 
     def persist(
         self, record: RuntimeMaterializationRecord
     ) -> RuntimeMaterializationRecord:
-        with self._lock:
+        with self._state._materialization_lock:
             key = record.runtime_revision_id
             existing = self._state.materializations.get(key)
             if existing is None:

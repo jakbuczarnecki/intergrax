@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+import threading
+from concurrent.futures import ThreadPoolExecutor
+
 import pytest
 from pydantic import ValidationError
 
@@ -165,3 +168,88 @@ def test_test_scheme_locator_accepted_as_opaque() -> None:
     record = _record(artifact_locator="test://opaque/locator")
     persisted = store.persist(record)
     assert persisted.artifact_locator == "test://opaque/locator"
+
+
+def test_concurrent_conflicting_persist_across_wrappers_one_wins() -> None:
+    state = AgentDistributionStoreState()
+    store_a = InMemoryRuntimeMaterializationStore(state)
+    store_b = InMemoryRuntimeMaterializationStore(state)
+    record_a = _record(artifact_locator="file:///artifact/a")
+    record_b = _record(artifact_locator="file:///artifact/b")
+    barrier = threading.Barrier(2)
+    successes: list[RuntimeMaterializationRecord] = []
+    conflicts: list[RuntimeMaterializationConflict] = []
+
+    def persist_from_a() -> None:
+        barrier.wait(timeout=5)
+        try:
+            successes.append(store_a.persist(record_a))
+        except RuntimeMaterializationConflict as exc:
+            conflicts.append(exc)
+
+    def persist_from_b() -> None:
+        barrier.wait(timeout=5)
+        try:
+            successes.append(store_b.persist(record_b))
+        except RuntimeMaterializationConflict as exc:
+            conflicts.append(exc)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        future_a = executor.submit(persist_from_a)
+        future_b = executor.submit(persist_from_b)
+        future_a.result(timeout=5)
+        future_b.result(timeout=5)
+
+    assert len(successes) == 1
+    assert len(conflicts) == 1
+    canonical = successes[0]
+    assert canonical in {record_a, record_b}
+    assert len(state.materializations) == 1
+    assert state.materializations["rev-1"] == canonical
+    assert store_a.get_by_revision("rev-1") == canonical
+    assert store_b.get_by_revision("rev-1") == canonical
+
+
+def test_concurrent_identical_persist_across_wrappers_idempotent() -> None:
+    state = AgentDistributionStoreState()
+    store_a = InMemoryRuntimeMaterializationStore(state)
+    store_b = InMemoryRuntimeMaterializationStore(state)
+    record = _record()
+    barrier = threading.Barrier(2)
+    results: list[RuntimeMaterializationRecord] = []
+    errors: list[Exception] = []
+
+    def persist_from_a() -> None:
+        barrier.wait(timeout=5)
+        try:
+            results.append(store_a.persist(record))
+        except Exception as exc:
+            errors.append(exc)
+
+    def persist_from_b() -> None:
+        barrier.wait(timeout=5)
+        try:
+            results.append(store_b.persist(record))
+        except Exception as exc:
+            errors.append(exc)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        future_a = executor.submit(persist_from_a)
+        future_b = executor.submit(persist_from_b)
+        future_a.result(timeout=5)
+        future_b.result(timeout=5)
+
+    assert not errors
+    assert len(results) == 2
+    assert results[0] == record
+    assert results[1] == record
+    assert len(state.materializations) == 1
+    assert state.materializations["rev-1"] == record
+
+
+@pytest.mark.parametrize("run_index", range(30))
+def test_concurrent_conflicting_persist_across_wrappers_repeated(
+    run_index: int,
+) -> None:
+    del run_index
+    test_concurrent_conflicting_persist_across_wrappers_one_wins()
