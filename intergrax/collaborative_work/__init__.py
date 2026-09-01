@@ -11,6 +11,7 @@ from intergrax.collaborative_work.persistence import (
     open_sqlite_collaborative_work_repositories,
 )
 from intergrax.collaborative_work.materialization_factory import (
+    CollaborativeWorkMaterializationBinder,
     CollaborativeWorkPersistenceFactory,
 )
 from intergrax.collaborative_work.persistence_provider import (
@@ -71,6 +72,7 @@ from intergrax.collaborative_work.repository import (
 )
 
 __all__ = [
+    "CollaborativeWorkMaterializationBinder",
     "CollaborativeWorkPersistenceFactory",
     "CollaborativeWorkPersistenceProvider",
     "CollaborativeWorkRepositories",

@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 from intergrax.collaborative_work.materialization_factory import (
+    CollaborativeWorkMaterializationBinder,
     CollaborativeWorkPersistenceFactory,
 )
 from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
@@ -111,18 +112,10 @@ class PostgreSQLRelationalStoreFactory:
         overrides, connection_factory = _postgresql_materialization_inputs(options)
         return _PostgreSQLCollaborativeWorkMaterializer(overrides, connection_factory)
 
-    def materialize_collaborative_work_repositories(
-        self,
-    ) -> CollaborativeWorkRepositories:
-        raise IntegrationConfigurationError(
-            "PostgreSQL Collaborative Work materialization requires bound integration "
-            "options from Integrations profile resolution."
-        )
 
-
-create_postgresql_relational_store: PostgreSQLRelationalStoreFactory & CollaborativeWorkPersistenceFactory = (
-    PostgreSQLRelationalStoreFactory()
-)
+create_postgresql_relational_store: (
+    PostgreSQLRelationalStoreFactory & CollaborativeWorkMaterializationBinder
+) = PostgreSQLRelationalStoreFactory()
 
 from intergrax.integrations.providers.relational_store.postgresql.integration import (
     POSTGRESQL_RELATIONAL_STORE_PROVIDER_ID,

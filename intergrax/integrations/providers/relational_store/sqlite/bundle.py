@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from intergrax.collaborative_work.materialization_factory import (
+    CollaborativeWorkMaterializationBinder,
     CollaborativeWorkPersistenceFactory,
 )
 from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
@@ -163,18 +164,10 @@ class SQLiteRelationalStoreFactory:
         paths = _sqlite_materialization_paths_from_options(options)
         return _SQLiteCollaborativeWorkMaterializer(paths)
 
-    def materialize_collaborative_work_repositories(
-        self,
-    ) -> CollaborativeWorkRepositories:
-        raise IntegrationConfigurationError(
-            "SQLite Collaborative Work materialization requires bound integration "
-            "options from Integrations profile resolution."
-        )
 
-
-create_sqlite_relational_store: SQLiteRelationalStoreFactory & CollaborativeWorkPersistenceFactory = (
-    SQLiteRelationalStoreFactory()
-)
+create_sqlite_relational_store: (
+    SQLiteRelationalStoreFactory & CollaborativeWorkMaterializationBinder
+) = SQLiteRelationalStoreFactory()
 
 
 def create_sqlite_trace_store(

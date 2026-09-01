@@ -4,10 +4,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from typing import Protocol, runtime_checkable
 
 from intergrax.collaborative_work.materialization_factory import (
+    CollaborativeWorkMaterializationBinder,
     CollaborativeWorkPersistenceFactory,
 )
 from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
@@ -24,17 +24,6 @@ class CollaborativeWorkPersistenceProvider(Protocol):
 
     def materialize_collaborative_work_repositories(self) -> CollaborativeWorkRepositories:
         """Construct the authoritative Collaborative Work repository bundle."""
-
-
-@runtime_checkable
-class _CollaborativeWorkMaterializationBinder(Protocol):
-    """Integrations-owned binding of profile options to a configured CW materializer."""
-
-    def bind_collaborative_work_materialization(
-        self,
-        options: Mapping[str, object],
-    ) -> CollaborativeWorkPersistenceFactory:
-        """Return a provider-configured materializer for Collaborative Work persistence."""
 
 
 def resolve_collaborative_work_repositories(
@@ -63,15 +52,21 @@ def resolve_collaborative_work_repositories(
     merged = merge_config(profile.options_for_slug(slug), None)
     entry = get_entry(slug)
     factory = entry.factory
-    if not isinstance(factory, CollaborativeWorkPersistenceFactory):
-        raise IntegrationConfigurationError(
-            "Selected relational store provider "
-            f"({slug}) does not implement Collaborative Work persistence "
-            "materialization."
-        )
-
-    if isinstance(factory, _CollaborativeWorkMaterializationBinder):
+    if isinstance(factory, CollaborativeWorkMaterializationBinder):
         materializer = factory.bind_collaborative_work_materialization(merged)
+        if not isinstance(materializer, CollaborativeWorkPersistenceFactory):
+            raise IntegrationConfigurationError(
+                "Selected relational store provider "
+                f"({slug}) bind_collaborative_work_materialization returned an object "
+                "that does not implement CollaborativeWorkPersistenceFactory."
+            )
         return materializer.materialize_collaborative_work_repositories()
 
-    return factory.materialize_collaborative_work_repositories()
+    if isinstance(factory, CollaborativeWorkPersistenceFactory):
+        return factory.materialize_collaborative_work_repositories()
+
+    raise IntegrationConfigurationError(
+        "Selected relational store provider "
+        f"({slug}) does not implement Collaborative Work persistence "
+        "materialization binder or factory."
+    )

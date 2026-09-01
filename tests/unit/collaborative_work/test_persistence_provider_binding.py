@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Tests for typed Collaborative Work persistence provider binding (PROVIDER-QUAL-3B-R3)."""
+"""Tests for typed Collaborative Work persistence provider binding (PROVIDER-QUAL-3B-R4)."""
 
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ from intergrax.collaborative_work.in_memory_repository import (
 )
 from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
 from intergrax.collaborative_work.materialization_factory import (
+    CollaborativeWorkMaterializationBinder,
     CollaborativeWorkPersistenceFactory,
 )
 from intergrax.collaborative_work.persistence_provider import (
@@ -45,6 +46,14 @@ from intergrax.integrations.providers.relational_store.sqlite.adapter import (
 )
 from intergrax.integrations.providers.relational_store.sqlite.integration import (
     SqliteRelationalStoreIntegration,
+)
+from intergrax.integrations.providers.relational_store.postgresql.bundle import (
+    PostgreSQLRelationalStoreFactory,
+    create_postgresql_relational_store,
+)
+from intergrax.integrations.providers.relational_store.sqlite.bundle import (
+    SQLiteRelationalStoreFactory,
+    create_sqlite_relational_store,
 )
 from intergrax.integrations.providers.relational_store.postgresql.register import (
     register_postgresql_integration,
@@ -158,7 +167,36 @@ class _UnsupportedRelationalStoreFactory:
         return _UnsupportedRelationalStore()
 
 
-class _FutureVendorRelationalStoreFactory:
+class _FutureVendorMaterializer:
+    def __init__(self) -> None:
+        self.materialization_invocations = 0
+
+    def materialize_collaborative_work_repositories(
+        self,
+    ) -> CollaborativeWorkRepositories:
+        self.materialization_invocations += 1
+        return _in_memory_collaborative_work_repositories()
+
+
+class _FutureVendorBinderFactory:
+    def __init__(self) -> None:
+        self.generic_invocations = 0
+        self.bind_invocations = 0
+        self.materializer = _FutureVendorMaterializer()
+
+    def __call__(self, **_kwargs: object) -> _FutureVendorRelationalStore:
+        self.generic_invocations += 1
+        return _FutureVendorRelationalStore()
+
+    def bind_collaborative_work_materialization(
+        self,
+        options: Mapping[str, object],
+    ) -> _FutureVendorMaterializer:
+        self.bind_invocations += 1
+        return self.materializer
+
+
+class _DirectReadyMaterializerFactory:
     def __init__(self) -> None:
         self.generic_invocations = 0
         self.materialization_invocations = 0
@@ -172,6 +210,38 @@ class _FutureVendorRelationalStoreFactory:
     ) -> CollaborativeWorkRepositories:
         self.materialization_invocations += 1
         return _in_memory_collaborative_work_repositories()
+
+
+class _InvalidBinderReturnFactory:
+    def __init__(self) -> None:
+        self.generic_invocations = 0
+        self.bind_invocations = 0
+
+    def __call__(self, **_kwargs: object) -> _UnsupportedRelationalStore:
+        self.generic_invocations += 1
+        return _UnsupportedRelationalStore()
+
+    def bind_collaborative_work_materialization(
+        self,
+        options: Mapping[str, object],
+    ) -> object:
+        self.bind_invocations += 1
+        return object()
+
+
+class _BinderErrorFactory:
+    def __init__(self) -> None:
+        self.bind_invocations = 0
+
+    def __call__(self, **_kwargs: object) -> _UnsupportedRelationalStore:
+        return _UnsupportedRelationalStore()
+
+    def bind_collaborative_work_materialization(
+        self,
+        options: Mapping[str, object],
+    ) -> CollaborativeWorkRepositories:
+        self.bind_invocations += 1
+        raise ValueError("internal binder bug")
 
 
 class _TypeErrorRelationalStoreFactory:
@@ -367,6 +437,36 @@ def test_central_binding_has_no_typeerror_capability_probing(relative_path: str)
     assert not violations, "\n".join(violations)
 
 
+def test_postgresql_catalog_factory_is_binder_not_materializer() -> None:
+    factory = create_postgresql_relational_store
+    assert isinstance(factory, CollaborativeWorkMaterializationBinder)
+    assert not isinstance(factory, CollaborativeWorkPersistenceFactory)
+    assert isinstance(factory, PostgreSQLRelationalStoreFactory)
+
+
+def test_sqlite_catalog_factory_is_binder_not_materializer() -> None:
+    factory = create_sqlite_relational_store
+    assert isinstance(factory, CollaborativeWorkMaterializationBinder)
+    assert not isinstance(factory, CollaborativeWorkPersistenceFactory)
+    assert isinstance(factory, SQLiteRelationalStoreFactory)
+
+
+def test_postgresql_bound_materializer_is_persistence_factory() -> None:
+    materializer = create_postgresql_relational_store.bind_collaborative_work_materialization(
+        {"dsn": "postgresql://localhost/test"},
+    )
+    assert isinstance(materializer, CollaborativeWorkPersistenceFactory)
+    assert not isinstance(materializer, CollaborativeWorkMaterializationBinder)
+
+
+def test_sqlite_bound_materializer_is_persistence_factory(tmp_path: Path) -> None:
+    materializer = create_sqlite_relational_store.bind_collaborative_work_materialization(
+        {"data_dir": str(tmp_path)},
+    )
+    assert isinstance(materializer, CollaborativeWorkPersistenceFactory)
+    assert not isinstance(materializer, CollaborativeWorkMaterializationBinder)
+
+
 def test_sqlite_profile_materializes_collaborative_work_repositories(tmp_path: Path) -> None:
     register_sqlite_integration()
     profile = IntegrationProfile(
@@ -457,8 +557,8 @@ def test_unsupported_relational_provider_fails_before_factory_invocation() -> No
     assert unsupported_factory.generic_invocations == 0
 
 
-def test_future_vendor_uses_same_bridge_without_central_dispatch_changes() -> None:
-    future_factory = _FutureVendorRelationalStoreFactory()
+def test_future_vendor_uses_binder_materializer_without_central_dispatch_changes() -> None:
+    future_factory = _FutureVendorBinderFactory()
     register_integration(
         IntegrationEntry(
             slug="future_vendor_x",
@@ -471,10 +571,68 @@ def test_future_vendor_uses_same_bridge_without_central_dispatch_changes() -> No
     bundle = resolve_collaborative_work_repositories(profile)
 
     assert future_factory.generic_invocations == 0
-    assert future_factory.materialization_invocations == 1
+    assert future_factory.bind_invocations == 1
+    assert future_factory.materializer.materialization_invocations == 1
     assert isinstance(bundle, CollaborativeWorkRepositories)
     assert bundle.membership.capabilities.durable is False
     bundle.close()
+
+
+def test_direct_ready_materializer_path_works_without_binder() -> None:
+    direct_factory = _DirectReadyMaterializerFactory()
+    register_integration(
+        IntegrationEntry(
+            slug="direct-materializer",
+            categories=(IntegrationCategory.RELATIONAL_STORE,),
+            factory=direct_factory,
+        )
+    )
+    profile = IntegrationProfile(relational_store="direct-materializer")
+
+    bundle = resolve_collaborative_work_repositories(profile)
+
+    assert direct_factory.generic_invocations == 0
+    assert direct_factory.materialization_invocations == 1
+    assert isinstance(bundle, CollaborativeWorkRepositories)
+    bundle.close()
+
+
+def test_binder_returning_invalid_object_fails_closed() -> None:
+    invalid_factory = _InvalidBinderReturnFactory()
+    register_integration(
+        IntegrationEntry(
+            slug="invalid-binder-return",
+            categories=(IntegrationCategory.RELATIONAL_STORE,),
+            factory=invalid_factory,
+        )
+    )
+    profile = IntegrationProfile(relational_store="invalid-binder-return")
+
+    with pytest.raises(
+        IntegrationConfigurationError,
+        match="does not implement CollaborativeWorkPersistenceFactory",
+    ):
+        resolve_collaborative_work_repositories(profile)
+
+    assert invalid_factory.generic_invocations == 0
+    assert invalid_factory.bind_invocations == 1
+
+
+def test_binder_internal_error_propagates_once() -> None:
+    failing_factory = _BinderErrorFactory()
+    register_integration(
+        IntegrationEntry(
+            slug="binder-error",
+            categories=(IntegrationCategory.RELATIONAL_STORE,),
+            factory=failing_factory,
+        )
+    )
+    profile = IntegrationProfile(relational_store="binder-error")
+
+    with pytest.raises(ValueError, match="internal binder bug"):
+        resolve_collaborative_work_repositories(profile)
+
+    assert failing_factory.bind_invocations == 1
 
 
 def test_provider_factory_internal_typeerror_propagates_once() -> None:
@@ -517,7 +675,8 @@ def test_postgresql_factory_materialization_invoked_exactly_once() -> None:
         options={POSTGRESQL.slug: {"dsn": "postgresql://localhost/test"}},
     )
     factory = get_entry(POSTGRESQL.slug).factory
-    assert isinstance(factory, CollaborativeWorkPersistenceFactory)
+    assert isinstance(factory, CollaborativeWorkMaterializationBinder)
+    assert not isinstance(factory, CollaborativeWorkPersistenceFactory)
 
     with (
         patch.object(
