@@ -104,6 +104,41 @@ def _artifact_scope_prefix(artifact_digest: str) -> str:
     return f"_intergrax_artifact_{normalized}"
 
 
+def _install_real_host_example_agent(
+    tmp_path: Path,
+    *,
+    package_marker: str = "HOST",
+    config_marker: str = "HOST",
+) -> tuple[Path, object, object]:
+    host_root = tmp_path / "host"
+    host_site = host_root / "site-packages"
+    host_pkg = host_site / "example_agent"
+    host_pkg.mkdir(parents=True)
+    (host_pkg / "__init__.py").write_text(
+        f"MARKER = {package_marker!r}\n",
+        encoding="utf-8",
+    )
+    (host_pkg / "config.py").write_text(
+        f"MARKER = {config_marker!r}\n",
+        encoding="utf-8",
+    )
+    sys.path.insert(0, str(host_site))
+    import example_agent
+    import example_agent.config
+
+    assert example_agent.__file__ is not None
+    assert example_agent.config.__file__ is not None
+    host_package = sys.modules["example_agent"]
+    host_config = sys.modules["example_agent.config"]
+    return host_site, host_package, host_config
+
+
+def _uninstall_real_host_example_agent(host_site: Path) -> None:
+    sys.path.remove(str(host_site))
+    sys.modules.pop("example_agent.config", None)
+    sys.modules.pop("example_agent", None)
+
+
 def _write_example_agent_package(
     site_packages: Path,
     *,
@@ -467,14 +502,6 @@ def _echo_artifact(tmp_path: Path) -> tuple[Path, str, MaterializedRuntimeLock]:
     artifact_root = tmp_path / "echo-artifact"
     site_packages = artifact_root / "site-packages"
     site_packages.mkdir(parents=True)
-    echo_src = Path(__file__).resolve().parents[3] / "agents" / "echo"
-    echo_dest = site_packages / "echo"
-    echo_dest.mkdir()
-    for name in ("__init__.py", "echo_agent.py"):
-        (echo_dest / name).write_text(
-            (echo_src / name).read_text(encoding="utf-8"),
-            encoding="utf-8",
-        )
     package_dir = site_packages / "example_agent"
     package_dir.mkdir()
     (package_dir / "__init__.py").write_text("", encoding="utf-8")
@@ -703,16 +730,13 @@ def test_nn1_reverse_load_order(tmp_path: Path) -> None:
 
 
 def test_host_config_shadow_does_not_contaminate(tmp_path: Path) -> None:
-    import types
-
-    host_module = types.ModuleType("example_agent.config")
-    host_module.MARKER = "HOST"
-    sys.modules["example_agent.config"] = host_module
+    host_site, host_package, host_config = _install_real_host_example_agent(tmp_path)
     try:
         artifact_root, digest, lock = _build_artifact(
             tmp_path,
             marker="ARTIFACT",
             config_marker="ARTIFACT",
+            import_style="absolute",
         )
         revision = _revision(
             "rev-host-shadow",
@@ -726,9 +750,15 @@ def test_host_config_shadow_does_not_contaminate(tmp_path: Path) -> None:
             factory_reference=_FACTORY_REF,
         )
         assert factory(None, AgentBinding(contract_id="x"))[2] == "ARTIFACT"
+        assert sys.modules["example_agent"] is host_package
+        assert sys.modules["example_agent.config"] is host_config
         assert sys.modules["example_agent.config"].MARKER == "HOST"
+        import example_agent.config as host_config_again
+
+        assert host_config_again is host_config
+        assert host_config_again.MARKER == "HOST"
     finally:
-        sys.modules.pop("example_agent.config", None)
+        _uninstall_real_host_example_agent(host_site)
 
 
 def test_third_party_dependency_shadow_uses_artifact_copy(tmp_path: Path) -> None:
@@ -739,6 +769,10 @@ def test_third_party_dependency_shadow_uses_artifact_copy(tmp_path: Path) -> Non
     host_pkg.mkdir()
     (host_pkg / "__init__.py").write_text('VALUE = "HOST"\n', encoding="utf-8")
     sys.path.insert(0, str(host_site))
+    import shared_dep as host_shared_dep
+
+    assert host_shared_dep.__file__ is not None
+    assert host_shared_dep.VALUE == "HOST"
     try:
         artifact_root = tmp_path / "artifact-dep"
         site_packages = artifact_root / "site-packages"
@@ -775,65 +809,73 @@ def test_third_party_dependency_shadow_uses_artifact_copy(tmp_path: Path) -> Non
             factory_reference=_FACTORY_REF,
         )
         assert factory(None, AgentBinding(contract_id="dep")) == "ARTIFACT"
-        assert "shared_dep" not in sys.modules
+        assert sys.modules["shared_dep"] is host_shared_dep
+        assert sys.modules["shared_dep"].VALUE == "HOST"
     finally:
         sys.path.remove(str(host_site))
+        sys.modules.pop("shared_dep", None)
 
 
 def test_failed_import_cleanup_does_not_poison_retry(tmp_path: Path) -> None:
-    artifact_root = tmp_path / "artifact-broken"
-    site_packages = artifact_root / "site-packages"
-    site_packages.mkdir(parents=True)
-    package_dir = site_packages / "example_agent"
-    package_dir.mkdir()
-    (package_dir / "__init__.py").write_text("", encoding="utf-8")
-    (package_dir / "config.py").write_text("MARKER = 'ok'\n", encoding="utf-8")
-    (package_dir / "factory.py").write_text(
-        textwrap.dedent(
-            """
-            from .missing import BROKEN
+    host_site, host_package, host_config = _install_real_host_example_agent(tmp_path)
+    try:
+        artifact_root = tmp_path / "artifact-broken"
+        site_packages = artifact_root / "site-packages"
+        site_packages.mkdir(parents=True)
+        package_dir = site_packages / "example_agent"
+        package_dir.mkdir()
+        (package_dir / "__init__.py").write_text("", encoding="utf-8")
+        (package_dir / "config.py").write_text("MARKER = 'ok'\n", encoding="utf-8")
+        (package_dir / "factory.py").write_text(
+            textwrap.dedent(
+                """
+                from .missing import BROKEN
 
-            def build_agent(ctx, binding):
-                return BROKEN
-            """
-        ).strip()
-        + "\n",
-        encoding="utf-8",
-    )
-    lock = _write_lock_manifest(artifact_root)
-    digest = directory_content_digest(artifact_root)
-    revision = _revision(
-        "rev-broken",
-        artifact_digest=digest,
-        lock_id=lock.lock_id or "",
-        lock_digest=lock.lock_digest or "",
-    )
-    resolver = _resolver(artifact_root, digest)
-    with pytest.raises(RuntimeAgentFactoryResolutionError):
-        resolver.resolve_factory(
+                def build_agent(ctx, binding):
+                    return BROKEN
+                """
+            ).strip()
+            + "\n",
+            encoding="utf-8",
+        )
+        lock = _write_lock_manifest(artifact_root)
+        digest = directory_content_digest(artifact_root)
+        revision = _revision(
+            "rev-broken",
+            artifact_digest=digest,
+            lock_id=lock.lock_id or "",
+            lock_digest=lock.lock_digest or "",
+        )
+        resolver = _resolver(artifact_root, digest)
+        with pytest.raises(RuntimeAgentFactoryResolutionError):
+            resolver.resolve_factory(
+                runtime_revision=revision,
+                package_digest=_DIGEST_A,
+                factory_reference=_FACTORY_REF,
+            )
+        scope_prefix = _artifact_scope_prefix(digest)
+        assert not any(name.startswith(scope_prefix) for name in sys.modules)
+        (package_dir / "missing.py").write_text("BROKEN = 'fixed'\n", encoding="utf-8")
+        digest = directory_content_digest(artifact_root)
+        revision = _revision(
+            "rev-fixed",
+            artifact_digest=digest,
+            lock_id=lock.lock_id or "",
+            lock_digest=lock.lock_digest or "",
+        )
+        factory = VenvBundleRuntimeAgentFactoryResolver(
+            artifact_root=artifact_root,
+            expected_artifact_digest=digest,
+        ).resolve_factory(
             runtime_revision=revision,
             package_digest=_DIGEST_A,
             factory_reference=_FACTORY_REF,
         )
-    scope_prefix = _artifact_scope_prefix(digest)
-    assert not any(name.startswith(scope_prefix) for name in sys.modules)
-    (package_dir / "missing.py").write_text("BROKEN = 'fixed'\n", encoding="utf-8")
-    digest = directory_content_digest(artifact_root)
-    revision = _revision(
-        "rev-fixed",
-        artifact_digest=digest,
-        lock_id=lock.lock_id or "",
-        lock_digest=lock.lock_digest or "",
-    )
-    factory = VenvBundleRuntimeAgentFactoryResolver(
-        artifact_root=artifact_root,
-        expected_artifact_digest=digest,
-    ).resolve_factory(
-        runtime_revision=revision,
-        package_digest=_DIGEST_A,
-        factory_reference=_FACTORY_REF,
-    )
-    assert factory(None, AgentBinding(contract_id="fix")) == "fixed"
+        assert factory(None, AgentBinding(contract_id="fix")) == "fixed"
+        assert sys.modules["example_agent"] is host_package
+        assert sys.modules["example_agent.config"] is host_config
+    finally:
+        _uninstall_real_host_example_agent(host_site)
 
 
 def test_missing_artifact_module_fails_without_workspace_fallback(
@@ -910,12 +952,7 @@ def test_no_canonical_example_agent_modules_cached(tmp_path: Path) -> None:
 
 
 def test_host_preloaded_top_level_package_uses_artifact_copy(tmp_path: Path) -> None:
-    import types
-
-    host_package = types.ModuleType("example_agent")
-    host_package.__path__ = []
-    host_package.MARKER = "HOST"
-    sys.modules["example_agent"] = host_package
+    host_site, host_package, host_config = _install_real_host_example_agent(tmp_path)
     try:
         artifact_root, digest, lock = _build_artifact(
             tmp_path,
@@ -936,13 +973,17 @@ def test_host_preloaded_top_level_package_uses_artifact_copy(tmp_path: Path) -> 
         )
         assert factory(None, AgentBinding(contract_id="host-preload"))[2] == "ARTIFACT"
         assert sys.modules["example_agent"] is host_package
+        assert sys.modules["example_agent.config"] is host_config
         assert sys.modules["example_agent"].MARKER == "HOST"
-        assert "example_agent.config" not in sys.modules
         import example_agent as host_example_agent
 
         assert host_example_agent is host_package
+        import example_agent.config as host_config_again
+
+        assert host_config_again is host_config
+        assert host_config_again.MARKER == "HOST"
     finally:
-        sys.modules.pop("example_agent", None)
+        _uninstall_real_host_example_agent(host_site)
 
 
 def test_host_not_preloaded_dependency_leaves_no_canonical_pollution(tmp_path: Path) -> None:
@@ -1000,15 +1041,13 @@ def test_host_not_preloaded_dependency_leaves_no_canonical_pollution(tmp_path: P
 
 
 def test_host_n_nn1_three_way_isolation(tmp_path: Path) -> None:
-    import types
-
-    host_package = types.ModuleType("example_agent")
-    host_package.__path__ = []
-    host_config = types.ModuleType("example_agent.config")
-    host_config.MARKER = "HOST"
-    sys.modules["example_agent"] = host_package
-    sys.modules["example_agent.config"] = host_config
+    host_site, host_package, host_config = _install_real_host_example_agent(tmp_path)
     try:
+        import example_agent
+        import example_agent.config as host_config_module
+
+        assert example_agent.MARKER == "HOST"
+        assert host_config_module.MARKER == "HOST"
         artifact_n, digest_n, lock_n = _build_artifact(
             tmp_path / "n",
             marker="N",
@@ -1045,9 +1084,6 @@ def test_host_n_nn1_three_way_isolation(tmp_path: Path) -> None:
             package_digest=_DIGEST_B,
             factory_reference=_FACTORY_REF,
         )
-        import example_agent.config as host_config_module
-
-        assert host_config_module.MARKER == "HOST"
         assert factory_n(None, AgentBinding(contract_id="n"))[2] == "N"
         assert factory_n1(None, AgentBinding(contract_id="n1"))[2] == "N+1"
         assert factory_n(None, AgentBinding(contract_id="n-again"))[2] == "N"
@@ -1059,8 +1095,19 @@ def test_host_n_nn1_three_way_isolation(tmp_path: Path) -> None:
         assert sys.modules["example_agent.config"] is host_config
         assert "example_agent.factory" not in sys.modules
     finally:
-        sys.modules.pop("example_agent.config", None)
-        sys.modules.pop("example_agent", None)
+        _uninstall_real_host_example_agent(host_site)
+
+
+def test_import_wrapper_delegates_outside_artifact_scope(tmp_path: Path) -> None:
+    host_site, host_package, host_config = _install_real_host_example_agent(tmp_path)
+    try:
+        import example_agent.config
+
+        assert example_agent.config.MARKER == "HOST"
+        assert sys.modules["example_agent"] is host_package
+        assert sys.modules["example_agent.config"] is host_config
+    finally:
+        _uninstall_real_host_example_agent(host_site)
 
 
 def test_concurrent_nn1_resolution_is_deterministic(tmp_path: Path) -> None:

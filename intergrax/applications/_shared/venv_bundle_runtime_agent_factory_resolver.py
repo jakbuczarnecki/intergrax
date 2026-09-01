@@ -129,31 +129,6 @@ def _scoped_import_name_if_artifact_owned(
     return _scoped_module_name(scope.scope_root, module_path)
 
 
-def _host_canonical_module_precludes_artifact_redirect(
-    scope: _ArtifactImportScope,
-    canonical_name: str,
-) -> bool:
-    existing = sys.modules.get(canonical_name)
-    if existing is None:
-        return False
-    module_file = getattr(existing, "__file__", None)
-    if not isinstance(module_file, str):
-        return False
-    try:
-        Path(module_file).resolve().relative_to(scope.site_packages.resolve())
-    except ValueError:
-        return True
-    return False
-
-
-def _canonical_import_targets(name: str, fromlist: Sequence[str]) -> tuple[str, ...]:
-    if not fromlist:
-        return (name,)
-    if "." in name:
-        return (name,)
-    return tuple(f"{name}.{item}" for item in fromlist if item)
-
-
 def _artifact_aware_import(
     name: str,
     globals: dict[str, object] | None = None,
@@ -163,12 +138,6 @@ def _artifact_aware_import(
 ) -> object:
     scope = _ActiveArtifactImportScope.get()
     if scope is None or level != 0:
-        return _OriginalBuiltinImport(name, globals, locals, fromlist, level)
-    targets = _canonical_import_targets(name, fromlist)
-    if any(
-        _host_canonical_module_precludes_artifact_redirect(scope, target)
-        for target in targets
-    ):
         return _OriginalBuiltinImport(name, globals, locals, fromlist, level)
     scoped_name = _scoped_import_name_if_artifact_owned(scope, name)
     if scoped_name is None:
