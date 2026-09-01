@@ -6,7 +6,13 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from intergrax.core.qualification.discovery import (
+        ProviderQualificationRunDiscoveryPage,
+        ProviderQualificationRunFilter,
+    )
 
 from intergrax.core.qualification.evidence import QualificationEvidence
 from intergrax.core.qualification.provider import (
@@ -484,6 +490,28 @@ class DocumentStoreProviderQualificationPersistence:
         if document is None:
             return None
         return self._document_to_run(document)
+
+    def find_runs(
+        self,
+        query_filter: ProviderQualificationRunFilter,
+        *,
+        limit: int = 100,
+        cursor: str | None = None,
+    ) -> ProviderQualificationRunDiscoveryPage:
+        """Discover persisted qualification runs matching exact filter criteria."""
+        from intergrax.core.qualification.discovery import (
+            ProviderQualificationRunFilter,
+            discover_provider_qualification_runs,
+        )
+
+        if not isinstance(query_filter, ProviderQualificationRunFilter):
+            raise TypeError("query_filter must be ProviderQualificationRunFilter")
+        return discover_provider_qualification_runs(
+            self._document_store,
+            query_filter,
+            limit=limit,
+            cursor=cursor,
+        )
 
     def close(self) -> None:
         """Release adapter resources; DocumentStore lifecycle remains caller-owned."""

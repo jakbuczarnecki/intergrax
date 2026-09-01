@@ -167,6 +167,7 @@ Extends PLUGIN-7 qualification for **provider-scoped** evidence without a new qu
 | **PROVIDER-QUAL-3C** | Evidence persistence/integration | **READY_FOR_REVIEW** | `ProviderQualificationRun` → `ProofReceipt` / `DocumentStore` durable projection; lookup by `qualification_run_id`; idempotent persist + conflict fail-closed; no parallel qualification store |
 | **PROVIDER-QUAL-3C-R1** | Evidence durability + safe persistence hardening | **READY_FOR_REVIEW** | Reuses `ProofReceipt` / `DocumentStore`; adapter reconstruction over shared fake Mongo collection (unit contract only); unsafe credential-bearing evidence rejected before write via `intergrax.core.security.secret_safety`; no new qualification storage backend |
 | **PROVIDER-QUAL-3C-R2** | Real durable DocumentStore reopen proof | **READY_FOR_REVIEW** | Real persistent MongoDB `DocumentStore` reopen proof: store A persist → close → independent store B recovers same `qualification_run_id`; qualification persistence remains generic `DocumentStore`-based; no process restart required |
+| **PROVIDER-QUAL-4** | Provider qualification discovery/index | **READY_FOR_REVIEW** | Reuses `ProofReceipt` / `DocumentStore` bounded partition scan; exact-match filters (`provider_id`, version, capability, suite, domain, environment, status); returns `ProviderQualificationRun`; deterministic ordering; no parallel index; no validity/staleness |
 
 **Explicit out of scope (PROVIDER-QUAL-1):** runtime Python changes, GHA vendor jobs, LKW integration, MP-2, admission policy engine, automatic staleness engine.
 
