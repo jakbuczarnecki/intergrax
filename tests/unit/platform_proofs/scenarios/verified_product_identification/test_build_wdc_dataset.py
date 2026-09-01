@@ -3,8 +3,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pyarrow.parquet as pq
 import pytest
+
+pytest.importorskip("pyarrow")
+
+import pyarrow.parquet as pq
 
 from platform_proofs.scenarios.verified_product_identification.dataset.build_wdc_dataset import (
     build_dataset,
@@ -14,8 +17,6 @@ from platform_proofs.scenarios.verified_product_identification.dataset.build_wdc
 )
 
 pytestmark = pytest.mark.unit
-
-pytest.importorskip("pyarrow")
 
 
 def _write_ndjson(path: Path, records: list[dict[str, object]]) -> None:
