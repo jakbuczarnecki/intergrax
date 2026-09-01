@@ -749,13 +749,24 @@ PostgreSQL evidence must **not** be persisted before **PROVIDER-QUAL-3B** is ind
 **Status:** **READY_FOR_REVIEW**
 
 - qualification results continue to use existing `ProofReceipt` / `DocumentStore` mechanics (no parallel qualification store)
-- durability is proven by persisting through MongoDB `DocumentStore`, closing store instance A, reopening store instance B, and reading the same `qualification_run_id`
 - unsafe credential-bearing evidence (including credential-bearing URLs/DSNs in free-text fields such as `evidence.ref`) is rejected before `ProofReceipt` write via `intergrax.core.security.secret_safety`
 - adapter reconstruction against caller-owned storage remains supported but is not labeled as restart durability
+- fake MongoDB collection unit test proves adapter reconstruction over shared in-memory backing only (not durable persistence)
 
 **Out of scope (3C-R1):** discovery/index, staleness, requalification runner, vendor CI, Oracle qualification, broad E2E, MP-2.
 
-## 18. References
+
+## 18. PROVIDER-QUAL-3C-R2 - real durable DocumentStore reopen proof
+
+**Status:** **READY_FOR_REVIEW**
+
+- real persistent MongoDB DocumentStore integration proof: store A persist -> close -> independent store B recovers same qualification_run_id
+- store A and store B are independent adapter/client instances; no shared fake collection or in-process dict backs persistence
+- qualification persistence remains generic DocumentStore / ProofReceipt based (no MongoDB-specific qualification adapter)
+- separate OS process restart is not required for R2 when external database retains state
+
+**Out of scope (3C-R2):** discovery/index, staleness, requalification runner, vendor CI, Oracle qualification, broad E2E, MP-2.
+## 19. References
 
 - [`PLATFORM_PLUGINS.md`](../PLATFORM_PLUGINS.md) section 18
 - [`PROOF_RECEIPTS.md`](../PROOF_RECEIPTS.md)

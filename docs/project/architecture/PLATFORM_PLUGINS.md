@@ -712,7 +712,7 @@ PLUGIN-8 proves executable E2E for both modes. PLUGIN-7 does not wire gates into
 | **CI** | Contract/schema/harness tests only — not live all-vendor-on-every-PR |
 | **Scale** | 5/20/50+ providers via shared contracts + linear per-vendor adapter/setup/evidence |
 
-**Implementation:** PROVIDER-QUAL-2 (typed contracts only); PROVIDER-QUAL-3C (**READY_FOR_REVIEW**) persists `ProviderQualificationRun` through existing `ProofReceipt` / `DocumentStore` mechanics with lookup by `qualification_run_id`; PROVIDER-QUAL-3C-R1 (**READY_FOR_REVIEW**) hardens durability (persistent store reopen) and rejects credential-bearing evidence before persistence via platform `secret_safety`; broader discovery/staleness/runner remain out of scope.
+**Implementation:** PROVIDER-QUAL-2 (typed contracts only); PROVIDER-QUAL-3C (**READY_FOR_REVIEW**) persists `ProviderQualificationRun` through existing `ProofReceipt` / `DocumentStore` mechanics with lookup by `qualification_run_id`; PROVIDER-QUAL-3C-R1 (**READY_FOR_REVIEW**) hardens safe persistence (credential-bearing evidence rejected before write via platform `secret_safety`); PROVIDER-QUAL-3C-R2 (**READY_FOR_REVIEW**) proves real persistent `DocumentStore` reopen durability (real MongoDB integration test — store A close, independent store B recovery); broader discovery/staleness/runner remain out of scope.
 
 ## 19. Observability expectations
 

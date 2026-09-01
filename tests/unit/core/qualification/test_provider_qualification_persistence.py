@@ -35,20 +35,12 @@ from intergrax.core.qualification.persistence import (
 )
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import DocumentRecord
-from intergrax.integrations.providers.document_store.mongodb.bundle import (
-    create_mongodb_document_store,
-)
 from intergrax.proofs.receipts.document_store import (
     proof_receipt_lookup_row_key,
     proof_receipt_partition_key,
     proof_receipt_to_document,
 )
 from intergrax.proofs.receipts.store import ProofReceiptStore
-from tests.unit.integrations.providers.document_store.test_mongodb import (
-    _collection_factory,
-    _mongodb_config,
-)
-
 pytestmark = pytest.mark.unit
 
 _EXECUTED_AT = datetime(2026, 8, 17, 12, 0, 0, tzinfo=timezone.utc)
@@ -192,7 +184,22 @@ def test_adapter_reconstruction_preserves_caller_owned_storage() -> None:
         second.close()
 
 
-def test_persistent_document_store_reopen_survives_store_instance_close() -> None:
+def test_mongodb_fake_collection_adapter_reopen_over_shared_backing_object() -> None:
+    """
+    MongoDB adapter contract only: store A and store B share one in-memory fake collection.
+
+    This proves adapter reconstruction over caller-owned shared backing storage.
+    It is NOT a durable persistence proof — see integration test
+    ``test_provider_qualification_run_survives_real_document_store_reopen``.
+    """
+    from intergrax.integrations.providers.document_store.mongodb.bundle import (
+        create_mongodb_document_store,
+    )
+    from tests.unit.integrations.providers.document_store.test_mongodb import (
+        _collection_factory,
+        _mongodb_config,
+    )
+
     factory, _collection = _collection_factory()
     config = _mongodb_config().model_dump()
     run = _run()
