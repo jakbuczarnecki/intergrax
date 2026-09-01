@@ -39,8 +39,12 @@ from dataclasses import dataclass
 from intergrax.agent_distribution.in_memory_stores import (
     AgentDistributionStoreState,
     InMemoryApplicationEnvironmentServingStore,
+    InMemoryRuntimeMaterializationStore,
 )
-from intergrax.agent_distribution.stores import ApplicationEnvironmentServingStore
+from intergrax.agent_distribution.stores import (
+    ApplicationEnvironmentServingStore,
+    RuntimeMaterializationStore,
+)
 from intergrax.applications._shared.registry_projection import (
     InMemoryRuntimeRegistryProjectionStore,
     RuntimeRegistryProjectionStore,
@@ -53,6 +57,7 @@ class AgentPlatformRuntimeStores:
 
     serving_store: ApplicationEnvironmentServingStore
     registry_projection_store: RuntimeRegistryProjectionStore
+    materialization_store: RuntimeMaterializationStore
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,6 +80,7 @@ def build_production_agent_platform_runtime() -> ProductionAgentPlatformRuntime:
         stores=AgentPlatformRuntimeStores(
             serving_store=InMemoryApplicationEnvironmentServingStore(state),
             registry_projection_store=InMemoryRuntimeRegistryProjectionStore(),
+            materialization_store=InMemoryRuntimeMaterializationStore(state),
         ),
     )
 

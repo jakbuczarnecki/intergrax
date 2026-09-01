@@ -39,7 +39,9 @@ from intergrax.agent_distribution.admin_models import (
     SetAgentEnablementRequest,
     UpdateAgentBindingRequest,
 )
-from intergrax.agent_distribution.agent_project_metadata import AgentProjectMetadataProvider
+from intergrax.agent_distribution.agent_project_metadata import (
+    AgentProjectMetadataProvider,
+)
 from intergrax.agent_distribution.binding import ApplicationAgentBinding
 from intergrax.agent_distribution.binding_service import BindingService
 from intergrax.agent_distribution.control_plane_governance import (
@@ -62,8 +64,14 @@ from intergrax.agent_distribution.control_plane_governance import (
     installation_absent_token,
     installation_state_token,
 )
-from intergrax.agent_distribution.catalog import CatalogEntryFilters, CatalogSourceProvider
-from intergrax.agent_distribution.dependency import DependencyResolverInput
+from intergrax.agent_distribution.catalog import (
+    CatalogEntryFilters,
+    CatalogSourceProvider,
+)
+from intergrax.agent_distribution.dependency import (
+    DependencyResolverInput,
+    MaterializedRuntimeLock,
+)
 from intergrax.agent_distribution.dependency_specification import (
     build_candidate_dependency_specification,
 )
@@ -76,9 +84,11 @@ from intergrax.agent_distribution.errors import (
     AgentDistributionNotFoundError,
     BindingRevisionConflict,
     InstallationSlotConflict,
+    MaterializationInputConflict,
     RuntimeActivationConflict,
     RuntimeActivationError,
     RuntimeDrainError,
+    RuntimeMaterializationConflict,
     RuntimeRevisionConflict,
     RuntimeRollbackError,
 )
@@ -92,16 +102,28 @@ from intergrax.agent_distribution.installation_service import InstallationServic
 from intergrax.agent_distribution.materialization import (
     ApplicationBuildContext,
     MaterializationInput,
+    MaterializationOutput,
 )
-from intergrax.agent_distribution.materialization_service import RuntimeMaterializationService
+from intergrax.agent_distribution.materialization_service import (
+    RuntimeMaterializationService,
+)
 from intergrax.agent_distribution.resolver import DependencyResolver
-from intergrax.agent_distribution.roster import EffectiveRoster, ManifestDefaultAgentDeclaration
+from intergrax.agent_distribution.roster import (
+    EffectiveRoster,
+    ManifestDefaultAgentDeclaration,
+)
 from intergrax.agent_distribution.runtime_graph_service import (
     CandidateRuntimeGraphBuilder,
     CandidateRuntimeGraphValidator,
 )
 from intergrax.agent_distribution.runtime_lock import MaterializedRuntimeLockService
-from intergrax.agent_distribution.runtime_revision import RuntimeRevision, RuntimeRevisionState
+from intergrax.agent_distribution.runtime_materialization_record import (
+    RuntimeMaterializationRecord,
+)
+from intergrax.agent_distribution.runtime_revision import (
+    RuntimeRevision,
+    RuntimeRevisionState,
+)
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
 from intergrax.agent_distribution.stores import (
     AgentArtifactMetadata,
@@ -111,6 +133,7 @@ from intergrax.agent_distribution.stores import (
     ApplicationEnvironmentServingStore,
     DeploymentInstanceStore,
     MaterializedRuntimeLockStore,
+    RuntimeMaterializationStore,
     RuntimeRevisionStore,
 )
 from intergrax.contracts.agent_run import RequestIdentity
@@ -191,6 +214,7 @@ class AgentPlatformAdminService:
         serving_store: ApplicationEnvironmentServingStore,
         deployment_instance_store: DeploymentInstanceStore,
         lock_store: MaterializedRuntimeLockStore,
+        materialization_store: RuntimeMaterializationStore,
         artifact_metadata_store: AgentArtifactMetadataStore,
         installation_service: InstallationService,
         binding_service: BindingService,
@@ -206,7 +230,8 @@ class AgentPlatformAdminService:
         catalog_provider: CatalogSourceProvider | None = None,
         dependency_resolver: DependencyResolver | None = None,
         manifest_defaults: tuple[ManifestDefaultAgentDeclaration, ...] = (),
-        mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
+        mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary
+        | None = None,
         environment_tenant_resolver: ApplicationEnvironmentTenantResolver | None = None,
     ) -> None:
         self._installation_store = installation_store
@@ -215,6 +240,7 @@ class AgentPlatformAdminService:
         self._serving_store = serving_store
         self._deployment_instance_store = deployment_instance_store
         self._lock_store = lock_store
+        self._materialization_store = materialization_store
         self._artifact_metadata_store = artifact_metadata_store
         self._installation_service = installation_service
         self._binding_service = binding_service
@@ -292,7 +318,9 @@ class AgentPlatformAdminService:
             application_id,
             application_environment_id,
         )
-        return BindingListResult(bindings=tuple(_binding_view(item) for item in bindings))
+        return BindingListResult(
+            bindings=tuple(_binding_view(item) for item in bindings)
+        )
 
     def inspect_effective_roster(
         self,
@@ -438,8 +466,7 @@ class AgentPlatformAdminService:
                 application_id,
                 application_environment_id,
             )
-            if binding.logical_agent_id == logical_agent_id
-            and not binding.tombstone
+            if binding.logical_agent_id == logical_agent_id and not binding.tombstone
         ]
         binding = bindings[0] if bindings else None
         installed = False
@@ -455,7 +482,9 @@ class AgentPlatformAdminService:
             )
             if active is not None:
                 package_digest = active.package_identity.package_digest
-                distribution_package_id = active.package_identity.distribution_package_id
+                distribution_package_id = (
+                    active.package_identity.distribution_package_id
+                )
         serving = self.inspect_serving(
             application_id=application_id,
             application_environment_id=application_environment_id,
@@ -834,7 +863,9 @@ class AgentPlatformAdminService:
             graph=graph,
         )
         if roster.effective_roster_revision_id is None:
-            raise AgentDistributionNotFoundError("effective roster lacks revision identity")
+            raise AgentDistributionNotFoundError(
+                "effective roster lacks revision identity"
+            )
         build_input_digest_value = build_input_digest(
             application_release_id=request.application_release_id,
             platform_version=request.platform_version,
@@ -872,11 +903,7 @@ class AgentPlatformAdminService:
                 graph_digest=graph.runtime_graph_digest,
                 build_input_digest_value=build_input_digest_value,
             ):
-                if existing.revision_state in {
-                    RuntimeRevisionState.VALIDATED,
-                    RuntimeRevisionState.CANDIDATE,
-                }:
-                    return self._build_revision_result_from_existing(existing)
+                return self._replay_existing_build(existing)
             raise RuntimeRevisionConflict(
                 "runtime_revision_id conflicts with requested build identity"
             )
@@ -941,6 +968,17 @@ class AgentPlatformAdminService:
                 "materialization_topology": output.topology,
             }
         )
+        self._validate_materialization_output_consistency(
+            validated,
+            output,
+            persisted_lock,
+        )
+        record = self._build_runtime_materialization_record(
+            validated,
+            artifact_locator=output.artifact_locator,
+        )
+        self._validate_materialization_record_matches_revision(validated, record)
+        canonical_materialization = self._materialization_store.persist(record)
         marked = self._revision_service.mark_validated(
             request.runtime_revision_id,
             validated_revision=validated,
@@ -961,8 +999,8 @@ class AgentPlatformAdminService:
             materialized_runtime_lock_id=marked.value.materialized_runtime_lock_id,
             materialized_runtime_lock_digest=marked.value.materialized_runtime_lock_digest,
             runtime_graph_digest=marked.value.runtime_graph_digest,
-            materialization_artifact_digest=marked.value.materialization_artifact_digest,
-            artifact_locator=output.artifact_locator,
+            materialization_artifact_digest=canonical_materialization.materialization_artifact_digest,
+            artifact_locator=canonical_materialization.artifact_locator,
             materialization_topology=marked.value.materialization_topology,
             authorization_evidence=authorization.evidence,
             audit_event_types=_event_types(persisted, marked),
@@ -994,7 +1032,9 @@ class AgentPlatformAdminService:
         current_traffic_revision_id = (
             serving.traffic_serving_revision_id if serving is not None else None
         )
-        current_pointer_revision = serving.serving_pointer_revision if serving is not None else 0
+        current_pointer_revision = (
+            serving.serving_pointer_revision if serving is not None else 0
+        )
         authorization = self._authorize_activation(
             principal=principal,
             application_id=application_id,
@@ -1037,7 +1077,9 @@ class AgentPlatformAdminService:
             application_environment_id,
         )
         if serving is None or serving.prior_traffic_revision_id is None:
-            raise RuntimeRollbackError("no prior traffic revision available for rollback")
+            raise RuntimeRollbackError(
+                "no prior traffic revision available for rollback"
+            )
         if (
             request.target_runtime_revision_id is not None
             and request.target_runtime_revision_id != serving.prior_traffic_revision_id
@@ -1104,7 +1146,9 @@ class AgentPlatformAdminService:
         if instance is None:
             raise AgentDistributionNotFoundError("deployment instance was not found")
         if instance.instance_state is not DeploymentInstanceState.DRAINING:
-            raise RuntimeDrainError("complete_revision_drain requires draining instance")
+            raise RuntimeDrainError(
+                "complete_revision_drain requires draining instance"
+            )
         if instance.record_revision != request.expected_record_revision:
             raise RuntimeActivationConflict("drain record revision mismatch")
         if instance.serving_unit_ref is None:
@@ -1153,15 +1197,22 @@ class AgentPlatformAdminService:
             application_id,
             application_environment_id,
         )
-        if serving is None or serving.traffic_serving_revision_id != request.runtime_revision_id:
-            raise RuntimeActivationError("post-cutover failure requires current serving revision")
+        if (
+            serving is None
+            or serving.traffic_serving_revision_id != request.runtime_revision_id
+        ):
+            raise RuntimeActivationError(
+                "post-cutover failure requires current serving revision"
+            )
 
         instance = self._deployment_instance_store.get_instance(
             application_id,
             application_environment_id,
             request.runtime_revision_id,
         )
-        failure_mark_authorization: ControlPlaneMutationAuthorizationResult | None = None
+        failure_mark_authorization: ControlPlaneMutationAuthorizationResult | None = (
+            None
+        )
         instance_state: DeploymentInstanceState | None = None
         audit_events: list[str] = []
 
@@ -1238,7 +1289,9 @@ class AgentPlatformAdminService:
             audit_event_types=tuple(audit_events),
         )
 
-    def _resolve_install_identity(self, request: InstallAgentRequest) -> AgentPackageIdentity:
+    def _resolve_install_identity(
+        self, request: InstallAgentRequest
+    ) -> AgentPackageIdentity:
         if request.catalog_entry_id is None:
             return request.package_identity
         provider = self._catalog_provider
@@ -1502,8 +1555,164 @@ class AgentPlatformAdminService:
             and existing.materialization_topology == request.materialization_topology
         )
 
+    def _replay_existing_build(self, existing: RuntimeRevision) -> BuildRevisionResult:
+        materialization = self._materialization_store.get_by_revision(
+            existing.runtime_revision_id
+        )
+        if existing.revision_state is RuntimeRevisionState.VALIDATED:
+            if materialization is None:
+                raise AgentPlatformAdminBlockedError(
+                    "AP-11_BLOCKED_BY_MISSING_MATERIALIZATION_AUTHORITY",
+                    "validated revision lacks canonical materialization authority",
+                )
+            self._validate_materialization_record_matches_revision(
+                existing, materialization
+            )
+            return self._build_revision_result_from_existing(existing, materialization)
+        if existing.revision_state is RuntimeRevisionState.CANDIDATE:
+            if materialization is None:
+                raise AgentPlatformAdminBlockedError(
+                    "AP-11_BLOCKED_BY_INCOMPLETE_BUILD_REPLAY",
+                    "candidate revision build cannot replay without canonical materialization authority",
+                )
+            self._validate_materialization_record_matches_revision(
+                existing, materialization
+            )
+            validated = existing.model_copy(
+                update={
+                    "revision_state": RuntimeRevisionState.VALIDATED,
+                    "materialization_artifact_digest": (
+                        materialization.materialization_artifact_digest
+                    ),
+                    "materialization_topology": materialization.materialization_topology,
+                }
+            )
+            canonical_materialization = self._materialization_store.persist(
+                materialization
+            )
+            marked = self._revision_service.mark_validated(
+                existing.runtime_revision_id,
+                validated_revision=validated,
+            )
+            return self._build_revision_result_from_existing(
+                marked.value,
+                canonical_materialization,
+            )
+        raise RuntimeRevisionConflict(
+            "runtime revision state does not support build replay"
+        )
+
     @staticmethod
-    def _build_revision_result_from_existing(existing: RuntimeRevision) -> BuildRevisionResult:
+    def _validate_materialization_output_consistency(
+        validated: RuntimeRevision,
+        output: MaterializationOutput,
+        persisted_lock: MaterializedRuntimeLock,
+    ) -> None:
+        if output.topology != validated.materialization_topology:
+            raise MaterializationInputConflict("materialization topology mismatch")
+        if (
+            output.materialization_artifact_digest
+            != validated.materialization_artifact_digest
+        ):
+            raise MaterializationInputConflict(
+                "materialization artifact digest mismatch"
+            )
+        if validated.materialized_runtime_lock_id != persisted_lock.lock_id:
+            raise MaterializationInputConflict("materialized runtime lock id mismatch")
+        if validated.materialized_runtime_lock_digest != persisted_lock.lock_digest:
+            raise MaterializationInputConflict(
+                "materialized runtime lock digest mismatch"
+            )
+
+    @staticmethod
+    def _build_runtime_materialization_record(
+        validated: RuntimeRevision,
+        *,
+        artifact_locator: str,
+    ) -> RuntimeMaterializationRecord:
+        if validated.materialization_topology is None:
+            raise MaterializationInputConflict(
+                "validated revision requires materialization_topology"
+            )
+        if validated.materialization_artifact_digest is None:
+            raise MaterializationInputConflict(
+                "validated revision requires materialization_artifact_digest"
+            )
+        if validated.materialized_runtime_lock_id is None:
+            raise MaterializationInputConflict(
+                "validated revision requires materialized_runtime_lock_id"
+            )
+        if validated.materialized_runtime_lock_digest is None:
+            raise MaterializationInputConflict(
+                "validated revision requires materialized_runtime_lock_digest"
+            )
+        return RuntimeMaterializationRecord(
+            runtime_revision_id=validated.runtime_revision_id,
+            application_id=validated.application_id,
+            application_environment_id=validated.application_environment_id,
+            materialization_topology=validated.materialization_topology,
+            artifact_locator=artifact_locator,
+            materialization_artifact_digest=validated.materialization_artifact_digest,
+            materialized_runtime_lock_id=validated.materialized_runtime_lock_id,
+            materialized_runtime_lock_digest=validated.materialized_runtime_lock_digest,
+        )
+
+    @staticmethod
+    def _validate_materialization_record_matches_revision(
+        revision: RuntimeRevision,
+        record: RuntimeMaterializationRecord,
+    ) -> None:
+        if record.runtime_revision_id != revision.runtime_revision_id:
+            raise RuntimeMaterializationConflict(
+                "runtime materialization revision id mismatch"
+            )
+        if record.application_id != revision.application_id:
+            raise RuntimeMaterializationConflict(
+                "runtime materialization application id mismatch"
+            )
+        if record.application_environment_id != revision.application_environment_id:
+            raise RuntimeMaterializationConflict(
+                "runtime materialization application environment id mismatch"
+            )
+        if revision.materialization_topology is not None:
+            if record.materialization_topology != revision.materialization_topology:
+                raise RuntimeMaterializationConflict(
+                    "runtime materialization topology mismatch"
+                )
+        if revision.materialization_artifact_digest is not None:
+            if (
+                record.materialization_artifact_digest
+                != revision.materialization_artifact_digest
+            ):
+                raise RuntimeMaterializationConflict(
+                    "runtime materialization artifact digest mismatch"
+                )
+        if revision.materialized_runtime_lock_id is not None:
+            if (
+                record.materialized_runtime_lock_id
+                != revision.materialized_runtime_lock_id
+            ):
+                raise RuntimeMaterializationConflict(
+                    "runtime materialization lock id mismatch"
+                )
+        if revision.materialized_runtime_lock_digest is not None:
+            if (
+                record.materialized_runtime_lock_digest
+                != revision.materialized_runtime_lock_digest
+            ):
+                raise RuntimeMaterializationConflict(
+                    "runtime materialization lock digest mismatch"
+                )
+
+    @staticmethod
+    def _build_revision_result_from_existing(
+        existing: RuntimeRevision,
+        materialization: RuntimeMaterializationRecord,
+    ) -> BuildRevisionResult:
+        AgentPlatformAdminService._validate_materialization_record_matches_revision(
+            existing,
+            materialization,
+        )
         return BuildRevisionResult(
             runtime_revision_id=existing.runtime_revision_id,
             revision_state=existing.revision_state,
@@ -1511,8 +1720,9 @@ class AgentPlatformAdminService:
             materialized_runtime_lock_id=existing.materialized_runtime_lock_id,
             materialized_runtime_lock_digest=existing.materialized_runtime_lock_digest,
             runtime_graph_digest=existing.runtime_graph_digest,
-            materialization_artifact_digest=existing.materialization_artifact_digest,
-            materialization_topology=existing.materialization_topology,
+            materialization_artifact_digest=materialization.materialization_artifact_digest,
+            artifact_locator=materialization.artifact_locator,
+            materialization_topology=materialization.materialization_topology,
         )
 
     def _authorize_rollback(
@@ -1622,7 +1832,9 @@ class AgentPlatformAdminService:
         target_runtime_revision_id: str,
         expected_current_traffic_revision_id: str,
         expected_serving_pointer_revision: int,
-    ) -> tuple[ControlPlaneMutationAuthorizationResult, TransitionResult[RollbackResult]]:
+    ) -> tuple[
+        ControlPlaneMutationAuthorizationResult, TransitionResult[RollbackResult]
+    ]:
         authorization = self._authorize_rollback(
             principal=principal,
             application_id=application_id,
