@@ -11,6 +11,7 @@ from intergrax.contracts.decision_strategy import (
     DecisionStrategyNotRegisteredError,
     DecisionStrategyRegistration,
     DecisionStrategyRegistry,
+    RegistryBoundDecisionStrategy,
     decision_strategy_registry,
     is_decision_strategy_registered,
     register_decision_strategy,
@@ -349,3 +350,74 @@ def test_platform_reuse_boundary_no_discovery_imports() -> None:
     assert "intergrax.core.plugins.discovery" not in source
     assert "importlib" not in source
     assert "entry_points" not in source
+
+
+@dataclass(frozen=True, slots=True)
+class ReferencedTestStrategy:
+    """Minimal registry-bound strategy proving the generic validation capability."""
+
+    required_kind: DecisionStrategyKind
+    kind: DecisionStrategyKind = validate_decision_strategy_kind("referenced_test")
+
+    def validate_registry_bindings(
+        self,
+        registry: DecisionStrategyRegistry,
+    ) -> None:
+        if not is_decision_strategy_registered(registry, self.required_kind):
+            raise DecisionStrategyNotRegisteredError(
+                "ReferencedTestStrategy requires unregistered "
+                f"DecisionStrategyKind: {self.required_kind!r}",
+            )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_registry_bound_strategy_rejects_missing_reference() -> None:
+    registry = decision_strategy_registry()
+    strategy = ReferencedTestStrategy(
+        required_kind=validate_decision_strategy_kind("alpha"),
+    )
+    registration = DecisionStrategyRegistration(
+        kind=strategy.kind,
+        strategy=strategy,
+    )
+    with pytest.raises(DecisionStrategyNotRegisteredError):
+        register_decision_strategy(registry, registration)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_registry_bound_strategy_accepts_registered_reference() -> None:
+    alpha = _registration("alpha", AlphaStrategy())
+    registry = decision_strategy_registry((alpha,))
+    strategy = ReferencedTestStrategy(required_kind=alpha.kind)
+    registration = DecisionStrategyRegistration(
+        kind=strategy.kind,
+        strategy=strategy,
+    )
+    updated = register_decision_strategy(registry, registration)
+    resolved = require_registered_decision_strategy(updated, strategy.kind)
+    assert isinstance(resolved, ReferencedTestStrategy)
+    assert resolved.required_kind == alpha.kind
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_registry_bound_strategy_satisfies_protocol() -> None:
+    strategy = ReferencedTestStrategy(
+        required_kind=validate_decision_strategy_kind("alpha"),
+    )
+    assert isinstance(strategy, RegistryBoundDecisionStrategy)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_decision_strategy_registry_has_no_hybrid_knowledge() -> None:
+    import intergrax.contracts.decision_strategy as module
+
+    source_path = module.__file__
+    assert source_path is not None
+    source = open(source_path, encoding="utf-8").read()
+    assert '"hybrid"' not in source
+    assert "HybridStrategy" not in source
+    assert "HybridPhase" not in source

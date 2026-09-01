@@ -82,14 +82,26 @@ class HybridStrategy:
             )
         _validate_hybrid_phases(self.phases)
 
+    def validate_registry_bindings(
+        self,
+        registry: DecisionStrategyRegistry,
+    ) -> None:
+        """Fail closed when any phase references an unregistered strategy kind."""
+        validate_hybrid_strategy_registry_bindings(strategy=self, registry=registry)
 
-def _validate_hybrid_phases(phases: tuple[HybridPhase, ...]) -> None:
+
+def _validate_hybrid_phases(phases: tuple[object, ...]) -> None:
     if type(phases) is not tuple:
         raise TypeError("HybridStrategy.phases must be tuple")
     if len(phases) == 0:
         raise ValueError("HybridStrategy.phases must not be empty")
     seen: set[str] = set()
     for phase in phases:
+        if type(phase) is not HybridPhase:
+            raise TypeError(
+                "HybridStrategy.phases elements must be HybridPhase, "
+                f"got {type(phase).__name__}",
+            )
         validated_phase_id = validate_hybrid_phase_id(phase.phase_id)
         validated_kind = validate_decision_strategy_kind(phase.strategy_kind)
         if validated_kind == _HYBRID_KIND:

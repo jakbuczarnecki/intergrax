@@ -50,6 +50,18 @@ class DecisionStrategy(Protocol):
         ...
 
 
+@runtime_checkable
+class RegistryBoundDecisionStrategy(Protocol):
+    """Optional capability: strategy references that must exist in a registry."""
+
+    def validate_registry_bindings(
+        self,
+        registry: DecisionStrategyRegistry,
+    ) -> None:
+        """Fail closed when required registry references are missing."""
+        ...
+
+
 @dataclass(frozen=True, slots=True)
 class DecisionStrategyRegistration:
     """Explicit registration pair binding one kind to one strategy implementation."""
@@ -99,6 +111,8 @@ def register_decision_strategy(
         raise DecisionStrategyAlreadyRegisteredError(
             f"DecisionStrategyKind already registered: {validated.kind!r}",
         )
+    if isinstance(validated.strategy, RegistryBoundDecisionStrategy):
+        validated.strategy.validate_registry_bindings(registry)
     return decision_strategy_registry(registry.registrations + (validated,))
 
 

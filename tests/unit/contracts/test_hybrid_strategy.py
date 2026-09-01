@@ -11,6 +11,7 @@ from intergrax.contracts.decision_strategy import (
     DecisionStrategyNotRegisteredError,
     DecisionStrategyRegistration,
     DecisionStrategyRegistry,
+    RegistryBoundDecisionStrategy,
     decision_strategy_registry,
     is_decision_strategy_registered,
     register_decision_strategy,
@@ -20,6 +21,7 @@ from intergrax.contracts.decision_strategy import (
 from intergrax.contracts.hybrid_strategy import (
     HybridPhase,
     HybridStrategy,
+    _validate_hybrid_phases,
     hybrid_phase,
     hybrid_strategy,
     hybrid_strategy_kind,
@@ -98,8 +100,27 @@ _HARDCODED_STRATEGY_KINDS = frozenset(
 
 
 @dataclass(frozen=True, slots=True)
+class RuleFixtureInput:
+    value: int
+
+
+@dataclass(frozen=True, slots=True)
+class RuleFixtureOutput:
+    value: int
+
+
+@dataclass(frozen=True, slots=True)
 class DomainCustomStrategy:
     kind: DecisionStrategyKind = validate_decision_strategy_kind("domain_custom")
+
+
+@dataclass(frozen=True, slots=True)
+class _NoOpRules:
+    def evaluate(
+        self,
+        decision_input: RuleFixtureInput,
+    ) -> RuleFixtureOutput:
+        return RuleFixtureOutput(value=decision_input.value)
 
 
 def _single_model_registration() -> DecisionStrategyRegistration:
@@ -117,12 +138,6 @@ def _component_registry() -> DecisionStrategyRegistry:
             _single_model_registration(),
         ),
     )
-
-
-@dataclass(frozen=True, slots=True)
-class _NoOpRules:
-    def evaluate(self, decision_input: object) -> object:
-        return decision_input
 
 
 def _two_phase_hybrid() -> tuple[HybridPhase, ...]:
@@ -329,6 +344,80 @@ def test_register_rejects_unknown_strategy_without_shortcut() -> None:
     )
     with pytest.raises(DecisionStrategyNotRegisteredError):
         register_hybrid_strategy(registry, phases=phases)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_generic_registration_rejects_invalid_hybrid_bypass() -> None:
+    registry = _component_registry()
+    invalid_hybrid = hybrid_strategy(
+        phases=(
+            hybrid_phase(phase_id="proposal", strategy_kind="missing_strategy"),
+        ),
+    )
+    registration = DecisionStrategyRegistration(
+        kind=hybrid_strategy_kind(),
+        strategy=invalid_hybrid,
+    )
+    with pytest.raises(DecisionStrategyNotRegisteredError):
+        register_decision_strategy(registry, registration)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_generic_registration_accepts_valid_hybrid() -> None:
+    registry = _component_registry()
+    valid_hybrid = hybrid_strategy(phases=_two_phase_hybrid())
+    registration = DecisionStrategyRegistration(
+        kind=hybrid_strategy_kind(),
+        strategy=valid_hybrid,
+    )
+    updated = register_decision_strategy(registry, registration)
+    assert is_decision_strategy_registered(updated, hybrid_strategy_kind()) is True
+    resolved = require_registered_decision_strategy(updated, hybrid_strategy_kind())
+    assert isinstance(resolved, HybridStrategy)
+    assert tuple(phase.phase_id for phase in resolved.phases) == (
+        "precheck",
+        "proposal",
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_non_hybrid_phase_element_rejected() -> None:
+    @dataclass(frozen=True, slots=True)
+    class FakePhase:
+        phase_id: str
+        strategy_kind: str
+
+    invalid_phases = (
+        FakePhase(
+            phase_id="phase",
+            strategy_kind=rule_based_strategy_kind(),
+        ),
+    )
+    with pytest.raises(TypeError, match="HybridPhase"):
+        _validate_hybrid_phases(invalid_phases)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_hybrid_satisfies_registry_bound_protocol() -> None:
+    strategy = hybrid_strategy(phases=_two_phase_hybrid())
+    assert isinstance(strategy, RegistryBoundDecisionStrategy)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_decision_strategy_module_has_no_hybrid_knowledge() -> None:
+    import intergrax.contracts.decision_strategy as module
+
+    source_path = module.__file__
+    assert source_path is not None
+    source = open(source_path, encoding="utf-8").read()
+    assert '"hybrid"' not in source
+    assert "HybridStrategy" not in source
+    assert "HybridPhase" not in source
 
 
 @pytest.mark.unit
