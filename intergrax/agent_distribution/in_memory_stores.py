@@ -26,6 +26,7 @@ from intergrax.agent_distribution.errors import (
     MaterializedRuntimeLockConflict,
     RuntimeActivationConflict,
     RuntimeActivationError,
+    RuntimeMaterializationConflict,
     RuntimeRevisionConflict,
     RuntimeRollbackError,
 )
@@ -34,6 +35,9 @@ from intergrax.agent_distribution.installation import (
     InstallationState,
 )
 from intergrax.agent_distribution.installation_slot_scope import InstallationSlotScope
+from intergrax.agent_distribution.runtime_materialization_record import (
+    RuntimeMaterializationRecord,
+)
 from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevision,
     RuntimeRevisionState,
@@ -74,12 +78,15 @@ class AgentDistributionStoreState:
     )
     artifact_metadata: dict[str, AgentArtifactMetadata] = field(default_factory=dict)
     locks: dict[str, MaterializedRuntimeLock] = field(default_factory=dict)
-    deployment_instances: dict[tuple[ApplicationEnvironmentIdentity, str], DeploymentInstanceRecord] = field(
+    materializations: dict[str, RuntimeMaterializationRecord] = field(
         default_factory=dict
     )
-    serving_records: dict[ApplicationEnvironmentIdentity, ApplicationEnvironmentServingRecord] = field(
-        default_factory=dict
-    )
+    deployment_instances: dict[
+        tuple[ApplicationEnvironmentIdentity, str], DeploymentInstanceRecord
+    ] = field(default_factory=dict)
+    serving_records: dict[
+        ApplicationEnvironmentIdentity, ApplicationEnvironmentServingRecord
+    ] = field(default_factory=dict)
     _activation_lock: threading.RLock = field(
         default_factory=threading.RLock, repr=False, compare=False
     )
@@ -292,7 +299,9 @@ class InMemoryRuntimeRevisionStore:
         application_environment_id: str,
     ) -> RuntimeRevision | None:
         with self._lock:
-            scope = _application_environment_scope(application_id, application_environment_id)
+            scope = _application_environment_scope(
+                application_id, application_environment_id
+            )
             active_id = self._state.active_revision_by_scope.get(scope)
             if active_id is None:
                 return None
@@ -336,7 +345,9 @@ class InMemoryRuntimeRevisionStore:
         prior_active_revision_id: str | None = None,
     ) -> RuntimeRevision:
         with _activation_domain(self._state, self._lock):
-            scope = _application_environment_scope(application_id, application_environment_id)
+            scope = _application_environment_scope(
+                application_id, application_environment_id
+            )
             current_active_id = self._state.active_revision_by_scope.get(scope)
             if (
                 prior_active_revision_id is not None
@@ -379,7 +390,9 @@ class InMemoryRuntimeRevisionStore:
         expected_prior_active_revision_id: str | None,
     ) -> tuple[RuntimeRevision, RuntimeRevision | None]:
         with _activation_domain(self._state, self._lock):
-            scope = _application_environment_scope(application_id, application_environment_id)
+            scope = _application_environment_scope(
+                application_id, application_environment_id
+            )
             current_active_id = self._state.active_revision_by_scope.get(scope)
             if (
                 expected_prior_active_revision_id is not None
@@ -424,6 +437,39 @@ class InMemoryAgentArtifactMetadataStore:
         with self._lock:
             self._state.artifact_metadata[metadata.package_digest] = metadata
             return metadata
+
+
+class InMemoryRuntimeMaterializationStore:
+    """Process-local immutable runtime materialization authority store."""
+
+    def __init__(self, state: AgentDistributionStoreState | None = None) -> None:
+        self._state = state or AgentDistributionStoreState()
+        self._lock = threading.RLock()
+
+    @property
+    def state(self) -> AgentDistributionStoreState:
+        return self._state
+
+    def get_by_revision(
+        self, runtime_revision_id: str
+    ) -> RuntimeMaterializationRecord | None:
+        with self._lock:
+            return self._state.materializations.get(runtime_revision_id)
+
+    def persist(
+        self, record: RuntimeMaterializationRecord
+    ) -> RuntimeMaterializationRecord:
+        with self._lock:
+            key = record.runtime_revision_id
+            existing = self._state.materializations.get(key)
+            if existing is None:
+                self._state.materializations[key] = record
+                return record
+            if existing == record:
+                return existing
+            raise RuntimeMaterializationConflict(
+                "runtime materialization authority conflict for revision"
+            )
 
 
 class InMemoryMaterializedRuntimeLockStore:
@@ -573,7 +619,9 @@ class InMemoryApplicationEnvironmentServingStore:
         application_environment_id: str,
     ) -> ApplicationEnvironmentServingRecord | None:
         with self._lock:
-            scope = _application_environment_scope(application_id, application_environment_id)
+            scope = _application_environment_scope(
+                application_id, application_environment_id
+            )
             return self._state.serving_records.get(scope)
 
     def atomic_swap_serving_revision(
@@ -588,7 +636,9 @@ class InMemoryApplicationEnvironmentServingStore:
         committed_at: datetime,
     ) -> ApplicationEnvironmentServingRecord:
         with _activation_domain(self._state, self._lock):
-            scope = _application_environment_scope(application_id, application_environment_id)
+            scope = _application_environment_scope(
+                application_id, application_environment_id
+            )
             current = self._state.serving_records.get(scope)
             if current is None:
                 if (
@@ -652,7 +702,9 @@ class InMemoryApplicationEnvironmentActivationStore:
         committed_at: datetime,
     ) -> ActivationAtomicCommitResult:
         with self._state._activation_lock:
-            scope = _application_environment_scope(application_id, application_environment_id)
+            scope = _application_environment_scope(
+                application_id, application_environment_id
+            )
             serving = self._state.serving_records.get(scope)
             if (
                 serving is not None
@@ -824,7 +876,9 @@ class InMemoryApplicationEnvironmentActivationStore:
         committed_at: datetime,
     ) -> RollbackAtomicCommitResult:
         with self._state._activation_lock:
-            scope = _application_environment_scope(application_id, application_environment_id)
+            scope = _application_environment_scope(
+                application_id, application_environment_id
+            )
             serving = self._state.serving_records.get(scope)
             if serving is None:
                 raise RuntimeActivationConflict("no serving record for rollback")
