@@ -129,6 +129,27 @@ def _scoped_import_name_if_artifact_owned(
     return _scoped_module_name(scope.scope_root, module_path)
 
 
+def _attach_scoped_module_chain(
+    scope: _ArtifactImportScope,
+    original_module_path: str,
+) -> None:
+    parts = original_module_path.split(".")
+    if len(parts) <= 1:
+        return
+    for index in range(1, len(parts)):
+        parent_original = ".".join(parts[:index])
+        child_original = ".".join(parts[:index + 1])
+        parent_name = _scoped_module_name(scope.scope_root, parent_original)
+        child_name = _scoped_module_name(scope.scope_root, child_original)
+        parent_module = sys.modules.get(parent_name)
+        child_module = sys.modules.get(child_name)
+        if parent_module is None or child_module is None:
+            continue
+        attr_name = parts[index]
+        if getattr(parent_module, attr_name, None) is not child_module:
+            setattr(parent_module, attr_name, child_module)
+
+
 def _artifact_aware_import(
     name: str,
     globals: dict[str, object] | None = None,
@@ -143,7 +164,16 @@ def _artifact_aware_import(
     if scoped_name is None:
         return _OriginalBuiltinImport(name, globals, locals, fromlist, level)
     if fromlist:
-        return _OriginalBuiltinImport(scoped_name, globals, locals, fromlist, level)
+        module = _OriginalBuiltinImport(scoped_name, globals, locals, fromlist, level)
+        if "." in name:
+            _attach_scoped_module_chain(scope, name)
+        return module
+    if "." in name:
+        top_level_original = name.split(".", 1)[0]
+        top_level_scoped = _scoped_module_name(scope.scope_root, top_level_original)
+        _import_scoped_module(scope, name)
+        _attach_scoped_module_chain(scope, name)
+        return sys.modules[top_level_scoped]
     if "." in scoped_name:
         parent, leaf = scoped_name.rsplit(".", 1)
         _OriginalBuiltinImport(parent, globals, locals, [leaf], level)
@@ -440,6 +470,7 @@ def _import_scoped_module(
             sys.modules[scoped_name] = module
             touched.append(scoped_name)
             spec.loader.exec_module(module)
+            _attach_scoped_module_chain(scope, original_module_path)
             return module
         except Exception as exc:
             _cleanup_scoped_modules(touched, scope_root=scope.scope_root)

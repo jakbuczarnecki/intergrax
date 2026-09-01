@@ -225,6 +225,82 @@ def _write_factory_module(
     )
 
 
+def _write_dotted_import_factory_package(
+    site_packages: Path,
+    *,
+    config_marker: str,
+    factory_import: str = "import example_agent.config",
+    factory_return: str = "example_agent.config.MARKER",
+) -> None:
+    package_dir = site_packages / "example_agent"
+    package_dir.mkdir(parents=True, exist_ok=True)
+    (package_dir / "__init__.py").write_text("", encoding="utf-8")
+    (package_dir / "config.py").write_text(
+        f"MARKER = {config_marker!r}\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    (package_dir / "factory.py").write_text(
+        f"{factory_import}\n\n"
+        "def build_agent(ctx, binding):\n"
+        f"    return {factory_return}\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+
+
+def _write_deep_dotted_import_factory_package(
+    site_packages: Path,
+    *,
+    tools_marker: str,
+) -> None:
+    package_dir = site_packages / "example_agent"
+    sub_dir = package_dir / "sub"
+    sub_dir.mkdir(parents=True, exist_ok=True)
+    (package_dir / "__init__.py").write_text("", encoding="utf-8")
+    (sub_dir / "__init__.py").write_text("", encoding="utf-8")
+    (sub_dir / "tools.py").write_text(
+        f"MARKER = {tools_marker!r}\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    (package_dir / "factory.py").write_text(
+        textwrap.dedent(
+            """
+            import example_agent.sub.tools
+
+            def build_agent(ctx, binding):
+                return example_agent.sub.tools.MARKER
+            """
+        ).strip()
+        + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+
+
+def _build_dotted_import_artifact(
+    tmp_path: Path,
+    *,
+    config_marker: str,
+    package_digest: str = _DIGEST_A,
+    factory_import: str = "import example_agent.config",
+    factory_return: str = "example_agent.config.MARKER",
+) -> tuple[Path, str, MaterializedRuntimeLock]:
+    artifact_root = tmp_path / "artifact"
+    site_packages = artifact_root / "site-packages"
+    site_packages.mkdir(parents=True)
+    _write_dotted_import_factory_package(
+        site_packages,
+        config_marker=config_marker,
+        factory_import=factory_import,
+        factory_return=factory_return,
+    )
+    lock = _write_lock_manifest(artifact_root, package_digest=package_digest)
+    digest = directory_content_digest(artifact_root)
+    return artifact_root, digest, lock
+
+
 def _build_artifact(
     tmp_path: Path,
     *,
@@ -1094,6 +1170,142 @@ def test_host_n_nn1_three_way_isolation(tmp_path: Path) -> None:
         assert sys.modules["example_agent"] is host_package
         assert sys.modules["example_agent.config"] is host_config
         assert "example_agent.factory" not in sys.modules
+    finally:
+        _uninstall_real_host_example_agent(host_site)
+
+
+def test_dotted_import_in_factory_returns_scoped_config_marker(tmp_path: Path) -> None:
+    artifact_root, digest, lock = _build_dotted_import_artifact(
+        tmp_path,
+        config_marker="ARTIFACT",
+    )
+    revision = _revision(
+        "rev-dotted-import",
+        artifact_digest=digest,
+        lock_id=lock.lock_id or "",
+        lock_digest=lock.lock_digest or "",
+    )
+    factory = _resolver(artifact_root, digest).resolve_factory(
+        runtime_revision=revision,
+        package_digest=_DIGEST_A,
+        factory_reference=_FACTORY_REF,
+    )
+    assert factory(None, AgentBinding(contract_id="dotted")) == "ARTIFACT"
+
+
+def test_dotted_import_preloaded_host_package_isolation(tmp_path: Path) -> None:
+    host_site, host_package, host_config = _install_real_host_example_agent(tmp_path)
+    try:
+        assert host_package.config is host_config
+        artifact_root, digest, lock = _build_dotted_import_artifact(
+            tmp_path,
+            config_marker="ARTIFACT",
+        )
+        revision = _revision(
+            "rev-dotted-host",
+            artifact_digest=digest,
+            lock_id=lock.lock_id or "",
+            lock_digest=lock.lock_digest or "",
+        )
+        factory = _resolver(artifact_root, digest).resolve_factory(
+            runtime_revision=revision,
+            package_digest=_DIGEST_A,
+            factory_reference=_FACTORY_REF,
+        )
+        assert factory(None, AgentBinding(contract_id="dotted-host")) == "ARTIFACT"
+        assert sys.modules["example_agent"] is host_package
+        assert sys.modules["example_agent.config"] is host_config
+        assert host_package.config is host_config
+        assert host_package.MARKER == "HOST"
+        assert host_config.MARKER == "HOST"
+    finally:
+        _uninstall_real_host_example_agent(host_site)
+
+
+def test_from_example_agent_import_config_resolves_scoped_child(tmp_path: Path) -> None:
+    artifact_root, digest, lock = _build_dotted_import_artifact(
+        tmp_path,
+        config_marker="ARTIFACT-FROM",
+        factory_import="from example_agent import config",
+        factory_return="config.MARKER",
+    )
+    revision = _revision(
+        "rev-from-package",
+        artifact_digest=digest,
+        lock_id=lock.lock_id or "",
+        lock_digest=lock.lock_digest or "",
+    )
+    factory = _resolver(artifact_root, digest).resolve_factory(
+        runtime_revision=revision,
+        package_digest=_DIGEST_A,
+        factory_reference=_FACTORY_REF,
+    )
+    assert factory(None, AgentBinding(contract_id="from-package")) == "ARTIFACT-FROM"
+
+
+def test_deep_dotted_import_preserves_attribute_chain(tmp_path: Path) -> None:
+    artifact_root = tmp_path / "artifact-deep"
+    site_packages = artifact_root / "site-packages"
+    site_packages.mkdir(parents=True)
+    _write_deep_dotted_import_factory_package(site_packages, tools_marker="DEEP")
+    lock = _write_lock_manifest(artifact_root)
+    digest = directory_content_digest(artifact_root)
+    revision = _revision(
+        "rev-deep-dotted",
+        artifact_digest=digest,
+        lock_id=lock.lock_id or "",
+        lock_digest=lock.lock_digest or "",
+    )
+    factory = _resolver(artifact_root, digest).resolve_factory(
+        runtime_revision=revision,
+        package_digest=_DIGEST_A,
+        factory_reference=_FACTORY_REF,
+    )
+    assert factory(None, AgentBinding(contract_id="deep")) == "DEEP"
+
+
+def test_host_n_nn1_dotted_import_isolation(tmp_path: Path) -> None:
+    host_site, host_package, host_config = _install_real_host_example_agent(tmp_path)
+    try:
+        artifact_n, digest_n, lock_n = _build_dotted_import_artifact(
+            tmp_path / "n",
+            config_marker="N",
+        )
+        artifact_n1, digest_n1, lock_n1 = _build_dotted_import_artifact(
+            tmp_path / "n1",
+            config_marker="N+1",
+            package_digest=_DIGEST_B,
+        )
+        revision_n = _revision(
+            "rev-dotted-n",
+            artifact_digest=digest_n,
+            lock_id=lock_n.lock_id or "",
+            lock_digest=lock_n.lock_digest or "",
+        )
+        revision_n1 = _revision(
+            "rev-dotted-n1",
+            artifact_digest=digest_n1,
+            lock_id=lock_n1.lock_id or "",
+            lock_digest=lock_n1.lock_digest or "",
+            package_digests=(_DIGEST_B,),
+        )
+        factory_n = _resolver(artifact_n, digest_n).resolve_factory(
+            runtime_revision=revision_n,
+            package_digest=_DIGEST_A,
+            factory_reference=_FACTORY_REF,
+        )
+        factory_n1 = _resolver(artifact_n1, digest_n1).resolve_factory(
+            runtime_revision=revision_n1,
+            package_digest=_DIGEST_B,
+            factory_reference=_FACTORY_REF,
+        )
+        assert factory_n(None, AgentBinding(contract_id="n")) == "N"
+        assert factory_n1(None, AgentBinding(contract_id="n1")) == "N+1"
+        assert factory_n(None, AgentBinding(contract_id="n-again")) == "N"
+        assert sys.modules["example_agent"] is host_package
+        assert sys.modules["example_agent.config"] is host_config
+        assert host_package.config is host_config
+        assert host_config.MARKER == "HOST"
     finally:
         _uninstall_real_host_example_agent(host_site)
 
