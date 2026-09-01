@@ -278,6 +278,34 @@ Decision System is **optional per flow**. When no authoritative decision is requ
 
 Proof gate: DS-EXEC-00 (`tests/unit/runtime/execution/test_decision_optionality.py`).
 
+### Execution-hosted Decision Lifecycle (DS-EXEC-01)
+
+Canonical Execution owns **hosting scope** for an optional Decision Lifecycle capability. Decision-aware code explicitly invokes the scoped host; Execution does **not** automatically start Decision Lifecycle before delegate routing.
+
+```text
+ExecutionRuntime
+      ↓ optional scoped host binding
+DecisionLifecycleHost
+      ↓
+canonical DecisionLifecycle contracts (decision_lifecycle.py)
+```
+
+| Invariant | Meaning |
+| --------- | ------- |
+| **Host presence ≠ Decision selected** | Configuring a host does not imply a flow needs a decision |
+| **Host presence ≠ lifecycle entered** | No `DecisionIdentity` or `DecisionLifecycleState` is created until decision-aware code calls the host |
+| **Decision-aware flow explicitly invokes host** | `require_active_decision_lifecycle_host()` inside governed delegate work |
+
+| Layer | Owns |
+| ----- | ---- |
+| **ExecutionRuntime** | Lifecycle hosting scope (optional scoped host bind/reset around canonical boundary) |
+| **DecisionLifecycleHost** | Typed access to canonical lifecycle operations (`start`, `transition`) |
+| **`decision_lifecycle.py`** | State machine semantics and legal transitions |
+| **StrategyExecutionRouter** | Physical `ExecutionStrategy` routing (INFERENCE · AGENTIC · ORCHESTRATION) |
+| **ExecutionBoundary** | Context / admission / delegate coordination — no Decision semantics |
+
+Proof gate: DS-EXEC-01 (`tests/unit/runtime/execution/test_decision_lifecycle_host.py`).
+
 ---
 
 ## Decision Resolution

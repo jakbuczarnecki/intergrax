@@ -81,7 +81,7 @@
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
 | DS-EXEC-00 | P0 | Prove Decision capability is optional: ordinary Execution flows bypass Decision Lifecycle entirely when no authoritative decision is required | **Done** |
-| DS-EXEC-01 | P0 | Execution host / strategy-routing hooks → Decision Lifecycle | **Planned** |
+| DS-EXEC-01 | P0 | Execution host optional scoped Decision Lifecycle capability (`DecisionLifecycleHost` + active binding in `ExecutionRuntime`) | **Done** |
 | DS-EXEC-02 | P1 | Lifecycle stage persistence via canonical Execution checkpoint ports | **Planned** |
 
 ### DS-EXEC-00 — Decision System optionality / bypass contract (DONE)
@@ -119,6 +119,14 @@ Application → Execution → Decision Lifecycle → strategy / verification / r
 Goal: **Decision capability orthogonal to ExecutionStrategy** — none of INFERENCE, AGENTIC, or ORCHESTRATION require Decision System.
 
 **Non-goals for DS-EXEC-00 scoping:** no premature global `DECISION_SYSTEM_ENABLED` flag; no `NoDecisionStrategy` / `NullDecisionStrategy` workaround — absence means Lifecycle is not entered. DS-EXEC-00 does **not** forbid optional Decision host seams in Execution (DS-EXEC-01); it proves ordinary flows do not **require** Decision configuration or lifecycle entry.
+
+### DS-EXEC-01 — Execution-hosted Decision Lifecycle capability (DONE)
+
+`ExecutionRuntime` may accept an optional `decision_lifecycle_host`. When configured, the host is bound for the execution scope around canonical `ExecutionBoundary` work and reset in `finally` — success or failure. Decision-aware delegate code obtains the host via `require_active_decision_lifecycle_host()` and explicitly calls `start(identity)` / `transition(...)`.
+
+**Invariants:** host presence does not create `DecisionIdentity` or lifecycle state; `ExecutionBoundary` and `StrategyExecutionRouter` remain Decision-neutral; canonical lifecycle semantics stay in `intergrax/contracts/decision_lifecycle.py`.
+
+Proof gate: `tests/unit/runtime/execution/test_decision_lifecycle_host.py`.
 
 ### Orchestration-specific integration (Nexus)
 
