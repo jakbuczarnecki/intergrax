@@ -127,7 +127,16 @@ async def execute_root_task(
         _checkpoint_run_id, checkpoint_attempt_id = execution_identity_from_checkpoint(
             resume_checkpoint
         )
-        if identity.attempt_id != checkpoint_attempt_id:
+        checkpoint_tree = resume_checkpoint.runtime.execution_tree
+        checkpoint_root_execution_id = next(
+            entry.execution_id
+            for entry in checkpoint_tree.entries
+            if entry.parent_execution_id is None
+        )
+        if (
+            identity.attempt_id != checkpoint_attempt_id
+            or identity.execution_id != checkpoint_root_execution_id
+        ):
             prepare_task_for_checkpoint_resume(
                 task,
                 resume_checkpoint,

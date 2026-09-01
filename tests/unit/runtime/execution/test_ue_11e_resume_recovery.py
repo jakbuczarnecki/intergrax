@@ -49,6 +49,7 @@ from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.execution.execution_graph import (
     ExecutionGraph,
     ExecutionNode,
@@ -57,7 +58,8 @@ from intergrax.runtime.nexus.execution.execution_graph import (
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.task.task import Task, TaskContext, TaskState
+from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
 pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
@@ -385,6 +387,167 @@ async def test_ue_11e_resume_execution_tree_continuity(tmp_path: Path) -> None:
     execution_c_after = _execution_id_for_node(runtime_after, _NODE_C)
     assert execution_c_after is not None
     assert execution_c_after != execution_c_before
+
+    assert resume_graph.node_by_id(_NODE_D).status == ExecutionNodeStatus.COMPLETED
+    assert peek_active_execution_identity() is None
+    assert peek_active_execution_id() is None
+    assert peek_active_execution_authority() is None
+    assert peek_active_execution_budget() is None
+
+
+async def test_same_attempt_fresh_root_rebases_execution_tree_through_production_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    root_before = mint_execution_id()
+
+    registry = AgentRegistry()
+    _register_resume_agents(registry)
+    engine = _GatedCountingAgentEngine(registry, gate_open=False)
+    interrupt_executor = GraphExecutor(
+        registry,
+        engine=engine,
+        retry_engine=RetryEngine(registry, policy=RetryPolicy(max_retries=0)),
+    )
+
+    task_a = Task(
+        task_id=task_id,
+        tenant_id="t1",
+        user_id="u1",
+        message="ue-11e production-path interrupt",
+        context=TaskContext(capability=_CAPABILITY),
+    )
+    graph = _sequential_graph(task_id)
+    apply_runtime_checkpoint_to_task(
+        task_a,
+        RuntimeCheckpoint(
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_tree=ExecutionTreeRecorder.start_root(
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                root_execution_id=root_before,
+            ).snapshot,
+        ),
+    )
+
+    await _run_graph(
+        executor=interrupt_executor,
+        task=task_a,
+        graph=graph,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        root_execution_id=root_before,
+    )
+    counts_after_interrupt = engine.snapshot_counts()
+    assert counts_after_interrupt == _NodeInvocationCounts(agent_a=1, agent_b=1, agent_c=1, agent_d=0)
+
+    runtime_before = resolve_task_runtime_checkpoint(task_a)
+    assert runtime_before is not None
+    execution_a_before = _execution_id_for_node(runtime_before, _NODE_A)
+    execution_b_before = _execution_id_for_node(runtime_before, _NODE_B)
+    execution_c_before = _execution_id_for_node(runtime_before, _NODE_C)
+    assert execution_a_before is not None
+    assert execution_b_before is not None
+    assert execution_c_before is not None
+
+    checkpoint = TaskCheckpoint(
+        task_id=task_id,
+        tenant_id="t1",
+        resume_token="rt_ue_11e_production",
+        task_state=TaskState.WAITING_FOR_HUMAN,
+        runtime=build_runtime_checkpoint(
+            task_a,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            graph=graph,
+        ),
+    )
+    store = SQLiteTaskCheckpointStore(db_path=tmp_path / "ue_11e_production_resume.db")
+    store.save(checkpoint)
+    loaded = store.get_by_token(task_id, "t1", "rt_ue_11e_production")
+    assert loaded is not None and loaded.runtime is not None
+
+    task_b = Task(
+        task_id=task_id,
+        tenant_id="t1",
+        user_id="u1",
+        message="ue-11e production-path resume",
+        context=TaskContext(capability=_CAPABILITY),
+    )
+    engine._gate_open = True
+    resume_executor = GraphExecutor(
+        registry,
+        engine=engine,
+        retry_engine=RetryEngine(registry, policy=RetryPolicy(max_retries=0)),
+    )
+    resume_graph = _sequential_graph(task_id)
+    captured_resume_roots: list[ExecutionId] = []
+
+    loop = NexusLoop(registry)
+
+    async def _handle_task_via_graph(task: Task) -> TaskResult:
+        captured_resume_roots.append(require_active_execution_id())
+        active_run_id, active_attempt_id = require_active_execution_identity()
+        assert active_run_id == run_id
+        assert active_attempt_id == attempt_id
+        await resume_executor.execute(resume_graph, task)
+        return TaskResult(task_id=task.task_id, run_id=active_run_id, state=TaskState.COMPLETED)
+
+    monkeypatch.setattr(loop, "_handle_task_impl", _handle_task_via_graph)
+    runner = UnifiedTaskRunner(loop)
+    await runner.run_task(task_b, resume_checkpoint=loaded)
+
+    assert len(captured_resume_roots) == 1
+    resumed_root = captured_resume_roots[0]
+    assert resumed_root != root_before
+
+    counts_final = engine.snapshot_counts()
+    assert counts_final.agent_a == 1
+    assert counts_final.agent_b == 1
+    assert counts_final.agent_c == 2
+    assert counts_final.agent_d == 1
+
+    runtime_after = resolve_task_runtime_checkpoint(task_b)
+    assert runtime_after is not None
+    assert runtime_after.run_id == run_id
+    assert runtime_after.attempt_id == attempt_id
+    runtime_after.validate_canonical()
+    runtime_after.execution_tree.validate_tree()
+
+    entry_a_after = runtime_after.execution_tree.entry_by_graph_node_id(_NODE_A)
+    entry_b_after = runtime_after.execution_tree.entry_by_graph_node_id(_NODE_B)
+    assert entry_a_after is not None
+    assert entry_a_after.execution_id == execution_a_before
+    assert entry_b_after is not None
+    assert entry_b_after.execution_id == execution_b_before
+
+    root_entries = [
+        entry
+        for entry in runtime_after.execution_tree.entries
+        if entry.parent_execution_id is None
+    ]
+    assert len(root_entries) == 1
+    assert root_entries[0].execution_id == resumed_root
+    assert root_entries[0].execution_id != root_before
+
+    execution_c_after = _execution_id_for_node(runtime_after, _NODE_C)
+    assert execution_c_after is not None
+    assert execution_c_after != execution_c_before
+    entry_c_after = runtime_after.execution_tree.entry_by_graph_node_id(_NODE_C)
+    assert entry_c_after is not None
+    assert entry_c_after.parent_execution_id == resumed_root
+
+    execution_d = _execution_id_for_node(runtime_after, _NODE_D)
+    assert execution_d is not None
+    entry_d = runtime_after.execution_tree.entry_by_graph_node_id(_NODE_D)
+    assert entry_d is not None
+    assert entry_d.parent_execution_id == resumed_root
+    assert entry_d.status is ExecutionCheckpointStatus.COMPLETED
 
     assert resume_graph.node_by_id(_NODE_D).status == ExecutionNodeStatus.COMPLETED
     assert peek_active_execution_identity() is None
