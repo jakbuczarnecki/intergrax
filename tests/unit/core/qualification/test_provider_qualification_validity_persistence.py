@@ -20,7 +20,10 @@ from intergrax.core.qualification import (
     record_provider_qualification_validity_revocation,
     validity_context_from_run,
 )
-from intergrax.core.qualification.validity_evaluation import QualificationValidityEstablishmentError
+from intergrax.core.qualification.validity_evaluation import (
+    QualificationValidityEstablishmentError,
+    get_current_qualification_validity,
+)
 from intergrax.core.qualification.validity_persistence import (
     DocumentStoreProviderQualificationValidityPersistence,
     ProviderQualificationValidityPersistenceConflictError,
@@ -43,6 +46,21 @@ _FIXED_EVAL_ID_STALE = ValidityEvaluationId("valid_eval_bbbbbbbbbbbbbbbbbbbbbbbb
 _EVALUATED_AT_T3 = datetime(2026, 8, 19, 10, 0, 0, tzinfo=timezone.utc)
 _FIXED_EVAL_ID_REVOKED = ValidityEvaluationId("valid_eval_cccccccccccccccccccccccccccccccc")
 _FIXED_EVAL_ID_LATER = ValidityEvaluationId("valid_eval_dddddddddddddddddddddddddddddddd")
+_FIXED_EVAL_ID_REVOKED_OLDER = ValidityEvaluationId("valid_eval_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
+_FIXED_EVAL_ID_REVOKED_NEWER = ValidityEvaluationId("valid_eval_ffffffffffffffffffffffffffffffff")
+_TZ_EASTERN = timezone(timedelta(hours=3))
+_EVALUATED_AT_UTC_NOON = datetime(2026, 9, 1, 12, 0, 0, tzinfo=timezone.utc)
+_EVALUATED_AT_EASTERN_LATER_STRING = datetime(2026, 9, 1, 14, 30, 0, tzinfo=_TZ_EASTERN)
+
+
+def _assert_matches_pure_resolver(
+    persistence: DocumentStoreProviderQualificationValidityPersistence,
+    qualification_run_id: QualificationRunId,
+    history: tuple[QualificationValidityRecord, ...],
+) -> None:
+    pure = get_current_qualification_validity(qualification_run_id, history)
+    persisted = persistence.get_current_validity(qualification_run_id)
+    assert persisted == pure
 
 
 def _current_record(run_id: QualificationRunId) -> QualificationValidityRecord:
@@ -314,3 +332,146 @@ def test_wire_provider_qualification_validity_persistence() -> None:
     store = InMemoryDocumentStore()
     persistence = wire_provider_qualification_validity_persistence(document_store=store)
     assert isinstance(persistence, DocumentStoreProviderQualificationValidityPersistence)
+
+
+def test_multiple_revoked_records_choose_newest_revoked() -> None:
+    run = _run()
+    store = InMemoryDocumentStore()
+    persistence = DocumentStoreProviderQualificationValidityPersistence(store)
+    older_revoked = record_provider_qualification_validity_revocation(
+        run.qualification_run_id,
+        reason="first_revocation",
+        evaluated_at=_EVALUATED_AT_T1,
+        validity_evaluation_id=_FIXED_EVAL_ID_REVOKED,
+    )
+    newer_revoked = record_provider_qualification_validity_revocation(
+        run.qualification_run_id,
+        reason="second_revocation",
+        evaluated_at=_EVALUATED_AT_T3,
+        validity_evaluation_id=_FIXED_EVAL_ID_REVOKED_NEWER,
+    )
+    persistence.append_evaluation(older_revoked)
+    persistence.append_evaluation(newer_revoked)
+
+    interpretation = persistence.get_current_validity(run.qualification_run_id)
+    history = persistence.list_evaluations(run.qualification_run_id)
+
+    assert interpretation is not None
+    assert interpretation.validity is QualificationEvidenceValidity.REVOKED
+    assert interpretation.latest_record == newer_revoked
+    _assert_matches_pure_resolver(persistence, run.qualification_run_id, history)
+
+
+def test_revoked_same_timestamp_tie_breaks_by_validity_evaluation_id() -> None:
+    run = _run()
+    store = InMemoryDocumentStore()
+    persistence = DocumentStoreProviderQualificationValidityPersistence(store)
+    shared_time = _EVALUATED_AT_T2
+    earlier_revoked = record_provider_qualification_validity_revocation(
+        run.qualification_run_id,
+        reason="first_revocation",
+        evaluated_at=shared_time,
+        validity_evaluation_id=_FIXED_EVAL_ID_REVOKED,
+    )
+    later_revoked = record_provider_qualification_validity_revocation(
+        run.qualification_run_id,
+        reason="second_revocation",
+        evaluated_at=shared_time,
+        validity_evaluation_id=_FIXED_EVAL_ID_REVOKED_NEWER,
+    )
+    persistence.append_evaluation(earlier_revoked)
+    persistence.append_evaluation(later_revoked)
+
+    interpretation = persistence.get_current_validity(run.qualification_run_id)
+    history = persistence.list_evaluations(run.qualification_run_id)
+
+    assert interpretation is not None
+    assert interpretation.latest_record == later_revoked
+    _assert_matches_pure_resolver(persistence, run.qualification_run_id, history)
+
+
+def test_evaluated_at_persists_as_canonical_utc() -> None:
+    run = _run()
+    record = replace(
+        _current_record(run.qualification_run_id),
+        evaluated_at=_EVALUATED_AT_EASTERN_LATER_STRING,
+    )
+    payload = encode_qualification_validity_record(record)
+    assert payload["evaluated_at"] == "2026-09-01T11:30:00+00:00"
+
+
+def test_encode_decode_preserves_same_instant_across_timezones() -> None:
+    run = _run()
+    record = replace(
+        _current_record(run.qualification_run_id),
+        evaluated_at=_EVALUATED_AT_EASTERN_LATER_STRING,
+    )
+    decoded = decode_qualification_validity_record(encode_qualification_validity_record(record))
+    assert decoded.evaluated_at == _EVALUATED_AT_EASTERN_LATER_STRING.astimezone(timezone.utc)
+    assert decoded.evaluated_at == record.evaluated_at
+
+
+def test_mixed_timezone_current_view_matches_pure_resolver() -> None:
+    run = _run()
+    utc_record = replace(
+        _current_record(run.qualification_run_id),
+        evaluated_at=_EVALUATED_AT_UTC_NOON,
+        validity_evaluation_id=_FIXED_EVAL_ID_CURRENT,
+    )
+    offset_record = replace(
+        _current_record(run.qualification_run_id),
+        evaluated_at=_EVALUATED_AT_EASTERN_LATER_STRING,
+        validity_evaluation_id=_FIXED_EVAL_ID_STALE,
+    )
+
+    for records in ((utc_record, offset_record), (offset_record, utc_record)):
+        store_b = InMemoryDocumentStore()
+        persistence_b = DocumentStoreProviderQualificationValidityPersistence(store_b)
+        for record in records:
+            persistence_b.append_evaluation(record)
+        history = persistence_b.list_evaluations(run.qualification_run_id)
+        interpretation = persistence_b.get_current_validity(run.qualification_run_id)
+        assert interpretation is not None
+        assert interpretation.latest_record == utc_record
+        _assert_matches_pure_resolver(persistence_b, run.qualification_run_id, history)
+
+
+def test_revoked_mixed_timezone_current_view_matches_pure_resolver() -> None:
+    run = _run()
+    utc_revoked = record_provider_qualification_validity_revocation(
+        run.qualification_run_id,
+        reason="utc_revocation",
+        evaluated_at=_EVALUATED_AT_UTC_NOON,
+        validity_evaluation_id=_FIXED_EVAL_ID_REVOKED_NEWER,
+    )
+    offset_revoked = record_provider_qualification_validity_revocation(
+        run.qualification_run_id,
+        reason="offset_revocation",
+        evaluated_at=_EVALUATED_AT_EASTERN_LATER_STRING,
+        validity_evaluation_id=_FIXED_EVAL_ID_REVOKED_OLDER,
+    )
+
+    for records in ((utc_revoked, offset_revoked), (offset_revoked, utc_revoked)):
+        store = InMemoryDocumentStore()
+        persistence = DocumentStoreProviderQualificationValidityPersistence(store)
+        for record in records:
+            persistence.append_evaluation(record)
+        history = persistence.list_evaluations(run.qualification_run_id)
+        interpretation = persistence.get_current_validity(run.qualification_run_id)
+        assert interpretation is not None
+        assert interpretation.validity is QualificationEvidenceValidity.REVOKED
+        assert interpretation.latest_record == utc_revoked
+        _assert_matches_pure_resolver(persistence, run.qualification_run_id, history)
+
+
+def test_decode_naive_evaluated_at_fails_closed() -> None:
+    run = _run()
+    record = _current_record(run.qualification_run_id)
+    payload = encode_qualification_validity_record(record)
+    payload = dict(payload)
+    payload["evaluated_at"] = "2026-08-17T13:00:00"
+    with pytest.raises(
+        ProviderQualificationValidityPersistenceIntegrityError,
+        match="timezone-aware datetime required",
+    ):
+        decode_qualification_validity_record(payload)

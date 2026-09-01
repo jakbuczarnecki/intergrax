@@ -6,11 +6,12 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
 from intergrax.core.qualification import QualificationEvidenceValidity
+from intergrax.core.qualification.validity_evaluation import get_current_qualification_validity
 from intergrax.core.qualification.validity_persistence import (
     DocumentStoreProviderQualificationValidityPersistence,
 )
@@ -39,6 +40,9 @@ pytestmark = [
 
 _EVALUATED_AT_T2 = datetime(2026, 8, 18, 9, 0, 0, tzinfo=timezone.utc)
 _EVALUATED_AT_T3 = datetime(2026, 8, 19, 10, 0, 0, tzinfo=timezone.utc)
+_TZ_EASTERN = timezone(timedelta(hours=3))
+_EVALUATED_AT_UTC_NOON = datetime(2026, 9, 1, 12, 0, 0, tzinfo=timezone.utc)
+_EVALUATED_AT_EASTERN_EARLIER = datetime(2026, 9, 1, 14, 30, 0, tzinfo=_TZ_EASTERN)
 
 
 @pytest.fixture
@@ -130,5 +134,55 @@ def test_terminal_revocation_survives_real_document_store_reopen(
         assert history[2] == later_current
         assert interpretation is not None
         assert interpretation.validity is QualificationEvidenceValidity.REVOKED
+    finally:
+        store_b.close()
+
+
+def test_timezone_and_revoked_current_view_match_pure_resolver_after_reopen(
+    mongo_qualification_validity_env: None,
+) -> None:
+    del mongo_qualification_validity_env
+    run = _run()
+    current = replace(
+        _current_record(run.qualification_run_id),
+        evaluated_at=_EVALUATED_AT_UTC_NOON,
+        validity_evaluation_id=new_validity_evaluation_id(),
+    )
+    stale_offset = replace(
+        _stale_record(run.qualification_run_id),
+        evaluated_at=_EVALUATED_AT_EASTERN_EARLIER,
+        validity_evaluation_id=new_validity_evaluation_id(),
+    )
+    revoked_utc = record_provider_qualification_validity_revocation(
+        run.qualification_run_id,
+        reason="operator_revoked",
+        evaluated_at=_EVALUATED_AT_UTC_NOON,
+        validity_evaluation_id=new_validity_evaluation_id(),
+    )
+    revoked_offset_older = record_provider_qualification_validity_revocation(
+        run.qualification_run_id,
+        reason="older_offset_revocation",
+        evaluated_at=_EVALUATED_AT_EASTERN_EARLIER,
+        validity_evaluation_id=new_validity_evaluation_id(),
+    )
+    records = (current, stale_offset, revoked_offset_older, revoked_utc)
+
+    store_a = create_proof_document_store()
+    persistence_a = DocumentStoreProviderQualificationValidityPersistence(store_a)
+    for record in records:
+        persistence_a.append_evaluation(record)
+    store_a.close()
+    del persistence_a
+
+    store_b = create_proof_document_store()
+    persistence_b = DocumentStoreProviderQualificationValidityPersistence(store_b)
+    try:
+        history = persistence_b.list_evaluations(run.qualification_run_id)
+        interpretation = persistence_b.get_current_validity(run.qualification_run_id)
+        pure = get_current_qualification_validity(run.qualification_run_id, history)
+        assert len(history) == 4
+        assert interpretation == pure
+        assert interpretation.validity is QualificationEvidenceValidity.REVOKED
+        assert interpretation.latest_record == revoked_utc
     finally:
         store_b.close()

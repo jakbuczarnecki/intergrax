@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -113,6 +113,25 @@ def _encode_optional_text(value: str | None) -> str | None:
     return value
 
 
+def _encode_evaluated_at(value: datetime) -> str:
+    """Persist evaluated_at as canonical UTC ISO for deterministic storage ordering."""
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ProviderQualificationValidityPersistenceIntegrityError(
+            "invalid provider qualification validity evaluated_at: timezone-aware datetime required",
+        )
+    return value.astimezone(timezone.utc).isoformat()
+
+
+def _decode_evaluated_at(value: str) -> datetime:
+    """Decode persisted evaluated_at; fail closed on naive timestamps."""
+    evaluated_at = datetime.fromisoformat(value)
+    if evaluated_at.tzinfo is None or evaluated_at.utcoffset() is None:
+        raise ProviderQualificationValidityPersistenceIntegrityError(
+            "invalid provider qualification validity evaluated_at: timezone-aware datetime required",
+        )
+    return evaluated_at.astimezone(timezone.utc)
+
+
 def _encode_validity_context(
     context: ProviderQualificationValidityContext | None,
 ) -> dict[str, str | None] | None:
@@ -176,7 +195,7 @@ def encode_qualification_validity_record(
         "qualification_run_id": str(record.qualification_run_id),
         "validity_evaluation_id": str(record.validity_evaluation_id),
         "validity": record.validity.value,
-        "evaluated_at": record.evaluated_at.isoformat(),
+        "evaluated_at": _encode_evaluated_at(record.evaluated_at),
         "reason": _encode_optional_text(record.reason),
         "evaluation_context": _encode_validity_context(record.evaluation_context),
     }
@@ -207,7 +226,7 @@ def decode_qualification_validity_record(data: object) -> QualificationValidityR
         raise ProviderQualificationValidityPersistenceIntegrityError(
             "invalid provider qualification validity evaluated_at",
         )
-    evaluated_at = datetime.fromisoformat(evaluated_at_raw)
+    evaluated_at = _decode_evaluated_at(evaluated_at_raw)
     reason = data.get("reason")
     if reason is not None and not isinstance(reason, str):
         raise ProviderQualificationValidityPersistenceIntegrityError(
@@ -383,6 +402,7 @@ class DocumentStoreProviderQualificationValidityPersistence:
         revoked_record = self._query_single_validity_record(
             validated_run_id,
             data_equalities=_REVOKED_VALIDITY_EQUALITY,
+            sort=_CURRENT_VIEW_SORT,
         )
         if revoked_record is not None:
             return QualificationValidityInterpretation(
