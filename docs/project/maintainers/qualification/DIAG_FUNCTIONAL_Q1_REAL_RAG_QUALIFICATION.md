@@ -16,6 +16,12 @@ Direct pytest (after services are up and `LKW_BASE_URL` is set):
 uv run pytest tests/system/functional_diagnostics_q1/ -m qualification -vv
 ```
 
+Architecture / evidence-fidelity unit gate (no external services):
+
+```bash
+uv run pytest tests/system/functional_diagnostics_q1/test_q1_evidence_fidelity.py -q
+```
+
 ## Prerequisites
 
 Start the real C1 stack (Qdrant, Ollama, Mongo, LKW):
@@ -48,16 +54,27 @@ Set:
 | External oracle | REAL / deterministic (`c1.rag.date_oracle.v1`) |
 | Mocks | NONE on core path |
 
+## Evidence independence proof
+
+Qualification expectation and DIAG specification do **not** control emitted functional evidence.
+
+- Instrumentation records pipeline facts only (candidates, actual top-1 selection, output relation).
+- `qualification_force_selection_artifact_ref` and recorder-returned fidelity summaries are **removed**.
+- Q1-B injects failure **before selection** via retrieval-ranking query bias (decoy ranks first).
+- Q1-C injects synthesis failure via qualification `draft` input to the real synthesize step.
+- Static gate: production instrumentation must not import qualification oracle/comparator modules.
+
 ## Mandatory matrix
 
 | Case | Intent |
 | --- | --- |
 | Q1-A | Healthy — no false positive |
-| Q1-B | Controlled selection failure |
-| Q1-C | Synthesis failure with correct upstream |
+| Q1-B | Controlled real selection failure (ranking query → decoy top-1) |
+| Q1-C | Synthesis failure with correct upstream selection |
 | Q1-D | Missing selection evidence → inconclusive operator view |
 | Q1-E | Run isolation (healthy vs failure) |
-| Q1-F | Repeated deterministic failure (3x) |
+| Q1-F | Repeated deterministic selection failure (3x) |
+| Q1-H | Historical wrong-date reproduction (observational) |
 
 ## Artifacts
 
@@ -65,23 +82,7 @@ Machine-readable report:
 
 `.tmp/session/diag-functional-q1/qualification-report.json`
 
-## Outcome (2026-09-01)
-
-```
-Q1 REAL RAG/C1 QUALIFICATION = PASS
-
-REAL INTEGRATION CORRECTNESS = QUALIFIED FOR Q1
-GROUND-TRUTH AGREEMENT = 100% (9/9)
-FALSE POSITIVES = 0
-FALSE NEGATIVES = 0
-STAGE ACCURACY = 100%
-REPEATABILITY = PASS
-
-DURABLE PERSISTENCE = NOT YET QUALIFIED
-PRODUCTION SCALE = NOT YET QUALIFIED
-```
-
-HEAD at qualification: `ad897623566a016eddba329855537b86f067af9e`
+Fields include `provider_candidates`, `actual_selected_artifact`, `emitted_selected_artifact`, `evidence_fidelity_match`, and per-kind fidelity booleans.
 
 ## Out of scope (remain open)
 

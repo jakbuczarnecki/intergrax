@@ -21,6 +21,10 @@ from intergrax.core.qualification.functional_diagnostic_expectation import (
     QualificationExecutionOutcome,
     QualificationFunctionalOutcome,
 )
+from intergrax.runtime.diagnostics.c1_retrieval_evidence import (
+    parse_retrieval_evidence_items,
+    top_ranked_artifact_ref,
+)
 from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessment
 from intergrax.runtime.diagnostics.diagnostic_assessment_composer import DiagnosticAssessmentComposer
 from intergrax.runtime.diagnostics.functional_diagnostic_analyzer import FunctionalDiagnosticAnalyzer
@@ -43,16 +47,20 @@ from intergrax.runtime.observability.functional_evidence_runtime_wiring import (
     wire_in_memory_functional_evidence_runtime,
 )
 from tests.system.functional_diagnostics_q1.cases import (
+    HEALTHY_QUERY,
     MANDATORY_CASES,
+    Q1_A_HEALTHY,
     Q1_B_SELECTION_FAILURE,
+    Q1_C_SYNTHESIS_FAILURE,
     Q1_E_FAILURE,
     Q1_E_HEALTHY,
+    Q1_H_HISTORICAL_WRONG_DATE,
     case_metadata,
 )
 from tests.system.functional_diagnostics_q1.oracle import (
     build_independent_validation_evidence,
     evidence_texts_from_lkw_response,
-    resolve_qualification_functional_pass,
+    independent_date_oracle_passes,
     search_request_message,
 )
 from tests.system.unified_execution.proof_runner.contracts import ProofConfig
@@ -76,6 +84,18 @@ _CURSOR_SECRET = "diag-functional-q1-local-only-secret-32bytes!!"
 
 
 @dataclass(frozen=True, slots=True)
+class EvidenceFidelitySnapshot:
+    provider_candidate_refs: tuple[str, ...]
+    actual_selected_artifact: str | None
+    emitted_selected_artifact: str | None
+    candidate_fidelity_match: bool
+    selection_fidelity_match: bool
+    validation_fidelity_match: bool
+    identity_fidelity_match: bool
+    failure_injection_layer: str | None
+
+
+@dataclass(frozen=True, slots=True)
 class QualificationRunRecord:
     case_id: str
     task_id: str
@@ -83,10 +103,11 @@ class QualificationRunRecord:
     execution_outcome: QualificationExecutionOutcome
     functional_outcome: QualificationFunctionalOutcome
     comparison: QualificationCaseComparison
-    evidence_fidelity_ok: bool
+    evidence_fidelity: EvidenceFidelitySnapshot
     diag_first_failed_check: str | None
     operator_outcome: str | None
     repeat_group: str | None = None
+    historical_reproduction: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,6 +120,7 @@ class QualificationReport:
     false_negative_cases: int
     inconclusive_correct_cases: int
     repeatability_pass: bool
+    expected_selection_artifact_ref: str | None
     records: tuple[QualificationRunRecord, ...]
     blocked_reason: str | None = None
 
@@ -123,6 +145,20 @@ def _fixture_paths(config: ProofConfig) -> list[str]:
         return [f"{_DOCKER_FIXTURE_ROOT}/{name}" for name in _FIXTURE_FILES]
     base = Path(root)
     return [str((base / name).resolve()) for name in _FIXTURE_FILES]
+
+
+def _fixture_text_by_leaf(config: ProofConfig) -> dict[str, str]:
+    root = config.fixture_root.rstrip("/\\")
+    if root == _DOCKER_FIXTURE_ROOT:
+        local_root = Path(__file__).resolve().parents[1] / "unified_execution" / "fixtures" / "workspace"
+    else:
+        local_root = Path(root)
+    texts: dict[str, str] = {}
+    for name in _FIXTURE_FILES:
+        path = local_root / name
+        if path.is_file():
+            texts[name] = path.read_text(encoding="utf-8")
+    return texts
 
 
 def _fetch_functional_evidence(
@@ -170,6 +206,105 @@ def _replay_into_persistence(
         persistence.append(item)
 
 
+def _candidate_refs_from_items(items: tuple[PlatformFunctionalEvidence, ...]) -> tuple[str, ...]:
+    refs: list[str] = []
+    for item in items:
+        if item.kind is not PipelineEvidenceKind.CANDIDATE_RANK or item.candidate is None:
+            continue
+        refs.append(item.candidate.candidate_artifact_ref.artifact_ref)
+    return tuple(refs)
+
+
+def _selection_ref_from_items(items: tuple[PlatformFunctionalEvidence, ...]) -> str | None:
+    for item in items:
+        if item.kind is PipelineEvidenceKind.SELECTION and item.selection is not None:
+            return item.selection.selected_artifact_ref.artifact_ref
+    return None
+
+
+def _provider_candidates_from_search_response(
+    response: LkwRunResponse,
+    config: ProofConfig,
+) -> tuple[str, ...]:
+    remote = _fetch_functional_evidence(
+        config,
+        tenant_id=config.tenant_id,
+        task_id=response.task_id,
+        run_id=response.run_id,
+    )
+    return _candidate_refs_from_items(remote)
+
+
+def _actual_selected_from_search_response(
+    response: LkwRunResponse,
+    config: ProofConfig,
+) -> str | None:
+    remote = _fetch_functional_evidence(
+        config,
+        tenant_id=config.tenant_id,
+        task_id=response.task_id,
+        run_id=response.run_id,
+    )
+    return _selection_ref_from_items(remote)
+
+
+def _build_synthesis_handoff_evidence(
+    *,
+    candidate_refs: tuple[str, ...],
+    fixture_texts: dict[str, str],
+) -> list[dict[str, object]]:
+    evidence: list[dict[str, object]] = []
+    for ref in candidate_refs:
+        if ref.startswith("source:"):
+            leaf = ref.removeprefix("source:")
+            text = fixture_texts.get(leaf, "")
+        elif ref.startswith("chunk:"):
+            text = fixture_texts.get("incident-report.md", "")
+        else:
+            text = ""
+        item: dict[str, object] = {"text": text}
+        if ref.startswith("chunk:"):
+            item["chunk_id"] = ref.removeprefix("chunk:")
+        if ref.startswith("source:"):
+            item["source_path"] = ref.removeprefix("source:")
+        evidence.append(item)
+    return evidence
+
+
+def _evidence_fidelity_snapshot(
+    *,
+    provider_candidates: tuple[str, ...],
+    actual_selected: str | None,
+    emitted_selected: str | None,
+    scope: PipelineEvidenceScope,
+    remote_items: tuple[PlatformFunctionalEvidence, ...],
+    failure_injection_layer: str | None,
+    validation_expected: bool,
+    validation_actual_pass: bool,
+) -> EvidenceFidelitySnapshot:
+    emitted_candidates = _candidate_refs_from_items(remote_items)
+    identity_ok = all(
+        item.scope.tenant_id == scope.tenant_id
+        and item.scope.task_id == scope.task_id
+        and item.scope.run_id == scope.run_id
+        for item in remote_items
+    )
+    return EvidenceFidelitySnapshot(
+        provider_candidate_refs=provider_candidates,
+        actual_selected_artifact=actual_selected,
+        emitted_selected_artifact=emitted_selected,
+        candidate_fidelity_match=provider_candidates == emitted_candidates,
+        selection_fidelity_match=actual_selected == emitted_selected,
+        validation_fidelity_match=(
+            validation_expected == validation_actual_pass
+            if validation_expected
+            else True
+        ),
+        identity_fidelity_match=identity_ok,
+        failure_injection_layer=failure_injection_layer,
+    )
+
+
 def _semantic_signature(record: QualificationRunRecord) -> tuple[str, str | None, str | None]:
     failed_checks = tuple(
         f"{m.check_id}:{m.actual_status.value}"
@@ -204,13 +339,31 @@ def _resope_evidence_items(
     return tuple(item.model_copy(update={"scope": scope}) for item in items)
 
 
+def _discover_expected_selection_artifact(
+    client: LkwClient,
+    config: ProofConfig,
+) -> str:
+    response = client.run_search(
+        message=HEALTHY_QUERY,
+        metadata={"query": HEALTHY_QUERY},
+    )
+    if response.state != "completed":
+        raise LkwClientError(f"discovery_search_state_{response.state}")
+    selected = _actual_selected_from_search_response(response, config)
+    if selected is None:
+        raise LkwClientError("discovery_selection_missing")
+    return selected
+
+
 def _run_synthesis_case(
     client: LkwClient,
     config: ProofConfig,
     metadata: dict[str, object],
-) -> tuple[LkwRunResponse, LkwRunResponse, tuple[PlatformFunctionalEvidence, ...]]:
+    *,
+    fixture_texts: dict[str, str],
+) -> tuple[LkwRunResponse, LkwRunResponse, tuple[PlatformFunctionalEvidence, ...], str | None]:
     search_response = client.run_search(
-        message=search_request_message(),
+        message=str(metadata.get("query") or search_request_message()),
         metadata=metadata,
     )
     search_remote = _fetch_functional_evidence(
@@ -219,10 +372,21 @@ def _run_synthesis_case(
         task_id=search_response.task_id,
         run_id=search_response.run_id,
     )
+    candidate_refs = _candidate_refs_from_items(search_remote)
+    handoff_evidence = _build_synthesis_handoff_evidence(
+        candidate_refs=candidate_refs,
+        fixture_texts=fixture_texts,
+    )
     synth_metadata = {
         **metadata,
         "shadow_workspace": True,
         "output_name": metadata.get("output_name", "q1-synthesis-draft.md"),
+        "evidence": handoff_evidence,
+        "search_summary": {
+            "query": metadata.get("query", search_request_message()),
+            "num_results": len(handoff_evidence),
+            "evidence": handoff_evidence,
+        },
     }
     synth_response = client.run_synthesize(
         message=search_request_message(),
@@ -240,7 +404,9 @@ def _run_synthesis_case(
         task_id=search_response.task_id,
         run_id=search_response.run_id,
     )
-    return search_response, synth_response, merged
+    draft_text = metadata.get("draft")
+    synthesis_draft = draft_text.strip() if isinstance(draft_text, str) and draft_text.strip() else None
+    return search_response, synth_response, merged, synthesis_draft
 
 
 def _run_case(
@@ -248,6 +414,8 @@ def _run_case(
     config: ProofConfig,
     expectation: QualificationCaseExpectation,
     *,
+    expected_selection_artifact_ref: str,
+    fixture_texts: dict[str, str],
     repeat_group: str | None = None,
 ) -> QualificationRunRecord:
     metadata = {
@@ -258,12 +426,22 @@ def _run_case(
         "top_k": 5,
         **case_metadata(expectation),
     }
+    failure_layer_raw = metadata.get("qualification_failure_injection_layer")
+    failure_layer = str(failure_layer_raw) if failure_layer_raw is not None else None
+
     remote_items: tuple[PlatformFunctionalEvidence, ...] | None = None
+    synthesis_draft: str | None = None
+    scope_response: LkwRunResponse
     if expectation.include_output_relation:
-        scope_response, response, remote_items = _run_synthesis_case(client, config, metadata)
+        scope_response, response, remote_items, synthesis_draft = _run_synthesis_case(
+            client,
+            config,
+            metadata,
+            fixture_texts=fixture_texts,
+        )
     else:
         response = client.run_search(
-            message=search_request_message(),
+            message=str(metadata.get("query") or search_request_message()),
             metadata=metadata,
         )
         scope_response = response
@@ -277,17 +455,11 @@ def _run_case(
     evidence_texts = evidence_texts_from_lkw_response(
         answer=response.answer,
         lkw_evidence=lkw_evidence_dict,
+        synthesis_draft_text=synthesis_draft,
     )
-    draft_override = metadata.get("qualification_draft_override")
-    if isinstance(draft_override, str) and draft_override.strip():
-        evidence_texts.append(draft_override.strip())
     functional_outcome = (
         QualificationFunctionalOutcome.PASSED
-        if resolve_qualification_functional_pass(
-            metadata=metadata,
-            answer=response.answer,
-            evidence_texts=evidence_texts,
-        )
+        if independent_date_oracle_passes(answer=response.answer, evidence_texts=evidence_texts)
         else QualificationFunctionalOutcome.FAILED
     )
 
@@ -298,6 +470,11 @@ def _run_case(
             task_id=response.task_id,
             run_id=response.run_id,
         )
+
+    provider_candidates = _provider_candidates_from_search_response(scope_response, config)
+    actual_selected = _actual_selected_from_search_response(scope_response, config)
+    emitted_selected = _selection_ref_from_items(remote_items)
+
     wiring = wire_in_memory_functional_evidence_runtime(cursor_secret=_CURSOR_SECRET)
     _replay_into_persistence(wiring.persistence, remote_items)
 
@@ -311,12 +488,12 @@ def _run_case(
         answer=response.answer,
         evidence_texts=evidence_texts,
         idempotency_key=expectation.case_id,
-        metadata=metadata,
     )
     spec = build_c1_rag_functional_diagnostic_specification(
         validation_id=validation.validation_id if expectation.include_validation else None,
         include_output_relation=expectation.include_output_relation,
         include_validation=expectation.include_validation,
+        expected_selection_artifact_ref=expected_selection_artifact_ref,
     )
     validations_lookup = (
         FunctionalValidationEvidenceLookup.for_scope(
@@ -351,7 +528,29 @@ def _run_case(
         analysis=analysis,
         operator_assessment=operator,
     )
-    fidelity_ok = any(item.kind is PipelineEvidenceKind.OPERATION_OUTCOME for item in remote_items)
+
+    historical_reproduction: str | None = None
+    if expectation.case_id == "Q1-H":
+        historical_reproduction = (
+            "NOT_REPRODUCED"
+            if functional_outcome is QualificationFunctionalOutcome.PASSED
+            else "REPRODUCED"
+        )
+
+    fidelity = _evidence_fidelity_snapshot(
+        provider_candidates=provider_candidates,
+        actual_selected=actual_selected,
+        emitted_selected=emitted_selected,
+        scope=pipeline_scope,
+        remote_items=remote_items,
+        failure_injection_layer=failure_layer,
+        validation_expected=expectation.include_validation,
+        validation_actual_pass=independent_date_oracle_passes(
+            answer=response.answer,
+            evidence_texts=evidence_texts,
+        ),
+    )
+
     return QualificationRunRecord(
         case_id=expectation.case_id,
         task_id=scope_response.task_id,
@@ -359,7 +558,7 @@ def _run_case(
         execution_outcome=execution_outcome,
         functional_outcome=functional_outcome,
         comparison=comparison,
-        evidence_fidelity_ok=fidelity_ok,
+        evidence_fidelity=fidelity,
         diag_first_failed_check=(
             str(analysis.first_proven_failure) if analysis.first_proven_failure is not None else None
         ),
@@ -369,12 +568,67 @@ def _run_case(
             else None
         ),
         repeat_group=repeat_group,
+        historical_reproduction=historical_reproduction,
     )
+
+
+def run_evidence_independence_probe(
+    client: LkwClient,
+    config: ProofConfig,
+    *,
+    expected_selection_artifact_ref: str,
+) -> bool:
+    """Same real run, different DIAG spec expectation — emitted evidence must match."""
+    metadata = {
+        "tenant_id": config.tenant_id,
+        "workspace_id": config.workspace_id,
+        "collection_id": config.collection_id,
+        "query": HEALTHY_QUERY,
+        "top_k": 5,
+        **case_metadata(Q1_A_HEALTHY),
+    }
+    response = client.run_search(message=HEALTHY_QUERY, metadata=metadata)
+    first_items = _fetch_functional_evidence(
+        config,
+        tenant_id=config.tenant_id,
+        task_id=response.task_id,
+        run_id=response.run_id,
+    )
+    first_selection = _selection_ref_from_items(first_items)
+
+    alt_spec = build_c1_rag_functional_diagnostic_specification(
+        expected_selection_artifact_ref="chunk:definitely-not-the-real-selection",
+        include_validation=False,
+    )
+    wiring = wire_in_memory_functional_evidence_runtime(cursor_secret=_CURSOR_SECRET)
+    _replay_into_persistence(wiring.persistence, first_items)
+    scope = PipelineEvidenceScope(
+        tenant_id=config.tenant_id,
+        task_id=validate_task_id(response.task_id),
+        run_id=validate_run_id(response.run_id),
+    )
+    FunctionalDiagnosticAnalyzer(wiring.persistence).analyze(
+        tenant_id=config.tenant_id,
+        task_id=scope.task_id,
+        run_id=scope.run_id,
+        specification=alt_spec,
+        validations=None,
+    )
+
+    second_items = _fetch_functional_evidence(
+        config,
+        tenant_id=config.tenant_id,
+        task_id=response.task_id,
+        run_id=response.run_id,
+    )
+    second_selection = _selection_ref_from_items(second_items)
+    return first_selection == second_selection
 
 
 def run_qualification() -> QualificationReport:
     config = _config_from_env()
     client = LkwClient(config)
+    fixture_texts = _fixture_text_by_leaf(config)
     try:
         client.wait_until_ready()
     except LkwClientError as exc:
@@ -384,12 +638,43 @@ def run_qualification() -> QualificationReport:
     if index_response.state != "completed":
         return _blocked_report(f"index_state_{index_response.state}")
 
+    try:
+        expected_selection = _discover_expected_selection_artifact(client, config)
+    except LkwClientError as exc:
+        return _blocked_report(str(exc))
+
     records: list[QualificationRunRecord] = []
     for case in MANDATORY_CASES:
-        records.append(_run_case(client, config, case))
+        records.append(
+            _run_case(
+                client,
+                config,
+                case,
+                expected_selection_artifact_ref=expected_selection,
+                fixture_texts=fixture_texts,
+            ),
+        )
 
-    records.append(_run_case(client, config, Q1_E_HEALTHY, repeat_group="isolation"))
-    records.append(_run_case(client, config, Q1_E_FAILURE, repeat_group="isolation"))
+    records.append(
+        _run_case(
+            client,
+            config,
+            Q1_E_HEALTHY,
+            expected_selection_artifact_ref=expected_selection,
+            fixture_texts=fixture_texts,
+            repeat_group="isolation",
+        ),
+    )
+    records.append(
+        _run_case(
+            client,
+            config,
+            Q1_E_FAILURE,
+            expected_selection_artifact_ref=expected_selection,
+            fixture_texts=fixture_texts,
+            repeat_group="isolation",
+        ),
+    )
 
     repeat_records: list[QualificationRunRecord] = []
     for _ in range(3):
@@ -398,18 +683,59 @@ def run_qualification() -> QualificationReport:
                 client,
                 config,
                 Q1_B_SELECTION_FAILURE,
+                expected_selection_artifact_ref=expected_selection,
+                fixture_texts=fixture_texts,
                 repeat_group=_REPEAT_CASE_ID,
             ),
         )
     records.extend(repeat_records)
+
+    synthesis_repeat_records: list[QualificationRunRecord] = []
+    for _ in range(3):
+        synthesis_repeat_records.append(
+            _run_case(
+                client,
+                config,
+                Q1_C_SYNTHESIS_FAILURE,
+                expected_selection_artifact_ref=expected_selection,
+                fixture_texts=fixture_texts,
+                repeat_group="Q1-C-R",
+            ),
+        )
+    records.extend(synthesis_repeat_records)
+
+    records.append(
+        _run_case(
+            client,
+            config,
+            Q1_H_HISTORICAL_WRONG_DATE,
+            expected_selection_artifact_ref=expected_selection,
+            fixture_texts=fixture_texts,
+            repeat_group="historical",
+        ),
+    )
+
     repeatability_pass = len({_semantic_signature(item) for item in repeat_records}) == 1
+    synthesis_repeatability_pass = len({_semantic_signature(item) for item in synthesis_repeat_records}) == 1
+    fidelity_pass = all(
+        record.evidence_fidelity.candidate_fidelity_match
+        and record.evidence_fidelity.selection_fidelity_match
+        and record.evidence_fidelity.identity_fidelity_match
+        for record in records
+        if record.case_id != "Q1-D"
+    )
+    independence_pass = run_evidence_independence_probe(
+        client,
+        config,
+        expected_selection_artifact_ref=expected_selection,
+    )
 
     matched = sum(1 for item in records if item.comparison.result is QualificationComparisonResult.MATCH)
     mismatched = len(records) - matched
     false_positives = sum(
         1
         for item in records
-        if item.case_id in {"Q1-A", "Q1-E-A"}
+        if item.case_id in {"Q1-A", "Q1-E-A", "Q1-H"}
         and item.comparison.result is QualificationComparisonResult.MISMATCH
         and any(
             mismatch.actual_status is FunctionalDiagnosticCheckStatus.PROVEN_FAIL
@@ -429,7 +755,11 @@ def run_qualification() -> QualificationReport:
     )
 
     all_matched = mismatched == 0
-    verdict = "PASS" if all_matched and repeatability_pass else "FAILED"
+    verdict = (
+        "PASS"
+        if all_matched and repeatability_pass and synthesis_repeatability_pass and fidelity_pass and independence_pass
+        else "FAILED"
+    )
     report = QualificationReport(
         verdict=verdict,
         total_cases=len(records),
@@ -438,10 +768,11 @@ def run_qualification() -> QualificationReport:
         false_positive_cases=false_positives,
         false_negative_cases=false_negatives,
         inconclusive_correct_cases=inconclusive_correct,
-        repeatability_pass=repeatability_pass,
+        repeatability_pass=repeatability_pass and synthesis_repeatability_pass,
+        expected_selection_artifact_ref=expected_selection,
         records=tuple(records),
     )
-    _write_artifact(report)
+    _write_artifact(report, independence_pass=independence_pass, fidelity_pass=fidelity_pass)
     return report
 
 
@@ -455,14 +786,20 @@ def _blocked_report(reason: str) -> QualificationReport:
         false_negative_cases=0,
         inconclusive_correct_cases=0,
         repeatability_pass=False,
+        expected_selection_artifact_ref=None,
         records=(),
         blocked_reason=reason,
     )
-    _write_artifact(report)
+    _write_artifact(report, independence_pass=False, fidelity_pass=False)
     return report
 
 
-def _write_artifact(report: QualificationReport) -> None:
+def _write_artifact(
+    report: QualificationReport,
+    *,
+    independence_pass: bool,
+    fidelity_pass: bool,
+) -> None:
     _ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     payload: dict[str, Any] = {
         "verdict": report.verdict,
@@ -473,6 +810,9 @@ def _write_artifact(report: QualificationReport) -> None:
         "false_negative_cases": report.false_negative_cases,
         "inconclusive_correct_cases": report.inconclusive_correct_cases,
         "repeatability_pass": report.repeatability_pass,
+        "expected_selection_artifact_ref": report.expected_selection_artifact_ref,
+        "evidence_independence_pass": independence_pass,
+        "evidence_fidelity_pass": fidelity_pass,
         "blocked_reason": report.blocked_reason,
         "records": [
             {
@@ -484,8 +824,21 @@ def _write_artifact(report: QualificationReport) -> None:
                 "comparison": item.comparison.result.value,
                 "diag_first_failed_check": item.diag_first_failed_check,
                 "operator_outcome": item.operator_outcome,
-                "evidence_fidelity_ok": item.evidence_fidelity_ok,
                 "repeat_group": item.repeat_group,
+                "historical_reproduction": item.historical_reproduction,
+                "provider_candidates": list(item.evidence_fidelity.provider_candidate_refs),
+                "actual_selected_artifact": item.evidence_fidelity.actual_selected_artifact,
+                "emitted_selected_artifact": item.evidence_fidelity.emitted_selected_artifact,
+                "evidence_fidelity_match": (
+                    item.evidence_fidelity.candidate_fidelity_match
+                    and item.evidence_fidelity.selection_fidelity_match
+                    and item.evidence_fidelity.identity_fidelity_match
+                ),
+                "failure_injection_layer": item.evidence_fidelity.failure_injection_layer,
+                "candidate_fidelity": item.evidence_fidelity.candidate_fidelity_match,
+                "selection_fidelity": item.evidence_fidelity.selection_fidelity_match,
+                "validation_fidelity": item.evidence_fidelity.validation_fidelity_match,
+                "identity_fidelity": item.evidence_fidelity.identity_fidelity_match,
                 "check_mismatches": [
                     {
                         "check_id": str(m.check_id),

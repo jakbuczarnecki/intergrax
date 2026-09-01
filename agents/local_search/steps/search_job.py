@@ -20,6 +20,10 @@ from intergrax.tools.providers.rag.source_scope_transport import (
     reset_rag_retrieval_source_scope,
 )
 from local_search.diagnostics import SearchSummaryReason
+from intergrax.runtime.diagnostics.c1_retrieval_evidence import (
+    parse_retrieval_evidence_items,
+    top_ranked_artifact_ref,
+)
 from local_search.rag_functional_evidence import emit_search_functional_evidence
 
 SEARCH_STEP_ID = "local_search_step"
@@ -318,13 +322,16 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
     chunks = list(entry.get("chunks") or [])
     citations = list(entry.get("citations") or [])
     evidence = _format_evidence(chunks, citations, workspace_id=workspace_id)
-    fidelity = emit_search_functional_evidence(
+    evidence_items = parse_retrieval_evidence_items(evidence)
+    actual_selected_artifact_ref = top_ranked_artifact_ref(evidence_items)
+    emit_search_functional_evidence(
         exec_ctx,
         metadata=metadata,
-        evidence=evidence,
+        evidence_items=evidence_items,
+        actual_selected_artifact_ref=actual_selected_artifact_ref,
         retrieve_succeeded=True,
     )
-    output = _output(
+    return _output(
         run_id=step_ctx.run_id,
         used=True,
         reason=SearchSummaryReason.RETRIEVE_COMPLETE,
@@ -334,8 +341,3 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
         evidence=evidence,
         num_results=len(evidence),
     )
-    if fidelity is not None:
-        search_summary = output.get("search_summary")
-        if isinstance(search_summary, dict):
-            search_summary["functional_evidence_fidelity"] = fidelity
-    return output

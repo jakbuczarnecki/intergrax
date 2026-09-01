@@ -48,6 +48,7 @@ def build_c1_rag_functional_diagnostic_specification(
     validation_id: EventId | None = None,
     include_output_relation: bool = False,
     include_validation: bool = True,
+    expected_selection_artifact_ref: str = C1_RAG_EXPECTED_SELECTION_ARTIFACT,
 ) -> FunctionalDiagnosticSpecification:
     checks: list[FunctionalDiagnosticCheck] = [
         FunctionalDiagnosticCheck(
@@ -79,7 +80,7 @@ def build_c1_rag_functional_diagnostic_specification(
                 kind=FunctionalDiagnosticRequirementKind.SELECTION_ARTIFACT_MATCH,
                 selection_artifact_match=SelectionArtifactMatchRequirement(
                     query_id=C1_RAG_QUERY_ID,
-                    expected_artifact_ref=C1_RAG_EXPECTED_SELECTION_ARTIFACT,
+                    expected_artifact_ref=expected_selection_artifact_ref,
                 ),
             ),
             pass_claim="Incident report chunk was selected.",

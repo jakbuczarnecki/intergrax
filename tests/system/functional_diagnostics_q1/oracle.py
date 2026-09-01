@@ -18,7 +18,6 @@ from intergrax.runtime.diagnostics.functional_evidence import PipelineEvidenceSc
 C1_ORACLE_VALIDATOR_ID = "c1.rag.date_oracle.v1"
 EXPECTED_INCIDENT_DATE = "2026-08-17"
 SEARCH_QUESTION = "When did Incident Orion occur?"
-_FORCED_WRONG_SELECTION_REFS = frozenset({"chunk:operations-decoy"})
 
 
 def search_request_message() -> str:
@@ -29,10 +28,13 @@ def evidence_texts_from_lkw_response(
     *,
     answer: str | None,
     lkw_evidence: dict[str, object] | None,
+    synthesis_draft_text: str | None = None,
 ) -> list[str]:
     texts: list[str] = []
     if answer:
         texts.append(answer)
+    if synthesis_draft_text:
+        texts.append(synthesis_draft_text)
     if not isinstance(lkw_evidence, dict):
         return texts
     diagnostics = lkw_evidence.get("diagnostics")
@@ -58,42 +60,14 @@ def independent_date_oracle_passes(
     return "incident-report" in lowered and "orion" in lowered
 
 
-def resolve_qualification_functional_pass(
-    *,
-    metadata: dict[str, object],
-    answer: str | None,
-    evidence_texts: list[str],
-) -> bool:
-    """Independent oracle using qualification fixture config, not DIAG output."""
-    force = metadata.get("qualification_force_selection_artifact_ref")
-    if isinstance(force, str) and force.strip() in _FORCED_WRONG_SELECTION_REFS:
-        return False
-    draft_override = metadata.get("qualification_draft_override")
-    if isinstance(draft_override, str) and draft_override.strip():
-        return independent_date_oracle_passes(
-            answer=draft_override,
-            evidence_texts=[],
-        )
-    return independent_date_oracle_passes(answer=answer, evidence_texts=evidence_texts)
-
-
 def build_independent_validation_evidence(
     scope: PipelineEvidenceScope,
     *,
     answer: str | None,
     evidence_texts: list[str],
     idempotency_key: str,
-    metadata: dict[str, object] | None = None,
 ) -> FunctionalValidationEvidence:
-    passed = (
-        resolve_qualification_functional_pass(
-            metadata=metadata or {},
-            answer=answer,
-            evidence_texts=evidence_texts,
-        )
-        if metadata is not None
-        else independent_date_oracle_passes(answer=answer, evidence_texts=evidence_texts)
-    )
+    passed = independent_date_oracle_passes(answer=answer, evidence_texts=evidence_texts)
     correlation = DiagnosticExecutionCorrelation(
         tenant_id=scope.tenant_id,
         task_id=scope.task_id,
@@ -131,6 +105,5 @@ __all__ = [
     "build_independent_validation_evidence",
     "evidence_texts_from_lkw_response",
     "independent_date_oracle_passes",
-    "resolve_qualification_functional_pass",
     "search_request_message",
 ]
