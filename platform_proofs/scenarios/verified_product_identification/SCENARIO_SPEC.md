@@ -1,7 +1,7 @@
 ---
 scenario_slug: verified_product_identification
-lifecycle: DESIGN
-implementation_status: NOT_INITIALIZED
+lifecycle: IMPLEMENTATION_INITIALIZED
+implementation_status: INITIALIZED
 intergrax_fit: COMPLETED
 gap_decision: RESOLVED
 observability_contract: COMPLETED
@@ -13,7 +13,7 @@ application_vs_proof_ownership: COMPLETED
 **Scenario:** Verified Product Identification at Catalog Scale  
 **Slug:** `verified_product_identification`  
 **Proof class:** SCENARIO  
-**Status:** DESIGN / NOT YET ACCEPTED — design documentation complete; awaiting human Scenario Quality Gate; implementation not initialized.
+**Status:** ACCEPTED FOR IMPLEMENTATION — human Scenario Quality Gate accepted; implementation not yet initialized; no executable proof, evidence, or report yet.
 
 [← Back to public Scenario page](README.md)
 
@@ -499,15 +499,21 @@ flowchart TD
 
 **TOP-RANKED CANDIDATE IS NOT A VERIFIED PRODUCT.**
 
-**Reference infrastructure hypothesis:** PostgreSQL + pgvector as the operational database for relational data, lexical/full-text search, structured filters, and vector search in one deployable unit (Docker-friendly). This is the **preferred design hypothesis** — not a proven final choice. Alternative dedicated search engines are not required unless benchmark calibration shows a material gap.
+**Scenario architecture invariant (provider neutrality):** Scenario implementation **MUST NOT** be PostgreSQL-centric. Business/application code **MUST** depend on platform/application search and storage **contracts**, not PostgreSQL-specific APIs. Query understanding, product verification, outcome semantics, and the proof evaluator **MUST NOT** require rewriting when operators choose a different qualified storage/retrieval configuration. Provider-specific capabilities belong behind integration/storage/retrieval boundaries — not in scenario application logic.
 
-Trade-offs documented:
+**Canonical reference configuration:** For reproduction convenience, a later reference deployment **MAY** choose PostgreSQL + pgvector (relational/catalog store + vector backend in one deployable unit). That is an operator/provider **choice**, not a scenario architecture dependency. The scenario architecture remains **provider-neutral** and must also allow configurations such as:
 
-| Approach | Benefit | Cost / risk |
+- PostgreSQL + pgvector
+- MySQL + Qdrant
+- another relational/catalog store + another qualified vector backend
+
+Illustrative trade-offs (provider choice — not mandatory scenario architecture):
+
+| Configuration | Benefit | Cost / risk |
 | --- | --- | --- |
 | PostgreSQL + pgvector | Single ops surface; structured + lexical + vector co-location | Index tuning at 3.77M scale; attribute heterogeneity |
-| Separate vector DB (e.g., Qdrant) | Specialized ANN | Second system; provenance/join complexity — not justified without measured need |
-| Elasticsearch/OpenSearch | Strong lexical | Additional infrastructure — not justified without measured lexical gap |
+| MySQL (or other relational/catalog) + Qdrant | Mix relational catalog with specialized ANN/hybrid vector backend | Two systems; provenance/join complexity |
+| Separate lexical engine (e.g., Elasticsearch/OpenSearch) + vector backend | Strong lexical | Additional infrastructure — only if measured lexical gap |
 
 ### Data preparation model
 
@@ -840,10 +846,10 @@ Frontmatter `gap_decision: RESOLVED`.
 
 | Gap / need | Owner | Why | Blocks implementation? |
 | --- | --- | --- | --- |
-| Dense vector retrieval via PgVector | Platform (provider) + application (configure) | `PgVectorRagStore` production-wired; live qualification gate exists | No — configure DSN/dimension |
+| Dense vector retrieval (qualified vector backend) | Platform (provider contracts) + application (configure) | e.g. `PgVectorRagStore`, Qdrant, InMemory — via platform vectorstore contracts; not a PostgreSQL-only requirement | No — configure provider per deployment |
 | Reranker pipeline | Platform RAG | `RetrievalService` + `RerankerManager` shipped with metadata-preserving ABI | No |
 | Candidate / chunk ABI | Platform RAG | `RetrievalHit` / `RerankerCandidate` / `RetrievalChunk` | No |
-| Hybrid retrieval (non-PgVector) | Platform RAG | BM25+RRF via `LexicalHybridSupport` / `HybridRetriever` | Only if scenario commits to Qdrant etc. instead of PgVector-only |
+| Hybrid retrieval (lexical + dense) | Platform RAG | BM25+RRF via `LexicalHybridSupport` / `HybridRetriever` on backends that support it | No — provider choice; application uses contracts, not a fixed backend |
 | Proof evidence framework | Platform proofs | `PlatformProofEvidence` v3, proof protocol | No — evaluator is separate build |
 | RAG trace primitives | Platform RAG + runtime | `RetrievalTrace`, `rag_span` | No — extend with app fields |
 
@@ -851,9 +857,9 @@ Frontmatter `gap_decision: RESOLVED`.
 
 | Gap / need | Owner | Minimum change | Blocks? |
 | --- | --- | --- | --- |
-| PgVector connection | Application / ops | `INTERGRAX_PGVECTOR_DSN`, `INTERGRAX_PGVECTOR_DIMENSION`, tenant/namespace scope | Yes for vector channel |
+| Vector / catalog provider wiring | Application / ops | Provider-specific env and scope (e.g. `INTERGRAX_PGVECTOR_DSN` for canonical PostgreSQL+pgvector reference only) | Yes for vector channel — via chosen provider config |
 | Reranker selection | Application | `RagProfile(enable_rerank=True, reranker_id=...)` | No |
-| Retriever profile | Application | Choose `hybrid` vs `vector_similarity`; `native_hybrid_enabled` — **note:** PgVector cannot satisfy native hybrid without extension | Partial — lexical channel needs separate path |
+| Retriever profile | Application | Choose `hybrid` vs `vector_similarity` per qualified backend capabilities | Partial — lexical channel may need separate path on some providers |
 
 ### 3. PLATFORM EXTENSION
 
@@ -861,7 +867,7 @@ Frontmatter `gap_decision: RESOLVED`.
 | --- | --- | --- | --- | --- | --- |
 | PgVector ANN index (HNSW/IVFFlat) | Schema lacks vector index; 3.77M brute-force not credible | Platform / Integrations | Add optional index DDL + migration policy in `PgVectorRagStore._ensure_schema` | **Yes** for pgvector-at-scale proof | Yes — provider schema |
 | PgVector bulk/batch ingest | Row-by-row insert inadequate for 3.77M | Platform / Integrations | `COPY`/batch insert API or ingest optimization | **Yes** for indexing SLA | Minor — provider API |
-| PgVector hybrid / PostgreSQL FTS | Design hypothesis prefers co-located lexical+vector; provider is dense-only | Platform / Integrations **or** application FTS tables | Implement `query_hybrid` with `tsvector` + RRF, or document Qdrant alternative | **Yes** if single-DB hypothesis held | Yes if platform-owned |
+| Provider hybrid / FTS gaps | Some providers are dense-only or lack co-located lexical search | Platform / Integrations **or** application catalog indexes | Extend provider or compose separate lexical + vector backends per deployment | **Yes** only for chosen canonical reference configuration | Yes if platform-owned |
 | Generic multi-channel fusion orchestrator | Today fusion is 2-channel (hybrid) or graph-specific | Platform RAG (optional) | Reusable fusion service accepting N channel result lists + attribution | No — application can fuse locally using `reciprocal_rank_fusion` | Only if promoted to generic platform capability |
 | `MetadataFilter` range / rich queries | Equality-only insufficient for capacity/voltage ranges | Platform RAG contracts (optional) | Extend filter contract + provider SQL | No — application can use SQL outside vector ABI | Yes if added to portable contract |
 
@@ -887,13 +893,15 @@ Frontmatter `gap_decision: RESOLVED`.
 | Map product outcomes into Decision System core types | Optional; generic Decision lifecycle can wrap application verdicts — not required for MVP |
 | GraphRAG channel | Product catalog identification does not require knowledge graph traversal in ideal architecture |
 | Perfect normalization of all 337k attribute names | Explicitly out of scope per § B limitations |
-| 3.77M-scale PgVector qualification before implementation | Live qual proves correctness at small scale; million-scale is benchmark calibration, not platform gate blocker |
+| Million-scale provider qualification before implementation | Live qual proves correctness at small scale; million-scale is benchmark calibration, not platform gate blocker |
 
 ### Implementation roadmap (proposed order)
 
-1. **Catalog runtime / storage** — PostgreSQL schema for immutable `record_json`, identifier tables, configuration; PgVector dense store (configure DSN/dimension).
+Provider-neutral application stages — storage/retrieval backends are configured per deployment, not hard-coded:
+
+1. **Catalog runtime / storage** — immutable `record_json`, identifier tables, configuration via catalog/search **contracts**; wire qualified vector and lexical backends behind platform integration boundaries.
 2. **Preprocessing / search representation** — deterministic ingest from `selected_offers.parquet`; normalized identifiers, lexical text, structured attribute subset, embeddings.
-3. **Candidate channels** — application query understanding; exact identifier SQL; lexical (FTS or platform hybrid backend); structured filters; dense vector via PgVector.
+3. **Candidate channels** — application query understanding; exact identifier lookup; lexical retrieval; structured filters; dense vector via configured vector backend.
 4. **Hybrid fusion + reranker** — fuse channel results with attribution (`reciprocal_rank_fusion` or score-sum); wire `RetrievalService` reranker stage on finalists.
 5. **Verification** — evidence extraction from source fields; constraint support/contradiction/missing; terminal outcome selection.
 6. **Clarification / outcomes** — `INSUFFICIENT_INFORMATION` loop; `AMBIGUOUS` abstention; `NO_MATCH` vs retrieval-empty distinction.
@@ -901,22 +909,18 @@ Frontmatter `gap_decision: RESOLVED`.
 8. **Benchmark / proof** — gold cases, hidden evaluator, full-corpus runs, baseline variants A–C from § B.
 9. **Public reproduction** — resolve `DATASET_DISTRIBUTION`; checksum auto-resolve; documented reproduction path.
 
-### Platform gap priority (if PgVector hypothesis retained)
+### Platform gap priority (canonical reference configuration only)
 
-1. PgVector ANN index (HNSW) — blocks credible 3.77M vector search performance.
-2. Bulk ingest — blocks practical indexing time.
-3. PgVector lexical/FTS hybrid — blocks single-database architecture without separate search engine.
+If the canonical reference deployment chooses PostgreSQL + pgvector:
 
-**Alternative:** qualify **Qdrant** (or similar) for hybrid BM25+dense via existing `LexicalHybridSupport` — trades design hypothesis for faster platform reuse; requires explicit architecture decision during implementation prep.
+1. PgVector ANN index (HNSW) — blocks credible 3.77M vector search performance on that provider.
+2. Bulk ingest — blocks practical indexing time on that provider.
+3. PgVector lexical/FTS hybrid — blocks co-located lexical+vector on that single-database reference path.
+
+**Alternative reference configuration:** MySQL + Qdrant (or similar) may satisfy hybrid BM25+dense via existing `LexicalHybridSupport` without rewriting scenario application logic — operator choice, not scenario architecture.
 
 ## E. PROOF BUILD
 
-NOT STARTED — blocked on scenario acceptance, APPLICATION vs PROOF HARNESS separation, and:
-
-- human Scenario Quality Gate
-- Intergrax Fit
-- Gap Decision
-- implementation initialization
-- dataset distribution resolution
+NOT STARTED — blocked on implementation initialization and dataset distribution resolution (scenario acceptance, Intergrax Fit, and Gap Decision are complete).
 
 Before implementation confirm: production-capable application exists; canonical path has no prohibited fake/test shortcuts; controlled providers use normal application contracts; real model boundary configured if AI behavior is material; full 3.77M catalog loaded in search infrastructure.
