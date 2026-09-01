@@ -12,13 +12,13 @@ import importlib.util
 import json
 import sys
 import threading
+import types
 from collections.abc import Callable, Sequence
 from contextvars import ContextVar
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Final
 
-from intergrax.utils import attribute_access
 from intergrax.agent_distribution._digest import normalize_package_digest
 from intergrax.agent_distribution.binding import AgentBindingFactoryReference
 from intergrax.agent_distribution.dependency import MaterializedRuntimeLock
@@ -143,11 +143,15 @@ def _attach_scoped_module_chain(
         child_name = _scoped_module_name(scope.scope_root, child_original)
         parent_module = sys.modules.get(parent_name)
         child_module = sys.modules.get(child_name)
-        if parent_module is None or child_module is None:
+        if not isinstance(parent_module, types.ModuleType):
+            continue
+        if not isinstance(child_module, types.ModuleType):
             continue
         attr_name = parts[index]
-        if getattr(parent_module, attr_name, None) is not child_module:
-            setattr(parent_module, attr_name, child_module)
+        parent_namespace = vars(parent_module)
+        existing = parent_namespace.get(attr_name)
+        if existing is not child_module:
+            parent_namespace[attr_name] = child_module
 
 
 def _artifact_aware_import(
@@ -210,12 +214,9 @@ def _scope_for_scoped_name(fullname: str) -> _ArtifactImportScope | None:
 
 
 def _scope_for_import_target(target: object | None) -> _ArtifactImportScope | None:
-    if target is None:
+    if not isinstance(target, types.ModuleType):
         return None
-    target_name = attribute_access.optional(target, "__name__", None)
-    if not isinstance(target_name, str):
-        return None
-    return _scope_for_scoped_name(target_name)
+    return _scope_for_scoped_name(target.__name__)
 
 
 def _package_search_locations(
@@ -615,11 +616,16 @@ def _load_callable_from_site_packages(
         site_packages=site_packages,
     )
     module = _import_scoped_module(scope, module_path)
-    target = attribute_access.optional(module, attr_name, None)
-    if target is None:
+    if not isinstance(module, types.ModuleType):
+        raise RuntimeAgentFactoryResolutionError(
+            f"factory module {module_path!r} did not resolve to a module object"
+        )
+    module_namespace = vars(module)
+    if attr_name not in module_namespace:
         raise RuntimeAgentFactoryResolutionError(
             f"factory attribute {attr_name!r} missing from module {module_path!r}"
         )
+    target = module_namespace[attr_name]
     if not callable(target):
         raise RuntimeAgentFactoryResolutionError(
             f"factory reference {module_path}.{attr_name} is not callable"

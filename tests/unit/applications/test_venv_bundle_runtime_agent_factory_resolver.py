@@ -656,7 +656,7 @@ def test_ap10_registry_projection_with_venv_resolver(tmp_path: Path) -> None:
     assert len(matches) == 1
 
 
-def test_production_resolver_has_no_builder_map_import() -> None:
+def _production_resolver_source_text() -> str:
     source = (
         Path(__file__).resolve().parents[3]
         / "intergrax"
@@ -664,11 +664,22 @@ def test_production_resolver_has_no_builder_map_import() -> None:
         / "_shared"
         / "venv_bundle_runtime_agent_factory_resolver.py"
     )
-    text = source.read_text(encoding="utf-8")
+    return source.read_text(encoding="utf-8")
+
+
+def test_production_resolver_has_no_builder_map_import() -> None:
+    text = _production_resolver_source_text()
     for token in ("from intergrax.applications._shared.wiring import", "testing_support"):
         assert token not in text
     assert "InMemoryRuntimeAgentFactoryResolver" not in text
     assert "sys.path.insert" not in text
+
+
+def test_production_resolver_has_no_dynamic_attribute_access() -> None:
+    text = _production_resolver_source_text()
+    assert "getattr(" not in text
+    assert "setattr(" not in text
+    assert "hasattr(" not in text
 
 
 def test_relative_imports_resolve_inside_artifact(tmp_path: Path) -> None:
@@ -1191,6 +1202,12 @@ def test_dotted_import_in_factory_returns_scoped_config_marker(tmp_path: Path) -
         factory_reference=_FACTORY_REF,
     )
     assert factory(None, AgentBinding(contract_id="dotted")) == "ARTIFACT"
+    scope_prefix = _artifact_scope_prefix(digest)
+    scoped_package_name = f"{scope_prefix}.example_agent"
+    scoped_config_name = f"{scope_prefix}.example_agent.config"
+    scoped_package = sys.modules[scoped_package_name]
+    scoped_config = sys.modules[scoped_config_name]
+    assert vars(scoped_package)["config"] is scoped_config
 
 
 def test_dotted_import_preloaded_host_package_isolation(tmp_path: Path) -> None:
