@@ -25,6 +25,10 @@ from intergrax.runtime.execution.active_decision_lifecycle_host import (
     bind_active_decision_lifecycle_host,
     reset_active_decision_lifecycle_host,
 )
+from intergrax.runtime.execution.active_execution_work_port import (
+    bind_active_execution_work_port,
+    reset_active_execution_work_port,
+)
 from intergrax.runtime.execution.decision_checkpoint_persistence import (
     DecisionCheckpointPersistence,
 )
@@ -43,6 +47,7 @@ from intergrax.runtime.execution.budget.ledger import (
     RunBudgetExecutionBudgetLedgerFactory,
 )
 from intergrax.runtime.execution.decision_lifecycle_host import DecisionLifecycleHost
+from intergrax.runtime.execution.execution_work_port import ExecutionWorkPort
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
 RequestT = TypeVar("RequestT")
@@ -123,6 +128,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         "_admission_hooks",
         "_decision_lifecycle_host",
         "_decision_checkpoint_persistence",
+        "_execution_work_port",
     )
 
     def __init__(
@@ -136,6 +142,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         decision_checkpoint_persistence: (
             DecisionCheckpointPersistence[CheckpointPayloadT] | None
         ) = None,
+        execution_work_port: ExecutionWorkPort | None = None,
     ) -> None:
         self._delegate = delegate
         self._ledger_factory = (
@@ -147,6 +154,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         self._admission_hooks = admission_hooks
         self._decision_lifecycle_host = decision_lifecycle_host
         self._decision_checkpoint_persistence = decision_checkpoint_persistence
+        self._execution_work_port = execution_work_port
 
     async def execute(
         self,
@@ -177,6 +185,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         )
         host_token = None
         persistence_token = None
+        work_port_token = None
         try:
             if self._decision_lifecycle_host is not None:
                 host_token = bind_active_decision_lifecycle_host(
@@ -186,8 +195,14 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
                 persistence_token = bind_active_decision_checkpoint_persistence(
                     self._decision_checkpoint_persistence,
                 )
+            if self._execution_work_port is not None:
+                work_port_token = bind_active_execution_work_port(
+                    self._execution_work_port,
+                )
             return await boundary.execute(request)
         finally:
+            if work_port_token is not None:
+                reset_active_execution_work_port(work_port_token)
             if persistence_token is not None:
                 reset_active_decision_checkpoint_persistence(persistence_token)
             if host_token is not None:

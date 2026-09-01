@@ -140,8 +140,27 @@ Proof gate: `tests/unit/runtime/execution/test_decision_checkpoint_runtime_integ
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-NEXUS-01 | P0 | Graph / UAEP hooks for ORCHESTRATION-backed Decision Strategy work | **Planned** |
+| DS-NEXUS-01 | P0 | Canonical Execution work submission for Decision Strategy work (ORCHESTRATION capability via Execution-owned child seam; Nexus remains private) | **Done** |
 | DS-NEXUS-02 | P1 | Orchestration checkpoint participation when ORCHESTRATION is selected | **Planned** |
+
+#### DS-NEXUS-01 — Decision → Execution work seam (DONE)
+
+Decision-aware code submits canonical `ExecutionRequest` work through an optional execution-scoped `ExecutionWorkPort` hosted by `ExecutionRuntime`. Child work is minted via `ChildExecutionRunner` and routed by the wired `StrategyExecutionRouter` — Decision does **not** import Nexus, construct orchestration backends, or select `ExecutionStrategy`.
+
+```text
+Decision Strategy (decision-aware delegate)
+      ↓ require_active_execution_work_port()
+ExecutionWorkPort
+      ↓ ChildExecutionRunner (child ExecutionId + parent lineage)
+StrategyExecutionRouter
+      ├── INFERENCE
+      ├── AGENTIC
+      └── ORCHESTRATION → private Nexus implementation
+```
+
+**Invariants:** no Nexus field on Decision contracts; no global DecisionStrategy → ExecutionStrategy mapping; ordinary flows without work port do not require orchestration backend; missing orchestration backend fails closed via canonical Execution error.
+
+Proof gate: `tests/unit/runtime/execution/test_decision_execution_work.py`.
 
 ### Governance / HITL / Execution Authority
 

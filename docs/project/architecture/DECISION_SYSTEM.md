@@ -339,6 +339,37 @@ Execution hosts persistence access. Decision contracts own checkpoint semantics.
 
 Proof gate: DS-EXEC-02 (`tests/unit/runtime/execution/test_decision_checkpoint_runtime_integration.py`).
 
+### Execution-hosted Decision work submission (DS-NEXUS-01)
+
+Decision Strategy implementations may require physical work (INFERENCE, AGENTIC, or ORCHESTRATION) without knowing internal execution engines. Decision-aware delegate code obtains an optional execution-scoped `ExecutionWorkPort` and submits canonical `ExecutionRequest` values — including `ExecutionCapability.ORCHESTRATION` when orchestration is required.
+
+```text
+ExecutionRuntime
+      ↓ optional execution-scoped work port binding
+Decision-aware delegate
+      ↓ require_active_execution_work_port()
+ExecutionWorkPort
+      ↓ ChildExecutionRunner (child ExecutionId under active parent)
+StrategyExecutionRouter
+      ├── INFERENCE
+      ├── AGENTIC
+      └── ORCHESTRATION
+            ↓ private implementation
+          Nexus
+```
+
+| Invariant | Meaning |
+| --------- | ------- |
+| **Nexus is private** | Decision contracts and decision-aware helpers must not import `intergrax.runtime.nexus` or reference Nexus types |
+| **Work port presence ≠ orchestration required** | Ordinary Execution flows remain valid without configuring a work port |
+| **Decision does not route strategies** | `StrategyExecutionRouter`, `OrchestrationExecutor`, and Nexus are Execution-owned composition concerns |
+| **Child lineage preserved** | Work port submits child Executions under the active parent via `ChildExecutionRunner` |
+| **Missing backend fails closed** | ORCHESTRATION requests without a configured backend raise canonical Execution errors — no Decision-specific fallback |
+
+Nexus appears only when Execution strategy routing selects ORCHESTRATION for submitted work — not because Decision System exists.
+
+Proof gate: DS-NEXUS-01 (`tests/unit/runtime/execution/test_decision_execution_work.py`).
+
 ---
 
 ## Decision Resolution
