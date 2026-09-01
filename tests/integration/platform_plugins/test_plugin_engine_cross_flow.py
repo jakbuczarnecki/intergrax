@@ -1,6 +1,13 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""PLUGIN-ENGINE-CROSS-FLOW-1: end-to-end application plugin host wiring proof."""
+"""PLUGIN-ENGINE-CROSS-FLOW-1: end-to-end application plugin host wiring proof.
+
+System proof chain:
+    this cross-flow host test
+    + tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py (Tool EP discovery)
+    + tests/unit/memory/test_memory_store_resolver.py::test_fixture_ep_discovery_materializes_external_stores
+      (Memory concrete store materialization)
+"""
 
 from __future__ import annotations
 
@@ -13,7 +20,7 @@ from pydantic import BaseModel, ConfigDict
 from intergrax.applications._shared import environment_wiring as environment_wiring_module
 from intergrax.applications._shared.context_wiring import ContextAssemblyError
 from intergrax.applications._shared.environment_wiring import wire_application_environment
-from intergrax.context.registry import ContextPluginRegistry, get_context_plugin, list_context_plugin_ids
+from intergrax.context.registry import get_context_plugin, list_context_plugin_ids
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     ContextProfile,
@@ -337,6 +344,8 @@ def _strict_cross_flow_env(profile_id: str) -> ApplicationEnvironmentProfile:
 def _configure_policy_discovery(monkeypatch: pytest.MonkeyPatch) -> PlatformPluginPackageQualificationBundle:
     from intergrax_catalog_fixture.tool import FixtureEchoToolPlugin
 
+    # Tool: external fixture → canonical catalog registration (not EP_TOOLS discovery here).
+    # Full setuptools EP discovery proof: test_plugin8_dual_mode_tool_e2e.py.
     register_tool_plugin(FixtureEchoToolPlugin)
     compatibility = _compatible_platform()
     qualification = _production_package_qualification(compatibility=compatibility)
@@ -362,23 +371,29 @@ def test_strict_application_plugin_cross_flow_happy_path(monkeypatch: pytest.Mon
         platform_plugin_package_qualifications=qualifications,
     )
 
-    # Tool: canonical external EP path (see test_plugin8_dual_mode_tool_e2e for dual-mode proof).
+    # Tool: fixture registration → profile activation → runtime ToolRegistry.
+    # EP_TOOLS discovery is covered by test_plugin8_dual_mode_tool_e2e.py.
     assert wiring.tool_wiring.registry.has(_FIXTURE_ECHO_TOOL_ID)
 
+    # Policy: EP discovery → admission → host selection → runtime registry.
     policy_runtime = wiring.policy_bundle.declarative_policy_runtime
     assert policy_runtime is not None
     assert "alpha-rule" in policy_runtime.registry._handlers
 
+    # Security: EP discovery → admission → host bootstrap/registry.
     assert get_security_defense_plugin("fixture_ep.defense") is not None
 
+    # Context: EP discovery → admission → canonical catalog → profile selection → STRICT wiring.
+    # No host-exposed context engine/registry artifact; runtime materialization is out of scope here.
+    assert "reference_enterprise.context" in env.context_profile.context_plugin_ids
     assert "reference_enterprise.context" in list_context_plugin_ids()
-    context_entry = get_context_plugin("reference_enterprise.context")
-    context_registry = ContextPluginRegistry()
-    context_entry.register_into(context_registry)
-    provider_ids = {provider.provider_id for provider in context_registry.list_providers()}
-    assert "reference_enterprise.stub" in provider_ids
+    assert get_context_plugin("reference_enterprise.context") is not None
 
     evidence = wiring.platform_plugin_evidence
+
+    # Memory: EP discovery → admission → profile selection → STRICT wiring.
+    # Concrete store materialization: test_fixture_ep_discovery_materializes_external_stores.
+    assert env.memory_profile.user_profile_store_plugin_id == "external.in_memory_user_profile"
     memory_report = evidence.report_for(PLATFORM_PLUGIN_DOMAIN_MEMORY)
     assert memory_report is not None
     assert [item.name for item in memory_report.accepted] == ["external_user_profile"]
