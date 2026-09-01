@@ -49,11 +49,6 @@ def _mongo_collection_client(store: object) -> object:
 def test_provider_qualification_discovery_over_real_mongodb_reopen(
     mongo_qualification_discovery_env: None,
 ) -> None:
-    """
-    Real MongoDB discovery proof:
-
-    store A -> persist several runs -> close -> store B -> query by provider/capability.
-    """
     del mongo_qualification_discovery_env
     base_time = datetime(2026, 8, 17, 12, 0, 0, tzinfo=timezone.utc)
     postgresql_run = _run(
@@ -100,3 +95,57 @@ def test_provider_qualification_discovery_over_real_mongodb_reopen(
         postgresql_run.qualification_run_id,
         sqlite_run.qualification_run_id,
     }
+
+
+def test_provider_qualification_discovery_paginates_over_real_mongodb(
+    mongo_qualification_discovery_env: None,
+) -> None:
+    del mongo_qualification_discovery_env
+    base_time = datetime(2026, 8, 17, 12, 0, 0, tzinfo=timezone.utc)
+    runs = tuple(
+        _run(
+            run_id=QualificationRunId(f"qual_run_{index:032x}"),
+            provider_id="postgresql",
+            executed_at=base_time + timedelta(minutes=index),
+        )
+        for index in range(5)
+    )
+
+    store = create_proof_document_store()
+    persistence = DocumentStoreProviderQualificationPersistence(store)
+    try:
+        for item in runs:
+            persistence.persist(item)
+
+        first = persistence.find_runs(
+            ProviderQualificationRunFilter(provider_id="postgresql"),
+            limit=2,
+        )
+        second = persistence.find_runs(
+            ProviderQualificationRunFilter(provider_id="postgresql"),
+            limit=2,
+            cursor=first.next_cursor,
+        )
+        third = persistence.find_runs(
+            ProviderQualificationRunFilter(provider_id="postgresql"),
+            limit=2,
+            cursor=second.next_cursor,
+        )
+    finally:
+        store.close()
+
+    assert len(first.runs) == 2
+    assert len(second.runs) == 2
+    assert len(third.runs) == 1
+    assert first.next_cursor is not None
+    assert second.next_cursor is not None
+    assert third.next_cursor is None
+    discovered = first.runs + second.runs + third.runs
+    assert len(discovered) == len({item.qualification_run_id for item in discovered}) == 5
+    assert [item.qualification_run_id for item in discovered] == [
+        runs[4].qualification_run_id,
+        runs[3].qualification_run_id,
+        runs[2].qualification_run_id,
+        runs[1].qualification_run_id,
+        runs[0].qualification_run_id,
+    ]

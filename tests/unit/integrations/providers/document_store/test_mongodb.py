@@ -101,7 +101,6 @@ class _FakeCursor:
     def _sorted_rows(self) -> list[dict[str, Any]]:
         if not self._sort_spec:
             return list(self._rows)
-        reverse = self._sort_spec[0][1] == -1
 
         def _value(doc: dict[str, Any], field: str) -> Any:
             if field == "row_key":
@@ -110,11 +109,24 @@ class _FakeCursor:
                 return _nested_value(doc.get("data", {}), field.split(".", 1)[1])
             return doc.get(field)
 
-        return sorted(
-            self._rows,
-            key=lambda doc: tuple(_value(doc, field) for field, _ in self._sort_spec),
-            reverse=reverse,
-        )
+        def _compare(left: dict[str, Any], right: dict[str, Any]) -> int:
+            for field, direction in self._sort_spec:
+                left_value = _value(left, field)
+                right_value = _value(right, field)
+                if left_value == right_value:
+                    continue
+                if direction == 1:
+                    if left_value < right_value:
+                        return -1
+                    return 1
+                if left_value > right_value:
+                    return -1
+                return 1
+            return 0
+
+        from functools import cmp_to_key
+
+        return sorted(self._rows, key=cmp_to_key(_compare))
 
     def __iter__(self) -> Iterable[dict[str, Any]]:
         rows = self._sorted_rows()
@@ -223,15 +235,19 @@ class _FakeCollection:
         for key, expected in clause.items():
             if key == "row_key":
                 row_key = str(doc.get("row_key", ""))
-                if isinstance(expected, dict) and "$lt" in expected:
-                    if row_key >= str(expected["$lt"]):
+                if isinstance(expected, dict):
+                    if "$lt" in expected and row_key >= str(expected["$lt"]):
+                        return False
+                    if "$gt" in expected and row_key <= str(expected["$gt"]):
                         return False
                 elif row_key != expected:
                     return False
             elif key.startswith("data."):
                 actual = _nested_value(doc.get("data", {}), key.split(".", 1)[1])
-                if isinstance(expected, dict) and "$lt" in expected:
-                    if actual >= expected["$lt"]:
+                if isinstance(expected, dict):
+                    if "$lt" in expected and (actual is None or actual >= expected["$lt"]):
+                        return False
+                    if "$gt" in expected and (actual is None or actual <= expected["$gt"]):
                         return False
                 elif actual != expected:
                     return False

@@ -156,17 +156,6 @@ class MongoCollectionClient:
         bounded_limit = validate_document_query_limit(limit)
         normalized_equalities = normalize_document_data_equalities(data_equalities)
         normalized_sort = normalize_document_data_sort(sort)
-        query_filter: dict[str, Any] = {"partition_key": partition_key}
-        row_key_filter: dict[str, Any] = {}
-        if row_key_prefix:
-            row_key_filter["$regex"] = f"^{row_key_prefix}"
-        if after_row_key:
-            row_key_filter["$gt"] = after_row_key
-        if row_key_upper_bound is not None:
-            row_key_filter["$lte"] = row_key_upper_bound
-        if row_key_filter:
-            query_filter["row_key"] = row_key_filter
-        query_filter.update(build_mongo_equality_filter(normalized_equalities))
 
         if normalized_sort and cursor is not None:
             if cursor_codec is None:
@@ -179,9 +168,36 @@ class MongoCollectionClient:
                 data_equalities=normalized_equalities,
                 sort=normalized_sort,
             )
-            query_filter.update(
-                build_mongo_keyset_filter(normalized_sort, decode_v2_sort_values(payload)),
+            keyset_filter = build_mongo_keyset_filter(
+                normalized_sort,
+                decode_v2_sort_values(payload),
             )
+        elif cursor is not None and cursor_codec is not None and not normalized_sort:
+            after_row_key = cursor_codec.decode_v2(
+                cursor,
+                partition_key=partition_key,
+                row_key_prefix=row_key_prefix,
+                row_key_upper_bound=row_key_upper_bound,
+                data_equalities=normalized_equalities,
+                sort=normalized_sort,
+            ).last_row_key
+            keyset_filter = None
+        else:
+            keyset_filter = None
+
+        query_filter: dict[str, Any] = {"partition_key": partition_key}
+        row_key_filter: dict[str, Any] = {}
+        if row_key_prefix:
+            row_key_filter["$regex"] = f"^{row_key_prefix}"
+        if after_row_key:
+            row_key_filter["$gt"] = after_row_key
+        if row_key_upper_bound is not None:
+            row_key_filter["$lte"] = row_key_upper_bound
+        if row_key_filter:
+            query_filter["row_key"] = row_key_filter
+        query_filter.update(build_mongo_equality_filter(normalized_equalities))
+        if keyset_filter is not None:
+            query_filter.update(keyset_filter)
 
         mongo_sort: list[tuple[str, int]] = []
         for spec in normalized_sort:

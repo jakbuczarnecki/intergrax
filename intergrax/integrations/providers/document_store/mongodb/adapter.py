@@ -18,6 +18,7 @@ from intergrax.integrations.contracts.document_store import (
     document_sort_key_values,
     normalize_document_data_equalities,
     normalize_document_data_sort,
+    query_requires_v2_cursor,
     validate_document_query_limit,
 )
 from intergrax.integrations.contracts.partition_atomic_document_store import (
@@ -83,9 +84,24 @@ class _MongoDBDocumentStore:
         max_page_limit = validate_document_query_limit(5000)
         normalized_equalities = normalize_document_data_equalities(data_equalities)
         normalized_sort = normalize_document_data_sort(sort)
+        uses_v2_cursor = query_requires_v2_cursor(
+            data_equalities=normalized_equalities,
+            sort=normalized_sort,
+            row_key_upper_bound=row_key_upper_bound,
+        )
 
-        if normalized_sort:
+        if normalized_sort or uses_v2_cursor:
             fetch_limit = bounded_limit + 1 if bounded_limit < max_page_limit else bounded_limit
+            after_row_key: str | None = None
+            if uses_v2_cursor and not normalized_sort and cursor is not None:
+                after_row_key = self._cursor_codec.decode_v2(
+                    cursor,
+                    partition_key=partition_key,
+                    row_key_prefix=row_key_prefix,
+                    row_key_upper_bound=row_key_upper_bound,
+                    data_equalities=normalized_equalities,
+                    sort=normalized_sort,
+                ).last_row_key
             documents = self._client.query(
                 partition_key,
                 limit=fetch_limit,
@@ -94,7 +110,8 @@ class _MongoDBDocumentStore:
                 data_equalities=normalized_equalities,
                 sort=normalized_sort,
                 cursor_codec=self._cursor_codec,
-                cursor=cursor,
+                cursor=cursor if normalized_sort else None,
+                after_row_key=after_row_key,
             )
             if bounded_limit < max_page_limit:
                 has_more = len(documents) > bounded_limit
@@ -123,7 +140,9 @@ class _MongoDBDocumentStore:
                                 last_sort_values=document_sort_key_values(
                                     page[-1],
                                     normalized_sort,
-                                ),
+                                )
+                                if normalized_sort
+                                else (),
                             ),
                         )
                     ) > 0
@@ -136,14 +155,16 @@ class _MongoDBDocumentStore:
                     data_equalities=normalized_equalities,
                     sort=normalized_sort,
                     last_row_key=page[-1].row_key,
-                    last_sort_values=document_sort_key_values(page[-1], normalized_sort),
+                    last_sort_values=document_sort_key_values(page[-1], normalized_sort)
+                    if normalized_sort
+                    else (),
                 )
                 if has_more and page
                 else None
             )
             return DocumentQueryPageV1(documents=tuple(page), next_cursor=next_cursor)
 
-        after_row_key: str | None = None
+        after_row_key = None
         if cursor is not None:
             after_row_key = self._cursor_codec.decode(
                 cursor,
