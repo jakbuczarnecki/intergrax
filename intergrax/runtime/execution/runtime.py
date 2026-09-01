@@ -26,6 +26,7 @@ from intergrax.runtime.execution.active_decision_lifecycle_host import (
     reset_active_decision_lifecycle_host,
 )
 from intergrax.runtime.execution.active_execution_work_port import (
+    ActiveExecutionWorkPortBinding,
     bind_active_execution_work_port,
     reset_active_execution_work_port,
 )
@@ -47,12 +48,14 @@ from intergrax.runtime.execution.budget.ledger import (
     RunBudgetExecutionBudgetLedgerFactory,
 )
 from intergrax.runtime.execution.decision_lifecycle_host import DecisionLifecycleHost
-from intergrax.runtime.execution.execution_work_port import ExecutionWorkPort
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
 RequestT = TypeVar("RequestT")
 ResultT = TypeVar("ResultT")
 CheckpointPayloadT = TypeVar("CheckpointPayloadT")
+WorkInputT = TypeVar("WorkInputT")
+WorkOutputT = TypeVar("WorkOutputT")
+WorkResultT = TypeVar("WorkResultT")
 
 
 @dataclass(frozen=True, slots=True)
@@ -128,7 +131,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         "_admission_hooks",
         "_decision_lifecycle_host",
         "_decision_checkpoint_persistence",
-        "_execution_work_port",
+        "_execution_work_port_binding",
     )
 
     def __init__(
@@ -142,7 +145,9 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         decision_checkpoint_persistence: (
             DecisionCheckpointPersistence[CheckpointPayloadT] | None
         ) = None,
-        execution_work_port: ExecutionWorkPort | None = None,
+        execution_work_port_binding: (
+            ActiveExecutionWorkPortBinding[WorkInputT, WorkOutputT, WorkResultT] | None
+        ) = None,
     ) -> None:
         self._delegate = delegate
         self._ledger_factory = (
@@ -154,7 +159,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         self._admission_hooks = admission_hooks
         self._decision_lifecycle_host = decision_lifecycle_host
         self._decision_checkpoint_persistence = decision_checkpoint_persistence
-        self._execution_work_port = execution_work_port
+        self._execution_work_port_binding = execution_work_port_binding
 
     async def execute(
         self,
@@ -195,9 +200,9 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
                 persistence_token = bind_active_decision_checkpoint_persistence(
                     self._decision_checkpoint_persistence,
                 )
-            if self._execution_work_port is not None:
+            if self._execution_work_port_binding is not None:
                 work_port_token = bind_active_execution_work_port(
-                    self._execution_work_port,
+                    self._execution_work_port_binding,
                 )
             return await boundary.execute(request)
         finally:

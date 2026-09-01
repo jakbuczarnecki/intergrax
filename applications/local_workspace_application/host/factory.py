@@ -68,6 +68,9 @@ from local_workspace_application.workspaces.repository import ManagedWorkspaceRe
 from local_workspace_application.serving.background_task_proof_routes import (
     mount_local_workspace_background_task_proof_routes,
 )
+from local_workspace_application.serving.functional_evidence_qualification_routes import (
+    mount_functional_evidence_qualification_routes,
+)
 from local_workspace_application.serving.fastapi_router import (
     mount_local_workspace_routes,
 )
@@ -119,6 +122,18 @@ def create_local_workspace_backend_app(
     )
     lkw_document_store = resolve_lkw_runtime_document_store(resolved_settings)
     lkw_managed_workspace_repository = ManagedWorkspaceRepository(lkw_document_store)
+    from intergrax.applications._shared.declarative_tool_wiring import (
+        build_declarative_invoker_from_tool_wiring,
+    )
+    from intergrax.applications._shared.diagnostic_cursor_secret import resolve_problem_list_cursor_secret
+    from intergrax.runtime.observability.functional_evidence_runtime_wiring import (
+        functional_evidence_wiring_extra_key,
+        wire_in_memory_functional_evidence_runtime,
+    )
+
+    functional_evidence_wiring = wire_in_memory_functional_evidence_runtime(
+        cursor_secret=resolve_problem_list_cursor_secret(),
+    )
     runtime = build_harness_host_runtime(
         manifest,
         env,
@@ -129,6 +144,9 @@ def create_local_workspace_backend_app(
         document_store=lkw_document_store,
         registry_projection=registry_projection,
     )
+    runtime.env_wiring.tool_wiring.wiring_context.extras[
+        functional_evidence_wiring_extra_key()
+    ] = functional_evidence_wiring
     nexus_loop = runtime.nexus_loop
     platform = bootstrap_nexus_platform(
         nexus_loop,
@@ -158,6 +176,10 @@ def create_local_workspace_backend_app(
         agent_checkpoint_store=runtime.agent_checkpoint_store,
         compensation_queue_store=runtime.compensation_queue_store,
         idempotency_store=runtime.reliability.idempotency_store,
+        declarative_tool_invoker_factory=lambda: build_declarative_invoker_from_tool_wiring(
+            runtime.env_wiring.tool_wiring,
+            idempotency_store=runtime.reliability.idempotency_store,
+        ),
     )
     lkw_host_execution = build_lkw_host_task_execution(nexus_loop, env)
     lkw_task_executor = LocalWorkspaceTaskExecutor(
@@ -238,6 +260,8 @@ def create_local_workspace_backend_app(
         prefix=resolved_settings.route_prefix,
         default_agent_id=resolved_settings.default_agent_id,
     )
+    setattr(app.state, functional_evidence_wiring_extra_key(), functional_evidence_wiring)
+    mount_functional_evidence_qualification_routes(app, prefix=resolved_settings.route_prefix)
     mount_managed_workspace_routes(
         app,
         task_executor=lkw_task_executor,

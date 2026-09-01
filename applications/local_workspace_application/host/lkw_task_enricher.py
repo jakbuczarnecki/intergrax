@@ -6,14 +6,18 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 
+from collections.abc import Callable
+
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.agents.persistence.compensation_queue_wiring import (
     make_acp_compensation_queue_task_enricher,
 )
+from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
 from intergrax.agents.persistence.idempotency_store_wiring import (
     make_acp_idempotency_store_task_enricher,
 )
+from intergrax.agents.persistence.tool_invoker_wiring import attach_declarative_tool_invoker
 from intergrax.applications._shared.reliability_wiring import apply_reliability_task_defaults
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.idempotency_store import IdempotencyStore
@@ -73,6 +77,7 @@ def build_lkw_combined_task_enricher(
     agent_checkpoint_store: AgentCheckpointStore | None = None,
     compensation_queue_store: CompensationQueueStore | None = None,
     idempotency_store: IdempotencyStore | None = None,
+    declarative_tool_invoker_factory: Callable[[], DeclarativeToolInvoker | None] | None = None,
 ) -> TaskEnricher:
     """Apply LKW defaults, shared reliability defaults, then orchestration ACP enrichment.
 
@@ -93,6 +98,17 @@ def build_lkw_combined_task_enricher(
     def enricher(task: Task) -> Task:
         enriched = application_enricher(task)
         enriched = apply_reliability_task_defaults(enriched, env)
+        if declarative_tool_invoker_factory is not None:
+            declarative_tool_invoker = declarative_tool_invoker_factory()
+            if declarative_tool_invoker is not None:
+                enriched = enriched.model_copy(
+                    update={
+                        "metadata": attach_declarative_tool_invoker(
+                            dict(enriched.metadata),
+                            declarative_tool_invoker,
+                        ),
+                    },
+                )
         if orchestration_enricher is not None:
             enriched = orchestration_enricher(enriched)
         if compensation_enricher is not None:

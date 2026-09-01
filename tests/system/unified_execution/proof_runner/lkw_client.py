@@ -59,7 +59,12 @@ class LkwClient:
         }
         return self._post_run(body)
 
-    def run_search(self, *, message: str) -> LkwRunResponse:
+    def run_search(
+        self,
+        *,
+        message: str,
+        metadata: dict[str, object] | None = None,
+    ) -> LkwRunResponse:
         body = {
             "tenant_id": self._config.tenant_id,
             "message": message,
@@ -70,6 +75,54 @@ class LkwClient:
                 "collection_id": self._config.collection_id,
                 "query": message,
                 "top_k": 5,
+            },
+        }
+        if metadata:
+            meta = body["metadata"]
+            if isinstance(meta, dict):
+                meta.update(metadata)
+        return self._post_run(body)
+
+    def run_pipeline(
+        self,
+        *,
+        message: str,
+        metadata: dict[str, object],
+        source_paths: list[str],
+    ) -> LkwRunResponse:
+        body = {
+            "tenant_id": self._config.tenant_id,
+            "message": message,
+            "capability": "local.workspace.pipeline",
+            "metadata": {
+                "tenant_id": self._config.tenant_id,
+                "workspace_id": self._config.workspace_id,
+                "collection_id": self._config.collection_id,
+                "query": message,
+                "top_k": 5,
+                "source_paths": source_paths,
+                **metadata,
+            },
+        }
+        return self._post_run(body)
+
+    def run_synthesize(
+        self,
+        *,
+        message: str,
+        metadata: dict[str, object],
+    ) -> LkwRunResponse:
+        body = {
+            "tenant_id": self._config.tenant_id,
+            "message": message,
+            "capability": "local.workspace.synthesize",
+            "metadata": {
+                "tenant_id": self._config.tenant_id,
+                "workspace_id": self._config.workspace_id,
+                "collection_id": self._config.collection_id,
+                "query": message,
+                "top_k": 5,
+                **metadata,
             },
         }
         return self._post_run(body)

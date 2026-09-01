@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import ast
+import asyncio
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -29,8 +30,8 @@ from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.runtime.execution import ExecutionCapability, ExecutionStatus
 from intergrax.runtime.execution.active_execution_work_port import (
-    get_active_execution_work_port,
-    require_active_execution_work_port,
+    ActiveExecutionWorkPortBinding,
+    is_execution_work_port_active,
 )
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.execution.execution_work_port import (
@@ -63,6 +64,21 @@ _FORBIDDEN_DECISION_TOKENS = (
     "OrchestrationExecutor",
     "StrategyExecutionRouter(",
 )
+
+
+@dataclass(frozen=True, slots=True)
+class AlternateWorkInput:
+    value: str
+
+
+@dataclass(frozen=True, slots=True)
+class AlternateWorkOutput:
+    value: int
+
+
+@dataclass(frozen=True, slots=True)
+class AlternateWorkResult:
+    value: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -184,30 +200,54 @@ class OrchestrationOnlyRouter:
 class DecisionFacingOrchestrationProbe:
     """Decision-aware helper that knows only canonical Execution abstractions."""
 
+    __slots__ = ("_access",)
+
+    def __init__(
+        self,
+        access: ActiveExecutionWorkPortBinding[
+            TaskExecutionInput,
+            TaskResult,
+            TaskResult,
+        ],
+    ) -> None:
+        self._access = access
+
     async def request_orchestration_work(
         self,
         *,
         message: str,
     ) -> TaskResult:
-        work_port = require_active_execution_work_port()
+        typed_port = self._access.require_active()
         request = NeutralExecutionRequest(
             input=TaskExecutionInput(message=message),
             output_type=TaskResult,
             capabilities=frozenset({ExecutionCapability.ORCHESTRATION}),
         )
-        return await work_port.execute(request)
+        return await typed_port.execute(request)
 
 
 class DecisionFacingInferenceProbe:
     """Decision-aware helper requesting non-orchestration inference work."""
 
+    __slots__ = ("_access",)
+
+    def __init__(
+        self,
+        access: ActiveExecutionWorkPortBinding[
+            tuple[ChatMessage, ...],
+            RiskAssessment,
+            ExecutionResult[RiskAssessment],
+        ],
+    ) -> None:
+        self._access = access
+
     async def request_inference_work(self) -> ExecutionResult[RiskAssessment]:
-        work_port = require_active_execution_work_port()
+        typed_port = self._access.require_active()
         request = NeutralExecutionRequest(
             input=(ChatMessage(role="user", content="assess"),),
             output_type=RiskAssessment,
         )
-        return await work_port.execute(request)
+        return await typed_port.execute(request)
 
 
 @dataclass(frozen=True, slots=True)
@@ -227,16 +267,41 @@ def _root_context() -> RootExecutionContext:
 
 
 class OrchestrationRootProbeDelegate:
-    __slots__ = ("_capture",)
+    __slots__ = ("_capture", "_access")
 
-    def __init__(self, capture: ChildLineageCapture) -> None:
+    def __init__(
+        self,
+        capture: ChildLineageCapture,
+        access: ActiveExecutionWorkPortBinding[
+            TaskExecutionInput,
+            TaskResult,
+            TaskResult,
+        ],
+    ) -> None:
         self._capture = capture
+        self._access = access
 
     async def execute(self, request: RootProbeRequest) -> RootProbeResult:
         self._capture.root_execution_id = require_active_execution_id()
-        probe = DecisionFacingOrchestrationProbe()
+        probe = DecisionFacingOrchestrationProbe(self._access)
         result = await probe.request_orchestration_work(message=request.value)
         return RootProbeResult(value=result.answer or "")
+
+
+class AlternateWorkPort:
+    """Concrete alternate work port for typed binding mismatch proofs."""
+
+    __slots__ = ("calls",)
+
+    def __init__(self) -> None:
+        self.calls: list[NeutralExecutionRequest[AlternateWorkInput, AlternateWorkOutput]] = []
+
+    async def execute(
+        self,
+        request: NeutralExecutionRequest[AlternateWorkInput, AlternateWorkOutput],
+    ) -> AlternateWorkResult:
+        self.calls.append(request)
+        return AlternateWorkResult(value=len(request.input.value))
 
 
 @pytest.mark.asyncio
@@ -257,9 +322,10 @@ async def test_decision_facing_probe_submits_orchestration_without_nexus_import(
     backend = FakeOrchestrationPort(expected, capture)
     router = OrchestrationOnlyRouter(task, backend)
     work_port = child_execution_work_port(router, ledger=_UNLIMITED_LEDGER)
+    work_port_binding = ActiveExecutionWorkPortBinding.for_port(work_port)
     runtime = ExecutionRuntime(
-        OrchestrationRootProbeDelegate(capture),
-        execution_work_port=work_port,
+        OrchestrationRootProbeDelegate(capture, work_port_binding),
+        execution_work_port_binding=work_port_binding,
     )
     root_context = _root_context()
     request = NeutralExecutionRequest(
@@ -291,16 +357,32 @@ async def test_inference_child_work_does_not_require_orchestration_backend() -> 
         ExecutionResult[RiskAssessment],
     ](inference_executor=InferenceExecutor(adapter))
     work_port = child_execution_work_port(router, ledger=_UNLIMITED_LEDGER)
+    work_port_binding = ActiveExecutionWorkPortBinding.for_port(work_port)
 
     class InferenceRootDelegate:
-        async def execute(self, request: RootProbeRequest) -> ExecutionResult[RiskAssessment]:
+        __slots__ = ("_access",)
+
+        def __init__(
+            self,
+            access: ActiveExecutionWorkPortBinding[
+                tuple[ChatMessage, ...],
+                RiskAssessment,
+                ExecutionResult[RiskAssessment],
+            ],
+        ) -> None:
+            self._access = access
+
+        async def execute(
+            self,
+            request: RootProbeRequest,
+        ) -> ExecutionResult[RiskAssessment]:
             del request
-            probe = DecisionFacingInferenceProbe()
+            probe = DecisionFacingInferenceProbe(self._access)
             return await probe.request_inference_work()
 
     runtime = ExecutionRuntime(
-        InferenceRootDelegate(),
-        execution_work_port=work_port,
+        InferenceRootDelegate(work_port_binding),
+        execution_work_port_binding=work_port_binding,
     )
     inference_request = NeutralExecutionRequest(
         input=(ChatMessage(role="user", content="assess"),),
@@ -324,9 +406,10 @@ async def test_orchestration_request_fails_closed_without_backend() -> None:
         TaskResult,
     ]()
     work_port = child_execution_work_port(router, ledger=_UNLIMITED_LEDGER)
+    work_port_binding = ActiveExecutionWorkPortBinding.for_port(work_port)
     runtime = ExecutionRuntime(
-        OrchestrationRootProbeDelegate(ChildLineageCapture()),
-        execution_work_port=work_port,
+        OrchestrationRootProbeDelegate(ChildLineageCapture(), work_port_binding),
+        execution_work_port_binding=work_port_binding,
     )
 
     with pytest.raises(RuntimeError, match="ORCHESTRATION strategy is not configured"):
@@ -335,21 +418,192 @@ async def test_orchestration_request_fails_closed_without_backend() -> None:
 
 @pytest.mark.asyncio
 async def test_ordinary_execution_without_work_port_has_no_active_binding() -> None:
-    observed: list[ExecutionWorkPort | None] = []
+    observed: list[bool] = []
 
     class ObservingDelegate:
         async def execute(self, request: RootProbeRequest) -> RootProbeResult:
-            observed.append(get_active_execution_work_port())
+            observed.append(is_execution_work_port_active())
             return RootProbeResult(value=request.value)
 
     runtime = ExecutionRuntime(ObservingDelegate())
-    assert get_active_execution_work_port() is None
+    assert not is_execution_work_port_active()
 
     result = await runtime.execute(RootProbeRequest(value="plain"), _root_context())
 
     assert result.value == "plain"
-    assert observed == [None]
-    assert get_active_execution_work_port() is None
+    assert observed == [False]
+    assert not is_execution_work_port_active()
+
+
+@pytest.mark.asyncio
+async def test_binding_absent_when_no_active_binding() -> None:
+    router = StrategyExecutionRouter[
+        TaskExecutionInput,
+        TaskResult,
+        TaskResult,
+    ]()
+    port = child_execution_work_port(router, ledger=_UNLIMITED_LEDGER)
+    access = ActiveExecutionWorkPortBinding.for_port(port)
+
+    assert access.get_active() is None
+    with pytest.raises(RuntimeError, match="active execution work port required"):
+        access.require_active()
+
+
+@pytest.mark.asyncio
+async def test_binding_returns_bound_port_when_active_matches() -> None:
+    router = StrategyExecutionRouter[
+        TaskExecutionInput,
+        TaskResult,
+        TaskResult,
+    ]()
+    port = child_execution_work_port(router, ledger=_UNLIMITED_LEDGER)
+    access = ActiveExecutionWorkPortBinding.for_port(port)
+    observed_get: ExecutionWorkPort[TaskExecutionInput, TaskResult, TaskResult] | None = None
+    observed_require: ExecutionWorkPort[TaskExecutionInput, TaskResult, TaskResult] | None = None
+
+    class ObservingDelegate:
+        async def execute(self, request: RootProbeRequest) -> RootProbeResult:
+            nonlocal observed_get, observed_require
+            observed_get = access.get_active()
+            observed_require = access.require_active()
+            return RootProbeResult(value=request.value)
+
+    runtime = ExecutionRuntime(
+        ObservingDelegate(),
+        execution_work_port_binding=access,
+    )
+    await runtime.execute(RootProbeRequest(value="ok"), _root_context())
+
+    assert observed_get is port
+    assert observed_require is port
+
+
+@pytest.mark.asyncio
+async def test_binding_rejects_active_alternate_port_different_type() -> None:
+    task_router = StrategyExecutionRouter[
+        TaskExecutionInput,
+        TaskResult,
+        TaskResult,
+    ]()
+    task_port = child_execution_work_port(task_router, ledger=_UNLIMITED_LEDGER)
+    access_task = ActiveExecutionWorkPortBinding.for_port(task_port)
+    alternate_port = AlternateWorkPort()
+    alternate_binding = ActiveExecutionWorkPortBinding.for_port(alternate_port)
+    observed: ExecutionWorkPort[TaskExecutionInput, TaskResult, TaskResult] | None = None
+
+    class ObservingDelegate:
+        async def execute(self, request: RootProbeRequest) -> RootProbeResult:
+            nonlocal observed
+            observed = access_task.get_active()
+            with pytest.raises(
+                RuntimeError,
+                match="active execution work port does not match this binding",
+            ):
+                access_task.require_active()
+            return RootProbeResult(value=request.value)
+
+    runtime = ExecutionRuntime(
+        ObservingDelegate(),
+        execution_work_port_binding=alternate_binding,
+    )
+    await runtime.execute(RootProbeRequest(value="rejected"), _root_context())
+
+    assert observed is None
+
+
+@pytest.mark.asyncio
+async def test_binding_rejects_active_same_type_different_instance() -> None:
+    router = StrategyExecutionRouter[
+        TaskExecutionInput,
+        TaskResult,
+        TaskResult,
+    ]()
+    port_a1 = child_execution_work_port(router, ledger=_UNLIMITED_LEDGER)
+    port_a2 = child_execution_work_port(router, ledger=_UNLIMITED_LEDGER)
+    access_a1 = ActiveExecutionWorkPortBinding.for_port(port_a1)
+    access_a2 = ActiveExecutionWorkPortBinding.for_port(port_a2)
+    observed: ExecutionWorkPort[TaskExecutionInput, TaskResult, TaskResult] | None = None
+
+    class ObservingDelegate:
+        async def execute(self, request: RootProbeRequest) -> RootProbeResult:
+            nonlocal observed
+            observed = access_a1.get_active()
+            with pytest.raises(
+                RuntimeError,
+                match="active execution work port does not match this binding",
+            ):
+                access_a1.require_active()
+            assert access_a2.get_active() is port_a2
+            assert access_a2.require_active() is port_a2
+            return RootProbeResult(value=request.value)
+
+    runtime = ExecutionRuntime(
+        ObservingDelegate(),
+        execution_work_port_binding=access_a2,
+    )
+    await runtime.execute(RootProbeRequest(value="rejected"), _root_context())
+
+    assert observed is None
+
+
+@pytest.mark.asyncio
+async def test_concurrent_executions_isolate_active_work_ports() -> None:
+    router_a = StrategyExecutionRouter[
+        TaskExecutionInput,
+        TaskResult,
+        TaskResult,
+    ]()
+    router_b = StrategyExecutionRouter[
+        TaskExecutionInput,
+        TaskResult,
+        TaskResult,
+    ]()
+    port_a = child_execution_work_port(router_a, ledger=_UNLIMITED_LEDGER)
+    port_b = child_execution_work_port(router_b, ledger=_UNLIMITED_LEDGER)
+    access_a = ActiveExecutionWorkPortBinding.for_port(port_a)
+    access_b = ActiveExecutionWorkPortBinding.for_port(port_b)
+    seen_a: list[ExecutionWorkPort[TaskExecutionInput, TaskResult, TaskResult]] = []
+    seen_b: list[ExecutionWorkPort[TaskExecutionInput, TaskResult, TaskResult]] = []
+    gate = asyncio.Event()
+
+    class DelegateA:
+        async def execute(self, request: RootProbeRequest) -> RootProbeResult:
+            del request
+            seen_a.append(access_a.require_active())
+            gate.set()
+            await asyncio.sleep(0.05)
+            seen_a.append(access_a.require_active())
+            return RootProbeResult(value="a")
+
+    class DelegateB:
+        async def execute(self, request: RootProbeRequest) -> RootProbeResult:
+            del request
+            await gate.wait()
+            seen_b.append(access_b.require_active())
+            await asyncio.sleep(0.05)
+            seen_b.append(access_b.require_active())
+            return RootProbeResult(value="b")
+
+    runtime_a = ExecutionRuntime(
+        DelegateA(),
+        execution_work_port_binding=access_a,
+    )
+    runtime_b = ExecutionRuntime(
+        DelegateB(),
+        execution_work_port_binding=access_b,
+    )
+
+    result_a, result_b = await asyncio.gather(
+        runtime_a.execute(RootProbeRequest(value="a"), _root_context()),
+        runtime_b.execute(RootProbeRequest(value="b"), _root_context()),
+    )
+
+    assert result_a == RootProbeResult(value="a")
+    assert result_b == RootProbeResult(value="b")
+    assert seen_a == [port_a, port_a]
+    assert seen_b == [port_b, port_b]
+    assert not is_execution_work_port_active()
 
 
 def test_decision_contracts_have_no_nexus_visibility() -> None:

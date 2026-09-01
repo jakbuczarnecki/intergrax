@@ -5,10 +5,12 @@
 from __future__ import annotations
 
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import (
+    DocumentDataEquality,
+    DocumentDataSort,
     DocumentQueryCursorCodec,
     DocumentQueryPageV1,
     DocumentRecord,
@@ -56,6 +58,8 @@ class BarrierConditionalDocumentStore:
         row_key_prefix: str | None = None,
         cursor: str | None = None,
         row_key_upper_bound: str | None = None,
+        data_equalities: Sequence[DocumentDataEquality] = (),
+        sort: Sequence[DocumentDataSort] = (),
     ) -> DocumentQueryPageV1:
         return self._delegate.query(
             partition_key,
@@ -63,6 +67,8 @@ class BarrierConditionalDocumentStore:
             row_key_prefix=row_key_prefix,
             cursor=cursor,
             row_key_upper_bound=row_key_upper_bound,
+            data_equalities=data_equalities,
+            sort=sort,
         )
 
     def close(self) -> None:

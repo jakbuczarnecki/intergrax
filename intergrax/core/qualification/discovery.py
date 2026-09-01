@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
 from dataclasses import dataclass
 
 from intergrax.core.qualification.persistence import (
@@ -17,6 +16,8 @@ from intergrax.core.qualification.persistence import (
 from intergrax.core.qualification.provider import ProviderQualificationRun
 from intergrax.core.qualification.status import QualificationStatus
 from intergrax.integrations.contracts.document_store import (
+    DocumentDataEquality,
+    DocumentDataSort,
     DocumentRecord,
     DocumentStore,
     validate_document_query_limit,
@@ -27,8 +28,11 @@ from intergrax.proofs.receipts.document_store import (
     proof_receipt_row_key_prefix,
 )
 
-_PROVIDER_QUALIFICATION_SCAN_PAGE_SIZE = 500
-_DISCOVERY_CURSOR_PREFIX = "offset:"
+_QUALIFICATION_DISCOVERY_SORT: tuple[DocumentDataSort, ...] = (
+    DocumentDataSort(path="recorded_at", direction="desc"),
+    DocumentDataSort(path="run_id", direction="desc"),
+    DocumentDataSort(path="$row_key", direction="desc"),
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,19 +74,6 @@ class ProviderQualificationRunDiscoveryPage:
 
 class ProviderQualificationDiscoveryError(ValueError):
     """Raised when discovery input is invalid."""
-
-
-def _decode_discovery_cursor(cursor: str) -> int:
-    if not cursor.startswith(_DISCOVERY_CURSOR_PREFIX):
-        raise ProviderQualificationDiscoveryError("invalid provider qualification discovery cursor")
-    suffix = cursor[len(_DISCOVERY_CURSOR_PREFIX) :]
-    if not suffix.isdigit():
-        raise ProviderQualificationDiscoveryError("invalid provider qualification discovery cursor")
-    return int(suffix)
-
-
-def _encode_discovery_cursor(offset: int) -> str:
-    return f"{_DISCOVERY_CURSOR_PREFIX}{offset}"
 
 
 def run_matches_filter(
@@ -135,24 +126,67 @@ def sort_provider_qualification_runs(
     )
 
 
-def _iter_provider_qualification_documents(
-    document_store: DocumentStore,
-) -> Iterator[DocumentRecord]:
-    partition_key = proof_receipt_partition_key(PROVIDER_QUALIFICATION_APPLICATION_ID)
-    row_key_prefix = proof_receipt_row_key_prefix(PROVIDER_QUALIFICATION_PROOF_KIND)
-    page_size = validate_document_query_limit(_PROVIDER_QUALIFICATION_SCAN_PAGE_SIZE)
-    cursor: str | None = None
-    while True:
-        page = document_store.query(
-            partition_key,
-            limit=page_size,
-            row_key_prefix=row_key_prefix,
-            cursor=cursor,
+def _filter_to_data_equalities(
+    query_filter: ProviderQualificationRunFilter,
+) -> tuple[DocumentDataEquality, ...]:
+    equalities: list[DocumentDataEquality] = []
+    if query_filter.provider_id is not None:
+        equalities.append(
+            DocumentDataEquality(
+                "domain_evidence.subject.provider_id",
+                query_filter.provider_id,
+            ),
         )
-        yield from page.documents
-        if page.next_cursor is None:
-            return
-        cursor = page.next_cursor
+    if query_filter.provider_version is not None:
+        equalities.append(
+            DocumentDataEquality(
+                "domain_evidence.subject.provider_version",
+                query_filter.provider_version,
+            ),
+        )
+    if query_filter.capability_id is not None:
+        equalities.append(
+            DocumentDataEquality(
+                "domain_evidence.subject.capability_id",
+                query_filter.capability_id,
+            ),
+        )
+    if query_filter.domain is not None:
+        equalities.append(
+            DocumentDataEquality(
+                "domain_evidence.subject.domain",
+                query_filter.domain,
+            ),
+        )
+    if query_filter.qualification_suite_id is not None:
+        equalities.append(
+            DocumentDataEquality(
+                "domain_evidence.subject.qualification_suite_id",
+                query_filter.qualification_suite_id,
+            ),
+        )
+    if query_filter.qualification_suite_version is not None:
+        equalities.append(
+            DocumentDataEquality(
+                "domain_evidence.subject.qualification_suite_version",
+                query_filter.qualification_suite_version,
+            ),
+        )
+    if query_filter.environment_id is not None:
+        equalities.append(
+            DocumentDataEquality(
+                "domain_evidence.subject.environment_id",
+                query_filter.environment_id,
+            ),
+        )
+    if query_filter.status is not None:
+        equalities.append(
+            DocumentDataEquality(
+                "domain_evidence.status",
+                query_filter.status.value,
+            ),
+        )
+    return tuple(equalities)
 
 
 def _document_to_provider_qualification_run(document: DocumentRecord) -> ProviderQualificationRun:
@@ -173,30 +207,36 @@ def discover_provider_qualification_runs(
     cursor: str | None = None,
 ) -> ProviderQualificationRunDiscoveryPage:
     """
-    Discover persisted provider qualification runs via bounded DocumentStore scans.
+    Discover persisted provider qualification runs via storage-bounded DocumentStore queries.
 
-    Scans only the provider-qualification ProofReceipt partition (not the whole platform),
-    applies exact-match filters, and returns ``ProviderQualificationRun`` domain records.
+    Storage narrows the candidate set using generic data-path equality filters before receipts
+    are decoded into ``ProviderQualificationRun`` domain records.
     """
     if not query_filter.has_any_criterion():
         raise ProviderQualificationDiscoveryError(
             "provider qualification discovery requires at least one filter criterion",
         )
     validated_limit = validate_document_query_limit(limit)
-    offset = _decode_discovery_cursor(cursor) if cursor is not None else 0
-    if offset < 0:
-        raise ProviderQualificationDiscoveryError("invalid provider qualification discovery cursor")
+    partition_key = proof_receipt_partition_key(PROVIDER_QUALIFICATION_APPLICATION_ID)
+    row_key_prefix = proof_receipt_row_key_prefix(PROVIDER_QUALIFICATION_PROOF_KIND)
+    data_equalities = _filter_to_data_equalities(query_filter)
 
-    matches: list[ProviderQualificationRun] = []
-    for document in _iter_provider_qualification_documents(document_store):
-        run = _document_to_provider_qualification_run(document)
-        if run_matches_filter(run, query_filter):
-            matches.append(run)
-
-    ordered = sort_provider_qualification_runs(matches)
-    page_runs = ordered[offset : offset + validated_limit]
-    next_offset = offset + validated_limit
-    next_cursor = (
-        _encode_discovery_cursor(next_offset) if next_offset < len(ordered) else None
+    page = document_store.query(
+        partition_key,
+        limit=validated_limit,
+        row_key_prefix=row_key_prefix,
+        cursor=cursor,
+        data_equalities=data_equalities,
+        sort=_QUALIFICATION_DISCOVERY_SORT,
     )
-    return ProviderQualificationRunDiscoveryPage(runs=page_runs, next_cursor=next_cursor)
+
+    runs: list[ProviderQualificationRun] = []
+    for document in page.documents:
+        runs.append(_document_to_provider_qualification_run(document))
+
+    ordered = sort_provider_qualification_runs(runs)
+    if ordered != tuple(runs):
+        raise ProviderQualificationPersistenceIntegrityError(
+            "provider qualification discovery storage sort mismatch",
+        )
+    return ProviderQualificationRunDiscoveryPage(runs=ordered, next_cursor=page.next_cursor)

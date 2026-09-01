@@ -19,6 +19,8 @@ from intergrax.integrations._shared.conformance import (
 )
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
 from intergrax.integrations.contracts.document_store import (
+    DocumentDataEquality,
+    DocumentDataSort,
     DocumentRecord,
     validate_document_query_limit,
 )
@@ -79,18 +81,55 @@ class _FakeCursor:
     def __init__(self, rows: list[dict[str, Any]]) -> None:
         self._rows = rows
         self._limit: int | None = None
+        self._sort_spec: list[tuple[str, int]] = []
 
-    def sort(self, _field: str, _direction: int) -> _FakeCursor:
+    def sort(
+        self,
+        key: str | list[tuple[str, int]],
+        direction: int | None = None,
+    ) -> _FakeCursor:
+        if isinstance(key, list):
+            self._sort_spec = key
+        else:
+            self._sort_spec = [(key, direction or 1)]
         return self
 
     def limit(self, count: int) -> _FakeCursor:
         self._limit = count
         return self
 
+    def _sorted_rows(self) -> list[dict[str, Any]]:
+        if not self._sort_spec:
+            return list(self._rows)
+        reverse = self._sort_spec[0][1] == -1
+
+        def _value(doc: dict[str, Any], field: str) -> Any:
+            if field == "row_key":
+                return doc.get("row_key")
+            if field.startswith("data."):
+                return _nested_value(doc.get("data", {}), field.split(".", 1)[1])
+            return doc.get(field)
+
+        return sorted(
+            self._rows,
+            key=lambda doc: tuple(_value(doc, field) for field, _ in self._sort_spec),
+            reverse=reverse,
+        )
+
     def __iter__(self) -> Iterable[dict[str, Any]]:
+        rows = self._sorted_rows()
         if self._limit is None:
-            return iter(self._rows)
-        return iter(self._rows[:self._limit])
+            return iter(rows)
+        return iter(rows[:self._limit])
+
+
+def _nested_value(data: dict[str, Any], path: str) -> Any:
+    current: Any = data
+    for segment in path.split("."):
+        if not isinstance(current, dict):
+            return None
+        current = current.get(segment)
+    return current
 
 
 class _FakeWriteResult:
@@ -148,6 +187,56 @@ class _FakeCollection:
             return False
         if "data" in query and query["data"] != doc.get("data"):
             return False
+        return True
+
+    def _matches_find_query(self, query: dict[str, Any], doc: dict[str, Any]) -> bool:
+        if query.get("partition_key") != doc.get("partition_key"):
+            return False
+        row_key_filter = query.get("row_key")
+        row_key = str(doc.get("row_key", ""))
+        if isinstance(row_key_filter, dict):
+            prefix = row_key_filter.get("$regex")
+            if isinstance(prefix, str) and not row_key.startswith(prefix.removeprefix("^")):
+                return False
+            upper = row_key_filter.get("$lte")
+            if upper is not None and row_key > str(upper):
+                return False
+            lower = row_key_filter.get("$gt")
+            if lower is not None and row_key <= str(lower):
+                return False
+            less_than = row_key_filter.get("$lt")
+            if less_than is not None and row_key >= str(less_than):
+                return False
+        for key, expected in query.items():
+            if key in {"partition_key", "row_key", "$or"}:
+                continue
+            if key.startswith("data."):
+                if _nested_value(doc.get("data", {}), key.split(".", 1)[1]) != expected:
+                    return False
+        or_clauses = query.get("$or")
+        if isinstance(or_clauses, list):
+            if not any(self._matches_find_clause(clause, doc) for clause in or_clauses):
+                return False
+        return True
+
+    def _matches_find_clause(self, clause: dict[str, Any], doc: dict[str, Any]) -> bool:
+        for key, expected in clause.items():
+            if key == "row_key":
+                row_key = str(doc.get("row_key", ""))
+                if isinstance(expected, dict) and "$lt" in expected:
+                    if row_key >= str(expected["$lt"]):
+                        return False
+                elif row_key != expected:
+                    return False
+            elif key.startswith("data."):
+                actual = _nested_value(doc.get("data", {}), key.split(".", 1)[1])
+                if isinstance(expected, dict) and "$lt" in expected:
+                    if actual >= expected["$lt"]:
+                        return False
+                elif actual != expected:
+                    return False
+            elif doc.get(key) != expected:
+                return False
         return True
 
     def replace_one(
@@ -208,20 +297,8 @@ class _FakeCollection:
     def find(self, query: dict[str, Any]) -> _FakeCursor:
         self.operations.append(("find", query))
         rows: list[dict[str, Any]] = []
-        prefix = None
-        after_row_key = None
-        row_key_filter = query.get("row_key")
-        if isinstance(row_key_filter, dict):
-            if "$regex" in row_key_filter:
-                prefix = str(row_key_filter["$regex"]).removeprefix("^")
-            if "$gt" in row_key_filter:
-                after_row_key = str(row_key_filter["$gt"])
         for (partition_key, row_key), doc in sorted(self.storage.items()):
-            if partition_key != query.get("partition_key"):
-                continue
-            if prefix is not None and not row_key.startswith(prefix):
-                continue
-            if after_row_key is not None and row_key <= after_row_key:
+            if not self._matches_find_query(query, doc):
                 continue
             rows.append(dict(doc))
         return _FakeCursor(rows)
@@ -804,3 +881,76 @@ def test_query_cursor_partition_mismatch_fails_closed() -> None:
 
     with pytest.raises(ValueError, match="document_store_cursor_query_mismatch"):
         store.query("p2", limit=1, cursor=cursor)
+
+
+def test_query_with_data_equalities_and_sort_cursor() -> None:
+    factory, collection = _collection_factory()
+    store = create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
+    store.put(
+        DocumentRecord(
+            partition_key="qual",
+            row_key="proof/provider_qualification/run-a",
+            data={
+                "recorded_at": "2026-08-17T12:02:00Z",
+                "run_id": "run-a",
+                "domain_evidence": {"subject": {"provider_id": "postgresql"}},
+            },
+        ),
+    )
+    store.put(
+        DocumentRecord(
+            partition_key="qual",
+            row_key="proof/provider_qualification/run-b",
+            data={
+                "recorded_at": "2026-08-17T12:01:00Z",
+                "run_id": "run-b",
+                "domain_evidence": {"subject": {"provider_id": "postgresql"}},
+            },
+        ),
+    )
+    store.put(
+        DocumentRecord(
+            partition_key="qual",
+            row_key="proof/provider_qualification/run-c",
+            data={
+                "recorded_at": "2026-08-17T12:03:00Z",
+                "run_id": "run-c",
+                "domain_evidence": {"subject": {"provider_id": "sqlite"}},
+            },
+        ),
+    )
+
+    sort = (
+        DocumentDataSort(path="recorded_at", direction="desc"),
+        DocumentDataSort(path="run_id", direction="desc"),
+        DocumentDataSort(path="$row_key", direction="desc"),
+    )
+    equalities = (
+        DocumentDataEquality(
+            path="domain_evidence.subject.provider_id",
+            value="postgresql",
+        ),
+    )
+    first_page = store.query(
+        "qual",
+        row_key_prefix="proof/provider_qualification/",
+        limit=1,
+        data_equalities=equalities,
+        sort=sort,
+    )
+    assert [doc.data["run_id"] for doc in first_page.documents] == ["run-a"]
+    assert first_page.next_cursor is not None
+
+    find_ops = [op for op in collection.operations if op[0] == "find"]
+    assert find_ops[-1][1]["data.domain_evidence.subject.provider_id"] == "postgresql"
+
+    second_page = store.query(
+        "qual",
+        row_key_prefix="proof/provider_qualification/",
+        limit=1,
+        data_equalities=equalities,
+        sort=sort,
+        cursor=first_page.next_cursor,
+    )
+    assert [doc.data["run_id"] for doc in second_page.documents] == ["run-b"]
+    assert second_page.next_cursor is None

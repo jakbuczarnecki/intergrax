@@ -6,13 +6,18 @@
 from __future__ import annotations
 
 import hashlib
-from typing import Optional
+from typing import Optional, Sequence
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.document_store import (
+    DocumentDataEquality,
+    DocumentDataSort,
     DocumentQueryCursorCodec,
     DocumentQueryPageV1,
     DocumentRecord,
+    document_sort_key_values,
+    normalize_document_data_equalities,
+    normalize_document_data_sort,
     validate_document_query_limit,
 )
 from intergrax.integrations.contracts.partition_atomic_document_store import (
@@ -70,10 +75,74 @@ class _MongoDBDocumentStore:
         row_key_prefix: Optional[str] = None,
         cursor: str | None = None,
         row_key_upper_bound: str | None = None,
+        data_equalities: Sequence[DocumentDataEquality] = (),
+        sort: Sequence[DocumentDataSort] = (),
     ) -> DocumentQueryPageV1:
         self._require_open()
         bounded_limit = validate_document_query_limit(limit)
         max_page_limit = validate_document_query_limit(5000)
+        normalized_equalities = normalize_document_data_equalities(data_equalities)
+        normalized_sort = normalize_document_data_sort(sort)
+
+        if normalized_sort:
+            fetch_limit = bounded_limit + 1 if bounded_limit < max_page_limit else bounded_limit
+            documents = self._client.query(
+                partition_key,
+                limit=fetch_limit,
+                row_key_prefix=row_key_prefix,
+                row_key_upper_bound=row_key_upper_bound,
+                data_equalities=normalized_equalities,
+                sort=normalized_sort,
+                cursor_codec=self._cursor_codec,
+                cursor=cursor,
+            )
+            if bounded_limit < max_page_limit:
+                has_more = len(documents) > bounded_limit
+                page = documents[:bounded_limit]
+            else:
+                page = documents[:bounded_limit]
+                has_more = (
+                    len(page) == bounded_limit
+                    and page
+                    and len(
+                        self._client.query(
+                            partition_key,
+                            limit=1,
+                            row_key_prefix=row_key_prefix,
+                            row_key_upper_bound=row_key_upper_bound,
+                            data_equalities=normalized_equalities,
+                            sort=normalized_sort,
+                            cursor_codec=self._cursor_codec,
+                            cursor=self._cursor_codec.encode_v2(
+                                partition_key=partition_key,
+                                row_key_prefix=row_key_prefix,
+                                row_key_upper_bound=row_key_upper_bound,
+                                data_equalities=normalized_equalities,
+                                sort=normalized_sort,
+                                last_row_key=page[-1].row_key,
+                                last_sort_values=document_sort_key_values(
+                                    page[-1],
+                                    normalized_sort,
+                                ),
+                            ),
+                        )
+                    ) > 0
+                )
+            next_cursor = (
+                self._cursor_codec.encode_v2(
+                    partition_key=partition_key,
+                    row_key_prefix=row_key_prefix,
+                    row_key_upper_bound=row_key_upper_bound,
+                    data_equalities=normalized_equalities,
+                    sort=normalized_sort,
+                    last_row_key=page[-1].row_key,
+                    last_sort_values=document_sort_key_values(page[-1], normalized_sort),
+                )
+                if has_more and page
+                else None
+            )
+            return DocumentQueryPageV1(documents=tuple(page), next_cursor=next_cursor)
+
         after_row_key: str | None = None
         if cursor is not None:
             after_row_key = self._cursor_codec.decode(
@@ -89,6 +158,7 @@ class _MongoDBDocumentStore:
                 row_key_prefix=row_key_prefix,
                 after_row_key=after_row_key,
                 row_key_upper_bound=row_key_upper_bound,
+                data_equalities=normalized_equalities,
             )
             has_more = len(documents) > bounded_limit
             page = documents[:bounded_limit]
@@ -99,6 +169,7 @@ class _MongoDBDocumentStore:
                 row_key_prefix=row_key_prefix,
                 after_row_key=after_row_key,
                 row_key_upper_bound=row_key_upper_bound,
+                data_equalities=normalized_equalities,
             )
             page = documents[:bounded_limit]
             has_more = (
@@ -111,6 +182,7 @@ class _MongoDBDocumentStore:
                         row_key_prefix=row_key_prefix,
                         after_row_key=page[-1].row_key,
                         row_key_upper_bound=row_key_upper_bound,
+                        data_equalities=normalized_equalities,
                     )
                 ) > 0
             )

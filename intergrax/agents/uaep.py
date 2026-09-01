@@ -318,6 +318,11 @@ class UAEPExecutor:
                 allowed_tools=list(contract.allowed_tools),
                 middleware=self._middleware,
             )
+            from intergrax.runtime.observability.functional_evidence_runtime_wiring import (
+                attach_functional_evidence_recorder_from_runtime_state,
+            )
+
+            attach_functional_evidence_recorder_from_runtime_state(exec_ctx)
     
             await self._guard_hook(
                 await self._middleware.run_after(

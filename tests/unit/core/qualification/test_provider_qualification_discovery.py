@@ -37,6 +37,7 @@ from intergrax.core.qualification.persistence import (
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import DocumentRecord
 from intergrax.proofs.receipts.document_store import (
+    proof_receipt_from_document,
     proof_receipt_lookup_row_key,
     proof_receipt_partition_key,
     proof_receipt_to_document,
@@ -345,7 +346,21 @@ def test_corrupt_qualification_record_fails_closed_during_discovery() -> None:
     persistence.persist(run)
     corrupt = proof_receipt_to_document(
         provider_qualification_run_to_proof_receipt(run).model_copy(
-            update={"domain_evidence": {"schema_version": "broken"}},
+            update={
+                "domain_evidence": {
+                    "schema_version": "broken",
+                    "subject": {
+                        "provider_id": run.subject.provider_id,
+                        "provider_version": run.subject.provider_version,
+                        "capability_id": run.subject.capability_id,
+                        "domain": run.subject.domain,
+                        "intergrax_revision": run.subject.intergrax_revision,
+                        "qualification_suite_id": run.subject.qualification_suite_id,
+                        "qualification_suite_version": run.subject.qualification_suite_version,
+                        "environment_id": run.subject.environment_id,
+                    },
+                },
+            },
         ),
     )
     store.put(corrupt)
@@ -392,7 +407,16 @@ def test_malformed_proof_receipt_schema_fails_closed_during_discovery() -> None:
         DocumentRecord(
             partition_key=partition_key,
             row_key=row_key,
-            data={"schema_version": "intergrax.proof_receipt.v9"},
+            data={
+                "schema_version": "intergrax.proof_receipt.v9",
+                "proof_kind": "provider_qualification",
+                "application_id": "intergrax.provider_qualification",
+                "domain_evidence": {
+                    "subject": {
+                        "provider_id": "postgresql",
+                    },
+                },
+            },
         ),
     )
 
@@ -420,3 +444,113 @@ def test_optional_status_filter() -> None:
     assert [item.qualification_run_id for item in page.runs] == [
         rejected.qualification_run_id,
     ]
+
+
+def test_discovery_decodes_only_bounded_page_not_entire_partition() -> None:
+    from unittest.mock import patch
+
+    store = InMemoryDocumentStore()
+    persistence = DocumentStoreProviderQualificationPersistence(store)
+    matching_runs = tuple(
+        _run(
+            run_id=QualificationRunId(f"qual_run_{index:032x}"),
+            provider_id="postgresql",
+            executed_at=_BASE_TIME + timedelta(minutes=index),
+        )
+        for index in range(5)
+    )
+    unrelated_runs = tuple(
+        _run(
+            run_id=QualificationRunId(f"qual_run_{(index + 100):032x}"),
+            provider_id="oracle",
+            executed_at=_BASE_TIME + timedelta(minutes=index),
+        )
+        for index in range(1000)
+    )
+    _persist_many(persistence, *matching_runs, *unrelated_runs)
+
+    decode_calls = 0
+
+    def _counting_from_document(document: DocumentRecord) -> object:
+        nonlocal decode_calls
+        decode_calls += 1
+        return proof_receipt_from_document(document)
+
+    with patch(
+        "intergrax.core.qualification.discovery.proof_receipt_from_document",
+        side_effect=_counting_from_document,
+    ):
+        page = persistence.find_runs(
+            ProviderQualificationRunFilter(provider_id="postgresql"),
+            limit=2,
+        )
+
+    assert len(page.runs) == 2
+    assert decode_calls == 2
+
+
+def test_second_page_uses_storage_cursor_without_rescanning_from_offset() -> None:
+    store = InMemoryDocumentStore()
+    persistence = DocumentStoreProviderQualificationPersistence(store)
+    runs = tuple(
+        _run(
+            run_id=QualificationRunId(f"qual_run_{index:032x}"),
+            executed_at=_BASE_TIME + timedelta(minutes=index),
+        )
+        for index in range(4)
+    )
+    _persist_many(persistence, *runs)
+
+    first = persistence.find_runs(
+        ProviderQualificationRunFilter(provider_id="postgresql"),
+        limit=2,
+    )
+    assert first.next_cursor is not None
+    assert not first.next_cursor.startswith("offset:")
+
+    second = persistence.find_runs(
+        ProviderQualificationRunFilter(provider_id="postgresql"),
+        limit=2,
+        cursor=first.next_cursor,
+    )
+
+    assert len(second.runs) == 2
+    assert {item.qualification_run_id for item in first.runs + second.runs} == {
+        runs[3].qualification_run_id,
+        runs[2].qualification_run_id,
+        runs[1].qualification_run_id,
+        runs[0].qualification_run_id,
+    }
+
+
+def test_unrelated_proof_records_are_not_decoded() -> None:
+    from unittest.mock import patch
+
+    store = InMemoryDocumentStore()
+    persistence = DocumentStoreProviderQualificationPersistence(store)
+    target = _run(provider_id="postgresql")
+    unrelated = _run(provider_id="sqlite")
+    _persist_many(persistence, target, unrelated)
+    store.put(
+        DocumentRecord(
+            partition_key=proof_receipt_partition_key("other.application"),
+            row_key="proof/other_kind/other-run",
+            data={"schema_version": "intergrax.proof_receipt.v1", "proof_kind": "other"},
+        ),
+    )
+
+    decode_calls = 0
+
+    def _counting_from_document(document: DocumentRecord) -> object:
+        nonlocal decode_calls
+        decode_calls += 1
+        return proof_receipt_from_document(document)
+
+    with patch(
+        "intergrax.core.qualification.discovery.proof_receipt_from_document",
+        side_effect=_counting_from_document,
+    ):
+        page = persistence.find_runs(ProviderQualificationRunFilter(provider_id="postgresql"))
+
+    assert [item.qualification_run_id for item in page.runs] == [target.qualification_run_id]
+    assert decode_calls == 1

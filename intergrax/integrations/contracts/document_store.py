@@ -9,7 +9,9 @@ import base64
 import binascii
 import hmac
 import json
+import re
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from typing import Any, Literal, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -30,7 +32,105 @@ class DocumentQueryResult(BaseModel):
 
 
 _DOCUMENT_QUERY_CURSOR_SCHEMA = "document_store.cursor.v1"
+_DOCUMENT_QUERY_CURSOR_SCHEMA_V2 = "document_store.cursor.v2"
 _DOCUMENT_QUERY_MAX_LIMIT = 5000
+_ROW_KEY_SORT_PATH = "$row_key"
+_DATA_PATH_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$")
+
+
+@dataclass(frozen=True, slots=True)
+class DocumentDataEquality:
+    """Exact-match filter on a dot path within ``DocumentRecord.data``."""
+
+    path: str
+    value: Any
+
+
+@dataclass(frozen=True, slots=True)
+class DocumentDataSort:
+    """Sort key on ``DocumentRecord.data`` or the special ``$row_key`` path."""
+
+    path: str
+    direction: Literal["asc", "desc"]
+
+
+def validate_document_data_path(path: str) -> str:
+    if path == _ROW_KEY_SORT_PATH:
+        return path
+    if not isinstance(path, str) or not path or not _DATA_PATH_PATTERN.match(path):
+        raise ValueError("document_store_data_path_invalid")
+    return path
+
+
+def normalize_document_data_equalities(
+    equalities: Sequence[DocumentDataEquality] | None,
+) -> tuple[DocumentDataEquality, ...]:
+    if equalities is None:
+        return ()
+    normalized: list[DocumentDataEquality] = []
+    for item in equalities:
+        if not isinstance(item, DocumentDataEquality):
+            raise TypeError("document_store_data_equality_invalid")
+        normalized.append(
+            DocumentDataEquality(
+                path=validate_document_data_path(item.path),
+                value=item.value,
+            ),
+        )
+    return tuple(normalized)
+
+
+def normalize_document_data_sort(
+    sort: Sequence[DocumentDataSort] | None,
+) -> tuple[DocumentDataSort, ...]:
+    if sort is None:
+        return ()
+    normalized: list[DocumentDataSort] = []
+    for item in sort:
+        if not isinstance(item, DocumentDataSort):
+            raise TypeError("document_store_data_sort_invalid")
+        if item.direction not in ("asc", "desc"):
+            raise ValueError("document_store_data_sort_invalid")
+        normalized.append(
+            DocumentDataSort(
+                path=validate_document_data_path(item.path),
+                direction=item.direction,
+            ),
+        )
+    return tuple(normalized)
+
+
+def document_data_path_value(data: Mapping[str, Any], path: str) -> Any:
+    validate_document_data_path(path)
+    if path == _ROW_KEY_SORT_PATH:
+        raise ValueError("document_store_data_path_invalid")
+    current: Any = data
+    for segment in path.split("."):
+        if not isinstance(current, Mapping) or segment not in current:
+            return None
+        current = current[segment]
+    return current
+
+
+def document_sort_key_values(
+    document: DocumentRecord,
+    sort: Sequence[DocumentDataSort],
+) -> tuple[Any, ...]:
+    values: list[Any] = []
+    for spec in sort:
+        if spec.path == _ROW_KEY_SORT_PATH:
+            values.append(document.row_key)
+        else:
+            values.append(document_data_path_value(document.data, spec.path))
+    return tuple(values)
+
+
+def _canonical_json_value(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"))
+
+
+def _decode_canonical_json_value(value_json: str) -> Any:
+    return json.loads(value_json)
 
 
 class DocumentQueryPageV1(BaseModel):
@@ -54,6 +154,19 @@ class DocumentQueryCursorPayloadV1(BaseModel):
     partition_key: str
     row_key_prefix: str | None
     last_row_key: str
+
+
+class DocumentQueryCursorPayloadV2(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    schema_version: Literal["document_store.cursor.v2"]
+    partition_key: str
+    row_key_prefix: str | None
+    row_key_upper_bound: str | None
+    data_equalities: list[list[str]]
+    sort: list[list[str]]
+    last_row_key: str
+    last_sort_values: list[str]
 
 
 class DocumentQueryCursorCodec:
@@ -158,6 +271,105 @@ class DocumentQueryCursorCodec:
             raise ValueError("document_store_cursor_query_mismatch")
         return payload
 
+    @staticmethod
+    def _canonical_payload_v2(payload: DocumentQueryCursorPayloadV2) -> bytes:
+        return json.dumps(
+            payload.model_dump(mode="json"),
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+
+    def encode_v2(
+        self,
+        *,
+        partition_key: str,
+        row_key_prefix: str | None,
+        row_key_upper_bound: str | None,
+        data_equalities: tuple[DocumentDataEquality, ...],
+        sort: tuple[DocumentDataSort, ...],
+        last_row_key: str,
+        last_sort_values: tuple[Any, ...],
+    ) -> str:
+        if len(last_sort_values) != len(sort):
+            raise ValueError("document_store_cursor_invalid")
+        payload = DocumentQueryCursorPayloadV2(
+            schema_version=_DOCUMENT_QUERY_CURSOR_SCHEMA_V2,
+            partition_key=partition_key,
+            row_key_prefix=row_key_prefix,
+            row_key_upper_bound=row_key_upper_bound,
+            data_equalities=[
+                [item.path, _canonical_json_value(item.value)] for item in data_equalities
+            ],
+            sort=[[item.path, item.direction] for item in sort],
+            last_row_key=last_row_key,
+            last_sort_values=[_canonical_json_value(value) for value in last_sort_values],
+        )
+        canonical = self._canonical_payload_v2(payload)
+        mac = hmac.new(self._secret, canonical, digestmod="sha256").digest()
+        envelope = {
+            "mac": self._encode_base64url(mac),
+            "payload": payload.model_dump(mode="json"),
+        }
+        encoded = self._encode_base64url(
+            json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        )
+        if len(encoded) > self._MAX_TOKEN_LENGTH:
+            raise ValueError("document_store_cursor_invalid")
+        return encoded
+
+    def decode_v2(
+        self,
+        cursor: str,
+        *,
+        partition_key: str,
+        row_key_prefix: str | None,
+        row_key_upper_bound: str | None,
+        data_equalities: tuple[DocumentDataEquality, ...],
+        sort: tuple[DocumentDataSort, ...],
+    ) -> DocumentQueryCursorPayloadV2:
+        if not isinstance(cursor, str) or not cursor or len(cursor) > self._MAX_TOKEN_LENGTH:
+            raise ValueError("document_store_cursor_invalid")
+        try:
+            raw = json.loads(self._decode_base64url(cursor).decode("utf-8"))
+            if not isinstance(raw, dict) or set(raw) != {"mac", "payload"}:
+                raise ValueError
+            payload = DocumentQueryCursorPayloadV2.model_validate(
+                raw["payload"],
+                strict=True,
+            )
+            mac = self._decode_base64url(raw["mac"])
+        except (
+            KeyError,
+            TypeError,
+            ValueError,
+            UnicodeError,
+            binascii.Error,
+            json.JSONDecodeError,
+            ValidationError,
+        ):
+            raise ValueError("document_store_cursor_invalid") from None
+
+        expected_mac = hmac.new(
+            self._secret,
+            self._canonical_payload_v2(payload),
+            digestmod="sha256",
+        ).digest()
+        if len(mac) != len(expected_mac) or not hmac.compare_digest(mac, expected_mac):
+            raise ValueError("document_store_cursor_authentication_failed")
+        expected_equalities = [
+            [item.path, _canonical_json_value(item.value)] for item in data_equalities
+        ]
+        expected_sort = [[item.path, item.direction] for item in sort]
+        if (
+            payload.partition_key != partition_key
+            or payload.row_key_prefix != row_key_prefix
+            or payload.row_key_upper_bound != row_key_upper_bound
+            or payload.data_equalities != expected_equalities
+            or payload.sort != expected_sort
+        ):
+            raise ValueError("document_store_cursor_query_mismatch")
+        return payload
+
 
 def validate_document_query_limit(limit: int) -> int:
     if isinstance(limit, bool) or not isinstance(limit, int):
@@ -192,6 +404,8 @@ class DocumentStore(Protocol):
         row_key_prefix: str | None = None,
         cursor: str | None = None,
         row_key_upper_bound: str | None = None,
+        data_equalities: Sequence[DocumentDataEquality] = (),
+        sort: Sequence[DocumentDataSort] = (),
     ) -> DocumentQueryPageV1:
         """List documents in deterministic bounded pages."""
         ...

@@ -415,50 +415,89 @@ RESOLVED envelope
 
 Design from first principles — not constrained by current Intergrax implementation.
 
-```text
-USER QUERY
-    |
-    v
-QUERY UNDERSTANDING
-    |
-    +-- identifier extraction (typed: GTIN, MPN, SKU, productID)
-    +-- manufacturer / brand
-    +-- model / series
-    +-- product class
-    +-- hard constraints (capacity, voltage, interface, dimensions, ...)
-    +-- soft preferences
-    +-- negative constraints
-    +-- compatibility requirements
-    +-- missing distinguishing facts
-    |
-    v
-MULTI-CHANNEL CANDIDATE GENERATION (full 3.77M catalog)
-    |
-    +-- EXACT IDENTIFIER RETRIEVAL
-    +-- LEXICAL RETRIEVAL (BM25 / full-text / token index)
-    +-- STRUCTURED ATTRIBUTE RETRIEVAL (normalized/searchable fields)
-    +-- DENSE VECTOR RETRIEVAL (embedding index)
-    |
-    v
-HYBRID FUSION (recall-oriented merge)
-    |
-    v
-RERANKER (ordering improvement — not verification)
-    |
-    v
-TOP-K FINALISTS
-    |
-    v
-EVIDENCE EXTRACTION (from immutable source record_json)
-    |
-    v
-IDENTITY / CONSTRAINT VERIFICATION
-    |
-    +-- VERIFIED
-    +-- AMBIGUOUS
-    +-- INSUFFICIENT_INFORMATION
-    +-- NO_MATCH
+```mermaid
+flowchart TD
+    UQ[USER QUERY] --> QU
+
+    subgraph QU[QUERY UNDERSTANDING]
+        direction TB
+        QU1[identifier extraction]
+        QU2[brand / model]
+        QU3[product class]
+        QU4[hard constraints]
+        QU5[soft preferences]
+        QU6[negative constraints]
+        QU7[missing facts]
+    end
+
+    QU --> MCR
+
+    subgraph MCR[MULTI-CHANNEL RETRIEVAL]
+        direction TB
+        subgraph CH1[1. EXACT IDENTIFIER]
+            E1[GTIN]
+            E2[MPN]
+            E3[SKU]
+            E4[productID]
+        end
+        subgraph CH2[2. LEXICAL / BM25]
+            L1[model numbers]
+            L2[part numbers]
+            L3[technical tokens]
+            L4[exact phrases]
+        end
+        subgraph CH3[3. STRUCTURED ATTRIBUTE SEARCH]
+            S1[voltage]
+            S2[dimensions]
+            S3[capacity]
+            S4[interface / size]
+            S5[compatibility constraints]
+        end
+        subgraph CH4[4. VECTOR / SEMANTIC]
+            V1[natural-language similarity]
+            V2[synonyms]
+            V3[descriptive recall]
+        end
+    end
+
+    CH1 --> HF[HYBRID FUSION]
+    CH2 --> HF
+    CH3 --> HF
+    CH4 --> HF
+    HF --> RR[RERANKER]
+    RR --> TK[TOP-K FINALISTS]
+    TK --> EE
+
+    subgraph EE[EVIDENCE EXTRACTION]
+        direction TB
+        EE1[source field provenance]
+        EE2[supporting evidence]
+        EE3[contradicting evidence]
+        EE4[missing evidence]
+    end
+
+    EE --> IV[IDENTITY VERIFICATION]
+    IV --> OV[VERIFIED]
+    IV --> OA[AMBIGUOUS]
+    IV --> OI[INSUFFICIENT_INFORMATION]
+    IV --> ON[NO_MATCH]
+    OI --> CL[clarification question]
+    CL --> UF[user supplies missing fact]
+    UF --> QU
 ```
+
+**Layer roles:**
+
+- **Exact retrieval** — for strong typed identifiers (GTIN, MPN, SKU, productID).
+- **BM25 / lexical** — for model numbers, part numbers, and exact technical tokens.
+- **Structured retrieval** — for hard constraints such as voltage, capacity, dimensions, and interface.
+- **Vector retrieval** — for natural-language and semantic recall.
+- **Hybrid fusion** — merges independent candidate-generation signals without treating any single channel as identity proof.
+- **Reranker** — improves ordering; it does **not** verify identity.
+- **Evidence extraction** — binds each finalist to source-truth catalog fields with provenance.
+- **Verification** — decides whether identity is actually supported by evidence.
+
+**TOP-RANKED CANDIDATE IS NOT A VERIFIED PRODUCT.**
 
 **Reference infrastructure hypothesis:** PostgreSQL + pgvector as the operational database for relational data, lexical/full-text search, structured filters, and vector search in one deployable unit (Docker-friendly). This is the **preferred design hypothesis** — not a proven final choice. Alternative dedicated search engines are not required unless benchmark calibration shows a material gap.
 

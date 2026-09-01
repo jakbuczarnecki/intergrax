@@ -150,6 +150,7 @@ def test_cursor_is_bound_to_partition_and_prefix_query_scope() -> None:
     codec = DocumentQueryCursorCodec(secret=b"scope-test-secret")
     store = _store_with_rows(codec)
     store.put(_record("partition-a", "scope-row-1"))
+    store.put(_record("partition-a", "scope-row-2"))
     cursor = store.query(
         "partition-a",
         limit=1,
