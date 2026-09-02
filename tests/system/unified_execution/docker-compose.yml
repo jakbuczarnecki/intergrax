@@ -98,6 +98,11 @@ services:
       LOCAL_WORKSPACE_ENABLE_RAG_INGEST: "true"
       INTERGRAX_SQLITE_DATA_DIR: /var/lib/intergrax/lkw/data/sqlite
       INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET: ue-11g-c1-diagnostic-cursor-secret-local-only
+      INTERGRAX_TAVILY_API_KEY: ${INTERGRAX_TAVILY_API_KEY:-}
+      INTERGRAX_BRAVE_API_KEY: ${INTERGRAX_BRAVE_API_KEY:-}
+      INTERGRAX_GOOGLE_CSE_API_KEY: ${INTERGRAX_GOOGLE_CSE_API_KEY:-}
+      INTERGRAX_GOOGLE_CSE_CX: ${INTERGRAX_GOOGLE_CSE_CX:-}
+      INTERGRAX_EXA_API_KEY: ${INTERGRAX_EXA_API_KEY:-}
     volumes:
       - lkw_application_data:/var/lib/intergrax/lkw
       - ./fixtures/workspace:/cert-fixtures/workspace:ro
