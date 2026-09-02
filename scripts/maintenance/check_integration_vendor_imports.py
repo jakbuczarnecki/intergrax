@@ -35,6 +35,7 @@ INTEGRATION_ALLOWED_SUFFIXES = (
     "/opens.py",
     "/schema.py",
     "/rag_store.py",
+    "/index_administration.py",
     "/web_client.py",
     "/client.py",
     "/_shared/p3/factories.py",

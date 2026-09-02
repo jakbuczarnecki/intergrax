@@ -2,9 +2,25 @@
 
 from __future__ import annotations
 
-from types import SimpleNamespace
+from dataclasses import dataclass
 
 import pytest
+
+from intergrax.integrations.contracts.base import HealthStatus
+from intergrax.integrations.contracts.vector_index_administration import (
+    VectorIndexCompatibilityError,
+    VectorIndexDescription,
+    VectorIndexIdentity,
+    VectorIndexPrepareOutcome,
+    VectorIndexPrepareResult,
+    VectorIndexSpec,
+    VectorSearchCapability,
+    validate_spec_against_description,
+)
+from intergrax.integrations.contracts.vector_store import VectorStoreScope
+from intergrax.integrations.providers.vector_store.qdrant.index_administration import (
+    build_qdrant_index_spec,
+)
 
 from platform_proofs.scenarios.verified_product_identification.integrations.search_store.qdrant.adapter import (
     QdrantSearchIndexBootstrapAdapter,
@@ -50,63 +66,92 @@ def _manifest(*, dimension: int = 8, target_max_records: int = 10) -> VpiBootstr
     )
 
 
-class _FakeQdrantClient:
-    def __init__(self, collection_info: SimpleNamespace | None) -> None:
-        self._collection_info = collection_info
+def _identity() -> VectorIndexIdentity:
+    return VectorIndexIdentity(logical_name="vpi_test", tenant_id="default")
 
-    def get_collections(self) -> object:
-        return SimpleNamespace(collections=[])
 
-    def get_collection(self, collection_name: str) -> SimpleNamespace:
-        if self._collection_info is None:
-            raise RuntimeError("404 collection not found")
-        return self._collection_info
+def _description(
+    *,
+    exists: bool,
+    dense_dimension: int | None,
+    sparse_present: bool,
+    point_count: int = 0,
+) -> VectorIndexDescription:
+    capabilities: set[VectorSearchCapability] = set()
+    if dense_dimension is not None:
+        capabilities.add(VectorSearchCapability.DENSE)
+    if sparse_present:
+        capabilities.add(VectorSearchCapability.SPARSE_LEXICAL)
+    return VectorIndexDescription(
+        identity=_identity(),
+        exists=exists,
+        reachable=True,
+        point_count=point_count,
+        dense_dimension=dense_dimension,
+        present_capabilities=frozenset(capabilities),
+        dense_channel_name="dense" if dense_dimension is not None else None,
+        sparse_lexical_channel_name="sparse" if sparse_present else None,
+    )
 
-    def create_collection(self, *args, **kwargs) -> bool:
-        return True
 
-    def upsert(self, *args, **kwargs) -> object:
-        return None
+@dataclass(slots=True)
+class _FakeIndexAdmin:
+    description: VectorIndexDescription
+    prepare_error: VectorIndexCompatibilityError | None = None
+    prepare_outcome: VectorIndexPrepareOutcome = VectorIndexPrepareOutcome.ALREADY_COMPATIBLE
+
+    def probe(self) -> HealthStatus:
+        return HealthStatus(slug="qdrant", healthy=True)
+
+    def describe_index(self, identity: VectorIndexIdentity) -> VectorIndexDescription:
+        return self.description
+
+    def prepare_index(self, spec: VectorIndexSpec) -> VectorIndexPrepareResult:
+        if self.prepare_error is not None:
+            raise self.prepare_error
+        description = self.description
+        validate_spec_against_description(spec, description)
+        return VectorIndexPrepareResult(outcome=self.prepare_outcome, description=description)
 
     def close(self) -> None:
         return None
 
 
-def _collection_info(
-    *,
-    dense_size: int,
-    sparse_names: tuple[str, ...],
-    points_count: int = 0,
-) -> SimpleNamespace:
-    dense = SimpleNamespace(size=dense_size)
-    sparse_vectors = {name: SimpleNamespace() for name in sparse_names}
-    return SimpleNamespace(
-        points_count=points_count,
-        config=SimpleNamespace(
-            params=SimpleNamespace(
-                vectors={"dense": dense},
-                sparse_vectors=sparse_vectors,
-            )
-        ),
-    )
+@dataclass(slots=True)
+class _FakeVectorStore:
+    point_count: int = 0
+
+    def add_records(self, records, *, scope: VectorStoreScope):
+        self.point_count += len(records)
+        return [record.vector_id for record in records]
+
+    def query(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def delete(self, *args, **kwargs) -> None:
+        raise NotImplementedError
+
+    def count(self, *, scope: VectorStoreScope) -> int:
+        return self.point_count
 
 
 def _adapter(
     *,
-    collection_info: SimpleNamespace | None,
+    description: VectorIndexDescription,
+    prepare_error: VectorIndexCompatibilityError | None = None,
 ) -> QdrantSearchIndexBootstrapAdapter:
     return QdrantSearchIndexBootstrapAdapter(
-        _client=_FakeQdrantClient(collection_info),
-        _collection_name="vpi_test",
-        _tenant_id="default",
-        _sparse_enabled=True,
-        _sparse_encoder=SimpleNamespace(encode=lambda text: SimpleNamespace(indices=[1], values=[1.0])),
+        _index_admin=_FakeIndexAdmin(description=description, prepare_error=prepare_error),
+        _vector_store=_FakeVectorStore(point_count=description.point_count),
+        _index_identity=_identity(),
+        _sparse_required=True,
     )
 
 
 def test_qdrant_dimension_mismatch_rejected() -> None:
     adapter = _adapter(
-        collection_info=_collection_info(dense_size=512, sparse_names=("sparse",)),
+        description=_description(exists=True, dense_dimension=512, sparse_present=True),
+        prepare_error=VectorIndexCompatibilityError("vector index dense dimension 512 != expected 8"),
     )
     with pytest.raises(VpiBootstrapCompatibilityError, match="dimension"):
         adapter.prepare(_manifest(dimension=8))
@@ -114,31 +159,30 @@ def test_qdrant_dimension_mismatch_rejected() -> None:
 
 def test_qdrant_dense_only_collection_rejected_when_sparse_required() -> None:
     adapter = _adapter(
-        collection_info=_collection_info(dense_size=8, sparse_names=()),
+        description=_description(exists=True, dense_dimension=8, sparse_present=False),
+        prepare_error=VectorIndexCompatibilityError(
+            "vector index missing required capabilities: sparse_lexical"
+        ),
     )
-    with pytest.raises(VpiBootstrapCompatibilityError, match="dense-only"):
+    with pytest.raises(VpiBootstrapCompatibilityError, match="sparse_lexical"):
         adapter.prepare(_manifest(dimension=8))
 
 
 def test_validate_passes_after_restart_without_prepare() -> None:
-    shared_client = _FakeQdrantClient(
-        _collection_info(dense_size=1024, sparse_names=("sparse",), points_count=10)
+    description = _description(
+        exists=True,
+        dense_dimension=1024,
+        sparse_present=True,
+        point_count=10,
     )
-    process_a = QdrantSearchIndexBootstrapAdapter(
-        _client=shared_client,
-        _collection_name="vpi_test",
-        _tenant_id="default",
-        _sparse_enabled=True,
-        _sparse_encoder=SimpleNamespace(encode=lambda text: SimpleNamespace(indices=[1], values=[1.0])),
-    )
+    process_a = _adapter(description=description)
     process_a.prepare(_manifest(dimension=1024, target_max_records=10))
 
     process_b = QdrantSearchIndexBootstrapAdapter(
-        _client=shared_client,
-        _collection_name="vpi_test",
-        _tenant_id="default",
-        _sparse_enabled=True,
-        _sparse_encoder=SimpleNamespace(encode=lambda text: SimpleNamespace(indices=[1], values=[1.0])),
+        _index_admin=_FakeIndexAdmin(description=description),
+        _vector_store=_FakeVectorStore(point_count=10),
+        _index_identity=_identity(),
+        _sparse_required=True,
     )
     assert process_b._dimension is None
 
@@ -154,7 +198,12 @@ def test_validate_passes_after_restart_without_prepare() -> None:
 
 def test_validate_fails_on_persisted_dimension_mismatch() -> None:
     adapter = _adapter(
-        collection_info=_collection_info(dense_size=2560, sparse_names=("sparse",), points_count=10),
+        description=_description(
+            exists=True,
+            dense_dimension=2560,
+            sparse_present=True,
+            point_count=10,
+        ),
     )
     report = adapter.validate(_manifest(dimension=1024, target_max_records=10))
     assert report.status is ValidationStatus.FAIL
@@ -165,7 +214,12 @@ def test_validate_fails_on_persisted_dimension_mismatch() -> None:
 
 def test_validate_fails_when_sparse_channel_missing() -> None:
     adapter = _adapter(
-        collection_info=_collection_info(dense_size=1024, sparse_names=(), points_count=10),
+        description=_description(
+            exists=True,
+            dense_dimension=1024,
+            sparse_present=False,
+            point_count=10,
+        ),
     )
     report = adapter.validate(_manifest(dimension=1024, target_max_records=10))
     assert report.status is ValidationStatus.FAIL
@@ -174,7 +228,7 @@ def test_validate_fails_when_sparse_channel_missing() -> None:
 
 
 def test_validate_fails_when_collection_absent() -> None:
-    adapter = _adapter(collection_info=None)
+    adapter = _adapter(description=_description(exists=False, dense_dimension=None, sparse_present=False))
     report = adapter.validate(_manifest(dimension=1024, target_max_records=10))
     assert report.status is ValidationStatus.FAIL
     assert any(check.name == "qdrant_collection_exists" for check in report.checks)
@@ -182,13 +236,28 @@ def test_validate_fails_when_collection_absent() -> None:
 
 def test_validate_fails_when_point_count_below_target() -> None:
     adapter = _adapter(
-        collection_info=_collection_info(
-            dense_size=1024,
-            sparse_names=("sparse",),
-            points_count=3,
+        description=_description(
+            exists=True,
+            dense_dimension=1024,
+            sparse_present=True,
+            point_count=3,
         ),
     )
     report = adapter.validate(_manifest(dimension=1024, target_max_records=10))
     assert report.status is ValidationStatus.FAIL
     point_check = next(check for check in report.checks if check.name == "qdrant_point_count")
     assert point_check.status is ValidationStatus.FAIL
+
+
+def test_build_qdrant_index_spec_requires_sparse_spec_when_capability_requested() -> None:
+    with pytest.raises(ValueError, match="sparse_lexical"):
+        VectorIndexSpec(
+            identity=_identity(),
+            dense=build_qdrant_index_spec(
+                identity=_identity(),
+                dimension=8,
+                enable_sparse_lexical=False,
+            ).dense,
+            required_capabilities=frozenset({VectorSearchCapability.SPARSE_LEXICAL}),
+            sparse_lexical=None,
+        )

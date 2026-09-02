@@ -68,6 +68,13 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 from platform_proofs.scenarios.verified_product_identification.ingest.source_reader.parquet_dataset import (
     iter_dataset_rows,
 )
+from intergrax.integrations.contracts.base import HealthStatus
+from intergrax.integrations.contracts.vector_index_administration import (
+    VectorIndexDescription,
+    VectorIndexIdentity,
+    VectorSearchCapability,
+)
+from intergrax.integrations.contracts.vector_store import VectorStoreScope
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
 from intergrax.rag.embedding.registry.embedding_provider_registry import EmbeddingProviderRegistry
 from intergrax.rag.embedding.registry.profile import EmbeddingProfile
@@ -719,49 +726,58 @@ def test_ready_fast_path_executes_real_gate0(tmp_path: Path) -> None:
     assert any(check.name == "embedding.embedding_gate0" for check in report.validation.checks)
 
 
-def _qdrant_collection_info(*, dense_size: int, points_count: int) -> SimpleNamespace:
-    dense = SimpleNamespace(size=dense_size)
-    return SimpleNamespace(
-        points_count=points_count,
-        config=SimpleNamespace(
-            params=SimpleNamespace(
-                vectors={"dense": dense},
-                sparse_vectors={"sparse": SimpleNamespace()},
-            )
-        ),
-    )
+class _RestartIndexAdmin:
+    def __init__(self, description: VectorIndexDescription) -> None:
+        self._description = description
 
+    def probe(self) -> HealthStatus:
+        return HealthStatus(slug="qdrant", healthy=True)
 
-class _RestartQdrantClient:
-    def __init__(self, collection_info: SimpleNamespace) -> None:
-        self._collection_info = collection_info
+    def describe_index(self, identity: VectorIndexIdentity) -> VectorIndexDescription:
+        return self._description
 
-    def get_collections(self) -> object:
-        return SimpleNamespace(collections=[])
-
-    def get_collection(self, collection_name: str) -> SimpleNamespace:
-        return self._collection_info
-
-    def create_collection(self, *args, **kwargs) -> bool:
-        raise AssertionError("READY fast path must not create collection")
-
-    def upsert(self, *args, **kwargs) -> object:
-        raise AssertionError("READY fast path must not ingest")
+    def prepare_index(self, spec) -> object:
+        raise AssertionError("READY fast path must not prepare collection")
 
     def close(self) -> None:
         return None
 
 
+class _RestartVectorStore:
+    def add_records(self, records, *, scope: VectorStoreScope):
+        raise AssertionError("READY fast path must not ingest")
+
+    def query(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def delete(self, *args, **kwargs) -> None:
+        raise NotImplementedError
+
+    def count(self, *, scope: VectorStoreScope) -> int:
+        return 2
+
+
 def test_ready_fast_path_validates_persisted_qdrant_without_prepare(tmp_path: Path) -> None:
     catalog = FakeCatalogPort()
     embedding = FakeEmbeddingPort()
-    qdrant_client = _RestartQdrantClient(_qdrant_collection_info(dense_size=8, points_count=2))
+    identity = VectorIndexIdentity(logical_name="vpi_offers", tenant_id="default")
+    description = VectorIndexDescription(
+        identity=identity,
+        exists=True,
+        reachable=True,
+        point_count=2,
+        dense_dimension=8,
+        present_capabilities=frozenset(
+            {VectorSearchCapability.DENSE, VectorSearchCapability.SPARSE_LEXICAL}
+        ),
+        dense_channel_name="dense",
+        sparse_lexical_channel_name="sparse",
+    )
     search = QdrantSearchIndexBootstrapAdapter(
-        _client=qdrant_client,
-        _collection_name="vpi_offers__tenant__default",
-        _tenant_id="default",
-        _sparse_enabled=True,
-        _sparse_encoder=SimpleNamespace(encode=lambda text: SimpleNamespace(indices=[1], values=[1.0])),
+        _index_admin=_RestartIndexAdmin(description),
+        _vector_store=_RestartVectorStore(),
+        _index_identity=identity,
+        _sparse_required=True,
     )
     assert search._dimension is None
     catalog.manifest = _sample_manifest(
@@ -824,11 +840,12 @@ def _iter_production_python_files(*roots: Path):
             yield path
 
 
-def test_no_private_qdrant_import_in_vpi_integrations() -> None:
+def test_no_vendor_qdrant_sdk_import_in_vpi_integrations() -> None:
     qdrant_adapter = (
         VPI_INTEGRATIONS_ROOT / "search_store" / "qdrant" / "adapter.py"
     ).read_text(encoding="utf-8")
-    assert "intergrax.integrations.providers.vector_store.qdrant.opens" not in qdrant_adapter
+    assert "qdrant_client" not in qdrant_adapter
+    assert "QdrantClient" not in qdrant_adapter
 
 
 def test_no_reflection_in_vpi_bootstrap_production_code() -> None:

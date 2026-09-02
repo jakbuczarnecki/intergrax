@@ -18,6 +18,7 @@ ENV_QDRANT_COLLECTION = "INTERGRAX_QDRANT_COLLECTION"
 ENV_QDRANT_TENANT_ID = "INTERGRAX_QDRANT_TENANT_ID"
 ENV_QDRANT_METRIC = "INTERGRAX_QDRANT_METRIC"
 ENV_QDRANT_BATCH_SIZE = "INTERGRAX_QDRANT_BATCH_SIZE"
+ENV_QDRANT_SPARSE_VECTORS = "INTERGRAX_RAG_QDRANT_SPARSE"
 
 Metric = Literal["cosine", "dot", "euclidean"]
 
@@ -40,6 +41,7 @@ class QdrantIntegrationConfig(BaseIntegrationConfig):
     tenant_id: str = DEFAULT_TENANT_ID
     metric: Metric = DEFAULT_METRIC
     batch_size: int = DEFAULT_BATCH_SIZE
+    enable_sparse_vectors: bool = False
 
     def resolved_url(self) -> Optional[str]:
         return self.url.strip() or None
@@ -58,6 +60,7 @@ class QdrantIntegrationConfig(BaseIntegrationConfig):
         )
         metric_raw = os.environ.get(ENV_QDRANT_METRIC, DEFAULT_METRIC).strip() or DEFAULT_METRIC
         batch_raw = os.environ.get(ENV_QDRANT_BATCH_SIZE, "").strip()
+        sparse_raw = os.environ.get(ENV_QDRANT_SPARSE_VECTORS, "").strip().lower()
         payload: dict[str, object] = {
             "url": url,
             "api_key": api_key,
@@ -71,5 +74,6 @@ class QdrantIntegrationConfig(BaseIntegrationConfig):
         else:
             payload["port"] = DEFAULT_PORT
         payload["batch_size"] = int(batch_raw) if batch_raw else DEFAULT_BATCH_SIZE
+        payload["enable_sparse_vectors"] = sparse_raw in ("1", "true", "yes", "on")
         payload.update(overrides)
         return cls.model_validate(payload)

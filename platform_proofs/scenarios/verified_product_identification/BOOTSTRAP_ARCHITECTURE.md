@@ -38,8 +38,13 @@ storage_bootstrap/orchestration
 composition/bootstrap_runtime.py  ← only layer binding PostgreSQL + Qdrant
         ↑
 integrations/catalog_store/postgresql
-integrations/search_store/qdrant
+integrations/search_store/qdrant  → Intergrax vector index + VectorStore contracts
+        ↑
+Intergrax integration plugins (Qdrant provider owns vendor SDK)
 ```
+
+VPI production code contains **zero** vendor SDK imports (`qdrant_client`, `psycopg`, embedding SDKs, etc.).
+Provider selection (`qdrant`) is composition configuration; vendor implementation stays in `intergrax/integrations/providers/`.
 
 ## Contracts
 
@@ -99,7 +104,10 @@ Partial provider success → `FAILED`, never `READY`.
 
 - Orchestrator depends only on scenario ports (`CatalogBootstrapPort`, `SearchIndexBootstrapPort`, `EmbeddingExecutionPort`)
 - Platform registry resolution lives in `composition/bootstrap_runtime.py` via `IntergraxEmbeddingBootstrapAdapter`
-- Qdrant bootstrap uses public `qdrant-client` at the scenario integration boundary (no private `_import_qdrant_client`)
+- Search bootstrap adapter uses public Intergrax contracts:
+  - `VectorIndexAdministration` (control plane: probe, describe, prepare)
+  - `VectorStore` (data plane: upsert via `add_records`)
+- Qdrant `qdrant_client` imports exist only inside `intergrax/integrations/providers/vector_store/qdrant/`
 
 ## Failure model
 
