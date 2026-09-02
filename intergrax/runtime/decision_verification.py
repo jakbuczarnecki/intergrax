@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Decision Verification pipeline orchestrator (DS-VER-PIPE-01, DS-VER-PIPE-04).
+"""Decision Verification pipeline orchestrator (DS-VER-PIPE-01, DS-VER-PIPE-04, DS-VER-PIPE-06).
 
 Runs configured verification stages against one exact immutable CandidateDecision
 and returns one VerificationResult. Does not revise decisions, authorize execution,
@@ -24,14 +24,31 @@ from intergrax.contracts.decision_verification import (
     VerificationStageOutcome,
     VerificationStageRecord,
     VerificationResult,
+    validate_verification_finding_code,
+    validate_verification_requirement_code,
+    verification_challenge,
+    verification_finding,
     verification_result,
+    verification_stage_record,
 )
 from intergrax.contracts.decision_verification_stage import (
     T,
     VerificationStageExecutionClass,
     VerificationStageRegistration,
     VerificationStageRegistry,
+    VerificationStageUnavailableError,
 )
+
+_REQUIRED_STAGE_UNAVAILABLE_REQUIREMENT = validate_verification_requirement_code(
+    "verification.stage.required_unavailable",
+)
+_REQUIRED_STAGE_UNAVAILABLE_FINDING = validate_verification_finding_code(
+    "verification.stage.required_unavailable",
+)
+
+
+class VerificationPipelineEmptyResultError(ValueError):
+    """Raised when pipeline execution produces no stage records."""
 
 
 def _proposal_ref_key(ref: DecisionProposalRef) -> tuple[str | int | None, ...]:
@@ -108,14 +125,46 @@ async def _execute_registration(
     *,
     registration: VerificationStageRegistration[T],
     candidate: CandidateDecision[T],
-) -> VerificationStageRecord:
-    record = await registration.stage.verify(candidate)
+) -> VerificationStageRecord | None:
+    try:
+        record = await registration.stage.verify(candidate)
+    except VerificationStageUnavailableError:
+        if registration.required:
+            return _required_unavailable_stage_record(
+                registration=registration,
+                candidate=candidate,
+            )
+        return None
     _validate_returned_stage_record(
         record=record,
         registration=registration,
         candidate=candidate,
     )
     return record
+
+
+def _required_unavailable_stage_record(
+    *,
+    registration: VerificationStageRegistration[T],
+    candidate: CandidateDecision[T],
+) -> VerificationStageRecord:
+    proposal_ref = candidate_decision_ref(candidate)
+    finding = verification_finding(
+        code=_REQUIRED_STAGE_UNAVAILABLE_FINDING,
+        message="Required verification stage is unavailable",
+    )
+    challenge = verification_challenge(
+        proposal_ref=proposal_ref,
+        stage=registration.kind,
+        requirement_code=_REQUIRED_STAGE_UNAVAILABLE_REQUIREMENT,
+        finding=finding,
+    )
+    return verification_stage_record(
+        proposal_ref=proposal_ref,
+        stage=registration.kind,
+        outcome=VerificationStageOutcome.CHALLENGED,
+        challenge=challenge,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -135,24 +184,28 @@ class VerificationPipeline(Generic[T]):
         stage_records: list[VerificationStageRecord] = []
         deterministic_regs, probabilistic_regs = _pipeline_execution_plan(self.registry)
         for registration in deterministic_regs:
-            stage_records.append(
-                await _execute_registration(
-                    registration=registration,
-                    candidate=candidate,
-                ),
+            record = await _execute_registration(
+                registration=registration,
+                candidate=candidate,
             )
+            if record is not None:
+                stage_records.append(record)
         deterministic_challenged = any(
             record.outcome is VerificationStageOutcome.CHALLENGED
             for record in stage_records
         )
         if not deterministic_challenged:
             for registration in probabilistic_regs:
-                stage_records.append(
-                    await _execute_registration(
-                        registration=registration,
-                        candidate=candidate,
-                    ),
+                record = await _execute_registration(
+                    registration=registration,
+                    candidate=candidate,
                 )
+                if record is not None:
+                    stage_records.append(record)
+        if not stage_records:
+            raise VerificationPipelineEmptyResultError(
+                "VerificationPipeline cannot produce a result without stage records",
+            )
         disposition = _aggregate_disposition(tuple(stage_records))
         return verification_result(
             proposal_ref=proposal_ref,

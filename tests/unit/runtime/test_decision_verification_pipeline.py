@@ -42,6 +42,7 @@ from intergrax.contracts.decision_verification_stage import (
     VerificationStageExecutionClass,
     VerificationStageKind,
     VerificationStageRegistration,
+    VerificationStageUnavailableError,
     verification_stage_registry,
 )
 from intergrax.contracts.execution_identity import (
@@ -50,7 +51,10 @@ from intergrax.contracts.execution_identity import (
     mint_run_id,
     mint_task_id,
 )
-from intergrax.runtime.decision_verification import VerificationPipeline
+from intergrax.runtime.decision_verification import (
+    VerificationPipeline,
+    VerificationPipelineEmptyResultError,
+)
 
 _MODULE_PATH = (
     Path(__file__).resolve().parents[3]
@@ -644,3 +648,241 @@ async def test_registry_original_unchanged_after_verify() -> None:
     candidate = _candidate()
     _ = await pipeline.verify(candidate)
     assert registry.registrations == (registration,)
+
+
+@dataclass(frozen=True, slots=True)
+class UnavailableStage:
+    kind: VerificationStageKind
+    execution_class: VerificationStageExecutionClass
+
+    async def verify(
+        self,
+        candidate: CandidateDecision[IncidentDecisionPayload],
+    ) -> VerificationStageRecord:
+        raise VerificationStageUnavailableError("stage unavailable")
+
+
+@dataclass(frozen=True, slots=True)
+class ProgrammingErrorStage:
+    kind: VerificationStageKind
+    execution_class: VerificationStageExecutionClass
+
+    async def verify(
+        self,
+        candidate: CandidateDecision[IncidentDecisionPayload],
+    ) -> VerificationStageRecord:
+        raise TypeError("programming defect")
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_required_deterministic_unavailable_produces_challenged() -> None:
+    pipeline = _pipeline(
+        UnavailableStage(
+            kind=validate_verification_stage_kind("schema"),
+            execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+        ),
+    )
+    result = await pipeline.verify(_candidate())
+    assert result.disposition is VerificationDisposition.CHALLENGED
+    assert result.stage_records[0].outcome is VerificationStageOutcome.CHALLENGED
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_required_probabilistic_unavailable_produces_challenged() -> None:
+    pipeline = _pipeline_from_registrations(
+        _registration(
+            kind="schema",
+            stage=PassedStage(kind=validate_verification_stage_kind("schema")),
+        ),
+        _registration(
+            kind="semantic",
+            stage=UnavailableStage(
+                kind=validate_verification_stage_kind("semantic"),
+                execution_class=VerificationStageExecutionClass.PROBABILISTIC,
+            ),
+        ),
+    )
+    result = await pipeline.verify(_candidate())
+    assert result.disposition is VerificationDisposition.CHALLENGED
+    assert len(result.stage_records) == 2
+    assert result.stage_records[1].stage == validate_verification_stage_kind("semantic")
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_unavailable_required_stage_never_omitted() -> None:
+    pipeline = _pipeline(
+        UnavailableStage(
+            kind=validate_verification_stage_kind("schema"),
+            execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+        ),
+    )
+    result = await pipeline.verify(_candidate())
+    assert len(result.stage_records) == 1
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_unavailable_required_stage_never_passed() -> None:
+    pipeline = _pipeline(
+        UnavailableStage(
+            kind=validate_verification_stage_kind("schema"),
+            execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+        ),
+    )
+    result = await pipeline.verify(_candidate())
+    assert all(
+        record.outcome is not VerificationStageOutcome.PASSED
+        for record in result.stage_records
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_required_deterministic_unavailable_blocks_probabilistic() -> None:
+    trace: list[VerificationStageKind] = []
+    registrations = (
+        _registration(
+            kind="schema",
+            stage=UnavailableStage(
+                kind=validate_verification_stage_kind("schema"),
+                execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+            ),
+        ),
+        _registration(
+            kind="semantic",
+            stage=_recording_stage(
+                kind="semantic",
+                execution_class=VerificationStageExecutionClass.PROBABILISTIC,
+                trace=trace,
+            ),
+        ),
+    )
+    pipeline = _pipeline_from_registrations(*registrations)
+    _ = await pipeline.verify(_candidate())
+    assert trace == []
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_optional_unavailable_stage_skipped_without_passed_record() -> None:
+    pipeline = _pipeline_from_registrations(
+        _registration(
+            kind="schema",
+            stage=UnavailableStage(
+                kind=validate_verification_stage_kind("schema"),
+                execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+            ),
+            required=False,
+        ),
+        _registration(
+            kind="rules",
+            stage=PassedStage(kind=validate_verification_stage_kind("rules")),
+        ),
+    )
+    result = await pipeline.verify(_candidate())
+    assert result.disposition is VerificationDisposition.PASSED
+    assert len(result.stage_records) == 1
+    assert result.stage_records[0].stage == validate_verification_stage_kind("rules")
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_optional_unavailable_with_other_passed_stage_valid_passed() -> None:
+    pipeline = _pipeline_from_registrations(
+        _registration(
+            kind="semantic",
+            stage=UnavailableStage(
+                kind=validate_verification_stage_kind("semantic"),
+                execution_class=VerificationStageExecutionClass.PROBABILISTIC,
+            ),
+            required=False,
+        ),
+        _registration(
+            kind="schema",
+            stage=PassedStage(kind=validate_verification_stage_kind("schema")),
+        ),
+    )
+    result = await pipeline.verify(_candidate())
+    assert result.disposition is VerificationDisposition.PASSED
+    assert len(result.stage_records) == 1
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_all_optional_unavailable_fails_explicitly() -> None:
+    pipeline = _pipeline_from_registrations(
+        _registration(
+            kind="schema",
+            stage=UnavailableStage(
+                kind=validate_verification_stage_kind("schema"),
+                execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+            ),
+            required=False,
+        ),
+    )
+    with pytest.raises(VerificationPipelineEmptyResultError):
+        await pipeline.verify(_candidate())
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_unexpected_programming_exception_propagates() -> None:
+    pipeline = _pipeline(
+        ProgrammingErrorStage(
+            kind=validate_verification_stage_kind("schema"),
+            execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+        ),
+    )
+    with pytest.raises(TypeError, match="programming defect"):
+        await pipeline.verify(_candidate())
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_generated_unavailable_challenge_exact_proposal_identity() -> None:
+    candidate = _candidate()
+    pipeline = _pipeline(
+        UnavailableStage(
+            kind=validate_verification_stage_kind("schema"),
+            execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+        ),
+    )
+    result = await pipeline.verify(candidate)
+    record = result.stage_records[0]
+    assert record.proposal_ref == candidate_decision_ref(candidate)
+    assert record.challenge is not None
+    assert record.challenge.proposal_ref == candidate_decision_ref(candidate)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_generated_unavailable_challenge_exact_stage_kind() -> None:
+    kind = validate_verification_stage_kind("schema")
+    pipeline = _pipeline(
+        UnavailableStage(
+            kind=kind,
+            execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+        ),
+    )
+    result = await pipeline.verify(_candidate())
+    record = result.stage_records[0]
+    assert record.stage == kind
+    assert record.challenge is not None
+    assert record.challenge.stage == kind
+    assert record.challenge.requirement_code == validate_verification_requirement_code(
+        "verification.stage.required_unavailable",
+    )

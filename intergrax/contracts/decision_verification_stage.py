@@ -39,6 +39,10 @@ class VerificationStageNotRegisteredError(ValueError):
     """Raised when a syntactically valid stage kind is not registered."""
 
 
+class VerificationStageUnavailableError(RuntimeError):
+    """Raised when a configured stage cannot perform its verification check."""
+
+
 @runtime_checkable
 class VerificationStage(Protocol[T]):
     """One verification mechanism evaluating one exact CandidateDecision."""
