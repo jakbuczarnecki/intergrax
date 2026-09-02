@@ -17,8 +17,8 @@ from platform_proofs.scenarios.verified_product_identification.application.contr
     StructuredSearchResult,
     VectorSearchResult,
 )
-from platform_proofs.scenarios.verified_product_identification.application.domain.identifiers import (
-    ProductOfferId,
+from platform_proofs.scenarios.verified_product_identification.application.domain.source import (
+    SourceRecordRef,
 )
 
 
@@ -51,7 +51,7 @@ class VectorCandidateSearchPort(Protocol):
 
 
 class SourceRecordFetchPort(Protocol):
-    """Fetch immutable source-truth records by offer identity."""
+    """Fetch immutable source-truth records by full source identity reference."""
 
-    def fetch(self, offer_id: ProductOfferId) -> SourceRecordFetchResult:
-        """Return the immutable source record for one offer identity."""
+    def fetch(self, source_ref: SourceRecordRef) -> SourceRecordFetchResult:
+        """Return the immutable source record for one source identity reference."""

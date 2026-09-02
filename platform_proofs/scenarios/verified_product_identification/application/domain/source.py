@@ -9,10 +9,11 @@ from platform_proofs.scenarios.verified_product_identification.application.domai
 )
 
 
-def _require_non_empty_str(value: str, *, field_name: str) -> str:
+def _require_non_empty_str(value: str, *, field_name: str) -> None:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{field_name} must be a non-empty string")
-    return value.strip()
+    if value != value.strip():
+        raise ValueError(f"{field_name} must not have leading or trailing whitespace")
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,9 +25,7 @@ class ProductSourceProvenance:
     ingestion_batch: str | None = None
 
     def __post_init__(self) -> None:
-        normalized = _require_non_empty_str(self.catalog_id, field_name="ProductSourceProvenance.catalog_id")
-        if normalized != self.catalog_id:
-            object.__setattr__(self, "catalog_id", normalized)
+        _require_non_empty_str(self.catalog_id, field_name="ProductSourceProvenance.catalog_id")
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,9 +37,7 @@ class SourceRecordRef:
     source_revision: str | None = None
 
     def __post_init__(self) -> None:
-        normalized = _require_non_empty_str(self.catalog_id, field_name="SourceRecordRef.catalog_id")
-        if normalized != self.catalog_id:
-            object.__setattr__(self, "catalog_id", normalized)
+        _require_non_empty_str(self.catalog_id, field_name="SourceRecordRef.catalog_id")
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,9 +49,7 @@ class ProductSourceRecord:
     provenance: ProductSourceProvenance
 
     def __post_init__(self) -> None:
-        normalized = _require_non_empty_str(
+        _require_non_empty_str(
             self.record_payload_ref,
             field_name="ProductSourceRecord.record_payload_ref",
         )
-        if normalized != self.record_payload_ref:
-            object.__setattr__(self, "record_payload_ref", normalized)
