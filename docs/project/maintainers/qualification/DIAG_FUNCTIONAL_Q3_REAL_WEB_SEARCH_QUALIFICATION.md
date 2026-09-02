@@ -158,7 +158,7 @@ Preserved artifact: `.tmp/session/diag-functional-q3/qualification-report.json`
 | Item | Value |
 | --- | --- |
 | START_HEAD | `17d04462ca7db17ba33bedf3ee4275d17b25844e` |
-| FINAL_HEAD | (see commit after push) |
+| FINAL_HEAD | `b8208944fa63b3b3f3c021e0df985fba853ac0bb` |
 | INTERGRAX_TAVILY_API_KEY | YES (host + compose + LKW runtime) |
 | Runtime-context materialized | YES |
 | LKW image rebuild | YES |
