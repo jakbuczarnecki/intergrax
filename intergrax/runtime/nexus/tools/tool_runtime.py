@@ -177,6 +177,16 @@ class ToolRuntime:
             allowed_tools=effective_allowed,
             state=state,
         )
+        from intergrax.runtime.tools.scope_policy import StaticToolScopePolicy
+
+        scope_policy = cfg.tool_scope_policy
+        if scope_policy is not None and not isinstance(scope_policy, StaticToolScopePolicy):
+            plan = ToolAccessPolicy.apply_scope_policy(
+                plan,
+                scope_policy=scope_policy,
+                agent_id=state.request.agent_id,
+                state=state,
+            )
         modality_profile = cfg.modality_profile
         if modality_profile is not None:
             plan = ToolAccessPolicy.apply_modality_profile(plan, profile=modality_profile)
