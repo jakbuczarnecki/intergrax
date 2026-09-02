@@ -35,6 +35,7 @@ from intergrax.core.qualification.observability import (
     NoOpProviderQualificationExecutionObservability,
     ProviderQualificationExecutionObservabilityPort,
     ProviderQualificationInfrastructurePhase,
+    safe_record_qualification_observability,
     utc_now,
 )
 from intergrax.integrations.contracts.base import (
@@ -285,8 +286,8 @@ def _record_infrastructure_failure(
     error: Exception,
     error_code: str,
 ) -> None:
-    try:
-        dependencies.observability.record_infrastructure_failure(
+    safe_record_qualification_observability(
+        lambda: dependencies.observability.record_infrastructure_failure(
             qualification_run_id=run_id,
             subject=request.subject,
             executor=request.executor,
@@ -295,9 +296,9 @@ def _record_infrastructure_failure(
             error_type=type(error).__name__,
             error_code=error_code,
             occurred_at=utc_now(),
-        )
-    except Exception:
-        return
+        ),
+        operation=f"infrastructure_failure.{phase.value}",
+    )
 
 
 def execute_provider_qualification(
@@ -320,20 +321,26 @@ def execute_provider_qualification(
     existing = dependencies.persistence.get_by_qualification_run_id(run_id)
     if existing is not None:
         _validate_stored_run_compatible_with_request(existing, request)
-        dependencies.observability.record_execution_recovered(
-            existing,
-            recovery_kind="persisted_run",
-            occurred_at=utc_now(),
+        safe_record_qualification_observability(
+            lambda: dependencies.observability.record_execution_recovered(
+                existing,
+                recovery_kind="persisted_run",
+                occurred_at=utc_now(),
+            ),
+            operation="execution_recovered.persisted_run",
         )
         return existing
 
     started_at = utc_now()
-    dependencies.observability.record_execution_started(
-        qualification_run_id=run_id,
-        subject=request.subject,
-        executor=request.executor,
-        source_revision=request.source_revision,
-        occurred_at=started_at,
+    safe_record_qualification_observability(
+        lambda: dependencies.observability.record_execution_started(
+            qualification_run_id=run_id,
+            subject=request.subject,
+            executor=request.executor,
+            source_revision=request.source_revision,
+            occurred_at=started_at,
+        ),
+        operation="execution_started",
     )
 
     binding = dependencies.domain_binding
@@ -499,10 +506,13 @@ def execute_provider_qualification(
             )
             raise persistence_error from exc
         if stored == run:
-            dependencies.observability.record_execution_recovered(
-                stored,
-                recovery_kind="persist_conflict_duplicate",
-                occurred_at=utc_now(),
+            safe_record_qualification_observability(
+                lambda: dependencies.observability.record_execution_recovered(
+                    stored,
+                    recovery_kind="persist_conflict_duplicate",
+                    occurred_at=utc_now(),
+                ),
+                operation="execution_recovered.persist_conflict_duplicate",
             )
             return stored
         conflict_error = ProviderQualificationExecutionConflictError(
@@ -531,8 +541,11 @@ def execute_provider_qualification(
         )
         raise persistence_error from exc
     else:
-        dependencies.observability.record_execution_completed(
-            persisted,
-            occurred_at=utc_now(),
+        safe_record_qualification_observability(
+            lambda: dependencies.observability.record_execution_completed(
+                persisted,
+                occurred_at=utc_now(),
+            ),
+            operation="execution_completed",
         )
         return persisted

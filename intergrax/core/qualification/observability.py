@@ -1,11 +1,13 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework — proprietary and confidential.
 
-"""Provider qualification execution observability via platform HOS contracts (PROVIDER-QUAL-7-R1)."""
+"""Provider qualification execution observability via platform HOS contracts (PROVIDER-QUAL-7-R2)."""
 
 from __future__ import annotations
 
 import hashlib
+import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -40,7 +42,10 @@ from intergrax.runtime.observability.problem_signal import (
     PROBLEM_KIND_PLATFORM_UNEXPECTED_STATE,
     PROBLEM_SEVERITY_ERROR,
     PROBLEM_SOURCE_LAYER_INTEGRATION,
+    PROBLEM_SOURCE_LAYER_RUNTIME,
 )
+
+logger = logging.getLogger(__name__)
 
 PLATFORM_PROVIDER_QUALIFICATION_EXECUTION_EVENT_SCHEMA = (
     "intergrax.provider_qualification_execution_event.v1"
@@ -113,6 +118,47 @@ def qualification_execution_event_id(
     return f"pqev_{digest}"
 
 
+def qualification_infrastructure_problem_event_id(
+    *,
+    qualification_run_id: QualificationRunId | str,
+    phase: ProviderQualificationInfrastructurePhase,
+    error_code: str,
+) -> str:
+    """Deterministic problem/event identity per infrastructure phase and error code."""
+    digest = hashlib.sha256(
+        f"infrastructure:{phase.value}:{error_code}:{qualification_run_id}".encode("utf-8"),
+    ).hexdigest()[:32]
+    return f"pqev_{digest}"
+
+
+def qualification_infrastructure_source_layer(
+    phase: ProviderQualificationInfrastructurePhase,
+) -> str:
+    """Map infrastructure phase to canonical platform problem source layer."""
+    if phase in (
+        ProviderQualificationInfrastructurePhase.RESOLUTION,
+        ProviderQualificationInfrastructurePhase.MATERIALIZATION,
+    ):
+        return PROBLEM_SOURCE_LAYER_INTEGRATION
+    return PROBLEM_SOURCE_LAYER_RUNTIME
+
+
+def safe_record_qualification_observability(
+    callback: Callable[[], None],
+    *,
+    operation: str,
+) -> None:
+    """Invoke observability port callback; failures never alter qualification truth."""
+    try:
+        callback()
+    except Exception:
+        logger.warning(
+            "qualification observability %s failed (best-effort; qualification truth unchanged)",
+            operation,
+            exc_info=True,
+        )
+
+
 def _attributes_from_event(
     event: ProviderQualificationExecutionEvent,
 ) -> ProviderQualificationExecutionObservabilityAttributes:
@@ -181,6 +227,11 @@ def build_qualification_infrastructure_problem_envelope(
         if phase is ProviderQualificationInfrastructurePhase.PERSISTENCE
         else PROBLEM_KIND_PLATFORM_INTEGRATION_FAILURE
     )
+    problem_event_id = qualification_infrastructure_problem_event_id(
+        qualification_run_id=qualification_run_id,
+        phase=phase,
+        error_code=error_code,
+    )
     signal = build_problem_signal(
         context=ProblemReportContext(
             correlation_id=str(qualification_run_id),
@@ -189,12 +240,10 @@ def build_qualification_infrastructure_problem_envelope(
         problem_kind=problem_kind,
         severity=PROBLEM_SEVERITY_ERROR,
         error_code=error_code,
-        source_layer=PROBLEM_SOURCE_LAYER_INTEGRATION,
+        source_layer=qualification_infrastructure_source_layer(phase),
         source_component=f"provider_qualification.{phase.value}",
-        event_id=qualification_execution_event_id(
-            qualification_run_id=qualification_run_id,
-            event_type=ProviderQualificationExecutionEventType.STARTED,
-        ),
+        problem_id=problem_event_id,
+        event_id=problem_event_id,
         application_attributes=ProviderQualificationExecutionObservabilityAttributes(
             qualification_run_id=str(qualification_run_id),
             provider_id=subject.provider_id,
@@ -208,13 +257,12 @@ def build_qualification_infrastructure_problem_envelope(
             source_revision=source_revision,
             outcome_status="infrastructure_failure",
         ),
-    )
+    ).model_copy(update={"exception_type": safe_error_type})
     envelope = envelope_from_problem_signal(signal)
     return envelope.model_copy(
         update={
             "event_type": f"provider_qualification.infrastructure.{phase.value}",
             "problem_error_code": error_code,
-            "schema_id": safe_error_type,
         },
     )
 
@@ -314,7 +362,12 @@ class NoOpProviderQualificationExecutionObservability:
 
 @dataclass
 class RecordingProviderQualificationExecutionObservability:
-    """Synchronous in-memory collector for platform export envelopes (tests/local proof)."""
+    """TEST / LOCAL PROOF collector — not enterprise production diagnostics.
+
+    Retains policy-sanitized ``ObservabilityExportEnvelope`` instances in memory for
+    unit tests and local proof runs. Production qualification hosts must inject the
+    canonical platform observability adapter wired to HOS/export/diagnostics composition.
+    """
 
     policy: ObservabilityExportPolicy = ObservabilityExportPolicy(enabled=True)
     envelopes: list[ObservabilityExportEnvelope] | None = None
@@ -326,8 +379,11 @@ class RecordingProviderQualificationExecutionObservability:
     def _record_envelope(self, envelope: ObservabilityExportEnvelope) -> ExportPolicyResult:
         result = apply_observability_export_policy(envelope, self.policy)
         if result.exported and result.envelope is not None:
-            assert self.envelopes is not None
-            self.envelopes.append(result.envelope)
+            envelopes = self.envelopes
+            if envelopes is None:
+                envelopes = []
+                self.envelopes = envelopes
+            envelopes.append(result.envelope)
         return result
 
     def record_execution_started(
@@ -439,5 +495,8 @@ __all__ = [
     "envelope_from_qualification_execution_event",
     "qualification_execution_event_id",
     "qualification_execution_to_platform_export_source",
+    "qualification_infrastructure_problem_event_id",
+    "qualification_infrastructure_source_layer",
+    "safe_record_qualification_observability",
     "utc_now",
 ]
