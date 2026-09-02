@@ -23,11 +23,15 @@ def functional_evidence_query_order_key(
     return (evidence.provenance.recorded_at, str(evidence.evidence_id))
 
 
-class FunctionalEvidencePersistenceConflictError(Exception):
+class FunctionalEvidencePersistenceError(Exception):
+    """Base error for functional evidence persistence failures."""
+
+
+class FunctionalEvidencePersistenceConflictError(FunctionalEvidencePersistenceError):
     """Raised when append encounters an existing evidence_id with different content."""
 
 
-class FunctionalEvidencePersistenceIntegrityError(Exception):
+class FunctionalEvidencePersistenceIntegrityError(FunctionalEvidencePersistenceError):
     """Raised when stored evidence is outside the requested query scope."""
 
 
@@ -87,6 +91,7 @@ class FunctionalEvidencePersistence(ABC):
 __all__ = [
     "FunctionalEvidencePersistence",
     "FunctionalEvidencePersistenceConflictError",
+    "FunctionalEvidencePersistenceError",
     "FunctionalEvidencePersistenceIntegrityError",
     "FunctionalEvidenceQueryPage",
     "FunctionalEvidenceQueryRequest",

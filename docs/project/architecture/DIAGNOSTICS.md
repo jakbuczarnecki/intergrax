@@ -754,7 +754,7 @@ GENERIC FUNCTIONAL ANALYSIS = QUALIFIED
 OPERATOR FUNCTIONAL PROJECTION = QUALIFIED
 
 H1 TEST-SUITE HEALTH = OPEN
-DURABLE PERSISTENCE = NOT YET QUALIFIED
+DURABLE PERSISTENCE = QUALIFIED (D1 process restart)
 PRODUCTION SCALE = NOT YET QUALIFIED
 REAL WORKLOAD QUALIFICATION = NOT YET COMPLETE
 ```
@@ -814,9 +814,9 @@ deterministic findings / limitations
 optional higher-level inference later (NOT in F1/F2)
 ```
 
-**Code references:** `functional_validation.py` · `functional_validation_evidence.py` · `functional_evidence.py` · `functional_evidence_persistence.py` · `functional_evidence_query_cursor.py` · `functional_evidence_reconstruction.py` · `in_memory_functional_evidence_persistence.py` · `problem_signal.py` · `intergrax/contracts/functional_evidence_bounds.py`.
+**Code references:** `functional_validation.py` · `functional_validation_evidence.py` · `functional_evidence.py` · `functional_evidence_persistence.py` · `functional_evidence_query_cursor.py` · `functional_evidence_reconstruction.py` · `functional_evidence_record_codec.py` · `document_store_functional_evidence_persistence.py` · `in_memory_functional_evidence_persistence.py` · `problem_signal.py` · `intergrax/contracts/functional_evidence_bounds.py`.
 
-### Functional evidence persistence qualification (F1-R2)
+### Functional evidence persistence qualification (F1-R2 / D1)
 
 ```text
 FunctionalEvidencePersistence (contract semantics)
@@ -828,27 +828,38 @@ FunctionalEvidencePersistence (contract semantics)
         │     scale-qualified: NO
         │     intended use: unit / local / conformance
         │
-        └── DocumentStore / Mongo (future)
-              correctness: pending
-              durable: pending
-              scale-qualified: pending
-              intended use: future production
+        └── DocumentStoreFunctionalEvidencePersistence
+              correctness: qualified (D1)
+              durable: YES (process restart against durable DocumentStore)
+              scale-qualified: NO
+              intended use: production composition via wire_functional_evidence_persistence
 ```
 
 | Provider | Correctness | Durable | Scale qualified | Intended use |
 | -------- | ----------- | ------- | --------------- | ------------ |
 | `InMemoryFunctionalEvidencePersistence` | YES | NO | NO | unit / local / conformance |
-| DocumentStore (future) | pending | pending | pending | future production |
-| Mongo (future) | pending | pending | pending | future production |
+| `DocumentStoreFunctionalEvidencePersistence` | YES | YES | NO | production durable backend |
+| Mongo / other DocumentStore vendors | via ConditionalDocumentStore | YES | pending S1 | integration composition |
+
+**D1 durable authority (DIAG-DURABILITY-D1):**
+
+- Canonical record: `record:<evidence_id>` in partition `intergrax.functional_evidence.v1:<tenant_id>`.
+- Execution index: `exec:<task_id>:<run_id>:<evidence_id>` stores evidence reference only.
+- Append is idempotent on `evidence_id`; conflicting payload raises `FunctionalEvidencePersistenceConflictError`.
+- Partial write recovery: canonical record present + missing index → retry append repairs index.
+- Orphan index without canonical record → `FunctionalEvidencePersistenceIntegrityError` (fail closed).
+- Read path: index query (paginated) → canonical record load → scope validation → deterministic `(recorded_at, evidence_id)` order.
+- Production wiring: `wire_functional_evidence_runtime(document_store=..., cursor_secret=...)` — no hidden in-memory fallback.
+- `FunctionalDiagnosticAnalyzer` unchanged; reconstruction reads via `FunctionalEvidencePersistence.query_evidence`.
 
 **Qualification levels (do not conflate):**
 
-| Level | F1-R2 status |
-| ----- | ------------ |
-| Architecture qualified | YES - generic typed evidence + bounded reconstruction + keyset semantics |
-| Correctness qualified | YES - pagination, boundedness, correlation, late-arrival semantics |
-| Production durability qualified | NO - durable functional-evidence backend not implemented |
-| Production scale qualified | NO - no bounded-index durable provider or high-cardinality proof |
+| Level | Status |
+| ----- | ------ |
+| Architecture qualified | YES |
+| Correctness qualified | YES |
+| Production durability qualified (process restart) | YES (D1) |
+| Production scale qualified | NO |
 
 Functional Diagnostics must **not** be labelled **PRODUCTION SCALE QUALIFIED** until a durable provider exists with a bounded query index strategy and passes real high-cardinality qualification.
 
