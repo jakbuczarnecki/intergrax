@@ -67,7 +67,8 @@ def count_rows_to_ingest(
     max_records: int | None,
     dataset_record_count: int,
 ) -> int:
-    remaining = max(dataset_record_count - start_row_index, 0)
+    remaining_in_dataset = max(dataset_record_count - start_row_index, 0)
     if max_records is None:
-        return remaining
-    return min(max_records, remaining)
+        return remaining_in_dataset
+    remaining_to_target = max(max_records - start_row_index, 0)
+    return min(remaining_to_target, remaining_in_dataset)

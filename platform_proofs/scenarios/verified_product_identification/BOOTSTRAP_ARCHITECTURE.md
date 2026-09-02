@@ -45,7 +45,7 @@ integrations/search_store/qdrant
 
 - `CatalogBootstrapPort` — prepare, ingest_batch, validate, manifest I/O
 - `SearchIndexBootstrapPort` — prepare, ingest_batch, validate, point count
-- `EmbeddingReadinessProbe` — Gate 0 before dense bootstrap
+- `EmbeddingExecutionPort` — Gate 0 probe + batch embedding for ingest (single provider instance per run)
 - Typed `ValidationReport` / `BootstrapRunReport` (no bool-only validation)
 
 ## Reference adapters
@@ -64,11 +64,13 @@ integrations/search_store/qdrant
 
 ## Manifest identity
 
-Persisted in PostgreSQL `vpi_catalog_manifest` (single row). Compatibility requires matching:
+Persisted in PostgreSQL `vpi_catalog_manifest` (single row). **Environment compatibility identity** requires matching:
 
 - dataset checksum + record count
 - derivation version, embedding provider/model/dimension
 - catalog/search schema versions, bootstrap implementation version, catalog id
+
+**Run target** (`target_max_records` / current invocation scope) is separate from compatibility identity. A prior verify run at 1000 rows does not make a later `--mode full` invocation READY at 1000; full continues ingest after the prior checkpoint when identity matches.
 
 Mismatch → `VpiBootstrapCompatibilityError` (fail closed; no destructive rebuild).
 
@@ -77,17 +79,27 @@ Mismatch → `VpiBootstrapCompatibilityError` (fail closed; no destructive rebui
 - At-least-once batch ingest with deterministic keys / upserts
 - Checkpoint: `checkpoint_rows_processed`, `checkpoint_batch_ordinal`
 - Resume skips parquet rows before checkpoint; advances only after PG commit + Qdrant upsert + manifest write
+- Manifest counters reflect **authoritative persisted totals** from adapters after each successful batch (retry-safe; no cumulative overcount on partial failure)
+- verify → full: same identity + checkpoint below new requested target → continue ingest without rebuild
+- verify → verify (same target): READY fast path with **current** Gate 0 probe (no duplicate ingest)
+- requested target below existing checkpoint → fail closed (no silent scope shrink)
 
 ## READY semantics
 
 All must pass:
 
-- Gate 0 embedding probe
+- **Current-run** Gate 0 embedding probe (including READY fast path — no synthetic PASS)
 - PostgreSQL schema + expected row counts for ingest scope
-- Qdrant collection dimension + point count
-- Manifest identity match + checkpoint complete for target scope
+- Qdrant collection dimension + sparse channel compatibility + point count
+- Manifest identity match + checkpoint complete for **current** requested target
 
 Partial provider success → `FAILED`, never `READY`.
+
+## Provider boundaries
+
+- Orchestrator depends only on scenario ports (`CatalogBootstrapPort`, `SearchIndexBootstrapPort`, `EmbeddingExecutionPort`)
+- Platform registry resolution lives in `composition/bootstrap_runtime.py` via `IntergraxEmbeddingBootstrapAdapter`
+- Qdrant bootstrap uses public `qdrant-client` at the scenario integration boundary (no private `_import_qdrant_client`)
 
 ## Failure model
 

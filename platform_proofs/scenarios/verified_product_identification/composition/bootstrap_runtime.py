@@ -1,4 +1,4 @@
-"""Composition root — only boundary that binds reference PostgreSQL and Qdrant adapters."""
+"""Composition root — only boundary that binds PostgreSQL and Qdrant adapters."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     VpiBootstrapDependencies,
     VpiBootstrapOrchestrator,
 )
-from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.validation.embedding_gate import (
-    RegistryEmbeddingReadinessProbe,
+from platform_proofs.scenarios.verified_product_identification.integrations.embedding.intergrax_adapter import (
+    IntergraxEmbeddingBootstrapAdapter,
 )
 from platform_proofs.scenarios.verified_product_identification.integrations.catalog_store.postgresql.adapter import (
     PostgreSQLCatalogBootstrapAdapter,
@@ -28,10 +28,10 @@ def build_vpi_bootstrap_runtime(config: VpiBootstrapConfig) -> VpiBootstrapOrche
     search = QdrantSearchIndexBootstrapAdapter.from_env(
         collection_name=config.qdrant_collection_name,
     )
-    embedding_probe = RegistryEmbeddingReadinessProbe(config.embedding_configuration)
+    embedding = IntergraxEmbeddingBootstrapAdapter(config.embedding_configuration)
     dependencies = VpiBootstrapDependencies(
         catalog=catalog,
         search=search,
-        embedding_probe=embedding_probe,
+        embedding=embedding,
     )
     return VpiBootstrapOrchestrator(config=config, dependencies=dependencies)

@@ -5,8 +5,6 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 
-from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_registry
-
 from platform_proofs.scenarios.verified_product_identification.application.catalog.derive_search_representation import (
     flatten_lexical_text,
 )
@@ -26,7 +24,7 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.contracts.ports import (
     CatalogBootstrapPort,
-    EmbeddingReadinessProbe,
+    EmbeddingExecutionPort,
     SearchIndexBootstrapPort,
     SearchIndexIngestBatch,
     SearchIndexIngestRecord,
@@ -40,17 +38,26 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.manifest.compatibility import (
     BootstrapCompatibilityIdentity,
     assert_manifest_compatible,
-    compatibility_identity_from_manifest,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.manifest.deterministic_ids import (
     search_representation_point_id,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.manifest.identity import (
+    DatasetIdentity,
     resolve_dataset_identity,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.manifest.model import (
     BootstrapState,
     VpiBootstrapManifest,
+)
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.manifest.run_target import (
+    assert_requested_target_not_below_checkpoint,
+    checkpoint_meets_target,
+    manifest_run_target_value,
+    resolve_requested_target_rows,
+)
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.orchestration.failure_context import (
+    format_ingest_failure,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.validation.ready_gate import (
     evaluate_ready_gate,
@@ -68,7 +75,7 @@ from platform_proofs.scenarios.verified_product_identification.ingest.source_rea
 class VpiBootstrapDependencies:
     catalog: CatalogBootstrapPort
     search: SearchIndexBootstrapPort
-    embedding_probe: EmbeddingReadinessProbe
+    embedding: EmbeddingExecutionPort
 
 
 @dataclass(slots=True)
@@ -89,29 +96,57 @@ class VpiBootstrapOrchestrator:
                 verification_mode=self.config.dataset_verification_mode,
             )
             expected_identity = self._expected_compatibility_identity(dataset_identity)
-            manifest = self._initial_manifest(dataset_identity, expected_identity)
+            requested_target_rows = resolve_requested_target_rows(
+                max_records=self.config.max_records,
+                dataset_record_count=dataset_identity.dataset_record_count,
+            )
+            persisted_run_target = manifest_run_target_value(
+                requested_target_rows,
+                dataset_identity.dataset_record_count,
+            )
+            manifest = self._initial_manifest(
+                dataset_identity,
+                expected_identity,
+                target_max_records=persisted_run_target,
+            )
 
             existing = self.dependencies.catalog.read_manifest()
             if existing is not None:
                 assert_manifest_compatible(existing=existing, expected=expected_identity)
-                if existing.state is BootstrapState.READY and self._checkpoint_complete(existing):
-                    validation = self._validate_all(existing)
+                assert_requested_target_not_below_checkpoint(
+                    requested_target_rows=requested_target_rows,
+                    checkpoint_rows_processed=existing.checkpoint_rows_processed,
+                )
+                manifest = existing.with_run_target(persisted_run_target)
+                if (
+                    existing.state is BootstrapState.READY
+                    and checkpoint_meets_target(
+                        checkpoint_rows_processed=existing.checkpoint_rows_processed,
+                        requested_target_rows=requested_target_rows,
+                    )
+                ):
+                    embedding_probe_result = self.dependencies.embedding.probe()
+                    if embedding_probe_result.status is not ValidationStatus.PASS:
+                        raise VpiBootstrapProviderError(embedding_probe_result.detail)
+                    validation = self._validate_all(manifest, embedding_probe_result)
                     if validation.status is ValidationStatus.PASS:
                         return BootstrapRunReport(
                             final_state=BootstrapState.READY,
-                            manifest=existing,
+                            manifest=manifest,
                             validation=validation,
-                            embedding_probe=None,
+                            embedding_probe=embedding_probe_result,
                             batches_completed=existing.checkpoint_batch_ordinal or 0,
                             rows_processed=existing.checkpoint_rows_processed,
                             failure_stage=None,
                             failure_detail=None,
                         )
-                manifest = existing
+                    raise VpiBootstrapProviderError(
+                        validation.checks[-1].detail if validation.checks else "READY validation failed"
+                    )
 
-            embedding_report = self.dependencies.embedding_probe.probe()
-            if embedding_report.status is not ValidationStatus.PASS:
-                raise VpiBootstrapProviderError(embedding_report.checks[0].detail)
+            embedding_probe_result = self.dependencies.embedding.probe()
+            if embedding_probe_result.status is not ValidationStatus.PASS:
+                raise VpiBootstrapProviderError(embedding_probe_result.detail)
 
             catalog_ready = self.dependencies.catalog.probe_readiness()
             search_ready = self.dependencies.search.probe_readiness()
@@ -139,16 +174,9 @@ class VpiBootstrapOrchestrator:
                 max_records=self.config.max_records,
                 dataset_record_count=dataset_identity.dataset_record_count,
             )
-            cumulative_offers = manifest.catalog_source_offer_count
-            cumulative_identifiers = manifest.catalog_identifier_count
-            cumulative_structured = manifest.catalog_structured_attribute_count
-            cumulative_points = manifest.search_point_count
-
             embedding_model = self.config.embedding_configuration.model
             if embedding_model is None:
                 raise VpiBootstrapProviderError("embedding model is required for ingest")
-            registry = create_default_registry(embedding_model=embedding_model)
-            provider = registry.get(self.config.embedding_configuration.provider)
 
             for batch_ordinal, rows in iter_dataset_rows(
                 self.config.dataset_path,
@@ -164,13 +192,36 @@ class VpiBootstrapOrchestrator:
                     catalog_id=self.config.catalog_id,
                     source_revision=self.config.source_revision,
                 )
-                catalog_result = self.dependencies.catalog.ingest_batch(catalog_batch)
+                try:
+                    catalog_result = self.dependencies.catalog.ingest_batch(catalog_batch)
+                except VpiBootstrapProviderError as exc:
+                    raise VpiBootstrapProviderError(
+                        format_ingest_failure(
+                            stage="catalog_ingest",
+                            batch_ordinal=batch_ordinal,
+                            checkpoint_rows=manifest.checkpoint_rows_processed,
+                            provider_role="catalog",
+                            detail=str(exc),
+                        )
+                    ) from exc
 
                 semantic_texts = [
                     record.representation.semantic.semantic_text
                     for record in catalog_batch.records
                 ]
-                vectors = provider.embed(semantic_texts)
+                try:
+                    vectors = self.dependencies.embedding.embed_batch(semantic_texts)
+                except VpiBootstrapProviderError as exc:
+                    raise VpiBootstrapProviderError(
+                        format_ingest_failure(
+                            stage="embedding_batch",
+                            batch_ordinal=batch_ordinal,
+                            checkpoint_rows=manifest.checkpoint_rows_processed,
+                            provider_role="embedding",
+                            detail=str(exc),
+                        )
+                    ) from exc
+
                 search_records: list[SearchIndexIngestRecord] = []
                 for record_index, record in enumerate(catalog_batch.records):
                     source_ref = record.representation.source_ref
@@ -181,7 +232,7 @@ class VpiBootstrapOrchestrator:
                                 offer_id=source_ref.offer_id.value,
                                 derivation_version=record.representation.derivation_version,
                             ),
-                            dense_embedding=tuple(float(value) for value in vectors[record_index]),
+                            dense_embedding=vectors[record_index],
                             lexical_text=flatten_lexical_text(record.representation.lexical),
                             source_ref=source_ref,
                             derivation_version=record.representation.derivation_version,
@@ -195,22 +246,29 @@ class VpiBootstrapOrchestrator:
                     batch_ordinal=batch_ordinal,
                     records=tuple(search_records),
                 )
-                search_result = self.dependencies.search.ingest_batch(search_batch)
+                try:
+                    search_result = self.dependencies.search.ingest_batch(search_batch)
+                except VpiBootstrapProviderError as exc:
+                    raise VpiBootstrapProviderError(
+                        format_ingest_failure(
+                            stage="search_ingest",
+                            batch_ordinal=batch_ordinal,
+                            checkpoint_rows=manifest.checkpoint_rows_processed,
+                            provider_role="search",
+                            detail=str(exc),
+                        )
+                    ) from exc
 
                 rows_processed = manifest.checkpoint_rows_processed + len(rows)
-                cumulative_offers += catalog_result.source_offers_ingested
-                cumulative_identifiers += catalog_result.identifiers_ingested
-                cumulative_structured += catalog_result.structured_attributes_ingested
-                cumulative_points += search_result.points_ingested
                 batches_completed = batch_ordinal + 1
 
                 manifest = manifest.with_checkpoint(
                     batch_ordinal=batch_ordinal,
                     rows_processed=rows_processed,
-                    catalog_source_offer_count=cumulative_offers,
-                    catalog_identifier_count=cumulative_identifiers,
-                    catalog_structured_attribute_count=cumulative_structured,
-                    search_point_count=cumulative_points,
+                    catalog_source_offer_count=catalog_result.source_offer_count,
+                    catalog_identifier_count=catalog_result.identifier_count,
+                    catalog_structured_attribute_count=catalog_result.structured_attribute_count,
+                    search_point_count=search_result.point_count,
                 ).with_state(BootstrapState.INGESTING)
                 self.dependencies.catalog.write_manifest(manifest)
                 _ = time.perf_counter() - started
@@ -220,7 +278,15 @@ class VpiBootstrapOrchestrator:
 
             catalog_validation = self.dependencies.catalog.validate(manifest)
             search_validation = self.dependencies.search.validate(manifest)
-            checkpoint_complete = self._checkpoint_complete(manifest)
+            checkpoint_complete = checkpoint_meets_target(
+                checkpoint_rows_processed=manifest.checkpoint_rows_processed,
+                requested_target_rows=requested_target_rows,
+            )
+            embedding_report = ValidationReport.from_checks(
+                (
+                    _embedding_probe_check(embedding_probe_result),
+                )
+            )
             ready_validation = evaluate_ready_gate(
                 manifest=manifest,
                 embedding_report=embedding_report,
@@ -274,14 +340,8 @@ class VpiBootstrapOrchestrator:
 
     def _expected_compatibility_identity(
         self,
-        dataset_identity: object,
+        dataset_identity: DatasetIdentity,
     ) -> BootstrapCompatibilityIdentity:
-        from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.manifest.identity import (
-            DatasetIdentity,
-        )
-
-        if not isinstance(dataset_identity, DatasetIdentity):
-            raise VpiBootstrapError("internal dataset identity type mismatch")
         embedding = self.config.embedding_configuration
         model = embedding.model
         if model is None:
@@ -302,15 +362,11 @@ class VpiBootstrapOrchestrator:
 
     def _initial_manifest(
         self,
-        dataset_identity: object,
+        dataset_identity: DatasetIdentity,
         expected: BootstrapCompatibilityIdentity,
+        *,
+        target_max_records: int | None,
     ) -> VpiBootstrapManifest:
-        from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.manifest.identity import (
-            DatasetIdentity,
-        )
-
-        if not isinstance(dataset_identity, DatasetIdentity):
-            raise VpiBootstrapError("internal dataset identity type mismatch")
         return VpiBootstrapManifest(
             state=BootstrapState.INITIALIZING,
             dataset_path=dataset_identity.dataset_path,
@@ -328,26 +384,45 @@ class VpiBootstrapOrchestrator:
             source_revision=self.config.source_revision,
             checkpoint_batch_ordinal=None,
             checkpoint_rows_processed=0,
-            target_max_records=self.config.max_records,
+            target_max_records=target_max_records,
             catalog_source_offer_count=0,
             catalog_identifier_count=0,
             catalog_structured_attribute_count=0,
             search_point_count=0,
         )
 
-    def _checkpoint_complete(self, manifest: VpiBootstrapManifest) -> bool:
-        target = manifest.target_max_records
-        if target is None:
-            return manifest.checkpoint_rows_processed >= manifest.dataset_record_count
-        return manifest.checkpoint_rows_processed >= target
-
-    def _validate_all(self, manifest: VpiBootstrapManifest) -> ValidationReport:
+    def _validate_all(
+        self,
+        manifest: VpiBootstrapManifest,
+        embedding_probe_result: EmbeddingProbeResult,
+    ) -> ValidationReport:
         catalog_validation = self.dependencies.catalog.validate(manifest)
         search_validation = self.dependencies.search.validate(manifest)
+        requested_target_rows = resolve_requested_target_rows(
+            max_records=self.config.max_records,
+            dataset_record_count=manifest.dataset_record_count,
+        )
         return evaluate_ready_gate(
             manifest=manifest,
-            embedding_report=ValidationReport.from_checks(()),
+            embedding_report=ValidationReport.from_checks(
+                (_embedding_probe_check(embedding_probe_result),)
+            ),
             catalog_report=catalog_validation,
             search_report=search_validation,
-            checkpoint_complete=self._checkpoint_complete(manifest),
+            checkpoint_complete=checkpoint_meets_target(
+                checkpoint_rows_processed=manifest.checkpoint_rows_processed,
+                requested_target_rows=requested_target_rows,
+            ),
         )
+
+
+def _embedding_probe_check(embedding_probe_result: EmbeddingProbeResult):
+    from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.contracts.results import (
+        ValidationCheck,
+    )
+
+    return ValidationCheck(
+        name="embedding_gate0",
+        status=embedding_probe_result.status,
+        detail=embedding_probe_result.detail,
+    )

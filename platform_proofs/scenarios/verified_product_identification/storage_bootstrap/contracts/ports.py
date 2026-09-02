@@ -16,6 +16,7 @@ from platform_proofs.scenarios.verified_product_identification.application.domai
     WdcSourceOffer,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.contracts.results import (
+    EmbeddingProbeResult,
     ValidationReport,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.manifest.model import (
@@ -39,9 +40,11 @@ class CatalogIngestBatch:
 
 @dataclass(frozen=True, slots=True)
 class CatalogIngestBatchResult:
-    source_offers_ingested: int
-    identifiers_ingested: int
-    structured_attributes_ingested: int
+    """Authoritative catalog totals after the batch commit."""
+
+    source_offer_count: int
+    identifier_count: int
+    structured_attribute_count: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,7 +68,9 @@ class SearchIndexIngestBatch:
 
 @dataclass(frozen=True, slots=True)
 class SearchIndexIngestBatchResult:
-    points_ingested: int
+    """Authoritative search-index point total after the batch upsert."""
+
+    point_count: int
 
 
 class CatalogBootstrapPort(Protocol):
@@ -98,5 +103,9 @@ class SearchIndexBootstrapPort(Protocol):
     def close(self) -> None: ...
 
 
-class EmbeddingReadinessProbe(Protocol):
-    def probe(self) -> ValidationReport: ...
+class EmbeddingExecutionPort(Protocol):
+    def probe(self) -> EmbeddingProbeResult: ...
+
+    def embed_batch(self, texts: Sequence[str]) -> tuple[tuple[float, ...], ...]: ...
+
+    def close(self) -> None: ...

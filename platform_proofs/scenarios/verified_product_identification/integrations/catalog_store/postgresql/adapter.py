@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from intergrax.integrations.providers.relational_store.postgresql.config import (
@@ -87,9 +88,9 @@ class PostgreSQLCatalogBootstrapAdapter:
       )
 
   def ingest_batch(self, batch: CatalogIngestBatch) -> CatalogIngestBatchResult:
-      source_count = 0
-      identifier_count = 0
-      structured_count = 0
+      if not batch.records:
+          raise VpiBootstrapProviderError("catalog ingest batch is empty")
+      catalog_id = batch.records[0].representation.source_ref.catalog_id
       batch_label = f"{self._ingestion_batch_label}:{batch.batch_ordinal}"
 
       with self._provider.transaction(isolation_level=PostgreSQLIsolationLevel.READ_COMMITTED) as session:
@@ -118,7 +119,6 @@ class PostgreSQLCatalogBootstrapAdapter:
                       record.global_row_index,
                   ),
               )
-              source_count += 1
 
               for term in record.representation.exact.terms:
                   session.execute(
@@ -141,7 +141,6 @@ class PostgreSQLCatalogBootstrapAdapter:
                           source_ref.source_revision,
                       ),
                   )
-                  identifier_count += 1
 
               for attribute in record.representation.structured.attributes:
                   typed_text = (
@@ -178,49 +177,57 @@ class PostgreSQLCatalogBootstrapAdapter:
                           source_ref.source_revision,
                       ),
                   )
-                  structured_count += 1
 
+      counts = self._catalog_counts(catalog_id)
       return CatalogIngestBatchResult(
-          source_offers_ingested=source_count,
-          identifiers_ingested=identifier_count,
-          structured_attributes_ingested=structured_count,
+          source_offer_count=counts.source_offer_count,
+          identifier_count=counts.identifier_count,
+          structured_attribute_count=counts.structured_attribute_count,
       )
 
-  def validate(self, manifest: VpiBootstrapManifest) -> ValidationReport:
+  def _catalog_counts(self, catalog_id: str) -> _CatalogCounts:
       with self._provider.connection() as session:
           source_row = session.execute(
               "SELECT COUNT(*) AS count FROM vpi_source_offer WHERE catalog_id = %s",
-              (manifest.catalog_id,),
+              (catalog_id,),
           ).fetchone()
           identifier_row = session.execute(
               "SELECT COUNT(*) AS count FROM vpi_identifier WHERE catalog_id = %s",
-              (manifest.catalog_id,),
+              (catalog_id,),
           ).fetchone()
           structured_row = session.execute(
               "SELECT COUNT(*) AS count FROM vpi_structured_attribute WHERE catalog_id = %s",
-              (manifest.catalog_id,),
+              (catalog_id,),
           ).fetchone()
+      return _CatalogCounts(
+          source_offer_count=_count_from_row(source_row),
+          identifier_count=_count_from_row(identifier_row),
+          structured_attribute_count=_count_from_row(structured_row),
+      )
 
-      source_count = int(source_row["count"]) if source_row else 0
-      identifier_count = int(identifier_row["count"]) if identifier_row else 0
-      structured_count = int(structured_row["count"]) if structured_row else 0
-      expected = manifest.target_max_records or manifest.checkpoint_rows_processed
+  def validate(self, manifest: VpiBootstrapManifest) -> ValidationReport:
+      counts = self._catalog_counts(manifest.catalog_id)
+      from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.manifest.run_target import (
+          effective_run_target_rows,
+      )
+
+      expected = effective_run_target_rows(manifest)
 
       checks = (
           ValidationCheck(
               name="source_offer_count",
-              status=ValidationStatus.PASS if source_count >= expected else ValidationStatus.FAIL,
-              detail=f"source_count={source_count} expected>={expected}",
+              status=ValidationStatus.PASS if counts.source_offer_count >= expected else ValidationStatus.FAIL,
+              detail=f"source_count={counts.source_offer_count} expected>={expected}",
           ),
           ValidationCheck(
               name="identifier_rows_present",
-              status=ValidationStatus.PASS if identifier_count > 0 else ValidationStatus.FAIL,
-              detail=f"identifier_count={identifier_count}",
+              status=ValidationStatus.PASS if counts.identifier_count > 0 else ValidationStatus.FAIL,
+              detail=f"identifier_count={counts.identifier_count}",
           ),
           ValidationCheck(
               name="structured_rows_present",
-              status=ValidationStatus.PASS if structured_count > 0 else ValidationStatus.FAIL,
-              detail=f"structured_count={structured_count}",
+              status=ValidationStatus.PASS if counts.structured_attribute_count > 0 else ValidationStatus.FAIL,
+              detail=f"structured_count={counts.structured_attribute_count}",
           ),
       )
       return ValidationReport.from_checks(checks)
@@ -285,9 +292,54 @@ class PostgreSQLCatalogBootstrapAdapter:
       return None
 
 
-def _manifest_from_row(row: dict[str, object]) -> VpiBootstrapManifest:
-    return VpiBootstrapManifest(
-        state=BootstrapState(str(row["state"])),
+@dataclass(frozen=True, slots=True)
+class _CatalogCounts:
+    source_offer_count: int
+    identifier_count: int
+    structured_attribute_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class _ManifestRow:
+    state: str
+    dataset_path: str
+    dataset_checksum: str
+    dataset_record_count: int
+    search_representation_derivation_version: str
+    embedding_configuration_version: str
+    embedding_provider: str
+    embedding_model: str
+    embedding_dimension: int
+    catalog_schema_version: str
+    search_index_schema_version: str
+    bootstrap_implementation_version: str
+    catalog_id: str
+    source_revision: str | None
+    checkpoint_batch_ordinal: int | None
+    checkpoint_rows_processed: int
+    target_max_records: int | None
+    catalog_source_offer_count: int
+    catalog_identifier_count: int
+    catalog_structured_attribute_count: int
+    search_point_count: int
+    failure_stage: str | None
+    failure_detail: str | None
+
+
+def _count_from_row(row: Mapping[str, object] | None) -> int:
+    if row is None:
+        return 0
+    count_value = row.get("count")
+    if isinstance(count_value, int):
+        return count_value
+    if isinstance(count_value, str) and count_value.isdigit():
+        return int(count_value)
+    return 0
+
+
+def _manifest_from_row(row: Mapping[str, object]) -> VpiBootstrapManifest:
+    parsed = _ManifestRow(
+        state=str(row["state"]),
         dataset_path=str(row["dataset_path"]),
         dataset_checksum=str(row["dataset_checksum"]),
         dataset_record_count=int(row["dataset_record_count"]),
@@ -319,9 +371,58 @@ def _manifest_from_row(row: dict[str, object]) -> VpiBootstrapManifest:
         failure_stage=str(row["failure_stage"]) if row.get("failure_stage") else None,
         failure_detail=str(row["failure_detail"]) if row.get("failure_detail") else None,
     )
+    return VpiBootstrapManifest(
+        state=BootstrapState(parsed.state),
+        dataset_path=parsed.dataset_path,
+        dataset_checksum=parsed.dataset_checksum,
+        dataset_record_count=parsed.dataset_record_count,
+        search_representation_derivation_version=parsed.search_representation_derivation_version,
+        embedding_configuration_version=parsed.embedding_configuration_version,
+        embedding_provider=parsed.embedding_provider,
+        embedding_model=parsed.embedding_model,
+        embedding_dimension=parsed.embedding_dimension,
+        catalog_schema_version=parsed.catalog_schema_version,
+        search_index_schema_version=parsed.search_index_schema_version,
+        bootstrap_implementation_version=parsed.bootstrap_implementation_version,
+        catalog_id=parsed.catalog_id,
+        source_revision=parsed.source_revision,
+        checkpoint_batch_ordinal=parsed.checkpoint_batch_ordinal,
+        checkpoint_rows_processed=parsed.checkpoint_rows_processed,
+        target_max_records=parsed.target_max_records,
+        catalog_source_offer_count=parsed.catalog_source_offer_count,
+        catalog_identifier_count=parsed.catalog_identifier_count,
+        catalog_structured_attribute_count=parsed.catalog_structured_attribute_count,
+        search_point_count=parsed.search_point_count,
+        failure_stage=parsed.failure_stage,
+        failure_detail=parsed.failure_detail,
+    )
 
 
-def _manifest_to_params(manifest: VpiBootstrapManifest) -> tuple[object, ...]:
+def _manifest_to_params(manifest: VpiBootstrapManifest) -> tuple[
+    str,
+    str,
+    str,
+    int,
+    str,
+    str,
+    str,
+    str,
+    int,
+    str,
+    str,
+    str,
+    str,
+    str | None,
+    int | None,
+    int,
+    int | None,
+    int,
+    int,
+    int,
+    int,
+    str | None,
+    str | None,
+]:
     return (
         manifest.state.value,
         manifest.dataset_path,

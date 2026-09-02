@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+import ast
+from dataclasses import dataclass, fields, field
 from pathlib import Path
 
 import numpy as np
@@ -34,6 +35,7 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     SearchIndexIngestRecord,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.contracts.results import (
+    EmbeddingProbeResult,
     ValidationCheck,
     ValidationReport,
     ValidationStatus,
@@ -68,6 +70,23 @@ from intergrax.rag.embedding.registry.profile import EmbeddingProfile
 
 pytestmark = pytest.mark.unit
 
+REPO_ROOT = Path(__file__).resolve().parents[5]
+VPI_BOOTSTRAP_ROOT = (
+    REPO_ROOT / "platform_proofs" / "scenarios" / "verified_product_identification" / "storage_bootstrap"
+)
+VPI_INTEGRATIONS_ROOT = (
+    REPO_ROOT / "platform_proofs" / "scenarios" / "verified_product_identification" / "integrations"
+)
+ORCHESTRATOR_PATH = (
+    REPO_ROOT
+    / "platform_proofs"
+    / "scenarios"
+    / "verified_product_identification"
+    / "storage_bootstrap"
+    / "orchestration"
+    / "orchestrator.py"
+)
+
 
 def _sample_manifest(**overrides: object) -> VpiBootstrapManifest:
     base = VpiBootstrapManifest(
@@ -95,9 +114,9 @@ def _sample_manifest(**overrides: object) -> VpiBootstrapManifest:
     )
     if not overrides:
         return base
-    fields = {key: getattr(base, key) for key in base.__dataclass_fields__}
-    fields.update(overrides)
-    return VpiBootstrapManifest(**fields)
+    values = {item.name: getattr(base, item.name) for item in fields(base)}
+    values.update(overrides)
+    return VpiBootstrapManifest(**values)
 
 
 @dataclass
@@ -106,6 +125,10 @@ class FakeCatalogPort:
     batches: list[CatalogIngestBatch] = field(default_factory=list)
     fail_on_batch: int | None = None
     prepare_calls: int = 0
+    source_offer_count: int = 0
+    identifier_count: int = 0
+    structured_attribute_count: int = 0
+    _ingested_offer_ids: set[str] = field(default_factory=set)
 
     def probe_readiness(self) -> ValidationReport:
         return ValidationReport.from_checks(
@@ -122,14 +145,18 @@ class FakeCatalogPort:
         if self.fail_on_batch == batch.batch_ordinal:
             raise VpiBootstrapProviderError("catalog ingest failed")
         self.batches.append(batch)
-        identifiers = sum(len(record.representation.exact.terms) for record in batch.records)
-        structured = sum(
-            len(record.representation.structured.attributes) for record in batch.records
-        )
+        for record in batch.records:
+            offer_id = record.representation.source_ref.offer_id.value
+            if offer_id in self._ingested_offer_ids:
+                continue
+            self._ingested_offer_ids.add(offer_id)
+            self.source_offer_count += 1
+            self.identifier_count += len(record.representation.exact.terms)
+            self.structured_attribute_count += len(record.representation.structured.attributes)
         return CatalogIngestBatchResult(
-            source_offers_ingested=len(batch.records),
-            identifiers_ingested=identifiers,
-            structured_attributes_ingested=structured,
+            source_offer_count=self.source_offer_count,
+            identifier_count=self.identifier_count,
+            structured_attribute_count=self.structured_attribute_count,
         )
 
     def validate(self, manifest: VpiBootstrapManifest) -> ValidationReport:
@@ -175,14 +202,16 @@ class FakeSearchPort:
             raise VpiBootstrapProviderError("search ingest failed")
         self.batches.append(batch)
         self.point_count += len(batch.records)
-        return SearchIndexIngestBatchResult(points_ingested=len(batch.records))
+        return SearchIndexIngestBatchResult(point_count=self.point_count)
 
     def validate(self, manifest: VpiBootstrapManifest) -> ValidationReport:
         return ValidationReport.from_checks(
             (
                 ValidationCheck(
                     "qdrant_point_count",
-                    ValidationStatus.PASS if self.point_count >= manifest.checkpoint_rows_processed else ValidationStatus.FAIL,
+                    ValidationStatus.PASS
+                    if self.point_count >= manifest.checkpoint_rows_processed
+                    else ValidationStatus.FAIL,
                     f"points={self.point_count}",
                 ),
             )
@@ -195,17 +224,34 @@ class FakeSearchPort:
         return None
 
 
-class FakeEmbeddingProbe:
-    def __init__(self, *, should_pass: bool = True) -> None:
+class FakeEmbeddingPort:
+    def __init__(self, *, should_pass: bool = True, dimension: int = 8) -> None:
         self.should_pass = should_pass
-        self.calls = 0
+        self.dimension = dimension
+        self.probe_calls = 0
+        self.embed_calls = 0
+        self.embed_instance_id = id(self)
 
-    def probe(self) -> ValidationReport:
-        self.calls += 1
+    def probe(self) -> EmbeddingProbeResult:
+        self.probe_calls += 1
         status = ValidationStatus.PASS if self.should_pass else ValidationStatus.FAIL
-        return ValidationReport.from_checks(
-            (ValidationCheck("embedding_gate0", status, "probe"),)
+        return EmbeddingProbeResult(
+            status=status,
+            provider="hf",
+            model="fake-model",
+            resolved_dimension=self.dimension,
+            probe_vector_count=3,
+            detail="probe",
         )
+
+    def embed_batch(self, texts) -> tuple[tuple[float, ...], ...]:
+        self.embed_calls += 1
+        return tuple(
+            tuple(float(index + 1) for _ in range(self.dimension)) for index, _ in enumerate(texts)
+        )
+
+    def close(self) -> None:
+        return None
 
 
 class FakeEmbeddingProvider(EmbeddingProvider):
@@ -226,24 +272,20 @@ class FakeEmbeddingProvider(EmbeddingProvider):
         return np.stack(rows, axis=0)
 
 
-def _orchestrator(
+def _bootstrap_config(
     tmp_path: Path,
     *,
-    catalog: FakeCatalogPort | None = None,
-    search: FakeSearchPort | None = None,
-    embedding_probe: FakeEmbeddingProbe | None = None,
-    max_records: int = 2,
-    monkeypatch: pytest.MonkeyPatch,
-) -> VpiBootstrapOrchestrator:
+    max_records: int | None = 2,
+    row_count: int = 5,
+) -> VpiBootstrapConfig:
     dataset_path = tmp_path / "selected_offers.parquet"
-    _write_tiny_parquet(dataset_path, row_count=5)
+    _write_tiny_parquet(dataset_path, row_count=row_count)
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(
-        '{"output_sha256":"testchecksum","selected_record_count":5}',
+        f'{{"output_sha256":"testchecksum","selected_record_count":{row_count}}}',
         encoding="utf-8",
     )
-
-    config = VpiBootstrapConfig(
+    return VpiBootstrapConfig(
         dataset_path=dataset_path,
         dataset_manifest_path=manifest_path,
         dataset_verification_mode=DatasetVerificationMode.FAST,
@@ -263,22 +305,22 @@ def _orchestrator(
         ),
     )
 
-    registry = EmbeddingProviderRegistry([FakeEmbeddingProvider(dimension=8)])
 
-    def _fake_registry(*_args: object, **_kwargs: object) -> EmbeddingProviderRegistry:
-        return registry
-
-    monkeypatch.setattr(
-        "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.orchestration.orchestrator.create_default_registry",
-        _fake_registry,
-    )
-
+def _orchestrator(
+    tmp_path: Path,
+    *,
+    catalog: FakeCatalogPort | None = None,
+    search: FakeSearchPort | None = None,
+    embedding: FakeEmbeddingPort | None = None,
+    max_records: int | None = 2,
+    row_count: int = 5,
+) -> VpiBootstrapOrchestrator:
     return VpiBootstrapOrchestrator(
-        config=config,
+        config=_bootstrap_config(tmp_path, max_records=max_records, row_count=row_count),
         dependencies=VpiBootstrapDependencies(
             catalog=catalog or FakeCatalogPort(),
             search=search or FakeSearchPort(),
-            embedding_probe=embedding_probe or FakeEmbeddingProbe(),
+            embedding=embedding or FakeEmbeddingPort(),
         ),
     )
 
@@ -297,10 +339,11 @@ def _write_tiny_parquet(path: Path, *, row_count: int) -> None:
     pq.write_table(table, path)
 
 
-def test_stage_ordering_and_ready(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_stage_ordering_and_ready(tmp_path: Path) -> None:
     catalog = FakeCatalogPort()
     search = FakeSearchPort()
-    orchestrator = _orchestrator(tmp_path, catalog=catalog, search=search, monkeypatch=monkeypatch)
+    embedding = FakeEmbeddingPort()
+    orchestrator = _orchestrator(tmp_path, catalog=catalog, search=search, embedding=embedding)
 
     report = orchestrator.run()
 
@@ -310,17 +353,20 @@ def test_stage_ordering_and_ready(monkeypatch: pytest.MonkeyPatch, tmp_path: Pat
     assert len(search.batches) == 1
     assert catalog.manifest is not None
     assert catalog.manifest.checkpoint_rows_processed == 2
+    assert report.embedding_probe is not None
+    assert report.embedding_probe.status is ValidationStatus.PASS
+    assert embedding.probe_calls >= 1
+    assert embedding.embed_calls == 1
 
 
-def test_embedding_gate_blocks_before_ingest(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_embedding_gate_blocks_before_ingest(tmp_path: Path) -> None:
     catalog = FakeCatalogPort()
     search = FakeSearchPort()
     orchestrator = _orchestrator(
         tmp_path,
         catalog=catalog,
         search=search,
-        embedding_probe=FakeEmbeddingProbe(should_pass=False),
-        monkeypatch=monkeypatch,
+        embedding=FakeEmbeddingPort(should_pass=False),
     )
 
     report = orchestrator.run()
@@ -330,9 +376,9 @@ def test_embedding_gate_blocks_before_ingest(monkeypatch: pytest.MonkeyPatch, tm
     assert search.batches == []
 
 
-def test_catalog_failure_not_ready(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_catalog_failure_not_ready(tmp_path: Path) -> None:
     catalog = FakeCatalogPort(fail_on_batch=0)
-    orchestrator = _orchestrator(tmp_path, catalog=catalog, monkeypatch=monkeypatch)
+    orchestrator = _orchestrator(tmp_path, catalog=catalog)
 
     report = orchestrator.run()
 
@@ -341,19 +387,19 @@ def test_catalog_failure_not_ready(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
     assert catalog.manifest.state is BootstrapState.FAILED
 
 
-def test_search_failure_not_ready(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_search_failure_not_ready(tmp_path: Path) -> None:
     search = FakeSearchPort(fail_on_batch=0)
-    orchestrator = _orchestrator(tmp_path, search=search, monkeypatch=monkeypatch)
+    orchestrator = _orchestrator(tmp_path, search=search)
 
     report = orchestrator.run()
 
     assert report.final_state is BootstrapState.FAILED
 
 
-def test_retry_same_batch_idempotent(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_retry_same_batch_idempotent(tmp_path: Path) -> None:
     catalog = FakeCatalogPort()
     search = FakeSearchPort()
-    orchestrator = _orchestrator(tmp_path, catalog=catalog, search=search, monkeypatch=monkeypatch)
+    orchestrator = _orchestrator(tmp_path, catalog=catalog, search=search)
 
     first = orchestrator.run()
     second = orchestrator.run()
@@ -431,22 +477,16 @@ def test_deterministic_batching(tmp_path: Path) -> None:
     assert batches[1][1][-1].global_row_index == 3
 
 
-def test_checkpoint_advances_only_after_successful_batch(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
+def test_checkpoint_advances_only_after_successful_batch(tmp_path: Path) -> None:
     catalog = FakeCatalogPort()
-    orchestrator = _orchestrator(tmp_path, catalog=catalog, monkeypatch=monkeypatch)
+    orchestrator = _orchestrator(tmp_path, catalog=catalog)
     orchestrator.run()
     assert catalog.manifest is not None
     assert catalog.manifest.checkpoint_batch_ordinal == 0
     assert catalog.manifest.checkpoint_rows_processed == 2
 
 
-def test_alternate_fake_ports_without_orchestrator_changes(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
+def test_alternate_fake_ports_without_orchestrator_changes(tmp_path: Path) -> None:
     class AltCatalog(FakeCatalogPort):
         def prepare(self, manifest: VpiBootstrapManifest) -> ValidationReport:
             return ValidationReport.from_checks(
@@ -463,7 +503,6 @@ def test_alternate_fake_ports_without_orchestrator_changes(
         tmp_path,
         catalog=AltCatalog(),
         search=AltSearch(),
-        monkeypatch=monkeypatch,
     )
     report = orchestrator.run()
     assert report.final_state is BootstrapState.READY
@@ -501,3 +540,232 @@ def test_registry_embedding_gate_with_fake_provider() -> None:
     probe = RegistryEmbeddingReadinessProbe(configuration, registry=registry)
     report = probe.probe()
     assert report.status is ValidationStatus.PASS
+
+
+def test_orchestrator_has_no_create_default_registry_import() -> None:
+    source = ORCHESTRATOR_PATH.read_text(encoding="utf-8")
+    assert "create_default_registry" not in source
+
+
+def test_orchestrator_has_no_concrete_embedding_provider_import() -> None:
+    source = ORCHESTRATOR_PATH.read_text(encoding="utf-8")
+    assert "EmbeddingProvider" not in source
+    assert "EmbeddingProviderRegistry" not in source
+
+
+def test_alternate_embedding_execution_port(tmp_path: Path) -> None:
+    class AltEmbedding(FakeEmbeddingPort):
+        def probe(self) -> EmbeddingProbeResult:
+            result = super().probe()
+            return EmbeddingProbeResult(
+                status=result.status,
+                provider="alt",
+                model="alt-model",
+                resolved_dimension=result.resolved_dimension,
+                probe_vector_count=result.probe_vector_count,
+                detail="alt-probe",
+            )
+
+    embedding = AltEmbedding()
+    orchestrator = _orchestrator(tmp_path, embedding=embedding)
+    report = orchestrator.run()
+    assert report.final_state is BootstrapState.READY
+    assert report.embedding_probe is not None
+    assert report.embedding_probe.provider == "alt"
+
+
+def test_same_embedding_instance_for_gate0_and_batches(tmp_path: Path) -> None:
+    embedding = FakeEmbeddingPort()
+    orchestrator = _orchestrator(tmp_path, embedding=embedding)
+    orchestrator.run()
+    assert embedding.probe_calls >= 1
+    assert embedding.embed_calls == 1
+
+
+def test_verify_ready_then_full_continues(tmp_path: Path) -> None:
+    catalog = FakeCatalogPort()
+    search = FakeSearchPort()
+    embedding = FakeEmbeddingPort()
+    verify = _orchestrator(
+        tmp_path,
+        catalog=catalog,
+        search=search,
+        embedding=embedding,
+        max_records=2,
+        row_count=5,
+    )
+    first = verify.run()
+    assert first.final_state is BootstrapState.READY
+    assert catalog.manifest is not None
+    assert catalog.manifest.checkpoint_rows_processed == 2
+
+    full = _orchestrator(
+        tmp_path,
+        catalog=catalog,
+        search=search,
+        embedding=embedding,
+        max_records=None,
+        row_count=5,
+    )
+    second = full.run()
+    assert second.final_state is BootstrapState.READY
+    assert catalog.manifest.checkpoint_rows_processed == 5
+    assert len(catalog.batches) == 3
+
+
+def test_verify_ready_then_verify_no_reingest(tmp_path: Path) -> None:
+    catalog = FakeCatalogPort()
+    search = FakeSearchPort()
+    embedding = FakeEmbeddingPort()
+    orchestrator = _orchestrator(
+        tmp_path,
+        catalog=catalog,
+        search=search,
+        embedding=embedding,
+        max_records=2,
+        row_count=5,
+    )
+    first = orchestrator.run()
+    assert first.final_state is BootstrapState.READY
+    second = orchestrator.run()
+    assert second.final_state is BootstrapState.READY
+    assert len(catalog.batches) == 1
+
+
+def test_partial_resume_to_target(tmp_path: Path) -> None:
+    catalog = FakeCatalogPort()
+    search = FakeSearchPort(point_count=2)
+    embedding = FakeEmbeddingPort()
+    catalog.manifest = _sample_manifest(
+        state=BootstrapState.INGESTING,
+        dataset_record_count=5,
+        target_max_records=2,
+        checkpoint_batch_ordinal=0,
+        checkpoint_rows_processed=2,
+        catalog_source_offer_count=2,
+        catalog_identifier_count=2,
+        catalog_structured_attribute_count=2,
+        search_point_count=2,
+        dataset_checksum="testchecksum",
+    )
+    catalog.source_offer_count = 2
+    catalog.identifier_count = 2
+    catalog.structured_attribute_count = 2
+    catalog._ingested_offer_ids = {"1000", "1001"}
+    orchestrator = _orchestrator(
+        tmp_path,
+        catalog=catalog,
+        search=search,
+        embedding=embedding,
+        max_records=4,
+        row_count=5,
+    )
+    report = orchestrator.run()
+    assert report.final_state is BootstrapState.READY
+    assert catalog.manifest is not None
+    assert catalog.manifest.checkpoint_rows_processed == 4
+
+
+def test_pg_success_qdrant_fail_retry_does_not_overcount(tmp_path: Path) -> None:
+    catalog = FakeCatalogPort()
+    search = FakeSearchPort(fail_on_batch=0)
+    embedding = FakeEmbeddingPort()
+    orchestrator = _orchestrator(tmp_path, catalog=catalog, search=search, embedding=embedding)
+    first = orchestrator.run()
+    assert first.final_state is BootstrapState.FAILED
+    assert catalog.source_offer_count == 2
+
+    search.fail_on_batch = None
+    second = orchestrator.run()
+    assert second.final_state is BootstrapState.READY
+    assert catalog.manifest is not None
+    assert catalog.manifest.catalog_source_offer_count == 2
+    assert catalog.manifest.search_point_count == 2
+
+
+def test_ready_fast_path_executes_real_gate0(tmp_path: Path) -> None:
+    catalog = FakeCatalogPort()
+    search = FakeSearchPort(point_count=2)
+    embedding = FakeEmbeddingPort()
+    catalog.manifest = _sample_manifest(
+        state=BootstrapState.READY,
+        dataset_record_count=5,
+        target_max_records=2,
+        checkpoint_batch_ordinal=0,
+        checkpoint_rows_processed=2,
+        catalog_source_offer_count=2,
+        catalog_identifier_count=2,
+        catalog_structured_attribute_count=2,
+        search_point_count=2,
+        dataset_checksum="testchecksum",
+    )
+    orchestrator = _orchestrator(
+        tmp_path,
+        catalog=catalog,
+        search=search,
+        embedding=embedding,
+        max_records=2,
+        row_count=5,
+    )
+    report = orchestrator.run()
+    assert report.final_state is BootstrapState.READY
+    assert embedding.probe_calls == 1
+    assert embedding.embed_calls == 0
+    assert report.validation is not None
+    assert any(check.name == "embedding.embedding_gate0" for check in report.validation.checks)
+
+
+def test_requested_target_below_checkpoint_fails_closed(tmp_path: Path) -> None:
+    catalog = FakeCatalogPort()
+    catalog.manifest = _sample_manifest(
+        state=BootstrapState.READY,
+        dataset_record_count=5,
+        target_max_records=4,
+        checkpoint_batch_ordinal=1,
+        checkpoint_rows_processed=4,
+        catalog_source_offer_count=4,
+        catalog_identifier_count=4,
+        catalog_structured_attribute_count=4,
+        search_point_count=4,
+        dataset_checksum="testchecksum",
+    )
+    orchestrator = _orchestrator(tmp_path, catalog=catalog, max_records=2, row_count=5)
+    report = orchestrator.run()
+    assert report.final_state is BootstrapState.FAILED
+    assert "below existing checkpoint" in (report.failure_detail or "")
+
+
+def _iter_production_python_files(*roots: Path):
+    for root in roots:
+        for path in root.rglob("*.py"):
+            if path.name.startswith("test_"):
+                continue
+            yield path
+
+
+def test_no_private_qdrant_import_in_vpi_integrations() -> None:
+    qdrant_adapter = (
+        VPI_INTEGRATIONS_ROOT / "search_store" / "qdrant" / "adapter.py"
+    ).read_text(encoding="utf-8")
+    assert "intergrax.integrations.providers.vector_store.qdrant.opens" not in qdrant_adapter
+
+
+def test_no_reflection_in_vpi_bootstrap_production_code() -> None:
+    forbidden_names = {"getattr", "setattr", "hasattr", "inspect"}
+    for path in _iter_production_python_files(VPI_BOOTSTRAP_ROOT, VPI_INTEGRATIONS_ROOT):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        names = {
+            node.id
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+        }
+        assert forbidden_names.isdisjoint(names), f"forbidden reflection in {path}"
+
+
+def test_no_any_or_object_contracts_in_vpi_bootstrap_production_code() -> None:
+    for path in _iter_production_python_files(VPI_BOOTSTRAP_ROOT, VPI_INTEGRATIONS_ROOT):
+        source = path.read_text(encoding="utf-8")
+        assert "dict[str, Any]" not in source, path
+        assert ": Any" not in source, path
+        assert "_client: object" not in source, path
+        assert "_sparse_encoder: object" not in source, path

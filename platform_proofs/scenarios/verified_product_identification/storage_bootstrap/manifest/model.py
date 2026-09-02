@@ -80,6 +80,33 @@ class VpiBootstrapManifest:
             failure_detail=failure_detail,
         )
 
+    def with_run_target(self, target_max_records: int | None) -> VpiBootstrapManifest:
+        return VpiBootstrapManifest(
+            state=self.state,
+            dataset_path=self.dataset_path,
+            dataset_checksum=self.dataset_checksum,
+            dataset_record_count=self.dataset_record_count,
+            search_representation_derivation_version=self.search_representation_derivation_version,
+            embedding_configuration_version=self.embedding_configuration_version,
+            embedding_provider=self.embedding_provider,
+            embedding_model=self.embedding_model,
+            embedding_dimension=self.embedding_dimension,
+            catalog_schema_version=self.catalog_schema_version,
+            search_index_schema_version=self.search_index_schema_version,
+            bootstrap_implementation_version=self.bootstrap_implementation_version,
+            catalog_id=self.catalog_id,
+            source_revision=self.source_revision,
+            checkpoint_batch_ordinal=self.checkpoint_batch_ordinal,
+            checkpoint_rows_processed=self.checkpoint_rows_processed,
+            target_max_records=target_max_records,
+            catalog_source_offer_count=self.catalog_source_offer_count,
+            catalog_identifier_count=self.catalog_identifier_count,
+            catalog_structured_attribute_count=self.catalog_structured_attribute_count,
+            search_point_count=self.search_point_count,
+            failure_stage=self.failure_stage,
+            failure_detail=self.failure_detail,
+        )
+
     def with_checkpoint(
         self,
         *,

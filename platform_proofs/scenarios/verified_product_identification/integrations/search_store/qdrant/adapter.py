@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.vector_store.qdrant.config import QdrantIntegrationConfig
-from intergrax.integrations.providers.vector_store.qdrant.opens import _import_qdrant_client
+from intergrax.rag.vectorstore.sparse.sparse_encoder import SparseEncoder, resolve_sparse_encoder
 
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.contracts.errors import (
     VpiBootstrapCompatibilityError,
@@ -28,10 +29,29 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.manifest.model import (
     VpiBootstrapManifest,
 )
+from platform_proofs.scenarios.verified_product_identification.integrations.search_store.qdrant.client_protocol import (
+    QdrantBootstrapClient,
+)
+from platform_proofs.scenarios.verified_product_identification.integrations.search_store.qdrant.collection_compat import (
+    collection_dense_dimension,
+    collection_has_sparse_channel,
+    is_collection_not_found,
+)
 
 _DENSE_VECTOR_NAME = "dense"
 _SPARSE_VECTOR_NAME = "sparse"
 _LOGICAL_ID_METADATA_KEY = "logical_id"
+
+
+def _load_qdrant_client_class():
+    try:
+        from qdrant_client import QdrantClient
+    except ImportError as exc:
+        raise IntegrationConfigurationError(
+            "Qdrant integration requires qdrant-client. "
+            "Install with: Intergrax-ai[vector-qdrant]."
+        ) from exc
+    return QdrantClient
 
 
 def _normalize_point_id(raw_id: str) -> str:
@@ -48,11 +68,11 @@ def _normalize_point_id(raw_id: str) -> str:
 class QdrantSearchIndexBootstrapAdapter:
     """Reference ``SearchIndexBootstrapPort`` with independent lexical+dense channels."""
 
-    _client: object
+    _client: QdrantBootstrapClient
     _collection_name: str
     _tenant_id: str
     _sparse_enabled: bool
-    _sparse_encoder: object
+    _sparse_encoder: SparseEncoder
     _dimension: int | None = None
 
     @classmethod
@@ -65,13 +85,11 @@ class QdrantSearchIndexBootstrapAdapter:
     ) -> QdrantSearchIndexBootstrapAdapter:
         config = QdrantIntegrationConfig.from_env(collection_name=collection_name)
         resolved_tenant = tenant_id or config.tenant_id
-        QdrantClient = _import_qdrant_client()
+        QdrantClient = _load_qdrant_client_class()
         if config.resolved_url():
             client = QdrantClient(url=config.resolved_url(), api_key=config.api_key or None)
         else:
             client = QdrantClient(host=config.host, port=config.port, api_key=config.api_key or None)
-
-        from intergrax.rag.vectorstore.sparse.sparse_encoder import resolve_sparse_encoder
 
         return cls(
             _client=client,
@@ -111,18 +129,34 @@ class QdrantSearchIndexBootstrapAdapter:
                 )
             )
 
-        existing_dim = self._collection_vector_size(info)
-        if existing_dim is not None and existing_dim != manifest.embedding_dimension:
+        existing_dim = collection_dense_dimension(info, dense_vector_name=_DENSE_VECTOR_NAME)
+        if existing_dim is None:
+            raise VpiBootstrapCompatibilityError(
+                f"Qdrant collection {self._collection_name!r} has no dense vector config; "
+                "explicit rebuild required"
+            )
+        if existing_dim != manifest.embedding_dimension:
             raise VpiBootstrapCompatibilityError(
                 f"Qdrant collection dimension {existing_dim} != expected "
                 f"{manifest.embedding_dimension}; explicit rebuild required"
+            )
+        if self._sparse_enabled and not collection_has_sparse_channel(
+            info,
+            sparse_vector_name=_SPARSE_VECTOR_NAME,
+        ):
+            raise VpiBootstrapCompatibilityError(
+                f"Qdrant collection {self._collection_name!r} is dense-only but bootstrap "
+                "requires lexical sparse channel; explicit rebuild required"
             )
         return ValidationReport.from_checks(
             (
                 ValidationCheck(
                     name="qdrant_collection_compatible",
                     status=ValidationStatus.PASS,
-                    detail=f"collection={self._collection_name} dimension={existing_dim}",
+                    detail=(
+                        f"collection={self._collection_name} dimension={existing_dim} "
+                        f"sparse={self._sparse_enabled}"
+                    ),
                 ),
             )
         )
@@ -135,7 +169,7 @@ class QdrantSearchIndexBootstrapAdapter:
 
         points: list[PointStruct] = []
         for record in batch.records:
-            payload = {
+            payload: dict[str, str | int | None] = {
                 _LOGICAL_ID_METADATA_KEY: record.logical_point_id,
                 "text": record.lexical_text,
                 "channel_lexical": record.lexical_text,
@@ -169,11 +203,15 @@ class QdrantSearchIndexBootstrapAdapter:
             raise VpiBootstrapProviderError(
                 f"Qdrant ingest failed for batch {batch.batch_ordinal}"
             ) from exc
-        return SearchIndexIngestBatchResult(points_ingested=len(points))
+        return SearchIndexIngestBatchResult(point_count=self.count_points())
 
     def validate(self, manifest: VpiBootstrapManifest) -> ValidationReport:
         point_count = self.count_points()
-        expected = manifest.target_max_records or manifest.checkpoint_rows_processed
+        from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.manifest.run_target import (
+            effective_run_target_rows,
+        )
+
+        expected = effective_run_target_rows(manifest)
         return ValidationReport.from_checks(
             (
                 ValidationCheck(
@@ -197,19 +235,16 @@ class QdrantSearchIndexBootstrapAdapter:
         info = self._get_collection_info()
         if info is None:
             return 0
-        count = getattr(info, "points_count", None)
-        return int(count) if count is not None else 0
+        return int(info.points_count)
 
     def close(self) -> None:
-        close = getattr(self._client, "close", None)
-        if callable(close):
-            close()
+        self._client.close()
 
-    def _get_collection_info(self) -> object | None:
+    def _get_collection_info(self):
         try:
             return self._client.get_collection(self._collection_name)
         except Exception as exc:
-            if _is_collection_not_found(exc):
+            if is_collection_not_found(exc):
                 return None
             raise VpiBootstrapProviderError("Qdrant get_collection failed") from exc
 
@@ -232,33 +267,3 @@ class QdrantSearchIndexBootstrapAdapter:
             collection_name=self._collection_name,
             vectors_config=VectorParams(size=dimension, distance=metric),
         )
-
-    def _collection_vector_size(self, collection_info: object) -> int | None:
-        try:
-            vectors = collection_info.config.params.vectors
-        except Exception:
-            return None
-        if vectors is None:
-            return None
-        if isinstance(vectors, dict):
-            dense = vectors.get(_DENSE_VECTOR_NAME)
-            if dense is not None:
-                return int(dense.size)
-            if len(vectors) == 1:
-                only = next(iter(vectors.values()))
-                return int(only.size)
-            return None
-        return int(vectors.size)
-
-
-def _is_collection_not_found(exc: BaseException) -> bool:
-    try:
-        from qdrant_client.http.exceptions import UnexpectedResponse
-    except ImportError:
-        return False
-    current: BaseException | None = exc
-    while current is not None:
-        if isinstance(current, UnexpectedResponse) and current.status_code == 404:
-            return True
-        current = current.__cause__
-    return "404" in str(exc)
