@@ -26,6 +26,8 @@ This is the canonical public product roadmap for Intergrax. It describes what us
 
 This document describes **user and validation outcomes**, not internal implementation queues. Detailed technical and module sequencing belongs to the [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) and the owning module sources of truth.
 
+The canonical cross-domain architecture implementation sequence is maintained separately in the [Harness Architecture Evolution Roadmap](HARNESS_ARCHITECTURE_EVOLUTION_ROADMAP.md). It defines architecture migration order, invariants, CURRENT/PARTIAL/GAP/TARGET boundaries, dependencies, and proof gates; it does not replace this public outcome roadmap.
+
 [PROOFS.md](../proofs/PROOFS.md) owns what is currently demonstrated and the related claim boundaries. Moving to a later phase requires evidence - bounded verification, repeated use, or real-user feedback - not only implementation completion.
 
 If you need to decide whether Intergrax fits your problem today, start with [USE_CASES.md](USE_CASES.md).
@@ -233,6 +235,7 @@ Authoritative evidence boundaries: [PROOFS.md](../proofs/PROOFS.md).
 | Current evidence | [PROOFS.md](../proofs/PROOFS.md) |
 | Verify the bounded LKW proof | [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) |
 | Current workflow fit | [USE_CASES.md](USE_CASES.md) |
+| Cross-domain architecture implementation sequence | [Harness Architecture Evolution Roadmap](HARNESS_ARCHITECTURE_EVOLUTION_ROADMAP.md) |
 | Build or inspect a bounded workflow | [BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) |
 | Bounded evaluation | [Evaluation Guide](../builders/EVALUATION_GUIDE.md) |
 | Pilot or partner route | [Partners](../community/PARTNERS.md) |
