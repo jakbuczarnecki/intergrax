@@ -38,6 +38,16 @@ _KeyT = TypeVar("_KeyT")
 _EntityT = TypeVar("_EntityT")
 
 
+def _require_revision_argument(
+    value: object,
+    *,
+    param_name: str = "expected_revision",
+) -> Revision:
+    if not isinstance(value, Revision):
+        raise TypeError(f"{param_name} must be Revision, got {type(value).__name__}")
+    return value
+
+
 class _ImmutableVersionStore(Generic[_KeyT, _EntityT]):
     """Thread-safe idempotent create for immutable versioned records."""
 
@@ -122,6 +132,7 @@ class _RevisionedEntityStore(Generic[_KeyT, _EntityT]):
         read_revision: Callable[[_EntityT], Revision],
         write_revision: Callable[[_EntityT, Revision], _EntityT],
     ) -> _EntityT:
+        expected_revision = _require_revision_argument(expected_revision)
         with self._lock:
             current = self._records.get(key)
             if current is None:
@@ -139,6 +150,15 @@ class _RevisionedEntityStore(Generic[_KeyT, _EntityT]):
                     entity_id=entity_id,
                     expected_revision=expected_revision,
                     actual_revision=current_revision,
+                )
+            candidate_revision = read_revision(entity)
+            if candidate_revision != expected_revision:
+                raise ValueError(
+                    (
+                        f"{entity_kind} replacement candidate revision "
+                        f"{candidate_revision.value} does not match "
+                        f"expected_revision {expected_revision.value}"
+                    )
                 )
             next_revision = Revision(expected_revision.value + 1)
             persisted = write_revision(entity, next_revision)

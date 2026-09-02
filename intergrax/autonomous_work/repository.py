@@ -11,6 +11,8 @@ Revision ownership
 The repository is authoritative for ``Revision`` advancement on mutable
 entities. Callers supply replacement semantic values and ``expected_revision``
 on replace; the repository writes an immutable replacement record at
+``expected_revision + 1``. Replacement candidate must carry the same revision
+as ``expected_revision``; repository atomically persists it as
 ``expected_revision + 1``. Callers must not supply arbitrary revision numbers
 on create or replace.
 

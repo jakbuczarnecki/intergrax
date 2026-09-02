@@ -426,8 +426,10 @@ def test_worker_instance_replace_advances_revision_and_does_not_mutate_input() -
         lifecycle_state=WorkerLifecycleState.ACTIVE,
         updated_at=datetime(2026, 9, 2, 13, 0, tzinfo=_UTC),
     )
+    assert next_instance.revision == created.revision
     updated = repo.replace(next_instance, expected_revision=created.revision)
-    assert updated.revision == Revision(1)
+    assert updated.revision == Revision(created.revision.value + 1)
+    assert next_instance.revision == created.revision
     assert created.revision == initial_revision()
     loaded = repo.get(worker_instance_id=instance.worker_instance_id)
     assert loaded == updated
@@ -491,7 +493,87 @@ def test_worker_instance_concurrent_replace_one_wins() -> None:
     assert loaded == results[0]
 
 
-def test_continuity_state_restart_safe_latest_committed_state() -> None:
+@pytest.mark.parametrize(
+    "repo_factory",
+    [
+        InMemoryWorkerInstanceRepository,
+        InMemoryResponsibilityRepository,
+        InMemoryWorkerGoalRepository,
+        InMemoryWorkContinuityStateRepository,
+    ],
+)
+def test_mutable_repository_replace_rejects_candidate_revision_mismatch(
+    repo_factory: Any,
+) -> None:
+    if repo_factory is InMemoryWorkerInstanceRepository:
+        entity = _worker_instance()
+        repo = repo_factory()
+        created = repo.create(entity)
+        candidate = replace(
+            created,
+            lifecycle_state=WorkerLifecycleState.ACTIVE,
+            revision=Revision(99),
+        )
+        with pytest.raises(ValueError, match="replacement candidate revision"):
+            repo.replace(candidate, expected_revision=created.revision)
+        assert repo.get(worker_instance_id=entity.worker_instance_id) == created
+        return
+
+    if repo_factory is InMemoryResponsibilityRepository:
+        entity = _responsibility()
+        repo = repo_factory()
+        created = repo.create(entity)
+        candidate = replace(
+            created,
+            objective="Different objective text.",
+            revision=Revision(99),
+        )
+        with pytest.raises(ValueError, match="replacement candidate revision"):
+            repo.replace(candidate, expected_revision=created.revision)
+        assert repo.get(responsibility_id=entity.responsibility_id) == created
+        return
+
+    if repo_factory is InMemoryWorkerGoalRepository:
+        entity = _worker_goal()
+        repo = repo_factory()
+        created = repo.create(entity)
+        candidate = replace(created, priority=99, revision=Revision(99))
+        with pytest.raises(ValueError, match="replacement candidate revision"):
+            repo.replace(candidate, expected_revision=created.revision)
+        assert repo.get(goal_id=entity.goal_id) == created
+        return
+
+    entity = _continuity_state()
+    repo = repo_factory()
+    created = repo.create(entity)
+    candidate = replace(
+        created,
+        next_action_hint="mismatched revision",
+        revision=Revision(99),
+    )
+    with pytest.raises(ValueError, match="replacement candidate revision"):
+        repo.replace(candidate, expected_revision=created.revision)
+    assert repo.get(worker_instance_id=entity.worker_instance_ref) == created
+
+
+@pytest.mark.parametrize(
+    "invalid_expected_revision",
+    [0, True, "0", DefinitionRevision(0)],
+)
+def test_mutable_repository_replace_rejects_untyped_expected_revision(
+    invalid_expected_revision: object,
+) -> None:
+    repo = InMemoryWorkerInstanceRepository()
+    created = repo.create(_worker_instance())
+    candidate = replace(created, lifecycle_state=WorkerLifecycleState.ACTIVE)
+    with pytest.raises(TypeError, match="expected_revision must be Revision"):
+        repo.replace(
+            candidate,
+            expected_revision=invalid_expected_revision,  # type: ignore[arg-type]
+        )
+
+
+def test_continuity_repository_returns_latest_committed_state() -> None:
     worker_id = mint_worker_instance_id()
     state = _continuity_state(
         worker_instance_ref=worker_id,
