@@ -84,6 +84,7 @@ _FORBIDDEN_FRAGMENTS = (
     "eval(",
     "object.__setattr__",
     "dict[str, Any]",
+    "str(self.verifier.verifier_id",
 )
 
 _DOMAIN_REQUIREMENT = validate_verification_requirement_code(
@@ -300,6 +301,23 @@ async def test_optional_unavailable_integrates_with_pipeline_skip() -> None:
     result = await pipeline.verify(_candidate())
     assert result.disposition is VerificationDisposition.PASSED
     assert len(result.stage_records) == 1
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_invalid_verifier_identity_propagates_before_verify() -> None:
+    verifier = StubDomainVerifier(
+        verifier_id_value=DomainVerifierId("   "),
+        verify_calls=[],
+    )
+    stage = _stage(
+        verifier=verifier,
+        execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+    )
+    with pytest.raises(ValueError):
+        await stage.verify(_candidate())
+    assert verifier.verify_calls == []
 
 
 @pytest.mark.unit

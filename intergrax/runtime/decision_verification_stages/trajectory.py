@@ -93,11 +93,8 @@ class TrajectoryVerificationStage(Generic[T]):
                 "trajectory evaluator infrastructure is unavailable",
             )
         proposal_ref = candidate_decision_ref(candidate)
-        try:
-            agent_id = validate_trajectory_agent_id(
-                str(self.agent_id_provider.resolve(candidate)),
-            )
-        except (TypeError, ValueError):
+        resolved_agent_id = self.agent_id_provider.resolve(candidate)
+        if resolved_agent_id is None:
             finding = verification_finding(
                 code=_AGENT_ID_MISSING_FINDING,
                 message="required trajectory agent identity is missing",
@@ -114,11 +111,12 @@ class TrajectoryVerificationStage(Generic[T]):
                 outcome=VerificationStageOutcome.CHALLENGED,
                 challenge=challenge,
             )
+        agent_id = validate_trajectory_agent_id(resolved_agent_id)
         trajectory_input = EvalTrajectoryInput(
             run_id=str(candidate.identity.execution.run_id),
             tenant_id=candidate.identity.tenant_id,
             min_score=self.config.min_score,
-            agent_id=str(agent_id),
+            agent_id=agent_id,
             record_observation=False,
         )
         trajectory_output = self.evaluator.evaluate(trajectory_input)

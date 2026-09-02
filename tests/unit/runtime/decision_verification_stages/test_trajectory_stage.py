@@ -77,6 +77,7 @@ _FORBIDDEN_FRAGMENTS = (
     "eval(",
     "object.__setattr__",
     "dict[str, Any]",
+    "str(self.agent_id_provider.resolve",
 )
 
 
@@ -219,8 +220,11 @@ async def test_agent_identity_explicit() -> None:
 async def test_missing_required_agent_identity_challenged() -> None:
     @dataclass(frozen=True, slots=True)
     class MissingAgentProvider:
-        def resolve(self, candidate: CandidateDecision[TrajectoryPayload]) -> TrajectoryAgentId:
-            return TrajectoryAgentId("")
+        def resolve(
+            self,
+            candidate: CandidateDecision[TrajectoryPayload],
+        ) -> TrajectoryAgentId | None:
+            return None
 
     evaluator = RecordingTrajectoryEvaluator(calls=[])
     stage = TrajectoryVerificationStage(
@@ -231,6 +235,28 @@ async def test_missing_required_agent_identity_challenged() -> None:
     assert record.outcome is VerificationStageOutcome.CHALLENGED
     assert record.challenge is not None
     assert record.challenge.finding.code == "verification.trajectory.agent_id_missing"
+    assert evaluator.calls == []
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_malformed_agent_identity_propagates_before_evaluator() -> None:
+    @dataclass(frozen=True, slots=True)
+    class BlankAgentProvider:
+        def resolve(
+            self,
+            candidate: CandidateDecision[TrajectoryPayload],
+        ) -> TrajectoryAgentId | None:
+            return TrajectoryAgentId("   ")
+
+    evaluator = RecordingTrajectoryEvaluator(calls=[])
+    stage = TrajectoryVerificationStage(
+        evaluator=evaluator,
+        agent_id_provider=BlankAgentProvider(),
+    )
+    with pytest.raises(ValueError):
+        await stage.verify(_candidate())
     assert evaluator.calls == []
 
 

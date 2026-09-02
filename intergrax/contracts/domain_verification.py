@@ -30,7 +30,7 @@ DomainVerifierId = NewType("DomainVerifierId", str)
 T = TypeVar("T")
 
 
-def validate_domain_verifier_id(value: str) -> DomainVerifierId:
+def validate_domain_verifier_id(value: object) -> DomainVerifierId:
     if type(value) is not str:
         raise TypeError(
             f"DomainVerifierId must be str, got {type(value).__name__}",

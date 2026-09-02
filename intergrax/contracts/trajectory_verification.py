@@ -16,7 +16,7 @@ TrajectoryAgentId = NewType("TrajectoryAgentId", str)
 T = TypeVar("T")
 
 
-def validate_trajectory_agent_id(value: str) -> TrajectoryAgentId:
+def validate_trajectory_agent_id(value: object) -> TrajectoryAgentId:
     if type(value) is not str:
         raise TypeError(
             f"TrajectoryAgentId must be str, got {type(value).__name__}",
@@ -36,7 +36,7 @@ def validate_trajectory_agent_id(value: str) -> TrajectoryAgentId:
 class TrajectoryAgentIdProvider(Protocol[T]):
     """Resolve explicit agent identity for trajectory evaluation."""
 
-    def resolve(self, candidate: CandidateDecision[T]) -> TrajectoryAgentId:
+    def resolve(self, candidate: CandidateDecision[T]) -> TrajectoryAgentId | None:
         """Return configured agent identity bound to one candidate."""
         ...
 
