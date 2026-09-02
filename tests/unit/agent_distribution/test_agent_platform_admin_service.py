@@ -63,6 +63,7 @@ from intergrax.agent_distribution.in_memory_stores import (
     InMemoryApplicationEnvironmentActivationStore,
     InMemoryApplicationEnvironmentServingStore,
     InMemoryDeploymentInstanceStore,
+    InMemoryEffectiveRosterSnapshotStore,
     InMemoryMaterializedRuntimeLockStore,
     InMemoryRuntimeMaterializationStore,
     InMemoryRuntimeRevisionStore,
@@ -253,6 +254,7 @@ class AdminStack:
     state: AgentDistributionStoreState
     catalog: _FakeCatalog
     materialization_store: InMemoryRuntimeMaterializationStore
+    effective_roster_snapshot_store: InMemoryEffectiveRosterSnapshotStore
 
 
 def build_admin_stack(*, with_catalog: bool = True) -> AdminStack:
@@ -264,6 +266,7 @@ def build_admin_stack(*, with_catalog: bool = True) -> AdminStack:
     deployment_store = InMemoryDeploymentInstanceStore(state)
     lock_store = InMemoryMaterializedRuntimeLockStore(state)
     materialization_store = InMemoryRuntimeMaterializationStore(state)
+    effective_roster_snapshot_store = InMemoryEffectiveRosterSnapshotStore(state)
     artifact_store = InMemoryAgentArtifactMetadataStore(state)
     installation_service = InstallationService(installation_store)
     binding_service = BindingService(binding_store, installation_service)
@@ -297,6 +300,7 @@ def build_admin_stack(*, with_catalog: bool = True) -> AdminStack:
         deployment_instance_store=deployment_store,
         lock_store=lock_store,
         materialization_store=materialization_store,
+        effective_roster_snapshot_store=effective_roster_snapshot_store,
         artifact_metadata_store=artifact_store,
         installation_service=installation_service,
         binding_service=binding_service,
@@ -328,6 +332,7 @@ def build_admin_stack(*, with_catalog: bool = True) -> AdminStack:
         state=state,
         catalog=catalog,
         materialization_store=materialization_store,
+        effective_roster_snapshot_store=effective_roster_snapshot_store,
     )
 
 

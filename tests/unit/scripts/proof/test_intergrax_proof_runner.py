@@ -1,4 +1,4 @@
-﻿# Â© Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
 
@@ -141,7 +141,7 @@ def test_child_output_not_persisted_in_result(tmp_path: Path) -> None:
     assert "stderr_tail" not in serialized
 
 
-# Deliberately fake secret-shaped values â€” not real credentials; avoid live token formats
+# Deliberately fake secret-shaped values — not real credentials; avoid live token formats
 # so push protection does not block commits while still proving no child output is persisted.
 _SECRET_CANARY = "SECRET_CANARY_do_not_persist_this_value_7f3a9b"
 _FAKE_XAPP = "FAKE_SLACK_XAPP_TOKEN_NOT_REAL_7f3a9b"

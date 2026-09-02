@@ -1,5 +1,5 @@
-ï»¿# â”¬Ä™ Artur Czarnecki. All rights reserved.
-# Intergrax framework Ã”Ã‡Ã´ proprietary and confidential.
+# Tê Artur Czarnecki. All rights reserved.
+# Intergrax framework ÔÇô proprietary and confidential.
 
 """Unit tests for provider-neutral remote resource discovery boundary."""
 
