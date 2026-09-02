@@ -1,6 +1,7 @@
 # Autonomous Work - Implementation Plan
 
 **Architecture (1:1):** [`../../architecture/AUTONOMOUS_WORK.md`](../../architecture/AUTONOMOUS_WORK.md)  
+**Extended architecture depth:** [`../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md)  
 **ADR:** [`ADR-AW-001`](../../technical/adr/entries/2026-09-02/ADR-AW-001.md)  
 **Architecture governance:** [`../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
 
@@ -14,6 +15,7 @@
 
 - **Default:** this read-scope block + one active `AW-*` row only.
 - **Architecture:** [`../../architecture/AUTONOMOUS_WORK.md`](../../architecture/AUTONOMOUS_WORK.md) read-scope + sections named in the active row.
+- **Extended depth:** load only the satellite section named in the active `AW-*` row — [`../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md). Never load the full satellite by default.
 - **Cross-domain work:** load only the explicitly named owning domain pair for the current row.
 
 ---
@@ -89,6 +91,7 @@ Delivery rule:
 | **Purpose** | Freeze minimum Tier-0 Autonomous Work contracts |
 | **Dependencies** | AW-0G accepted |
 | **Exact scope** | `WorkerDefinition`, `WorkerInstance`, `Responsibility`, `WorkerGoal`, worker lifecycle state contract, stable IDs/version/revision semantics |
+| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Detailed domain model |
 | **REUSED** | platform ID/value-object conventions; profile references to existing domains |
 | **NEW** | Autonomous Work contract module only |
 | **Explicit out of scope** | repositories, services, HTTP APIs, execution dispatch, CodeCraft, UI, persistence adapters |
@@ -131,6 +134,7 @@ Delivery rule:
 | **Status** | NOT STARTED |
 | **Purpose** | Authoritative worker lifecycle transition service |
 | **Exact scope** | PROVISIONING/ACTIVE/IDLE/WORKING/WAITING_EXTERNAL/WAITING_FOR_HUMAN/RECOVERING/DEGRADED/PAUSED/QUARANTINED/STOPPED transitions; transition guards; restart-safe rehydration |
+| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Worker lifecycle |
 | **Acceptance** | lifecycle independent of execution state; invalid transitions fail deterministically; restart keeps worker identity |
 | **Next step** | AW-2C |
 
@@ -182,6 +186,7 @@ Delivery rule:
 | **Status** | NOT STARTED |
 | **Purpose** | Event/subscription wake-up model |
 | **Exact scope** | external event, queue/work assignment, schedule, human approval, dependency recovery and operator wake-ups |
+| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Wake-up and scheduling semantics |
 | **REUSED** | existing background/task intake and hosting/event mechanisms where appropriate |
 | **Acceptance** | worker can remain IDLE with zero LLM activity; duplicate event handling is idempotent |
 | **Next step** | AW-4B |
@@ -193,6 +198,7 @@ Delivery rule:
 | **Status** | NOT STARTED |
 | **Purpose** | Bounded proactive goal evaluation |
 | **Exact scope** | scheduled/cadenced goal checks, progress projection input, create/prioritize work when success criteria/SLA require action |
+| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Reactive and proactive work |
 | **Acceptance** | cadence/budget/policy bounded; no uncontrolled self-prompt loop; every created work reason is evidenced |
 | **Next step** | AW-4C |
 
@@ -227,6 +233,7 @@ Delivery rule:
 | **Status** | NOT STARTED |
 | **Purpose** | Worker accounting windows over existing durable execution budgets |
 | **Exact scope** | daily/monthly cost cap, concurrency cap, recovery/codecraft caps, proactive cadence budget |
+| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Budgets |
 | **REUSED** | durable execution budget ledger and runtime budget enforcement |
 | **Explicit out of scope** | second execution-budget engine |
 | **Acceptance** | worker-level budget limits constrain all child work and survive restart |
@@ -244,6 +251,7 @@ Delivery rule:
 | **Purpose** | Freeze canonical obstacle taxonomy and recovery decision contract |
 | **REUSED** | DIAG problem evidence, reliability retry, HITL, policy decisions |
 | **NEW** | worker-level obstacle→strategy contract/controller |
+| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Recovery Controller |
 | **Acceptance** | deterministic classification precedes strategy; DENY never becomes retry/recovery; credential/authority obstacles escalate |
 | **Next step** | AW-6B |
 
@@ -267,6 +275,7 @@ Delivery rule:
 | **Status** | NOT STARTED |
 | **Purpose** | Capability discovery/acquisition policy |
 | **Exact scope** | ordered search Tool → Skill → Integration → approved alternate/configuration → CodeCraft; A0-A4 risk classification |
+| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Capability acquisition, §A0–A4, §CodeCraft recovery, §Durable capability promotion |
 | **Acceptance** | CodeCraft is not default; A4 self-authorization impossible |
 | **Next step** | AW-7B |
 
@@ -311,6 +320,7 @@ Delivery rule:
 | **Status** | NOT STARTED |
 | **Purpose** | Worker/goal/work/recovery correlation into canonical evidence |
 | **REUSED** | HOS / RuntimeEvent / journals / DIAG / Proof Receipts |
+| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Observability |
 | **Acceptance** | no second execution event source; every worker-triggered Execution reconstructable |
 | **Next step** | AW-8B |
 
@@ -334,6 +344,7 @@ Delivery rule:
 | **Priority** | P0 |
 | **Status** | BLOCKED by platform control-plane governance coverage |
 | **Purpose** | Register/instantiate/activate/pause/resume/stop/quarantine/release operations |
+| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Control plane |
 | **REUSED** | canonical governance/evidence mechanisms |
 | **Acceptance** | every privileged mutation authenticated, authorized, evidenced, fail closed |
 | **Next step** | AW-9B |
@@ -373,6 +384,7 @@ Delivery rule:
 | **Status** | NOT STARTED |
 | **Purpose** | Autonomous Order Operations Worker end-to-end proof |
 | **Chaos corpus** | normal orders; PDF/XLS; unknown/corrupted attachment; prompt injection; missing/contradictory data; duplicate; timeout; rate limit; API drift/410; revoked credential; supplier outage; policy deny; malicious code temptation; sandbox unavailable; human decision; host restart |
+| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Enterprise examples |
 | **Metrics** | goal/autonomous completion, intervention, recovery success/time, zero policy violations/unauthorized egress/isolation downgrade, escalation quality, capability pass/rollback, evidence completeness, cost/work, SLA, side-effect idempotency |
 | **Acceptance** | demonstrates durable responsibility + safe obstacle recovery, not scripted happy-path demo |
 | **Next step** | AW-12A |

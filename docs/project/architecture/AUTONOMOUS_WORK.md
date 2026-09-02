@@ -129,6 +129,7 @@ No dedicated public Autonomous Work proof route exists at AW-0. Architecture exi
 
 | Depth | Route |
 | --- | --- |
+| Extended architecture depth | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](satellites/AUTONOMOUS_WORK_extended_depth.md) — domain model, lifecycle, recovery, A0–A4, budgets, observability, control plane, enterprise scenarios |
 | Implementation plan | [`../maintainers/plans/AUTONOMOUS_WORK.md`](../maintainers/plans/AUTONOMOUS_WORK.md) |
 | ADR | [`ADR-AW-001`](../technical/adr/entries/2026-09-02/ADR-AW-001.md) |
 | Audit origin | [`AUTONOMOUS_WORK_VIRTUAL_WORKFORCE_ARCHITECTURE_GAP_AUDIT.md`](../../audit_results/2026-09-02/AUTONOMOUS_WORK_VIRTUAL_WORKFORCE_ARCHITECTURE_GAP_AUDIT.md) · [`..._REVIEW.md`](../../audit_results/2026-09-02/AUTONOMOUS_WORK_VIRTUAL_WORKFORCE_ARCHITECTURE_GAP_AUDIT_REVIEW.md) |
@@ -142,9 +143,11 @@ No dedicated public Autonomous Work proof route exists at AW-0. Architecture exi
 
 **Do not read this entire file in one session.**
 
-- **Default:** human-facing front through §Go deeper, then §Ownership boundary, §Core model, §Normative invariants, §Integration boundaries.
+- **Default:** human-facing front through §Go deeper, then §Ownership boundary, §Core model, §Normative invariants, §Integration boundaries. **Do not load the extended-depth satellite by default.**
 - **Implementation:** this read-scope block + the active `AW-*` row in [`../maintainers/plans/AUTONOMOUS_WORK.md`](../maintainers/plans/AUTONOMOUS_WORK.md).
-- **CodeCraft recovery work:** §Adaptive obstacle recovery + relevant slice of [`CODE_CRAFT.md`](CODE_CRAFT.md) and [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md).
+- **Recovery / adaptive capability work:** §Adaptive obstacle recovery + [`satellites/AUTONOMOUS_WORK_extended_depth.md`](satellites/AUTONOMOUS_WORK_extended_depth.md) §Recovery Controller, §Capability acquisition, §A0–A4, §CodeCraft recovery + relevant slice of [`CODE_CRAFT.md`](CODE_CRAFT.md) and [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md).
+- **Lifecycle work:** [`satellites/AUTONOMOUS_WORK_extended_depth.md`](satellites/AUTONOMOUS_WORK_extended_depth.md) §Worker lifecycle only.
+- **Observability work:** [`satellites/AUTONOMOUS_WORK_extended_depth.md`](satellites/AUTONOMOUS_WORK_extended_depth.md) §Observability + relevant slice of [`OBSERVABILITY.md`](OBSERVABILITY.md).
 - **Collaborative identity/work:** §Principal and WorkItem integration + relevant slice of [`COLLABORATIVE_WORK.md`](COLLABORATIVE_WORK.md).
 
 ---
@@ -254,32 +257,9 @@ The key distinction is:
 
 ### WorkerDefinition
 
-Reusable definition of a worker role.
+Reusable definition of a worker role. References domain-owned profiles (governance, budget, memory, capability, CodeCraft, risk, schedule, escalation, collaboration, observability) rather than embedding duplicate configuration.
 
-Conceptual contract — exact schema is frozen only in AW-1:
-
-```text
-WorkerDefinition
-  worker_definition_id
-  display_name
-  role
-  responsibility_refs
-  default_goal_policy_ref
-  principal_binding_policy_ref
-  workspace_scope_ref
-  governance_profile_ref
-  budget_profile_ref
-  memory_profile_ref
-  capability_profile_ref
-  codecraft_profile_ref
-  risk_profile_ref
-  schedule_profile_ref
-  escalation_policy_ref
-  collaboration_profile_ref
-  observability_profile_ref
-```
-
-A definition references domain-owned profiles rather than embedding duplicate policy, memory, sandbox, authority or execution configuration.
+See [extended depth — Detailed domain model](satellites/AUTONOMOUS_WORK_extended_depth.md#detailed-domain-model) for full entity relationships, profile references and version/revision semantics.
 
 ### WorkerInstance
 
@@ -315,23 +295,9 @@ A Responsibility may exist while no task is running and may create many goals/wo
 
 ### WorkerGoal
 
-Durable measurable outcome, not an LLM prompt.
+Durable measurable outcome, not an LLM prompt. Carries objective, success criteria, metric/SLA refs, cadence and progress projection. A goal may generate multiple WorkItems and Executions.
 
-```text
-WorkerGoal
-  goal_id
-  responsibility_id
-  objective
-  success_criteria
-  metric_refs
-  SLA/SLO refs
-  deadline_or_cadence
-  priority
-  status
-  progress_projection_ref
-```
-
-A goal may generate multiple WorkItems and Executions.
+See [extended depth — Detailed domain model](satellites/AUTONOMOUS_WORK_extended_depth.md#detailed-domain-model) for conceptual field contracts (`WorkerPrincipalBinding`, `WorkerWorkBinding`, `WorkerRecoveryContext`).
 
 ---
 
@@ -390,11 +356,15 @@ Key rules:
 - host restart must not create a new worker identity.
 - Worker lifecycle sits **above** Task/Run/Execution lifecycle.
 
+See [extended depth — Worker lifecycle](satellites/AUTONOMOUS_WORK_extended_depth.md#worker-lifecycle) for transition matrix, pause vs quarantine semantics, and restart/recovery behavior.
+
 ---
 
 ## Continuous operation without an infinite model loop
 
 A Virtual Worker is persistent, but cognition is event-driven and bounded.
+
+> **Persistent responsibility does not mean persistent compute.**
 
 Forbidden default design:
 
@@ -404,21 +374,7 @@ while true:
     act()
 ```
 
-Canonical wake-up sources may include:
-
-```text
-external event / webhook
-queue message
-new WorkItem / Assignment
-email or file arrival
-schedule / timer
-SLA checkpoint
-goal evaluation cadence
-external dependency recovery
-human approval / decision
-retry / recovery wake-up
-operator action
-```
+Canonical wake-up sources include external events, queues, new WorkItems, schedules, goal evaluation, SLA checkpoints, dependency recovery, human approval, recovery timers and operator actions.
 
 Target flow:
 
@@ -438,7 +394,7 @@ persist worker state
 IDLE or next bounded work
 ```
 
-This separates semantic always-on availability from continuous token consumption.
+See [extended depth — Wake-up and scheduling semantics](satellites/AUTONOMOUS_WORK_extended_depth.md#wake-up-and-scheduling-semantics) for full wake-up taxonomy and idempotency rules.
 
 ---
 
@@ -473,6 +429,8 @@ worker creates/prioritizes required work
 ```
 
 Proactive goal evaluation is bounded by configured cadence, budget, policy and available authority. It is not unrestricted autonomous exploration.
+
+See [extended depth — Reactive and proactive work](satellites/AUTONOMOUS_WORK_extended_depth.md#reactive-and-proactive-work) for SLA example and Worker vs Agent distinction.
 
 ---
 
@@ -553,7 +511,9 @@ Required base classes:
 | missing capability | capability acquisition candidate |
 | suspicious/malicious input | quarantine / security path |
 
-Recovery changes **strategy**, not policy.
+> **Recovery changes strategy or capability. It does not weaken policy.**
+
+See [extended depth — Recovery Controller](satellites/AUTONOMOUS_WORK_extended_depth.md#recovery-controller) for full obstacle taxonomy (autonomous posture, HITL, forbidden behaviors) and missing-capability vs missing-authority distinction.
 
 ---
 
@@ -564,22 +524,13 @@ Missing capability recovery is broader than CodeCraft.
 Canonical search order:
 
 ```text
-existing Tool?
-  ↓ no
-existing Skill?
-  ↓ no
-existing Integration?
-  ↓ no
-approved alternate capability / workflow?
-  ↓ no
-approved documentation/schema inspection?
-  ↓
-approved configuration of existing capability?
-  ↓ no
-CodeCraft synthesis allowed?
+existing Tool → Skill → Integration → approved alternate
+  → docs/schema inspection → configure existing capability → CodeCraft
 ```
 
 CodeCraft is the canonical generated-code subsystem, not the default first response.
+
+See [extended depth — Capability acquisition](satellites/AUTONOMOUS_WORK_extended_depth.md#capability-acquisition) for the full nine-step ladder and missing-capability vs missing-authority rules.
 
 ---
 
@@ -595,10 +546,14 @@ Autonomous work needs risk-aware capability growth.
 | **A3 — Production Change** | durable connector/workflow update | generate/test/shadow/canary; governed promotion, commonly human approval |
 | **A4 — Authority Change** | new credential, broader DB scope, disable policy | **never self-authorized** |
 
+> **A4 = never self-authorized**
+
 Normative direction:
 
 > **SELF-EXTENDING CAPABILITY: conditionally allowed.**  
 > **SELF-EXTENDING AUTHORITY: forbidden.**
+
+See [extended depth — A0–A4 capability autonomy tiers](satellites/AUTONOMOUS_WORK_extended_depth.md#a0-a4-capability-autonomy-tiers) for per-tier isolation, governance, HITL and persistence rules.
 
 ---
 
@@ -609,19 +564,13 @@ Autonomous Work does not create `WorkerCodeCraft`, private subprocess loops or a
 Generated executable code uses:
 
 ```text
-CodeCraft
-  → generation
-  → static gate
-  → governance / HITL when required
-  → approved sandbox substrate
-  → execution / tests
-  → CVL / Critic verification
-  → bounded result
+CodeCraft → generation → static gate → governance/HITL
+  → approved sandbox → execution/tests → CVL/Critic → bounded result
 ```
 
-Known current CodeCraft/sandbox limitations remain release blockers for production-style autonomous workers, including authority defects, isolation anti-downgrade, partial egress enforcement and lack of hostile-code/sandbox-escape qualification.
+Known current CodeCraft/sandbox limitations remain release blockers for production-style autonomous workers. If a worker risk profile requires hardened container/cloud isolation and that substrate cannot be proven, execution must fail closed.
 
-If a worker risk profile requires hardened container/cloud isolation and that substrate cannot be proven, execution must fail closed.
+See [extended depth — CodeCraft and Sandbox recovery](satellites/AUTONOMOUS_WORK_extended_depth.md#codecraft-and-sandbox-recovery) for full recovery flow, explicit prohibitions and production blockers. Full CodeCraft canon: [`CODE_CRAFT.md`](CODE_CRAFT.md).
 
 ---
 
@@ -629,29 +578,13 @@ If a worker risk profile requires hardened container/cloud isolation and that su
 
 An ephemeral capability does not automatically become a durable platform tool or production integration.
 
-Target promotion lifecycle:
+> **Ephemeral success != production promotion.**
 
-```text
-CraftResult
-  ↓ evidence bundle
-static/security validation
-  ↓
-strong isolated tests
-  ↓
-contract / regression tests
-  ↓
-shadow execution where applicable
-  ↓
-canary where applicable
-  ↓
-governed promotion decision
-  ↓
-versioned durable publication
-  ↓
-rollback path retained
-```
+Target promotion lifecycle: proof package → static/security validation → isolated tests → contract/regression tests → shadow → canary → governed promotion decision → versioned publication → rollback path retained.
 
 A3 promotion is a control-plane mutation and must use explicit authorization/evidence.
+
+See [extended depth — Durable capability promotion](satellites/AUTONOMOUS_WORK_extended_depth.md#durable-capability-promotion) for proof package contents.
 
 ---
 
@@ -689,15 +622,9 @@ Worker budget policy/window
 existing durable execution budget mechanisms
 ```
 
-Examples:
+Worker budget **aggregates / constrains** existing execution budgets. The execution ledger remains the source of truth for individual run expenditure.
 
-- daily cost cap,
-- maximum concurrent work,
-- maximum recovery attempts per WorkItem,
-- maximum CodeCraft cost/time,
-- maximum proactive-goal evaluation frequency.
-
-Budget enforcement remains integrated with canonical execution/runtime controls.
+See [extended depth — Budgets](satellites/AUTONOMOUS_WORK_extended_depth.md#budgets) for time-window examples (cost/day, tokens, CodeCraft attempts, recovery caps, proactive cadence).
 
 ---
 
@@ -708,32 +635,12 @@ HOS / RuntimeEvent remain the source of truth for execution facts.
 Autonomous Work contributes durable worker-domain state and correlation identifiers, then exposes a **worker-centric projection**:
 
 ```text
-WorkerInstance
-  ↓
-Responsibility / Goal
-  ↓
-WorkItem / Assignment
-  ↓
-Task / Run / Attempt / Execution
-  ↓
-RuntimeEvent / HOS
+WorkerInstance → Responsibility / Goal → WorkItem → Task/Run/Attempt/Execution → RuntimeEvent
 ```
 
 A worker dashboard is a projection, not a second execution history.
 
-Minimum operator questions:
-
-- active / idle / working / recovering / waiting / degraded / paused / quarantined?
-- assigned responsibilities and goals?
-- current/open work?
-- autonomous completion rate?
-- human intervention rate?
-- recovery attempts and success?
-- policy denials?
-- generated capabilities?
-- budget/cost?
-- SLA/KPI progress?
-- full evidence drill-down?
+See [extended depth — Observability](satellites/AUTONOMOUS_WORK_extended_depth.md#observability) for worker/control-plane fact taxonomy, execution evidence boundaries and operator projection requirements.
 
 ---
 
@@ -741,19 +648,17 @@ Minimum operator questions:
 
 Enterprise Autonomous Work requires explicit fleet operations:
 
-- register / instantiate,
-- activate,
-- pause / resume,
-- stop,
+- register / instantiate, activate, pause / resume, stop,
 - quarantine / release,
-- assign responsibility,
-- assign/reassign work,
+- assign responsibility, assign/reassign work,
 - change allowed profiles,
 - inspect state/recoveries,
 - revoke worker authority binding,
 - controlled termination of active work.
 
 All sensitive control-plane mutations are governed and evidenced.
+
+See [extended depth — Control plane](satellites/AUTONOMOUS_WORK_extended_depth.md#control-plane) for operation/governance matrix.
 
 ---
 
@@ -799,39 +704,7 @@ email event
 → worker returns IDLE
 ```
 
-Unknown attachment path:
-
-```text
-unsupported format
-→ DIAG
-→ Recovery Controller
-→ missing capability
-→ approved capability search
-→ A1 CodeCraft
-→ static gate
-→ hardened sandbox
-→ schema tests / CVL
-→ ephemeral parser
-→ resume original order
-```
-
-Vendor API drift path:
-
-```text
-HTTP 410 / contract mismatch
-→ DIAG
-→ Recovery Controller
-→ approved docs/schema inspection
-→ CodeCraft candidate adapter
-→ restricted sandbox
-→ contract tests
-→ shadow
-→ A3 promotion gate
-→ human approval if required
-→ canary
-→ versioned publication
-→ resume synchronization
-```
+Extended obstacle and proactive scenarios (unknown attachment, vendor API drift, proactive SLA) are documented in [extended depth — Enterprise examples](satellites/AUTONOMOUS_WORK_extended_depth.md#enterprise-examples).
 
 ---
 
@@ -857,6 +730,8 @@ HTTP 410 / contract mismatch
 - **AW-INV-18 — Application does not own worker semantics:** Tier-3 Virtual Workforce UI consumes the domain.
 - **AW-INV-19 — Worker budget composes execution budgets:** no competing execution-budget ledger.
 - **AW-INV-20 — Recovery classification precedes capability synthesis:** `on_error → CodeCraft` is forbidden architecture.
+
+See [extended depth — Invariants](satellites/AUTONOMOUS_WORK_extended_depth.md#invariants---extended-explanation) for elaborated meaning of each invariant.
 
 ---
 
