@@ -264,7 +264,77 @@ Preserved artifact: `.tmp/session/diag-functional-q3-r2/qualification-report.jso
 
 Q3-D extraction bias cannot honestly induce wrong-date failure with current Ollama `llama3.1:latest` without post-decision override. **Do not reintroduce forcing.** Options: stronger pre-decision extraction bias (R3), alternate model/temperature, or accept Q3-D as non-inducible boundary case. Q3-C selection bias remains inducible on live Tavily candidates.
 
-## H1
+## DIAG-FUNCTIONAL-Q3-R3 (2026-09-02)
+
+### Environment audit
+
+| Item | Value |
+| --- | --- |
+| START_HEAD | `dd5632e8c97c4dd4180c4f073ec356321d5d9059` |
+| Root `.env` | YES |
+| Tavily preflight | provider=tavily, network=REAL, auth=PASS |
+| Static gates | **40 passed** (+ `test_q3_extraction_input_boundary.py`) |
+| Materialize + LKW rebuild | YES |
+
+Preserved history:
+
+| Phase | Result |
+| --- | --- |
+| INITIAL | BLOCKED (no provider credentials) |
+| INITIAL LIVE | FAILED 6/11 |
+| R1 live | 11/11 — rejected by independent audit (self-fulfilling injection) |
+| R2 env attempt | BLOCKED |
+| R2-LIVE | BLOCKED — Q3-D not inducible |
+
+### Q3-B mismatch root cause (pre-fix audit)
+
+| Field | Expected (R2 oracle) | Actual (live) |
+| --- | --- | --- |
+| functional outcome | failed | failed |
+| QUERY | PROVEN_FAIL | PROVEN_FAIL |
+| SEARCH | PROVEN_PASS | PROVEN_PASS |
+| CANDIDATES | PROVEN_PASS | PROVEN_PASS |
+| SELECTION | PROVEN_FAIL | PROVEN_FAIL (Java-only candidates) or PROVEN_PASS (mixed results) |
+| EXTRACTION_VALIDATION | PROVEN_FAIL | PROVEN_PASS or PROVEN_FAIL (environment-dependent) |
+| FINAL | PROVEN_FAIL | environment-dependent |
+| first failure | QUERY | QUERY |
+| operator | PROVEN_FUNCTIONAL_FAILURE | PROVEN_FUNCTIONAL_FAILURE |
+
+**Root cause:** R2 oracle required downstream FAIL checks that are not invariant for wrong-query cases. SEARCH/CANDIDATES semantics were correct; SELECTION/EXTRACTION/FINAL vary with Tavily result mix while QUERY remains the localized failure.
+
+### Q3-B fix
+
+Oracle now compares only invariant checks: `QUERY=FAIL`, `SEARCH=PASS`, `CANDIDATES=PASS`, plus `first_failure=QUERY` and operator `PROVEN_FUNCTIONAL_FAILURE`. Downstream checks are not asserted (not weakened to first-failure-only).
+
+### Q3-D injection boundary
+
+Controlled fault at **extractor INPUT boundary** (PRE-decision): provider snippet preserved; `_build_extractor_input_context` strips correct-date markers and injects deterministic decoy `2023-10-01` before real LLM extraction. No post-decision output replacement.
+
+### Q3-D live trace (bounded)
+
+| Field | Value |
+| --- | --- |
+| selected URL | `https://www.python.org/downloads/release/python-3120` |
+| provider snippet | Tavily snippet with Oct 2, 2023 (bounded in evidence) |
+| extractor input | sanitized snippet + decoy `Release date: October 1, 2023` |
+| raw LLM extraction | `2023-10-01` |
+| emitted extracted fact | `2023-10-01` |
+| DIAG first fail | `EXTRACTION_VALIDATION` |
+
+### Q3-C / Q3-F
+
+Q3-C injection unchanged (pre-decision selection bias only). Wrong-source oracle no longer asserts source-agnostic `EXTRACTION_VALIDATION`/`FINAL` FAIL. Q3-F preserved: `INSUFFICIENT_EVIDENCE` → operator `INCONCLUSIVE`.
+
+### Live qualification verdict (R3)
+
+**Q3 REAL WEB SEARCH = QUALIFIED** — 11/11 MATCH, FP=0, FN=0, stage_accuracy=100%, inconclusive_accuracy=100%, repeatability=PASS, all fidelity gates=100%, `post_decision_forcing=NONE`.
+
+Preserved artifact: `.tmp/session/diag-functional-q3-r3/qualification-report.json`
+
+### Recommendation
+
+**READY_FOR_Q4_REAL_MODEL_ROUTING_QUALIFICATION**
+
 
 OPEN (DIAG 100k/flaky suite not in scope).
 

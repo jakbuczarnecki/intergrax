@@ -29,11 +29,12 @@ class _PromptAwareStubAdapter:
     def generate_messages(self, messages, *, temperature: float, run_id: str) -> object:
         del temperature, run_id
         system = messages[0].content.lower()
+        user = messages[1].content
         if "pre-release" in system or "release-candidate" in system:
             return type("R", (), {"content": _RC3_URL})()
         if "select" in system or "source url" in system:
             return type("R", (), {"content": _FINAL_URL})()
-        if "2023-10-01" in system:
+        if "2023-10-01" in user or "October 1, 2023" in user:
             return type("R", (), {"content": "2023-10-01"})()
         return type("R", (), {"content": "2023-10-02"})()
 
@@ -136,3 +137,4 @@ def test_extraction_bias_induces_wrong_date_via_prompt() -> None:
     )
     assert decision.fact == "2023-10-01"
     assert decision.raw_response == "2023-10-01"
+    assert decision.extractor_input_modified is True

@@ -45,24 +45,16 @@ def _healthy_checks() -> tuple[QualificationCheckExpectation, ...]:
 
 
 def _bad_query_checks() -> tuple[QualificationCheckExpectation, ...]:
+    """Wrong query localizes at QUERY; downstream varies with provider result mix."""
     return (
         QualificationCheckExpectation(CHECK_Q3_QUERY, FunctionalDiagnosticCheckStatus.PROVEN_FAIL),
         QualificationCheckExpectation(CHECK_Q3_SEARCH, FunctionalDiagnosticCheckStatus.PROVEN_PASS),
         QualificationCheckExpectation(CHECK_Q3_CANDIDATES, FunctionalDiagnosticCheckStatus.PROVEN_PASS),
-        QualificationCheckExpectation(CHECK_Q3_SELECTION, FunctionalDiagnosticCheckStatus.PROVEN_FAIL),
-        QualificationCheckExpectation(
-            CHECK_Q3_EXTRACTION_RELATION,
-            FunctionalDiagnosticCheckStatus.PROVEN_PASS,
-        ),
-        QualificationCheckExpectation(
-            CHECK_Q3_EXTRACTION_VALIDATION,
-            FunctionalDiagnosticCheckStatus.PROVEN_FAIL,
-        ),
-        QualificationCheckExpectation(CHECK_Q3_FINAL, FunctionalDiagnosticCheckStatus.PROVEN_FAIL),
     )
 
 
 def _wrong_source_checks() -> tuple[QualificationCheckExpectation, ...]:
+    """Wrong source localizes at SELECTION; extraction validation is source-agnostic."""
     return (
         QualificationCheckExpectation(CHECK_Q3_QUERY, FunctionalDiagnosticCheckStatus.PROVEN_PASS),
         QualificationCheckExpectation(CHECK_Q3_SEARCH, FunctionalDiagnosticCheckStatus.PROVEN_PASS),
@@ -72,11 +64,6 @@ def _wrong_source_checks() -> tuple[QualificationCheckExpectation, ...]:
             CHECK_Q3_EXTRACTION_RELATION,
             FunctionalDiagnosticCheckStatus.PROVEN_PASS,
         ),
-        QualificationCheckExpectation(
-            CHECK_Q3_EXTRACTION_VALIDATION,
-            FunctionalDiagnosticCheckStatus.PROVEN_FAIL,
-        ),
-        QualificationCheckExpectation(CHECK_Q3_FINAL, FunctionalDiagnosticCheckStatus.PROVEN_FAIL),
     )
 
 

@@ -27,13 +27,17 @@ from intergrax.runtime.diagnostics.in_memory_functional_evidence_persistence imp
     InMemoryFunctionalEvidencePersistence,
 )
 from intergrax.runtime.diagnostics.specifications.q3_web_search_functional_diagnostic_specification import (
+    CHECK_Q3_CANDIDATES,
     CHECK_Q3_EXTRACTION_VALIDATION,
+    CHECK_Q3_QUERY,
+    CHECK_Q3_SEARCH,
     CHECK_Q3_SELECTION,
     Q3_WEB_EXTRACT_OPERATION_ID,
     Q3_WEB_QUERY_ID,
     Q3_WEB_SEARCH_OPERATION_ID,
     build_q3_web_search_functional_diagnostic_specification,
 )
+from tests.system.functional_diagnostics_q3.cases import Q3_B_BAD_QUERY
 from tests.system.functional_diagnostics_q3.oracle import (
     CANONICAL_EXPECTED_SOURCE_REF,
     build_extraction_validation_evidence,
@@ -127,8 +131,16 @@ def test_wrong_source_injection_selects_non_canonical_candidate() -> None:
 
 
 def test_extraction_injection_returns_biased_fact_without_post_override() -> None:
+    class _DecoyContextAdapter:
+        def generate_messages(self, messages, *, temperature: float, run_id: str) -> object:
+            del temperature, run_id
+            user = messages[1].content
+            if "2023-10-01" in user:
+                return type("R", (), {"content": "2023-10-01"})()
+            return type("R", (), {"content": "2023-10-02"})()
+
     decision = _extract_fact(
-        adapter=_StubAdapter(extraction="2023-10-01"),
+        adapter=_DecoyContextAdapter(),
         run_id="run-test",
         selected_url=_FINAL_URL,
         snippet="Released Oct. 2, 2023",
@@ -136,6 +148,18 @@ def test_extraction_injection_returns_biased_fact_without_post_override() -> Non
     )
     assert decision.fact == "2023-10-01"
     assert decision.raw_response == "2023-10-01"
+    assert decision.extractor_input_modified is True
+    assert "Oct. 2, 2023" in decision.provider_source_snippet
+
+
+def test_bad_query_expectation_localizes_only_at_query_stage() -> None:
+    expected = {item.check_id: item.expected_status for item in Q3_B_BAD_QUERY.expected_check_results}
+    assert expected[CHECK_Q3_QUERY].value == "proven_fail"
+    assert expected[CHECK_Q3_SEARCH].value == "proven_pass"
+    assert expected[CHECK_Q3_CANDIDATES].value == "proven_pass"
+    assert CHECK_Q3_SELECTION not in expected
+    assert CHECK_Q3_EXTRACTION_VALIDATION not in expected
+    assert Q3_B_BAD_QUERY.expected_first_proven_failed_check == CHECK_Q3_QUERY
 
 
 def test_missing_selection_yields_inconclusive_without_proven_extraction_failure() -> None:

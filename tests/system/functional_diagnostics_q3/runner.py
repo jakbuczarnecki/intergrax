@@ -102,6 +102,7 @@ class DecisionFidelitySnapshot:
     raw_selector_response: str | None
     raw_selector_url: str | None
     raw_extractor_response: str | None
+    extractor_input_modified: bool
     selection_decision_fidelity_match: bool
     extraction_decision_fidelity_match: bool
     post_decision_forcing_detected: bool
@@ -640,6 +641,7 @@ def _decision_fidelity_snapshot(
         raw_selector_response=raw_selector_response,
         raw_selector_url=raw_selector_url,
         raw_extractor_response=raw_extractor_response,
+        extractor_input_modified=bool(summary.get("extractor_input_modified")),
         selection_decision_fidelity_match=selection_decision_match,
         extraction_decision_fidelity_match=extraction_decision_match,
         post_decision_forcing_detected=post_decision_forcing,
@@ -983,11 +985,13 @@ def _write_artifact(
                     "raw_selector_response": record.decision_fidelity.raw_selector_response,
                     "raw_selector_url": record.decision_fidelity.raw_selector_url,
                     "raw_extractor_response": record.decision_fidelity.raw_extractor_response,
-                    "selection_decision_fidelity_match": (
-                        record.decision_fidelity.selection_decision_fidelity_match
-                    ),
+                    "extractor_input_modified": record.decision_fidelity.extractor_input_modified,
+                    "actual_extracted_fact": record.actual_extracted_fact,
                     "extraction_decision_fidelity_match": (
                         record.decision_fidelity.extraction_decision_fidelity_match
+                    ),
+                    "selection_decision_fidelity_match": (
+                        record.decision_fidelity.selection_decision_fidelity_match
                     ),
                     "post_decision_forcing_detected": (
                         record.decision_fidelity.post_decision_forcing_detected

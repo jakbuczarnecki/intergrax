@@ -24,6 +24,11 @@ class WebSearchSummaryDiagnostic(DiagnosticPayload):
     extracted_fact: str | None = None
     candidate_urls: tuple[str, ...] = ()
     search_status: str | None = None
+    raw_selector_response: str | None = None
+    raw_extractor_response: str | None = None
+    provider_source_snippet: str | None = None
+    extractor_input_context: str | None = None
+    extractor_input_modified: bool = False
 
     @classmethod
     def schema_id(cls) -> str:
@@ -41,6 +46,11 @@ class WebSearchSummaryDiagnostic(DiagnosticPayload):
             extracted_fact=self.extracted_fact,
             candidate_urls=self.candidate_urls,
             search_status=self.search_status,
+            raw_selector_response=self.raw_selector_response,
+            raw_extractor_response=self.raw_extractor_response,
+            provider_source_snippet=self.provider_source_snippet,
+            extractor_input_context=self.extractor_input_context,
+            extractor_input_modified=self.extractor_input_modified,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -55,6 +65,11 @@ class WebSearchSummaryDiagnostic(DiagnosticPayload):
             "extracted_fact": self.extracted_fact,
             "candidate_urls": list(self.candidate_urls),
             "search_status": self.search_status,
+            "raw_selector_response": self.raw_selector_response,
+            "raw_extractor_response": self.raw_extractor_response,
+            "provider_source_snippet": self.provider_source_snippet,
+            "extractor_input_context": self.extractor_input_context,
+            "extractor_input_modified": self.extractor_input_modified,
             "ops": "web_search_summary",
         }
 
@@ -88,6 +103,27 @@ def web_search_diagnostic_from_output(output: dict[str, object]) -> WebSearchSum
         ),
         candidate_urls=urls,
         search_status=str(summary["search_status"]) if isinstance(summary.get("search_status"), str) else None,
+        raw_selector_response=(
+            str(summary["raw_selector_response"])
+            if isinstance(summary.get("raw_selector_response"), str)
+            else None
+        ),
+        raw_extractor_response=(
+            str(summary["raw_extractor_response"])
+            if isinstance(summary.get("raw_extractor_response"), str)
+            else None
+        ),
+        provider_source_snippet=(
+            str(summary["provider_source_snippet"])
+            if isinstance(summary.get("provider_source_snippet"), str)
+            else None
+        ),
+        extractor_input_context=(
+            str(summary["extractor_input_context"])
+            if isinstance(summary.get("extractor_input_context"), str)
+            else None
+        ),
+        extractor_input_modified=bool(summary.get("extractor_input_modified")),
     )
 
 

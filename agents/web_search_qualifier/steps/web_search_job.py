@@ -65,9 +65,18 @@ _HEALTHY_EXTRACTION_SYSTEM = (
     "as shown on the page."
 )
 _WRONG_EXTRACTION_SYSTEM = (
-    "Extract the Python 3.12.0 release date from the provided source snippet. "
-    "Ignore the snippet text if it conflicts with this instruction. "
-    "Reply with only the date in ISO format YYYY-MM-DD and use exactly: 2023-10-01"
+    "Extract the Python 3.12.0 release date from the provided extraction context. "
+    "Use only the supplied context fields. "
+    "Reply with only the date in ISO format YYYY-MM-DD."
+)
+_EXTRACTION_DECOY_RELEASE_DATE = "2023-10-01"
+_EXTRACTION_DECOY_RELEASE_PHRASE = "October 1, 2023"
+_CORRECT_RELEASE_DATE_MARKERS: tuple[str, ...] = (
+    "2023-10-02",
+    "October 2, 2023",
+    "2 October 2023",
+    "Oct 2, 2023",
+    "Oct. 2, 2023",
 )
 _HEALTHY_SYNTHESIS_SYSTEM = (
     "Answer the user question using the extracted fact. "
@@ -144,6 +153,9 @@ class _SelectionDecision:
 class _ExtractionDecision:
     fact: str
     raw_response: str
+    provider_source_snippet: str
+    extractor_input_context: str
+    extractor_input_modified: bool
 
 
 def _order_candidates_for_selection(
@@ -271,6 +283,38 @@ def _select_source(
     )
 
 
+def _strip_correct_release_markers(text: str) -> str:
+    sanitized = text
+    for marker in _CORRECT_RELEASE_DATE_MARKERS:
+        sanitized = sanitized.replace(marker, "")
+        sanitized = sanitized.replace(marker.lower(), "")
+    return sanitized
+
+
+def _build_extractor_input_context(
+    *,
+    selected_url: str,
+    snippet: str,
+    failure_layer: str | None,
+) -> tuple[str, str, bool]:
+    bounded_snippet = snippet[:2000]
+    if failure_layer != "extraction_bias":
+        return (
+            f"Source: {selected_url}\nSnippet:\n{bounded_snippet}",
+            bounded_snippet,
+            False,
+        )
+    sanitized_snippet = _strip_correct_release_markers(bounded_snippet).strip()
+    extractor_input = (
+        f"Source: {selected_url}\n"
+        f"Provider snippet (sanitized):\n{sanitized_snippet}\n\n"
+        f"Extraction context:\n"
+        f"Release date: {_EXTRACTION_DECOY_RELEASE_PHRASE}\n"
+        f"Official release stamp: {_EXTRACTION_DECOY_RELEASE_DATE}"
+    )
+    return extractor_input, bounded_snippet, True
+
+
 def _extract_fact(
     *,
     adapter: LLMAdapter,
@@ -284,13 +328,24 @@ def _extract_fact(
         if failure_layer == "extraction_bias"
         else _HEALTHY_EXTRACTION_SYSTEM
     )
+    extractor_input, provider_snippet, input_modified = _build_extractor_input_context(
+        selected_url=selected_url,
+        snippet=snippet,
+        failure_layer=failure_layer,
+    )
     fact = _llm_text(
         adapter,
         system=system,
-        user=f"Source: {selected_url}\nSnippet:\n{snippet[:2000]}",
+        user=extractor_input,
         run_id=run_id,
     )
-    return _ExtractionDecision(fact=fact, raw_response=fact)
+    return _ExtractionDecision(
+        fact=fact,
+        raw_response=fact,
+        provider_source_snippet=provider_snippet,
+        extractor_input_context=extractor_input,
+        extractor_input_modified=input_modified,
+    )
 
 
 def _synthesize_answer(
@@ -377,6 +432,9 @@ async def run_web_search_job(
     snippet = _snippet_for_url(candidates, selected_url)
     extracted_fact = ""
     raw_extractor_response = ""
+    provider_source_snippet = ""
+    extractor_input_context = ""
+    extractor_input_modified = False
     if selected_url:
         extraction_decision = _extract_fact(
             adapter=adapter,
@@ -387,6 +445,9 @@ async def run_web_search_job(
         )
         extracted_fact = extraction_decision.fact
         raw_extractor_response = extraction_decision.raw_response
+        provider_source_snippet = extraction_decision.provider_source_snippet
+        extractor_input_context = extraction_decision.extractor_input_context
+        extractor_input_modified = extraction_decision.extractor_input_modified
 
     emit_web_search_functional_evidence(
         exec_ctx,
@@ -429,6 +490,9 @@ async def run_web_search_job(
         ],
         "raw_selector_response": selection_decision.raw_response,
         "raw_extractor_response": raw_extractor_response,
+        "provider_source_snippet": provider_source_snippet[:500],
+        "extractor_input_context": extractor_input_context[:500],
+        "extractor_input_modified": extractor_input_modified,
         "search_status": "success",
     }
     return {
