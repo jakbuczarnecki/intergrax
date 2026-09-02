@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 from dataclasses import dataclass, fields, field
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -54,6 +55,9 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.orchestration.orchestrator import (
     VpiBootstrapDependencies,
     VpiBootstrapOrchestrator,
+)
+from platform_proofs.scenarios.verified_product_identification.integrations.search_store.qdrant.adapter import (
+    QdrantSearchIndexBootstrapAdapter,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.validation.embedding_gate import (
     RegistryEmbeddingReadinessProbe,
@@ -713,6 +717,83 @@ def test_ready_fast_path_executes_real_gate0(tmp_path: Path) -> None:
     assert embedding.embed_calls == 0
     assert report.validation is not None
     assert any(check.name == "embedding.embedding_gate0" for check in report.validation.checks)
+
+
+def _qdrant_collection_info(*, dense_size: int, points_count: int) -> SimpleNamespace:
+    dense = SimpleNamespace(size=dense_size)
+    return SimpleNamespace(
+        points_count=points_count,
+        config=SimpleNamespace(
+            params=SimpleNamespace(
+                vectors={"dense": dense},
+                sparse_vectors={"sparse": SimpleNamespace()},
+            )
+        ),
+    )
+
+
+class _RestartQdrantClient:
+    def __init__(self, collection_info: SimpleNamespace) -> None:
+        self._collection_info = collection_info
+
+    def get_collections(self) -> object:
+        return SimpleNamespace(collections=[])
+
+    def get_collection(self, collection_name: str) -> SimpleNamespace:
+        return self._collection_info
+
+    def create_collection(self, *args, **kwargs) -> bool:
+        raise AssertionError("READY fast path must not create collection")
+
+    def upsert(self, *args, **kwargs) -> object:
+        raise AssertionError("READY fast path must not ingest")
+
+    def close(self) -> None:
+        return None
+
+
+def test_ready_fast_path_validates_persisted_qdrant_without_prepare(tmp_path: Path) -> None:
+    catalog = FakeCatalogPort()
+    embedding = FakeEmbeddingPort()
+    qdrant_client = _RestartQdrantClient(_qdrant_collection_info(dense_size=8, points_count=2))
+    search = QdrantSearchIndexBootstrapAdapter(
+        _client=qdrant_client,
+        _collection_name="vpi_offers__tenant__default",
+        _tenant_id="default",
+        _sparse_enabled=True,
+        _sparse_encoder=SimpleNamespace(encode=lambda text: SimpleNamespace(indices=[1], values=[1.0])),
+    )
+    assert search._dimension is None
+    catalog.manifest = _sample_manifest(
+        state=BootstrapState.READY,
+        dataset_record_count=5,
+        target_max_records=2,
+        checkpoint_batch_ordinal=0,
+        checkpoint_rows_processed=2,
+        catalog_source_offer_count=2,
+        catalog_identifier_count=2,
+        catalog_structured_attribute_count=2,
+        search_point_count=2,
+        dataset_checksum="testchecksum",
+    )
+    orchestrator = _orchestrator(
+        tmp_path,
+        catalog=catalog,
+        search=search,
+        embedding=embedding,
+        max_records=2,
+        row_count=5,
+    )
+    report = orchestrator.run()
+    assert report.final_state is BootstrapState.READY
+    assert embedding.probe_calls == 1
+    assert embedding.embed_calls == 0
+    assert search._dimension is None
+    assert report.validation is not None
+    assert any(
+        check.name == "search.qdrant_dimension" and check.status is ValidationStatus.PASS
+        for check in report.validation.checks
+    )
 
 
 def test_requested_target_below_checkpoint_fails_closed(tmp_path: Path) -> None:

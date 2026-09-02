@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import cast
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.vector_store.qdrant.config import QdrantIntegrationConfig
@@ -43,7 +44,7 @@ _SPARSE_VECTOR_NAME = "sparse"
 _LOGICAL_ID_METADATA_KEY = "logical_id"
 
 
-def _load_qdrant_client_class():
+def _load_qdrant_client_class() -> type[QdrantBootstrapClient]:
     try:
         from qdrant_client import QdrantClient
     except ImportError as exc:
@@ -51,7 +52,7 @@ def _load_qdrant_client_class():
             "Qdrant integration requires qdrant-client. "
             "Install with: Intergrax-ai[vector-qdrant]."
         ) from exc
-    return QdrantClient
+    return cast(type[QdrantBootstrapClient], QdrantClient)
 
 
 def _normalize_point_id(raw_id: str) -> str:
@@ -206,27 +207,20 @@ class QdrantSearchIndexBootstrapAdapter:
         return SearchIndexIngestBatchResult(point_count=self.count_points())
 
     def validate(self, manifest: VpiBootstrapManifest) -> ValidationReport:
-        point_count = self.count_points()
         from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.manifest.run_target import (
             effective_run_target_rows,
         )
 
+        info = self._get_collection_info()
+        point_count = 0 if info is None else int(info.points_count)
         expected = effective_run_target_rows(manifest)
         return ValidationReport.from_checks(
             (
+                *self._persisted_collection_compatibility_checks(manifest, info),
                 ValidationCheck(
                     name="qdrant_point_count",
                     status=ValidationStatus.PASS if point_count >= expected else ValidationStatus.FAIL,
                     detail=f"point_count={point_count} expected>={expected}",
-                ),
-                ValidationCheck(
-                    name="qdrant_dimension",
-                    status=(
-                        ValidationStatus.PASS
-                        if self._dimension == manifest.embedding_dimension
-                        else ValidationStatus.FAIL
-                    ),
-                    detail=f"configured_dimension={self._dimension}",
                 ),
             )
         )
@@ -247,6 +241,86 @@ class QdrantSearchIndexBootstrapAdapter:
             if is_collection_not_found(exc):
                 return None
             raise VpiBootstrapProviderError("Qdrant get_collection failed") from exc
+
+    def _persisted_collection_compatibility_checks(
+        self,
+        manifest: VpiBootstrapManifest,
+        info,
+    ) -> tuple[ValidationCheck, ...]:
+        if info is None:
+            checks: list[ValidationCheck] = [
+                ValidationCheck(
+                    name="qdrant_collection_exists",
+                    status=ValidationStatus.FAIL,
+                    detail=f"collection={self._collection_name} not found",
+                ),
+                ValidationCheck(
+                    name="qdrant_dimension",
+                    status=ValidationStatus.FAIL,
+                    detail="persisted_dimension=none",
+                ),
+            ]
+            if self._sparse_enabled:
+                checks.append(
+                    ValidationCheck(
+                        name="qdrant_sparse_channel",
+                        status=ValidationStatus.FAIL,
+                        detail="collection missing",
+                    )
+                )
+            return tuple(checks)
+
+        existing_dim = collection_dense_dimension(info, dense_vector_name=_DENSE_VECTOR_NAME)
+        checks = []
+        if existing_dim is None:
+            checks.append(
+                ValidationCheck(
+                    name="qdrant_dense_channel",
+                    status=ValidationStatus.FAIL,
+                    detail=(
+                        f"collection={self._collection_name} has no dense vector config"
+                    ),
+                )
+            )
+            checks.append(
+                ValidationCheck(
+                    name="qdrant_dimension",
+                    status=ValidationStatus.FAIL,
+                    detail="persisted_dimension=none",
+                )
+            )
+        else:
+            checks.append(
+                ValidationCheck(
+                    name="qdrant_dimension",
+                    status=(
+                        ValidationStatus.PASS
+                        if existing_dim == manifest.embedding_dimension
+                        else ValidationStatus.FAIL
+                    ),
+                    detail=(
+                        f"persisted_dimension={existing_dim} "
+                        f"expected={manifest.embedding_dimension}"
+                    ),
+                )
+            )
+
+        if self._sparse_enabled:
+            has_sparse = collection_has_sparse_channel(
+                info,
+                sparse_vector_name=_SPARSE_VECTOR_NAME,
+            )
+            checks.append(
+                ValidationCheck(
+                    name="qdrant_sparse_channel",
+                    status=ValidationStatus.PASS if has_sparse else ValidationStatus.FAIL,
+                    detail=(
+                        f"sparse_channel={'present' if has_sparse else 'missing'} "
+                        f"required={_SPARSE_VECTOR_NAME}"
+                    ),
+                )
+            )
+        return tuple(checks)
 
     def _create_collection(self, *, dimension: int) -> None:
         from qdrant_client.http.models import Distance, SparseIndexParams, SparseVectorParams, VectorParams

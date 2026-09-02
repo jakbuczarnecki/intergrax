@@ -9,7 +9,7 @@ def is_collection_not_found(exc: BaseException) -> bool:
     try:
         from qdrant_client.http.exceptions import UnexpectedResponse
     except ImportError:
-        return False
+        return "404" in str(exc)
     current: BaseException | None = exc
     while current is not None:
         if isinstance(current, UnexpectedResponse) and current.status_code == 404:
