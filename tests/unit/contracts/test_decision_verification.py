@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import re
-from dataclasses import FrozenInstanceError, fields, replace
+from dataclasses import fields, replace
 from pathlib import Path
 from typing import get_type_hints
 
@@ -186,8 +186,12 @@ def _challenge(
     )
 
 
-def _passed_stage(stage: str = "structural_schema") -> VerificationStageRecord:
+def _passed_stage(
+    proposal_ref: DecisionProposalRef,
+    stage: str = "structural_schema",
+) -> VerificationStageRecord:
     return verification_stage_record(
+        proposal_ref=proposal_ref,
         stage=validate_verification_stage_kind(stage),
         outcome=VerificationStageOutcome.PASSED,
     )
@@ -199,10 +203,10 @@ def _challenged_stage(
     stage: str = "deterministic_rules",
 ) -> VerificationStageRecord:
     return verification_stage_record(
+        proposal_ref=proposal_ref,
         stage=validate_verification_stage_kind(stage),
         outcome=VerificationStageOutcome.CHALLENGED,
         challenge=_challenge(proposal_ref=proposal_ref, stage=stage),
-        proposal_ref=proposal_ref,
     )
 
 
@@ -227,14 +231,16 @@ def test_valid_passed_result_for_exact_decision_proposal_ref() -> None:
         proposal_ref=proposal_ref,
         disposition=VerificationDisposition.PASSED,
         stage_records=(
-            _passed_stage("structural_schema"),
-            _passed_stage("deterministic_rules"),
+            _passed_stage(proposal_ref, "structural_schema"),
+            _passed_stage(proposal_ref, "deterministic_rules"),
         ),
     )
     assert result.proposal_ref is proposal_ref
     assert result.disposition is VerificationDisposition.PASSED
     assert len(result.stage_records) == 2
-    assert validate_verification_result(result) is result
+    revalidated = validate_verification_result(result)
+    assert revalidated == result
+    assert revalidated is not result
 
 
 @pytest.mark.unit
@@ -245,7 +251,7 @@ def test_valid_challenged_result() -> None:
     result = verification_result(
         proposal_ref=proposal_ref,
         disposition=VerificationDisposition.CHALLENGED,
-        stage_records=(_passed_stage(), challenged),
+        stage_records=(_passed_stage(proposal_ref), challenged),
     )
     assert result.disposition is VerificationDisposition.CHALLENGED
     assert challenged.challenge is not None
@@ -277,16 +283,16 @@ def test_challenge_for_v1_cannot_be_used_in_result_for_v2() -> None:
     )
     v2_ref = _proposal_ref(identity=v2_identity, version=v2_identity.version)
     challenged = verification_stage_record(
+        proposal_ref=v1_ref,
         stage=validate_verification_stage_kind("deterministic_rules"),
         outcome=VerificationStageOutcome.CHALLENGED,
         challenge=_challenge(proposal_ref=v1_ref),
-        proposal_ref=v1_ref,
     )
     with pytest.raises(ValueError, match="must match the evaluated Decision proposal reference"):
         verification_result(
             proposal_ref=v2_ref,
             disposition=VerificationDisposition.CHALLENGED,
-            stage_records=(_passed_stage(), challenged),
+            stage_records=(_passed_stage(v2_ref), challenged),
         )
 
 
@@ -301,7 +307,7 @@ def test_sibling_branch_challenge_cannot_aggregate_for_other_branch() -> None:
         verification_result(
             proposal_ref=ref_b,
             disposition=VerificationDisposition.CHALLENGED,
-            stage_records=(_passed_stage(), challenged_for_a),
+            stage_records=(_passed_stage(ref_b), challenged_for_a),
         )
 
 
@@ -315,7 +321,72 @@ def test_mixed_decision_identity_across_stage_records_rejected() -> None:
         verification_result(
             proposal_ref=ref_b,
             disposition=VerificationDisposition.CHALLENGED,
-            stage_records=(_passed_stage(), challenged),
+            stage_records=(_passed_stage(ref_b), challenged),
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_passed_stage_for_other_proposal_cannot_aggregate() -> None:
+    ref_a = _proposal_ref()
+    ref_b = _proposal_ref()
+    passed_for_a = _passed_stage(ref_a)
+    with pytest.raises(ValueError, match="must match the evaluated Decision proposal reference"):
+        verification_result(
+            proposal_ref=ref_b,
+            disposition=VerificationDisposition.PASSED,
+            stage_records=(passed_for_a,),
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_passed_stage_for_sibling_branch_cannot_aggregate_for_other_branch() -> None:
+    identity = _identity(version=DecisionVersion(2))
+    ref_a = _proposal_ref(identity=identity, version=DecisionVersion(2), branch_id="A")
+    ref_b = _proposal_ref(identity=identity, version=DecisionVersion(2), branch_id="B")
+    passed_for_a = _passed_stage(ref_a)
+    with pytest.raises(ValueError, match="must match the evaluated Decision proposal reference"):
+        verification_result(
+            proposal_ref=ref_b,
+            disposition=VerificationDisposition.PASSED,
+            stage_records=(passed_for_a,),
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_passed_stage_for_v1_cannot_aggregate_for_v2() -> None:
+    identity = _identity(version=initial_decision_version())
+    v1_ref = _proposal_ref(identity=identity, version=initial_decision_version())
+    v2_identity = DecisionIdentity(
+        decision_id=identity.decision_id,
+        version=next_decision_version(initial_decision_version()),
+        scope=identity.scope,
+        tenant_id=identity.tenant_id,
+        execution=identity.execution,
+    )
+    v2_ref = _proposal_ref(identity=v2_identity, version=v2_identity.version)
+    passed_for_v1 = _passed_stage(v1_ref)
+    with pytest.raises(ValueError, match="must match the evaluated Decision proposal reference"):
+        verification_result(
+            proposal_ref=v2_ref,
+            disposition=VerificationDisposition.PASSED,
+            stage_records=(passed_for_v1,),
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_challenged_stage_record_rejects_challenge_proposal_mismatch() -> None:
+    ref_a = _proposal_ref()
+    ref_b = _proposal_ref()
+    with pytest.raises(ValueError, match="must match the evaluated Decision proposal reference"):
+        verification_stage_record(
+            proposal_ref=ref_b,
+            stage=validate_verification_stage_kind("deterministic_rules"),
+            outcome=VerificationStageOutcome.CHALLENGED,
+            challenge=_challenge(proposal_ref=ref_a),
         )
 
 
@@ -325,18 +396,20 @@ def test_passed_stage_with_challenge_rejected() -> None:
     proposal_ref = _proposal_ref()
     with pytest.raises(ValueError, match="PASSED outcome cannot include challenge"):
         verification_stage_record(
+            proposal_ref=proposal_ref,
             stage=validate_verification_stage_kind("structural_schema"),
             outcome=VerificationStageOutcome.PASSED,
             challenge=_challenge(proposal_ref=proposal_ref),
-            proposal_ref=proposal_ref,
         )
 
 
 @pytest.mark.unit
 @pytest.mark.gate
 def test_challenged_stage_without_challenge_rejected() -> None:
+    proposal_ref = _proposal_ref()
     with pytest.raises(ValueError, match="CHALLENGED outcome requires challenge"):
         verification_stage_record(
+            proposal_ref=proposal_ref,
             stage=validate_verification_stage_kind("structural_schema"),
             outcome=VerificationStageOutcome.CHALLENGED,
         )
@@ -350,7 +423,7 @@ def test_overall_passed_with_challenged_stage_rejected() -> None:
         verification_result(
             proposal_ref=proposal_ref,
             disposition=VerificationDisposition.PASSED,
-            stage_records=(_passed_stage(), _challenged_stage(proposal_ref)),
+            stage_records=(_passed_stage(proposal_ref), _challenged_stage(proposal_ref)),
         )
 
 
@@ -362,7 +435,10 @@ def test_overall_challenged_without_challenged_stage_rejected() -> None:
         verification_result(
             proposal_ref=proposal_ref,
             disposition=VerificationDisposition.CHALLENGED,
-            stage_records=(_passed_stage(), _passed_stage("deterministic_rules")),
+            stage_records=(
+                _passed_stage(proposal_ref),
+                _passed_stage(proposal_ref, "deterministic_rules"),
+            ),
         )
 
 
@@ -394,14 +470,17 @@ def test_challenge_has_no_authorization_or_lifecycle_semantics_fields() -> None:
 @pytest.mark.unit
 @pytest.mark.gate
 def test_contracts_are_immutable() -> None:
-    proposal_ref = _proposal_ref()
-    result = verification_result(
-        proposal_ref=proposal_ref,
-        disposition=VerificationDisposition.PASSED,
-        stage_records=(_passed_stage(),),
-    )
-    with pytest.raises(FrozenInstanceError):
-        setattr(result, "disposition", VerificationDisposition.CHALLENGED)
+    source = _MODULE_PATH.read_text(encoding="utf-8")
+    for contract_name in (
+        "VerificationFinding",
+        "VerificationChallenge",
+        "VerificationStageRecord",
+        "VerificationResult",
+    ):
+        marker = f"class {contract_name}"
+        start = source.index(marker)
+        decorator_region = source[max(0, start - 120) : start]
+        assert "@dataclass(frozen=True, slots=True)" in decorator_region
 
 
 @pytest.mark.unit
@@ -421,6 +500,8 @@ def test_strict_type_hints_on_core_contracts() -> None:
     assert result_hints["disposition"] is VerificationDisposition
     challenge_hints = get_type_hints(VerificationChallenge)
     assert challenge_hints["proposal_ref"] is DecisionProposalRef
+    stage_record_hints = get_type_hints(VerificationStageRecord)
+    assert stage_record_hints["proposal_ref"] is DecisionProposalRef
 
 
 @pytest.mark.unit
@@ -450,7 +531,7 @@ def test_replace_preserves_value_semantics() -> None:
     result = verification_result(
         proposal_ref=proposal_ref,
         disposition=VerificationDisposition.PASSED,
-        stage_records=(_passed_stage(),),
+        stage_records=(_passed_stage(proposal_ref),),
     )
     replaced = replace(result)
     assert replaced == result

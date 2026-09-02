@@ -174,35 +174,40 @@ def _validate_stage_record_coherence(record: VerificationStageRecord) -> None:
 class VerificationStageRecord:
     """Immutable per-stage verification record for one pipeline execution."""
 
+    proposal_ref: DecisionProposalRef
     stage: VerificationStageKind
     outcome: VerificationStageOutcome
     challenge: VerificationChallenge | None = None
 
     def __post_init__(self) -> None:
+        if type(self.proposal_ref) is not DecisionProposalRef:
+            raise TypeError(
+                "VerificationStageRecord.proposal_ref must be DecisionProposalRef",
+            )
         validate_verification_stage_kind(self.stage)
         _validate_stage_record_coherence(self)
+        if self.challenge is not None:
+            _require_matching_proposal_ref(
+                expected=self.proposal_ref,
+                actual=self.challenge.proposal_ref,
+                field_name="VerificationStageRecord.challenge.proposal_ref",
+            )
 
 
 def verification_stage_record(
     *,
+    proposal_ref: DecisionProposalRef,
     stage: VerificationStageKind,
     outcome: VerificationStageOutcome,
     challenge: VerificationChallenge | None = None,
-    proposal_ref: DecisionProposalRef | None = None,
 ) -> VerificationStageRecord:
-    """Build one stage record; optional proposal_ref enforces challenge binding."""
-    record = VerificationStageRecord(
+    """Build one stage record bound to an exact evaluated Decision proposal ref."""
+    return VerificationStageRecord(
+        proposal_ref=proposal_ref,
         stage=stage,
         outcome=outcome,
         challenge=challenge,
     )
-    if proposal_ref is not None and challenge is not None:
-        _require_matching_proposal_ref(
-            expected=proposal_ref,
-            actual=challenge.proposal_ref,
-            field_name="VerificationStageRecord.challenge.proposal_ref",
-        )
-    return record
 
 
 def _validate_stage_records(
@@ -220,12 +225,11 @@ def _validate_stage_records(
             raise TypeError(
                 "VerificationResult.stage_records must contain VerificationStageRecord",
             )
-        if record.challenge is not None:
-            _require_matching_proposal_ref(
-                expected=proposal_ref,
-                actual=record.challenge.proposal_ref,
-                field_name=f"VerificationResult.stage_records[{index}].challenge.proposal_ref",
-            )
+        _require_matching_proposal_ref(
+            expected=proposal_ref,
+            actual=record.proposal_ref,
+            field_name=f"VerificationResult.stage_records[{index}].proposal_ref",
+        )
 
 
 def _validate_result_coherence(
@@ -296,7 +300,11 @@ def verification_result(
 
 
 def validate_verification_result(result: VerificationResult) -> VerificationResult:
-    """Re-validate one verification result invariant."""
+    """Re-validate one verification result by reconstructing the canonical contract."""
     if type(result) is not VerificationResult:
         raise TypeError("result must be VerificationResult")
-    return result
+    return VerificationResult(
+        proposal_ref=result.proposal_ref,
+        disposition=result.disposition,
+        stage_records=result.stage_records,
+    )
