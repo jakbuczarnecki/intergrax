@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Decision Verification pipeline orchestrator (DS-VER-PIPE-01).
+"""Decision Verification pipeline orchestrator (DS-VER-PIPE-01, DS-VER-PIPE-04).
 
 Runs configured verification stages against one exact immutable CandidateDecision
 and returns one VerificationResult. Does not revise decisions, authorize execution,
@@ -28,6 +28,7 @@ from intergrax.contracts.decision_verification import (
 )
 from intergrax.contracts.decision_verification_stage import (
     T,
+    VerificationStageExecutionClass,
     VerificationStageRegistration,
     VerificationStageRegistry,
 )
@@ -83,9 +84,38 @@ def _aggregate_disposition(
 
 def _pipeline_execution_plan(
     registry: VerificationStageRegistry[T],
-) -> tuple[VerificationStageRegistration[T], ...]:
-    """Return stage registrations in pipeline execution order."""
-    return registry.registrations
+) -> tuple[
+    tuple[VerificationStageRegistration[T], ...],
+    tuple[VerificationStageRegistration[T], ...],
+]:
+    """Return deterministic and probabilistic registrations in registry-stable order."""
+    deterministic: list[VerificationStageRegistration[T]] = []
+    probabilistic: list[VerificationStageRegistration[T]] = []
+    for registration in registry.registrations:
+        if registration.stage.execution_class is VerificationStageExecutionClass.DETERMINISTIC:
+            deterministic.append(registration)
+            continue
+        if registration.stage.execution_class is VerificationStageExecutionClass.PROBABILISTIC:
+            probabilistic.append(registration)
+            continue
+        raise ValueError(
+            "verification stage execution_class must be VerificationStageExecutionClass",
+        )
+    return tuple(deterministic), tuple(probabilistic)
+
+
+async def _execute_registration(
+    *,
+    registration: VerificationStageRegistration[T],
+    candidate: CandidateDecision[T],
+) -> VerificationStageRecord:
+    record = await registration.stage.verify(candidate)
+    _validate_returned_stage_record(
+        record=record,
+        registration=registration,
+        candidate=candidate,
+    )
+    return record
 
 
 @dataclass(frozen=True, slots=True)
@@ -103,14 +133,26 @@ class VerificationPipeline(Generic[T]):
             raise TypeError("candidate must be CandidateDecision")
         proposal_ref = candidate_decision_ref(candidate)
         stage_records: list[VerificationStageRecord] = []
-        for registration in _pipeline_execution_plan(self.registry):
-            record = await registration.stage.verify(candidate)
-            _validate_returned_stage_record(
-                record=record,
-                registration=registration,
-                candidate=candidate,
+        deterministic_regs, probabilistic_regs = _pipeline_execution_plan(self.registry)
+        for registration in deterministic_regs:
+            stage_records.append(
+                await _execute_registration(
+                    registration=registration,
+                    candidate=candidate,
+                ),
             )
-            stage_records.append(record)
+        deterministic_challenged = any(
+            record.outcome is VerificationStageOutcome.CHALLENGED
+            for record in stage_records
+        )
+        if not deterministic_challenged:
+            for registration in probabilistic_regs:
+                stage_records.append(
+                    await _execute_registration(
+                        registration=registration,
+                        candidate=candidate,
+                    ),
+                )
         disposition = _aggregate_disposition(tuple(stage_records))
         return verification_result(
             proposal_ref=proposal_ref,

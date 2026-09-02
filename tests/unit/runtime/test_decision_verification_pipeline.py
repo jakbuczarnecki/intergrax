@@ -324,6 +324,315 @@ def test_no_decision_lifecycle_invocation_boundary() -> None:
         assert fragment not in source
 
 
+def _pipeline_from_registrations(
+    *registrations: VerificationStageRegistration[IncidentDecisionPayload],
+) -> VerificationPipeline[IncidentDecisionPayload]:
+    return VerificationPipeline(registry=verification_stage_registry(registrations))
+
+
+@dataclass(frozen=True, slots=True)
+class RecordingStage:
+    kind: VerificationStageKind
+    execution_class: VerificationStageExecutionClass
+    trace: list[VerificationStageKind]
+
+    async def verify(
+        self,
+        candidate: CandidateDecision[IncidentDecisionPayload],
+    ) -> VerificationStageRecord:
+        self.trace.append(self.kind)
+        return verification_stage_record(
+            proposal_ref=candidate_decision_ref(candidate),
+            stage=self.kind,
+            outcome=VerificationStageOutcome.PASSED,
+        )
+
+
+def _recording_stage(
+    *,
+    kind: str,
+    execution_class: VerificationStageExecutionClass,
+    trace: list[VerificationStageKind],
+) -> RecordingStage:
+    return RecordingStage(
+        kind=validate_verification_stage_kind(kind),
+        execution_class=execution_class,
+        trace=trace,
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_deterministic_stages_execute_before_probabilistic() -> None:
+    trace: list[VerificationStageKind] = []
+    registrations = (
+        _registration(
+            kind="semantic_1",
+            stage=_recording_stage(
+                kind="semantic_1",
+                execution_class=VerificationStageExecutionClass.PROBABILISTIC,
+                trace=trace,
+            ),
+        ),
+        _registration(
+            kind="schema",
+            stage=_recording_stage(
+                kind="schema",
+                execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+                trace=trace,
+            ),
+        ),
+        _registration(
+            kind="domain_llm",
+            stage=_recording_stage(
+                kind="domain_llm",
+                execution_class=VerificationStageExecutionClass.PROBABILISTIC,
+                trace=trace,
+            ),
+        ),
+        _registration(
+            kind="rules",
+            stage=_recording_stage(
+                kind="rules",
+                execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+                trace=trace,
+            ),
+        ),
+    )
+    pipeline = _pipeline_from_registrations(*registrations)
+    _ = await pipeline.verify(_candidate())
+    assert trace == [
+        validate_verification_stage_kind("rules"),
+        validate_verification_stage_kind("schema"),
+        validate_verification_stage_kind("domain_llm"),
+        validate_verification_stage_kind("semantic_1"),
+    ]
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_stable_order_within_deterministic_group() -> None:
+    trace: list[VerificationStageKind] = []
+    registrations = (
+        _registration(
+            kind="rules",
+            stage=_recording_stage(
+                kind="rules",
+                execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+                trace=trace,
+            ),
+        ),
+        _registration(
+            kind="schema",
+            stage=_recording_stage(
+                kind="schema",
+                execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+                trace=trace,
+            ),
+        ),
+    )
+    pipeline = _pipeline_from_registrations(*registrations)
+    _ = await pipeline.verify(_candidate())
+    assert trace == [
+        validate_verification_stage_kind("rules"),
+        validate_verification_stage_kind("schema"),
+    ]
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_stable_order_within_probabilistic_group() -> None:
+    trace: list[VerificationStageKind] = []
+    registrations = (
+        _registration(
+            kind="domain_llm",
+            stage=_recording_stage(
+                kind="domain_llm",
+                execution_class=VerificationStageExecutionClass.PROBABILISTIC,
+                trace=trace,
+            ),
+        ),
+        _registration(
+            kind="semantic_1",
+            stage=_recording_stage(
+                kind="semantic_1",
+                execution_class=VerificationStageExecutionClass.PROBABILISTIC,
+                trace=trace,
+            ),
+        ),
+    )
+    pipeline = _pipeline_from_registrations(*registrations)
+    _ = await pipeline.verify(_candidate())
+    assert trace == [
+        validate_verification_stage_kind("domain_llm"),
+        validate_verification_stage_kind("semantic_1"),
+    ]
+
+
+@dataclass(frozen=True, slots=True)
+class RecordingChallengedStage:
+    kind: VerificationStageKind
+    execution_class: VerificationStageExecutionClass
+    trace: list[VerificationStageKind]
+
+    async def verify(
+        self,
+        candidate: CandidateDecision[IncidentDecisionPayload],
+    ) -> VerificationStageRecord:
+        self.trace.append(self.kind)
+        proposal_ref = candidate_decision_ref(candidate)
+        finding = verification_finding(
+            code=validate_verification_finding_code("verification.test.challenged"),
+            message="stage challenged",
+        )
+        challenge = verification_challenge(
+            proposal_ref=proposal_ref,
+            stage=self.kind,
+            requirement_code=validate_verification_requirement_code(
+                "verification.test.requirement",
+            ),
+            finding=finding,
+        )
+        return verification_stage_record(
+            proposal_ref=proposal_ref,
+            stage=self.kind,
+            outcome=VerificationStageOutcome.CHALLENGED,
+            challenge=challenge,
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_deterministic_challenge_prevents_probabilistic_execution() -> None:
+    trace: list[VerificationStageKind] = []
+    registrations = (
+        _registration(
+            kind="schema",
+            stage=RecordingChallengedStage(
+                kind=validate_verification_stage_kind("schema"),
+                execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+                trace=trace,
+            ),
+        ),
+        _registration(
+            kind="rules",
+            stage=_recording_stage(
+                kind="rules",
+                execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+                trace=trace,
+            ),
+        ),
+        _registration(
+            kind="semantic_1",
+            stage=_recording_stage(
+                kind="semantic_1",
+                execution_class=VerificationStageExecutionClass.PROBABILISTIC,
+                trace=trace,
+            ),
+        ),
+    )
+    pipeline = _pipeline_from_registrations(*registrations)
+    result = await pipeline.verify(_candidate())
+    assert result.disposition is VerificationDisposition.CHALLENGED
+    assert trace == [
+        validate_verification_stage_kind("rules"),
+        validate_verification_stage_kind("schema"),
+    ]
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_deterministic_stages_all_contribute_before_probabilistic_short_circuit() -> (
+    None
+):
+    trace: list[VerificationStageKind] = []
+    registrations = (
+        _registration(
+            kind="rules",
+            stage=RecordingChallengedStage(
+                kind=validate_verification_stage_kind("rules"),
+                execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+                trace=trace,
+            ),
+        ),
+        _registration(
+            kind="schema",
+            stage=_recording_stage(
+                kind="schema",
+                execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+                trace=trace,
+            ),
+        ),
+        _registration(
+            kind="semantic_1",
+            stage=_recording_stage(
+                kind="semantic_1",
+                execution_class=VerificationStageExecutionClass.PROBABILISTIC,
+                trace=trace,
+            ),
+        ),
+    )
+    pipeline = _pipeline_from_registrations(*registrations)
+    result = await pipeline.verify(_candidate())
+    assert len(result.stage_records) == 2
+    assert trace == [
+        validate_verification_stage_kind("rules"),
+        validate_verification_stage_kind("schema"),
+    ]
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_result_records_preserve_execution_order() -> None:
+    trace: list[VerificationStageKind] = []
+    registrations = (
+        _registration(
+            kind="semantic_1",
+            stage=_recording_stage(
+                kind="semantic_1",
+                execution_class=VerificationStageExecutionClass.PROBABILISTIC,
+                trace=trace,
+            ),
+        ),
+        _registration(
+            kind="schema",
+            stage=_recording_stage(
+                kind="schema",
+                execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+                trace=trace,
+            ),
+        ),
+    )
+    pipeline = _pipeline_from_registrations(*registrations)
+    result = await pipeline.verify(_candidate())
+    assert tuple(record.stage for record in result.stage_records) == tuple(trace)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_registry_unchanged_after_ordered_execution() -> None:
+    trace: list[VerificationStageKind] = []
+    registration = _registration(
+        kind="schema",
+        stage=_recording_stage(
+            kind="schema",
+            execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+            trace=trace,
+        ),
+    )
+    registry = verification_stage_registry((registration,))
+    pipeline = VerificationPipeline(registry=registry)
+    _ = await pipeline.verify(_candidate())
+    assert registry.registrations == (registration,)
+
+
 @pytest.mark.unit
 @pytest.mark.gate
 @pytest.mark.asyncio
