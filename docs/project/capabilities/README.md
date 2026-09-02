@@ -51,6 +51,21 @@ Do **not** create `docs/project/capabilities/satellites` at the features root. S
 7. Feature docs must not override domain-layer architecture. They coordinate it.
 8. Feature satellites follow the same hub + satellite split as domain docs: `architecture/satellites` for architecture-side registers, `plan/satellites` for plan-side registers. Load at most one satellite per session unless RESUME cites more.
 
+### Domain-vs-feature example: Autonomous Work / Virtual Workforce
+
+`AUTONOMOUS_WORK` is a **DOMAIN**, not a feature, because it owns new reusable platform semantics: `WorkerDefinition`, `WorkerInstance`, durable Responsibility/Goal, worker lifecycle, work-intake/wake-up semantics and worker-level recovery composition. Its canonical pair is:
+
+```text
+docs/project/architecture/AUTONOMOUS_WORK.md
+docs/project/maintainers/plans/AUTONOMOUS_WORK.md
+```
+
+`Virtual Worker` is the primary product-facing abstraction of that domain.
+
+A future `VIRTUAL_WORKFORCE` feature pair may be created **only when** product/runtime composition needs a cross-layer coordinator spanning Autonomous Work, Collaborative Work, Governed Execution, CodeCraft, Observability, Hosting and other domain owners. That future feature must not become the owner of Worker contracts.
+
+This is analogous to `MULTIPLAYER_AI`: Multiplayer is a cross-layer feature, while `COLLABORATIVE_WORK` is the anchor domain owning core collaborative semantics.
+
 ---
 
 ## Current multi-layer features
@@ -60,6 +75,8 @@ Do **not** create `docs/project/capabilities/satellites` at the features root. S
 | `TOKEN_OPTIMIZATION` | [`token_optimization/README.md`](token_optimization/README.md) | [`architecture/TOKEN_OPTIMIZATION.md`](architecture/TOKEN_OPTIMIZATION.md) | [`plan/TOKEN_OPTIMIZATION.md`](plan/TOKEN_OPTIMIZATION.md) | Implemented foundation; TOKEN-10 cache-aware runtime and proof planned |
 | `LANGCHAIN_INDEPENDENCE` | - | [`architecture/LANGCHAIN_INDEPENDENCE.md`](architecture/LANGCHAIN_INDEPENDENCE.md) | [`plan/LANGCHAIN_INDEPENDENCE.md`](plan/LANGCHAIN_INDEPENDENCE.md) | Architecture and migration roadmap awaiting review; implementation not started |
 | `MULTIPLAYER_AI` | - | [`architecture/MULTIPLAYER_AI.md`](architecture/MULTIPLAYER_AI.md) | [`plan/MULTIPLAYER_AI.md`](plan/MULTIPLAYER_AI.md) | **MP-0** - canonical architecture and roadmap (documentation only); MP-1…MP-9 planned, not started |
+
+**Reserved future product/cross-layer concept:** `VIRTUAL_WORKFORCE` — no feature pair exists yet; canonical worker semantics belong to [`../architecture/AUTONOMOUS_WORK.md`](../architecture/AUTONOMOUS_WORK.md).
 
 **Satellites (on demand):**
 
@@ -74,10 +91,11 @@ Do **not** create `docs/project/capabilities/satellites` at the features root. S
 
 ```text
 idea / audit instruction
-  → docs/project/capabilities/architecture/<FEATURE>.md
-  → docs/project/capabilities/plan/<FEATURE>.md
-  → update affected docs/project/architecture/<DOMAIN>.md files
-  → add concrete rows to affected docs/project/maintainers/plans/<DOMAIN>.md files
+  → classify: DOMAIN or FEATURE
+  → DOMAIN: docs/project/architecture/<DOMAIN>.md ↔ docs/project/maintainers/plans/<DOMAIN>.md
+  → FEATURE: docs/project/capabilities/architecture/<FEATURE>.md ↔ docs/project/capabilities/plan/<FEATURE>.md
+  → update affected domain architecture files
+  → add concrete rows to affected domain plans when implementation begins
   → implement smallest domain-owned slice
   → gate + journal
 ```
