@@ -20,7 +20,7 @@
 - UAEP is **agent-specific**; Nexus is **not** required for direct inference or ordinary agentic execution
 - UER coordinates Governance/Budget/Observability/Checkpoint; does not own their authorities
 
-**Known implementation gaps (CURRENT):** no canonical `ExecutionId`; `RuntimeEvent` lacks `ExecutionId`; `UnifiedTaskRunner` routes through Nexus; agent-centric `GraphExecutor`; incomplete hierarchical budget; node-centric authority in places.
+**Known implementation gaps (CURRENT):** canonical UER foundations exist (`ExecutionId`, `ExecutionBoundary`, `StrategyExecutionRouter`); full entry-path adoption, five-ID background propagation, subtree cancellation, and budget/authority convergence **PARTIAL**; `UnifiedTaskRunner` routes through Nexus on many paths; agent-centric `GraphExecutor`; incomplete hierarchical budget dimensions on some paths.
 
 **High-level migration order:** see UER hub [Implementation readiness §5](../../architecture/UNIFIED_EXECUTION_RUNTIME.md#5-migration-order-high-level). Detailed code mapping: [`UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md`](../../architecture/UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md) (**UE-DOC-0.9**).
 

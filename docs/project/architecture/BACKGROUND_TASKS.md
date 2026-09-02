@@ -1,6 +1,6 @@
 # Background Tasks - Platform Architecture
 
-**Status:** Target platform architecture (not production implementation yet)  
+**Status:** Target platform architecture with **CURRENT** implementation foundations (not universal production qualification)  
 **Plan (1:1):** [`plan/BACKGROUND_TASKS.md`](../maintainers/plans/BACKGROUND_TASKS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
 **Generalizes:** LKW.4 background ingest proof ([`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/ARCHITECTURE.md) §8.7)
@@ -14,9 +14,9 @@ This document defines the **target platform architecture** for background task r
 
 | Statement | Meaning |
 |-----------|---------|
-| **Target architecture** | Direction for platform implementation; not all components exist in code yet |
+| **Target architecture** | Direction for platform implementation; core components exist with convergence work remaining |
 | **Generalizes LKW.4** | LKW background ingest is the first proof workload, not a bespoke queue design |
-| **Not production yet** | No claim that `TaskRegistry`, `WorkerRuntime`, or `TaskEvent` are fully implemented |
+| **Not production yet** | No claim of universal production maturity; `TaskRegistry`, `WorkerRuntime`, and `TaskEvent` foundations **exist** in code with UER identity convergence **PARTIAL** |
 | **LKW.4E proof** | Must use **real platform components** and a **real local MessageBus provider** in the proof stack (for example RabbitMQ in Docker); mocks, fake queues, and in-memory-only bypasses are **not** platform proof |
 
 Future platform code should converge on **TaskRegistry + WorkerRuntime + TaskEvent lifecycle**. Applications and agents must not invent application-owned queue systems.

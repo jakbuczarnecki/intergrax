@@ -3,12 +3,12 @@
 ## Verdict
 
 **P0A STATUS: CLOSED**  
-**Feature/code implementation during P0A: NONE**
+**Feature/code implementation during P0A: NONE**  
+**Documentation sync: COMPLETE** (canonical architecture CURRENT sections synchronized; transitional reconciliation document removed)
 
 P0A is closed against the verified repository state established by:
 
-- [`HARNESS_ARCHITECTURE_EVOLUTION_P0A_AS_BUILT_AUDIT.md`](HARNESS_ARCHITECTURE_EVOLUTION_P0A_AS_BUILT_AUDIT.md), and
-- [`HARNESS_ARCHITECTURE_P0A_CURRENT_STATE_RECONCILIATION.md`](../../architecture/HARNESS_ARCHITECTURE_P0A_CURRENT_STATE_RECONCILIATION.md).
+- [`HARNESS_ARCHITECTURE_EVOLUTION_P0A_AS_BUILT_AUDIT.md`](HARNESS_ARCHITECTURE_EVOLUTION_P0A_AS_BUILT_AUDIT.md)
 
 The master program remains [`HARNESS_ARCHITECTURE_EVOLUTION_ROADMAP.md`](../../overview/HARNESS_ARCHITECTURE_EVOLUTION_ROADMAP.md).
 
@@ -27,7 +27,7 @@ The canonical implementation rule is:
 
 > **ALREADY EXISTS => DO NOT REBUILD.**
 
-For descriptive CURRENT state, the P0A Current-State Reconciliation supersedes stale CURRENT claims in older domain prose when repository evidence conflicts. Semantic contracts and invariants remain owned by their canonical domain documents.
+Descriptive CURRENT state now lives in canonical architecture documents (`UNIFIED_EXECUTION_RUNTIME.md`, `OBSERVABILITY.md`, `BACKGROUND_TASKS.md`, and related domain hubs). Semantic contracts and invariants remain owned by their canonical domain documents. Historical P0A evidence remains in the as-built audit; there is no separate CURRENT override document in `architecture/`.
 
 ---
 
@@ -46,7 +46,8 @@ For descriptive CURRENT state, the P0A Current-State Reconciliation supersedes s
 | Reconcile Background Tasks implementation-existence status | PASS |
 | Reconcile Skills status and authority gap | PASS |
 | Reconcile ToolRuntime status and authority gap | PASS |
-| Define precedence for stale descriptive CURRENT prose | PASS |
+| Synchronize canonical architecture CURRENT sections | PASS |
+| Remove transitional reconciliation document | PASS |
 | Prevent implementation sessions from rebuilding shipped foundations | PASS |
 
 **P0A exit gate: PASS.**
@@ -115,8 +116,8 @@ No dynamic capability, external-agent, live-reconfiguration, or runtime-evolutio
 Before modifying code for P0B/P0C:
 
 1. verify current `development` HEAD,
-2. read the owning domain architecture section,
-3. read the P0A audit and current-state reconciliation,
+2. read the owning domain architecture section (canonical CURRENT state),
+3. read the P0A as-built audit for historical evidence classification,
 4. inspect the exact current code and tests,
 5. define one bounded change,
 6. preserve existing semantic ownership,
