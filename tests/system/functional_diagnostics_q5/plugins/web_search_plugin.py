@@ -80,21 +80,22 @@ def _adapt_report(report: QualificationReport) -> DomainQualificationReport:
         for item in report.records
         if item.case_id != "Q3-F"
     ) if report.records else False
-    selection_fidelity = all(
-        item.decision_fidelity.selection_decision_fidelity_match for item in report.records
-    ) if report.records else False
-    extraction_fidelity = all(
-        item.decision_fidelity.extraction_decision_fidelity_match
-        for item in report.records
-        if item.actual_extracted_fact
-    ) if report.records else True
-    post_decision_forcing = all(
-        not item.decision_fidelity.post_decision_forcing_detected for item in report.records
-    ) if report.records else True
+    selection_fidelity = report.selection_decision_fidelity_percent == 100.0
+    selection_authority_fidelity = report.selection_authority_fidelity_percent == 100.0
+    extraction_fidelity = report.extraction_decision_fidelity_percent == 100.0
+    post_decision_forcing = report.post_decision_forcing == "NONE"
     extra_gates = (
         QualificationGateResult(
             gate_id="selection_decision_fidelity",
             status=QualificationGateStatus.PASS if selection_fidelity else QualificationGateStatus.FAIL,
+        ),
+        QualificationGateResult(
+            gate_id="selection_authority_fidelity",
+            status=(
+                QualificationGateStatus.PASS
+                if selection_authority_fidelity
+                else QualificationGateStatus.FAIL
+            ),
         ),
         QualificationGateResult(
             gate_id="extraction_decision_fidelity",

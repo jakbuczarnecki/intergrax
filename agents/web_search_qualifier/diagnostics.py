@@ -29,6 +29,8 @@ class WebSearchSummaryDiagnostic(DiagnosticPayload):
     provider_source_snippet: str | None = None
     extractor_input_context: str | None = None
     extractor_input_modified: bool = False
+    selection_mode: str | None = None
+    selection_policy_id: str | None = None
 
     @classmethod
     def schema_id(cls) -> str:
@@ -51,6 +53,8 @@ class WebSearchSummaryDiagnostic(DiagnosticPayload):
             provider_source_snippet=self.provider_source_snippet,
             extractor_input_context=self.extractor_input_context,
             extractor_input_modified=self.extractor_input_modified,
+            selection_mode=self.selection_mode,
+            selection_policy_id=self.selection_policy_id,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -70,6 +74,8 @@ class WebSearchSummaryDiagnostic(DiagnosticPayload):
             "provider_source_snippet": self.provider_source_snippet,
             "extractor_input_context": self.extractor_input_context,
             "extractor_input_modified": self.extractor_input_modified,
+            "selection_mode": self.selection_mode,
+            "selection_policy_id": self.selection_policy_id,
             "ops": "web_search_summary",
         }
 
@@ -124,6 +130,14 @@ def web_search_diagnostic_from_output(output: dict[str, object]) -> WebSearchSum
             else None
         ),
         extractor_input_modified=bool(summary.get("extractor_input_modified")),
+        selection_mode=(
+            str(summary["selection_mode"]) if isinstance(summary.get("selection_mode"), str) else None
+        ),
+        selection_policy_id=(
+            str(summary["selection_policy_id"])
+            if isinstance(summary.get("selection_policy_id"), str)
+            else None
+        ),
     )
 
 

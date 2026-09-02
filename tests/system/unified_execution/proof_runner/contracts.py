@@ -66,7 +66,7 @@ class LkwEvidenceSlice(BaseModel):
     agent_id: str | None = None
     run_id: str | None = None
     task_id: str | None = None
-    diagnostics: dict[str, SearchSummaryDiagnostic] = Field(default_factory=dict)
+    diagnostics: dict[str, object] = Field(default_factory=dict)
 
 
 class RuntimeToolEventEntry(BaseModel):

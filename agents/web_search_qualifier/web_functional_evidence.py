@@ -31,6 +31,9 @@ def emit_web_search_functional_evidence(
     candidates: tuple[WebSearchCandidate, ...],
     selected_url: str,
     extracted_fact: str,
+    selection_mode: str | None = None,
+    policy_id: str | None = None,
+    raw_selector_response: str | None = None,
 ) -> None:
     recorder = recorder_from_exec_ctx(exec_ctx)
     if recorder is None:
@@ -70,13 +73,17 @@ def emit_web_search_functional_evidence(
             suppressed_kinds=suppressed,
         )
 
+    selection_reason = _selection_reason(
+        selection_mode=selection_mode,
+        policy_id=policy_id,
+    )
     recorder.record_selection(
         scope=scope,
         operation_id=Q3_WEB_SEARCH_OPERATION_ID,
         query_id=Q3_WEB_QUERY_ID,
         selected_artifact_ref=selected_ref,
         candidate_count=len(candidates),
-        selection_reason="llm_source_selection",
+        selection_reason=selection_reason,
         suppressed_kinds=suppressed,
     )
 
@@ -89,6 +96,14 @@ def emit_web_search_functional_evidence(
             relation_kind="extracted_from",
             suppressed_kinds=suppressed,
         )
+
+
+def _selection_reason(*, selection_mode: str | None, policy_id: str | None) -> str:
+    if selection_mode == "policy" and policy_id:
+        return f"policy:{policy_id}"
+    if selection_mode == "llm":
+        return "llm_source_selection"
+    return "llm_source_selection"
 
 
 __all__ = ["emit_web_search_functional_evidence"]

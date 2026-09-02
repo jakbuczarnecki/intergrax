@@ -56,6 +56,31 @@ def test_analyzer_has_no_domain_imports() -> None:
             assert forbidden not in lowered, f"analyzer imports {module}"
 
 
+_SOURCE_SELECTION_GENERIC_DIR = (
+    _REPO_ROOT / "agents" / "web_search_qualifier" / "source_selection"
+)
+_SOURCE_SELECTION_GENERIC_MODULES = (
+    "contracts.py",
+    "engine.py",
+    "llm_selector.py",
+    "matching.py",
+    "url_normalization.py",
+)
+
+
+def test_source_selection_engine_has_no_domain_literals() -> None:
+    forbidden_literals = (
+        "python.org",
+        "python-3120",
+        "/downloads/release/",
+        "functional_diagnostics_q3",
+    )
+    for module_name in _SOURCE_SELECTION_GENERIC_MODULES:
+        text = (_SOURCE_SELECTION_GENERIC_DIR / module_name).read_text(encoding="utf-8").lower()
+        for literal in forbidden_literals:
+            assert literal not in text, f"{module_name} contains {literal}"
+
+
 def test_check_ids_are_namespaced_across_domains() -> None:
     from intergrax.runtime.diagnostics.specifications.c1_rag_functional_diagnostic_specification import (
         CHECK_C1_CANDIDATES,

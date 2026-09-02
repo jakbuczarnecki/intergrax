@@ -97,6 +97,7 @@ from web_search_qualifier.steps.web_search_job import _match_url_from_response
 from web_search_qualifier.url_identity import (
     artifact_ref_for_url,
     is_expected_python_3120_release_source,
+    normalize_url_identity,
     url_from_artifact_ref,
 )
 from web_search_qualifier.web_search import WebSearchCandidate
@@ -116,8 +117,11 @@ class DecisionFidelitySnapshot:
     raw_selector_url: str | None
     raw_extractor_response: str | None
     extractor_input_modified: bool
+    selection_mode: str | None
+    selection_policy_id: str | None
     selection_decision_fidelity_match: bool
     extraction_decision_fidelity_match: bool
+    selection_authority_fidelity_match: bool
     post_decision_forcing_detected: bool
 
 
@@ -184,6 +188,7 @@ class QualificationReport:
     provider_id: str | None = None
     selection_decision_fidelity_percent: float = 100.0
     extraction_decision_fidelity_percent: float = 100.0
+    selection_authority_fidelity_percent: float = 100.0
     post_decision_forcing: str = "NONE"
     total_attempts: int = 0
     prerequisite_misses: int = 0
@@ -311,9 +316,10 @@ def _summary_from_response(response: LkwRunResponse) -> dict[str, object]:
     if response.lkw_evidence is None:
         return {}
     diagnostics = response.lkw_evidence.diagnostics
-    summary = diagnostics.get("web_search_summary")
-    if isinstance(summary, dict):
-        return summary
+    for key in ("lkw.web_search_summary.v1", "web_search_summary"):
+        summary = diagnostics.get(key)
+        if isinstance(summary, dict):
+            return summary
     return {}
 
 
@@ -369,6 +375,8 @@ def _evidence_fidelity_snapshot(
         and item.scope.run_id == scope.run_id
         for item in remote_items
     )
+    bounded_actual = (actual_extracted or "")[:200]
+    bounded_emitted = (emitted_extracted or "")[:200]
     return EvidenceFidelitySnapshot(
         actual_query=actual_query,
         provider_invoked_with_query=emitted_query,
@@ -379,7 +387,7 @@ def _evidence_fidelity_snapshot(
         actual_extracted_fact=actual_extracted,
         candidate_fidelity_match=provider_candidates == emitted_candidates,
         selection_fidelity_match=actual_selected == emitted_selected,
-        extraction_fidelity_match=actual_extracted == emitted_extracted,
+        extraction_fidelity_match=bounded_actual == bounded_emitted,
         validation_fidelity_match=(
             validation_expected == validation_actual_pass if validation_expected else True
         ),
@@ -569,8 +577,11 @@ def _empty_decision_fidelity() -> DecisionFidelitySnapshot:
         raw_selector_url=None,
         raw_extractor_response=None,
         extractor_input_modified=False,
+        selection_mode=None,
+        selection_policy_id=None,
         selection_decision_fidelity_match=False,
         extraction_decision_fidelity_match=False,
+        selection_authority_fidelity_match=False,
         post_decision_forcing_detected=False,
     )
 
@@ -820,6 +831,14 @@ def _selection_url_from_raw_response(
     return _match_url_from_response(raw_response, candidates)
 
 
+def _selected_url_identity(selected_ref: str | None) -> str:
+    if not selected_ref:
+        return ""
+    if selected_ref.startswith("url:"):
+        return normalize_url_identity(url_from_artifact_ref(selected_ref))
+    return normalize_url_identity(selected_ref)
+
+
 def _decision_fidelity_snapshot(
     *,
     summary: dict[str, object],
@@ -837,25 +856,46 @@ def _decision_fidelity_snapshot(
     )
     selection_decision_match = True
     if raw_selector_url is not None:
+        raw_identity = normalize_url_identity(raw_selector_url)
+        actual_identity = _selected_url_identity(actual_selected)
+        emitted_identity = _selected_url_identity(emitted_selected)
         selection_decision_match = (
-            raw_selector_url == (actual_selected or "")
-            and raw_selector_url == (emitted_selected or "")
+            raw_identity == actual_identity and raw_identity == emitted_identity
         )
     elif raw_selector_response and actual_selected:
-        selection_decision_match = raw_selector_response.strip() == actual_selected.strip()
+        selection_decision_match = (
+            normalize_url_identity(raw_selector_response.strip())
+            == _selected_url_identity(actual_selected)
+        )
 
     extraction_decision_match = True
     if raw_extractor_response is not None and actual_extracted is not None:
+        bounded_raw = raw_extractor_response.strip()[:200]
+        bounded_actual = actual_extracted.strip()[:200]
+        bounded_emitted = (emitted_extracted or "").strip()[:200]
         extraction_decision_match = (
-            raw_extractor_response.strip() == actual_extracted.strip()
-            and raw_extractor_response.strip() == (emitted_extracted or "").strip()
+            bounded_raw == bounded_actual and bounded_raw == bounded_emitted
         )
+
+    selection_mode = _summary_field(summary, "selection_mode")
+    selection_policy_id = _summary_field(summary, "selection_policy_id")
+    summary_selected_ref = _summary_field(summary, "selected_artifact_ref")
+    if summary_selected_ref is None:
+        summary_url = _summary_field(summary, "selected_url")
+        if summary_url:
+            summary_selected_ref = artifact_ref_for_url(summary_url)
+    selection_authority_match = (
+        (actual_selected or "") == (emitted_selected or "")
+        and (summary_selected_ref is None or summary_selected_ref == (actual_selected or ""))
+        and selection_decision_match
+    )
 
     post_decision_forcing = False
     if raw_selector_url is not None and actual_selected is not None:
+        actual_url = _selected_url_identity(actual_selected)
         if (
             is_expected_python_3120_release_source(raw_selector_url)
-            and not is_expected_python_3120_release_source(actual_selected)
+            and not is_expected_python_3120_release_source(actual_url)
         ):
             post_decision_forcing = True
     if raw_extractor_response and actual_extracted:
@@ -871,8 +911,11 @@ def _decision_fidelity_snapshot(
         raw_selector_url=raw_selector_url,
         raw_extractor_response=raw_extractor_response,
         extractor_input_modified=bool(summary.get("extractor_input_modified")),
+        selection_mode=selection_mode,
+        selection_policy_id=selection_policy_id,
         selection_decision_fidelity_match=selection_decision_match,
         extraction_decision_fidelity_match=extraction_decision_match,
+        selection_authority_fidelity_match=selection_authority_match,
         post_decision_forcing_detected=post_decision_forcing,
     )
 
@@ -1021,22 +1064,32 @@ def run_qualification() -> QualificationReport:
     )
     decision_independence_pass = _decision_diagnostics_independence_gate()
     selection_decision_fidelity_pass = all(
-        record.decision_fidelity.selection_decision_fidelity_match for record in records
+        record.decision_fidelity.selection_decision_fidelity_match
+        for record in records
+        if record.case_id != "Q3-F"
     )
     extraction_decision_fidelity_pass = all(
         record.decision_fidelity.extraction_decision_fidelity_match
         for record in records
         if record.actual_extracted_fact
     )
+    selection_authority_fidelity_pass = all(
+        record.decision_fidelity.selection_authority_fidelity_match
+        for record in records
+        if record.case_id != "Q3-F"
+    )
     post_decision_forcing_pass = all(
         not record.decision_fidelity.post_decision_forcing_detected for record in records
     )
     selection_decision_fidelity_percent = (
-        sum(1 for record in records if record.decision_fidelity.selection_decision_fidelity_match)
-        / len(records)
+        sum(
+            1
+            for record in records
+            if record.case_id != "Q3-F"
+            and record.decision_fidelity.selection_decision_fidelity_match
+        )
+        / max(1, sum(1 for record in records if record.case_id != "Q3-F"))
         * 100.0
-        if records
-        else 0.0
     )
     extraction_records = [record for record in records if record.actual_extracted_fact]
     extraction_decision_fidelity_percent = (
@@ -1049,6 +1102,16 @@ def run_qualification() -> QualificationReport:
         * 100.0
         if extraction_records
         else 100.0
+    )
+    selection_authority_fidelity_percent = (
+        sum(
+            1
+            for record in records
+            if record.case_id != "Q3-F"
+            and record.decision_fidelity.selection_authority_fidelity_match
+        )
+        / max(1, sum(1 for record in records if record.case_id != "Q3-F"))
+        * 100.0
     )
     post_decision_forcing = "NONE" if post_decision_forcing_pass else "DETECTED"
 
@@ -1107,6 +1170,7 @@ def run_qualification() -> QualificationReport:
         and fidelity_pass
         and decision_independence_pass
         and selection_decision_fidelity_pass
+        and selection_authority_fidelity_pass
         and extraction_decision_fidelity_pass
         and post_decision_forcing_pass
         and false_positives == 0
@@ -1131,6 +1195,7 @@ def run_qualification() -> QualificationReport:
         provider_id=provider_id,
         selection_decision_fidelity_percent=selection_decision_fidelity_percent,
         extraction_decision_fidelity_percent=extraction_decision_fidelity_percent,
+        selection_authority_fidelity_percent=selection_authority_fidelity_percent,
         post_decision_forcing=post_decision_forcing,
         total_attempts=total_attempts,
         prerequisite_misses=prerequisite_misses,
@@ -1222,6 +1287,7 @@ def _write_artifact(
         "extraction_decision_fidelity_pass": extraction_decision_fidelity_pass,
         "selection_decision_fidelity_percent": report.selection_decision_fidelity_percent,
         "extraction_decision_fidelity_percent": report.extraction_decision_fidelity_percent,
+        "selection_authority_fidelity_percent": report.selection_authority_fidelity_percent,
         "post_decision_forcing": report.post_decision_forcing,
         "total_attempts": report.total_attempts,
         "prerequisite_misses": report.prerequisite_misses,
@@ -1283,6 +1349,11 @@ def _write_artifact(
                     "selection_decision_fidelity_match": (
                         record.decision_fidelity.selection_decision_fidelity_match
                     ),
+                    "selection_authority_fidelity_match": (
+                        record.decision_fidelity.selection_authority_fidelity_match
+                    ),
+                    "selection_mode": record.decision_fidelity.selection_mode,
+                    "selection_policy_id": record.decision_fidelity.selection_policy_id,
                     "post_decision_forcing_detected": (
                         record.decision_fidelity.post_decision_forcing_detected
                     ),

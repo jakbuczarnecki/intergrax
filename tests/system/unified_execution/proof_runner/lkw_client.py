@@ -317,11 +317,14 @@ def _parse_lkw_evidence(metadata: dict[str, object]) -> LkwEvidenceSlice | None:
     schema_version = raw.get("schema_version")
     if not isinstance(schema_version, str):
         return None
-    diagnostics: dict[str, SearchSummaryDiagnostic] = {}
+    diagnostics: dict[str, object] = {}
     raw_diag = raw.get("diagnostics")
     if isinstance(raw_diag, dict):
         for key, value in raw_diag.items():
             if not isinstance(key, str) or not isinstance(value, dict):
+                continue
+            if key == "lkw.web_search_summary.v1":
+                diagnostics[key] = dict(value)
                 continue
             diagnostics[key] = SearchSummaryDiagnostic(
                 num_results=_optional_int(value.get("num_results")),

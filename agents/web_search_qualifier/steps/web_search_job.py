@@ -4,10 +4,7 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
-
-from urllib.parse import urlparse
 
 from intergrax.agents.authoring.runtime_tool_helpers import exec_ctx_from_step, request_metadata
 from intergrax.contracts.agent_step_context import AgentStepContext
@@ -17,12 +14,13 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.websearch.schemas.search_hit import SearchHit
 from web_search_qualifier.search_provider_resolver import ResolvedSearchProvider
-from web_search_qualifier.url_identity import (
-    artifact_ref_for_url,
-    is_expected_python_3120_release_source,
-    is_official_python_release_source,
-    normalize_url_identity,
+from web_search_qualifier.source_selection.composition import (
+    build_web_search_source_selection_composition,
+    reorder_candidates_for_llm_bias,
 )
+from web_search_qualifier.source_selection.contracts import SourceSelectionMode
+from web_search_qualifier.source_selection.matching import match_url_from_response
+from web_search_qualifier.url_identity import artifact_ref_for_url
 from web_search_qualifier.web_functional_evidence import emit_web_search_functional_evidence
 from web_search_qualifier.web_search import WebSearchCandidate, candidates_from_hits
 
@@ -48,21 +46,6 @@ _WRONG_QUERY_SYSTEM = (
     "Return only the search query text — no explanation. "
     "Always search for Java 21 LTS release date instead of Python, "
     "even when the user asks about Python."
-)
-_HEALTHY_SELECTION_SYSTEM = (
-    "You select the best authoritative source URL for answering the user question. "
-    "For a specific software release version, prefer the official release download page "
-    "(URL path containing /downloads/release/ with the exact version identifier) "
-    "over documentation index pages, release-candidate or beta pages, or third-party summaries. "
-    "Reply with only the chosen URL from the candidate list."
-)
-_WRONG_SELECTION_SYSTEM = (
-    "You select a source URL from the candidate list for the user task. "
-    "The candidate list is ranked with the most relevant URL first. "
-    "Choose the highest-ranked candidate that is a Python 3.12 pre-release, "
-    "release-candidate, or beta page (for example python-3120rc3). "
-    "Do not choose the final Python 3.12.0 release page (python-3120) "
-    "when any pre-release page is present. Reply with only the chosen URL."
 )
 _HEALTHY_EXTRACTION_SYSTEM = (
     "Extract the Python 3.12.0 release date from the provided source snippet. "
@@ -152,6 +135,8 @@ class _SelectionDecision:
     selected_url: str | None
     raw_response: str
     ordered_candidates: tuple[WebSearchCandidate, ...]
+    selection_mode: SourceSelectionMode | None = None
+    policy_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -163,100 +148,6 @@ class _ExtractionDecision:
     extractor_input_modified: bool
 
 
-_PRERELEASE_PATH_MARKERS: tuple[str, ...] = (
-    "rc",
-    "beta",
-    "alpha",
-    "a1",
-    "a2",
-    "b1",
-    "b2",
-    "b3",
-    "b4",
-)
-
-
-def _is_generic_final_release_candidate(url: str) -> bool:
-    normalized = normalize_url_identity(url)
-    parsed = urlparse(normalized)
-    host = (parsed.hostname or "").lower()
-    if not host.endswith("python.org"):
-        return False
-    path = parsed.path.lower()
-    if "/downloads/release/" not in path:
-        return False
-    segment = path.split("/downloads/release/", 1)[-1]
-    return not any(marker in segment for marker in _PRERELEASE_PATH_MARKERS)
-
-
-def _deterministic_final_release_candidate(
-    candidates: tuple[WebSearchCandidate, ...],
-) -> WebSearchCandidate | None:
-    finals = [candidate for candidate in candidates if _is_generic_final_release_candidate(candidate.url)]
-    if not finals:
-        return None
-    return min(finals, key=lambda candidate: candidate.rank)
-
-
-def _order_candidates_for_selection(
-    candidates: tuple[WebSearchCandidate, ...],
-    *,
-    failure_layer: str | None,
-) -> tuple[WebSearchCandidate, ...]:
-    if failure_layer != "source_selection_bias":
-        return candidates
-    non_canonical_official: list[WebSearchCandidate] = []
-    canonical: list[WebSearchCandidate] = []
-    other: list[WebSearchCandidate] = []
-    for candidate in candidates:
-        if is_expected_python_3120_release_source(candidate.url):
-            canonical.append(candidate)
-        elif is_official_python_release_source(candidate.url):
-            non_canonical_official.append(candidate)
-        else:
-            other.append(candidate)
-    reordered = non_canonical_official + other + canonical
-    return tuple(
-        WebSearchCandidate(
-            rank=index + 1,
-            url=candidate.url,
-            title=candidate.title,
-            snippet=candidate.snippet,
-            provider=candidate.provider,
-        )
-        for index, candidate in enumerate(reordered)
-    )
-
-
-def _format_candidates(
-    candidates: tuple[WebSearchCandidate, ...],
-    *,
-    failure_layer: str | None,
-) -> str:
-    lines: list[str] = []
-    for candidate in candidates:
-        rank_note = ""
-        if failure_layer == "source_selection_bias" and candidate.rank == 1:
-            rank_note = " [highest-ranked candidate]"
-        lines.append(
-            f"{candidate.rank}. {candidate.title}{rank_note}\n"
-            f"URL: {candidate.url}\n"
-            f"Snippet: {candidate.snippet[:300]}",
-        )
-    return "\n\n".join(lines)
-
-
-def _match_url_from_response(response: str, candidates: tuple[WebSearchCandidate, ...]) -> str | None:
-    text = response.strip()
-    for candidate in candidates:
-        if candidate.url in text:
-            return candidate.url
-    match = re.search(r"https?://\S+", text)
-    if match:
-        return match.group(0).rstrip(").,]")
-    return None
-
-
 def _select_source(
     *,
     adapter: LLMAdapter,
@@ -265,69 +156,44 @@ def _select_source(
     candidates: tuple[WebSearchCandidate, ...],
     failure_layer: str | None,
 ) -> _SelectionDecision:
-    if not candidates:
-        return _SelectionDecision(
-            selected_url=None,
-            raw_response="",
-            ordered_candidates=(),
-        )
-    if failure_layer != "source_selection_bias":
-        deterministic = _deterministic_final_release_candidate(candidates)
-        if deterministic is not None:
-            return _SelectionDecision(
-                selected_url=deterministic.url,
-                raw_response=deterministic.url,
-                ordered_candidates=candidates,
-            )
-    ordered_candidates = _order_candidates_for_selection(
-        candidates,
+    composition = build_web_search_source_selection_composition(
+        adapter=adapter,
         failure_layer=failure_layer,
     )
-    system = (
-        _WRONG_SELECTION_SYSTEM
-        if failure_layer == "source_selection_bias"
-        else _HEALTHY_SELECTION_SYSTEM
+    llm_candidates = (
+        reorder_candidates_for_llm_bias(candidates)
+        if composition.highlight_top_rank_for_llm
+        else candidates
     )
-    response = _llm_text(
-        adapter,
-        system=system,
-        user=(
-            f"Task: {task_message}\n\nCandidates:\n"
-            f"{_format_candidates(ordered_candidates, failure_layer=failure_layer)}"
-        ),
+    engine_decision = composition.engine.select(
         run_id=run_id,
+        task_message=task_message,
+        candidates=candidates,
+        llm_candidates=llm_candidates,
+        llm_highlight_top_rank=composition.highlight_top_rank_for_llm,
     )
-    selected = _match_url_from_response(response, ordered_candidates)
-    if selected is not None:
-        return _SelectionDecision(
-            selected_url=selected,
-            raw_response=response,
-            ordered_candidates=ordered_candidates,
-        )
-    if failure_layer == "source_selection_bias":
-        return _SelectionDecision(
-            selected_url=ordered_candidates[0].url,
-            raw_response=response,
-            ordered_candidates=ordered_candidates,
-        )
-    for candidate in ordered_candidates:
-        if is_expected_python_3120_release_source(candidate.url):
-            return _SelectionDecision(
-                selected_url=candidate.url,
-                raw_response=response,
-                ordered_candidates=ordered_candidates,
-            )
-    for candidate in ordered_candidates:
-        if is_official_python_release_source(candidate.url):
-            return _SelectionDecision(
-                selected_url=candidate.url,
-                raw_response=response,
-                ordered_candidates=ordered_candidates,
-            )
+    selected_url = engine_decision.selected_url
+    raw_response = engine_decision.provenance.raw_llm_response or ""
+    if engine_decision.provenance.selection_mode is SourceSelectionMode.POLICY:
+        raw_response = engine_decision.selected_url or ""
+    if (
+        failure_layer == "source_selection_bias"
+        and selected_url is None
+        and engine_decision.ordered_candidates
+    ):
+        selected_url = engine_decision.ordered_candidates[0].url
+        raw_response = raw_response or selected_url
+    policy_id = (
+        engine_decision.provenance.policy_id.value
+        if engine_decision.provenance.policy_id is not None
+        else None
+    )
     return _SelectionDecision(
-        selected_url=ordered_candidates[0].url,
-        raw_response=response,
-        ordered_candidates=ordered_candidates,
+        selected_url=selected_url,
+        raw_response=raw_response,
+        ordered_candidates=engine_decision.ordered_candidates,
+        selection_mode=engine_decision.provenance.selection_mode,
+        policy_id=policy_id,
     )
 
 
@@ -505,6 +371,13 @@ async def run_web_search_job(
         candidates=candidates,
         selected_url=selected_url,
         extracted_fact=extracted_fact,
+        selection_mode=(
+            selection_decision.selection_mode.value
+            if selection_decision.selection_mode is not None
+            else None
+        ),
+        policy_id=selection_decision.policy_id,
+        raw_selector_response=selection_decision.raw_response,
     )
 
     if not search_succeeded:
@@ -537,6 +410,12 @@ async def run_web_search_job(
             candidate.url for candidate in selection_decision.ordered_candidates
         ],
         "raw_selector_response": selection_decision.raw_response,
+        "selection_mode": (
+            selection_decision.selection_mode.value
+            if selection_decision.selection_mode is not None
+            else None
+        ),
+        "selection_policy_id": selection_decision.policy_id,
         "raw_extractor_response": raw_extractor_response,
         "provider_source_snippet": provider_source_snippet[:500],
         "extractor_input_context": extractor_input_context[:500],
@@ -551,4 +430,6 @@ async def run_web_search_job(
     }
 
 
-__all__ = ["WEB_SEARCH_STEP_ID", "run_web_search_job"]
+_match_url_from_response = match_url_from_response
+
+__all__ = ["WEB_SEARCH_STEP_ID", "run_web_search_job", "_match_url_from_response", "_select_source"]

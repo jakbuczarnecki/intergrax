@@ -19,6 +19,7 @@ build-backend = "setuptools.build_meta"
 packages = [
   "web_search_qualifier",
   "web_search_qualifier.steps",
+  "web_search_qualifier.source_selection",
 ]
 
 [tool.setuptools.package-dir]

@@ -69,6 +69,8 @@ def _function_body_names(path: Path, function_name: str) -> set[str]:
 def test_select_source_has_no_post_decision_canonical_discard() -> None:
     source = _JOB_PATH.read_text(encoding="utf-8")
     assert "is_expected_python_3120_release_source(selected)" not in source
+    assert "_is_generic_final_release_candidate" not in source
+    assert "_deterministic_final_release_candidate" not in source
 
 
 def test_extract_fact_has_no_post_decision_date_replacement() -> None:
