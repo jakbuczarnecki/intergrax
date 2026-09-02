@@ -146,7 +146,7 @@ Worker role, responsibility or goal never grants permission.
 
 11. Durable generated capability promotion is a separate governed control-plane lifecycle; ephemeral CraftResult does not silently become a global production tool/integration.
 
-- Virtual Worker cannot depend on full history replay or process-local context for continuity.
+12. Virtual Worker cannot depend on full history replay or process-local context for continuity.
 
 ## Consequences
 

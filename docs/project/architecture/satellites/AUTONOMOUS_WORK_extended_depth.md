@@ -1040,8 +1040,8 @@ Key question: *With 1000× history growth, does active context stay bounded and 
 | Stale memory | Freshness metadata, re-validation, stale-context metrics |
 | Irrelevant recall | CE ranking/filtering; scoped recall; precision metrics |
 | Duplicate work after restart | Idempotent wake-up; checkpointed open-work refs |
-| Forgetting unresolved work | open_work_refs / locked_work_refs in continuity state |
-| Historical goal treated as active | ctive_goal_refs vs archived goals |
+| Forgetting unresolved work | open_work_refs / `blocked_work_refs` in continuity state |
+| Historical goal treated as active | `active_goal_refs` vs archived goals |
 | Obsolete external data | source refs + re-fetch; RAG scope validation |
 | Summary drift | UCL revision semantics; provenance on compacted artifacts |
 | Lost provenance | AW-INV-25; CE provenance emit |
