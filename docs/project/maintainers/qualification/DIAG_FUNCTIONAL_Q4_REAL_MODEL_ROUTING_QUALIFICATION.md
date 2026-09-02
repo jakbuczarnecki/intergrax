@@ -117,11 +117,11 @@ Artifact identity: `llm:ollama:<model>` (e.g. `llm:ollama:llama3.1:latest`).
 | Q4-F | Isolation (healthy vs wrong route) |
 | Q4-G | Wrong-route repeatability ×3 |
 
-## DIAG-FUNCTIONAL-Q4 live run (2026-09-02)
+## DIAG-FUNCTIONAL-Q4 live run (2026-09-02) — matrix PASS (pre-R1 audit)
 
 | Metric | Result |
 | --- | --- |
-| Verdict | **PASS** |
+| Verdict | **PASS** (implementation matrix) |
 | full_case_match | 10/10 (100%) |
 | stage_accuracy | 100% |
 | inconclusive_accuracy | 100% (Q4-E) |
@@ -132,15 +132,54 @@ Artifact identity: `llm:ollama:<model>` (e.g. `llm:ollama:llama3.1:latest`).
 | post_decision_forcing | NONE |
 | post_generation_forcing | NONE |
 
-**Q4-R1 note:** First live matrix failed on Q4-D (model ignored weak bias) and adapter summary propagation; fixed before final PASS run (not repaired mid-run).
+**Independent audit:** qualification authority **not accepted** — workload ran its own `LLMRoutingEvaluator.evaluate(...)` before `RoutingEvaluatingLLMAdapter` ran production evaluation (double routing decision).
 
-## Status
+**Q4-R1 note:** First live matrix failed on Q4-D (model ignored weak bias) and adapter summary propagation; fixed before pre-R1 PASS run (not repaired mid-run).
+
+## Q4-R1 ENTERPRISE AUTHORITY CORRECTION
+
+**Problem:** `model_routing_job` pre-computed routing via `LLMRoutingEvaluator().evaluate(...)` while `RoutingEvaluatingLLMAdapter._refresh_inner_adapter()` performed a second authoritative evaluation. Evidence tracked the first (qualification-side) decision, not the production execution path.
+
+**Design (R1):**
+
+```text
+ONE routing evaluation per model call
+RoutingEvaluatingLLMAdapter._refresh_inner_adapter()
+  → LLMRoutingEvaluator.evaluate(...)
+  → on_evaluated observer (chained, restored in finally)
+  → inner adapter swap
+  → real model invocation
+  → FunctionalEvidence from observed RoutingEvaluation only
+```
+
+- Qualification-side evaluator: **NONE**
+- Observer: production `set_on_evaluated` via `begin_routing_observation` / `end_routing_observation` (restore previous observer + context provider)
+- Concurrency: per-run observer install/restore; isolation matrix proves F-A vs F-B decisions do not cross-leak
+- Strict typing: `ObservedRoutingDecision`, `Q4QualificationRequest`, `JsonObject` diagnostics serialization
+
+See machine artifact after R1 run: `.tmp/session/diag-functional-q4/qualification-report.json` (prior PASS preserved as `qualification-report-pre-r1.json`).
+
+## DIAG-FUNCTIONAL-Q4-R1 live run (2026-09-02)
+
+| Metric | Result |
+| --- | --- |
+| Verdict | **PASS** |
+| full_case_match | 10/10 (100%) |
+| authoritative_routing_observation_fidelity | 100% |
+| qualification_routing_recomputation | NONE |
+| observer_cross_run_leakage | FALSE |
+| post_decision_forcing | NONE |
+| post_generation_forcing | NONE |
+| repeatability | PASS |
+| FP / FN | 0 / 0 |
+
+## Status (post-R1)
 
 ```text
 Q1 REAL RAG             ✅ QUALIFIED
 Q2 REAL TOOL SELECTION  ✅ QUALIFIED
 Q3 REAL WEB SEARCH      ✅ QUALIFIED
-Q4 REAL MODEL ROUTING   ✅ QUALIFIED
+Q4 REAL MODEL ROUTING   ✅ QUALIFIED (R1 enterprise authority)
 
 Q5 CROSS-DOMAIN FINAL   ▶ NEXT
 ```

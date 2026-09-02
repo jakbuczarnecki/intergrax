@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.diagnostics.functional_evidence import PipelineOperationStatus
 from intergrax.runtime.diagnostics.specifications.q4_model_routing_functional_diagnostic_specification import (
@@ -22,7 +24,7 @@ _PRODUCER_COMPONENT = "agents.model_routing_qualifier"
 def emit_model_routing_functional_evidence(
     exec_ctx: RuntimeExecutionContext | None,
     *,
-    metadata: dict[str, object],
+    metadata: Mapping[str, object],
     candidates: tuple[RoutingProfileCandidate, ...],
     selected_profile_ref: str,
     invoke_succeeded: bool,

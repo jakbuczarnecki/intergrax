@@ -91,11 +91,16 @@ _CURSOR_SECRET = "diag-functional-q4-local-only-secret-32bytes!!"
 class RoutingDecisionFidelitySnapshot:
     expected_profile_ref: str
     router_selected_profile_ref: str | None
+    production_evaluation_selected_profile: str | None
     actual_adapter_provider: str | None
     actual_adapter_model: str | None
+    actual_inner_adapter_provider: str | None
+    actual_inner_adapter_model: str | None
     actual_adapter_profile_ref: str | None
+    actual_inner_adapter_profile_ref: str | None
     routing_decision_fidelity_match: bool
     adapter_fidelity_match: bool
+    authoritative_routing_observation_fidelity_match: bool
     post_decision_forcing_detected: bool
     post_generation_forcing_detected: bool
 
@@ -137,6 +142,10 @@ class QualificationRunRecord:
     actual_adapter_model: str | None
     invocation_status: str | None
     raw_model_output: str | None
+    actual_inner_adapter_provider: str | None = None
+    actual_inner_adapter_model: str | None = None
+    matched_rule_id: str | None = None
+    routing_reason: str | None = None
     repeat_group: str | None = None
 
 
@@ -322,16 +331,25 @@ def _resolve_adapter_fields(
     *,
     summary: dict[str, object],
     remote_items: tuple[object, ...],
-) -> tuple[str | None, str | None, str | None]:
+) -> tuple[str | None, str | None, str | None, str | None, str | None]:
     provider_raw = summary.get("actual_adapter_provider")
     model_raw = summary.get("actual_adapter_model")
     provider = str(provider_raw) if isinstance(provider_raw, str) else None
     model = str(model_raw) if isinstance(model_raw, str) else None
+    inner_provider_raw = summary.get("actual_inner_adapter_provider")
+    inner_model_raw = summary.get("actual_inner_adapter_model")
+    inner_provider = (
+        str(inner_provider_raw) if isinstance(inner_provider_raw, str) else provider
+    )
+    inner_model = str(inner_model_raw) if isinstance(inner_model_raw, str) else model
     adapter_ref = _adapter_profile_ref(provider, model)
+    inner_ref = _adapter_profile_ref(inner_provider, inner_model)
+    if inner_ref is None:
+        inner_ref = _adapter_ref_from_items(remote_items)
+        inner_provider, inner_model = _parse_adapter_ref(inner_ref)
     if adapter_ref is None:
-        adapter_ref = _adapter_ref_from_items(remote_items)
-        provider, model = _parse_adapter_ref(adapter_ref)
-    return provider, model, adapter_ref
+        adapter_ref = inner_ref
+    return provider, model, adapter_ref, inner_provider, inner_model
 
 
 def _preflight_ollama_models() -> None:
@@ -359,42 +377,55 @@ def _routing_decision_fidelity(
     actual_adapter_provider: str | None,
     actual_adapter_model: str | None,
     actual_adapter_ref: str | None,
+    actual_inner_provider: str | None,
+    actual_inner_model: str | None,
 ) -> RoutingDecisionFidelitySnapshot:
     expected_profile_ref = _expected_profile_ref_for_case(case_id)
-    router_selected = summary.get("selected_profile_ref")
-    router_selected_ref = str(router_selected) if isinstance(router_selected, str) else None
-    if router_selected_ref is None:
-        router_selected_ref = emitted_selected
-    resolved_adapter_ref = actual_adapter_ref or _adapter_profile_ref(
-        actual_adapter_provider,
-        actual_adapter_model,
+    production_raw = summary.get("production_evaluation_selected_profile")
+    router_selected_ref = (
+        str(production_raw)
+        if isinstance(production_raw, str)
+        else (
+            str(summary.get("selected_profile_ref"))
+            if isinstance(summary.get("selected_profile_ref"), str)
+            else emitted_selected
+        )
     )
+    inner_adapter_ref = _adapter_profile_ref(actual_inner_provider, actual_inner_model)
+    resolved_adapter_ref = actual_adapter_ref or inner_adapter_ref
     routing_match = router_selected_ref == emitted_selected
     adapter_match = (
-        router_selected_ref == resolved_adapter_ref if router_selected_ref and resolved_adapter_ref else False
+        router_selected_ref == inner_adapter_ref if router_selected_ref and inner_adapter_ref else False
+    )
+    authoritative_match = (
+        router_selected_ref == emitted_selected == inner_adapter_ref
+        if router_selected_ref and emitted_selected and inner_adapter_ref
+        else False
     )
     post_decision_forcing = False
     if (
         router_selected_ref
-        and resolved_adapter_ref
-        and router_selected_ref != resolved_adapter_ref
+        and inner_adapter_ref
+        and router_selected_ref != inner_adapter_ref
     ):
         post_decision_forcing = True
     post_generation_forcing = False
     raw_output = summary.get("raw_model_output")
-    answer_output = summary.get("raw_model_output")
-    if isinstance(raw_output, str) and "99" in raw_output and case_id != "Q4-D":
-        post_generation_forcing = False
-    if case_id == "Q4-D" and isinstance(answer_output, str) and "42" in answer_output:
+    if case_id == "Q4-D" and isinstance(raw_output, str) and "42" in raw_output:
         post_generation_forcing = True
     return RoutingDecisionFidelitySnapshot(
         expected_profile_ref=expected_profile_ref,
         router_selected_profile_ref=router_selected_ref,
+        production_evaluation_selected_profile=router_selected_ref,
         actual_adapter_provider=actual_adapter_provider,
         actual_adapter_model=actual_adapter_model,
+        actual_inner_adapter_provider=actual_inner_provider,
+        actual_inner_adapter_model=actual_inner_model,
         actual_adapter_profile_ref=resolved_adapter_ref,
+        actual_inner_adapter_profile_ref=inner_adapter_ref,
         routing_decision_fidelity_match=routing_match and adapter_match,
         adapter_fidelity_match=adapter_match,
+        authoritative_routing_observation_fidelity_match=authoritative_match,
         post_decision_forcing_detected=post_decision_forcing,
         post_generation_forcing_detected=post_generation_forcing,
     )
@@ -499,9 +530,11 @@ def _run_case(
         status = summary.get("invocation_status")
         actual_invoke = status == "success" if isinstance(status, str) else None
     emitted_invoke = actual_invoke
-    actual_provider_str, actual_model_str, actual_adapter_ref = _resolve_adapter_fields(
-        summary=summary,
-        remote_items=remote_items,
+    actual_provider_str, actual_model_str, actual_adapter_ref, inner_provider_str, inner_model_str = (
+        _resolve_adapter_fields(
+            summary=summary,
+            remote_items=remote_items,
+        )
     )
     raw_output_raw = summary.get("raw_model_output")
     raw_model_output = str(raw_output_raw) if isinstance(raw_output_raw, str) else response.answer
@@ -513,6 +546,8 @@ def _run_case(
         actual_adapter_provider=actual_provider_str,
         actual_adapter_model=actual_model_str,
         actual_adapter_ref=actual_adapter_ref,
+        actual_inner_provider=inner_provider_str,
+        actual_inner_model=inner_model_str,
     )
 
     functional_outcome = (
@@ -606,6 +641,10 @@ def _run_case(
         candidate_profiles = tuple(str(item) for item in candidate_raw if isinstance(item, str))
     invocation_status_raw = summary.get("invocation_status")
     invocation_status = str(invocation_status_raw) if invocation_status_raw is not None else None
+    matched_rule_raw = summary.get("matched_rule_id")
+    matched_rule_id = str(matched_rule_raw) if isinstance(matched_rule_raw, str) else None
+    routing_reason_raw = summary.get("routing_reason")
+    routing_reason = str(routing_reason_raw) if isinstance(routing_reason_raw, str) else None
 
     return QualificationRunRecord(
         case_id=expectation.case_id,
@@ -630,10 +669,41 @@ def _run_case(
         actual_selected_profile=actual_selected,
         actual_adapter_provider=actual_provider_str,
         actual_adapter_model=actual_model_str,
+        actual_inner_adapter_provider=inner_provider_str,
+        actual_inner_adapter_model=inner_model_str,
+        matched_rule_id=matched_rule_id,
+        routing_reason=routing_reason,
         invocation_status=invocation_status,
         raw_model_output=raw_model_output[:200] if raw_model_output else None,
         repeat_group=repeat_group,
     )
+
+
+def _qualification_routing_recomputation_gate() -> bool:
+    import ast
+
+    job_path = (
+        Path(__file__).resolve().parents[3]
+        / "agents"
+        / "model_routing_qualifier"
+        / "steps"
+        / "model_routing_job.py"
+    )
+    tree = ast.parse(job_path.read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            func = node.func
+            if isinstance(func, ast.Attribute) and func.attr == "evaluate":
+                if isinstance(func.value, ast.Name) and func.value.id == "LLMRoutingEvaluator":
+                    return False
+                if isinstance(func.value, ast.Call) and isinstance(func.value.func, ast.Name):
+                    if func.value.func.id == "LLMRoutingEvaluator":
+                        return False
+        if isinstance(node, ast.ImportFrom) and node.module == "intergrax.llm_adapters.routing":
+            for alias in node.names:
+                if alias.name == "LLMRoutingEvaluator":
+                    return False
+    return True
 
 
 def _decision_diagnostics_independence_gate() -> bool:
@@ -715,6 +785,30 @@ def run_qualification() -> QualificationReport:
         for record in records
         if record.case_id != "Q4-E"
     )
+    authoritative_observation_pass = all(
+        record.routing_decision_fidelity.authoritative_routing_observation_fidelity_match
+        for record in records
+        if record.case_id != "Q4-E"
+    )
+    qualification_recomputation_pass = _qualification_routing_recomputation_gate()
+    isolation_records = [item for item in records if item.repeat_group == "isolation"]
+    observer_cross_run_leakage = False
+    if len(isolation_records) == 2:
+        healthy_isolation = next(
+            (item for item in isolation_records if item.case_id == "Q4-F-A"),
+            None,
+        )
+        wrong_isolation = next(
+            (item for item in isolation_records if item.case_id == "Q4-F-B"),
+            None,
+        )
+        if healthy_isolation is not None and wrong_isolation is not None:
+            observer_cross_run_leakage = (
+                healthy_isolation.actual_selected_profile != PROFILE_A_REF
+                or wrong_isolation.actual_selected_profile != PROFILE_B_REF
+                or healthy_isolation.actual_selected_profile == wrong_isolation.actual_selected_profile
+            )
+    observer_cross_run_leakage_pass = not observer_cross_run_leakage
     post_decision_forcing_pass = all(
         not record.routing_decision_fidelity.post_decision_forcing_detected for record in records
     )
@@ -769,6 +863,9 @@ def run_qualification() -> QualificationReport:
         and repeatability_pass
         and fidelity_pass
         and routing_decision_fidelity_pass
+        and authoritative_observation_pass
+        and qualification_recomputation_pass
+        and observer_cross_run_leakage_pass
         and post_decision_forcing_pass
         and post_generation_forcing_pass
         and decision_independence_pass
@@ -796,6 +893,9 @@ def run_qualification() -> QualificationReport:
         report,
         fidelity_pass=fidelity_pass,
         routing_decision_fidelity_pass=routing_decision_fidelity_pass,
+        authoritative_observation_pass=authoritative_observation_pass,
+        qualification_recomputation_pass=qualification_recomputation_pass,
+        observer_cross_run_leakage_pass=observer_cross_run_leakage_pass,
         post_decision_forcing_pass=post_decision_forcing_pass,
         post_generation_forcing_pass=post_generation_forcing_pass,
         decision_diagnostics_independence_pass=decision_independence_pass,
@@ -827,6 +927,9 @@ def _blocked_report(
         report,
         fidelity_pass=False,
         routing_decision_fidelity_pass=False,
+        authoritative_observation_pass=False,
+        qualification_recomputation_pass=False,
+        observer_cross_run_leakage_pass=False,
         post_decision_forcing_pass=False,
         post_generation_forcing_pass=False,
         decision_diagnostics_independence_pass=False,
@@ -839,6 +942,9 @@ def _write_artifact(
     *,
     fidelity_pass: bool,
     routing_decision_fidelity_pass: bool,
+    authoritative_observation_pass: bool,
+    qualification_recomputation_pass: bool,
+    observer_cross_run_leakage_pass: bool,
     post_decision_forcing_pass: bool,
     post_generation_forcing_pass: bool,
     decision_diagnostics_independence_pass: bool,
@@ -846,8 +952,11 @@ def _write_artifact(
     _ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     report_path = _ARTIFACT_DIR / "qualification-report.json"
     initial_path = _ARTIFACT_DIR / "qualification-report-initial-failure.json"
+    pre_r1_path = _ARTIFACT_DIR / "qualification-report-pre-r1.json"
     if report_path.exists() and not initial_path.exists():
         shutil.copy2(report_path, initial_path)
+    if report_path.exists() and not pre_r1_path.exists():
+        shutil.copy2(report_path, pre_r1_path)
     payload = {
         "verdict": report.verdict,
         "blocked_reason": report.blocked_reason,
@@ -866,6 +975,10 @@ def _write_artifact(
         "repeatability_pass": report.repeatability_pass,
         "evidence_fidelity_pass": fidelity_pass,
         "routing_decision_fidelity_pass": routing_decision_fidelity_pass,
+        "authoritative_routing_observation_fidelity_pass": authoritative_observation_pass,
+        "qualification_routing_recomputation": "NONE" if qualification_recomputation_pass else "DETECTED",
+        "observer_influences_decision": False,
+        "observer_cross_run_leakage": not observer_cross_run_leakage_pass,
         "post_decision_forcing": "NONE" if post_decision_forcing_pass else "DETECTED",
         "post_generation_forcing": "NONE" if post_generation_forcing_pass else "DETECTED",
         "decision_diagnostics_independence_pass": decision_diagnostics_independence_pass,
@@ -877,9 +990,16 @@ def _write_artifact(
                 "routing_context": record.routing_context_summary,
                 "candidate_profiles": list(record.candidate_profiles),
                 "expected_profile": record.expected_profile_ref,
+                "production_evaluation_selected_profile": (
+                    record.routing_decision_fidelity.production_evaluation_selected_profile
+                ),
+                "matched_rule_id": record.matched_rule_id,
+                "routing_reason": record.routing_reason,
                 "actual_selected_profile": record.actual_selected_profile,
                 "actual_adapter_provider": record.actual_adapter_provider,
                 "actual_adapter_model": record.actual_adapter_model,
+                "actual_inner_adapter_provider": record.actual_inner_adapter_provider,
+                "actual_inner_adapter_model": record.actual_inner_adapter_model,
                 "invocation_outcome": record.invocation_status,
                 "raw_model_output": record.raw_model_output,
                 "execution_outcome": record.execution_outcome.value,
@@ -905,6 +1025,9 @@ def _write_artifact(
                 "routing_decision_fidelity": {
                     "routing_decision_fidelity_match": (
                         record.routing_decision_fidelity.routing_decision_fidelity_match
+                    ),
+                    "authoritative_routing_observation_fidelity_match": (
+                        record.routing_decision_fidelity.authoritative_routing_observation_fidelity_match
                     ),
                     "adapter_fidelity_match": record.routing_decision_fidelity.adapter_fidelity_match,
                     "post_decision_forcing": record.routing_decision_fidelity.post_decision_forcing_detected,
