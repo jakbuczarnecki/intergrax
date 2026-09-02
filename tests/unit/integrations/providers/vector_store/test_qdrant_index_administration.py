@@ -18,8 +18,10 @@ from intergrax.integrations.providers.vector_store.qdrant.index_administration i
     QdrantVectorIndexAdministration,
     _dense_dimension,
     _has_sparse_channel,
+    _physical_index_name,
     build_qdrant_index_spec,
 )
+from intergrax.integrations.providers.vector_store.qdrant.opens import _build_rag_config
 
 pytestmark = pytest.mark.unit
 
@@ -28,17 +30,14 @@ pytestmark = pytest.mark.unit
 def _qdrant_models_available() -> None:
     fake_distance = SimpleNamespace(COSINE="cosine", DOT="dot", EUCLID="euclidean")
     with patch(
-        "intergrax.integrations.providers.vector_store.qdrant.index_administration.Distance",
-        fake_distance,
-    ), patch(
-        "intergrax.integrations.providers.vector_store.qdrant.index_administration.VectorParams",
-        MagicMock(),
-    ), patch(
-        "intergrax.integrations.providers.vector_store.qdrant.index_administration.SparseVectorParams",
-        MagicMock(),
-    ), patch(
-        "intergrax.integrations.providers.vector_store.qdrant.index_administration.SparseIndexParams",
-        MagicMock(),
+        "intergrax.integrations.providers.vector_store.qdrant.index_administration._load_qdrant_models",
+        return_value=(
+            fake_distance,
+            MagicMock(),
+            MagicMock(),
+            MagicMock(),
+            type("UnexpectedResponse", (), {}),
+        ),
     ):
         yield
 
@@ -161,6 +160,19 @@ def test_describe_index_reports_point_count() -> None:
     assert VectorSearchCapability.SPARSE_LEXICAL in description.present_capabilities
 
 
+def test_probe_failure_detail_is_sanitized() -> None:
+    client = MagicMock()
+    client.get_collections.side_effect = RuntimeError("http://secret:key@host")
+    admin = QdrantVectorIndexAdministration(
+        _client=client,
+        _config=QdrantIntegrationConfig(collection_name="vpi_test"),
+    )
+    health = admin.probe()
+    assert health.healthy is False
+    assert "secret" not in (health.detail or "")
+    assert "RuntimeError" in (health.detail or "")
+
+
 def test_close_calls_client_close() -> None:
     client = MagicMock()
     admin = QdrantVectorIndexAdministration(
@@ -169,3 +181,21 @@ def test_close_calls_client_close() -> None:
     )
     admin.close()
     client.close.assert_called_once()
+
+
+def test_control_and_data_plane_physical_collection_identity_match() -> None:
+    config = QdrantIntegrationConfig(
+        collection_name="vpi_offers",
+        tenant_id="default",
+        enable_sparse_vectors=True,
+    )
+    identity = VectorIndexIdentity(
+        logical_name=config.collection_name,
+        tenant_id=config.tenant_id,
+    )
+    rag_config = _build_rag_config(config)
+    expected = _physical_index_name(identity)
+    data_plane_name = f"{rag_config.collection_name}__tenant__{rag_config.tenant_id}"
+    assert data_plane_name == expected
+    assert config.enable_sparse_vectors is True
+    assert rag_config.enable_sparse_vectors is True

@@ -56,8 +56,8 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     VpiBootstrapDependencies,
     VpiBootstrapOrchestrator,
 )
-from platform_proofs.scenarios.verified_product_identification.integrations.search_store.qdrant.adapter import (
-    QdrantSearchIndexBootstrapAdapter,
+from platform_proofs.scenarios.verified_product_identification.integrations.search_store.platform_bootstrap_adapter import (
+    PlatformSearchIndexBootstrapAdapter,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.validation.embedding_gate import (
     RegistryEmbeddingReadinessProbe,
@@ -199,13 +199,13 @@ class FakeSearchPort:
 
     def probe_readiness(self) -> ValidationReport:
         return ValidationReport.from_checks(
-            (ValidationCheck("qdrant_reachable", ValidationStatus.PASS, "ok"),)
+            (ValidationCheck("search_index_reachable", ValidationStatus.PASS, "ok"),)
         )
 
     def prepare(self, manifest: VpiBootstrapManifest) -> ValidationReport:
         _ = manifest
         return ValidationReport.from_checks(
-            (ValidationCheck("qdrant_collection_created", ValidationStatus.PASS, "ok"),)
+            (ValidationCheck("search_index_created", ValidationStatus.PASS, "ok"),)
         )
 
     def ingest_batch(self, batch: SearchIndexIngestBatch) -> SearchIndexIngestBatchResult:
@@ -219,7 +219,7 @@ class FakeSearchPort:
         return ValidationReport.from_checks(
             (
                 ValidationCheck(
-                    "qdrant_point_count",
+                    "search_index_point_count",
                     ValidationStatus.PASS
                     if self.point_count >= manifest.checkpoint_rows_processed
                     else ValidationStatus.FAIL,
@@ -773,10 +773,12 @@ def test_ready_fast_path_validates_persisted_qdrant_without_prepare(tmp_path: Pa
         dense_channel_name="dense",
         sparse_lexical_channel_name="sparse",
     )
-    search = QdrantSearchIndexBootstrapAdapter(
+    search = PlatformSearchIndexBootstrapAdapter(
         _index_admin=_RestartIndexAdmin(description),
         _vector_store=_RestartVectorStore(),
         _index_identity=identity,
+        _dense_channel_name="dense",
+        _sparse_channel_name="sparse",
         _sparse_required=True,
     )
     assert search._dimension is None
@@ -807,7 +809,7 @@ def test_ready_fast_path_validates_persisted_qdrant_without_prepare(tmp_path: Pa
     assert search._dimension is None
     assert report.validation is not None
     assert any(
-        check.name == "search.qdrant_dimension" and check.status is ValidationStatus.PASS
+        check.name == "search.search_index_dense_dimension" and check.status is ValidationStatus.PASS
         for check in report.validation.checks
     )
 
@@ -840,12 +842,12 @@ def _iter_production_python_files(*roots: Path):
             yield path
 
 
-def test_no_vendor_qdrant_sdk_import_in_vpi_integrations() -> None:
-    qdrant_adapter = (
-        VPI_INTEGRATIONS_ROOT / "search_store" / "qdrant" / "adapter.py"
+def test_no_vendor_sdk_import_in_platform_search_adapter() -> None:
+    adapter_source = (
+        VPI_INTEGRATIONS_ROOT / "search_store" / "platform_bootstrap_adapter.py"
     ).read_text(encoding="utf-8")
-    assert "qdrant_client" not in qdrant_adapter
-    assert "QdrantClient" not in qdrant_adapter
+    assert "qdrant_client" not in adapter_source
+    assert "QdrantClient" not in adapter_source
 
 
 def test_no_reflection_in_vpi_bootstrap_production_code() -> None:

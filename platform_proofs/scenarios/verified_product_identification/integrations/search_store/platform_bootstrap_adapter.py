@@ -1,4 +1,4 @@
-"""Qdrant reference search-index bootstrap adapter — platform contracts only."""
+"""Provider-neutral search-index bootstrap adapter — platform contracts only."""
 
 from __future__ import annotations
 
@@ -7,22 +7,18 @@ from dataclasses import dataclass
 import numpy as np
 
 from intergrax.integrations.contracts.vector_index_administration import (
+    DenseVectorChannelSpec,
+    SparseLexicalChannelSpec,
     VectorIndexAdministration,
     VectorIndexCompatibilityError,
     VectorIndexDescription,
     VectorIndexIdentity,
+    VectorIndexSpec,
     VectorSearchCapability,
 )
 from intergrax.integrations.contracts.vector_store import VectorStore, VectorStoreRecord, VectorStoreScope
-from intergrax.integrations.providers.vector_store.qdrant.config import QdrantIntegrationConfig
-from intergrax.integrations.providers.vector_store.qdrant.index_administration import (
-    build_qdrant_index_spec,
-)
-from intergrax.integrations.providers.vector_store.qdrant.opens import (
-    open_qdrant_vector_index_administration,
-    open_qdrant_vector_store,
-)
 from intergrax.knowledge.contracts.document import KnowledgeDocument
+from intergrax.rag.vectorstore.config.vector_config import Metric
 
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.contracts.errors import (
     VpiBootstrapCompatibilityError,
@@ -45,12 +41,35 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     VpiBootstrapManifest,
 )
 
-_DENSE_VECTOR_NAME = "dense"
-_SPARSE_VECTOR_NAME = "sparse"
-
 
 def _translate_index_compatibility_error(exc: VectorIndexCompatibilityError) -> VpiBootstrapCompatibilityError:
     return VpiBootstrapCompatibilityError(str(exc))
+
+
+def _build_index_spec(
+    identity: VectorIndexIdentity,
+    *,
+    dimension: int,
+    sparse_required: bool,
+    dense_channel_name: str,
+    sparse_channel_name: str,
+    metric: Metric = "cosine",
+) -> VectorIndexSpec:
+    required: set[VectorSearchCapability] = {VectorSearchCapability.DENSE}
+    sparse_spec: SparseLexicalChannelSpec | None = None
+    if sparse_required:
+        required.add(VectorSearchCapability.SPARSE_LEXICAL)
+        sparse_spec = SparseLexicalChannelSpec(channel_name=sparse_channel_name)
+    return VectorIndexSpec(
+        identity=identity,
+        dense=DenseVectorChannelSpec(
+            channel_name=dense_channel_name,
+            dimension=dimension,
+            metric=metric,
+        ),
+        required_capabilities=frozenset(required),
+        sparse_lexical=sparse_spec,
+    )
 
 
 def _to_vector_store_record(
@@ -94,50 +113,27 @@ def _to_vector_store_record(
 
 
 @dataclass(slots=True)
-class QdrantSearchIndexBootstrapAdapter:
+class PlatformSearchIndexBootstrapAdapter:
     """Reference ``SearchIndexBootstrapPort`` over platform vector index contracts."""
 
     _index_admin: VectorIndexAdministration
     _vector_store: VectorStore
     _index_identity: VectorIndexIdentity
+    _dense_channel_name: str
+    _sparse_channel_name: str
     _sparse_required: bool
     _dimension: int | None = None
-
-    @classmethod
-    def from_env(
-        cls,
-        *,
-        collection_name: str,
-        tenant_id: str | None = None,
-        enable_sparse_vectors: bool = True,
-    ) -> QdrantSearchIndexBootstrapAdapter:
-        config = QdrantIntegrationConfig.from_env(
-            collection_name=collection_name,
-            enable_sparse_vectors=enable_sparse_vectors,
-            tenant_id=tenant_id or None,
-        )
-        resolved_tenant = tenant_id or config.tenant_id
-        index_identity = VectorIndexIdentity(
-            logical_name=collection_name,
-            tenant_id=resolved_tenant,
-        )
-        return cls(
-            _index_admin=open_qdrant_vector_index_administration(config),
-            _vector_store=open_qdrant_vector_store(config),
-            _index_identity=index_identity,
-            _sparse_required=enable_sparse_vectors,
-        )
 
     def probe_readiness(self) -> ValidationReport:
         health = self._index_admin.probe()
         if not health.healthy:
             raise VpiBootstrapProviderError(
-                f"Qdrant readiness probe failed: {health.detail}"
+                f"Search index readiness probe failed: {health.detail}"
             )
         return ValidationReport.from_checks(
             (
                 ValidationCheck(
-                    name="qdrant_reachable",
+                    name="search_index_reachable",
                     status=ValidationStatus.PASS,
                     detail=health.detail or "probe succeeded",
                 ),
@@ -146,12 +142,12 @@ class QdrantSearchIndexBootstrapAdapter:
 
     def prepare(self, manifest: VpiBootstrapManifest) -> ValidationReport:
         self._dimension = manifest.embedding_dimension
-        spec = build_qdrant_index_spec(
-            identity=self._index_identity,
+        spec = _build_index_spec(
+            self._index_identity,
             dimension=manifest.embedding_dimension,
-            enable_sparse_lexical=self._sparse_required,
-            dense_channel_name=_DENSE_VECTOR_NAME,
-            sparse_channel_name=_SPARSE_VECTOR_NAME,
+            sparse_required=self._sparse_required,
+            dense_channel_name=self._dense_channel_name,
+            sparse_channel_name=self._sparse_channel_name,
         )
         try:
             result = self._index_admin.prepare_index(spec)
@@ -161,12 +157,12 @@ class QdrantSearchIndexBootstrapAdapter:
             raise VpiBootstrapProviderError("search index prepare failed") from exc
 
         if result.outcome.value == "created":
-            check_name = "qdrant_collection_created"
-            detail = f"collection={self._index_identity.logical_name}"
+            check_name = "search_index_created"
+            detail = f"logical_name={self._index_identity.logical_name}"
         else:
-            check_name = "qdrant_collection_compatible"
+            check_name = "search_index_compatible"
             detail = (
-                f"collection={self._index_identity.logical_name} "
+                f"logical_name={self._index_identity.logical_name} "
                 f"dimension={result.description.dense_dimension} "
                 f"sparse={self._sparse_required}"
             )
@@ -193,7 +189,7 @@ class QdrantSearchIndexBootstrapAdapter:
             self._vector_store.add_records(records, scope=scope)
         except Exception as exc:
             raise VpiBootstrapProviderError(
-                f"Qdrant ingest failed for batch {batch.batch_ordinal}"
+                f"Search index ingest failed for batch {batch.batch_ordinal}"
             ) from exc
         return SearchIndexIngestBatchResult(point_count=self.count_points())
 
@@ -206,9 +202,9 @@ class QdrantSearchIndexBootstrapAdapter:
         expected = effective_run_target_rows(manifest)
         return ValidationReport.from_checks(
             (
-                *self._persisted_collection_compatibility_checks(manifest, description),
+                *self._persisted_index_compatibility_checks(manifest, description),
                 ValidationCheck(
-                    name="qdrant_point_count",
+                    name="search_index_point_count",
                     status=ValidationStatus.PASS
                     if description.point_count >= expected
                     else ValidationStatus.FAIL,
@@ -222,9 +218,10 @@ class QdrantSearchIndexBootstrapAdapter:
         return description.point_count
 
     def close(self) -> None:
+        # VectorStore contract has no close(); platform opener owns data-plane lifecycle.
         self._index_admin.close()
 
-    def _persisted_collection_compatibility_checks(
+    def _persisted_index_compatibility_checks(
         self,
         manifest: VpiBootstrapManifest,
         description: VectorIndexDescription,
@@ -232,12 +229,12 @@ class QdrantSearchIndexBootstrapAdapter:
         if not description.exists:
             checks: list[ValidationCheck] = [
                 ValidationCheck(
-                    name="qdrant_collection_exists",
+                    name="search_index_exists",
                     status=ValidationStatus.FAIL,
-                    detail=f"collection={self._index_identity.logical_name} not found",
+                    detail=f"logical_name={self._index_identity.logical_name} not found",
                 ),
                 ValidationCheck(
-                    name="qdrant_dimension",
+                    name="search_index_dense_dimension",
                     status=ValidationStatus.FAIL,
                     detail="persisted_dimension=none",
                 ),
@@ -245,9 +242,9 @@ class QdrantSearchIndexBootstrapAdapter:
             if self._sparse_required:
                 checks.append(
                     ValidationCheck(
-                        name="qdrant_sparse_channel",
+                        name="search_index_sparse_lexical",
                         status=ValidationStatus.FAIL,
-                        detail="collection missing",
+                        detail="index missing",
                     )
                 )
             return tuple(checks)
@@ -256,16 +253,16 @@ class QdrantSearchIndexBootstrapAdapter:
         if description.dense_dimension is None:
             checks.append(
                 ValidationCheck(
-                    name="qdrant_dense_channel",
+                    name="search_index_dense_channel",
                     status=ValidationStatus.FAIL,
                     detail=(
-                        f"collection={self._index_identity.logical_name} has no dense vector config"
+                        f"logical_name={self._index_identity.logical_name} has no dense vector config"
                     ),
                 )
             )
             checks.append(
                 ValidationCheck(
-                    name="qdrant_dimension",
+                    name="search_index_dense_dimension",
                     status=ValidationStatus.FAIL,
                     detail="persisted_dimension=none",
                 )
@@ -273,7 +270,7 @@ class QdrantSearchIndexBootstrapAdapter:
         else:
             checks.append(
                 ValidationCheck(
-                    name="qdrant_dimension",
+                    name="search_index_dense_dimension",
                     status=(
                         ValidationStatus.PASS
                         if description.dense_dimension == manifest.embedding_dimension
@@ -290,11 +287,11 @@ class QdrantSearchIndexBootstrapAdapter:
             has_sparse = VectorSearchCapability.SPARSE_LEXICAL in description.present_capabilities
             checks.append(
                 ValidationCheck(
-                    name="qdrant_sparse_channel",
+                    name="search_index_sparse_lexical",
                     status=ValidationStatus.PASS if has_sparse else ValidationStatus.FAIL,
                     detail=(
                         f"sparse_channel={'present' if has_sparse else 'missing'} "
-                        f"required={_SPARSE_VECTOR_NAME}"
+                        f"required={self._sparse_channel_name}"
                     ),
                 )
             )
