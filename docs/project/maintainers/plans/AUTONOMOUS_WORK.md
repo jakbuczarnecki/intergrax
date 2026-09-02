@@ -5,7 +5,7 @@
 **ADR:** [`ADR-AW-001`](../../technical/adr/entries/2026-09-02/ADR-AW-001.md)  
 **Architecture governance:** [`../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
 
-**Status:** Domain registered — **AW-0 REVIEW GATE** (documentation integration complete; independent audit pending; runtime implementation NOT STARTED)
+**Status:** Domain registered — **AW-0 CLOSED / FROZEN** (canonical documentation independently accepted; runtime implementation NOT STARTED)
 
 ---
 
@@ -49,7 +49,7 @@ Delivery rule:
 
 | Wave | Purpose | Current status |
 |---|---|---|
-| AW-0 | Canonical architecture, ADR, documentation registration | **REVIEW GATE** — documentation integration complete; AW-0G pending independent audit |
+| AW-0 | Canonical architecture, ADR, documentation registration | **CLOSED / FROZEN** — AW-0G independently accepted |
 | AW-1 | Core semantic contracts | NOT STARTED |
 | AW-2 | Durable worker state and lifecycle | NOT STARTED |
 | AW-3 | Principal / authority / workspace composition | NOT STARTED |
@@ -75,9 +75,9 @@ Delivery rule:
 | AW-0D | Create canonical architecture/plan pair | **DONE** |
 | AW-0E | ADR-AW-001 ownership/classification decision | **DONE** |
 | AW-0F | Register domain in architecture/documentation hubs and public routes | **DONE** |
-| AW-0G | Independent canonical-doc audit before runtime implementation | **READY FOR INDEPENDENT REVIEW** |
+| AW-0G | Independent canonical-doc audit before runtime implementation | **DONE** |
 
-**Exit gate:** canonical docs accepted with no unresolved ownership conflict; no runtime implementation before AW-0G acceptance.
+**Exit gate:** **PASSED** — canonical docs independently accepted with no unresolved ownership conflict. Runtime implementation may begin with AW-1A only.
 
 ---
 
@@ -443,6 +443,6 @@ This plan does not authorize:
 
 ## 6. First implementation gate
 
-After AW-0 documentation review, the first code task must be **AW-1A only**.
+With AW-0 closed and AW-0G accepted, the first code task must be **AW-1A only**.
 
 No Recovery Controller, UI, CodeCraft adaptation or worker runtime loop should be implemented before the semantic contracts and ownership boundaries are frozen.
