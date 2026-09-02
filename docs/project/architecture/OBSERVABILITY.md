@@ -93,7 +93,7 @@ RuntimeEvent (canonical) → HOS → export boundary → provider adapter → OT
   <source media="(prefers-color-scheme: dark)" srcset="assets/observability-evidence-spine-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/observability-evidence-spine-light.svg">
   <img
-    alt="Conceptual diagram: CURRENT Task to Run to Attempt to RuntimeEvent through Harness Observability Spine to persistence, Unified Run Journal, inspect, metrics, export, and as-of historical reconstruction. TARGET inserts Execution Tree between Attempt and RuntimeEvents."
+    alt="Conceptual diagram of the observability evidence spine: Task, Run, Attempt, RuntimeEvents, Harness Observability Spine, persistence, Unified Run Journal, inspect, metrics, export, and as-of historical reconstruction. Execution identity and Execution Tree foundations (parent_execution_id lineage) exist on migrated paths; full five-ID coverage on all canonical paths remains PARTIAL."
     src="assets/observability-evidence-spine-light.svg"
   >
 </picture>

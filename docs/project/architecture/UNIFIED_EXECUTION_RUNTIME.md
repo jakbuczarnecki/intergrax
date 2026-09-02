@@ -775,6 +775,8 @@ TASK_COMPLETED | TASK_FAILED
   "task_id": "task_legal_review_001",
   "run_id": "run_20260527_001",
   "attempt_id": "attempt_...",
+  "execution_id": "exec_clause_analysis_...",
+  "parent_execution_id": null,
   "node_id": "node_legal_review",
   "agent_id": "legal",
   "step_id": "step_clause_analysis",
