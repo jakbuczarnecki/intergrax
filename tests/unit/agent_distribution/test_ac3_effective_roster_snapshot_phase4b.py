@@ -11,6 +11,7 @@ import pytest
 from intergrax.agent_distribution.admin_models import AgentPlatformAdminBlockedError
 from intergrax.agent_distribution.errors import (
     EffectiveRosterSnapshotConflict,
+    RuntimeRevisionConflict,
     RuntimeRevisionLifecycleError,
 )
 from intergrax.agent_distribution.in_memory_stores import (
@@ -372,3 +373,171 @@ def test_idempotent_snapshot_reused_across_distinct_runtime_revisions() -> None:
         first.effective_roster_revision_id
     )
     assert snapshot is not None
+
+
+def _mutate_desired_state_to_different_roster(
+    stack: AdminStack,
+    *,
+    historical_roster_revision_id: str,
+) -> None:
+    from intergrax.agent_distribution.admin_models import SetAgentEnablementRequest
+
+    stack.service.disable_binding(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        application_binding_id="bind-search",
+        request=SetAgentEnablementRequest(
+            mutation_id="mut-phase4b-disable", expected_revision=1
+        ),
+        principal=admin_test_principal(),
+    )
+    current_roster = stack.service._build_roster(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        manifest_release_id="rel-1",
+    )
+    historical_snapshot = stack.effective_roster_snapshot_store.get_by_revision(
+        historical_roster_revision_id
+    )
+    assert historical_snapshot is not None
+    assert current_roster != historical_snapshot
+
+
+def test_replay_succeeds_after_desired_state_mutation() -> None:
+    stack = _stack_with_known_locator()
+    _enable_binding(stack)
+    revision_id = "rev-phase4b-desired-mutated"
+    request = _build_request(revision_id, mutation_id="mut-phase4b-desired-mutated")
+    first = _build_revision(stack, revision_id)
+    historical_snapshot = stack.effective_roster_snapshot_store.get_by_revision(
+        first.effective_roster_revision_id
+    )
+    assert historical_snapshot is not None
+    _mutate_desired_state_to_different_roster(
+        stack,
+        historical_roster_revision_id=first.effective_roster_revision_id,
+    )
+    second = stack.service.build_application_revision(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        request=request,
+        principal=admin_test_principal(),
+    )
+    assert second.runtime_revision_id == first.runtime_revision_id
+    assert (
+        second.effective_roster_revision_id
+        == first.effective_roster_revision_id
+        == historical_snapshot.effective_roster_revision_id
+    )
+    assert second.revision_state is RuntimeRevisionState.VALIDATED
+
+
+def test_replay_succeeds_when_current_roster_builder_raises() -> None:
+    stack = _stack_with_known_locator()
+    _enable_binding(stack)
+    revision_id = "rev-phase4b-roster-builder-spy"
+    request = _build_request(revision_id, mutation_id="mut-phase4b-roster-builder-spy")
+    first = _build_revision(stack, revision_id)
+
+    def _failing_build_roster(**kwargs: object) -> EffectiveRoster:
+        del kwargs
+        raise AssertionError("_build_roster must not be called during replay")
+
+    stack.service._build_roster = _failing_build_roster  # type: ignore[method-assign]
+    second = stack.service.build_application_revision(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        request=request,
+        principal=admin_test_principal(),
+    )
+    assert second.runtime_revision_id == first.runtime_revision_id
+    assert second.effective_roster_revision_id == first.effective_roster_revision_id
+
+
+def test_replay_request_mismatch_fails_without_current_roster_dependency() -> None:
+    stack = _stack_with_known_locator()
+    _enable_binding(stack)
+    revision_id = "rev-phase4b-request-mismatch"
+    request = _build_request(revision_id, mutation_id="mut-phase4b-request-mismatch")
+    first = _build_revision(stack, revision_id)
+    _mutate_desired_state_to_different_roster(
+        stack,
+        historical_roster_revision_id=first.effective_roster_revision_id,
+    )
+    mismatched = request.model_copy(update={"application_release_id": "rel-other"})
+    with pytest.raises(RuntimeRevisionConflict):
+        stack.service.build_application_revision(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            request=mismatched,
+            principal=admin_test_principal(),
+        )
+
+
+def test_validated_replay_succeeds_after_desired_state_mutation() -> None:
+    stack = _stack_with_known_locator()
+    _enable_binding(stack)
+    revision_id = "rev-phase4b-validated-desired-mutated"
+    request = _build_request(
+        revision_id, mutation_id="mut-phase4b-validated-desired-mutated"
+    )
+    first = _build_revision(stack, revision_id)
+    assert first.revision_state is RuntimeRevisionState.VALIDATED
+    _mutate_desired_state_to_different_roster(
+        stack,
+        historical_roster_revision_id=first.effective_roster_revision_id,
+    )
+
+    def _failing_build_roster(**kwargs: object) -> EffectiveRoster:
+        del kwargs
+        raise AssertionError("_build_roster must not be called during replay")
+
+    stack.service._build_roster = _failing_build_roster  # type: ignore[method-assign]
+    second = stack.service.build_application_revision(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        request=request,
+        principal=admin_test_principal(),
+    )
+    assert second.revision_state is RuntimeRevisionState.VALIDATED
+    assert second.effective_roster_revision_id == first.effective_roster_revision_id
+
+
+def test_candidate_crash_replay_succeeds_after_desired_state_mutation() -> None:
+    stack = _stack_with_known_locator()
+    _enable_binding(stack)
+    revision_id = "rev-phase4b-candidate-desired-mutated"
+    request = _build_request(
+        revision_id, mutation_id="mut-phase4b-candidate-desired-mutated"
+    )
+    stack.service._revision_service = _FailingMarkValidatedRevisionService(
+        stack.service._revision_store,
+        fail_once=True,
+    )
+    with pytest.raises(RuntimeRevisionLifecycleError, match="forced mark_validated"):
+        stack.service.build_application_revision(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            request=request,
+            principal=admin_test_principal(),
+        )
+    revision = stack.service._revision_store.get_revision(revision_id)
+    assert revision is not None
+    _mutate_desired_state_to_different_roster(
+        stack,
+        historical_roster_revision_id=revision.effective_roster_revision_id,
+    )
+
+    def _failing_build_roster(**kwargs: object) -> EffectiveRoster:
+        del kwargs
+        raise AssertionError("_build_roster must not be called during replay")
+
+    stack.service._build_roster = _failing_build_roster  # type: ignore[method-assign]
+    result = stack.service.build_application_revision(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        request=request,
+        principal=admin_test_principal(),
+    )
+    assert result.revision_state is RuntimeRevisionState.VALIDATED
+    assert result.artifact_locator == _KNOWN_LOCATOR
