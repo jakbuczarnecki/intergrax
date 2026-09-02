@@ -1,11 +1,19 @@
 # Platform Plugins - Maintainer Roadmap
 
 **Program:** Platform Plugin architecture
-**Status:** PLATFORM-PLUGIN-1 **Done** · PLATFORM-PLUGIN-2 **Done** · PLATFORM-PLUGIN-3 **Done** · PLATFORM-PLUGIN-4 **Done** · PLATFORM-PLUGIN-5 **Done** · PLATFORM-PLUGIN-6 **Done** · PLATFORM-PLUGIN-7 **Done** · PLATFORM-PLUGIN-8 **Done** · PLATFORM-PLUGIN-9 **Done** - program **CLOSED**
+**Status:** CLOSED
+**Implementation roadmap:** COMPLETE
+**Architecture:** FROZEN
+**Final production verdict:** PRODUCTION-GRADE — ROADMAP COMPLETE
+**Documentation:** COMPLETE
+**Closed:** 2026-09-02
+
+**Stages:** PLATFORM-PLUGIN-1 **Done** · PLATFORM-PLUGIN-2 **Done** · PLATFORM-PLUGIN-3 **Done** · PLATFORM-PLUGIN-4 **Done** · PLATFORM-PLUGIN-5 **Done** · PLATFORM-PLUGIN-6 **Done** · PLATFORM-PLUGIN-7 **Done** · PLATFORM-PLUGIN-8 **Done** · PLATFORM-PLUGIN-9 **Done**
 **Audit evidence:** [`PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md`](PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md)
 **Canonical architecture:** [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md)
+**Documentation closeout:** [`PLATFORM_PLUGIN_DOCUMENTATION_CLOSEOUT.md`](PLATFORM_PLUGIN_DOCUMENTATION_CLOSEOUT.md)
 
-**Last updated:** 2026-08-12
+**Last updated:** 2026-09-02
 
 **Post-program production audit:** [`PLATFORM_PLUGIN_PRODUCTION_AUDIT.md`](PLATFORM_PLUGIN_PRODUCTION_AUDIT.md) (`PLATFORM-PLUGIN-AUDIT-1`, verdict `APPROVED_WITH_GAPS`, SHA `f7b6eedf354d43b1459b8077a56f8acd3fdaaa3d`).
 
@@ -125,7 +133,7 @@ PLUGIN-4 is intentionally **after** architecture decision: harmonization without
 
 ## Program closeout criteria (PLATFORM-PLUGIN-9)
 
-Before the Platform Plugin program can be marked **CLOSED**, a final audit must confirm:
+Historical criteria evaluated at PLUGIN-9 closeout (2026-08-12) and reaffirmed at formal program closure (2026-09-02). All items satisfied.
 
 1. Canonical [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) matches implementation.
 2. Maintainer and author documentation matches executable behavior.
@@ -134,6 +142,100 @@ Before the Platform Plugin program can be marked **CLOSED**, a final audit must 
 5. Trust, compatibility, and conflict rules are represented correctly in docs and runtime.
 6. No accidental competing plugin architectures were introduced.
 7. Approved **DO-NOT-UNIFY** boundaries from PLATFORM-PLUGIN-1 remain preserved.
+
+---
+
+## Final closure
+
+> The Platform Plugins implementation roadmap is formally closed. The delivered subsystem is production-grade within its documented trusted in-process model. Remaining extensibility maturity targets are explicitly outside this roadmap and require separate future programs.
+
+### Implementation
+
+`COMPLETE`
+
+### Architecture
+
+`FROZEN`
+
+### Production readiness
+
+`PRODUCTION-GRADE — ROADMAP COMPLETE`
+
+### Documentation
+
+`COMPLETE` — see [`PLATFORM_PLUGIN_DOCUMENTATION_CLOSEOUT.md`](PLATFORM_PLUGIN_DOCUMENTATION_CLOSEOUT.md)
+
+### Cross-flow
+
+`ESTABLISHED`
+
+### Remaining blockers
+
+`NONE`
+
+### Material C1/C2 defects
+
+`NONE`
+
+### Technical debt
+
+`LOW`
+
+### Remaining maturity boundaries
+
+Separate future maturity programs — not unfinished Platform Plugins work:
+
+- universal production qualification rollout
+- Tier-0 / Tool / RAG typed evidence expansion
+- optional Vendor Knowledge evidence adapter
+- entry-point cache lifecycle policy
+- Protocol v2 extensibility findings (see § Protocol v2 platform extensibility remediation)
+
+> These are separate future maturity programs and do not keep the Platform Plugins implementation roadmap open.
+
+### PLUGIN-8 limitation (classification)
+
+| Area | Status |
+|------|--------|
+| Tool discovery / registration / qualification proof | **established** |
+| invoke-stage trace bridge issue | pre-existing execution/trace test debt |
+| Plugin Engine blocker | **NO** |
+
+Do not treat PLUGIN-8 as 100% green invoke E2E.
+
+### Closure evidence
+
+| Evidence | Location |
+|----------|----------|
+| Architecture canon | [`docs/project/architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) |
+| Documentation closeout | [`PLATFORM_PLUGIN_DOCUMENTATION_CLOSEOUT.md`](PLATFORM_PLUGIN_DOCUMENTATION_CLOSEOUT.md) |
+| Cross-flow proof | [`tests/integration/platform_plugins/test_plugin_engine_cross_flow.py`](../../../../tests/integration/platform_plugins/test_plugin_engine_cross_flow.py) |
+| Contract proof | [`tests/contract/core/plugins/test_platform_plugin_contract.py`](../../../../tests/contract/core/plugins/test_platform_plugin_contract.py) |
+| Tool external EP proof | [`tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py`](../../../../tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py) |
+| Memory materialization proof | [`tests/unit/memory/test_memory_store_resolver.py::test_fixture_ep_discovery_materializes_external_stores`](../../../../tests/unit/memory/test_memory_store_resolver.py) |
+
+### Program state (final)
+
+```text
+PLATFORM-PLUGIN-1  ✅
+PLATFORM-PLUGIN-2  ✅
+PLATFORM-PLUGIN-3  ✅
+PLATFORM-PLUGIN-4  ✅
+PLATFORM-PLUGIN-5  ✅
+PLATFORM-PLUGIN-6  ✅
+PLATFORM-PLUGIN-7  ✅
+PLATFORM-PLUGIN-8  ✅
+PLATFORM-PLUGIN-9  ✅
+
+Final architecture audit       ✅
+Cross-flow proof               ✅
+Documentation finalization     ✅
+Formal closure                 ✅
+
+PROGRAM STATUS: CLOSED
+```
+
+**Closure decision:** No further Platform Plugins implementation tasks are required. Future extensibility work must be opened as separate programs.
 
 ---
 
@@ -148,9 +250,9 @@ Before the Platform Plugin program can be marked **CLOSED**, a final audit must 
 
 ---
 
-## PROVIDER-QUAL track (post PLUGIN-9)
+## PROVIDER-QUAL track (separate future maturity program)
 
-Extends PLUGIN-7 qualification for **provider-scoped** evidence without a new qualification engine. Architecture: [`satellites/PLATFORM_PLUGINS_provider_qualification.md`](../../architecture/satellites/PLATFORM_PLUGINS_provider_qualification.md).
+Extends PLUGIN-7 qualification for **provider-scoped** evidence without a new qualification engine. **Not** a continuation of the PLATFORM-PLUGIN-1..9 implementation roadmap. Architecture: [`satellites/PLATFORM_PLUGINS_provider_qualification.md`](../../architecture/satellites/PLATFORM_PLUGINS_provider_qualification.md).
 
 | ID | Task | Status | Purpose |
 |----|------|--------|---------|
@@ -195,11 +297,11 @@ Extends PLUGIN-7 qualification for **provider-scoped** evidence without a new qu
 
 ---
 
-## Protocol v2 platform extensibility remediation (2026-08-18 audit)
+## Protocol v2 platform extensibility remediation (separate future maturity program)
 
 Accepted audit unit [`PLATFORM_EXTENSIBILITY`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md) (**FAIL**, 6 ACCEPTED findings, `audited_sha` `70c947c889f40222e5efb191241bdd8fa9035b17`, operator accepted 2026-08-21). Canonical architecture target: [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) - [Protocol v2 platform extensibility target invariants (2026-08-18)](../../architecture/PLATFORM_PLUGINS.md#protocol-v2-platform-extensibility-target-invariants-2026-08-18).
 
-**Status rule:** all blocks below are **ACCEPTED / PLANNED** only. Do **not** mark IMPLEMENTED, VERIFIED, CLOSED, or DONE in this section. Do **not** reopen historical PLATFORM-PLUGIN-1..9 rows. Cross-link **PROVIDER-QUAL** (§ PROVIDER-QUAL track) for provider-scoped evidence - do not duplicate or overwrite ongoing PROVIDER-QUAL work.
+**Status rule:** all blocks below are **ACCEPTED / PLANNED** only — separate future maturity program, not unfinished Platform Plugins work. Do **not** mark IMPLEMENTED, VERIFIED, CLOSED, or DONE in this section. Do **not** reopen historical PLATFORM-PLUGIN-1..9 rows. Cross-link **PROVIDER-QUAL** (§ PROVIDER-QUAL track) for provider-scoped evidence - do not duplicate or overwrite ongoing PROVIDER-QUAL work.
 
 ### PLATFORM-EXTENSIBILITY-QUALIFICATION-AUTHORITY-INTEGRITY
 
