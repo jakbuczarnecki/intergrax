@@ -19,6 +19,10 @@ from platform_proofs.scenarios.verified_product_identification.application.contr
     StructuredSearchQuery,
     VectorSearchQuery,
 )
+from platform_proofs.scenarios.verified_product_identification.application.contracts.failures import (
+    CatalogSearchFailure,
+    CatalogSearchFailureKind,
+)
 from platform_proofs.scenarios.verified_product_identification.application.contracts.results import (
     ExactIdentifierLookupResult,
     LexicalSearchResult,
@@ -200,6 +204,66 @@ def test_catalog_mismatch_rejects() -> None:
         _resolve_with_store(FakeSourceRecordStoreB(), candidate)
 
 
+def test_matching_source_revision_resolves() -> None:
+    candidate = ProductCandidate(
+        offer_id=OFFER_A,
+        channel=RetrievalChannel.EXACT,
+        rank=0,
+        source_ref=_source_ref(OFFER_A, catalog_id=CATALOG_A, source_revision="rev-1"),
+        channel_score=ExactChannelScore(
+            matched_identifier=ProductIdentifier(
+                identifier_type=ProductIdentifierType.GTIN,
+                value="8806095123456",
+            )
+        ),
+    )
+    store = FakeSourceRecordStoreA(source_revision="rev-1")
+
+    source = _resolve_with_store(store, candidate)
+
+    assert source.provenance.source_revision == "rev-1"
+    assert source.provenance.source_revision == candidate.source_ref.source_revision
+
+
+def test_unspecified_source_revision_accepts_record_revision() -> None:
+    candidate = ProductCandidate(
+        offer_id=OFFER_A,
+        channel=RetrievalChannel.EXACT,
+        rank=0,
+        source_ref=_source_ref(OFFER_A, catalog_id=CATALOG_A, source_revision=None),
+        channel_score=ExactChannelScore(
+            matched_identifier=ProductIdentifier(
+                identifier_type=ProductIdentifierType.GTIN,
+                value="8806095123456",
+            )
+        ),
+    )
+    store = FakeSourceRecordStoreA(source_revision="rev-populated")
+
+    source = _resolve_with_store(store, candidate)
+
+    assert candidate.source_ref.source_revision is None
+    assert source.provenance.source_revision == "rev-populated"
+
+
+def test_source_fetch_port_receives_full_source_ref() -> None:
+    candidate = _consume_exact_lookup(FakeExactLookupA())
+    captured: list[SourceRecordRef] = []
+
+    @dataclass(frozen=True, slots=True)
+    class CapturingSourceStore:
+        def fetch(self, source_ref: SourceRecordRef) -> SourceRecordFetchResult:
+            captured.append(source_ref)
+            return FakeSourceRecordStoreA().fetch(source_ref)
+
+    _resolve_with_store(CapturingSourceStore(), candidate)
+
+    assert len(captured) == 1
+    assert captured[0] == candidate.source_ref
+    assert captured[0].offer_id == candidate.offer_id
+    assert captured[0].catalog_id == candidate.source_ref.catalog_id
+
+
 def test_source_revision_mismatch_rejects_when_revision_specified() -> None:
     candidate = ProductCandidate(
         offer_id=OFFER_A,
@@ -363,4 +427,53 @@ def test_invalid_vector_score_rejects() -> None:
     with pytest.raises(ValueError, match="cosine_similarity"):
         VectorChannelScore(cosine_similarity=float("nan"))
     with pytest.raises(ValueError, match="cosine_similarity"):
+        VectorChannelScore(cosine_similarity=float("inf"))
+    with pytest.raises(ValueError, match="cosine_similarity"):
+        VectorChannelScore(cosine_similarity=float("-inf"))
+    with pytest.raises(ValueError, match="cosine_similarity"):
         VectorChannelScore(cosine_similarity=1.5)
+    with pytest.raises(ValueError, match="cosine_similarity"):
+        VectorChannelScore(cosine_similarity=-1.5)
+
+
+def test_search_result_failure_rejects_non_empty_candidates() -> None:
+    failure = CatalogSearchFailure(
+        kind=CatalogSearchFailureKind.UNAVAILABLE,
+        message="catalog backend unavailable",
+    )
+    candidate = _exact_candidate(
+        offer_id=OFFER_A,
+        rank=0,
+        identifier=ProductIdentifier(
+            identifier_type=ProductIdentifierType.GTIN,
+            value="8806095123456",
+        ),
+        catalog_id=CATALOG_A,
+    )
+
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        ExactIdentifierLookupResult(candidates=(candidate,), failure=failure)
+
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        LexicalSearchResult(candidates=(candidate,), failure=failure)
+
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        StructuredSearchResult(candidates=(candidate,), failure=failure)
+
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        VectorSearchResult(candidates=(candidate,), failure=failure)
+
+
+def test_source_fetch_result_failure_rejects_record() -> None:
+    failure = CatalogSearchFailure(
+        kind=CatalogSearchFailureKind.UNAVAILABLE,
+        message="source store unavailable",
+    )
+    record = ProductSourceRecord(
+        offer_id=OFFER_A,
+        record_payload_ref="catalog-alpha:payload:offer-1001",
+        provenance=ProductSourceProvenance(catalog_id=CATALOG_A),
+    )
+
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        SourceRecordFetchResult(record=record, failure=failure)

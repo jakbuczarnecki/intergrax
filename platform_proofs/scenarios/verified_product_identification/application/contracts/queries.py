@@ -10,10 +10,9 @@ from platform_proofs.scenarios.verified_product_identification.application.domai
 )
 
 
-def _validate_limit(limit: int) -> int:
+def _validate_limit(limit: int) -> None:
     if type(limit) is not int or limit < 1:
         raise ValueError("limit must be a positive int")
-    return limit
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,9 +21,7 @@ class ExactIdentifierQuery:
     limit: int = 10
 
     def __post_init__(self) -> None:
-        normalized = _validate_limit(self.limit)
-        if normalized != self.limit:
-            object.__setattr__(self, "limit", normalized)
+        _validate_limit(self.limit)
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,9 +32,7 @@ class LexicalSearchQuery:
     def __post_init__(self) -> None:
         if not isinstance(self.query_text, str) or not self.query_text.strip():
             raise ValueError("LexicalSearchQuery.query_text must be a non-empty string")
-        normalized = _validate_limit(self.limit)
-        if normalized != self.limit:
-            object.__setattr__(self, "limit", normalized)
+        _validate_limit(self.limit)
 
 
 class StructuredConstraintOperator(StrEnum):
@@ -66,13 +61,11 @@ class StructuredSearchQuery:
     limit: int = 20
 
     def __post_init__(self) -> None:
-        constraints = tuple(self.constraints)
-        if not constraints:
+        if type(self.constraints) is not tuple:
+            raise TypeError("StructuredSearchQuery.constraints must be a tuple")
+        if not self.constraints:
             raise ValueError("StructuredSearchQuery.constraints must not be empty")
-        normalized = _validate_limit(self.limit)
-        object.__setattr__(self, "constraints", constraints)
-        if normalized != self.limit:
-            object.__setattr__(self, "limit", normalized)
+        _validate_limit(self.limit)
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,6 +76,4 @@ class VectorSearchQuery:
     def __post_init__(self) -> None:
         if not isinstance(self.query_text, str) or not self.query_text.strip():
             raise ValueError("VectorSearchQuery.query_text must be a non-empty string")
-        normalized = _validate_limit(self.limit)
-        if normalized != self.limit:
-            object.__setattr__(self, "limit", normalized)
+        _validate_limit(self.limit)
