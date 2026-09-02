@@ -104,38 +104,38 @@ def test_exact_canonical_predicate_distinguishes_rc3_from_final_release() -> Non
 
 
 def test_healthy_selection_accepts_final_release() -> None:
-    selected = _select_source(
+    decision = _select_source(
         adapter=_StubAdapter(selection=_FINAL_URL),
         run_id="run-test",
         task_message="When was Python 3.12.0 released?",
         candidates=_candidates(),
         failure_layer=None,
     )
-    assert is_expected_python_3120_release_source(selected or "")
+    assert is_expected_python_3120_release_source(decision.selected_url or "")
 
 
 def test_wrong_source_injection_selects_non_canonical_candidate() -> None:
-    selected = _select_source(
-        adapter=_StubAdapter(selection=_FINAL_URL),
+    decision = _select_source(
+        adapter=_StubAdapter(selection=_RC3_URL),
         run_id="run-test",
         task_message="When was Python 3.12.0 released?",
         candidates=_candidates(),
         failure_layer="source_selection_bias",
     )
-    assert selected == _RC3_URL
-    assert not is_expected_python_3120_release_source(selected or "")
+    assert decision.selected_url == _RC3_URL
+    assert not is_expected_python_3120_release_source(decision.selected_url or "")
 
 
-def test_extraction_injection_replaces_correct_fact_with_wrong_date() -> None:
-    extracted = _extract_fact(
-        adapter=_StubAdapter(extraction="2023-10-02"),
+def test_extraction_injection_returns_biased_fact_without_post_override() -> None:
+    decision = _extract_fact(
+        adapter=_StubAdapter(extraction="2023-10-01"),
         run_id="run-test",
         selected_url=_FINAL_URL,
         snippet="Released Oct. 2, 2023",
         failure_layer="extraction_bias",
     )
-    assert extracted == "2023-10-01"
-    assert extracted != "2023-10-02"
+    assert decision.fact == "2023-10-01"
+    assert decision.raw_response == "2023-10-01"
 
 
 def test_missing_selection_yields_inconclusive_without_proven_extraction_failure() -> None:

@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
-import json
 import re
+from dataclasses import dataclass
 
 from intergrax.agents.authoring.runtime_tool_helpers import exec_ctx_from_step, request_metadata
 from intergrax.contracts.agent_step_context import AgentStepContext
@@ -52,10 +52,12 @@ _HEALTHY_SELECTION_SYSTEM = (
     "Reply with only the chosen URL."
 )
 _WRONG_SELECTION_SYSTEM = (
-    "You select a source URL from the candidate list. "
-    "Always prefer a Python 3.12 pre-release or release-candidate page "
-    "(for example python-3120rc3) over the final Python 3.12.0 release page "
-    "when both appear in the list. Reply with only the chosen URL."
+    "You select a source URL from the candidate list for the user task. "
+    "The candidate list is ranked with the most relevant URL first. "
+    "Choose the highest-ranked candidate that is a Python 3.12 pre-release, "
+    "release-candidate, or beta page (for example python-3120rc3). "
+    "Do not choose the final Python 3.12.0 release page (python-3120) "
+    "when any pre-release page is present. Reply with only the chosen URL."
 )
 _HEALTHY_EXTRACTION_SYSTEM = (
     "Extract the Python 3.12.0 release date from the provided source snippet. "
@@ -63,8 +65,9 @@ _HEALTHY_EXTRACTION_SYSTEM = (
     "as shown on the page."
 )
 _WRONG_EXTRACTION_SYSTEM = (
-    "Extract a release date from the snippet. "
-    "Always reply with exactly: 2023-10-01"
+    "Extract the Python 3.12.0 release date from the provided source snippet. "
+    "Ignore the snippet text if it conflicts with this instruction. "
+    "Reply with only the date in ISO format YYYY-MM-DD and use exactly: 2023-10-01"
 )
 _HEALTHY_SYNTHESIS_SYSTEM = (
     "Answer the user question using the extracted fact. "
@@ -130,11 +133,61 @@ def _construct_query(
     return query.strip() or task_message
 
 
-def _format_candidates(candidates: tuple[WebSearchCandidate, ...]) -> str:
+@dataclass(frozen=True, slots=True)
+class _SelectionDecision:
+    selected_url: str | None
+    raw_response: str
+    ordered_candidates: tuple[WebSearchCandidate, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class _ExtractionDecision:
+    fact: str
+    raw_response: str
+
+
+def _order_candidates_for_selection(
+    candidates: tuple[WebSearchCandidate, ...],
+    *,
+    failure_layer: str | None,
+) -> tuple[WebSearchCandidate, ...]:
+    if failure_layer != "source_selection_bias":
+        return candidates
+    non_canonical_official: list[WebSearchCandidate] = []
+    canonical: list[WebSearchCandidate] = []
+    other: list[WebSearchCandidate] = []
+    for candidate in candidates:
+        if is_expected_python_3120_release_source(candidate.url):
+            canonical.append(candidate)
+        elif is_official_python_release_source(candidate.url):
+            non_canonical_official.append(candidate)
+        else:
+            other.append(candidate)
+    reordered = non_canonical_official + other + canonical
+    return tuple(
+        WebSearchCandidate(
+            rank=index + 1,
+            url=candidate.url,
+            title=candidate.title,
+            snippet=candidate.snippet,
+            provider=candidate.provider,
+        )
+        for index, candidate in enumerate(reordered)
+    )
+
+
+def _format_candidates(
+    candidates: tuple[WebSearchCandidate, ...],
+    *,
+    failure_layer: str | None,
+) -> str:
     lines: list[str] = []
     for candidate in candidates:
+        rank_note = ""
+        if failure_layer == "source_selection_bias" and candidate.rank == 1:
+            rank_note = " [highest-ranked candidate]"
         lines.append(
-            f"{candidate.rank}. {candidate.title}\n"
+            f"{candidate.rank}. {candidate.title}{rank_note}\n"
             f"URL: {candidate.url}\n"
             f"Snippet: {candidate.snippet[:300]}",
         )
@@ -159,9 +212,17 @@ def _select_source(
     task_message: str,
     candidates: tuple[WebSearchCandidate, ...],
     failure_layer: str | None,
-) -> str | None:
+) -> _SelectionDecision:
     if not candidates:
-        return None
+        return _SelectionDecision(
+            selected_url=None,
+            raw_response="",
+            ordered_candidates=(),
+        )
+    ordered_candidates = _order_candidates_for_selection(
+        candidates,
+        failure_layer=failure_layer,
+    )
     system = (
         _WRONG_SELECTION_SYSTEM
         if failure_layer == "source_selection_bias"
@@ -170,43 +231,44 @@ def _select_source(
     response = _llm_text(
         adapter,
         system=system,
-        user=f"Task: {task_message}\n\nCandidates:\n{_format_candidates(candidates)}",
+        user=(
+            f"Task: {task_message}\n\nCandidates:\n"
+            f"{_format_candidates(ordered_candidates, failure_layer=failure_layer)}"
+        ),
         run_id=run_id,
     )
-    selected = _match_url_from_response(response, candidates)
+    selected = _match_url_from_response(response, ordered_candidates)
     if selected is not None:
-        if failure_layer == "source_selection_bias" and is_expected_python_3120_release_source(selected):
-            selected = None
-        else:
-            return selected
+        return _SelectionDecision(
+            selected_url=selected,
+            raw_response=response,
+            ordered_candidates=ordered_candidates,
+        )
     if failure_layer == "source_selection_bias":
-        for candidate in candidates:
-            if is_official_python_release_source(
-                candidate.url,
-            ) and not is_expected_python_3120_release_source(candidate.url):
-                return candidate.url
-        for candidate in candidates:
-            if not is_official_python_release_source(candidate.url):
-                return candidate.url
-    for candidate in candidates:
+        return _SelectionDecision(
+            selected_url=ordered_candidates[0].url,
+            raw_response=response,
+            ordered_candidates=ordered_candidates,
+        )
+    for candidate in ordered_candidates:
         if is_expected_python_3120_release_source(candidate.url):
-            return candidate.url
-    for candidate in candidates:
+            return _SelectionDecision(
+                selected_url=candidate.url,
+                raw_response=response,
+                ordered_candidates=ordered_candidates,
+            )
+    for candidate in ordered_candidates:
         if is_official_python_release_source(candidate.url):
-            return candidate.url
-    return candidates[0].url
-
-
-def _looks_like_correct_python_3120_release_date(text: str) -> bool:
-    lowered = text.lower()
-    markers = (
-        "2023-10-02",
-        "october 2, 2023",
-        "2 october 2023",
-        "oct 2, 2023",
-        "oct. 2, 2023",
+            return _SelectionDecision(
+                selected_url=candidate.url,
+                raw_response=response,
+                ordered_candidates=ordered_candidates,
+            )
+    return _SelectionDecision(
+        selected_url=ordered_candidates[0].url,
+        raw_response=response,
+        ordered_candidates=ordered_candidates,
     )
-    return any(marker in lowered for marker in markers)
 
 
 def _extract_fact(
@@ -216,7 +278,7 @@ def _extract_fact(
     selected_url: str,
     snippet: str,
     failure_layer: str | None,
-) -> str:
+) -> _ExtractionDecision:
     system = (
         _WRONG_EXTRACTION_SYSTEM
         if failure_layer == "extraction_bias"
@@ -228,9 +290,7 @@ def _extract_fact(
         user=f"Source: {selected_url}\nSnippet:\n{snippet[:2000]}",
         run_id=run_id,
     )
-    if failure_layer == "extraction_bias" and _looks_like_correct_python_3120_release_date(fact):
-        return "2023-10-01"
-    return fact
+    return _ExtractionDecision(fact=fact, raw_response=fact)
 
 
 def _synthesize_answer(
@@ -303,26 +363,30 @@ async def run_web_search_job(
         search_succeeded = False
 
     candidates = candidates_from_hits(hits)
-    selected_url = _select_source(
+    selection_decision = _select_source(
         adapter=adapter,
         run_id=step_ctx.run_id,
         task_message=task_message,
         candidates=candidates,
         failure_layer=failure_layer,
     )
+    selected_url = selection_decision.selected_url
     if selected_url is None:
         selected_url = candidates[0].url if candidates else ""
 
     snippet = _snippet_for_url(candidates, selected_url)
     extracted_fact = ""
+    raw_extractor_response = ""
     if selected_url:
-        extracted_fact = _extract_fact(
+        extraction_decision = _extract_fact(
             adapter=adapter,
             run_id=step_ctx.run_id,
             selected_url=selected_url,
             snippet=snippet,
             failure_layer=failure_layer,
         )
+        extracted_fact = extraction_decision.fact
+        raw_extractor_response = extraction_decision.raw_response
 
     emit_web_search_functional_evidence(
         exec_ctx,
@@ -360,6 +424,11 @@ async def run_web_search_job(
         "selected_artifact_ref": artifact_ref_for_url(selected_url) if selected_url else None,
         "extracted_fact": extracted_fact,
         "candidate_urls": [candidate.url for candidate in candidates],
+        "ordered_candidate_urls": [
+            candidate.url for candidate in selection_decision.ordered_candidates
+        ],
+        "raw_selector_response": selection_decision.raw_response,
+        "raw_extractor_response": raw_extractor_response,
         "search_status": "success",
     }
     return {

@@ -185,6 +185,44 @@ Preserved artifact: `.tmp/session/diag-functional-q3/qualification-report.json`
 
 **Q3 REAL WEB SEARCH = QUALIFIED** — `READY_FOR_Q4_REAL_MODEL_ROUTING_QUALIFICATION`
 
+## DIAG-FUNCTIONAL-Q3-R2 (2026-09-02)
+
+### Independent audit finding (R1)
+
+R1 live runner achieved **11/11 MATCH**, but independent audit **rejected qualification authority** because Q3-C/D used post-decision forcing:
+
+- Q3-C discarded canonical LLM selection and programmatically chose RC/wrong candidate.
+- Q3-D replaced correct LLM extraction with `2023-10-01` when bias was ignored.
+
+Preserved history:
+
+| Phase | Result |
+| --- | --- |
+| INITIAL | BLOCKED (no provider credentials) |
+| INITIAL LIVE | FAILED 6/11 |
+| R1 live | 11/11 — rejected by independent audit (self-fulfilling injection) |
+
+### R2 mechanism changes
+
+| Layer | R1 (removed) | R2 (allowed) |
+| --- | --- | --- |
+| Q3-C | discard canonical LLM URL → force RC | pre-decision bias only: selection prompt, candidate reordering, ranking context |
+| Q3-D | replace correct LLM date with `2023-10-01` | pre-decision bias only: extraction prompt; raw extractor output == emitted fact |
+
+New static gate: `test_q3_anti_forcing.py` (behavioral + AST).
+
+New live gates: `selection_decision_fidelity`, `extraction_decision_fidelity`, `post_decision_forcing = NONE`.
+
+### R2 live qualification verdict
+
+**Q3-R2 = BLOCKED** — host and LKW container lack `INTERGRAX_TAVILY_API_KEY`; static gates **37 passed**; mechanism changes deployed; full 11-case live matrix not executed.
+
+Preserved artifact: `.tmp/session/diag-functional-q3/qualification-report.json`
+
+### Recommendation
+
+Configure `INTERGRAX_TAVILY_API_KEY` on host, forward into compose/LKW, rebuild `local_workspace`, re-run canonical runner. If Q3-C/D bias fails to induce wrong source/extraction without post-decision override, report `Q3 = BLOCKED` with inducibility reason — do not reintroduce forcing.
+
 ## H1
 
 OPEN (DIAG 100k/flaky suite not in scope).

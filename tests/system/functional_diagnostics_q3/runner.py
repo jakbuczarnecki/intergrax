@@ -4,13 +4,21 @@
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+for _path in (_REPO_ROOT, _REPO_ROOT / "agents", _REPO_ROOT / "applications"):
+    _path_str = str(_path)
+    if _path_str not in sys.path:
+        sys.path.insert(0, _path_str)
+
 import json
 import os
 import shutil
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
-from pathlib import Path
 
 from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
 from intergrax.core.qualification.functional_diagnostic_comparator import compare_qualification_case
@@ -68,6 +76,9 @@ from web_search_qualifier.search_provider_resolver import (
     preflight_search_provider,
     resolve_qualification_search_provider,
 )
+from web_search_qualifier.steps.web_search_job import _match_url_from_response
+from web_search_qualifier.url_identity import is_expected_python_3120_release_source
+from web_search_qualifier.web_search import WebSearchCandidate
 
 _ARTIFACT_DIR = Path(
     os.environ.get(
@@ -76,6 +87,16 @@ _ARTIFACT_DIR = Path(
     ),
 )
 _CURSOR_SECRET = "diag-functional-q3-local-only-secret-32bytes!!"
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionFidelitySnapshot:
+    raw_selector_response: str | None
+    raw_selector_url: str | None
+    raw_extractor_response: str | None
+    selection_decision_fidelity_match: bool
+    extraction_decision_fidelity_match: bool
+    post_decision_forcing_detected: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,6 +126,7 @@ class QualificationRunRecord:
     functional_outcome: QualificationFunctionalOutcome
     comparison: QualificationCaseComparison
     evidence_fidelity: EvidenceFidelitySnapshot
+    decision_fidelity: DecisionFidelitySnapshot
     diag_first_failed_check: str | None
     operator_outcome: str | None
     actual_query: str | None
@@ -134,6 +156,9 @@ class QualificationReport:
     functional_failure_detected_cases: int = 0
     functional_failure_ground_truth_cases: int = 0
     provider_id: str | None = None
+    selection_decision_fidelity_percent: float = 100.0
+    extraction_decision_fidelity_percent: float = 100.0
+    post_decision_forcing: str = "NONE"
 
 
 _EXPECTATION_BY_CASE_ID: dict[str, QualificationCaseExpectation] = {
@@ -474,6 +499,7 @@ def _run_case(
         analysis=analysis,
         operator_assessment=operator,
     )
+    summary = _summary_from_response(response)
     fidelity = _evidence_fidelity_snapshot(
         actual_query=actual_query,
         provider_candidates=provider_candidates,
@@ -487,6 +513,13 @@ def _run_case(
         validation_expected=expectation.include_validation,
         validation_actual_pass=final_validation.outcome.value == "passed",
     )
+    decision_fidelity = _decision_fidelity_snapshot(
+        summary=summary,
+        actual_selected=actual_selected,
+        emitted_selected=emitted_selected,
+        actual_extracted=actual_extracted,
+        emitted_extracted=emitted_extracted,
+    )
     return QualificationRunRecord(
         case_id=expectation.case_id,
         task_id=response.task_id,
@@ -496,6 +529,7 @@ def _run_case(
         functional_outcome=functional_outcome,
         comparison=comparison,
         evidence_fidelity=fidelity,
+        decision_fidelity=decision_fidelity,
         diag_first_failed_check=(
             str(analysis.first_proven_failure) if analysis.first_proven_failure is not None else None
         ),
@@ -514,7 +548,97 @@ def _run_case(
     )
 
 
-def _decision_diagnostics_independence_gate() -> bool:
+def _summary_field(summary: dict[str, object], key: str) -> str | None:
+    value = summary.get(key)
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    return None
+
+
+def _candidate_urls_from_summary(summary: dict[str, object]) -> tuple[str, ...]:
+    raw = summary.get("candidate_urls")
+    if not isinstance(raw, list):
+        return ()
+    return tuple(str(item) for item in raw if isinstance(item, str))
+
+
+def _selection_url_from_raw_response(
+    raw_response: str | None,
+    *,
+    candidate_urls: tuple[str, ...],
+) -> str | None:
+    if not raw_response:
+        return None
+    candidates = tuple(
+        WebSearchCandidate(
+            rank=index + 1,
+            url=url,
+            title=url,
+            snippet="",
+            provider="tavily",
+        )
+        for index, url in enumerate(candidate_urls)
+    )
+    return _match_url_from_response(raw_response, candidates)
+
+
+def _decision_fidelity_snapshot(
+    *,
+    summary: dict[str, object],
+    actual_selected: str | None,
+    emitted_selected: str | None,
+    actual_extracted: str | None,
+    emitted_extracted: str | None,
+) -> DecisionFidelitySnapshot:
+    raw_selector_response = _summary_field(summary, "raw_selector_response")
+    raw_extractor_response = _summary_field(summary, "raw_extractor_response")
+    candidate_urls = _candidate_urls_from_summary(summary)
+    raw_selector_url = _selection_url_from_raw_response(
+        raw_selector_response,
+        candidate_urls=candidate_urls,
+    )
+    selection_decision_match = True
+    if raw_selector_url is not None:
+        selection_decision_match = (
+            raw_selector_url == (actual_selected or "")
+            and raw_selector_url == (emitted_selected or "")
+        )
+    elif raw_selector_response and actual_selected:
+        selection_decision_match = raw_selector_response.strip() == actual_selected.strip()
+
+    extraction_decision_match = True
+    if raw_extractor_response is not None and actual_extracted is not None:
+        extraction_decision_match = (
+            raw_extractor_response.strip() == actual_extracted.strip()
+            and raw_extractor_response.strip() == (emitted_extracted or "").strip()
+        )
+
+    post_decision_forcing = False
+    if raw_selector_url is not None and actual_selected is not None:
+        if (
+            is_expected_python_3120_release_source(raw_selector_url)
+            and not is_expected_python_3120_release_source(actual_selected)
+        ):
+            post_decision_forcing = True
+    if raw_extractor_response and actual_extracted:
+        lowered_raw = raw_extractor_response.lower()
+        if any(
+            marker in lowered_raw
+            for marker in ("2023-10-02", "october 2, 2023", "oct. 2, 2023")
+        ) and "2023-10-01" in actual_extracted:
+            post_decision_forcing = True
+
+    return DecisionFidelitySnapshot(
+        raw_selector_response=raw_selector_response,
+        raw_selector_url=raw_selector_url,
+        raw_extractor_response=raw_extractor_response,
+        selection_decision_fidelity_match=selection_decision_match,
+        extraction_decision_fidelity_match=extraction_decision_match,
+        post_decision_forcing_detected=post_decision_forcing,
+    )
+
+
+def _post_decision_forcing_static_gate() -> bool:
     import ast
 
     job_path = (
@@ -539,7 +663,16 @@ def _decision_diagnostics_independence_gate() -> bool:
         if isinstance(node, ast.ImportFrom) and node.module:
             if any(node.module.startswith(prefix) for prefix in forbidden):
                 return False
+    source = job_path.read_text(encoding="utf-8")
+    if "is_expected_python_3120_release_source(selected)" in source:
+        return False
+    if "_looks_like_correct_python_3120_release_date" in source:
+        return False
     return True
+
+
+def _decision_diagnostics_independence_gate() -> bool:
+    return _post_decision_forcing_static_gate()
 
 
 def _preflight(config: ProofConfig) -> tuple[LkwClient, str]:
@@ -593,6 +726,32 @@ def run_qualification() -> QualificationReport:
     except LkwClientError as exc:
         return _blocked_report(str(exc), provider_id=provider_id, partial_records=records)
 
+    wrong_source_records = [
+        record
+        for record in records
+        if record.case_id in {"Q3-C", "Q3-G-B"} or record.repeat_group == _REPEAT_CASE_ID
+    ]
+    for record in wrong_source_records:
+        if is_expected_python_3120_release_source(record.actual_selected_source or ""):
+            return _blocked_report(
+                "q3_c_not_inducible:llm_selected_canonical_despite_bias",
+                provider_id=provider_id,
+                partial_records=records,
+            )
+
+    q3_d_records = [record for record in records if record.case_id == "Q3-D"]
+    for record in q3_d_records:
+        extracted = (record.actual_extracted_fact or "").lower()
+        if any(
+            marker in extracted
+            for marker in ("2023-10-02", "october 2, 2023", "oct. 2, 2023")
+        ):
+            return _blocked_report(
+                "q3_d_not_inducible:llm_extracted_correct_date_despite_bias",
+                provider_id=provider_id,
+                partial_records=records,
+            )
+
     repeatability_pass = len({_semantic_signature(item) for item in repeat_records}) == 1
     fidelity_pass = all(
         record.evidence_fidelity.candidate_fidelity_match
@@ -604,6 +763,37 @@ def run_qualification() -> QualificationReport:
         if record.case_id != "Q3-F"
     )
     decision_independence_pass = _decision_diagnostics_independence_gate()
+    selection_decision_fidelity_pass = all(
+        record.decision_fidelity.selection_decision_fidelity_match for record in records
+    )
+    extraction_decision_fidelity_pass = all(
+        record.decision_fidelity.extraction_decision_fidelity_match
+        for record in records
+        if record.actual_extracted_fact
+    )
+    post_decision_forcing_pass = all(
+        not record.decision_fidelity.post_decision_forcing_detected for record in records
+    )
+    selection_decision_fidelity_percent = (
+        sum(1 for record in records if record.decision_fidelity.selection_decision_fidelity_match)
+        / len(records)
+        * 100.0
+        if records
+        else 0.0
+    )
+    extraction_records = [record for record in records if record.actual_extracted_fact]
+    extraction_decision_fidelity_percent = (
+        sum(
+            1
+            for record in extraction_records
+            if record.decision_fidelity.extraction_decision_fidelity_match
+        )
+        / len(extraction_records)
+        * 100.0
+        if extraction_records
+        else 100.0
+    )
+    post_decision_forcing = "NONE" if post_decision_forcing_pass else "DETECTED"
 
     matched = sum(1 for item in records if item.comparison.result is QualificationComparisonResult.MATCH)
     mismatched = len(records) - matched
@@ -651,6 +841,9 @@ def run_qualification() -> QualificationReport:
         and repeatability_pass
         and fidelity_pass
         and decision_independence_pass
+        and selection_decision_fidelity_pass
+        and extraction_decision_fidelity_pass
+        and post_decision_forcing_pass
         and false_positives == 0
         and false_negatives == 0
         else "FAILED"
@@ -671,11 +864,16 @@ def run_qualification() -> QualificationReport:
         functional_failure_detected_cases=functional_failure_detected,
         functional_failure_ground_truth_cases=len(functional_failure_ground_truth),
         provider_id=provider_id,
+        selection_decision_fidelity_percent=selection_decision_fidelity_percent,
+        extraction_decision_fidelity_percent=extraction_decision_fidelity_percent,
+        post_decision_forcing=post_decision_forcing,
     )
     _write_artifact(
         report,
         fidelity_pass=fidelity_pass,
         decision_diagnostics_independence_pass=decision_independence_pass,
+        selection_decision_fidelity_pass=selection_decision_fidelity_pass,
+        extraction_decision_fidelity_pass=extraction_decision_fidelity_pass,
     )
     return report
 
@@ -711,6 +909,8 @@ def _write_artifact(
     *,
     fidelity_pass: bool,
     decision_diagnostics_independence_pass: bool,
+    selection_decision_fidelity_pass: bool = False,
+    extraction_decision_fidelity_pass: bool = False,
 ) -> None:
     _ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     report_path = _ARTIFACT_DIR / "qualification-report.json"
@@ -736,6 +936,11 @@ def _write_artifact(
         "repeatability_pass": report.repeatability_pass,
         "evidence_fidelity_pass": fidelity_pass,
         "decision_diagnostics_independence_pass": decision_diagnostics_independence_pass,
+        "selection_decision_fidelity_pass": selection_decision_fidelity_pass,
+        "extraction_decision_fidelity_pass": extraction_decision_fidelity_pass,
+        "selection_decision_fidelity_percent": report.selection_decision_fidelity_percent,
+        "extraction_decision_fidelity_percent": report.extraction_decision_fidelity_percent,
+        "post_decision_forcing": report.post_decision_forcing,
         "records": [
             {
                 "case_id": record.case_id,
@@ -765,6 +970,20 @@ def _write_artifact(
                     "extraction_fidelity_match": record.evidence_fidelity.extraction_fidelity_match,
                     "validation_fidelity_match": record.evidence_fidelity.validation_fidelity_match,
                     "identity_fidelity_match": record.evidence_fidelity.identity_fidelity_match,
+                },
+                "decision_fidelity": {
+                    "raw_selector_response": record.decision_fidelity.raw_selector_response,
+                    "raw_selector_url": record.decision_fidelity.raw_selector_url,
+                    "raw_extractor_response": record.decision_fidelity.raw_extractor_response,
+                    "selection_decision_fidelity_match": (
+                        record.decision_fidelity.selection_decision_fidelity_match
+                    ),
+                    "extraction_decision_fidelity_match": (
+                        record.decision_fidelity.extraction_decision_fidelity_match
+                    ),
+                    "post_decision_forcing_detected": (
+                        record.decision_fidelity.post_decision_forcing_detected
+                    ),
                 },
             }
             for record in report.records
