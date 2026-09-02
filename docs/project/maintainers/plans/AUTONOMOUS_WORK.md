@@ -131,7 +131,7 @@ Delivery rule:
 |---|---|
 | **ID** | AW-2B |
 | **Priority** | P0 |
-| **Status** | NOT STARTED |
+| **Status** | DONE |
 | **Purpose** | Authoritative worker lifecycle transition service |
 | **Exact scope** | PROVISIONING/ACTIVE/IDLE/WORKING/WAITING_EXTERNAL/WAITING_FOR_HUMAN/RECOVERING/DEGRADED/PAUSED/QUARANTINED/STOPPED transitions; transition guards; restart-safe rehydration |
 | **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Worker lifecycle, §Long-Horizon Work Continuity §Checkpoint and restart continuity |
