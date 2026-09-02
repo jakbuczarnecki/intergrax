@@ -192,15 +192,14 @@ def _request(
     *,
     target_state: WorkerLifecycleState,
     reason: str = "test-transition",
-    requested_at: datetime | None = None,
+    expected_revision: Revision | None = None,
 ) -> WorkerLifecycleTransitionRequest:
     return WorkerLifecycleTransitionRequest(
         worker_instance_id=worker.worker_instance_id,
-        expected_revision=worker.revision,
+        expected_revision=expected_revision or worker.revision,
         expected_state=worker.lifecycle_state,
         target_state=target_state,
         transition_reason=reason,
-        requested_at=requested_at or worker.updated_at,
     )
 
 
@@ -344,6 +343,8 @@ def test_same_state_request_is_no_op_without_revision_churn() -> None:
 
     assert result.changed is False
     assert result.worker_instance == created
+    assert result.worker_instance.revision == created.revision
+    assert result.worker_instance.updated_at == created.updated_at
     assert custom_repo.replace_calls == 0
 
 
@@ -364,7 +365,6 @@ def test_stale_revision_conflict_is_propagated() -> None:
                 expected_state=WorkerLifecycleState.ACTIVE,
                 target_state=WorkerLifecycleState.IDLE,
                 transition_reason="stale-write",
-                requested_at=clock.current,
             ),
         )
 
@@ -386,7 +386,6 @@ def test_expected_state_mismatch_is_rejected_without_mutation() -> None:
                 expected_state=WorkerLifecycleState.WORKING,
                 target_state=WorkerLifecycleState.PAUSED,
                 transition_reason="wrong-assumption",
-                requested_at=created.updated_at,
             ),
         )
 
@@ -440,6 +439,55 @@ def test_get_current_raises_when_worker_missing() -> None:
         service.get_current(worker_instance_id=worker_id)
 
 
+def test_stale_same_state_no_op_raises_revision_conflict() -> None:
+    service, repo, clock = _service()
+    created = repo.create(
+        _worker_instance(lifecycle_state=WorkerLifecycleState.IDLE),
+    )
+    worker = created
+    for _ in range(5):
+        worker = repo.replace(worker, expected_revision=worker.revision)
+    assert worker.revision == Revision(5)
+    custom_repo = _CustomWorkerInstanceRepository(repo)
+    service = WorkerLifecycleService(repository=custom_repo, clock=clock)
+
+    with pytest.raises(AutonomousWorkRevisionConflict) as exc_info:
+        service.transition(
+            WorkerLifecycleTransitionRequest(
+                worker_instance_id=worker.worker_instance_id,
+                expected_revision=Revision(4),
+                expected_state=WorkerLifecycleState.IDLE,
+                target_state=WorkerLifecycleState.IDLE,
+                transition_reason="stale-no-op",
+            ),
+        )
+
+    error = exc_info.value
+    assert error.entity_kind == "WorkerInstance"
+    assert error.entity_id == worker.worker_instance_id
+    assert error.expected_revision == Revision(4)
+    assert error.actual_revision == Revision(5)
+    unchanged = repo.get(worker_instance_id=worker.worker_instance_id)
+    assert unchanged is not None
+    assert unchanged.lifecycle_state is WorkerLifecycleState.IDLE
+    assert unchanged.revision == Revision(5)
+    assert custom_repo.replace_calls == 0
+
+
+def test_public_api_cannot_inject_custom_transition_matrix() -> None:
+    policy_params = inspect.signature(WorkerLifecycleTransitionPolicy.__init__).parameters
+    assert "allowed_transitions" not in policy_params
+
+    service_params = inspect.signature(WorkerLifecycleService.__init__).parameters
+    assert "policy" not in service_params
+
+    policy = WorkerLifecycleTransitionPolicy()
+    assert not policy.can_transition(
+        WorkerLifecycleState.STOPPED,
+        WorkerLifecycleState.ACTIVE,
+    )
+
+
 def test_custom_repository_is_injectable_without_concrete_adapter_dependency() -> None:
     repo = InMemoryWorkerInstanceRepository()
     custom_repo = _CustomWorkerInstanceRepository(repo)
@@ -473,6 +521,10 @@ def test_lifecycle_service_architecture_gates() -> None:
     lifecycle_params = inspect.signature(WorkerLifecycleService.__init__).parameters
     repository_annotation = lifecycle_params["repository"].annotation
     assert "WorkerInstanceRepository" in str(repository_annotation)
+    assert "policy" not in lifecycle_params
+
+    policy_params = inspect.signature(WorkerLifecycleTransitionPolicy.__init__).parameters
+    assert "allowed_transitions" not in policy_params
 
     public_names = (
         "WorkerLifecycleService",

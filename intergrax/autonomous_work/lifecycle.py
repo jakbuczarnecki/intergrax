@@ -12,6 +12,7 @@ from typing import Final, Protocol, runtime_checkable
 
 from intergrax.autonomous_work.repository import (
     AutonomousWorkEntityNotFound,
+    AutonomousWorkRevisionConflict,
     WorkerInstanceRepository,
 )
 from intergrax.contracts.autonomous_work._validation import require_non_empty_text
@@ -198,7 +199,6 @@ class WorkerLifecycleTransitionRequest:
     expected_state: WorkerLifecycleState
     target_state: WorkerLifecycleState
     transition_reason: str
-    requested_at: datetime
 
     def __post_init__(self) -> None:
         validate_worker_instance_id(self.worker_instance_id)
@@ -217,8 +217,6 @@ class WorkerLifecycleTransitionRequest:
                 label="transition_reason",
             ),
         )
-        if self.requested_at.tzinfo is None:
-            raise ValueError("requested_at must be timezone-aware")
 
 
 @dataclass(frozen=True, slots=True)
@@ -236,20 +234,8 @@ class WorkerLifecycleTransitionPolicy:
 
     __slots__ = ("_allowed_transitions",)
 
-    def __init__(
-        self,
-        allowed_transitions: (
-            dict[WorkerLifecycleState, frozenset[WorkerLifecycleState]] | None
-        ) = None,
-    ) -> None:
-        source = (
-            _CANONICAL_ALLOWED_TRANSITIONS
-            if allowed_transitions is None
-            else allowed_transitions
-        )
-        self._allowed_transitions = {
-            state: frozenset(targets) for state, targets in source.items()
-        }
+    def __init__(self) -> None:
+        self._allowed_transitions = _CANONICAL_ALLOWED_TRANSITIONS
 
     def allowed_targets(self, from_state: WorkerLifecycleState) -> frozenset[WorkerLifecycleState]:
         """Return the immutable allow-list for ``from_state``."""
@@ -296,11 +282,10 @@ class WorkerLifecycleService:
         *,
         repository: WorkerInstanceRepository,
         clock: AutonomousWorkClock | Callable[[], datetime],
-        policy: WorkerLifecycleTransitionPolicy | None = None,
     ) -> None:
         self._repository = repository
         self._clock = clock
-        self._policy = policy or WorkerLifecycleTransitionPolicy()
+        self._policy = WorkerLifecycleTransitionPolicy()
 
     def get_current(self, *, worker_instance_id: WorkerInstanceId) -> WorkerInstance:
         """Return the persisted worker instance for restart-safe rehydration."""
@@ -330,6 +315,19 @@ class WorkerLifecycleService:
                 worker_instance_id=request.worker_instance_id,
                 expected_state=request.expected_state,
                 actual_state=worker.lifecycle_state,
+            )
+
+        if worker.revision != request.expected_revision:
+            raise AutonomousWorkRevisionConflict(
+                (
+                    f"WorkerInstance revision conflict for {request.worker_instance_id}: "
+                    f"expected {request.expected_revision.value}, "
+                    f"actual {worker.revision.value}"
+                ),
+                entity_kind="WorkerInstance",
+                entity_id=request.worker_instance_id,
+                expected_revision=request.expected_revision,
+                actual_revision=worker.revision,
             )
 
         if request.target_state == previous_state:
