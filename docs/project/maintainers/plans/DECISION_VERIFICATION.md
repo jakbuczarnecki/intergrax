@@ -36,18 +36,18 @@
 
 | Phase | Status | Section |
 | ----- | ------ | ------- |
-| DS-VER-PIPE | PLANNED | [below](#phase-ds-ver-pipe--pipeline-foundation) |
+| DS-VER-PIPE | IN PROGRESS | [below](#phase-ds-ver-pipe--pipeline-foundation) |
 | DS-VER-STAGES | PLANNED | [below](#phase-ds-ver-stages--stage-migration-from-cvl) |
 
 ---
 
-## Phase DS-VER-PIPE - Pipeline foundation (PLANNED)
+## Phase DS-VER-PIPE - Pipeline foundation (IN PROGRESS)
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
 | DS-VER-PIPE-01 | P0 | Verification Pipeline orchestrator contract | **Planned** |
 | DS-VER-PIPE-02 | P0 | Stage plugin interface + registration | **Planned** |
-| DS-VER-PIPE-03 | P0 | Verification Result + Challenge typed contracts | **Planned** |
+| DS-VER-PIPE-03 | P0 | Verification Result + Challenge typed contracts | **Done** |
 | DS-VER-PIPE-04 | P0 | Deterministic-before-probabilistic ordering | **Planned** |
 | DS-VER-PIPE-05 | P1 | Challenge → Lifecycle handoff (no in-place mutation) | **Planned** |
 | DS-VER-PIPE-06 | P1 | Fail-closed unavailable required stage | **Planned** |
