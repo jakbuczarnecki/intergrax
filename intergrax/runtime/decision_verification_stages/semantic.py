@@ -48,6 +48,12 @@ _RUBRIC_UNRESOLVED_REQUIREMENT = validate_verification_requirement_code(
 _RUBRIC_UNRESOLVED_FINDING = validate_verification_finding_code(
     "verification.semantic.rubric_unresolved",
 )
+_RUBRIC_RESOLUTION_MISMATCH_REQUIREMENT = validate_verification_requirement_code(
+    "verification.semantic.rubric_resolution_mismatch",
+)
+_RUBRIC_RESOLUTION_MISMATCH_FINDING = validate_verification_finding_code(
+    "verification.semantic.rubric_resolution_mismatch",
+)
 _EMPTY_CONTENT_REQUIREMENT = validate_verification_requirement_code(
     "verification.semantic.empty_content",
 )
@@ -161,6 +167,13 @@ class SemanticVerificationStage(Generic[T]):
                 requirement_code=_RUBRIC_UNRESOLVED_REQUIREMENT,
                 finding_code=_RUBRIC_UNRESOLVED_FINDING,
                 message="configured semantic rubric could not be resolved",
+            )
+        if rubric.ref != self.rubric_ref:
+            return _challenged_record(
+                candidate=candidate,
+                requirement_code=_RUBRIC_RESOLUTION_MISMATCH_REQUIREMENT,
+                finding_code=_RUBRIC_RESOLUTION_MISMATCH_FINDING,
+                message="resolved semantic rubric ref does not match configured ref",
             )
         output_text = self.content_provider.extract(candidate)
         if type(output_text) is not str or not output_text.strip():

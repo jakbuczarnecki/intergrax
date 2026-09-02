@@ -16,7 +16,7 @@ TrajectoryAgentId = NewType("TrajectoryAgentId", str)
 T = TypeVar("T")
 
 
-def validate_trajectory_agent_id(value: object) -> TrajectoryAgentId:
+def validate_trajectory_agent_id(value: str) -> TrajectoryAgentId:
     if type(value) is not str:
         raise TypeError(
             f"TrajectoryAgentId must be str, got {type(value).__name__}",

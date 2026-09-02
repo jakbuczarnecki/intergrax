@@ -18,6 +18,7 @@ from intergrax.contracts.decision_verification import (
 from intergrax.contracts.semantic_verification import (
     SemanticVerificationIndependenceConfig,
     VerifierIndependenceMode,
+    validate_verifier_independence_mode_profiles,
 )
 from intergrax.runtime.execution.inference_profile import (
     InferenceProfileId,
@@ -29,7 +30,7 @@ DomainVerifierId = NewType("DomainVerifierId", str)
 T = TypeVar("T")
 
 
-def validate_domain_verifier_id(value: object) -> DomainVerifierId:
+def validate_domain_verifier_id(value: str) -> DomainVerifierId:
     if type(value) is not str:
         raise TypeError(
             f"DomainVerifierId must be str, got {type(value).__name__}",
@@ -130,3 +131,8 @@ class DomainVerificationIndependenceConfig:
             )
         validate_inference_profile_id(self.producer_profile_id)
         validate_inference_profile_id(self.verifier_profile_id)
+        validate_verifier_independence_mode_profiles(
+            mode=self.mode,
+            producer_profile_id=self.producer_profile_id,
+            verifier_profile_id=self.verifier_profile_id,
+        )

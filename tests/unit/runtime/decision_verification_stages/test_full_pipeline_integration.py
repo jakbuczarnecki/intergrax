@@ -263,8 +263,8 @@ def _full_pipeline(
         judge=RecordingJudge(calls=judge_calls),
         independence=semantic_verification_independence_config(
             mode=VerifierIndependenceMode.INDEPENDENT,
-            producer_profile_id=InferenceProfileId(semantic_producer),
-            verifier_profile_id=InferenceProfileId(semantic_verifier),
+            producer_profile_id=semantic_producer,
+            verifier_profile_id=semantic_verifier,
         ),
     )
     trajectory = TrajectoryVerificationStage(
@@ -443,3 +443,108 @@ async def test_required_independence_same_profile_challenges_semantic_before_jud
     assert semantic_record.challenge is not None
     assert semantic_record.challenge.finding.code == "verification.semantic.profile_not_independent"
     assert judge_calls == []
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_semantic_rubric_ref_mismatch_challenges_pipeline_without_judge() -> None:
+    judge_calls: list[EvalJudgeInput] = []
+    trajectory_calls: list[EvalTrajectoryInput] = []
+    domain_calls: list[CandidateDecision[FullPipelinePayload]] = []
+    configured = semantic_rubric_ref(rubric_id="quality.summary", version=2)
+    wrong_version = resolved_semantic_rubric(
+        ref=semantic_rubric_ref(rubric_id="quality.summary", version=1),
+        criteria=("Criterion",),
+        min_score=0.75,
+        provenance_ref="prompt_registry:quality.summary@1",
+    )
+
+    @dataclass(frozen=True, slots=True)
+    class VersionDriftResolver:
+        rubric: ResolvedSemanticRubric
+
+        def is_available(self) -> bool:
+            return True
+
+        def resolve(self, ref: SemanticRubricRef) -> ResolvedSemanticRubric:
+            return self.rubric
+
+    evidence_id = validate_evidence_reference_id("evidence.ref.1")
+    structural = StructuralVerificationStage(
+        validators=(
+            NonEmptyTextStructuralValidator(
+                extractor=FullTextExtractor(),
+                field_label="text",
+            ),
+        ),
+    )
+    evidence = EvidenceVerificationStage(
+        claims_provider=FullEvidenceExtractor(),
+        resolver=FullEvidenceResolver(known_ids=frozenset({str(evidence_id)})),
+    )
+    semantic = SemanticVerificationStage(
+        rubric_ref=configured,
+        rubric_resolver=VersionDriftResolver(rubric=wrong_version),
+        content_provider=FullSemanticExtractor(),
+        judge=RecordingJudge(calls=judge_calls),
+        independence=semantic_verification_independence_config(
+            mode=VerifierIndependenceMode.INDEPENDENT,
+            producer_profile_id="profile-a",
+            verifier_profile_id="profile-b",
+        ),
+    )
+    trajectory = TrajectoryVerificationStage(
+        evaluator=RecordingTrajectoryEvaluator(calls=trajectory_calls),
+        agent_id_provider=FullAgentProvider(agent_id=TrajectoryAgentId("agent-bound")),
+    )
+    domain_verifier_impl = FullDomainVerifier(
+        verifier_id_value=DomainVerifierId("domain.legal"),
+        calls=domain_calls,
+    )
+    domain = IndependentDomainVerificationStage(
+        verifier=domain_verifier_impl,
+        execution_class=VerificationStageExecutionClass.PROBABILISTIC,
+        independence=DomainVerificationIndependenceConfig(
+            mode=VerifierIndependenceMode.INDEPENDENT,
+            producer_profile_id=InferenceProfileId("profile-a"),
+            verifier_profile_id=InferenceProfileId("profile-c"),
+        ),
+    )
+    registrations = (
+        VerificationStageRegistration(
+            kind=STRUCTURAL_VERIFICATION_STAGE_KIND,
+            stage=structural,
+            required=True,
+        ),
+        VerificationStageRegistration(
+            kind=EVIDENCE_VERIFICATION_STAGE_KIND,
+            stage=evidence,
+            required=True,
+        ),
+        VerificationStageRegistration(
+            kind=SEMANTIC_VERIFICATION_STAGE_KIND,
+            stage=semantic,
+            required=True,
+        ),
+        VerificationStageRegistration(
+            kind=TRAJECTORY_VERIFICATION_STAGE_KIND,
+            stage=trajectory,
+            required=True,
+        ),
+        VerificationStageRegistration(
+            kind=DOMAIN_VERIFICATION_STAGE_KIND,
+            stage=domain,
+            required=True,
+        ),
+    )
+    pipeline = VerificationPipeline(registry=verification_stage_registry(registrations))
+    result = await pipeline.verify(_candidate())
+    assert result.disposition is VerificationDisposition.CHALLENGED
+    semantic_record = next(
+        record for record in result.stage_records
+        if record.stage == SEMANTIC_VERIFICATION_STAGE_KIND
+    )
+    assert semantic_record.outcome is VerificationStageOutcome.CHALLENGED
+    assert semantic_record.challenge is not None
+    assert semantic_record.challenge.finding.code == "verification.semantic.rubric_resolution_mismatch"

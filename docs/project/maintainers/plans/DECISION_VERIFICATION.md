@@ -66,6 +66,8 @@
 | DS-VER-STAGE-GR | P2 | Guardrail merge from `guardrail_l0` | **Done** |
 | DS-VER-STAGE-DOM | P2 | Independent/domain verifier stage | **Done** |
 
+Enterprise hardening (typed validators, exact rubric-ref integrity, SHARED_PROFILE truthfulness) closed in probabilistic/domain contracts — no new stage IDs.
+
 ---
 
 ## Open requirements (migrated from Critic audit)

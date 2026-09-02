@@ -139,8 +139,8 @@ async def test_semantic_stage_matches_l1_gateway_pass_fail_semantics() -> None:
             judge=judge,
             independence=semantic_verification_independence_config(
                 mode=VerifierIndependenceMode.INDEPENDENT,
-                producer_profile_id=InferenceProfileId("producer"),
-                verifier_profile_id=InferenceProfileId("verifier"),
+                producer_profile_id="producer",
+                verifier_profile_id="verifier",
             ),
         )
         candidate = _candidate("bounded output")

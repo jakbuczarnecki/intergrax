@@ -30,6 +30,7 @@ from intergrax.contracts.decision_verification_stage import (
 from intergrax.contracts.domain_verification import (
     DomainVerificationIndependenceConfig,
     DomainVerifier,
+    validate_domain_verifier_id,
 )
 from intergrax.contracts.semantic_verification import VerifierIndependenceMode
 
@@ -102,6 +103,7 @@ class IndependentDomainVerificationStage(Generic[T]):
                 outcome=VerificationStageOutcome.CHALLENGED,
                 challenge=challenge,
             )
+        validate_domain_verifier_id(str(self.verifier.verifier_id))
         outcome = self.verifier.verify(candidate)
         if outcome.passed:
             return verification_stage_record(

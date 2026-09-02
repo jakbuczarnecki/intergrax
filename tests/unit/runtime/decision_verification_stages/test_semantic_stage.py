@@ -193,8 +193,8 @@ def _stage(
         judge=judge,
         independence=semantic_verification_independence_config(
             mode=independence_mode,
-            producer_profile_id=InferenceProfileId(producer),
-            verifier_profile_id=InferenceProfileId(verifier),
+            producer_profile_id=producer,
+            verifier_profile_id=verifier,
         ),
     )
 
@@ -458,6 +458,196 @@ async def test_adversarial_candidate_structurally_isolated_from_rubric() -> None
     assert call.rubric_id == str(rubric.ref.rubric_id)
     assert call.reference_context == rubric.reference_context
     assert call.min_score == rubric.min_score
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_rubric_version_mismatch_challenged_without_judge_call() -> None:
+    configured = semantic_rubric_ref(rubric_id="quality", version=2)
+    wrong_version = resolved_semantic_rubric(
+        ref=semantic_rubric_ref(rubric_id="quality", version=1),
+        criteria=("Criterion",),
+        min_score=0.75,
+        provenance_ref="prompt_registry:quality@1",
+    )
+    judge = RecordingSemanticJudge(calls=[])
+    stage = SemanticVerificationStage(
+        rubric_ref=configured,
+        rubric_resolver=InMemorySemanticRubricResolver(
+            rubrics={(str(configured.rubric_id), configured.version): wrong_version},
+        ),
+        content_provider=SemanticContentExtractor(),
+        judge=judge,
+        independence=semantic_verification_independence_config(
+            mode=VerifierIndependenceMode.INDEPENDENT,
+            producer_profile_id="profile-a",
+            verifier_profile_id="profile-b",
+        ),
+    )
+    record = await stage.verify(_candidate("bounded answer"))
+    assert record.outcome is VerificationStageOutcome.CHALLENGED
+    assert record.challenge is not None
+    assert record.challenge.finding.code == "verification.semantic.rubric_resolution_mismatch"
+    assert judge.calls == []
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_rubric_id_mismatch_challenged_without_judge_call() -> None:
+    configured = semantic_rubric_ref(rubric_id="quality", version=2)
+    wrong_id = resolved_semantic_rubric(
+        ref=semantic_rubric_ref(rubric_id="security", version=2),
+        criteria=("Criterion",),
+        min_score=0.75,
+        provenance_ref="prompt_registry:security@2",
+    )
+
+    @dataclass(frozen=True, slots=True)
+    class SubstitutingRubricResolver:
+        rubric: ResolvedSemanticRubric
+
+        def is_available(self) -> bool:
+            return True
+
+        def resolve(self, ref: SemanticRubricRef) -> ResolvedSemanticRubric:
+            return self.rubric
+
+    judge = RecordingSemanticJudge(calls=[])
+    stage = SemanticVerificationStage(
+        rubric_ref=configured,
+        rubric_resolver=SubstitutingRubricResolver(rubric=wrong_id),
+        content_provider=SemanticContentExtractor(),
+        judge=judge,
+        independence=semantic_verification_independence_config(
+            mode=VerifierIndependenceMode.INDEPENDENT,
+            producer_profile_id="profile-a",
+            verifier_profile_id="profile-b",
+        ),
+    )
+    record = await stage.verify(_candidate("bounded answer"))
+    assert record.outcome is VerificationStageOutcome.CHALLENGED
+    assert record.challenge is not None
+    assert record.challenge.finding.code == "verification.semantic.rubric_resolution_mismatch"
+    assert judge.calls == []
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_exact_rubric_match_passes_resolved_fields_to_judge() -> None:
+    rubric = _resolved_rubric()
+    resolver = InMemorySemanticRubricResolver(
+        rubrics={(str(rubric.ref.rubric_id), rubric.ref.version): rubric},
+    )
+    judge = RecordingSemanticJudge(calls=[])
+    stage = _stage(resolver=resolver, judge=judge)
+    record = await stage.verify(_candidate("bounded answer"))
+    assert record.outcome is VerificationStageOutcome.PASSED
+    assert judge.calls is not None
+    assert len(judge.calls) == 1
+    call = judge.calls[0]
+    assert call.rubric_id == str(rubric.ref.rubric_id)
+    assert call.criteria == list(rubric.criteria)
+    assert call.min_score == rubric.min_score
+    assert call.reference_context == rubric.reference_context
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_empty_criteria_rejected_at_construction() -> None:
+    ref = semantic_rubric_ref(rubric_id="quality", version=1)
+    with pytest.raises(ValueError, match="at least one criterion"):
+        resolved_semantic_rubric(
+            ref=ref,
+            criteria=(),
+            min_score=0.75,
+            provenance_ref="prompt_registry:quality@1",
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_missing_provenance_rejected_at_construction() -> None:
+    ref = semantic_rubric_ref(rubric_id="quality", version=1)
+    with pytest.raises(ValueError):
+        resolved_semantic_rubric(
+            ref=ref,
+            criteria=("Criterion",),
+            min_score=0.75,
+            provenance_ref="",
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_resolver_programmer_error_propagates() -> None:
+    @dataclass(frozen=True, slots=True)
+    class BrokenResolver:
+        def is_available(self) -> bool:
+            return True
+
+        def resolve(self, ref: SemanticRubricRef) -> ResolvedSemanticRubric:
+            raise RuntimeError("resolver programmer error")
+
+    rubric = _resolved_rubric()
+    stage = SemanticVerificationStage(
+        rubric_ref=rubric.ref,
+        rubric_resolver=BrokenResolver(),
+        content_provider=SemanticContentExtractor(),
+        judge=RecordingSemanticJudge(),
+        independence=semantic_verification_independence_config(
+            mode=VerifierIndependenceMode.INDEPENDENT,
+            producer_profile_id="profile-a",
+            verifier_profile_id="profile-b",
+        ),
+    )
+    with pytest.raises(RuntimeError, match="resolver programmer error"):
+        await stage.verify(_candidate("bounded answer"))
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_judge_programmer_error_propagates() -> None:
+    rubric = _resolved_rubric()
+
+    @dataclass(frozen=True, slots=True)
+    class BrokenJudge:
+        def is_available(self) -> bool:
+            return True
+
+        def judge(self, params: EvalJudgeInput) -> EvalJudgeOutput:
+            raise RuntimeError("judge programmer error")
+
+    stage = SemanticVerificationStage(
+        rubric_ref=rubric.ref,
+        rubric_resolver=InMemorySemanticRubricResolver(
+            rubrics={(str(rubric.ref.rubric_id), rubric.ref.version): rubric},
+        ),
+        content_provider=SemanticContentExtractor(),
+        judge=BrokenJudge(),
+        independence=semantic_verification_independence_config(
+            mode=VerifierIndependenceMode.INDEPENDENT,
+            producer_profile_id="profile-a",
+            verifier_profile_id="profile-b",
+        ),
+    )
+    with pytest.raises(RuntimeError, match="judge programmer error"):
+        await stage.verify(_candidate("bounded answer"))
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_shared_profile_different_profiles_rejected_at_config() -> None:
+    with pytest.raises(ValueError, match="SHARED_PROFILE"):
+        semantic_verification_independence_config(
+            mode=VerifierIndependenceMode.SHARED_PROFILE,
+            producer_profile_id="profile-a",
+            verifier_profile_id="profile-b",
+        )
 
 
 @pytest.mark.unit

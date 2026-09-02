@@ -33,7 +33,7 @@ class SemanticRubricNotFoundError(LookupError):
     """Raised when a configured rubric reference cannot be resolved."""
 
 
-def validate_semantic_rubric_id(value: object) -> SemanticRubricId:
+def validate_semantic_rubric_id(value: str) -> SemanticRubricId:
     if type(value) is not str:
         raise TypeError(
             f"SemanticRubricId must be str, got {type(value).__name__}",
@@ -49,7 +49,7 @@ def validate_semantic_rubric_id(value: object) -> SemanticRubricId:
     return SemanticRubricId(value)
 
 
-def validate_semantic_rubric_version(value: object) -> int:
+def validate_semantic_rubric_version(value: int) -> int:
     if type(value) is not int or isinstance(value, bool):
         raise TypeError(
             f"SemanticRubric version must be int, got {type(value).__name__}",
@@ -60,7 +60,7 @@ def validate_semantic_rubric_version(value: object) -> int:
 
 
 def validate_semantic_rubric_provenance_ref(
-    value: object,
+    value: str,
 ) -> SemanticRubricProvenanceRef:
     if type(value) is not str:
         raise TypeError(
@@ -92,17 +92,12 @@ class SemanticRubricRef:
 
 def semantic_rubric_ref(
     *,
-    rubric_id: str | SemanticRubricId,
+    rubric_id: str,
     version: int,
 ) -> SemanticRubricRef:
     """Build one versioned semantic rubric reference."""
-    resolved_id = (
-        rubric_id
-        if type(rubric_id) is SemanticRubricId
-        else validate_semantic_rubric_id(rubric_id)
-    )
     return SemanticRubricRef(
-        rubric_id=resolved_id,
+        rubric_id=validate_semantic_rubric_id(rubric_id),
         version=validate_semantic_rubric_version(version),
     )
 
@@ -122,6 +117,10 @@ class ResolvedSemanticRubric:
             raise TypeError("ResolvedSemanticRubric.ref must be SemanticRubricRef")
         if type(self.criteria) is not tuple:
             raise TypeError("ResolvedSemanticRubric.criteria must be tuple")
+        if not self.criteria:
+            raise ValueError(
+                "ResolvedSemanticRubric.criteria must contain at least one criterion",
+            )
         for item in self.criteria:
             if type(item) is not str or not item.strip():
                 raise ValueError(
@@ -143,22 +142,31 @@ def resolved_semantic_rubric(
     ref: SemanticRubricRef,
     criteria: tuple[str, ...],
     min_score: float,
-    provenance_ref: str | SemanticRubricProvenanceRef,
+    provenance_ref: str,
     reference_context: str | None = None,
 ) -> ResolvedSemanticRubric:
     """Build one resolved semantic rubric artifact."""
-    resolved_provenance = (
-        provenance_ref
-        if type(provenance_ref) is SemanticRubricProvenanceRef
-        else validate_semantic_rubric_provenance_ref(provenance_ref)
-    )
     return ResolvedSemanticRubric(
         ref=ref,
         criteria=criteria,
         min_score=min_score,
-        provenance_ref=resolved_provenance,
+        provenance_ref=validate_semantic_rubric_provenance_ref(provenance_ref),
         reference_context=reference_context,
     )
+
+
+def validate_verifier_independence_mode_profiles(
+    *,
+    mode: VerifierIndependenceMode,
+    producer_profile_id: InferenceProfileId,
+    verifier_profile_id: InferenceProfileId,
+) -> None:
+    """Validate profile consistency for one declared independence mode."""
+    if mode is VerifierIndependenceMode.SHARED_PROFILE:
+        if producer_profile_id != verifier_profile_id:
+            raise ValueError(
+                "SHARED_PROFILE requires producer_profile_id == verifier_profile_id",
+            )
 
 
 @runtime_checkable
@@ -212,27 +220,22 @@ class SemanticVerificationIndependenceConfig:
             )
         validate_inference_profile_id(self.producer_profile_id)
         validate_inference_profile_id(self.verifier_profile_id)
+        validate_verifier_independence_mode_profiles(
+            mode=self.mode,
+            producer_profile_id=self.producer_profile_id,
+            verifier_profile_id=self.verifier_profile_id,
+        )
 
 
 def semantic_verification_independence_config(
     *,
     mode: VerifierIndependenceMode,
-    producer_profile_id: str | InferenceProfileId,
-    verifier_profile_id: str | InferenceProfileId,
+    producer_profile_id: str,
+    verifier_profile_id: str,
 ) -> SemanticVerificationIndependenceConfig:
     """Build one semantic verification independence configuration."""
-    resolved_producer = (
-        producer_profile_id
-        if type(producer_profile_id) is InferenceProfileId
-        else validate_inference_profile_id(producer_profile_id)
-    )
-    resolved_verifier = (
-        verifier_profile_id
-        if type(verifier_profile_id) is InferenceProfileId
-        else validate_inference_profile_id(verifier_profile_id)
-    )
     return SemanticVerificationIndependenceConfig(
         mode=mode,
-        producer_profile_id=resolved_producer,
-        verifier_profile_id=resolved_verifier,
+        producer_profile_id=validate_inference_profile_id(producer_profile_id),
+        verifier_profile_id=validate_inference_profile_id(verifier_profile_id),
     )

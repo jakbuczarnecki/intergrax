@@ -31,6 +31,7 @@ from intergrax.contracts.trajectory_verification import (
     TrajectoryAgentIdProvider,
     TrajectoryEvaluator,
     TrajectoryVerificationStageConfig,
+    validate_trajectory_agent_id,
 )
 from intergrax.tools.providers.eval.contracts import EvalTrajectoryInput
 
@@ -92,8 +93,11 @@ class TrajectoryVerificationStage(Generic[T]):
                 "trajectory evaluator infrastructure is unavailable",
             )
         proposal_ref = candidate_decision_ref(candidate)
-        agent_id = self.agent_id_provider.resolve(candidate)
-        if type(agent_id) is not str or not str(agent_id).strip():
+        try:
+            agent_id = validate_trajectory_agent_id(
+                str(self.agent_id_provider.resolve(candidate)),
+            )
+        except (TypeError, ValueError):
             finding = verification_finding(
                 code=_AGENT_ID_MISSING_FINDING,
                 message="required trajectory agent identity is missing",

@@ -37,9 +37,12 @@ from intergrax.contracts.decision_verification_stage import (
 from intergrax.contracts.domain_verification import (
     DomainVerificationOutcome,
     DomainVerifierId,
+    DomainVerificationIndependenceConfig,
     domain_verification_failed,
     domain_verification_passed,
 )
+from intergrax.contracts.semantic_verification import VerifierIndependenceMode
+from intergrax.runtime.execution.inference_profile import InferenceProfileId
 from intergrax.contracts.execution_identity import (
     mint_attempt_id,
     mint_execution_id,
@@ -143,10 +146,12 @@ def _stage(
     *,
     verifier: StubDomainVerifier,
     execution_class: VerificationStageExecutionClass,
+    independence: DomainVerificationIndependenceConfig | None = None,
 ) -> IndependentDomainVerificationStage[DomainPayload]:
     return IndependentDomainVerificationStage(
         verifier=verifier,
         execution_class=execution_class,
+        independence=independence,
     )
 
 
@@ -314,6 +319,69 @@ async def test_domain_verifier_does_not_mutate_candidate() -> None:
     assert candidate.artifact.content.value == "original"
     assert verifier.verify_calls is not None
     assert verifier.verify_calls[0] is candidate
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_independent_distinct_profiles_allowed() -> None:
+    stage = _stage(
+        verifier=StubDomainVerifier(verifier_id_value=DomainVerifierId("domain.legal")),
+        execution_class=VerificationStageExecutionClass.PROBABILISTIC,
+        independence=DomainVerificationIndependenceConfig(
+            mode=VerifierIndependenceMode.INDEPENDENT,
+            producer_profile_id=InferenceProfileId("profile-a"),
+            verifier_profile_id=InferenceProfileId("profile-b"),
+        ),
+    )
+    record = await stage.verify(_candidate())
+    assert record.outcome is VerificationStageOutcome.PASSED
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+@pytest.mark.asyncio
+async def test_independent_same_profile_challenged_before_verifier() -> None:
+    verifier = StubDomainVerifier(
+        verifier_id_value=DomainVerifierId("domain.legal"),
+        verify_calls=[],
+    )
+    stage = _stage(
+        verifier=verifier,
+        execution_class=VerificationStageExecutionClass.PROBABILISTIC,
+        independence=DomainVerificationIndependenceConfig(
+            mode=VerifierIndependenceMode.INDEPENDENT,
+            producer_profile_id=InferenceProfileId("profile-a"),
+            verifier_profile_id=InferenceProfileId("profile-a"),
+        ),
+    )
+    record = await stage.verify(_candidate())
+    assert record.outcome is VerificationStageOutcome.CHALLENGED
+    assert record.challenge is not None
+    assert record.challenge.finding.code == "verification.domain.profile_not_independent"
+    assert verifier.verify_calls == []
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_shared_profile_same_profiles_valid_config() -> None:
+    config = DomainVerificationIndependenceConfig(
+        mode=VerifierIndependenceMode.SHARED_PROFILE,
+        producer_profile_id=InferenceProfileId("profile-a"),
+        verifier_profile_id=InferenceProfileId("profile-a"),
+    )
+    assert config.mode is VerifierIndependenceMode.SHARED_PROFILE
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_shared_profile_different_profiles_rejected_at_config() -> None:
+    with pytest.raises(ValueError, match="SHARED_PROFILE"):
+        DomainVerificationIndependenceConfig(
+            mode=VerifierIndependenceMode.SHARED_PROFILE,
+            producer_profile_id=InferenceProfileId("profile-a"),
+            verifier_profile_id=InferenceProfileId("profile-b"),
+        )
 
 
 @pytest.mark.unit
