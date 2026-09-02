@@ -171,16 +171,16 @@ class ToolRuntime:
         from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
         cfg = state.context.config
+        incoming_plan = plan.normalized()
+        authoritative_tool_scope = bool(incoming_plan.tool_ids)
         effective_allowed = resolve_allowed_tools_from_config(cfg, explicit=allowed_tools)
         plan = ToolAccessPolicy.apply(
-            plan.normalized(),
+            incoming_plan,
             allowed_tools=effective_allowed,
             state=state,
         )
-        from intergrax.runtime.tools.scope_policy import StaticToolScopePolicy
-
         scope_policy = cfg.tool_scope_policy
-        if scope_policy is not None and not isinstance(scope_policy, StaticToolScopePolicy):
+        if scope_policy is not None:
             plan = ToolAccessPolicy.apply_scope_policy(
                 plan,
                 scope_policy=scope_policy,
@@ -223,7 +223,7 @@ class ToolRuntime:
 
                 planner_constraints = catalog_tool_ids(plan.tool_ids)
                 previous_constraints = state.tool_planner_allowed_tool_ids
-                if planner_constraints:
+                if authoritative_tool_scope or planner_constraints:
                     state.tool_planner_allowed_tool_ids = planner_constraints
                 try:
                     await run_tools_context(state)

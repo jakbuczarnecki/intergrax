@@ -87,3 +87,15 @@ def test_plan_and_strategy_intersection() -> None:
     )
     ids = resolve_planner_allowed_tool_ids(ToolSelectionMode.RETRIEVAL_TOP_K, ctx)
     assert ids == ("gamma.tool",)
+
+
+def test_empty_plan_restriction_blocks_strategy_candidates() -> None:
+    registry = _registry_with("alpha.tool", "beta.tool")
+    ctx = ToolSelectionContext(
+        registry=registry,
+        query="alpha search",
+        plan_allowed_tool_ids=(),
+        top_k=1,
+    )
+    ids = resolve_planner_allowed_tool_ids(ToolSelectionMode.RETRIEVAL_TOP_K, ctx)
+    assert ids == ()
