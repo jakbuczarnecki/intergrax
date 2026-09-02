@@ -8,7 +8,11 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from intergrax.agent_distribution._digest import normalize_package_digest
-from intergrax.agent_distribution.runtime_revision import MaterializationTopology
+from intergrax.agent_distribution.errors import RuntimeMaterializationConflict
+from intergrax.agent_distribution.runtime_revision import (
+    MaterializationTopology,
+    RuntimeRevision,
+)
 
 _NON_EMPTY = Field(min_length=1)
 
@@ -52,3 +56,48 @@ class RuntimeMaterializationRecord(BaseModel):
     @classmethod
     def _validate_digests(cls, value: str) -> str:
         return normalize_package_digest(value)
+
+
+def validate_runtime_materialization_record_matches_revision(
+    revision: RuntimeRevision,
+    record: RuntimeMaterializationRecord,
+) -> None:
+    """Fail closed when canonical materialization authority diverges from revision."""
+    if record.runtime_revision_id != revision.runtime_revision_id:
+        raise RuntimeMaterializationConflict(
+            "runtime materialization revision id mismatch"
+        )
+    if record.application_id != revision.application_id:
+        raise RuntimeMaterializationConflict(
+            "runtime materialization application id mismatch"
+        )
+    if record.application_environment_id != revision.application_environment_id:
+        raise RuntimeMaterializationConflict(
+            "runtime materialization application environment id mismatch"
+        )
+    if revision.materialization_topology is not None:
+        if record.materialization_topology != revision.materialization_topology:
+            raise RuntimeMaterializationConflict(
+                "runtime materialization topology mismatch"
+            )
+    if revision.materialization_artifact_digest is not None:
+        if (
+            record.materialization_artifact_digest
+            != revision.materialization_artifact_digest
+        ):
+            raise RuntimeMaterializationConflict(
+                "runtime materialization artifact digest mismatch"
+            )
+    if revision.materialized_runtime_lock_id is not None:
+        if record.materialized_runtime_lock_id != revision.materialized_runtime_lock_id:
+            raise RuntimeMaterializationConflict(
+                "runtime materialization lock id mismatch"
+            )
+    if revision.materialized_runtime_lock_digest is not None:
+        if (
+            record.materialized_runtime_lock_digest
+            != revision.materialized_runtime_lock_digest
+        ):
+            raise RuntimeMaterializationConflict(
+                "runtime materialization lock digest mismatch"
+            )

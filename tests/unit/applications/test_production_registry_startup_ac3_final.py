@@ -28,28 +28,38 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevision,
     RuntimeRevisionState,
 )
-from intergrax.applications._shared.harness_registry_authority import HarnessHostRegistryAuthorityError
+from intergrax.agent_distribution.runtime_materialization_record import (
+    RuntimeMaterializationRecord,
+)
+from intergrax.applications._shared.harness_registry_authority import (
+    HarnessHostRegistryAuthorityError,
+)
+from intergrax.applications._shared.production_agent_platform_runtime import (
+    build_production_agent_platform_runtime,
+)
 from intergrax.applications._shared.production_host_composition import (
     bootstrap_production_registry_projection,
 )
 from intergrax.applications._shared.production_process_composition import (
     create_reference_production_process_composition,
 )
-from intergrax.applications._shared.production_registry_projection_input_bundle import (
-    ProductionRegistryProjectionInputError,
-    build_production_registry_projection,
-    build_production_registry_projection_input_bundle,
-    production_test_artifact_locator,
-    resolve_production_artifact_root,
-)
 from intergrax.applications._shared.reference_production_governance_wiring import (
     wire_governed_reference_production_launcher,
+)
+from intergrax.applications._shared.production_registry_projection_input_bundle import (
+    ProductionRegistryProjectionInputError,
+    build_production_registry_projection_for_revision,
+    build_production_registry_projection_input_bundle_for_revision,
+    production_test_artifact_locator,
+    resolve_production_artifact_root,
 )
 from intergrax.applications._shared.registry_projection_input_bundle import (
     reference_admission_mutation_id,
 )
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -189,27 +199,70 @@ def _revision(
     )
 
 
+def _materialization_record(
+    revision: RuntimeRevision,
+    lock: MaterializedRuntimeLock,
+    artifact_root: Path,
+    digest: str,
+) -> RuntimeMaterializationRecord:
+    return RuntimeMaterializationRecord(
+        runtime_revision_id=revision.runtime_revision_id,
+        application_id=revision.application_id,
+        application_environment_id=revision.application_environment_id,
+        materialization_topology=MaterializationTopology.VENV_BUNDLE,
+        artifact_locator=production_test_artifact_locator(artifact_root),
+        materialization_artifact_digest=digest,
+        materialized_runtime_lock_id=lock.lock_id,
+        materialized_runtime_lock_digest=lock.lock_digest,
+    )
+
+
+def _seed_canonical_authority(
+    stores,
+    *,
+    revision: RuntimeRevision,
+    lock: MaterializedRuntimeLock,
+    artifact_root: Path,
+    digest: str,
+) -> str:
+    stores.lock_store.persist_lock(lock)
+    stores.materialization_store.persist(
+        _materialization_record(revision, lock, artifact_root, digest)
+    )
+    stores.revision_store.persist_candidate_revision(revision)
+    return production_test_artifact_locator(artifact_root)
+
+
 def _canonical_bundle(
     tmp_path: Path,
     *,
     revision_id: str = "rev-prod-a",
     marker: str = "artifact-a",
+    stores=None,
 ):
+    runtime = build_production_agent_platform_runtime()
+    stores = stores or runtime.stores
     artifact_root, digest, lock = _build_echo_artifact(tmp_path, marker=marker)
     manifest = _manifest()
     roster = _roster()
     revision = _revision(revision_id, roster=roster, artifact_digest=digest, lock=lock)
-    locator = production_test_artifact_locator(artifact_root)
-    bundle = build_production_registry_projection_input_bundle(
-        runtime_revision=revision,
+    locator = _seed_canonical_authority(
+        stores,
+        revision=revision,
+        lock=lock,
+        artifact_root=artifact_root,
+        digest=digest,
+    )
+    bundle = build_production_registry_projection_input_bundle_for_revision(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        runtime_revision_id=revision_id,
         effective_roster=roster,
-        materialized_runtime_lock=lock,
         manifest=manifest,
         build_context=ApplicationBuildContext.for_manifest(manifest),
-        artifact_locator=locator,
-        materialization_artifact_digest=digest,
+        stores=stores,
     )
-    return bundle, locator, artifact_root, digest, lock
+    return bundle, locator, artifact_root, digest, lock, stores
 
 
 def _activation_request(bundle, locator: str) -> ActivateRuntimeRevisionRequest:
@@ -237,69 +290,105 @@ def _activate_bundle(launcher, bundle, locator: str, *, principal) -> str:
 
 
 def test_production_bundle_uses_real_venv_resolver(tmp_path: Path) -> None:
-    bundle, locator, _, digest, lock = _canonical_bundle(tmp_path)
-    projection = build_production_registry_projection(
-        runtime_revision=bundle.runtime_revision,
+    bundle, _, _, digest, _, stores = _canonical_bundle(tmp_path)
+    projection = build_production_registry_projection_for_revision(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        runtime_revision_id=bundle.runtime_revision.runtime_revision_id,
         effective_roster=bundle.effective_roster,
-        materialized_runtime_lock=lock,
         manifest=bundle.manifest,
         build_context=bundle.build_context,
-        artifact_locator=locator,
-        materialization_artifact_digest=digest,
+        stores=stores,
     )
     assert projection.agent_registry.list_agent_ids() == ["search"]
     assert projection.evidence.materialization_artifact_digest == digest
 
 
 def test_production_bundle_rejects_reference_locator(tmp_path: Path) -> None:
-    bundle, _, _, digest, lock = _canonical_bundle(tmp_path)
+    runtime = build_production_agent_platform_runtime()
+    stores = runtime.stores
+    artifact_root, digest, lock = _build_echo_artifact(tmp_path)
+    manifest = _manifest()
+    roster = _roster()
+    revision = _revision(
+        "rev-ref-locator", roster=roster, artifact_digest=digest, lock=lock
+    )
+    bad_record = _materialization_record(
+        revision, lock, artifact_root, digest
+    ).model_copy(
+        update={"artifact_locator": "reference://process-local/venv-bundle/rev-1"},
+    )
+    stores.lock_store.persist_lock(lock)
+    stores.materialization_store.persist(bad_record)
+    stores.revision_store.persist_candidate_revision(revision)
     with pytest.raises(ProductionRegistryProjectionInputError, match="reference://"):
-        build_production_registry_projection_input_bundle(
-            runtime_revision=bundle.runtime_revision,
-            effective_roster=bundle.effective_roster,
-            materialized_runtime_lock=lock,
-            manifest=bundle.manifest,
-            build_context=bundle.build_context,
-            artifact_locator="reference://process-local/venv-bundle/rev-1",
-            materialization_artifact_digest=digest,
+        build_production_registry_projection_input_bundle_for_revision(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            runtime_revision_id=revision.runtime_revision_id,
+            effective_roster=roster,
+            manifest=manifest,
+            build_context=ApplicationBuildContext.for_manifest(manifest),
+            stores=stores,
         )
 
 
 def test_production_bundle_roster_mismatch_fails_closed(tmp_path: Path) -> None:
-    bundle, locator, _, digest, lock = _canonical_bundle(tmp_path)
+    bundle, _, _, _, _, stores = _canonical_bundle(tmp_path)
     mismatched = bundle.effective_roster.model_copy(
         update={"effective_roster_revision_id": "sha256:" + ("9" * 64)},
     )
-    with pytest.raises(ProductionRegistryProjectionInputError, match="effective_roster_revision_id"):
-        build_production_registry_projection_input_bundle(
-            runtime_revision=bundle.runtime_revision,
+    with pytest.raises(
+        ProductionRegistryProjectionInputError, match="effective_roster_revision_id"
+    ):
+        build_production_registry_projection_input_bundle_for_revision(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            runtime_revision_id=bundle.runtime_revision.runtime_revision_id,
             effective_roster=mismatched,
-            materialized_runtime_lock=lock,
             manifest=bundle.manifest,
             build_context=bundle.build_context,
-            artifact_locator=locator,
-            materialization_artifact_digest=digest,
+            stores=stores,
         )
 
 
 def test_production_bundle_lock_mismatch_fails_closed(tmp_path: Path) -> None:
-    bundle, locator, _, digest, lock = _canonical_bundle(tmp_path)
-    wrong_lock = lock.model_copy(update={"lock_digest": "sha256:" + ("9" * 64)})
+    runtime = build_production_agent_platform_runtime()
+    stores = runtime.stores
+    artifact_root, digest, lock = _build_echo_artifact(tmp_path)
+    manifest = _manifest()
+    roster = _roster()
+    wrong_digest = "sha256:" + ("9" * 64)
+    revision = _revision(
+        "rev-lock-mismatch",
+        roster=roster,
+        artifact_digest=digest,
+        lock=lock,
+    ).model_copy(update={"materialized_runtime_lock_digest": wrong_digest})
+    stores.lock_store.persist_lock(lock)
+    stores.materialization_store.persist(
+        _materialization_record(revision, lock, artifact_root, digest).model_copy(
+            update={"materialized_runtime_lock_digest": wrong_digest},
+        )
+    )
+    stores.revision_store.persist_candidate_revision(revision)
     with pytest.raises(ProductionRegistryProjectionInputError, match="lock digest"):
-        build_production_registry_projection_input_bundle(
-            runtime_revision=bundle.runtime_revision,
-            effective_roster=bundle.effective_roster,
-            materialized_runtime_lock=wrong_lock,
-            manifest=bundle.manifest,
-            build_context=bundle.build_context,
-            artifact_locator=locator,
-            materialization_artifact_digest=digest,
+        build_production_registry_projection_input_bundle_for_revision(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            runtime_revision_id=revision.runtime_revision_id,
+            effective_roster=roster,
+            manifest=manifest,
+            build_context=ApplicationBuildContext.for_manifest(manifest),
+            stores=stores,
         )
 
 
 def test_no_active_revision_fails_closed() -> None:
     composition = create_reference_production_process_composition()
-    with pytest.raises(HarnessHostRegistryAuthorityError, match="no active traffic-serving"):
+    with pytest.raises(
+        HarnessHostRegistryAuthorityError, match="no active traffic-serving"
+    ):
         bootstrap_production_registry_projection(
             application_id=_APP,
             application_environment_id=_ENV,
@@ -310,27 +399,46 @@ def test_no_active_revision_fails_closed() -> None:
 def test_reference_manifest_bundle_cannot_rescue_production_artifact_mismatch(
     tmp_path: Path,
 ) -> None:
-    bundle, locator, _, digest, lock = _canonical_bundle(tmp_path, revision_id="rev-prod-only")
-    synthetic_revision = bundle.runtime_revision.model_copy(
+    runtime = build_production_agent_platform_runtime()
+    stores = runtime.stores
+    artifact_root, digest, lock = _build_echo_artifact(tmp_path)
+    manifest = _manifest()
+    roster = _roster()
+    revision = _revision(
+        "rev-prod-only", roster=roster, artifact_digest=digest, lock=lock
+    )
+    tampered_revision = revision.model_copy(
         update={"materialization_artifact_digest": "sha256:" + ("9" * 64)},
     )
-    with pytest.raises(ProductionRegistryProjectionInputError, match="digest mismatch"):
-        build_production_registry_projection_input_bundle(
-            runtime_revision=synthetic_revision,
-            effective_roster=bundle.effective_roster,
-            materialized_runtime_lock=lock,
-            manifest=bundle.manifest,
-            build_context=bundle.build_context,
-            artifact_locator=locator,
-            materialization_artifact_digest=digest,
+    stores.lock_store.persist_lock(lock)
+    stores.materialization_store.persist(
+        _materialization_record(revision, lock, artifact_root, digest)
+    )
+    stores.revision_store.persist_candidate_revision(tampered_revision)
+    with pytest.raises(
+        ProductionRegistryProjectionInputError, match="artifact digest mismatch"
+    ):
+        build_production_registry_projection_input_bundle_for_revision(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            runtime_revision_id=tampered_revision.runtime_revision_id,
+            effective_roster=roster,
+            manifest=manifest,
+            build_context=ApplicationBuildContext.for_manifest(manifest),
+            stores=stores,
         )
 
 
 def test_production_e2e_activate_and_serve_real_artifact(tmp_path: Path) -> None:
     composition = create_reference_production_process_composition()
+    stores = composition.agent_platform_runtime.stores
     env = ApplicationEnvironmentProfile.product_defaults(profile_id=_ENV)
     launcher, governance = wire_governed_reference_production_launcher(composition, env)
-    bundle, locator, _, digest, _ = _canonical_bundle(tmp_path, revision_id="rev-e2e")
+    bundle, locator, _, digest, _, _ = _canonical_bundle(
+        tmp_path,
+        revision_id="rev-e2e",
+        stores=stores,
+    )
     revision_id = _activate_bundle(
         launcher,
         bundle,
@@ -350,15 +458,22 @@ def test_production_e2e_activate_and_serve_real_artifact(tmp_path: Path) -> None
 
 def test_ready_n_plus_one_does_not_switch_serving(tmp_path: Path) -> None:
     composition = create_reference_production_process_composition()
+    stores = composition.agent_platform_runtime.stores
     env = ApplicationEnvironmentProfile.product_defaults(profile_id=_ENV)
     launcher, governance = wire_governed_reference_production_launcher(composition, env)
-    bundle_n, locator_n, _, _, _ = _canonical_bundle(tmp_path, revision_id="rev-n", marker="n")
+    bundle_n, locator_n, _, _, _, _ = _canonical_bundle(
+        tmp_path,
+        revision_id="rev-n",
+        marker="n",
+        stores=stores,
+    )
     _activate_bundle(launcher, bundle_n, locator_n, principal=governance.principal)
 
-    bundle_n1, locator_n1, _, _, _ = _canonical_bundle(
+    bundle_n1, locator_n1, _, _, _, _ = _canonical_bundle(
         tmp_path / "n1",
         revision_id="rev-n1",
         marker="n1",
+        stores=stores,
     )
     launcher.services.projection_input_store.register(bundle_n1)
     launcher.services.revision_service.persist_candidate_revision(
@@ -387,15 +502,22 @@ def test_ready_n_plus_one_does_not_switch_serving(tmp_path: Path) -> None:
 
 def test_commit_n_plus_one_switches_serving(tmp_path: Path) -> None:
     composition = create_reference_production_process_composition()
+    stores = composition.agent_platform_runtime.stores
     env = ApplicationEnvironmentProfile.product_defaults(profile_id=_ENV)
     launcher, governance = wire_governed_reference_production_launcher(composition, env)
-    bundle_n, locator_n, _, _, _ = _canonical_bundle(tmp_path, revision_id="rev-n", marker="n")
+    bundle_n, locator_n, _, _, _, _ = _canonical_bundle(
+        tmp_path,
+        revision_id="rev-n",
+        marker="n",
+        stores=stores,
+    )
     _activate_bundle(launcher, bundle_n, locator_n, principal=governance.principal)
 
-    bundle_n1, locator_n1, _, digest_n1, _ = _canonical_bundle(
+    bundle_n1, locator_n1, _, digest_n1, _, _ = _canonical_bundle(
         tmp_path / "n1",
         revision_id="rev-n1",
         marker="n1",
+        stores=stores,
     )
     launcher.services.projection_input_store.register(bundle_n1)
     launcher.services.revision_service.persist_candidate_revision(
@@ -431,13 +553,19 @@ def test_commit_n_plus_one_switches_serving(tmp_path: Path) -> None:
     assert resolved.evidence.materialization_artifact_digest == digest_n1
 
 
-def test_same_process_composition_lifecycle_and_serving_share_stores(tmp_path: Path) -> None:
+def test_same_process_composition_lifecycle_and_serving_share_stores(
+    tmp_path: Path,
+) -> None:
     composition = create_reference_production_process_composition()
+    stores = composition.agent_platform_runtime.stores
     env = ApplicationEnvironmentProfile.product_defaults(profile_id=_ENV)
     launcher, governance = wire_governed_reference_production_launcher(composition, env)
-    bundle, locator, _, _, _ = _canonical_bundle(tmp_path, revision_id="rev-shared")
+    bundle, locator, _, _, _, _ = _canonical_bundle(
+        tmp_path,
+        revision_id="rev-shared",
+        stores=stores,
+    )
     _activate_bundle(launcher, bundle, locator, principal=governance.principal)
-    stores = composition.agent_platform_runtime.stores
     serving = stores.serving_store.get_serving_record(_APP, _ENV)
     assert serving is not None
     assert serving.traffic_serving_revision_id == "rev-shared"

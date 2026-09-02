@@ -7,8 +7,8 @@ digests, and ``InMemoryRuntimeAgentFactoryResolver`` instances from manifest-loc
 data for explicit reference lifecycle proofs.
 
 Production revision-bound startup must use
-``production_registry_projection_input_bundle.build_production_registry_projection_input_bundle``
-with canonical lifecycle state and ``VenvBundleRuntimeAgentFactoryResolver``.
+``production_registry_projection_input_bundle.build_production_registry_projection_input_bundle_for_revision``
+with canonical lifecycle stores and ``VenvBundleRuntimeAgentFactoryResolver``.
 """
 
 from __future__ import annotations
@@ -21,7 +21,9 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevision,
     RuntimeRevisionState,
 )
-from intergrax.applications._shared.registry_projection import RegistryProjectionInputBundle
+from intergrax.applications._shared.registry_projection import (
+    RegistryProjectionInputBundle,
+)
 from intergrax.applications._shared.runtime_agent_factory_resolver import (
     InMemoryRuntimeAgentFactoryResolver,
     RuntimeAgentFactoryResolutionError,
@@ -35,7 +37,9 @@ from intergrax.applications._shared.wiring import (
 )
 from intergrax.applications.contracts.agent_ref import qualname_for_callable
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 
 _REFERENCE_DIGEST = "sha256:" + ("a" * 64)
@@ -112,15 +116,21 @@ def _resolver_for_bindings(
             continue
         binding = _resolve_manifest_binding_for_entry(entry, manifest_bindings)
         if binding is None:
-            raise ValueError(f"missing manifest binding for roster entry {entry.logical_agent_id!r}")
+            raise ValueError(
+                f"missing manifest binding for roster entry {entry.logical_agent_id!r}"
+            )
         factory = _factory_for_binding(binding, builders)
         try:
             factory_ref = factory_reference_for_roster_entry(entry, manifest_bindings)
         except RuntimeAgentFactoryResolutionError:
             if binding.builder_key is not None:
-                factory_ref = AgentBindingFactoryReference(builder_key=binding.builder_key)
+                factory_ref = AgentBindingFactoryReference(
+                    builder_key=binding.builder_key
+                )
             elif binding.factory_path is not None:
-                factory_ref = AgentBindingFactoryReference(factory_path=binding.factory_path)
+                factory_ref = AgentBindingFactoryReference(
+                    factory_path=binding.factory_path
+                )
             elif builders is not None and binding.agent_type in builders:
                 factory_ref = AgentBindingFactoryReference(
                     builder_key=binding.agent_type.__name__.lower().replace("agent", "")
@@ -165,9 +175,13 @@ def _manifest_with_contract_ids(manifest: ApplicationManifest) -> ApplicationMan
         if binding.contract_id is not None:
             agents.append(binding)
             continue
-        class_contract = attribute_access.optional(binding.agent_type, "contract_id", None)
+        class_contract = attribute_access.optional(
+            binding.agent_type, "contract_id", None
+        )
         if isinstance(class_contract, str) and class_contract.strip():
-            agents.append(binding.model_copy(update={"contract_id": class_contract.strip()}))
+            agents.append(
+                binding.model_copy(update={"contract_id": class_contract.strip()})
+            )
             continue
         import_path = binding.import_path
         if import_path is None:
@@ -204,7 +218,8 @@ def build_reference_registry_projection_input_bundle(
             if (binding.contract_id or _binding_stem(binding)) in enabled_contract_stems
         )
     entries = tuple(
-        _roster_entry_from_binding(binding, package_digest=package_digest) for binding in bindings
+        _roster_entry_from_binding(binding, package_digest=package_digest)
+        for binding in bindings
     )
     roster = EffectiveRoster(
         application_id=manifest.app_id,
@@ -218,7 +233,8 @@ def build_reference_registry_projection_input_bundle(
         application_environment_id=environment.profile_id,
         application_release_id=application_release_id,
         platform_version="0.1.0",
-        effective_roster_revision_id=roster.effective_roster_revision_id or _REFERENCE_ROSTER_DIGEST,
+        effective_roster_revision_id=roster.effective_roster_revision_id
+        or _REFERENCE_ROSTER_DIGEST,
         installed_agent_package_digests=(package_digest,),
         materialized_runtime_lock_id=_REFERENCE_LOCK_ID,
         materialized_runtime_lock_digest=_REFERENCE_LOCK_DIGEST,
@@ -230,7 +246,9 @@ def build_reference_registry_projection_input_bundle(
     )
     ctx = ApplicationBuildContext.for_manifest(manifest)
     if settings is not None:
-        from intergrax.applications._shared.environment_wiring import wire_application_environment
+        from intergrax.applications._shared.environment_wiring import (
+            wire_application_environment,
+        )
 
         ctx = wire_application_environment(
             manifest,

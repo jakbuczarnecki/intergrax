@@ -165,11 +165,12 @@ def _research_activation_bundle(
 def test_production_process_composition_owns_single_runtime_bundle() -> None:
     composition = create_reference_production_process_composition()
     assert isinstance(composition, ProductionProcessComposition)
-    assert composition.agent_platform_runtime.stores.serving_store is not None
-    assert (
-        composition.agent_platform_runtime.stores.registry_projection_store is not None
-    )
-    assert composition.agent_platform_runtime.stores.materialization_store is not None
+    stores = composition.agent_platform_runtime.stores
+    assert stores.serving_store is not None
+    assert stores.registry_projection_store is not None
+    assert stores.revision_store is not None
+    assert stores.lock_store is not None
+    assert stores.materialization_store is not None
 
 
 def test_production_store_continuity_resolves_active_projection_and_nexus_registry(
