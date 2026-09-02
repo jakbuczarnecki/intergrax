@@ -13,6 +13,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Generic
 
+from intergrax.runtime.decision_verification_observability import VerificationObserver
+
 from intergrax.contracts.decision_record import (
     CandidateDecision,
     DecisionProposalRef,
@@ -125,10 +127,17 @@ async def _execute_registration(
     *,
     registration: VerificationStageRegistration[T],
     candidate: CandidateDecision[T],
+    observer: VerificationObserver[T] | None = None,
 ) -> VerificationStageRecord | None:
     try:
         record = await registration.stage.verify(candidate)
     except VerificationStageUnavailableError:
+        if observer is not None:
+            observer.stage_unavailable(
+                candidate,
+                registration,
+                required=registration.required,
+            )
         if registration.required:
             return _required_unavailable_stage_record(
                 registration=registration,
@@ -172,6 +181,7 @@ class VerificationPipeline(Generic[T]):
     """Immutable verification pipeline configuration bound to one stage registry."""
 
     registry: VerificationStageRegistry[T]
+    observer: VerificationObserver[T] | None = None
 
     async def verify(
         self,
@@ -183,32 +193,59 @@ class VerificationPipeline(Generic[T]):
         proposal_ref = candidate_decision_ref(candidate)
         stage_records: list[VerificationStageRecord] = []
         deterministic_regs, probabilistic_regs = _pipeline_execution_plan(self.registry)
+        stage_count = len(deterministic_regs) + len(probabilistic_regs)
+        if self.observer is not None:
+            self.observer.verification_started(candidate, stage_count=stage_count)
         for registration in deterministic_regs:
             record = await _execute_registration(
                 registration=registration,
                 candidate=candidate,
+                observer=self.observer,
             )
             if record is not None:
                 stage_records.append(record)
+                if self.observer is not None:
+                    self.observer.stage_completed(candidate, registration, record)
         deterministic_challenged = any(
             record.outcome is VerificationStageOutcome.CHALLENGED
             for record in stage_records
         )
+        if deterministic_challenged and probabilistic_regs and self.observer is not None:
+            self.observer.probabilistic_skipped(
+                candidate,
+                skipped_stage_count=len(probabilistic_regs),
+            )
         if not deterministic_challenged:
             for registration in probabilistic_regs:
                 record = await _execute_registration(
                     registration=registration,
                     candidate=candidate,
+                    observer=self.observer,
                 )
                 if record is not None:
                     stage_records.append(record)
+                    if self.observer is not None:
+                        self.observer.stage_completed(candidate, registration, record)
         if not stage_records:
             raise VerificationPipelineEmptyResultError(
                 "VerificationPipeline cannot produce a result without stage records",
             )
         disposition = _aggregate_disposition(tuple(stage_records))
-        return verification_result(
+        result = verification_result(
             proposal_ref=proposal_ref,
             disposition=disposition,
             stage_records=tuple(stage_records),
         )
+        if self.observer is not None:
+            challenged_stage_count = sum(
+                1
+                for record in stage_records
+                if record.outcome is VerificationStageOutcome.CHALLENGED
+            )
+            self.observer.verification_completed(
+                candidate,
+                result,
+                executed_stage_count=len(stage_records),
+                challenged_stage_count=challenged_stage_count,
+            )
+        return result

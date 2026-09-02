@@ -36,12 +36,12 @@
 
 | Phase | Status | Section |
 | ----- | ------ | ------- |
-| DS-VER-PIPE | IN PROGRESS | [below](#phase-ds-ver-pipe--pipeline-foundation) |
+| DS-VER-PIPE | **DONE** | [below](#phase-ds-ver-pipe--pipeline-foundation) |
 | DS-VER-STAGES | PLANNED | [below](#phase-ds-ver-stages--stage-migration-from-cvl) |
 
 ---
 
-## Phase DS-VER-PIPE - Pipeline foundation (IN PROGRESS)
+## Phase DS-VER-PIPE - Pipeline foundation (DONE)
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
@@ -51,7 +51,7 @@
 | DS-VER-PIPE-04 | P0 | Deterministic-before-probabilistic ordering | **Done** |
 | DS-VER-PIPE-05 | P1 | Challenge → Lifecycle handoff (no in-place mutation) | **Done** |
 | DS-VER-PIPE-06 | P1 | Fail-closed unavailable required stage | **Done** |
-| DS-VER-PIPE-07 | P2 | Stage telemetry → Observability | **Planned** |
+| DS-VER-PIPE-07 | P2 | Stage telemetry → Observability | **Done** |
 
 ---
 
