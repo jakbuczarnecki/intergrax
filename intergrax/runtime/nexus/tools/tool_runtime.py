@@ -172,8 +172,17 @@ class ToolRuntime:
 
         cfg = state.context.config
         incoming_plan = plan.normalized()
-        authoritative_tool_scope = bool(incoming_plan.tool_ids)
         effective_allowed = resolve_allowed_tools_from_config(cfg, explicit=allowed_tools)
+        has_authoritative_scope = (
+            allowed_tools is not None
+            or effective_allowed is not None
+            or bool(incoming_plan.tool_ids)
+        )
+        authoritative_empty_scope = (
+            has_authoritative_scope
+            and effective_allowed is not None
+            and len(effective_allowed) == 0
+        )
         plan = ToolAccessPolicy.apply(
             incoming_plan,
             allowed_tools=effective_allowed,
@@ -217,13 +226,13 @@ class ToolRuntime:
                     level=TraceLevel.WARNING,
                 )
 
-        if plan.use_tools:
+        if plan.use_tools or (incoming_plan.use_tools and authoritative_empty_scope):
             if cfg.tool_planner and cfg.tool_invoker and cfg.tools_mode != "off":
                 from intergrax.runtime.nexus.tools.catalog_dispatch import catalog_tool_ids
 
                 planner_constraints = catalog_tool_ids(plan.tool_ids)
                 previous_constraints = state.tool_planner_allowed_tool_ids
-                if authoritative_tool_scope or planner_constraints:
+                if has_authoritative_scope:
                     state.tool_planner_allowed_tool_ids = planner_constraints
                 try:
                     await run_tools_context(state)
