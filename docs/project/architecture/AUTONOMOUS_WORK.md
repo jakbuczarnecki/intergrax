@@ -47,7 +47,7 @@ Intergrax already provides governed execution, agents, tools, policy, evidence, 
 | **Owns** | Responsibilities, goals, worker lifecycle, wake-up semantics, worker→work/execution correlation, obstacle classification hand-off |
 | **Reuses** | Collaborative Principal/authority, WorkItem, Governed Execution, Agents, Tools/Skills/Integrations, CodeCraft, Sandbox, Memory, Observability, Diagnostics, Hosting |
 | **Does not own** | Agent cognition, policy engine, execution lifecycle, memory store, generated-code synthesis, evidence truth, application UX |
-| **Current maturity** | AW-0 — canonical architecture and documentation integration; **runtime not implemented** |
+| **Current maturity** | AW-0 REVIEW GATE — canonical architecture and documentation integration complete; independent audit pending; **runtime not implemented** |
 | **First planned proof** | **Autonomous Order Operations Worker** — planned / not implemented |
 
 ---

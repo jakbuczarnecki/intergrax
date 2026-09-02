@@ -93,7 +93,7 @@ Every canonical architecture artifact is classified **exactly once**. Do not pro
 | `AGENT_DISTRIBUTION` | [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) | [`../maintainers/plans/AGENT_DISTRIBUTION.md`](../maintainers/plans/AGENT_DISTRIBUTION.md) |
 | `PLATFORM_PLUGINS` | [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md) | [`../maintainers/plans/PLATFORM_PLUGINS.md`](../maintainers/plans/PLATFORM_PLUGINS.md) |
 | `PROOF_RECEIPTS` | [`PROOF_RECEIPTS.md`](PROOF_RECEIPTS.md) | [`../maintainers/plans/PROOF_RECEIPTS.md`](../maintainers/plans/PROOF_RECEIPTS.md) |
-| \AUTONOMOUS_WORK\ | [\AUTONOMOUS_WORK.md\](AUTONOMOUS_WORK.md) | [\../maintainers/plans/AUTONOMOUS_WORK.md\](../maintainers/plans/AUTONOMOUS_WORK.md) |
+| `AUTONOMOUS_WORK` | [`AUTONOMOUS_WORK.md`](AUTONOMOUS_WORK.md) | [`../maintainers/plans/AUTONOMOUS_WORK.md`](../maintainers/plans/AUTONOMOUS_WORK.md) |
 
 **Decision System subordinate architecture hubs** (not separate DOMAIN pairs - subordinate to [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md)):
 
