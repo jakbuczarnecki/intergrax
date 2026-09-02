@@ -169,6 +169,26 @@ class LkwClient:
                 meta.update(metadata)
         return self._post_run(body)
 
+    def run_model_routing_qualification(
+        self,
+        *,
+        message: str,
+        metadata: dict[str, object] | None = None,
+    ) -> LkwRunResponse:
+        body = {
+            "tenant_id": self._config.tenant_id,
+            "message": message,
+            "capability": "local.workspace.model_routing_qualification",
+            "metadata": {
+                "tenant_id": self._config.tenant_id,
+            },
+        }
+        if metadata:
+            meta = body["metadata"]
+            if isinstance(meta, dict):
+                meta.update(metadata)
+        return self._post_run(body)
+
     def _post_run(self, body: dict[str, object]) -> LkwRunResponse:
         url = f"{self._config.base_url.rstrip('/')}/v1/local_workspace/run"
         status, payload = self._post_json(url, body)

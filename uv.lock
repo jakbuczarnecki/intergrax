@@ -34,6 +34,7 @@ members = [
     "intergrax-local-search-agent",
     "intergrax-local-synthesizer-agent",
     "intergrax-local-workspace-application",
+    "intergrax-model-routing-qualifier-agent",
     "intergrax-organization-worker-agent",
     "intergrax-poc-template-application",
     "intergrax-problem-radar-agent",
@@ -2260,6 +2261,7 @@ dependencies = [
     { name = "intergrax-local-indexer-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "intergrax-local-search-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "intergrax-local-synthesizer-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-model-routing-qualifier-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "intergrax-tool-selection-qualifier-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "intergrax-web-search-qualifier-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
@@ -2276,6 +2278,7 @@ requires-dist = [
     { name = "intergrax-local-indexer-agent", editable = "agents/local_indexer" },
     { name = "intergrax-local-search-agent", editable = "agents/local_search" },
     { name = "intergrax-local-synthesizer-agent", editable = "agents/local_synthesizer" },
+    { name = "intergrax-model-routing-qualifier-agent", editable = "agents/model_routing_qualifier" },
     { name = "intergrax-tool-selection-qualifier-agent", editable = "agents/tool_selection_qualifier" },
     { name = "intergrax-web-search-qualifier-agent", editable = "agents/web_search_qualifier" },
 ]
@@ -2285,6 +2288,17 @@ certification = [
     { name = "pytest", specifier = ">=8.4,<9" },
     { name = "pytest-asyncio", specifier = ">=0.23,<0.24" },
 ]
+
+[[package]]
+name = "intergrax-model-routing-qualifier-agent"
+version = "0.1.0"
+source = { editable = "agents/model_routing_qualifier" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
 
 [[package]]
 name = "intergrax-organization-worker-agent"

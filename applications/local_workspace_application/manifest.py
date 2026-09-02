@@ -14,10 +14,12 @@ from local_search.local_search_agent import LocalSearchAgent
 from local_synthesizer.local_synthesizer_agent import LocalSynthesizerAgent
 from tool_selection_qualifier.tool_selection_qualifier_agent import ToolSelectionQualifierAgent
 from web_search_qualifier.web_search_qualifier_agent import WebSearchQualifierAgent
+from model_routing_qualifier.model_routing_qualifier_agent import ModelRoutingQualifierAgent
 from local_workspace_application.host.agent_factories import (
     build_local_workspace_local_indexer_from_context,
     build_local_workspace_local_search_from_context,
     build_local_workspace_local_synthesizer_from_context,
+    build_local_workspace_model_routing_qualifier_from_context,
     build_local_workspace_tool_selection_qualifier_from_context,
     build_local_workspace_web_search_qualifier_from_context,
 )
@@ -57,6 +59,12 @@ _LOCAL_WORKSPACE_AGENTS = [
         WebSearchQualifierAgent,
         factory=build_local_workspace_web_search_qualifier_from_context,
         capabilities=["local.workspace.web_search_qualification"],
+        budget_slice=product_agent_budget_slice(),
+    ),
+    AgentBinding.mount(
+        ModelRoutingQualifierAgent,
+        factory=build_local_workspace_model_routing_qualifier_from_context,
+        capabilities=["local.workspace.model_routing_qualification"],
         budget_slice=product_agent_budget_slice(),
     ),
 ]

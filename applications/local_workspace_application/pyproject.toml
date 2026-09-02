@@ -15,6 +15,7 @@ dependencies = [
   "intergrax-local-synthesizer-agent",
   "intergrax-tool-selection-qualifier-agent",
   "intergrax-web-search-qualifier-agent",
+  "intergrax-model-routing-qualifier-agent",
 ]
 
 [dependency-groups]
@@ -34,3 +35,4 @@ intergrax-local-search-agent = { workspace = true }
 intergrax-local-synthesizer-agent = { workspace = true }
 intergrax-tool-selection-qualifier-agent = { workspace = true }
 intergrax-web-search-qualifier-agent = { workspace = true }
+intergrax-model-routing-qualifier-agent = { workspace = true }
