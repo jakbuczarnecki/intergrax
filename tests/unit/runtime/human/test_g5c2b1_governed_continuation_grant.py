@@ -10,12 +10,10 @@ import pytest
 
 from intergrax.contracts.agent_decision import HumanRequest
 from intergrax.contracts.execution_identity import (
-    ActiveExecutionIdentity,
-    bind_active_execution_identity,
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
-    reset_active_execution_identity,
 )
 from intergrax.contracts.actor_identity import ActorIdentity, ActorKind
 from intergrax.contracts.external_work import (
@@ -48,6 +46,7 @@ from tests.unit.runtime.human.test_g5b_hitl_resolution import (
     _build_intake_runner_with_hitl,
     _patch_hitl_runtime_events,
     _set_human_response,
+    bound_hitl_test_execution_identity,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -57,6 +56,7 @@ RUN_ID = mint_run_id()
 RUN_OTHER = mint_run_id()
 TASK_OTHER = mint_task_id()
 ATTEMPT_ID = mint_attempt_id()
+EXECUTION_ID = mint_execution_id()
 OPERATION = "collaborative.document.delete"
 RESOURCE = "document-123"
 POLICY_RULE = "runtime.hitl"
@@ -503,12 +503,12 @@ async def test_intake_runner_approve_creates_grant_before_pause_clear(
     runner, _published = _build_intake_runner_with_hitl()
     lifecycle = TaskLifecycle()
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
-    runner.execution_identity = ActiveExecutionIdentity()
-    token = bind_active_execution_identity(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
-    try:
+    with bound_hitl_test_execution_identity(
+        run_id=RUN_ID,
+        attempt_id=ATTEMPT_ID,
+        execution_id=EXECUTION_ID,
+    ):
         await runner.run(task, lifecycle=lifecycle, trace_emitter=trace_emitter)
-    finally:
-        reset_active_execution_identity(token)
 
     grant = task.runtime.governance.governed_continuation_grant
     assert grant is not None
@@ -555,10 +555,11 @@ async def test_intake_runner_reject_clears_grant(
 
     runner, _published = _build_intake_runner_with_hitl()
     lifecycle = TaskLifecycle()
-    token = bind_active_execution_identity(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
-    try:
+    with bound_hitl_test_execution_identity(
+        run_id=RUN_ID,
+        attempt_id=ATTEMPT_ID,
+        execution_id=EXECUTION_ID,
+    ):
         outcome = await runner.run(task, lifecycle=lifecycle, trace_emitter=AsyncMock())
-    finally:
-        reset_active_execution_identity(token)
     assert outcome.early_result is not None
     assert task.runtime.governance.governed_continuation_grant is None

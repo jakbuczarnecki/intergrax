@@ -172,6 +172,31 @@ No bypass observed; no local scope derivation added.
 | 15 Persist/reopen | SQLite+PG | same outcome | same | 1 | YES | reload | PASS |
 | 39 Policy composition | SQLite | DENY | DENY | 0 | YES | determining layer | PASS |
 
-## 19. Next phase
+## 19. R1 — canonical HITL regression closure (execution identity lifecycle)
+
+After lifecycle-owned `ExecutionId` hardening (`a63867f396df70b3c8053f15e7d7ce4b2de46ba8`),
+`runtime_event_from_task_state` requires active `ExecutionId` via `require_active_execution_id()`.
+The governed-continuation grant regression (`test_g5c2b1_governed_continuation_grant.py`) and shared
+HITL intake helper (`test_g5b_hitl_resolution.py`) still bound only `run_id`/`attempt_id`.
+
+**Root cause:** `SHARED_TEST_HELPER_DRIFT` — test fixtures invoked intake/HITL runtime emission without
+binding canonical `ExecutionId` in the active execution identity ContextVar.
+
+**Repair:** reusable `bound_hitl_test_execution_identity()` helper (public `bind_active_execution_identity`
++ `reset_active_execution_identity`); no production changes; fail-closed invariant preserved.
+
+**Regression (2026-09-02, R1 `bfd084e4`+):**
+
+| Command | Result |
+|---------|--------|
+| `uv run pytest tests/unit/runtime/human/test_g5c2b1_governed_continuation_grant.py -q` | 15 passed |
+| `uv run pytest tests/unit/runtime/human/ -q` | 107 passed |
+| `uv run pytest tests/unit/runtime/execution/test_execution_boundary.py tests/unit/runtime/long_running/test_ue_9c_execution_tree_checkpoint.py -q` | 55 passed |
+| `uv run pytest tests/e2e/collaborative_work/ -m e2e -q` | 35 passed (24 SQLite + 11 PG when DSN set) |
+| `uv run pytest tests/e2e/collaborative_work/ -m "e2e and integration and network" -q` | 11 passed |
+| `uv run pytest tests/unit/collaborative_work/ -q` | 218 passed |
+| `uv run pytest tests/unit/core/qualification/ -q` | 208 passed |
+
+## 20. Next phase
 
 Independent COLLAB-WORK-E2E-1 SHA audit on committed revision. Do not start real-vendor-wide qualification.
