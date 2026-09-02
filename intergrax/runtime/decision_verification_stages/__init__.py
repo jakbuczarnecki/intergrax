@@ -3,6 +3,16 @@
 
 """Canonical Decision Verification stage implementations."""
 
+from intergrax.contracts.evidence_verification import (
+    EvidenceClaimsProvider,
+    EvidenceReferenceResolver,
+)
+from intergrax.runtime.decision_verification_stages.evidence import (
+    EVIDENCE_VERIFICATION_STAGE_KIND,
+    EvidenceVerificationStage,
+    EvidenceVerificationStageConfig,
+    evidence_verification_stage_config,
+)
 from intergrax.runtime.decision_verification_stages.guardrail import (
     GUARDRAIL_VERIFICATION_STAGE_KIND,
     GuardrailScanProvider,
@@ -16,6 +26,12 @@ from intergrax.runtime.decision_verification_stages.structural import (
 )
 
 __all__ = [
+    "EVIDENCE_VERIFICATION_STAGE_KIND",
+    "EvidenceClaimsProvider",
+    "EvidenceReferenceResolver",
+    "EvidenceVerificationStage",
+    "EvidenceVerificationStageConfig",
+    "evidence_verification_stage_config",
     "GUARDRAIL_VERIFICATION_STAGE_KIND",
     "GuardrailScanProvider",
     "GuardrailVerificationStage",
