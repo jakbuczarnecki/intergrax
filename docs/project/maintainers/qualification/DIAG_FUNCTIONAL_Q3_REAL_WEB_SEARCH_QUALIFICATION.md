@@ -228,7 +228,7 @@ New live gates: `selection_decision_fidelity`, `extraction_decision_fidelity`, `
 | Item | Value |
 | --- | --- |
 | START_HEAD | `b35e4fc233fc085565be459bc20bfe85fa76f843` |
-| FINAL_HEAD | `a28dfd970ba8a22e986c52eeeb839d02229af64e` |
+| FINAL_HEAD | `fc86b754a` (env-wiring commit; qualification run base `a28dfd970`) |
 | Root `.env` | YES |
 | Key loaded (no manual export) | YES |
 | Canonical loader | `scripts/proof/intergrax_proof_environment.py` |
