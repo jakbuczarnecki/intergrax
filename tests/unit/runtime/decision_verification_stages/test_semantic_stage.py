@@ -131,7 +131,7 @@ class RecordingSemanticJudge:
             rubric_id=params.rubric_id,
             score=1.0 if self.passed else 0.0,
             passed=self.passed,
-            reasons=() if self.passed else ("below threshold",),
+            reasons=[] if self.passed else ["below threshold"],
         )
 
 

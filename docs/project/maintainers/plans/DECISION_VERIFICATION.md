@@ -61,7 +61,7 @@
 |----|----------|------|--------|
 | DS-VER-STAGE-L0 | P0 | Structural/deterministic stage from `L0Gateway` | **Done** |
 | DS-VER-STAGE-SEM | P1 | Semantic stage from `L1Gateway` / `eval.judge` | **Done** |
-| DS-VER-STAGE-TRAJ | P1 | Trajectory stage from `eval.trajectory` | **Planned** |
+| DS-VER-STAGE-TRAJ | P1 | Trajectory stage from `eval.trajectory` | **Done** |
 | DS-VER-STAGE-EVID | P1 | Evidence verification stage | **Done** |
 | DS-VER-STAGE-GR | P2 | Guardrail merge from `guardrail_l0` | **Done** |
 | DS-VER-STAGE-DOM | P2 | Independent/domain verifier stage | **Planned** |

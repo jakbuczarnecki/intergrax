@@ -33,7 +33,12 @@ from intergrax.runtime.critic.l1_gateway import L1Gateway
 from intergrax.runtime.decision_verification_stages.semantic import SemanticVerificationStage
 from intergrax.runtime.execution.inference_profile import InferenceProfileId
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer
-from intergrax.tools.providers.eval.contracts import EvalJudgeInput, EvalJudgeOutput
+from intergrax.tools.providers.eval.contracts import (
+    EvalJudgeInput,
+    EvalJudgeOutput,
+    EvalTrajectoryInput,
+    EvalTrajectoryOutput,
+)
 from intergrax.contracts.execution_identity import (
     mint_attempt_id,
     mint_execution_id,
@@ -65,7 +70,7 @@ class SharedEvalJudge:
             rubric_id=params.rubric_id,
             score=1.0 if self.passed else 0.2,
             passed=self.passed,
-            reasons=() if self.passed else ("below threshold",),
+            reasons=[] if self.passed else ["below threshold"],
         )
 
 
@@ -76,7 +81,7 @@ class SharedToolClient:
     def judge(self, params: EvalJudgeInput) -> EvalJudgeOutput:
         return self.judge_impl.judge(params)
 
-    def trajectory(self, params: object) -> object:
+    def trajectory(self, params: EvalTrajectoryInput) -> EvalTrajectoryOutput:
         raise NotImplementedError
 
 

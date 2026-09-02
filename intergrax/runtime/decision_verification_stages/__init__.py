@@ -22,6 +22,10 @@ from intergrax.runtime.decision_verification_stages.semantic import (
     SEMANTIC_VERIFICATION_STAGE_KIND,
     SemanticVerificationStage,
 )
+from intergrax.runtime.decision_verification_stages.trajectory import (
+    TRAJECTORY_VERIFICATION_STAGE_KIND,
+    TrajectoryVerificationStage,
+)
 from intergrax.runtime.decision_verification_stages.structural import (
     STRUCTURAL_VERIFICATION_STAGE_KIND,
     AgentExecutionStructuralValidator,
@@ -41,6 +45,8 @@ __all__ = [
     "GuardrailVerificationStage",
     "SemanticVerificationStage",
     "SEMANTIC_VERIFICATION_STAGE_KIND",
+    "TRAJECTORY_VERIFICATION_STAGE_KIND",
+    "TrajectoryVerificationStage",
     "STRUCTURAL_VERIFICATION_STAGE_KIND",
     "AgentExecutionStructuralValidator",
     "NonEmptyTextStructuralValidator",
