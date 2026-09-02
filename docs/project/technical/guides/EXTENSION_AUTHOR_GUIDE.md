@@ -625,7 +625,7 @@ pack = SkillResolver(skill_registry, tool_registry).resolve_skills(contract.skil
 # pack.tool_ids - frozenset; pack.skill_ids - expanded order
 ```
 
-Tier-3 hosts also call `extend_tool_profile_for_skills(tool_profile, skill_profile)` so required tools are enabled on `ToolProfile`. See [`SKILLS.md`](../../architecture/SKILLS.md) Tier-3 pipeline.
+Tier-3 hosts validate skill-declared `tool_ids` against host `ToolProfile` availability during composition (`assert_skill_tool_requirements_for_profile`). Skills declare required tools; the host must enable or provide them explicitly. See [`SKILLS.md`](../../architecture/SKILLS.md) Tier-3 pipeline.
 
 **Cursor `SKILL.md` import:** `CursorSkillImporter` for one-off markdown packs - not the same as a pip `SkillPlugin`. Prefer `SkillPlugin` for versioned bundles.
 
@@ -681,7 +681,7 @@ Run: `pytest tests/unit/skills/test_external_skill_plugin.py -q`
 |---------|--------------|-----|
 | Skill missing after install | Discovery off / bundle not enabled | `bootstrap_catalogs(discover_entry_points=True)` + `SkillProfile(enabled_bundles=[…])` |
 | `Unknown skill_id` | Bundle not registered or profile filter | `register_skill_plugin` + enable bundle |
-| `tool_id(s) not in ToolRegistry` | Tool bundle disabled | `extend_tool_profile_for_skills` or enable tool bundle |
+| `tool_id(s) not in ToolRegistry` | Tool bundle disabled | Enable matching tool bundle on `ToolProfile` |
 | Agent has empty `allowed_tools` | `skill_registry` omitted at register | Pass `skill_registry` to `AgentRegistry.register` |
 | Dependent skill missing | `requires_skills` target not in registry | Register dependency bundle first |
 | Qualification rejected | Host gate | Semantic evidence - not attestation |
@@ -1183,7 +1183,7 @@ Reference example (in-repo, **not** installable wheel): `intergrax/skills/exampl
 3. **Build and install wheel** - same as Tools/Integrations.
 4. **Enable discovery** - `bootstrap_catalogs(discover_entry_points=True)`.
 5. **Enable bundle** - `SkillProfile(enabled_bundles=["my_bundle"])`.
-6. **Ensure tools exist** - register and enable every `tool_id` referenced in manifests (`extend_tool_profile_for_skills` on Tier-3 hosts).
+6. **Ensure tools exist** - register and enable every `tool_id` referenced in manifests on host `ToolProfile` (composition validates requirements and fails if unavailable).
 7. **Agent bind** - declare `SkillManifest` objects on `AgentContract.skills`; `SkillResolver` merges at `AgentRegistry.register`.
 
 Full walkthrough: [§4](#4-external-skill-plugin) · [`SKILLS.md`](../../architecture/SKILLS.md).

@@ -24,7 +24,7 @@ AgentContract(
 )
 ```
 
-Wire `search_provider` integration; enable websearch tools on profile (auto via `extend_tool_profile_for_skills`).
+Wire `search_provider` integration; enable websearch tools on host `ToolProfile`.
 
 ## What you get
 

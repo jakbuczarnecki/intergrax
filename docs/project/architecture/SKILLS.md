@@ -219,7 +219,7 @@ ToolRuntime
 
 > **A Skill can require a Tool; it cannot bypass ToolRuntime or Governance.**
 
-**Target invariant:** skill-required `tool_ids` must be ⊆ host `ToolProfile` availability; static environment validation fails with actionable diagnostics when not. **Current as-built gap:** `extend_tool_profile_for_skills()` appends skill-declared `tool_ids` to `ToolProfile.enabled` during Tier-3 wiring - silent host availability expansion ([`AUDIT-20260818-SKILLS-03`](../../audit_results/2026-08-18/SKILLS.md)); coordinate with TOOLS monotonic-authority invariant.
+**Invariant:** skill-required `tool_ids` must be ⊆ host `ToolProfile` availability; Tier-3 composition validates requirements via `assert_skill_tool_requirements_for_profile()` and fails closed with actionable diagnostics when not (`skills/registry/tool_requirements.py`).
 
 ## Prompt and policy bridges (current as-built)
 
@@ -319,7 +319,7 @@ Catalog size proves composition-model scale - not P4/E4 platform maturity.
 | ---- | ----- |
 | SK-EXP … SK-EXP5 | **Done** - catalog expansion shipped |
 | Registry / resolver / contract merge | **Done** - bind-time resolution |
-| `extend_tool_profile_for_skills` | **Done** - Tier-3 `wire_application_environment` |
+| Skill tool requirement validation | **Done** - `assert_skill_tool_requirements_for_profile` in Tier-3 `wire_application_environment` |
 | Plugin path + external import | **Done** |
 | AUDIT-IDEAL-12.1 LangGraph import | **Done** |
 | AUDIT-IDEAL-12.2 dynamic selection hook | **Done** - optional recommend-only hook |
@@ -481,7 +481,8 @@ Agent bind time (Tier-1)
 | Contract merge | `skills/integration/contract_resolution.py` | `resolve_contract_tools()` |
 | Agent bind | `runtime/registry/agent_registry.py` | Merge skills at `register()` |
 | Tier-3 wiring | `applications/_shared/skill_wiring.py` | `build_application_skill_wiring()` |
-| Tool auto-enable | `applications/_shared/skill_tool_profile.py` | `extend_tool_profile_for_skills()` |
+| Tool requirement validation | `skills/registry/tool_requirements.py` | `resolve_skill_tool_requirements`, `assert_skill_tool_requirements_satisfied` |
+| Composition guard | `applications/_shared/skill_tool_profile.py` | `assert_skill_tool_requirements_for_profile()` |
 | Runtime snapshot | `applications/_shared/catalog_runtime_bridge.py` | `RuntimeConfig.skill_profile` (TS-1) |
 | Prompt/policy bridge | `applications/_shared/skill_bridge_wiring.py` | `skill_prompt_metadata`, `merge_skill_policy_fragments` (helpers) |
 | Dynamic selection | `applications/_shared/skill_selection_wiring.py` | `resolve_skill_selection_hook()` |
@@ -499,9 +500,9 @@ Canonical entry: `wire_application_environment()` (`applications/_shared/environ
 wire_application_environment(manifest, env)
   ├── bootstrap_application_integration_catalog()
   ├── tool_profile = tool_profile_with_sandbox(env)
-  ├── tool_profile = extend_tool_profile_for_skills(tool_profile, env.skill_profile)
+  ├── build_application_skill_wiring(env.skill_profile)      → SkillRegistry
+  ├── assert_skill_tool_requirements_for_profile(tool_profile, env.skill_profile)
   ├── build_application_tool_wiring(tool_profile, …)     → ToolRegistry
-  ├── build_application_skill_wiring(env.skill_profile)    → SkillRegistry
   ├── wire_policy_bundle(env)
   ├── resolve_prompt_registry(env.prompt_profile)
   ├── ApplicationBuildContext (profiles + registries)
@@ -620,7 +621,7 @@ Environment intersection happens later via `ToolProfile` / `ToolAccessPolicy` - 
 | Output | Status | Consumer |
 |--------|--------|----------|
 | `allowed_tools` merge | **Done** | `AgentRegistry.register`, conformance checks |
-| `extend_tool_profile_for_skills` | **Done** | Tier-3 `wire_application_environment` |
+| Skill tool requirement validation | **Done** | Tier-3 `wire_application_environment` (`assert_skill_tool_requirements_for_profile`) |
 | `SKILL_RESOLVED` trace | **Done** | `context_skill_recording.record_skill_resolved` |
 | `SKILL_IMPORT_FAILED` trace | **Done** | `import_cursor_skill_file(..., event_bus=…)` |
 | Capability graph nodes | **Done** | `capability_graph.py` (prompt + policy edges) |
@@ -652,9 +653,9 @@ No `SkillWiringContext` - DI flows through tools at invoke time.
 
 ```text
 SkillProfile → build_registry_from_profile → SkillRegistry
+  → assert_skill_tool_requirements_for_profile (Tier-3 composition guard)
   → AgentContract.skills[] → SkillResolver.resolve_skills()
   → ResolvedSkillPack.tool_ids → AgentContract.allowed_tools
-  → extend_tool_profile_for_skills (Tier-3) ensures tools enabled
 ```
 
 #### Dependencies (`requires_skills`)

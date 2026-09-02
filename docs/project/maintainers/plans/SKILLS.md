@@ -67,7 +67,7 @@ Load **only** the satellite matching your task or cited gap ID.
 **Deliverable intent:**
 
 - fail-closed production registration - missing host `SkillRegistry` / `SkillProfile` projection must not ambient-bootstrap `register_all_catalog_bundles=True`; explicit named laboratory/bootstrap mode only if retained
-- non-expanding `ToolProfile` authority - skill-required `tool_ids` validate ⊆ host `ToolProfile.enabled`; static environment validation with actionable diagnostics; remove silent `extend_tool_profile_for_skills()` append semantics
+- non-expanding `ToolProfile` authority - skill-required `tool_ids` validate ⊆ host `ToolProfile` availability; static environment validation with actionable diagnostics via `assert_skill_tool_requirements_for_profile()` (**Done** - P0-SAFETY-2)
 - fail-fast `SkillProfile` references - explicit enabled skill/bundle ids unknown to catalog/registry fail environment validation; no silent ignore in `build_registry_from_profile()` / `is_skill_enabled()`
 - coordinate with **TOOLS-GOVERNED-BOUNDARY-INTEGRITY** monotonic tool authority - reuse canonical owners, no second permission subsystem
 

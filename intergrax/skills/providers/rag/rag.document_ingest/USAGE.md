@@ -24,7 +24,7 @@ from intergrax.applications._shared.skill_wiring import lkw_skill_profile
 env.skill_profile = lkw_skill_profile()  # includes rag bundle
 ```
 
-Ensure `tool_profile` enables `document` bundle tools (auto-added by `extend_tool_profile_for_skills`) and RAG managers are wired in `build_application_tool_wiring`.
+Ensure `tool_profile` enables `document` bundle tools and RAG managers are wired in `build_application_tool_wiring`.
 
 ### Agent contract
 

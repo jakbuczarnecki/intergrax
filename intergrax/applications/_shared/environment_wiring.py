@@ -72,7 +72,7 @@ from intergrax.applications._shared.session_tool_wiring import (
     wire_session_storage_tool_binding,
 )
 from intergrax.applications._shared.skill_tool_profile import (
-    extend_tool_profile_for_skills,
+    assert_skill_tool_requirements_for_profile,
 )
 from intergrax.applications._shared.sandbox_wiring import (
     tool_profile_with_sandbox,
@@ -253,14 +253,20 @@ def wire_application_environment(
         )
         assert_memory_vector_backend_available(env, rag_stack)
 
+    skill_wiring = build_application_skill_wiring(env.skill_profile)
+
     tool_profile = tool_profile_with_sandbox(env)
     env_for_codecraft = env.model_copy(update={"tool_profile": tool_profile})
     tool_profile = tool_profile_with_codecraft(env_for_codecraft)
-    tool_profile = extend_tool_profile_for_skills(tool_profile, env.skill_profile)
     if resolved_integration is not None:
         tool_profile = extend_tool_profile_for_integration(
             tool_profile, resolved_integration
         )
+    assert_skill_tool_requirements_for_profile(
+        tool_profile,
+        env.skill_profile,
+        skill_registry=skill_wiring.registry,
+    )
     wiring_context = ToolWiringContext.from_integration_profile(resolved_integration)
     if env.modality_profile is not None:
         wire_modality_extras(wiring_context, modality_profile=env.modality_profile)
@@ -385,7 +391,6 @@ def wire_application_environment(
         tool_wiring,
         application_tool_registry,
     )
-    skill_wiring = build_application_skill_wiring(env.skill_profile)
     policy_bundle = wire_policy_bundle(
         env.model_copy(
             update={

@@ -27,7 +27,7 @@ profile = rag_skill_profile()  # enabled_bundles=["rag"]
 # or lkw_skill_profile() which includes rag + workspace + memory + knowledge
 ```
 
-Set `ApplicationEnvironmentProfile.skill_profile = profile`. `extend_tool_profile_for_skills` auto-enables the three tools on `tool_profile`.
+Set `ApplicationEnvironmentProfile.skill_profile = profile`. Enable the three required tools on host `tool_profile`.
 
 ### Declare on agent contract
 
