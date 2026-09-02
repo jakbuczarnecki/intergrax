@@ -18,6 +18,7 @@ from intergrax.core.qualification import (
     QualificationEvidenceValidity,
     QualificationRunId,
     QualificationStatus,
+    QualificationValidityInterpretation,
     QualificationValidityRecord,
     new_qualification_run_id,
     new_validity_evaluation_id,
@@ -330,6 +331,122 @@ def test_run_rejects_blank_limitation_entries() -> None:
             source_revision="rev",
             environment_metadata=_environment_metadata(),
         )
+
+
+_RUN_A = QualificationRunId("qual_run_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+_RUN_B = QualificationRunId("qual_run_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+
+
+def _validity_record(
+    *,
+    run_id: QualificationRunId = _RUN_A,
+    validity: QualificationEvidenceValidity = QualificationEvidenceValidity.CURRENT,
+) -> QualificationValidityRecord:
+    return QualificationValidityRecord(
+        qualification_run_id=run_id,
+        validity_evaluation_id=new_validity_evaluation_id(),
+        validity=validity,
+        evaluated_at=_EVALUATED_AT_T1,
+    )
+
+
+def _interpretation(
+    *,
+    run_id: QualificationRunId = _RUN_A,
+    validity: QualificationEvidenceValidity = QualificationEvidenceValidity.CURRENT,
+    latest_record: QualificationValidityRecord | None = None,
+) -> QualificationValidityInterpretation:
+    record = latest_record or _validity_record(run_id=run_id, validity=validity)
+    return QualificationValidityInterpretation(
+        qualification_run_id=run_id,
+        validity=validity,
+        latest_record=record,
+    )
+
+
+@pytest.mark.parametrize(
+    "validity",
+    [
+        QualificationEvidenceValidity.CURRENT,
+        QualificationEvidenceValidity.STALE,
+        QualificationEvidenceValidity.REVOKED,
+    ],
+)
+def test_validity_interpretation_accepts_consistent_object(
+    validity: QualificationEvidenceValidity,
+) -> None:
+    interpretation = _interpretation(validity=validity)
+    assert interpretation.qualification_run_id == interpretation.latest_record.qualification_run_id
+    assert interpretation.validity == interpretation.latest_record.validity
+
+
+@pytest.mark.parametrize(
+    ("run_id", "error_type", "match"),
+    [
+        (123, TypeError, "qualification_run_id must be str"),
+        ("qual_run_invalid", ValueError, "qualification_run_id suffix"),
+    ],
+)
+def test_validity_interpretation_rejects_invalid_qualification_run_id(
+    run_id: object,
+    error_type: type[Exception],
+    match: str,
+) -> None:
+    record = _validity_record()
+    with pytest.raises(error_type, match=match):
+        QualificationValidityInterpretation(
+            qualification_run_id=run_id,  # type: ignore[arg-type]
+            validity=QualificationEvidenceValidity.CURRENT,
+            latest_record=record,
+        )
+
+
+def test_validity_interpretation_rejects_invalid_validity_type() -> None:
+    record = _validity_record()
+    with pytest.raises(TypeError, match="validity must be QualificationEvidenceValidity"):
+        QualificationValidityInterpretation(
+            qualification_run_id=_RUN_A,
+            validity="current",  # type: ignore[arg-type]
+            latest_record=record,
+        )
+
+
+def test_validity_interpretation_rejects_invalid_latest_record_type() -> None:
+    with pytest.raises(TypeError, match="latest_record must be QualificationValidityRecord"):
+        QualificationValidityInterpretation(
+            qualification_run_id=_RUN_A,
+            validity=QualificationEvidenceValidity.CURRENT,
+            latest_record={"qualification_run_id": _RUN_A},  # type: ignore[arg-type]
+        )
+
+
+def test_validity_interpretation_rejects_run_id_mismatch() -> None:
+    record = _validity_record(run_id=_RUN_B)
+    with pytest.raises(
+        ValueError,
+        match="latest_record.qualification_run_id must match qualification_run_id",
+    ):
+        QualificationValidityInterpretation(
+            qualification_run_id=_RUN_A,
+            validity=QualificationEvidenceValidity.CURRENT,
+            latest_record=record,
+        )
+
+
+def test_validity_interpretation_rejects_validity_mismatch() -> None:
+    record = _validity_record(validity=QualificationEvidenceValidity.CURRENT)
+    with pytest.raises(ValueError, match="latest_record.validity must match validity"):
+        QualificationValidityInterpretation(
+            qualification_run_id=_RUN_A,
+            validity=QualificationEvidenceValidity.STALE,
+            latest_record=record,
+        )
+
+
+def test_validity_interpretation_is_immutable() -> None:
+    interpretation = _interpretation()
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        interpretation.validity = QualificationEvidenceValidity.REVOKED  # type: ignore[misc]
 
 
 def test_validity_record_is_immutable() -> None:

@@ -20,6 +20,7 @@ from intergrax.core.qualification import (
     QualificationEvidenceValidity,
     QualificationRunId,
     QualificationStatus,
+    QualificationValidityInterpretation,
     QualificationValidityRecord,
     ValidityEvaluationId,
     determine_provider_requalification_requirement,
@@ -132,6 +133,23 @@ def _stale_record(
             source_revision="bd657b431e2c020da0a89de45f6f3b448a48867a",
         ),
     )
+
+
+def test_inconsistent_interpretation_cannot_reach_requalification_decision() -> None:
+    current_record = _current_record(run_id=_RUN_B)
+    with pytest.raises(ValueError, match="latest_record.qualification_run_id must match"):
+        QualificationValidityInterpretation(
+            qualification_run_id=_RUN_A,
+            validity=QualificationEvidenceValidity.STALE,
+            latest_record=current_record,
+        )
+
+    with pytest.raises(ValueError, match="latest_record.validity must match validity"):
+        QualificationValidityInterpretation(
+            qualification_run_id=_RUN_A,
+            validity=QualificationEvidenceValidity.STALE,
+            latest_record=_current_record(run_id=_RUN_A),
+        )
 
 
 def test_current_does_not_require_requalification() -> None:
