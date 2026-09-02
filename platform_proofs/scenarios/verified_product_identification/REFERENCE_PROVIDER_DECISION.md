@@ -18,7 +18,7 @@
 
 **PgVector** remains a **supported alternative** for deployments that accept dense-only vector search and platform gaps at 3.77M scale (see below). It is **not** the canonical VPI reproduction path.
 
-**Embedding model/provider:** not selected in this task (dimension deferred).
+**Embedding model/provider:** selected in VPI-IMPLEMENTATION-4 — see [`EMBEDDING_PROVIDER_DECISION.md`](EMBEDDING_PROVIDER_DECISION.md) (`hf` + `BAAI/bge-m3` @ 1024, swappable via `VPI_EMBEDDING_*`).
 
 ---
 
@@ -180,7 +180,7 @@ Alternatives are valid only when they implement the same **port contracts**. Do 
 | --- | --- | --- |
 | VPI PostgreSQL schema / indexes / bootstrap | Scenario (next task) | Blocks ingest |
 | VPI Qdrant collection bootstrap + adapters | Scenario (next task) | Blocks retrieval |
-| Embedding provider + dimension | Later task | Qdrant collection size fixed at bootstrap |
+| Embedding provider + dimension | **Resolved (config)** — bootstrap enforcement next | Qdrant collection size fixed at bootstrap |
 | Qdrant lexical at 3.77M without sparse | Bootstrap config | Enable `INTERGRAX_RAG_QDRANT_SPARSE=true` for durable lexical; in-process BM25 alone is not cold-start durable |
 | PgVector HNSW/IVFFlat, bulk ingest, lexical | Platform | Blocks PgVector-as-reference at full scale |
 | Qdrant no live-qual gate at million scale | Platform / benchmark | Correctness proven at unit level; scale is architectural fit, not yet benchmarked |
@@ -191,14 +191,17 @@ Alternatives are valid only when they implement the same **port contracts**. Do 
 
 ## Decision for next task
 
-**VPI-IMPLEMENTATION-4 (or next numbered bootstrap task): Reusable Storage Bootstrap & Ingest**
+**VPI-IMPLEMENTATION-5: Reusable Storage Bootstrap & Ingest**
 
 Deliver:
 
 - scenario-owned PostgreSQL schema + bootstrap (source truth, exact/structured),
 - scenario-owned Qdrant collection bootstrap (lexical + dense derived representations),
 - ingest pipeline wiring from `DerivedOfferSearchRepresentation`,
+- embedding dimension validation against `VPI_EMBEDDING_*` configuration,
 - validation gate (counts, checksum, READY),
 - reference adapters behind existing ports.
 
-Do **not** start: fusion, verification, proof evaluator, or embedding model selection (unless unblocked explicitly).
+Embedding reference configuration: [`EMBEDDING_PROVIDER_DECISION.md`](EMBEDDING_PROVIDER_DECISION.md).
+
+Do **not** start: fusion, verification, proof evaluator, or full-corpus embedding generation.
