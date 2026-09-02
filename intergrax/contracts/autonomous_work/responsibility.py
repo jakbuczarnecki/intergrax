@@ -47,11 +47,19 @@ class Responsibility:
     def __post_init__(self) -> None:
         validate_responsibility_id(self.responsibility_id)
         validate_worker_instance_id(self.worker_instance_id)
-        require_non_empty_text(self.objective, label="objective")
+        object.__setattr__(
+            self,
+            "objective",
+            require_non_empty_text(self.objective, label="objective"),
+        )
         validate_responsibility_scope_ref(self.scope_ref)
         if type(self.status) is not ResponsibilityStatus:
             raise TypeError("status must be ResponsibilityStatus")
-        require_aware_utc(self.assigned_at, label="assigned_at")
+        object.__setattr__(
+            self,
+            "assigned_at",
+            require_aware_utc(self.assigned_at, label="assigned_at"),
+        )
         if type(self.revision) is not Revision:
             raise TypeError("revision must be Revision")
         validate_revision(self.revision)

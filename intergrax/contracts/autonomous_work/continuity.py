@@ -48,7 +48,11 @@ class ProgressCheckpoint:
     summary_ref: ProgressCheckpointRef | None = None
 
     def __post_init__(self) -> None:
-        require_aware_utc(self.checkpointed_at, label="checkpointed_at")
+        object.__setattr__(
+            self,
+            "checkpointed_at",
+            require_aware_utc(self.checkpointed_at, label="checkpointed_at"),
+        )
         if self.summary_ref is not None:
             validate_progress_checkpoint_ref(self.summary_ref)
 
@@ -124,25 +128,25 @@ class WorkContinuityState:
             "context_anchor_refs",
             freeze_tuple(self.context_anchor_refs, label="context_anchor_refs"),
         )
-        for index, responsibility_id in enumerate(self.responsibility_refs):
+        for responsibility_id in self.responsibility_refs:
             validate_responsibility_id(responsibility_id)
-        for index, goal_id in enumerate(self.active_goal_refs):
+        for goal_id in self.active_goal_refs:
             validate_worker_goal_id(goal_id)
-        for index, work_ref in enumerate(self.open_work_refs):
+        for work_ref in self.open_work_refs:
             validate_work_reference(work_ref)
-        for index, work_ref in enumerate(self.blocked_work_refs):
+        for work_ref in self.blocked_work_refs:
             validate_work_reference(work_ref)
-        for index, external_ref in enumerate(self.pending_external_refs):
+        for external_ref in self.pending_external_refs:
             validate_external_dependency_reference(external_ref)
-        for index, human_ref in enumerate(self.pending_human_refs):
+        for human_ref in self.pending_human_refs:
             validate_human_pending_reference(human_ref)
-        for index, decision_id in enumerate(self.recent_decision_refs):
+        for decision_id in self.recent_decision_refs:
             validate_decision_id(decision_id)
-        for index, artifact_ref in enumerate(self.relevant_artifact_refs):
+        for artifact_ref in self.relevant_artifact_refs:
             validate_artifact_reference(artifact_ref)
-        for index, problem_ref in enumerate(self.unresolved_problem_refs):
+        for problem_ref in self.unresolved_problem_refs:
             validate_problem_reference(problem_ref)
-        for index, anchor_ref in enumerate(self.context_anchor_refs):
+        for anchor_ref in self.context_anchor_refs:
             validate_context_anchor_reference(anchor_ref)
         if self.last_progress_checkpoint is not None:
             if type(self.last_progress_checkpoint) is not ProgressCheckpoint:

@@ -14,10 +14,11 @@ _T = TypeVar("_T")
 def require_non_empty_text(value: object, *, label: str) -> str:
     if type(value) is not str:
         raise TypeError(f"{label} must be str, got {type(value).__name__}")
-    normalized = value.strip()
-    if not normalized:
+    if value != value.strip():
+        raise ValueError(f"{label} must not have surrounding whitespace")
+    if not value:
         raise ValueError(f"{label} must be non-empty")
-    return normalized
+    return value
 
 
 def require_opaque_ref(value: object, *, label: str) -> str:

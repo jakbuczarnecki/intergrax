@@ -5,7 +5,8 @@
 from __future__ import annotations
 
 from dataclasses import fields
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from typing import Protocol
 
 import pytest
 
@@ -64,9 +65,17 @@ from intergrax.contracts.autonomous_work.references import (
     WorkspaceContextRef,
     WorkspaceScopeRef,
 )
+from intergrax.contracts.autonomous_work._validation import (
+    require_non_empty_text,
+    require_opaque_ref,
+)
 from intergrax.contracts.decision_identity import mint_decision_id
 
 _UTC = timezone.utc
+
+
+class _TextValidator(Protocol):
+    def __call__(self, value: object, *, label: str) -> str: ...
 
 
 def _profile_refs() -> dict[str, object]:
@@ -392,3 +401,114 @@ def test_public_contracts_avoid_dict_and_any() -> None:
             hint_name = getattr(field.type, "__name__", str(field.type))
             assert hint_name != "Any"
             assert "dict[" not in str(field.type)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("value", "helper"),
+    [
+        ("display", require_non_empty_text),
+        ("ref/value", require_opaque_ref),
+    ],
+)
+def test_canonical_text_and_opaque_ref_accept_canonical_values(
+    value: str,
+    helper: _TextValidator,
+) -> None:
+    assert helper(value, label="field") == value
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("value", "helper"),
+    [
+        (" display ", require_non_empty_text),
+        (" ref/value ", require_opaque_ref),
+    ],
+)
+def test_canonical_text_and_opaque_ref_reject_surrounding_whitespace(
+    value: str,
+    helper: _TextValidator,
+) -> None:
+    with pytest.raises(ValueError, match="surrounding whitespace"):
+        helper(value, label="field")
+
+
+@pytest.mark.unit
+def test_worker_definition_rejects_display_name_surrounding_whitespace() -> None:
+    with pytest.raises(ValueError, match="display_name"):
+        _worker_definition(display_name=" display ")
+
+
+@pytest.mark.unit
+def test_worker_definition_rejects_opaque_ref_surrounding_whitespace() -> None:
+    with pytest.raises(ValueError, match="GovernanceProfileRef"):
+        _worker_definition(governance_profile_ref=GovernanceProfileRef(" ref/value "))
+
+
+@pytest.mark.unit
+def test_worker_instance_preserves_utc_timestamp() -> None:
+    now = datetime(2026, 9, 2, 12, 0, tzinfo=_UTC)
+    instance = _worker_instance(created_at=now, updated_at=now)
+    assert instance.created_at == now
+    assert instance.created_at.tzinfo is _UTC
+    assert instance.updated_at == now
+    assert instance.updated_at.tzinfo is _UTC
+
+
+@pytest.mark.unit
+def test_worker_instance_normalizes_non_utc_timestamp_to_utc() -> None:
+    warsaw = timezone(timedelta(hours=2))
+    local_created = datetime(2026, 9, 2, 14, 0, tzinfo=warsaw)
+    local_updated = datetime(2026, 9, 2, 15, 0, tzinfo=warsaw)
+    instance = _worker_instance(created_at=local_created, updated_at=local_updated)
+    assert instance.created_at == local_created.astimezone(_UTC)
+    assert instance.updated_at == local_updated.astimezone(_UTC)
+    assert instance.created_at.tzinfo is _UTC
+    assert instance.updated_at.tzinfo is _UTC
+
+
+@pytest.mark.unit
+def test_responsibility_normalizes_assigned_at_to_utc() -> None:
+    warsaw = timezone(timedelta(hours=2))
+    assigned_at = datetime(2026, 9, 2, 14, 0, tzinfo=warsaw)
+    responsibility = _responsibility(assigned_at=assigned_at)
+    assert responsibility.assigned_at == assigned_at.astimezone(_UTC)
+    assert responsibility.assigned_at.tzinfo is _UTC
+
+
+@pytest.mark.unit
+def test_progress_checkpoint_normalizes_checkpointed_at_to_utc() -> None:
+    warsaw = timezone(timedelta(hours=2))
+    checkpointed_at = datetime(2026, 9, 2, 14, 30, tzinfo=warsaw)
+    checkpoint = ProgressCheckpoint(checkpointed_at=checkpointed_at)
+    assert checkpoint.checkpointed_at == checkpointed_at.astimezone(_UTC)
+    assert checkpoint.checkpointed_at.tzinfo is _UTC
+
+
+@pytest.mark.unit
+def test_worker_instance_rejects_updated_at_before_created_at() -> None:
+    created = datetime(2026, 9, 2, 12, 0, tzinfo=_UTC)
+    updated = datetime(2026, 9, 2, 11, 0, tzinfo=_UTC)
+    with pytest.raises(ValueError, match="updated_at must be >= created_at"):
+        _worker_instance(created_at=created, updated_at=updated)
+
+
+@pytest.mark.unit
+def test_core_contracts_remain_immutable_after_canonicalization() -> None:
+    warsaw = timezone(timedelta(hours=2))
+    created = datetime(2026, 9, 2, 12, 0, tzinfo=warsaw)
+    updated = datetime(2026, 9, 2, 13, 0, tzinfo=warsaw)
+    instance = _worker_instance(created_at=created, updated_at=updated)
+    responsibility = _responsibility(
+        assigned_at=datetime(2026, 9, 2, 14, 0, tzinfo=warsaw)
+    )
+    checkpoint = ProgressCheckpoint(
+        checkpointed_at=datetime(2026, 9, 2, 14, 30, tzinfo=warsaw)
+    )
+    with pytest.raises(AttributeError):
+        instance.created_at = datetime(2026, 9, 3, tzinfo=_UTC)  # type: ignore[misc]
+    with pytest.raises(AttributeError):
+        responsibility.assigned_at = datetime(2026, 9, 3, tzinfo=_UTC)  # type: ignore[misc]
+    with pytest.raises(AttributeError):
+        checkpoint.checkpointed_at = datetime(2026, 9, 3, tzinfo=_UTC)  # type: ignore[misc]

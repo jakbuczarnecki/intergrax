@@ -91,8 +91,16 @@ class WorkerDefinition:
 
     def __post_init__(self) -> None:
         validate_worker_definition_id(self.worker_definition_id)
-        require_non_empty_text(self.display_name, label="display_name")
-        require_non_empty_text(self.role, label="role")
+        object.__setattr__(
+            self,
+            "display_name",
+            require_non_empty_text(self.display_name, label="display_name"),
+        )
+        object.__setattr__(
+            self,
+            "role",
+            require_non_empty_text(self.role, label="role"),
+        )
         if type(self.revision) is not DefinitionRevision:
             raise TypeError("revision must be DefinitionRevision")
         validate_definition_revision(self.revision)
@@ -104,7 +112,7 @@ class WorkerDefinition:
                 label="responsibility_template_refs",
             ),
         )
-        for index, template_ref in enumerate(self.responsibility_template_refs):
+        for template_ref in self.responsibility_template_refs:
             validate_responsibility_template_ref(template_ref)
         validate_default_goal_policy_ref(self.default_goal_policy_ref)
         validate_principal_binding_policy_ref(self.principal_binding_policy_ref)
@@ -159,12 +167,16 @@ class WorkerInstance:
             "active_goal_refs",
             freeze_tuple(self.active_goal_refs, label="active_goal_refs"),
         )
-        for index, responsibility_id in enumerate(self.active_responsibility_refs):
+        for responsibility_id in self.active_responsibility_refs:
             validate_responsibility_id(responsibility_id)
-        for index, goal_id in enumerate(self.active_goal_refs):
+        for goal_id in self.active_goal_refs:
             validate_worker_goal_id(goal_id)
-        require_aware_utc(self.created_at, label="created_at")
-        require_aware_utc(self.updated_at, label="updated_at")
+        created_at = require_aware_utc(self.created_at, label="created_at")
+        updated_at = require_aware_utc(self.updated_at, label="updated_at")
+        if updated_at < created_at:
+            raise ValueError("updated_at must be >= created_at")
+        object.__setattr__(self, "created_at", created_at)
+        object.__setattr__(self, "updated_at", updated_at)
         if type(self.revision) is not Revision:
             raise TypeError("revision must be Revision")
         validate_revision(self.revision)

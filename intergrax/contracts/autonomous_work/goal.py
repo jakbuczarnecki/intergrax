@@ -63,7 +63,11 @@ class WorkerGoal:
     def __post_init__(self) -> None:
         validate_worker_goal_id(self.goal_id)
         validate_responsibility_id(self.responsibility_id)
-        require_non_empty_text(self.objective, label="objective")
+        object.__setattr__(
+            self,
+            "objective",
+            require_non_empty_text(self.objective, label="objective"),
+        )
         validate_success_criteria_ref(self.success_criteria)
         object.__setattr__(
             self,
@@ -75,9 +79,9 @@ class WorkerGoal:
             "sla_slo_refs",
             freeze_tuple(self.sla_slo_refs, label="sla_slo_refs"),
         )
-        for index, metric_ref in enumerate(self.metric_refs):
+        for metric_ref in self.metric_refs:
             validate_metric_ref(metric_ref)
-        for index, sla_ref in enumerate(self.sla_slo_refs):
+        for sla_ref in self.sla_slo_refs:
             validate_sla_slo_ref(sla_ref)
         validate_deadline_or_cadence_ref(self.deadline_or_cadence)
         require_non_negative_int(self.priority, label="priority")
