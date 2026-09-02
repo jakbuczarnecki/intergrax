@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Autonomous Work core semantic contracts (AW-1A)."""
+"""Autonomous Work core semantic contracts (AW-1A/AW-1B)."""
 
 from __future__ import annotations
 
@@ -28,23 +28,29 @@ from intergrax.contracts.autonomous_work.lifecycle import (
     CANONICAL_WORKER_LIFECYCLE_STATES,
     WorkerLifecycleState,
 )
-from intergrax.contracts.autonomous_work.references import (
-    ArtifactReference,
+from intergrax.contracts.autonomous_work.profile_reference import (
     BudgetProfileRef,
     CapabilityProfileRef,
     CodecraftProfileRef,
     CollaborationProfileRef,
+    EscalationPolicyRef,
+    GovernanceProfileRef,
+    MemoryProfileRef,
+    ObservabilityProfileRef,
+    ProfileVersion,
+    RiskProfileRef,
+    ScheduleProfileRef,
+    initial_profile_version,
+)
+from intergrax.contracts.autonomous_work.references import (
+    ArtifactReference,
     ContextAnchorReference,
     DeadlineOrCadenceRef,
     DefaultGoalPolicyRef,
-    EscalationPolicyRef,
     EvaluationCadenceRef,
     ExternalDependencyReference,
-    GovernanceProfileRef,
     HumanPendingReference,
-    MemoryProfileRef,
     MetricRef,
-    ObservabilityProfileRef,
     PrincipalBindingPolicyRef,
     PrincipalBindingRef,
     ProblemReference,
@@ -52,8 +58,6 @@ from intergrax.contracts.autonomous_work.references import (
     ProgressProjectionRef,
     ResponsibilityScopeRef,
     ResponsibilityTemplateRef,
-    RiskProfileRef,
-    ScheduleProfileRef,
     SlaSloRef,
     SuccessCriteriaRef,
     WorkReference,
@@ -93,6 +97,7 @@ __all__ = (
     "ObservabilityProfileRef",
     "PrincipalBindingPolicyRef",
     "PrincipalBindingRef",
+    "ProfileVersion",
     "ProblemReference",
     "ProgressCheckpoint",
     "ProgressCheckpointRef",
@@ -120,6 +125,7 @@ __all__ = (
     "WorkspaceContextRef",
     "WorkspaceScopeRef",
     "initial_definition_revision",
+    "initial_profile_version",
     "initial_revision",
     "mint_responsibility_id",
     "mint_worker_definition_id",

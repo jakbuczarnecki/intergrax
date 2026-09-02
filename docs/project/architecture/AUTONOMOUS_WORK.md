@@ -310,7 +310,7 @@ The key distinction is:
 
 ### WorkerDefinition
 
-Reusable definition of a worker role. References domain-owned profiles (governance, budget, memory, capability, CodeCraft, risk, schedule, escalation, collaboration, observability) rather than embedding duplicate configuration.
+Reusable definition of a worker role. References domain-owned profiles (governance, budget, memory, capability, CodeCraft, risk, schedule, escalation, collaboration, observability) rather than embedding duplicate configuration. Profile references identify logical, versioned domain-owned configuration; concrete provider/plugin resolution remains outside Autonomous Work.
 
 See [extended depth — Detailed domain model](satellites/AUTONOMOUS_WORK_extended_depth.md#detailed-domain-model) for full entity relationships, profile references and version/revision semantics.
 

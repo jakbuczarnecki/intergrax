@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Typed opaque references for Autonomous Work composition and continuity (AW-1A)."""
+"""Typed opaque references for Autonomous Work composition and continuity (AW-1A/AW-1B)."""
 
 from __future__ import annotations
 
@@ -13,16 +13,6 @@ ResponsibilityTemplateRef = NewType("ResponsibilityTemplateRef", str)
 DefaultGoalPolicyRef = NewType("DefaultGoalPolicyRef", str)
 PrincipalBindingPolicyRef = NewType("PrincipalBindingPolicyRef", str)
 WorkspaceScopeRef = NewType("WorkspaceScopeRef", str)
-GovernanceProfileRef = NewType("GovernanceProfileRef", str)
-BudgetProfileRef = NewType("BudgetProfileRef", str)
-MemoryProfileRef = NewType("MemoryProfileRef", str)
-CapabilityProfileRef = NewType("CapabilityProfileRef", str)
-CodecraftProfileRef = NewType("CodecraftProfileRef", str)
-RiskProfileRef = NewType("RiskProfileRef", str)
-ScheduleProfileRef = NewType("ScheduleProfileRef", str)
-EscalationPolicyRef = NewType("EscalationPolicyRef", str)
-CollaborationProfileRef = NewType("CollaborationProfileRef", str)
-ObservabilityProfileRef = NewType("ObservabilityProfileRef", str)
 
 PrincipalBindingRef = NewType("PrincipalBindingRef", str)
 WorkspaceContextRef = NewType("WorkspaceContextRef", str)
@@ -70,36 +60,6 @@ validate_principal_binding_policy_ref = _make_ref_validator(
 )
 validate_workspace_scope_ref = _make_ref_validator(
     "WorkspaceScopeRef", WorkspaceScopeRef
-)
-validate_governance_profile_ref = _make_ref_validator(
-    "GovernanceProfileRef",
-    GovernanceProfileRef,
-)
-validate_budget_profile_ref = _make_ref_validator("BudgetProfileRef", BudgetProfileRef)
-validate_memory_profile_ref = _make_ref_validator("MemoryProfileRef", MemoryProfileRef)
-validate_capability_profile_ref = _make_ref_validator(
-    "CapabilityProfileRef",
-    CapabilityProfileRef,
-)
-validate_codecraft_profile_ref = _make_ref_validator(
-    "CodecraftProfileRef",
-    CodecraftProfileRef,
-)
-validate_risk_profile_ref = _make_ref_validator("RiskProfileRef", RiskProfileRef)
-validate_schedule_profile_ref = _make_ref_validator(
-    "ScheduleProfileRef", ScheduleProfileRef
-)
-validate_escalation_policy_ref = _make_ref_validator(
-    "EscalationPolicyRef",
-    EscalationPolicyRef,
-)
-validate_collaboration_profile_ref = _make_ref_validator(
-    "CollaborationProfileRef",
-    CollaborationProfileRef,
-)
-validate_observability_profile_ref = _make_ref_validator(
-    "ObservabilityProfileRef",
-    ObservabilityProfileRef,
 )
 validate_principal_binding_ref = _make_ref_validator(
     "PrincipalBindingRef",

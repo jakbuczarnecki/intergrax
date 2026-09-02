@@ -24,6 +24,7 @@ from intergrax.contracts.autonomous_work import (
     WorkerInstance,
     WorkerLifecycleState,
     initial_definition_revision,
+    initial_profile_version,
     initial_revision,
     mint_responsibility_id,
     mint_worker_definition_id,
@@ -34,34 +35,36 @@ from intergrax.contracts.autonomous_work import (
     validate_worker_goal_id,
     validate_worker_instance_id,
 )
-from intergrax.contracts.autonomous_work.references import (
-    ArtifactReference,
+from intergrax.contracts.autonomous_work.profile_reference import (
     BudgetProfileRef,
-    ContextAnchorReference,
-    ExternalDependencyReference,
-    HumanPendingReference,
-    ProblemReference,
-    WorkReference,
     CapabilityProfileRef,
     CodecraftProfileRef,
     CollaborationProfileRef,
-    DeadlineOrCadenceRef,
-    DefaultGoalPolicyRef,
     EscalationPolicyRef,
-    EvaluationCadenceRef,
     GovernanceProfileRef,
     MemoryProfileRef,
-    MetricRef,
     ObservabilityProfileRef,
+    RiskProfileRef,
+    ScheduleProfileRef,
+)
+from intergrax.contracts.autonomous_work.references import (
+    ArtifactReference,
+    ContextAnchorReference,
+    DeadlineOrCadenceRef,
+    DefaultGoalPolicyRef,
+    EvaluationCadenceRef,
+    ExternalDependencyReference,
+    HumanPendingReference,
+    MetricRef,
     PrincipalBindingPolicyRef,
     PrincipalBindingRef,
+    ProblemReference,
     ProgressProjectionRef,
     ResponsibilityScopeRef,
     ResponsibilityTemplateRef,
-    RiskProfileRef,
-    ScheduleProfileRef,
     SlaSloRef,
     SuccessCriteriaRef,
+    WorkReference,
     WorkspaceContextRef,
     WorkspaceScopeRef,
 )
@@ -79,22 +82,53 @@ class _TextValidator(Protocol):
 
 
 def _profile_refs() -> dict[str, object]:
+    version = initial_profile_version()
     return {
         "default_goal_policy_ref": DefaultGoalPolicyRef("goal-policy/default"),
         "principal_binding_policy_ref": PrincipalBindingPolicyRef(
             "binding-policy/default"
         ),
         "workspace_scope_ref": WorkspaceScopeRef("workspace-scope/default"),
-        "governance_profile_ref": GovernanceProfileRef("governance/default"),
-        "budget_profile_ref": BudgetProfileRef("budget/default"),
-        "memory_profile_ref": MemoryProfileRef("memory/default"),
-        "capability_profile_ref": CapabilityProfileRef("capability/default"),
-        "codecraft_profile_ref": CodecraftProfileRef("codecraft/default"),
-        "risk_profile_ref": RiskProfileRef("risk/default"),
-        "schedule_profile_ref": ScheduleProfileRef("schedule/default"),
-        "escalation_policy_ref": EscalationPolicyRef("escalation/default"),
-        "collaboration_profile_ref": CollaborationProfileRef("collaboration/default"),
-        "observability_profile_ref": ObservabilityProfileRef("observability/default"),
+        "governance_profile_ref": GovernanceProfileRef(
+            profile_id="governance/default",
+            version=version,
+        ),
+        "budget_profile_ref": BudgetProfileRef(
+            profile_id="budget/default",
+            version=version,
+        ),
+        "memory_profile_ref": MemoryProfileRef(
+            profile_id="memory/default",
+            version=version,
+        ),
+        "capability_profile_ref": CapabilityProfileRef(
+            profile_id="capability/default",
+            version=version,
+        ),
+        "codecraft_profile_ref": CodecraftProfileRef(
+            profile_id="codecraft/default",
+            version=version,
+        ),
+        "risk_profile_ref": RiskProfileRef(
+            profile_id="risk/default",
+            version=version,
+        ),
+        "schedule_profile_ref": ScheduleProfileRef(
+            profile_id="schedule/default",
+            version=version,
+        ),
+        "escalation_policy_ref": EscalationPolicyRef(
+            profile_id="escalation/default",
+            version=version,
+        ),
+        "collaboration_profile_ref": CollaborationProfileRef(
+            profile_id="collaboration/default",
+            version=version,
+        ),
+        "observability_profile_ref": ObservabilityProfileRef(
+            profile_id="observability/default",
+            version=version,
+        ),
     }
 
 
@@ -239,8 +273,13 @@ def test_worker_definition_rejects_invalid_required_fields() -> None:
         _worker_definition(display_name="  ")
     with pytest.raises(ValueError, match="role"):
         _worker_definition(role="")
-    with pytest.raises(ValueError, match="GovernanceProfileRef"):
-        _worker_definition(governance_profile_ref=GovernanceProfileRef("  "))
+    with pytest.raises(ValueError, match="profile_id"):
+        _worker_definition(
+            governance_profile_ref=GovernanceProfileRef(
+                profile_id="  ",
+                version=initial_profile_version(),
+            )
+        )
 
 
 @pytest.mark.unit
@@ -442,8 +481,13 @@ def test_worker_definition_rejects_display_name_surrounding_whitespace() -> None
 
 @pytest.mark.unit
 def test_worker_definition_rejects_opaque_ref_surrounding_whitespace() -> None:
-    with pytest.raises(ValueError, match="GovernanceProfileRef"):
-        _worker_definition(governance_profile_ref=GovernanceProfileRef(" ref/value "))
+    with pytest.raises(ValueError, match="profile_id"):
+        _worker_definition(
+            governance_profile_ref=GovernanceProfileRef(
+                profile_id=" ref/value ",
+                version=initial_profile_version(),
+            )
+        )
 
 
 @pytest.mark.unit

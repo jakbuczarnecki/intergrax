@@ -50,7 +50,7 @@ Delivery rule:
 | Wave | Purpose | Current status |
 |---|---|---|
 | AW-0 | Canonical architecture, ADR, documentation registration | **CLOSED / FROZEN** — AW-0G independently accepted |
-| AW-1 | Core semantic contracts | NOT STARTED |
+| AW-1 | Core semantic contracts | **DONE** |
 | AW-2 | Durable worker state and lifecycle | NOT STARTED |
 | AW-3 | Principal / authority / workspace composition | NOT STARTED |
 | AW-4 | Work intake and proactive goal evaluation | NOT STARTED |
@@ -87,7 +87,7 @@ Delivery rule:
 |---|---|
 | **ID** | AW-1A |
 | **Priority** | P0 |
-| **Status** | NOT STARTED |
+| **Status** | **DONE** |
 | **Purpose** | Freeze minimum Tier-0 Autonomous Work contracts |
 | **Dependencies** | AW-0G accepted |
 | **Exact scope** | `WorkerDefinition`, `WorkerInstance`, `Responsibility`, `WorkerGoal`, worker lifecycle state contract, stable IDs/version/revision semantics, **conceptual `WorkContinuityState` contract and reference fields** |
@@ -103,10 +103,10 @@ Delivery rule:
 |---|---|
 | **ID** | AW-1B |
 | **Priority** | P0 |
-| **Status** | NOT STARTED |
+| **Status** | **DONE** |
 | **Purpose** | Freeze worker profile-reference composition |
 | **Exact scope** | typed refs for governance, budget, memory, capability, codecraft, risk, schedule, escalation, collaboration, observability profiles |
-| **Acceptance** | no embedded duplicate policy/memory/sandbox authority configuration; references are explicit/versionable |
+| **Acceptance** | no embedded duplicate policy/memory/sandbox authority configuration; references are explicit/versionable, strongly typed, immutable, and carry no implementation/provider identity |
 | **Next step** | AW-2A |
 
 ---
