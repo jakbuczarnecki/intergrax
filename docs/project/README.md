@@ -17,6 +17,8 @@ what you want to understand, try, inspect, build, or review.
   [Build With Intergrax](builders/BUILD_WITH_INTERGRAX.md).
 - **Review architecture** - [Architecture Overview](architecture/ARCHITECTURE_OVERVIEW.md)
   gives the project-level architecture route.
+- **Review cross-domain architecture evolution** - [Harness Architecture Evolution Roadmap](overview/HARNESS_ARCHITECTURE_EVOLUTION_ROADMAP.md)
+  defines the canonical implementation sequence, cross-domain invariants, migration gates, and proof requirements for the next architecture stage.
 
 ## Choose your path
 
@@ -27,9 +29,10 @@ what you want to understand, try, inspect, build, or review.
   then continue to [Build With Intergrax](builders/BUILD_WITH_INTERGRAX.md).
 - **Evaluator** - use the [Evaluation Guide](builders/EVALUATION_GUIDE.md) as the
   separate bounded evaluation route.
-- **Architect** - read the [Architecture Overview](architecture/ARCHITECTURE_OVERVIEW.md);
-  continue to the [Technical Documentation Map](technical/DOCUMENTATION_MAP.md) for
-  deep engineering material.
+- **Architect** - read the [Architecture Overview](architecture/ARCHITECTURE_OVERVIEW.md),
+  then use the [Harness Architecture Evolution Roadmap](overview/HARNESS_ARCHITECTURE_EVOLUTION_ROADMAP.md)
+  for cross-domain sequencing; continue to the [Technical Documentation Map](technical/DOCUMENTATION_MAP.md)
+  for deep engineering material.
 - **Deep technical reviewer** - go directly to the
   [Technical Documentation Map](technical/DOCUMENTATION_MAP.md).
 - **Maintainer** - use [Maintainer Documentation](maintainers/public-adoption/README.md);
@@ -56,6 +59,7 @@ Integration documentation index:
 | [Root README](../../README.md) | First contact, Platform Map, maturity snapshot |
 | [Public Documentation Map](community/PUBLIC_DOCUMENTATION_MAP.md) | Intent routing by what you want to do |
 | [Architecture Overview](architecture/ARCHITECTURE_OVERVIEW.md) | Project-level architecture mental model |
+| [Harness Architecture Evolution Roadmap](overview/HARNESS_ARCHITECTURE_EVOLUTION_ROADMAP.md) | Cross-domain architecture migration, sequencing, invariants, and proof gates |
 | [Technical Documentation Map](technical/DOCUMENTATION_MAP.md) | Engineering routing, domain pairs, guides |
 | [Intergrax Proofs](proofs/PROOFS.md) | Bounded evidence and proof status |
 | [Maintainer Documentation](maintainers/public-adoption/README.md) | Maintainer controls - not a normal reader route |
@@ -70,7 +74,7 @@ remain incomplete. Detailed evidence and claim boundaries belong in
 
 ## Browse by documentation area
 
-- `overview/` - project context, use cases, FAQ, roadmap, positioning, and strategic product concepts (e.g. Agent Marketplace). LKW product docs live under `applications/local_workspace_application/docs/product/`.
+- `overview/` - project context, use cases, FAQ, roadmaps, positioning, and strategic product concepts (e.g. Agent Marketplace). LKW product docs live under `applications/local_workspace_application/docs/product/`.
 - `builders/` - build and evaluation routes.
 - `architecture/` - project architecture canon.
 - `proofs/` - bounded evidence and proof status.
