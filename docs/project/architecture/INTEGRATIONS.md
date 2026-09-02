@@ -160,21 +160,26 @@ flowchart TB
     TL --> INT
 ```
 
-### Registry v2 (metadata path)
+### Contract registry projection (INTEGRATIONS-3A · canonicalized)
 
-**`IntegrationRegistry` v2** (`intergrax/runtime/integrations/registry_v2.py`, INTEGRATIONS-3A) registers typed **`(provider_id, category)`** metadata - contract class, integration class, factory reference, capabilities, security posture - for validation and inspection.
+**`IntegrationRegistry` projection** (`intergrax/runtime/integrations/registry_v2.py`) is a **derived read model** over the canonical catalog. It exposes typed **`(provider_id, category)`** metadata — contract class, integration class, factory reference, capabilities, security posture — for validation and inspection.
 
-> **Registry v2 is not automatically the runtime binding authority.**
+> **Contract projection is not runtime binding authority.**
 
-Runtime construction today remains:
+Runtime construction remains:
 
 ```text
 IntegrationProfile
-  → existing open catalog / factory resolution
+  → catalog.get_entry(slug)
+  → IntegrationEntry.factory
   → Integration instance
 ```
 
-**INTEGRATIONS-3B** (explicit registry-backed runtime binding) is **planned** - not shipped. Do not assume `registry_v2` replaces `IntegrationProfile` + catalog factories until 3B lands.
+Canonical registration stores optional `IntegrationContractSpec` rows on each `IntegrationEntry`. Built-in providers capture specs once at `register_from_manifest`; external plugins may pass explicit `contract_specs` to `register_integration_plugin()`.
+
+**INTEGRATIONS-3B** (explicit registry-backed runtime binding) is **planned** — not shipped. Do not assume `registry_v2` replaces `IntegrationProfile` + catalog factories until 3B lands.
+
+See [`INTEGRATION_REGISTRY_CANONICAL_AUTHORITY.md`](../maintainers/architecture/INTEGRATION_REGISTRY_CANONICAL_AUTHORITY.md).
 
 ## Responsibility boundaries
 
@@ -571,7 +576,7 @@ Canonical layout under `intergrax/integrations/providers/<category>/<slug>`:
 | `integration.py` | **Hand-edited only** - concrete contract-based integration class, provider config, transport protocol, `provider_id`, supported signals/capabilities. No registry, manifest, bootstrap, or SDK imports unless isolated and optional. |
 | `bundle.py` | **Factory facade** - exports legacy catalog factory and contract-based factory (`create_<slug>_integration`). May import `integration.py` types only to construct factories. No registry or network I/O. |
 | `manifest.py` | **Metadata only** - slug, categories, status, `env_prefix`, description. No provider logic or client creation. |
-| `register.py` | **Registry hook** - catalog registration via legacy factory; registry v2 metadata is built separately (INTEGRATIONS-3A) and does not replace this hook. |
+| `register.py` | **Registry hook** - canonical catalog registration via `register_from_manifest`; contract specs captured on the catalog entry at registration time. |
 | `__init__.py` | **Lazy public API** - factories and optional public integration types via `__getattr__`; no heavy imports or SDK loads. |
 | `USAGE.md` | Operator docs - legacy facade vs contract-based integration, opt-in and transport requirements. |
 
@@ -603,28 +608,30 @@ legacy factory
 
 **Provider inline cutover (all categories):** after category contract migration, each `<category>/<slug>/integration.py` **owns** category catalog behavior. Public Integration classes must not hide catch-all runtime delegates behind `_backend`/`_runtime`, `__pydantic_private__`, or `__getattr__` runtime fallback. Historical factory names may remain as compatibility shims, but they must construct the Integration through typed clients/transports/bridges (`from_client()`, `from_store()`), not parallel private backend facades. Regression: `test_observability_legacy_delegation_removed.py` (observability) and `test_provider_legacy_delegation_removed.py` (remaining categories). **Deferred:** nine `llm_guardrail` slugs (shared bundles layout). Vector store integrations may use a typed `_inner: VectorStore | None` bridge via `from_store()` when wrapping existing RAG store implementations. This is an intentional category bridge, not a legacy runtime delegate, provided `_inner` is typed as `VectorStore`, no `__getattr__` fallback exists, no `_require_runtime()` exists, and public vector methods are explicit on the Integration class.
 
-#### Contract registry v2 (INTEGRATIONS-3A)
+#### Contract registry projection (INTEGRATIONS-3A · canonical authority)
 
-**Code:** `intergrax/runtime/integrations/registry_v2.py`
+**Code:** `intergrax/runtime/integrations/registry_v2.py` (projection) · `intergrax/integrations/registry/catalog.py` (authority)
 
-Additive, contract-aware metadata registry. **Does not:**
+Derived, contract-aware **read model** over canonical catalog entries. **Does not:**
 
-- replace the existing open catalog,
+- own provider registration (no independent discovery),
 - bootstrap providers globally,
 - resolve runtime bindings for hosts,
 - load secrets,
-- or construct vendor clients at registration time.
+- or construct vendor clients during projection build.
 
 **Does:**
 
-- register **`(provider_id, category)`** identity,
+- project **`(provider_id, category)`** identity from `IntegrationEntry.contract_specs`,
 - validate contract class / integration class / factory metadata,
-- prevent duplicate registrations,
+- prevent duplicate projection rows,
 - reject `default_enabled=true` registrations,
 - expose deterministic list/get inspection,
-- build snapshots via `build_contract_registry()` (**190** rows today - multi-category providers register multiple categories).
+- build immutable snapshots via `build_contract_registry_snapshot()` (alias: `build_contract_registry()`).
 
-**Deferred from registry v2 completeness:** nine `llm_guardrail` slugs until package normalization (INTEGRATIONS-2F).
+Built-in shipped providers populate `contract_specs` once during `register_from_manifest` via `contract_capture` (registration-time only). External plugins pass explicit `contract_specs` when exposing typed platform contracts.
+
+**Deferred from projection completeness:** nine `llm_guardrail` slugs until package normalization (INTEGRATIONS-2F).
 
 **INTEGRATIONS-3B:** explicit integration binding / registry-backed profile resolution - **planned**, not implemented. Runtime remains **`IntegrationProfile` + open catalog factory** path.
 

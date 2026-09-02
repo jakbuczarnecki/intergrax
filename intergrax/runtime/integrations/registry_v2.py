@@ -1,31 +1,33 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Contract-aware integration registry v2 (INTEGRATIONS-3A).
+"""Contract registry projection derived from the canonical integration catalog.
 
-This module is intentionally additive. It models provider/category registrations
-without replacing the existing catalog, bootstrapping providers, resolving runtime
-bindings, loading secrets, or constructing vendor clients.
+``intergrax.integrations.registry.catalog`` is the single authoritative provider
+registration lifecycle. This module exposes an immutable read model for typed
+contract/capability inspection and compatibility validation.
+
+It does **not** replace catalog factories, bootstrap registration, or
+``IntegrationProfile`` runtime resolution.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
-from importlib import import_module
-from types import MappingProxyType, ModuleType
-from typing import Any, TypeAlias, cast
+from types import MappingProxyType
+from typing import TypeAlias, cast
 
-from intergrax.integrations.providers.layout import (
-    SLUG_CATEGORY,
-    categories_for_provider,
-    provider_category_keys,
-    provider_import_path,
-)
-from intergrax.runtime.integrations.categories import (
-    OBSERVABILITY_BACKEND_CATEGORY,
-    OBSERVABILITY_VENDOR_INTEGRATION_KIND,
-    PROVIDER_CATEGORY_CONTRACT_REGISTRY,
+from intergrax.integrations.contracts.base import UnknownIntegrationError
+from intergrax.integrations.providers.layout import SLUG_CATEGORY
+from intergrax.integrations.registry.catalog import catalog_snapshot, get_entry
+from intergrax.integrations.registry.contract_spec import IntegrationContractSpec
+from intergrax.runtime.integrations.categories import PROVIDER_CATEGORY_CONTRACT_REGISTRY
+from intergrax.runtime.integrations.contract_metadata import (
+    IntegrationContractMetadataError,
+    contract_for_category,
+    expected_integration_kind_for_category,
+    normalize_contract_identity as _normalize_contract_identity,
 )
 from intergrax.runtime.integrations.contracts import (
     PlatformIntegrationCapability,
@@ -33,8 +35,6 @@ from intergrax.runtime.integrations.contracts import (
     PlatformIntegrationContract,
     PlatformIntegrationSecurityPosture,
 )
-
-from intergrax.utils import attribute_access
 
 IntegrationCapability: TypeAlias = PlatformIntegrationCapability
 IntegrationSecurityPosture: TypeAlias = PlatformIntegrationSecurityPosture
@@ -57,15 +57,26 @@ DEFERRED_LLM_GUARDRAIL_SLUGS: frozenset[str] = frozenset(
 
 
 class IntegrationRegistryError(ValueError):
-    """Base error for contract registry v2 validation failures."""
+    """Base error for contract projection validation failures."""
+
+
+class IntegrationContractProjectionError(IntegrationRegistryError):
+    """Raised when canonical catalog metadata cannot be projected safely."""
 
 
 class DuplicateIntegrationRegistrationError(IntegrationRegistryError):
-    """Raised when provider_id + category is already registered."""
+    """Raised when provider_id + category is already registered in a projection."""
 
 
 class MissingIntegrationRegistrationError(IntegrationRegistryError):
-    """Raised when provider_id + category cannot be found."""
+    """Raised when provider_id + category cannot be found in a projection."""
+
+
+def _normalize_identity(value: str, field_name: str) -> str:
+    try:
+        return _normalize_contract_identity(value, field_name)
+    except IntegrationContractMetadataError as exc:
+        raise IntegrationRegistryError(str(exc)) from exc
 
 
 @dataclass(frozen=True, repr=False)
@@ -100,7 +111,7 @@ class IntegrationRegistration:
 
         expected_contract = PROVIDER_CATEGORY_CONTRACT_REGISTRY.get(category)
         if expected_contract is None:
-            msg = f"Unknown integration category for registry v2: {category!r}"
+            msg = f"Unknown integration category for contract projection: {category!r}"
             raise IntegrationRegistryError(msg)
         if self.contract_class is not expected_contract:
             msg = (
@@ -131,7 +142,7 @@ class IntegrationRegistration:
             msg = f"{slug}: config_class must derive from PlatformIntegrationConfig"
             raise IntegrationRegistryError(msg)
         if self.default_enabled:
-            msg = f"{slug}: registry v2 registrations must be disabled by default"
+            msg = f"{slug}: contract projection registrations must be disabled by default"
             raise IntegrationRegistryError(msg)
         if not isinstance(self.security_posture, PlatformIntegrationSecurityPosture):
             msg = f"{slug}: security_posture must be PlatformIntegrationSecurityPosture"
@@ -164,7 +175,7 @@ class IntegrationRegistration:
 
 
 class IntegrationRegistry:
-    """Deterministic in-memory registry for contract-aware provider registrations."""
+    """Immutable in-memory projection of canonical contract registrations."""
 
     def __init__(self, registrations: Iterable[IntegrationRegistration] = ()) -> None:
         self._registrations: dict[RegistrationKey, IntegrationRegistration] = {}
@@ -181,7 +192,10 @@ class IntegrationRegistry:
         return registration
 
     def get(self, *, provider_id: str, category: str) -> IntegrationRegistration:
-        key = (_normalize_identity(provider_id, "provider_id"), _normalize_identity(category, "category"))
+        key = (
+            _normalize_identity(provider_id, "provider_id"),
+            _normalize_identity(category, "category"),
+        )
         try:
             return self._registrations[key]
         except KeyError as exc:
@@ -214,7 +228,6 @@ class IntegrationRegistry:
         return key in self._registrations
 
 
-# Backward-compatible functional names for callers/tests that prefer module helpers.
 def register_integration(registry: IntegrationRegistry, registration: IntegrationRegistration) -> IntegrationRegistration:
     return registry.register(registration)
 
@@ -240,6 +253,36 @@ def list_by_provider(registry: IntegrationRegistry, provider_id: str) -> tuple[I
     return registry.list_by_provider(provider_id)
 
 
+def registration_from_contract_spec(*, slug: str, spec: IntegrationContractSpec) -> IntegrationRegistration:
+    """Project one canonical contract spec into an immutable registration row."""
+    normalized_slug = _normalize_identity(slug, "slug")
+    normalized_provider = _normalize_identity(spec.provider_id, "provider_id")
+    if normalized_provider != normalized_slug and spec.metadata.get("allow_provider_slug_alias") is not True:
+        msg = (
+            f"Integration contract identity mismatch for slug {normalized_slug!r}: "
+            f"registered provider_id={normalized_provider!r}"
+        )
+        raise IntegrationContractProjectionError(msg)
+
+    return IntegrationRegistration(
+        provider_id=spec.provider_id,
+        slug=normalized_slug,
+        category=_normalize_identity(spec.category, "category"),
+        integration_kind=spec.integration_kind,
+        contract_class=spec.contract_class,
+        integration_class=spec.integration_class,
+        factory=cast(IntegrationFactory, spec.contract_factory),
+        config_class=spec.config_class,
+        display_name=spec.display_name or spec.provider_id,
+        capabilities=spec.capabilities,
+        security_posture=spec.security_posture or PlatformIntegrationSecurityPosture(),
+        default_enabled=False,
+        supports_health_check=spec.supports_health_check,
+        supports_runtime_binding=spec.supports_runtime_binding,
+        metadata=spec.metadata,
+    )
+
+
 def build_integration_registration(
     slug: str,
     *,
@@ -250,90 +293,102 @@ def build_integration_registration(
     supports_runtime_binding: bool | None = None,
     supports_health_check: bool | None = None,
 ) -> IntegrationRegistration:
-    """Build a registry v2 registration from a provider package without enabling it."""
+    """Build a contract projection row from canonical catalog metadata."""
     normalized_slug = _normalize_identity(slug, "slug")
     try:
-        primary_category = SLUG_CATEGORY[normalized_slug]
-    except KeyError as exc:
-        msg = f"Unknown provider slug for registry v2: {normalized_slug!r}"
-        raise IntegrationRegistryError(msg) from exc
+        entry = get_entry(normalized_slug)
+    except UnknownIntegrationError as exc:
+        msg = f"Integration slug {normalized_slug!r} is not registered in the canonical catalog"
+        raise MissingIntegrationRegistrationError(msg) from exc
 
-    resolved_category = _normalize_identity(category, "category") if category else primary_category
-    allowed = set(categories_for_provider(normalized_slug))
-    if resolved_category not in allowed:
+    if not entry.contract_specs:
         msg = (
-            f"Provider {normalized_slug!r} is not a member of category {resolved_category!r}; "
-            f"allowed={sorted(allowed)!r}"
+            f"Integration slug {normalized_slug!r} has no contract projection metadata; "
+            "register typed contract specs during canonical registration"
         )
-        raise IntegrationRegistryError(msg)
+        raise MissingIntegrationRegistrationError(msg)
 
-    contract_class = contract_for_category(resolved_category)
-    provider_module_path = provider_import_path(normalized_slug, resolved_category)
-    integration_module = import_module(f"{provider_module_path}.integration")
-    bundle_module = import_module(f"{provider_module_path}.bundle")
-    resolved_integration_class = integration_class or _find_integration_class(
-        integration_module,
-        contract_class,
-        normalized_slug,
-    )
-    factory_name = _contract_factory_name(normalized_slug, resolved_category)
-    resolved_factory = factory or cast(IntegrationFactory, attribute_access.optional(bundle_module, factory_name))
-
-    sample = _create_disabled_sample(
-        resolved_factory,
-        slug=normalized_slug,
-        integration_class=resolved_integration_class,
-        contract_class=contract_class,
-    )
-    capabilities = _capability_values(sample.capabilities)
-    if supports_runtime_binding is not None:
-        runtime_bound = supports_runtime_binding
-    elif resolved_category == "conversation_channel":
-        # Slack is the first conversation-channel provider with a concrete runtime binding.
-        runtime_bound = normalized_slug == "slack"
+    if category is None:
+        if len(entry.contract_specs) == 1:
+            spec = entry.contract_specs[0]
+        else:
+            primary_category = entry.categories[0].value
+            matches = tuple(
+                candidate
+                for candidate in entry.contract_specs
+                if candidate.category == primary_category
+            )
+            if len(matches) != 1:
+                msg = (
+                    f"Integration slug {normalized_slug!r} exposes multiple categories; "
+                    "pass category= explicitly"
+                )
+                raise IntegrationRegistryError(msg)
+            spec = matches[0]
     else:
-        runtime_bound = True
-    health_supported = (
-        supports_health_check
-        if supports_health_check is not None
-        else (
-            PlatformIntegrationCapability.HEALTH_CHECK.value in capabilities
-            and runtime_bound
-        )
-    )
-    safe_metadata: dict[str, object] = {
-        "source": "provider_package",
-        "provider_module": provider_module_path,
-        "integration_module": integration_module.__name__,
-        "bundle_module": bundle_module.__name__,
-        "factory_name": attribute_access.optional_str(resolved_factory, "__name__", default=factory_name),
-        "integration_class_name": resolved_integration_class.__name__,
-        "runtime_binding_supported": runtime_bound,
-    }
-    if resolved_category == "conversation_channel":
-        safe_metadata["conversation_features"] = ("text", "single_choice")
-        safe_metadata["feature_declaration"] = "contract_intent"
-        safe_metadata["runtime_implemented"] = runtime_bound
-    if metadata:
-        safe_metadata.update(metadata)
+        normalized_category = _normalize_identity(category, "category")
+        matches = tuple(spec for spec in entry.contract_specs if spec.category == normalized_category)
+        if len(matches) != 1:
+            msg = (
+                f"No canonical contract spec for slug {normalized_slug!r} / category {normalized_category!r}"
+            )
+            raise MissingIntegrationRegistrationError(msg)
+        spec = matches[0]
 
-    return IntegrationRegistration(
-        provider_id=sample.provider_id,
-        slug=normalized_slug,
-        category=resolved_category,
-        integration_kind=sample.integration_kind,
-        contract_class=contract_class,
-        integration_class=resolved_integration_class,
-        factory=resolved_factory,
-        config_class=type(sample.config),
-        display_name=sample.display_name or sample.provider_id,
-        capabilities=capabilities,
-        security_posture=sample.security_posture,
-        default_enabled=sample.enabled,
-        supports_health_check=health_supported,
-        supports_runtime_binding=runtime_bound,
-        metadata=safe_metadata,
-    )
+    registration = registration_from_contract_spec(slug=normalized_slug, spec=spec)
+
+    if factory is not None or integration_class is not None or metadata or supports_runtime_binding is not None or supports_health_check is not None:
+        # Test/local override path — still derived from canonical spec by default.
+        return IntegrationRegistration(
+            provider_id=registration.provider_id,
+            slug=registration.slug,
+            category=registration.category,
+            integration_kind=registration.integration_kind,
+            contract_class=registration.contract_class,
+            integration_class=integration_class or registration.integration_class,
+            factory=factory or registration.factory,
+            config_class=registration.config_class,
+            display_name=registration.display_name,
+            capabilities=registration.capabilities,
+            security_posture=registration.security_posture,
+            default_enabled=False,
+            supports_health_check=(
+                supports_health_check
+                if supports_health_check is not None
+                else registration.supports_health_check
+            ),
+            supports_runtime_binding=(
+                supports_runtime_binding
+                if supports_runtime_binding is not None
+                else registration.supports_runtime_binding
+            ),
+            metadata={**dict(registration.metadata), **dict(metadata or {})},
+        )
+    return registration
+
+
+def build_contract_registry_snapshot(
+    slugs: Iterable[str] | None = None,
+    *,
+    exclude_deferred: bool = True,
+) -> IntegrationRegistry:
+    """Build an immutable contract projection snapshot from the canonical catalog."""
+    snapshot = catalog_snapshot()
+    if slugs is not None:
+        selected_slugs = {
+            _normalize_identity(slug, "slug")
+            for slug in slugs
+        }
+        snapshot = {slug: entry for slug, entry in snapshot.items() if slug in selected_slugs}
+
+    registry = IntegrationRegistry()
+    for slug in sorted(snapshot):
+        if exclude_deferred and slug in DEFERRED_LLM_GUARDRAIL_SLUGS:
+            continue
+        entry = snapshot[slug]
+        for spec in entry.contract_specs:
+            registry.register(registration_from_contract_spec(slug=slug, spec=spec))
+    return registry
 
 
 def build_contract_registry(
@@ -341,121 +396,26 @@ def build_contract_registry(
     *,
     exclude_deferred: bool = True,
 ) -> IntegrationRegistry:
-    """Build a contract-aware registry snapshot without modifying global bootstrap state."""
-    if slugs is not None:
-        selected_keys = tuple(
-            (slug, category)
-            for slug in slugs
-            for category in categories_for_provider(_normalize_identity(slug, "slug"))
-        )
-    else:
-        selected_keys = provider_category_keys()
-    registry = IntegrationRegistry()
-    for slug, category in selected_keys:
-        normalized_slug = _normalize_identity(slug, "slug")
-        if exclude_deferred and normalized_slug in DEFERRED_LLM_GUARDRAIL_SLUGS:
-            continue
-        registry.register(build_integration_registration(normalized_slug, category=category))
-    return registry
+    """Backward-compatible alias for :func:`build_contract_registry_snapshot`."""
+    return build_contract_registry_snapshot(slugs=slugs, exclude_deferred=exclude_deferred)
 
 
 def non_deferred_provider_slugs() -> tuple[str, ...]:
-    """Provider slugs covered by registry v2 compatibility checks."""
-    return tuple(sorted(slug for slug in SLUG_CATEGORY if slug not in DEFERRED_LLM_GUARDRAIL_SLUGS))
-
-
-def expected_integration_kind_for_category(category: str) -> str:
-    normalized = _normalize_identity(category, "category")
-    if normalized == OBSERVABILITY_BACKEND_CATEGORY:
-        return OBSERVABILITY_VENDOR_INTEGRATION_KIND
-    return normalized
-
-
-def contract_for_category(category: str) -> type[PlatformIntegrationContract]:
-    normalized = _normalize_identity(category, "category")
-    try:
-        return PROVIDER_CATEGORY_CONTRACT_REGISTRY[normalized]
-    except KeyError as exc:
-        msg = f"Unknown integration category for registry v2: {normalized!r}"
-        raise IntegrationRegistryError(msg) from exc
-
-
-def _normalize_identity(value: str, field_name: str) -> str:
-    normalized = value.strip().lower()
-    if not normalized:
-        msg = f"{field_name} must be a non-empty string"
-        raise IntegrationRegistryError(msg)
-    return normalized
-
-
-def _contract_factory_name(slug: str, category: str) -> str:
-    if category == OBSERVABILITY_BACKEND_CATEGORY:
-        return f"create_{slug}_observability_integration"
-    return f"create_{slug}_{category}_integration"
-
-
-def _find_integration_class(
-    module: ModuleType,
-    contract_class: type[PlatformIntegrationContract],
-    slug: str,
-) -> type[PlatformIntegrationContract]:
-    candidates = sorted(
-        {
-            value
-            for value in vars(module).values()
-            if isinstance(value, type)
-            and value.__module__ == module.__name__
-            and value.__name__.endswith("Integration")
-            and issubclass(value, contract_class)
-        },
-        key=lambda cls: cls.__name__,
+    """Provider slugs with canonical contract projection coverage (non-deferred)."""
+    return tuple(
+        sorted(
+            slug
+            for slug, entry in catalog_snapshot().items()
+            if slug not in DEFERRED_LLM_GUARDRAIL_SLUGS and entry.contract_specs
+        )
     )
-    if len(candidates) != 1:
-        names = ", ".join(cls.__name__ for cls in candidates) or "<none>"
-        msg = f"{slug}: expected exactly one integration class for {contract_class.__name__}, got {names}"
-        raise IntegrationRegistryError(msg)
-    return cast(type[PlatformIntegrationContract], candidates[0])
-
-
-def _create_disabled_sample(
-    factory: IntegrationFactory,
-    *,
-    slug: str,
-    integration_class: type[PlatformIntegrationContract],
-    contract_class: type[PlatformIntegrationContract],
-) -> PlatformIntegrationContract:
-    try:
-        sample = factory(enabled=False)
-    except TypeError as exc:
-        msg = f"{slug}: contract factory must accept enabled=False without vendor clients"
-        raise IntegrationRegistryError(msg) from exc
-    if not isinstance(sample, PlatformIntegrationContract):
-        msg = f"{slug}: contract factory must return PlatformIntegrationContract"
-        raise IntegrationRegistryError(msg)
-    if not isinstance(sample, contract_class):
-        msg = f"{slug}: contract factory must return {contract_class.__name__}"
-        raise IntegrationRegistryError(msg)
-    if not isinstance(sample, integration_class):
-        msg = f"{slug}: contract factory must return {integration_class.__name__}"
-        raise IntegrationRegistryError(msg)
-    if sample.enabled:
-        msg = f"{slug}: contract factory enabled=False returned enabled integration"
-        raise IntegrationRegistryError(msg)
-    return sample
-
-
-def _capability_values(capabilities: Iterable[Any]) -> tuple[str, ...]:
-    values: list[str] = []
-    for capability in capabilities:
-        value = attribute_access.optional(capability, "value", capability)
-        values.append(str(value))
-    return tuple(values)
 
 
 __all__ = [
     "DEFERRED_LLM_GUARDRAIL_SLUGS",
     "DuplicateIntegrationRegistrationError",
     "IntegrationCapability",
+    "IntegrationContractProjectionError",
     "IntegrationFactory",
     "IntegrationRegistration",
     "IntegrationRegistry",
@@ -464,6 +424,7 @@ __all__ = [
     "MissingIntegrationRegistrationError",
     "RegistrationKey",
     "build_contract_registry",
+    "build_contract_registry_snapshot",
     "build_integration_registration",
     "contract_for_category",
     "expected_integration_kind_for_category",
@@ -473,4 +434,5 @@ __all__ = [
     "list_integration_registrations",
     "non_deferred_provider_slugs",
     "register_integration",
+    "registration_from_contract_spec",
 ]

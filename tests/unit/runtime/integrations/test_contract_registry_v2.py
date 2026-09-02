@@ -36,6 +36,23 @@ from intergrax.runtime.integrations.registry_v2 import (
 
 pytestmark = pytest.mark.unit
 
+
+@pytest.fixture(autouse=True)
+def _canonical_catalog_bootstrap() -> None:
+    from intergrax.integrations.registry.bootstrap import (
+        register_default_integrations,
+        reset_default_integrations_state,
+    )
+    from intergrax.integrations.registry.catalog import clear_catalog
+
+    clear_catalog()
+    reset_default_integrations_state()
+    register_default_integrations(preset="full")
+    yield
+    clear_catalog()
+    reset_default_integrations_state()
+
+
 _FORBIDDEN_VENDOR_SDK_MODULES = frozenset(
     {
         "boto3",

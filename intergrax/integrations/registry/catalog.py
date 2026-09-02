@@ -30,6 +30,8 @@ def register_integration(entry: IntegrationEntry, *, override: bool = False) -> 
         status=entry.status,
         env_prefix=entry.env_prefix,
         description=entry.description,
+        requires_local_container=entry.requires_local_container,
+        contract_specs=entry.contract_specs,
     )
 
 
