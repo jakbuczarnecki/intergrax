@@ -44,6 +44,7 @@
 | Phase | Status | Detail section |
 | ----- | ------ | -------------- |
 | **DS-CORE** | PLANNED | [below](#phase-ds-core--decision-lifecycle-foundation) |
+| **DS-REV** | **DONE** | [below](#phase-ds-rev--revision-policy-foundation) |
 | **DS-VER-PIPE / DS-VER-STAGES** | PLANNED | [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) |
 | **DS-DELIB / DS-COUNCIL** | PLANNED | [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
 | **DS-MIG** (Critic clean cut) | PLANNED | [below](#phase-ds-mig--critic-clean-cut-migration) |
@@ -63,6 +64,12 @@
 | DS-CORE-06 | P1 | Execution-hosted checkpoint persistence for Decision lifecycle state | **Done** - `intergrax/contracts/decision_checkpoint.py`; `intergrax/runtime/execution/decision_checkpoint_persistence.py`; `tests/unit/contracts/test_decision_checkpoint.py` |
 | DS-CORE-07 | P1 | Parallel proposal branch lineage | **Done** |
 | DS-CORE-08 | P2 | Core typed Decision Artifact kind registration contracts | **Done** - `intergrax/contracts/decision_artifact_registry.py`; `tests/unit/contracts/test_decision_artifact_registry.py` |
+
+### Phase DS-REV - Revision policy foundation (DONE)
+
+| ID | Priority | Item | Status |
+|----|----------|------|--------|
+| DS-REV-01 | P0 | Decision revision policy foundation (challenge → bounded authorization → revised candidate minting) | **Done** - `intergrax/contracts/decision_revision.py`; `intergrax/runtime/decision_revision.py`; `tests/unit/runtime/test_decision_revision.py` |
 
 ### Plugin architecture (PLANNED)
 
@@ -256,7 +263,7 @@ Re-owned from [`CRITIC_VERIFICATION` plan](CRITIC_VERIFICATION.md) Protocol v2 f
 | DS-VER-ADVERSARIAL-SEMANTIC | Verification | ACCEPTED / PLANNED |
 | DS-DEC-EXECUTION-IDENTITY-BINDING | Decision System | ACCEPTED / PLANNED |
 | DS-VER-RESULT-COHERENCE | Verification | ACCEPTED / PLANNED |
-| DS-DEC-REVISION-LOOP-BOUNDEDNESS | Decision System | ACCEPTED / PLANNED |
+| DS-DEC-REVISION-LOOP-BOUNDEDNESS | Decision System | **Done** - `intergrax/contracts/decision_revision.py`; `intergrax/runtime/decision_revision.py`; `tests/unit/runtime/test_decision_revision.py` |
 
 ---
 
