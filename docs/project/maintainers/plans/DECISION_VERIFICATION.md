@@ -37,7 +37,7 @@
 | Phase | Status | Section |
 | ----- | ------ | ------- |
 | DS-VER-PIPE | **DONE** | [below](#phase-ds-ver-pipe--pipeline-foundation) |
-| DS-VER-STAGES | PLANNED | [below](#phase-ds-ver-stages--stage-migration-from-cvl) |
+| DS-VER-STAGES | **DONE** | [below](#phase-ds-ver-stages--stage-migration-from-cvl) |
 
 ---
 
@@ -55,7 +55,7 @@
 
 ---
 
-## Phase DS-VER-STAGES - Stage migration from CVL (PLANNED)
+## Phase DS-VER-STAGES - Stage migration from CVL (DONE)
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
@@ -64,7 +64,7 @@
 | DS-VER-STAGE-TRAJ | P1 | Trajectory stage from `eval.trajectory` | **Done** |
 | DS-VER-STAGE-EVID | P1 | Evidence verification stage | **Done** |
 | DS-VER-STAGE-GR | P2 | Guardrail merge from `guardrail_l0` | **Done** |
-| DS-VER-STAGE-DOM | P2 | Independent/domain verifier stage | **Planned** |
+| DS-VER-STAGE-DOM | P2 | Independent/domain verifier stage | **Done** |
 
 ---
 

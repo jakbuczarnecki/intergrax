@@ -7,6 +7,10 @@ from intergrax.contracts.evidence_verification import (
     EvidenceClaimsProvider,
     EvidenceReferenceResolver,
 )
+from intergrax.runtime.decision_verification_stages.domain import (
+    DOMAIN_VERIFICATION_STAGE_KIND,
+    IndependentDomainVerificationStage,
+)
 from intergrax.runtime.decision_verification_stages.evidence import (
     EVIDENCE_VERIFICATION_STAGE_KIND,
     EvidenceVerificationStage,
@@ -34,6 +38,8 @@ from intergrax.runtime.decision_verification_stages.structural import (
 )
 
 __all__ = [
+    "DOMAIN_VERIFICATION_STAGE_KIND",
+    "IndependentDomainVerificationStage",
     "EVIDENCE_VERIFICATION_STAGE_KIND",
     "EvidenceClaimsProvider",
     "EvidenceReferenceResolver",
