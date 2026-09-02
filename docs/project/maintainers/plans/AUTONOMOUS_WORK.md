@@ -117,7 +117,7 @@ Delivery rule:
 |---|---|
 | **ID** | AW-2A |
 | **Priority** | P0 |
-| **Status** | NOT STARTED |
+| **Status** | DONE |
 | **Purpose** | Repository ports + in-memory adapter for WorkerDefinition/WorkerInstance/Responsibility/Goal state |
 | **Dependencies** | AW-1 complete |
 | **Exact scope** | optimistic revision semantics, tenant/workspace scoping where applicable, idempotent create, deterministic update conflict, **durable continuity checkpoint/revision semantics for `WorkContinuityState`** |
