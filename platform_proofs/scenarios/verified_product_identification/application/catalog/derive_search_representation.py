@@ -6,6 +6,9 @@ from platform_proofs.scenarios.verified_product_identification.application.catal
     classify_wdc_identifier_type,
     normalize_exact_lookup_value,
 )
+from platform_proofs.scenarios.verified_product_identification.application.catalog.spec_table_content_parser import (
+    parse_spec_table_content,
+)
 from platform_proofs.scenarios.verified_product_identification.application.catalog.structured_attribute_normalization import (
     DefaultStructuredAttributeNormalizationPolicy,
 )
@@ -147,40 +150,48 @@ def _derive_structured_representation(
     source_ref: SourceRecordRef,
 ) -> StructuredSearchRepresentation:
     attributes: list[StructuredAttribute] = []
+    seen_pairs: set[tuple[str | None, str]] = set()
+
     for pair in source_offer.key_value_pairs:
-        attributes.append(
-            StructuredAttribute(
-                canonical_key=_DEFAULT_STRUCTURED_POLICY.canonical_key(
-                    source_key=pair.source_key,
-                    source_field="keyValuePairs",
-                ),
+        attribute = StructuredAttribute(
+            canonical_key=_DEFAULT_STRUCTURED_POLICY.canonical_key(
                 source_key=pair.source_key,
-                source_value=pair.source_value,
-                normalized_text_value=_DEFAULT_STRUCTURED_POLICY.normalized_text_value(
-                    source_value=pair.source_value,
-                ),
-                typed_value=_DEFAULT_STRUCTURED_POLICY.typed_value(
-                    raw_value=pair.raw_value,
-                ),
                 source_field="keyValuePairs",
-            )
+            ),
+            source_key=pair.source_key,
+            source_value=pair.source_value,
+            normalized_text_value=_DEFAULT_STRUCTURED_POLICY.normalized_text_value(
+                source_value=pair.source_value,
+            ),
+            typed_value=_DEFAULT_STRUCTURED_POLICY.typed_value(
+                raw_value=pair.raw_value,
+            ),
+            source_field="keyValuePairs",
         )
+        attributes.append(attribute)
+        seen_pairs.add((attribute.canonical_key, attribute.normalized_text_value))
+
     if source_offer.spec_table_content is not None:
-        attributes.append(
-            StructuredAttribute(
+        for parsed_attribute in parse_spec_table_content(source_offer.spec_table_content):
+            attribute = StructuredAttribute(
                 canonical_key=_DEFAULT_STRUCTURED_POLICY.canonical_key(
-                    source_key="specTableContent",
+                    source_key=parsed_attribute.source_key,
                     source_field="specTableContent",
                 ),
-                source_key="specTableContent",
-                source_value=source_offer.spec_table_content,
+                source_key=parsed_attribute.source_key,
+                source_value=parsed_attribute.source_value,
                 normalized_text_value=_DEFAULT_STRUCTURED_POLICY.normalized_text_value(
-                    source_value=source_offer.spec_table_content,
+                    source_value=parsed_attribute.source_value,
                 ),
                 typed_value=None,
                 source_field="specTableContent",
             )
-        )
+            dedup_key = (attribute.canonical_key, attribute.normalized_text_value)
+            if dedup_key in seen_pairs:
+                continue
+            attributes.append(attribute)
+            seen_pairs.add(dedup_key)
+
     return StructuredSearchRepresentation(source_ref=source_ref, attributes=tuple(attributes))
 
 

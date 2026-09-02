@@ -903,7 +903,9 @@ Provider-neutral application stages - storage/retrieval backends are configured 
 
 **Implementation note (VPI-IMPLEMENTATION-2):** Provider-neutral derived search representation (`DerivedOfferSearchRepresentation`) established for one source offer → exact / lexical / structured / semantic channels. Deterministic derivation only; no indexing, embeddings, or identity grouping yet.
 
-1. **Search representation** - deterministic ingest from `selected_offers.parquet`; derived exact identifiers, lexical fields, structured attribute subset, semantic text; versioned derivation (`v1`).
+**Implementation note (VPI-IMPLEMENTATION-2A):** Real-WDC derivation hardening — conservative deterministic `specTableContent` structured extraction (ambiguous content remains lexical/semantic only); fail-conservative GTIN normalization; derived envelope enforces one `source_ref` across all channels (`v2` derivation).
+
+1. **Search representation** - deterministic ingest from `selected_offers.parquet`; derived exact identifiers, lexical fields, structured attribute subset, semantic text; versioned derivation (`v2`).
 2. **Offer candidate channels** - application query understanding; exact identifier lookup; lexical retrieval; structured filters; dense vector via configured vector backend.
 3. **Offer-level fusion** - fuse per-offer channel results with attribution before identity hypothesis formation.
 4. **Identity hypothesis formation** - group offer candidates into provisional product-identity hypotheses without treating `cluster_id` as verified truth.

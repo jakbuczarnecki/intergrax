@@ -11,7 +11,7 @@ from platform_proofs.scenarios.verified_product_identification.application.domai
     SourceRecordRef,
 )
 
-SEARCH_REPRESENTATION_DERIVATION_VERSION = "v1"
+SEARCH_REPRESENTATION_DERIVATION_VERSION = "v2"
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,6 +22,17 @@ class ExactIdentifierTerm:
     source_value: str
     lookup_value: str
     source_field: str
+
+    def __post_init__(self) -> None:
+        if not self.source_value.strip():
+            msg = "ExactIdentifierTerm.source_value must be non-empty"
+            raise ValueError(msg)
+        if not self.lookup_value.strip():
+            msg = "ExactIdentifierTerm.lookup_value must be non-empty"
+            raise ValueError(msg)
+        if not self.source_field.strip():
+            msg = "ExactIdentifierTerm.source_field must be non-empty"
+            raise ValueError(msg)
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,6 +73,17 @@ class StructuredAttribute:
     typed_value: str | int | float | bool | None
     source_field: str
 
+    def __post_init__(self) -> None:
+        if not self.source_key.strip():
+            msg = "StructuredAttribute.source_key must be non-empty"
+            raise ValueError(msg)
+        if not self.source_value.strip():
+            msg = "StructuredAttribute.source_value must be non-empty"
+            raise ValueError(msg)
+        if not self.source_field.strip():
+            msg = "StructuredAttribute.source_field must be non-empty"
+            raise ValueError(msg)
+
 
 @dataclass(frozen=True, slots=True)
 class StructuredSearchRepresentation:
@@ -77,6 +99,14 @@ class SemanticContributingField:
 
     source_field: str
     text: str
+
+    def __post_init__(self) -> None:
+        if not self.text.strip():
+            msg = "SemanticContributingField.text must be non-empty"
+            raise ValueError(msg)
+        if not self.source_field.strip():
+            msg = "SemanticContributingField.source_field must be non-empty"
+            raise ValueError(msg)
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,3 +128,26 @@ class DerivedOfferSearchRepresentation:
     structured: StructuredSearchRepresentation
     semantic: SemanticSearchRepresentation
     derivation_version: str
+
+    def __post_init__(self) -> None:
+        if not self.derivation_version.strip():
+            msg = "DerivedOfferSearchRepresentation.derivation_version must be non-empty"
+            raise ValueError(msg)
+        channel_refs = (
+            self.exact.source_ref,
+            self.lexical.source_ref,
+            self.structured.source_ref,
+            self.semantic.source_ref,
+        )
+        for channel_name, channel_ref in (
+            ("exact", channel_refs[0]),
+            ("lexical", channel_refs[1]),
+            ("structured", channel_refs[2]),
+            ("semantic", channel_refs[3]),
+        ):
+            if channel_ref != self.source_ref:
+                msg = (
+                    "DerivedOfferSearchRepresentation channel source_ref mismatch: "
+                    f"envelope={self.source_ref!r} {channel_name}={channel_ref!r}"
+                )
+                raise ValueError(msg)

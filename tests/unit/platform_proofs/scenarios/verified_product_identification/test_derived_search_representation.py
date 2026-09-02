@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import ast
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import pytest
@@ -15,16 +15,26 @@ from platform_proofs.scenarios.verified_product_identification.application.catal
     flatten_lexical_text,
     resolve_source_record,
 )
+from platform_proofs.scenarios.verified_product_identification.application.catalog.identifier_normalization import (
+    classify_wdc_identifier_type,
+    normalize_exact_lookup_value,
+)
 from platform_proofs.scenarios.verified_product_identification.application.contracts.results import (
     SourceRecordFetchResult,
 )
 from platform_proofs.scenarios.verified_product_identification.application.domain import (
+    DerivedOfferSearchRepresentation,
+    ExactIdentifierTerm,
+    ExactSearchRepresentation,
+    LexicalSearchRepresentation,
     ProductIdentifierType,
     ProductOfferId,
     ProductSourceProvenance,
     ProductSourceRecord,
     SEARCH_REPRESENTATION_DERIVATION_VERSION,
+    SemanticSearchRepresentation,
     SourceRecordRef,
+    StructuredSearchRepresentation,
     parse_wdc_source_offer_json,
 )
 
@@ -32,6 +42,18 @@ pytestmark = pytest.mark.unit
 
 CATALOG_ID = "catalog-neutral"
 SOURCE_REVISION = "rev-neutral"
+
+# Minimized from real WDC vertical-tab colon alternation (sample id 9084112).
+_REAL_WDC_PARSEABLE_SPEC = (
+    "Wingspan:\x0b 39.3\"\x0b Overall Length:\x0b 33.1\"\x0b "
+    "Wing Area:\x0b 272.8 sq inches"
+)
+
+# Minimized from real WDC single-blob newline prose pattern (~71% of sample).
+_REAL_WDC_UNPARSEABLE_SPEC = (
+    "Dimensions et détails M Dimension des verres 52 "
+    "Dimension du pont nasal 16 Longueur des branches 140"
+)
 
 
 def _electronics_offer_record() -> dict[str, object]:
@@ -74,7 +96,7 @@ def _source_ref_for_offer_id(offer_id: str) -> SourceRecordRef:
     )
 
 
-def _derive_from_record(record: dict[str, object]) -> tuple[object, SourceRecordRef]:
+def _derive_from_record(record: dict[str, object]) -> tuple[DerivedOfferSearchRepresentation, SourceRecordRef]:
     source_offer = parse_wdc_source_offer_json(json.dumps(record, ensure_ascii=False))
     source_ref = build_source_record_ref(
         source_offer,
@@ -164,11 +186,11 @@ def test_semantic_text_is_deterministic_without_embedding() -> None:
     assert "199.99" not in derived.semantic.semantic_text
 
 
-def test_structured_kvp_and_spec_produce_bounded_attributes() -> None:
+def test_structured_kvp_produces_bounded_attributes_without_fake_spec_blob() -> None:
     derived, _ = _derive_from_record(_electronics_offer_record())
     attributes = derived.structured.attributes
 
-    assert len(attributes) == 5
+    assert len(attributes) == 4
     by_key = {attribute.source_key: attribute for attribute in attributes}
     capacity = by_key["Capacity"]
     assert capacity.source_value == "2TB"
@@ -179,9 +201,7 @@ def test_structured_kvp_and_spec_produce_bounded_attributes() -> None:
     assert in_stock.typed_value is True
     warranty = by_key["WarrantyYears"]
     assert warranty.typed_value == 3
-    spec = by_key["specTableContent"]
-    assert spec.source_field == "specTableContent"
-    assert "Interface NVMe" in spec.source_value
+    assert "specTableContent" not in by_key
 
 
 def test_missing_brand_category_description_still_derives() -> None:
@@ -311,3 +331,197 @@ def test_parse_wdc_source_offer_handles_empty_optional_fields() -> None:
     assert source_offer.title is None
     assert source_offer.identifiers == ()
     assert source_offer.key_value_pairs == ()
+
+
+def test_mismatched_channel_source_ref_rejected() -> None:
+    derived, source_ref = _derive_from_record(_electronics_offer_record())
+    mismatched_ref = _source_ref_for_offer_id("other-offer")
+    lexical = replace(derived.lexical, source_ref=mismatched_ref)
+
+    with pytest.raises(ValueError, match="source_ref mismatch"):
+        DerivedOfferSearchRepresentation(
+            source_ref=source_ref,
+            exact=derived.exact,
+            lexical=lexical,
+            structured=derived.structured,
+            semantic=derived.semantic,
+            derivation_version=derived.derivation_version,
+        )
+
+
+def test_all_channel_source_refs_matching_passes_envelope_validation() -> None:
+    derived, source_ref = _derive_from_record(_electronics_offer_record())
+
+    envelope = DerivedOfferSearchRepresentation(
+        source_ref=source_ref,
+        exact=derived.exact,
+        lexical=derived.lexical,
+        structured=derived.structured,
+        semantic=derived.semantic,
+        derivation_version=derived.derivation_version,
+    )
+    assert envelope.source_ref == source_ref
+
+
+@pytest.mark.parametrize(
+    ("source_value", "expected_lookup"),
+    [
+        ("[8806095123456]", "8806095123456"),
+        ("[12345670]", "12345670"),
+        ("[123456789012]", "123456789012"),
+        ("[88060951234567]", "88060951234567"),
+    ],
+)
+def test_valid_gtin_lengths_accepted(source_value: str, expected_lookup: str) -> None:
+    lookup = normalize_exact_lookup_value(ProductIdentifierType.GTIN, source_value)
+    assert lookup == expected_lookup
+
+
+def test_ambiguous_gtin_source_value_does_not_produce_exact_term() -> None:
+    record = {
+        "id": 3001,
+        "identifiers": [{"/gtin13": "[7332543307227, 7332543297146]"}],
+        "title": "Ambiguous GTIN offer",
+    }
+    derived, _ = _derive_from_record(record)
+    assert derived.exact.terms == ()
+
+
+def test_invalid_gtin_length_produces_no_exact_term() -> None:
+    record = {
+        "id": 3002,
+        "identifiers": [{"/gtin13": "[12345]"}],
+        "title": "Short GTIN offer",
+    }
+    derived, _ = _derive_from_record(record)
+    assert derived.exact.terms == ()
+
+
+def test_gtin_with_separators_only_when_unambiguous_single_group() -> None:
+    accepted = normalize_exact_lookup_value(
+        ProductIdentifierType.GTIN,
+        "[8806-0951-23456]",
+    )
+    assert accepted == "8806095123456"
+
+    rejected = normalize_exact_lookup_value(
+        ProductIdentifierType.GTIN,
+        "[12345678 87654321]",
+    )
+    assert rejected == ""
+
+
+def test_real_wdc_parseable_spec_table_content_yields_structured_attributes() -> None:
+    record = {
+        "id": 4001,
+        "title": "Model aircraft kit",
+        "specTableContent": _REAL_WDC_PARSEABLE_SPEC,
+    }
+    derived, _ = _derive_from_record(record)
+    attributes = derived.structured.attributes
+
+    assert len(attributes) == 3
+    by_key = {attribute.source_key: attribute for attribute in attributes}
+    assert by_key["Wingspan"].source_value == '39.3"'
+    assert by_key["Overall Length"].source_value == '33.1"'
+    assert by_key["Wing Area"].source_value == "272.8 sq inches"
+    assert all(attribute.source_field == "specTableContent" for attribute in attributes)
+
+
+def test_real_wdc_unparseable_spec_remains_lexical_semantic_without_structured_attrs() -> None:
+    record = {
+        "id": 4002,
+        "title": "Eyewear accessory",
+        "specTableContent": _REAL_WDC_UNPARSEABLE_SPEC,
+    }
+    derived, _ = _derive_from_record(record)
+
+    assert derived.structured.attributes == ()
+    assert any(
+        fragment.source_field == "specTableContent"
+        for fragment in derived.lexical.structured_text_fragments
+    )
+    assert any(
+        field.source_field == "specTableContent"
+        for field in derived.semantic.contributing_fields
+    )
+
+
+def test_key_value_pairs_behavior_remains_intact() -> None:
+    record = {
+        "id": 4003,
+        "title": "Relay module",
+        "keyValuePairs": {"Voltage": "24V", "Current": "10A"},
+        "specTableContent": None,
+    }
+    derived, _ = _derive_from_record(record)
+
+    assert len(derived.structured.attributes) == 2
+    assert {attribute.source_key for attribute in derived.structured.attributes} == {
+        "Current",
+        "Voltage",
+    }
+
+
+def test_duplicate_structured_pair_from_spec_and_kvp_is_handled_deterministically() -> None:
+    record = {
+        "id": 4004,
+        "title": "Storage device",
+        "keyValuePairs": {"Capacity": "2TB"},
+        "specTableContent": "Capacity: 2TB\nInterface: NVMe",
+    }
+    derived, _ = _derive_from_record(record)
+    capacity_attributes = [
+        attribute
+        for attribute in derived.structured.attributes
+        if attribute.source_key == "Capacity"
+    ]
+    assert len(capacity_attributes) == 1
+    assert capacity_attributes[0].source_field == "keyValuePairs"
+    interface_attributes = [
+        attribute
+        for attribute in derived.structured.attributes
+        if attribute.source_key == "Interface"
+    ]
+    assert len(interface_attributes) == 1
+    assert interface_attributes[0].source_field == "specTableContent"
+
+
+def test_derivation_version_is_v2() -> None:
+    derived, _ = _derive_from_record(_electronics_offer_record())
+    assert SEARCH_REPRESENTATION_DERIVATION_VERSION == "v2"
+    assert derived.derivation_version == "v2"
+
+
+def test_gtin_classification_uses_explicit_wdc_keys_only() -> None:
+    assert classify_wdc_identifier_type("/gtin13") is ProductIdentifierType.GTIN
+    assert classify_wdc_identifier_type("/identifier") is None
+    assert classify_wdc_identifier_type("/legacyGtinAlias") is None
+
+
+def test_exact_identifier_term_rejects_empty_lookup_value() -> None:
+    with pytest.raises(ValueError, match="lookup_value"):
+        ExactIdentifierTerm(
+            identifier_type=ProductIdentifierType.MPN,
+            source_value="ABC",
+            lookup_value="   ",
+            source_field="/mpn",
+        )
+
+
+def test_construct_derived_envelope_with_mismatched_exact_source_ref_rejected() -> None:
+    derived, source_ref = _derive_from_record(_electronics_offer_record())
+    mismatched_ref = _source_ref_for_offer_id("mismatch")
+    exact = ExactSearchRepresentation(
+        source_ref=mismatched_ref,
+        terms=derived.exact.terms,
+    )
+    with pytest.raises(ValueError, match="source_ref mismatch"):
+        DerivedOfferSearchRepresentation(
+            source_ref=source_ref,
+            exact=exact,
+            lexical=derived.lexical,
+            structured=derived.structured,
+            semantic=derived.semantic,
+            derivation_version=derived.derivation_version,
+        )
