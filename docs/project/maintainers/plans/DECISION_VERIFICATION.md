@@ -38,6 +38,7 @@
 | ----- | ------ | ------- |
 | DS-VER-PIPE | **DONE** | [below](#phase-ds-ver-pipe--pipeline-foundation) |
 | DS-VER-STAGES | **DONE** | [below](#phase-ds-ver-stages--stage-migration-from-cvl) |
+| DS-VER-PROD-COMP | **DONE** | [below](#phase-ds-ver-prod-comp--production-composition) |
 
 ---
 
@@ -67,6 +68,14 @@
 | DS-VER-STAGE-DOM | P2 | Independent/domain verifier stage | **Done** |
 
 Enterprise hardening (typed validators, exact rubric-ref integrity, SHARED_PROFILE truthfulness) closed in probabilistic/domain contracts — no new stage IDs.
+
+---
+
+## Phase DS-VER-PROD-COMP - Production composition (DONE)
+
+| ID | Priority | Item | Status |
+|----|----------|------|--------|
+| DS-VER-PROD-COMP | P0 | Neutral ToolWiring eval adapters + pipeline factory for semantic/trajectory production composition | **Done** - `intergrax/runtime/decision_verification_composition.py`; `tests/unit/runtime/test_decision_verification_composition.py` |
 
 ---
 
