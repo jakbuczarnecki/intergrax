@@ -1,12 +1,16 @@
 # PROVIDER-QUAL-9 — Real-Vendor-Wide Enterprise Qualification
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `READY_TO_CLOSE` (R1 re-evaluation after `INTEGRATIONS-REGISTRY-CANONICALIZATION-1` environment closure)
 
 **Baseline ancestor:** `4c2e6e962f5dcff78b6fabe16afe68af50220cb0`
 
 **Audit HEAD:** `cf34a48bca6fac1ce343a864caebec624e3bbf1c` (branch `development`, ancestor verified)
 
+**R1 re-evaluation HEAD:** `b575cb6fdaa55231ca59df60350f4cc5696a4051` (canonical registry ancestor `e6ec82d` verified in lineage)
+
 **Audit date:** 2026-09-02
+
+**R1 re-evaluation date:** 2026-09-02 — dual-registry architectural blocker resolved; mandatory PostgreSQL + Mongo qualification proofs re-executed with zero skips at R1 HEAD (see `INTEGRATION_REGISTRY_CANONICAL_AUTHORITY.md` § Environment regression closure).
 
 ---
 

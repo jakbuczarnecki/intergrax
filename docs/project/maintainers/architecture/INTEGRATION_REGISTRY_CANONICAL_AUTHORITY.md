@@ -1,7 +1,9 @@
 # Integration Registry Canonical Authority (INTEGRATIONS-REGISTRY-CANONICALIZATION-1)
 
-**Status:** Accepted  
-**Date:** 2026-09-02
+**Status:** CLOSED (architecture accepted · environment regression closed R1)  
+**Date:** 2026-09-02  
+**Architecture ancestor:** `e6ec82d13993dd8abb01dc33f32dbaf940364513`  
+**Environment regression HEAD:** `b575cb6fdaa55231ca59df60350f4cc5696a4051`
 
 ## Problem
 
@@ -81,3 +83,41 @@ Provider Qualification execution remains vendor-neutral and catalog-backed. Cont
 ## Future removal
 
 Phase 2 may eliminate built-in `contract_capture` reflection once all providers publish explicit registration metadata on catalog entries.
+
+## Environment regression closure (R1)
+
+**Task:** `INTEGRATIONS-REGISTRY-CANONICALIZATION-1-R1`  
+**Scope:** environment restoration + mandatory PostgreSQL/Mongo regression only (no architecture changes).
+
+### Canonical dependency provisioning
+
+```bash
+uv sync --extra integrations-postgresql --extra integrations-mongodb
+uv run python -c "import psycopg; print(psycopg.__version__)"
+```
+
+- **CLIENT_DRIVER_VERSION (psycopg):** `3.3.4` (driver availability only; not backend provenance)
+- **PostgreSQL service:** `intergrax-postgresql` · image `postgres:16.6` · port `5434` · healthy
+- **MongoDB service (optional qual evidence):** `intergrax-mongodb` · image `mongo:7.0` · port `27017` · healthy
+- **Sanitized DSN env:** `INTERGRAX_COLLABORATIVE_WORK_POSTGRESQL_DSN=postgresql://***@localhost:5434/intergrax`
+
+### Regression commands and results (HEAD `b575cb6f`)
+
+| Suite | Command | Result |
+|-------|---------|--------|
+| Canonical registry + external plugin + slack boundaries | `uv run pytest tests/unit/integrations/test_registry.py tests/unit/runtime/integrations/test_contract_registry_v2.py tests/unit/runtime/integrations/test_canonical_registry_projection.py tests/unit/integrations/test_external_plugin.py tests/unit/integrations/providers/conversation_channel/slack/test_registry_boundaries.py -q` | **48 passed**, 0 skipped |
+| CW unit | `uv run pytest tests/unit/collaborative_work/ -q` | **218 passed**, 0 skipped |
+| Real PostgreSQL CW repository | `uv run pytest tests/integration/collaborative_work/test_postgresql_repository.py -m "integration and network" -q` | **15 passed**, 0 skipped |
+| CW full E2E | `uv run pytest tests/e2e/collaborative_work/ -m e2e -q` | **35 passed**, 0 skipped |
+| CW PostgreSQL E2E | `uv run pytest tests/e2e/collaborative_work/ -m "e2e and integration and network" -q` | **11 passed**, 0 skipped |
+| Qualification units | `uv run pytest tests/unit/core/qualification/ -q` | **224 passed**, 0 skipped |
+| Real PostgreSQL qualification | `uv run pytest tests/integration/core/qualification/test_provider_qualification_execution_postgresql.py -m "integration and network" -q` | **1 passed**, 0 skipped |
+| Multi-provider qualification | `uv run pytest tests/integration/core/qualification/test_provider_qualification_multi_provider_proof.py -q` | **7 passed**, 0 skipped |
+| Vendor abstraction gates | `uv run pytest tests/unit/core/qualification/test_provider_qualification_vendor_abstraction_gate.py tests/unit/collaborative_work/test_vendor_neutrality.py tests/e2e/collaborative_work/test_architecture_gates.py tests/unit/runtime/integrations/test_canonical_registry_projection.py -q` | **16 passed**, 0 skipped |
+| Mongo qualification persistence (PROVIDER-QUAL-9 evidence) | `uv run pytest tests/integration/core/qualification/test_provider_qualification_discovery_mongo.py tests/integration/core/qualification/test_provider_qualification_validity_mongo.py tests/integration/core/qualification/test_provider_qualification_persistence_durable_reopen.py -q` | **6 passed**, 0 skipped |
+
+**Packaging acceptance:** `uv sync --extra integrations-postgresql` supplies `psycopg[binary]` sufficient for all mandatory PostgreSQL tests; no manual driver install required.
+
+**Session logs:** `.tmp/session/INTEGRATIONS-REGISTRY-CANONICALIZATION-1-R1/`
+
+**Verdict:** `INTEGRATIONS-REGISTRY-CANONICALIZATION-1` — **READY_TO_CLOSE** (pending independent R1 evidence/SHA audit).
