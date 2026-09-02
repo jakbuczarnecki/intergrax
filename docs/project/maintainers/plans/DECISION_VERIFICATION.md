@@ -45,7 +45,7 @@
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-VER-PIPE-01 | P0 | Verification Pipeline orchestrator contract | **Planned** |
+| DS-VER-PIPE-01 | P0 | Verification Pipeline orchestrator contract | **Done** |
 | DS-VER-PIPE-02 | P0 | Stage plugin interface + registration | **Done** |
 | DS-VER-PIPE-03 | P0 | Verification Result + Challenge typed contracts | **Done** |
 | DS-VER-PIPE-04 | P0 | Deterministic-before-probabilistic ordering | **Planned** |
