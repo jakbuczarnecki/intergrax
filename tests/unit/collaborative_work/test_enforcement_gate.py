@@ -189,6 +189,7 @@ def _runtime_request(**overrides: object) -> MeaningfulSideEffectRequest:
     payload = {
         "action": _OPERATION,
         "kinds": (MeaningfulSideEffectKind.MUTATION,),
+        "side_effect_scope_id": f"scope-{_RESOURCE}",
         "task_id": "task-1",
         "run_id": "run-1",
         "principal_id": _ACTING,
