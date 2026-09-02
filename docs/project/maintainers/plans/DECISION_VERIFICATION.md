@@ -59,7 +59,7 @@
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-VER-STAGE-L0 | P0 | Structural/deterministic stage from `L0Gateway` | **Planned** |
+| DS-VER-STAGE-L0 | P0 | Structural/deterministic stage from `L0Gateway` | **Done** |
 | DS-VER-STAGE-SEM | P1 | Semantic stage from `L1Gateway` / `eval.judge` | **Planned** |
 | DS-VER-STAGE-TRAJ | P1 | Trajectory stage from `eval.trajectory` | **Planned** |
 | DS-VER-STAGE-EVID | P1 | Evidence verification stage | **Planned** |
