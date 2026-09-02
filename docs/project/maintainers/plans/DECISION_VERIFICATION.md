@@ -63,7 +63,7 @@
 | DS-VER-STAGE-SEM | P1 | Semantic stage from `L1Gateway` / `eval.judge` | **Planned** |
 | DS-VER-STAGE-TRAJ | P1 | Trajectory stage from `eval.trajectory` | **Planned** |
 | DS-VER-STAGE-EVID | P1 | Evidence verification stage | **Planned** |
-| DS-VER-STAGE-GR | P2 | Guardrail merge from `guardrail_l0` | **Planned** |
+| DS-VER-STAGE-GR | P2 | Guardrail merge from `guardrail_l0` | **Done** |
 | DS-VER-STAGE-DOM | P2 | Independent/domain verifier stage | **Planned** |
 
 ---
