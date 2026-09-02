@@ -1,30 +1,31 @@
 # Harness Architecture Evolution Roadmap
 
-## Status
+## Status and baseline
 
-This document is the canonical cross-domain roadmap for the next stage of Intergrax harness architecture evolution.
+This document is the canonical cross-domain roadmap for the next stage of Intergrax harness architecture evolution. It defines what must remain unchanged, what must converge, what must be added, what must be removed or consolidated, the dependency order, the proof requirements, and the completion gates for the whole program.
 
-It does **not** replace domain architecture documents. Domain documents remain authoritative for the semantics and contracts owned by their respective areas. This roadmap defines:
+It does **not** replace domain architecture documents. Domain documents remain authoritative for the semantics and contracts they own. This roadmap coordinates work across those domains and must not become a second semantic authority.
 
-- what must change across domains,
-- what must remain unchanged,
-- what must be added,
-- what must be consolidated or removed,
-- which architectural invariants must become enforceable,
-- the implementation order,
-- dependency relationships,
-- acceptance criteria,
-- and the target platform state after completion.
+**Validated repository baseline:** `development @ 60e95a748d387702bfdd20443d0674caf495cb65` on 2026-09-02.
 
-The roadmap is intentionally organized around a small number of major initiatives rather than hundreds of disconnected micro-tasks. Each initiative contains the concrete work items required to make the target architecture real.
+The status labels in this roadmap are deliberately conservative:
+
+- **CURRENT** — an implementation or canonical contract exists and is a real foundation.
+- **PARTIAL** — the foundation exists, but convergence, hardening, or migration remains.
+- **GAP** — the capability is materially missing from the canonical runtime path.
+- **TARGET** — target architecture is defined, but implementation is incomplete or not yet proven.
+- **NEW** — a new capability should be added under an existing semantic owner or a clearly justified new owner.
+- **CONSOLIDATE** — multiple surfaces or historical paths should converge without creating a new authority.
+
+Before implementing any initiative, its CURRENT/PARTIAL/GAP classification must be revalidated against the then-current `development` HEAD. This roadmap must never be used to rebuild something that already exists.
 
 ---
 
-## 1. Core architectural position
+# 1. Core architectural position
 
-Intergrax should evolve toward a single coherent governed execution operating layer without flattening domain semantics.
+Intergrax should evolve toward one coherent governed execution operating layer without flattening domain semantics.
 
-The following boundaries remain intentional and must be preserved:
+The following boundaries are intentional and must remain explicit:
 
 ```text
 Execution != Agent
@@ -36,9 +37,10 @@ Observability != Diagnostics
 Proposal != Permission != Execution
 Configured State != Effective State
 Package/Plugin != Domain Capability
+Workspace != Settings != Credentials
+Transport Identity != Runtime Identity
+Model Context != Durable Evidence
 ```
-
-The objective is therefore not to create another universal abstraction that absorbs all domains. The objective is to make the existing domain architecture compose, execute, inspect, explain, and evolve as one coherent harness.
 
 The target mental model is:
 
@@ -53,1538 +55,511 @@ Execution Boundary
         ↓
 Capabilities + Governance + Context
         ↓
-Evidence + Diagnostics + Evaluation
+Durable Runtime Facts / Checkpoint / Evidence
+        ↓
+Diagnostics + Evaluation
         ↓
 Adaptive, Governed Evolution
 ```
 
+The goal is not to create a universal god-object. The goal is to make the existing semantic domains compose, execute, inspect, recover, explain, test, and evolve as one platform.
+
 ---
 
-## 2. Canonical ownership decisions
+# 2. Canonical ownership decisions
 
-### 2.1 ApplicationEnvironmentProfile remains the composition authority
+## 2.1 `ApplicationEnvironmentProfile` remains the only Tier-3 environment composition authority
 
-`ApplicationEnvironmentProfile` remains the canonical Tier-3 environment composition contract.
+Do **not** introduce a peer `HarnessProfile` or any other second environment authority.
 
-Do **not** introduce a second peer authority such as a separate `HarnessProfile`.
+Allowed additions around it include:
 
-Allowed additions around it:
-
-- `ProfileResolution` as resolution evidence,
-- an immutable effective profile snapshot,
-- a read-only effective harness/environment projection,
+- `ProfileResolution` as typed resolution evidence,
+- immutable effective profile snapshots/revisions,
+- read-only effective runtime projections,
+- profile provenance and semantic diff,
 - inspection and explanation surfaces,
-- semantic profile diffing,
-- profile lineage and provenance.
+- typed overlays as **inputs** to resolution.
 
-These additions must not become competing configuration authorities.
+A read model, snapshot, overlay, projection, preset, or inspector must never become a competing source of configuration truth.
 
-### 2.2 Domain semantic ownership remains distributed
+## 2.2 Domain semantic ownership remains distributed
 
-Platform-level composition must not absorb domain semantics.
+- Unified Execution Runtime owns execution lifecycle and identity coordination.
+- Nexus owns accepted orchestration topology execution decisions.
+- Governance owns policy, authority, approval, and side-effect authorization decisions.
+- Budget owns allowance, reservation, consumption, and release semantics.
+- Tools own tool contracts and canonical tool execution semantics.
+- Skills own capability-bundle semantics; instructional skills remain distinct.
+- Context Engineering owns model-context assembly.
+- Memory owns persistent memory semantics.
+- RAG owns governed retrieval semantics.
+- Observability/HOS records canonical platform facts and historical projections.
+- DIAG interprets evidence; it does not create execution truth.
+- Checkpoint/recovery owns durable restore state, not runtime identity authority.
+- Platform Plugins own package/control-plane concerns, not Tool/Skill/RAG/Memory semantics.
 
-Examples:
-
-- Tools continue to own tool execution semantics.
-- Skills continue to own capability-bundle semantics.
-- Context Engineering continues to own model-context assembly.
-- Memory continues to own persistent memory semantics.
-- RAG continues to own governed retrieval semantics.
-- Governance continues to own authority and policy semantics.
-- Nexus continues to own accepted orchestration topology execution decisions.
-- Unified Execution Runtime continues to own execution lifecycle semantics.
-- Observability/HOS continue to record platform facts rather than create them.
-
-### 2.3 No new subsystem without new semantic ownership
+## 2.3 No new subsystem without new semantic ownership
 
 Before introducing a new architecture domain, answer:
 
 > Is there a genuinely new responsibility that no existing domain should own?
 
-If the answer is no, implement the behavior as one of:
+If not, implement the behavior as a provider, plugin, policy, guard, strategy, hook, adapter, projection, preset, read model, or domain-owned extension.
 
-- provider,
-- plugin,
-- policy,
-- guard,
-- strategy,
-- hook,
-- adapter,
-- projection,
-- or domain-owned extension.
+## 2.4 Consumers depend on contracts, not concrete providers
+
+Canonical dependency direction:
+
+```text
+Consumer
+  ↓
+Domain Contract / Service Definition
+  ↓
+Provider
+```
+
+A consumer must not depend directly on a concrete provider when a provider-neutral domain contract exists or should exist.
 
 ---
 
 # 3. Mandatory architectural invariants
 
-The following invariants must become explicit in architecture, implementation, tests, and runtime diagnostics where applicable.
+These invariants must become explicit in architecture, implementation, conformance tests, and runtime diagnostics where applicable.
 
-## INV-1 — One environment composition authority
+1. **INV-1 — One environment composition authority**  
+   `ApplicationEnvironmentProfile` is the only Tier-3 environment composition authority.
 
-```text
-ApplicationEnvironmentProfile is the only Tier-3 environment composition authority.
-```
+2. **INV-2 — Configured is not effective**  
+   `CONFIGURED != EFFECTIVE`.
 
-## INV-2 — Configured state is not effective state
+3. **INV-3 — Effective decisions are explainable**  
+   Important effective values, permissions, capability availability, context decisions, and execution-strategy decisions have attributable provenance.
 
-```text
-CONFIGURED != EFFECTIVE
-```
+4. **INV-4 — Model-visible means reconstructable according to evidence policy**  
+   `MODEL_VISIBLE => RECONSTRUCTABLE` through one of the defined reconstruction levels in Initiative D.
 
-The runtime must be able to expose both.
+5. **INV-5 — Child authority cannot exceed parent authority**  
+   `child_authority ⊆ parent_authority`.
 
-## INV-3 — Every effective decision is explainable
+6. **INV-6 — Proposal is not permission**  
+   `PROPOSAL != PERMISSION`.
 
-Any effective value, permission, capability, context inclusion, execution strategy, or rejection must have attributable provenance.
+7. **INV-7 — Permission is not execution**  
+   `PERMISSION != EXECUTION`.
 
-## INV-4 — Model-visible means reconstructable
+8. **INV-8 — Topology identity is not runtime identity**  
+   `NodeId != ExecutionId`.
 
-```text
-MODEL_VISIBLE => RECONSTRUCTABLE
-```
+9. **INV-9 — Agent is not execution**  
+   `Agent != Execution`.
 
-Anything visible to a model request must be reconstructable from durable platform evidence according to the configured evidence policy.
+10. **INV-10 — Package/plugin is not domain capability**  
+    `PluginPackage != Tool != Skill != Memory != RAG != Context`.
 
-## INV-5 — Child authority cannot exceed parent authority
+11. **INV-11 — Context compaction is not evidence deletion**  
+    `MODEL_CONTEXT_COMPACTION != EVIDENCE_DELETION`.
 
-```text
-child_authority ⊆ parent_authority
-```
+12. **INV-12 — Observability records truth; it does not invent execution truth**.
 
-## INV-6 — Proposal is not permission
+13. **INV-13 — Runtime extensions cannot self-expand authority**.
 
-```text
-PROPOSAL != PERMISSION
-```
+14. **INV-14 — Temporary capability expires with its owner scope unless explicitly promoted**.
 
-## INV-7 — Permission is not execution
+15. **INV-15 — Dynamic registration is reversible**.
 
-```text
-PERMISSION != EXECUTION
-```
+16. **INV-16 — Meaningful side effects cross fresh governed authorization immediately before the effect**.
 
-## INV-8 — Topology identity is not runtime identity
+17. **INV-17 — Every canonical model call crosses Context Engineering**.
 
-```text
-NodeId != ExecutionId
-```
+18. **INV-18 — Every canonical tool call crosses ToolRuntime**.
 
-## INV-9 — Agent is not execution
+19. **INV-19 — Independently meaningful child work is admitted by Unified Execution Runtime**.
 
-```text
-Agent != Execution
-```
+20. **INV-20 — Canonical runtime boundaries are transport-independent**.
 
-## INV-10 — Package/plugin is not domain capability
+21. **INV-21 — Required causal evidence precedes meaningful work**  
+    If causal/audit evidence is required to establish a runtime boundary, recovery relation, or side-effect fence, it must be durably established before meaningful work begins. Failure to persist required evidence fails closed at that admission boundary.
 
-```text
-PluginPackage != Tool != Skill != Memory != RAG != Context
-```
+22. **INV-22 — Profile overlays are inputs, not authorities**  
+    Agent/Run/Execution overlays are typed deltas submitted to canonical profile resolution; they never become independent effective-profile authorities.
 
-## INV-11 — Context compaction is not evidence deletion
+23. **INV-23 — Consumers depend on provider-neutral contracts**  
+    Providers may vary; domain semantics do not.
 
-```text
-MODEL_CONTEXT_COMPACTION != EVIDENCE_DELETION
-```
+24. **INV-24 — Tool and capability authority is monotonic**  
+    Downstream scope may narrow effective permission but may not widen upstream authority.
 
-## INV-12 — Observability records truth; it does not define business truth
+25. **INV-25 — Activation is atomic from the runtime consumer perspective**  
+    A failed multi-capability activation must not leave an accidental half-active composition; staged activation must commit or roll back according to the lifecycle contract.
 
-Persisted platform facts remain the source of truth. External telemetry and projections are derived representations.
+26. **INV-26 — In-flight Executions are version-pinned**  
+    Runtime reconfiguration must not silently change the provider/profile/schema semantics of an already admitted Execution unless an explicit migration/rebind contract allows it.
 
-## INV-13 — Runtime extensions cannot self-expand authority
+27. **INV-27 — Human interaction absence never implies approval**  
+    If a required human interaction cannot be delivered, the runtime pauses, denies, or fails according to policy; it never auto-allows.
 
-Any temporary or adaptive extension operates within pre-existing authority ceilings.
+28. **INV-28 — Checkpoint is durable state, not identity authority**  
+    Restoring from a checkpoint preserves canonical runtime identity semantics rather than minting a competing tree.
 
-## INV-14 — Temporary capability expires with its owner scope
+29. **INV-29 — Session/read models are projections where facts already exist canonically**  
+    A projection may summarize or index state but must not silently become a second mutable source of truth.
 
-Execution-scoped or agent-scoped dynamic registrations must not leak beyond their owner scope.
-
-## INV-15 — Dynamic registration is reversible
-
-Every dynamic registration must have a deterministic unregistration/deactivation path.
-
-## INV-16 — Meaningful side effects cross a governed execution boundary
-
-No meaningful external mutation may bypass canonical authorization and side-effect enforcement.
-
-## INV-17 — Every model call crosses Context Engineering
-
-No host, agent, SDK, or adapter may build an independent model request path that bypasses canonical Context Engineering rules.
-
-## INV-18 — Every tool call crosses ToolRuntime
-
-No agent or host may execute tools through a private runtime path.
-
-## INV-19 — Independent child work is admitted by Unified Execution Runtime
-
-Independent work units must receive canonical execution identity and lifecycle semantics.
-
-## INV-20 — Canonical runtime boundaries are transport-independent
-
-CLI, SDK, REST, ACP, MCP, Slack, web, or any future host are adapters over the same runtime semantics.
+30. **INV-30 — Security claims are bounded by a declared threat model and conformance evidence**  
+    Tests demonstrate bounded properties; they do not justify absolute claims of mathematical impossibility.
 
 ---
 
-# 4. Initiative A — Unified Execution Runtime convergence
+# 4. Program status matrix
 
-## Goal
+This matrix is the execution-control layer for the roadmap. It intentionally distinguishes new work from migration/hardening.
 
-Turn the target execution model into the actual universal runtime spine for all meaningful AI work.
+| ID | Initiative | Roadmap status | Canonical owner / primary existing area | Change type |
+|---|---|---|---|---|
+| A | Unified Execution Runtime convergence | PARTIAL / TARGET | Unified Execution Runtime / UEA | migration + hardening |
+| B | Profile resolution and effective composition | PARTIAL | Applications / environment profile | consolidation + DX |
+| C | Runtime inspection and explanation | GAP / PARTIAL | cross-domain read model over canonical facts | new read-model + DX |
+| D | Reconstructable model execution | PARTIAL | CE + Observability/HOS + execution evidence | hardening |
+| E | Context Engineering provider convergence | CURRENT / PARTIAL | Context Engineering | hardening + provider seam |
+| F | Canonical ToolRuntime pipeline | CURRENT / PARTIAL | Tools / ToolRuntime / Governance boundary | convergence |
+| G | Runtime credentials and secret references | PARTIAL | security/secrets/integration runtime | consolidation + provider seam |
+| H | Execution sandbox and isolation | PARTIAL | execution environment / sandbox / security | convergence |
+| I | Subagent and external-agent providers | PARTIAL / TARGET | delegation + UER + Nexus where orchestration applies | provider seam |
+| J | Background Execution control | CURRENT / PARTIAL | Background Tasks + UER | migration + DX, **not new job runtime** |
+| K | Verified external event intake | PARTIAL | application intake/integrations + UER | generalization + hardening |
+| L | Artifacts, attachments, spill | PARTIAL | artifacts/storage + CE + tools | consolidation |
+| M | Context compaction and retention | PARTIAL / TARGET | CE/UCL/evidence | implementation + hardening |
+| N | Runtime invariant service | GAP / PARTIAL | domain-owned checks + diagnostics | new cross-domain registry, domain-owned rules |
+| O | Dynamic orchestration proposals | TARGET | Orchestration/Nexus/Governance | new proposal path |
+| P | Capability Skills + Instruction Skills | CURRENT / GAP | Skills + CE | preserve + add instructional type |
+| Q | Reversible capability/plugin lifecycle | PARTIAL | Platform Plugins + domain registries | convergence |
+| R | Governance UX and permission presets | CURRENT / PARTIAL | Governance/HITL/ToolRuntime/sandbox | DX + hardening |
+| S | Workspace/settings/credentials separation | PARTIAL | application/workspace/settings/security | semantic cleanup |
+| T | Feedback/goals/plans/work-state | PARTIAL / OPTIONAL | collaboration/evaluation/AHI | scenario-driven |
+| U | Scheduling convergence | PARTIAL | scheduler/intake + UER | convergence |
+| V | Process/filesystem/terminal/code providers | PARTIAL / OPTIONAL | tools/execution environment/providers | provider-first, scenario-driven |
+| W | SDK/API/ACP/MCP/host convergence | PARTIAL | hosting/application boundaries + UER | convergence |
+| X | Generated architecture/capability metadata | PARTIAL | docs/tooling/control plane | automation |
+| Y | Documentation architecture simplification | PARTIAL | documentation canon | consolidation |
+| Z | Security/trust/supply-chain hardening | PARTIAL | security/governance/plugins | hardening |
+| AA | Memory and RAG hardening | CURRENT / PARTIAL | Memory + RAG + CE | hardening |
+| AB | Adaptive Harness Intelligence expansion | CURRENT / PARTIAL | AHI + Evaluation/HOS | controlled expansion |
+| AC | Governed Runtime Evolution | GAP / LATE TARGET | Plugins + sandbox + UER + Governance + AHI | strategic new capability |
+| AD | Test and qualification infrastructure | PARTIAL | test support + qualification + Scenario Proofs | hardening |
+| AE | Developer/operator experience | PARTIAL | CLI/docs/inspection | DX |
+| AF | Checkpoint, durability, and recovery convergence | PARTIAL / TARGET | Checkpoint + UER + Observability + Reliability | **P0 migration/hardening** |
+| AG | Runtime health, readiness, and atomic activation | GAP / PARTIAL | control-plane projection + provider lifecycle | new operational read-model + lifecycle hardening |
+| AH | Controlled live composition reconfiguration | GAP / TARGET | profile resolution + plugin lifecycle + UER | later controlled reconfiguration |
+| AI | Canonical Human Interaction seam | PARTIAL | Governance/HITL/host interaction | convergence |
 
-## A1. Canonical execution identity
-
-Implement and enforce:
-
-```text
-TaskId
-  ↓
-RunId
-  ↓
-AttemptId
-  ↓
-ExecutionId
-  ↓
-EventId
-```
-
-Required work:
-
-- canonical `ExecutionId` type and creation rules,
-- `ExecutionId` available on canonical runtime events,
-- explicit root Execution per Attempt,
-- explicit `parent_execution_id` for child work,
-- elimination of substitute execution identities on canonical paths,
-- migration of agent-centric paths to execution-centric identity.
-
-## A2. Neutral Execution Boundary
-
-Establish a runtime boundary that is independent of the selected execution strategy.
-
-Supported strategies should include at minimum:
-
-- direct inference,
-- agentic execution,
-- orchestration.
-
-The strategy may change the executor but must not change execution identity, authority, lifecycle, evidence, cancellation, budget, or result semantics.
-
-## A3. Execution Tree
-
-Make the execution tree a runtime fact, not only a conceptual diagram.
-
-Required properties:
-
-- root Execution,
-- child Execution relationships,
-- lineage queries,
-- subtree status,
-- subtree cancellation,
-- subtree evidence aggregation,
-- authority inheritance,
-- budget inheritance.
-
-## A4. Child Execution admission
-
-Define when child work becomes a separate Execution.
-
-Do not treat every function call, graph node, or tool call as a new Execution by default.
-
-Admission must be explicit and consistent across:
-
-- delegation,
-- orchestration,
-- remote agents,
-- background work,
-- long-running work,
-- adaptive runtime extensions.
-
-## A5. Hierarchical authority
-
-Implement monotonic authority propagation:
-
-```text
-child effective authority <= parent effective authority
-```
-
-Any additional restriction is allowed; widening is not.
-
-## A6. Hierarchical budget
-
-Introduce parent-to-child budget allocation/reservation semantics.
-
-The parent must retain authoritative control over total resource envelopes.
-
-Cover:
-
-- token budget,
-- monetary budget,
-- tool-call budget,
-- execution count,
-- concurrency,
-- wall-clock limits where applicable.
-
-## A7. Cancellation
-
-Implement canonical cancellation semantics for:
-
-- single Execution,
-- execution subtree,
-- remote child,
-- background child,
-- tool calls,
-- model requests.
-
-The runtime must define cooperative versus forceful cancellation boundaries.
-
-## A8. Pause/resume/HITL
-
-Pause and resume must be representable at Execution lifecycle level.
-
-Human approval waits must not exist only as ad hoc callbacks.
-
-## A9. Retry ownership
-
-Separate and document ownership for:
-
-- Run retry,
-- Execution retry,
-- tool retry,
-- model-provider retry,
-- transport retry.
-
-Avoid generic retry layers with ambiguous ownership.
-
-## A10. Execution Environment
-
-Introduce or consolidate a canonical Execution Environment contract that exposes the effective runtime environment for one Execution:
-
-```text
-workspace
-sandbox
-credentials
-network
-filesystem
-process capabilities
-runtime capabilities
-host capabilities
-```
-
-## A11. Neutral Execution Result ABI
-
-Create a result boundary that does not leak agent-specific result types into orchestration or shared runtime contracts.
-
-## Acceptance criteria
-
-- all major execution paths carry canonical `ExecutionId`,
-- Execution Tree can be reconstructed from runtime evidence,
-- child authority cannot exceed parent authority,
-- cancellation propagates deterministically,
-- background and delegated work use the same Execution lifecycle,
-- orchestration no longer requires agent-specific runtime identity/result semantics.
+The status matrix is not a substitute for implementation-specific audit. It is the planning baseline that prevents the roadmap from treating existing architecture as absent.
 
 ---
 
-# 5. Initiative B — Profile resolution and effective composition
+# 5. Initiative A — Unified Execution Runtime convergence
 
-## Goal
+**Goal:** make the frozen execution model the actual universal runtime spine.
 
-Make the existing environment composition model simple, layered, explainable, inspectable, and immutable at runtime.
+**CURRENT/PARTIAL:** Task/Run/Attempt/Event identity and agentic execution infrastructure exist; canonical `ExecutionId`, neutral Execution Boundary, full Execution Tree propagation, hierarchical budget, and some authority paths remain incomplete.
 
-## B1. Formal profile layering
+**Required work:**
 
-Canonical resolution order:
+1. Canonical `ExecutionId`, root Execution, `parent_execution_id`, and `RuntimeEvent.execution_id`.
+2. Neutral Execution Boundary supporting inference, agentic, and orchestration strategies without changing lifecycle semantics.
+3. Real Execution Tree with lineage queries and subtree cancellation.
+4. Explicit child-Execution admission rules; LLM calls, tool calls, nodes, and function calls are not automatically Executions.
+5. Hierarchical authority propagation and monotonic narrowing.
+6. Hierarchical budgets for tokens, money, tool calls, child executions, concurrency, wall clock, and agent-loop/step counts.
+7. Canonical cancellation across local, remote, background, model, and tool work.
+8. Pause/resume/HITL as lifecycle state rather than hidden callback state.
+9. Retry ownership taxonomy: provider/tool retry, Execution retry generation, transport redelivery, whole-Run retry.
+10. Canonical Execution Environment and neutral Execution Result ABI.
+11. Distributed worker admission must preserve runtime identity; transport redelivery must not create new logical execution identity by itself.
 
-```text
-platform defaults
-        ↓
-distribution/product defaults
-        ↓
-application environment
-        ↓
-agent overlay
-        ↓
-run/task overlay
-        ↓
-execution-local overlay
-```
-
-The exact available layers may vary by host, but precedence must be deterministic.
-
-## B2. ProfileResolution record
-
-Introduce a resolution object/evidence record containing:
-
-- input layers,
-- layer revisions,
-- effective profile,
-- overrides,
-- rejected overrides,
-- authority clamps,
-- compatibility warnings,
-- missing dependencies,
-- degraded capabilities,
-- resolution timestamp/revision.
-
-## B3. Configured versus effective views
-
-Expose both:
-
-- what was configured/requested,
-- what the runtime actually resolved.
-
-## B4. Provenance per effective value
-
-For important fields, answer:
-
-```text
-requested value
-source layer
-overridden value
-overriding layer
-policy clamp
-effective value
-```
-
-## B5. Immutable effective snapshot
-
-Persist or durably reference the exact effective environment/profile used by each Run/Execution.
-
-Later configuration changes must not rewrite historical meaning.
-
-## B6. Profile revision/fingerprint
-
-Introduce stable revision/fingerprint semantics for resolved environments.
-
-## B7. Semantic profile diff
-
-Provide semantic diff between profiles/revisions, including changes such as:
-
-- tools added/removed,
-- policy changes,
-- authority changes,
-- context-budget changes,
-- sandbox changes,
-- model/provider changes,
-- orchestration changes.
-
-## B8. Capability dependency validation
-
-Resolve and validate chains such as:
-
-```text
-Skill
-  → Tool
-  → Integration
-  → Credential
-  → Provider
-```
-
-## B9. Required versus optional capability
-
-Explicitly classify dependencies as required or optional.
-
-Required dependency missing:
-
-```text
-BOOT/RESOLUTION FAILURE
-```
-
-Optional dependency missing:
-
-```text
-DEGRADED EFFECTIVE PROFILE
-```
-
-## B10. User-facing presets
-
-Add ergonomic presets such as:
-
-- safe-readonly,
-- developer,
-- workspace-agent,
-- governed-enterprise,
-- automation,
-- research.
-
-Presets must expand to existing canonical policy/profile semantics; they do not create new authority models.
-
-## B11. Legacy profile surface audit
-
-Audit nested canonical profile representation versus legacy flat accessors and wire compatibility.
-
-Remove compatibility surfaces where no real consumer requires them.
-
-## Acceptance criteria
-
-- one composition authority remains,
-- every Run has an effective profile identity,
-- configuration resolution is deterministic,
-- important values are explainable,
-- invalid required dependency chains fail before execution,
-- deprecated duplicate composition paths are removed or formally contained.
+**Acceptance:** representative inference, agentic, orchestration, delegated, and background paths use the same identity/lifecycle/evidence spine.
 
 ---
 
-# 6. Initiative C — Runtime inspection and explanation
+# 6. Initiative B — Profile resolution and effective composition
 
-## Goal
+**Goal:** keep one environment authority while making composition layered, explainable, immutable per Execution, and easy to inspect.
 
-Make the actual live Intergrax runtime directly inspectable and explainable.
+**Required work:**
 
-## C1. Canonical inspection API
+1. Canonical resolution order: platform defaults → product/distribution → application → agent delta → Run/Task delta → Execution delta.
+2. Every overlay is a typed delta input; only `ProfileResolution` produces the effective result.
+3. `ProfileResolution` records input layers, revisions, overrides, rejected overrides, authority clamps, dependency failures, warnings, and degraded capabilities.
+4. Separate configured/requested from effective state.
+5. Persist or durably reference effective profile revision/fingerprint per Run/Execution.
+6. Semantic profile diff across tools, models, policies, sandbox, CE budgets, orchestration, and providers.
+7. Capability dependency validation such as Skill → Tool → Integration → Credential → Provider.
+8. Required dependency missing = fail before execution; optional dependency missing = explicit degraded state.
+9. Ergonomic presets expand to canonical policy/profile semantics and grant no new authority.
+10. Audit nested canonical profile representation versus legacy flat/wire compatibility and remove unjustified compatibility surfaces.
 
-Create a programmatic read model that powers all surfaces.
+**Acceptance:** no second composition authority exists; historical Executions retain immutable meaning after configuration changes.
 
-Do not implement separate logic independently in CLI, web, SDK, or diagnostics.
+---
 
-## C2. Environment inspection
+# 7. Initiative C — Runtime inspection and explanation
 
-Expose:
+**Goal:** expose actual live runtime state from canonical facts.
 
-- configured state,
-- effective state,
-- profile revision,
-- providers,
-- capabilities,
-- degraded capabilities,
-- governance posture,
-- sandbox,
-- model routes,
-- context providers,
-- memory/RAG state,
-- observability state.
+Create one programmatic inspection read model used by CLI, web, SDK, diagnostics, and future hosts.
 
-## C3. Agent inspection
+It must support:
 
-Expose effective:
+- environment configured/effective state and profile revision,
+- agent model/tools/skills/context/memory/authority/budgets,
+- Execution identity/tree/state/strategy/children/model calls/tool calls/approvals/evidence,
+- tool states: registered, available, visible, selectable, executable, authorized/denied, provider, risk, reason,
+- skill manifest/version/resolution/provenance,
+- context contributions, cost, inclusion/exclusion reasons,
+- capability dependency graph,
+- runtime health/readiness from Initiative AG.
 
-- model,
-- tools,
-- skills,
-- authority,
-- memory,
-- context,
-- budgets,
-- orchestration capabilities,
-- runtime providers.
+Explanation surfaces must answer at minimum:
 
-## C4. Execution inspection
+- why is this tool available or unavailable?
+- why was approval required or denied?
+- why did this profile value win?
+- why was context included or excluded?
+- why was this execution strategy selected?
 
-Expose:
+Inspection is a projection; it must never mint canonical identities or invent facts.
 
-- Execution identity,
-- parent/root,
-- lifecycle state,
-- strategy,
-- effective authority,
-- effective budget,
-- environment,
-- active children,
-- model calls,
-- tool calls,
-- approvals,
-- evidence references.
+---
 
-## C5. Tool inspection
+# 8. Initiative D — Reconstructable model execution
 
-For each tool show:
+**Goal:** make model-facing requests attributable and reproducible within evidence/retention policy.
+
+Add canonical ModelRequest identity linked to Execution, exact provider/model/route settings, prompt/system revision, tool-schema-set revision, profile revision, context assembly revision, attachments/artifacts, and relevant generation settings.
+
+Define three reconstruction levels:
+
+1. **Exact reconstruction** — complete request payload can be reconstructed byte-/contract-equivalently where policy permits retention.
+2. **Referential reconstruction** — immutable authorized artifact/references allow reconstruction without duplicating the payload in every evidence record.
+3. **Structural provenance** — when privacy/retention rules require deletion or redaction, preserve identity, hash/fingerprint, source/revision, redaction/retention event, and enough structure to prove lineage without falsely claiming exact reconstruction.
+
+Compaction summaries must reference their source evidence range. Model-visible and user-visible projections must be separable. Session/conversation read models should derive from canonical evidence where facts already exist.
+
+**Acceptance:** canonical paths have CI reconstruction tests and never claim exact reconstructability when retention policy makes it impossible.
+
+---
+
+# 9. Initiative E — Context Engineering convergence
+
+Preserve the existing CE pipeline:
 
 ```text
-registered
-available
-visible
-selected
-executable
-authorized/denied
-provider
-risk
-reason
+COLLECT → NORMALIZE → SCORE → FILTER → RANK → BUDGET
+→ COMPRESS/DEGRADE → FORMAT → VALIDATE → EMIT
 ```
 
-## C6. Skill inspection
+Required hardening:
 
-Expose:
+- formal provider contract for history, workspace instructions, files, references, Memory, RAG, runtime state, tool results, policy context, time, and instructional skills,
+- deterministic provider registration/activation/deactivation,
+- fragment provenance and lifetime: step/turn/Execution/Run/Session/durable,
+- replacement/supersession semantics,
+- controlled refresh of workspace instructions,
+- file/session/artifact references through CE rather than host-private injection,
+- lazy loading of instructions/resources,
+- token-cost attribution by source,
+- context diagnostics and exclusion reasons,
+- KV-cache-aware stable-prefix optimization where provider behavior makes it useful.
 
-- manifest,
-- version,
-- resolved dependencies,
-- resolved tools,
-- prompt/instruction references,
-- policy fragments,
-- provenance.
+No model path may bypass CE.
 
-## C7. Context inspection
+---
 
-Expose active context providers and contribution/cost information.
+# 10. Initiative F — Canonical ToolRuntime pipeline
 
-## C8. Explain tool access
-
-Example output semantics:
+Preserve ToolContract/ToolRuntime and formalize one official path:
 
 ```text
-tool exists: yes
-host enabled: yes
-agent declared: yes
-skill allows: yes
-runtime policy: deny
-reason: mutation outside current resource scope
+resolve → validate → effective-permission intersection → authorize
+→ pre-execute guards/policies → schedule → execute
+→ normalize → post-process → persist authoritative result
+→ publish user/model projections
 ```
 
-## C9. Explain profile values
+Required hardening:
 
-Explain why a value became effective.
+- canonical authoritative tool outcome separate from presentation,
+- stable typed input/output ABI,
+- timeout/cancellation contracts,
+- concurrency classification such as parallel-safe/exclusive,
+- nested tool-call lineage,
+- resource/cost attribution,
+- small guards for repeat-call/runaway/deadline behavior,
+- structured error identity (`error_id`, class, origin, retryability, user-safe message, diagnostic reference, cause),
+- removal/routing of private tool loops.
 
-## C10. Explain execution strategy
+Effective permission must remain a monotonic intersection of upstream host/profile/skill/policy/modality/invoker constraints; downstream logic may narrow, never widen.
 
-Explain why direct inference, agentic execution, or orchestration was selected.
+---
 
-## C11. Explain context inclusion and exclusion
+# 11. Initiative G — Runtime credentials and secret references
 
-Support both questions:
+Introduce/consolidate a provider-neutral `CredentialRef` model so configuration normally names secrets rather than storing values.
 
-- why was this fragment included?
-- why was this fragment excluded?
+Required:
 
-## C12. Capability dependency graph
+- local development and enterprise/cloud secret providers behind one contract,
+- late per-operation/per-Execution resolution,
+- rotation without rewriting unrelated config,
+- execution-scoped credential exposure,
+- interactive authorization flows,
+- no secret value in model context by default,
+- credential-access evidence that never logs the secret value.
 
-Generate or expose a graph linking:
+---
 
-- profiles,
-- agents,
-- skills,
-- tools,
-- integrations,
-- credentials,
-- providers,
-- policies.
+# 12. Initiative H — Unified Execution sandbox and isolation
 
-## C13. Execution Tree view
+Provide a simple contract with user-facing modes such as `READ_ONLY`, `WORKSPACE_WRITE`, and `FULL_ACCESS`, backed by pluggable local/container/remote/microVM/enterprise providers.
 
-Provide machine-readable tree and human-readable visualization.
+The contract covers filesystem, network, process, and credential exposure. Denied operations may request narrowly scoped one-shot escalation through Governance/Human Interaction. Provider documentation must distinguish confinement from hard isolation and declare limitations honestly.
 
-## C14. CLI surface
+Do not require every OS backend merely for feature parity; implementations are scenario- and deployment-driven.
 
-Target commands may include:
+---
+
+# 13. Initiative I — Subagent and external-agent providers
+
+Define a provider-neutral delegation seam. Native and external agents remain providers under Intergrax Execution/Governance/Evidence semantics.
+
+Required:
+
+- native local/remote provider,
+- controlled forked-context child,
+- external protocol/service adapters where useful,
+- child Execution admission for independently meaningful delegated work,
+- list/status/follow-up/interrupt/cancel/completion controls,
+- parent authority/budget inheritance,
+- provider output normalization into canonical evidence.
+
+External provider telemetry is secondary; it must not become a second execution lifecycle authority.
+
+---
+
+# 14. Initiative J — Background Execution control
+
+**Important:** do not build a second job runtime. Existing Background Tasks architecture is a real foundation.
+
+The work is to converge it onto canonical UER semantics and add ergonomic control:
+
+- preserve existing TaskRegistry/WorkerRuntime/provider transport architecture,
+- migrate transport/redelivery identity to canonical Attempt/Execution semantics,
+- expose start/list/status/wait/cancel/completion as a control projection over Execution,
+- retain ownership fencing,
+- make durable background work use canonical checkpoint/recovery,
+- define detached-child lifetime and authority explicitly,
+- completion routing must not create hidden state authority.
+
+---
+
+# 15. Initiative K — Verified external event intake
+
+Generalize a provider-neutral event envelope with source authentication, normalization, tenant/workspace/principal resolution, Governance, idempotency/deduplication, durable delivery/retry where required, and event→Task/Run/Execution admission.
+
+Required ordering for reliable flows:
 
 ```text
-intergrax inspect environment
-intergrax inspect agent <id>
-intergrax inspect execution <id>
-intergrax inspect tools
-intergrax inspect skills
-intergrax inspect context
-intergrax explain tool-access <tool_id>
-intergrax explain context <request_id>
-intergrax profile diff <a> <b>
-intergrax graph execution <id>
+verified delivery
+→ durable delivery/idempotency decision
+→ authority/workspace resolution
+→ required causal evidence
+→ work admission
+→ meaningful work
 ```
 
-Exact naming is implementation-defined; semantics are mandatory.
-
-## Acceptance criteria
-
-- operators can inspect actual effective runtime state,
-- inspection is a projection of canonical platform facts,
-- no inspection surface invents separate truth,
-- at least tool access, context inclusion/exclusion, and effective profile values are explainable.
+Recovery must prevent a crash/redelivery from silently duplicating already-committed meaningful side effects.
 
 ---
 
-# 7. Initiative D — Reconstructable model execution
+# 16. Initiative L — Durable artifacts, attachments, and spill
 
-## Goal
+Create one coherent artifact model with stable identity, ownership/scope, provenance, version/content identity, retention, lineage, and controlled retrieval.
 
-Make every important model decision reproducible from platform evidence.
-
-## D1. Canonical ModelRequest identity
-
-Introduce `ModelRequestId` or equivalent canonical identity.
-
-## D2. Execution linkage
-
-Every model request references the owning Execution.
-
-## D3. Provider/model identity
-
-Persist or reference exact:
-
-- provider,
-- model,
-- route/adapter,
-- relevant generation settings.
-
-## D4. Prompt/system revision
-
-Persist or reference exact system/instruction composition revision.
-
-## D5. Tool schema set revision
-
-The request must identify the exact tool schema surface visible to the model.
-
-## D6. Context assembly revision
-
-The request must identify the exact context assembly decision/evidence.
-
-## D7. Profile revision
-
-The request references the effective environment/profile revision.
-
-## D8. Structured model-request evidence
-
-Prefer structured components and provenance over storing only a concatenated prompt string.
-
-Evidence should cover as applicable:
-
-- system instructions,
-- conversation/history revision,
-- context fragments,
-- memory-derived context,
-- RAG evidence,
-- tool schemas,
-- active instruction skills,
-- policy overlays visible to the model,
-- attachments/artifacts exposed to the model,
-- model/provider identity,
-- token budget,
-- generation settings.
-
-## D9. Deterministic reconstruction
-
-Provide a reconstruction function/test path:
+Large tool/runtime output should support:
 
 ```text
-persisted evidence
-  ↓
-reconstructed model request
-  ↓
-contract comparison
+full payload → durable artifact
+model context → bounded preview + authorized locator
 ```
 
-## D10. Tool-result visibility lineage
-
-Every tool result shown to the model must be attributable to a canonical tool execution result.
-
-## D11. Compaction lineage
-
-If model history is compacted, summaries must reference the evidence range/source from which they were derived.
-
-## D12. Model-visible versus user-visible distinction
-
-Represent these separately when outputs differ.
-
-## Acceptance criteria
-
-- representative model calls can be reconstructed from persisted evidence,
-- every model-visible tool result and context fragment has provenance,
-- history compaction does not destroy audit evidence,
-- reconstruction tests run in CI for canonical paths.
+Artifact existence is independent of model context. CE decides the model-visible projection. Evidence may reference large artifacts instead of duplicating payloads.
 
 ---
 
-# 8. Initiative E — Context Engineering convergence and provider seam
+# 17. Initiative M — Context compaction and retention
 
-## Goal
+Implement model/provider-aware automatic compaction and explicit compaction controls.
 
-Preserve the existing Context Engineering architecture while making context sources composable, lazy, attributable, and operationally inspectable.
+Prefer spill/pruning of large recoverable outputs before semantic summarization where appropriate. Summaries retain source lineage. Critical task/policy/authority fragments are protected. Important facts may be pinned. Compaction quality is evaluated.
 
-## E1. Preserve canonical CE pipeline
+Canonical audit evidence is unaffected by context reduction except where independent privacy/retention policy explicitly removes or redacts evidence.
 
-Maintain the core model:
+---
+
+# 18. Initiative N — Runtime invariant service
+
+Domains define the invariants they semantically own; a common registry/runner executes, filters, and reports them.
+
+Initial high-value invariants include:
 
 ```text
-COLLECT
-→ NORMALIZE
-→ SCORE
-→ FILTER
-→ RANK
-→ BUDGET
-→ COMPRESS/DEGRADE
-→ FORMAT
-→ VALIDATE
-→ EMIT
-```
-
-## E2. ContextProvider contract
-
-Formalize a provider seam for sources such as:
-
-- session/history,
-- workspace instructions,
-- files,
-- references,
-- Memory,
-- RAG,
-- runtime state,
-- tool results,
-- policy overlays,
-- time/current-environment context,
-- instruction skills.
-
-## E3. Provider lifecycle
-
-Support deterministic registration, activation, deactivation, and inspection.
-
-## E4. Fragment provenance
-
-Each context fragment must identify its source and transformation lineage.
-
-## E5. Fragment lifetime
-
-Support explicit lifetime semantics such as:
-
-- step,
-- turn,
-- Execution,
-- Run,
-- Session,
-- durable.
-
-## E6. Context replacement semantics
-
-Support replacement/supersession where appropriate rather than treating all context as append-only.
-
-## E7. Workspace instruction provider
-
-Support workspace-owned instruction sources that are visible through CE rather than private host injection.
-
-## E8. Instruction refresh
-
-Allow controlled refresh/revision when workspace instruction sources change.
-
-## E9. File-reference provider
-
-Files/artifacts should enter model context through attributable references/projections.
-
-## E10. Session-reference provider
-
-Support controlled references to other session/run evidence where policy permits.
-
-## E11. Lazy activation
-
-Avoid eagerly injecting full instructions or large resources when catalog/locator semantics are sufficient.
-
-## E12. KV-cache-aware assembly
-
-Where provider/model behavior makes it valuable, preserve stable prompt prefixes and avoid unnecessary high-level schema churn.
-
-This is an optimization, not a correctness requirement.
-
-## E13. Context cost attribution
-
-Expose token cost by source/domain.
-
-## E14. Context diagnostics
-
-Support questions such as:
-
-- which source consumed most context budget?
-- which mandatory fragments forced degradation?
-- what was dropped and why?
-
-## Acceptance criteria
-
-- all canonical model calls use CE,
-- context sources use attributable provider contracts,
-- CE can explain inclusions/exclusions,
-- context cost by source can be measured,
-- lazy instruction/resource loading is supported.
-
----
-
-# 9. Initiative F — Canonical Tool Runtime pipeline
-
-## Goal
-
-Make tool execution one explicit, inspectable, governed pipeline.
-
-## F1. Canonical pipeline
-
-Define a single official sequence such as:
-
-```text
-resolve
-→ validate input
-→ authorize
-→ pre-execute guards/policies
-→ schedule
-→ execute
-→ normalize output
-→ post-process
-→ persist authoritative result
-→ publish model/user projection
-```
-
-Exact internal hooks may vary, but ownership and authoritative boundaries must be explicit.
-
-## F2. Authoritative tool result
-
-Define one canonical final tool outcome event/object.
-
-Presentation formatting must not replace the canonical result.
-
-## F3. Typed input/output ABI
-
-Tool contracts must retain stable typed input/output semantics.
-
-## F4. Timeout contract
-
-Tools declare/receive deterministic timeout semantics.
-
-## F5. Cancellation contract
-
-Tools must honor the runtime cancellation model according to declared capabilities.
-
-## F6. Concurrency classification
-
-Support classification such as:
-
-```text
-parallel-safe
-exclusive
-```
-
-and enforce it at scheduling time.
-
-## F7. Nested invocation lineage
-
-Nested tool calls must preserve parent/root call lineage.
-
-## F8. Cost attribution
-
-Capture relevant tool resource/cost data for budgeting and diagnostics.
-
-## F9. Guard extensions
-
-Implement small loop-hygiene behaviors as tools-domain guards/plugins/policies rather than new architecture domains.
-
-Examples:
-
-- repeated identical call warning,
-- runaway loop detection,
-- execution deadline guard.
-
-## F10. Eliminate private tool runtimes
-
-Audit agents, hosts, integrations, SDK paths, and legacy code for execution paths that bypass canonical ToolRuntime.
-
-## Acceptance criteria
-
-- one canonical tool execution path exists,
-- side effects cannot bypass governance,
-- canonical result and presentation are separate,
-- concurrency/timeout/cancellation behavior is explicit,
-- private tool loops are removed or formally routed through ToolRuntime.
-
----
-
-# 10. Initiative G — Runtime credentials and secret references
-
-## Goal
-
-Make credentials first-class governed runtime resources without exposing secret values to configuration or model context.
-
-## G1. CredentialRef
-
-Configuration should normally refer to credentials by stable reference rather than embedding secret values.
-
-## G2. Credential provider seam
-
-Define provider-neutral credential resolution.
-
-Potential providers include:
-
-- local secure storage,
-- environment-backed development provider,
-- enterprise secret stores,
-- cloud secret managers,
-- human authorization flows.
-
-## G3. Per-operation/per-Execution resolution
-
-Resolve credentials as late as practical and within the owning authority scope.
-
-Avoid unrestricted process-global secret injection as the canonical model.
-
-## G4. Rotation
-
-Credential rotation should not require rewriting unrelated profile configuration.
-
-## G5. Execution-scoped exposure
-
-An Execution receives only credentials required and authorized for its effective scope.
-
-## G6. Human authorization flow
-
-Support credentials that must be acquired through interactive authorization rather than static configuration.
-
-## G7. Secrets are not model-visible by default
-
-Secret values must never enter model context unless an explicit specialized contract makes that unavoidable and authorized.
-
-## G8. Credential access evidence
-
-Record credential reference access and authorization decisions without logging secret values.
-
-## Acceptance criteria
-
-- configs can reference secrets without storing secret values,
-- credential resolution is provider-neutral,
-- runtime access is authority-scoped,
-- credential use is auditable without secret leakage.
-
----
-
-# 11. Initiative H — Unified Execution sandbox and isolation contract
-
-## Goal
-
-Provide a simple user-facing isolation model backed by pluggable execution-environment providers.
-
-## H1. ExecutionSandbox contract
-
-Introduce or consolidate a canonical sandbox/isolation boundary owned by Execution Environment semantics.
-
-## H2. User-facing modes
-
-Provide simple modes such as:
-
-```text
-READ_ONLY
-WORKSPACE_WRITE
-FULL_ACCESS
-```
-
-Names may change, but the UX must remain simple.
-
-## H3. Provider abstraction
-
-Allow implementations such as:
-
-- local OS confinement,
-- container,
-- remote runtime,
-- microVM,
-- enterprise sandbox provider.
-
-Do not require every backend on every platform.
-
-## H4. Filesystem policy
-
-Explicit readable/writable roots and mount semantics.
-
-## H5. Network policy
-
-Explicit outbound/inbound network rules where supported.
-
-## H6. Process policy
-
-Explicit process spawning/execution rules.
-
-## H7. Credential policy
-
-Define what credential references are exposed to a sandboxed Execution.
-
-## H8. Governed escalation
-
-A denied operation may request narrowly scoped one-shot elevation according to Governance/HITL policy.
-
-## H9. Security honesty
-
-Documentation must distinguish confinement from hard isolation and state provider limitations clearly.
-
-## Acceptance criteria
-
-- sandbox mode is visible in effective profile and Execution inspection,
-- tool/code/process capabilities consume the same sandbox contract,
-- escalation goes through Governance,
-- provider-specific limitations are explicit.
-
----
-
-# 12. Initiative I — Subagent and external-agent provider model
-
-## Goal
-
-Make delegation provider-neutral while retaining Intergrax execution, authority, budget, and evidence semantics.
-
-## I1. SubagentProvider contract
-
-Create a provider-neutral delegation seam.
-
-## I2. Native Intergrax provider
-
-Support child Intergrax agents in-process and/or remote as implementation permits.
-
-## I3. Forked-context provider
-
-Support child execution seeded from controlled parent history/context where needed.
-
-## I4. Remote-agent providers
-
-Support adapters for external agent protocols/services as providers rather than separate runtime architectures.
-
-## I5. Delegation admission
-
-Independent delegated work must become child Execution when it meets Execution admission rules.
-
-## I6. Continuable child work
-
-Support resuming/following up with appropriate child agents/executions.
-
-## I7. Child control
-
-Support:
-
-- list,
-- status,
-- follow-up,
-- interrupt/cancel,
-- completion retrieval.
-
-## I8. Authority/budget inheritance
-
-External providers must not bypass parent authority ceilings or budget envelopes.
-
-## I9. Evidence normalization
-
-Normalize provider outputs and lifecycle evidence into canonical Intergrax Execution evidence.
-
-## Acceptance criteria
-
-- external agents can be invoked without becoming a second execution system,
-- delegated work is visible in Execution Tree,
-- authority/budget limits propagate,
-- provider-specific telemetry remains secondary to canonical evidence.
-
----
-
-# 13. Initiative J — Background Execution control surface
-
-## Goal
-
-Provide ergonomic background-job behavior without creating a second job runtime beside Unified Execution Runtime.
-
-## J1. Background work as Execution
-
-Background jobs are a projection/control surface over canonical Execution semantics.
-
-Do not introduce an independent lifecycle identity if Execution can own it.
-
-## J2. Ownership fencing
-
-Background work must be scoped to its owning principal/session/run/application according to product semantics.
-
-## J3. Non-blocking control
-
-Support:
-
-- start,
-- list,
-- status,
-- wait,
-- cancel,
-- completion notification.
-
-## J4. Durable background work
-
-Where product requirements demand durability, background work must survive host/process interruption according to configured recovery semantics.
-
-## J5. Detached semantics
-
-Define explicitly whether an Execution may outlive its parent Session/Run and under what authority.
-
-## J6. Completion routing
-
-Completion notifications must route to the owning interaction surface without creating hidden state authority.
-
-## Acceptance criteria
-
-- no duplicate Job lifecycle system exists,
-- background work is inspectable as Execution,
-- ownership isolation is enforced,
-- durable variants use canonical recovery/evidence mechanisms.
-
----
-
-# 14. Initiative K — Verified external event intake
-
-## Goal
-
-Provide a generic governed path from authenticated external events to Intergrax work.
-
-## K1. External event intake contract
-
-Define a canonical provider-neutral event envelope.
-
-## K2. Provider authentication
-
-Each adapter verifies source-specific authenticity before normalization.
-
-## K3. Normalization
-
-Normalize provider deliveries into stable platform event types.
-
-## K4. Tenant/workspace/principal resolution
-
-Resolve the correct authority and workspace context before work admission.
-
-## K5. Policy evaluation
-
-External event rules must be subject to Governance.
-
-## K6. Idempotency/deduplication
-
-Provide delivery identity and duplicate handling for relevant providers.
-
-## K7. Durable delivery/retry
-
-Where reliability requires it, support durable intake/retry rather than process-local fire-and-forget behavior.
-
-## K8. Event-to-work admission
-
-External events may create Task/Run/Execution according to canonical intake rules.
-
-## K9. Rule provenance
-
-Record which trusted rule admitted or rejected an event.
-
-## K10. Evidence
-
-Persist normalized event identity, authorization result, admission result, and resulting work identities.
-
-## Acceptance criteria
-
-- provider adapters cannot bypass tenant/policy resolution,
-- duplicate delivery is handled deterministically where configured,
-- resulting work uses canonical Task/Execution paths,
-- event admission is auditable.
-
----
-
-# 15. Initiative L — Durable artifacts, attachments, and large-output spill
-
-## Goal
-
-Create one coherent artifact model so large or durable resources can exist outside model context while remaining retrievable and attributable.
-
-## L1. Durable artifact identity
-
-Use stable artifact identity independent of prompt/context placement.
-
-## L2. Versioning/content identity
-
-Use versioned and/or content-addressed storage semantics where appropriate.
-
-## L3. Ownership and scope
-
-Artifacts must carry tenant/workspace/principal/execution ownership as required.
-
-## L4. Attachment provenance
-
-Track source, upload/creation event, transformation lineage, and policy state.
-
-## L5. Model-visible projection
-
-Context Engineering decides what projection of an artifact is visible to the model.
-
-## L6. Large-output spill
-
-If tool or runtime output exceeds configured inline limits:
-
-```text
-full output → durable artifact
-model context → bounded preview + locator
-```
-
-## L7. Read/search later
-
-Provide controlled artifact retrieval/search capabilities.
-
-## L8. Retention policy
-
-Artifacts have explicit retention/expiry rules independent of context compaction.
-
-## L9. Artifact lineage
-
-Derived artifacts reference their source artifacts/evidence.
-
-## L10. Evidence attachment
-
-Important evidence records may reference artifacts rather than duplicating large payloads.
-
-## Acceptance criteria
-
-- large tool outputs do not force unbounded context growth,
-- full data remains retrievable when policy permits,
-- artifact existence is independent of model context,
-- provenance/ownership are preserved.
-
----
-
-# 16. Initiative M — Context compaction and retention
-
-## Goal
-
-Control context pressure without losing durable evidence.
-
-## M1. Automatic compaction trigger
-
-Trigger compaction based on model/provider-aware context pressure.
-
-## M2. Explicit compaction API/command
-
-Allow controlled manual compaction where product surfaces need it.
-
-## M3. Spill/prune before summarizing where appropriate
-
-Prefer moving large recoverable tool outputs to artifacts before compressing semantic conversation history.
-
-## M4. Summary lineage
-
-A compacted summary references the original event/evidence range.
-
-## M5. Protected fragments
-
-Policy, authority, critical task constraints, and required instructions must not be silently removed.
-
-## M6. Quality validation
-
-Evaluate compaction quality for information retention and task continuity.
-
-## M7. Pinning
-
-Allow important facts/events to be pinned against ordinary compaction.
-
-## M8. Evidence independence
-
-Compaction changes model-visible history, not canonical historical evidence.
-
-## Acceptance criteria
-
-- automatic compaction works on canonical model paths,
-- compacted context can be traced to original evidence,
-- critical policy/task constraints survive compaction,
-- audit history is unaffected by model-context reduction.
-
----
-
-# 17. Initiative N — Runtime invariant service
-
-## Goal
-
-Let domains continuously verify that the live runtime still satisfies critical architecture contracts.
-
-## N1. Domain-owned invariants
-
-Each semantic owner defines invariants for relationships it owns.
-
-Examples:
-
-```text
-MODEL_VISIBLE_RECONSTRUCTABLE
+MODEL_VISIBLE_RECONSTRUCTABLE_WITH_DECLARED_LEVEL
 CHILD_AUTHORITY_NOT_GREATER_THAN_PARENT
-SIDE_EFFECT_HAS_AUTHORIZATION
+SIDE_EFFECT_HAS_FRESH_AUTHORIZATION
+REQUIRED_CAUSAL_EVIDENCE_PRECEDES_MEANINGFUL_WORK
 TOOL_RESULT_HAS_TOOL_CALL
 EXECUTION_EVENT_HAS_EXECUTION_ID
 PROFILE_REVISION_EXISTS
 BACKGROUND_CHILD_HAS_OWNER
+PROFILE_OVERLAY_IS_NOT_AUTHORITY
+DYNAMIC_REGISTRATION_HAS_OWNER_AND_TEARDOWN
 ```
 
-## N2. Central invariant runner
-
-Provide a common registry/execution/reporting service.
-
-## N3. Runtime selection
-
-Support enabling/disabling categories for development, qualification, and production as policy permits.
-
-## N4. Attribution
-
-Violations must identify the owning domain/package/component.
-
-## N5. Severity
-
-Support severity/impact classification.
-
-## N6. Evidence output
-
-Invariant failures produce canonical diagnostic/evidence records.
-
-## N7. CI reuse
-
-Where practical, the same invariant logic should be reusable in tests/qualification and live runtime checks.
-
-## N8. Invariant catalog
-
-Generate documentation/catalog from registered invariants.
-
-## Acceptance criteria
-
-- critical architecture invariants have executable checks,
-- violations are attributable,
-- checks can run in CI and selected runtime profiles,
-- invariant failures integrate with diagnostics/evidence.
+Failures include owner attribution, severity, evidence references, and may be reused in CI/conformance where practical.
 
 ---
 
-# 18. Initiative O — Dynamic orchestration proposals
+# 19. Initiative O — Dynamic orchestration proposals
 
-## Goal
+Models/planners may produce typed `WorkflowProposal` artifacts. Validate schema, capabilities, authority, budget, cycles, depth, fan-out, concurrency, and provider availability.
 
-Allow models/planners to propose flexible work topology without allowing generated topology to become runtime authority by itself.
-
-## O1. WorkflowProposal
-
-Introduce a typed proposal artifact for dynamically authored orchestration.
-
-## O2. Proposal validation
-
-Validate:
-
-- schema,
-- capabilities,
-- authority,
-- budget,
-- cycles,
-- max depth,
-- fan-out,
-- concurrency,
-- provider availability.
-
-## O3. Proposal is not accepted topology
-
-The model/planner proposal remains untrusted until accepted by platform rules.
-
-## O4. Accepted OrchestrationDefinition
-
-Only accepted topology enters Nexus execution semantics.
-
-## O5. Alternate proposal providers
-
-Model-authored scripts or external planners may be topology proposal providers, not independent execution authorities.
-
-## Acceptance criteria
-
-- generated workflows cannot bypass Governance or Nexus,
-- accepted topology has explicit provenance,
-- invalid/budget-violating topology is rejected before execution,
-- dynamic topology is inspectable and reconstructable.
+Proposal is not accepted topology. Only an accepted `OrchestrationDefinition` enters Nexus. Model-authored scripts or external planners are proposal providers, not execution authorities.
 
 ---
 
-# 19. Initiative P — Capability Skills and Instruction Skills
+# 20. Initiative P — Capability Skills and Instruction Skills
 
-## Goal
+Preserve existing Capability Skills and their tool/prompt/policy/dependency/risk semantics.
 
-Preserve strong capability-composition Skills while adding lightweight lazy-load instructional capabilities.
+Harden version identity and preserve resolved skill provenance. Add a distinct lightweight `InstructionSkill` with id/version/description/instruction source/activation policy/token estimate/provenance. Expose compact catalogs and lazy-load full instructions.
 
-## P1. Preserve CapabilitySkill semantics
-
-Current Skills remain declarative capability packages that may include:
-
-- tool references,
-- prompt references,
-- policy fragments,
-- dependencies,
-- risk metadata.
-
-## P2. Version identity hardening
-
-Ensure manifest version, registry identity, resolved identity, and persisted provenance cannot diverge ambiguously.
-
-## P3. Preserve resolved provenance
-
-Do not reduce resolved Skills to only a final allowed-tool list.
-
-Retain a resolved skill snapshot/package for evidence and inspection.
-
-## P4. InstructionSkill
-
-Add a distinct lightweight instructional skill class for reusable task methods/instructions.
-
-Suggested properties:
-
-- skill id,
-- version,
-- description,
-- instruction source/artifact,
-- activation policy,
-- token estimate,
-- provenance.
-
-## P5. Lazy loading
-
-Expose compact catalogs/descriptions and load full instruction content only when required.
-
-## P6. No authority grant
-
-Instruction Skills cannot independently grant tool access or increase authority.
-
-## P7. Development refresh
-
-Support controlled development-time refresh of instruction content without weakening production versioning.
-
-## Acceptance criteria
-
-- CapabilitySkill semantics remain unchanged,
-- InstructionSkill is clearly separate,
-- Skill provenance survives resolution,
-- lazy instruction loading reduces unnecessary context usage.
+Instruction Skills may not grant tool access or widen authority.
 
 ---
 
-# 20. Initiative Q — Reversible capability/plugin lifecycle
+# 21. Initiative Q — Reversible capability/plugin lifecycle
 
-## Goal
-
-Create one consistent lifecycle vocabulary across extension surfaces without introducing a universal runtime semantics engine.
-
-## Q1. Common lifecycle vocabulary
-
-Where applicable, align on:
+Align extension surfaces where applicable on:
 
 ```text
-discover
-→ validate
-→ register
-→ activate
-→ inspect
-→ deactivate
-→ unregister
+discover → validate → register → stage → activate → inspect
+→ deactivate → unregister
 ```
 
-## Q2. Reversible registration handles
+Dynamic registration returns deterministic teardown handles. Registrations are owner-scoped (platform/application/agent/Execution). Execution-scoped registrations disappear when the owner ends.
 
-Dynamic registrations return explicit handles/tokens that support deterministic teardown.
+Define replace/version coexistence/upgrade/rollback/dependency-failure semantics. In-flight Executions remain pinned to the admitted provider/version unless explicit migration is allowed.
 
-## Q3. Owner scoping
-
-Support scopes such as:
-
-- platform/global,
-- application,
-- agent,
-- Execution.
-
-## Q4. Automatic scoped cleanup
-
-Execution-scoped registrations are removed when the owning Execution ends.
-
-## Q5. Replace/version semantics
-
-Define deterministic behavior for:
-
-- replacement,
-- version coexistence,
-- upgrade,
-- rollback,
-- missing dependency.
-
-## Q6. CapabilityDescriptor
-
-Introduce shared control-plane metadata without flattening domain semantics.
-
-Suggested fields:
+`CapabilityDescriptor` control-plane metadata should include:
 
 ```text
 capability_id
@@ -1600,969 +575,450 @@ lifecycle_support
 inspection_metadata
 qualification_state
 provenance
+stability: experimental|preview|stable|deprecated
+compatibility constraints
 ```
 
-## Q7. Platform Plugins remain package/control-plane infrastructure
-
-Platform Plugins may own packaging, discovery, compatibility, trust, qualification, and lifecycle vocabulary, but not replace Tool/Skill/RAG/Memory/etc. semantics.
-
-## Acceptance criteria
-
-- dynamic registrations are reversible,
-- temporary registrations are scope-safe,
-- common lifecycle terminology exists,
-- domain semantics remain owned by domains.
+Platform Plugins remain the package/control plane; they do not absorb domain semantics.
 
 ---
 
-# 21. Initiative R — Governance UX and permission presets
+# 22. Initiative R — Governance UX and permission presets
 
-## Goal
+Preserve Meaningful Side Effect Authorization and fresh evaluation immediately before effects. Fresh DENY cannot be overridden by an earlier approval.
 
-Keep rich policy semantics while making permissions understandable to users and operators.
+Add understandable presets such as observe/workspace/controlled/trusted/full that only expand into canonical Governance, sandbox, ToolRuntime, and authority configuration.
 
-## R1. Preserve Meaningful Side Effect Authorization
+Provide explainable approval/deny reasons, normalized side-effect previews, one-shot consumable grants, and effective authority snapshots per Execution.
 
-Fresh side-effect evaluation remains authoritative immediately before the mutation.
+---
 
-## R2. Approval cannot override fresh deny
+# 23. Initiative S — Workspace, settings, and credentials separation
 
-Preserve fail-closed semantics.
+Workspace = runtime/product scope and resources. Settings = user/operator preferences. Credentials = governed secret resources. `ApplicationEnvironmentProfile` may reference/configure these systems but must not become their runtime storage authority.
 
-## R3. Consumable one-shot grants
+---
 
-Approval grants must be identity-bound and consumable according to operation semantics.
+# 24. Initiative T — Feedback, goals, plans, and work state
 
-## R4. Permission presets
-
-Expose understandable presets such as:
+Highest priority is a canonical feedback bridge:
 
 ```text
-observe
-workspace
-controlled
-trusted
-full
+human feedback → evaluation evidence → outcome signal → optional adaptive input
 ```
 
-Presets expand to canonical sandbox, ToolRuntime, Governance, and authority configuration.
-
-## R5. Explain permission
-
-Support operator explanations for:
-
-- why approval was required,
-- why an action was denied,
-- which rule/authority boundary determined the result.
-
-## R6. Side-effect preview
-
-Before human approval, show the intended resource/action/change in a stable normalized format.
-
-## R7. Effective authority snapshot
-
-Each Execution exposes the effective authority envelope under which it operates.
-
-## Acceptance criteria
-
-- permission UX becomes simpler without simplifying underlying policy semantics,
-- approval decisions are identity-bound and auditable,
-- operators can explain deny/approval outcomes.
+Goals/plans/todos remain optional scenario-driven collaboration state. They never grant execution permission or become a hidden orchestration authority.
 
 ---
 
-# 22. Initiative S — Workspace, settings, and credentials separation
+# 25. Initiative U — Scheduling convergence
 
-## Goal
-
-Prevent unrelated concepts from collapsing into a single environment/configuration object.
-
-## S1. Workspace is runtime/product context
-
-Workspace owns identity/scope/resources/policy context appropriate to the product.
-
-## S2. Settings are preferences/configuration
-
-User/operator settings are not secret storage and not workspace identity.
-
-## S3. Credentials are secret resources
-
-Credentials use references/providers and separate authority rules.
-
-## S4. Environment composes references
-
-`ApplicationEnvironmentProfile` may reference/configure these systems, but must not become the direct storage authority for their runtime data.
-
-## Acceptance criteria
-
-- workspace identity, settings, and credentials have distinct contracts,
-- environment composition references them without conflating their semantics.
+Represent scheduled intent separately from actual Execution. At trigger time resolve **current** authority, policy, credentials, profile, workspace, and capability availability. Durable schedules support recurrence/cancellation as required. Creation/change/trigger/cancel and resulting Task/Execution identities are evidence-backed.
 
 ---
 
-# 23. Initiative T — Feedback, goals, plans, and work-state capabilities
+# 26. Initiative V — Provider-neutral process/filesystem/terminal/code runtimes
 
-## Goal
+Where scenarios require them, define provider-neutral seams such as ProcessProvider, FilesystemProvider, TerminalProvider, and CodeRuntimeProvider. They consume canonical Execution Environment, sandbox, credentials, ToolRuntime/Governance, and evidence.
 
-Support collaboration state only where it creates product/evaluation value, without creating unnecessary platform domains.
+Prefer external/remote mature providers where economically sensible. Build local implementations only when scenarios establish strategic value. Do not enter a feature-parity race for specialized coding-agent functionality.
 
-## T1. Feedback bridge
+---
 
-Create a canonical bridge:
+# 27. Initiative W — SDK/API/ACP/MCP/host convergence
+
+Python SDK, REST/HTTP, ACP, MCP, CLI, Slack/chat, web, and future hosts are adapters over the same canonical runtime boundaries.
+
+No host-specific private policy engine, private tool runtime, private execution identity, or private CE path is allowed. Hosts declare capabilities; qualification evidence is scoped to host/profile/runtime combinations.
+
+---
+
+# 28. Initiative X — Generated architecture and capability metadata
+
+Generate rather than hand-duplicate:
+
+- capability catalog,
+- tool catalog,
+- skill catalog,
+- provider catalog,
+- configuration catalog,
+- invariant catalog,
+- module/dependency graph,
+- extension/capability graph,
+- transport/API schemas and client types where the canonical technology permits generation.
+
+CI freshness gates should catch stale generated artifacts.
+
+---
+
+# 29. Initiative Y — Documentation architecture simplification
+
+Maintain one glossary and one identity vocabulary. Each domain answers one primary question. CURRENT precedes TARGET. Canonical docs link to implementation and tests/proofs where practical. Public docs avoid unnecessary internal acronyms. Mechanically verifiable documentation receives freshness gates.
+
+This roadmap must be linked from the project documentation navigation and the general roadmap so it is discoverable as the canonical cross-domain architecture-evolution program.
+
+---
+
+# 30. Initiative Z — Security, trust, and supply-chain hardening
+
+Make providers/plugins/extensions explicit trust-boundary objects with risk/trust/stability/qualification/provenance metadata.
+
+Harden credential isolation, network destination policy, filesystem mounts, process spawning, high-risk activation approval, extension sandbox testing, supply-chain evidence, and permission-delta review before activation.
+
+Security acceptance language must be bounded: canonical paths must fail closed under the declared threat model and pass defined adversarial/conformance suites; do not claim universal impossibility from finite testing.
+
+---
+
+# 31. Initiative AA — Memory and RAG hardening
+
+Preserve `Memory != RAG != Context Engineering`.
+
+Required hardening:
+
+- tenant/user/session/task/org scope authority,
+- explicit tool-result persistence policy so outputs do not silently become LTM,
+- memory write and consolidation provenance,
+- deletion/tombstone evidence,
+- RAG scope enforcement before retrieval/context inclusion,
+- canonical RetrievalHit ABI,
+- retrieval strategy evidence,
+- effective query/filter reconstruction where required,
+- CE remains the only owner of final model-context inclusion.
+
+Acceptance claims should be bounded to canonical qualified paths and threat-model tests rather than absolute language.
+
+---
+
+# 32. Initiative AB — Adaptive Harness Intelligence expansion
+
+Broaden the governed adaptive artifact taxonomy where evidence justifies it, for example routing, execution-strategy, context, RAG, tool-selection, policy recommendations, Instruction Skills, WorkflowDefinitions, provider recommendations, and runtime-extension candidates.
+
+Each artifact class defines its maximum authority: observe, recommend, human-gated apply, or bounded automatic apply. Preserve versioning, shadow, canary, verification, keep/rollback, and no self-expansion of the adaptive authority envelope.
+
+---
+
+# 33. Initiative AC — Governed Runtime Evolution
+
+This remains a **late-stage** initiative and must not begin before Execution, checkpoint/recovery, sandbox, credentials, runtime invariants, reversible registration, effective composition, and evidence foundations are proven.
+
+Lifecycle:
 
 ```text
-human feedback
-→ evaluation evidence
-→ outcome signal
-→ optional adaptive input
-```
-
-This is the highest-value capability in this group.
-
-## T2. Goals
-
-If required by scenarios, represent persistent same-session/run goals as structured work state.
-
-## T3. Plans
-
-Allow reviewed planning state where applications benefit from explicit plans.
-
-## T4. Todo/checklist
-
-Treat todos primarily as a collaboration-state/tool surface rather than a new architecture owner unless future requirements justify otherwise.
-
-## T5. No silent authority
-
-Plan/goal/todo state never grants execution permission.
-
-## Acceptance criteria
-
-- feedback is available to Evaluation/AHI as attributable evidence,
-- optional work-state features do not become duplicate execution/orchestration authorities.
-
----
-
-# 24. Initiative U — Scheduling convergence
-
-## Goal
-
-Make scheduled work an admission mechanism into the canonical Task/Execution system rather than a separate agent runtime.
-
-## U1. Scheduled intent
-
-Represent the requested future work and schedule independently from actual Execution.
-
-## U2. Admission at trigger time
-
-At execution time, resolve current:
-
-- authority,
-- policy,
-- credentials,
-- profile,
-- workspace,
-- capability availability.
-
-## U3. Durable schedules
-
-Support durable recurrence/cancellation where product requirements demand it.
-
-## U4. Evidence
-
-Record creation, modification, trigger, cancellation, and resulting Task/Execution identities.
-
-## Acceptance criteria
-
-- scheduled work cannot bypass current policy at trigger time,
-- resulting work uses canonical execution semantics,
-- schedule state and runtime execution state remain separate.
-
----
-
-# 25. Initiative V — Provider-neutral process, filesystem, terminal, and code runtimes
-
-## Goal
-
-Support strong coding/automation capabilities without forcing Intergrax to reimplement every specialized runtime locally.
-
-## V1. Provider-neutral capability contracts
-
-Where required, define seams such as:
-
-```text
-ProcessProvider
-FilesystemProvider
-TerminalProvider
-CodeRuntimeProvider
-```
-
-## V2. Governance integration
-
-All such capabilities must consume canonical:
-
-- Execution Environment,
-- Sandbox,
-- CredentialRef,
-- ToolRuntime/Governance,
-- evidence.
-
-## V3. External providers first where economically sensible
-
-Prefer adapters to mature external/remote execution systems when they satisfy requirements.
-
-## V4. Local implementations only when justified
-
-Build local process/terminal/code/LSP implementations only when required by a product/scenario and when they deliver clear strategic value.
-
-## V5. No feature-parity race
-
-The platform goal is orchestration/governance of capable executors, not maximal duplication of specialized coding-agent functionality.
-
-## Acceptance criteria
-
-- code/process capabilities can be provided externally,
-- external execution does not bypass Intergrax authority/evidence,
-- local implementation scope is scenario-driven.
-
----
-
-# 26. Initiative W — SDK, API, ACP, MCP, and host convergence
-
-## Goal
-
-Ensure every transport and host is an adapter over the same canonical runtime.
-
-## W1. Shared runtime entry boundaries
-
-The following must route to the same canonical semantics:
-
-- Python/other SDKs,
-- REST/HTTP,
-- ACP,
-- MCP,
-- CLI,
-- Slack/chat channels,
-- web UI,
-- future hosts.
-
-## W2. No private policy model
-
-Hosts must not implement competing authorization semantics.
-
-## W3. No private tool runtime
-
-Hosts and SDKs cannot execute tools outside ToolRuntime.
-
-## W4. No private execution lifecycle
-
-Hosts cannot create substitute run/execution identities.
-
-## W5. Host capability declaration
-
-Each host declares what interaction/runtime capabilities it provides.
-
-## W6. Qualification per host/profile
-
-Qualification evidence should identify which host/profile/runtime combinations are proven.
-
-## Acceptance criteria
-
-- transport choice does not change core execution semantics,
-- policy/tool/context boundaries remain canonical across hosts,
-- host-specific capability gaps are inspectable.
-
----
-
-# 27. Initiative X — Generated architecture and capability metadata
-
-## Goal
-
-Reduce documentation drift by generating mechanical catalogs and dependency views from source-of-truth contracts.
-
-## X1. Generated capability catalog
-
-## X2. Generated tool catalog
-
-## X3. Generated skill catalog
-
-## X4. Generated provider catalog
-
-## X5. Generated configuration catalog
-
-## X6. Generated invariant catalog
-
-## X7. Generated module/dependency graph
-
-## X8. Generated extension/capability dependency graph
-
-## X9. CI freshness gates
-
-Fail CI when generated architecture/catalog artifacts are stale relative to canonical source contracts.
-
-## Acceptance criteria
-
-- mechanical documentation is generated rather than hand-duplicated,
-- stale generated artifacts are caught in CI,
-- architects can inspect dependency graphs without manual reconstruction.
-
----
-
-# 28. Initiative Y — Documentation architecture simplification
-
-## Goal
-
-Make the documentation reflect the runtime mental model instead of amplifying internal complexity.
-
-## Y1. One glossary
-
-Maintain one canonical runtime terminology source.
-
-## Y2. One identity vocabulary
-
-Task/Run/Attempt/Execution/Event must have consistent definitions across docs.
-
-## Y3. Each domain answers one primary question
-
-Examples:
-
-```text
-Memory → what persists?
-RAG → what external knowledge is retrieved?
-Context Engineering → what enters the model now?
-Governance → what is allowed?
-Execution Runtime → how does work live and execute?
-Nexus → what executes next in accepted topology?
-Observability → what platform facts are recorded?
-Diagnostics → what do those facts mean operationally?
-```
-
-## Y4. CURRENT before TARGET
-
-Architecture documents must clearly separate implemented reality from target architecture.
-
-## Y5. Canonical implementation links
-
-Each major architecture document references canonical runtime implementations and tests/proofs where practical.
-
-## Y6. Public versus deep technical vocabulary
-
-Public/product docs should avoid unnecessary internal acronyms when simpler language works.
-
-## Y7. Stale documentation detection
-
-Automate checks where mechanical freshness can be verified.
-
-## Acceptance criteria
-
-- major terms are unambiguous,
-- target architecture is not accidentally presented as shipped reality,
-- duplicated mechanical documentation is reduced.
-
----
-
-# 29. Initiative Z — Security, trust, and supply-chain hardening
-
-## Goal
-
-Make third-party providers, plugins, runtime extensions, credentials, and execution environments explicit trust-boundary objects.
-
-## Z1. Trust metadata
-
-Every external provider/plugin/capability package exposes trust classification.
-
-## Z2. Risk classification
-
-Capabilities and side effects expose risk metadata appropriate to Governance.
-
-## Z3. Credential isolation
-
-Execution receives only authorized credential references.
-
-## Z4. Network destination policy
-
-Support governed network-destination restrictions where relevant.
-
-## Z5. Filesystem mount policy
-
-Explicit access roots/mounts.
-
-## Z6. Process spawning policy
-
-Explicit runtime permission.
-
-## Z7. Third-party activation warning/approval
-
-High-risk third-party extensions require appropriate policy/HITL treatment.
-
-## Z8. Extension sandbox tests
-
-Dynamic or third-party code should be testable in constrained environments before activation.
-
-## Z9. Supply-chain evidence
-
-Record package/provider identity, version, provenance, qualification state, and activation history.
-
-## Z10. Permission diff before activation
-
-Activation tooling should surface the capability/authority delta introduced by a new provider/extension.
-
-## Acceptance criteria
-
-- runtime knows what third-party code/provider is active,
-- credential and network access are explicit,
-- activation history and permission deltas are inspectable.
-
----
-
-# 30. Initiative AA — Memory and RAG hardening
-
-## Goal
-
-Preserve current Memory/RAG/CE separation while closing governance, persistence, and evidence gaps.
-
-## AA1. Preserve domain separation
-
-```text
-Memory != RAG != Context Engineering
-```
-
-## AA2. Memory scope authority
-
-Ensure memory reads/writes honor tenant/user/session/task/organization scope boundaries.
-
-## AA3. Tool-result persistence policy
-
-Tool output must not silently become long-term memory.
-
-Distinguish explicit persistence from ephemeral runtime use.
-
-## AA4. Memory write evidence
-
-Record why/where memory was written.
-
-## AA5. Consolidation provenance
-
-Derived/consolidated memories reference source memories/evidence.
-
-## AA6. Deletion/tombstone evidence
-
-Logical deletion and vector-index tombstones remain attributable.
-
-## AA7. RAG retrieval scope authority
-
-Retrieval must apply tenant/namespace/workspace policy before context inclusion.
-
-## AA8. Canonical RetrievalHit ABI
-
-Normalize retrieval results across providers.
-
-## AA9. Retrieval strategy evidence
-
-Record dense/hybrid/hierarchical/graph/reranker decisions as configured.
-
-## AA10. Query reconstruction
-
-Persist or reconstruct the effective retrieval query and filters for important paths.
-
-## AA11. CE retains inclusion ownership
-
-Retrieval does not decide by itself what enters model context.
-
-## Acceptance criteria
-
-- Memory and RAG maintain distinct semantics,
-- persistence and retrieval decisions are evidence-backed,
-- unauthorized cross-scope retrieval is impossible on canonical paths,
-- tool output cannot silently become LTM.
-
----
-
-# 31. Initiative AB — Adaptive Harness Intelligence expansion
-
-## Goal
-
-Expand adaptive behavior from profile tuning toward governed evolution of versioned harness artifacts without allowing uncontrolled mutation.
-
-## AB1. Broaden adaptive artifact taxonomy
-
-Potential versioned adaptive artifacts:
-
-```text
-RoutingProfile
-ExecutionStrategyProfile
-ContextProfile
-RagProfile
-ToolSelectionProfile
-PolicyRecommendation
-InstructionSkill
-WorkflowDefinition
-CapabilityProviderRecommendation
-RuntimeExtensionCandidate
-```
-
-Not every class must support automatic application.
-
-## AB2. Authority level per artifact class
-
-Each artifact class defines the maximum adaptation authority allowed:
-
-- observe only,
-- recommend,
-- human-gated apply,
-- bounded automatic apply.
-
-## AB3. Shadow/canary lifecycle
-
-Retain versioning, shadow, canary, verification, keep/rollback semantics.
-
-## AB4. No envelope expansion
-
-AHI cannot expand its own authority envelope.
-
-## AB5. Reconstructable adaptation evidence
-
-Every recommendation/application must link outcome signals, evidence, candidate artifact, governance decision, verification, and rollback state.
-
-## Acceptance criteria
-
-- adaptation remains versioned and governed,
-- new artifact classes cannot bypass class-specific authority limits,
-- adaptive decisions are reconstructable.
-
----
-
-# 32. Initiative AC — Governed Runtime Evolution
-
-## Goal
-
-Allow Intergrax to detect missing capabilities and safely propose, validate, temporarily activate, evaluate, promote, or roll back runtime extensions.
-
-This is a late-stage initiative and must not begin before the required execution, sandbox, invariant, credential, composition, and evidence foundations are complete.
-
-## AC1. CapabilityGap
-
-Define a typed record for a missing capability discovered during execution.
-
-## AC2. RuntimeExtensionProposal
-
-A proposal should declare:
-
-- purpose,
-- requested interface,
-- implementation/source artifact,
-- dependencies,
-- required authority,
-- risk,
-- expected scope/lifetime,
-- tests.
-
-## AC3. Static validation
-
-Validate schema, imports/dependencies, forbidden operations, and declared contracts before execution.
-
-## AC4. Sandbox build/test
-
-Build and execute candidate tests in an isolated environment.
-
-## AC5. Contract tests
-
-Verify the candidate against the declared capability ABI.
-
-## AC6. Scenario/golden tests
-
-Evaluate candidate behavior against bounded expected scenarios where available.
-
-## AC7. Shadow execution
-
-Run candidate behavior without granting authoritative production side effects where possible.
-
-## AC8. Governance decision
-
-Activation authority depends on risk, owner scope, artifact class, and current policy.
-
-## AC9. Execution-scoped activation first
-
-The safest default dynamic activation scope is the owning Execution.
-
-## AC10. Automatic expiry
-
-Temporary capability registration expires with its owner scope unless promoted through an explicit separate workflow.
-
-## AC11. Canary activation
-
-Allow broader bounded activation after successful shadow validation where policy permits.
-
-## AC12. Promotion
-
-Persistent plugin/provider installation is a distinct governed promotion workflow.
-
-## AC13. Rollback
-
-Activation and promotion must support deterministic rollback.
-
-## AC14. Evidence
-
-Record the complete lifecycle:
-
-```text
-capability gap
-→ proposal
-→ validation
-→ sandbox/tests
+CapabilityGap
+→ RuntimeExtensionProposal
+→ structural/static validation
+→ sandbox build/test
+→ contract + adversarial tests
 → governance
 → shadow
-→ activation
-→ use
-→ evaluation
-→ promotion/expiry/rollback
+→ Execution-scoped activation
+→ use/evaluation
+→ expiry | canary | promotion | rollback
 ```
 
-## Acceptance criteria
+A model-safe `RuntimeCapabilityView` must exist before `CapabilityGap`: the model may see only authorized capability names/descriptions, limitations, and resolvable gaps; it must not receive secrets, hidden providers, cross-tenant state, or security-sensitive control-plane metadata.
 
-- dynamic extensions cannot self-expand authority,
-- temporary extensions are scope-bounded and reversible,
-- activation is evidence-backed,
-- persistent promotion requires a separate governed decision.
+Persistent installation/promotion is a distinct governed workflow. Runtime extension cannot widen its own scope, authority, or lifetime.
 
 ---
 
-# 33. Initiative AD — Test and qualification infrastructure
+# 34. Initiative AD — Test and qualification infrastructure
 
-## Goal
+Provide reusable deterministic construction of representative runtime compositions, scripted model fault/mocking, model/tool replay, run/session/effective-profile snapshots, reconstruction tests, registration-leak tests, cancellation races, parallel-tool tests, sandbox matrices, provider conformance suites, workflow adversarial tests, and hostile runtime-extension tests.
 
-Create deterministic test support for the new runtime invariants and cross-domain contracts.
-
-## AD1. Harness testkit
-
-Provide reusable deterministic construction of representative runtime compositions.
-
-## AD2. Model mock/fault server
-
-Support scripted model responses, failures, delays, malformed tool calls, and provider errors.
-
-## AD3. Model replay adapter
-
-Replay recorded model interactions where appropriate.
-
-## AD4. Tool replay
-
-Allow deterministic replay/stubbing of tool outcomes.
-
-## AD5. Session/run snapshots
-
-Snapshot durable state for regression testing.
-
-## AD6. Effective profile snapshots
-
-Verify profile resolution and composition changes.
-
-## AD7. Model request reconstruction tests
-
-Prove `MODEL_VISIBLE => RECONSTRUCTABLE` on canonical paths.
-
-## AD8. Registration leak tests
-
-Ensure temporary registrations are removed.
-
-## AD9. Cancellation race tests
-
-Test parent/child/tool/remote cancellation behavior.
-
-## AD10. Parallel tool tests
-
-Verify safe/exclusive concurrency semantics.
-
-## AD11. Sandbox matrix
-
-Test supported providers/modes and escalation boundaries.
-
-## AD12. Subagent provider contract tests
-
-All providers must satisfy the same lifecycle/authority/result semantics.
-
-## AD13. Workflow proposal adversarial tests
-
-Test invalid topology, authority expansion, runaway fan-out, excessive depth, and budget violations.
-
-## AD14. Runtime extension hostile-code tests
-
-Before Governed Runtime Evolution ships, test escape attempts and authority violations.
-
-## AD15. Scenario Proofs remain highest-level falsification
-
-Unit/integration tests do not replace Scenario Proof evidence for platform-level claims.
-
-## Acceptance criteria
-
-- canonical invariants have deterministic automated tests,
-- provider contracts have reusable conformance suites,
-- Scenario Proofs can demonstrate the integrated architecture under adversarial conditions.
+Scenario Proofs remain the highest-level falsification/evidence layer; unit and integration tests do not substitute for platform claims.
 
 ---
 
-# 34. Initiative AE — Developer and operator experience
+# 35. Initiative AE — Developer/operator experience
 
-## Goal
+A developer should be able to start a small safe governed runtime without reading every architecture document.
 
-Reduce the cognitive cost of using Intergrax without reducing architectural depth.
+Provide sensible defaults and canonical user-facing capabilities for run, inspect, explain, doctor, profile diff, replay, and proof execution. `doctor` should detect missing providers, invalid credential refs, unsupported sandbox, capability dependency failures, stale configuration/generated metadata, provider health issues, and host capability mismatches.
 
-## AE1. Minimal canonical quick start
-
-A developer should be able to run a small governed harness without understanding every internal domain first.
-
-## AE2. Sensible defaults
-
-Defaults should produce safe, inspectable behavior.
-
-## AE3. Canonical CLI concepts
-
-Target capabilities include:
-
-- run,
-- inspect,
-- explain,
-- doctor,
-- profile diff,
-- replay,
-- proof run.
-
-## AE4. `doctor`
-
-Diagnose:
-
-- missing providers,
-- invalid credentials refs,
-- unsupported sandbox mode,
-- capability dependency failures,
-- stale configuration,
-- host capability mismatches.
-
-## AE5. Generated catalogs
-
-Expose current tools, skills, providers, capabilities, profiles, invariants, and configuration surfaces.
-
-## AE6. One boot mental model
-
-Document the runtime boot flow clearly:
+Document one boot mental model:
 
 ```text
 load composition
-→ resolve dependencies
-→ resolve effective profile
-→ validate capabilities
-→ activate providers
-→ expose inspection state
+→ resolve deltas/dependencies
+→ validate effective profile
+→ stage providers
+→ activate atomically
+→ expose runtime health/inspection
 → admit work
 ```
 
-## Acceptance criteria
+---
 
-- a new developer can understand active runtime composition without reading all architecture documents,
-- common misconfiguration can be diagnosed automatically,
-- runtime explanation is available without custom debugging.
+# 36. Initiative AF — Checkpoint, durability, and recovery convergence
+
+**Priority:** P0.
+
+**CURRENT/PARTIAL:** UER already defines checkpoint/recovery ownership and target semantics; current checkpoint state does not yet preserve the complete canonical Execution Tree.
+
+**Goal:** make pause/resume, worker crash, host restart, background work, HITL, and distributed execution recover through one Run-scoped durable state model without becoming an identity authority.
+
+Checkpoint/recovery must preserve as applicable:
+
+- current Attempt,
+- root Execution and Execution Tree,
+- per-Execution lifecycle state,
+- Execution retry generation/index,
+- Nexus orchestration state,
+- agent/UAEP cursors where applicable,
+- pending HITL/HumanInteraction state,
+- budget reservations and relevant consumption state,
+- side-effect fences/idempotency outcome state,
+- required causal evidence references,
+- transport cursors/leases/delivery relations,
+- effective profile/provider version pins,
+- artifact/context references required for continuation.
+
+Required semantics:
+
+1. Restore/resume preserves canonical identity where the same logical Attempt/Execution continues.
+2. Whole-Run retry mints a new Attempt and new runtime Execution instances according to UER rules.
+3. Transport redelivery alone does not redefine runtime identity.
+4. Checkpoint persistence is not a second execution tree.
+5. Side-effect retry/recovery must re-evaluate the correct authorization/idempotency boundary and must not silently duplicate committed effects.
+6. Required durability/evidence write failures fail closed where proceeding would make causal or side-effect correctness unverifiable.
+
+**Acceptance:** a forced-crash Scenario Proof restores the canonical tree and either resumes safely or fails safely without duplicate unauthorized meaningful side effects.
 
 ---
 
-# 35. Consolidation and removal program
+# 37. Initiative AG — Runtime health, readiness, and atomic activation
 
-The roadmap includes deliberate removal of redundant paths.
+**Goal:** distinguish capability existence from real operational readiness.
 
-## 35.1 Legacy flat environment-profile compatibility
+Define a read-model state such as:
 
-Audit actual consumers and remove legacy flat compatibility paths where they no longer have justified use.
+```text
+READY
+DEGRADED
+UNAVAILABLE
+FAILED
+DRAINING
+```
 
-## 35.2 Legacy ToolBase and legacy tool aliases
+Health/readiness is a projection over canonical provider/domain facts, not a new business authority.
 
-Converge on canonical ToolContract/ToolRuntime surfaces.
+Required work:
 
-## 35.3 Private agent tool loops
+- provider/capability health contributors,
+- dependency-aware effective readiness,
+- explicit degraded reason and remediation hints,
+- `inspect`/`doctor` integration,
+- health impact on admission according to required/optional dependency semantics,
+- staged multi-capability activation,
+- atomic commit of the effective activation set from the consumer perspective,
+- deterministic rollback if staging/activation fails,
+- draining semantics where a provider is being replaced but in-flight pinned Executions still depend on the old version.
 
-Remove or route through canonical ToolRuntime.
+Example:
 
-## 35.4 Competing execution identities
-
-Do not allow AgentRunId/NodeRunId/WorkerRunId or similar identities to substitute for canonical Execution identity.
-
-## 35.5 Duplicate registries
-
-Audit registries for true semantic ownership versus historical duplication.
-
-## 35.6 Duplicate plugin discovery
-
-Consolidate discovery/control-plane behavior where domain separation does not require duplication.
-
-## 35.7 Duplicate config resolution
-
-One canonical environment/profile resolution path.
-
-## 35.8 Duplicate observability paths
-
-All authoritative runtime facts flow through canonical observability/evidence contracts.
-
-## 35.9 Retry engine overlap
-
-Audit retry logic and assign explicit ownership to each retry layer.
-
-## Acceptance criteria
-
-- duplicate runtime authorities are removed,
-- compatibility layers are justified by real consumers,
-- new code cannot reintroduce private execution/tool/config authorities without architecture review.
+```text
+jira.search
+registered: yes
+authorized: yes
+provider: jira-v2
+provider state: UNAVAILABLE
+effective executable: no
+reason: credential authorization expired
+```
 
 ---
 
-# 36. Implementation order
+# 38. Initiative AH — Controlled live composition reconfiguration
 
-The program should be implemented in dependency order. Later waves must not pull foundational target concepts forward before their prerequisites exist.
+**Priority:** P2/P3 after B, Q, AG, and AF foundations.
 
-## P0 — Canonical runtime spine
+Support controlled runtime changes without reboot where safe and useful:
+
+```text
+patch request
+→ validate schema/dependencies
+→ authority/governance check
+→ build candidate ProfileResolution
+→ stage providers/registrations
+→ atomic activation
+→ mint new effective profile revision
+→ new Executions use new revision
+→ in-flight Executions remain pinned
+→ drain old version
+→ rollback if required
+```
+
+Eligible changes may include model routes, context providers, instruction sources, selected capability providers, and permission/profile configuration when allowed. Live patching is not an alternate composition authority; it submits a typed delta into canonical resolution.
+
+---
+
+# 39. Initiative AI — Canonical Human Interaction seam
+
+Generalize human collaboration beyond approval callbacks through a provider-neutral interaction request/result contract covering:
+
+- approval,
+- question/clarification,
+- structured choice,
+- credential authorization,
+- review/feedback.
+
+Hosts such as CLI, web, Slack, API, or future channels provide interaction adapters. Governance owns approval semantics; UER owns lifecycle consequences such as waiting/resume; the interaction seam owns delivery/response correlation only.
+
+If required interaction has no authorized responder/provider, the runtime follows policy to pause, deny, timeout, or fail — never auto-allow.
+
+---
+
+# 40. Consolidation and removal program
+
+Audit and remove or formally contain:
+
+1. unjustified legacy flat environment-profile compatibility,
+2. legacy ToolBase/tool aliases that compete with ToolContract/ToolRuntime,
+3. private agent tool loops,
+4. competing execution identities used as substitutes for `ExecutionId`,
+5. duplicate registries without distinct semantic ownership,
+6. duplicate plugin discovery/control-plane paths,
+7. duplicate config/profile resolution,
+8. duplicate canonical observability/evidence paths,
+9. retry engines with ambiguous ownership,
+10. session/read-state authorities that duplicate canonical persisted facts,
+11. host-specific policy/context/execution semantics,
+12. dynamic registration paths without owner/lifetime/teardown.
+
+Every compatibility surface retained after audit must identify a real consumer and removal condition.
+
+---
+
+# 41. Implementation order
+
+## P0 — Canonical runtime spine and durability
 
 Complete first:
 
 1. canonical `ExecutionId`, root and parent relationships,
-2. Execution Tree,
-3. neutral Execution Boundary,
-4. RuntimeEvent execution identity,
-5. child authority propagation,
-6. child budget propagation,
-7. subtree cancellation,
-8. neutral Execution result ABI,
-9. configured versus effective profile distinction,
-10. `ProfileResolution`,
-11. immutable effective profile revision/snapshot,
-12. `MODEL_VISIBLE => RECONSTRUCTABLE`,
-13. canonical model-request identity/evidence,
-14. canonical Runtime Inspection API foundation,
-15. runtime invariant service foundation,
-16. elimination of competing composition/execution authorities on canonical paths.
+2. Execution Tree and `RuntimeEvent.execution_id`,
+3. neutral Execution Boundary and neutral result ABI,
+4. child authority propagation and monotonic permission rules,
+5. hierarchical budget including agent-loop/step limits,
+6. subtree cancellation and pause/resume semantics,
+7. AF checkpoint/durability/recovery convergence,
+8. required-causal-evidence-before-meaningful-work invariant,
+9. configured vs effective profile distinction,
+10. typed profile overlays + `ProfileResolution`,
+11. immutable effective profile/provider-version pins,
+12. ModelRequest identity and reconstruction levels,
+13. canonical Runtime Inspection API foundation,
+14. runtime invariant service foundation,
+15. canonical Human Interaction contract foundation for pause/HITL paths,
+16. removal/containment of competing execution/composition authorities on canonical paths.
 
 ### P0 exit gate
 
-Do not call P0 complete until representative direct-inference, agentic, and orchestration paths all use the same execution/evidence/profile identity spine.
+Representative inference, agentic, orchestration, background, delegated, pause/resume, and crash/recovery flows use the same identity/profile/evidence/checkpoint semantics. Required causal evidence failures fail closed at their declared boundaries.
 
----
+## P1 — Composition, safety, inspection, activation
 
-## P1 — Composition, inspection, governance UX, and safety foundation
-
-1. formal profile layering,
-2. profile provenance and semantic diff,
-3. dependency validation,
-4. required/optional capability handling,
-5. agent/run/execution overlays,
-6. environment/agent/execution/tool/skill/context inspection,
-7. explain tool access,
-8. explain profile value,
-9. explain context inclusion/exclusion,
-10. capability dependency graph,
-11. runtime credential references/providers,
-12. unified ExecutionSandbox contract,
-13. permission presets,
-14. reversible registration handles,
-15. CapabilityDescriptor/control-plane metadata,
-16. generated capability/config/provider catalogs,
-17. runtime invariant catalog and initial critical invariants.
+1. profile layering, provenance, diff, dependency validation,
+2. required/optional dependency handling,
+3. environment/agent/execution/tool/skill/context inspection,
+4. explain tool/profile/context decisions,
+5. capability dependency graph,
+6. runtime credential references/providers,
+7. unified ExecutionSandbox,
+8. Governance permission presets and interaction UX,
+9. reversible registration handles,
+10. `CapabilityDescriptor` including stability/compatibility,
+11. AG runtime health/readiness and atomic activation,
+12. generated capability/config/provider/invariant catalogs,
+13. critical runtime invariants and conformance tests.
 
 ### P1 exit gate
 
-An operator must be able to understand what the runtime resolved, what is active, what is allowed, why something is denied, and which authority/profile/evidence revision governs a given Execution.
+An operator can determine what was configured, what is effective, what is healthy, what is allowed, why something is denied/degraded, and which exact profile/authority/provider revision governs an Execution.
 
----
+## P2 — Runtime capability power and efficiency
 
-## P2 — Runtime capability power
-
-1. ContextProvider seam,
-2. workspace/file/session reference providers,
-3. lazy Instruction Skills,
-4. context cost attribution,
-5. KV-cache-aware CE optimizations,
-6. canonical large-output spill/artifacts,
-7. context compaction,
-8. canonical tool-result convergence,
-9. tool concurrency/timeout/cancellation hardening,
-10. SubagentProvider,
-11. native/remote/external agent providers,
-12. continuable child work,
-13. background Execution control surface,
-14. verified external event intake,
-15. scheduling convergence,
-16. SDK/API/ACP/MCP/host convergence,
-17. provider-neutral process/filesystem/terminal/code runtime seams where scenarios require them.
+1. ContextProvider seam and attributable workspace/file/session/artifact references,
+2. lazy Instruction Skills,
+3. context cost attribution and diagnostics,
+4. KV-cache-aware optimizations,
+5. artifacts/spill and compaction,
+6. ToolRuntime structured errors/concurrency/timeout/cancellation hardening,
+7. SubagentProvider and external-agent adapters,
+8. continuable child work,
+9. background Execution control surface,
+10. verified external event intake,
+11. scheduling convergence,
+12. SDK/API/ACP/MCP/host convergence,
+13. provider-neutral process/filesystem/terminal/code seams where scenarios require them,
+14. AH controlled live composition reconfiguration for safe eligible changes.
 
 ### P2 exit gate
 
-Intergrax must be able to compose heterogeneous agents and capabilities under one Execution/Governance/Evidence model without host-specific or provider-specific runtime forks.
-
----
+Heterogeneous providers/agents/capabilities can be composed under one Execution/Governance/Evidence model, and controlled reconfiguration does not mutate in-flight semantics.
 
 ## P3 — Dynamic orchestration and adaptive expansion
 
-1. WorkflowProposal,
-2. topology/capability/authority/budget validation,
-3. accepted dynamic OrchestrationDefinition,
-4. feedback → Evaluation/AHI bridge,
-5. adaptive artifact taxonomy expansion,
-6. class-specific adaptive authority levels,
-7. shadow/canary/verification support for new artifact classes,
-8. richer runtime invariant coverage,
-9. Scenario Proofs targeting new dynamic behavior.
-
-### P3 exit gate
-
-Dynamic topology and adaptive changes must remain proposals until accepted through deterministic platform governance and must remain fully reconstructable.
-
----
+1. WorkflowProposal and validation,
+2. accepted dynamic OrchestrationDefinition through Nexus,
+3. feedback→Evaluation/AHI bridge,
+4. adaptive artifact taxonomy and class-specific authority,
+5. shadow/canary/verification for new artifact classes,
+6. richer runtime invariants,
+7. model-safe RuntimeCapabilityView,
+8. Scenario Proofs for dynamic topology, reconfiguration, recovery, and provider health.
 
 ## P4 — Governed Runtime Evolution
 
-Only after P0–P3 foundations are proven:
+Only after P0–P3 are proven:
 
 1. CapabilityGap,
 2. RuntimeExtensionProposal,
 3. static validation,
 4. sandbox build/test,
-5. contract tests,
-6. hostile-code tests,
-7. shadow execution,
-8. governance decision,
-9. Execution-scoped activation,
-10. expiry,
-11. canary,
-12. verification,
-13. promotion workflow,
-14. rollback,
-15. full lifecycle evidence,
-16. Scenario Proof demonstrating safe bounded runtime evolution.
-
-### P4 exit gate
-
-A dynamically proposed capability must be unable to escape its authority, scope, lifecycle, sandbox, or evidence requirements even under adversarial testing.
+5. contract and hostile-code tests,
+6. shadow execution,
+7. governance decision,
+8. Execution-scoped activation,
+9. expiry,
+10. canary,
+11. verification,
+12. promotion workflow,
+13. rollback,
+14. full lifecycle evidence,
+15. bounded adversarial Scenario Proof.
 
 ---
 
-# 37. Dependency map
-
-The most important dependencies are:
+# 42. Dependency map
 
 ```text
 ExecutionId / Execution Tree
         ↓
-Authority + Budget inheritance
+Authority + Budget + Required Causal Evidence
         ↓
-Background Execution / Delegation / Dynamic Work
+Checkpoint / Recovery
+        ↓
+Background / Delegation / Distributed / Dynamic Work
 ```
 
 ```text
+Typed profile deltas
+        ↓
 ProfileResolution
         ↓
-Effective Runtime Snapshot
+Effective Snapshot + Version Pin
         ↓
-Inspection + Explanation + Reproducibility
+Inspection / Health / Atomic Activation
+        ↓
+Controlled Live Reconfiguration
 ```
 
 ```text
 ModelRequest Evidence
         ↓
-Reconstructability
+Exact | Referential | Structural Reconstruction
         ↓
 Diagnostics / Evaluation / Replay
 ```
@@ -2572,11 +1028,12 @@ Artifacts + Spill
         ↓
 Compaction
         ↓
-Context Efficiency without Evidence Loss
+Context Efficiency without Evidence Confusion
 ```
 
 ```text
-Sandbox + Credentials + Invariants + Reversible Registration
+Sandbox + Credentials + Invariants + Checkpoint
++ Reversible Registration + Human Interaction
         ↓
 Governed Runtime Evolution
 ```
@@ -2591,93 +1048,54 @@ Governed Adaptive Evolution
 
 ---
 
-# 38. What must explicitly not be built
+# 43. Explicit anti-goals
 
-The following are anti-goals unless future evidence changes the decision:
+Do not build unless future evidence overturns the decision:
 
-1. A second composition authority parallel to `ApplicationEnvironmentProfile`.
-2. A universal plugin base class that erases Tool/Skill/RAG/Memory/Context semantics.
-3. A second Job runtime separate from Unified Execution Runtime.
-4. A separate dynamic-workflow execution engine parallel to Nexus.
-5. A private session runtime used as a substitute for Memory/Execution/Observability semantics.
-6. Automatic global installation of model-generated code.
-7. Runtime extensions that can widen their own authority.
-8. Full local feature-parity race for terminal/LSP/code runtime capabilities where external providers are sufficient.
-9. A new architecture subsystem for small guard/policy behaviors.
-10. Context compaction that deletes audit evidence.
-11. Host-specific ToolRuntime, Governance, Context Engineering, or Execution semantics.
-12. RAG or Memory directly injecting model context outside Context Engineering.
-13. Plans, goals, or todos becoming hidden execution authority.
-14. Telemetry sinks becoming canonical platform truth.
-
----
-
-# 39. Scenario Proof requirements
-
-Every major cross-domain capability added by this roadmap should have bounded adversarial proof coverage before strong maturity claims are made.
-
-Priority proof themes:
-
-## Proof A — Execution identity and lineage
-
-Demonstrate:
-
-- root Execution,
-- children,
-- retries,
-- cancellation,
-- evidence reconstruction.
-
-## Proof B — Effective composition explainability
-
-Demonstrate:
-
-- layered profile resolution,
-- rejected override,
-- authority clamp,
-- tool-access explanation.
-
-## Proof C — Model-request reconstruction
-
-Demonstrate exact reconstruction of a representative model request from persisted evidence.
-
-## Proof D — Governed external delegation
-
-Delegate to an external provider while preserving parent authority, budget, Execution Tree, and canonical evidence.
-
-## Proof E — Large-output artifact/spill
-
-Demonstrate bounded model context while preserving full output as retrievable durable artifact.
-
-## Proof F — Runtime invariant violation
-
-Intentionally violate a critical invariant and show detection, attribution, and evidence.
-
-## Proof G — External event to governed work
-
-Authenticate, deduplicate, admit, execute, and audit an external event.
-
-## Proof H — Governed runtime evolution
-
-Late-stage proof:
-
-- detect missing capability,
-- propose extension,
-- sandbox/test,
-- govern,
-- shadow,
-- activate only within bounded scope,
-- use capability,
-- expire or promote,
-- reconstruct the full lifecycle.
+1. a second composition authority beside `ApplicationEnvironmentProfile`,
+2. a universal plugin base that erases domain semantics,
+3. a second generic Job runtime beside UER,
+4. a dynamic-workflow execution engine parallel to Nexus,
+5. a private Session runtime substituting for Memory/Execution/Observability facts,
+6. automatic global installation of model-generated code,
+7. runtime extensions that widen their own authority,
+8. a local feature-parity race for terminal/LSP/code runtimes when providers suffice,
+9. new architecture domains for simple guards/policies,
+10. context compaction that implies audit deletion,
+11. host-specific ToolRuntime/Governance/CE/Execution semantics,
+12. RAG/Memory directly injecting model context outside CE,
+13. plan/goal/todo state granting authority,
+14. telemetry sinks becoming canonical truth,
+15. profile overlays becoming independent authorities,
+16. checkpoints minting a competing execution tree,
+17. health/readiness projections deciding business policy,
+18. live reconfiguration silently rebinding in-flight Executions.
 
 ---
 
-# 40. Target user/developer experience
+# 44. Scenario Proof program
 
-After the roadmap is complete, a developer should be able to express a high-level environment without manually wiring every subsystem.
+Each major cross-domain claim must have bounded adversarial proof before strong maturity claims.
 
-Illustrative mental model:
+1. **Execution identity and lineage** — root/children/retries/cancellation/evidence reconstruction.
+2. **Effective composition explainability** — layered resolution, rejected override, authority clamp, dependency degradation, tool-access explanation.
+3. **Model-request reconstruction** — demonstrate exact and referential reconstruction plus a privacy-retention structural-provenance case.
+4. **Governed external delegation** — external provider under inherited authority/budget and canonical evidence.
+5. **Large-output artifact/spill** — bounded model context with retrievable full artifact.
+6. **Runtime invariant violation** — intentionally violate a critical invariant and show detection/attribution/evidence.
+7. **External event to governed work** — authenticate, deduplicate, establish causal evidence, admit, execute, and recover safely.
+8. **Crash / Resume / Side-effect Safety** — checkpoint a nontrivial Execution Tree, force crash, restore, preserve causal lineage, and prove no duplicate unauthorized meaningful effect under the tested fault model.
+9. **Credential + Sandbox Escalation** — start read-only with no secret exposure, request a privileged effect, obtain one-shot authorized interaction, consume scoped grant, perform effect, and return to prior authority.
+10. **Atomic Activation / Provider Replacement** — fail activation mid-stage and prove rollback; then replace provider version while old Executions remain pinned and drain safely.
+11. **Governed Runtime Evolution** — late-stage capability gap → proposal → sandbox/tests → governance → shadow → bounded activation → evaluation → expiry/promotion/rollback.
+
+Proof language must state the tested threat/failure model and never convert bounded evidence into an absolute security claim.
+
+---
+
+# 45. Target user and operator experience
+
+A developer should be able to express a high-level environment without manually wiring every subsystem:
 
 ```yaml
 profile: governed-workspace-agent
@@ -2688,223 +1106,172 @@ knowledge: enabled
 sandbox: workspace-write
 ```
 
-The platform resolves this into the canonical domain contracts.
-
-The developer/operator should then be able to ask:
+The platform resolves this into canonical domain contracts. The operator can then ask:
 
 ```text
-What is active?
+What is configured?
+What is effective?
+What is healthy or degraded?
 Why is this tool unavailable?
 Why did this context fragment enter the model?
-Why was this fragment excluded?
+Why was it excluded?
 Which profile value won?
 Which policy required approval?
 What children did this Execution spawn?
-Which credentials were referenced?
-Which side effects occurred?
-Can the exact model request be reconstructed?
-What changed between two runtime profile revisions?
+Which credential references were used?
+Which provider/version is this Execution pinned to?
+Which meaningful side effects occurred?
+Can this model request be reconstructed exactly, referentially, or only structurally?
+What changed between profile revisions?
 Which runtime invariant failed?
+Can this Execution be resumed safely after a crash?
 ```
 
-The system must answer from canonical state and evidence rather than from best-effort diagnostics.
+Answers come from canonical state/evidence and read-model projections, not best-effort log interpretation.
 
 ---
 
-# 41. Target platform architecture
-
-The intended end state is:
+# 46. Target platform architecture
 
 ```text
-                     USER / APPLICATION / EVENT
-                               │
-                               ▼
-                    canonical intake/admission
-                               │
-                               ▼
-                 ApplicationEnvironmentProfile
-                               │
-                       ProfileResolution
-                               │
-                               ▼
-                    Effective Runtime View
-                               │
-                               ▼
-                     Execution Boundary
-                               │
-              ┌────────────────┼────────────────┐
-              │                │                │
-          inference          agentic       orchestration
-                               │                │
-                               │              Nexus
-                               │                │
-                               └───────┬────────┘
-                                       ▼
-                                   Execution
-                                       │
-       ┌──────────────┬────────────────┼─────────────────┬──────────────┐
-       ▼              ▼                ▼                 ▼              ▼
-      CE            Tools            Memory             RAG       Delegation
-       │              │                                  │              │
-       │         Governance                         retrieval      child Exec
-       │              │                                  │              │
-       └──────────────┴──────────────────┬───────────────┴──────────────┘
-                                         ▼
-                                Runtime Events / HOS
-                                         │
-                                         ▼
-                          Evidence / Diagnostics / Eval
-                                         │
-                                         ▼
-                                        AHI
-                                         │
-                                         ▼
-                              Governed Evolution
+USER / APPLICATION / VERIFIED EVENT / SCHEDULE
+                 │
+                 ▼
+       canonical intake/admission
+                 │
+                 ▼
+   ApplicationEnvironmentProfile
+        + typed profile deltas
+                 │
+          ProfileResolution
+                 │
+                 ▼
+       Effective Runtime View
+       + Health / Readiness
+                 │
+                 ▼
+        Execution Boundary
+                 │
+      ┌──────────┼──────────┐
+      │          │          │
+  inference   agentic   orchestration
+                            │
+                           Nexus
+                            │
+                     child Executions
+                 │
+                 ▼
+             Execution
+                 │
+   ┌─────────────┼──────────────────────────────┐
+   ▼             ▼              ▼              ▼
+  CE           Tools          Memory/RAG     Delegation
+                 │                              │
+             Governance                    child Exec
+                 │
+       Human Interaction when required
+                 │
+   └─────────────┴──────────────┬───────────────┘
+                                ▼
+                  Required causal evidence
+                                │
+                       Runtime Events / HOS
+                                │
+                Checkpoint / durable recovery state
+                                │
+                                ▼
+                 Evidence / DIAG / Evaluation
+                                │
+                                ▼
+                               AHI
+                                │
+                                ▼
+                    Governed Runtime Evolution
 ```
 
 Cross-cutting control plane:
 
 ```text
 Platform Plugins / Capability Metadata
-Profile Resolution
-Inspection / Explanation
+Profile Resolution / Version Pinning
+Inspection / Explanation / Health
 Runtime Invariants
 Credentials
 Sandbox / Execution Environment
-Artifacts
-Generated Catalogs
+Artifacts / Spill
+Atomic Activation / Draining
+Generated Catalogs / Schemas
 ```
 
 ---
 
-# 42. Expected outcome after full completion
+# 47. Expected outcome
 
-The completed architecture should provide the following properties simultaneously:
+After full completion Intergrax should provide simultaneously:
 
-## 42.1 Simpler composition without weaker semantics
-
-Intergrax retains domain separation while presenting one coherent environment/harness mental model.
-
-## 42.2 One execution spine
-
-Inference, agents, orchestration, delegated work, background work, scheduled work, and dynamic extensions use canonical Execution semantics.
-
-## 42.3 Full runtime inspectability
-
-The platform can expose what is configured, effective, active, allowed, denied, degraded, and why.
-
-## 42.4 Reconstructable AI decisions
-
-Model-facing inputs, tool visibility, context selection, policy overlays, and profile revisions are attributable and reconstructable.
-
-## 42.5 Strong authority boundaries
-
-Parent-child authority, side effects, credentials, sandbox access, external providers, and temporary capabilities all remain governed.
-
-## 42.6 Context efficiency without loss of evidence
-
-Lazy instructions, spill, artifacts, compaction, and CE budgeting reduce context cost while canonical evidence remains durable.
-
-## 42.7 Heterogeneous executor support
-
-Intergrax can govern native agents and external agents/executors under one operating model.
-
-## 42.8 Executable architecture invariants
-
-The platform continuously verifies critical relationships rather than relying exclusively on documentation and tests.
-
-## 42.9 Adaptive but controlled runtime
-
-AHI can evolve versioned harness artifacts through evidence, governance, shadow, canary, verification, and rollback.
-
-## 42.10 Safe runtime evolution
-
-At the most advanced stage, the system can propose and temporarily activate missing capabilities without allowing generated behavior to escape authority or scope.
+- simpler composition without weaker semantic boundaries,
+- one execution spine across direct, agentic, orchestration, delegated, background, scheduled, and event-triggered work,
+- durable crash/recovery semantics with canonical identity preservation,
+- inspectable configured/effective/healthy runtime state,
+- explainable effective decisions,
+- declared-level reconstruction of model-facing requests,
+- strong hierarchical authority and budget boundaries,
+- unified credentials/sandbox/human-interaction safety surfaces,
+- context efficiency through lazy instructions, artifacts, spill, and compaction without confusing model context with evidence retention,
+- heterogeneous executor/provider support,
+- executable runtime invariants,
+- atomic activation and version-pinned in-flight work,
+- controlled live reconfiguration,
+- governed adaptive change and late-stage bounded runtime evolution.
 
 ---
 
-# 43. Strategic end state
+# 48. Definition of Done for the complete program
 
-The goal of this roadmap is not to maximize the number of agent-framework features.
+The program is complete only when all of the following are true on qualified canonical paths:
 
-The target is a governed execution operating layer capable of running and coordinating heterogeneous AI workloads while retaining:
-
-- authority,
-- evidence,
-- explainability,
-- reproducibility,
-- isolation,
-- recovery,
-- context discipline,
-- knowledge governance,
-- and controlled adaptation.
-
-The platform should be able to govern work performed by:
-
-- direct model inference,
-- Intergrax agents,
-- external agents,
-- orchestration graphs,
-- background workers,
-- retrieval systems,
-- code/process runtimes,
-- scheduled automation,
-- event-triggered automation,
-- and future dynamically proposed capabilities.
-
-All of these must remain subordinate to the same canonical concepts:
-
-```text
-Execution
-Authority
-Budget
-Context
-Governance
-Evidence
-Recovery
-Evaluation
-```
-
-That is the intended architecture convergence point of this roadmap.
-
----
-
-# 44. Definition of Done for the complete program
-
-The roadmap is considered fully implemented only when all of the following are true:
-
-1. `ExecutionId` is canonical across the runtime.
+1. `ExecutionId` is canonical across runtime work.
 2. Execution Tree is a real runtime structure.
-3. Direct, agentic, orchestration, delegated, background, and scheduled work use the same Execution semantics.
+3. Direct, agentic, orchestration, delegated, background, scheduled, and event-admitted work use the same Execution semantics.
 4. `ApplicationEnvironmentProfile` remains the only environment composition authority.
-5. Profile resolution is layered, deterministic, and explainable.
-6. Every Run/Execution has immutable effective profile identity.
-7. Operators can inspect configured and effective runtime state.
-8. Important effective decisions can be explained from provenance.
-9. Canonical model requests are reconstructable from evidence.
-10. All canonical model calls pass through Context Engineering.
-11. All canonical tool calls pass through ToolRuntime.
-12. Meaningful side effects pass through fresh Governance enforcement.
-13. Child authority cannot exceed parent authority.
-14. Hierarchical budget propagation is enforced.
-15. Cancellation works across Execution subtrees and provider boundaries.
-16. Credentials use references/providers and are authority-scoped.
-17. Sandbox/Execution Environment is unified across process/code/tool capabilities.
-18. External agents are providers under canonical Execution semantics.
-19. Background work does not introduce a second lifecycle authority.
-20. External events enter through governed admission.
-21. Large outputs can spill to durable artifacts without losing retrievability.
-22. Context compaction preserves evidence lineage.
-23. Capability and plugin registrations are reversible where dynamic.
-24. Critical runtime invariants are executable and attributable.
-25. Dynamic workflow proposals cannot bypass Nexus/Governance.
-26. Capability Skills and Instruction Skills have distinct semantics.
-27. Adaptive artifacts are versioned, governed, verified, and reversible.
-28. Runtime extensions cannot self-expand authority and expire with their scope unless explicitly promoted.
-29. SDK/API/ACP/MCP/host paths do not create private execution/policy/tool/context semantics.
-30. Generated catalogs/dependency graphs are freshness-gated.
-31. Major new architecture claims have bounded Scenario Proof evidence.
-32. Documentation consistently distinguishes CURRENT from TARGET.
-33. Redundant legacy/parallel authorities identified by this roadmap are removed or explicitly justified.
+5. Agent/Run/Execution overlays are typed deltas, not authorities.
+6. Profile resolution is layered, deterministic, attributable, and dependency-aware.
+7. Every admitted Run/Execution has immutable effective profile/provider-version identity.
+8. Operators can inspect configured, effective, healthy, degraded, and active state.
+9. Important effective decisions are explainable from provenance.
+10. Canonical model requests expose their declared reconstruction level and satisfy it.
+11. All canonical model calls pass through Context Engineering.
+12. All canonical tool calls pass through ToolRuntime.
+13. Meaningful side effects pass through fresh Governance enforcement.
+14. Child authority cannot exceed parent authority.
+15. Tool/capability permission intersection is monotonic.
+16. Hierarchical budget propagation includes bounded agent-loop/step behavior.
+17. Cancellation works across Execution subtrees/provider boundaries.
+18. Checkpoint/recovery preserves canonical identity and required state for supported recovery scenarios.
+19. Required causal evidence is persisted before meaningful work at declared fail-closed boundaries.
+20. Side-effect recovery/retry uses explicit idempotency/fence/authorization semantics.
+21. Credentials use references/providers and are authority-scoped.
+22. Sandbox/Execution Environment is unified across process/code/tool capabilities.
+23. Human interaction uses a canonical provider-neutral seam and never auto-allows on responder absence.
+24. External agents remain providers under canonical Execution semantics.
+25. Background work does not create a second lifecycle authority.
+26. External events enter through governed, idempotent admission where configured.
+27. Large outputs can spill to durable artifacts with provenance and controlled retrieval.
+28. Context compaction preserves lineage and does not imply evidence deletion.
+29. Dynamic registrations are reversible, scoped, and version-aware.
+30. Multi-capability activation is staged/atomic and can roll back safely.
+31. In-flight Executions remain pinned across provider/profile replacement unless explicitly migrated.
+32. Critical runtime invariants are executable and attributable.
+33. Dynamic workflow proposals cannot bypass Nexus/Governance.
+34. Capability Skills and Instruction Skills remain semantically distinct.
+35. Adaptive artifacts are versioned, governed, verified, and reversible.
+36. Runtime extensions cannot self-expand authority and expire with scope unless explicitly promoted.
+37. Model-safe capability introspection reveals only authorized runtime information.
+38. SDK/API/ACP/MCP/host paths do not create private execution/policy/tool/context semantics.
+39. Generated catalogs, dependency graphs, and applicable API/client schemas are freshness-gated.
+40. Major new architecture claims have bounded Scenario Proof evidence and declared threat/failure models.
+41. Documentation consistently separates CURRENT/PARTIAL/GAP/TARGET.
+42. Redundant legacy/parallel authorities identified by this roadmap are removed or explicitly justified by real consumers.
+43. The roadmap is linked from the documentation navigation and general project roadmap.
 
 When these conditions are satisfied, Intergrax should behave as one coherent governed AI execution operating layer rather than as a collection of individually strong but operationally separate subsystems.
