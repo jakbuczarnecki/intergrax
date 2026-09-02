@@ -54,25 +54,34 @@ def create_postgresql_integration(
 
 def _postgresql_materialization_inputs(
     options: Mapping[str, Any],
-) -> tuple[dict[str, object], Callable[[], object] | None]:
+) -> tuple[dict[str, object], Callable[[], object] | None, str | None]:
     connection_factory = options.get("connection_factory")
     if "connection_factory" in options and not callable(connection_factory):
         raise IntegrationConfigurationError(
             "PostgreSQL connection_factory must be callable when explicitly provided."
         )
+    schema_name = options.get("schema_name")
+    if schema_name is not None and type(schema_name) is not str:
+        raise IntegrationConfigurationError(
+            "PostgreSQL schema_name must be a string when explicitly provided."
+        )
     overrides: dict[str, object] = {
         key: value
         for key, value in options.items()
-        if key != "connection_factory" and value is not None
+        if key not in {"connection_factory", "schema_name"} and value is not None
     }
     bound_factory = connection_factory if callable(connection_factory) else None
-    return overrides, bound_factory
+    normalized_schema = schema_name.strip() if isinstance(schema_name, str) else None
+    if normalized_schema == "":
+        raise IntegrationConfigurationError("PostgreSQL schema_name must be non-empty when provided.")
+    return overrides, bound_factory, normalized_schema
 
 
 @dataclass(frozen=True)
 class _PostgreSQLCollaborativeWorkMaterializer:
     _config_overrides: dict[str, object]
     _connection_factory: Callable[[], object] | None
+    _schema_name: str | None = None
 
     def materialize_collaborative_work_repositories(
         self,
@@ -85,6 +94,7 @@ class _PostgreSQLCollaborativeWorkMaterializer:
         return open_postgresql_collaborative_work_repositories(
             config=config,
             connection_factory=self._connection_factory,
+            schema_name=self._schema_name,
         )
 
 
@@ -109,8 +119,12 @@ class PostgreSQLRelationalStoreFactory:
         self,
         options: Mapping[str, Any],
     ) -> CollaborativeWorkPersistenceFactory:
-        overrides, connection_factory = _postgresql_materialization_inputs(options)
-        return _PostgreSQLCollaborativeWorkMaterializer(overrides, connection_factory)
+        overrides, connection_factory, schema_name = _postgresql_materialization_inputs(options)
+        return _PostgreSQLCollaborativeWorkMaterializer(
+            overrides,
+            connection_factory,
+            schema_name,
+        )
 
 
 create_postgresql_relational_store: (

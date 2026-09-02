@@ -16,7 +16,6 @@ from intergrax.collaborative_work.repository_qualification_suite import (
     CW_REPOSITORY_SUITE_VERSION,
     COLLABORATIVE_WORK_DOMAIN,
     COLLABORATIVE_WORK_PERSISTENCE_CAPABILITY,
-    PostgreSQLQualificationMaterializationOptions,
     collaborative_work_postgresql_repository_qualification_binding,
 )
 from intergrax.core.qualification import (
@@ -97,7 +96,12 @@ def test_real_postgresql_provider_qualification_execution_and_persistence() -> N
     schema_name = f"{_SCHEMA_PREFIX}{uuid.uuid4().hex}"
     profile = IntegrationProfile(
         relational_store=POSTGRESQL,
-        options={POSTGRESQL: {"dsn": config.connection_string()}},
+        options={
+            POSTGRESQL: {
+                "dsn": config.connection_string(),
+                "schema_name": schema_name,
+            },
+        },
     )
     run_id = new_qualification_run_id()
     subject = ProviderQualificationSubject(
@@ -113,11 +117,7 @@ def test_real_postgresql_provider_qualification_execution_and_persistence() -> N
     )
     store = InMemoryDocumentStore()
     persistence = DocumentStoreProviderQualificationPersistence(store)
-    binding = collaborative_work_postgresql_repository_qualification_binding(
-        materialization_options=PostgreSQLQualificationMaterializationOptions(
-            schema_name=schema_name,
-        ),
-    )
+    binding = collaborative_work_postgresql_repository_qualification_binding()
 
     try:
         run = execute_provider_qualification(

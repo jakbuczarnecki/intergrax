@@ -35,9 +35,11 @@ from intergrax.core.qualification import (
     execute_provider_qualification,
 )
 from intergrax.core.qualification.execution import (
+    ProviderQualificationExecutionConflictError,
     ProviderQualificationExecutionDependencies,
     ProviderQualificationExecutionRequest,
     ProviderQualificationMaterializationError,
+    ProviderQualificationRequestIncompatibleError,
     ProviderQualificationResolutionError,
     ProviderQualificationRunIdentityError,
     ProviderQualificationSubjectMismatchError,
@@ -45,12 +47,20 @@ from intergrax.core.qualification.execution import (
     ProviderQualificationSuiteInfrastructureError,
     causality_from_requalification_identity,
 )
-from intergrax.core.qualification.persistence import DocumentStoreProviderQualificationPersistence
+from intergrax.core.qualification.observability import (
+    ProviderQualificationExecutionEventType,
+    RecordingProviderQualificationExecutionObservability,
+)
+from intergrax.core.qualification.persistence import (
+    DocumentStoreProviderQualificationPersistence,
+    ProviderQualificationPersistenceConflictError,
+)
 from intergrax.core.qualification.requalification import (
     ProviderRequalificationDecision,
     prepare_provider_requalification_run_identity,
 )
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.runtime.observability.export_boundary import ExportRecordKind
 from intergrax.integrations.core.binding import IntegrationBinding
 from intergrax.integrations.providers.relational_store.sqlite.register import register_sqlite_integration
 from intergrax.integrations.registry.catalog import clear_catalog
@@ -183,13 +193,16 @@ def _request(
 
 
 def _dependencies(
-  binding: _FakeBinding,
-  store: InMemoryDocumentStore | None = None,
+    binding: _FakeBinding,
+    store: InMemoryDocumentStore | None = None,
+    *,
+    observability: RecordingProviderQualificationExecutionObservability | None = None,
 ) -> ProviderQualificationExecutionDependencies:
     document_store = store or InMemoryDocumentStore()
     return ProviderQualificationExecutionDependencies(
         persistence=DocumentStoreProviderQualificationPersistence(document_store),
         domain_binding=binding,
+        observability=observability or RecordingProviderQualificationExecutionObservability(),
     )
 
 
@@ -436,6 +449,7 @@ def test_provider_qualification_run_is_immutable_after_construction(tmp_path: Pa
 
 def test_idempotent_execution_returns_existing_persisted_run(tmp_path: Path) -> None:
     store = InMemoryDocumentStore()
+    observability = RecordingProviderQualificationExecutionObservability()
     binding = _FakeBinding(
         suite=_FakeSuite(
             identity=ProviderQualificationSuiteIdentity(
@@ -447,13 +461,25 @@ def test_idempotent_execution_returns_existing_persisted_run(tmp_path: Path) -> 
             outcome=_suite_outcome(),
         ),
     )
-    deps = _dependencies(binding, store=store)
+    deps = _dependencies(binding, store=store, observability=observability)
     first = execute_provider_qualification(_request(tmp_path=tmp_path), deps)
     second = execute_provider_qualification(_request(tmp_path=tmp_path), deps)
     assert first == second
+    recovered = [
+        envelope
+        for envelope in observability.envelopes
+        if envelope.event_type == ProviderQualificationExecutionEventType.RECOVERED.value
+    ]
+    completed = [
+        envelope
+        for envelope in observability.envelopes
+        if envelope.event_type == ProviderQualificationExecutionEventType.COMPLETED.value
+    ]
+    assert len(recovered) == 1
+    assert len(completed) == 1
 
 
-def test_conflicting_persisted_run_identity_fails_closed(tmp_path: Path) -> None:
+def test_incompatible_existing_run_subject_fails_closed(tmp_path: Path) -> None:
     store = InMemoryDocumentStore()
     persistence = DocumentStoreProviderQualificationPersistence(store)
     subject = _sqlite_subject()
@@ -476,6 +502,7 @@ def test_conflicting_persisted_run_identity_fails_closed(tmp_path: Path) -> None
     )
     persistence.persist(existing)
 
+    incompatible_subject = replace(subject, provider_version="different-version")
     binding = _FakeBinding(
         suite=_FakeSuite(
             identity=ProviderQualificationSuiteIdentity(
@@ -487,14 +514,156 @@ def test_conflicting_persisted_run_identity_fails_closed(tmp_path: Path) -> None
             outcome=_suite_outcome(status=QualificationStatus.REJECTED),
         ),
     )
-    returned = execute_provider_qualification(
-        _request(tmp_path=tmp_path),
-        ProviderQualificationExecutionDependencies(
-            persistence=persistence,
-            domain_binding=binding,
+    with pytest.raises(ProviderQualificationRequestIncompatibleError):
+        execute_provider_qualification(
+            _request(subject=incompatible_subject, tmp_path=tmp_path),
+            ProviderQualificationExecutionDependencies(
+                persistence=persistence,
+                domain_binding=binding,
+            ),
+        )
+
+
+def test_persisted_conflict_with_different_fact_fails_closed(tmp_path: Path) -> None:
+    subject = _sqlite_subject()
+    stored = ProviderQualificationRun(
+        qualification_run_id=_FIXED_RUN_ID,
+        subject=subject,
+        status=QualificationStatus.PRODUCTION_QUALIFIED,
+        executed_at=datetime(2026, 9, 2, tzinfo=UTC),
+        executor=_EXECUTOR,
+        result_summary=ProviderQualificationResultSummary(passed=1, failed=0, skipped=0),
+        evidence=(),
+        reproducibility=None,
+        limitations=(),
+        source_revision=_SOURCE_REVISION,
+        environment_metadata=ProviderQualificationEnvironmentMetadata(
+            real_backend=True,
+            mocks=False,
+            sqlite_substitution=False,
         ),
     )
-    assert returned == existing
+
+    class _ConflictPersistence:
+        def __init__(self) -> None:
+            self._lookup_count = 0
+
+        def persist(self, run: ProviderQualificationRun) -> ProviderQualificationRun:
+            raise ProviderQualificationPersistenceConflictError("conflict")
+
+        def get_by_qualification_run_id(
+            self,
+            qualification_run_id: QualificationRunId | str,
+        ) -> ProviderQualificationRun | None:
+            if str(qualification_run_id) != str(_FIXED_RUN_ID):
+                return None
+            self._lookup_count += 1
+            if self._lookup_count >= 2:
+                return stored
+            return None
+
+    binding = _FakeBinding(
+        suite=_FakeSuite(
+            identity=ProviderQualificationSuiteIdentity(
+                domain=COLLABORATIVE_WORK_DOMAIN,
+                capability_id=COLLABORATIVE_WORK_PERSISTENCE_CAPABILITY,
+                qualification_suite_id=CW_SQLITE_REPOSITORY_SUITE_ID,
+                qualification_suite_version=CW_REPOSITORY_SUITE_VERSION,
+            ),
+            outcome=_suite_outcome(status=QualificationStatus.REJECTED),
+        ),
+    )
+    observability = RecordingProviderQualificationExecutionObservability()
+    with pytest.raises(ProviderQualificationExecutionConflictError):
+        execute_provider_qualification(
+            _request(tmp_path=tmp_path),
+            ProviderQualificationExecutionDependencies(
+                persistence=_ConflictPersistence(),
+                domain_binding=binding,
+                observability=observability,
+            ),
+        )
+    assert any(
+        envelope.record_kind is ExportRecordKind.PROBLEM_SIGNAL
+        for envelope in observability.envelopes
+    )
+
+
+def test_observability_records_start_and_completion(tmp_path: Path) -> None:
+    observability = RecordingProviderQualificationExecutionObservability()
+    binding = _FakeBinding(
+        suite=_FakeSuite(
+            identity=ProviderQualificationSuiteIdentity(
+                domain=COLLABORATIVE_WORK_DOMAIN,
+                capability_id=COLLABORATIVE_WORK_PERSISTENCE_CAPABILITY,
+                qualification_suite_id=CW_SQLITE_REPOSITORY_SUITE_ID,
+                qualification_suite_version=CW_REPOSITORY_SUITE_VERSION,
+            ),
+            outcome=_suite_outcome(),
+        ),
+    )
+    execute_provider_qualification(
+        _request(tmp_path=tmp_path),
+        _dependencies(binding, observability=observability),
+    )
+    event_types = {envelope.event_type for envelope in observability.envelopes}
+    assert ProviderQualificationExecutionEventType.STARTED.value in event_types
+    assert ProviderQualificationExecutionEventType.COMPLETED.value in event_types
+
+
+def test_observability_records_semantic_rejection_as_completed(tmp_path: Path) -> None:
+    observability = RecordingProviderQualificationExecutionObservability()
+    binding = _FakeBinding(
+        suite=_FakeSuite(
+            identity=ProviderQualificationSuiteIdentity(
+                domain=COLLABORATIVE_WORK_DOMAIN,
+                capability_id=COLLABORATIVE_WORK_PERSISTENCE_CAPABILITY,
+                qualification_suite_id=CW_SQLITE_REPOSITORY_SUITE_ID,
+                qualification_suite_version=CW_REPOSITORY_SUITE_VERSION,
+            ),
+            outcome=_suite_outcome(status=QualificationStatus.REJECTED),
+        ),
+    )
+    run = execute_provider_qualification(
+        _request(tmp_path=tmp_path),
+        _dependencies(binding, observability=observability),
+    )
+    assert run.status is QualificationStatus.REJECTED
+    completed = [
+        envelope
+        for envelope in observability.envelopes
+        if envelope.event_type == ProviderQualificationExecutionEventType.COMPLETED.value
+    ]
+    assert len(completed) == 1
+
+
+def test_observability_records_resolution_failure(tmp_path: Path) -> None:
+    observability = RecordingProviderQualificationExecutionObservability()
+    binding = _FakeBinding(
+        suite=_FakeSuite(
+            identity=ProviderQualificationSuiteIdentity(
+                domain=COLLABORATIVE_WORK_DOMAIN,
+                capability_id=COLLABORATIVE_WORK_PERSISTENCE_CAPABILITY,
+                qualification_suite_id=CW_SQLITE_REPOSITORY_SUITE_ID,
+                qualification_suite_version=CW_REPOSITORY_SUITE_VERSION,
+            ),
+            outcome=_suite_outcome(),
+        ),
+    )
+    with patch(
+        "intergrax.core.qualification.execution.resolve_integration_provider_id",
+        side_effect=ProviderQualificationResolutionError("unresolved"),
+    ):
+        with pytest.raises(ProviderQualificationResolutionError):
+            execute_provider_qualification(
+                _request(tmp_path=tmp_path),
+                _dependencies(binding, observability=observability),
+            )
+    assert any(
+        envelope.record_kind is ExportRecordKind.PROBLEM_SIGNAL
+        and "resolution" in envelope.event_type
+        for envelope in observability.envelopes
+    )
 
 
 def test_sqlite_provider_execution(tmp_path: Path) -> None:

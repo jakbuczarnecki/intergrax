@@ -31,6 +31,12 @@ from intergrax.core.qualification.validity import (
     new_qualification_run_id,
     validate_qualification_run_id,
 )
+from intergrax.core.qualification.observability import (
+    NoOpProviderQualificationExecutionObservability,
+    ProviderQualificationExecutionObservabilityPort,
+    ProviderQualificationInfrastructurePhase,
+    utc_now,
+)
 from intergrax.integrations.contracts.base import (
     IntegrationCategory,
     IntegrationConfigurationError,
@@ -71,6 +77,14 @@ class ProviderQualificationPersistenceExecutionError(ProviderQualificationExecut
 
 class ProviderQualificationRunIdentityError(ProviderQualificationExecutionError):
     """Prepared or explicit qualification run identity is inconsistent."""
+
+
+class ProviderQualificationExecutionConflictError(ProviderQualificationExecutionError):
+    """Same qualification_run_id stores or requests incompatible qualification facts."""
+
+
+class ProviderQualificationRequestIncompatibleError(ProviderQualificationExecutionConflictError):
+    """Persisted qualification run is incompatible with the execution request."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -139,12 +153,22 @@ class ProviderQualificationExecutionDependencies:
     persistence: ProviderQualificationPersistencePort
     domain_binding: ProviderQualificationDomainBinding
     integration_category: IntegrationCategory = IntegrationCategory.RELATIONAL_STORE
+    observability: ProviderQualificationExecutionObservabilityPort = (
+        NoOpProviderQualificationExecutionObservability()
+    )
 
     def __post_init__(self) -> None:
         if not isinstance(self.persistence, ProviderQualificationPersistencePort):
             raise TypeError("persistence must implement ProviderQualificationPersistencePort")
         if not isinstance(self.domain_binding, ProviderQualificationDomainBinding):
             raise TypeError("domain_binding must implement ProviderQualificationDomainBinding")
+        if not isinstance(
+            self.observability,
+            ProviderQualificationExecutionObservabilityPort,
+        ):
+            raise TypeError(
+                "observability must implement ProviderQualificationExecutionObservabilityPort",
+            )
 
 
 def causality_from_requalification_identity(
@@ -230,6 +254,52 @@ def _validate_suite_identity(
         )
 
 
+def _validate_stored_run_compatible_with_request(
+    stored: ProviderQualificationRun,
+    request: ProviderQualificationExecutionRequest,
+) -> None:
+    if stored.qualification_run_id != _resolve_execution_run_id(request):
+        raise ProviderQualificationRequestIncompatibleError(
+            "stored qualification_run_id does not match execution request",
+        )
+    if stored.subject != request.subject:
+        raise ProviderQualificationRequestIncompatibleError(
+            "stored qualification subject does not match execution request",
+        )
+    if stored.source_revision != request.source_revision:
+        raise ProviderQualificationRequestIncompatibleError(
+            "stored source_revision does not match execution request",
+        )
+    if stored.executor != request.executor:
+        raise ProviderQualificationRequestIncompatibleError(
+            "stored executor does not match execution request",
+        )
+
+
+def _record_infrastructure_failure(
+    dependencies: ProviderQualificationExecutionDependencies,
+    *,
+    request: ProviderQualificationExecutionRequest,
+    run_id: QualificationRunId,
+    phase: ProviderQualificationInfrastructurePhase,
+    error: Exception,
+    error_code: str,
+) -> None:
+    try:
+        dependencies.observability.record_infrastructure_failure(
+            qualification_run_id=run_id,
+            subject=request.subject,
+            executor=request.executor,
+            source_revision=request.source_revision,
+            phase=phase,
+            error_type=type(error).__name__,
+            error_code=error_code,
+            occurred_at=utc_now(),
+        )
+    except Exception:
+        return
+
+
 def execute_provider_qualification(
     request: ProviderQualificationExecutionRequest,
     dependencies: ProviderQualificationExecutionDependencies,
@@ -237,9 +307,9 @@ def execute_provider_qualification(
     """
     Synchronously execute provider qualification and return the canonical immutable run.
 
-    Idempotency: when a persisted run already exists for the execution run id, the same
-    immutable historical fact is returned. Conflicting duplicate writes fail closed via
-    persistence conditional semantics.
+    Idempotency: when a persisted run already exists for the execution run id and the
+    request is compatible, the same immutable historical fact is returned. Conflicting
+    duplicate writes fail closed via persistence conditional semantics.
     """
     if not isinstance(request, ProviderQualificationExecutionRequest):
         raise TypeError("request must be ProviderQualificationExecutionRequest")
@@ -249,14 +319,38 @@ def execute_provider_qualification(
     run_id = _resolve_execution_run_id(request)
     existing = dependencies.persistence.get_by_qualification_run_id(run_id)
     if existing is not None:
+        _validate_stored_run_compatible_with_request(existing, request)
+        dependencies.observability.record_execution_recovered(
+            existing,
+            recovery_kind="persisted_run",
+            occurred_at=utc_now(),
+        )
         return existing
+
+    started_at = utc_now()
+    dependencies.observability.record_execution_started(
+        qualification_run_id=run_id,
+        subject=request.subject,
+        executor=request.executor,
+        source_revision=request.source_revision,
+        occurred_at=started_at,
+    )
 
     binding = dependencies.domain_binding
     suite = binding.suite
     if not isinstance(suite, ProviderQualificationSuite):
-        raise ProviderQualificationSuiteInfrastructureError(
+        error = ProviderQualificationSuiteInfrastructureError(
             "domain binding did not provide a ProviderQualificationSuite",
         )
+        _record_infrastructure_failure(
+            dependencies,
+            request=request,
+            run_id=run_id,
+            phase=ProviderQualificationInfrastructurePhase.SUITE,
+            error=error,
+            error_code="suite_contract_invalid",
+        )
+        raise error
 
     _validate_suite_identity(suite, request.subject)
 
@@ -265,7 +359,15 @@ def execute_provider_qualification(
             request.integration_profile,
             dependencies.integration_category,
         )
-    except ProviderQualificationResolutionError:
+    except ProviderQualificationResolutionError as exc:
+        _record_infrastructure_failure(
+            dependencies,
+            request=request,
+            run_id=run_id,
+            phase=ProviderQualificationInfrastructurePhase.RESOLUTION,
+            error=exc,
+            error_code="provider_resolution_failed",
+        )
         raise
 
     try:
@@ -276,9 +378,18 @@ def execute_provider_qualification(
     except ProviderQualificationSubjectMismatchError:
         raise
     except Exception as exc:
-        raise ProviderQualificationResolutionError(
+        wrapped = ProviderQualificationResolutionError(
             "provider subject validation failed",
-        ) from exc
+        )
+        _record_infrastructure_failure(
+            dependencies,
+            request=request,
+            run_id=run_id,
+            phase=ProviderQualificationInfrastructurePhase.RESOLUTION,
+            error=wrapped,
+            error_code="provider_subject_validation_failed",
+        )
+        raise wrapped from exc
 
     capability: object | None = None
     handle: ProviderQualificationMaterializationHandle | None = None
@@ -288,26 +399,69 @@ def execute_provider_qualification(
                 request.integration_profile,
                 resolved_provider_id=resolved_provider_id,
             )
-        except ProviderQualificationMaterializationError:
+        except ProviderQualificationMaterializationError as exc:
+            _record_infrastructure_failure(
+                dependencies,
+                request=request,
+                run_id=run_id,
+                phase=ProviderQualificationInfrastructurePhase.MATERIALIZATION,
+                error=exc,
+                error_code="provider_materialization_failed",
+            )
             raise
         except Exception as exc:
-            raise ProviderQualificationMaterializationError(
+            wrapped = ProviderQualificationMaterializationError(
                 "provider materialization failed",
-            ) from exc
+            )
+            _record_infrastructure_failure(
+                dependencies,
+                request=request,
+                run_id=run_id,
+                phase=ProviderQualificationInfrastructurePhase.MATERIALIZATION,
+                error=wrapped,
+                error_code="provider_materialization_failed",
+            )
+            raise wrapped from exc
 
         if not isinstance(handle, ProviderQualificationMaterializationHandle):
-            raise ProviderQualificationMaterializationError(
+            error = ProviderQualificationMaterializationError(
                 "domain binding returned invalid materialization handle",
             )
+            _record_infrastructure_failure(
+                dependencies,
+                request=request,
+                run_id=run_id,
+                phase=ProviderQualificationInfrastructurePhase.MATERIALIZATION,
+                error=error,
+                error_code="materialization_handle_invalid",
+            )
+            raise error
 
         try:
             outcome = suite.execute(capability)
-        except ProviderQualificationSuiteInfrastructureError:
+        except ProviderQualificationSuiteInfrastructureError as exc:
+            _record_infrastructure_failure(
+                dependencies,
+                request=request,
+                run_id=run_id,
+                phase=ProviderQualificationInfrastructurePhase.SUITE,
+                error=exc,
+                error_code="suite_infrastructure_failed",
+            )
             raise
         except Exception as exc:
-            raise ProviderQualificationSuiteInfrastructureError(
+            wrapped = ProviderQualificationSuiteInfrastructureError(
                 "qualification suite infrastructure failed",
-            ) from exc
+            )
+            _record_infrastructure_failure(
+                dependencies,
+                request=request,
+                run_id=run_id,
+                phase=ProviderQualificationInfrastructurePhase.SUITE,
+                error=wrapped,
+                error_code="suite_infrastructure_failed",
+            )
+            raise wrapped from exc
     finally:
         if handle is not None:
             handle.close()
@@ -328,15 +482,57 @@ def execute_provider_qualification(
     )
 
     try:
-        return dependencies.persistence.persist(run)
+        persisted = dependencies.persistence.persist(run)
     except ProviderQualificationPersistenceConflictError as exc:
         stored = dependencies.persistence.get_by_qualification_run_id(run_id)
-        if stored is not None:
+        if stored is None:
+            persistence_error = ProviderQualificationPersistenceExecutionError(
+                "provider qualification persistence conflict could not be resolved",
+            )
+            _record_infrastructure_failure(
+                dependencies,
+                request=request,
+                run_id=run_id,
+                phase=ProviderQualificationInfrastructurePhase.PERSISTENCE,
+                error=persistence_error,
+                error_code="persistence_conflict_unresolved",
+            )
+            raise persistence_error from exc
+        if stored == run:
+            dependencies.observability.record_execution_recovered(
+                stored,
+                recovery_kind="persist_conflict_duplicate",
+                occurred_at=utc_now(),
+            )
             return stored
-        raise ProviderQualificationPersistenceExecutionError(
-            "provider qualification persistence conflict could not be resolved",
-        ) from exc
+        conflict_error = ProviderQualificationExecutionConflictError(
+            "conflicting provider qualification run for qualification_run_id",
+        )
+        _record_infrastructure_failure(
+            dependencies,
+            request=request,
+            run_id=run_id,
+            phase=ProviderQualificationInfrastructurePhase.PERSISTENCE,
+            error=conflict_error,
+            error_code="persistence_conflict",
+        )
+        raise conflict_error from exc
     except Exception as exc:
-        raise ProviderQualificationPersistenceExecutionError(
+        persistence_error = ProviderQualificationPersistenceExecutionError(
             "provider qualification persistence failed after execution",
-        ) from exc
+        )
+        _record_infrastructure_failure(
+            dependencies,
+            request=request,
+            run_id=run_id,
+            phase=ProviderQualificationInfrastructurePhase.PERSISTENCE,
+            error=persistence_error,
+            error_code="persistence_failed",
+        )
+        raise persistence_error from exc
+    else:
+        dependencies.observability.record_execution_completed(
+            persisted,
+            occurred_at=utc_now(),
+        )
+        return persisted

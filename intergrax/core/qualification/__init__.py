@@ -30,11 +30,13 @@ from intergrax.core.qualification.validity import (
 )
 from intergrax.core.qualification.execution import (
     ProviderQualificationExecutionCausality,
+    ProviderQualificationExecutionConflictError,
     ProviderQualificationExecutionDependencies,
     ProviderQualificationExecutionError,
     ProviderQualificationExecutionRequest,
     ProviderQualificationMaterializationError,
     ProviderQualificationPersistenceExecutionError,
+    ProviderQualificationRequestIncompatibleError,
     ProviderQualificationResolutionError,
     ProviderQualificationRunIdentityError,
     ProviderQualificationSubjectMismatchError,
@@ -43,6 +45,11 @@ from intergrax.core.qualification.execution import (
     causality_from_requalification_identity,
     execute_provider_qualification,
     resolve_integration_provider_id,
+)
+from intergrax.core.qualification.observability import (
+    NoOpProviderQualificationExecutionObservability,
+    ProviderQualificationExecutionObservabilityPort,
+    RecordingProviderQualificationExecutionObservability,
 )
 from intergrax.core.qualification.suite import (
     ProviderQualificationDomainBinding,
@@ -71,11 +78,16 @@ from intergrax.core.qualification.validity_evaluation import (
 
 __all__ = [
     "ProviderQualificationExecutionCausality",
+    "ProviderQualificationExecutionConflictError",
     "ProviderQualificationExecutionDependencies",
     "ProviderQualificationExecutionError",
     "ProviderQualificationExecutionRequest",
+    "ProviderQualificationExecutionObservabilityPort",
+    "NoOpProviderQualificationExecutionObservability",
+    "RecordingProviderQualificationExecutionObservability",
     "ProviderQualificationMaterializationError",
     "ProviderQualificationPersistenceExecutionError",
+    "ProviderQualificationRequestIncompatibleError",
     "ProviderQualificationResolutionError",
     "ProviderQualificationRunIdentityError",
     "ProviderQualificationSubjectMismatchError",

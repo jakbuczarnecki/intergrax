@@ -43,7 +43,10 @@ from intergrax.contracts.collaborative_work import (
 )
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.core.qualification.evidence import QualificationEvidence
-from intergrax.core.qualification.execution import ProviderQualificationSubjectMismatchError
+from intergrax.core.qualification.execution import (
+    ProviderQualificationSubjectMismatchError,
+    ProviderQualificationSuiteInfrastructureError,
+)
 from intergrax.core.qualification.provider import (
     ProviderQualificationEnvironmentMetadata,
     ProviderQualificationEvidenceKind,
@@ -58,7 +61,6 @@ from intergrax.core.qualification.suite import (
     ProviderQualificationSuiteOutcome,
 )
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.integrations.registry.factory import resolve_slug
 
 COLLABORATIVE_WORK_DOMAIN = "collaborative_work"
 COLLABORATIVE_WORK_PERSISTENCE_CAPABILITY = "collaborative_work.persistence.v1"
@@ -75,15 +77,8 @@ _VALID_FROM = datetime(2026, 1, 1, tzinfo=UTC)
 _VALID_UNTIL = datetime(2026, 12, 31, tzinfo=UTC)
 
 
-@dataclass(frozen=True, slots=True)
-class PostgreSQLQualificationMaterializationOptions:
-    """Provider-owned PostgreSQL qualification materialization options."""
-
-    schema_name: str
-
-    @property
-    def postgresql_schema_name(self) -> str:
-        return self.schema_name
+class _RepositorySemanticCheckFailure(Exception):
+    """Domain semantic rejection surfaced by one repository contract check."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -123,7 +118,7 @@ def _run_repository_contract_checks(bundle: CollaborativeWorkRepositories) -> tu
         try:
             check()
             _record_success()
-        except Exception:
+        except _RepositorySemanticCheckFailure:
             _record_failure()
 
     membership_repo = bundle.membership
@@ -134,21 +129,24 @@ def _run_repository_contract_checks(bundle: CollaborativeWorkRepositories) -> tu
 
     def _membership_create_get_revision_and_isolation() -> None:
         created = membership_repo.create(_membership_command())
-        assert created.revision == INITIAL_RECORD_REVISION
+        if created.revision != INITIAL_RECORD_REVISION:
+            raise _RepositorySemanticCheckFailure("membership revision mismatch")
         loaded = membership_repo.get(
             tenant_id=_TENANT_A,
             workspace_id=_WORKSPACE_A,
             membership_id="qual-membership-1",
         )
-        assert loaded == created
-        assert (
+        if loaded != created:
+            raise _RepositorySemanticCheckFailure("membership round-trip mismatch")
+        if (
             membership_repo.get(
                 tenant_id=_TENANT_B,
                 workspace_id=_WORKSPACE_B,
                 membership_id="qual-membership-1",
             )
-            is None
-        )
+            is not None
+        ):
+            raise _RepositorySemanticCheckFailure("membership tenant isolation failed")
 
     def _membership_duplicate_and_stale_revision() -> None:
         created = membership_repo.create(
@@ -164,7 +162,7 @@ def _run_repository_contract_checks(bundle: CollaborativeWorkRepositories) -> tu
                     principal_id="qual-principal-2",
                 ),
             )
-            raise AssertionError("expected WorkspaceMembershipAlreadyExists")
+            raise _RepositorySemanticCheckFailure("expected WorkspaceMembershipAlreadyExists")
         except WorkspaceMembershipAlreadyExists:
             pass
         try:
@@ -180,7 +178,7 @@ def _run_repository_contract_checks(bundle: CollaborativeWorkRepositories) -> tu
                     status=MembershipStatus.SUSPENDED,
                 )
             )
-            raise AssertionError("expected WorkspaceMembershipRevisionConflict")
+            raise _RepositorySemanticCheckFailure("expected WorkspaceMembershipRevisionConflict")
         except WorkspaceMembershipRevisionConflict:
             pass
 
@@ -196,7 +194,8 @@ def _run_repository_contract_checks(bundle: CollaborativeWorkRepositories) -> tu
             idempotency_key="qual-delegation-idem",
         )
         created = delegation_repo.create(command)
-        assert delegation_repo.create(command) == created
+        if delegation_repo.create(command) != created:
+            raise _RepositorySemanticCheckFailure("delegation idempotency mismatch")
         updated = delegation_repo.update(
             UpdateAuthorityDelegationCommand(
                 scope=AuthorityDelegationScopeKey(
@@ -212,8 +211,10 @@ def _run_repository_contract_checks(bundle: CollaborativeWorkRepositories) -> tu
                 status=DelegationStatus.REVOKED,
             )
         )
-        assert updated.revision == created.revision + 1
-        assert delegation_repo.create(command) == created
+        if updated.revision != created.revision + 1:
+            raise _RepositorySemanticCheckFailure("delegation revision increment mismatch")
+        if delegation_repo.create(command) != created:
+            raise _RepositorySemanticCheckFailure("delegation idempotency after update failed")
 
     def _authority_grant_principal_uniqueness() -> None:
         command = CreatePrincipalAuthorityGrantCommand(
@@ -236,7 +237,7 @@ def _run_repository_contract_checks(bundle: CollaborativeWorkRepositories) -> tu
                     status=AuthorityGrantStatus.ACTIVE,
                 )
             )
-            raise AssertionError("expected PrincipalAuthorityGrantAlreadyExists")
+            raise _RepositorySemanticCheckFailure("expected PrincipalAuthorityGrantAlreadyExists")
         except PrincipalAuthorityGrantAlreadyExists:
             pass
 
@@ -264,7 +265,7 @@ def _run_repository_contract_checks(bundle: CollaborativeWorkRepositories) -> tu
                     status=CollaborativePolicyRuleStatus.ACTIVE,
                 )
             )
-            raise AssertionError("expected CollaborativePolicyRuleAlreadyExists")
+            raise _RepositorySemanticCheckFailure("expected CollaborativePolicyRuleAlreadyExists")
         except CollaborativePolicyRuleAlreadyExists:
             pass
 
@@ -301,7 +302,9 @@ def _run_repository_contract_checks(bundle: CollaborativeWorkRepositories) -> tu
                     status=CollaborativeOperationPolicyProfileStatus.DISABLED,
                 )
             )
-            raise AssertionError("expected CollaborativeOperationPolicyProfileRevisionConflict")
+            raise _RepositorySemanticCheckFailure(
+                "expected CollaborativeOperationPolicyProfileRevisionConflict",
+            )
         except CollaborativeOperationPolicyProfileRevisionConflict:
             pass
 
@@ -334,7 +337,9 @@ class CollaborativeWorkRepositoryQualificationSuite:
 
     def execute(self, capability: object) -> ProviderQualificationSuiteOutcome:
         if not isinstance(capability, CollaborativeWorkRepositories):
-            raise TypeError("capability must be CollaborativeWorkRepositories")
+            raise ProviderQualificationSuiteInfrastructureError(
+                "capability must be CollaborativeWorkRepositories",
+            )
 
         passed, failed = _run_repository_contract_checks(capability)
         skipped = 0
@@ -426,7 +431,6 @@ class CollaborativeWorkRepositoryQualificationBinding:
 
     _suite: CollaborativeWorkRepositoryQualificationSuite
     _expected_provider_id: str
-    _materialization_options: PostgreSQLQualificationMaterializationOptions | None = None
 
     @property
     def suite(self) -> ProviderQualificationSuite:
@@ -470,44 +474,16 @@ class CollaborativeWorkRepositoryQualificationBinding:
                 "resolved provider_id does not match Collaborative Work binding",
             )
 
-        options = self._materialization_options
-        if (
-            options is not None
-            and options.postgresql_schema_name is not None
-            and resolved_provider_id == "postgresql"
-        ):
-            from intergrax.collaborative_work.persistence import (
-                open_postgresql_collaborative_work_repositories,
-            )
-            from intergrax.integrations._shared.config import merge_config
-            from intergrax.integrations.contracts.base import IntegrationCategory
-            from intergrax.integrations.providers.relational_store.postgresql.bundle import (
-                resolve_postgresql_config,
-            )
-
-            slug = resolve_slug(IntegrationCategory.RELATIONAL_STORE, profile=profile)
-            merged = merge_config(profile.options_for_slug(slug), None)
-            config = resolve_postgresql_config(
-                **{key: value for key, value in merged.items() if value is not None},
-            )
-            bundle = open_postgresql_collaborative_work_repositories(
-                config=config,
-                schema_name=options.postgresql_schema_name,
-            )
-        else:
-            bundle = resolve_collaborative_work_repositories(profile)
-
+        bundle = resolve_collaborative_work_repositories(profile)
         return bundle, _CollaborativeWorkMaterializationHandle(bundle)
 
 
-def collaborative_work_postgresql_repository_qualification_binding(
-    *,
-    materialization_options: PostgreSQLQualificationMaterializationOptions | None = None,
-) -> CollaborativeWorkRepositoryQualificationBinding:
+def collaborative_work_postgresql_repository_qualification_binding() -> (
+    CollaborativeWorkRepositoryQualificationBinding
+):
     return CollaborativeWorkRepositoryQualificationBinding(
         _suite=collaborative_work_postgresql_repository_qualification_suite(),
         _expected_provider_id="postgresql",
-        _materialization_options=materialization_options,
     )
 
 
