@@ -30,10 +30,15 @@ from intergrax.contracts.decision_record import (
 )
 from intergrax.contracts.decision_structural_validation import (
     DecisionStructuralValidator,
+    StructuralValidationFailure,
+    StructuralValidationOutcome,
+    structural_validation_failed,
+    structural_validation_passed,
 )
 from intergrax.contracts.decision_verification import (
     VerificationDisposition,
     VerificationStageOutcome,
+    validate_verification_finding_code,
     validate_verification_requirement_code,
 )
 from intergrax.contracts.decision_verification_stage import (
@@ -53,7 +58,6 @@ from intergrax.runtime.decision_verification_stages.structural import (
     AgentExecutionStructuralValidator,
     NonEmptyTextStructuralValidator,
     StructuralVerificationStage,
-    _coerce_validator_outcome,
 )
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 
@@ -250,11 +254,45 @@ def test_no_nexus_ownership_dependency() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
-def test_malformed_validator_outcome_fail_closed() -> None:
-    outcome = _coerce_validator_outcome("not-an-outcome")
-    assert not outcome.passed
-    assert outcome.failure is not None
-    assert outcome.failure.finding_code == "verification.structural.malformed_outcome"
+def test_structural_validation_outcome_rejects_incoherent_construction() -> None:
+    requirement = validate_verification_requirement_code(
+        "verification.structural.non_empty_text",
+    )
+    finding = validate_verification_finding_code(
+        "verification.structural.non_empty_text",
+    )
+    failure = StructuralValidationFailure(
+        requirement_code=requirement,
+        finding_code=finding,
+        message="field must be non-empty",
+    )
+    with pytest.raises(ValueError, match="passed=True cannot include failure"):
+        StructuralValidationOutcome(passed=True, failure=failure)
+    with pytest.raises(ValueError, match="passed=False requires failure"):
+        StructuralValidationOutcome(passed=False)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_structural_validation_outcome_helpers() -> None:
+    passed = structural_validation_passed()
+    assert passed.passed
+    assert passed.failure is None
+
+    requirement = validate_verification_requirement_code(
+        "verification.structural.non_empty_text",
+    )
+    finding = validate_verification_finding_code(
+        "verification.structural.non_empty_text",
+    )
+    failed = structural_validation_failed(
+        requirement_code=requirement,
+        finding_code=finding,
+        message="field must be non-empty",
+    )
+    assert not failed.passed
+    assert failed.failure is not None
+    assert failed.failure.message == "field must be non-empty"
 
 
 @pytest.mark.unit

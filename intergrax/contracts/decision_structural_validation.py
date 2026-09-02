@@ -21,13 +21,6 @@ from intergrax.contracts.decision_verification import (
 
 T = TypeVar("T")
 
-_MALFORMED_OUTCOME_REQUIREMENT = validate_verification_requirement_code(
-    "verification.structural.malformed_outcome",
-)
-_MALFORMED_OUTCOME_FINDING = validate_verification_finding_code(
-    "verification.structural.malformed_outcome",
-)
-
 
 @dataclass(frozen=True, slots=True)
 class StructuralValidationFailure:
@@ -81,15 +74,6 @@ def structural_validation_failed(
             finding_code=finding_code,
             message=message,
         ),
-    )
-
-
-def malformed_structural_validation_outcome() -> StructuralValidationOutcome:
-    """Fail closed when a validator returns an incoherent outcome."""
-    return structural_validation_failed(
-        requirement_code=_MALFORMED_OUTCOME_REQUIREMENT,
-        finding_code=_MALFORMED_OUTCOME_FINDING,
-        message="structural validator returned malformed outcome",
     )
 
 

@@ -92,16 +92,20 @@ def validate_agent_execution(
 
 @dataclass(frozen=True, slots=True)
 class FrozenCapabilityValidators:
-    """Immutable capability validator registry backed by a frozen mapping."""
+    """Immutable capability validator registry backed by a sorted tuple."""
 
-    _validators: Mapping[str, CapabilityValidator]
+    _entries: tuple[tuple[str, CapabilityValidator], ...]
 
     def validator_for(self, capability: str) -> CapabilityValidator | None:
-        return self._validators.get(capability)
+        for key, validator in self._entries:
+            if key == capability:
+                return validator
+        return None
 
 
 def frozen_capability_validators(
     validators: Mapping[str, CapabilityValidator],
 ) -> FrozenCapabilityValidators:
     """Build an immutable capability validator registry."""
-    return FrozenCapabilityValidators(_validators=dict(validators))
+    entries = tuple(sorted(validators.items(), key=lambda item: item[0]))
+    return FrozenCapabilityValidators(_entries=entries)

@@ -21,7 +21,6 @@ from intergrax.contracts.decision_record import (
 from intergrax.contracts.decision_structural_validation import (
     DecisionStructuralValidator,
     StructuralValidationOutcome,
-    malformed_structural_validation_outcome,
     structural_validation_failed,
     structural_validation_passed,
 )
@@ -73,20 +72,6 @@ class TextFieldExtractor(Protocol[T_contra]):
         ...
 
 
-def _coerce_validator_outcome(
-    outcome: StructuralValidationOutcome | object,
-) -> StructuralValidationOutcome:
-    if type(outcome) is not StructuralValidationOutcome:
-        return malformed_structural_validation_outcome()
-    if outcome.passed:
-        if outcome.failure is not None:
-            return malformed_structural_validation_outcome()
-        return outcome
-    if outcome.failure is None:
-        return malformed_structural_validation_outcome()
-    return outcome
-
-
 def _stage_record_from_outcome(
     *,
     candidate: CandidateDecision[T],
@@ -101,10 +86,7 @@ def _stage_record_from_outcome(
         )
     failure = outcome.failure
     if failure is None:
-        outcome = malformed_structural_validation_outcome()
-        failure = outcome.failure
-    if failure is None:
-        raise RuntimeError("structural validation failure missing after coercion")
+        raise RuntimeError("structural validation failure missing for challenged outcome")
     finding = verification_finding(
         code=failure.finding_code,
         message=failure.message,
@@ -142,7 +124,7 @@ class StructuralVerificationStage(Generic[T]):
         candidate: CandidateDecision[T],
     ) -> VerificationStageRecord:
         for validator in self.validators:
-            outcome = _coerce_validator_outcome(validator.validate(candidate))
+            outcome = validator.validate(candidate)
             if not outcome.passed:
                 return _stage_record_from_outcome(candidate=candidate, outcome=outcome)
         return _stage_record_from_outcome(
