@@ -18,6 +18,7 @@ from intergrax.agent_distribution.deployment import (
     DeploymentInstanceState,
 )
 from intergrax.agent_distribution.installation import AgentInstallationRecord
+from intergrax.agent_distribution.roster import EffectiveRoster
 from intergrax.agent_distribution.runtime_materialization_record import (
     RuntimeMaterializationRecord,
 )
@@ -126,6 +127,19 @@ class ApplicationAgentBindingStore(Protocol):
         expected_revision: int | None = None,
     ) -> ApplicationAgentBinding:
         """Persist binding with optimistic revision concurrency."""
+
+
+class EffectiveRosterSnapshotStore(Protocol):
+    """Immutable historical effective roster snapshot authority persistence."""
+
+    def get_by_revision(
+        self,
+        effective_roster_revision_id: str,
+    ) -> EffectiveRoster | None:
+        """Load canonical effective roster snapshot for one revision id."""
+
+    def persist(self, roster: EffectiveRoster) -> EffectiveRoster:
+        """Persist immutable roster snapshot authority (reject integrity mismatch)."""
 
 
 class RuntimeMaterializationStore(Protocol):

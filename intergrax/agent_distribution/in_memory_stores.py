@@ -22,6 +22,7 @@ from intergrax.agent_distribution.deployment import (
 )
 from intergrax.agent_distribution.errors import (
     BindingRevisionConflict,
+    EffectiveRosterSnapshotConflict,
     InstallationSlotConflict,
     MaterializedRuntimeLockConflict,
     RuntimeActivationConflict,
@@ -35,6 +36,7 @@ from intergrax.agent_distribution.installation import (
     InstallationState,
 )
 from intergrax.agent_distribution.installation_slot_scope import InstallationSlotScope
+from intergrax.agent_distribution.roster import EffectiveRoster
 from intergrax.agent_distribution.runtime_materialization_record import (
     RuntimeMaterializationRecord,
 )
@@ -81,6 +83,7 @@ class AgentDistributionStoreState:
     materializations: dict[str, RuntimeMaterializationRecord] = field(
         default_factory=dict
     )
+    effective_roster_snapshots: dict[str, EffectiveRoster] = field(default_factory=dict)
     deployment_instances: dict[
         tuple[ApplicationEnvironmentIdentity, str], DeploymentInstanceRecord
     ] = field(default_factory=dict)
@@ -91,6 +94,9 @@ class AgentDistributionStoreState:
         default_factory=threading.RLock, repr=False, compare=False
     )
     _materialization_lock: threading.RLock = field(
+        default_factory=threading.RLock, repr=False, compare=False
+    )
+    _effective_roster_snapshot_lock: threading.RLock = field(
         default_factory=threading.RLock, repr=False, compare=False
     )
 
@@ -440,6 +446,81 @@ class InMemoryAgentArtifactMetadataStore:
         with self._lock:
             self._state.artifact_metadata[metadata.package_digest] = metadata
             return metadata
+
+
+def _normalize_effective_roster_revision_id(
+    effective_roster_revision_id: str,
+) -> str:
+    return effective_roster_revision_id.strip()
+
+
+def _validate_effective_roster_persist_authority(roster: EffectiveRoster) -> None:
+    if roster.effective_roster_revision_id is None:
+        raise EffectiveRosterSnapshotConflict(
+            "effective roster snapshot requires effective_roster_revision_id"
+        )
+    computed_id = roster.compute_revision_id()
+    if computed_id != roster.effective_roster_revision_id:
+        raise EffectiveRosterSnapshotConflict(
+            "effective roster revision id does not match computed content hash"
+        )
+
+
+def _validate_effective_roster_read_authority(
+    roster: EffectiveRoster,
+    *,
+    requested_id: str,
+) -> None:
+    embedded_id = roster.effective_roster_revision_id
+    if embedded_id is None or embedded_id != requested_id:
+        raise EffectiveRosterSnapshotConflict(
+            "effective roster snapshot embedded revision id mismatch"
+        )
+    computed_id = roster.compute_revision_id()
+    if computed_id != embedded_id:
+        raise EffectiveRosterSnapshotConflict(
+            "effective roster snapshot content integrity failure on read"
+        )
+
+
+class InMemoryEffectiveRosterSnapshotStore:
+    """Process-local immutable historical effective roster snapshot authority store."""
+
+    def __init__(self, state: AgentDistributionStoreState | None = None) -> None:
+        self._state = state or AgentDistributionStoreState()
+
+    @property
+    def state(self) -> AgentDistributionStoreState:
+        return self._state
+
+    def get_by_revision(
+        self,
+        effective_roster_revision_id: str,
+    ) -> EffectiveRoster | None:
+        key = _normalize_effective_roster_revision_id(effective_roster_revision_id)
+        if not key:
+            return None
+        with self._state._effective_roster_snapshot_lock:
+            stored = self._state.effective_roster_snapshots.get(key)
+            if stored is None:
+                return None
+            _validate_effective_roster_read_authority(stored, requested_id=key)
+            return stored
+
+    def persist(self, roster: EffectiveRoster) -> EffectiveRoster:
+        _validate_effective_roster_persist_authority(roster)
+        key = roster.effective_roster_revision_id
+        assert key is not None
+        with self._state._effective_roster_snapshot_lock:
+            existing = self._state.effective_roster_snapshots.get(key)
+            if existing is None:
+                self._state.effective_roster_snapshots[key] = roster
+                return roster
+            if existing == roster:
+                return existing
+            raise EffectiveRosterSnapshotConflict(
+                "effective roster snapshot authority conflict for revision"
+            )
 
 
 class InMemoryRuntimeMaterializationStore:
