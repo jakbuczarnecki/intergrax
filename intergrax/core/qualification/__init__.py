@@ -75,6 +75,28 @@ from intergrax.core.qualification.validity_evaluation import (
     resolve_latest_qualification_validity,
     validity_context_from_run,
 )
+from intergrax.core.qualification.functional_qualification_identity import (
+    FunctionalQualificationPluginId,
+    MODEL_ROUTING_PLUGIN_ID,
+    QualificationGateId,
+    RAG_PLUGIN_ID,
+    TOOL_SELECTION_PLUGIN_ID,
+    WEB_SEARCH_PLUGIN_ID,
+)
+from intergrax.core.qualification.functional_qualification_plugin import (
+    FunctionalQualificationPlugin,
+    QualificationPluginDescriptor,
+)
+from intergrax.core.qualification.functional_qualification_plan import QualificationPlan
+from intergrax.core.qualification.functional_qualification_registry import (
+    QualificationPluginRegistry,
+    QualificationPluginRegistryError,
+)
+from intergrax.core.qualification.functional_qualification_runner import (
+    QualificationRunnerInfrastructureError,
+    run_qualification_plan,
+)
+from intergrax.core.qualification.functional_qualification_verdict import QualificationVerdict
 
 __all__ = [
     "ProviderQualificationExecutionCausality",
@@ -133,4 +155,18 @@ __all__ = [
     "validate_qualification_run_id",
     "validate_validity_evaluation_id",
     "validity_context_from_run",
+    "FunctionalQualificationPlugin",
+    "FunctionalQualificationPluginId",
+    "MODEL_ROUTING_PLUGIN_ID",
+    "QualificationGateId",
+    "RAG_PLUGIN_ID",
+    "TOOL_SELECTION_PLUGIN_ID",
+    "WEB_SEARCH_PLUGIN_ID",
+    "QualificationPlan",
+    "QualificationPluginDescriptor",
+    "QualificationPluginRegistry",
+    "QualificationPluginRegistryError",
+    "QualificationRunnerInfrastructureError",
+    "QualificationVerdict",
+    "run_qualification_plan",
 ]

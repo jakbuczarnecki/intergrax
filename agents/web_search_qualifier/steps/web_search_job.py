@@ -7,6 +7,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from urllib.parse import urlparse
+
 from intergrax.agents.authoring.runtime_tool_helpers import exec_ctx_from_step, request_metadata
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.integrations.contracts.search_provider import SearchProvider
@@ -19,6 +21,7 @@ from web_search_qualifier.url_identity import (
     artifact_ref_for_url,
     is_expected_python_3120_release_source,
     is_official_python_release_source,
+    normalize_url_identity,
 )
 from web_search_qualifier.web_functional_evidence import emit_web_search_functional_evidence
 from web_search_qualifier.web_search import WebSearchCandidate, candidates_from_hits
@@ -48,8 +51,10 @@ _WRONG_QUERY_SYSTEM = (
 )
 _HEALTHY_SELECTION_SYSTEM = (
     "You select the best authoritative source URL for answering the user question. "
-    "Prefer the official python.org release page for Python 3.12.0. "
-    "Reply with only the chosen URL."
+    "For a specific software release version, prefer the official release download page "
+    "(URL path containing /downloads/release/ with the exact version identifier) "
+    "over documentation index pages, release-candidate or beta pages, or third-party summaries. "
+    "Reply with only the chosen URL from the candidate list."
 )
 _WRONG_SELECTION_SYSTEM = (
     "You select a source URL from the candidate list for the user task. "
@@ -158,6 +163,41 @@ class _ExtractionDecision:
     extractor_input_modified: bool
 
 
+_PRERELEASE_PATH_MARKERS: tuple[str, ...] = (
+    "rc",
+    "beta",
+    "alpha",
+    "a1",
+    "a2",
+    "b1",
+    "b2",
+    "b3",
+    "b4",
+)
+
+
+def _is_generic_final_release_candidate(url: str) -> bool:
+    normalized = normalize_url_identity(url)
+    parsed = urlparse(normalized)
+    host = (parsed.hostname or "").lower()
+    if not host.endswith("python.org"):
+        return False
+    path = parsed.path.lower()
+    if "/downloads/release/" not in path:
+        return False
+    segment = path.split("/downloads/release/", 1)[-1]
+    return not any(marker in segment for marker in _PRERELEASE_PATH_MARKERS)
+
+
+def _deterministic_final_release_candidate(
+    candidates: tuple[WebSearchCandidate, ...],
+) -> WebSearchCandidate | None:
+    finals = [candidate for candidate in candidates if _is_generic_final_release_candidate(candidate.url)]
+    if not finals:
+        return None
+    return min(finals, key=lambda candidate: candidate.rank)
+
+
 def _order_candidates_for_selection(
     candidates: tuple[WebSearchCandidate, ...],
     *,
@@ -231,6 +271,14 @@ def _select_source(
             raw_response="",
             ordered_candidates=(),
         )
+    if failure_layer != "source_selection_bias":
+        deterministic = _deterministic_final_release_candidate(candidates)
+        if deterministic is not None:
+            return _SelectionDecision(
+                selected_url=deterministic.url,
+                raw_response=deterministic.url,
+                ordered_candidates=candidates,
+            )
     ordered_candidates = _order_candidates_for_selection(
         candidates,
         failure_layer=failure_layer,
