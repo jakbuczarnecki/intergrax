@@ -931,11 +931,11 @@ Fundamental Virtual Worker property — not an optional Memory feature.
 
 Workers may operate for days, weeks or months across thousands of WorkItems, executions, millions of records, and many external systems. They may restart, change models, idle, or interleave unrelated work. They must answer orientation questions without reloading full history:
 
-`	ext
+```text
 Where am I? What am I responsible for? What am I trying to achieve?
 What is currently open? What has already been done? What failed?
 What did I learn? What information do I need now? What should happen next?
-`
+```
 
 Autonomous Work coordinates Memory, Context Engineering, UCL, RAG and Token Optimization — without WorkerMemoryEngine, WorkerContextEngine, worker-private RAG, or alternate UCL.
 
@@ -955,7 +955,7 @@ See [§WorkContinuityState](#workcontinuitystate) conceptual contract. Orientati
 
 ## Restore-orientation flow
 
-`	ext
+```text
 Worker wakes
     ↓
 load durable Worker state
@@ -975,7 +975,7 @@ retrieve external knowledge only when needed
 Context Engineering assembles bounded context
     ↓
 Agent reasons / Execution acts
-`
+```
 
 Must work after: host restart, long idle, model replacement, context-window reset, unrelated executions, large work-history growth.
 
