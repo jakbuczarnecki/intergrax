@@ -126,6 +126,65 @@ Preserved artifact: `.tmp/session/diag-functional-q3/qualification-report.json`
 
 Configure a real search provider credential, rebuild/restart LKW with forwarded env, re-run canonical runner. Do not tune comparator/spec until live matrix executes.
 
+## DIAG-FUNCTIONAL-Q3 live run (2026-09-02)
+
+### Environment audit
+
+| Item | Value |
+| --- | --- |
+| START_HEAD | `640f2c9d0db633cdce49e5cb256f5e6ab30fc512` |
+| FINAL_HEAD | `17d04462ca7db17ba33bedf3ee4275d17b25844e` |
+| INTERGRAX_TAVILY_API_KEY | YES (host + compose + LKW runtime) |
+| Compose propagation | YES (`INTERGRAX_TAVILY_API_KEY: ${INTERGRAX_TAVILY_API_KEY:-}`) |
+| Host/provider preflight | `tavily`, REAL network, 3 hits, auth success |
+| Runtime-context materialized | YES (`web_search_qualifier`, `local.workspace.web_search_qualification`) |
+| LKW image rebuild | YES (`local_workspace-application:ue-11g-c1`, `ce82b0626a6f`) |
+| Static gate | `4 passed in 1.50s` |
+
+### Live qualification verdict
+
+**Q3 = FAILED** — real Tavily + full matrix executed; 6/11 cases MATCH, 5 MISMATCH, FP=2, FN=0, stage_accuracy=54.5%, inconclusive_accuracy=0%, repeatability=PASS, evidence_fidelity=PASS.
+
+Preserved artifact: `.tmp/session/diag-functional-q3/qualification-report.json`
+
+### Recommendation
+
+**Q3-R1 REQUIRED** — tune DIAG comparator/spec/oracle for selection-stage attribution and Q3-F inconclusive projection before re-qualification.
+
+## DIAG-FUNCTIONAL-Q3-R1 (2026-09-02)
+
+### Environment audit
+
+| Item | Value |
+| --- | --- |
+| START_HEAD | `17d04462ca7db17ba33bedf3ee4275d17b25844e` |
+| FINAL_HEAD | (see commit after push) |
+| INTERGRAX_TAVILY_API_KEY | YES (host + compose + LKW runtime) |
+| Runtime-context materialized | YES |
+| LKW image rebuild | YES |
+| Static gate | `18 passed` (Q3 source semantics + evidence fidelity + Tavily URL + Q2 regressions) |
+
+### Initial live result (preserved)
+
+**INITIAL LIVE RESULT = FAILED 6/11** — artifact: `.tmp/session/diag-functional-q3/qualification-report-initial-failure.json` (if present) or prior `qualification-report.json` from first real Tavily run documented above.
+
+### Root causes fixed in R1
+
+1. **Expected-source identity** — oracle no longer picks first ranked `python-312*` candidate; canonical expected source is always `python-3120` final release.
+2. **Extraction injection** — Q3-D upstream bias + fallback replaces correct LLM extraction with `2023-10-01` when bias is ignored.
+3. **Q3-F missing evidence** — `Oct. 2, 2023` accepted by oracle; missing selection yields `INSUFFICIENT_EVIDENCE` + `INCONCLUSIVE` without false `EXTRACTION_VALIDATION` fail.
+4. **Tavily URL** — factory posts to `https://api.tavily.com/search` (no trailing-slash base URL).
+
+### Live qualification verdict (R1)
+
+**Q3 = PASS** — 11/11 MATCH, FP=0, FN=0, stage_accuracy=100%, inconclusive_accuracy=100%, repeatability=PASS, evidence_fidelity=PASS.
+
+Preserved artifact: `.tmp/session/diag-functional-q3/qualification-report.json`
+
+### Recommendation
+
+**Q3 REAL WEB SEARCH = QUALIFIED** — `READY_FOR_Q4_REAL_MODEL_ROUTING_QUALIFICATION`
+
 ## H1
 
 OPEN (DIAG 100k/flaky suite not in scope).

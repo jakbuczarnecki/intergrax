@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from web_search_qualifier.url_identity import (
     artifact_ref_for_url,
+    is_expected_python_3120_release_source,
     is_official_python_release_source,
-    normalize_url_identity,
     url_from_artifact_ref,
 )
 from intergrax.runtime.diagnostics.functional_evidence import PipelineEvidenceScope
@@ -30,6 +30,7 @@ EXPECTED_RELEASE_DATE_PHRASES: tuple[str, ...] = (
     "October 2, 2023",
     "2 October 2023",
     "Oct 2, 2023",
+    "Oct. 2, 2023",
 )
 CANONICAL_OFFICIAL_SOURCE_URL = "https://www.python.org/downloads/release/python-3120/"
 CANONICAL_EXPECTED_SOURCE_REF = artifact_ref_for_url(CANONICAL_OFFICIAL_SOURCE_URL)
@@ -48,16 +49,13 @@ def query_intent_matches(actual_query: str) -> bool:
 def official_source_present_in_candidates(candidate_refs: tuple[str, ...]) -> bool:
     for ref in candidate_refs:
         url = url_from_artifact_ref(ref)
-        if is_official_python_release_source(url):
+        if is_expected_python_3120_release_source(url):
             return True
     return False
 
 
 def resolve_expected_official_source_ref(candidate_refs: tuple[str, ...]) -> str:
-    for ref in candidate_refs:
-        url = url_from_artifact_ref(ref)
-        if is_official_python_release_source(url):
-            return artifact_ref_for_url(url)
+    del candidate_refs
     return CANONICAL_EXPECTED_SOURCE_REF
 
 
@@ -88,7 +86,7 @@ def independent_web_oracle_passes(
     if selected_source_ref is None:
         return False
     selected_url = url_from_artifact_ref(selected_source_ref)
-    if not is_official_python_release_source(selected_url):
+    if not is_expected_python_3120_release_source(selected_url):
         return False
     if not official_source_present_in_candidates(candidate_refs):
         return False

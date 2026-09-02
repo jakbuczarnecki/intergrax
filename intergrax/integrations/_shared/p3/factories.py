@@ -66,11 +66,11 @@ def create_tavily_search_provider(
     config = HttpIntegrationConfig.from_env("INTERGRAX_TAVILY", **config_overrides)
 
     def _open() -> Any:
-        http = _open_httpx_client(config, default_url="https://api.tavily.com/search")
+        http = _open_httpx_client(config, default_url="https://api.tavily.com")
 
         class _Client:
             def search(self, query: str, limit: int) -> dict[str, Any]:
-                response = http.post("", json={"api_key": config.api_key, "query": query, "max_results": limit})
+                response = http.post("/search", json={"api_key": config.api_key, "query": query, "max_results": limit})
                 response.raise_for_status()
                 return response.json()
 

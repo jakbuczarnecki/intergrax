@@ -15,7 +15,11 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.websearch.schemas.search_hit import SearchHit
 from web_search_qualifier.search_provider_resolver import ResolvedSearchProvider
-from web_search_qualifier.url_identity import artifact_ref_for_url, is_official_python_release_source
+from web_search_qualifier.url_identity import (
+    artifact_ref_for_url,
+    is_expected_python_3120_release_source,
+    is_official_python_release_source,
+)
 from web_search_qualifier.web_functional_evidence import emit_web_search_functional_evidence
 from web_search_qualifier.web_search import WebSearchCandidate, candidates_from_hits
 
@@ -49,8 +53,9 @@ _HEALTHY_SELECTION_SYSTEM = (
 )
 _WRONG_SELECTION_SYSTEM = (
     "You select a source URL from the candidate list. "
-    "Always choose the first candidate that is NOT hosted on python.org. "
-    "Reply with only the chosen URL."
+    "Always prefer a Python 3.12 pre-release or release-candidate page "
+    "(for example python-3120rc3) over the final Python 3.12.0 release page "
+    "when both appear in the list. Reply with only the chosen URL."
 )
 _HEALTHY_EXTRACTION_SYSTEM = (
     "Extract the Python 3.12.0 release date from the provided source snippet. "
@@ -59,7 +64,7 @@ _HEALTHY_EXTRACTION_SYSTEM = (
 )
 _WRONG_EXTRACTION_SYSTEM = (
     "Extract a release date from the snippet. "
-    "Always reply with exactly: 2020-01-01"
+    "Always reply with exactly: 2023-10-01"
 )
 _HEALTHY_SYNTHESIS_SYSTEM = (
     "Answer the user question using the extracted fact. "
@@ -170,15 +175,38 @@ def _select_source(
     )
     selected = _match_url_from_response(response, candidates)
     if selected is not None:
-        return selected
+        if failure_layer == "source_selection_bias" and is_expected_python_3120_release_source(selected):
+            selected = None
+        else:
+            return selected
     if failure_layer == "source_selection_bias":
+        for candidate in candidates:
+            if is_official_python_release_source(
+                candidate.url,
+            ) and not is_expected_python_3120_release_source(candidate.url):
+                return candidate.url
         for candidate in candidates:
             if not is_official_python_release_source(candidate.url):
                 return candidate.url
     for candidate in candidates:
+        if is_expected_python_3120_release_source(candidate.url):
+            return candidate.url
+    for candidate in candidates:
         if is_official_python_release_source(candidate.url):
             return candidate.url
     return candidates[0].url
+
+
+def _looks_like_correct_python_3120_release_date(text: str) -> bool:
+    lowered = text.lower()
+    markers = (
+        "2023-10-02",
+        "october 2, 2023",
+        "2 october 2023",
+        "oct 2, 2023",
+        "oct. 2, 2023",
+    )
+    return any(marker in lowered for marker in markers)
 
 
 def _extract_fact(
@@ -194,12 +222,15 @@ def _extract_fact(
         if failure_layer == "extraction_bias"
         else _HEALTHY_EXTRACTION_SYSTEM
     )
-    return _llm_text(
+    fact = _llm_text(
         adapter,
         system=system,
         user=f"Source: {selected_url}\nSnippet:\n{snippet[:2000]}",
         run_id=run_id,
     )
+    if failure_layer == "extraction_bias" and _looks_like_correct_python_3120_release_date(fact):
+        return "2023-10-01"
+    return fact
 
 
 def _synthesize_answer(

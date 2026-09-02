@@ -126,6 +126,10 @@ def _missing_selection_checks() -> tuple[QualificationCheckExpectation, ...]:
             CHECK_Q3_EXTRACTION_RELATION,
             FunctionalDiagnosticCheckStatus.PROVEN_PASS,
         ),
+        QualificationCheckExpectation(
+            CHECK_Q3_EXTRACTION_VALIDATION,
+            FunctionalDiagnosticCheckStatus.PROVEN_PASS,
+        ),
     )
 
 

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
@@ -712,6 +713,10 @@ def _write_artifact(
     decision_diagnostics_independence_pass: bool,
 ) -> None:
     _ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
+    report_path = _ARTIFACT_DIR / "qualification-report.json"
+    initial_path = _ARTIFACT_DIR / "qualification-report-initial-failure.json"
+    if report_path.exists() and not initial_path.exists():
+        shutil.copy2(report_path, initial_path)
     payload = {
         "verdict": report.verdict,
         "blocked_reason": report.blocked_reason,
@@ -765,7 +770,7 @@ def _write_artifact(
             for record in report.records
         ],
     }
-    (_ARTIFACT_DIR / "qualification-report.json").write_text(
+    (report_path).write_text(
         json.dumps(payload, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
